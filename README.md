@@ -1,6 +1,31 @@
 # Zyvoriq
 
-Zyvoriq is being designed as an AI-native idea-to-impact platform for creating, assuring, adapting, publishing, and continuously improving high-quality humanized content across channels.
+Zyvoriq is an AI-native idea-to-impact platform for creating, assuring, adapting, publishing, and continuously improving high-quality humanized content across channels.
+
+## Homepage
+
+The repository now includes the first production-style homepage built with Next.js + React + TypeScript.
+
+### Run locally
+
+```bash
+npm install
+npm run dev
+```
+
+Then open `http://localhost:3000`.
+
+### Homepage capabilities
+
+- Responsive desktop/mobile navigation
+- Interactive Zyvoriq Director prompt experience
+- Creator / founder / student demo modes
+- Product capability narrative
+- Idea-to-impact workflow visualization
+- Content Quality / Publish Confidence section
+- Use-case paths
+- Interactive early-access form state
+- Responsive layout and accessibility labels
 
 ## Product documentation
 
