@@ -1,117 +1,290 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 850" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="100%" height="100%">
   <defs>
-    <filter id="cardShadow5" x="-10%" y="-10%" width="120%" height="120%">
+    <filter id="erdShadow" x="-10%" y="-10%" width="120%" height="120%">
       <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.06"/>
     </filter>
+    <marker id="fkArrTeal" markerWidth="7" markerHeight="7" refX="4" refY="3.5" orient="auto"><polygon points="0 0, 7 3.5, 0 7" fill="#0D9488"/></marker>
+    <marker id="fkArrIndigo" markerWidth="7" markerHeight="7" refX="4" refY="3.5" orient="auto"><polygon points="0 0, 7 3.5, 0 7" fill="#6366F1"/></marker>
+    <marker id="fkArrGreen" markerWidth="7" markerHeight="7" refX="4" refY="3.5" orient="auto"><polygon points="0 0, 7 3.5, 0 7" fill="#16A34A"/></marker>
   </defs>
 
-  <rect width="1440" height="850" fill="#F8FAFC"/>
-  <rect x="1" y="1" width="1438" height="848" fill="none" stroke="#E2E8F0" stroke-width="2"/>
+  <!-- Background Canvas -->
+  <rect width="1600" height="1000" fill="#F8FAFC"/>
+  <rect x="1" y="1" width="1598" height="998" fill="none" stroke="#CBD5E1" stroke-width="2"/>
 
-  <text x="50" y="52" fill="#0F172A" font-family="sans-serif" font-size="24" font-weight="bold">ARC-001 / DAT-001: Canonical Relational Entity-Relationship Model</text>
-  <text x="50" y="78" fill="#475569" font-family="sans-serif" font-size="13">Multi-Tenant PostgreSQL 16 + pgvector Schema: Tenants -> Workspaces -> Projects -> Assets -> Artifacts -> Veritas</text>
+  <!-- Top Title Banner -->
+  <text x="50" y="52" fill="#0F172A" font-family="sans-serif" font-size="26" font-weight="bold" letter-spacing="-0.5px">DAT-001 / ARC-001: Canonical Relational Schema &amp; pgvector Entity Relationship Model</text>
+  <text x="50" y="78" fill="#475569" font-family="sans-serif" font-size="14" font-weight="500">Multi-Tenant PostgreSQL 16: Organizations -> Workspaces (Vector Memory) -> Swarm DAG Tasks -> Veritas VQC Provenance</text>
 
-  <!-- Tenant -->
-  <g transform="translate(50, 120)">
-    <rect width="250" height="150" rx="8" fill="#FFFFFF" stroke="#64748B" stroke-width="1.5" filter="url(#cardShadow5)"/>
-    <rect width="250" height="34" rx="8" fill="#E2E8F0"/>
-    <text x="15" y="23" fill="#0F172A" font-family="sans-serif" font-size="13" font-weight="bold">TENANT (Billing Scope)</text>
-    <text x="15" y="55" fill="#475569" font-family="monospace" font-size="11">id: uuid (PK)</text>
-    <text x="15" y="75" fill="#475569" font-family="monospace" font-size="11">name: string</text>
-    <text x="15" y="95" fill="#475569" font-family="monospace" font-size="11">plan_tier: string</text>
-    <text x="15" y="115" fill="#475569" font-family="monospace" font-size="11">spending_limit_usd: float</text>
-    <text x="15" y="135" fill="#475569" font-family="monospace" font-size="11">created_at: timestamp</text>
+  <!-- Top Right Badges -->
+  <rect x="1160" y="32" width="180" height="32" rx="16" fill="#CCFBF1" stroke="#0D9488" stroke-width="1.2"/>
+  <text x="1180" y="53" fill="#0F766E" font-family="sans-serif" font-size="13" font-weight="bold">PostgreSQL 16 + pgvector</text>
+  <rect x="1355" y="32" width="195" height="32" rx="16" fill="#DCFCE7" stroke="#16A34A" stroke-width="1.2"/>
+  <text x="1375" y="53" fill="#166534" font-family="sans-serif" font-size="13" font-weight="bold">Multi-Tenant RLS Enforced</text>
+
+  <!-- Top Flow Ribbon -->
+  <rect x="50" y="105" width="1500" height="55" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1" filter="url(#erdShadow)"/>
+  <g transform="translate(65, 118)">
+    <text x="0" y="22" fill="#0369A1" font-family="sans-serif" font-size="12" font-weight="bold">RELATIONAL DOMAINS:</text>
+    
+    <rect x="150" y="2" width="200" height="26" rx="6" fill="#F0FDFA" stroke="#0D9488"/>
+    <text x="165" y="19" fill="#0F766E" font-family="sans-serif" font-size="11" font-weight="bold">1. Identity &amp; Tenant RLS</text>
+
+    <rect x="365" y="2" width="220" height="26" rx="6" fill="#EEF2FF" stroke="#6366F1"/>
+    <text x="380" y="19" fill="#4338CA" font-family="sans-serif" font-size="11" font-weight="bold">2. Persona Style Vector Memory</text>
+
+    <rect x="600" y="2" width="220" height="26" rx="6" fill="#FFFBEB" stroke="#D97706"/>
+    <text x="615" y="19" fill="#92400E" font-family="sans-serif" font-size="11" font-weight="bold">3. Swarm DAG Task Execution</text>
+
+    <rect x="835" y="2" width="210" height="26" rx="6" fill="#FDF2F8" stroke="#DB2777"/>
+    <text x="850" y="19" fill="#9D174D" font-family="sans-serif" font-size="11" font-weight="bold">4. Rendered Modality Artifacts</text>
+
+    <rect x="1060" y="2" width="210" height="26" rx="6" fill="#DCFCE7" stroke="#16A34A"/>
+    <text x="1075" y="19" fill="#166534" font-family="sans-serif" font-size="11" font-weight="bold">5. Veritas VQC Provenance</text>
+
+    <rect x="1285" y="2" width="200" height="26" rx="6" fill="#F1F5F9" stroke="#64748B"/>
+    <text x="1300" y="19" fill="#334155" font-family="sans-serif" font-size="11" font-weight="bold">6. Omnichannel Publish</text>
   </g>
 
-  <line x1="300" y1="195" x2="380" y2="195" stroke="#0284C7" stroke-width="2"/>
+  <!-- ========================================== -->
+  <!-- TIER 1: TENANCY, WORKSPACES & IDENTITY (Top Row, y=180) -->
+  <!-- ========================================== -->
 
-  <!-- Workspace -->
-  <g transform="translate(380, 120)">
-    <rect width="290" height="170" rx="8" fill="#FFFFFF" stroke="#0D9488" stroke-width="1.5" filter="url(#cardShadow5)"/>
-    <rect width="290" height="34" rx="8" fill="#CCFBF1"/>
-    <text x="15" y="23" fill="#0F766E" font-family="sans-serif" font-size="13" font-weight="bold">WORKSPACE (Persona Vault)</text>
-    <text x="15" y="55" fill="#475569" font-family="monospace" font-size="11">id: uuid (PK)</text>
-    <text x="15" y="75" fill="#475569" font-family="monospace" font-size="11">tenant_id: uuid (FK)</text>
-    <text x="15" y="95" fill="#0D9488" font-family="monospace" font-size="11">persona_vector: vector(1536)</text>
-    <text x="15" y="115" fill="#475569" font-family="monospace" font-size="11">autonomy_mode: string</text>
-    <text x="15" y="135" fill="#475569" font-family="monospace" font-size="11">tone_blacklist: text[]</text>
-    <text x="15" y="155" fill="#475569" font-family="monospace" font-size="11">gold_benchmark_id: uuid</text>
+  <!-- Table 1: organizations (tenants) -->
+  <g transform="translate(50, 180)">
+    <rect width="345" height="230" rx="10" fill="#FFFFFF" stroke="#0D9488" stroke-width="1.5" filter="url(#erdShadow)"/>
+    <rect width="345" height="36" rx="10" fill="#CCFBF1"/>
+    <text x="15" y="24" fill="#0F766E" font-family="sans-serif" font-size="13" font-weight="bold">organizations (Tenants)</text>
+    
+    <text x="15" y="60" fill="#0F172A" font-family="monospace" font-size="11">🔑 id: UUID (PK)</text>
+    <text x="15" y="80" fill="#334155" font-family="monospace" font-size="11">   name: VARCHAR(255) NOT NULL</text>
+    <text x="15" y="100" fill="#334155" font-family="monospace" font-size="11">   plan_tier: ENUM (free, pro, enterprise)</text>
+    <text x="15" y="120" fill="#334155" font-family="monospace" font-size="11">   monthly_token_quota: BIGINT</text>
+    <text x="15" y="140" fill="#334155" font-family="monospace" font-size="11">   c2pa_signing_key_id: TEXT</text>
+    <text x="15" y="160" fill="#334155" font-family="monospace" font-size="11">   spending_limit_usd: NUMERIC(10,2)</text>
+    <text x="15" y="180" fill="#334155" font-family="monospace" font-size="11">   created_at: TIMESTAMPTZ DEFAULT now()</text>
+    <line x1="15" y1="195" x2="330" y2="195" stroke="#E2E8F0"/>
+    <text x="15" y="215" fill="#0F766E" font-family="sans-serif" font-size="10" font-weight="bold">RLS Guard: tenant_id = current_setting('app.tenant_id')</text>
   </g>
 
-  <line x1="670" y1="195" x2="750" y2="195" stroke="#0284C7" stroke-width="2"/>
-
-  <!-- Project -->
-  <g transform="translate(750, 120)">
-    <rect width="260" height="150" rx="8" fill="#FFFFFF" stroke="#6366F1" stroke-width="1.5" filter="url(#cardShadow5)"/>
-    <rect width="260" height="34" rx="8" fill="#EEF2FF"/>
-    <text x="15" y="23" fill="#4338CA" font-family="sans-serif" font-size="13" font-weight="bold">PROJECT (Campaign)</text>
-    <text x="15" y="55" fill="#475569" font-family="monospace" font-size="11">id: uuid (PK)</text>
-    <text x="15" y="75" fill="#475569" font-family="monospace" font-size="11">workspace_id: uuid (FK)</text>
-    <text x="15" y="95" fill="#475569" font-family="monospace" font-size="11">title: string</text>
-    <text x="15" y="115" fill="#475569" font-family="monospace" font-size="11">status: string</text>
-    <text x="15" y="135" fill="#475569" font-family="monospace" font-size="11">created_at: timestamp</text>
+  <!-- Table 2: workspaces -->
+  <g transform="translate(435, 180)">
+    <rect width="355" height="230" rx="10" fill="#FFFFFF" stroke="#0D9488" stroke-width="1.5" filter="url(#erdShadow)"/>
+    <rect width="355" height="36" rx="10" fill="#CCFBF1"/>
+    <text x="15" y="24" fill="#0F766E" font-family="sans-serif" font-size="13" font-weight="bold">workspaces (Persona Containers)</text>
+    
+    <text x="15" y="60" fill="#0F172A" font-family="monospace" font-size="11">🔑 id: UUID (PK)</text>
+    <text x="15" y="80" fill="#0369A1" font-family="monospace" font-size="11">🔗 org_id: UUID (FK -> organizations.id)</text>
+    <text x="15" y="100" fill="#334155" font-family="monospace" font-size="11">   name: VARCHAR(100) NOT NULL</text>
+    <text x="15" y="120" fill="#334155" font-family="monospace" font-size="11">   slug: VARCHAR(100) UNIQUE</text>
+    <text x="15" y="140" fill="#4338CA" font-family="monospace" font-size="11">   brand_vector: VECTOR(1536)</text>
+    <text x="15" y="160" fill="#334155" font-family="monospace" font-size="11">   autonomy_level: ENUM (auto, copilot, sup)</text>
+    <text x="15" y="180" fill="#334155" font-family="monospace" font-size="11">   cliche_blacklist: TEXT[]</text>
+    <line x1="15" y1="195" x2="340" y2="195" stroke="#E2E8F0"/>
+    <text x="15" y="215" fill="#4338CA" font-family="sans-serif" font-size="10" font-weight="bold">Index: CREATE INDEX ON workspaces USING ivfflat (brand_vector)</text>
   </g>
 
-  <line x1="1010" y1="195" x2="1090" y2="195" stroke="#0284C7" stroke-width="2"/>
-
-  <!-- Master Asset -->
-  <g transform="translate(1090, 120)">
-    <rect width="290" height="170" rx="8" fill="#FFFFFF" stroke="#DB2777" stroke-width="1.5" filter="url(#cardShadow5)"/>
-    <rect width="290" height="34" rx="8" fill="#FDF2F8"/>
-    <text x="15" y="23" fill="#9D174D" font-family="sans-serif" font-size="13" font-weight="bold">MASTER_ASSET (Concept)</text>
-    <text x="15" y="55" fill="#475569" font-family="monospace" font-size="11">id: uuid (PK)</text>
-    <text x="15" y="75" fill="#475569" font-family="monospace" font-size="11">project_id: uuid (FK)</text>
-    <text x="15" y="95" fill="#475569" font-family="monospace" font-size="11">raw_prompt: text</text>
-    <text x="15" y="115" fill="#475569" font-family="monospace" font-size="11">director_task_graph: jsonb</text>
-    <text x="15" y="135" fill="#475569" font-family="monospace" font-size="11">synthesis_status: string</text>
-    <text x="15" y="155" fill="#475569" font-family="monospace" font-size="11">total_tokens_spent: int</text>
+  <!-- Table 3: users_rbac -->
+  <g transform="translate(830, 180)">
+    <rect width="345" height="230" rx="10" fill="#FFFFFF" stroke="#6366F1" stroke-width="1.5" filter="url(#erdShadow)"/>
+    <rect width="345" height="36" rx="10" fill="#EEF2FF"/>
+    <text x="15" y="24" fill="#4338CA" font-family="sans-serif" font-size="13" font-weight="bold">users_rbac (Access Management)</text>
+    
+    <text x="15" y="60" fill="#0F172A" font-family="monospace" font-size="11">🔑 id: UUID (PK)</text>
+    <text x="15" y="80" fill="#0369A1" font-family="monospace" font-size="11">🔗 workspace_id: UUID (FK -> workspaces.id)</text>
+    <text x="15" y="100" fill="#334155" font-family="monospace" font-size="11">   email: VARCHAR(255) UNIQUE</text>
+    <text x="15" y="120" fill="#334155" font-family="monospace" font-size="11">   role: ENUM (owner, admin, editor, viewer)</text>
+    <text x="15" y="140" fill="#334155" font-family="monospace" font-size="11">   api_key_hash: VARCHAR(64)</text>
+    <text x="15" y="160" fill="#334155" font-family="monospace" font-size="11">   rate_limit_per_min: INT DEFAULT 60</text>
+    <text x="15" y="180" fill="#334155" font-family="monospace" font-size="11">   last_login_at: TIMESTAMPTZ</text>
+    <line x1="15" y1="195" x2="330" y2="195" stroke="#E2E8F0"/>
+    <text x="15" y="215" fill="#3730A3" font-family="sans-serif" font-size="10" font-weight="bold">Auth: OAuth 2.0 PKCE / Session Token Guard</text>
   </g>
 
-  <!-- Modality Artifact -->
-  <line x1="1235" y1="290" x2="1235" y2="390" stroke="#0284C7" stroke-width="2"/>
-  
-  <g transform="translate(1070, 390)">
-    <rect width="320" height="190" rx="8" fill="#FFFFFF" stroke="#D97706" stroke-width="1.5" filter="url(#cardShadow5)"/>
-    <rect width="320" height="34" rx="8" fill="#FFFBEB"/>
-    <text x="15" y="23" fill="#92400E" font-family="sans-serif" font-size="13" font-weight="bold">MODALITY_ARTIFACT (Render)</text>
-    <text x="15" y="55" fill="#475569" font-family="monospace" font-size="11">id: uuid (PK)</text>
-    <text x="15" y="75" fill="#475569" font-family="monospace" font-size="11">master_asset_id: uuid (FK)</text>
-    <text x="15" y="95" fill="#D97706" font-family="monospace" font-size="11">modality: video|audio|code|text</text>
-    <text x="15" y="115" fill="#475569" font-family="monospace" font-size="11">media_s3_url: string</text>
-    <text x="15" y="135" fill="#475569" font-family="monospace" font-size="11">payload: jsonb</text>
-    <text x="15" y="155" fill="#475569" font-family="monospace" font-size="11">c2pa_manifest_id: string</text>
-    <text x="15" y="175" fill="#475569" font-family="monospace" font-size="11">created_at: timestamp</text>
+  <!-- Table 4: persona_memories -->
+  <g transform="translate(1215, 180)">
+    <rect width="335" height="230" rx="10" fill="#FFFFFF" stroke="#6366F1" stroke-width="1.5" filter="url(#erdShadow)"/>
+    <rect width="335" height="36" rx="10" fill="#EEF2FF"/>
+    <text x="15" y="24" fill="#4338CA" font-family="sans-serif" font-size="13" font-weight="bold">persona_memories (Vector Vault)</text>
+    
+    <text x="15" y="60" fill="#0F172A" font-family="monospace" font-size="11">🔑 id: UUID (PK)</text>
+    <text x="15" y="80" fill="#0369A1" font-family="monospace" font-size="11">🔗 workspace_id: UUID (FK -> workspaces.id)</text>
+    <text x="15" y="100" fill="#334155" font-family="monospace" font-size="11">   memory_type: ENUM (style, voice, rule)</text>
+    <text x="15" y="120" fill="#4338CA" font-family="monospace" font-size="11">   embedding: VECTOR(1536) NOT NULL</text>
+    <text x="15" y="140" fill="#334155" font-family="monospace" font-size="11">   exemplar_text: TEXT</text>
+    <text x="15" y="160" fill="#334155" font-family="monospace" font-size="11">   veritas_pass_rate: NUMERIC(5,2)</text>
+    <text x="15" y="180" fill="#334155" font-family="monospace" font-size="11">   created_at: TIMESTAMPTZ</text>
+    <line x1="15" y1="195" x2="320" y2="195" stroke="#E2E8F0"/>
+    <text x="15" y="215" fill="#4338CA" font-family="sans-serif" font-size="10" font-weight="bold">Similarity Metric: Cosine Distance &lt; 0.15</text>
   </g>
 
-  <!-- Veritas Assessment -->
-  <line x1="1070" y1="485" x2="890" y2="485" stroke="#16A34A" stroke-width="2"/>
+  <!-- ========================================== -->
+  <!-- TIER 2: SWARM DAG, TASKS & ARTIFACTS (Middle Row, y=445) -->
+  <!-- ========================================== -->
 
-  <g transform="translate(560, 390)">
-    <rect width="330" height="210" rx="8" fill="#F0FDF4" stroke="#16A34A" stroke-width="2" filter="url(#cardShadow5)"/>
-    <rect width="330" height="34" rx="8" fill="#DCFCE7"/>
-    <text x="15" y="23" fill="#166534" font-family="sans-serif" font-size="13" font-weight="bold">VERITAS_ASSESSMENT (Gate QA)</text>
-    <text x="15" y="55" fill="#334155" font-family="monospace" font-size="11">id: uuid (PK)</text>
-    <text x="15" y="75" fill="#334155" font-family="monospace" font-size="11">artifact_id: uuid (FK)</text>
-    <text x="15" y="95" fill="#166534" font-family="monospace" font-size="11">composite_vqs: float (0-100)</text>
-    <text x="15" y="115" fill="#334155" font-family="monospace" font-size="11">factuality_score: float</text>
-    <text x="15" y="135" fill="#334155" font-family="monospace" font-size="11">brand_tone_score: float</text>
-    <text x="15" y="155" fill="#334155" font-family="monospace" font-size="11">gate_decision: PASS|REVIEW|REPAIR</text>
-    <text x="15" y="175" fill="#334155" font-family="monospace" font-size="11">repair_loop_count: int</text>
-    <text x="15" y="195" fill="#334155" font-family="monospace" font-size="11">ed25519_vqc_signature: text</text>
+  <!-- Table 5: swarm_runs -->
+  <g transform="translate(50, 445)">
+    <rect width="345" height="235" rx="10" fill="#FFFFFF" stroke="#D97706" stroke-width="1.5" filter="url(#erdShadow)"/>
+    <rect width="345" height="36" rx="10" fill="#FEF3C7"/>
+    <text x="15" y="24" fill="#92400E" font-family="sans-serif" font-size="13" font-weight="bold">swarm_runs (Master DAG Pipeline)</text>
+    
+    <text x="15" y="60" fill="#0F172A" font-family="monospace" font-size="11">🔑 id: UUID (PK)</text>
+    <text x="15" y="80" fill="#0369A1" font-family="monospace" font-size="11">🔗 workspace_id: UUID (FK -> workspaces.id)</text>
+    <text x="15" y="100" fill="#334155" font-family="monospace" font-size="11">   concept_prompt: TEXT NOT NULL</text>
+    <text x="15" y="120" fill="#334155" font-family="monospace" font-size="11">   dag_state: JSONB</text>
+    <text x="15" y="140" fill="#334155" font-family="monospace" font-size="11">   status: ENUM (queued, running, done, fail)</text>
+    <text x="15" y="160" fill="#334155" font-family="monospace" font-size="11">   total_cost_usd: NUMERIC(8,4)</text>
+    <text x="15" y="180" fill="#334155" font-family="monospace" font-size="11">   sse_stream_id: VARCHAR(64)</text>
+    <line x1="15" y1="195" x2="330" y2="195" stroke="#E2E8F0"/>
+    <text x="15" y="215" fill="#92400E" font-family="sans-serif" font-size="10" font-weight="bold">Execution: Asynchronous Redis BullMQ DAG Engine</text>
   </g>
 
-  <!-- Publish Job -->
-  <line x1="560" y1="485" x2="380" y2="485" stroke="#D97706" stroke-width="2"/>
+  <!-- Table 6: swarm_tasks -->
+  <g transform="translate(435, 445)">
+    <rect width="355" height="235" rx="10" fill="#FFFFFF" stroke="#D97706" stroke-width="1.5" filter="url(#erdShadow)"/>
+    <rect width="355" height="36" rx="10" fill="#FEF3C7"/>
+    <text x="15" y="24" fill="#92400E" font-family="sans-serif" font-size="13" font-weight="bold">swarm_tasks (Agent Execution Nodes)</text>
+    
+    <text x="15" y="60" fill="#0F172A" font-family="monospace" font-size="11">🔑 id: UUID (PK)</text>
+    <text x="15" y="80" fill="#0369A1" font-family="monospace" font-size="11">🔗 swarm_run_id: UUID (FK -> swarm_runs.id)</text>
+    <text x="15" y="100" fill="#334155" font-family="monospace" font-size="11">   agent_role: ENUM (research, script, video...)</text>
+    <text x="15" y="120" fill="#334155" font-family="monospace" font-size="11">   model_engine: VARCHAR(64)</text>
+    <text x="15" y="140" fill="#334155" font-family="monospace" font-size="11">   input_context: JSONB</text>
+    <text x="15" y="160" fill="#334155" font-family="monospace" font-size="11">   output_result: JSONB</text>
+    <text x="15" y="180" fill="#334155" font-family="monospace" font-size="11">   execution_ms: INT</text>
+    <line x1="15" y1="195" x2="340" y2="195" stroke="#E2E8F0"/>
+    <text x="15" y="215" fill="#92400E" font-family="sans-serif" font-size="10" font-weight="bold">Concurrency: Distributed parallel worker nodes</text>
+  </g>
 
-  <g transform="translate(100, 410)">
-    <rect width="280" height="160" rx="8" fill="#FFFFFF" stroke="#D97706" stroke-width="1.5" filter="url(#cardShadow5)"/>
-    <rect width="280" height="34" rx="8" fill="#FFFBEB"/>
-    <text x="15" y="23" fill="#92400E" font-family="sans-serif" font-size="13" font-weight="bold">PUBLISH_JOB (Dispatch)</text>
-    <text x="15" y="55" fill="#475569" font-family="monospace" font-size="11">id: uuid (PK)</text>
-    <text x="15" y="75" fill="#475569" font-family="monospace" font-size="11">artifact_id: uuid (FK)</text>
-    <text x="15" y="95" fill="#475569" font-family="monospace" font-size="11">channel: youtube|linkedin|x|web</text>
-    <text x="15" y="115" fill="#475569" font-family="monospace" font-size="11">scheduled_at: timestamp</text>
-    <text x="15" y="135" fill="#475569" font-family="monospace" font-size="11">delivery_status: SENT|FAILED</text>
-    <text x="15" y="155" fill="#475569" font-family="monospace" font-size="11">external_post_id: string</text>
+  <!-- Table 7: grounding_claims -->
+  <g transform="translate(830, 445)">
+    <rect width="345" height="235" rx="10" fill="#FFFFFF" stroke="#0D9488" stroke-width="1.5" filter="url(#erdShadow)"/>
+    <rect width="345" height="36" rx="10" fill="#CCFBF1"/>
+    <text x="15" y="24" fill="#0F766E" font-family="sans-serif" font-size="13" font-weight="bold">grounding_claims (Fact Registry)</text>
+    
+    <text x="15" y="60" fill="#0F172A" font-family="monospace" font-size="11">🔑 id: UUID (PK)</text>
+    <text x="15" y="80" fill="#0369A1" font-family="monospace" font-size="11">🔗 task_id: UUID (FK -> swarm_tasks.id)</text>
+    <text x="15" y="100" fill="#334155" font-family="monospace" font-size="11">   claim_statement: TEXT NOT NULL</text>
+    <text x="15" y="120" fill="#334155" font-family="monospace" font-size="11">   source_url: TEXT</text>
+    <text x="15" y="140" fill="#334155" font-family="monospace" font-size="11">   doi_citation: VARCHAR(100)</text>
+    <text x="15" y="160" fill="#334155" font-family="monospace" font-size="11">   confidence_score: NUMERIC(5,2)</text>
+    <text x="15" y="180" fill="#334155" font-family="monospace" font-size="11">   verification_status: ENUM (verified, reject)</text>
+    <line x1="15" y1="195" x2="330" y2="195" stroke="#E2E8F0"/>
+    <text x="15" y="215" fill="#0F766E" font-family="sans-serif" font-size="10" font-weight="bold">Grounding: Google Search Grounding API Anchors</text>
+  </g>
+
+  <!-- Table 8: modality_artifacts -->
+  <g transform="translate(1215, 445)">
+    <rect width="335" height="235" rx="10" fill="#FFFFFF" stroke="#DB2777" stroke-width="1.5" filter="url(#erdShadow)"/>
+    <rect width="335" height="36" rx="10" fill="#FDF2F8"/>
+    <text x="15" y="24" fill="#9D174D" font-family="sans-serif" font-size="13" font-weight="bold">modality_artifacts (Generated Stems)</text>
+    
+    <text x="15" y="60" fill="#0F172A" font-family="monospace" font-size="11">🔑 id: UUID (PK)</text>
+    <text x="15" y="80" fill="#0369A1" font-family="monospace" font-size="11">🔗 task_id: UUID (FK -> swarm_tasks.id)</text>
+    <text x="15" y="100" fill="#DB2777" font-family="monospace" font-size="11">   modality: ENUM (video, audio, code, text)</text>
+    <text x="15" y="120" fill="#334155" font-family="monospace" font-size="11">   storage_s3_url: TEXT</text>
+    <text x="15" y="140" fill="#334155" font-family="monospace" font-size="11">   payload: JSONB</text>
+    <text x="15" y="160" fill="#334155" font-family="monospace" font-size="11">   ast_syntax_valid: BOOLEAN</text>
+    <text x="15" y="180" fill="#334155" font-family="monospace" font-size="11">   c2pa_manifest_id: VARCHAR(64)</text>
+    <line x1="15" y1="195" x2="320" y2="195" stroke="#E2E8F0"/>
+    <text x="15" y="215" fill="#9D174D" font-family="sans-serif" font-size="10" font-weight="bold">Formats: MP4 (Veo 2), WAV (TTS), Draw.io XML</text>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- TIER 3: VERITAS QUALITY, AUTO-REPAIR & PROVENANCE (Bottom Row, y=710) -->
+  <!-- ========================================== -->
+
+  <!-- Table 9: veritas_evaluations -->
+  <g transform="translate(50, 710)">
+    <rect width="345" height="235" rx="10" fill="#FFFFFF" stroke="#16A34A" stroke-width="1.8" filter="url(#erdShadow)"/>
+    <rect width="345" height="36" rx="10" fill="#DCFCE7"/>
+    <text x="15" y="24" fill="#166534" font-family="sans-serif" font-size="13" font-weight="bold">veritas_evaluations (5-Axis Audit)</text>
+    
+    <text x="15" y="60" fill="#0F172A" font-family="monospace" font-size="11">🔑 id: UUID (PK)</text>
+    <text x="15" y="80" fill="#0369A1" font-family="monospace" font-size="11">🔗 artifact_id: UUID (FK -> modality_artifacts)</text>
+    <text x="15" y="100" fill="#166534" font-family="monospace" font-size="11">   composite_vqs: NUMERIC(5,2) NOT NULL</text>
+    <text x="15" y="120" fill="#334155" font-family="monospace" font-size="11">   factuality_score: NUMERIC(5,2)</text>
+    <text x="15" y="140" fill="#334155" font-family="monospace" font-size="11">   brand_tone_score: NUMERIC(5,2)</text>
+    <text x="15" y="160" fill="#DC2626" font-family="monospace" font-size="11">   safety_policy_passed: BOOLEAN (HARD GATE)</text>
+    <text x="15" y="180" fill="#334155" font-family="monospace" font-size="11">   gate_decision: ENUM (pass, repair, review)</text>
+    <line x1="15" y1="195" x2="330" y2="195" stroke="#E2E8F0"/>
+    <text x="15" y="215" fill="#166534" font-family="sans-serif" font-size="10" font-weight="bold">Formula: VQS = 0.30(Fact)+0.25(Tone)+0.20(Cons)+0.15(Safe)+0.10(Hum)</text>
+  </g>
+
+  <!-- Table 10: defect_diff_reports -->
+  <g transform="translate(435, 710)">
+    <rect width="355" height="235" rx="10" fill="#FFFFFF" stroke="#DC2626" stroke-width="1.5" filter="url(#erdShadow)"/>
+    <rect width="355" height="36" rx="10" fill="#FEE2E2"/>
+    <text x="15" y="24" fill="#991B1B" font-family="sans-serif" font-size="13" font-weight="bold">defect_diff_reports (Auto-Repair)</text>
+    
+    <text x="15" y="60" fill="#0F172A" font-family="monospace" font-size="11">🔑 id: UUID (PK)</text>
+    <text x="15" y="80" fill="#0369A1" font-family="monospace" font-size="11">🔗 evaluation_id: UUID (FK -> veritas_evaluations)</text>
+    <text x="15" y="100" fill="#334155" font-family="monospace" font-size="11">   failing_segment_idx: INT</text>
+    <text x="15" y="120" fill="#334155" font-family="monospace" font-size="11">   error_category: ENUM (fact, tone, ast, pii)</text>
+    <text x="15" y="140" fill="#334155" font-family="monospace" font-size="11">   observed_fault_text: TEXT</text>
+    <text x="15" y="160" fill="#334155" font-family="monospace" font-size="11">   ground_truth_patch: TEXT</text>
+    <text x="15" y="180" fill="#334155" font-family="monospace" font-size="11">   iteration_attempt: INT (1-3)</text>
+    <line x1="15" y1="195" x2="340" y2="195" stroke="#E2E8F0"/>
+    <text x="15" y="215" fill="#991B1B" font-family="sans-serif" font-size="10" font-weight="bold">Self-Healing: Max 3 surgical repair loops before escalation</text>
+  </g>
+
+  <!-- Table 11: veritas_certificates (VQC) -->
+  <g transform="translate(830, 710)">
+    <rect width="345" height="235" rx="10" fill="#FFFFFF" stroke="#16A34A" stroke-width="1.8" filter="url(#erdShadow)"/>
+    <rect width="345" height="36" rx="10" fill="#DCFCE7"/>
+    <text x="15" y="24" fill="#166534" font-family="sans-serif" font-size="13" font-weight="bold">veritas_certificates (Signed VQC)</text>
+    
+    <text x="15" y="60" fill="#0F172A" font-family="monospace" font-size="11">🔑 id: UUID (PK)</text>
+    <text x="15" y="80" fill="#0369A1" font-family="monospace" font-size="11">🔗 evaluation_id: UUID (FK -> veritas_evaluations)</text>
+    <text x="15" y="100" fill="#166534" font-family="monospace" font-size="11">   ed25519_signature: TEXT NOT NULL</text>
+    <text x="15" y="120" fill="#334155" font-family="monospace" font-size="11">   c2pa_manifest_hash: VARCHAR(64)</text>
+    <text x="15" y="140" fill="#334155" font-family="monospace" font-size="11">   sha256_root_checksum: VARCHAR(64)</text>
+    <text x="15" y="160" fill="#334155" font-family="monospace" font-size="11">   signer_public_key_id: TEXT</text>
+    <text x="15" y="180" fill="#334155" font-family="monospace" font-size="11">   issued_at: TIMESTAMPTZ DEFAULT now()</text>
+    <line x1="15" y1="195" x2="330" y2="195" stroke="#E2E8F0"/>
+    <text x="15" y="215" fill="#166534" font-family="sans-serif" font-size="10" font-weight="bold">Provenance: Embedded in C2PA JUMBF Box (MP4/WAV/SVG)</text>
+  </g>
+
+  <!-- Table 12: publish_dispatches -->
+  <g transform="translate(1215, 710)">
+    <rect width="335" height="235" rx="10" fill="#FFFFFF" stroke="#0284C7" stroke-width="1.5" filter="url(#erdShadow)"/>
+    <rect width="335" height="36" rx="10" fill="#E0F2FE"/>
+    <text x="15" y="24" fill="#0369A1" font-family="sans-serif" font-size="13" font-weight="bold">publish_dispatches (Delivery Logs)</text>
+    
+    <text x="15" y="60" fill="#0F172A" font-family="monospace" font-size="11">🔑 id: UUID (PK)</text>
+    <text x="15" y="80" fill="#0369A1" font-family="monospace" font-size="11">🔗 cert_id: UUID (FK -> veritas_certificates)</text>
+    <text x="15" y="100" fill="#0284C7" font-family="monospace" font-size="11">   channel: ENUM (youtube, linkedin, x, substack)</text>
+    <text x="15" y="120" fill="#334155" font-family="monospace" font-size="11">   external_post_id: VARCHAR(255)</text>
+    <text x="15" y="140" fill="#334155" font-family="monospace" font-size="11">   delivery_status: ENUM (sent, scheduled, fail)</text>
+    <text x="15" y="160" fill="#334155" font-family="monospace" font-size="11">   error_response: JSONB</text>
+    <text x="15" y="180" fill="#334155" font-family="monospace" font-size="11">   published_at: TIMESTAMPTZ</text>
+    <line x1="15" y1="195" x2="320" y2="195" stroke="#E2E8F0"/>
+    <text x="15" y="215" fill="#0369A1" font-family="sans-serif" font-size="10" font-weight="bold">Dispatch: Verified C2PA Assets to Omnichannel Connectors</text>
+  </g>
+
+  <!-- Connectors (Orthogonal lines connecting relational tiers) -->
+  <path d="M 395 295 L 435 295" stroke="#0D9488" stroke-width="2" marker-end="url(#fkArrTeal)"/>
+  <path d="M 790 295 L 830 295" stroke="#6366F1" stroke-width="2" marker-end="url(#fkArrIndigo)"/>
+  <path d="M 612 410 L 612 445" stroke="#0D9488" stroke-width="2" marker-end="url(#fkArrTeal)"/>
+  <path d="M 395 560 L 435 560" stroke="#D97706" stroke-width="2" marker-end="url(#fkArrTeal)"/>
+  <path d="M 790 560 L 830 560" stroke="#0D9488" stroke-width="2" marker-end="url(#fkArrTeal)"/>
+  <path d="M 1175 560 L 1215 560" stroke="#D97706" stroke-width="2" marker-end="url(#fkArrTeal)"/>
+  <path d="M 1382 680 L 1382 710" stroke="#0284C7" stroke-width="2" marker-end="url(#fkArrTeal)"/>
+  <path d="M 395 825 L 435 825" stroke="#DC2626" stroke-width="2" marker-end="url(#fkArrGreen)"/>
+  <path d="M 790 825 L 830 825" stroke="#16A34A" stroke-width="2" marker-end="url(#fkArrGreen)"/>
+
+  <!-- Legend (Bottom) -->
+  <g transform="translate(50, 968)">
+    <text x="0" y="16" fill="#475569" font-family="sans-serif" font-size="12" font-weight="bold">LEGEND:</text>
+    <rect x="70" y="3" width="14" height="14" rx="3" fill="#0D9488"/>
+    <text x="92" y="15" fill="#334155" font-family="sans-serif" font-size="12">Tenant &amp; Workspace</text>
+    <rect x="260" y="3" width="14" height="14" rx="3" fill="#6366F1"/>
+    <text x="282" y="15" fill="#334155" font-family="sans-serif" font-size="12">Vector Memory &amp; RBAC</text>
+    <rect x="470" y="3" width="14" height="14" rx="3" fill="#D97706"/>
+    <text x="492" y="15" fill="#334155" font-family="sans-serif" font-size="12">Swarm DAG Tasks</text>
+    <rect x="660" y="3" width="14" height="14" rx="3" fill="#DB2777"/>
+    <text x="682" y="15" fill="#334155" font-family="sans-serif" font-size="12">Rendered Artifacts</text>
+    <rect x="850" y="3" width="14" height="14" rx="3" fill="#16A34A"/>
+    <text x="872" y="15" fill="#334155" font-family="sans-serif" font-size="12">Veritas VQC Certificates</text>
   </g>
 </svg>
