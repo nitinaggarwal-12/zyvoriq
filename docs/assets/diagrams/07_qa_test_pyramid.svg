@@ -1,28 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 650" width="100%" height="100%">
-  <rect width="1200" height="650" fill="#07090E" rx="16"/>
-  <rect x="1" y="1" width="1198" height="648" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2" rx="15"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 800" width="100%" height="100%">
+  <defs>
+    <filter id="cardShadow7" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.06"/>
+    </filter>
+  </defs>
 
-  <text x="50" y="55" fill="#F8FAFC" font-family="sans-serif" font-size="22" font-weight="bold">QAT-001: Master QA Test Pyramid &amp; AI Benchmark Quality Gates</text>
-  <rect x="970" y="35" width="180" height="28" rx="14" fill="rgba(16,185,129,0.15)" stroke="#10B981" stroke-width="1"/>
-  <text x="990" y="54" fill="#34D399" font-family="sans-serif" font-size="12" font-weight="600">QA Test Pyramid</text>
+  <rect width="1440" height="800" fill="#F8FAFC"/>
+  <rect x="1" y="1" width="1438" height="798" fill="none" stroke="#E2E8F0" stroke-width="2"/>
 
-  <!-- Pyramid Tier 1 (Top): E2E -->
-  <polygon points="600,100 480,210 720,210" fill="#BE185D" stroke="#F43F5E" stroke-width="2"/>
-  <text x="550" y="175" fill="#FFFFFF" font-family="sans-serif" font-size="13" font-weight="bold">E2E Tests (10%)</text>
-  <text x="535" y="195" fill="#FDA4AF" font-family="sans-serif" font-size="11">Puppeteer / Visual Pixelmatch</text>
+  <text x="50" y="52" fill="#0F172A" font-family="sans-serif" font-size="24" font-weight="bold">QAT-001: Master QA Test Pyramid &amp; AI Quality Gates</text>
+  <text x="50" y="78" fill="#475569" font-family="sans-serif" font-size="13">Quality Assurance Architecture: Unit Parsers (35%) -> Integration RLS (30%) -> 250 AI Golden Evals (25%) -> E2E (10%)</text>
 
-  <!-- Pyramid Tier 2: AI Evals -->
-  <polygon points="480,215 720,215 800,340 400,340" fill="#4338CA" stroke="#6366F1" stroke-width="2"/>
-  <text x="500" y="270" fill="#FFFFFF" font-family="sans-serif" font-size="14" font-weight="bold">AI &amp; Veritas Evals (25%)</text>
-  <text x="480" y="295" fill="#C7D2FE" font-family="sans-serif" font-size="12">250 Golden Evaluation Benchmark Suite</text>
+  <!-- Pyramid Tier 1: E2E Tests (Top) -->
+  <polygon points="720,130 570,260 870,260" fill="#FCE7F3" stroke="#DB2777" stroke-width="2"/>
+  <text x="650" y="210" fill="#9D174D" font-family="sans-serif" font-size="14" font-weight="bold">1. E2E Tests (10%)</text>
+  <text x="620" y="235" fill="#BE185D" font-family="sans-serif" font-size="11">Puppeteer UI &amp; Visual Pixelmatch</text>
 
-  <!-- Pyramid Tier 3: Integration -->
-  <polygon points="400,345 800,345 880,470 320,470" fill="#0F766E" stroke="#14B8A6" stroke-width="2"/>
-  <text x="490" y="400" fill="#FFFFFF" font-family="sans-serif" font-size="14" font-weight="bold">Integration Tests (30%)</text>
-  <text x="440" y="425" fill="#A7F3D0" font-family="sans-serif" font-size="12">API Contracts, Postgres RLS, Redis BullMQ Queues</text>
+  <!-- Pyramid Tier 2: AI Golden Evals -->
+  <polygon points="570,265 870,265 980,410 460,410" fill="#EEF2FF" stroke="#6366F1" stroke-width="2"/>
+  <text x="610" y="335" fill="#3730A3" font-family="sans-serif" font-size="15" font-weight="bold">2. AI &amp; Veritas Golden Evals (25%)</text>
+  <text x="560" y="365" fill="#4338CA" font-family="sans-serif" font-size="12">250 Golden Evaluation Benchmark Suite &amp; Factuality Tests</text>
 
-  <!-- Pyramid Tier 4 (Base): Unit -->
-  <polygon points="320,475 880,475 960,600 240,600" fill="#1E293B" stroke="#38BDF8" stroke-width="2"/>
-  <text x="520" y="530" fill="#FFFFFF" font-family="sans-serif" font-size="14" font-weight="bold">Unit Tests (35%)</text>
-  <text x="440" y="555" fill="#BAE6FD" font-family="sans-serif" font-size="12">Vitest Parsers, VQS Mathematical Formulas, Utilities</text>
+  <!-- Pyramid Tier 3: Integration Tests -->
+  <polygon points="460,415 980,415 1100,570 340,570" fill="#CCFBF1" stroke="#0D9488" stroke-width="2"/>
+  <text x="620" y="485" fill="#0F766E" font-family="sans-serif" font-size="15" font-weight="bold">3. Integration Tests (30%)</text>
+  <text x="520" y="515" fill="#115E59" font-family="sans-serif" font-size="12">API Contracts, Postgres Tenant RLS &amp; Redis BullMQ Queues</text>
+
+  <!-- Pyramid Tier 4: Unit Tests (Base) -->
+  <polygon points="340,575 1100,575 1220,730 220,730" fill="#E0F2FE" stroke="#0284C7" stroke-width="2"/>
+  <text x="640" y="640" fill="#0369A1" font-family="sans-serif" font-size="16" font-weight="bold">4. Unit Tests (35%)</text>
+  <text x="510" y="670" fill="#075985" font-family="sans-serif" font-size="12">Vitest Parsers, VQS Mathematical Formulas &amp; XML Serialization</text>
 </svg>

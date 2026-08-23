@@ -1,413 +1,350 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" width="100%" height="100%">
   <defs>
-    <!-- Gradients -->
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#07090E"/>
-      <stop offset="50%" stop-color="#0B0F19"/>
-      <stop offset="100%" stop-color="#0F172A"/>
-    </linearGradient>
-    
-    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#151D2F"/>
-      <stop offset="100%" stop-color="#0D1322"/>
-    </linearGradient>
-
-    <linearGradient id="tealGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#14B8A6"/>
-      <stop offset="100%" stop-color="#22D3EE"/>
-    </linearGradient>
-
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.6"/>
+    <filter id="cardShadow8" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.06"/>
     </filter>
-
-    <marker id="arrTeal" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L6,3 z" fill="#2DD4BF"/>
-    </marker>
-    <marker id="arrPurple" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L6,3 z" fill="#A855F7"/>
-    </marker>
-    <marker id="arrGreen" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L6,3 z" fill="#34D399"/>
-    </marker>
-    <marker id="arrRed" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L6,3 z" fill="#F43F5E"/>
-    </marker>
+    <marker id="arrBlue8" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#0284C7"/></marker>
+    <marker id="arrPurple8" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#7C3AED"/></marker>
+    <marker id="arrGreen8" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#16A34A"/></marker>
+    <marker id="arrRed8" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#DC2626"/></marker>
   </defs>
 
-  <!-- Canvas Background -->
-  <rect width="1440" height="900" fill="url(#bg)"/>
-  
-  <!-- Subtle Grid Pattern -->
-  <g stroke="rgba(255,255,255,0.03)" stroke-width="1">
-    <line x1="0" y1="100" x2="1440" y2="100"/>
-    <line x1="0" y1="200" x2="1440" y2="200"/>
-    <line x1="0" y1="300" x2="1440" y2="300"/>
-    <line x1="0" y1="400" x2="1440" y2="400"/>
-    <line x1="0" y1="500" x2="1440" y2="500"/>
-    <line x1="0" y1="600" x2="1440" y2="600"/>
-    <line x1="0" y1="700" x2="1440" y2="700"/>
-    <line x1="0" y1="800" x2="1440" y2="800"/>
-  </g>
+  <rect width="1440" height="900" fill="#F8FAFC"/>
+  <rect x="1" y="1" width="1438" height="898" fill="none" stroke="#E2E8F0" stroke-width="2"/>
 
-  <!-- ==================== 1. TOP HEADER & TITLE ==================== -->
-  <g id="header">
-    <text x="40" y="52" fill="#F8FAFC" font-family="sans-serif" font-size="24" font-weight="bold" letter-spacing="-0.5px">REL-001: Zero-Downtime CI/CD Pipeline &amp; Canary Rollout Topology</text>
-    <text x="40" y="78" fill="#94A3B8" font-family="sans-serif" font-size="13" font-weight="500">Automated Multi-Stage Delivery Architecture: TypeScript Compiler -> AI Golden Evals -> Deterministic Docker Build -> Canary 10% -> 100% GA</text>
+  <!-- Header -->
+  <text x="40" y="52" fill="#0F172A" font-family="sans-serif" font-size="24" font-weight="bold" letter-spacing="-0.5px">REL-001: Zero-Downtime CI/CD Pipeline &amp; Canary Rollout Topology</text>
+  <text x="40" y="78" fill="#475569" font-family="sans-serif" font-size="13" font-weight="500">Automated Multi-Stage Delivery Architecture: TypeScript Compiler -> AI Golden Evals -> Deterministic Docker Build -> Canary 10% -> 100% GA</text>
 
-    <!-- Header Badges -->
-    <rect x="1050" y="32" width="130" height="30" rx="15" fill="rgba(20,184,166,0.12)" stroke="#14B8A6" stroke-width="1.2"/>
-    <text x="1068" y="52" fill="#2DD4BF" font-family="sans-serif" font-size="12" font-weight="bold">QG-REL-01</text>
+  <rect x="1050" y="32" width="130" height="30" rx="15" fill="#CCFBF1" stroke="#0D9488" stroke-width="1.2"/>
+  <text x="1068" y="52" fill="#0F766E" font-family="sans-serif" font-size="12" font-weight="bold">QG-REL-01</text>
 
-    <rect x="1195" y="32" width="205" height="30" rx="15" fill="rgba(99,102,241,0.12)" stroke="#6366F1" stroke-width="1.2"/>
-    <text x="1212" y="52" fill="#A5B4FC" font-family="sans-serif" font-size="12" font-weight="bold">Zero-Downtime Rollout</text>
-  </g>
+  <rect x="1195" y="32" width="205" height="30" rx="15" fill="#EEF2FF" stroke="#6366F1" stroke-width="1.2"/>
+  <text x="1212" y="52" fill="#4338CA" font-family="sans-serif" font-size="12" font-weight="bold">Zero-Downtime Rollout</text>
 
-  <!-- ==================== 2. TOP CONCEPTUAL RIBBON ==================== -->
-  <rect x="40" y="105" width="1360" height="60" rx="12" fill="#0D121F" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-  
+  <!-- Flow Ribbon -->
+  <rect x="40" y="105" width="1360" height="60" rx="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1" filter="url(#cardShadow8)"/>
   <g transform="translate(60, 118)">
-    <text x="0" y="24" fill="#38BDF8" font-family="sans-serif" font-size="12" font-weight="bold">STAGE FLOW</text>
+    <text x="0" y="24" fill="#0284C7" font-family="sans-serif" font-size="12" font-weight="bold">STAGE FLOW</text>
     
-    <!-- Stage 1 Pill -->
-    <rect x="110" y="4" width="180" height="28" rx="6" fill="#1E293B" stroke="#475569"/>
-    <text x="130" y="23" fill="#F8FAFC" font-family="sans-serif" font-size="11" font-weight="bold">1. Commit &amp; TypeCheck</text>
-    <path d="M300 18 L325 18" stroke="#64748B" stroke-width="2" marker-end="url(#arrTeal)"/>
+    <rect x="110" y="4" width="180" height="28" rx="6" fill="#F1F5F9" stroke="#94A3B8"/>
+    <text x="130" y="23" fill="#0F172A" font-family="sans-serif" font-size="11" font-weight="bold">1. Commit &amp; TypeCheck</text>
+    <path d="M300 18 L325 18" stroke="#64748B" stroke-width="2" marker-end="url(#arrBlue8)"/>
 
-    <!-- Stage 2 Pill -->
-    <rect x="340" y="4" width="190" height="28" rx="6" fill="#1E293B" stroke="#14B8A6"/>
-    <text x="360" y="23" fill="#2DD4BF" font-family="sans-serif" font-size="11" font-weight="bold">2. Vitest &amp; AI Golden Evals</text>
-    <path d="M540 18 L565 18" stroke="#64748B" stroke-width="2" marker-end="url(#arrTeal)"/>
+    <rect x="340" y="4" width="190" height="28" rx="6" fill="#CCFBF1" stroke="#0D9488"/>
+    <text x="360" y="23" fill="#0F766E" font-family="sans-serif" font-size="11" font-weight="bold">2. Vitest &amp; AI Golden Evals</text>
+    <path d="M540 18 L565 18" stroke="#64748B" stroke-width="2" marker-end="url(#arrBlue8)"/>
 
-    <!-- Stage 3 Pill -->
-    <rect x="580" y="4" width="190" height="28" rx="6" fill="#1E293B" stroke="#8B5CF6"/>
-    <text x="600" y="23" fill="#C084FC" font-family="sans-serif" font-size="11" font-weight="bold">3. Immutable Docker Build</text>
-    <path d="M780 18 L805 18" stroke="#64748B" stroke-width="2" marker-end="url(#arrPurple)"/>
+    <rect x="580" y="4" width="190" height="28" rx="6" fill="#EDE9FE" stroke="#7C3AED"/>
+    <text x="600" y="23" fill="#5B21B6" font-family="sans-serif" font-size="11" font-weight="bold">3. Immutable Docker Build</text>
+    <path d="M780 18 L805 18" stroke="#64748B" stroke-width="2" marker-end="url(#arrPurple8)"/>
 
-    <!-- Stage 4 Pill -->
-    <rect x="820" y="4" width="200" height="28" rx="6" fill="#1E293B" stroke="#F59E0B"/>
-    <text x="840" y="23" fill="#FCD34D" font-family="sans-serif" font-size="11" font-weight="bold">4. Canary (10% Traffic Burn)</text>
-    <path d="M1030 18 L1055 18" stroke="#64748B" stroke-width="2" marker-end="url(#arrGreen)"/>
+    <rect x="820" y="4" width="200" height="28" rx="6" fill="#FEF3C7" stroke="#D97706"/>
+    <text x="840" y="23" fill="#92400E" font-family="sans-serif" font-size="11" font-weight="bold">4. Canary (10% Traffic Burn)</text>
+    <path d="M1030 18 L1055 18" stroke="#64748B" stroke-width="2" marker-end="url(#arrGreen8)"/>
 
-    <!-- Stage 5 Pill -->
-    <rect x="1070" y="4" width="180" height="28" rx="6" fill="#064E3B" stroke="#10B981"/>
-    <text x="1100" y="23" fill="#A7F3D0" font-family="sans-serif" font-size="11" font-weight="bold">5. 100% Production GA</text>
+    <rect x="1070" y="4" width="180" height="28" rx="6" fill="#DCFCE7" stroke="#16A34A"/>
+    <text x="1100" y="23" fill="#166534" font-family="sans-serif" font-size="11" font-weight="bold">5. 100% Production GA</text>
   </g>
-
-  <!-- ==================== 3. MAIN ARCHITECTURAL SWIMLANES ==================== -->
 
   <!-- SWIMLANE 1: SOURCE & STATIC VERIFICATION -->
   <g transform="translate(40, 185)">
-    <rect width="250" height="675" rx="14" fill="#0B101D" stroke="#334155" stroke-width="1.5" filter="url(#shadow)"/>
-    <rect width="250" height="42" rx="14" fill="#151E33"/>
-    <text x="20" y="27" fill="#38BDF8" font-family="sans-serif" font-size="13" font-weight="bold">STAGE 1: CODE &amp; STATIC GATES</text>
+    <rect width="250" height="675" rx="14" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5" filter="url(#cardShadow8)"/>
+    <rect width="250" height="42" rx="14" fill="#E2E8F0"/>
+    <text x="20" y="27" fill="#0369A1" font-family="sans-serif" font-size="13" font-weight="bold">STAGE 1: CODE &amp; STATIC GATES</text>
 
     <!-- Node 1.1: Git Webhook Trigger -->
     <g transform="translate(15, 60)">
-      <rect width="220" height="135" rx="10" fill="url(#cardGrad)" stroke="#475569" stroke-width="1.2"/>
-      <rect x="12" y="12" width="28" height="28" rx="6" fill="#1E293B" stroke="#64748B"/>
-      <circle cx="26" cy="26" r="6" fill="#38BDF8"/>
-      <text x="48" y="28" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="bold">Git Push (main)</text>
-      <text x="48" y="44" fill="#94A3B8" font-family="sans-serif" font-size="10">GitHub Actions Webhook</text>
+      <rect width="220" height="135" rx="10" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1.2" filter="url(#cardShadow8)"/>
+      <rect x="12" y="12" width="28" height="28" rx="6" fill="#E2E8F0" stroke="#64748B"/>
+      <circle cx="26" cy="26" r="6" fill="#0284C7"/>
+      <text x="48" y="28" fill="#0F172A" font-family="sans-serif" font-size="13" font-weight="bold">Git Push (main)</text>
+      <text x="48" y="44" fill="#64748B" font-family="sans-serif" font-size="10">GitHub Actions Webhook</text>
       
-      <line x1="12" y1="58" x2="208" y2="58" stroke="rgba(255,255,255,0.06)"/>
-      <text x="16" y="80" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Branch: refs/heads/main</text>
-      <text x="16" y="100" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Signed GPG Commits Only</text>
-      <text x="16" y="120" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Trigger CI Workflow Runner</text>
+      <line x1="12" y1="58" x2="208" y2="58" stroke="#E2E8F0"/>
+      <text x="16" y="80" fill="#334155" font-family="sans-serif" font-size="11">• Branch: refs/heads/main</text>
+      <text x="16" y="100" fill="#334155" font-family="sans-serif" font-size="11">• Signed GPG Commits Only</text>
+      <text x="16" y="120" fill="#334155" font-family="sans-serif" font-size="11">• Trigger CI Workflow Runner</text>
     </g>
 
-    <!-- Arrow Down -->
-    <line x1="125" y1="205" x2="125" y2="235" stroke="#22D3EE" stroke-width="2" marker-end="url(#arrTeal)"/>
+    <line x1="125" y1="205" x2="125" y2="235" stroke="#0284C7" stroke-width="2" marker-end="url(#arrBlue8)"/>
 
     <!-- Node 1.2: TypeScript Strict Compilation -->
     <g transform="translate(15, 245)">
-      <rect width="220" height="145" rx="10" fill="url(#cardGrad)" stroke="#14B8A6" stroke-width="1.5"/>
-      <rect x="12" y="12" width="28" height="28" rx="6" fill="rgba(20,184,166,0.2)" stroke="#14B8A6"/>
-      <polygon points="26,16 32,24 27,24 29,34 20,27 25,27" fill="#14B8A6"/>
-      <text x="48" y="28" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="bold">tsc --noEmit</text>
-      <text x="48" y="44" fill="#2DD4BF" font-family="sans-serif" font-size="10">TypeScript 5.7 Strict Mode</text>
+      <rect width="220" height="145" rx="10" fill="#FFFFFF" stroke="#0D9488" stroke-width="1.5" filter="url(#cardShadow8)"/>
+      <rect x="12" y="12" width="28" height="28" rx="6" fill="#CCFBF1" stroke="#0D9488"/>
+      <polygon points="26,16 32,24 27,24 29,34 20,27 25,27" fill="#0D9488"/>
+      <text x="48" y="28" fill="#0F172A" font-family="sans-serif" font-size="13" font-weight="bold">tsc --noEmit</text>
+      <text x="48" y="44" fill="#0F766E" font-family="sans-serif" font-size="10">TypeScript 5.7 Strict Mode</text>
       
-      <line x1="12" y1="58" x2="208" y2="58" stroke="rgba(255,255,255,0.06)"/>
-      <text x="16" y="80" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Zero Any Type Violations</text>
-      <text x="16" y="100" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Next.js 15 Route Types</text>
-      <text x="16" y="120" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Strict Null Checks Enabled</text>
-      <text x="16" y="138" fill="#10B981" font-family="sans-serif" font-size="10" font-weight="bold">[PASS] Exit Code: 0 (Hard Gate)</text>
+      <line x1="12" y1="58" x2="208" y2="58" stroke="#E2E8F0"/>
+      <text x="16" y="80" fill="#334155" font-family="sans-serif" font-size="11">• Zero Any Type Violations</text>
+      <text x="16" y="100" fill="#334155" font-family="sans-serif" font-size="11">• Next.js 15 Route Types</text>
+      <text x="16" y="120" fill="#334155" font-family="sans-serif" font-size="11">• Strict Null Checks Enabled</text>
+      <text x="16" y="138" fill="#15803D" font-family="sans-serif" font-size="10" font-weight="bold">[PASS] Exit Code: 0 (Hard Gate)</text>
     </g>
 
-    <!-- Arrow Down -->
-    <line x1="125" y1="400" x2="125" y2="430" stroke="#22D3EE" stroke-width="2" marker-end="url(#arrTeal)"/>
+    <line x1="125" y1="400" x2="125" y2="430" stroke="#0284C7" stroke-width="2" marker-end="url(#arrBlue8)"/>
 
     <!-- Node 1.3: ESLint & SAST Scan -->
     <g transform="translate(15, 440)">
-      <rect width="220" height="135" rx="10" fill="url(#cardGrad)" stroke="#475569" stroke-width="1.2"/>
-      <rect x="12" y="12" width="28" height="28" rx="6" fill="#1E293B" stroke="#64748B"/>
+      <rect width="220" height="135" rx="10" fill="#FFFFFF" stroke="#64748B" stroke-width="1.2" filter="url(#cardShadow8)"/>
+      <rect x="12" y="12" width="28" height="28" rx="6" fill="#E2E8F0" stroke="#64748B"/>
       <path d="M26,18 L32,22 L32,28 C32,32 26,34 26,34 C26,34 20,32 20,28 L20,22 Z" fill="#64748B"/>
-      <text x="48" y="28" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="bold">SAST Security Scan</text>
-      <text x="48" y="44" fill="#94A3B8" font-family="sans-serif" font-size="10">SEC-001 Static Analysis</text>
+      <text x="48" y="28" fill="#0F172A" font-family="sans-serif" font-size="13" font-weight="bold">SAST Security Scan</text>
+      <text x="48" y="44" fill="#64748B" font-family="sans-serif" font-size="10">SEC-001 Static Analysis</text>
       
-      <line x1="12" y1="58" x2="208" y2="58" stroke="rgba(255,255,255,0.06)"/>
-      <text x="16" y="80" fill="#CBD5E1" font-family="sans-serif" font-size="11">• ESLint Rule Enforcements</text>
-      <text x="16" y="100" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Secret &amp; Token Entropy Check</text>
-      <text x="16" y="120" fill="#CBD5E1" font-family="sans-serif" font-size="11">• SVG XSS Sanitization Audit</text>
+      <line x1="12" y1="58" x2="208" y2="58" stroke="#E2E8F0"/>
+      <text x="16" y="80" fill="#334155" font-family="sans-serif" font-size="11">• ESLint Rule Enforcements</text>
+      <text x="16" y="100" fill="#334155" font-family="sans-serif" font-size="11">• Secret &amp; Token Entropy Check</text>
+      <text x="16" y="120" fill="#334155" font-family="sans-serif" font-size="11">• SVG XSS Sanitization Audit</text>
     </g>
   </g>
 
-  <!-- Inter-Lane Connector 1 to 2 -->
-  <path d="M 290 500 L 320 500" stroke="#22D3EE" stroke-width="2.5" marker-end="url(#arrTeal)"/>
+  <path d="M 290 500 L 320 500" stroke="#0284C7" stroke-width="2.5" marker-end="url(#arrBlue8)"/>
 
   <!-- SWIMLANE 2: TEST SUITES & AI QUALITY EVALS -->
   <g transform="translate(320, 185)">
-    <rect width="255" height="675" rx="14" fill="#0B101D" stroke="#334155" stroke-width="1.5" filter="url(#shadow)"/>
-    <rect width="255" height="42" rx="14" fill="#151E33"/>
-    <text x="20" y="27" fill="#2DD4BF" font-family="sans-serif" font-size="13" font-weight="bold">STAGE 2: AUTOMATED QA PYRAMID</text>
+    <rect width="255" height="675" rx="14" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5" filter="url(#cardShadow8)"/>
+    <rect width="255" height="42" rx="14" fill="#CCFBF1"/>
+    <text x="20" y="27" fill="#0F766E" font-family="sans-serif" font-size="13" font-weight="bold">STAGE 2: AUTOMATED QA PYRAMID</text>
 
     <!-- Node 2.1: Vitest Unit Suite -->
     <g transform="translate(15, 60)">
-      <rect width="225" height="135" rx="10" fill="url(#cardGrad)" stroke="#14B8A6" stroke-width="1.5"/>
-      <rect x="12" y="12" width="28" height="28" rx="6" fill="rgba(20,184,166,0.2)" stroke="#14B8A6"/>
-      <circle cx="26" cy="26" r="6" fill="#14B8A6"/>
-      <text x="48" y="28" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="bold">Vitest Unit Suite</text>
-      <text x="48" y="44" fill="#2DD4BF" font-family="sans-serif" font-size="10">Parsers &amp; Math Logic (35%)</text>
+      <rect width="225" height="135" rx="10" fill="#FFFFFF" stroke="#0D9488" stroke-width="1.5" filter="url(#cardShadow8)"/>
+      <rect x="12" y="12" width="28" height="28" rx="6" fill="#CCFBF1" stroke="#0D9488"/>
+      <circle cx="26" cy="26" r="6" fill="#0D9488"/>
+      <text x="48" y="28" fill="#0F172A" font-family="sans-serif" font-size="13" font-weight="bold">Vitest Unit Suite</text>
+      <text x="48" y="44" fill="#0F766E" font-family="sans-serif" font-size="10">Parsers &amp; Math Logic (35%)</text>
       
-      <line x1="12" y1="58" x2="213" y2="58" stroke="rgba(255,255,255,0.06)"/>
-      <text x="16" y="80" fill="#CBD5E1" font-family="sans-serif" font-size="11">• VQS Mathematical Formulas</text>
-      <text x="16" y="100" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Draw.io XML Generator Logic</text>
-      <text x="16" y="120" fill="#CBD5E1" font-family="sans-serif" font-size="11">• C2PA Manifest Serialization</text>
+      <line x1="12" y1="58" x2="213" y2="58" stroke="#E2E8F0"/>
+      <text x="16" y="80" fill="#334155" font-family="sans-serif" font-size="11">• VQS Mathematical Formulas</text>
+      <text x="16" y="100" fill="#334155" font-family="sans-serif" font-size="11">• Draw.io XML Generator Logic</text>
+      <text x="16" y="120" fill="#334155" font-family="sans-serif" font-size="11">• C2PA Manifest Serialization</text>
     </g>
 
-    <!-- Arrow Down -->
-    <line x1="127" y1="205" x2="127" y2="235" stroke="#22D3EE" stroke-width="2" marker-end="url(#arrTeal)"/>
+    <line x1="127" y1="205" x2="127" y2="235" stroke="#0284C7" stroke-width="2" marker-end="url(#arrBlue8)"/>
 
     <!-- Node 2.2: AI & Veritas Golden Evals -->
     <g transform="translate(15, 245)">
-      <rect width="225" height="165" rx="10" fill="url(#cardGrad)" stroke="#6366F1" stroke-width="2"/>
-      <rect x="12" y="12" width="28" height="28" rx="6" fill="rgba(99,102,241,0.2)" stroke="#6366F1"/>
+      <rect width="225" height="165" rx="10" fill="#FFFFFF" stroke="#6366F1" stroke-width="2" filter="url(#cardShadow8)"/>
+      <rect x="12" y="12" width="28" height="28" rx="6" fill="#EEF2FF" stroke="#6366F1"/>
       <circle cx="26" cy="26" r="8" fill="none" stroke="#6366F1" stroke-width="2"/>
       <circle cx="26" cy="26" r="3" fill="#6366F1"/>
-      <text x="48" y="28" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="bold">Veritas Golden Evals</text>
-      <text x="48" y="44" fill="#A5B4FC" font-family="sans-serif" font-size="10">250 Benchmark Tests (25%)</text>
+      <text x="48" y="28" fill="#0F172A" font-family="sans-serif" font-size="13" font-weight="bold">Veritas Golden Evals</text>
+      <text x="48" y="44" fill="#4338CA" font-family="sans-serif" font-size="10">250 Benchmark Tests (25%)</text>
       
-      <line x1="12" y1="58" x2="213" y2="58" stroke="rgba(255,255,255,0.06)"/>
-      <text x="16" y="80" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Factuality Grounding >= 90%</text>
-      <text x="16" y="100" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Multi-Model Consensus Eval</text>
-      <text x="16" y="120" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Persona Tone Drift Check</text>
-      <text x="16" y="140" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Auto-Repair Circuit Validated</text>
-      <text x="16" y="158" fill="#34D399" font-family="sans-serif" font-size="10" font-weight="bold">[PASS] 100% Golden Suite Pass</text>
+      <line x1="12" y1="58" x2="213" y2="58" stroke="#E2E8F0"/>
+      <text x="16" y="80" fill="#334155" font-family="sans-serif" font-size="11">• Factuality Grounding >= 90%</text>
+      <text x="16" y="100" fill="#334155" font-family="sans-serif" font-size="11">• Multi-Model Consensus Eval</text>
+      <text x="16" y="120" fill="#334155" font-family="sans-serif" font-size="11">• Persona Tone Drift Check</text>
+      <text x="16" y="140" fill="#334155" font-family="sans-serif" font-size="11">• Auto-Repair Circuit Validated</text>
+      <text x="16" y="158" fill="#15803D" font-family="sans-serif" font-size="10" font-weight="bold">[PASS] 100% Golden Suite Pass</text>
     </g>
 
-    <!-- Arrow Down -->
-    <line x1="127" y1="420" x2="127" y2="450" stroke="#22D3EE" stroke-width="2" marker-end="url(#arrTeal)"/>
+    <line x1="127" y1="420" x2="127" y2="450" stroke="#0284C7" stroke-width="2" marker-end="url(#arrBlue8)"/>
 
     <!-- Node 2.3: Integration & RLS Tests -->
     <g transform="translate(15, 460)">
-      <rect width="225" height="135" rx="10" fill="url(#cardGrad)" stroke="#475569" stroke-width="1.2"/>
-      <rect x="12" y="12" width="28" height="28" rx="6" fill="#1E293B" stroke="#64748B"/>
+      <rect width="225" height="135" rx="10" fill="#FFFFFF" stroke="#64748B" stroke-width="1.2" filter="url(#cardShadow8)"/>
+      <rect x="12" y="12" width="28" height="28" rx="6" fill="#E2E8F0" stroke="#64748B"/>
       <rect x="18" y="18" width="16" height="16" rx="2" fill="#64748B"/>
-      <text x="48" y="28" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="bold">Integration &amp; RLS</text>
-      <text x="48" y="44" fill="#94A3B8" font-family="sans-serif" font-size="10">API Contracts &amp; DB (30%)</text>
+      <text x="48" y="28" fill="#0F172A" font-family="sans-serif" font-size="13" font-weight="bold">Integration &amp; RLS</text>
+      <text x="48" y="44" fill="#64748B" font-family="sans-serif" font-size="10">API Contracts &amp; DB (30%)</text>
       
-      <line x1="12" y1="58" x2="213" y2="58" stroke="rgba(255,255,255,0.06)"/>
-      <text x="16" y="80" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Postgres Tenant Isolation</text>
-      <text x="16" y="100" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Redis BullMQ Worker Queues</text>
-      <text x="16" y="120" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Social Publisher Webhooks</text>
+      <line x1="12" y1="58" x2="213" y2="58" stroke="#E2E8F0"/>
+      <text x="16" y="80" fill="#334155" font-family="sans-serif" font-size="11">• Postgres Tenant Isolation</text>
+      <text x="16" y="100" fill="#334155" font-family="sans-serif" font-size="11">• Redis BullMQ Worker Queues</text>
+      <text x="16" y="120" fill="#334155" font-family="sans-serif" font-size="11">• Social Publisher Webhooks</text>
     </g>
   </g>
 
-  <!-- Inter-Lane Connector 2 to 3 -->
-  <path d="M 575 520 L 605 520" stroke="#A855F7" stroke-width="2.5" marker-end="url(#arrPurple)"/>
+  <path d="M 575 520 L 605 520" stroke="#7C3AED" stroke-width="2.5" marker-end="url(#arrPurple8)"/>
 
   <!-- SWIMLANE 3: DOCKER & ARTIFACT REGISTRY -->
   <g transform="translate(605, 185)">
-    <rect width="250" height="675" rx="14" fill="#0B101D" stroke="#334155" stroke-width="1.5" filter="url(#shadow)"/>
-    <rect width="250" height="42" rx="14" fill="#151E33"/>
-    <text x="20" y="27" fill="#C084FC" font-family="sans-serif" font-size="13" font-weight="bold">STAGE 3: IMMUTABLE PACKAGING</text>
+    <rect width="250" height="675" rx="14" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5" filter="url(#cardShadow8)"/>
+    <rect width="250" height="42" rx="14" fill="#EDE9FE"/>
+    <text x="20" y="27" fill="#5B21B6" font-family="sans-serif" font-size="13" font-weight="bold">STAGE 3: IMMUTABLE PACKAGING</text>
 
     <!-- Node 3.1: Next Standalone Build -->
     <g transform="translate(15, 60)">
-      <rect width="220" height="150" rx="10" fill="url(#cardGrad)" stroke="#8B5CF6" stroke-width="1.5"/>
-      <rect x="12" y="12" width="28" height="28" rx="6" fill="rgba(139,92,246,0.2)" stroke="#8B5CF6"/>
-      <rect x="17" y="17" width="18" height="18" rx="3" fill="#8B5CF6"/>
-      <text x="48" y="28" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="bold">Next.js Standalone</text>
-      <text x="48" y="44" fill="#C084FC" font-family="sans-serif" font-size="10">output: 'standalone'</text>
+      <rect width="220" height="150" rx="10" fill="#FFFFFF" stroke="#7C3AED" stroke-width="1.5" filter="url(#cardShadow8)"/>
+      <rect x="12" y="12" width="28" height="28" rx="6" fill="#EDE9FE" stroke="#7C3AED"/>
+      <rect x="17" y="17" width="18" height="18" rx="3" fill="#7C3AED"/>
+      <text x="48" y="28" fill="#0F172A" font-family="sans-serif" font-size="13" font-weight="bold">Next.js Standalone</text>
+      <text x="48" y="44" fill="#6D28D9" font-family="sans-serif" font-size="10">output: 'standalone'</text>
       
-      <line x1="12" y1="58" x2="208" y2="58" stroke="rgba(255,255,255,0.06)"/>
-      <text x="16" y="80" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Minified Server Chunks</text>
-      <text x="16" y="100" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Static Assets Pre-compressed</text>
-      <text x="16" y="120" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Pruned node_modules (78MB)</text>
-      <text x="16" y="140" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Build Manifest Generated</text>
+      <line x1="12" y1="58" x2="208" y2="58" stroke="#E2E8F0"/>
+      <text x="16" y="80" fill="#334155" font-family="sans-serif" font-size="11">• Minified Server Chunks</text>
+      <text x="16" y="100" fill="#334155" font-family="sans-serif" font-size="11">• Static Assets Pre-compressed</text>
+      <text x="16" y="120" fill="#334155" font-family="sans-serif" font-size="11">• Pruned node_modules (78MB)</text>
+      <text x="16" y="140" fill="#334155" font-family="sans-serif" font-size="11">• Build Manifest Generated</text>
     </g>
 
-    <!-- Arrow Down -->
-    <line x1="125" y1="220" x2="125" y2="250" stroke="#A855F7" stroke-width="2" marker-end="url(#arrPurple)"/>
+    <line x1="125" y1="220" x2="125" y2="250" stroke="#7C3AED" stroke-width="2" marker-end="url(#arrPurple8)"/>
 
     <!-- Node 3.2: Multi-Stage Docker -->
     <g transform="translate(15, 260)">
-      <rect width="220" height="150" rx="10" fill="url(#cardGrad)" stroke="#8B5CF6" stroke-width="1.5"/>
-      <rect x="12" y="12" width="28" height="28" rx="6" fill="rgba(139,92,246,0.2)" stroke="#8B5CF6"/>
-      <ellipse cx="26" cy="26" rx="8" ry="6" fill="#8B5CF6"/>
-      <text x="48" y="28" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="bold">Docker Packaging</text>
-      <text x="48" y="44" fill="#C084FC" font-family="sans-serif" font-size="10">Alpine 3.20 Non-Root</text>
+      <rect width="220" height="150" rx="10" fill="#FFFFFF" stroke="#7C3AED" stroke-width="1.5" filter="url(#cardShadow8)"/>
+      <rect x="12" y="12" width="28" height="28" rx="6" fill="#EDE9FE" stroke="#7C3AED"/>
+      <ellipse cx="26" cy="26" rx="8" ry="6" fill="#7C3AED"/>
+      <text x="48" y="28" fill="#0F172A" font-family="sans-serif" font-size="13" font-weight="bold">Docker Packaging</text>
+      <text x="48" y="44" fill="#6D28D9" font-family="sans-serif" font-size="10">Alpine 3.20 Non-Root</text>
       
-      <line x1="12" y1="58" x2="208" y2="58" stroke="rgba(255,255,255,0.06)"/>
-      <text x="16" y="80" fill="#CBD5E1" font-family="sans-serif" font-size="11">• User: nextjs:nodejs (1001)</text>
-      <text x="16" y="100" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Read-Only Container Root</text>
-      <text x="16" y="120" fill="#CBD5E1" font-family="sans-serif" font-size="11">• SHA-256 Digest Signing</text>
-      <text x="16" y="140" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Trivy CVE Scanner: 0 High</text>
+      <line x1="12" y1="58" x2="208" y2="58" stroke="#E2E8F0"/>
+      <text x="16" y="80" fill="#334155" font-family="sans-serif" font-size="11">• User: nextjs:nodejs (1001)</text>
+      <text x="16" y="100" fill="#334155" font-family="sans-serif" font-size="11">• Read-Only Container Root</text>
+      <text x="16" y="120" fill="#334155" font-family="sans-serif" font-size="11">• SHA-256 Digest Signing</text>
+      <text x="16" y="140" fill="#334155" font-family="sans-serif" font-size="11">• Trivy CVE Scanner: 0 High</text>
     </g>
 
-    <!-- Arrow Down -->
-    <line x1="125" y1="420" x2="125" y2="450" stroke="#A855F7" stroke-width="2" marker-end="url(#arrPurple)"/>
+    <line x1="125" y1="420" x2="125" y2="450" stroke="#7C3AED" stroke-width="2" marker-end="url(#arrPurple8)"/>
 
     <!-- Node 3.3: Image Registry Push -->
     <g transform="translate(15, 460)">
-      <rect width="220" height="135" rx="10" fill="url(#cardGrad)" stroke="#475569" stroke-width="1.2"/>
-      <rect x="12" y="12" width="28" height="28" rx="6" fill="#1E293B" stroke="#64748B"/>
+      <rect width="220" height="135" rx="10" fill="#FFFFFF" stroke="#64748B" stroke-width="1.2" filter="url(#cardShadow8)"/>
+      <rect x="12" y="12" width="28" height="28" rx="6" fill="#E2E8F0" stroke="#64748B"/>
       <circle cx="26" cy="26" r="7" fill="#64748B"/>
-      <text x="48" y="28" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="bold">Registry Release</text>
-      <text x="48" y="44" fill="#94A3B8" font-family="sans-serif" font-size="10">Signed Artifact Vault</text>
+      <text x="48" y="28" fill="#0F172A" font-family="sans-serif" font-size="13" font-weight="bold">Registry Release</text>
+      <text x="48" y="44" fill="#64748B" font-family="sans-serif" font-size="10">Signed Artifact Vault</text>
       
-      <line x1="12" y1="58" x2="208" y2="58" stroke="rgba(255,255,255,0.06)"/>
-      <text x="16" y="80" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Tag: zyvoriq:v1.0.0-sha</text>
-      <text x="16" y="100" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Cosign Cryptographic Sign</text>
-      <text x="16" y="120" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Artifact SLSA Level 3 Ready</text>
+      <line x1="12" y1="58" x2="208" y2="58" stroke="#E2E8F0"/>
+      <text x="16" y="80" fill="#334155" font-family="sans-serif" font-size="11">• Tag: zyvoriq:v1.0.0-sha</text>
+      <text x="16" y="100" fill="#334155" font-family="sans-serif" font-size="11">• Cosign Cryptographic Sign</text>
+      <text x="16" y="120" fill="#334155" font-family="sans-serif" font-size="11">• Artifact SLSA Level 3 Ready</text>
     </g>
   </g>
 
-  <!-- Inter-Lane Connector 3 to 4 -->
-  <path d="M 855 490 L 890 490" stroke="#F59E0B" stroke-width="2.5" marker-end="url(#arrTeal)"/>
+  <path d="M 855 490 L 890 490" stroke="#D97706" stroke-width="2.5" marker-end="url(#arrBlue8)"/>
 
   <!-- SWIMLANE 4: CANARY VALIDATION & TRAFFIC SHIFTING -->
   <g transform="translate(890, 185)">
-    <rect width="250" height="675" rx="14" fill="#0B101D" stroke="#334155" stroke-width="1.5" filter="url(#shadow)"/>
-    <rect width="250" height="42" rx="14" fill="#151E33"/>
-    <text x="20" y="27" fill="#FCD34D" font-family="sans-serif" font-size="13" font-weight="bold">STAGE 4: CANARY OBSERVABILITY</text>
+    <rect width="250" height="675" rx="14" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5" filter="url(#cardShadow8)"/>
+    <rect width="250" height="42" rx="14" fill="#FEF3C7"/>
+    <text x="20" y="27" fill="#92400E" font-family="sans-serif" font-size="13" font-weight="bold">STAGE 4: CANARY OBSERVABILITY</text>
 
     <!-- Node 4.1: Canary Deployment 10% -->
     <g transform="translate(15, 60)">
-      <rect width="220" height="150" rx="10" fill="url(#cardGrad)" stroke="#F59E0B" stroke-width="1.5"/>
-      <rect x="12" y="12" width="28" height="28" rx="6" fill="rgba(245,158,11,0.2)" stroke="#F59E0B"/>
-      <polygon points="26,18 32,26 20,26" fill="#F59E0B"/>
-      <text x="48" y="28" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="bold">Canary Pod (10%)</text>
-      <text x="48" y="44" fill="#FCD34D" font-family="sans-serif" font-size="10">Active Ingress Slice</text>
+      <rect width="220" height="150" rx="10" fill="#FFFFFF" stroke="#D97706" stroke-width="1.5" filter="url(#cardShadow8)"/>
+      <rect x="12" y="12" width="28" height="28" rx="6" fill="#FEF3C7" stroke="#D97706"/>
+      <polygon points="26,18 32,26 20,26" fill="#D97706"/>
+      <text x="48" y="28" fill="#0F172A" font-family="sans-serif" font-size="13" font-weight="bold">Canary Pod (10%)</text>
+      <text x="48" y="44" fill="#B45309" font-family="sans-serif" font-size="10">Active Ingress Slice</text>
       
-      <line x1="12" y1="58" x2="208" y2="58" stroke="rgba(255,255,255,0.06)"/>
-      <text x="16" y="80" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Edge Weighted Routing (10%)</text>
-      <text x="16" y="100" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Real User Request Traffic</text>
-      <text x="16" y="120" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Health Probe: /api/health</text>
-      <text x="16" y="140" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Active Warmup: 120s</text>
+      <line x1="12" y1="58" x2="208" y2="58" stroke="#E2E8F0"/>
+      <text x="16" y="80" fill="#334155" font-family="sans-serif" font-size="11">• Edge Weighted Routing (10%)</text>
+      <text x="16" y="100" fill="#334155" font-family="sans-serif" font-size="11">• Real User Request Traffic</text>
+      <text x="16" y="120" fill="#334155" font-family="sans-serif" font-size="11">• Health Probe: /api/health</text>
+      <text x="16" y="140" fill="#334155" font-family="sans-serif" font-size="11">• Active Warmup: 120s</text>
     </g>
 
-    <!-- Arrow Down -->
-    <line x1="125" y1="220" x2="125" y2="250" stroke="#F59E0B" stroke-width="2" marker-end="url(#arrTeal)"/>
+    <line x1="125" y1="220" x2="125" y2="250" stroke="#D97706" stroke-width="2" marker-end="url(#arrBlue8)"/>
 
     <!-- Node 4.2: Health & SLA Telemetry Probes -->
     <g transform="translate(15, 260)">
-      <rect width="220" height="150" rx="10" fill="url(#cardGrad)" stroke="#F59E0B" stroke-width="1.5"/>
-      <rect x="12" y="12" width="28" height="28" rx="6" fill="rgba(245,158,11,0.2)" stroke="#F59E0B"/>
-      <line x1="18" y1="32" x2="24" y2="24" stroke="#F59E0B" stroke-width="2"/>
-      <line x1="24" y1="24" x2="30" y2="28" stroke="#F59E0B" stroke-width="2"/>
-      <line x1="30" y1="28" x2="36" y2="18" stroke="#F59E0B" stroke-width="2"/>
-      <text x="48" y="28" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="bold">Telemetry Burning</text>
-      <text x="48" y="44" fill="#FCD34D" font-family="sans-serif" font-size="10">SLO &amp; Error Rate Guard</text>
+      <rect width="220" height="150" rx="10" fill="#FFFFFF" stroke="#D97706" stroke-width="1.5" filter="url(#cardShadow8)"/>
+      <rect x="12" y="12" width="28" height="28" rx="6" fill="#FEF3C7" stroke="#D97706"/>
+      <line x1="18" y1="32" x2="24" y2="24" stroke="#D97706" stroke-width="2"/>
+      <line x1="24" y1="24" x2="30" y2="28" stroke="#D97706" stroke-width="2"/>
+      <line x1="30" y1="28" x2="36" y2="18" stroke="#D97706" stroke-width="2"/>
+      <text x="48" y="28" fill="#0F172A" font-family="sans-serif" font-size="13" font-weight="bold">Telemetry Burning</text>
+      <text x="48" y="44" fill="#B45309" font-family="sans-serif" font-size="10">SLO &amp; Error Rate Guard</text>
       
-      <line x1="12" y1="58" x2="208" y2="58" stroke="rgba(255,255,255,0.06)"/>
-      <text x="16" y="80" fill="#CBD5E1" font-family="sans-serif" font-size="11">• HTTP 5xx Error Rate &lt; 0.1%</text>
-      <text x="16" y="100" fill="#CBD5E1" font-family="sans-serif" font-size="11">• P99 Latency &lt; 850ms</text>
-      <text x="16" y="120" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Memory Leak Check: 0 Drift</text>
-      <text x="16" y="140" fill="#CBD5E1" font-family="sans-serif" font-size="11">• SSE Connection Stability: 99.9%</text>
+      <line x1="12" y1="58" x2="208" y2="58" stroke="#E2E8F0"/>
+      <text x="16" y="80" fill="#334155" font-family="sans-serif" font-size="11">• HTTP 5xx Error Rate &lt; 0.1%</text>
+      <text x="16" y="100" fill="#334155" font-family="sans-serif" font-size="11">• P99 Latency &lt; 850ms</text>
+      <text x="16" y="120" fill="#334155" font-family="sans-serif" font-size="11">• Memory Leak Check: 0 Drift</text>
+      <text x="16" y="140" fill="#334155" font-family="sans-serif" font-size="11">• SSE Connection Stability: 99.9%</text>
     </g>
 
-    <!-- Arrow Down -->
-    <line x1="125" y1="420" x2="125" y2="450" stroke="#F43F5E" stroke-width="2" marker-end="url(#arrRed)"/>
+    <line x1="125" y1="420" x2="125" y2="450" stroke="#DC2626" stroke-width="2" marker-end="url(#arrRed8)"/>
 
     <!-- Node 4.3: Circuit Breaker / Rollback Enclave -->
     <g transform="translate(15, 460)">
-      <rect width="220" height="135" rx="10" fill="#2A0B12" stroke="#F43F5E" stroke-width="1.5"/>
-      <rect x="12" y="12" width="28" height="28" rx="6" fill="rgba(244,63,94,0.2)" stroke="#F43F5E"/>
-      <polygon points="26,18 32,30 20,30" fill="#F43F5E"/>
-      <text x="48" y="28" fill="#FECDD3" font-family="sans-serif" font-size="13" font-weight="bold">Rollback Guard</text>
-      <text x="48" y="44" fill="#FDA4AF" font-family="sans-serif" font-size="10">Auto-Reversion Trigger</text>
+      <rect width="220" height="135" rx="10" fill="#FEF2F2" stroke="#DC2626" stroke-width="1.5" filter="url(#cardShadow8)"/>
+      <rect x="12" y="12" width="28" height="28" rx="6" fill="#FEE2E2" stroke="#DC2626"/>
+      <polygon points="26,18 32,30 20,30" fill="#DC2626"/>
+      <text x="48" y="28" fill="#991B1B" font-family="sans-serif" font-size="13" font-weight="bold">Rollback Guard</text>
+      <text x="48" y="44" fill="#B91C1C" font-family="sans-serif" font-size="10">Auto-Reversion Trigger</text>
       
-      <line x1="12" y1="58" x2="208" y2="58" stroke="rgba(255,255,255,0.06)"/>
-      <text x="16" y="80" fill="#FFE4E6" font-family="sans-serif" font-size="11">• 5xx Spike > 0.5% -> Rollback</text>
-      <text x="16" y="100" fill="#FFE4E6" font-family="sans-serif" font-size="11">• P99 > 2500ms -> Auto-Kill</text>
-      <text x="16" y="120" fill="#FFE4E6" font-family="sans-serif" font-size="11">• Revert Traffic in &lt; 2.5s</text>
+      <line x1="12" y1="58" x2="208" y2="58" stroke="#FECACA"/>
+      <text x="16" y="80" fill="#7F1D1D" font-family="sans-serif" font-size="11">• 5xx Spike > 0.5% -> Rollback</text>
+      <text x="16" y="100" fill="#7F1D1D" font-family="sans-serif" font-size="11">• P99 > 2500ms -> Auto-Kill</text>
+      <text x="16" y="120" fill="#7F1D1D" font-family="sans-serif" font-size="11">• Revert Traffic in &lt; 2.5s</text>
     </g>
   </g>
 
-  <!-- Inter-Lane Connector 4 to 5 (Success Path) -->
-  <path d="M 1140 335 L 1175 335" stroke="#10B981" stroke-width="3" marker-end="url(#arrGreen)"/>
+  <path d="M 1140 335 L 1175 335" stroke="#16A34A" stroke-width="3" marker-end="url(#arrGreen8)"/>
 
   <!-- SWIMLANE 5: FULL PRODUCTION PROMOTION -->
   <g transform="translate(1175, 185)">
-    <rect width="225" height="675" rx="14" fill="#0B101D" stroke="#047857" stroke-width="1.8" filter="url(#shadow)"/>
-    <rect width="225" height="42" rx="14" fill="#064E3B"/>
-    <text x="18" y="27" fill="#A7F3D0" font-family="sans-serif" font-size="13" font-weight="bold">STAGE 5: FULL PRODUCTION GA</text>
+    <rect width="225" height="675" rx="14" fill="#F8FAFC" stroke="#16A34A" stroke-width="1.8" filter="url(#cardShadow8)"/>
+    <rect width="225" height="42" rx="14" fill="#DCFCE7"/>
+    <text x="18" y="27" fill="#166534" font-family="sans-serif" font-size="13" font-weight="bold">STAGE 5: FULL PRODUCTION GA</text>
 
     <!-- Node 5.1: 100% Traffic Shift -->
     <g transform="translate(12, 60)">
-      <rect width="200" height="160" rx="10" fill="url(#cardGrad)" stroke="#10B981" stroke-width="2"/>
-      <rect x="12" y="12" width="28" height="28" rx="6" fill="rgba(16,185,129,0.2)" stroke="#10B981"/>
-      <polygon points="26,16 32,32 20,32" fill="#10B981"/>
-      <text x="48" y="28" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="bold">100% Traffic Shift</text>
-      <text x="48" y="44" fill="#34D399" font-family="sans-serif" font-size="10">Rolling Container Swap</text>
+      <rect width="200" height="160" rx="10" fill="#FFFFFF" stroke="#16A34A" stroke-width="2" filter="url(#cardShadow8)"/>
+      <rect x="12" y="12" width="28" height="28" rx="6" fill="#DCFCE7" stroke="#16A34A"/>
+      <polygon points="26,16 32,32 20,32" fill="#16A34A"/>
+      <text x="48" y="28" fill="#0F172A" font-family="sans-serif" font-size="13" font-weight="bold">100% Traffic Shift</text>
+      <text x="48" y="44" fill="#15803D" font-family="sans-serif" font-size="10">Rolling Container Swap</text>
       
-      <line x1="12" y1="58" x2="188" y2="58" stroke="rgba(255,255,255,0.06)"/>
-      <text x="14" y="80" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Edge Load Balancer 100%</text>
-      <text x="14" y="100" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Zero Dropped Requests</text>
-      <text x="14" y="120" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Global Anycast DNS Active</text>
-      <text x="14" y="140" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Railway Pods Synced</text>
+      <line x1="12" y1="58" x2="188" y2="58" stroke="#E2E8F0"/>
+      <text x="14" y="80" fill="#334155" font-family="sans-serif" font-size="11">• Edge Load Balancer 100%</text>
+      <text x="14" y="100" fill="#334155" font-family="sans-serif" font-size="11">• Zero Dropped Requests</text>
+      <text x="14" y="120" fill="#334155" font-family="sans-serif" font-size="11">• Global Anycast DNS Active</text>
+      <text x="14" y="140" fill="#334155" font-family="sans-serif" font-size="11">• Railway Pods Synced</text>
     </g>
 
-    <!-- Arrow Down -->
-    <line x1="112" y1="230" x2="112" y2="260" stroke="#10B981" stroke-width="2" marker-end="url(#arrGreen)"/>
+    <line x1="112" y1="230" x2="112" y2="260" stroke="#16A34A" stroke-width="2" marker-end="url(#arrGreen8)"/>
 
     <!-- Node 5.2: Edge Cache Invalidation -->
     <g transform="translate(12, 270)">
-      <rect width="200" height="150" rx="10" fill="url(#cardGrad)" stroke="#10B981" stroke-width="1.5"/>
-      <rect x="12" y="12" width="28" height="28" rx="6" fill="rgba(16,185,129,0.2)" stroke="#10B981"/>
-      <circle cx="26" cy="26" r="7" fill="#10B981"/>
-      <text x="48" y="28" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="bold">CDN Invalidation</text>
-      <text x="48" y="44" fill="#34D399" font-family="sans-serif" font-size="10">Edge Cache Freshness</text>
+      <rect width="200" height="150" rx="10" fill="#FFFFFF" stroke="#16A34A" stroke-width="1.5" filter="url(#cardShadow8)"/>
+      <rect x="12" y="12" width="28" height="28" rx="6" fill="#DCFCE7" stroke="#16A34A"/>
+      <circle cx="26" cy="26" r="7" fill="#16A34A"/>
+      <text x="48" y="28" fill="#0F172A" font-family="sans-serif" font-size="13" font-weight="bold">CDN Invalidation</text>
+      <text x="48" y="44" fill="#15803D" font-family="sans-serif" font-size="10">Edge Cache Freshness</text>
       
-      <line x1="12" y1="58" x2="188" y2="58" stroke="rgba(255,255,255,0.06)"/>
-      <text x="14" y="80" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Purge HTML / JS Bundles</text>
-      <text x="14" y="100" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Preserve Immutable Assets</text>
-      <text x="14" y="120" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Unique SHA Token Check</text>
-      <text x="14" y="140" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Global Cache Warmup</text>
+      <line x1="12" y1="58" x2="188" y2="58" stroke="#E2E8F0"/>
+      <text x="14" y="80" fill="#334155" font-family="sans-serif" font-size="11">• Purge HTML / JS Bundles</text>
+      <text x="14" y="100" fill="#334155" font-family="sans-serif" font-size="11">• Preserve Immutable Assets</text>
+      <text x="14" y="120" fill="#334155" font-family="sans-serif" font-size="11">• Unique SHA Token Check</text>
+      <text x="14" y="140" fill="#334155" font-family="sans-serif" font-size="11">• Global Cache Warmup</text>
     </g>
 
-    <!-- Arrow Down -->
-    <line x1="112" y1="430" x2="112" y2="460" stroke="#10B981" stroke-width="2" marker-end="url(#arrGreen)"/>
+    <line x1="112" y1="430" x2="112" y2="460" stroke="#16A34A" stroke-width="2" marker-end="url(#arrGreen8)"/>
 
     <!-- Node 5.3: Post-Deploy Verification -->
     <g transform="translate(12, 470)">
-      <rect width="200" height="145" rx="10" fill="#042F2E" stroke="#14B8A6" stroke-width="1.5"/>
-      <rect x="12" y="12" width="28" height="28" rx="6" fill="rgba(20,184,166,0.2)" stroke="#14B8A6"/>
-      <circle cx="26" cy="26" r="7" fill="#14B8A6"/>
-      <text x="48" y="28" fill="#2DD4BF" font-family="sans-serif" font-size="13" font-weight="bold">Post-Deploy SLA</text>
-      <text x="48" y="44" fill="#5EEAD4" font-family="sans-serif" font-size="10">GA Signoff Passed</text>
+      <rect width="200" height="145" rx="10" fill="#DCFCE7" stroke="#16A34A" stroke-width="1.5" filter="url(#cardShadow8)"/>
+      <rect x="12" y="12" width="28" height="28" rx="6" fill="#BBF7D0" stroke="#16A34A"/>
+      <circle cx="26" cy="26" r="7" fill="#16A34A"/>
+      <text x="48" y="28" fill="#166534" font-family="sans-serif" font-size="13" font-weight="bold">Post-Deploy SLA</text>
+      <text x="48" y="44" fill="#15803D" font-family="sans-serif" font-size="10">GA Signoff Passed</text>
       
-      <line x1="12" y1="58" x2="188" y2="58" stroke="rgba(255,255,255,0.06)"/>
-      <text x="14" y="80" fill="#CCFBF1" font-family="sans-serif" font-size="11">• Slack Deployment Alert</text>
-      <text x="14" y="100" fill="#CCFBF1" font-family="sans-serif" font-size="11">• PagerDuty Healthy</text>
-      <text x="14" y="120" fill="#CCFBF1" font-family="sans-serif" font-size="11">• Release Tagged: v1.0.0</text>
-      <text x="14" y="138" fill="#34D399" font-family="sans-serif" font-size="10" font-weight="bold">[LIVE] IN PRODUCTION</text>
+      <line x1="12" y1="58" x2="188" y2="58" stroke="#86EFAC"/>
+      <text x="14" y="80" fill="#166534" font-family="sans-serif" font-size="11">• Slack Deployment Alert</text>
+      <text x="14" y="100" fill="#166534" font-family="sans-serif" font-size="11">• PagerDuty Healthy</text>
+      <text x="14" y="120" fill="#166534" font-family="sans-serif" font-size="11">• Release Tagged: v1.0.0</text>
+      <text x="14" y="138" fill="#166534" font-family="sans-serif" font-size="10" font-weight="bold">[LIVE] IN PRODUCTION</text>
     </g>
   </g>
 
-  <!-- ==================== 4. BOTTOM LEGEND ==================== -->
+  <!-- Legend -->
   <g transform="translate(40, 868)">
-    <text x="0" y="18" fill="#64748B" font-family="sans-serif" font-size="11" font-weight="600">LEGEND:</text>
-    <rect x="60" y="5" width="12" height="12" rx="3" fill="#14B8A6"/>
-    <text x="78" y="16" fill="#94A3B8" font-family="sans-serif" font-size="11">Compile &amp; Unit Gate</text>
-    <rect x="220" y="5" width="12" height="12" rx="3" fill="#8B5CF6"/>
-    <text x="238" y="16" fill="#94A3B8" font-family="sans-serif" font-size="11">Immutable Packaging</text>
-    <rect x="390" y="5" width="12" height="12" rx="3" fill="#F59E0B"/>
-    <text x="408" y="16" fill="#94A3B8" font-family="sans-serif" font-size="11">Canary Ingress &amp; Probes</text>
-    <rect x="580" y="5" width="12" height="12" rx="3" fill="#10B981"/>
-    <text x="598" y="16" fill="#94A3B8" font-family="sans-serif" font-size="11">100% Production GA</text>
-    <rect x="750" y="5" width="12" height="12" rx="3" fill="#F43F5E"/>
-    <text x="768" y="16" fill="#94A3B8" font-family="sans-serif" font-size="11">Auto-Rollback Trigger</text>
+    <text x="0" y="18" fill="#475569" font-family="sans-serif" font-size="11" font-weight="600">LEGEND:</text>
+    <rect x="60" y="5" width="12" height="12" rx="3" fill="#0D9488"/>
+    <text x="78" y="16" fill="#334155" font-family="sans-serif" font-size="11">Compile &amp; Unit Gate</text>
+    <rect x="220" y="5" width="12" height="12" rx="3" fill="#7C3AED"/>
+    <text x="238" y="16" fill="#334155" font-family="sans-serif" font-size="11">Immutable Packaging</text>
+    <rect x="390" y="5" width="12" height="12" rx="3" fill="#D97706"/>
+    <text x="408" y="16" fill="#334155" font-family="sans-serif" font-size="11">Canary Ingress &amp; Probes</text>
+    <rect x="580" y="5" width="12" height="12" rx="3" fill="#16A34A"/>
+    <text x="598" y="16" fill="#334155" font-family="sans-serif" font-size="11">100% Production GA</text>
+    <rect x="750" y="5" width="12" height="12" rx="3" fill="#DC2626"/>
+    <text x="768" y="16" fill="#334155" font-family="sans-serif" font-size="11">Auto-Rollback Trigger</text>
   </g>
 </svg>
