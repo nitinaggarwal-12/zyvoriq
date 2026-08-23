@@ -19,31 +19,77 @@
 
 ## 1. Agent Swarm Decomposition & Dependency Graph
 
+```mermaid
+flowchart TD
+    UserBrief["User Brief / Raw Concept (Text, URL, File)"]
+    Director["Director Orchestrator (Decomposes Task Graph)"]
+    
+    subgraph SwarmPhase1["Parallel Research & Copy Swarm"]
+        Research["Research & Grounding Agent (Google Search / Docs)"]
+        Scripting["Scripting & Narrative Agent (Channel Copywriting)"]
+        CodeAgent["Code & Diagram Compiler (AST / Draw.io)"]
+    end
+    
+    subgraph SwarmPhase2["Multimodal Media Swarm"]
+        Visual["Visual & Storyboard Agent (Veo 2 Prompts)"]
+        Voice["Neural Speech Agent (DeepMind TTS SSML)"]
+    end
+    
+    subgraph AssurancePhase["Automated Quality Firewall"]
+        Veritas["Veritas Consensus Evaluator (5-Axis VQS Matrix)"]
+    end
+
+    UserBrief --> Director
+    Director --> Research
+    Director --> Scripting
+    Director --> CodeAgent
+    
+    Research --> Visual
+    Scripting --> Visual
+    Scripting --> Voice
+    
+    Visual --> Veritas
+    Voice --> Veritas
+    CodeAgent --> Veritas
 ```
-                                  ┌─────────────────────────────┐
-                                  │   Director Orchestrator     │
-                                  │   Decomposes User Brief     │
-                                  └──────────────┬──────────────┘
-                                                 │
-                  ┌──────────────────────────────┼──────────────────────────────┐
-                  ▼                              ▼                              ▼
-    ┌───────────────────────────┐  ┌───────────────────────────┐  ┌───────────────────────────┐
-    │      Research Agent       │  │      Scripting Agent      │  │     Code Compiler Agent   │
-    │  Web & Document Grounding │  │ Tone & Channel Adaptation │  │ AST Validation & Diagrams │
-    └─────────────┬─────────────┘  └─────────────┬─────────────┘  └─────────────┬─────────────┘
-                  │                              │                              │
-                  └──────────────────────────────┼──────────────────────────────┘
-                                                 ▼
-                                  ┌─────────────────────────────┐
-                                  │    Visual & Voice Swarm     │
-                                  │ Storyboard + Neural Dubbing │
-                                  └──────────────┬──────────────┘
-                                                 │
-                                                 ▼
-                                  ┌─────────────────────────────┐
-                                  │  Veritas Assurance Evaluator│
-                                  │  Consensus & Fact Firewall  │
-                                  └─────────────────────────────┘
+
+---
+
+## 2. Multi-Agent Inter-Service Sequence Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as User / Creator
+    participant BFF as Next.js BFF
+    participant Swarm as Swarm Orchestrator
+    participant Model as Model Router (Gemini/Claude)
+    participant Veritas as Veritas QA Engine
+    participant Channel as Social Connector
+
+    User->>BFF: Submit Brief (Cmd+Enter)
+    BFF->>Swarm: Initialize Agent Graph (POST /director/synthesize)
+    Swarm-->>BFF: SSE Token Stream Started
+    BFF-->>User: Live Progress Updates (SSE)
+    
+    par Parallel Synthesis
+        Swarm->>Model: Research & Claims Extraction
+        Swarm->>Model: Narrative & Code AST Generation
+        Swarm->>Model: Storyboard & Neural Voice Dub
+    end
+
+    Model-->>Swarm: Modality Artifact Drafts
+    Swarm->>Veritas: Evaluate Drafts (POST /veritas/evaluate)
+    
+    alt VQS >= 90 (Pass)
+        Veritas-->>Swarm: Signed Quality Certificate (VQC)
+        Swarm->>Channel: Dispatch / Schedule Posts
+        Channel-->>User: Published Confirmation
+    else VQS < 90 (Repair Required)
+        Veritas->>Swarm: Surgical Diff Patch & Re-prompt
+        Swarm->>Model: Regenerate Flawed Passages
+        Model-->>Veritas: Re-evaluate Patch
+    end
 ```
 
 ---

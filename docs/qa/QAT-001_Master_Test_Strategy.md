@@ -19,16 +19,16 @@
 
 ## 1. Test Pyramid & Automation Frameworks
 
-```
-                       ┌───────────────┐
-                       │ E2E Puppeteer │  10% (UI flows & visual regression)
-                       ├───────────────┤
-                       │  AI / Veritas │  25% (Golden eval benchmark suite)
-                       ├───────────────┤
-                       │  Integration  │  30% (API contracts, RLS, Queues)
-                       ├───────────────┤
-                       │  Unit (Vitest)│  35% (Parsers, VQS formulas, utils)
-                       └───────────────┘
+```mermaid
+graph TD
+    E2E["1. E2E Tests (Puppeteer / UI State / Visual Pixelmatch) - 10%"]
+    Evals["2. AI & Veritas Quality Evaluations (250 Golden Benchmarks) - 25%"]
+    Integration["3. Integration Tests (API Contracts / RLS / BullMQ Queues) - 30%"]
+    Unit["4. Unit Tests (Vitest / Parsers / VQS Mathematical Formulas) - 35%"]
+
+    E2E --> Evals
+    Evals --> Integration
+    Integration --> Unit
 ```
 
 ---

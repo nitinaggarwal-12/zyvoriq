@@ -25,45 +25,44 @@ This document specifies the global information architecture, page routing tree, 
 
 ## 2. Route Hierarchy & Sitemap Tree
 
-```
-Zyvoriq Web Application
-├── / (Marketing Homepage & Public Demo)
-│   ├── #director (Interactive Hero Simulation)
-│   ├── #veritas (Quality Matrix Overview)
-│   ├── #studio (Multimodal Asset Showcase)
-│   ├── #autonomy (Governance Policy Showcase)
-│   └── #waitlist (Early Access Onboarding)
-│
-├── /app (Authenticated Platform Shell)
-│   ├── /dashboard (Executive Overview & Active Projects)
-│   │   └── /dashboard/project/[id] (Project Detail & Asset Manifest)
-│   │
-│   ├── /director (Idea-to-Impact Swarm Console)
-│   │   └── /director/session/[sessionId] (Live Multi-Agent Execution Stream)
-│   │
-│   ├── /studio (Multimodal Asset Studio)
-│   │   ├── /studio/video/[assetId] (Cinematic Video & Shorts Canvas)
-│   │   ├── /studio/audio/[assetId] (5-Band Neural Voice & Dubbing Editor)
-│   │   ├── /studio/code/[assetId] (Code Playground & Architecture Canvas)
-│   │   └── /studio/editorial/[assetId] (Omnichannel Written Copy Matrix)
-│   │
-│   ├── /veritas (Quality Assurance & Auto-Repair Console)
-│   │   ├── /veritas/audit/[auditId] (Deep Factuality & Consensus Diff Viewer)
-│   │   └── /veritas/benchmarks (Workspace Golden QA Thresholds)
-│   │
-│   ├── /governance (Autonomy & Compliance Center)
-│   │   ├── /governance/policies (Autonomy Slider & Approval Matrix)
-│   │   └── /governance/audit-logs (Cryptographic Provenance & C2PA Registry)
-│   │
-│   ├── /analytics (Omnichannel Telemetry & Persona Learning)
-│   │   ├── /analytics/engagement (Real-Time Cross-Platform Metrics)
-│   │   └── /analytics/persona-drift (Brand Voice Fidelity Tracking)
-│   │
-│   └── /settings (Workspace & Account Management)
-│       ├── /settings/workspace (Brand Tone Guidelines & Persona Memory)
-│       ├── /settings/connectors (YouTube, LinkedIn, X, Substack Auth)
-│       ├── /settings/members (RBAC & Team Permissions)
-│       └── /settings/billing (Usage Quotas & Foundation Model Spend)
+```mermaid
+graph TD
+    Root["/ (Landing Page & Marketing)"]
+    
+    subgraph AppShell["/app (Authenticated Platform Workspace)"]
+        Dashboard["/app/dashboard (Executive Metrics & Projects)"]
+        Director["/app/director (Swarm Synthesis Console)"]
+        
+        subgraph StudioGroup["/app/studio (Multimodal Asset Studio)"]
+            Video["/studio/video (Cinematic & Shorts)"]
+            Audio["/studio/audio (5-Band Neural Dubbing)"]
+            Code["/studio/code (AST Validator & Diagrams)"]
+            Editorial["/studio/editorial (Omnichannel Copy)"]
+        end
+        
+        subgraph VeritasGroup["/app/veritas (Quality Assurance Center)"]
+            Audit["/veritas/audit (Factuality Diff Viewer)"]
+            Benchmarks["/veritas/benchmarks (Golden Baselines)"]
+        end
+        
+        subgraph GovGroup["/app/governance (Compliance & Provenance)"]
+            Policies["/governance/policies (Autonomy Slider)"]
+            AuditLogs["/governance/audit-logs (C2PA Registry)"]
+        end
+        
+        Analytics["/app/analytics (Real-time Telemetry)"]
+        Settings["/app/settings (Brand Vault & Connectors)"]
+    end
+
+    Root --> Dashboard
+    Dashboard --> Director
+    Dashboard --> Video
+    Dashboard --> Audio
+    Dashboard --> Code
+    Dashboard --> Editorial
+    Director --> Audit
+    Audit --> Policies
+    Policies --> Analytics
 ```
 
 ---

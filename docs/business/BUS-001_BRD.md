@@ -57,12 +57,26 @@ By automating multi-agent generation with cryptographic **Veritas Quality Assura
 
 ## 4. Current-State vs. Target-State Workflow
 
-```
-[Current Fragmented Workflow]
-Briefing Doc ──► Copywriter (3d) ──► Graphic Designer (3d) ──► Voice Actor (2d) ──► Video Editor (4d) ──► Legal (3d) ──► Post (15d Total)
+```mermaid
+flowchart TD
+    subgraph Legacy["Legacy Fragmented Workflow (15 Days Total)"]
+        direction LR
+        L1["Briefing Doc"] --> L2["Copywriter (3d)"]
+        L2 --> L3["Graphic Designer (3d)"]
+        L3 --> L4["Voice Actor (2d)"]
+        L4 --> L5["Video Editor (4d)"]
+        L5 --> L6["Legal QA (3d)"]
+        L6 --> L7["Manual Post (15d Total)"]
+    end
 
-[Zyvoriq Target-State Workflow]
-Raw Idea ──► Director Swarm ──► Veritas QA Gate (Automated) ──► Multimodal Synthesis ──► Autonomy Signoff ──► Multi-Channel Publish (<45m)
+    subgraph Zyvoriq["Zyvoriq AI-Native Target Workflow (< 45 Minutes)"]
+        direction LR
+        Z1["Raw Idea Brief"] --> Z2["Director Swarm"]
+        Z2 --> Z3["Veritas QA Gate (Auto)"]
+        Z3 --> Z4["Multimodal Synthesis"]
+        Z4 --> Z5["Autonomy Signoff"]
+        Z5 --> Z6["Omnichannel Publish (< 45m)"]
+    end
 ```
 
 ---

@@ -18,8 +18,15 @@
 
 ## 1. CI/CD Deployment Pipeline
 
-```
-[Git Push to main] ──► [TypeScript tsc] ──► [Unit & E2E Tests] ──► [Docker Build] ──► [Canary Rollout (10%)] ──► [Full Release (100%)]
+```mermaid
+flowchart LR
+    Push["Git Push to main"] --> TSC["TypeScript (tsc --noEmit)"]
+    TSC --> Tests["Unit & Puppeteer E2E Tests"]
+    Tests --> Docker["Deterministic Docker Build"]
+    Docker --> Canary["Canary Deployment (10% Traffic)"]
+    Canary --> Verify{"Health Check (GET /api/health) OK?"}
+    Verify -->|Yes| Full["Full Production Rollout (100%)"]
+    Verify -->|No / 5xx > 0.5%| Rollback["Automated Instant Rollback"]
 ```
 
 - **Zero-Downtime Deployments**: Rolling container replacement with health check verification (`GET /api/health`).

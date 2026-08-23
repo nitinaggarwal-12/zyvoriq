@@ -28,38 +28,47 @@
 
 ## 2. End-to-End System Topology
 
-```
-                                  ┌─────────────────────────────┐
-                                  │   Web & Client Interface    │
-                                  │  Next.js 15 + React 19 App  │
-                                  └──────────────┬──────────────┘
-                                                 │ HTTPS / WSS / SSE
-                                                 ▼
-                                  ┌─────────────────────────────┐
-                                  │   API Gateway & Edge BFF    │
-                                  │  Auth, Rate Limit, Session  │
-                                  └──────────────┬──────────────┘
-                                                 │
-                  ┌──────────────────────────────┼──────────────────────────────┐
-                  ▼                              ▼                              ▼
-    ┌───────────────────────────┐  ┌───────────────────────────┐  ┌───────────────────────────┐
-    │   Multi-Agent Director    │  │     Veritas Quality &     │  │   Omnichannel Publisher   │
-    │     Swarm Orchestrator    │  │     Consensus Engine      │  │     & Webhook Adapter     │
-    └─────────────┬─────────────┘  └─────────────┬─────────────┘  └─────────────┬─────────────┘
-                  │                              │                              │
-                  └──────────────────────────────┼──────────────────────────────┘
-                                                 ▼
-                                  ┌─────────────────────────────┐
-                                  │ Intelligent Model Router    │
-                                  │ Gemini Pro | Claude | Veo 2 │
-                                  └──────────────┬──────────────┘
-                                                 │
-                  ┌──────────────────────────────┴──────────────────────────────┐
-                  ▼                                                             ▼
-    ┌───────────────────────────┐                                 ┌───────────────────────────┐
-    │   PostgreSQL + pgvector   │                                 │   Object Store & S3/GCS   │
-    │  (Workspace & Memory DB)  │                                 │    (Assets & C2PA Media)  │
-    └───────────────────────────┘                                 └───────────────────────────┘
+```mermaid
+flowchart TD
+    Client["Client Interface (Next.js 15 + React 19)"]
+    Gateway["API Gateway & Edge BFF (Auth / Rate Limiting / JWT)"]
+    
+    subgraph CoreEngine["Core Orchestration & Assurance Layer"]
+        Director["Multi-Agent Swarm Orchestrator (Temporal / Node)"]
+        Veritas["Veritas Quality & Consensus Engine (5-Axis QA)"]
+        Publisher["Omnichannel Publisher & Webhook Adapter"]
+    end
+    
+    Router["Intelligent Foundation Model Router"]
+    
+    subgraph Models["Frontier AI Models"]
+        Gemini["Google Gemini 2.5 Pro / Flash"]
+        Claude["Anthropic Claude 3.5 Sonnet"]
+        Veo["Google Veo 2 / Neural TTS"]
+    end
+    
+    subgraph Persistence["Storage & Database Layer"]
+        Postgres[("PostgreSQL 16 + pgvector (RLS Multi-Tenant)")]
+        ObjectStore[("S3 / GCS Object Store (C2PA Signed Media)")]
+        RedisQueue[("Redis BullMQ (Async Job Queues)")]
+    end
+
+    Client -->|HTTPS / SSE Stream| Gateway
+    Gateway --> Director
+    Gateway --> Veritas
+    Gateway --> Publisher
+
+    Director --> Router
+    Veritas --> Router
+    Router --> Gemini
+    Router --> Claude
+    Router --> Veo
+
+    Director --> RedisQueue
+    Publisher --> RedisQueue
+    Director --> Postgres
+    Veritas --> Postgres
+    Director --> ObjectStore
 ```
 
 ---
@@ -98,32 +107,70 @@
 
 ## 4. Canonical Data Model (ERD)
 
-```
-┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
-│     Tenant      │ 1───N │    Workspace    │ 1───N │     Project     │
-│  (Billing/Org)  │       │ (Brand Persona) │       │   (Campaign)    │
-└─────────────────┘       └─────────────────┘       └────────┬────────┘
-                                                             │ 1
-                                                             │
-                                                             ▼ N
-                                                    ┌─────────────────┐
-                                                    │   MasterAsset   │
-                                                    │  (Core Thesis)  │
-                                                    └────────┬────────┘
-                                                             │ 1
-                                                             │
-                              ┌──────────────────────────────┴──────────────────────────────┐
-                              ▼ N                                                           ▼ N
-                     ┌─────────────────┐                                           ┌─────────────────┐
-                     │ ModalityArtifact│                                           │VeritasAssessment│
-                     │(Video/Audio/Code│                                           │ (Scores/Diffs)  │
-                     └────────┬────────┘                                           └─────────────────┘
-                              │ 1
-                              ▼ N
-                     ┌─────────────────┐
-                     │   PublishJob    │
-                     │ (YT/LI/X/Queue) │
-                     └─────────────────┘
+```mermaid
+erDiagram
+    TENANT ||--o{ WORKSPACE : owns
+    WORKSPACE ||--o{ PROJECT : contains
+    PROJECT ||--o{ MASTER_ASSET : generates
+    MASTER_ASSET ||--o{ MODALITY_ARTIFACT : produces
+    MODALITY_ARTIFACT ||--o{ VERITAS_ASSESSMENT : evaluated_by
+    MODALITY_ARTIFACT ||--o{ PUBLISH_JOB : scheduled_for
+    WORKSPACE ||--o{ AUDIT_LOG : records
+
+    TENANT {
+        uuid id PK
+        string name
+        string plan_tier
+        timestamp created_at
+    }
+    WORKSPACE {
+        uuid id PK
+        uuid tenant_id FK
+        string name
+        string autonomy_mode
+        vector persona_vector
+    }
+    PROJECT {
+        uuid id PK
+        uuid workspace_id FK
+        string title
+        string status
+    }
+    MASTER_ASSET {
+        uuid id PK
+        uuid project_id FK
+        string raw_prompt
+        string status
+    }
+    MODALITY_ARTIFACT {
+        uuid id PK
+        uuid master_asset_id FK
+        string modality
+        jsonb payload
+        string c2pa_manifest_id
+    }
+    VERITAS_ASSESSMENT {
+        uuid id PK
+        uuid artifact_id FK
+        float composite_vqs
+        float factuality_score
+        float tone_score
+        string gate_decision
+    }
+    PUBLISH_JOB {
+        uuid id PK
+        uuid artifact_id FK
+        string channel
+        timestamp scheduled_at
+        string status
+    }
+    AUDIT_LOG {
+        uuid id PK
+        uuid workspace_id FK
+        string actor_id
+        string action_type
+        string entry_hash
+    }
 ```
 
 ---

@@ -27,26 +27,33 @@ Veritas evaluates all synthesized assets before they are stored or published, co
 
 ## 2. The 5 Veritas Evaluation Dimensions
 
-```
-                                  ┌─────────────────────────────┐
-                                  │    Veritas Quality Matrix   │
-                                  └──────────────┬──────────────┘
-                                                 │
-                  ┌──────────────────────────────┼──────────────────────────────┐
-                  ▼                              ▼                              ▼
-    ┌───────────────────────────┐  ┌───────────────────────────┐  ┌───────────────────────────┐
-    │  Factuality & Grounding   │  │   Brand Voice Alignment   │  │  Multi-Engine Consensus   │
-    │      Weight: 30%          │  │        Weight: 25%        │  │        Weight: 20%        │
-    └───────────────────────────┘  └───────────────────────────┘  └───────────────────────────┘
-                  │                                                             │
-                  └──────────────────────────────┬──────────────────────────────┘
-                                                 ▼
-                  ┌──────────────────────────────┴──────────────────────────────┐
-                  ▼                                                             ▼
-    ┌───────────────────────────┐                                 ┌───────────────────────────┐
-    │ Safety & Policy Compliance│                                 │ Perceptual Humanization   │
-    │        Weight: 15%        │                                 │        Weight: 10%        │
-    └───────────────────────────┘                                 └───────────────────────────┘
+```mermaid
+flowchart TD
+    Asset["Synthesized Media Asset Draft (Text, Audio, Video, Code)"]
+    Veritas["Veritas Quality & Consensus Evaluator"]
+    
+    subgraph Dimensions["5 Deterministic Evaluation Dimensions"]
+        Fact["1. Factuality & Grounding (Weight: 30%)"]
+        Tone["2. Brand Voice Alignment (Weight: 25%)"]
+        Consensus["3. Multi-Engine Consensus (Weight: 20%)"]
+        Safety["4. Safety & Policy Compliance (Weight: 15% - Hard Gate)"]
+        Hum["5. Perceptual Humanization (Weight: 10%)"]
+    end
+    
+    VQS["Composite VQS Score Calculation (0 - 100)"]
+
+    Asset --> Veritas
+    Veritas --> Fact
+    Veritas --> Tone
+    Veritas --> Consensus
+    Veritas --> Safety
+    Veritas --> Hum
+    
+    Fact --> VQS
+    Tone --> VQS
+    Consensus --> VQS
+    Safety --> VQS
+    Hum --> VQS
 ```
 
 ### 2.1 Dimension Definitions & Scoring Formulas
@@ -84,20 +91,20 @@ $$\text{VQS} = (0.30 \times S_{\text{fact}}) + (0.25 \times S_{\text{tone}}) + (
 
 ## 4. Closed-Loop Auto-Repair Architecture
 
-```
-[Draft Generated] ──► [Veritas Evaluator] ──► Score Check
-                             │
-            ┌────────────────┴────────────────┐
-            ▼                                 ▼
-    [VQS >= 90 (Pass)]                [VQS < 90 (Fail)]
-            │                                 │
-            ▼                                 ▼
-   [Publish / Deploy]             [Auto-Repair Prompt Engine]
-                                              │ (Injects specific error diffs)
-                                              ▼
-                                   [Targeted Regenerator]
-                                              │ (Max 3 iterations)
-                                              └──► [Re-evaluate in Veritas]
+```mermaid
+flowchart TD
+    Draft["Generated Asset Draft"] --> Evaluator["Veritas Consensus Evaluator"]
+    Evaluator --> Decision{"VQS >= 90 and Safety == 100?"}
+    
+    Decision -->|Yes - Passed| Cert["Issue Signed Quality Certificate (VQC)"]
+    Cert --> Publish["Deploy to Connected Omnichannel Channels"]
+    
+    Decision -->|No - Sub-Threshold| AutoRepair["Auto-Repair Diagnostics Engine"]
+    AutoRepair --> Diff["Generate Surgical Defect Diff & Rationale"]
+    Diff --> Regenerator["Targeted Prompt Regenerator (Max 3 Iterations)"]
+    Regenerator -->|Repaired Patch| Evaluator
+    
+    Regenerator -->|Exceeded 3 Loops| HumanReview["Escalate to Human Co-Pilot Review"]
 ```
 
 1. **Error Diagnosis**: The Veritas engine generates an exact structured defect report highlighting failing sentences, missing citations, or tone mismatches.
