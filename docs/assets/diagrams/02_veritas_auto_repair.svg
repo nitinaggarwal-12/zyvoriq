@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#07090E"/>
+      <stop offset="100%" stop-color="#0D121F"/>
+    </linearGradient>
+    <filter id="tealGlow">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="700" fill="url(#bgGrad2)" rx="16"/>
+  <rect x="1" y="1" width="1198" height="698" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2" rx="15"/>
+
+  <!-- Header -->
+  <text x="50" y="55" fill="#F8FAFC" font-family="sans-serif" font-size="22" font-weight="bold">AI-003: Veritas 5-Axis Quality Consensus &amp; Auto-Repair Engine</text>
+  <rect x="960" y="35" width="190" height="28" rx="14" fill="rgba(20,184,166,0.15)" stroke="#14B8A6" stroke-width="1"/>
+  <text x="980" y="54" fill="#2DD4BF" font-family="sans-serif" font-size="12" font-weight="600">Veritas Assurance Gate</text>
+
+  <!-- Step 1: Draft -->
+  <rect x="80" y="120" width="220" height="90" rx="10" fill="#1E293B" stroke="#64748B" stroke-width="1.5"/>
+  <text x="110" y="155" fill="#F8FAFC" font-family="sans-serif" font-size="15" font-weight="bold">Synthesized Draft</text>
+  <text x="100" y="180" fill="#94A3B8" font-family="sans-serif" font-size="12">Video, Audio, Code, Copy</text>
+
+  <!-- Arrow -->
+  <line x1="300" y1="165" x2="380" y2="165" stroke="#22D3EE" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Step 2: Veritas 5-Axis Evaluator -->
+  <rect x="380" y="100" width="380" height="230" rx="12" fill="#151D2F" stroke="#14B8A6" stroke-width="2" filter="url(#tealGlow)"/>
+  <text x="410" y="135" fill="#2DD4BF" font-family="sans-serif" font-size="16" font-weight="bold">Veritas Multi-Engine Evaluator</text>
+  <text x="410" y="170" fill="#E2E8F0" font-family="sans-serif" font-size="13">1. Factuality &amp; Grounding (Weight: 30%)</text>
+  <text x="410" y="195" fill="#E2E8F0" font-family="sans-serif" font-size="13">2. Brand Voice &amp; Tone Alignment (Weight: 25%)</text>
+  <text x="410" y="220" fill="#E2E8F0" font-family="sans-serif" font-size="13">3. Multi-Engine Consensus (Weight: 20%)</text>
+  <text x="410" y="245" fill="#E2E8F0" font-family="sans-serif" font-size="13">4. Safety &amp; Policy Compliance (Weight: 15% - Gate)</text>
+  <text x="410" y="270" fill="#E2E8F0" font-family="sans-serif" font-size="13">5. Perceptual Humanization (Weight: 10%)</text>
+
+  <text x="410" y="305" fill="#38BDF8" font-family="sans-serif" font-size="13" font-weight="bold">Composite Score: VQS = Σ (w_i × S_i)</text>
+
+  <!-- Decision Fork -->
+  <line x1="760" y1="165" x2="860" y2="165" stroke="#14B8A6" stroke-width="2"/>
+  
+  <!-- Pass Path -->
+  <rect x="860" y="120" width="260" height="90" rx="10" fill="#064E3B" stroke="#10B981" stroke-width="2"/>
+  <text x="890" y="155" fill="#A7F3D0" font-family="sans-serif" font-size="15" font-weight="bold">✓ VQS ≥ 90 (PASS)</text>
+  <text x="890" y="180" fill="#D1FAE5" font-family="sans-serif" font-size="12">Signed VQC &amp; Instant Publish</text>
+
+  <!-- Fail Path -->
+  <line x1="570" y1="330" x2="570" y2="400" stroke="#F43F5E" stroke-width="2"/>
+  
+  <rect x="380" y="400" width="380" height="100" rx="12" fill="#3F1219" stroke="#F43F5E" stroke-width="2"/>
+  <text x="410" y="435" fill="#FECDD3" font-family="sans-serif" font-size="15" font-weight="bold">✗ VQS &lt; 90: Auto-Repair Diagnostics</text>
+  <text x="410" y="460" fill="#FFE4E6" font-family="sans-serif" font-size="12">• Generates targeted error diff &amp; surgical prompt</text>
+  <text x="410" y="480" fill="#FFE4E6" font-family="sans-serif" font-size="12">• Max 3 auto-repair loops before human escalation</text>
+
+  <!-- Loop back line -->
+  <path d="M 380 450 L 190 450 L 190 210" fill="none" stroke="#F43F5E" stroke-width="2" stroke-dasharray="4"/>
+  <text x="210" y="440" fill="#FDA4AF" font-family="sans-serif" font-size="12" font-weight="600">Surgical Diff Regeneration Loop</text>
+</svg>

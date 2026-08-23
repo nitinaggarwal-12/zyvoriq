@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 650" width="100%" height="100%">
+  <rect width="1200" height="650" fill="#07090E" rx="16"/>
+  <rect x="1" y="1" width="1198" height="648" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2" rx="15"/>
+
+  <text x="50" y="55" fill="#F8FAFC" font-family="sans-serif" font-size="22" font-weight="bold">QAT-001: Master QA Test Pyramid &amp; AI Benchmark Quality Gates</text>
+  <rect x="970" y="35" width="180" height="28" rx="14" fill="rgba(16,185,129,0.15)" stroke="#10B981" stroke-width="1"/>
+  <text x="990" y="54" fill="#34D399" font-family="sans-serif" font-size="12" font-weight="600">QA Test Pyramid</text>
+
+  <!-- Pyramid Tier 1 (Top): E2E -->
+  <polygon points="600,100 480,210 720,210" fill="#BE185D" stroke="#F43F5E" stroke-width="2"/>
+  <text x="550" y="175" fill="#FFFFFF" font-family="sans-serif" font-size="13" font-weight="bold">E2E Tests (10%)</text>
+  <text x="535" y="195" fill="#FDA4AF" font-family="sans-serif" font-size="11">Puppeteer / Visual Pixelmatch</text>
+
+  <!-- Pyramid Tier 2: AI Evals -->
+  <polygon points="480,215 720,215 800,340 400,340" fill="#4338CA" stroke="#6366F1" stroke-width="2"/>
+  <text x="500" y="270" fill="#FFFFFF" font-family="sans-serif" font-size="14" font-weight="bold">AI &amp; Veritas Evals (25%)</text>
+  <text x="480" y="295" fill="#C7D2FE" font-family="sans-serif" font-size="12">250 Golden Evaluation Benchmark Suite</text>
+
+  <!-- Pyramid Tier 3: Integration -->
+  <polygon points="400,345 800,345 880,470 320,470" fill="#0F766E" stroke="#14B8A6" stroke-width="2"/>
+  <text x="490" y="400" fill="#FFFFFF" font-family="sans-serif" font-size="14" font-weight="bold">Integration Tests (30%)</text>
+  <text x="440" y="425" fill="#A7F3D0" font-family="sans-serif" font-size="12">API Contracts, Postgres RLS, Redis BullMQ Queues</text>
+
+  <!-- Pyramid Tier 4 (Base): Unit -->
+  <polygon points="320,475 880,475 960,600 240,600" fill="#1E293B" stroke="#38BDF8" stroke-width="2"/>
+  <text x="520" y="530" fill="#FFFFFF" font-family="sans-serif" font-size="14" font-weight="bold">Unit Tests (35%)</text>
+  <text x="440" y="555" fill="#BAE6FD" font-family="sans-serif" font-size="12">Vitest Parsers, VQS Mathematical Formulas, Utilities</text>
+</svg>

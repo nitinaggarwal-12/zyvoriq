@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 650" width="100%" height="100%">
+  <rect width="1200" height="650" fill="#07090E" rx="16"/>
+  <rect x="1" y="1" width="1198" height="648" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2" rx="15"/>
+
+  <text x="50" y="55" fill="#F8FAFC" font-family="sans-serif" font-size="22" font-weight="bold">BUS-001: Legacy 15-Day Agency Process vs. Zyvoriq &lt; 45min Swarm</text>
+  <rect x="970" y="35" width="180" height="28" rx="14" fill="rgba(245,158,11,0.15)" stroke="#F59E0B" stroke-width="1"/>
+  <text x="990" y="54" fill="#FCD34D" font-family="sans-serif" font-size="12" font-weight="600">Business Transformation</text>
+
+  <!-- Legacy Box -->
+  <rect x="50" y="100" width="1100" height="220" rx="12" fill="#1C1917" stroke="#78716C" stroke-width="1.5"/>
+  <text x="70" y="130" fill="#F87171" font-family="sans-serif" font-size="14" font-weight="bold">LEGACY AGENCY WORKFLOW (15 BUSINESS DAYS — $350+/ASSET)</text>
+
+  <rect x="70" y="160" width="120" height="120" rx="8" fill="#292524" stroke="#57534E"/>
+  <text x="85" y="195" fill="#E7E5E4" font-family="sans-serif" font-size="12" font-weight="bold">Briefing Doc</text>
+  <text x="85" y="220" fill="#A8A29E" font-family="sans-serif" font-size="11">Google Doc</text>
+
+  <rect x="230" y="160" width="120" height="120" rx="8" fill="#292524" stroke="#57534E"/>
+  <text x="245" y="195" fill="#E7E5E4" font-family="sans-serif" font-size="12" font-weight="bold">Copywriter</text>
+  <text x="245" y="220" fill="#F87171" font-family="sans-serif" font-size="11">3 Days</text>
+
+  <rect x="390" y="160" width="120" height="120" rx="8" fill="#292524" stroke="#57534E"/>
+  <text x="405" y="195" fill="#E7E5E4" font-family="sans-serif" font-size="12" font-weight="bold">Designer</text>
+  <text x="405" y="220" fill="#F87171" font-family="sans-serif" font-size="11">3 Days</text>
+
+  <rect x="550" y="160" width="120" height="120" rx="8" fill="#292524" stroke="#57534E"/>
+  <text x="565" y="195" fill="#E7E5E4" font-family="sans-serif" font-size="12" font-weight="bold">Voice Actor</text>
+  <text x="565" y="220" fill="#F87171" font-family="sans-serif" font-size="11">2 Days</text>
+
+  <rect x="710" y="160" width="120" height="120" rx="8" fill="#292524" stroke="#57534E"/>
+  <text x="725" y="195" fill="#E7E5E4" font-family="sans-serif" font-size="12" font-weight="bold">Video Editor</text>
+  <text x="725" y="220" fill="#F87171" font-family="sans-serif" font-size="11">4 Days</text>
+
+  <rect x="870" y="160" width="120" height="120" rx="8" fill="#292524" stroke="#57534E"/>
+  <text x="885" y="195" fill="#E7E5E4" font-family="sans-serif" font-size="12" font-weight="bold">Legal Review</text>
+  <text x="885" y="220" fill="#F87171" font-family="sans-serif" font-size="11">3 Days</text>
+
+  <rect x="1030" y="160" width="100" height="120" rx="8" fill="#450A0A" stroke="#DC2626"/>
+  <text x="1040" y="195" fill="#FCA5A5" font-family="sans-serif" font-size="12" font-weight="bold">Manual Post</text>
+  <text x="1040" y="220" fill="#F87171" font-family="sans-serif" font-size="11">Total: 15d</text>
+
+  <!-- Zyvoriq Target Box -->
+  <rect x="50" y="360" width="1100" height="230" rx="12" fill="#0D121F" stroke="#14B8A6" stroke-width="2"/>
+  <text x="70" y="390" fill="#2DD4BF" font-family="sans-serif" font-size="14" font-weight="bold">ZYVORIQ AUTONOMOUS WORKFLOW (&lt; 45 MINUTES — &lt; $0.80/BUNDLE)</text>
+
+  <rect x="70" y="420" width="180" height="130" rx="8" fill="#151D2F" stroke="#38BDF8"/>
+  <text x="90" y="455" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="bold">1. Raw Idea Brief</text>
+  <text x="90" y="480" fill="#94A3B8" font-family="sans-serif" font-size="11">Text, URL, or Voice Memo</text>
+  <text x="90" y="510" fill="#38BDF8" font-family="sans-serif" font-size="11">&lt; 30 Seconds</text>
+
+  <rect x="290" y="420" width="180" height="130" rx="8" fill="#151D2F" stroke="#6366F1"/>
+  <text x="310" y="455" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="bold">2. Director Swarm</text>
+  <text x="310" y="480" fill="#94A3B8" font-family="sans-serif" font-size="11">Parallel Research, Copy, Code</text>
+  <text x="310" y="510" fill="#A5B4FC" font-family="sans-serif" font-size="11">~ 15 Seconds</text>
+
+  <rect x="510" y="420" width="180" height="130" rx="8" fill="#151D2F" stroke="#14B8A6"/>
+  <text x="530" y="455" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="bold">3. Veritas QA Gate</text>
+  <text x="530" y="480" fill="#94A3B8" font-family="sans-serif" font-size="11">Multi-Engine Consensus &amp; Patch</text>
+  <text x="530" y="510" fill="#2DD4BF" font-family="sans-serif" font-size="11">~ 4.5 Seconds</text>
+
+  <rect x="730" y="420" width="180" height="130" rx="8" fill="#151D2F" stroke="#EC4899"/>
+  <text x="750" y="455" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="bold">4. Multimodal Render</text>
+  <text x="750" y="480" fill="#94A3B8" font-family="sans-serif" font-size="11">1080p Video, Audio, Diagrams</text>
+  <text x="750" y="510" fill="#F472B6" font-family="sans-serif" font-size="11">~ 30 Seconds</text>
+
+  <rect x="950" y="420" width="180" height="130" rx="8" fill="#064E3B" stroke="#10B981"/>
+  <text x="965" y="455" fill="#A7F3D0" font-family="sans-serif" font-size="13" font-weight="bold">5. Omnichannel Post</text>
+  <text x="965" y="480" fill="#D1FAE5" font-family="sans-serif" font-size="11">1-Click YouTube, LinkedIn, X</text>
+  <text x="965" y="510" fill="#34D399" font-family="sans-serif" font-size="11">Instant / Scheduled</text>
+</svg>
