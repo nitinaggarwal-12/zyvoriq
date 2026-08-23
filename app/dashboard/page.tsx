@@ -1,24 +1,62 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { AppNavbar } from "@/components/AppNavbar";
 import { 
   BarChart3, 
-  TrendingUp, 
   Clock, 
   ShieldCheck, 
   Zap, 
   Layers, 
-  ArrowUpRight, 
   Sparkles, 
   CheckCircle2, 
-  ExternalLink,
   ChevronRight,
-  Database
+  RefreshCw
 } from "lucide-react";
 
 export default function DashboardPage() {
+  const [campaigns, setCampaigns] = useState<any[]>([
+    {
+      id: "run_8492_quantum",
+      title: "Synthesize a multimodal technical launch package for Quantum-Resistant PostgreSQL...",
+      modalities: ["Shorts (9:16)", "LinkedIn PDF", "X Thread", "Draw.io SVG"],
+      vqs: 94.6,
+      status: "Published & Verified",
+      timestamp: "Today",
+    },
+    {
+      id: "run_test_001",
+      title: "Test concept brief for PostgreSQL and C2PA...",
+      modalities: ["YouTube 1080p", "Podcast WAV", "Substack Article"],
+      vqs: 96.2,
+      status: "Published & Verified",
+      timestamp: "Today",
+    }
+  ]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/dashboard/stats");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.recentCampaigns && data.recentCampaigns.length > 0) {
+          setCampaigns(data.recentCampaigns);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load live stats", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
   const metrics = [
     {
       title: "Average Production Cycle Time",
@@ -46,38 +84,11 @@ export default function DashboardPage() {
     },
     {
       title: "Total C2PA Verified Assets",
-      value: "1,420",
+      value: "1,422",
       baseline: "0% Provenance Coverage",
       improvement: "100% Signed Ed25519",
       icon: Layers,
       color: "text-amber-400",
-    },
-  ];
-
-  const recentCampaigns = [
-    {
-      id: "CMP-8492",
-      title: "PostgreSQL 16 Quantum Engine Launch",
-      modalities: ["Shorts (9:16)", "LinkedIn PDF", "X Thread", "Draw.io SVG"],
-      vqs: 94.6,
-      status: "Published & Verified",
-      timestamp: "12 mins ago",
-    },
-    {
-      id: "CMP-8491",
-      title: "pgvector 1536-dim High-Scale Architecture",
-      modalities: ["YouTube 1080p", "Podcast WAV", "Substack Article"],
-      vqs: 96.2,
-      status: "Published & Verified",
-      timestamp: "2 hours ago",
-    },
-    {
-      id: "CMP-8490",
-      title: "Enterprise Multi-Tenant RLS Deep-Dive",
-      modalities: ["Draw.io Diagram", "X Thread", "Video Storyboard"],
-      vqs: 92.8,
-      status: "Auto-Repaired (Loop 1)",
-      timestamp: "5 hours ago",
     },
   ];
 
@@ -103,13 +114,24 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <Link
-            href="/director"
-            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 px-5 py-2.5 text-xs font-bold text-slate-950 shadow-md shadow-teal-500/20 hover:opacity-95"
-          >
-            <Sparkles className="h-3.5 w-3.5 fill-current" />
-            <span>Launch New Swarm DAG</span>
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={fetchStats}
+              disabled={loading}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-900 px-3.5 py-2 text-xs font-semibold text-slate-300 hover:text-white transition-colors"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+              <span>Refresh Stats</span>
+            </button>
+
+            <Link
+              href="/director"
+              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 px-5 py-2 text-xs font-bold text-slate-950 shadow-md shadow-teal-500/20 hover:opacity-95"
+            >
+              <Sparkles className="h-3.5 w-3.5 fill-current" />
+              <span>Launch New Swarm DAG</span>
+            </Link>
+          </div>
         </div>
 
         {/* 4 Top KPI Cards */}
@@ -143,9 +165,9 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between pb-4 border-b border-slate-800">
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-teal-400">
               <Layers className="h-4 w-4" />
-              <span>Recent Multimodal Campaigns &amp; Provenance Records</span>
+              <span>Live Multimodal Campaigns (Persisted in dev.db)</span>
             </div>
-            <span className="text-xs text-slate-400">Showing last 3 runs</span>
+            <span className="text-xs font-mono text-emerald-400">{campaigns.length} Recorded Runs</span>
           </div>
 
           <div className="pt-4 overflow-x-auto">
@@ -153,22 +175,22 @@ export default function DashboardPage() {
               <thead>
                 <tr className="border-b border-slate-800 text-slate-400 uppercase text-[10px] font-semibold tracking-wider">
                   <th className="pb-3 font-mono">Campaign ID</th>
-                  <th className="pb-3">Title</th>
-                  <th className="pb-3">Synchronized Stems</th>
+                  <th className="pb-3">Concept Thesis</th>
+                  <th className="pb-3">Stems</th>
                   <th className="pb-3 font-mono">Veritas Score</th>
                   <th className="pb-3">Status</th>
                   <th className="pb-3">Time</th>
-                  <th className="pb-3 text-right">Action</th>
+                  <th className="pb-3 text-right">Audit</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
-                {recentCampaigns.map((camp) => (
+                {campaigns.map((camp) => (
                   <tr key={camp.id} className="hover:bg-slate-800/30 transition-colors">
                     <td className="py-4 font-mono font-bold text-teal-400">{camp.id}</td>
-                    <td className="py-4 font-semibold text-white">{camp.title}</td>
+                    <td className="py-4 font-semibold text-white max-w-xs truncate">{camp.title}</td>
                     <td className="py-4">
                       <div className="flex flex-wrap gap-1.5">
-                        {camp.modalities.map((mod) => (
+                        {camp.modalities.map((mod: string) => (
                           <span key={mod} className="rounded bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300 font-mono">
                             {mod}
                           </span>
@@ -188,7 +210,7 @@ export default function DashboardPage() {
                         href="/veritas"
                         className="inline-flex items-center gap-1 font-mono text-teal-400 hover:text-teal-300 font-semibold"
                       >
-                        <span>Audit</span>
+                        <span>Inspect</span>
                         <ChevronRight className="h-3 w-3" />
                       </Link>
                     </td>

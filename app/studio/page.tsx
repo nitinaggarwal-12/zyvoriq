@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import Link from "next/link";
 import { AppNavbar } from "@/components/AppNavbar";
 import { 
@@ -12,29 +12,63 @@ import {
   Sparkles, 
   Play, 
   Pause, 
-  Download, 
   Share2, 
   CheckCircle2, 
-  Lock, 
-  Eye, 
-  Maximize2, 
-  Sliders, 
-  RefreshCw,
-  Copy,
-  ExternalLink,
-  ChevronRight
+  ZoomIn, 
+  ZoomOut,
+  Maximize2
 } from "lucide-react";
 
 export default function StudioPage() {
-  const [activePane, setActivePane] = useState<"all" | "narrative" | "video" | "audio" | "diagram">("all");
   const [aspectRatio, setAspectRatio] = useState<"9:16" | "16:9">("9:16");
-  const [selectedLanguage, setSelectedLanguage] = useState("English (US - Studio Master)");
+  const [selectedLanguage, setSelectedLanguage] = useState("English (US - Studio Master Baritone)");
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [diagramZoom, setDiagramZoom] = useState(1);
+  const [activeTabDiagram, setActiveTabDiagram] = useState<"visual" | "xml">("visual");
+
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const oscRef = useRef<OscillatorNode | null>(null);
+
+  const toggleAudioPreview = () => {
+    if (isPlayingAudio) {
+      if (oscRef.current) {
+        oscRef.current.stop();
+        oscRef.current.disconnect();
+        oscRef.current = null;
+      }
+      setIsPlayingAudio(false);
+    } else {
+      try {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContextClass) {
+          const ctx = new AudioContextClass();
+          audioCtxRef.current = ctx;
+
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(220, ctx.currentTime); // A3 harmonic
+          gain.gain.setValueAtTime(0.1, ctx.currentTime);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start();
+          oscRef.current = osc;
+          setIsPlayingAudio(true);
+        }
+      } catch (e) {
+        console.error("Audio playback error", e);
+        setIsPlayingAudio(true);
+      }
+    }
+  };
 
   const scenes = [
     {
       id: 1,
-      title: "Scene 1: The Bottleneck Hook",
+      title: "Scene 1: The Enterprise Bottleneck",
       narration: "Traditional enterprise content pipelines take 14 days and cost $140,000 per brand line. Zyvoriq collapses this into 90 seconds.",
       videoShot: "Macro cinematic shot of glowing server motherboards with data streams converging into a single quantum core.",
       audioStem: "Deep authoritative baritone + subtle ambient low-frequency synth pad.",
@@ -98,10 +132,13 @@ export default function StudioPage() {
               </button>
             </div>
 
-            <button className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-teal-500 px-5 py-2 text-xs font-bold text-white shadow-md shadow-indigo-500/20 hover:opacity-95">
+            <Link
+              href="/governance"
+              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-teal-500 px-5 py-2 text-xs font-bold text-white shadow-md shadow-indigo-500/20 hover:opacity-95"
+            >
               <Share2 className="h-3.5 w-3.5" />
               <span>Omnichannel Dispatch</span>
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -116,7 +153,7 @@ export default function StudioPage() {
                 <span>Pane 1: Narrative &amp; Storyboard Script (Claude 3.5 Sonnet)</span>
               </div>
               <span className="rounded bg-teal-950 px-2 py-0.5 text-[10px] font-mono text-teal-300 border border-teal-800/40">
-                Persona Tone: 0.94 Cosine
+                Persona Tone: 0.94 Match
               </span>
             </div>
 
@@ -125,7 +162,7 @@ export default function StudioPage() {
                 <div key={scene.id} className="rounded-xl border border-slate-800/80 bg-obsidian-950/80 p-4">
                   <div className="flex items-center justify-between pb-2">
                     <span className="font-mono text-xs font-bold text-indigo-300">{scene.title}</span>
-                    <span className="text-[10px] font-mono text-emerald-400">✓ Fact Anchored</span>
+                    <span className="text-[10px] font-mono text-emerald-400">✓ Ground Truth Anchored</span>
                   </div>
                   <p className="text-xs text-slate-200 leading-relaxed font-sans">{scene.narration}</p>
                 </div>
@@ -183,7 +220,6 @@ export default function StudioPage() {
                   <option>German (DE - Tech Narrative)</option>
                   <option>Japanese (JA - Executive Pitch)</option>
                   <option>Spanish (ES - Latin America Commercial)</option>
-                  <option>French (FR - Parisian Studio)</option>
                 </select>
               </div>
 
@@ -192,21 +228,21 @@ export default function StudioPage() {
                 <div className="flex items-center justify-between pb-3">
                   <span className="text-xs font-mono font-bold text-emerald-300">Vocal Waveform &amp; Gold Karaoke Sync</span>
                   <button
-                    onClick={() => setIsPlayingAudio(!isPlayingAudio)}
-                    className="flex items-center gap-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 px-3 py-1 text-xs font-mono text-emerald-300 hover:bg-emerald-500/30"
+                    onClick={toggleAudioPreview}
+                    className="flex items-center gap-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 px-3 py-1 text-xs font-mono text-emerald-300 hover:bg-emerald-500/30 transition-colors"
                   >
                     {isPlayingAudio ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3 fill-current" />}
-                    <span>{isPlayingAudio ? "Pause Stem" : "Preview Stem"}</span>
+                    <span>{isPlayingAudio ? "Stop Stem Audio" : "Play Stem Audio (Web Audio)"}</span>
                   </button>
                 </div>
 
-                {/* Simulated Audio Bars */}
+                {/* Animated Audio Bars */}
                 <div className="flex items-center gap-1 h-12 py-2">
                   {[40, 65, 85, 30, 95, 75, 45, 90, 60, 80, 100, 50, 70, 90, 35, 85, 60, 45, 95, 70, 80, 55, 65, 90, 40].map((h, i) => (
                     <div
                       key={i}
                       className="flex-1 bg-gradient-to-t from-emerald-500/40 to-teal-400 rounded-full transition-all duration-150"
-                      style={{ height: `${isPlayingAudio ? Math.min(100, h + Math.random() * 20) : h}%` }}
+                      style={{ height: `${isPlayingAudio ? Math.min(100, h + Math.sin(Date.now() / 200 + i) * 30) : h}%` }}
                     />
                   ))}
                 </div>
@@ -219,21 +255,73 @@ export default function StudioPage() {
             <div className="flex items-center justify-between pb-4 border-b border-slate-800">
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-400">
                 <Code className="h-4 w-4" />
-                <span>Pane 4: Draw.io Vector Diagram Canvas (mxGraph AST)</span>
+                <span>Pane 4: Draw.io Vector Architecture Canvas</span>
               </div>
-              <span className="rounded bg-amber-950 px-2 py-0.5 text-[10px] font-mono text-amber-300 border border-amber-800/40">
-                2D Auto-Healed (30px Pad)
-              </span>
+              <div className="flex items-center gap-1 rounded-lg border border-slate-800 bg-slate-950 p-1 text-xs font-semibold">
+                <button
+                  onClick={() => setActiveTabDiagram("visual")}
+                  className={`px-2 py-0.5 rounded ${activeTabDiagram === "visual" ? "bg-amber-500/20 text-amber-300" : "text-slate-400"}`}
+                >
+                  SVG Render
+                </button>
+                <button
+                  onClick={() => setActiveTabDiagram("xml")}
+                  className={`px-2 py-0.5 rounded ${activeTabDiagram === "xml" ? "bg-amber-500/20 text-amber-300" : "text-slate-400"}`}
+                >
+                  mxGraph XML
+                </button>
+              </div>
             </div>
 
             <div className="pt-4 flex flex-col gap-4">
-              <div className="rounded-xl border border-slate-800 bg-obsidian-950 p-4">
-                <div className="flex items-center justify-between pb-2">
-                  <span className="text-xs font-mono font-bold text-amber-300">Generated XML Graph Coordinates</span>
-                  <span className="text-[10px] font-mono text-emerald-400">✓ 0 Node Collisions</span>
-                </div>
+              {activeTabDiagram === "visual" ? (
+                <div className="rounded-xl border border-slate-800 bg-obsidian-950 p-4 relative overflow-hidden flex items-center justify-center min-h-[220px]">
+                  {/* Interactive SVG Diagram Preview */}
+                  <svg viewBox="0 0 500 200" className="w-full h-auto max-h-[200px]" style={{ transform: `scale(${diagramZoom})` }}>
+                    <rect x="20" y="30" width="130" height="60" rx="8" fill="#F0FDFA" stroke="#0D9488" strokeWidth="1.5" />
+                    <text x="35" y="55" fill="#0F766E" fontSize="10" fontWeight="bold">Client BFF Gateway</text>
+                    <text x="35" y="72" fill="#334155" fontSize="8">Rate Limiter &amp; Auth</text>
 
-                <pre className="text-[11px] font-mono text-slate-300/90 leading-relaxed overflow-x-auto p-2 bg-slate-950 rounded-lg border border-slate-800">
+                    <line x1="150" y1="60" x2="190" y2="60" stroke="#0D9488" strokeWidth="2" markerEnd="url(#arr)" />
+
+                    <rect x="190" y="30" width="140" height="60" rx="8" fill="#EEF2FF" stroke="#6366F1" strokeWidth="1.5" />
+                    <text x="205" y="55" fill="#4338CA" fontSize="10" fontWeight="bold">Director Swarm DAG</text>
+                    <text x="205" y="72" fill="#334155" fontSize="8">Task Decomposition</text>
+
+                    <line x1="330" y1="60" x2="370" y2="60" stroke="#6366F1" strokeWidth="2" />
+
+                    <rect x="370" y="30" width="110" height="60" rx="8" fill="#DCFCE7" stroke="#16A34A" strokeWidth="1.5" />
+                    <text x="382" y="55" fill="#166534" fontSize="10" fontWeight="bold">Veritas VQC Gate</text>
+                    <text x="382" y="72" fill="#334155" fontSize="8">VQS 94.6 (PASS)</text>
+
+                    <line x1="260" y1="90" x2="260" y2="130" stroke="#6366F1" strokeWidth="1.5" strokeDasharray="3 3" />
+
+                    <rect x="190" y="130" width="140" height="50" rx="8" fill="#FFFBEB" stroke="#D97706" strokeWidth="1.5" />
+                    <text x="205" y="152" fill="#92400E" fontSize="9" fontWeight="bold">pgvector 1536 Memory</text>
+                    <text x="205" y="168" fill="#334155" fontSize="8">ivfflat Cosine &lt; 0.15</text>
+                  </svg>
+
+                  {/* Zoom Controls */}
+                  <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-slate-900/90 rounded-lg p-1 border border-slate-800">
+                    <button
+                      onClick={() => setDiagramZoom(Math.max(0.8, diagramZoom - 0.1))}
+                      className="p-1 text-slate-400 hover:text-white"
+                      title="Zoom Out"
+                    >
+                      <ZoomOut className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setDiagramZoom(Math.min(1.4, diagramZoom + 0.1))}
+                      className="p-1 text-slate-400 hover:text-white"
+                      title="Zoom In"
+                    >
+                      <ZoomIn className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-slate-800 bg-obsidian-950 p-4">
+                  <pre className="text-[11px] font-mono text-slate-300/90 leading-relaxed overflow-x-auto p-2 bg-slate-950 rounded-lg border border-slate-800 max-h-[190px]">
 {`<mxfile host="zyvoriq-studio">
   <root>
     <mxCell id="0"/>
@@ -246,8 +334,9 @@ export default function StudioPage() {
     </mxCell>
   </root>
 </mxfile>`}
-                </pre>
-              </div>
+                  </pre>
+                </div>
+              )}
             </div>
           </div>
 

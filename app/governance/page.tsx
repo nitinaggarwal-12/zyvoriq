@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { AppNavbar } from "@/components/AppNavbar";
 import { 
@@ -9,54 +9,53 @@ import {
   Key, 
   FileText, 
   CheckCircle2, 
-  AlertTriangle, 
-  RotateCcw, 
   Download, 
-  Copy, 
-  ExternalLink, 
   Plus, 
-  Trash2,
-  Cpu,
-  BarChart3
+  RefreshCw
 } from "lucide-react";
 
 export default function GovernancePage() {
   const [apiKeyCreated, setApiKeyCreated] = useState(false);
-
-  const auditLogs = [
+  const [logs, setLogs] = useState<any[]>([
     {
-      id: "LOG-9841",
-      timestamp: "2026-08-23T11:45:12Z",
+      id: "LOG-vqc_89f3a12ce94",
+      timestamp: "Today",
       agent: "Agent 9 (Omnichannel Publisher)",
-      action: "C2PA Manifest Injected into Master MP4",
+      action: "C2PA Manifest Injected & Ed25519 Signed",
       hash: "sha256:7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069",
-      status: "VERIFIED",
+      status: "SEALED",
     },
     {
-      id: "LOG-9840",
-      timestamp: "2026-08-23T11:44:58Z",
-      agent: "Agent 7 (Veritas Consensus)",
-      action: "Issued Cryptographic VQC Certificate (VQS 94.6)",
-      hash: "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      status: "PASSED",
-    },
-    {
-      id: "LOG-9839",
-      timestamp: "2026-08-23T11:44:10Z",
-      agent: "Agent 2 (Research Grounding)",
-      action: "Cross-examined 6 claims via Google Grounding API",
-      hash: "sha256:ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      status: "ANCHORED",
-    },
-    {
-      id: "LOG-9838",
-      timestamp: "2026-08-23T11:43:00Z",
-      agent: "Agent 1 (Director DAG)",
-      action: "Dispatched Parallel Swarm Run #8492",
+      id: "LOG-run_8492_quantum",
+      timestamp: "Today",
+      agent: "Agent 1 (Director Swarm DAG)",
+      action: "Ingested Concept Prompt: Synthesize a multimodal technical launch package...",
       hash: "sha256:88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
-      status: "INITIATED",
-    },
-  ];
+      status: "RECORDED",
+    }
+  ]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchLogs = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/governance/logs");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.auditTrail && data.auditTrail.length > 0) {
+          setLogs(data.auditTrail);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load live logs", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs();
+  }, []);
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-slate-100 selection:bg-teal-500/30 selection:text-teal-200">
@@ -82,11 +81,20 @@ export default function GovernancePage() {
 
           <div className="flex items-center gap-3">
             <button
+              onClick={fetchLogs}
+              disabled={loading}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-900 px-3.5 py-2 text-xs font-semibold text-slate-300 hover:text-white transition-colors"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+              <span>Refresh Logs</span>
+            </button>
+
+            <button
               onClick={() => setApiKeyCreated(true)}
               className="flex items-center gap-2 rounded-xl bg-teal-500 px-4 py-2 text-xs font-bold text-slate-950 shadow-md hover:bg-teal-400"
             >
               <Plus className="h-3.5 w-3.5" />
-              <span>Generate API Key</span>
+              <span>{apiKeyCreated ? "Key Created" : "Generate API Key"}</span>
             </button>
           </div>
         </div>
@@ -100,13 +108,13 @@ export default function GovernancePage() {
               <div className="flex items-center justify-between pb-4 border-b border-slate-800">
                 <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-teal-400">
                   <FileText className="h-4 w-4" />
-                  <span>Immutable Cryptographic Audit Trail (PostgreSQL RLS)</span>
+                  <span>Immutable Cryptographic Audit Trail (PostgreSQL RLS / dev.db)</span>
                 </div>
-                <span className="text-xs font-mono text-emerald-400">Hardware Sealed</span>
+                <span className="text-xs font-mono text-emerald-400">{logs.length} Logged Entries</span>
               </div>
 
-              <div className="pt-4 flex flex-col gap-3.5">
-                {auditLogs.map((log) => (
+              <div className="pt-4 flex flex-col gap-3.5 max-h-[580px] overflow-y-auto pr-1">
+                {logs.map((log) => (
                   <div key={log.id} className="rounded-xl border border-slate-800/70 bg-obsidian-950/80 p-4">
                     <div className="flex items-center justify-between pb-1 text-xs">
                       <span className="font-mono font-bold text-white">{log.agent}</span>

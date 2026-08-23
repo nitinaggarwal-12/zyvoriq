@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Sparkles, ShieldCheck, ArrowUpRight, Menu, X, Terminal, BookOpen } from "lucide-react";
+import Link from "next/link";
+import { Sparkles, ShieldCheck, ArrowUpRight, Menu, X, Terminal, Layers, Lock, BarChart3 } from "lucide-react";
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -10,8 +11,8 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-slate-800/70 bg-obsidian-950/85 backdrop-blur-2xl transition-all duration-200">
       <div className="mx-auto flex h-20 max-w-8xl items-center justify-between px-6 md:px-12 lg:px-16">
         {/* Brand */}
-        <a
-          href="#top"
+        <Link
+          href="/"
           className="group flex items-center gap-3.5 text-slate-100 transition-opacity hover:opacity-90"
           aria-label="Zyvoriq home"
         >
@@ -28,48 +29,45 @@ export function Navbar() {
               Autonomous Intelligence
             </span>
           </div>
-        </a>
+        </Link>
 
         {/* Desktop Nav Links */}
-        <nav className="hidden items-center gap-8 text-sm font-medium text-slate-300 lg:flex" aria-label="Primary navigation">
-          <a
-            href="#director"
+        <nav className="hidden items-center gap-6 text-sm font-medium text-slate-300 lg:flex" aria-label="Primary navigation">
+          <Link
+            href="/director"
             className="flex items-center gap-1.5 transition-colors hover:text-teal-300"
           >
             <Terminal className="h-4 w-4 text-teal-400/80" />
             Director Console
-          </a>
-          <a
-            href="#lifecycle"
-            className="transition-colors hover:text-teal-300"
-          >
-            Lifecycle Architecture
-          </a>
-          <a
-            href="#veritas"
-            className="flex items-center gap-1.5 transition-colors hover:text-teal-300"
+          </Link>
+          <Link
+            href="/veritas"
+            className="flex items-center gap-1.5 transition-colors hover:text-emerald-300"
           >
             <ShieldCheck className="h-4 w-4 text-emerald-400/80" />
             Veritas QA
-          </a>
-          <a
-            href="#multimodal"
-            className="transition-colors hover:text-teal-300"
+          </Link>
+          <Link
+            href="/studio"
+            className="flex items-center gap-1.5 transition-colors hover:text-indigo-300"
           >
+            <Layers className="h-4 w-4 text-indigo-400/80" />
             Multimodal Studio
-          </a>
-          <a
-            href="#autonomy"
-            className="transition-colors hover:text-teal-300"
+          </Link>
+          <Link
+            href="/governance"
+            className="flex items-center gap-1.5 transition-colors hover:text-amber-300"
           >
-            Autonomy Policy
-          </a>
-          <a
-            href="#use-cases"
-            className="transition-colors hover:text-teal-300"
+            <Lock className="h-4 w-4 text-amber-400/80" />
+            Governance
+          </Link>
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-1.5 transition-colors hover:text-teal-300"
           >
-            Solutions
-          </a>
+            <BarChart3 className="h-4 w-4 text-teal-400/80" />
+            Analytics
+          </Link>
         </nav>
 
         {/* Action Controls & Live Status */}
@@ -79,99 +77,99 @@ export function Navbar() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
             </span>
-            <span>QGV-001 Governed</span>
+            <span>VQC Governed</span>
           </div>
 
-          <a
-            href="#waitlist"
+          <Link
+            href="/dashboard"
             className="rounded-xl border border-slate-700/80 bg-slate-900/60 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-200 backdrop-blur transition-all duration-200 hover:border-slate-600 hover:bg-slate-800"
           >
-            Join Early Access
-          </a>
+            Dashboard
+          </Link>
 
-          <a
-            href="#director"
+          <Link
+            href="/director"
             className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 via-emerald-400 to-teal-500 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-slate-950 shadow-lg shadow-teal-500/20 transition-all duration-200 hover:scale-[1.02] hover:shadow-teal-500/30 active:scale-[0.98]"
           >
             <Sparkles className="h-3.5 w-3.5" />
-            <span>Launch Director</span>
-          </a>
+            <span>Launch Mission Control</span>
+          </Link>
         </div>
 
         {/* Mobile menu trigger */}
-        <button
-          type="button"
-          className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-800 bg-slate-900 text-slate-200 lg:hidden"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle navigation menu"
-        >
-          {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+        <div className="flex items-center gap-2 lg:hidden">
+          <button
+            type="button"
+            className="inline-flex items-center justify-center rounded-xl p-2.5 text-slate-300 hover:bg-slate-800 hover:text-white focus:outline-none"
+            aria-controls="mobile-menu"
+            aria-expanded={mobileMenuOpen}
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            <span className="sr-only">Open main menu</span>
+            {mobileMenuOpen ? (
+              <X className="block h-6 w-6" aria-hidden="true" />
+            ) : (
+              <Menu className="block h-6 w-6" aria-hidden="true" />
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* Mobile Drawer */}
+      {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div className="border-b border-slate-800 bg-obsidian-950/95 px-6 py-6 backdrop-blur-2xl lg:hidden">
-          <nav className="flex flex-col gap-4 text-base font-semibold text-slate-200">
-            <a
-              href="#director"
+        <div className="border-b border-slate-800 bg-obsidian-950/98 px-6 py-6 backdrop-blur-2xl lg:hidden" id="mobile-menu">
+          <div className="space-y-4">
+            <Link
+              href="/director"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 py-2 text-teal-300"
+              className="flex items-center gap-3 rounded-xl px-3 py-2 text-base font-semibold text-slate-200 hover:bg-slate-800/80 hover:text-teal-300"
             >
-              <Terminal className="h-4 w-4" /> Director Console
-            </a>
-            <a
-              href="#lifecycle"
+              <Terminal className="h-5 w-5 text-teal-400" />
+              Director Console
+            </Link>
+            <Link
+              href="/veritas"
               onClick={() => setMobileMenuOpen(false)}
-              className="py-2 hover:text-teal-300"
+              className="flex items-center gap-3 rounded-xl px-3 py-2 text-base font-semibold text-slate-200 hover:bg-slate-800/80 hover:text-emerald-300"
             >
-              Lifecycle Architecture
-            </a>
-            <a
-              href="#veritas"
+              <ShieldCheck className="h-5 w-5 text-emerald-400" />
+              Veritas QA Inspector
+            </Link>
+            <Link
+              href="/studio"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 py-2 hover:text-teal-300"
+              className="flex items-center gap-3 rounded-xl px-3 py-2 text-base font-semibold text-slate-200 hover:bg-slate-800/80 hover:text-indigo-300"
             >
-              <ShieldCheck className="h-4 w-4 text-emerald-400" /> Veritas QA Gate
-            </a>
-            <a
-              href="#multimodal"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-2 hover:text-teal-300"
-            >
+              <Layers className="h-5 w-5 text-indigo-400" />
               Multimodal Studio
-            </a>
-            <a
-              href="#autonomy"
+            </Link>
+            <Link
+              href="/governance"
               onClick={() => setMobileMenuOpen(false)}
-              className="py-2 hover:text-teal-300"
+              className="flex items-center gap-3 rounded-xl px-3 py-2 text-base font-semibold text-slate-200 hover:bg-slate-800/80 hover:text-amber-300"
             >
-              Autonomy Policy
-            </a>
-            <a
-              href="#use-cases"
+              <Lock className="h-5 w-5 text-amber-400" />
+              Governance &amp; C2PA
+            </Link>
+            <Link
+              href="/dashboard"
               onClick={() => setMobileMenuOpen(false)}
-              className="py-2 hover:text-teal-300"
+              className="flex items-center gap-3 rounded-xl px-3 py-2 text-base font-semibold text-slate-200 hover:bg-slate-800/80 hover:text-teal-300"
             >
-              Solutions
-            </a>
-            <div className="mt-4 flex flex-col gap-3 pt-4 border-t border-slate-800">
-              <a
-                href="#director"
+              <BarChart3 className="h-5 w-5 text-teal-400" />
+              Analytics Dashboard
+            </Link>
+            <div className="pt-4">
+              <Link
+                href="/director"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 to-emerald-400 py-3 text-center text-xs font-black uppercase text-slate-950"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 to-emerald-400 py-3 text-center text-sm font-black uppercase tracking-wider text-slate-950 shadow-lg"
               >
-                Launch Director Console
-              </a>
-              <a
-                href="#waitlist"
-                onClick={() => setMobileMenuOpen(false)}
-                className="rounded-xl border border-slate-700 bg-slate-900 py-3 text-center text-xs font-bold uppercase text-slate-200"
-              >
-                Request Early Access
-              </a>
+                <Sparkles className="h-4 w-4" />
+                <span>Launch Mission Control</span>
+              </Link>
             </div>
-          </nav>
+          </div>
         </div>
       )}
     </header>
