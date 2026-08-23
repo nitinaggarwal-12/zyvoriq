@@ -1,38 +1,58 @@
-# Zyvoriq
+# Zyvoriq — AI-Native Idea-to-Impact Platform
 
-Zyvoriq is an AI-native idea-to-impact platform for creating, assuring, adapting, publishing, and continuously improving high-quality humanized content across channels.
+Zyvoriq is an enterprise-grade, AI-native platform designed for creating, evaluating, adapting, publishing, and continuously optimizing high-impact humanized multimodal content across all channels.
 
-## Homepage
+---
 
-The repository now includes the first production-style homepage built with Next.js + React + TypeScript.
+## 🚀 Key Platform Capabilities & Modular Architecture
 
-### Run locally
+The frontend is built with **Next.js 15**, **React 19**, **TypeScript**, and **Tailwind CSS**, featuring high-craft dark glassmorphic design and interactive simulations:
+
+- **Director Console (`DirectorConsole.tsx`)**: Interactive prompt director simulation with agent step breakdown, asset synthesis, and confidence metrics.
+- **Veritas Quality Matrix (`VeritasQualityMatrix.tsx`)**: Real-time evaluation scoring across Factuality, Tone Alignment, Multi-Engine Consensus, Compliance, and Perceptual Humanization.
+- **Multimodal Studio (`MultimodalStudio.tsx`)**: Interactive preview engine covering Video briefs, Neural Audio Dubbing, Code Architecture, and Visual Infographics.
+- **Autonomy & Governance Guardrails (`AutonomyPolicyControls.tsx`)**: Dynamic autonomy policy sliders (Supervised, Co-Pilot, Full Autonomous) with cryptographic audit trails and approval triggers.
+- **Idea-to-Impact Lifecycle (`LifecycleFlow.tsx`)**: End-to-end visualization of the idea ingestion, synthesis, evaluation, omni-channel distribution, and telemetry feedback loop.
+- **Targeted Use Cases (`UseCasesSection.tsx`)**: Tailored workflows for Enterprise Marketing, Developer DevRel, Creator Studios, and Executive Briefings.
+- **Waitlist & Access Tier Selection (`WaitlistCTA.tsx`)**: Interactive early-access onboarding with team role and volume tier customization.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Framework**: [Next.js 15](https://nextjs.org/) (App Router)
+- **UI Engine**: [React 19](https://react.dev/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) with obsidian glassmorphic design tokens
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Type Safety**: [TypeScript 5](https://www.typescriptlang.org/)
+
+---
+
+## 🏃 Local Development
 
 ```bash
+# Install dependencies
 npm install
+
+# Start local development server
 npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm run start
 ```
 
-Then open `http://localhost:3000`.
+Open [http://localhost:3000](http://localhost:3000) with your browser to view the application.
 
-### Homepage capabilities
+---
 
-- Responsive desktop/mobile navigation
-- Interactive Zyvoriq Director prompt experience
-- Creator / founder / student demo modes
-- Product capability narrative
-- Idea-to-impact workflow visualization
-- Content Quality / Publish Confidence section
-- Use-case paths
-- Interactive early-access form state
-- Responsive layout and accessibility labels
-
-## Product documentation
+## 📚 Product & Engineering Documentation
 
 - [Product & Engineering Documentation Blueprint](docs/product/Zyvoriq_Product_Engineering_Documentation_Blueprint.md)
 
-The blueprint defines the controlled artifact inventory, document IDs, ownership, dependencies, sequencing, P0/P1/P2 priorities, reusable templates, end-to-end traceability, and centralized quality-governance gates from strategy through GA.
-
-## Documentation lifecycle
-
-**VISION → BRD → PRD → IA/UX → FRD/FDD → NFR → HLD/SDD → LLD/TDD → API/DATA/AI SPECS → EPICS/STORIES → TEST/EVALS → BUILD → UAT → RELEASE → OPERATE → MEASURE → LEARN**
+### Lifecycle Blueprint
+```
+VISION → BRD → PRD → IA/UX → FRD/FDD → NFR → HLD/SDD → LLD/TDD → API/DATA/AI SPECS → EPICS/STORIES → TEST/EVALS → BUILD → UAT → RELEASE → OPERATE → MEASURE → LEARN
+```
