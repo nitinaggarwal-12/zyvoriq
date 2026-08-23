@@ -1,20 +1,34 @@
 import { NextResponse } from "next/server";
+import { db } from "@/lib/db/client";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { prompt, personaTone, autonomyMode, targetChannels } = body;
+    const { prompt, personaTone, autonomyMode, targetChannels, workspaceId } = body;
 
     if (!prompt) {
       return NextResponse.json({ error: "Missing required prompt parameter" }, { status: 400 });
     }
 
-    const taskId = `task_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const taskId = `run_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const wsId = workspaceId || "ws_tech_eng";
+
+    // Persist Swarm Run into Database
+    db.createSwarmRun({
+      id: taskId,
+      workspace_id: wsId,
+      concept_prompt: prompt,
+      dag_state: {
+        autonomyMode: autonomyMode || "auto",
+        personaTone: personaTone || "Engineering-First",
+        targetChannels: targetChannels || ["shorts", "linkedin", "x", "diagram"]
+      }
+    });
 
     return NextResponse.json({
       taskId,
       status: "queued",
-      message: "Swarm DAG compiled and scheduled across 9 specialized foundation agents",
+      message: "Swarm DAG compiled and persisted to database (dev.db)",
       dag: {
         root: "Agent 1: Director Swarm DAG Compiler (Gemini 2.5 Pro)",
         parallelWorkers: [
