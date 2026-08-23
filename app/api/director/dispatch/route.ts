@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
+import { modelRouter } from "@/lib/ai/router";
 
 export async function POST(req: Request) {
   try {
@@ -13,7 +14,13 @@ export async function POST(req: Request) {
     const taskId = `run_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const wsId = workspaceId || "ws_tech_eng";
 
-    // Persist Swarm Run into Database
+    // 1. Dispatch Research & Grounding (Gemini 2.5 Pro)
+    const claims = await modelRouter.dispatchGroundingResearch(prompt);
+
+    // 2. Dispatch Scripting & AST (Claude 3.5 Sonnet)
+    const scenes = await modelRouter.dispatchScriptingAndAst(prompt, personaTone || "Engineering-First", claims);
+
+    // 3. Persist Swarm Run into Database
     db.createSwarmRun({
       id: taskId,
       workspace_id: wsId,
@@ -21,14 +28,18 @@ export async function POST(req: Request) {
       dag_state: {
         autonomyMode: autonomyMode || "auto",
         personaTone: personaTone || "Engineering-First",
-        targetChannels: targetChannels || ["shorts", "linkedin", "x", "diagram"]
+        targetChannels: targetChannels || ["shorts", "linkedin", "x", "diagram"],
+        claimsCount: claims.length,
+        scenesCount: scenes.length
       }
     });
 
     return NextResponse.json({
       taskId,
       status: "queued",
-      message: "Swarm DAG compiled and persisted to database (dev.db)",
+      message: "Swarm DAG compiled and scheduled across Gemini 2.5 Pro & Claude 3.5 Sonnet",
+      claims,
+      scenes,
       dag: {
         root: "Agent 1: Director Swarm DAG Compiler (Gemini 2.5 Pro)",
         parallelWorkers: [

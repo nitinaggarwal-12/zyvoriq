@@ -1,29 +1,19 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
+import { modelRouter } from "@/lib/ai/router";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { draftText, factClaims, brandVector, artifactId } = body;
 
-    // Deterministic 5-Axis VQS Computation
-    const factualityScore = 96.0;
-    const brandVoiceScore = 92.5;
-    const consensusScore = 95.0;
-    const safetyPolicyScore = 100.0; // Hard Gate
-    const humanizationScore = 91.0;
+    // Execute Consensus via Model Router
+    const evaluation = modelRouter.evaluateVeritasConsensus({
+      text: draftText,
+      claimsCount: factClaims?.length || 3
+    });
 
-    const compositeVQS = Number(
-      (
-        0.30 * factualityScore +
-        0.25 * brandVoiceScore +
-        0.20 * consensusScore +
-        0.15 * safetyPolicyScore +
-        0.10 * humanizationScore
-      ).toFixed(2)
-    );
-
-    const isPassed = compositeVQS >= 90.0 && safetyPolicyScore === 100.0;
+    const isPassed = evaluation.gateDecision === "pass";
     const evalId = `eval_${Date.now()}`;
     const artId = artifactId || "art_master_package_8492";
 
@@ -31,13 +21,13 @@ export async function POST(req: Request) {
     db.recordVeritasEvaluation({
       id: evalId,
       artifact_id: artId,
-      composite_vqs: compositeVQS,
-      factuality_score: factualityScore,
-      brand_tone_score: brandVoiceScore,
-      consensus_score: consensusScore,
+      composite_vqs: evaluation.compositeVQS,
+      factuality_score: evaluation.factualityScore,
+      brand_tone_score: evaluation.brandVoiceScore,
+      consensus_score: evaluation.consensusScore,
       safety_policy_passed: isPassed,
-      humanization_score: humanizationScore,
-      gate_decision: isPassed ? "pass" : "repair"
+      humanization_score: evaluation.humanizationScore,
+      gate_decision: evaluation.gateDecision
     });
 
     let certificate = null;
@@ -62,15 +52,15 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       evaluationId: evalId,
-      compositeVQS,
+      compositeVQS: evaluation.compositeVQS,
       isPassed,
       decision: isPassed ? "PASS_APPROVED" : "SURGICAL_REPAIR_TRIGGERED",
       axisBreakdown: {
-        factuality: { score: factualityScore, weight: 0.30, status: "PASS" },
-        brandVoice: { score: brandVoiceScore, weight: 0.25, status: "PASS" },
-        consensus: { score: consensusScore, weight: 0.20, status: "PASS" },
-        safetyGate: { score: safetyPolicyScore, weight: 0.15, status: "HARD_GATE_PASS" },
-        humanization: { score: humanizationScore, weight: 0.10, status: "PASS" }
+        factuality: { score: evaluation.factualityScore, weight: 0.30, status: "PASS" },
+        brandVoice: { score: evaluation.brandVoiceScore, weight: 0.25, status: "PASS" },
+        consensus: { score: evaluation.consensusScore, weight: 0.20, status: "PASS" },
+        safetyGate: { score: evaluation.safetyPolicyScore, weight: 0.15, status: "HARD_GATE_PASS" },
+        humanization: { score: evaluation.humanizationScore, weight: 0.10, status: "PASS" }
       },
       certificate
     });
