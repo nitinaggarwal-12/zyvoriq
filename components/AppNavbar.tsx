@@ -7,21 +7,20 @@ import {
   Terminal, 
   ShieldCheck, 
   Layers, 
-  FileText, 
   BarChart3, 
   Sparkles, 
   Lock, 
-  Sliders, 
   ChevronDown, 
   Activity, 
-  Zap, 
-  ArrowUpRight,
-  RefreshCw
+  Menu,
+  X,
+  ChevronRight
 } from "lucide-react";
 
 export function AppNavbar() {
   const pathname = usePathname();
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeWorkspace, setActiveWorkspace] = useState("Enterprise Core (US-East)");
 
   const navItems = [
@@ -34,30 +33,30 @@ export function AppNavbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-obsidian-950/90 backdrop-blur-2xl transition-all duration-200">
-      <div className="mx-auto flex h-20 max-w-8xl items-center justify-between px-6 md:px-12 lg:px-16">
+      <div className="mx-auto flex h-20 max-w-8xl items-center justify-between px-4 sm:px-6 md:px-12 lg:px-16">
         
         {/* Brand & Workspace Switcher */}
-        <div className="flex items-center gap-6">
-          <Link href="/" className="group flex items-center gap-3.5" aria-label="Zyvoriq Home">
+        <div className="flex items-center gap-4 sm:gap-6">
+          <Link href="/" className="group flex items-center gap-3" aria-label="Zyvoriq Home">
             <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 via-emerald-500 to-cyan-600 p-[1px] shadow-lg shadow-teal-500/20 group-hover:scale-105 transition-transform">
               <div className="flex h-full w-full items-center justify-center rounded-[11px] bg-obsidian-950 font-mono text-lg font-black text-teal-300">
                 Z
               </div>
             </div>
             <div className="flex flex-col">
-              <span className="font-mono text-xl font-extrabold tracking-tight text-white flex items-center gap-1">
+              <span className="font-mono text-lg sm:text-xl font-extrabold tracking-tight text-white flex items-center gap-1">
                 ZYVORIQ<span className="text-teal-400">.</span>
                 <span className="rounded bg-teal-950/80 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-teal-400 border border-teal-800/50">
                   Engine
                 </span>
               </span>
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+              <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-slate-400">
                 Autonomous Intelligence
               </span>
             </div>
           </Link>
 
-          {/* Workspace Dropdown */}
+          {/* Workspace Dropdown (Desktop) */}
           <div className="relative hidden xl:block">
             <button
               onClick={() => setWorkspaceMenuOpen(!workspaceMenuOpen)}
@@ -95,8 +94,8 @@ export function AppNavbar() {
           </div>
         </div>
 
-        {/* Center Route Tabs */}
-        <nav className="hidden md:flex items-center gap-1.5 rounded-xl border border-slate-800/80 bg-slate-950/60 p-1.5 backdrop-blur-md">
+        {/* Center Route Tabs (Desktop) */}
+        <nav className="hidden lg:flex items-center gap-1.5 rounded-xl border border-slate-800/80 bg-slate-950/60 p-1.5 backdrop-blur-md">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -124,22 +123,61 @@ export function AppNavbar() {
           })}
         </nav>
 
-        {/* Right Status Badges & Quick Action */}
-        <div className="flex items-center gap-3.5">
-          <div className="hidden lg:flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3 py-1 text-xs text-emerald-300">
+        {/* Right Action & Mobile Toggle */}
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3 py-1 text-xs text-emerald-300">
             <Activity className="h-3.5 w-3.5 text-emerald-400 animate-spin" style={{ animationDuration: '3s' }} />
-            <span className="font-mono text-[11px] font-bold">9 Swarm Agents Online</span>
+            <span className="font-mono text-[11px] font-bold">9 Swarms Online</span>
           </div>
 
           <Link
             href="/director"
-            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 px-4 py-2 text-xs font-bold text-slate-950 shadow-md shadow-teal-500/20 hover:opacity-95 transition-opacity"
+            className="flex items-center gap-1.5 sm:gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 px-3.5 py-2 text-xs font-bold text-slate-950 shadow-md shadow-teal-500/20 hover:opacity-95 transition-opacity"
           >
             <Sparkles className="h-3.5 w-3.5 fill-current" />
-            <span>New Brief</span>
+            <span className="hidden xs:inline">New Brief</span>
           </Link>
+
+          {/* Mobile Menu Toggle Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="flex lg:hidden items-center justify-center p-2 rounded-xl border border-slate-800 bg-slate-900 text-slate-300 hover:text-white"
+            aria-label="Toggle navigation menu"
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile Drawer (Visible when open on mobile/tablet) */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden border-b border-slate-800 bg-obsidian-950/98 px-6 py-4 backdrop-blur-2xl">
+          <div className="flex flex-col gap-2">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${
+                    isActive
+                      ? "bg-teal-500/15 text-teal-300 border border-teal-500/30"
+                      : "text-slate-300 hover:bg-slate-800/60 hover:text-white"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon className={`h-4 w-4 ${isActive ? "text-teal-400" : "text-slate-400"}`} />
+                    <span>{item.name}</span>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-slate-500" />
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </header>
   );
 }
