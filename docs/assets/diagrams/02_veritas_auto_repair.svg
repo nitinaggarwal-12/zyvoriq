@@ -1,59 +1,238 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 950" width="100%" height="100%">
   <defs>
-    <linearGradient id="bgGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#07090E"/>
-      <stop offset="100%" stop-color="#0D121F"/>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#07090E"/><stop offset="50%" stop-color="#0B0F19"/><stop offset="100%" stop-color="#0F172A"/>
     </linearGradient>
-    <filter id="tealGlow">
-      <feGaussianBlur stdDeviation="6" result="blur"/>
-      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    <linearGradient id="cardGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#151D2F"/><stop offset="100%" stop-color="#0D1322"/>
+    </linearGradient>
+    <filter id="shadow2" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.6"/>
     </filter>
+    <marker id="arrTeal2" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#2DD4BF"/></marker>
+    <marker id="arrGreen2" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#34D399"/></marker>
+    <marker id="arrRed2" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#F43F5E"/></marker>
   </defs>
 
-  <rect width="1200" height="700" fill="url(#bgGrad2)" rx="16"/>
-  <rect x="1" y="1" width="1198" height="698" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2" rx="15"/>
+  <rect width="1500" height="950" fill="url(#bg2)"/>
 
   <!-- Header -->
-  <text x="50" y="55" fill="#F8FAFC" font-family="sans-serif" font-size="22" font-weight="bold">AI-003: Veritas 5-Axis Quality Consensus &amp; Auto-Repair Engine</text>
-  <rect x="960" y="35" width="190" height="28" rx="14" fill="rgba(20,184,166,0.15)" stroke="#14B8A6" stroke-width="1"/>
-  <text x="980" y="54" fill="#2DD4BF" font-family="sans-serif" font-size="12" font-weight="600">Veritas Assurance Gate</text>
+  <text x="50" y="52" fill="#F8FAFC" font-family="sans-serif" font-size="26" font-weight="bold" letter-spacing="-0.5px">AI-003: Veritas 5-Axis Deterministic Quality Consensus &amp; Closed-Loop Auto-Repair</text>
+  <text x="50" y="78" fill="#94A3B8" font-family="sans-serif" font-size="14" font-weight="500">Autonomous Content Quality Governance: Multi-Engine LLM Consensus + Automated Defect Diff Extraction + 3-Loop Self-Repair</text>
 
-  <!-- Step 1: Draft -->
-  <rect x="80" y="120" width="220" height="90" rx="10" fill="#1E293B" stroke="#64748B" stroke-width="1.5"/>
-  <text x="110" y="155" fill="#F8FAFC" font-family="sans-serif" font-size="15" font-weight="bold">Synthesized Draft</text>
-  <text x="100" y="180" fill="#94A3B8" font-family="sans-serif" font-size="12">Video, Audio, Code, Copy</text>
+  <rect x="1150" y="32" width="140" height="32" rx="16" fill="rgba(20,184,166,0.12)" stroke="#14B8A6" stroke-width="1.2"/>
+  <text x="1170" y="53" fill="#2DD4BF" font-family="sans-serif" font-size="13" font-weight="bold">VQS Formula</text>
+  <rect x="1305" y="32" width="145" height="32" rx="16" fill="rgba(16,185,129,0.12)" stroke="#10B981" stroke-width="1.2"/>
+  <text x="1325" y="53" fill="#34D399" font-family="sans-serif" font-size="13" font-weight="bold">Self-Healing Loop</text>
 
-  <!-- Arrow -->
-  <line x1="300" y1="165" x2="380" y2="165" stroke="#22D3EE" stroke-width="2" marker-end="url(#arrow)"/>
+  <!-- Flow Ribbon -->
+  <rect x="50" y="105" width="1400" height="60" rx="12" fill="#0D121F" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <g transform="translate(70, 118)">
+    <text x="0" y="24" fill="#38BDF8" font-family="sans-serif" font-size="12" font-weight="bold">LIFECYCLE:</text>
+    <rect x="90" y="4" width="200" height="28" rx="6" fill="#1E293B" stroke="#475569"/>
+    <text x="110" y="23" fill="#F8FAFC" font-family="sans-serif" font-size="11" font-weight="bold">1. Media Draft Ingestion</text>
+    <path d="M300 18 L325 18" stroke="#64748B" stroke-width="2" marker-end="url(#arrTeal2)"/>
 
-  <!-- Step 2: Veritas 5-Axis Evaluator -->
-  <rect x="380" y="100" width="380" height="230" rx="12" fill="#151D2F" stroke="#14B8A6" stroke-width="2" filter="url(#tealGlow)"/>
-  <text x="410" y="135" fill="#2DD4BF" font-family="sans-serif" font-size="16" font-weight="bold">Veritas Multi-Engine Evaluator</text>
-  <text x="410" y="170" fill="#E2E8F0" font-family="sans-serif" font-size="13">1. Factuality &amp; Grounding (Weight: 30%)</text>
-  <text x="410" y="195" fill="#E2E8F0" font-family="sans-serif" font-size="13">2. Brand Voice &amp; Tone Alignment (Weight: 25%)</text>
-  <text x="410" y="220" fill="#E2E8F0" font-family="sans-serif" font-size="13">3. Multi-Engine Consensus (Weight: 20%)</text>
-  <text x="410" y="245" fill="#E2E8F0" font-family="sans-serif" font-size="13">4. Safety &amp; Policy Compliance (Weight: 15% - Gate)</text>
-  <text x="410" y="270" fill="#E2E8F0" font-family="sans-serif" font-size="13">5. Perceptual Humanization (Weight: 10%)</text>
+    <rect x="335" y="4" width="220" height="28" rx="6" fill="#1E293B" stroke="#14B8A6"/>
+    <text x="350" y="23" fill="#2DD4BF" font-family="sans-serif" font-size="11" font-weight="bold">2. 5-Axis Multi-Model Eval</text>
+    <path d="M565 18 L590 18" stroke="#64748B" stroke-width="2" marker-end="url(#arrTeal2)"/>
 
-  <text x="410" y="305" fill="#38BDF8" font-family="sans-serif" font-size="13" font-weight="bold">Composite Score: VQS = Σ (w_i × S_i)</text>
+    <rect x="600" y="4" width="220" height="28" rx="6" fill="#1E293B" stroke="#F59E0B"/>
+    <text x="615" y="23" fill="#FCD34D" font-family="sans-serif" font-size="11" font-weight="bold">3. VQS Gate Decision (90)</text>
+    <path d="M830 18 L855 18" stroke="#64748B" stroke-width="2" marker-end="url(#arrTeal2)"/>
 
-  <!-- Decision Fork -->
-  <line x1="760" y1="165" x2="860" y2="165" stroke="#14B8A6" stroke-width="2"/>
-  
-  <!-- Pass Path -->
-  <rect x="860" y="120" width="260" height="90" rx="10" fill="#064E3B" stroke="#10B981" stroke-width="2"/>
-  <text x="890" y="155" fill="#A7F3D0" font-family="sans-serif" font-size="15" font-weight="bold">✓ VQS ≥ 90 (PASS)</text>
-  <text x="890" y="180" fill="#D1FAE5" font-family="sans-serif" font-size="12">Signed VQC &amp; Instant Publish</text>
+    <rect x="865" y="4" width="240" height="28" rx="6" fill="#1E293B" stroke="#F43F5E"/>
+    <text x="880" y="23" fill="#FDA4AF" font-family="sans-serif" font-size="11" font-weight="bold">4. Surgical Defect Diff Loop</text>
+    <path d="M1115 18 L1140 18" stroke="#64748B" stroke-width="2" marker-end="url(#arrGreen2)"/>
 
-  <!-- Fail Path -->
-  <line x1="570" y1="330" x2="570" y2="400" stroke="#F43F5E" stroke-width="2"/>
-  
-  <rect x="380" y="400" width="380" height="100" rx="12" fill="#3F1219" stroke="#F43F5E" stroke-width="2"/>
-  <text x="410" y="435" fill="#FECDD3" font-family="sans-serif" font-size="15" font-weight="bold">✗ VQS &lt; 90: Auto-Repair Diagnostics</text>
-  <text x="410" y="460" fill="#FFE4E6" font-family="sans-serif" font-size="12">• Generates targeted error diff &amp; surgical prompt</text>
-  <text x="410" y="480" fill="#FFE4E6" font-family="sans-serif" font-size="12">• Max 3 auto-repair loops before human escalation</text>
+    <rect x="1150" y="4" width="200" height="28" rx="6" fill="#064E3B" stroke="#10B981"/>
+    <text x="1170" y="23" fill="#A7F3D0" font-family="sans-serif" font-size="11" font-weight="bold">5. C2PA Signed Certificate</text>
+  </g>
 
-  <!-- Loop back line -->
-  <path d="M 380 450 L 190 450 L 190 210" fill="none" stroke="#F43F5E" stroke-width="2" stroke-dasharray="4"/>
-  <text x="210" y="440" fill="#FDA4AF" font-family="sans-serif" font-size="12" font-weight="600">Surgical Diff Regeneration Loop</text>
+  <!-- SWIMLANE 1: 5 EVALUATION AXES -->
+  <g transform="translate(50, 185)">
+    <rect width="450" height="720" rx="14" fill="#0B101D" stroke="#334155" stroke-width="1.5" filter="url(#shadow2)"/>
+    <rect width="450" height="42" rx="14" fill="#151E33"/>
+    <text x="20" y="27" fill="#2DD4BF" font-family="sans-serif" font-size="14" font-weight="bold">SECTION 1: THE 5 VERITAS EVALUATION AXES</text>
+
+    <!-- 5 Cards Stacked -->
+    <!-- Axis 1 -->
+    <g transform="translate(18, 55)">
+      <rect width="414" height="110" rx="8" fill="url(#cardGrad2)" stroke="#14B8A6" stroke-width="1.5"/>
+      <rect x="12" y="12" width="28" height="28" rx="6" fill="rgba(20,184,166,0.2)" stroke="#14B8A6"/>
+      <polygon points="26,16 32,24 27,24 29,34 20,27 25,27" fill="#14B8A6"/>
+      <text x="48" y="28" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="bold">1. Factuality &amp; Grounding (Weight: 30%)</text>
+      <text x="48" y="44" fill="#2DD4BF" font-family="sans-serif" font-size="11">Google Search Grounding &amp; Enterprise Corpus</text>
+      <line x1="12" y1="56" x2="402" y2="56" stroke="rgba(255,255,255,0.06)"/>
+      <text x="16" y="75" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Claim-by-claim ground truth validation</text>
+      <text x="16" y="95" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Penalty: -25 unverified claim; -100 catastrophic error</text>
+    </g>
+
+    <!-- Axis 2 -->
+    <g transform="translate(18, 175)">
+      <rect width="414" height="110" rx="8" fill="url(#cardGrad2)" stroke="#6366F1" stroke-width="1.5"/>
+      <rect x="12" y="12" width="28" height="28" rx="6" fill="rgba(99,102,241,0.2)" stroke="#6366F1"/>
+      <circle cx="26" cy="26" r="7" fill="#6366F1"/>
+      <text x="48" y="28" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="bold">2. Brand Voice Alignment (Weight: 25%)</text>
+      <text x="48" y="44" fill="#A5B4FC" font-family="sans-serif" font-size="11">Persona Memory Vector Cosine Similarity</text>
+      <line x1="12" y1="56" x2="402" y2="56" stroke="rgba(255,255,255,0.06)"/>
+      <text x="16" y="75" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Cosine distance to brand tone vector in pgvector</text>
+      <text x="16" y="95" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Cliché filter: "delve", "tapestry", "game-changer"</text>
+    </g>
+
+    <!-- Axis 3 -->
+    <g transform="translate(18, 295)">
+      <rect width="414" height="110" rx="8" fill="url(#cardGrad2)" stroke="#38BDF8" stroke-width="1.5"/>
+      <rect x="12" y="12" width="28" height="28" rx="6" fill="rgba(56,189,248,0.2)" stroke="#38BDF8"/>
+      <rect x="20" y="20" width="12" height="12" rx="2" fill="#38BDF8"/>
+      <text x="48" y="28" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="bold">3. Multi-Engine Consensus (Weight: 20%)</text>
+      <text x="48" y="44" fill="#38BDF8" font-family="sans-serif" font-size="11">Dual Model Evaluation (Gemini 2.5 Pro + Claude 3.5)</text>
+      <line x1="12" y1="56" x2="402" y2="56" stroke="rgba(255,255,255,0.06)"/>
+      <text x="16" y="75" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Independent claim cross-examination</text>
+      <text x="16" y="95" fill="#CBD5E1" font-family="sans-serif" font-size="11">• High semantic divergence triggers human review</text>
+    </g>
+
+    <!-- Axis 4 -->
+    <g transform="translate(18, 415)">
+      <rect width="414" height="120" rx="8" fill="#2A0B12" stroke="#F43F5E" stroke-width="1.8"/>
+      <rect x="12" y="12" width="28" height="28" rx="6" fill="rgba(244,63,94,0.2)" stroke="#F43F5E"/>
+      <path d="M26,18 L32,22 L32,28 C32,32 26,34 26,34 C26,34 20,32 20,28 L20,22 Z" fill="#F43F5E"/>
+      <text x="48" y="28" fill="#FECDD3" font-family="sans-serif" font-size="13" font-weight="bold">4. Safety, Policy &amp; IP (Weight: 15% - HARD GATE)</text>
+      <text x="48" y="44" fill="#FDA4AF" font-family="sans-serif" font-size="11">PII Leakage, Toxic Content &amp; IP Infringement</text>
+      <line x1="12" y1="56" x2="402" y2="56" stroke="rgba(255,255,255,0.06)"/>
+      <text x="16" y="75" fill="#FFE4E6" font-family="sans-serif" font-size="11">• Zero tolerance: Score must be exactly 100/100</text>
+      <text x="16" y="95" fill="#FFE4E6" font-family="sans-serif" font-size="11">• Automated PII masking &amp; defamatory libel detection</text>
+      <text x="16" y="112" fill="#F43F5E" font-family="sans-serif" font-size="10" font-weight="bold">[HARD GATE] Any violation immediately vetoes publish</text>
+    </g>
+
+    <!-- Axis 5 -->
+    <g transform="translate(18, 545)">
+      <rect width="414" height="110" rx="8" fill="url(#cardGrad2)" stroke="#10B981" stroke-width="1.5"/>
+      <rect x="12" y="12" width="28" height="28" rx="6" fill="rgba(16,185,129,0.2)" stroke="#10B981"/>
+      <circle cx="26" cy="26" r="7" fill="#10B981"/>
+      <text x="48" y="28" fill="#F8FAFC" font-family="sans-serif" font-size="13" font-weight="bold">5. Perceptual Humanization (Weight: 10%)</text>
+      <text x="48" y="44" fill="#34D399" font-family="sans-serif" font-size="11">Burstiness, Rhythm &amp; Vocal Flow Dynamics</text>
+      <line x1="12" y1="56" x2="402" y2="56" stroke="rgba(255,255,255,0.06)"/>
+      <text x="16" y="75" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Syntactic variance prevents repetitive cadence</text>
+      <text x="16" y="95" fill="#CBD5E1" font-family="sans-serif" font-size="11">• Neural audio breath &amp; pitch modulation check</text>
+    </g>
+
+    <!-- Formula Footer Box -->
+    <g transform="translate(18, 665)">
+      <rect width="414" height="40" rx="6" fill="#0D1322" stroke="#14B8A6"/>
+      <text x="15" y="25" fill="#38BDF8" font-family="sans-serif" font-size="12" font-weight="bold">VQS = 0.30(Fact) + 0.25(Tone) + 0.20(Cons) + 0.15(Safe) + 0.10(Hum)</text>
+    </g>
+  </g>
+
+  <!-- Inter-Lane Arrow -->
+  <path d="M 500 545 L 540 545" stroke="#2DD4BF" stroke-width="3" marker-end="url(#arrTeal2)"/>
+
+  <!-- SWIMLANE 2: CLOSED-LOOP AUTO-REPAIR ENGINE -->
+  <g transform="translate(540, 185)">
+    <rect width="910" height="720" rx="14" fill="#0B101D" stroke="#14B8A6" stroke-width="1.8" filter="url(#shadow2)"/>
+    <rect width="910" height="42" rx="14" fill="#042F2E"/>
+    <text x="20" y="27" fill="#A7F3D0" font-family="sans-serif" font-size="14" font-weight="bold">SECTION 2: CLOSED-LOOP SELF-HEALING &amp; PROVENANCE CERTIFICATION</text>
+
+    <!-- Main Decision Gate -->
+    <g transform="translate(30, 60)">
+      <rect width="850" height="150" rx="10" fill="#0D1322" stroke="#2DD4BF" stroke-width="1.5"/>
+      <text x="25" y="32" fill="#2DD4BF" font-family="sans-serif" font-size="16" font-weight="bold">Deterministic Quality Threshold Evaluation</text>
+      
+      <g transform="translate(20, 50)">
+        <!-- Green Gate -->
+        <rect width="250" height="80" rx="8" fill="#064E3B" stroke="#10B981" stroke-width="1.5"/>
+        <text x="15" y="28" fill="#A7F3D0" font-family="sans-serif" font-size="13" font-weight="bold">VQS >= 90 &amp;&amp; Safe == 100</text>
+        <text x="15" y="48" fill="#D1FAE5" font-family="sans-serif" font-size="11">• Instant Publish Approved</text>
+        <text x="15" y="68" fill="#34D399" font-family="sans-serif" font-size="10" font-weight="bold">[PASS] Automatic Channel Dispatch</text>
+
+        <!-- Amber Gate -->
+        <rect x="270" y="0" width="270" height="80" rx="8" fill="#451A03" stroke="#F59E0B" stroke-width="1.5"/>
+        <text x="285" y="28" fill="#FCD34D" font-family="sans-serif" font-size="13" font-weight="bold">75 &lt;= VQS &lt; 90</text>
+        <text x="285" y="48" fill="#FEF08A" font-family="sans-serif" font-size="11">• Co-Pilot Review Required</text>
+        <text x="285" y="68" fill="#FBBF24" font-family="sans-serif" font-size="10" font-weight="bold">[REVIEW] Human Approval Gate</text>
+
+        <!-- Red Gate -->
+        <rect x="560" y="0" width="270" height="80" rx="8" fill="#3F1219" stroke="#F43F5E" stroke-width="1.5"/>
+        <text x="575" y="28" fill="#FECDD3" font-family="sans-serif" font-size="13" font-weight="bold">VQS &lt; 75 || Single Dim &lt; 70</text>
+        <text x="575" y="48" fill="#FFE4E6" font-family="sans-serif" font-size="11">• Trigger Auto-Repair Engine</text>
+        <text x="575" y="68" fill="#F43F5E" font-family="sans-serif" font-size="10" font-weight="bold">[REPAIR] Targeted Patch Generator</text>
+      </g>
+    </g>
+
+    <!-- Lower Flow: Auto-Repair Circuit (Left) vs Provenance Certificate (Right) -->
+    <g transform="translate(30, 235)">
+      <!-- Left Box: Auto-Repair Engine -->
+      <rect width="410" height="460" rx="10" fill="#151D2F" stroke="#F43F5E" stroke-width="1.5"/>
+      <text x="20" y="30" fill="#FECDD3" font-family="sans-serif" font-size="14" font-weight="bold">Closed-Loop Auto-Repair Engine</text>
+
+      <!-- Step A: Defect Diff -->
+      <g transform="translate(15, 45)">
+        <rect width="380" height="90" rx="6" fill="#0D1322" stroke="#64748B"/>
+        <text x="15" y="25" fill="#F8FAFC" font-family="sans-serif" font-size="12" font-weight="bold">Step 1: Surgical Defect Diffing</text>
+        <text x="15" y="45" fill="#94A3B8" font-family="sans-serif" font-size="10">• Isolates exact failing sentences or scene frames</text>
+        <text x="15" y="65" fill="#94A3B8" font-family="sans-serif" font-size="10">• Injects ground-truth verified correction context</text>
+      </g>
+
+      <line x1="205" y1="140" x2="205" y2="165" stroke="#F43F5E" stroke-width="2" marker-end="url(#arrRed2)"/>
+
+      <!-- Step B: Targeted Regenerator -->
+      <g transform="translate(15, 170)">
+        <rect width="380" height="90" rx="6" fill="#0D1322" stroke="#6366F1"/>
+        <text x="15" y="25" fill="#A5B4FC" font-family="sans-serif" font-size="12" font-weight="bold">Step 2: Targeted Re-Prompting</text>
+        <text x="15" y="45" fill="#94A3B8" font-family="sans-serif" font-size="10">• Dispatches patch prompt to LLM with error rationale</text>
+        <text x="15" y="65" fill="#94A3B8" font-family="sans-serif" font-size="10">• Preserves verified sections (Zero wasteful re-runs)</text>
+      </g>
+
+      <line x1="205" y1="265" x2="205" y2="290" stroke="#F43F5E" stroke-width="2" marker-end="url(#arrRed2)"/>
+
+      <!-- Step C: Loop Counter & Escalate -->
+      <g transform="translate(15, 295)">
+        <rect width="380" height="150" rx="6" fill="#0D1322" stroke="#F59E0B"/>
+        <text x="15" y="25" fill="#FCD34D" font-family="sans-serif" font-size="12" font-weight="bold">Step 3: Re-Evaluation &amp; Convergence</text>
+        <text x="15" y="45" fill="#94A3B8" font-family="sans-serif" font-size="10">• Re-calculates 5-Axis VQS on newly patched draft</text>
+        <text x="15" y="65" fill="#94A3B8" font-family="sans-serif" font-size="10">• Loop count &lt;= 3: If VQS &gt;= 90 -> Issue Certificate</text>
+        <text x="15" y="85" fill="#94A3B8" font-family="sans-serif" font-size="10">• Loop count > 3: Gracefully escalate to human co-pilot</text>
+        <text x="15" y="110" fill="#10B981" font-family="sans-serif" font-size="10" font-weight="bold">[CONVERGENCE] 91.2% repaired on Loop 1; 98.6% by Loop 2</text>
+      </g>
+    </g>
+
+    <!-- Right Box: Cryptographic Provenance Certificate (VQC) -->
+    <g transform="translate(460, 235)">
+      <rect width="420" height="460" rx="10" fill="#042F2E" stroke="#10B981" stroke-width="2"/>
+      <text x="20" y="30" fill="#A7F3D0" font-family="sans-serif" font-size="15" font-weight="bold">Cryptographic Quality Certificate (VQC)</text>
+
+      <g transform="translate(15, 50)">
+        <rect width="390" height="385" rx="8" fill="#0B131E" stroke="#0F766E" stroke-width="1.2"/>
+        <text x="20" y="30" fill="#38BDF8" font-family="monospace" font-size="12" font-weight="bold">{ "certificate_id": "vqc_89f3a12",</text>
+        <text x="20" y="55" fill="#E2E8F0" font-family="monospace" font-size="11">  "composite_vqs": 94.6,</text>
+        <text x="20" y="75" fill="#E2E8F0" font-family="monospace" font-size="11">  "factuality_score": 96.0,</text>
+        <text x="20" y="95" fill="#E2E8F0" font-family="monospace" font-size="11">  "brand_tone_alignment": 92.5,</text>
+        <text x="20" y="115" fill="#E2E8F0" font-family="monospace" font-size="11">  "consensus_agreement": 95.0,</text>
+        <text x="20" y="135" fill="#E2E8F0" font-family="monospace" font-size="11">  "safety_policy_passed": true,</text>
+        <text x="20" y="155" fill="#E2E8F0" font-family="monospace" font-size="11">  "humanization_score": 91.0,</text>
+        <text x="20" y="180" fill="#A5B4FC" font-family="monospace" font-size="11">  "evaluators": ["gemini-2.5-pro", "claude-3.5"],</text>
+        <text x="20" y="205" fill="#FCD34D" font-family="monospace" font-size="11">  "c2pa_manifest_hash": "sha256:e3b0c44...",</text>
+        <text x="20" y="230" fill="#34D399" font-family="monospace" font-size="11">  "signed_by": "Zyvoriq Veritas Enclave",</text>
+        <text x="20" y="255" fill="#34D399" font-family="monospace" font-size="11">  "signature": "MEQCIFz9...ed25519"</text>
+        <text x="20" y="280" fill="#38BDF8" font-family="monospace" font-size="12" font-weight="bold">}</text>
+
+        <line x1="20" y1="305" x2="370" y2="305" stroke="rgba(255,255,255,0.1)"/>
+        <text x="20" y="330" fill="#2DD4BF" font-family="sans-serif" font-size="12" font-weight="bold">✓ C2PA Content Credentials Embedded in MP4/WAV</text>
+        <text x="20" y="355" fill="#A7F3D0" font-family="sans-serif" font-size="11">Immutable audit verification logged to PostgreSQL</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Legend -->
+  <g transform="translate(50, 918)">
+    <text x="0" y="18" fill="#64748B" font-family="sans-serif" font-size="12" font-weight="bold">LEGEND:</text>
+    <rect x="70" y="5" width="14" height="14" rx="3" fill="#14B8A6"/>
+    <text x="92" y="17" fill="#94A3B8" font-family="sans-serif" font-size="12">5-Axis Quality Metrics</text>
+    <rect x="250" y="5" width="14" height="14" rx="3" fill="#F43F5E"/>
+    <text x="272" y="17" fill="#94A3B8" font-family="sans-serif" font-size="12">Auto-Repair Feedback Loop</text>
+    <rect x="470" y="5" width="14" height="14" rx="3" fill="#10B981"/>
+    <text x="492" y="17" fill="#94A3B8" font-family="sans-serif" font-size="12">Signed VQC Quality Certificate</text>
+    <rect x="700" y="5" width="14" height="14" rx="3" fill="#F59E0B"/>
+    <text x="722" y="17" fill="#94A3B8" font-family="sans-serif" font-size="12">Co-Pilot Review Gate</text>
+  </g>
 </svg>
