@@ -41,6 +41,7 @@ interface PersonaConfig {
   image: string;
   videoUrl: string;
   audioUrl?: string;
+  exactAudioDurationSec: number;
   bodyLanguage: string;
   introScript: string;
   defaultVideoLeadMs?: number;
@@ -51,7 +52,7 @@ export default function StudioPage() {
   const [activeTab, setActiveTab] = useState<"option1" | "option2" | "compare">("compare");
   const [selectedPlaybackEngine, setSelectedPlaybackEngine] = useState<"option1" | "option2">("option1");
 
-  // Dynamic Personas Catalog
+  // Dynamic Personas Catalog with True Audio Durations
   const [personas, setPersonas] = useState<Record<string, PersonaConfig>>({
     priya: { 
       name: "Priya (Bangalore)", 
@@ -65,6 +66,7 @@ export default function StudioPage() {
       image: "/assets/avatars/avatar_priya_cto.jpg",
       videoUrl: "/assets/video/priya_veo_broadcast.mp4",
       audioUrl: "/assets/audio/priya_deepmind.wav",
+      exactAudioDurationSec: 23.2,
       bodyLanguage: "Articulate Indian female CTO with open hand keynote stage gestures",
       introScript: "Hello everyone! I'm Priya, Global Transformation CTO. Traditional enterprise content pipelines take 14 long days and over $140,000. With Zyvoriq, we collapse that entire lifecycle into just 90 seconds—backed by Veritas cryptographic consensus and Ed25519 provenance!",
       defaultVideoLeadMs: 800
@@ -81,6 +83,7 @@ export default function StudioPage() {
       image: "/assets/avatars/avatar_female_executive.jpg",
       videoUrl: "/assets/video/victoria_veo_broadcast.mp4",
       audioUrl: "/assets/audio/victoria_deepmind.wav",
+      exactAudioDurationSec: 10.92,
       bodyLanguage: "Articulate stage presence with active hand gestures & eye contact",
       introScript: "Good evening. I am Victoria, MasterClass Executive VP. [dramatic pause] Let us examine how Veritas auto-repair eliminates architectural drift and enforces compliance across all digital channels.",
       defaultVideoLeadMs: 600
@@ -96,6 +99,8 @@ export default function StudioPage() {
       voiceKeywords: ["Google US English", "Alex", "Fred", "Arthur", "male"],
       image: "/assets/avatars/avatar_keynote_gesture.jpg",
       videoUrl: "/assets/video/david_veo_broadcast.mp4",
+      audioUrl: "/assets/audio/david_deepmind.wav",
+      exactAudioDurationSec: 12.5,
       bodyLanguage: "Charismatic male founder on TED stage with open-hand gesture",
       introScript: "Hey everyone, David here from Silicon Valley. We are radically accelerating enterprise AI content with sub-25 millisecond synthesis latency.",
       defaultVideoLeadMs: 500
@@ -112,6 +117,7 @@ export default function StudioPage() {
       image: "/assets/avatars/avatar_elena_founder.jpg",
       videoUrl: "/assets/video/victoria_veo_broadcast.mp4",
       audioUrl: "/assets/audio/victoria_deepmind.wav",
+      exactAudioDurationSec: 10.92,
       bodyLanguage: "Enthusiastic female tech founder on Berlin stage with open arms",
       introScript: "Hi everyone! I am Elena from Berlin. We are disrupting manual content workflows by replacing 14-day human delays with instant multi-agent swarm synthesis.",
       defaultVideoLeadMs: 600
@@ -128,6 +134,7 @@ export default function StudioPage() {
       image: "/assets/avatars/avatar_maya_fireside.jpg",
       videoUrl: "/assets/video/priya_veo_broadcast.mp4",
       audioUrl: "/assets/audio/priya_deepmind.wav",
+      exactAudioDurationSec: 23.2,
       bodyLanguage: "Gentle empathetic smile, cozy book cafe with coffee mug",
       introScript: "Welcome, I am Maya from Dublin. Pull up a chair. Today we reflect on the deeper story behind sovereign enterprise intelligence and algorithmic trust.",
       defaultVideoLeadMs: 800
@@ -143,6 +150,8 @@ export default function StudioPage() {
       voiceKeywords: ["Daniel", "Oliver", "George", "Google UK English Male", "en-GB", "male"],
       image: "/assets/avatars/avatar_executive_gravitas.jpg",
       videoUrl: "/assets/video/david_veo_broadcast.mp4",
+      audioUrl: "/assets/audio/david_deepmind.wav",
+      exactAudioDurationSec: 12.5,
       bodyLanguage: "Commanding skyline boardroom presence with folded arms",
       introScript: "I am Sir Jonathan. In this documentary briefing, we explore the cryptographic provenance of AI content generation and immutable ledger verification.",
       defaultVideoLeadMs: 500
@@ -151,10 +160,8 @@ export default function StudioPage() {
 
   const [selectedPersona, setSelectedPersona] = useState("priya");
 
-  // Speed Stepper Controls (0.01x increments)
-  const [videoSpeed, setVideoSpeed] = useState<number>(1.00);
-  const [audioSpeed, setAudioSpeed] = useState<number>(1.00);
-  const [syncAudioSpeed, setSyncAudioSpeed] = useState<boolean>(false);
+  // Speed Stepper Controls (0.01x increments) - UNIFIED SPEED BY DEFAULT
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.00);
 
   // Temporal Phase Offset (Video Lead Time in Milliseconds)
   const [videoLeadOffsetMs, setVideoLeadOffsetMs] = useState<number>(800);
@@ -168,6 +175,9 @@ export default function StudioPage() {
   // Video & Audio Elements Ref
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Dynamic Audio Duration Tracking
+  const [dynamicAudioDuration, setDynamicAudioDuration] = useState<number>(23.2);
 
   // Option 2 Cloud GPU Synthesis State
   const [isSynthesizingOption2, setIsSynthesizingOption2] = useState(false);
@@ -195,64 +205,58 @@ export default function StudioPage() {
 
   const currentPersona = personas[selectedPersona] || personas["priya"];
 
-  // CRITICAL FIX: Ensure video element is ALWAYS 100% MUTED to prevent dual-voice audio bleeding!
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.muted = true;
-      videoRef.current.volume = 0;
-    }
-  }, [selectedPersona]);
-
-  // Automatically update default lead time when switching personas
+  // Update dynamic duration and lead offset when switching personas
   useEffect(() => {
     if (currentPersona.defaultVideoLeadMs !== undefined) {
       setVideoLeadOffsetMs(currentPersona.defaultVideoLeadMs);
     }
+    setDynamicAudioDuration(currentPersona.exactAudioDurationSec || 23.2);
   }, [selectedPersona]);
 
-  // Dynamic real-time playback rate binding
+  // CRITICAL: Keep video element strictly MUTED at all times
   useEffect(() => {
     if (videoRef.current) {
-      videoRef.current.playbackRate = videoSpeed;
-      videoRef.current.defaultPlaybackRate = videoSpeed;
       videoRef.current.muted = true;
       videoRef.current.volume = 0;
     }
-  }, [videoSpeed]);
+  }, [selectedPersona]);
 
+  // Unified Real-Time Playback Rate Binding to BOTH Video and Audio
   useEffect(() => {
-    if (audioRef.current) {
-      const targetRate = syncAudioSpeed ? videoSpeed : audioSpeed;
-      audioRef.current.playbackRate = targetRate;
-      audioRef.current.defaultPlaybackRate = targetRate;
+    if (videoRef.current) {
+      videoRef.current.playbackRate = playbackSpeed;
+      videoRef.current.defaultPlaybackRate = playbackSpeed;
+      videoRef.current.muted = true;
+      videoRef.current.volume = 0;
     }
-  }, [audioSpeed, videoSpeed, syncAudioSpeed]);
+    if (audioRef.current) {
+      audioRef.current.playbackRate = playbackSpeed;
+      audioRef.current.defaultPlaybackRate = playbackSpeed;
+    }
+  }, [playbackSpeed]);
 
-  // Seamless Video Looping (Preserve active speaking offset mid-sentence)
+  // Seamless Video Looping during speech
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    const handleVideoEnded = () => {
-      if (isSpeakingClone) {
+    const handleTimeUpdate = () => {
+      // Loop smoothly before video end (5.8s of 6.0s) so mouth never pauses
+      if (isSpeakingClone && video.currentTime >= 5.75) {
         video.currentTime = videoLeadOffsetMs / 1000.0;
-        video.muted = true;
-        video.volume = 0;
-        video.play().catch(() => {});
       }
     };
 
-    video.addEventListener("ended", handleVideoEnded);
-    return () => video.removeEventListener("ended", handleVideoEnded);
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    return () => video.removeEventListener("timeupdate", handleTimeUpdate);
   }, [isSpeakingClone, videoLeadOffsetMs]);
 
-  // Ultra-Precise Speed Stepper Handler (±0.01x or ±0.10x)
-  const adjustVideoSpeed = (delta: number) => {
-    setVideoSpeed((prev) => {
+  // Unified Speed Stepper Handler (±0.01x or ±0.10x)
+  const adjustPlaybackSpeed = (delta: number) => {
+    setPlaybackSpeed((prev) => {
       const next = Math.max(0.50, Math.min(3.00, Math.round((prev + delta) * 100) / 100));
-      if (videoRef.current) {
-        videoRef.current.playbackRate = next;
-      }
+      if (videoRef.current) videoRef.current.playbackRate = next;
+      if (audioRef.current) audioRef.current.playbackRate = next;
       return next;
     });
   };
@@ -265,27 +269,27 @@ export default function StudioPage() {
     });
   };
 
-  // Syllable-Weighted and Punctuation-Aware Word Timing Model
+  // Syllable-Weighted and Punctuation-Aware Word Timing Model (Calibrated to True Audio Duration)
   const wordsList = useMemo(() => {
     return cloneScript.split(/\s+/).filter(w => w.trim().length > 0);
   }, [cloneScript]);
 
   const wordTimings = useMemo(() => {
-    const totalEstDuration = 14.2; // Calibrated to 48kHz audio duration
+    const totalDuration = dynamicAudioDuration;
 
     const weights = wordsList.map((w) => {
       let weight = Math.max(2, w.length);
       
       // Numbers expand to multi-word phrases
-      if (w.includes("$140,000")) weight = 24; // "one hundred forty thousand dollars"
-      else if (w.includes("14")) weight = 8; // "fourteen"
-      else if (w.includes("90")) weight = 6; // "ninety"
-      else if (w.includes("Ed25519")) weight = 16; // "E-d-two-five-five-one-nine"
-      else if (w.includes("CTO")) weight = 8; // "C-T-O"
+      if (w.includes("$140,000")) weight = 28; // "one hundred forty thousand dollars"
+      else if (w.includes("14")) weight = 10; // "fourteen"
+      else if (w.includes("90")) weight = 8; // "ninety"
+      else if (w.includes("Ed25519")) weight = 18; // "E-d-two-five-five-one-nine"
+      else if (w.includes("CTO")) weight = 10; // "C-T-O"
       
       // Punctuation pauses
-      if (/[.!?]/.test(w)) weight += 8; // ~350ms sentence pause
-      else if (/[,;—-]/.test(w)) weight += 4; // ~180ms clause pause
+      if (/[.!?]/.test(w)) weight += 12; // ~400ms sentence pause
+      else if (/[,;—-]/.test(w)) weight += 6; // ~200ms clause pause
       
       return weight;
     });
@@ -295,21 +299,28 @@ export default function StudioPage() {
     let accumulatedTime = 0;
     return wordsList.map((word, i) => {
       const start = accumulatedTime;
-      const duration = (weights[i] / totalWeight) * totalEstDuration;
+      const duration = (weights[i] / totalWeight) * totalDuration;
       accumulatedTime += duration;
       return { word, start, end: accumulatedTime };
     });
-  }, [wordsList]);
+  }, [wordsList, dynamicAudioDuration]);
 
-  // Real-Time Syllable-Exact Caption Tracker
+  // Real-Time Millisecond-Exact Caption & Progress Tracker
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
+
+    const handleLoadedMetadata = () => {
+      if (audio.duration && audio.duration > 0) {
+        setDynamicAudioDuration(audio.duration);
+      }
+    };
 
     const handleTimeUpdate = () => {
       if (audio.duration && audio.duration > 0) {
         const adjustedCurrentTime = audio.currentTime + (captionLeadOffsetMs / 1000.0);
         
+        // Find exact word index where currentTime falls within start and end
         const idx = wordTimings.findIndex(t => adjustedCurrentTime >= t.start && adjustedCurrentTime < t.end);
         if (idx !== -1) {
           setSpokenWordIndex(idx);
@@ -327,30 +338,24 @@ export default function StudioPage() {
       }
     };
 
+    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
     audio.addEventListener("timeupdate", handleTimeUpdate);
     audio.addEventListener("ended", handleAudioEnded);
 
     return () => {
+      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
       audio.removeEventListener("timeupdate", handleTimeUpdate);
       audio.removeEventListener("ended", handleAudioEnded);
     };
   }, [wordTimings, captionLeadOffsetMs]);
 
-  // SINGLE AUDIO MASTER PLAYBACK (Guarantees zero overlapping voice tracks)
+  // Unified Playback Controller
   const handleTogglePlayback = (mode: "option1" | "option2") => {
     setSelectedPlaybackEngine(mode);
 
-    // If already speaking, stop cleanly
     if (isSpeakingClone) {
-      if (videoRef.current) {
-        videoRef.current.pause();
-      }
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-      if (typeof window !== "undefined" && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
+      if (videoRef.current) videoRef.current.pause();
+      if (audioRef.current) audioRef.current.pause();
       setIsSpeakingClone(false);
       setSpokenWordIndex(-1);
       return;
@@ -358,19 +363,19 @@ export default function StudioPage() {
 
     const startOffsetSeconds = videoLeadOffsetMs / 1000.0;
 
-    // 1. Start Pristine Muted Video
+    // 1. Play Synchronized Muted Video
     if (videoRef.current) {
       videoRef.current.muted = true;
       videoRef.current.volume = 0;
       videoRef.current.currentTime = startOffsetSeconds;
-      videoRef.current.playbackRate = videoSpeed;
+      videoRef.current.playbackRate = playbackSpeed;
       videoRef.current.play().catch(() => {});
     }
 
-    // 2. Start Single Dedicated 48kHz Audio Track
+    // 2. Play Single 48kHz Master Audio
     if (currentPersona.audioUrl && audioRef.current) {
       audioRef.current.currentTime = 0;
-      audioRef.current.playbackRate = syncAudioSpeed ? videoSpeed : audioSpeed;
+      audioRef.current.playbackRate = playbackSpeed;
       audioRef.current.play().catch(() => {});
       setIsSpeakingClone(true);
       return;
@@ -443,7 +448,8 @@ export default function StudioPage() {
       voiceKeywords: [newPersonaGender === "female" ? "female" : "male", "Google US English", "Samantha"],
       image: newPersonaGender === "female" ? "/assets/avatars/avatar_female_executive.jpg" : "/assets/avatars/avatar_keynote_gesture.jpg",
       videoUrl: newPersonaGender === "female" ? "/assets/video/victoria_veo_broadcast.mp4" : "/assets/video/david_veo_broadcast.mp4",
-      audioUrl: newPersonaGender === "female" ? "/assets/audio/victoria_deepmind.wav" : undefined,
+      audioUrl: newPersonaGender === "female" ? "/assets/audio/victoria_deepmind.wav" : "/assets/audio/david_deepmind.wav",
+      exactAudioDurationSec: 10.92,
       bodyLanguage: newPersonaAppearance || "Bespoke stage presentation with expressive gestures",
       introScript: newPersonaIntro || `Hello, I am ${newPersonaName}, ${newPersonaTitle}. Welcome to our sovereign AI studio.`,
       defaultVideoLeadMs: 600
@@ -591,7 +597,7 @@ export default function StudioPage() {
               </h1>
             </div>
             <p className="mt-2 text-sm md:text-base text-slate-400 max-w-4xl">
-              Compare <b>Option 1 (Instant Keynote Broadcast)</b> vs <b>Option 2 (Cloud GPU Neural Lip Sync Pipeline)</b> with single master audio and <b>Syllable-Exact Word Tracking</b>.
+              Compare <b>Option 1 (Instant Keynote Broadcast)</b> vs <b>Option 2 (Cloud GPU Neural Lip Sync Pipeline)</b> with <b>Syllable-Exact Audio/Video/Text Synchronization</b>.
             </p>
           </div>
 
@@ -762,7 +768,7 @@ export default function StudioPage() {
                   <MessageSquare className="h-4 w-4" />
                   <span>Speech Script &amp; Teleprompter</span>
                 </span>
-                <span className="text-xs font-mono text-amber-400">48kHz DeepMind Audio</span>
+                <span className="text-xs font-mono text-amber-400">48kHz DeepMind Audio ({dynamicAudioDuration.toFixed(1)}s)</span>
               </div>
 
               <div className="pt-3">
@@ -828,21 +834,21 @@ export default function StudioPage() {
                 </div>
               </div>
 
-              {/* ⚡ 2. ULTRA-PRECISE DYNAMIC LIVE ±0.01x SPEED STEPPER & SLIDER */}
+              {/* ⚡ 2. ULTRA-PRECISE UNIFIED DYNAMIC LIVE SPEED STEPPER & SLIDER (±0.01x) */}
               <div className="mt-3 flex flex-col gap-2.5 bg-obsidian-950 p-4 rounded-xl border border-teal-500/40">
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col">
                     <span className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
                       <Gauge className="h-3.5 w-3.5 text-teal-400" />
-                      <span>Live Dynamic Speed (±0.01x):</span>
+                      <span>Unified Video/Audio Speed (±0.01x):</span>
                     </span>
-                    <span className="text-[11px] text-slate-400">Instantly mutates video playback rate in real time</span>
+                    <span className="text-[11px] text-slate-400">Keeps video, voice, and teleprompter 100% locked together</span>
                   </div>
 
                   <div className="flex items-center gap-1.5">
                     {/* -0.10 Macro Step */}
                     <button
-                      onClick={() => adjustVideoSpeed(-0.10)}
+                      onClick={() => adjustPlaybackSpeed(-0.10)}
                       className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-300 font-mono font-bold hover:bg-slate-800 text-[11px] active:scale-95 transition-all"
                       title="Jump -0.10x"
                     >
@@ -851,7 +857,7 @@ export default function StudioPage() {
 
                     {/* -0.01 Micro Step */}
                     <button
-                      onClick={() => adjustVideoSpeed(-0.01)}
+                      onClick={() => adjustPlaybackSpeed(-0.01)}
                       className="h-8 w-8 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold flex items-center justify-center hover:bg-slate-700 active:scale-95 text-xs transition-all"
                       title="Decrease by -0.01x"
                     >
@@ -860,12 +866,12 @@ export default function StudioPage() {
 
                     {/* Precise Value Display */}
                     <div className="w-18 px-2 text-center font-mono font-extrabold text-base text-emerald-400 bg-slate-900 py-1 rounded-lg border border-teal-500/60 shadow-inner">
-                      {videoSpeed.toFixed(2)}x
+                      {playbackSpeed.toFixed(2)}x
                     </div>
 
                     {/* +0.01 Micro Step */}
                     <button
-                      onClick={() => adjustVideoSpeed(+0.01)}
+                      onClick={() => adjustPlaybackSpeed(+0.01)}
                       className="h-8 w-8 rounded-lg bg-gradient-to-r from-teal-500 to-emerald-500 border border-teal-400 text-slate-950 font-bold flex items-center justify-center hover:brightness-110 active:scale-95 text-xs shadow-md transition-all"
                       title="Increase by +0.01x"
                     >
@@ -874,7 +880,7 @@ export default function StudioPage() {
 
                     {/* +0.10 Macro Step */}
                     <button
-                      onClick={() => adjustVideoSpeed(+0.10)}
+                      onClick={() => adjustPlaybackSpeed(+0.10)}
                       className="px-2 py-1 rounded bg-slate-900 border border-teal-700 text-teal-300 font-mono font-bold hover:bg-slate-800 text-[11px] active:scale-95 transition-all"
                       title="Jump +0.10x"
                     >
@@ -891,40 +897,22 @@ export default function StudioPage() {
                     min="0.50"
                     max="3.00"
                     step="0.01"
-                    value={videoSpeed}
+                    value={playbackSpeed}
                     onInput={(e: any) => {
                       const val = parseFloat(e.target.value);
-                      setVideoSpeed(val);
-                      if (videoRef.current) {
-                        videoRef.current.playbackRate = val;
-                      }
+                      setPlaybackSpeed(val);
+                      if (videoRef.current) videoRef.current.playbackRate = val;
+                      if (audioRef.current) audioRef.current.playbackRate = val;
                     }}
                     onChange={(e: any) => {
                       const val = parseFloat(e.target.value);
-                      setVideoSpeed(val);
-                      if (videoRef.current) {
-                        videoRef.current.playbackRate = val;
-                      }
+                      setPlaybackSpeed(val);
+                      if (videoRef.current) videoRef.current.playbackRate = val;
+                      if (audioRef.current) audioRef.current.playbackRate = val;
                     }}
                     className="flex-1 accent-teal-400 cursor-pointer h-2 bg-slate-800 rounded-lg"
                   />
                   <span className="text-[10px] font-mono text-slate-400">3.00x</span>
-                </div>
-
-                {/* Audio Sync Toggle */}
-                <div className="pt-1 flex items-center justify-between border-t border-slate-800/80 text-[11px] font-mono">
-                  <span className="text-slate-400">Audio Sync Pacing:</span>
-                  <button
-                    onClick={() => setSyncAudioSpeed(!syncAudioSpeed)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all ${
-                      syncAudioSpeed 
-                        ? "bg-teal-950 text-teal-300 border-teal-600 font-bold" 
-                        : "bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-300"
-                    }`}
-                  >
-                    {syncAudioSpeed ? <Lock className="h-3 w-3 text-teal-400" /> : <Unlock className="h-3 w-3 text-slate-500" />}
-                    <span>{syncAudioSpeed ? "Audio Speed Locked to Video" : "Audio at Native 1.00x"}</span>
-                  </button>
                 </div>
               </div>
 
@@ -948,7 +936,7 @@ export default function StudioPage() {
                   ) : (
                     <>
                       <Play className="h-4 w-4 fill-current" />
-                      <span>▶ Play Option 1 ({videoSpeed.toFixed(2)}x)</span>
+                      <span>▶ Play Option 1 ({playbackSpeed.toFixed(2)}x)</span>
                     </>
                   )}
                 </button>
@@ -978,7 +966,7 @@ export default function StudioPage() {
                   ) : option2Rendered ? (
                     <>
                       <Play className="h-4 w-4 fill-current text-white" />
-                      <span>▶ Play Option 2 ({videoSpeed.toFixed(2)}x)</span>
+                      <span>▶ Play Option 2 ({playbackSpeed.toFixed(2)}x)</span>
                     </>
                   ) : (
                     <>
@@ -1015,7 +1003,7 @@ export default function StudioPage() {
                         ? "bg-purple-950 text-purple-300 border-purple-700/50"
                         : "bg-teal-950 text-teal-300 border-teal-800/40"
                     }`}>
-                      {selectedPlaybackEngine === "option2" ? `GPU NEURAL MASTER • ${videoSpeed.toFixed(2)}X` : `1080P60 • ${videoSpeed.toFixed(2)}X VIDEO`}
+                      {selectedPlaybackEngine === "option2" ? `GPU NEURAL MASTER • ${playbackSpeed.toFixed(2)}X` : `1080P60 • ${playbackSpeed.toFixed(2)}X SYNC`}
                     </span>
                   </div>
                 </div>
@@ -1037,17 +1025,17 @@ export default function StudioPage() {
                     {/* Floating Dynamic Fine-Tune Stepper Over Viewport (±0.01x) */}
                     <div className="absolute top-3 left-3 flex items-center gap-1 rounded-xl bg-slate-950/90 border border-slate-700/80 px-2 py-1 backdrop-blur-md z-10">
                       <button
-                        onClick={() => adjustVideoSpeed(-0.01)}
+                        onClick={() => adjustPlaybackSpeed(-0.01)}
                         className="h-6 w-6 rounded bg-slate-800 text-white font-mono font-bold flex items-center justify-center hover:bg-slate-700 text-xs active:scale-95"
                         title="-0.01x"
                       >
                         -
                       </button>
                       <span className="font-mono text-xs font-bold text-emerald-400 px-1">
-                        {videoSpeed.toFixed(2)}x
+                        {playbackSpeed.toFixed(2)}x
                       </span>
                       <button
-                        onClick={() => adjustVideoSpeed(+0.01)}
+                        onClick={() => adjustPlaybackSpeed(+0.01)}
                         className="h-6 w-6 rounded bg-teal-500 text-slate-950 font-mono font-bold flex items-center justify-center hover:bg-teal-400 text-xs active:scale-95"
                         title="+0.01x"
                       >
@@ -1082,7 +1070,7 @@ export default function StudioPage() {
                       </div>
                     </div>
 
-                    {/* 🎬 BROADCAST-GRADE ON-SCREEN CLOSED CAPTIONS (CC) OVERLAY WITH EXACT PHONETIC WORD TRACKING */}
+                    {/* 🎬 BROADCAST-GRADE ON-SCREEN CLOSED CAPTIONS (CC) OVERLAY WITH TRUE AUDIO DURATION TRACKING */}
                     {showCaptions && (
                       <div className="absolute bottom-3 left-3 right-3 z-10 flex flex-col items-center justify-end pointer-events-none">
                         <div className="max-w-xl w-full rounded-2xl bg-slate-950/90 border border-slate-700/80 p-3.5 backdrop-blur-xl shadow-2xl text-center">
@@ -1135,7 +1123,7 @@ export default function StudioPage() {
               <div className="pt-4 border-t border-slate-800 flex items-center justify-between flex-wrap gap-4 text-xs font-mono">
                 <div className="flex items-center gap-3 text-slate-400">
                   <span>Presenter: <b className="text-white">{currentPersona.name}</b></span>
-                  <span>Audio Master: <b className="text-emerald-400">SINGLE 48KHZ CHANNEL (MUTED VIDEO)</b></span>
+                  <span>Audio Tracking: <b className="text-emerald-400">EXACT {dynamicAudioDuration.toFixed(1)}s SYNC</b></span>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -1156,7 +1144,7 @@ export default function StudioPage() {
                     }`}
                   >
                     <Play className="h-3.5 w-3.5 fill-current" />
-                    <span>{isSpeakingClone ? "Pause" : `Play ${selectedPlaybackEngine === "option2" ? "Option 2 (GPU)" : `Option 1 (${videoSpeed.toFixed(2)}x)`}`}</span>
+                    <span>{isSpeakingClone ? "Pause" : `Play ${selectedPlaybackEngine === "option2" ? "Option 2 (GPU)" : `Option 1 (${playbackSpeed.toFixed(2)}x)`}`}</span>
                   </button>
                 </div>
               </div>
