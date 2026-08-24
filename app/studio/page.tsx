@@ -43,175 +43,6 @@ import {
 export default function StudioPage() {
   const [studioMode, setStudioMode] = useState<"avatar" | "matrix" | "podcast">("avatar");
 
-  // Story & Emotion Themes
-  const [selectedTheme, setSelectedTheme] = useState<"keynote" | "executive" | "storyteller" | "thriller" | "fireside">("keynote");
-  const [selectedPersona, setSelectedPersona] = useState("victoria");
-  const [selectedBaseModel, setSelectedBaseModel] = useState<"Charon" | "Aoede" | "Puck" | "Kore" | "Fenrir">("Aoede");
-  const [selectedAccent, setSelectedAccent] = useState("uk_oxford");
-  const [selectedArchetype, setSelectedArchetype] = useState("chief_architect");
-
-  // Advanced Prosody Sliders
-  const [stability, setStability] = useState(85);
-  const [styleExaggeration, setStyleExaggeration] = useState(55);
-  const [breathDensity, setBreathDensity] = useState(30);
-
-  // Active Acoustic Telemetry Display
-  const [activeVoiceLabel, setActiveVoiceLabel] = useState("Victoria (DeepMind Aoede Soprano)");
-  const [activePitchRate, setActivePitchRate] = useState("Pitch: 1.22 • Rate: 0.98x");
-
-  // Prompt-to-Voice AI Designer
-  const [customVoicePrompt, setCustomVoicePrompt] = useState("");
-  const [isDesigningVoice, setIsDesigningVoice] = useState(false);
-
-  // Video & Audio Elements Ref
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  // Google DeepMind Video Synthesis State
-  const [isSynthesizingVideo, setIsSynthesizingVideo] = useState(false);
-  const [synthesisStage, setSynthesisStage] = useState<string>("");
-  const [synthesisProgress, setSynthesisProgress] = useState(0);
-
-  // Virtual Clone Script & Playback
-  const [cloneScript, setCloneScript] = useState(
-    "Good evening. I am Victoria, MasterClass Executive VP. [dramatic pause] Let us examine how Veritas auto-repair eliminates architectural drift and enforces compliance across all digital channels."
-  );
-  const [isSpeakingClone, setIsSpeakingClone] = useState(false);
-  const [spokenWordIndex, setSpokenWordIndex] = useState(-1);
-  const [audioPlaybackProgress, setAudioPlaybackProgress] = useState(0);
-
-  // 8 Dedicated Spotlight Personas with Google Veo 3.1 Motion Pictures
-  const storyPersonas: Record<string, { 
-    name: string; 
-    title: string; 
-    base: string; 
-    vibe: string; 
-    pitch: number; 
-    rate: number; 
-    gender: "female" | "male"; 
-    voiceKeywords: string[];
-    image: string;
-    videoUrl: string;
-    audioUrl?: string;
-    bodyLanguage: string;
-    introScript: string;
-  }> = {
-    victoria: { 
-      name: "Victoria (London)", 
-      title: "MasterClass Executive VP", 
-      base: "Aoede", 
-      vibe: "Magnetic, eloquent & expressive", 
-      pitch: 1.22, 
-      rate: 0.98, 
-      gender: "female",
-      voiceKeywords: ["Samantha", "Karen", "Victoria", "Google UK English Female", "female"],
-      image: "/assets/avatars/avatar_female_executive.jpg",
-      videoUrl: "/assets/video/victoria_veo_broadcast.mp4",
-      audioUrl: "/assets/audio/victoria_deepmind.wav",
-      bodyLanguage: "Articulate stage presence with active hand gestures & eye contact",
-      introScript: "Good evening. I am Victoria, MasterClass Executive VP. [dramatic pause] Let us examine how Veritas auto-repair eliminates architectural drift and enforces compliance across all digital channels."
-    },
-    priya: { 
-      name: "Priya (Bangalore)", 
-      title: "Global Transformation CTO", 
-      base: "Aoede", 
-      vibe: "Decisive & strategic clarity", 
-      pitch: 1.18, 
-      rate: 1.02, 
-      gender: "female",
-      voiceKeywords: ["Veena", "Google UK English Female", "Samantha", "en-IN", "female"],
-      image: "/assets/avatars/avatar_priya_cto.jpg",
-      videoUrl: "/assets/video/priya_veo_broadcast.mp4",
-      audioUrl: "/assets/audio/victoria_deepmind.wav",
-      bodyLanguage: "Articulate Indian female CTO with open hand keynote stage gestures",
-      introScript: "Hello! I am Priya, Global Transformation CTO. [dramatic pause] Traditional enterprise pipelines take 14 days and $140,000. Zyvoriq collapses this into 90 seconds with Veritas consensus and Ed25519 provenance."
-    },
-    david: { 
-      name: "David (Silicon Valley)", 
-      title: "Visionary Tech Orator & Founder", 
-      base: "Puck", 
-      vibe: "Inspiring, resonant & punchy", 
-      pitch: 1.05, 
-      rate: 1.10, 
-      gender: "male",
-      voiceKeywords: ["Google US English", "Alex", "Fred", "Arthur", "male"],
-      image: "/assets/avatars/avatar_keynote_gesture.jpg",
-      videoUrl: "/assets/video/david_veo_broadcast.mp4",
-      bodyLanguage: "Charismatic male founder on TED stage with open-hand gesture",
-      introScript: "Hey everyone, David here from Silicon Valley. We are radically accelerating enterprise AI content with sub-25 millisecond synthesis latency."
-    },
-    elena: { 
-      name: "Elena (Berlin)", 
-      title: "AI Tech Founder & Lead", 
-      base: "Kore", 
-      vibe: "High-energy visionary optimism", 
-      pitch: 1.26, 
-      rate: 1.12, 
-      gender: "female",
-      voiceKeywords: ["Victoria", "Samantha", "Karen", "female"],
-      image: "/assets/avatars/avatar_elena_founder.jpg",
-      videoUrl: "/assets/video/victoria_veo_broadcast.mp4",
-      bodyLanguage: "Enthusiastic female tech founder on Berlin stage with open arms",
-      introScript: "Hi everyone! I am Elena from Berlin. We are disrupting manual content workflows by replacing 14-day human delays with instant multi-agent swarm synthesis."
-    },
-    maya: { 
-      name: "Maya (Dublin)", 
-      title: "Intimate Fireside Novelist", 
-      base: "Kore", 
-      vibe: "Curious, lively & poignant", 
-      pitch: 1.28, 
-      rate: 0.90, 
-      gender: "female",
-      voiceKeywords: ["Tessa", "Moira", "Fiona", "Google US English", "female"],
-      image: "/assets/avatars/avatar_maya_fireside.jpg",
-      videoUrl: "/assets/video/victoria_veo_broadcast.mp4",
-      bodyLanguage: "Gentle empathetic smile, cozy book cafe with coffee mug",
-      introScript: "Welcome, I am Maya from Dublin. Pull up a chair. Today we reflect on the deeper story behind sovereign enterprise intelligence and algorithmic trust."
-    },
-    jonathan: { 
-      name: "Sir Jonathan (Oxford)", 
-      title: "DeepMind Documentary Baritone", 
-      base: "Charon", 
-      vibe: "Warm, deep & theatrical", 
-      pitch: 0.78, 
-      rate: 0.88, 
-      gender: "male",
-      voiceKeywords: ["Daniel", "Oliver", "George", "Google UK English Male", "en-GB", "male"],
-      image: "/assets/avatars/avatar_executive_gravitas.jpg",
-      videoUrl: "/assets/video/david_veo_broadcast.mp4",
-      bodyLanguage: "Commanding skyline boardroom presence with folded arms",
-      introScript: "I am Sir Jonathan. In this documentary briefing, we explore the cryptographic provenance of AI content generation and immutable ledger verification."
-    },
-    alister: { 
-      name: "Alister (Highlands)", 
-      title: "Scottish Senior Cloud Fellow", 
-      base: "Fenrir", 
-      vibe: "Distinguished, rich & thoughtful", 
-      pitch: 0.70, 
-      rate: 0.84, 
-      gender: "male",
-      voiceKeywords: ["Fiona", "Oliver", "Scottish", "Google UK English Male", "male"],
-      image: "/assets/avatars/avatar_fireside_journey.jpg",
-      videoUrl: "/assets/video/david_veo_broadcast.mp4",
-      bodyLanguage: "Distinguished Scottish fellow in fireside armchair",
-      introScript: "Greetings. Alister here. In my thirty years of enterprise infrastructure engineering, nothing has unified architectural governance like Zyvoriq's five-axis consensus."
-    },
-    marcus: { 
-      name: "Marcus Aurelius Tech", 
-      title: "Chief AI Architect & Founder", 
-      base: "Charon", 
-      vibe: "Commanding C-Suite Gravitas", 
-      pitch: 0.75, 
-      rate: 0.92, 
-      gender: "male",
-      voiceKeywords: ["Alex", "Daniel", "Google US English", "male"],
-      image: "/assets/avatars/avatar_executive_gravitas.jpg",
-      videoUrl: "/assets/video/david_veo_broadcast.mp4",
-      bodyLanguage: "Direct eye contact, sharp suit in executive boardroom",
-      introScript: "I am Marcus Aurelius Tech. We built Zyvoriq to deliver sovereign autonomous intelligence with zero third-party cloud data egress."
-    },
-  };
-
   // 5 Story & Emotion Themes
   const storyThemes = [
     { 
@@ -261,7 +92,177 @@ export default function StudioPage() {
     },
   ];
 
-  const currentPersona = storyPersonas[selectedPersona] || storyPersonas["victoria"];
+  // 8 Dedicated Spotlight Personas with Google Veo 3.1 Motion Pictures
+  const storyPersonas: Record<string, { 
+    name: string; 
+    title: string; 
+    base: string; 
+    vibe: string; 
+    pitch: number; 
+    rate: number; 
+    gender: "female" | "male"; 
+    voiceKeywords: string[];
+    image: string;
+    videoUrl: string;
+    audioUrl?: string;
+    bodyLanguage: string;
+    introScript: string;
+  }> = {
+    priya: { 
+      name: "Priya (Bangalore)", 
+      title: "Global Transformation CTO", 
+      base: "Aoede", 
+      vibe: "Decisive & strategic clarity", 
+      pitch: 1.18, 
+      rate: 1.02, 
+      gender: "female",
+      voiceKeywords: ["Veena", "Google UK English Female", "Samantha", "en-IN", "female"],
+      image: "/assets/avatars/avatar_priya_cto.jpg",
+      videoUrl: "/assets/video/priya_veo_broadcast.mp4",
+      audioUrl: "/assets/audio/priya_deepmind.wav",
+      bodyLanguage: "Articulate Indian female CTO with open hand keynote stage gestures",
+      introScript: "Hello! I am Priya, Global Transformation CTO. [dramatic pause] Traditional enterprise pipelines take 14 days and $140,000. Zyvoriq collapses this into 90 seconds with Veritas consensus and Ed25519 provenance."
+    },
+    victoria: { 
+      name: "Victoria (London)", 
+      title: "MasterClass Executive VP", 
+      base: "Aoede", 
+      vibe: "Magnetic, eloquent & expressive", 
+      pitch: 1.22, 
+      rate: 0.98, 
+      gender: "female",
+      voiceKeywords: ["Samantha", "Karen", "Victoria", "Google UK English Female", "female"],
+      image: "/assets/avatars/avatar_female_executive.jpg",
+      videoUrl: "/assets/video/victoria_veo_broadcast.mp4",
+      audioUrl: "/assets/audio/victoria_deepmind.wav",
+      bodyLanguage: "Articulate stage presence with active hand gestures & eye contact",
+      introScript: "Good evening. I am Victoria, MasterClass Executive VP. [dramatic pause] Let us examine how Veritas auto-repair eliminates architectural drift and enforces compliance across all digital channels."
+    },
+    david: { 
+      name: "David (Silicon Valley)", 
+      title: "Visionary Tech Orator & Founder", 
+      base: "Puck", 
+      vibe: "Inspiring, resonant & punchy", 
+      pitch: 1.05, 
+      rate: 1.10, 
+      gender: "male",
+      voiceKeywords: ["Google US English", "Alex", "Fred", "Arthur", "male"],
+      image: "/assets/avatars/avatar_keynote_gesture.jpg",
+      videoUrl: "/assets/video/david_veo_broadcast.mp4",
+      bodyLanguage: "Charismatic male founder on TED stage with open-hand gesture",
+      introScript: "Hey everyone, David here from Silicon Valley. We are radically accelerating enterprise AI content with sub-25 millisecond synthesis latency."
+    },
+    elena: { 
+      name: "Elena (Berlin)", 
+      title: "AI Tech Founder & Lead", 
+      base: "Kore", 
+      vibe: "High-energy visionary optimism", 
+      pitch: 1.26, 
+      rate: 1.12, 
+      gender: "female",
+      voiceKeywords: ["Victoria", "Samantha", "Karen", "female"],
+      image: "/assets/avatars/avatar_elena_founder.jpg",
+      videoUrl: "/assets/video/victoria_veo_broadcast.mp4",
+      audioUrl: "/assets/audio/victoria_deepmind.wav",
+      bodyLanguage: "Enthusiastic female tech founder on Berlin stage with open arms",
+      introScript: "Hi everyone! I am Elena from Berlin. We are disrupting manual content workflows by replacing 14-day human delays with instant multi-agent swarm synthesis."
+    },
+    maya: { 
+      name: "Maya (Dublin)", 
+      title: "Intimate Fireside Novelist", 
+      base: "Kore", 
+      vibe: "Curious, lively & poignant", 
+      pitch: 1.28, 
+      rate: 0.90, 
+      gender: "female",
+      voiceKeywords: ["Tessa", "Moira", "Fiona", "Google US English", "female"],
+      image: "/assets/avatars/avatar_maya_fireside.jpg",
+      videoUrl: "/assets/video/priya_veo_broadcast.mp4",
+      audioUrl: "/assets/audio/priya_deepmind.wav",
+      bodyLanguage: "Gentle empathetic smile, cozy book cafe with coffee mug",
+      introScript: "Welcome, I am Maya from Dublin. Pull up a chair. Today we reflect on the deeper story behind sovereign enterprise intelligence and algorithmic trust."
+    },
+    jonathan: { 
+      name: "Sir Jonathan (Oxford)", 
+      title: "DeepMind Documentary Baritone", 
+      base: "Charon", 
+      vibe: "Warm, deep & theatrical", 
+      pitch: 0.78, 
+      rate: 0.88, 
+      gender: "male",
+      voiceKeywords: ["Daniel", "Oliver", "George", "Google UK English Male", "en-GB", "male"],
+      image: "/assets/avatars/avatar_executive_gravitas.jpg",
+      videoUrl: "/assets/video/david_veo_broadcast.mp4",
+      bodyLanguage: "Commanding skyline boardroom presence with folded arms",
+      introScript: "I am Sir Jonathan. In this documentary briefing, we explore the cryptographic provenance of AI content generation and immutable ledger verification."
+    },
+    alister: { 
+      name: "Alister (Highlands)", 
+      title: "Scottish Senior Cloud Fellow", 
+      base: "Fenrir", 
+      vibe: "Distinguished, rich & thoughtful", 
+      pitch: 0.70, 
+      rate: 0.84, 
+      gender: "male",
+      voiceKeywords: ["Fiona", "Oliver", "Scottish", "Google UK English Male", "male"],
+      image: "/assets/avatars/avatar_fireside_journey.jpg",
+      videoUrl: "/assets/video/david_veo_broadcast.mp4",
+      bodyLanguage: "Distinguished Scottish fellow in fireside armchair",
+      introScript: "Greetings. Alister here. In my thirty years of enterprise infrastructure engineering, nothing has unified architectural governance like Zyvoriq's five-axis consensus."
+    },
+    marcus: { 
+      name: "Marcus Aurelius Tech", 
+      title: "Chief AI Architect & Founder", 
+      base: "Charon", 
+      vibe: "Commanding C-Suite Gravitas", 
+      pitch: 0.75, 
+      rate: 0.92, 
+      gender: "male",
+      voiceKeywords: ["Alex", "Daniel", "Google US English", "male"],
+      image: "/assets/avatars/avatar_executive_gravitas.jpg",
+      videoUrl: "/assets/video/david_veo_broadcast.mp4",
+      bodyLanguage: "Direct eye contact, sharp suit in executive boardroom",
+      introScript: "I am Marcus Aurelius Tech. We built Zyvoriq to deliver sovereign autonomous intelligence with zero third-party cloud data egress."
+    },
+  };
+
+  const [selectedTheme, setSelectedTheme] = useState<"keynote" | "executive" | "storyteller" | "thriller" | "fireside">("keynote");
+  const [selectedPersona, setSelectedPersona] = useState("priya");
+  const [selectedBaseModel, setSelectedBaseModel] = useState<"Charon" | "Aoede" | "Puck" | "Kore" | "Fenrir">("Aoede");
+  const [selectedAccent, setSelectedAccent] = useState("in_bangalore");
+  const [selectedArchetype, setSelectedArchetype] = useState("chief_architect");
+
+  // Advanced Prosody Sliders
+  const [stability, setStability] = useState(85);
+  const [styleExaggeration, setStyleExaggeration] = useState(55);
+  const [breathDensity, setBreathDensity] = useState(30);
+
+  // Active Acoustic Telemetry Display
+  const [activeVoiceLabel, setActiveVoiceLabel] = useState("Priya (DeepMind Aoede Soprano)");
+  const [activePitchRate, setActivePitchRate] = useState("Pitch: 1.18 • Rate: 1.02x");
+
+  // Prompt-to-Voice AI Designer
+  const [customVoicePrompt, setCustomVoicePrompt] = useState("");
+  const [isDesigningVoice, setIsDesigningVoice] = useState(false);
+
+  // Video & Audio Elements Ref
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Google DeepMind Video Synthesis State
+  const [isSynthesizingVideo, setIsSynthesizingVideo] = useState(false);
+  const [synthesisStage, setSynthesisStage] = useState<string>("");
+  const [synthesisProgress, setSynthesisProgress] = useState(0);
+
+  // Virtual Clone Script & Playback
+  const [cloneScript, setCloneScript] = useState(
+    "Hello! I am Priya, Global Transformation CTO. [dramatic pause] Traditional enterprise pipelines take 14 days and $140,000. Zyvoriq collapses this into 90 seconds with Veritas consensus and Ed25519 provenance."
+  );
+  const [isSpeakingClone, setIsSpeakingClone] = useState(false);
+  const [spokenWordIndex, setSpokenWordIndex] = useState(-1);
+  const [audioPlaybackProgress, setAudioPlaybackProgress] = useState(0);
+
+  const currentPersona = storyPersonas[selectedPersona] || storyPersonas["priya"];
 
   // Update telemetry banner whenever state changes
   useEffect(() => {
@@ -487,7 +488,7 @@ export default function StudioPage() {
 
       {/* Hidden Synchronized DeepMind Audio Element */}
       {currentPersona.audioUrl && (
-        <audio ref={audioRef} src={currentPersona.audioUrl} preload="auto" />
+        <audio ref={audioRef} key={currentPersona.audioUrl} src={currentPersona.audioUrl} preload="auto" />
       )}
 
       <main className="mx-auto max-w-[1720px] px-6 py-8 md:px-10 md:py-10 lg:px-12">
