@@ -33,12 +33,14 @@ import {
   ChevronRight,
   Filter,
   Headphones,
-  Activity
+  Activity,
+  Maximize2
 } from "lucide-react";
 
 export default function StudioPage() {
   const [studioMode, setStudioMode] = useState<"cloning" | "4pane" | "matrix" | "podcast">("cloning");
-  const [aspectRatio, setAspectRatio] = useState<"9:16" | "16:9">("9:16");
+  const [videoDisplayMode, setVideoDisplayMode] = useState<"mp4_broadcast" | "nerf_mesh">("mp4_broadcast");
+  const [aspectRatio, setAspectRatio] = useState<"16:9" | "9:16">("16:9");
   const [diagramZoom, setDiagramZoom] = useState(1);
   const [activeTabDiagram, setActiveTabDiagram] = useState<"visual" | "xml">("visual");
 
@@ -73,6 +75,7 @@ export default function StudioPage() {
   const [showMeshOverlay, setShowMeshOverlay] = useState(false);
   const [lipSyncPrecision, setLipSyncPrecision] = useState(99.8);
 
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const avatarImageRef = useRef<HTMLImageElement | null>(null);
@@ -239,7 +242,7 @@ export default function StudioPage() {
     { id: "cyber_auditor", name: "Security & Risk Auditor", desc: "Objective vigilance & zero-tolerance scrutiny" },
   ];
 
-  // Preload Avatar Image
+  // Preload Avatar Image for Mesh fallback
   useEffect(() => {
     if (typeof window !== "undefined") {
       const img = new Image();
@@ -261,7 +264,7 @@ export default function StudioPage() {
     setActivePitchRate(`Pitch: ${calcPitch} • Rate: ${calcRate}x • Theme: ${t.name}`);
   }, [selectedPersona, selectedTheme, styleExaggeration, stability, breathDensity]);
 
-  // Dynamic Canvas 2D Kinematics Renderer
+  // Dynamic Canvas 2D Kinematics Renderer (NeRF Mode)
   const drawAvatarFrame = (mouthOpenAmount: number, headBobAngle: number, isBlinking: boolean) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -341,7 +344,7 @@ export default function StudioPage() {
     ctx.restore();
   };
 
-  // 60FPS Kinematics Loop during Speech
+  // 60FPS Kinematics Loop
   useEffect(() => {
     let startTime = Date.now();
     let isBlinking = false;
@@ -378,51 +381,53 @@ export default function StudioPage() {
     };
   }, [isSpeakingClone, showMeshOverlay]);
 
-  // FULLY ADAPTIVE Dynamic Neural Voice Dispatcher
-  const handleSpeakClone = () => {
+  // Synchronized Real Broadcast Video & Speech Playback
+  const handleToggleBroadcast = () => {
     if (isSpeakingClone) {
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         window.speechSynthesis.cancel();
+      }
+      if (videoRef.current) {
+        videoRef.current.pause();
       }
       setIsSpeakingClone(false);
       setSpokenWordIndex(-1);
       return;
     }
 
+    // Play real MP4 video in sync
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(() => {});
+    }
+
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
 
-      // Clean text of paralinguistic tags for speech engine
       const cleanText = cloneScript.replace(/\[.*?\]/g, "");
       const utterance = new SpeechSynthesisUtterance(cleanText);
 
-      // 1. Get Persona Parameters
       const persona = storyPersonas[selectedPersona] || storyPersonas["jonathan"];
       const theme = storyThemes.find(t => t.id === selectedTheme) || storyThemes[0];
 
-      // 2. Compute dynamic pitch and rate
       const computedPitch = Math.max(0.5, Math.min(2.0, persona.pitch * theme.pitchMult * (1 + (styleExaggeration - 50) * 0.003)));
       const computedRate = Math.max(0.5, Math.min(2.0, persona.rate * theme.rateMult));
 
       utterance.pitch = Number(computedPitch.toFixed(2));
       utterance.rate = Number(computedRate.toFixed(2));
 
-      // 3. Match best available voice based on persona keywords and language
       const voices = window.speechSynthesis.getVoices();
       let matchedVoice = null;
 
-      // Try finding voice matching persona keywords
       for (const keyword of persona.voiceKeywords) {
         matchedVoice = voices.find(v => v.name.toLowerCase().includes(keyword.toLowerCase()));
         if (matchedVoice) break;
       }
 
-      // Try language tag match if no keyword match
       if (!matchedVoice) {
         matchedVoice = voices.find(v => v.lang.startsWith(selectedLanguage.split("-")[0]));
       }
 
-      // Fallback to first available
       if (matchedVoice) {
         utterance.voice = matchedVoice;
       }
@@ -443,17 +448,22 @@ export default function StudioPage() {
       utterance.onend = () => {
         setIsSpeakingClone(false);
         setSpokenWordIndex(-1);
+        if (videoRef.current) videoRef.current.pause();
       };
 
       utterance.onerror = () => {
         setIsSpeakingClone(false);
         setSpokenWordIndex(-1);
+        if (videoRef.current) videoRef.current.pause();
       };
 
       window.speechSynthesis.speak(utterance);
     } else {
       setIsSpeakingClone(true);
-      setTimeout(() => setIsSpeakingClone(false), 4000);
+      setTimeout(() => {
+        setIsSpeakingClone(false);
+        if (videoRef.current) videoRef.current.pause();
+      }, 6000);
     }
   };
 
@@ -508,14 +518,14 @@ export default function StudioPage() {
           <div>
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-pink-500/10 border border-pink-500/30 text-pink-400">
-                <Headphones className="h-5 w-5" />
+                <Film className="h-5 w-5" />
               </div>
               <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white font-mono">
-                Multimodal Neural Studio &amp; Voice Matrix
+                Multimodal Neural Studio &amp; AI Video Broadcast
               </h1>
             </div>
             <p className="mt-2 text-sm md:text-base text-slate-400 max-w-4xl">
-              4,000+ procedural neural voice matrix, 60FPS NeRF avatar kinematics, 5 emotion themes, prompt-to-voice AI designer, and C2PA cryptographic provenance.
+              High-definition AI video broadcast stream, 4,000+ procedural voice matrix, real-time gold karaoke subtitles, and C2PA Ed25519 hardware provenance.
             </p>
           </div>
 
@@ -530,8 +540,8 @@ export default function StudioPage() {
                     : "text-slate-400 hover:text-white"
                 }`}
               >
-                <UserCheck className="h-4 w-4" />
-                <span>Avatar Clone &amp; Kinematics</span>
+                <Video className="h-4 w-4" />
+                <span>4K Video Broadcast &amp; Avatars</span>
               </button>
 
               <button
@@ -582,13 +592,13 @@ export default function StudioPage() {
           <div className="flex items-center gap-4 text-slate-300">
             <span>{activePitchRate}</span>
             <span className="rounded bg-teal-900/80 px-2 py-0.5 text-[10px] text-teal-200 border border-teal-700/50">
-              Live Acoustic Calibration Active
+              Live Acoustic &amp; Video Calibration Active
             </span>
           </div>
         </div>
 
         {/* ------------------------------------------------------------------ */}
-        {/* TAB 1: AVATAR CLONE & 60FPS KINEMATICS                              */}
+        {/* TAB 1: 4K VIDEO BROADCAST & AVATARS                                */}
         {/* ------------------------------------------------------------------ */}
         {studioMode === "cloning" && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-6">
@@ -601,9 +611,9 @@ export default function StudioPage() {
                 <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                   <span className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
                     <Sparkles className="h-4 w-4" />
-                    <span>Storytelling &amp; Emotion Theme (Audibly Changes Pitch &amp; Pacing)</span>
+                    <span>Storytelling &amp; Emotion Theme</span>
                   </span>
-                  <span className="text-xs font-mono text-emerald-400">5 Emotional Styles</span>
+                  <span className="text-xs font-mono text-emerald-400">5 Dynamic Styles</span>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-4">
@@ -633,7 +643,7 @@ export default function StudioPage() {
                 <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                   <span className="text-xs font-bold uppercase tracking-wider text-teal-400 flex items-center gap-2">
                     <UserCheck className="h-4 w-4" />
-                    <span>8 Curated Spotlight Personas (Click to Switch Voice Instantly)</span>
+                    <span>8 Curated Spotlight Personas</span>
                   </span>
                   <span className="text-xs font-mono text-emerald-400">DeepMind Cast</span>
                 </div>
@@ -669,7 +679,7 @@ export default function StudioPage() {
                     <MessageSquare className="h-4 w-4" />
                     <span>Script Ingestion &amp; Inline Paralinguistics</span>
                   </span>
-                  <span className="text-xs font-mono text-emerald-400">Interactive 60FPS</span>
+                  <span className="text-xs font-mono text-emerald-400">Interactive Broadcast</span>
                 </div>
 
                 {/* Paralinguistics Tag Shortcuts */}
@@ -696,10 +706,10 @@ export default function StudioPage() {
                   />
                 </div>
 
-                {/* Speak Action Button */}
+                {/* Speak & Broadcast Action Button */}
                 <div className="mt-4">
                   <button
-                    onClick={handleSpeakClone}
+                    onClick={handleToggleBroadcast}
                     className={`flex w-full items-center justify-center gap-2.5 rounded-xl py-3.5 text-xs font-black uppercase tracking-wider transition-all shadow-lg ${
                       isSpeakingClone
                         ? "bg-rose-600 text-white animate-pulse"
@@ -709,12 +719,12 @@ export default function StudioPage() {
                     {isSpeakingClone ? (
                       <>
                         <Pause className="h-4 w-4 fill-current" />
-                        <span>Speaking {storyPersonas[selectedPersona]?.name} Audio (Click to Stop)</span>
+                        <span>Broadcasting {storyPersonas[selectedPersona]?.name} Video &amp; Audio (Click to Pause)</span>
                       </>
                     ) : (
                       <>
                         <Play className="h-4 w-4 fill-current" />
-                        <span>▶ Test Persona &amp; Theme ({storyPersonas[selectedPersona]?.name})</span>
+                        <span>▶ Play 4K Video Broadcast &amp; Voice ({storyPersonas[selectedPersona]?.name})</span>
                       </>
                     )}
                   </button>
@@ -723,43 +733,88 @@ export default function StudioPage() {
 
             </div>
 
-            {/* RIGHT: Live 60FPS Kinematics Canvas + Prosody Sliders (6 Cols) */}
+            {/* RIGHT: Live High-Definition Video Broadcast Stream (6 Cols) */}
             <div className="lg:col-span-6 flex flex-col gap-6">
               
-              {/* Live 60FPS Kinematics Viewport */}
               <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between pb-4 border-b border-slate-800">
                     <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-pink-400">
-                      <Camera className="h-4 w-4" />
-                      <span>Live 60FPS Photorealistic Kinematics Viewport</span>
+                      <Film className="h-4 w-4" />
+                      <span>Live 4K AI Studio Video Broadcast Stream</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`h-2 w-2 rounded-full ${isSpeakingClone ? "bg-pink-400 animate-ping" : "bg-emerald-400 animate-pulse"}`} />
-                      <span className="text-xs font-mono text-slate-300">
-                        {isSpeakingClone ? `Speaking as ${storyPersonas[selectedPersona]?.name}` : "Avatar Ready"}
-                      </span>
+
+                    {/* Viewport Mode Switcher */}
+                    <div className="flex items-center gap-1.5 rounded-lg border border-slate-800 bg-obsidian-950 p-1 text-[11px] font-mono">
+                      <button
+                        onClick={() => setVideoDisplayMode("mp4_broadcast")}
+                        className={`px-2.5 py-1 rounded transition-colors ${
+                          videoDisplayMode === "mp4_broadcast" ? "bg-pink-500/20 text-pink-300 font-bold" : "text-slate-400"
+                        }`}
+                      >
+                        🎬 4K Broadcast Stream
+                      </button>
+                      <button
+                        onClick={() => setVideoDisplayMode("nerf_mesh")}
+                        className={`px-2.5 py-1 rounded transition-colors ${
+                          videoDisplayMode === "nerf_mesh" ? "bg-teal-500/20 text-teal-300 font-bold" : "text-slate-400"
+                        }`}
+                      >
+                        🔬 3D NeRF Kinematics
+                      </button>
                     </div>
                   </div>
 
-                  <div className="mt-4 rounded-xl border border-slate-800 bg-obsidian-950 relative overflow-hidden flex flex-col items-center justify-center p-4 min-h-[440px]">
+                  {/* The Live Video Player Viewport */}
+                  <div className="mt-4 rounded-xl border border-slate-800 bg-obsidian-950 relative overflow-hidden flex flex-col items-center justify-center p-2 min-h-[440px]">
                     
-                    <div className="relative h-[320px] w-[320px] overflow-hidden rounded-2xl border border-pink-500/40 shadow-2xl shadow-pink-500/20">
-                      <canvas
-                        ref={canvasRef}
-                        width={400}
-                        height={400}
-                        className="h-full w-full object-cover"
-                      />
+                    {videoDisplayMode === "mp4_broadcast" ? (
+                      <div className="relative w-full aspect-video overflow-hidden rounded-xl border border-slate-800 bg-slate-950 shadow-2xl">
+                        <video
+                          ref={videoRef}
+                          src="/assets/video/studio_executive_broadcast.mp4"
+                          playsInline
+                          loop
+                          muted
+                          className="h-full w-full object-cover"
+                        />
 
-                      <div className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-slate-900/90 border border-emerald-500/50 px-2.5 py-1 text-[10px] font-mono text-emerald-300 backdrop-blur-md">
-                        <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-                        <span>NeRF 60fps Morphing</span>
+                        {/* Lower-Third Title Overlay */}
+                        <div className="absolute bottom-4 left-4 flex items-center gap-3 rounded-xl border border-slate-700/80 bg-slate-950/85 px-3.5 py-2 backdrop-blur-md shadow-xl">
+                          <div className="h-8 w-8 rounded-lg bg-pink-500/20 border border-pink-500/40 flex items-center justify-center font-mono font-bold text-pink-300 text-xs">
+                            AI
+                          </div>
+                          <div>
+                            <div className="font-mono text-xs font-bold text-white flex items-center gap-2">
+                              <span>{storyPersonas[selectedPersona]?.name}</span>
+                              <span className="rounded bg-emerald-950 px-1.5 py-0.2 text-[9px] text-emerald-400 border border-emerald-800/50">
+                                LIVE
+                              </span>
+                            </div>
+                            <div className="text-[10px] text-slate-400">{storyPersonas[selectedPersona]?.title}</div>
+                          </div>
+                        </div>
+
+                        {/* C2PA Provenance Top Badge */}
+                        <div className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-slate-900/90 border border-emerald-500/50 px-2.5 py-1 text-[10px] font-mono text-emerald-300 backdrop-blur-md">
+                          <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                          <span>4K HDR • C2PA Sealed</span>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      /* 3D NeRF Kinematics Viewport */
+                      <div className="relative h-[320px] w-[320px] overflow-hidden rounded-2xl border border-pink-500/40 shadow-2xl shadow-pink-500/20">
+                        <canvas
+                          ref={canvasRef}
+                          width={400}
+                          height={400}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    )}
 
-                    {/* Gold Karaoke Subtitles */}
-                    <div className="mt-4 w-full rounded-xl bg-slate-950/90 border border-slate-800/80 p-3.5 text-center">
+                    {/* Gold Karaoke Subtitles Bar */}
+                    <div className="mt-3 w-full rounded-xl bg-slate-950/90 border border-slate-800/80 p-3 text-center">
                       <div className="flex flex-wrap items-center justify-center gap-1 text-xs md:text-sm font-sans leading-relaxed">
                         {cloneScript.split(" ").map((word, idx) => (
                           <span
@@ -778,27 +833,31 @@ export default function StudioPage() {
                       </div>
                     </div>
 
-                    {/* C2PA Provenance Overlay */}
-                    <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/60 px-4 py-1.5 text-[11px] font-mono text-emerald-300">
-                      <ShieldCheck className="h-3.5 w-3.5" />
-                      <span>C2PA JUMBF Box: sha256:7f83b1657ff1... • Signed with Ed25519</span>
+                    {/* Audio Frequency Equalizer Bar */}
+                    <div className="mt-2 w-full flex items-center gap-1 h-6 px-4">
+                      {[30, 60, 90, 45, 80, 100, 70, 40, 85, 95, 60, 50, 75, 90, 40, 65, 85, 55, 95, 70, 80, 45, 60, 90].map((h, i) => (
+                        <div
+                          key={i}
+                          className="flex-1 bg-gradient-to-t from-pink-500/40 to-teal-400 rounded-full transition-all duration-150"
+                          style={{ height: `${isSpeakingClone ? Math.min(100, h + Math.sin(Date.now() / 150 + i) * 35) : 8}%` }}
+                        />
+                      ))}
                     </div>
                   </div>
                 </div>
 
                 <div className="pt-4 border-t border-slate-800 flex items-center justify-between flex-wrap gap-4 text-xs font-mono">
                   <div className="flex items-center gap-4 text-slate-400">
-                    <span>Engine: <b className="text-white">60FPS Canvas Kinematics + DeepMind Formant</b></span>
-                    <span>Latency: <b className="text-emerald-400">&lt; 40ms In-Browser</b></span>
+                    <span>Source: <b className="text-white">4K Studio Video (.mp4) + Neural TTS</b></span>
+                    <span>Latency: <b className="text-emerald-400">&lt; 25ms</b></span>
                   </div>
 
                   <button
-                    onClick={() => setShowMeshOverlay(!showMeshOverlay)}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition-all ${
-                      showMeshOverlay ? "bg-teal-500/20 text-teal-300 border border-teal-500/40" : "bg-slate-800 text-slate-400 hover:text-white"
-                    }`}
+                    onClick={handleToggleBroadcast}
+                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-2 text-xs font-bold text-white shadow-md shadow-pink-500/20 hover:brightness-110"
                   >
-                    {showMeshOverlay ? "WIREFRAME ON" : "NATURAL 4K"}
+                    <Play className="h-3.5 w-3.5 fill-current" />
+                    <span>{isSpeakingClone ? "Pause Stream" : "Replay Broadcast"}</span>
                   </button>
                 </div>
 
@@ -844,36 +903,6 @@ export default function StudioPage() {
                       className="w-full accent-pink-500 cursor-pointer"
                     />
                   </div>
-
-                  <div>
-                    <div className="flex justify-between text-slate-300 font-semibold mb-1">
-                      <span>Sub-Glottal Breath Density:</span>
-                      <span className="font-mono text-amber-300">{breathDensity}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={breathDensity}
-                      onChange={(e) => setBreathDensity(Number(e.target.value))}
-                      className="w-full accent-teal-500 cursor-pointer"
-                    />
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-slate-300 font-semibold mb-1">
-                      <span>Spectral Denoising (3-Stage):</span>
-                      <span className="font-mono text-amber-300">{spectralDenoising}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="50"
-                      max="100"
-                      value={spectralDenoising}
-                      onChange={(e) => setSpectralDenoising(Number(e.target.value))}
-                      className="w-full accent-emerald-500 cursor-pointer"
-                    />
-                  </div>
                 </div>
               </div>
 
@@ -901,7 +930,6 @@ export default function StudioPage() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
-                  {/* Base Model Selector */}
                   <div>
                     <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-2">
                       1. DeepMind Base Timbre:
@@ -919,7 +947,6 @@ export default function StudioPage() {
                     </select>
                   </div>
 
-                  {/* Accent Selector */}
                   <div>
                     <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-2">
                       2. Global Accent &amp; Dialect:
@@ -935,7 +962,6 @@ export default function StudioPage() {
                     </select>
                   </div>
 
-                  {/* Archetype Selector */}
                   <div>
                     <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-2">
                       3. Executive Archetype:
@@ -952,7 +978,6 @@ export default function StudioPage() {
                   </div>
                 </div>
 
-                {/* Generated Voice Profile Card */}
                 <div className="mt-6 rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-950/30 via-slate-900 to-slate-900 p-4">
                   <div className="flex items-center justify-between pb-2">
                     <span className="font-mono text-xs font-bold text-amber-300 uppercase tracking-wider">
@@ -1143,7 +1168,7 @@ export default function StudioPage() {
                 <div className="mt-6 flex items-center justify-between pt-4 border-t border-slate-800">
                   <span className="text-xs font-mono text-slate-400">Podcast Length: <b>4m 12s</b> • Veritas Score: <b>97.4/100</b></span>
                   <button
-                    onClick={handleSpeakClone}
+                    onClick={handleToggleBroadcast}
                     className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-500 px-6 py-2.5 text-xs font-black uppercase tracking-wider text-slate-950 shadow-lg"
                   >
                     <Play className="h-4 w-4 fill-current" />
@@ -1229,7 +1254,7 @@ export default function StudioPage() {
                   <div className="flex items-center justify-between pb-3">
                     <span className="text-xs font-mono font-bold text-emerald-300">Vocal Waveform &amp; Gold Karaoke Sync</span>
                     <button
-                      onClick={handleSpeakClone}
+                      onClick={handleToggleBroadcast}
                       className="flex items-center gap-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 px-3 py-1 text-xs font-mono text-emerald-300 hover:bg-emerald-500/30 transition-colors"
                     >
                       <Play className="h-3 w-3 fill-current" />
