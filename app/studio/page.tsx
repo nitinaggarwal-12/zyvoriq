@@ -39,9 +39,12 @@ import {
   Award,
   Lock,
   Plus,
+  Minus,
   X,
   UserPlus,
-  Gauge
+  Gauge,
+  FastForward,
+  Rewind
 } from "lucide-react";
 
 interface PersonaConfig {
@@ -208,8 +211,9 @@ export default function StudioPage() {
   const [selectedPersona, setSelectedPersona] = useState("priya");
   const [selectedBaseModel, setSelectedBaseModel] = useState<"Charon" | "Aoede" | "Puck" | "Kore" | "Fenrir">("Aoede");
 
-  // Speed & Tempo Controller (0.5x to 2.5x)
-  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.25);
+  // Independent Video & Audio Speed Stepper Controls (0.1x increments)
+  const [videoSpeed, setVideoSpeed] = useState<number>(1.40); // Default to 1.4x so video runs fast & snappy
+  const [audioSpeed, setAudioSpeed] = useState<number>(1.00);
 
   // Advanced Prosody Sliders
   const [stability, setStability] = useState(85);
@@ -218,7 +222,7 @@ export default function StudioPage() {
 
   // Active Acoustic Telemetry Display
   const [activeVoiceLabel, setActiveVoiceLabel] = useState("Priya (DeepMind Aoede Soprano)");
-  const [activePitchRate, setActivePitchRate] = useState("Pitch: 1.18 • Speed: 1.25x");
+  const [activePitchRate, setActivePitchRate] = useState("Video: 1.40x • Audio: 1.00x");
 
   // Custom Persona Creation Modal State
   const [isCreatingPersona, setIsCreatingPersona] = useState(false);
@@ -254,18 +258,38 @@ export default function StudioPage() {
     const t = storyThemes.find(theme => theme.id === selectedTheme) || storyThemes[0];
     const calcPitch = (p.pitch * t.pitchMult * (1 + (styleExaggeration - 50) * 0.003)).toFixed(2);
     setActiveVoiceLabel(`${p.name} (${p.base} • ${p.vibe})`);
-    setActivePitchRate(`Pitch: ${calcPitch} • Speed: ${playbackSpeed}x • Emotion: ${t.name}`);
-  }, [selectedPersona, selectedTheme, styleExaggeration, stability, breathDensity, personas, playbackSpeed]);
+    setActivePitchRate(`Pitch: ${calcPitch} • Video Speed: ${videoSpeed.toFixed(1)}x • Audio: ${audioSpeed.toFixed(1)}x`);
+  }, [selectedPersona, selectedTheme, styleExaggeration, stability, breathDensity, personas, videoSpeed, audioSpeed]);
 
-  // Update Video and Audio Playback Rate whenever speed state changes
+  // Update Video Playback Rate in real time
   useEffect(() => {
     if (videoRef.current) {
-      videoRef.current.playbackRate = playbackSpeed;
+      videoRef.current.playbackRate = videoSpeed;
     }
+  }, [videoSpeed]);
+
+  // Update Audio Playback Rate in real time
+  useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.playbackRate = playbackSpeed;
+      audioRef.current.playbackRate = audioSpeed;
     }
-  }, [playbackSpeed]);
+  }, [audioSpeed]);
+
+  // Stepper Handlers for Video Speed (±0.1x)
+  const adjustVideoSpeed = (delta: number) => {
+    setVideoSpeed((prev) => {
+      const next = Math.max(0.5, Math.min(3.0, Math.round((prev + delta) * 10) / 10));
+      return next;
+    });
+  };
+
+  // Stepper Handlers for Audio Speed (±0.1x)
+  const adjustAudioSpeed = (delta: number) => {
+    setAudioSpeed((prev) => {
+      const next = Math.max(0.5, Math.min(2.5, Math.round((prev + delta) * 10) / 10));
+      return next;
+    });
+  };
 
   // Smooth Subtitle Progress Tracker
   useEffect(() => {
@@ -298,7 +322,7 @@ export default function StudioPage() {
     };
   }, [cloneScript, selectedPersona]);
 
-  // Synchronized Persona Voice & Video Playback Trigger with Speed Multiplier
+  // Synchronized Persona Voice & Video Playback Trigger
   const handleToggleBroadcast = () => {
     if (isSpeakingClone) {
       if (videoRef.current) {
@@ -315,12 +339,12 @@ export default function StudioPage() {
       return;
     }
 
-    // Play DeepMind 48kHz Neural Audio with speed multiplier
+    // Play DeepMind 48kHz Neural Audio with user-calibrated video & audio rates
     if (currentPersona.audioUrl && audioRef.current && videoRef.current) {
       audioRef.current.currentTime = 0;
       videoRef.current.currentTime = 0;
-      audioRef.current.playbackRate = playbackSpeed;
-      videoRef.current.playbackRate = playbackSpeed;
+      audioRef.current.playbackRate = audioSpeed;
+      videoRef.current.playbackRate = videoSpeed;
       
       videoRef.current.play().catch(() => {});
       audioRef.current.play().catch(() => {});
@@ -330,7 +354,7 @@ export default function StudioPage() {
 
     if (videoRef.current) {
       videoRef.current.currentTime = 0;
-      videoRef.current.playbackRate = playbackSpeed;
+      videoRef.current.playbackRate = videoSpeed;
       videoRef.current.play().catch(() => {});
     }
 
@@ -344,7 +368,7 @@ export default function StudioPage() {
       const theme = storyThemes.find(t => t.id === selectedTheme) || storyThemes[0];
 
       const computedPitch = Math.max(0.5, Math.min(2.0, persona.pitch * theme.pitchMult * (1 + (styleExaggeration - 50) * 0.003)));
-      const computedRate = Math.max(0.5, Math.min(2.5, persona.rate * theme.rateMult * (playbackSpeed / 1.0)));
+      const computedRate = Math.max(0.5, Math.min(2.5, persona.rate * theme.rateMult * audioSpeed));
 
       utterance.pitch = Number(computedPitch.toFixed(2));
       utterance.rate = Number(computedRate.toFixed(2));
@@ -399,7 +423,7 @@ export default function StudioPage() {
       setIsSpeakingClone(true);
       setTimeout(() => {
         setIsSpeakingClone(false);
-      }, 6000 / playbackSpeed);
+      }, 6000 / audioSpeed);
     }
   };
 
@@ -617,7 +641,7 @@ export default function StudioPage() {
               </h1>
             </div>
             <p className="mt-2 text-sm md:text-base text-slate-400 max-w-4xl">
-              100% Native Google DeepMind architecture: Veo 3.1 Fast 1080p60 motion pictures, Gemini 3.1 Flash 48kHz neural voice synthesis, dynamic speed/tempo controls, and C2PA cryptographic provenance.
+              100% Native Google DeepMind architecture: Veo 3.1 Fast 1080p60 motion pictures, Gemini 3.1 Flash 48kHz neural voice synthesis, granular 0.1x video/audio speed steppers, and C2PA cryptographic provenance.
             </p>
           </div>
 
@@ -643,7 +667,7 @@ export default function StudioPage() {
             <span>{activePitchRate}</span>
             <span className="rounded bg-teal-900/80 px-2 py-0.5 text-[10px] text-teal-200 border border-teal-700/50 flex items-center gap-1">
               <Gauge className="h-3 w-3 text-emerald-400" />
-              <span>Speed: {playbackSpeed}x Active</span>
+              <span>Video Speed: <b>{videoSpeed.toFixed(1)}x</b></span>
             </span>
           </div>
         </div>
@@ -653,7 +677,7 @@ export default function StudioPage() {
         {/* ------------------------------------------------------------------ */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-6">
           
-          {/* LEFT: Personas Grid, Themes, Script & Speed Controls (6 Cols) */}
+          {/* LEFT: Personas Grid, Themes, Script & Speed Steppers (6 Cols) */}
           <div className="lg:col-span-6 flex flex-col gap-6">
             
             {/* Personas Grid */}
@@ -703,57 +727,69 @@ export default function StudioPage() {
               </div>
             </div>
 
-            {/* ⚡ Video & Audio Speed / Tempo Multiplier Controller */}
+            {/* ⚡ Granular ±0.1x Video Speed Stepper & Calibration Controller */}
             <div className="rounded-2xl border border-teal-500/40 bg-slate-900/70 p-6 backdrop-blur-xl shadow-xl">
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                 <span className="text-xs font-bold uppercase tracking-wider text-teal-300 flex items-center gap-2">
                   <Gauge className="h-4 w-4 text-emerald-400" />
-                  <span>Video &amp; Audio Playback Speed Multiplier</span>
+                  <span>Granular Video Speed Stepper (Match Audio Cadence)</span>
                 </span>
                 <span className="font-mono text-xs font-bold text-emerald-400 bg-emerald-950/80 px-2.5 py-1 rounded-lg border border-emerald-700/50">
-                  {playbackSpeed.toFixed(2)}x Speed
+                  Video: {videoSpeed.toFixed(1)}x • Audio: {audioSpeed.toFixed(1)}x
                 </span>
               </div>
 
-              {/* Speed Preset Quick Buttons */}
-              <div className="grid grid-cols-5 gap-2 pt-4">
-                {[
-                  { label: "0.8x Slow", val: 0.8 },
-                  { label: "1.0x Normal", val: 1.0 },
-                  { label: "1.25x Natural", val: 1.25 },
-                  { label: "1.5x Brisk", val: 1.5 },
-                  { label: "2.0x Fast", val: 2.0 },
-                ].map((item) => (
-                  <button
-                    key={item.val}
-                    onClick={() => setPlaybackSpeed(item.val)}
-                    className={`py-2 px-1 text-center rounded-xl border text-xs font-mono font-bold transition-all ${
-                      playbackSpeed === item.val
-                        ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-slate-950 border-teal-400 shadow-md shadow-teal-500/20"
-                        : "bg-obsidian-950 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
+              {/* Video Speed Stepper Controls (±0.1x Steppers) */}
+              <div className="pt-4 flex flex-col gap-3">
+                <div className="flex items-center justify-between bg-obsidian-950 p-3 rounded-xl border border-slate-800">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
+                      <Film className="h-3.5 w-3.5 text-teal-400" />
+                      <span>Video Playback Speed (0.1x Stepper):</span>
+                    </span>
+                    <span className="text-[11px] text-slate-400">Increase video speed to eliminate slow-motion lag</span>
+                  </div>
 
-              {/* Continuous Precision Slider */}
-              <div className="pt-4">
-                <div className="flex justify-between text-xs font-mono text-slate-400 mb-1.5">
-                  <span>0.50x (Slow Motion)</span>
-                  <span className="text-teal-300 font-bold">Custom Tempo: {playbackSpeed.toFixed(2)}x</span>
-                  <span>2.50x (Double Speed)</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => adjustVideoSpeed(-0.1)}
+                      className="h-8 w-8 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold flex items-center justify-center hover:bg-slate-700 active:scale-95 transition-all text-sm"
+                      title="Decrease Video Speed (-0.1x)"
+                    >
+                      <Minus className="h-4 w-4" />
+                    </button>
+
+                    <div className="w-16 text-center font-mono font-extrabold text-base text-emerald-400 bg-slate-900 py-1 rounded-lg border border-teal-500/40">
+                      {videoSpeed.toFixed(1)}x
+                    </div>
+
+                    <button
+                      onClick={() => adjustVideoSpeed(+0.1)}
+                      className="h-8 w-8 rounded-lg bg-gradient-to-r from-teal-500 to-emerald-500 border border-teal-400 text-slate-950 font-bold flex items-center justify-center hover:brightness-110 active:scale-95 transition-all text-sm shadow-md"
+                      title="Increase Video Speed (+0.1x)"
+                    >
+                      <Plus className="h-4 w-4 stroke-[3]" />
+                    </button>
+                  </div>
                 </div>
-                <input
-                  type="range"
-                  min="0.50"
-                  max="2.50"
-                  step="0.05"
-                  value={playbackSpeed}
-                  onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
-                  className="w-full accent-teal-400 cursor-pointer h-2 bg-slate-800 rounded-lg"
-                />
+
+                {/* Quick Video Speed Pills */}
+                <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                  <span className="text-[11px] font-mono text-slate-400 mr-1">Presets:</span>
+                  {[1.0, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0].map((rate) => (
+                    <button
+                      key={rate}
+                      onClick={() => setVideoSpeed(rate)}
+                      className={`px-2.5 py-1 rounded-lg border font-mono text-xs font-bold transition-all ${
+                        Math.abs(videoSpeed - rate) < 0.05
+                          ? "bg-teal-500 text-slate-950 border-teal-300 shadow-md shadow-teal-500/20"
+                          : "bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700"
+                      }`}
+                    >
+                      {rate.toFixed(1)}x
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -840,7 +876,7 @@ export default function StudioPage() {
                   ) : (
                     <>
                       <Play className="h-4 w-4 fill-current" />
-                      <span>▶ Play {currentPersona.name} ({playbackSpeed}x)</span>
+                      <span>▶ Play {currentPersona.name} ({videoSpeed.toFixed(1)}x Video)</span>
                     </>
                   )}
                 </button>
@@ -871,7 +907,7 @@ export default function StudioPage() {
 
                   <div className="flex items-center gap-2">
                     <span className="rounded bg-teal-950 px-2 py-0.5 text-[10px] font-mono text-teal-300 border border-teal-800/40">
-                      {currentPersona.gender.toUpperCase()} • 1080P60 • {playbackSpeed}X
+                      {currentPersona.gender.toUpperCase()} • 1080P60 • {videoSpeed.toFixed(1)}X VIDEO
                     </span>
                   </div>
                 </div>
@@ -923,7 +959,7 @@ export default function StudioPage() {
                         <div className="font-mono text-xs font-bold text-white flex items-center gap-2">
                           <span>{currentPersona.name}</span>
                           <span className="rounded bg-emerald-950 px-1.5 py-0.2 text-[9px] text-emerald-400 border border-emerald-800/50">
-                            {isSpeakingClone ? `${playbackSpeed}X SPEED` : "READY"}
+                            {isSpeakingClone ? `${videoSpeed.toFixed(1)}X VIDEO` : "READY"}
                           </span>
                         </div>
                         <div className="text-[10px] text-slate-400">{currentPersona.title}</div>
@@ -934,6 +970,25 @@ export default function StudioPage() {
                     <div className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-slate-900/90 border border-emerald-500/50 px-2.5 py-1 text-[10px] font-mono text-emerald-300 backdrop-blur-md">
                       <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
                       <span>Google Veo 3.1 • C2PA Sealed</span>
+                    </div>
+
+                    {/* Floating Fine-Tune Stepper Over Viewport */}
+                    <div className="absolute top-3 left-3 flex items-center gap-1 rounded-xl bg-slate-950/90 border border-slate-700/80 px-2 py-1 backdrop-blur-md">
+                      <button
+                        onClick={() => adjustVideoSpeed(-0.1)}
+                        className="h-6 w-6 rounded bg-slate-800 text-white font-mono font-bold flex items-center justify-center hover:bg-slate-700 text-xs"
+                      >
+                        -
+                      </button>
+                      <span className="font-mono text-xs font-bold text-emerald-400 px-1">
+                        {videoSpeed.toFixed(1)}x
+                      </span>
+                      <button
+                        onClick={() => adjustVideoSpeed(+0.1)}
+                        className="h-6 w-6 rounded bg-teal-500 text-slate-950 font-mono font-bold flex items-center justify-center hover:bg-teal-400 text-xs"
+                      >
+                        +
+                      </button>
                     </div>
                   </div>
 
@@ -971,9 +1026,22 @@ export default function StudioPage() {
               </div>
 
               <div className="pt-4 border-t border-slate-800 flex items-center justify-between flex-wrap gap-4 text-xs font-mono">
-                <div className="flex items-center gap-4 text-slate-400">
-                  <span>Pose: <b className="text-white">{currentPersona.bodyLanguage}</b></span>
-                  <span>Playback Speed: <b className="text-emerald-400">{playbackSpeed.toFixed(2)}x</b></span>
+                <div className="flex items-center gap-3 text-slate-400">
+                  <span>Video Speed: <b className="text-emerald-400">{videoSpeed.toFixed(1)}x</b></span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => adjustVideoSpeed(-0.1)}
+                      className="px-2 py-0.5 rounded bg-slate-800 text-slate-200 hover:bg-slate-700 font-bold"
+                    >
+                      -0.1x
+                    </button>
+                    <button
+                      onClick={() => adjustVideoSpeed(+0.1)}
+                      className="px-2 py-0.5 rounded bg-teal-500 text-slate-950 hover:bg-teal-400 font-bold"
+                    >
+                      +0.1x
+                    </button>
+                  </div>
                 </div>
 
                 <button
@@ -981,7 +1049,7 @@ export default function StudioPage() {
                   className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 px-4 py-2 text-xs font-bold text-slate-950 shadow-md shadow-teal-500/20 hover:brightness-110"
                 >
                   <Play className="h-3.5 w-3.5 fill-current" />
-                  <span>{isSpeakingClone ? "Pause Motion" : `Play Motion (${playbackSpeed}x)`}</span>
+                  <span>{isSpeakingClone ? "Pause Motion" : `Play Motion (${videoSpeed.toFixed(1)}x)`}</span>
                 </button>
               </div>
 
