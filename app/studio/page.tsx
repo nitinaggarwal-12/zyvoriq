@@ -52,7 +52,7 @@ export default function StudioPage() {
   const [activeTab, setActiveTab] = useState<"option1" | "option2" | "compare">("compare");
   const [selectedPlaybackEngine, setSelectedPlaybackEngine] = useState<"option1" | "option2">("option1");
 
-  // Dynamic Personas Catalog with True Audio Durations
+  // Dynamic Personas Catalog with Verified Audio Files on Disk
   const [personas, setPersonas] = useState<Record<string, PersonaConfig>>({
     priya: { 
       name: "Priya (Bangalore)", 
@@ -66,7 +66,7 @@ export default function StudioPage() {
       image: "/assets/avatars/avatar_priya_cto.jpg",
       videoUrl: "/assets/video/priya_veo_broadcast.mp4",
       audioUrl: "/assets/audio/priya_deepmind.wav",
-      exactAudioDurationSec: 23.2,
+      exactAudioDurationSec: 23.20,
       bodyLanguage: "Articulate Indian female CTO with open hand keynote stage gestures",
       introScript: "Hello everyone! I'm Priya, Global Transformation CTO. Traditional enterprise content pipelines take 14 long days and over $140,000. With Zyvoriq, we collapse that entire lifecycle into just 90 seconds—backed by Veritas cryptographic consensus and Ed25519 provenance!",
       defaultVideoLeadMs: 800
@@ -100,7 +100,7 @@ export default function StudioPage() {
       image: "/assets/avatars/avatar_keynote_gesture.jpg",
       videoUrl: "/assets/video/david_veo_broadcast.mp4",
       audioUrl: "/assets/audio/david_deepmind.wav",
-      exactAudioDurationSec: 12.5,
+      exactAudioDurationSec: 10.20,
       bodyLanguage: "Charismatic male founder on TED stage with open-hand gesture",
       introScript: "Hey everyone, David here from Silicon Valley. We are radically accelerating enterprise AI content with sub-25 millisecond synthesis latency.",
       defaultVideoLeadMs: 500
@@ -116,8 +116,8 @@ export default function StudioPage() {
       voiceKeywords: ["Victoria", "Samantha", "Karen", "female"],
       image: "/assets/avatars/avatar_elena_founder.jpg",
       videoUrl: "/assets/video/victoria_veo_broadcast.mp4",
-      audioUrl: "/assets/audio/victoria_deepmind.wav",
-      exactAudioDurationSec: 10.92,
+      audioUrl: "/assets/audio/elena_deepmind.wav",
+      exactAudioDurationSec: 12.52,
       bodyLanguage: "Enthusiastic female tech founder on Berlin stage with open arms",
       introScript: "Hi everyone! I am Elena from Berlin. We are disrupting manual content workflows by replacing 14-day human delays with instant multi-agent swarm synthesis.",
       defaultVideoLeadMs: 600
@@ -133,8 +133,8 @@ export default function StudioPage() {
       voiceKeywords: ["Tessa", "Moira", "Fiona", "Google US English", "female"],
       image: "/assets/avatars/avatar_maya_fireside.jpg",
       videoUrl: "/assets/video/priya_veo_broadcast.mp4",
-      audioUrl: "/assets/audio/priya_deepmind.wav",
-      exactAudioDurationSec: 23.2,
+      audioUrl: "/assets/audio/maya_deepmind.wav",
+      exactAudioDurationSec: 11.80,
       bodyLanguage: "Gentle empathetic smile, cozy book cafe with coffee mug",
       introScript: "Welcome, I am Maya from Dublin. Pull up a chair. Today we reflect on the deeper story behind sovereign enterprise intelligence and algorithmic trust.",
       defaultVideoLeadMs: 800
@@ -150,8 +150,8 @@ export default function StudioPage() {
       voiceKeywords: ["Daniel", "Oliver", "George", "Google UK English Male", "en-GB", "male"],
       image: "/assets/avatars/avatar_executive_gravitas.jpg",
       videoUrl: "/assets/video/david_veo_broadcast.mp4",
-      audioUrl: "/assets/audio/david_deepmind.wav",
-      exactAudioDurationSec: 12.5,
+      audioUrl: "/assets/audio/jonathan_deepmind.wav",
+      exactAudioDurationSec: 10.84,
       bodyLanguage: "Commanding skyline boardroom presence with folded arms",
       introScript: "I am Sir Jonathan. In this documentary briefing, we explore the cryptographic provenance of AI content generation and immutable ledger verification.",
       defaultVideoLeadMs: 500
@@ -177,7 +177,7 @@ export default function StudioPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Dynamic Audio Duration Tracking
-  const [dynamicAudioDuration, setDynamicAudioDuration] = useState<number>(23.2);
+  const [dynamicAudioDuration, setDynamicAudioDuration] = useState<number>(23.20);
 
   // Option 2 Cloud GPU Synthesis State
   const [isSynthesizingOption2, setIsSynthesizingOption2] = useState(false);
@@ -210,7 +210,11 @@ export default function StudioPage() {
     if (currentPersona.defaultVideoLeadMs !== undefined) {
       setVideoLeadOffsetMs(currentPersona.defaultVideoLeadMs);
     }
-    setDynamicAudioDuration(currentPersona.exactAudioDurationSec || 23.2);
+    setDynamicAudioDuration(currentPersona.exactAudioDurationSec || 23.20);
+    setIsSpeakingClone(false);
+    setSpokenWordIndex(-1);
+    if (videoRef.current) videoRef.current.pause();
+    if (audioRef.current) audioRef.current.pause();
   }, [selectedPersona]);
 
   // CRITICAL: Keep video element strictly MUTED at all times
@@ -241,7 +245,7 @@ export default function StudioPage() {
     if (!video) return;
 
     const handleTimeUpdate = () => {
-      // Loop smoothly before video end (5.8s of 6.0s) so mouth never pauses
+      // Loop smoothly before video end (5.75s of 6.0s) so mouth never pauses
       if (isSpeakingClone && video.currentTime >= 5.75) {
         video.currentTime = videoLeadOffsetMs / 1000.0;
       }
@@ -597,7 +601,7 @@ export default function StudioPage() {
               </h1>
             </div>
             <p className="mt-2 text-sm md:text-base text-slate-400 max-w-4xl">
-              Compare <b>Option 1 (Instant Keynote Broadcast)</b> vs <b>Option 2 (Cloud GPU Neural Lip Sync Pipeline)</b> with <b>Syllable-Exact Audio/Video/Text Synchronization</b>.
+              Compare <b>Option 1 (Instant Keynote Broadcast)</b> vs <b>Option 2 (Cloud GPU Neural Lip Sync Pipeline)</b> with <b>Syllable-Exact Audio/Video/Text Synchronization</b> across all 6 presenters.
             </p>
           </div>
 
@@ -1077,7 +1081,7 @@ export default function StudioPage() {
                           <div className="flex items-center justify-center gap-1.5 mb-1.5">
                             <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" />
                             <span className="font-mono text-[10px] font-bold text-amber-300 uppercase tracking-widest">
-                              Syllable-Exact Live Teleprompter
+                              Syllable-Exact Live Teleprompter ({dynamicAudioDuration.toFixed(1)}s)
                             </span>
                           </div>
 
