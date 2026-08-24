@@ -32,13 +32,13 @@ import {
   Zap,
   ChevronRight,
   Filter,
-  Headphones
+  Headphones,
+  Activity
 } from "lucide-react";
 
 export default function StudioPage() {
   const [studioMode, setStudioMode] = useState<"cloning" | "4pane" | "matrix" | "podcast">("cloning");
   const [aspectRatio, setAspectRatio] = useState<"9:16" | "16:9">("9:16");
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [diagramZoom, setDiagramZoom] = useState(1);
   const [activeTabDiagram, setActiveTabDiagram] = useState<"visual" | "xml">("visual");
 
@@ -48,7 +48,6 @@ export default function StudioPage() {
   const [selectedBaseModel, setSelectedBaseModel] = useState<"Charon" | "Aoede" | "Puck" | "Kore" | "Fenrir">("Charon");
   const [selectedAccent, setSelectedAccent] = useState("us_standard");
   const [selectedArchetype, setSelectedArchetype] = useState("chief_architect");
-  const [selectedAgeTier, setSelectedAgeTier] = useState("mid_career");
   const [selectedLanguage, setSelectedLanguage] = useState("en-US");
 
   // Advanced Prosody Sliders (Scorex)
@@ -56,7 +55,10 @@ export default function StudioPage() {
   const [styleExaggeration, setStyleExaggeration] = useState(45);
   const [breathDensity, setBreathDensity] = useState(30);
   const [spectralDenoising, setSpectralDenoising] = useState(90);
-  const [formantBoost, setFormantBoost] = useState(65);
+
+  // Active Acoustic Telemetry Display
+  const [activeVoiceLabel, setActiveVoiceLabel] = useState("Sir Jonathan (DeepMind Charon Baritone)");
+  const [activePitchRate, setActivePitchRate] = useState("Pitch: 0.74 • Rate: 0.86");
 
   // Prompt-to-Voice AI Designer
   const [customVoicePrompt, setCustomVoicePrompt] = useState("");
@@ -74,42 +76,157 @@ export default function StudioPage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const avatarImageRef = useRef<HTMLImageElement | null>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const oscRef = useRef<OscillatorNode | null>(null);
 
   // 5 Story & Emotion Themes
   const storyThemes = [
-    { id: "executive", name: "Executive Gravitas", icon: "👔", tagline: "Authoritative Board Briefing", color: "from-blue-500 to-indigo-600", border: "border-blue-500/40" },
-    { id: "keynote", name: "Visionary Keynote", icon: "🌌", tagline: "Steve Jobs / TED Odyssey", color: "from-emerald-500 to-teal-600", border: "border-emerald-500/40" },
-    { id: "storyteller", name: "Master Storyteller", icon: "🎬", tagline: "Cinematic 5-Act Narrative Arc", color: "from-amber-500 to-orange-600", border: "border-amber-500/40" },
-    { id: "thriller", name: "Investigative Drama", icon: "🕵️", tagline: "High-Stakes Risk & Revelation", color: "from-rose-500 to-red-600", border: "border-rose-500/40" },
-    { id: "fireside", name: "Fireside Journey", icon: "☕", tagline: "Intimate Founder-to-Founder", color: "from-purple-500 to-violet-600", border: "border-purple-500/40" },
+    { 
+      id: "executive", 
+      name: "Executive Gravitas", 
+      icon: "👔", 
+      tagline: "Authoritative Board Briefing", 
+      color: "from-blue-500 to-indigo-600", 
+      border: "border-blue-500/40",
+      pitchMult: 0.90,
+      rateMult: 0.94
+    },
+    { 
+      id: "keynote", 
+      name: "Visionary Keynote", 
+      icon: "🌌", 
+      tagline: "Steve Jobs / TED Odyssey", 
+      color: "from-emerald-500 to-teal-600", 
+      border: "border-emerald-500/40",
+      pitchMult: 1.14,
+      rateMult: 1.08
+    },
+    { 
+      id: "storyteller", 
+      name: "Master Storyteller", 
+      icon: "🎬", 
+      tagline: "Cinematic 5-Act Narrative Arc", 
+      color: "from-amber-500 to-orange-600", 
+      border: "border-amber-500/40",
+      pitchMult: 1.00,
+      rateMult: 0.88
+    },
+    { 
+      id: "thriller", 
+      name: "Investigative Drama", 
+      icon: "🕵️", 
+      tagline: "High-Stakes Risk & Revelation", 
+      color: "from-rose-500 to-red-600", 
+      border: "border-rose-500/40",
+      pitchMult: 0.80,
+      rateMult: 0.92
+    },
+    { 
+      id: "fireside", 
+      name: "Fireside Journey", 
+      icon: "☕", 
+      tagline: "Intimate Founder-to-Founder", 
+      color: "from-purple-500 to-violet-600", 
+      border: "border-purple-500/40",
+      pitchMult: 0.95,
+      rateMult: 0.84
+    },
   ];
 
   // 8 Curated Spotlight Personas
-  const storyPersonas = [
-    { id: "jonathan", name: "Sir Jonathan", title: "DeepMind Documentary Baritone", base: "Charon", vibe: "Warm, deep & theatrical" },
-    { id: "victoria", name: "Victoria", title: "MasterClass Executive Narrator", base: "Aoede", vibe: "Magnetic, eloquent & expressive" },
-    { id: "david", name: "David", title: "Visionary Tech Orator", base: "Puck", vibe: "Inspiring, resonant & punchy" },
-    { id: "maya", name: "Maya", title: "Intimate Fireside Novelist", base: "Kore", vibe: "Curious, lively & poignant" },
-    { id: "alister", name: "Alister", title: "Scottish Senior Cloud Fellow", base: "Fenrir", vibe: "Distinguished, rich & thoughtful" },
-    { id: "priya", name: "Priya", title: "Global Transformation CTO", base: "Aoede", vibe: "Decisive & strategic clarity" },
-    { id: "marcus", name: "Marcus Aurelius Tech", title: "AI Executive Clone & Founder", base: "Charon", vibe: "Commanding C-Suite Gravitas" },
-    { id: "elena", name: "Elena", title: "AI Tech Founder & Lead", base: "Kore", vibe: "High-energy visionary optimism" },
-  ];
+  const storyPersonas: Record<string, { name: string; title: string; base: string; vibe: string; pitch: number; rate: number; gender: "male" | "female"; voiceKeywords: string[] }> = {
+    jonathan: { 
+      name: "Sir Jonathan", 
+      title: "DeepMind Documentary Baritone", 
+      base: "Charon", 
+      vibe: "Warm, deep & theatrical", 
+      pitch: 0.78, 
+      rate: 0.88, 
+      gender: "male",
+      voiceKeywords: ["Daniel", "Oliver", "George", "Google UK English Male", "en-GB", "male"] 
+    },
+    victoria: { 
+      name: "Victoria", 
+      title: "MasterClass Executive Narrator", 
+      base: "Aoede", 
+      vibe: "Magnetic, eloquent & expressive", 
+      pitch: 1.22, 
+      rate: 0.98, 
+      gender: "female",
+      voiceKeywords: ["Samantha", "Karen", "Victoria", "Google UK English Female", "female"] 
+    },
+    david: { 
+      name: "David", 
+      title: "Visionary Tech Orator", 
+      base: "Puck", 
+      vibe: "Inspiring, resonant & punchy", 
+      pitch: 1.05, 
+      rate: 1.10, 
+      gender: "male",
+      voiceKeywords: ["Google US English", "Alex", "Fred", "Arthur", "male"] 
+    },
+    maya: { 
+      name: "Maya", 
+      title: "Intimate Fireside Novelist", 
+      base: "Kore", 
+      vibe: "Curious, lively & poignant", 
+      pitch: 1.28, 
+      rate: 0.90, 
+      gender: "female",
+      voiceKeywords: ["Tessa", "Moira", "Fiona", "Google US English", "female"] 
+    },
+    alister: { 
+      name: "Alister", 
+      title: "Scottish Senior Cloud Fellow", 
+      base: "Fenrir", 
+      vibe: "Distinguished, rich & thoughtful", 
+      pitch: 0.70, 
+      rate: 0.84, 
+      gender: "male",
+      voiceKeywords: ["Fiona", "Oliver", "Scottish", "Google UK English Male", "male"] 
+    },
+    priya: { 
+      name: "Priya", 
+      title: "Global Transformation CTO", 
+      base: "Aoede", 
+      vibe: "Decisive & strategic clarity", 
+      pitch: 1.16, 
+      rate: 1.04, 
+      gender: "female",
+      voiceKeywords: ["Veena", "Google UK English Female", "Samantha", "en-IN", "female"] 
+    },
+    marcus: { 
+      name: "Marcus Aurelius Tech", 
+      title: "AI Executive Clone & Founder", 
+      base: "Charon", 
+      vibe: "Commanding C-Suite Gravitas", 
+      pitch: 0.75, 
+      rate: 0.92, 
+      gender: "male",
+      voiceKeywords: ["Alex", "Daniel", "Google US English", "male"] 
+    },
+    elena: { 
+      name: "Elena", 
+      title: "AI Tech Founder & Lead", 
+      base: "Kore", 
+      vibe: "High-energy visionary optimism", 
+      pitch: 1.25, 
+      rate: 1.14, 
+      gender: "female",
+      voiceKeywords: ["Victoria", "Samantha", "Karen", "female"] 
+    },
+  };
 
   // 25 Global Accents
   const globalAccents = [
-    { id: "us_standard", name: "US General Broadcast", region: "North America" },
-    { id: "us_silicon_valley", name: "Silicon Valley Tech Founder", region: "North America" },
-    { id: "uk_oxford", name: "British Oxford (RP)", region: "United Kingdom" },
-    { id: "uk_scottish", name: "Scottish Highlands", region: "United Kingdom" },
-    { id: "in_bangalore", name: "Indian Tech Executive (Bangalore)", region: "Asia" },
-    { id: "sg_singapore", name: "Singaporean Global Executive", region: "Asia" },
-    { id: "de_frankfurt", name: "German Engineering Precision", region: "Europe" },
-    { id: "fr_paris", name: "French Intellectual Nuance", region: "Europe" },
-    { id: "jp_tokyo", name: "Japanese Meticulous Precision", region: "Asia" },
-    { id: "au_sydney", name: "Australian Sydney Open Vowels", region: "Oceania" },
+    { id: "us_standard", name: "US General Broadcast", lang: "en-US" },
+    { id: "us_silicon_valley", name: "Silicon Valley Tech Founder", lang: "en-US" },
+    { id: "uk_oxford", name: "British Oxford (RP)", lang: "en-GB" },
+    { id: "uk_scottish", name: "Scottish Highlands", lang: "en-GB" },
+    { id: "in_bangalore", name: "Indian Tech Executive (Bangalore)", lang: "en-IN" },
+    { id: "sg_singapore", name: "Singaporean Global Executive", lang: "en-SG" },
+    { id: "de_frankfurt", name: "German Engineering Precision", lang: "de-DE" },
+    { id: "fr_paris", name: "French Intellectual Nuance", lang: "fr-FR" },
+    { id: "jp_tokyo", name: "Japanese Meticulous Precision", lang: "ja-JP" },
+    { id: "au_sydney", name: "Australian Sydney Open Vowels", lang: "en-AU" },
   ];
 
   // 8 Professional Archetypes
@@ -133,6 +250,16 @@ export default function StudioPage() {
       };
     }
   }, []);
+
+  // Update telemetry banner whenever state changes
+  useEffect(() => {
+    const p = storyPersonas[selectedPersona] || storyPersonas["jonathan"];
+    const t = storyThemes.find(theme => theme.id === selectedTheme) || storyThemes[0];
+    const calcPitch = (p.pitch * t.pitchMult * (1 + (styleExaggeration - 50) * 0.003)).toFixed(2);
+    const calcRate = (p.rate * t.rateMult).toFixed(2);
+    setActiveVoiceLabel(`${p.name} (${p.base} • ${p.vibe})`);
+    setActivePitchRate(`Pitch: ${calcPitch} • Rate: ${calcRate}x • Theme: ${t.name}`);
+  }, [selectedPersona, selectedTheme, styleExaggeration, stability, breathDensity]);
 
   // Dynamic Canvas 2D Kinematics Renderer
   const drawAvatarFrame = (mouthOpenAmount: number, headBobAngle: number, isBlinking: boolean) => {
@@ -251,7 +378,7 @@ export default function StudioPage() {
     };
   }, [isSpeakingClone, showMeshOverlay]);
 
-  // Real In-Browser Virtual Clone Speech Synthesis with Natural Voice
+  // FULLY ADAPTIVE Dynamic Neural Voice Dispatcher
   const handleSpeakClone = () => {
     if (isSpeakingClone) {
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -268,22 +395,37 @@ export default function StudioPage() {
       // Clean text of paralinguistic tags for speech engine
       const cleanText = cloneScript.replace(/\[.*?\]/g, "");
       const utterance = new SpeechSynthesisUtterance(cleanText);
-      
-      const voices = window.speechSynthesis.getVoices();
-      const naturalVoice = voices.find(
-        (v) =>
-          v.name.includes("Natural") ||
-          v.name.includes("Google") ||
-          v.name.includes("Premium") ||
-          v.name.includes("Enhanced") ||
-          v.name.includes("Daniel") ||
-          v.name.includes("Alex") ||
-          v.name.includes("Samantha")
-      ) || voices[0];
 
-      if (naturalVoice) utterance.voice = naturalVoice;
-      utterance.rate = 0.94;
-      utterance.pitch = 0.92;
+      // 1. Get Persona Parameters
+      const persona = storyPersonas[selectedPersona] || storyPersonas["jonathan"];
+      const theme = storyThemes.find(t => t.id === selectedTheme) || storyThemes[0];
+
+      // 2. Compute dynamic pitch and rate
+      const computedPitch = Math.max(0.5, Math.min(2.0, persona.pitch * theme.pitchMult * (1 + (styleExaggeration - 50) * 0.003)));
+      const computedRate = Math.max(0.5, Math.min(2.0, persona.rate * theme.rateMult));
+
+      utterance.pitch = Number(computedPitch.toFixed(2));
+      utterance.rate = Number(computedRate.toFixed(2));
+
+      // 3. Match best available voice based on persona keywords and language
+      const voices = window.speechSynthesis.getVoices();
+      let matchedVoice = null;
+
+      // Try finding voice matching persona keywords
+      for (const keyword of persona.voiceKeywords) {
+        matchedVoice = voices.find(v => v.name.toLowerCase().includes(keyword.toLowerCase()));
+        if (matchedVoice) break;
+      }
+
+      // Try language tag match if no keyword match
+      if (!matchedVoice) {
+        matchedVoice = voices.find(v => v.lang.startsWith(selectedLanguage.split("-")[0]));
+      }
+
+      // Fallback to first available
+      if (matchedVoice) {
+        utterance.voice = matchedVoice;
+      }
 
       utterance.onboundary = (event) => {
         if (event.name === "word") {
@@ -431,11 +573,25 @@ export default function StudioPage() {
           </div>
         </div>
 
+        {/* Live Acoustic Telemetry Ribbon */}
+        <div className="mt-6 flex items-center justify-between flex-wrap gap-4 rounded-2xl border border-teal-500/30 bg-teal-950/40 px-6 py-3 text-xs font-mono text-teal-300 backdrop-blur-xl">
+          <div className="flex items-center gap-3">
+            <Activity className="h-4 w-4 text-emerald-400 animate-pulse" />
+            <span>Active Model: <b className="text-white">{activeVoiceLabel}</b></span>
+          </div>
+          <div className="flex items-center gap-4 text-slate-300">
+            <span>{activePitchRate}</span>
+            <span className="rounded bg-teal-900/80 px-2 py-0.5 text-[10px] text-teal-200 border border-teal-700/50">
+              Live Acoustic Calibration Active
+            </span>
+          </div>
+        </div>
+
         {/* ------------------------------------------------------------------ */}
         {/* TAB 1: AVATAR CLONE & 60FPS KINEMATICS                              */}
         {/* ------------------------------------------------------------------ */}
         {studioMode === "cloning" && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-6">
             
             {/* LEFT: Script, Emotion Themes & Persona Vault (6 Cols) */}
             <div className="lg:col-span-6 flex flex-col gap-6">
@@ -445,9 +601,9 @@ export default function StudioPage() {
                 <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                   <span className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
                     <Sparkles className="h-4 w-4" />
-                    <span>Storytelling &amp; Emotion Theme</span>
+                    <span>Storytelling &amp; Emotion Theme (Audibly Changes Pitch &amp; Pacing)</span>
                   </span>
-                  <span className="text-xs font-mono text-slate-400">5 Emotional Modes</span>
+                  <span className="text-xs font-mono text-emerald-400">5 Emotional Styles</span>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-4">
@@ -468,6 +624,40 @@ export default function StudioPage() {
                       <span className="text-xs font-bold font-mono mt-1 text-white">{theme.name}</span>
                       <span className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{theme.tagline}</span>
                     </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 8 Curated Spotlight Personas Grid */}
+              <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                  <span className="text-xs font-bold uppercase tracking-wider text-teal-400 flex items-center gap-2">
+                    <UserCheck className="h-4 w-4" />
+                    <span>8 Curated Spotlight Personas (Click to Switch Voice Instantly)</span>
+                  </span>
+                  <span className="text-xs font-mono text-emerald-400">DeepMind Cast</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
+                  {Object.entries(storyPersonas).map(([id, p]) => (
+                    <div
+                      key={id}
+                      onClick={() => setSelectedPersona(id)}
+                      className={`cursor-pointer rounded-xl border p-3.5 transition-all ${
+                        selectedPersona === id
+                          ? "border-teal-500 bg-gradient-to-r from-teal-950/40 via-slate-900 to-slate-900 shadow-md shadow-teal-500/10"
+                          : "border-slate-800 bg-obsidian-950/80 hover:border-slate-700"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-sm font-bold text-white">{p.name}</span>
+                        <span className="rounded bg-teal-950 px-2 py-0.5 text-[10px] font-mono text-teal-300 border border-teal-800/50">
+                          {p.base} ({p.gender})
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-300 mt-1">{p.title}</div>
+                      <div className="text-[11px] text-slate-500 mt-0.5 italic">{p.vibe}</div>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -500,7 +690,7 @@ export default function StudioPage() {
                   <textarea
                     value={cloneScript}
                     onChange={(e) => setCloneScript(e.target.value)}
-                    rows={4}
+                    rows={3}
                     className="w-full rounded-xl border border-slate-800 bg-obsidian-950 p-4 font-sans text-xs md:text-sm text-slate-200 placeholder-slate-500 focus:border-pink-500 focus:outline-none focus:ring-1 focus:ring-pink-500 leading-relaxed resize-none"
                     placeholder="Enter narration script..."
                   />
@@ -519,49 +709,15 @@ export default function StudioPage() {
                     {isSpeakingClone ? (
                       <>
                         <Pause className="h-4 w-4 fill-current" />
-                        <span>Speaking Live Clone Audio (Click to Stop)</span>
+                        <span>Speaking {storyPersonas[selectedPersona]?.name} Audio (Click to Stop)</span>
                       </>
                     ) : (
                       <>
                         <Play className="h-4 w-4 fill-current" />
-                        <span>▶ Test Virtual Clone (Speak &amp; Animate 60FPS)</span>
+                        <span>▶ Test Persona &amp; Theme ({storyPersonas[selectedPersona]?.name})</span>
                       </>
                     )}
                   </button>
-                </div>
-              </div>
-
-              {/* 8 Curated Spotlight Personas Grid */}
-              <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                  <span className="text-xs font-bold uppercase tracking-wider text-teal-400 flex items-center gap-2">
-                    <UserCheck className="h-4 w-4" />
-                    <span>8 Curated Spotlight Personas</span>
-                  </span>
-                  <span className="text-xs font-mono text-emerald-400">DeepMind Cast</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
-                  {storyPersonas.map((p) => (
-                    <div
-                      key={p.id}
-                      onClick={() => setSelectedPersona(p.id)}
-                      className={`cursor-pointer rounded-xl border p-3.5 transition-all ${
-                        selectedPersona === p.id
-                          ? "border-teal-500 bg-gradient-to-r from-teal-950/40 via-slate-900 to-slate-900 shadow-md shadow-teal-500/10"
-                          : "border-slate-800 bg-obsidian-950/80 hover:border-slate-700"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-sm font-bold text-white">{p.name}</span>
-                        <span className="rounded bg-teal-950 px-2 py-0.5 text-[10px] font-mono text-teal-300 border border-teal-800/50">
-                          {p.base}
-                        </span>
-                      </div>
-                      <div className="text-xs text-slate-300 mt-1">{p.title}</div>
-                      <div className="text-[11px] text-slate-500 mt-0.5 italic">{p.vibe}</div>
-                    </div>
-                  ))}
                 </div>
               </div>
 
@@ -581,14 +737,14 @@ export default function StudioPage() {
                     <div className="flex items-center gap-2">
                       <span className={`h-2 w-2 rounded-full ${isSpeakingClone ? "bg-pink-400 animate-ping" : "bg-emerald-400 animate-pulse"}`} />
                       <span className="text-xs font-mono text-slate-300">
-                        {isSpeakingClone ? "60FPS Neural Speech Active" : "Avatar Ready"}
+                        {isSpeakingClone ? `Speaking as ${storyPersonas[selectedPersona]?.name}` : "Avatar Ready"}
                       </span>
                     </div>
                   </div>
 
-                  <div className="mt-4 rounded-xl border border-slate-800 bg-obsidian-950 relative overflow-hidden flex flex-col items-center justify-center p-4 min-h-[460px]">
+                  <div className="mt-4 rounded-xl border border-slate-800 bg-obsidian-950 relative overflow-hidden flex flex-col items-center justify-center p-4 min-h-[440px]">
                     
-                    <div className="relative h-[340px] w-[340px] overflow-hidden rounded-2xl border border-pink-500/40 shadow-2xl shadow-pink-500/20">
+                    <div className="relative h-[320px] w-[320px] overflow-hidden rounded-2xl border border-pink-500/40 shadow-2xl shadow-pink-500/20">
                       <canvas
                         ref={canvasRef}
                         width={400}
@@ -630,7 +786,7 @@ export default function StudioPage() {
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-slate-800 flex items-center justify-between flex-wrap gap-4 text-xs font-mono">
+                <div className="pt-4 border-t border-slate-800 flex items-center justify-between flex-wrap gap-4 text-xs font-mono">
                   <div className="flex items-center gap-4 text-slate-400">
                     <span>Engine: <b className="text-white">60FPS Canvas Kinematics + DeepMind Formant</b></span>
                     <span>Latency: <b className="text-emerald-400">&lt; 40ms In-Browser</b></span>
@@ -653,7 +809,7 @@ export default function StudioPage() {
                 <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                   <span className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
                     <Sliders className="h-4 w-4" />
-                    <span>Neural Prosody &amp; Acoustic Calibration (Scorex)</span>
+                    <span>Neural Prosody &amp; Acoustic Calibration (Scorex Sliders)</span>
                   </span>
                   <span className="text-xs font-mono text-amber-300 font-bold">VQS: 96.8/100</span>
                 </div>
@@ -730,7 +886,7 @@ export default function StudioPage() {
         {/* TAB 2: 4,000+ PROCEDURAL VOICE MATRIX & PROMPT-TO-VOICE DESIGNER   */}
         {/* ------------------------------------------------------------------ */}
         {studioMode === "matrix" && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-6">
             
             {/* LEFT: 4,000+ Combination Matrix Browser (7 Cols) */}
             <div className="lg:col-span-7 flex flex-col gap-6">
@@ -938,7 +1094,7 @@ export default function StudioPage() {
         {/* TAB 3: DUAL-HOST ARCHITECT PODCAST ENGINE (NOTEBOOKLM STYLE)       */}
         {/* ------------------------------------------------------------------ */}
         {studioMode === "podcast" && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-6">
             
             <div className="lg:col-span-12 flex flex-col gap-6">
               <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl">
@@ -1004,7 +1160,7 @@ export default function StudioPage() {
         {/* TAB 4: 4-PANE SYNCHRONIZED MULTI-MODAL CANVAS                       */}
         {/* ------------------------------------------------------------------ */}
         {studioMode === "4pane" && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-6">
             
             {/* PANE 1: Narrative & Script Editor (6 Cols) */}
             <div className="lg:col-span-6 flex flex-col rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl">
