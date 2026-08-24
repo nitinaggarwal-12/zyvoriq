@@ -9,7 +9,7 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-800/70 bg-obsidian-950/85 backdrop-blur-2xl transition-all duration-200">
-      <div className="mx-auto flex h-20 max-w-8xl items-center justify-between px-6 md:px-12 lg:px-16">
+      <div className="mx-auto flex h-20 w-full max-w-[1720px] items-center justify-between px-6 sm:px-8 lg:px-12">
         {/* Brand */}
         <Link
           href="/"
@@ -32,52 +32,52 @@ export function Navbar() {
         </Link>
 
         {/* Desktop Nav Links */}
-        <nav className="hidden items-center gap-6 text-sm font-medium text-slate-300 lg:flex" aria-label="Primary navigation">
+        <nav className="hidden items-center gap-4 text-sm font-medium text-slate-300 lg:flex" aria-label="Primary navigation">
           <Link
             href="/director"
-            className="flex items-center gap-1.5 transition-colors hover:text-teal-300"
+            className="flex items-center gap-2 rounded-xl px-4 py-2 hover:text-teal-300 hover:bg-slate-800/40 transition-all font-semibold"
           >
             <Terminal className="h-4 w-4 text-teal-400/80" />
-            Director Console
+            <span>Director Console</span>
           </Link>
           <Link
             href="/veritas"
-            className="flex items-center gap-1.5 transition-colors hover:text-emerald-300"
+            className="flex items-center gap-2 rounded-xl px-4 py-2 hover:text-emerald-300 hover:bg-slate-800/40 transition-all font-semibold"
           >
             <ShieldCheck className="h-4 w-4 text-emerald-400/80" />
-            Veritas QA
+            <span>Veritas QA</span>
           </Link>
           <Link
             href="/studio"
-            className="flex items-center gap-1.5 transition-colors hover:text-indigo-300"
+            className="flex items-center gap-2 rounded-xl px-4 py-2 hover:text-indigo-300 hover:bg-slate-800/40 transition-all font-semibold"
           >
             <Layers className="h-4 w-4 text-indigo-400/80" />
-            Multimodal Studio
+            <span>Multimodal Studio</span>
           </Link>
           <Link
             href="/governance"
-            className="flex items-center gap-1.5 transition-colors hover:text-amber-300"
+            className="flex items-center gap-2 rounded-xl px-4 py-2 hover:text-amber-300 hover:bg-slate-800/40 transition-all font-semibold"
           >
             <Lock className="h-4 w-4 text-amber-400/80" />
-            Governance
+            <span>Governance</span>
           </Link>
           <Link
             href="/dashboard"
-            className="flex items-center gap-1.5 transition-colors hover:text-teal-300"
+            className="flex items-center gap-2 rounded-xl px-4 py-2 hover:text-teal-300 hover:bg-slate-800/40 transition-all font-semibold"
           >
             <BarChart3 className="h-4 w-4 text-teal-400/80" />
-            Analytics
+            <span>Analytics</span>
           </Link>
         </nav>
 
         {/* Action Controls & Live Status */}
         <div className="hidden items-center gap-4 sm:flex">
-          <div className="hidden items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3 py-1.5 text-xs font-semibold text-emerald-300 xl:flex">
+          <div className="hidden items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3.5 py-1.5 text-xs font-semibold text-emerald-300 xl:flex">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
             </span>
-            <span>VQC Governed</span>
+            <span className="font-mono text-xs">VQC Governed</span>
           </div>
 
           <Link
