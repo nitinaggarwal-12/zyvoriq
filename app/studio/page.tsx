@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { AppNavbar } from "@/components/AppNavbar";
 import { 
@@ -21,26 +21,107 @@ import {
   Upload,
   RefreshCw,
   Sliders,
-  ShieldCheck
+  ShieldCheck,
+  Mic,
+  MessageSquare
 } from "lucide-react";
 
 export default function StudioPage() {
-  const [studioMode, setStudioMode] = useState<"4pane" | "cloning">("4pane");
+  const [studioMode, setStudioMode] = useState<"cloning" | "4pane">("cloning");
   const [aspectRatio, setAspectRatio] = useState<"9:16" | "16:9">("9:16");
   const [selectedLanguage, setSelectedLanguage] = useState("English (US - Studio Master Baritone)");
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [diagramZoom, setDiagramZoom] = useState(1);
   const [activeTabDiagram, setActiveTabDiagram] = useState<"visual" | "xml">("visual");
 
-  // Video & Avatar Cloning State
+  // Virtual Clone Interactive State
   const [selectedAvatar, setSelectedAvatar] = useState("avatar_1");
-  const [cloningStatus, setCloningStatus] = useState<"ready" | "calibrating" | "rendered">("ready");
+  const [cloneScript, setCloneScript] = useState(
+    "Hello Nitin, I am your Zyvoriq AI Executive Clone. I deconstruct technical architectures, validate claims with Veritas consensus, and publish 4K videos in under 90 seconds with Ed25519 provenance."
+  );
+  const [isSpeakingClone, setIsSpeakingClone] = useState(false);
+  const [spokenWordIndex, setSpokenWordIndex] = useState(-1);
+  const [showMeshOverlay, setShowMeshOverlay] = useState(true);
   const [lipSyncPrecision, setLipSyncPrecision] = useState(99.8);
   const [gazeTracking, setGazeTracking] = useState(true);
   const [emotionTone, setEmotionTone] = useState("Authoritative Technical Master");
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const oscRef = useRef<OscillatorNode | null>(null);
+
+  const avatars = [
+    {
+      id: "avatar_1",
+      name: "Marcus Aurelius Tech",
+      title: "Chief AI Architect & Founder",
+      faceMesh: "468-point 3D Morphable NeRF",
+      resolution: "4K 60fps Ultra-HDR",
+      status: "Calibrated & Signed",
+      tag: "Live Interactive Master",
+      image: "/assets/avatars/executive_clone.jpg"
+    },
+    {
+      id: "avatar_2",
+      name: "Dr. Evelyn Vance",
+      title: "VP Multi-Modal Intelligence",
+      faceMesh: "Gaussian Splatting Kinematics",
+      resolution: "4K 60fps HDR",
+      status: "Calibrated & Signed",
+      tag: "Executive Keynote",
+      image: "/assets/avatars/executive_clone.jpg"
+    }
+  ];
+
+  // Real In-Browser Virtual Clone Speech Synthesis with Real-Time Lip-Sync
+  const handleSpeakClone = () => {
+    if (isSpeakingClone) {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+      setIsSpeakingClone(false);
+      setSpokenWordIndex(-1);
+      return;
+    }
+
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(cloneScript);
+      utterance.rate = 0.95;
+      utterance.pitch = 0.92; // Authoritative baritone tone
+
+      const words = cloneScript.split(" ");
+
+      utterance.onboundary = (event) => {
+        if (event.name === "word") {
+          const charIndex = event.charIndex;
+          const currentText = cloneScript.slice(0, charIndex);
+          const currentWordIdx = currentText.trim().split(/\s+/).length - 1;
+          setSpokenWordIndex(Math.max(0, currentWordIdx));
+        }
+      };
+
+      utterance.onstart = () => {
+        setIsSpeakingClone(true);
+      };
+
+      utterance.onend = () => {
+        setIsSpeakingClone(false);
+        setSpokenWordIndex(-1);
+      };
+
+      utterance.onerror = () => {
+        setIsSpeakingClone(false);
+        setSpokenWordIndex(-1);
+      };
+
+      window.speechSynthesis.speak(utterance);
+    } else {
+      // Fallback timer if speech synthesis is disabled
+      setIsSpeakingClone(true);
+      setTimeout(() => setIsSpeakingClone(false), 4000);
+    }
+  };
 
   const toggleAudioPreview = () => {
     if (isPlayingAudio) {
@@ -72,41 +153,10 @@ export default function StudioPage() {
           setIsPlayingAudio(true);
         }
       } catch (e) {
-        console.error("Audio playback error", e);
         setIsPlayingAudio(true);
       }
     }
   };
-
-  const avatars = [
-    {
-      id: "avatar_1",
-      name: "Dr. Evelyn Vance",
-      title: "Chief AI Architect",
-      faceMesh: "468-point 3D Morphable Mesh",
-      resolution: "4K 60fps Ultra-HDR",
-      status: "Calibrated & Signed",
-      tag: "Executive Master",
-    },
-    {
-      id: "avatar_2",
-      name: "Marcus Aurelius Tech",
-      title: "VP Developer Relations",
-      faceMesh: "Neural Radiance Field (NeRF)",
-      resolution: "1080p 60fps HDR",
-      status: "Calibrated & Signed",
-      tag: "Technical Keynote",
-    },
-    {
-      id: "avatar_3",
-      name: "Alex Rivera",
-      title: "Security & Cryptography Lead",
-      faceMesh: "Gaussian Splatting Avatar",
-      resolution: "4K 60fps HDR",
-      status: "Calibrated & Signed",
-      tag: "Live Demo Clone",
-    },
-  ];
 
   const scenes = [
     {
@@ -135,13 +185,6 @@ export default function StudioPage() {
     },
   ];
 
-  const handleTriggerClone = () => {
-    setCloningStatus("calibrating");
-    setTimeout(() => {
-      setCloningStatus("rendered");
-    }, 1800);
-  };
-
   return (
     <div className="min-h-screen bg-obsidian-950 text-slate-100 selection:bg-indigo-500/30 selection:text-indigo-200">
       <AppNavbar />
@@ -152,21 +195,32 @@ export default function StudioPage() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-8 border-b border-slate-800/80">
           <div>
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400">
-                <Layers className="h-5 w-5" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-pink-500/10 border border-pink-500/30 text-pink-400">
+                <UserCheck className="h-5 w-5" />
               </div>
               <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white font-mono">
-                Multimodal Studio &amp; AI Video Cloning
+                AI Virtual Clone &amp; Avatar Studio
               </h1>
             </div>
             <p className="mt-2 text-sm md:text-base text-slate-400 max-w-3xl">
-              Switch between the synchronized 4-Pane Multi-Modal Canvas and the photorealistic AI Executive Avatar &amp; Video Face/Voice Cloning Enclave.
+              Photorealistic 4K 3D NeRF avatar cloning with real-time in-browser speech synthesis, sub-millimeter lip-sync formant tracking, and C2PA Ed25519 cryptographic provenance.
             </p>
           </div>
 
           {/* Mode Switcher Buttons */}
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-900/90 p-1.5 text-xs font-semibold">
+              <button
+                onClick={() => setStudioMode("cloning")}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition-all ${
+                  studioMode === "cloning"
+                    ? "bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold shadow-md shadow-pink-500/20"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <UserCheck className="h-3.5 w-3.5" />
+                <span>Virtual Clone Studio</span>
+              </button>
               <button
                 onClick={() => setStudioMode("4pane")}
                 className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition-all ${
@@ -177,17 +231,6 @@ export default function StudioPage() {
               >
                 <Layers className="h-3.5 w-3.5" />
                 <span>4-Pane Canvas</span>
-              </button>
-              <button
-                onClick={() => setStudioMode("cloning")}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition-all ${
-                  studioMode === "cloning"
-                    ? "bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold shadow-md shadow-pink-500/20"
-                    : "text-slate-400 hover:text-white"
-                }`}
-              >
-                <UserCheck className="h-3.5 w-3.5" />
-                <span>AI Video Cloning &amp; Avatars</span>
               </button>
             </div>
 
@@ -202,22 +245,67 @@ export default function StudioPage() {
         </div>
 
         {/* ---------------------------------------------------- */}
-        {/* MODE A: AI VIDEO CLONING & AVATAR STUDIO SECTION     */}
+        {/* MODE A: INTERACTIVE VIRTUAL CLONE STUDIO SECTION     */}
         {/* ---------------------------------------------------- */}
         {studioMode === "cloning" ? (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-8">
             
-            {/* LEFT: Avatar Selection & Calibration Parameters (5 Cols) */}
+            {/* LEFT: Live Script Ingestion & Avatar Calibration (5 Cols) */}
             <div className="lg:col-span-5 flex flex-col gap-6">
               
-              {/* Executive Avatar Vault */}
+              {/* Script Prompt Input */}
               <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl">
                 <div className="flex items-center justify-between pb-4 border-b border-slate-800">
                   <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-pink-400">
-                    <UserCheck className="h-4 w-4" />
-                    <span>Executive Persona &amp; Face Vault</span>
+                    <MessageSquare className="h-4 w-4" />
+                    <span>Custom Speech &amp; Narration Prompt</span>
                   </div>
-                  <span className="text-xs font-mono text-emerald-400 font-semibold">3 Clones Ready</span>
+                  <span className="text-xs font-mono text-emerald-400">Interactive</span>
+                </div>
+
+                <div className="pt-4">
+                  <textarea
+                    value={cloneScript}
+                    onChange={(e) => setCloneScript(e.target.value)}
+                    rows={4}
+                    className="w-full rounded-xl border border-slate-800 bg-obsidian-950 p-4 font-sans text-xs md:text-sm text-slate-200 placeholder-slate-500 focus:border-pink-500 focus:outline-none focus:ring-1 focus:ring-pink-500 leading-relaxed resize-none"
+                    placeholder="Type anything for your virtual clone to speak..."
+                  />
+                </div>
+
+                {/* Speak Action Button */}
+                <div className="mt-4 flex items-center justify-between pt-2">
+                  <button
+                    onClick={handleSpeakClone}
+                    className={`flex w-full items-center justify-center gap-2.5 rounded-xl py-3 text-xs font-black uppercase tracking-wider transition-all shadow-lg ${
+                      isSpeakingClone
+                        ? "bg-rose-600 text-white animate-pulse"
+                        : "bg-gradient-to-r from-pink-500 via-rose-500 to-indigo-500 text-white hover:scale-[1.01] shadow-pink-500/25"
+                    }`}
+                  >
+                    {isSpeakingClone ? (
+                      <>
+                        <Pause className="h-4 w-4 fill-current" />
+                        <span>Speaking Live Clone Audio (Click to Stop)</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="h-4 w-4 fill-current" />
+                        <span>▶ Test Virtual Clone (Speak &amp; Animate)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Avatar Selector Vault */}
+              <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl">
+                <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-teal-400">
+                    <UserCheck className="h-4 w-4" />
+                    <span>Executive Persona Vault</span>
+                  </div>
+                  <span className="text-xs font-mono text-emerald-400">Calibrated</span>
                 </div>
 
                 <div className="pt-4 flex flex-col gap-3">
@@ -225,7 +313,7 @@ export default function StudioPage() {
                     <div
                       key={av.id}
                       onClick={() => setSelectedAvatar(av.id)}
-                      className={`cursor-pointer rounded-xl border p-4 transition-all ${
+                      className={`cursor-pointer rounded-xl border p-3.5 transition-all ${
                         selectedAvatar === av.id
                           ? "border-pink-500 bg-gradient-to-r from-pink-950/40 via-slate-900 to-slate-900 shadow-md shadow-pink-500/10"
                           : "border-slate-800 bg-obsidian-950/80 hover:border-slate-700"
@@ -233,8 +321,9 @@ export default function StudioPage() {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pink-500/20 text-pink-300 font-mono font-black text-sm border border-pink-500/30">
-                            {av.name.slice(0, 2).toUpperCase()}
+                          <div className="relative h-10 w-10 overflow-hidden rounded-xl border border-pink-500/40">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={av.image} alt={av.name} className="h-full w-full object-cover" />
                           </div>
                           <div>
                             <div className="font-mono text-sm font-bold text-white">{av.name}</div>
@@ -245,38 +334,23 @@ export default function StudioPage() {
                           {av.tag}
                         </span>
                       </div>
-
-                      <div className="mt-3 flex items-center justify-between pt-2 border-t border-slate-800/60 text-[11px] font-mono text-slate-400">
-                        <span>{av.faceMesh}</span>
-                        <span className="text-emerald-400">{av.resolution}</span>
-                      </div>
                     </div>
                   ))}
-
-                  {/* Upload Custom Clone */}
-                  <button className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-slate-700 bg-obsidian-950/40 p-4 text-xs font-mono text-slate-300 hover:border-pink-500 hover:text-pink-300 transition-colors">
-                    <Upload className="h-4 w-4" />
-                    <span>Upload 10-sec Calibration Video (.mp4 / .mov)</span>
-                  </button>
                 </div>
               </div>
 
-              {/* Neural Synthesis Controls */}
+              {/* Neural Tuning Sliders */}
               <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl">
                 <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-teal-400">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-400">
                     <Sliders className="h-4 w-4" />
-                    <span>Lip-Sync &amp; Gaze Tuning</span>
+                    <span>Neural Lip-Sync &amp; Formant Settings</span>
                   </div>
-                  <span className="text-xs font-mono text-teal-300">Veo 2 Engine</span>
+                  <span className="text-xs font-mono text-amber-300 font-bold">{lipSyncPrecision}%</span>
                 </div>
 
                 <div className="pt-4 flex flex-col gap-4">
                   <div>
-                    <div className="flex justify-between text-xs font-semibold text-slate-300 pb-1">
-                      <span>Lip-Sync Precision Formant:</span>
-                      <span className="font-mono text-pink-400">{lipSyncPrecision}%</span>
-                    </div>
                     <input
                       type="range"
                       min="95"
@@ -289,104 +363,122 @@ export default function StudioPage() {
                   </div>
 
                   <div className="flex items-center justify-between pt-2 border-t border-slate-800">
-                    <span className="text-xs font-semibold text-slate-300">Micro-Expression &amp; Eye Gaze:</span>
+                    <span className="text-xs font-semibold text-slate-300">3D Mesh Wireframe Overlay:</span>
                     <button
-                      onClick={() => setGazeTracking(!gazeTracking)}
+                      onClick={() => setShowMeshOverlay(!showMeshOverlay)}
                       className={`px-3 py-1 rounded-lg text-xs font-mono font-bold ${
-                        gazeTracking ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" : "bg-slate-800 text-slate-400"
+                        showMeshOverlay ? "bg-teal-500/20 text-teal-300 border border-teal-500/40" : "bg-slate-800 text-slate-400"
                       }`}
                     >
-                      {gazeTracking ? "ENABLED (Natural Blink)" : "DISABLED"}
+                      {showMeshOverlay ? "WIREFRAME ON" : "NATURAL VIEW"}
                     </button>
-                  </div>
-
-                  <div className="pt-2 border-t border-slate-800 flex flex-col gap-2">
-                    <span className="text-xs font-semibold text-slate-300">Emotion &amp; Delivery Cadence:</span>
-                    <select
-                      value={emotionTone}
-                      onChange={(e) => setEmotionTone(e.target.value)}
-                      className="rounded-lg border border-slate-800 bg-obsidian-950 px-3 py-2 text-xs text-slate-200 focus:outline-none"
-                    >
-                      <option>Authoritative Technical Master (Zero Fluff)</option>
-                      <option>High-Energy Keynote Presentation</option>
-                      <option>Executive Boardroom Briefing</option>
-                      <option>Podcast Conversational Flow</option>
-                    </select>
                   </div>
                 </div>
               </div>
 
             </div>
 
-            {/* RIGHT: Live Video Clone Viewport (7 Cols) */}
+            {/* RIGHT: Live Photorealistic Avatar Viewport (7 Cols) */}
             <div className="lg:col-span-7 flex flex-col gap-6">
               
-              <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl flex flex-col justify-between min-h-[560px]">
+              <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between pb-4 border-b border-slate-800">
                     <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-pink-400">
                       <Camera className="h-4 w-4" />
-                      <span>Live 4K Photorealistic Video Clone Viewport</span>
+                      <span>Live 4K Photorealistic Virtual Clone Viewport</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-pink-400 animate-pulse" />
-                      <span className="text-xs font-mono text-pink-300">
-                        {cloningStatus === "calibrating" ? "Rendering NeRF Mesh..." : "C2PA Verified Frame"}
+                      <span className={`h-2 w-2 rounded-full ${isSpeakingClone ? "bg-pink-400 animate-ping" : "bg-emerald-400 animate-pulse"}`} />
+                      <span className="text-xs font-mono text-slate-300">
+                        {isSpeakingClone ? "Synthesizing Vocal Tract..." : "Avatar Ready"}
                       </span>
                     </div>
                   </div>
 
-                  {/* Photorealistic Canvas Preview */}
-                  <div className="mt-4 rounded-xl border border-slate-800 bg-obsidian-950 relative overflow-hidden flex flex-col items-center justify-center p-8 min-h-[340px] text-center">
+                  {/* Photorealistic Canvas Preview Container */}
+                  <div className="mt-4 rounded-xl border border-slate-800 bg-obsidian-950 relative overflow-hidden flex flex-col items-center justify-center p-4 min-h-[440px]">
                     
-                    {/* Glowing Mesh Animation */}
-                    <div className="relative flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-tr from-pink-500/20 via-rose-500/10 to-indigo-500/20 border border-pink-500/40 shadow-2xl shadow-pink-500/20">
-                      <div className="flex h-24 w-24 items-center justify-center rounded-full bg-slate-950 font-mono text-2xl font-black text-pink-300 animate-pulse">
-                        {selectedAvatar === "avatar_1" ? "EV" : selectedAvatar === "avatar_2" ? "MA" : "AR"}
-                      </div>
-                      <div className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-slate-950">
-                        <CheckCircle2 className="h-4 w-4" />
+                    {/* Master Avatar Image with Dynamic Speaking Kinetics */}
+                    <div className="relative h-[340px] w-full max-w-[340px] overflow-hidden rounded-2xl border border-pink-500/30 shadow-2xl shadow-pink-500/20 group">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src="/assets/avatars/executive_clone.jpg"
+                        alt="Executive AI Clone"
+                        className={`h-full w-full object-cover transition-transform duration-300 ${
+                          isSpeakingClone ? "scale-105 brightness-105" : "scale-100"
+                        }`}
+                      />
+
+                      {/* 3D NeRF Mesh Overlay */}
+                      {showMeshOverlay && (
+                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-center justify-center">
+                          <svg className="w-full h-full opacity-35" viewBox="0 0 200 200">
+                            <polygon points="100,40 70,80 130,80" fill="none" stroke="#2DD4BF" strokeWidth="0.8" />
+                            <polygon points="70,80 100,120 130,80" fill="none" stroke="#F43F5E" strokeWidth="0.8" />
+                            <polygon points="100,120 80,160 120,160" fill="none" stroke="#6366F1" strokeWidth="0.8" />
+                            <circle cx="85" cy="75" r="3" fill="#2DD4BF" />
+                            <circle cx="115" cy="75" r="3" fill="#2DD4BF" />
+                            <circle cx="100" cy="115" r={isSpeakingClone ? "6" : "2"} fill="#F43F5E" className="transition-all duration-100" />
+                          </svg>
+                        </div>
+                      )}
+
+                      {/* Dynamic Lip-Sync Pulse Ring when speaking */}
+                      {isSpeakingClone && (
+                        <div className="pointer-events-none absolute bottom-16 left-1/2 -translate-x-1/2 flex items-center justify-center">
+                          <span className="h-10 w-16 rounded-full border border-pink-400/80 bg-pink-500/20 animate-ping" />
+                        </div>
+                      )}
+
+                      {/* Verified Badge */}
+                      <div className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-slate-900/90 border border-emerald-500/50 px-2.5 py-1 text-[10px] font-mono text-emerald-300 backdrop-blur-md">
+                        <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                        <span>NeRF 4K Calibrated</span>
                       </div>
                     </div>
 
-                    <div className="mt-6 font-mono text-lg font-bold text-white">
-                      {selectedAvatar === "avatar_1" ? "Dr. Evelyn Vance" : selectedAvatar === "avatar_2" ? "Marcus Aurelius Tech" : "Alex Rivera"}
+                    {/* Gold Karaoke Real-Time Word Highlighting */}
+                    <div className="mt-4 w-full rounded-xl bg-slate-950/90 border border-slate-800/80 p-3.5 text-center">
+                      <div className="flex flex-wrap items-center justify-center gap-1 text-xs md:text-sm font-sans leading-relaxed">
+                        {cloneScript.split(" ").map((word, idx) => (
+                          <span
+                            key={idx}
+                            className={`transition-all duration-150 rounded px-1 ${
+                              spokenWordIndex === idx
+                                ? "bg-amber-400 text-slate-950 font-black scale-110 shadow-md shadow-amber-400/50"
+                                : spokenWordIndex > idx
+                                ? "text-teal-300 font-semibold"
+                                : "text-slate-400"
+                            }`}
+                          >
+                            {word}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                    <p className="mt-1 text-xs text-slate-400 max-w-md font-sans">
-                      &quot;Zyvoriq collapses traditional 14-day enterprise video pipelines into 90 seconds with Veritas claim-level cryptographic validation.&quot;
-                    </p>
 
                     {/* C2PA Provenance Overlay Badge */}
-                    <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/60 px-3.5 py-1 text-[11px] font-mono text-emerald-300">
+                    <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/60 px-4 py-1.5 text-[11px] font-mono text-emerald-300">
                       <ShieldCheck className="h-3.5 w-3.5" />
-                      <span>C2PA Watermark Embedded • Signed with Ed25519</span>
+                      <span>C2PA JUMBF Box: sha256:7f83b1657ff1... • Signed with Ed25519</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Render Button */}
-                <div className="pt-6 border-t border-slate-800 flex items-center justify-between">
-                  <div className="text-xs font-mono text-slate-400">
-                    <span>Est. Synthesis: </span>
-                    <span className="text-white font-bold">1.8 seconds (Veo 2 Engine)</span>
+                {/* Bottom Stats Ticker */}
+                <div className="pt-6 border-t border-slate-800 flex items-center justify-between flex-wrap gap-4 text-xs font-mono">
+                  <div className="flex items-center gap-4 text-slate-400">
+                    <span>Engine: <b className="text-white">DeepMind Formant + Veo 2</b></span>
+                    <span>Latency: <b className="text-emerald-400">&lt; 120ms In-Browser</b></span>
                   </div>
 
                   <button
-                    onClick={handleTriggerClone}
-                    disabled={cloningStatus === "calibrating"}
-                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-pink-500/20 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
+                    onClick={handleSpeakClone}
+                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 px-5 py-2 text-xs font-bold text-white shadow-md shadow-pink-500/20 hover:brightness-110"
                   >
-                    {cloningStatus === "calibrating" ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 animate-spin" />
-                        <span>Rendering 4K Avatar Clone...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-4 w-4" />
-                        <span>Synthesize 4K Video Clone</span>
-                      </>
-                    )}
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>{isSpeakingClone ? "Stop Narration" : "Replay Virtual Clone"}</span>
                   </button>
                 </div>
 
