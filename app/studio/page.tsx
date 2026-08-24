@@ -20,9 +20,10 @@ import {
   Gauge,
   Subtitles,
   Cpu,
-  CheckCircle2,
   Zap,
-  Scale
+  Scale,
+  ChevronsLeft,
+  ChevronsRight
 } from "lucide-react";
 
 interface PersonaConfig {
@@ -140,8 +141,8 @@ export default function StudioPage() {
 
   const [selectedPersona, setSelectedPersona] = useState("priya");
 
-  // Speed Stepper Controls (0.1x increments)
-  const [videoSpeed, setVideoSpeed] = useState<number>(1.20);
+  // Ultra-Precise Speed Stepper Controls (0.01x increments)
+  const [videoSpeed, setVideoSpeed] = useState<number>(1.25);
   const [audioSpeed, setAudioSpeed] = useState<number>(1.00);
 
   // Live Closed Captions (CC) Overlay Toggle
@@ -191,10 +192,10 @@ export default function StudioPage() {
     }
   }, [audioSpeed]);
 
-  // Stepper Handlers for Video Speed (±0.1x)
+  // Ultra-Precise Stepper Handler (±0.01x or ±0.10x)
   const adjustVideoSpeed = (delta: number) => {
     setVideoSpeed((prev) => {
-      const next = Math.max(0.5, Math.min(3.0, Math.round((prev + delta) * 10) / 10));
+      const next = Math.max(0.50, Math.min(3.00, Math.round((prev + delta) * 100) / 100));
       return next;
     });
   };
@@ -479,7 +480,7 @@ export default function StudioPage() {
               </h1>
             </div>
             <p className="mt-2 text-sm md:text-base text-slate-400 max-w-4xl">
-              Compare <b>Option 1 (Instant Keynote Broadcast)</b> vs <b>Option 2 (Cloud GPU Neural Lip Sync Pipeline)</b> side-by-side with real-time performance and quality telemetry.
+              Fine-tune video speed with <b>ultra-precise ±0.01x increments</b> or compare <b>Option 1 (Instant Keynote Broadcast)</b> vs <b>Option 2 (Cloud GPU Neural Lip Sync)</b>.
             </p>
           </div>
 
@@ -643,7 +644,7 @@ export default function StudioPage() {
               </div>
             </div>
 
-            {/* Script Input & Stepper Controls */}
+            {/* Script Input & Ultra-Precise ±0.01x Stepper Controls */}
             <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl">
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                 <span className="text-xs font-bold uppercase tracking-wider text-pink-400 flex items-center gap-2">
@@ -663,33 +664,74 @@ export default function StudioPage() {
                 />
               </div>
 
-              {/* Speed Steppers */}
-              <div className="mt-4 flex items-center justify-between bg-obsidian-950 p-3 rounded-xl border border-slate-800">
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
-                    <Gauge className="h-3.5 w-3.5 text-teal-400" />
-                    <span>Video Cadence (0.1x Stepper):</span>
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => adjustVideoSpeed(-0.1)}
-                    className="h-7 w-7 rounded bg-slate-800 border border-slate-700 text-white font-bold flex items-center justify-center hover:bg-slate-700 text-xs"
-                  >
-                    <Minus className="h-3.5 w-3.5" />
-                  </button>
-
-                  <div className="w-14 text-center font-mono font-extrabold text-sm text-emerald-400 bg-slate-900 py-1 rounded-lg border border-teal-500/40">
-                    {videoSpeed.toFixed(1)}x
+              {/* ⚡ ULTRA-PRECISE ±0.01x SPEED STEPPER CONTROLLER */}
+              <div className="mt-4 flex flex-col gap-2.5 bg-obsidian-950 p-4 rounded-xl border border-teal-500/30">
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
+                      <Gauge className="h-3.5 w-3.5 text-teal-400" />
+                      <span>Ultra-Precise Speed Stepper (±0.01x):</span>
+                    </span>
+                    <span className="text-[11px] text-slate-400">Micro-tune video tempo to match speech delivery</span>
                   </div>
 
-                  <button
-                    onClick={() => adjustVideoSpeed(+0.1)}
-                    className="h-7 w-7 rounded bg-teal-500 border border-teal-400 text-slate-950 font-bold flex items-center justify-center hover:brightness-110 text-xs"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    {/* -0.10 Macro Step */}
+                    <button
+                      onClick={() => adjustVideoSpeed(-0.10)}
+                      className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-300 font-mono font-bold hover:bg-slate-800 text-[11px]"
+                      title="Jump -0.10x"
+                    >
+                      -0.10
+                    </button>
+
+                    {/* -0.01 Micro Step */}
+                    <button
+                      onClick={() => adjustVideoSpeed(-0.01)}
+                      className="h-8 w-8 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold flex items-center justify-center hover:bg-slate-700 active:scale-95 text-xs"
+                      title="Decrease by -0.01x"
+                    >
+                      <Minus className="h-4 w-4" />
+                    </button>
+
+                    {/* Precise Value Display */}
+                    <div className="w-18 px-2 text-center font-mono font-extrabold text-base text-emerald-400 bg-slate-900 py-1 rounded-lg border border-teal-500/50 shadow-inner">
+                      {videoSpeed.toFixed(2)}x
+                    </div>
+
+                    {/* +0.01 Micro Step */}
+                    <button
+                      onClick={() => adjustVideoSpeed(+0.01)}
+                      className="h-8 w-8 rounded-lg bg-gradient-to-r from-teal-500 to-emerald-500 border border-teal-400 text-slate-950 font-bold flex items-center justify-center hover:brightness-110 active:scale-95 text-xs shadow-md"
+                      title="Increase by +0.01x"
+                    >
+                      <Plus className="h-4 w-4 stroke-[3]" />
+                    </button>
+
+                    {/* +0.10 Macro Step */}
+                    <button
+                      onClick={() => adjustVideoSpeed(+0.10)}
+                      className="px-2 py-1 rounded bg-slate-900 border border-teal-700 text-teal-300 font-mono font-bold hover:bg-slate-800 text-[11px]"
+                      title="Jump +0.10x"
+                    >
+                      +0.10
+                    </button>
+                  </div>
+                </div>
+
+                {/* Slider for Smooth Continuous Scrubbing */}
+                <div className="pt-1 flex items-center gap-3">
+                  <span className="text-[10px] font-mono text-slate-400">0.50x</span>
+                  <input
+                    type="range"
+                    min="0.50"
+                    max="3.00"
+                    step="0.01"
+                    value={videoSpeed}
+                    onChange={(e) => setVideoSpeed(parseFloat(e.target.value))}
+                    className="flex-1 accent-teal-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
+                  />
+                  <span className="text-[10px] font-mono text-slate-400">3.00x</span>
                 </div>
               </div>
 
@@ -713,7 +755,7 @@ export default function StudioPage() {
                   ) : (
                     <>
                       <Play className="h-4 w-4 fill-current" />
-                      <span>▶ Play Option 1 (0s)</span>
+                      <span>▶ Play Option 1 ({videoSpeed.toFixed(2)}x)</span>
                     </>
                   )}
                 </button>
@@ -780,7 +822,7 @@ export default function StudioPage() {
                         ? "bg-purple-950 text-purple-300 border-purple-700/50"
                         : "bg-teal-950 text-teal-300 border-teal-800/40"
                     }`}>
-                      {selectedPlaybackEngine === "option2" ? "GPU NEURAL MASTER • 1080P" : `1080P60 • ${videoSpeed.toFixed(1)}X VIDEO`}
+                      {selectedPlaybackEngine === "option2" ? "GPU NEURAL MASTER • 1080P" : `1080P60 • ${videoSpeed.toFixed(2)}X VIDEO`}
                     </span>
                   </div>
                 </div>
@@ -799,6 +841,27 @@ export default function StudioPage() {
                       playsInline
                       className="h-full w-full object-cover"
                     />
+
+                    {/* Floating Fine-Tune Stepper Over Viewport (±0.01x) */}
+                    <div className="absolute top-3 left-3 flex items-center gap-1 rounded-xl bg-slate-950/90 border border-slate-700/80 px-2 py-1 backdrop-blur-md z-10">
+                      <button
+                        onClick={() => adjustVideoSpeed(-0.01)}
+                        className="h-6 w-6 rounded bg-slate-800 text-white font-mono font-bold flex items-center justify-center hover:bg-slate-700 text-xs"
+                        title="-0.01x"
+                      >
+                        -
+                      </button>
+                      <span className="font-mono text-xs font-bold text-emerald-400 px-1">
+                        {videoSpeed.toFixed(2)}x
+                      </span>
+                      <button
+                        onClick={() => adjustVideoSpeed(+0.01)}
+                        className="h-6 w-6 rounded bg-teal-500 text-slate-950 font-mono font-bold flex items-center justify-center hover:bg-teal-400 text-xs"
+                        title="+0.01x"
+                      >
+                        +
+                      </button>
+                    </div>
 
                     {/* Option 2 GPU Synthesis Progress Overlay */}
                     {isSynthesizingOption2 && (
@@ -901,7 +964,7 @@ export default function StudioPage() {
                     }`}
                   >
                     <Play className="h-3.5 w-3.5 fill-current" />
-                    <span>{isSpeakingClone ? "Pause" : `Play ${selectedPlaybackEngine === "option2" ? "Option 2 (GPU)" : "Option 1 (0s)"}`}</span>
+                    <span>{isSpeakingClone ? "Pause" : `Play ${selectedPlaybackEngine === "option2" ? "Option 2 (GPU)" : `Option 1 (${videoSpeed.toFixed(2)}x)`}`}</span>
                   </button>
                 </div>
               </div>
