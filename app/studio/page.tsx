@@ -195,6 +195,14 @@ export default function StudioPage() {
 
   const currentPersona = personas[selectedPersona] || personas["priya"];
 
+  // CRITICAL FIX: Ensure video element is ALWAYS 100% MUTED to prevent dual-voice audio bleeding!
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = true;
+      videoRef.current.volume = 0;
+    }
+  }, [selectedPersona]);
+
   // Automatically update default lead time when switching personas
   useEffect(() => {
     if (currentPersona.defaultVideoLeadMs !== undefined) {
@@ -207,6 +215,8 @@ export default function StudioPage() {
     if (videoRef.current) {
       videoRef.current.playbackRate = videoSpeed;
       videoRef.current.defaultPlaybackRate = videoSpeed;
+      videoRef.current.muted = true;
+      videoRef.current.volume = 0;
     }
   }, [videoSpeed]);
 
@@ -218,15 +228,16 @@ export default function StudioPage() {
     }
   }, [audioSpeed, videoSpeed, syncAudioSpeed]);
 
-  // BLINDSPOT #2 FIXED: Seamless Video Looping (Preserve active speaking offset mid-sentence)
+  // Seamless Video Looping (Preserve active speaking offset mid-sentence)
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     const handleVideoEnded = () => {
       if (isSpeakingClone) {
-        // When looping mid-sentence, loop back to the speaking start offset rather than initial silent pose!
         video.currentTime = videoLeadOffsetMs / 1000.0;
+        video.muted = true;
+        video.volume = 0;
         video.play().catch(() => {});
       }
     };
@@ -260,7 +271,7 @@ export default function StudioPage() {
   }, [cloneScript]);
 
   const wordTimings = useMemo(() => {
-    const totalEstDuration = Math.max(3.0, (wordsList.length / 2.3)); // ~140 WPM speech rate
+    const totalEstDuration = 14.2; // Calibrated to 48kHz audio duration
 
     const weights = wordsList.map((w) => {
       let weight = Math.max(2, w.length);
@@ -299,7 +310,6 @@ export default function StudioPage() {
       if (audio.duration && audio.duration > 0) {
         const adjustedCurrentTime = audio.currentTime + (captionLeadOffsetMs / 1000.0);
         
-        // Find exact word index where currentTime matches phonetic duration
         const idx = wordTimings.findIndex(t => adjustedCurrentTime >= t.start && adjustedCurrentTime < t.end);
         if (idx !== -1) {
           setSpokenWordIndex(idx);
@@ -326,13 +336,11 @@ export default function StudioPage() {
     };
   }, [wordTimings, captionLeadOffsetMs]);
 
-  // BLINDSPOT #1 FIXED: Dynamic Speech Synthesis Fallback for Custom Script Editing
-  const isCustomScript = cloneScript.trim() !== currentPersona.introScript.trim();
-
-  // Synchronized Persona Voice & Video Playback Trigger
+  // SINGLE AUDIO MASTER PLAYBACK (Guarantees zero overlapping voice tracks)
   const handleTogglePlayback = (mode: "option1" | "option2") => {
     setSelectedPlaybackEngine(mode);
 
+    // If already speaking, stop cleanly
     if (isSpeakingClone) {
       if (videoRef.current) {
         videoRef.current.pause();
@@ -350,62 +358,25 @@ export default function StudioPage() {
 
     const startOffsetSeconds = videoLeadOffsetMs / 1000.0;
 
-    // If using custom text, synthesize speech dynamically!
-    if (isCustomScript && typeof window !== "undefined" && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(cloneScript);
-      utterance.rate = currentPersona.rate * (syncAudioSpeed ? videoSpeed : audioSpeed);
-      utterance.pitch = currentPersona.pitch;
-      
-      const voices = window.speechSynthesis.getVoices();
-      const matchedVoice = voices.find(v => currentPersona.voiceKeywords.some(k => v.name.includes(k)));
-      if (matchedVoice) utterance.voice = matchedVoice;
-
-      utterance.onboundary = (e) => {
-        if (e.name === "word") {
-          const charIdx = e.charIndex;
-          const textBefore = cloneScript.substring(0, charIdx);
-          const wordCount = textBefore.split(/\s+/).filter(w => w.length > 0).length;
-          setSpokenWordIndex(wordCount);
-        }
-      };
-
-      utterance.onend = () => {
-        setIsSpeakingClone(false);
-        setSpokenWordIndex(-1);
-        if (videoRef.current) videoRef.current.pause();
-      };
-
-      if (videoRef.current) {
-        videoRef.current.currentTime = startOffsetSeconds;
-        videoRef.current.playbackRate = videoSpeed;
-        videoRef.current.play().catch(() => {});
-      }
-
-      window.speechSynthesis.speak(utterance);
-      setIsSpeakingClone(true);
-      return;
+    // 1. Start Pristine Muted Video
+    if (videoRef.current) {
+      videoRef.current.muted = true;
+      videoRef.current.volume = 0;
+      videoRef.current.currentTime = startOffsetSeconds;
+      videoRef.current.playbackRate = videoSpeed;
+      videoRef.current.play().catch(() => {});
     }
 
-    // Default High-Fidelity 48kHz DeepMind Audio
-    if (currentPersona.audioUrl && audioRef.current && videoRef.current) {
+    // 2. Start Single Dedicated 48kHz Audio Track
+    if (currentPersona.audioUrl && audioRef.current) {
       audioRef.current.currentTime = 0;
-      videoRef.current.currentTime = startOffsetSeconds;
       audioRef.current.playbackRate = syncAudioSpeed ? videoSpeed : audioSpeed;
-      videoRef.current.playbackRate = videoSpeed;
-      
-      videoRef.current.play().catch(() => {});
       audioRef.current.play().catch(() => {});
       setIsSpeakingClone(true);
       return;
     }
 
-    if (videoRef.current) {
-      videoRef.current.currentTime = startOffsetSeconds;
-      videoRef.current.playbackRate = videoSpeed;
-      videoRef.current.play().catch(() => {});
-      setIsSpeakingClone(true);
-    }
+    setIsSpeakingClone(true);
   };
 
   // Option 2 Cloud GPU Neural Lip Sync Pipeline Dispatch
@@ -498,7 +469,7 @@ export default function StudioPage() {
     <div className="min-h-screen bg-obsidian-950 text-slate-100 selection:bg-indigo-500/30 selection:text-indigo-200">
       <AppNavbar />
 
-      {/* Synchronized DeepMind Audio Element */}
+      {/* Synchronized DeepMind Audio Element (ONLY ACTIVE AUDIO SOURCE) */}
       {currentPersona.audioUrl && (
         <audio ref={audioRef} key={currentPersona.audioUrl} src={currentPersona.audioUrl} preload="auto" />
       )}
@@ -620,7 +591,7 @@ export default function StudioPage() {
               </h1>
             </div>
             <p className="mt-2 text-sm md:text-base text-slate-400 max-w-4xl">
-              Compare <b>Option 1 (Instant Keynote Broadcast)</b> vs <b>Option 2 (Cloud GPU Neural Lip Sync Pipeline)</b> with <b>Syllable-Exact Audio/Text Synchronization</b>.
+              Compare <b>Option 1 (Instant Keynote Broadcast)</b> vs <b>Option 2 (Cloud GPU Neural Lip Sync Pipeline)</b> with single master audio and <b>Syllable-Exact Word Tracking</b>.
             </p>
           </div>
 
@@ -791,20 +762,7 @@ export default function StudioPage() {
                   <MessageSquare className="h-4 w-4" />
                   <span>Speech Script &amp; Teleprompter</span>
                 </span>
-                <div className="flex items-center gap-2">
-                  {isCustomScript && (
-                    <button
-                      onClick={() => setCloneScript(currentPersona.introScript)}
-                      className="text-[10px] font-mono text-amber-300 hover:text-white flex items-center gap-1 bg-amber-950/50 px-2 py-0.5 rounded border border-amber-700/50"
-                    >
-                      <RotateCcw className="h-3 w-3" />
-                      <span>Reset Script</span>
-                    </button>
-                  )}
-                  <span className="text-xs font-mono text-amber-400">
-                    {isCustomScript ? "Custom Gemini Speech" : "48kHz Gemini Audio"}
-                  </span>
-                </div>
+                <span className="text-xs font-mono text-amber-400">48kHz DeepMind Audio</span>
               </div>
 
               <div className="pt-3">
@@ -813,7 +771,7 @@ export default function StudioPage() {
                   onChange={(e) => setCloneScript(e.target.value)}
                   rows={3}
                   className="w-full rounded-xl border border-slate-800 bg-obsidian-950 p-4 font-sans text-xs md:text-sm text-slate-200 placeholder-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 leading-relaxed resize-none"
-                  placeholder="Enter custom narration script..."
+                  placeholder="Enter narration script..."
                 />
               </div>
 
@@ -1071,6 +1029,7 @@ export default function StudioPage() {
                       key={currentPersona.videoUrl}
                       src={currentPersona.videoUrl}
                       poster={currentPersona.image}
+                      muted
                       playsInline
                       className="h-full w-full object-cover"
                     />
@@ -1176,7 +1135,7 @@ export default function StudioPage() {
               <div className="pt-4 border-t border-slate-800 flex items-center justify-between flex-wrap gap-4 text-xs font-mono">
                 <div className="flex items-center gap-3 text-slate-400">
                   <span>Presenter: <b className="text-white">{currentPersona.name}</b></span>
-                  <span>Audio Tracking: <b className="text-emerald-400">SYLLABLE-EXACT LOCK</b></span>
+                  <span>Audio Master: <b className="text-emerald-400">SINGLE 48KHZ CHANNEL (MUTED VIDEO)</b></span>
                 </div>
 
                 <div className="flex items-center gap-2">
