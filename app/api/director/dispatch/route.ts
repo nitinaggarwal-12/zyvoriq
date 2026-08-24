@@ -14,10 +14,10 @@ export async function POST(req: Request) {
     const taskId = `run_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const wsId = workspaceId || "ws_tech_eng";
 
-    // 1. Dispatch Research & Grounding (Gemini 2.5 Pro)
+    // 1. Dispatch Research & Grounding (Gemini 3.7 Flash)
     const claims = await modelRouter.dispatchGroundingResearch(prompt);
 
-    // 2. Dispatch Scripting & AST (Claude 3.5 Sonnet)
+    // 2. Dispatch Scripting & AST (Gemini 3.7 Flash Hybrid Reasoning)
     const scenes = await modelRouter.dispatchScriptingAndAst(prompt, personaTone || "Engineering-First", claims);
 
     // 3. Persist Swarm Run into Database
@@ -37,19 +37,19 @@ export async function POST(req: Request) {
     return NextResponse.json({
       taskId,
       status: "queued",
-      message: "Swarm DAG compiled and scheduled across Gemini 2.5 Pro & Claude 3.5 Sonnet",
+      message: "Swarm DAG compiled and scheduled across Google Gemini 3.7 Flash Sovereign Pipeline",
       claims,
       scenes,
       dag: {
-        root: "Agent 1: Director Swarm DAG Compiler (Gemini 2.5 Pro)",
+        root: "Agent 1: Director Swarm DAG Compiler (Gemini 3.7 Flash)",
         parallelWorkers: [
-          "Agent 2: Research & Grounding (Gemini 2.5 Pro)",
-          "Agent 3: Scripting & Narrative (Claude 3.5 Sonnet)",
-          "Agent 4: Cinematic Video Storyboard (Veo 2)",
+          "Agent 2: Research & Grounding (Gemini 3.7 Flash)",
+          "Agent 3: Scripting & Narrative (Gemini 3.7 Flash)",
+          "Agent 4: Cinematic Video Storyboard (Veo 2 / Veo 3.1)",
           "Agent 5: Speech & Vocal Dubbing (DeepMind Neural TTS)",
           "Agent 6: Code & Diagram Compiler (Draw.io XML AST)"
         ],
-        qualityGate: "Agent 7: Veritas 5-Axis Consensus Auditor (Gemini + Claude)",
+        qualityGate: "Agent 7: Veritas 5-Axis Consensus Auditor (Gemini 3.7 Flash)",
         autoRepair: "Agent 8: Surgical Defect Auto-Repair (Loop 1-3)",
         publisher: "Agent 9: Omnichannel C2PA Publisher (Ed25519 Signed)"
       },

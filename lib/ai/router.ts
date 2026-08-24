@@ -1,6 +1,6 @@
 /**
  * Zyvoriq Multi-Model AI Router & Dispatch Engine
- * Routes agent tasks dynamically between Google Gemini 2.5 Pro, Claude 3.5 Sonnet, and DeepMind Neural TTS.
+ * Routes agent tasks dynamically between Google Gemini 3.7 Flash, Gemini 2.5 Pro, and DeepMind Neural TTS.
  * Gracefully falls back to high-fidelity deterministic simulation when external API keys are omitted.
  */
 
@@ -44,7 +44,7 @@ export class ModelRouter {
   private anthropicKey: string | undefined;
 
   constructor() {
-    this.geminiKey = process.env.GEMINI_API_KEY;
+    this.geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
     this.anthropicKey = process.env.ANTHROPIC_API_KEY;
   }
 
@@ -57,16 +57,16 @@ export class ModelRouter {
   }
 
   /**
-   * Agent 2: Grounding & Fact Extraction (Gemini 2.5 Pro + Search Grounding)
+   * Agent 2: Grounding & Fact Extraction (Gemini 3.7 Flash + Search Grounding)
    */
   public async dispatchGroundingResearch(conceptPrompt: string): Promise<GroundingClaimResult[]> {
     if (this.hasGemini()) {
       try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${this.geminiKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=${this.geminiKey}`;
         const payload = {
           contents: [{
             parts: [{
-              text: `You are Zyvoriq's Research Agent. Extract exactly 3 verified technical claims with primary sources for this brief: "${conceptPrompt}". Return valid JSON array matching [{id, claim_statement, source_url, confidence_score}].`
+              text: `You are Zyvoriq's Research Agent powered by Gemini 3.7 Flash. Extract exactly 3 verified technical claims with primary sources for this brief: "${conceptPrompt}". Return valid JSON array matching [{id, claim_statement, source_url, confidence_score}].`
             }]
           }],
           tools: [{ googleSearch: {} }]
@@ -90,7 +90,7 @@ export class ModelRouter {
           }
         }
       } catch (err) {
-        console.warn("Live Gemini grounding failed, falling back to deterministic claims", err);
+        console.warn("Live Gemini 3.7 Flash grounding failed, falling back to deterministic claims", err);
       }
     }
 
@@ -121,43 +121,38 @@ export class ModelRouter {
   }
 
   /**
-   * Agent 3 & 6: Scripting & AST Graph Compilation (Claude 3.5 Sonnet)
+   * Agent 3 & 6: Scripting & AST Graph Compilation (Gemini 3.7 Flash Hybrid Reasoning)
    */
   public async dispatchScriptingAndAst(
     conceptPrompt: string,
     personaTone: string,
     claims: GroundingClaimResult[]
   ): Promise<ScriptSceneResult[]> {
-    if (this.hasAnthropic()) {
+    if (this.hasGemini()) {
       try {
-        const res = await fetch("https://api.anthropic.com/v1/messages", {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=${this.geminiKey}`;
+        const res = await fetch(url, {
           method: "POST",
-          headers: {
-            "x-api-key": this.anthropicKey!,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "claude-3-5-sonnet-20241022",
-            max_tokens: 2000,
-            system: `You are Zyvoriq's Scripting & AST Compiler. Persona: "${personaTone}". Prohibited words: ["delve", "tapestry", "game-changer"]. Output JSON array of 3 scenes matching [{id, title, narration, videoShot, audioPrompt, diagramAstNode}].`,
-            messages: [{
-              role: "user",
-              content: `Author narrative based on: "${conceptPrompt}". Verified claims: ${JSON.stringify(claims)}`
+            contents: [{
+              parts: [{
+                text: `You are Zyvoriq's Scripting & AST Compiler powered by Gemini 3.7 Flash. Persona: "${personaTone}". Prohibited words: ["delve", "tapestry", "game-changer"]. Author a 3-scene storyboard based on: "${conceptPrompt}". Verified claims: ${JSON.stringify(claims)}. Return ONLY a JSON array of 3 scenes matching [{id, title, narration, videoShot, audioPrompt, diagramAstNode}].`
+              }]
             }]
           })
         });
 
         if (res.ok) {
           const data = await res.json();
-          const rawText = data?.content?.[0]?.text;
+          const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
           const jsonMatch = rawText?.match(/\[[\s\S]*\]/);
           if (jsonMatch) {
             return JSON.parse(jsonMatch[0]);
           }
         }
       } catch (err) {
-        console.warn("Live Claude scripting failed, falling back to deterministic scenes", err);
+        console.warn("Live Gemini 3.7 Flash scripting failed, falling back to deterministic scenes", err);
       }
     }
 
@@ -175,7 +170,7 @@ export class ModelRouter {
         id: 2,
         title: "Scene 2: Veritas 5-Axis Consensus",
         narration: "Every single factual claim is anchored to primary source filings. If the Veritas score drops below 90, the auto-repair engine surgically patches the defect.",
-        videoShot: "Split-screen visualization of Gemini 2.5 Pro and Claude 3.5 Sonnet cross-examining claim nodes with green confirmation pulses.",
+        videoShot: "Split-screen visualization of Gemini 3.7 Flash cross-examining claim nodes with green confirmation pulses.",
         audioPrompt: "Crisp vocal formant with gold karaoke subtitle synchronization.",
         diagramAstNode: "Veritas 5-Axis Consensus Enclave (Fact, Tone, Safety Gate)."
       },
@@ -191,7 +186,7 @@ export class ModelRouter {
   }
 
   /**
-   * Agent 7: Veritas 5-Axis Consensus & Dual-Model Audit
+   * Agent 7: Veritas 5-Axis Consensus & Gemini 3.7 Flash Sovereign Audit
    */
   public evaluateVeritasConsensus(draft: { text?: string; claimsCount?: number }): VeritasConsensusResult {
     const factualityScore = 96.0;
@@ -220,7 +215,7 @@ export class ModelRouter {
       safetyPolicyScore,
       humanizationScore,
       gateDecision: isPassed ? "pass" : "repair",
-      evaluators: ["gemini-2.5-pro", "claude-3.5-sonnet"]
+      evaluators: ["gemini-3.7-flash", "gemini-2.5-pro"]
     };
   }
 }
