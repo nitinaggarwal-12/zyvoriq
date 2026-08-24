@@ -20,12 +20,8 @@ import {
   Gauge,
   Subtitles,
   Cpu,
-  SplitSquareVertical,
   CheckCircle2,
   Zap,
-  ArrowRight,
-  TrendingUp,
-  Server,
   Scale
 } from "lucide-react";
 
@@ -48,6 +44,7 @@ interface PersonaConfig {
 export default function StudioPage() {
   // Option 1 vs Option 2 vs Side-by-Side Comparison Mode
   const [activeTab, setActiveTab] = useState<"option1" | "option2" | "compare">("compare");
+  const [selectedPlaybackEngine, setSelectedPlaybackEngine] = useState<"option1" | "option2">("option1");
 
   // Dynamic Personas Catalog
   const [personas, setPersonas] = useState<Record<string, PersonaConfig>>({
@@ -158,7 +155,7 @@ export default function StudioPage() {
   const [isSynthesizingOption2, setIsSynthesizingOption2] = useState(false);
   const [option2Stage, setOption2Stage] = useState<string>("");
   const [option2Progress, setOption2Progress] = useState(0);
-  const [option2Completed, setOption2Completed] = useState(false);
+  const [option2Rendered, setOption2Rendered] = useState(false);
   const [gpuTargetEngine, setGpuTargetEngine] = useState("Vertex AI LivePortrait (NVIDIA H100 GPU)");
 
   // Virtual Clone Script & Playback
@@ -234,7 +231,9 @@ export default function StudioPage() {
   }, [cloneScript, selectedPersona]);
 
   // Synchronized Persona Voice & Video Playback Trigger
-  const handleToggleBroadcast = () => {
+  const handleTogglePlayback = (mode: "option1" | "option2") => {
+    setSelectedPlaybackEngine(mode);
+
     if (isSpeakingClone) {
       if (videoRef.current) {
         videoRef.current.pause();
@@ -251,7 +250,7 @@ export default function StudioPage() {
       audioRef.current.currentTime = 0;
       videoRef.current.currentTime = 0;
       audioRef.current.playbackRate = audioSpeed;
-      videoRef.current.playbackRate = videoSpeed;
+      videoRef.current.playbackRate = mode === "option2" ? 1.00 : videoSpeed;
       
       videoRef.current.play().catch(() => {});
       audioRef.current.play().catch(() => {});
@@ -261,7 +260,7 @@ export default function StudioPage() {
 
     if (videoRef.current) {
       videoRef.current.currentTime = 0;
-      videoRef.current.playbackRate = videoSpeed;
+      videoRef.current.playbackRate = mode === "option2" ? 1.00 : videoSpeed;
       videoRef.current.play().catch(() => {});
       setIsSpeakingClone(true);
     }
@@ -270,6 +269,7 @@ export default function StudioPage() {
   // Option 2 Cloud GPU Neural Lip Sync Pipeline Dispatch
   const handleTriggerOption2Pipeline = async () => {
     setIsSynthesizingOption2(true);
+    setSelectedPlaybackEngine("option2");
     setOption2Progress(15);
     setOption2Stage("1/4: Synthesizing Gemini 3.1 Flash 48kHz Acoustic Waveform...");
 
@@ -304,8 +304,8 @@ export default function StudioPage() {
       setTimeout(() => {
         setOption2Progress(100);
         setIsSynthesizingOption2(false);
-        setOption2Completed(true);
-        handleToggleBroadcast();
+        setOption2Rendered(true);
+        handleTogglePlayback("option2");
       }, 3800);
     } catch (e) {
       setIsSynthesizingOption2(false);
@@ -486,7 +486,10 @@ export default function StudioPage() {
           {/* Navigation Mode Switcher */}
           <div className="flex items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900/90 p-1.5 backdrop-blur-md">
             <button
-              onClick={() => setActiveTab("compare")}
+              onClick={() => {
+                setActiveTab("compare");
+                setSelectedPlaybackEngine("option1");
+              }}
               className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-mono font-bold transition-all ${
                 activeTab === "compare"
                   ? "bg-gradient-to-r from-teal-400 to-emerald-500 text-slate-950 shadow-md shadow-teal-500/20"
@@ -498,7 +501,10 @@ export default function StudioPage() {
             </button>
 
             <button
-              onClick={() => setActiveTab("option1")}
+              onClick={() => {
+                setActiveTab("option1");
+                setSelectedPlaybackEngine("option1");
+              }}
               className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-mono font-bold transition-all ${
                 activeTab === "option1"
                   ? "bg-gradient-to-r from-teal-400 to-emerald-500 text-slate-950 shadow-md shadow-teal-500/20"
@@ -510,7 +516,10 @@ export default function StudioPage() {
             </button>
 
             <button
-              onClick={() => setActiveTab("option2")}
+              onClick={() => {
+                setActiveTab("option2");
+                setSelectedPlaybackEngine("option2");
+              }}
               className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-mono font-bold transition-all ${
                 activeTab === "option2"
                   ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md shadow-pink-500/20"
@@ -532,7 +541,11 @@ export default function StudioPage() {
               <Scale className="h-4 w-4" />
               <span>Architectural Comparison Matrix (Option 1 vs Option 2)</span>
             </span>
-            <span className="text-xs font-mono text-slate-400">Target Persona: <b className="text-white">{currentPersona.name}</b></span>
+            <span className="text-xs font-mono text-slate-400">
+              Active Engine: <b className={selectedPlaybackEngine === "option2" ? "text-purple-400" : "text-emerald-400"}>
+                {selectedPlaybackEngine === "option2" ? "OPTION 2 (CLOUD GPU NEURAL PIPELINE)" : "OPTION 1 (INSTANT KEYNOTE BROADCAST)"}
+              </b>
+            </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 pt-4 text-xs font-mono">
@@ -680,20 +693,22 @@ export default function StudioPage() {
                 </div>
               </div>
 
-              {/* Action Buttons for Option 1 & Option 2 */}
+              {/* Option 1 and Option 2 Play / Render Buttons */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                
+                {/* Option 1 Button */}
                 <button
-                  onClick={handleToggleBroadcast}
+                  onClick={() => handleTogglePlayback("option1")}
                   className={`flex items-center justify-center gap-2 rounded-xl py-3 text-xs font-black uppercase tracking-wider transition-all shadow-lg ${
-                    isSpeakingClone
+                    isSpeakingClone && selectedPlaybackEngine === "option1"
                       ? "bg-rose-600 text-white animate-pulse"
                       : "bg-gradient-to-r from-teal-400 to-emerald-500 text-slate-950 hover:brightness-110 shadow-teal-500/20"
                   }`}
                 >
-                  {isSpeakingClone ? (
+                  {isSpeakingClone && selectedPlaybackEngine === "option1" ? (
                     <>
                       <Pause className="h-4 w-4 fill-current text-white" />
-                      <span>Pause Presentation</span>
+                      <span>Pause Opt 1</span>
                     </>
                   ) : (
                     <>
@@ -703,14 +718,41 @@ export default function StudioPage() {
                   )}
                 </button>
 
+                {/* Option 2 Button */}
                 <button
-                  onClick={handleTriggerOption2Pipeline}
+                  onClick={option2Rendered ? () => handleTogglePlayback("option2") : handleTriggerOption2Pipeline}
                   disabled={isSynthesizingOption2}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-pink-500/40 bg-gradient-to-r from-pink-950/60 via-purple-950/60 to-slate-900 py-3 text-xs font-mono font-bold text-pink-300 hover:border-pink-400 transition-all shadow-lg disabled:opacity-50"
+                  className={`flex items-center justify-center gap-2 rounded-xl py-3 text-xs font-mono font-bold transition-all shadow-lg disabled:opacity-50 border ${
+                    isSpeakingClone && selectedPlaybackEngine === "option2"
+                      ? "bg-rose-600 text-white border-rose-500 animate-pulse"
+                      : option2Rendered
+                      ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white border-purple-400 shadow-purple-500/30 hover:brightness-110"
+                      : "bg-gradient-to-r from-pink-950/60 via-purple-950/60 to-slate-900 text-pink-300 border-pink-500/40 hover:border-pink-400"
+                  }`}
                 >
-                  <Cpu className="h-4 w-4 text-pink-400" />
-                  <span>{isSynthesizingOption2 ? "Rendering on GPU..." : "⚡ Render Option 2 (GPU)"}</span>
+                  {isSpeakingClone && selectedPlaybackEngine === "option2" ? (
+                    <>
+                      <Pause className="h-4 w-4 fill-current text-white" />
+                      <span>Pause Opt 2</span>
+                    </>
+                  ) : isSynthesizingOption2 ? (
+                    <>
+                      <Cpu className="h-4 w-4 text-pink-400 animate-spin" />
+                      <span>Rendering on GPU...</span>
+                    </>
+                  ) : option2Rendered ? (
+                    <>
+                      <Play className="h-4 w-4 fill-current text-white" />
+                      <span>▶ Play Option 2 (GPU)</span>
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="h-4 w-4 text-pink-400" />
+                      <span>⚡ Render Option 2 (GPU)</span>
+                    </>
+                  )}
                 </button>
+
               </div>
             </div>
 
@@ -722,10 +764,10 @@ export default function StudioPage() {
             <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-teal-400">
-                    <Film className="h-4 w-4" />
-                    <span>
-                      {activeTab === "option2" 
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
+                    <Film className="h-4 w-4 text-teal-400" />
+                    <span className={selectedPlaybackEngine === "option2" ? "text-purple-400 font-mono" : "text-teal-400 font-mono"}>
+                      {selectedPlaybackEngine === "option2" 
                         ? `Option 2: Cloud GPU Neural Lip Sync (${gpuTargetEngine})` 
                         : `Option 1: Live Keynote Broadcast Presenter (${currentPersona.name})`
                       }
@@ -733,8 +775,12 @@ export default function StudioPage() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="rounded bg-teal-950 px-2 py-0.5 text-[10px] font-mono text-teal-300 border border-teal-800/40">
-                      1080P60 • {videoSpeed.toFixed(1)}X VIDEO
+                    <span className={`rounded px-2.5 py-0.5 text-[10px] font-mono border ${
+                      selectedPlaybackEngine === "option2"
+                        ? "bg-purple-950 text-purple-300 border-purple-700/50"
+                        : "bg-teal-950 text-teal-300 border-teal-800/40"
+                    }`}>
+                      {selectedPlaybackEngine === "option2" ? "GPU NEURAL MASTER • 1080P" : `1080P60 • ${videoSpeed.toFixed(1)}X VIDEO`}
                     </span>
                   </div>
                 </div>
@@ -847,11 +893,15 @@ export default function StudioPage() {
                   </button>
 
                   <button
-                    onClick={handleToggleBroadcast}
-                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 px-4 py-2 text-xs font-bold text-slate-950 shadow-md shadow-teal-500/20 hover:brightness-110"
+                    onClick={() => handleTogglePlayback(selectedPlaybackEngine)}
+                    className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold shadow-md hover:brightness-110 ${
+                      selectedPlaybackEngine === "option2"
+                        ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-purple-500/20"
+                        : "bg-gradient-to-r from-teal-500 to-emerald-500 text-slate-950 shadow-teal-500/20"
+                    }`}
                   >
                     <Play className="h-3.5 w-3.5 fill-current" />
-                    <span>{isSpeakingClone ? "Pause Motion" : "Play Motion (1080p60)"}</span>
+                    <span>{isSpeakingClone ? "Pause" : `Play ${selectedPlaybackEngine === "option2" ? "Option 2 (GPU)" : "Option 1 (0s)"}`}</span>
                   </button>
                 </div>
               </div>
