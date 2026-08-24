@@ -22,8 +22,8 @@ import {
   Cpu,
   Zap,
   Scale,
-  ChevronsLeft,
-  ChevronsRight
+  Lock,
+  Unlock
 } from "lucide-react";
 
 interface PersonaConfig {
@@ -144,6 +144,7 @@ export default function StudioPage() {
   // Ultra-Precise Speed Stepper Controls (0.01x increments)
   const [videoSpeed, setVideoSpeed] = useState<number>(1.25);
   const [audioSpeed, setAudioSpeed] = useState<number>(1.00);
+  const [syncAudioSpeed, setSyncAudioSpeed] = useState<boolean>(false);
 
   // Live Closed Captions (CC) Overlay Toggle
   const [showCaptions, setShowCaptions] = useState<boolean>(true);
@@ -178,24 +179,30 @@ export default function StudioPage() {
 
   const currentPersona = personas[selectedPersona] || personas["priya"];
 
-  // Update Video Playback Rate in real time
+  // DYNAMIC REAL-TIME PLAYBACK RATE BINDING
+  // Immediately applies speed changes directly to HTML5 video element on the fly
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.playbackRate = videoSpeed;
+      videoRef.current.defaultPlaybackRate = videoSpeed;
     }
   }, [videoSpeed]);
 
-  // Update Audio Playback Rate in real time
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.playbackRate = audioSpeed;
+      const targetRate = syncAudioSpeed ? videoSpeed : audioSpeed;
+      audioRef.current.playbackRate = targetRate;
+      audioRef.current.defaultPlaybackRate = targetRate;
     }
-  }, [audioSpeed]);
+  }, [audioSpeed, videoSpeed, syncAudioSpeed]);
 
   // Ultra-Precise Stepper Handler (±0.01x or ±0.10x)
   const adjustVideoSpeed = (delta: number) => {
     setVideoSpeed((prev) => {
       const next = Math.max(0.50, Math.min(3.00, Math.round((prev + delta) * 100) / 100));
+      if (videoRef.current) {
+        videoRef.current.playbackRate = next;
+      }
       return next;
     });
   };
@@ -250,8 +257,8 @@ export default function StudioPage() {
     if (currentPersona.audioUrl && audioRef.current && videoRef.current) {
       audioRef.current.currentTime = 0;
       videoRef.current.currentTime = 0;
-      audioRef.current.playbackRate = audioSpeed;
-      videoRef.current.playbackRate = mode === "option2" ? 1.00 : videoSpeed;
+      audioRef.current.playbackRate = syncAudioSpeed ? videoSpeed : audioSpeed;
+      videoRef.current.playbackRate = videoSpeed;
       
       videoRef.current.play().catch(() => {});
       audioRef.current.play().catch(() => {});
@@ -261,7 +268,7 @@ export default function StudioPage() {
 
     if (videoRef.current) {
       videoRef.current.currentTime = 0;
-      videoRef.current.playbackRate = mode === "option2" ? 1.00 : videoSpeed;
+      videoRef.current.playbackRate = videoSpeed;
       videoRef.current.play().catch(() => {});
       setIsSpeakingClone(true);
     }
@@ -480,7 +487,7 @@ export default function StudioPage() {
               </h1>
             </div>
             <p className="mt-2 text-sm md:text-base text-slate-400 max-w-4xl">
-              Fine-tune video speed with <b>ultra-precise ±0.01x increments</b> or compare <b>Option 1 (Instant Keynote Broadcast)</b> vs <b>Option 2 (Cloud GPU Neural Lip Sync)</b>.
+              Fine-tune video speed with <b>dynamic live ±0.01x increments</b> or compare <b>Option 1 (Instant Keynote Broadcast)</b> vs <b>Option 2 (Cloud GPU Neural Lip Sync)</b>.
             </p>
           </div>
 
@@ -664,22 +671,22 @@ export default function StudioPage() {
                 />
               </div>
 
-              {/* ⚡ ULTRA-PRECISE ±0.01x SPEED STEPPER CONTROLLER */}
-              <div className="mt-4 flex flex-col gap-2.5 bg-obsidian-950 p-4 rounded-xl border border-teal-500/30">
+              {/* ⚡ ULTRA-PRECISE DYNAMIC LIVE ±0.01x SPEED STEPPER & SLIDER */}
+              <div className="mt-4 flex flex-col gap-3 bg-obsidian-950 p-4 rounded-xl border border-teal-500/40">
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col">
                     <span className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
                       <Gauge className="h-3.5 w-3.5 text-teal-400" />
-                      <span>Ultra-Precise Speed Stepper (±0.01x):</span>
+                      <span>Live Dynamic Speed (±0.01x):</span>
                     </span>
-                    <span className="text-[11px] text-slate-400">Micro-tune video tempo to match speech delivery</span>
+                    <span className="text-[11px] text-slate-400">Instantly mutates video playback rate in real time</span>
                   </div>
 
                   <div className="flex items-center gap-1.5">
                     {/* -0.10 Macro Step */}
                     <button
                       onClick={() => adjustVideoSpeed(-0.10)}
-                      className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-300 font-mono font-bold hover:bg-slate-800 text-[11px]"
+                      className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-300 font-mono font-bold hover:bg-slate-800 text-[11px] active:scale-95 transition-all"
                       title="Jump -0.10x"
                     >
                       -0.10
@@ -688,21 +695,21 @@ export default function StudioPage() {
                     {/* -0.01 Micro Step */}
                     <button
                       onClick={() => adjustVideoSpeed(-0.01)}
-                      className="h-8 w-8 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold flex items-center justify-center hover:bg-slate-700 active:scale-95 text-xs"
+                      className="h-8 w-8 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold flex items-center justify-center hover:bg-slate-700 active:scale-95 text-xs transition-all"
                       title="Decrease by -0.01x"
                     >
                       <Minus className="h-4 w-4" />
                     </button>
 
                     {/* Precise Value Display */}
-                    <div className="w-18 px-2 text-center font-mono font-extrabold text-base text-emerald-400 bg-slate-900 py-1 rounded-lg border border-teal-500/50 shadow-inner">
+                    <div className="w-18 px-2 text-center font-mono font-extrabold text-base text-emerald-400 bg-slate-900 py-1 rounded-lg border border-teal-500/60 shadow-inner">
                       {videoSpeed.toFixed(2)}x
                     </div>
 
                     {/* +0.01 Micro Step */}
                     <button
                       onClick={() => adjustVideoSpeed(+0.01)}
-                      className="h-8 w-8 rounded-lg bg-gradient-to-r from-teal-500 to-emerald-500 border border-teal-400 text-slate-950 font-bold flex items-center justify-center hover:brightness-110 active:scale-95 text-xs shadow-md"
+                      className="h-8 w-8 rounded-lg bg-gradient-to-r from-teal-500 to-emerald-500 border border-teal-400 text-slate-950 font-bold flex items-center justify-center hover:brightness-110 active:scale-95 text-xs shadow-md transition-all"
                       title="Increase by +0.01x"
                     >
                       <Plus className="h-4 w-4 stroke-[3]" />
@@ -711,7 +718,7 @@ export default function StudioPage() {
                     {/* +0.10 Macro Step */}
                     <button
                       onClick={() => adjustVideoSpeed(+0.10)}
-                      className="px-2 py-1 rounded bg-slate-900 border border-teal-700 text-teal-300 font-mono font-bold hover:bg-slate-800 text-[11px]"
+                      className="px-2 py-1 rounded bg-slate-900 border border-teal-700 text-teal-300 font-mono font-bold hover:bg-slate-800 text-[11px] active:scale-95 transition-all"
                       title="Jump +0.10x"
                     >
                       +0.10
@@ -719,7 +726,7 @@ export default function StudioPage() {
                   </div>
                 </div>
 
-                {/* Slider for Smooth Continuous Scrubbing */}
+                {/* Slider for Smooth Continuous Real-Time Scrubbing */}
                 <div className="pt-1 flex items-center gap-3">
                   <span className="text-[10px] font-mono text-slate-400">0.50x</span>
                   <input
@@ -728,10 +735,39 @@ export default function StudioPage() {
                     max="3.00"
                     step="0.01"
                     value={videoSpeed}
-                    onChange={(e) => setVideoSpeed(parseFloat(e.target.value))}
-                    className="flex-1 accent-teal-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
+                    onInput={(e: any) => {
+                      const val = parseFloat(e.target.value);
+                      setVideoSpeed(val);
+                      if (videoRef.current) {
+                        videoRef.current.playbackRate = val;
+                      }
+                    }}
+                    onChange={(e: any) => {
+                      const val = parseFloat(e.target.value);
+                      setVideoSpeed(val);
+                      if (videoRef.current) {
+                        videoRef.current.playbackRate = val;
+                      }
+                    }}
+                    className="flex-1 accent-teal-400 cursor-pointer h-2 bg-slate-800 rounded-lg"
                   />
                   <span className="text-[10px] font-mono text-slate-400">3.00x</span>
+                </div>
+
+                {/* Audio Sync Toggle */}
+                <div className="pt-1 flex items-center justify-between border-t border-slate-800/80 text-[11px] font-mono">
+                  <span className="text-slate-400">Audio Sync Pacing:</span>
+                  <button
+                    onClick={() => setSyncAudioSpeed(!syncAudioSpeed)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all ${
+                      syncAudioSpeed 
+                        ? "bg-teal-950 text-teal-300 border-teal-600 font-bold" 
+                        : "bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-300"
+                    }`}
+                  >
+                    {syncAudioSpeed ? <Lock className="h-3 w-3 text-teal-400" /> : <Unlock className="h-3 w-3 text-slate-500" />}
+                    <span>{syncAudioSpeed ? "Audio Speed Locked to Video" : "Audio at Native 1.00x"}</span>
+                  </button>
                 </div>
               </div>
 
@@ -785,7 +821,7 @@ export default function StudioPage() {
                   ) : option2Rendered ? (
                     <>
                       <Play className="h-4 w-4 fill-current text-white" />
-                      <span>▶ Play Option 2 (GPU)</span>
+                      <span>▶ Play Option 2 ({videoSpeed.toFixed(2)}x)</span>
                     </>
                   ) : (
                     <>
@@ -822,7 +858,7 @@ export default function StudioPage() {
                         ? "bg-purple-950 text-purple-300 border-purple-700/50"
                         : "bg-teal-950 text-teal-300 border-teal-800/40"
                     }`}>
-                      {selectedPlaybackEngine === "option2" ? "GPU NEURAL MASTER • 1080P" : `1080P60 • ${videoSpeed.toFixed(2)}X VIDEO`}
+                      {selectedPlaybackEngine === "option2" ? `GPU NEURAL MASTER • ${videoSpeed.toFixed(2)}X` : `1080P60 • ${videoSpeed.toFixed(2)}X VIDEO`}
                     </span>
                   </div>
                 </div>
@@ -842,11 +878,11 @@ export default function StudioPage() {
                       className="h-full w-full object-cover"
                     />
 
-                    {/* Floating Fine-Tune Stepper Over Viewport (±0.01x) */}
+                    {/* Floating Dynamic Fine-Tune Stepper Over Viewport (±0.01x) */}
                     <div className="absolute top-3 left-3 flex items-center gap-1 rounded-xl bg-slate-950/90 border border-slate-700/80 px-2 py-1 backdrop-blur-md z-10">
                       <button
                         onClick={() => adjustVideoSpeed(-0.01)}
-                        className="h-6 w-6 rounded bg-slate-800 text-white font-mono font-bold flex items-center justify-center hover:bg-slate-700 text-xs"
+                        className="h-6 w-6 rounded bg-slate-800 text-white font-mono font-bold flex items-center justify-center hover:bg-slate-700 text-xs active:scale-95"
                         title="-0.01x"
                       >
                         -
@@ -856,7 +892,7 @@ export default function StudioPage() {
                       </span>
                       <button
                         onClick={() => adjustVideoSpeed(+0.01)}
-                        className="h-6 w-6 rounded bg-teal-500 text-slate-950 font-mono font-bold flex items-center justify-center hover:bg-teal-400 text-xs"
+                        className="h-6 w-6 rounded bg-teal-500 text-slate-950 font-mono font-bold flex items-center justify-center hover:bg-teal-400 text-xs active:scale-95"
                         title="+0.01x"
                       >
                         +
