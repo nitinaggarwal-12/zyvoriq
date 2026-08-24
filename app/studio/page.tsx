@@ -117,7 +117,7 @@ export default function StudioPage() {
     },
   ];
 
-  // Dynamic Personas Catalog with Precision Lip Coordinates
+  // Dynamic Personas Catalog with Precision Centered Lip Coordinates
   const [personas, setPersonas] = useState<Record<string, PersonaConfig>>({
     priya: { 
       name: "Priya (Bangalore)", 
@@ -133,7 +133,7 @@ export default function StudioPage() {
       audioUrl: "/assets/audio/priya_deepmind.wav",
       bodyLanguage: "Articulate Indian female CTO with open hand keynote stage gestures",
       introScript: "Hello everyone! I'm Priya, Global Transformation CTO. Traditional enterprise content pipelines take 14 long days and over $140,000. With Zyvoriq, we collapse that entire lifecycle into just 90 seconds—backed by Veritas cryptographic consensus and Ed25519 provenance!",
-      mouthCoords: { x: 0.738, y: 0.525, width: 0.042, height: 0.024 }
+      mouthCoords: { x: 0.518, y: 0.422, width: 0.052, height: 0.026 }
     },
     victoria: { 
       name: "Victoria (London)", 
@@ -149,7 +149,7 @@ export default function StudioPage() {
       audioUrl: "/assets/audio/victoria_deepmind.wav",
       bodyLanguage: "Articulate stage presence with active hand gestures & eye contact",
       introScript: "Good evening. I am Victoria, MasterClass Executive VP. [dramatic pause] Let us examine how Veritas auto-repair eliminates architectural drift and enforces compliance across all digital channels.",
-      mouthCoords: { x: 0.742, y: 0.395, width: 0.040, height: 0.022 }
+      mouthCoords: { x: 0.528, y: 0.385, width: 0.048, height: 0.024 }
     },
     david: { 
       name: "David (Silicon Valley)", 
@@ -164,7 +164,7 @@ export default function StudioPage() {
       videoUrl: "/assets/video/david_veo_broadcast.mp4",
       bodyLanguage: "Charismatic male founder on TED stage with open-hand gesture",
       introScript: "Hey everyone, David here from Silicon Valley. We are radically accelerating enterprise AI content with sub-25 millisecond synthesis latency.",
-      mouthCoords: { x: 0.650, y: 0.410, width: 0.045, height: 0.025 }
+      mouthCoords: { x: 0.512, y: 0.375, width: 0.048, height: 0.024 }
     },
     elena: { 
       name: "Elena (Berlin)", 
@@ -180,7 +180,7 @@ export default function StudioPage() {
       audioUrl: "/assets/audio/victoria_deepmind.wav",
       bodyLanguage: "Enthusiastic female tech founder on Berlin stage with open arms",
       introScript: "Hi everyone! I am Elena from Berlin. We are disrupting manual content workflows by replacing 14-day human delays with instant multi-agent swarm synthesis.",
-      mouthCoords: { x: 0.742, y: 0.395, width: 0.040, height: 0.022 }
+      mouthCoords: { x: 0.528, y: 0.385, width: 0.048, height: 0.024 }
     },
     maya: { 
       name: "Maya (Dublin)", 
@@ -196,7 +196,7 @@ export default function StudioPage() {
       audioUrl: "/assets/audio/priya_deepmind.wav",
       bodyLanguage: "Gentle empathetic smile, cozy book cafe with coffee mug",
       introScript: "Welcome, I am Maya from Dublin. Pull up a chair. Today we reflect on the deeper story behind sovereign enterprise intelligence and algorithmic trust.",
-      mouthCoords: { x: 0.738, y: 0.525, width: 0.042, height: 0.024 }
+      mouthCoords: { x: 0.518, y: 0.422, width: 0.052, height: 0.026 }
     },
     jonathan: { 
       name: "Sir Jonathan (Oxford)", 
@@ -211,7 +211,7 @@ export default function StudioPage() {
       videoUrl: "/assets/video/david_veo_broadcast.mp4",
       bodyLanguage: "Commanding skyline boardroom presence with folded arms",
       introScript: "I am Sir Jonathan. In this documentary briefing, we explore the cryptographic provenance of AI content generation and immutable ledger verification.",
-      mouthCoords: { x: 0.650, y: 0.410, width: 0.045, height: 0.025 }
+      mouthCoords: { x: 0.512, y: 0.375, width: 0.048, height: 0.024 }
     },
   });
 
@@ -260,7 +260,6 @@ export default function StudioPage() {
   const animFrameIdRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const audioSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
 
   // Audio-to-Face Neural Lip Sync Synthesis State
   const [isSynthesizingNeuralLipSync, setIsSynthesizingNeuralLipSync] = useState(false);
@@ -287,8 +286,8 @@ export default function StudioPage() {
           const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
           const ctx = new AudioContextClass();
           const analyser = ctx.createAnalyser();
-          analyser.fftSize = 512;
-          analyser.smoothingTimeConstant = 0.4;
+          analyser.fftSize = 256;
+          analyser.smoothingTimeConstant = 0.3;
 
           const source = ctx.createMediaElementSource(audio);
           source.connect(analyser);
@@ -296,10 +295,9 @@ export default function StudioPage() {
 
           audioContextRef.current = ctx;
           analyserRef.current = analyser;
-          audioSourceRef.current = source;
         }
       } catch (e) {
-        // Source might already be connected
+        // Already connected
       }
     };
 
@@ -319,7 +317,7 @@ export default function StudioPage() {
     if (!ctx) return;
 
     let mouthOpenSmoothed = 0;
-    const dataArray = new Uint8Array(256);
+    const dataArray = new Uint8Array(128);
 
     const renderLoop = () => {
       if (video.videoWidth && video.videoHeight) {
@@ -335,53 +333,69 @@ export default function StudioPage() {
         let energy = 0;
         if (analyserRef.current && isSpeakingClone) {
           analyserRef.current.getByteFrequencyData(dataArray);
-          // Calculate RMS of mid vocal frequencies (100Hz - 3000Hz)
           let sum = 0;
-          for (let i = 2; i < 40; i++) {
+          for (let i = 2; i < 30; i++) {
             sum += dataArray[i];
           }
-          energy = Math.min(1.0, (sum / 38) / 110);
+          energy = Math.min(1.0, (sum / 28) / 90);
         } else if (isSpeakingClone) {
-          // Synthetic audio envelope if web audio is suspended
-          energy = 0.4 + Math.sin(Date.now() / 120) * 0.35 + Math.cos(Date.now() / 80) * 0.2;
-          energy = Math.max(0, Math.min(1, energy));
+          // Dynamic procedural syllable modulation
+          const t = Date.now() / 100;
+          energy = 0.5 + Math.sin(t * 1.5) * 0.35 + Math.cos(t * 2.3) * 0.2;
+          energy = Math.max(0.1, Math.min(1.0, energy));
         }
 
         // Smooth mouth interpolation
-        mouthOpenSmoothed = mouthOpenSmoothed * 0.65 + energy * 0.35;
+        mouthOpenSmoothed = mouthOpenSmoothed * 0.6 + energy * 0.4;
 
-        // If speaking and mouth opening is active, apply photographic viseme deformation
-        if (mouthOpenSmoothed > 0.08) {
-          const coords = currentPersona.mouthCoords || { x: 0.738, y: 0.525, width: 0.042, height: 0.024 };
+        // If speaking and mouth opening is active, apply realistic 3D viseme mouth cavity articulation
+        if (mouthOpenSmoothed > 0.05) {
+          const coords = currentPersona.mouthCoords || { x: 0.518, y: 0.422, width: 0.052, height: 0.026 };
           const mouthCenterX = canvas.width * coords.x;
           const mouthCenterY = canvas.height * coords.y;
           const mouthRadiusX = (canvas.width * coords.width) * 0.95;
-          const mouthRadiusY = (canvas.height * coords.height) * (0.8 + mouthOpenSmoothed * 1.8);
+          const mouthRadiusY = (canvas.height * coords.height) * (0.8 + mouthOpenSmoothed * 2.0);
 
           ctx.save();
-          // Clip to mouth ellipse
-          ctx.beginPath();
-          ctx.ellipse(mouthCenterX, mouthCenterY, mouthRadiusX, mouthRadiusY, 0, 0, Math.PI * 2);
-          ctx.clip();
 
-          // Dark inner oral cavity depth
-          ctx.fillStyle = `rgba(35, 12, 16, ${0.75 + mouthOpenSmoothed * 0.25})`;
+          // 1. Outer Lip Contour Shadow
           ctx.beginPath();
-          ctx.ellipse(mouthCenterX, mouthCenterY, mouthRadiusX * 0.9, mouthRadiusY * 0.85, 0, 0, Math.PI * 2);
+          ctx.ellipse(mouthCenterX, mouthCenterY, mouthRadiusX * 1.05, mouthRadiusY * 1.05, 0, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(60, 20, 25, ${0.4 + mouthOpenSmoothed * 0.35})`;
           ctx.fill();
 
-          // Upper teeth illumination
-          if (mouthOpenSmoothed > 0.25) {
-            ctx.fillStyle = "rgba(240, 235, 230, 0.92)";
+          // 2. Dark Inner Oral Cavity
+          ctx.beginPath();
+          ctx.ellipse(mouthCenterX, mouthCenterY, mouthRadiusX * 0.9, mouthRadiusY * 0.85, 0, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(28, 8, 12, ${0.85 + mouthOpenSmoothed * 0.15})`;
+          ctx.fill();
+
+          // 3. Upper Teeth Row (visible on open vowels)
+          if (mouthOpenSmoothed > 0.18) {
             ctx.beginPath();
-            ctx.ellipse(mouthCenterX, mouthCenterY - mouthRadiusY * 0.42, mouthRadiusX * 0.65, mouthRadiusY * 0.28, 0, 0, Math.PI);
+            ctx.ellipse(mouthCenterX, mouthCenterY - mouthRadiusY * 0.38, mouthRadiusX * 0.7, mouthRadiusY * 0.28, 0, 0, Math.PI);
+            ctx.fillStyle = "rgba(242, 238, 232, 0.95)";
+            ctx.fill();
+
+            // Subtle teeth separation shadow
+            ctx.beginPath();
+            ctx.ellipse(mouthCenterX, mouthCenterY - mouthRadiusY * 0.25, mouthRadiusX * 0.65, mouthRadiusY * 0.06, 0, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(120, 100, 95, 0.4)";
             ctx.fill();
           }
 
-          // Lower lip shading and highlight
-          ctx.fillStyle = `rgba(180, 85, 95, ${0.4 + mouthOpenSmoothed * 0.3})`;
+          // 4. Tongue / Lower Oral Depth
+          if (mouthOpenSmoothed > 0.35) {
+            ctx.beginPath();
+            ctx.ellipse(mouthCenterX, mouthCenterY + mouthRadiusY * 0.35, mouthRadiusX * 0.55, mouthRadiusY * 0.3, 0, 0, Math.PI);
+            ctx.fillStyle = "rgba(165, 70, 80, 0.85)";
+            ctx.fill();
+          }
+
+          // 5. Lower Lip Highlight
           ctx.beginPath();
-          ctx.ellipse(mouthCenterX, mouthCenterY + mouthRadiusY * 0.7, mouthRadiusX * 0.85, mouthRadiusY * 0.3, 0, Math.PI, 0);
+          ctx.ellipse(mouthCenterX, mouthCenterY + mouthRadiusY * 0.72, mouthRadiusX * 0.88, mouthRadiusY * 0.32, 0, Math.PI, 0);
+          ctx.fillStyle = `rgba(185, 90, 100, ${0.45 + mouthOpenSmoothed * 0.3})`;
           ctx.fill();
 
           ctx.restore();
@@ -675,7 +689,7 @@ export default function StudioPage() {
       audioUrl: newPersonaGender === "female" ? "/assets/audio/victoria_deepmind.wav" : undefined,
       bodyLanguage: newPersonaAppearance || "Bespoke stage presentation with expressive gestures",
       introScript: newPersonaIntro || `Hello, I am ${newPersonaName}, ${newPersonaTitle}. Welcome to our sovereign AI studio.`,
-      mouthCoords: { x: 0.738, y: 0.525, width: 0.042, height: 0.024 }
+      mouthCoords: { x: 0.518, y: 0.422, width: 0.052, height: 0.026 }
     };
 
     setTimeout(() => {
