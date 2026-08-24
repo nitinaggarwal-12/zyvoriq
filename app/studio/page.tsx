@@ -23,7 +23,9 @@ import {
   Zap,
   Scale,
   Lock,
-  Unlock
+  Unlock,
+  FastForward,
+  Timer
 } from "lucide-react";
 
 interface PersonaConfig {
@@ -40,6 +42,7 @@ interface PersonaConfig {
   audioUrl?: string;
   bodyLanguage: string;
   introScript: string;
+  defaultVideoLeadMs?: number; // Pre-configured lead time in ms
 }
 
 export default function StudioPage() {
@@ -47,7 +50,7 @@ export default function StudioPage() {
   const [activeTab, setActiveTab] = useState<"option1" | "option2" | "compare">("compare");
   const [selectedPlaybackEngine, setSelectedPlaybackEngine] = useState<"option1" | "option2">("option1");
 
-  // Dynamic Personas Catalog
+  // Dynamic Personas Catalog with Pre-Calibrated Temporal Offsets
   const [personas, setPersonas] = useState<Record<string, PersonaConfig>>({
     priya: { 
       name: "Priya (Bangalore)", 
@@ -62,7 +65,8 @@ export default function StudioPage() {
       videoUrl: "/assets/video/priya_veo_broadcast.mp4",
       audioUrl: "/assets/audio/priya_deepmind.wav",
       bodyLanguage: "Articulate Indian female CTO with open hand keynote stage gestures",
-      introScript: "Hello everyone! I'm Priya, Global Transformation CTO. Traditional enterprise content pipelines take 14 long days and over $140,000. With Zyvoriq, we collapse that entire lifecycle into just 90 seconds—backed by Veritas cryptographic consensus and Ed25519 provenance!"
+      introScript: "Hello everyone! I'm Priya, Global Transformation CTO. Traditional enterprise content pipelines take 14 long days and over $140,000. With Zyvoriq, we collapse that entire lifecycle into just 90 seconds—backed by Veritas cryptographic consensus and Ed25519 provenance!",
+      defaultVideoLeadMs: 800
     },
     victoria: { 
       name: "Victoria (London)", 
@@ -77,7 +81,8 @@ export default function StudioPage() {
       videoUrl: "/assets/video/victoria_veo_broadcast.mp4",
       audioUrl: "/assets/audio/victoria_deepmind.wav",
       bodyLanguage: "Articulate stage presence with active hand gestures & eye contact",
-      introScript: "Good evening. I am Victoria, MasterClass Executive VP. [dramatic pause] Let us examine how Veritas auto-repair eliminates architectural drift and enforces compliance across all digital channels."
+      introScript: "Good evening. I am Victoria, MasterClass Executive VP. [dramatic pause] Let us examine how Veritas auto-repair eliminates architectural drift and enforces compliance across all digital channels.",
+      defaultVideoLeadMs: 600
     },
     david: { 
       name: "David (Silicon Valley)", 
@@ -91,7 +96,8 @@ export default function StudioPage() {
       image: "/assets/avatars/avatar_keynote_gesture.jpg",
       videoUrl: "/assets/video/david_veo_broadcast.mp4",
       bodyLanguage: "Charismatic male founder on TED stage with open-hand gesture",
-      introScript: "Hey everyone, David here from Silicon Valley. We are radically accelerating enterprise AI content with sub-25 millisecond synthesis latency."
+      introScript: "Hey everyone, David here from Silicon Valley. We are radically accelerating enterprise AI content with sub-25 millisecond synthesis latency.",
+      defaultVideoLeadMs: 500
     },
     elena: { 
       name: "Elena (Berlin)", 
@@ -106,7 +112,8 @@ export default function StudioPage() {
       videoUrl: "/assets/video/victoria_veo_broadcast.mp4",
       audioUrl: "/assets/audio/victoria_deepmind.wav",
       bodyLanguage: "Enthusiastic female tech founder on Berlin stage with open arms",
-      introScript: "Hi everyone! I am Elena from Berlin. We are disrupting manual content workflows by replacing 14-day human delays with instant multi-agent swarm synthesis."
+      introScript: "Hi everyone! I am Elena from Berlin. We are disrupting manual content workflows by replacing 14-day human delays with instant multi-agent swarm synthesis.",
+      defaultVideoLeadMs: 600
     },
     maya: { 
       name: "Maya (Dublin)", 
@@ -121,7 +128,8 @@ export default function StudioPage() {
       videoUrl: "/assets/video/priya_veo_broadcast.mp4",
       audioUrl: "/assets/audio/priya_deepmind.wav",
       bodyLanguage: "Gentle empathetic smile, cozy book cafe with coffee mug",
-      introScript: "Welcome, I am Maya from Dublin. Pull up a chair. Today we reflect on the deeper story behind sovereign enterprise intelligence and algorithmic trust."
+      introScript: "Welcome, I am Maya from Dublin. Pull up a chair. Today we reflect on the deeper story behind sovereign enterprise intelligence and algorithmic trust.",
+      defaultVideoLeadMs: 800
     },
     jonathan: { 
       name: "Sir Jonathan (Oxford)", 
@@ -135,16 +143,21 @@ export default function StudioPage() {
       image: "/assets/avatars/avatar_executive_gravitas.jpg",
       videoUrl: "/assets/video/david_veo_broadcast.mp4",
       bodyLanguage: "Commanding skyline boardroom presence with folded arms",
-      introScript: "I am Sir Jonathan. In this documentary briefing, we explore the cryptographic provenance of AI content generation and immutable ledger verification."
+      introScript: "I am Sir Jonathan. In this documentary briefing, we explore the cryptographic provenance of AI content generation and immutable ledger verification.",
+      defaultVideoLeadMs: 500
     },
   });
 
   const [selectedPersona, setSelectedPersona] = useState("priya");
 
-  // Ultra-Precise Speed Stepper Controls (0.01x increments)
+  // Speed Stepper Controls (0.01x increments)
   const [videoSpeed, setVideoSpeed] = useState<number>(1.25);
   const [audioSpeed, setAudioSpeed] = useState<number>(1.00);
   const [syncAudioSpeed, setSyncAudioSpeed] = useState<boolean>(false);
+
+  // Temporal Phase Offset (Video Lead Time in Milliseconds)
+  // Advances video start time so mouth motion matches immediate speech onset
+  const [videoLeadOffsetMs, setVideoLeadOffsetMs] = useState<number>(800);
 
   // Live Closed Captions (CC) Overlay Toggle
   const [showCaptions, setShowCaptions] = useState<boolean>(true);
@@ -179,8 +192,14 @@ export default function StudioPage() {
 
   const currentPersona = personas[selectedPersona] || personas["priya"];
 
-  // DYNAMIC REAL-TIME PLAYBACK RATE BINDING
-  // Immediately applies speed changes directly to HTML5 video element on the fly
+  // Automatically update default lead time when switching personas
+  useEffect(() => {
+    if (currentPersona.defaultVideoLeadMs !== undefined) {
+      setVideoLeadOffsetMs(currentPersona.defaultVideoLeadMs);
+    }
+  }, [selectedPersona]);
+
+  // Real-time playbackRate binding
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.playbackRate = videoSpeed;
@@ -196,13 +215,21 @@ export default function StudioPage() {
     }
   }, [audioSpeed, videoSpeed, syncAudioSpeed]);
 
-  // Ultra-Precise Stepper Handler (±0.01x or ±0.10x)
+  // Ultra-Precise Speed Stepper Handler (±0.01x or ±0.10x)
   const adjustVideoSpeed = (delta: number) => {
     setVideoSpeed((prev) => {
       const next = Math.max(0.50, Math.min(3.00, Math.round((prev + delta) * 100) / 100));
       if (videoRef.current) {
         videoRef.current.playbackRate = next;
       }
+      return next;
+    });
+  };
+
+  // Temporal Lead Offset Stepper (±50ms or ±100ms)
+  const adjustLeadOffset = (deltaMs: number) => {
+    setVideoLeadOffsetMs((prev) => {
+      const next = Math.max(0, Math.min(3000, prev + deltaMs));
       return next;
     });
   };
@@ -238,7 +265,7 @@ export default function StudioPage() {
     };
   }, [cloneScript, selectedPersona]);
 
-  // Synchronized Persona Voice & Video Playback Trigger
+  // Synchronized Persona Voice & Video Playback Trigger with Phase Offset Compensation
   const handleTogglePlayback = (mode: "option1" | "option2") => {
     setSelectedPlaybackEngine(mode);
 
@@ -254,9 +281,12 @@ export default function StudioPage() {
       return;
     }
 
+    const startOffsetSeconds = videoLeadOffsetMs / 1000.0;
+
     if (currentPersona.audioUrl && audioRef.current && videoRef.current) {
       audioRef.current.currentTime = 0;
-      videoRef.current.currentTime = 0;
+      // Start video directly at the calibrated speech gesture offset
+      videoRef.current.currentTime = startOffsetSeconds;
       audioRef.current.playbackRate = syncAudioSpeed ? videoSpeed : audioSpeed;
       videoRef.current.playbackRate = videoSpeed;
       
@@ -267,7 +297,7 @@ export default function StudioPage() {
     }
 
     if (videoRef.current) {
-      videoRef.current.currentTime = 0;
+      videoRef.current.currentTime = startOffsetSeconds;
       videoRef.current.playbackRate = videoSpeed;
       videoRef.current.play().catch(() => {});
       setIsSpeakingClone(true);
@@ -340,7 +370,8 @@ export default function StudioPage() {
       videoUrl: newPersonaGender === "female" ? "/assets/video/victoria_veo_broadcast.mp4" : "/assets/video/david_veo_broadcast.mp4",
       audioUrl: newPersonaGender === "female" ? "/assets/audio/victoria_deepmind.wav" : undefined,
       bodyLanguage: newPersonaAppearance || "Bespoke stage presentation with expressive gestures",
-      introScript: newPersonaIntro || `Hello, I am ${newPersonaName}, ${newPersonaTitle}. Welcome to our sovereign AI studio.`
+      introScript: newPersonaIntro || `Hello, I am ${newPersonaName}, ${newPersonaTitle}. Welcome to our sovereign AI studio.`,
+      defaultVideoLeadMs: 600
     };
 
     setTimeout(() => {
@@ -487,7 +518,7 @@ export default function StudioPage() {
               </h1>
             </div>
             <p className="mt-2 text-sm md:text-base text-slate-400 max-w-4xl">
-              Fine-tune video speed with <b>dynamic live ±0.01x increments</b> or compare <b>Option 1 (Instant Keynote Broadcast)</b> vs <b>Option 2 (Cloud GPU Neural Lip Sync)</b>.
+              Eliminate start lag with <b>Temporal Lead Offset (ms)</b>, micro-tune video speed with <b>live ±0.01x increments</b>, and compare <b>Option 1 vs Option 2</b>.
             </p>
           </div>
 
@@ -651,7 +682,7 @@ export default function StudioPage() {
               </div>
             </div>
 
-            {/* Script Input & Ultra-Precise ±0.01x Stepper Controls */}
+            {/* Script Input & Synchronization Controls */}
             <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl">
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                 <span className="text-xs font-bold uppercase tracking-wider text-pink-400 flex items-center gap-2">
@@ -671,8 +702,61 @@ export default function StudioPage() {
                 />
               </div>
 
-              {/* ⚡ ULTRA-PRECISE DYNAMIC LIVE ±0.01x SPEED STEPPER & SLIDER */}
-              <div className="mt-4 flex flex-col gap-3 bg-obsidian-950 p-4 rounded-xl border border-teal-500/40">
+              {/* ⚡ 1. TEMPORAL LEAD OFFSET (Eliminates start delay & lag) */}
+              <div className="mt-4 flex flex-col gap-2.5 bg-obsidian-950 p-4 rounded-xl border border-amber-500/30">
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
+                      <Timer className="h-3.5 w-3.5 text-amber-400" />
+                      <span>Video Start Lead Offset ({videoLeadOffsetMs}ms):</span>
+                    </span>
+                    <span className="text-[11px] text-slate-400">Advances video so mouth starts in active speaking motion</span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => adjustLeadOffset(-100)}
+                      className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-300 font-mono font-bold hover:bg-slate-800 text-[11px] active:scale-95"
+                      title="-100ms"
+                    >
+                      -100ms
+                    </button>
+
+                    <div className="w-18 px-2 text-center font-mono font-extrabold text-sm text-amber-400 bg-slate-900 py-1 rounded-lg border border-amber-500/50 shadow-inner">
+                      +{(videoLeadOffsetMs / 1000).toFixed(2)}s
+                    </div>
+
+                    <button
+                      onClick={() => adjustLeadOffset(+100)}
+                      className="px-2 py-1 rounded bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-mono font-bold hover:brightness-110 text-[11px] active:scale-95 shadow-md"
+                      title="+100ms"
+                    >
+                      +100ms
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Offset Lead Presets */}
+                <div className="pt-1 flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[11px] font-mono text-slate-400 mr-1">Quick Lead Presets:</span>
+                  {[0, 400, 600, 800, 1000, 1200, 1500].map((ms) => (
+                    <button
+                      key={ms}
+                      onClick={() => setVideoLeadOffsetMs(ms)}
+                      className={`px-2 py-0.5 rounded-lg border font-mono text-[11px] font-bold transition-all ${
+                        videoLeadOffsetMs === ms
+                          ? "bg-amber-400 text-slate-950 border-amber-300 shadow-md shadow-amber-400/20"
+                          : "bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-700"
+                      }`}
+                    >
+                      +{ms}ms
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* ⚡ 2. ULTRA-PRECISE DYNAMIC LIVE ±0.01x SPEED STEPPER & SLIDER */}
+              <div className="mt-3 flex flex-col gap-2.5 bg-obsidian-950 p-4 rounded-xl border border-teal-500/40">
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col">
                     <span className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
@@ -979,7 +1063,7 @@ export default function StudioPage() {
               <div className="pt-4 border-t border-slate-800 flex items-center justify-between flex-wrap gap-4 text-xs font-mono">
                 <div className="flex items-center gap-3 text-slate-400">
                   <span>Presenter: <b className="text-white">{currentPersona.name}</b></span>
-                  <span>Captions: <b className={showCaptions ? "text-amber-400" : "text-slate-500"}>{showCaptions ? "ACTIVE ON-SCREEN" : "MUTED"}</b></span>
+                  <span>Offset: <b className="text-amber-400">+{videoLeadOffsetMs}ms</b></span>
                 </div>
 
                 <div className="flex items-center gap-2">
