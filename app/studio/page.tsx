@@ -38,7 +38,8 @@ import {
   Eye,
   Key,
   Settings2,
-  Cpu
+  Cpu,
+  VideoOff
 } from "lucide-react";
 
 export default function StudioPage() {
@@ -64,6 +65,12 @@ export default function StudioPage() {
   // Prompt-to-Voice AI Designer
   const [customVoicePrompt, setCustomVoicePrompt] = useState("");
   const [isDesigningVoice, setIsDesigningVoice] = useState(false);
+
+  // Video Recording & Export State
+  const [isRecordingVideo, setIsRecordingVideo] = useState(false);
+  const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
 
   // Virtual Clone Script & Playback
   const [cloneScript, setCloneScript] = useState(
@@ -117,7 +124,7 @@ export default function StudioPage() {
       voiceKeywords: ["Veena", "Google UK English Female", "Samantha", "en-IN", "female"],
       image: "/assets/avatars/avatar_priya_cto.jpg",
       bodyLanguage: "Articulate Indian female CTO with open hand keynote stage gestures",
-      introScript: "Hello! I am Priya, Global Transformation CTO. Traditional enterprise pipelines take 14 days and $140,000. Zyvoriq collapses this into 90 seconds with Veritas consensus and Ed25519 provenance.",
+      introScript: "Hello! I am Priya, Global Transformation CTO. [dramatic pause] Traditional enterprise pipelines take 14 days and $140,000. Zyvoriq collapses this into 90 seconds with Veritas consensus and Ed25519 provenance.",
       mouthCenter: { xRatio: 0.495, yRatio: 0.355, radiusX: 20, radiusY: 11 }
     },
     elena: { 
@@ -452,6 +459,10 @@ export default function StudioPage() {
       utterance.onend = () => {
         setIsSpeakingClone(false);
         setSpokenWordIndex(-1);
+        if (isRecordingVideo && mediaRecorderRef.current) {
+          mediaRecorderRef.current.stop();
+          setIsRecordingVideo(false);
+        }
       };
 
       utterance.onerror = () => {
@@ -465,6 +476,45 @@ export default function StudioPage() {
       setTimeout(() => {
         setIsSpeakingClone(false);
       }, 6000);
+    }
+  };
+
+  // Record Live Canvas Stream to MP4 / WebM Video File
+  const handleRecordVideoBroadcast = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    recordedChunksRef.current = [];
+    setRecordedVideoUrl(null);
+    setIsRecordingVideo(true);
+
+    try {
+      const stream = (canvas as any).captureStream ? (canvas as any).captureStream(30) : null;
+      if (!stream) {
+        handleToggleBroadcast();
+        return;
+      }
+
+      const recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
+        const url = URL.createObjectURL(blob);
+        setRecordedVideoUrl(url);
+        setIsRecordingVideo(false);
+      };
+
+      recorder.start();
+      handleToggleBroadcast();
+    } catch (e) {
+      handleToggleBroadcast();
     }
   };
 
@@ -674,10 +724,10 @@ export default function StudioPage() {
                   />
                 </div>
 
-                <div className="mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
                   <button
                     onClick={handleToggleBroadcast}
-                    className={`flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-xs font-black uppercase tracking-wider transition-all shadow-lg ${
+                    className={`flex items-center justify-center gap-2 rounded-xl py-3 text-xs font-black uppercase tracking-wider transition-all shadow-lg ${
                       isSpeakingClone
                         ? "bg-rose-600 text-white animate-pulse"
                         : "bg-gradient-to-r from-teal-400 via-emerald-500 to-indigo-500 text-slate-950 hover:scale-[1.01] shadow-teal-500/25"
@@ -686,14 +736,23 @@ export default function StudioPage() {
                     {isSpeakingClone ? (
                       <>
                         <Pause className="h-4 w-4 fill-current text-white" />
-                        <span className="text-white">Speaking {currentPersona.name} ({currentPersona.gender.toUpperCase()}) - Click to Pause</span>
+                        <span className="text-white">Pause Voice Output</span>
                       </>
                     ) : (
                       <>
                         <Play className="h-4 w-4 fill-current" />
-                        <span>▶ Start {currentPersona.name} 60FPS Kinematic Speech &amp; Gestures</span>
+                        <span>▶ Start {currentPersona.name} Speech</span>
                       </>
                     )}
+                  </button>
+
+                  <button
+                    onClick={handleRecordVideoBroadcast}
+                    disabled={isRecordingVideo}
+                    className="flex items-center justify-center gap-2 rounded-xl border border-pink-500/40 bg-gradient-to-r from-pink-950/50 via-purple-950/50 to-slate-900 py-3 text-xs font-mono font-bold text-pink-300 hover:border-pink-400 transition-all shadow-lg disabled:opacity-50"
+                  >
+                    <Video className="h-4 w-4 text-pink-400" />
+                    <span>{isRecordingVideo ? "Recording Broadcast..." : "📹 Record & Render Video"}</span>
                   </button>
                 </div>
               </div>
@@ -755,6 +814,25 @@ export default function StudioPage() {
                         <span>4K HDR • C2PA Sealed</span>
                       </div>
                     </div>
+
+                    {/* Recorded Video Playback Modal (When Rendered) */}
+                    {recordedVideoUrl && (
+                      <div className="mt-3 w-full rounded-xl border border-pink-500/40 bg-pink-950/30 p-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Film className="h-4 w-4 text-pink-400" />
+                          <span className="text-xs font-mono font-bold text-pink-300">Recorded Broadcast Video Ready (.webm)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={recordedVideoUrl}
+                            download={`${selectedPersona}_broadcast_video.webm`}
+                            className="rounded-lg bg-pink-500 px-3 py-1 text-xs font-mono font-bold text-slate-950 hover:bg-pink-400 transition-colors"
+                          >
+                            Download Video
+                          </a>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Gold Karaoke Subtitles Bar */}
                     <div className="mt-3 w-full rounded-xl bg-slate-950/90 border border-slate-800/80 p-3 text-center">
