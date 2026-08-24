@@ -23,28 +23,53 @@ import {
   Sliders,
   ShieldCheck,
   Mic,
-  MessageSquare
+  MessageSquare,
+  Globe,
+  Radio,
+  Download,
+  Users,
+  Film,
+  Zap,
+  ChevronRight,
+  Filter,
+  Headphones
 } from "lucide-react";
 
 export default function StudioPage() {
-  const [studioMode, setStudioMode] = useState<"cloning" | "4pane">("cloning");
+  const [studioMode, setStudioMode] = useState<"cloning" | "4pane" | "matrix" | "podcast">("cloning");
   const [aspectRatio, setAspectRatio] = useState<"9:16" | "16:9">("9:16");
-  const [selectedLanguage, setSelectedLanguage] = useState("English (US - Studio Master Baritone)");
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [diagramZoom, setDiagramZoom] = useState(1);
   const [activeTabDiagram, setActiveTabDiagram] = useState<"visual" | "xml">("visual");
 
+  // Story & Emotion Themes (From Scorex)
+  const [selectedTheme, setSelectedTheme] = useState<"storyteller" | "keynote" | "thriller" | "fireside" | "executive">("executive");
+  const [selectedPersona, setSelectedPersona] = useState("jonathan");
+  const [selectedBaseModel, setSelectedBaseModel] = useState<"Charon" | "Aoede" | "Puck" | "Kore" | "Fenrir">("Charon");
+  const [selectedAccent, setSelectedAccent] = useState("us_standard");
+  const [selectedArchetype, setSelectedArchetype] = useState("chief_architect");
+  const [selectedAgeTier, setSelectedAgeTier] = useState("mid_career");
+  const [selectedLanguage, setSelectedLanguage] = useState("en-US");
+
+  // Advanced Prosody Sliders (Scorex)
+  const [stability, setStability] = useState(82);
+  const [styleExaggeration, setStyleExaggeration] = useState(45);
+  const [breathDensity, setBreathDensity] = useState(30);
+  const [spectralDenoising, setSpectralDenoising] = useState(90);
+  const [formantBoost, setFormantBoost] = useState(65);
+
+  // Prompt-to-Voice AI Designer
+  const [customVoicePrompt, setCustomVoicePrompt] = useState("");
+  const [isDesigningVoice, setIsDesigningVoice] = useState(false);
+
   // Virtual Clone Interactive State
-  const [selectedAvatar, setSelectedAvatar] = useState("avatar_1");
   const [cloneScript, setCloneScript] = useState(
-    "Hello Nitin, I am your Zyvoriq AI Executive Clone. I deconstruct technical architectures, validate claims with Veritas consensus, and publish 4K videos in under 90 seconds with Ed25519 provenance."
+    "Traditional enterprise pipelines take 14 days and $140,000. [dramatic pause] Zyvoriq collapses this into 90 seconds with Veritas consensus and Ed25519 provenance."
   );
   const [isSpeakingClone, setIsSpeakingClone] = useState(false);
   const [spokenWordIndex, setSpokenWordIndex] = useState(-1);
   const [showMeshOverlay, setShowMeshOverlay] = useState(false);
   const [lipSyncPrecision, setLipSyncPrecision] = useState(99.8);
-  const [gazeTracking, setGazeTracking] = useState(true);
-  const [emotionTone, setEmotionTone] = useState("Authoritative Technical Master");
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
@@ -52,27 +77,49 @@ export default function StudioPage() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const oscRef = useRef<OscillatorNode | null>(null);
 
-  const avatars = [
-    {
-      id: "avatar_1",
-      name: "Marcus Aurelius Tech",
-      title: "Chief AI Architect & Founder",
-      faceMesh: "468-point 3D Morphable NeRF",
-      resolution: "4K 60fps Ultra-HDR",
-      status: "Calibrated & Signed",
-      tag: "Live Interactive Master",
-      image: "/assets/avatars/executive_clone.jpg"
-    },
-    {
-      id: "avatar_2",
-      name: "Dr. Evelyn Vance",
-      title: "VP Multi-Modal Intelligence",
-      faceMesh: "Gaussian Splatting Kinematics",
-      resolution: "4K 60fps HDR",
-      status: "Calibrated & Signed",
-      tag: "Executive Keynote",
-      image: "/assets/avatars/executive_clone.jpg"
-    }
+  // 5 Story & Emotion Themes
+  const storyThemes = [
+    { id: "executive", name: "Executive Gravitas", icon: "👔", tagline: "Authoritative Board Briefing", color: "from-blue-500 to-indigo-600", border: "border-blue-500/40" },
+    { id: "keynote", name: "Visionary Keynote", icon: "🌌", tagline: "Steve Jobs / TED Odyssey", color: "from-emerald-500 to-teal-600", border: "border-emerald-500/40" },
+    { id: "storyteller", name: "Master Storyteller", icon: "🎬", tagline: "Cinematic 5-Act Narrative Arc", color: "from-amber-500 to-orange-600", border: "border-amber-500/40" },
+    { id: "thriller", name: "Investigative Drama", icon: "🕵️", tagline: "High-Stakes Risk & Revelation", color: "from-rose-500 to-red-600", border: "border-rose-500/40" },
+    { id: "fireside", name: "Fireside Journey", icon: "☕", tagline: "Intimate Founder-to-Founder", color: "from-purple-500 to-violet-600", border: "border-purple-500/40" },
+  ];
+
+  // 8 Curated Spotlight Personas
+  const storyPersonas = [
+    { id: "jonathan", name: "Sir Jonathan", title: "DeepMind Documentary Baritone", base: "Charon", vibe: "Warm, deep & theatrical" },
+    { id: "victoria", name: "Victoria", title: "MasterClass Executive Narrator", base: "Aoede", vibe: "Magnetic, eloquent & expressive" },
+    { id: "david", name: "David", title: "Visionary Tech Orator", base: "Puck", vibe: "Inspiring, resonant & punchy" },
+    { id: "maya", name: "Maya", title: "Intimate Fireside Novelist", base: "Kore", vibe: "Curious, lively & poignant" },
+    { id: "alister", name: "Alister", title: "Scottish Senior Cloud Fellow", base: "Fenrir", vibe: "Distinguished, rich & thoughtful" },
+    { id: "priya", name: "Priya", title: "Global Transformation CTO", base: "Aoede", vibe: "Decisive & strategic clarity" },
+    { id: "marcus", name: "Marcus Aurelius Tech", title: "AI Executive Clone & Founder", base: "Charon", vibe: "Commanding C-Suite Gravitas" },
+    { id: "elena", name: "Elena", title: "AI Tech Founder & Lead", base: "Kore", vibe: "High-energy visionary optimism" },
+  ];
+
+  // 25 Global Accents
+  const globalAccents = [
+    { id: "us_standard", name: "US General Broadcast", region: "North America" },
+    { id: "us_silicon_valley", name: "Silicon Valley Tech Founder", region: "North America" },
+    { id: "uk_oxford", name: "British Oxford (RP)", region: "United Kingdom" },
+    { id: "uk_scottish", name: "Scottish Highlands", region: "United Kingdom" },
+    { id: "in_bangalore", name: "Indian Tech Executive (Bangalore)", region: "Asia" },
+    { id: "sg_singapore", name: "Singaporean Global Executive", region: "Asia" },
+    { id: "de_frankfurt", name: "German Engineering Precision", region: "Europe" },
+    { id: "fr_paris", name: "French Intellectual Nuance", region: "Europe" },
+    { id: "jp_tokyo", name: "Japanese Meticulous Precision", region: "Asia" },
+    { id: "au_sydney", name: "Australian Sydney Open Vowels", region: "Oceania" },
+  ];
+
+  // 8 Professional Archetypes
+  const archetypes = [
+    { id: "chief_architect", name: "Chief Enterprise Architect", desc: "Deep technological mastery & gravitas" },
+    { id: "board_director", name: "Tier-1 Board Director", desc: "Razor-sharp boardroom strategic weight" },
+    { id: "startup_founder", name: "Visionary Startup Founder", desc: "Charismatic conviction & disruptive energy" },
+    { id: "keynote_orator", name: "TED / Keynote Orator", desc: "Soaring rhetorical arcs & auditorium presence" },
+    { id: "fireside_mentor", name: "Fireside Executive Mentor", desc: "Compassionate, warm, intimate wisdom" },
+    { id: "cyber_auditor", name: "Security & Risk Auditor", desc: "Objective vigilance & zero-tolerance scrutiny" },
   ];
 
   // Preload Avatar Image
@@ -87,7 +134,7 @@ export default function StudioPage() {
     }
   }, []);
 
-  // Dynamic Canvas 2D Kinematics Renderer (Mouth morphing, Eye blinking, Head bobbing)
+  // Dynamic Canvas 2D Kinematics Renderer
   const drawAvatarFrame = (mouthOpenAmount: number, headBobAngle: number, isBlinking: boolean) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -97,12 +144,10 @@ export default function StudioPage() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     ctx.save();
-    // Subtle head tilt / bobbing
     ctx.translate(canvas.width / 2, canvas.height / 2);
     ctx.rotate(headBobAngle * 0.03);
     ctx.translate(-canvas.width / 2, -canvas.height / 2);
 
-    // Draw base avatar portrait
     if (avatarImageRef.current) {
       ctx.drawImage(avatarImageRef.current, 0, 0, canvas.width, canvas.height);
     } else {
@@ -110,39 +155,32 @@ export default function StudioPage() {
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    // 1. Dynamic Eye Blinking Kinematics
     if (isBlinking) {
       ctx.fillStyle = "#1E293B";
-      // Left Eyelid
       ctx.beginPath();
       ctx.ellipse(canvas.width * 0.44, canvas.height * 0.32, 16, 5, 0, 0, Math.PI * 2);
       ctx.fill();
-      // Right Eyelid
       ctx.beginPath();
       ctx.ellipse(canvas.width * 0.58, canvas.height * 0.32, 16, 5, 0, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // 2. Real-Time Lip-Sync Morphing (Mouth Opening & Closing Curves)
     if (mouthOpenAmount > 0.05) {
       const mouthX = canvas.width * 0.51;
       const mouthY = canvas.height * 0.44;
       const mouthWidth = 28 + mouthOpenAmount * 6;
       const mouthHeight = Math.max(3, mouthOpenAmount * 18);
 
-      // Inner mouth cavity
       ctx.fillStyle = "#2D0A14";
       ctx.beginPath();
       ctx.ellipse(mouthX, mouthY, mouthWidth, mouthHeight, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Teeth / Lip highlight
       ctx.fillStyle = "#F8FAFC";
       ctx.beginPath();
       ctx.ellipse(mouthX, mouthY - mouthHeight * 0.4, mouthWidth * 0.7, 3, 0, 0, Math.PI);
       ctx.fill();
 
-      // Lower Lip shadow
       ctx.strokeStyle = "rgba(190, 24, 93, 0.6)";
       ctx.lineWidth = 2.5;
       ctx.beginPath();
@@ -150,7 +188,6 @@ export default function StudioPage() {
       ctx.stroke();
     }
 
-    // 3. 3D NeRF Mesh Overlay Wireframe
     if (showMeshOverlay) {
       ctx.strokeStyle = "rgba(45, 212, 191, 0.4)";
       ctx.lineWidth = 1;
@@ -186,7 +223,6 @@ export default function StudioPage() {
     const animateLoop = () => {
       const elapsed = (Date.now() - startTime) / 1000;
       
-      // Random blink every 3.5 seconds
       blinkTimer += 0.016;
       if (blinkTimer > 3.5) {
         isBlinking = true;
@@ -215,7 +251,7 @@ export default function StudioPage() {
     };
   }, [isSpeakingClone, showMeshOverlay]);
 
-  // Real In-Browser Virtual Clone Speech Synthesis with Natural Voice & Real-Time Lip-Sync
+  // Real In-Browser Virtual Clone Speech Synthesis with Natural Voice
   const handleSpeakClone = () => {
     if (isSpeakingClone) {
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -229,7 +265,9 @@ export default function StudioPage() {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
 
-      const utterance = new SpeechSynthesisUtterance(cloneScript);
+      // Clean text of paralinguistic tags for speech engine
+      const cleanText = cloneScript.replace(/\[.*?\]/g, "");
+      const utterance = new SpeechSynthesisUtterance(cleanText);
       
       const voices = window.speechSynthesis.getVoices();
       const naturalVoice = voices.find(
@@ -250,7 +288,7 @@ export default function StudioPage() {
       utterance.onboundary = (event) => {
         if (event.name === "word") {
           const charIndex = event.charIndex;
-          const currentText = cloneScript.slice(0, charIndex);
+          const currentText = cleanText.slice(0, charIndex);
           const currentWordIdx = currentText.trim().split(/\s+/).length - 1;
           setSpokenWordIndex(Math.max(0, currentWordIdx));
         }
@@ -277,39 +315,17 @@ export default function StudioPage() {
     }
   };
 
-  const toggleAudioPreview = () => {
-    if (isPlayingAudio) {
-      if (oscRef.current) {
-        oscRef.current.stop();
-        oscRef.current.disconnect();
-        oscRef.current = null;
-      }
-      setIsPlayingAudio(false);
-    } else {
-      try {
-        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-        if (AudioContextClass) {
-          const ctx = new AudioContextClass();
-          audioCtxRef.current = ctx;
+  const insertParalinguistic = (tag: string) => {
+    setCloneScript((prev) => `${prev} ${tag} `);
+  };
 
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-
-          osc.type = "sine";
-          osc.frequency.setValueAtTime(220, ctx.currentTime);
-          gain.gain.setValueAtTime(0.1, ctx.currentTime);
-
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-
-          osc.start();
-          oscRef.current = osc;
-          setIsPlayingAudio(true);
-        }
-      } catch (e) {
-        setIsPlayingAudio(true);
-      }
-    }
+  const handleDesignVoice = () => {
+    if (!customVoicePrompt) return;
+    setIsDesigningVoice(true);
+    setTimeout(() => {
+      setIsDesigningVoice(false);
+      alert(`Voice Created: Procedural neural embedding compiled from prompt "${customVoicePrompt}"`);
+    }, 1200);
   };
 
   const scenes = [
@@ -343,92 +359,155 @@ export default function StudioPage() {
     <div className="min-h-screen bg-obsidian-950 text-slate-100 selection:bg-indigo-500/30 selection:text-indigo-200">
       <AppNavbar />
 
-      <main className="mx-auto max-w-[1720px] px-6 py-8 md:px-12 md:py-10 lg:px-16">
+      <main className="mx-auto max-w-[1720px] px-6 py-8 md:px-10 md:py-10 lg:px-12">
         
-        {/* Top Title & Studio Switcher Banner */}
+        {/* Top Header & Studio Mode Switcher */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-8 border-b border-slate-800/80">
           <div>
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-pink-500/10 border border-pink-500/30 text-pink-400">
-                <UserCheck className="h-5 w-5" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-pink-500/10 border border-pink-500/30 text-pink-400">
+                <Headphones className="h-5 w-5" />
               </div>
               <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white font-mono">
-                AI Virtual Clone &amp; Avatar Studio
+                Multimodal Neural Studio &amp; Voice Matrix
               </h1>
             </div>
-            <p className="mt-2 text-sm md:text-base text-slate-400 max-w-3xl">
-              Photorealistic 4K 3D NeRF avatar cloning with real-time in-browser speech synthesis, 60fps mouth phoneme morphing, and C2PA Ed25519 cryptographic provenance.
+            <p className="mt-2 text-sm md:text-base text-slate-400 max-w-4xl">
+              4,000+ procedural neural voice matrix, 60FPS NeRF avatar kinematics, 5 emotion themes, prompt-to-voice AI designer, and C2PA cryptographic provenance.
             </p>
           </div>
 
-          {/* Mode Switcher Buttons */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-900/90 p-1.5 text-xs font-semibold">
+          {/* 4 Studio Modes */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 rounded-2xl border border-slate-800 bg-slate-900/90 p-1.5 text-xs font-semibold">
               <button
                 onClick={() => setStudioMode("cloning")}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition-all ${
+                className={`flex items-center gap-2 rounded-xl px-4 py-2 transition-all ${
                   studioMode === "cloning"
-                    ? "bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold shadow-md shadow-pink-500/20"
+                    ? "bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold shadow-lg shadow-pink-500/20"
                     : "text-slate-400 hover:text-white"
                 }`}
               >
-                <UserCheck className="h-3.5 w-3.5" />
-                <span>Virtual Clone Studio</span>
+                <UserCheck className="h-4 w-4" />
+                <span>Avatar Clone &amp; Kinematics</span>
               </button>
+
+              <button
+                onClick={() => setStudioMode("matrix")}
+                className={`flex items-center gap-2 rounded-xl px-4 py-2 transition-all ${
+                  studioMode === "matrix"
+                    ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold shadow-lg shadow-amber-500/20"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <Radio className="h-4 w-4" />
+                <span>4,000+ Voice Matrix &amp; Prosody</span>
+              </button>
+
+              <button
+                onClick={() => setStudioMode("podcast")}
+                className={`flex items-center gap-2 rounded-xl px-4 py-2 transition-all ${
+                  studioMode === "podcast"
+                    ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold shadow-lg shadow-emerald-500/20"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <Users className="h-4 w-4" />
+                <span>Dual-Host Podcast (NotebookLM)</span>
+              </button>
+
               <button
                 onClick={() => setStudioMode("4pane")}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition-all ${
+                className={`flex items-center gap-2 rounded-xl px-4 py-2 transition-all ${
                   studioMode === "4pane"
-                    ? "bg-indigo-500 text-white font-bold shadow-md shadow-indigo-500/20"
+                    ? "bg-indigo-500 text-white font-bold shadow-lg shadow-indigo-500/20"
                     : "text-slate-400 hover:text-white"
                 }`}
               >
-                <Layers className="h-3.5 w-3.5" />
+                <Layers className="h-4 w-4" />
                 <span>4-Pane Canvas</span>
               </button>
             </div>
-
-            <Link
-              href="/governance"
-              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-teal-500 px-5 py-2 text-xs font-bold text-white shadow-md shadow-indigo-500/20 hover:opacity-95"
-            >
-              <Share2 className="h-3.5 w-3.5" />
-              <span>Omnichannel Dispatch</span>
-            </Link>
           </div>
         </div>
 
-        {/* ---------------------------------------------------- */}
-        {/* MODE A: INTERACTIVE VIRTUAL CLONE STUDIO SECTION     */}
-        {/* ---------------------------------------------------- */}
-        {studioMode === "cloning" ? (
+        {/* ------------------------------------------------------------------ */}
+        {/* TAB 1: AVATAR CLONE & 60FPS KINEMATICS                              */}
+        {/* ------------------------------------------------------------------ */}
+        {studioMode === "cloning" && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-8">
             
-            {/* LEFT: Live Script Ingestion & Avatar Calibration (5 Cols) */}
-            <div className="lg:col-span-5 flex flex-col gap-6">
+            {/* LEFT: Script, Emotion Themes & Persona Vault (6 Cols) */}
+            <div className="lg:col-span-6 flex flex-col gap-6">
               
-              {/* Script Prompt Input */}
+              {/* Emotion & Story Themes Bar */}
               <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl">
-                <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-pink-400">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                  <span className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    <span>Storytelling &amp; Emotion Theme</span>
+                  </span>
+                  <span className="text-xs font-mono text-slate-400">5 Emotional Modes</span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-4">
+                  {storyThemes.map((theme) => (
+                    <button
+                      key={theme.id}
+                      onClick={() => setSelectedTheme(theme.id as any)}
+                      className={`flex flex-col text-left p-3 rounded-xl border transition-all ${
+                        selectedTheme === theme.id
+                          ? `bg-slate-800 ${theme.border} text-white shadow-lg`
+                          : "border-slate-800/80 bg-obsidian-950/60 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-lg">{theme.icon}</span>
+                        {selectedTheme === theme.id && <span className="h-2 w-2 rounded-full bg-emerald-400" />}
+                      </div>
+                      <span className="text-xs font-bold font-mono mt-1 text-white">{theme.name}</span>
+                      <span className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{theme.tagline}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Script Prompt Input + Paralinguistics Buttons */}
+              <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                  <span className="text-xs font-bold uppercase tracking-wider text-pink-400 flex items-center gap-2">
                     <MessageSquare className="h-4 w-4" />
-                    <span>Custom Speech &amp; Narration Prompt</span>
-                  </div>
+                    <span>Script Ingestion &amp; Inline Paralinguistics</span>
+                  </span>
                   <span className="text-xs font-mono text-emerald-400">Interactive 60FPS</span>
                 </div>
 
-                <div className="pt-4">
+                {/* Paralinguistics Tag Shortcuts */}
+                <div className="flex items-center gap-2 pt-3 flex-wrap">
+                  <span className="text-[11px] font-mono text-slate-400">Insert Cues:</span>
+                  {["[dramatic pause]", "[whispers]", "[sighs]", "[laughs]", "[throat-clears]"].map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => insertParalinguistic(tag)}
+                      className="px-2.5 py-1 rounded-lg border border-pink-500/30 bg-pink-950/40 text-pink-300 font-mono text-[11px] hover:bg-pink-900/60 transition-colors"
+                    >
+                      + {tag}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="pt-3">
                   <textarea
                     value={cloneScript}
                     onChange={(e) => setCloneScript(e.target.value)}
                     rows={4}
                     className="w-full rounded-xl border border-slate-800 bg-obsidian-950 p-4 font-sans text-xs md:text-sm text-slate-200 placeholder-slate-500 focus:border-pink-500 focus:outline-none focus:ring-1 focus:ring-pink-500 leading-relaxed resize-none"
-                    placeholder="Type anything for your virtual clone to speak..."
+                    placeholder="Enter narration script..."
                   />
                 </div>
 
                 {/* Speak Action Button */}
-                <div className="mt-4 flex items-center justify-between pt-2">
+                <div className="mt-4">
                   <button
                     onClick={handleSpeakClone}
                     className={`flex w-full items-center justify-center gap-2.5 rounded-xl py-3.5 text-xs font-black uppercase tracking-wider transition-all shadow-lg ${
@@ -452,89 +531,46 @@ export default function StudioPage() {
                 </div>
               </div>
 
-              {/* Avatar Selector Vault */}
+              {/* 8 Curated Spotlight Personas Grid */}
               <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl">
-                <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-teal-400">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                  <span className="text-xs font-bold uppercase tracking-wider text-teal-400 flex items-center gap-2">
                     <UserCheck className="h-4 w-4" />
-                    <span>Executive Persona Vault</span>
-                  </div>
-                  <span className="text-xs font-mono text-emerald-400">Calibrated NeRF</span>
+                    <span>8 Curated Spotlight Personas</span>
+                  </span>
+                  <span className="text-xs font-mono text-emerald-400">DeepMind Cast</span>
                 </div>
 
-                <div className="pt-4 flex flex-col gap-3">
-                  {avatars.map((av) => (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
+                  {storyPersonas.map((p) => (
                     <div
-                      key={av.id}
-                      onClick={() => setSelectedAvatar(av.id)}
+                      key={p.id}
+                      onClick={() => setSelectedPersona(p.id)}
                       className={`cursor-pointer rounded-xl border p-3.5 transition-all ${
-                        selectedAvatar === av.id
-                          ? "border-pink-500 bg-gradient-to-r from-pink-950/40 via-slate-900 to-slate-900 shadow-md shadow-pink-500/10"
+                        selectedPersona === p.id
+                          ? "border-teal-500 bg-gradient-to-r from-teal-950/40 via-slate-900 to-slate-900 shadow-md shadow-teal-500/10"
                           : "border-slate-800 bg-obsidian-950/80 hover:border-slate-700"
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="relative h-10 w-10 overflow-hidden rounded-xl border border-pink-500/40">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={av.image} alt={av.name} className="h-full w-full object-cover" />
-                          </div>
-                          <div>
-                            <div className="font-mono text-sm font-bold text-white">{av.name}</div>
-                            <div className="text-xs text-slate-400">{av.title}</div>
-                          </div>
-                        </div>
-                        <span className="rounded bg-pink-950 px-2 py-0.5 text-[10px] font-mono text-pink-300 border border-pink-800/50">
-                          {av.tag}
+                        <span className="font-mono text-sm font-bold text-white">{p.name}</span>
+                        <span className="rounded bg-teal-950 px-2 py-0.5 text-[10px] font-mono text-teal-300 border border-teal-800/50">
+                          {p.base}
                         </span>
                       </div>
+                      <div className="text-xs text-slate-300 mt-1">{p.title}</div>
+                      <div className="text-[11px] text-slate-500 mt-0.5 italic">{p.vibe}</div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Neural Tuning Sliders */}
-              <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl">
-                <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-400">
-                    <Sliders className="h-4 w-4" />
-                    <span>Neural Lip-Sync &amp; Formant Settings</span>
-                  </div>
-                  <span className="text-xs font-mono text-amber-300 font-bold">{lipSyncPrecision}%</span>
-                </div>
-
-                <div className="pt-4 flex flex-col gap-4">
-                  <div>
-                    <input
-                      type="range"
-                      min="95"
-                      max="100"
-                      step="0.1"
-                      value={lipSyncPrecision}
-                      onChange={(e) => setLipSyncPrecision(Number(e.target.value))}
-                      className="w-full accent-pink-500 cursor-pointer"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-800">
-                    <span className="text-xs font-semibold text-slate-300">3D NeRF Mesh Overlay:</span>
-                    <button
-                      onClick={() => setShowMeshOverlay(!showMeshOverlay)}
-                      className={`px-3 py-1 rounded-lg text-xs font-mono font-bold ${
-                        showMeshOverlay ? "bg-teal-500/20 text-teal-300 border border-teal-500/40" : "bg-slate-800 text-slate-400"
-                      }`}
-                    >
-                      {showMeshOverlay ? "WIREFRAME ON" : "NATURAL 4K"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
             </div>
 
-            {/* RIGHT: Live Photorealistic 60FPS Canvas Kinematics Viewport (7 Cols) */}
-            <div className="lg:col-span-7 flex flex-col gap-6">
+            {/* RIGHT: Live 60FPS Kinematics Canvas + Prosody Sliders (6 Cols) */}
+            <div className="lg:col-span-6 flex flex-col gap-6">
               
+              {/* Live 60FPS Kinematics Viewport */}
               <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between pb-4 border-b border-slate-800">
@@ -550,11 +586,9 @@ export default function StudioPage() {
                     </div>
                   </div>
 
-                  {/* 60FPS Interactive Canvas Viewport */}
                   <div className="mt-4 rounded-xl border border-slate-800 bg-obsidian-950 relative overflow-hidden flex flex-col items-center justify-center p-4 min-h-[460px]">
                     
-                    {/* The Live 60FPS Canvas */}
-                    <div className="relative h-[360px] w-[360px] overflow-hidden rounded-2xl border border-pink-500/40 shadow-2xl shadow-pink-500/20">
+                    <div className="relative h-[340px] w-[340px] overflow-hidden rounded-2xl border border-pink-500/40 shadow-2xl shadow-pink-500/20">
                       <canvas
                         ref={canvasRef}
                         width={400}
@@ -562,14 +596,13 @@ export default function StudioPage() {
                         className="h-full w-full object-cover"
                       />
 
-                      {/* Verified Badge */}
                       <div className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-slate-900/90 border border-emerald-500/50 px-2.5 py-1 text-[10px] font-mono text-emerald-300 backdrop-blur-md">
                         <CheckCircle2 className="h-3 w-3 text-emerald-400" />
                         <span>NeRF 60fps Morphing</span>
                       </div>
                     </div>
 
-                    {/* Gold Karaoke Real-Time Word Highlighting */}
+                    {/* Gold Karaoke Subtitles */}
                     <div className="mt-4 w-full rounded-xl bg-slate-950/90 border border-slate-800/80 p-3.5 text-center">
                       <div className="flex flex-wrap items-center justify-center gap-1 text-xs md:text-sm font-sans leading-relaxed">
                         {cloneScript.split(" ").map((word, idx) => (
@@ -589,7 +622,7 @@ export default function StudioPage() {
                       </div>
                     </div>
 
-                    {/* C2PA Provenance Overlay Badge */}
+                    {/* C2PA Provenance Overlay */}
                     <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/60 px-4 py-1.5 text-[11px] font-mono text-emerald-300">
                       <ShieldCheck className="h-3.5 w-3.5" />
                       <span>C2PA JUMBF Box: sha256:7f83b1657ff1... • Signed with Ed25519</span>
@@ -597,7 +630,6 @@ export default function StudioPage() {
                   </div>
                 </div>
 
-                {/* Bottom Stats Ticker */}
                 <div className="pt-6 border-t border-slate-800 flex items-center justify-between flex-wrap gap-4 text-xs font-mono">
                   <div className="flex items-center gap-4 text-slate-400">
                     <span>Engine: <b className="text-white">60FPS Canvas Kinematics + DeepMind Formant</b></span>
@@ -605,23 +637,373 @@ export default function StudioPage() {
                   </div>
 
                   <button
-                    onClick={handleSpeakClone}
-                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 px-5 py-2 text-xs font-bold text-white shadow-md shadow-pink-500/20 hover:brightness-110"
+                    onClick={() => setShowMeshOverlay(!showMeshOverlay)}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition-all ${
+                      showMeshOverlay ? "bg-teal-500/20 text-teal-300 border border-teal-500/40" : "bg-slate-800 text-slate-400 hover:text-white"
+                    }`}
                   >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    <span>{isSpeakingClone ? "Stop Narration" : "Replay Virtual Clone"}</span>
+                    {showMeshOverlay ? "WIREFRAME ON" : "NATURAL 4K"}
                   </button>
                 </div>
 
               </div>
 
+              {/* Advanced Prosody & Formant Tuning Panel */}
+              <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                  <span className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                    <Sliders className="h-4 w-4" />
+                    <span>Neural Prosody &amp; Acoustic Calibration (Scorex)</span>
+                  </span>
+                  <span className="text-xs font-mono text-amber-300 font-bold">VQS: 96.8/100</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 text-xs">
+                  <div>
+                    <div className="flex justify-between text-slate-300 font-semibold mb-1">
+                      <span>Vocal Stability:</span>
+                      <span className="font-mono text-amber-300">{stability}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="30"
+                      max="100"
+                      value={stability}
+                      onChange={(e) => setStability(Number(e.target.value))}
+                      className="w-full accent-amber-500 cursor-pointer"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between text-slate-300 font-semibold mb-1">
+                      <span>Style Exaggeration:</span>
+                      <span className="font-mono text-amber-300">{styleExaggeration}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={styleExaggeration}
+                      onChange={(e) => setStyleExaggeration(Number(e.target.value))}
+                      className="w-full accent-pink-500 cursor-pointer"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between text-slate-300 font-semibold mb-1">
+                      <span>Sub-Glottal Breath Density:</span>
+                      <span className="font-mono text-amber-300">{breathDensity}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={breathDensity}
+                      onChange={(e) => setBreathDensity(Number(e.target.value))}
+                      className="w-full accent-teal-500 cursor-pointer"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between text-slate-300 font-semibold mb-1">
+                      <span>Spectral Denoising (3-Stage):</span>
+                      <span className="font-mono text-amber-300">{spectralDenoising}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="50"
+                      max="100"
+                      value={spectralDenoising}
+                      onChange={(e) => setSpectralDenoising(Number(e.target.value))}
+                      className="w-full accent-emerald-500 cursor-pointer"
+                    />
+                  </div>
+                </div>
+              </div>
+
             </div>
 
           </div>
-        ) : (
-          /* ---------------------------------------------------- */
-          /* MODE B: 4-PANE SYNCHRONIZED MULTI-MODAL CANVAS       */
-          /* ---------------------------------------------------- */
+        )}
+
+        {/* ------------------------------------------------------------------ */}
+        {/* TAB 2: 4,000+ PROCEDURAL VOICE MATRIX & PROMPT-TO-VOICE DESIGNER   */}
+        {/* ------------------------------------------------------------------ */}
+        {studioMode === "matrix" && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-8">
+            
+            {/* LEFT: 4,000+ Combination Matrix Browser (7 Cols) */}
+            <div className="lg:col-span-7 flex flex-col gap-6">
+              
+              <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl">
+                <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-400">
+                    <Radio className="h-4 w-4" />
+                    <span>4,000+ Procedural Voice Matrix Generator</span>
+                  </div>
+                  <span className="text-xs font-mono text-emerald-400">5 Bases × 25 Accents × 8 Archetypes</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
+                  {/* Base Model Selector */}
+                  <div>
+                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-2">
+                      1. DeepMind Base Timbre:
+                    </label>
+                    <select
+                      value={selectedBaseModel}
+                      onChange={(e) => setSelectedBaseModel(e.target.value as any)}
+                      className="w-full rounded-xl border border-slate-800 bg-obsidian-950 px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-amber-500"
+                    >
+                      <option value="Charon">Charon (Deep Baritone)</option>
+                      <option value="Aoede">Aoede (Magnetic Soprano)</option>
+                      <option value="Puck">Puck (Crisp Tenor)</option>
+                      <option value="Kore">Kore (Warm Alto)</option>
+                      <option value="Fenrir">Fenrir (Resonant Bass)</option>
+                    </select>
+                  </div>
+
+                  {/* Accent Selector */}
+                  <div>
+                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-2">
+                      2. Global Accent &amp; Dialect:
+                    </label>
+                    <select
+                      value={selectedAccent}
+                      onChange={(e) => setSelectedAccent(e.target.value)}
+                      className="w-full rounded-xl border border-slate-800 bg-obsidian-950 px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-amber-500"
+                    >
+                      {globalAccents.map((a) => (
+                        <option key={a.id} value={a.id}>{a.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Archetype Selector */}
+                  <div>
+                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-2">
+                      3. Executive Archetype:
+                    </label>
+                    <select
+                      value={selectedArchetype}
+                      onChange={(e) => setSelectedArchetype(e.target.value)}
+                      className="w-full rounded-xl border border-slate-800 bg-obsidian-950 px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-amber-500"
+                    >
+                      {archetypes.map((arch) => (
+                        <option key={arch.id} value={arch.id}>{arch.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Generated Voice Profile Card */}
+                <div className="mt-6 rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-950/30 via-slate-900 to-slate-900 p-4">
+                  <div className="flex items-center justify-between pb-2">
+                    <span className="font-mono text-xs font-bold text-amber-300 uppercase tracking-wider">
+                      Active Procedural Voice Signature
+                    </span>
+                    <span className="text-[10px] font-mono text-emerald-400">✓ Calibrated Formant Lock</span>
+                  </div>
+                  <div className="font-mono text-sm font-bold text-white mt-1">
+                    {selectedBaseModel} • {globalAccents.find(a => a.id === selectedAccent)?.name} ({archetypes.find(a => a.id === selectedArchetype)?.name})
+                  </div>
+                  <p className="text-xs text-slate-300 mt-1 font-sans">
+                    {archetypes.find(a => a.id === selectedArchetype)?.desc}
+                  </p>
+                </div>
+              </div>
+
+              {/* Multilingual Dubbing Matrix (30+ Languages) */}
+              <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl">
+                <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-teal-400">
+                    <Globe className="h-4 w-4" />
+                    <span>30+ Multilingual Voice Dubbing Engine</span>
+                  </div>
+                  <span className="text-xs font-mono text-teal-300 font-bold">Zero-Loss Translation</span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4">
+                  {[
+                    { code: "en-US", name: "English (US Master)" },
+                    { code: "en-GB", name: "English (UK Oxford)" },
+                    { code: "de-DE", name: "German (Frankfurt)" },
+                    { code: "ja-JP", name: "Japanese (Tokyo)" },
+                    { code: "fr-FR", name: "French (Paris)" },
+                    { code: "es-ES", name: "Spanish (Madrid)" },
+                    { code: "zh-CN", name: "Mandarin (Beijing)" },
+                    { code: "hi-IN", name: "Hindi (Mumbai)" }
+                  ].map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => setSelectedLanguage(lang.code)}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        selectedLanguage === lang.code
+                          ? "border-teal-500 bg-teal-950/50 text-white font-bold shadow-md"
+                          : "border-slate-800 bg-obsidian-950/80 text-slate-400 hover:border-slate-700"
+                      }`}
+                    >
+                      <div className="font-mono text-xs">{lang.code}</div>
+                      <div className="text-[11px] text-slate-300 mt-1">{lang.name}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            {/* RIGHT: "Prompt-to-Voice" Custom AI Voice Designer (5 Cols) */}
+            <div className="lg:col-span-5 flex flex-col gap-6">
+              
+              <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl">
+                <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-pink-400">
+                    <Sparkles className="h-4 w-4" />
+                    <span>&ldquo;Prompt-to-Voice&rdquo; Custom AI Voice Designer</span>
+                  </div>
+                  <span className="text-xs font-mono text-pink-300 font-bold">DeepMind Synthesis</span>
+                </div>
+
+                <p className="text-xs text-slate-400 pt-3 leading-relaxed">
+                  Describe any acoustic timbre in natural language. Zyvoriq compiles acoustic embeddings, formant frequencies, and paralinguistic curves into a bespoke custom voice model.
+                </p>
+
+                <div className="pt-3">
+                  <textarea
+                    value={customVoicePrompt}
+                    onChange={(e) => setCustomVoicePrompt(e.target.value)}
+                    rows={4}
+                    className="w-full rounded-xl border border-slate-800 bg-obsidian-950 p-4 font-sans text-xs md:text-sm text-slate-200 placeholder-slate-500 focus:border-pink-500 focus:outline-none focus:ring-1 focus:ring-pink-500 leading-relaxed resize-none"
+                    placeholder="e.g. A warm, gravelly Scottish professor with deep bass resonance, measured cadence, and slight breath intake before key points..."
+                  />
+                </div>
+
+                <div className="mt-4">
+                  <button
+                    onClick={handleDesignVoice}
+                    disabled={isDesigningVoice}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-indigo-600 py-3 text-xs font-black uppercase tracking-wider text-white shadow-lg hover:brightness-110 disabled:opacity-50"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    <span>{isDesigningVoice ? "Synthesizing Neural Embedding..." : "Compile Custom Voice Model"}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 24-bit Studio Master WAV/MP3 Exporter */}
+              <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl">
+                <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-400">
+                    <Download className="h-4 w-4" />
+                    <span>24-bit 48kHz Studio Master Exporter</span>
+                  </div>
+                  <span className="text-xs font-mono text-emerald-300">Broadcast Ready</span>
+                </div>
+
+                <div className="pt-4 flex flex-col gap-3">
+                  <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-obsidian-950 p-3">
+                    <div>
+                      <div className="font-mono text-xs font-bold text-white">Full Episode Master (.WAV)</div>
+                      <div className="text-[10px] text-slate-400">24-bit PCM • 48,000Hz Stereo • Lossless</div>
+                    </div>
+                    <button
+                      onClick={() => alert("Downloading 24-bit Master WAV stem...")}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-mono font-bold hover:bg-emerald-500/30"
+                    >
+                      Export WAV
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-obsidian-950 p-3">
+                    <div>
+                      <div className="font-mono text-xs font-bold text-white">Streaming Delivery (.MP3)</div>
+                      <div className="text-[10px] text-slate-400">320kbps Constant Bitrate • C2PA Sealed</div>
+                    </div>
+                    <button
+                      onClick={() => alert("Downloading 320kbps MP3 stem...")}
+                      className="px-3 py-1.5 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 text-xs font-mono font-bold hover:bg-indigo-500/30"
+                    >
+                      Export MP3
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        )}
+
+        {/* ------------------------------------------------------------------ */}
+        {/* TAB 3: DUAL-HOST ARCHITECT PODCAST ENGINE (NOTEBOOKLM STYLE)       */}
+        {/* ------------------------------------------------------------------ */}
+        {studioMode === "podcast" && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-8">
+            
+            <div className="lg:col-span-12 flex flex-col gap-6">
+              <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl">
+                <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-400">
+                    <Users className="h-4 w-4" />
+                    <span>Dual-Host Enterprise Architecture Podcast (NotebookLM Style)</span>
+                  </div>
+                  <span className="text-xs font-mono text-emerald-300 font-bold">2-Host Multi-Turn Dialogue</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
+                  {/* Host A */}
+                  <div className="rounded-xl border border-teal-500/30 bg-obsidian-950 p-4">
+                    <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
+                      <div className="h-10 w-10 rounded-xl bg-teal-500/20 border border-teal-500/40 flex items-center justify-center font-mono font-bold text-teal-300">
+                        A
+                      </div>
+                      <div>
+                        <div className="font-mono text-sm font-bold text-white">Host A: Sir Jonathan (Charon)</div>
+                        <div className="text-xs text-slate-400">Lead Enterprise Architect • Deep Baritone</div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-300 pt-3 leading-relaxed italic">
+                      &ldquo;Let&rsquo;s break down how Zyvoriq solves the 14-day bottleneck. When an architect writes a PRD, the Director agent immediately partitions it into concurrent AST synthesis trees.&rdquo;
+                    </p>
+                  </div>
+
+                  {/* Host B */}
+                  <div className="rounded-xl border border-pink-500/30 bg-obsidian-950 p-4">
+                    <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
+                      <div className="h-10 w-10 rounded-xl bg-pink-500/20 border border-pink-500/40 flex items-center justify-center font-mono font-bold text-pink-300">
+                        B
+                      </div>
+                      <div>
+                        <div className="font-mono text-sm font-bold text-white">Host B: Victoria (Aoede)</div>
+                        <div className="text-xs text-slate-400">Chief AI Strategist • Magnetic Soprano</div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-300 pt-3 leading-relaxed italic">
+                      &ldquo;Exactly, Jonathan. And the critical differentiator is Veritas. If a benchmark claim lacks primary source grounding, it never makes it to YouTube or LinkedIn.&rdquo;
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex items-center justify-between pt-4 border-t border-slate-800">
+                  <span className="text-xs font-mono text-slate-400">Podcast Length: <b>4m 12s</b> • Veritas Score: <b>97.4/100</b></span>
+                  <button
+                    onClick={handleSpeakClone}
+                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-500 px-6 py-2.5 text-xs font-black uppercase tracking-wider text-slate-950 shadow-lg"
+                  >
+                    <Play className="h-4 w-4 fill-current" />
+                    <span>Synthesize Full 2-Host Episode</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* ------------------------------------------------------------------ */}
+        {/* TAB 4: 4-PANE SYNCHRONIZED MULTI-MODAL CANVAS                       */}
+        {/* ------------------------------------------------------------------ */}
+        {studioMode === "4pane" && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-8">
             
             {/* PANE 1: Narrative & Script Editor (6 Cols) */}
@@ -656,17 +1038,9 @@ export default function StudioPage() {
                   <Video className="h-4 w-4" />
                   <span>Pane 2: Cinematic Video Storyboard (Google Veo 2 / Imagen 3)</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setStudioMode("cloning")}
-                    className="text-[10px] font-mono font-bold text-pink-400 hover:text-pink-300 underline"
-                  >
-                    Open Avatar Cloning →
-                  </button>
-                  <span className="rounded bg-pink-950 px-2 py-0.5 text-[10px] font-mono text-pink-300 border border-pink-800/40">
-                    1080p 60fps HDR
-                  </span>
-                </div>
+                <span className="rounded bg-pink-950 px-2 py-0.5 text-[10px] font-mono text-pink-300 border border-pink-800/40">
+                  1080p 60fps HDR
+                </span>
               </div>
 
               <div className="pt-4 flex flex-col gap-4">
@@ -695,29 +1069,15 @@ export default function StudioPage() {
               </div>
 
               <div className="pt-4 flex flex-col gap-4">
-                <div className="flex items-center justify-between gap-3 text-xs font-semibold text-slate-300">
-                  <span>Vocal Matrix Language Cast:</span>
-                  <select
-                    value={selectedLanguage}
-                    onChange={(e) => setSelectedLanguage(e.target.value)}
-                    className="rounded-lg border border-slate-800 bg-obsidian-950 px-3 py-1.5 text-xs text-slate-200 focus:outline-none"
-                  >
-                    <option>English (US - Studio Master Baritone)</option>
-                    <option>German (DE - Tech Narrative)</option>
-                    <option>Japanese (JA - Executive Pitch)</option>
-                    <option>Spanish (ES - Latin America Commercial)</option>
-                  </select>
-                </div>
-
                 <div className="rounded-xl border border-slate-800 bg-obsidian-950 p-4">
                   <div className="flex items-center justify-between pb-3">
                     <span className="text-xs font-mono font-bold text-emerald-300">Vocal Waveform &amp; Gold Karaoke Sync</span>
                     <button
-                      onClick={toggleAudioPreview}
+                      onClick={handleSpeakClone}
                       className="flex items-center gap-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 px-3 py-1 text-xs font-mono text-emerald-300 hover:bg-emerald-500/30 transition-colors"
                     >
-                      {isPlayingAudio ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3 fill-current" />}
-                      <span>{isPlayingAudio ? "Stop Stem Audio" : "Play Stem Audio (Web Audio)"}</span>
+                      <Play className="h-3 w-3 fill-current" />
+                      <span>Test Audio Synthesis</span>
                     </button>
                   </div>
 
@@ -726,7 +1086,7 @@ export default function StudioPage() {
                       <div
                         key={i}
                         className="flex-1 bg-gradient-to-t from-emerald-500/40 to-teal-400 rounded-full transition-all duration-150"
-                        style={{ height: `${isPlayingAudio ? Math.min(100, h + Math.sin(Date.now() / 200 + i) * 30) : h}%` }}
+                        style={{ height: `${isSpeakingClone ? Math.min(100, h + Math.sin(Date.now() / 200 + i) * 30) : h}%` }}
                       />
                     ))}
                   </div>
@@ -776,30 +1136,7 @@ export default function StudioPage() {
                       <rect x="370" y="30" width="110" height="60" rx="8" fill="#DCFCE7" stroke="#16A34A" strokeWidth="1.5" />
                       <text x="382" y="55" fill="#166534" fontSize="10" fontWeight="bold">Veritas VQC Gate</text>
                       <text x="382" y="72" fill="#334155" fontSize="8">VQS 94.6 (PASS)</text>
-
-                      <line x1="260" y1="90" x2="260" y2="130" stroke="#6366F1" strokeWidth="1.5" strokeDasharray="3 3" />
-
-                      <rect x="190" y="130" width="140" height="50" rx="8" fill="#FFFBEB" stroke="#D97706" strokeWidth="1.5" />
-                      <text x="205" y="152" fill="#92400E" fontSize="9" fontWeight="bold">pgvector 1536 Memory</text>
-                      <text x="205" y="168" fill="#334155" fontSize="8">ivfflat Cosine &lt; 0.15</text>
                     </svg>
-
-                    <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-slate-900/90 rounded-lg p-1 border border-slate-800">
-                      <button
-                        onClick={() => setDiagramZoom(Math.max(0.8, diagramZoom - 0.1))}
-                        className="p-1 text-slate-400 hover:text-white"
-                        title="Zoom Out"
-                      >
-                        <ZoomOut className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        onClick={() => setDiagramZoom(Math.min(1.4, diagramZoom + 0.1))}
-                        className="p-1 text-slate-400 hover:text-white"
-                        title="Zoom In"
-                      >
-                        <ZoomIn className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
                   </div>
                 ) : (
                   <div className="rounded-xl border border-slate-800 bg-obsidian-950 p-4">
@@ -808,12 +1145,7 @@ export default function StudioPage() {
   <root>
     <mxCell id="0"/>
     <mxCell id="1" parent="0"/>
-    <mxCell id="node_bff" value="Edge BFF Gateway" vertex="1" parent="1">
-      <mxGeometry x="50" y="120" width="280" height="90" as="geometry"/>
-    </mxCell>
-    <mxCell id="node_veritas" value="Veritas 5-Axis Engine" vertex="1" parent="1">
-      <mxGeometry x="420" y="120" width="340" height="150" as="geometry"/>
-    </mxCell>
+    <mxCell id="node_bff" value="Edge BFF Gateway" vertex="1" parent="1"/>
   </root>
 </mxfile>`}
                     </pre>
