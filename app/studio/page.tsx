@@ -43,8 +43,7 @@ import {
   X,
   UserPlus,
   Gauge,
-  FastForward,
-  Rewind
+  Subtitles
 } from "lucide-react";
 
 interface PersonaConfig {
@@ -211,9 +210,12 @@ export default function StudioPage() {
   const [selectedPersona, setSelectedPersona] = useState("priya");
   const [selectedBaseModel, setSelectedBaseModel] = useState<"Charon" | "Aoede" | "Puck" | "Kore" | "Fenrir">("Aoede");
 
-  // Independent Video & Audio Speed Stepper Controls (0.1x increments)
-  const [videoSpeed, setVideoSpeed] = useState<number>(1.40); // Default to 1.4x so video runs fast & snappy
+  // Speed Stepper Controls (0.1x increments)
+  const [videoSpeed, setVideoSpeed] = useState<number>(1.40);
   const [audioSpeed, setAudioSpeed] = useState<number>(1.00);
+
+  // Live Closed Captions (CC) Overlay Toggle
+  const [showCaptions, setShowCaptions] = useState<boolean>(true);
 
   // Advanced Prosody Sliders
   const [stability, setStability] = useState(85);
@@ -258,8 +260,8 @@ export default function StudioPage() {
     const t = storyThemes.find(theme => theme.id === selectedTheme) || storyThemes[0];
     const calcPitch = (p.pitch * t.pitchMult * (1 + (styleExaggeration - 50) * 0.003)).toFixed(2);
     setActiveVoiceLabel(`${p.name} (${p.base} • ${p.vibe})`);
-    setActivePitchRate(`Pitch: ${calcPitch} • Video Speed: ${videoSpeed.toFixed(1)}x • Audio: ${audioSpeed.toFixed(1)}x`);
-  }, [selectedPersona, selectedTheme, styleExaggeration, stability, breathDensity, personas, videoSpeed, audioSpeed]);
+    setActivePitchRate(`Pitch: ${calcPitch} • Video: ${videoSpeed.toFixed(1)}x • Audio: ${audioSpeed.toFixed(1)}x • CC: ${showCaptions ? "ON" : "OFF"}`);
+  }, [selectedPersona, selectedTheme, styleExaggeration, stability, breathDensity, personas, videoSpeed, audioSpeed, showCaptions]);
 
   // Update Video Playback Rate in real time
   useEffect(() => {
@@ -291,15 +293,15 @@ export default function StudioPage() {
     });
   };
 
-  // Smooth Subtitle Progress Tracker
+  // High-Precision Real-Time Caption Synchronizer
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
     const handleTimeUpdate = () => {
-      if (audio.duration) {
+      if (audio.duration && audio.duration > 0) {
         const progress = audio.currentTime / audio.duration;
-        const words = cloneScript.split(" ");
+        const words = cloneScript.split(" ").filter(w => w.trim().length > 0);
         const wordIndex = Math.min(words.length - 1, Math.floor(progress * words.length));
         setSpokenWordIndex(wordIndex);
       }
@@ -515,6 +517,8 @@ export default function StudioPage() {
     setCloneScript((prev) => `${prev} ${tag} `);
   };
 
+  const scriptWords = cloneScript.split(" ").filter(w => w.trim().length > 0);
+
   return (
     <div className="min-h-screen bg-obsidian-950 text-slate-100 selection:bg-indigo-500/30 selection:text-indigo-200">
       <AppNavbar />
@@ -641,12 +645,24 @@ export default function StudioPage() {
               </h1>
             </div>
             <p className="mt-2 text-sm md:text-base text-slate-400 max-w-4xl">
-              100% Native Google DeepMind architecture: Veo 3.1 Fast 1080p60 motion pictures, Gemini 3.1 Flash 48kHz neural voice synthesis, granular 0.1x video/audio speed steppers, and C2PA cryptographic provenance.
+              100% Native Google DeepMind architecture: Veo 3.1 Fast 1080p60 motion pictures, Gemini 3.1 Flash 48kHz neural voice synthesis, real-time broadcast closed captions (CC), and C2PA cryptographic provenance.
             </p>
           </div>
 
           {/* Actions & Modes */}
           <div className="flex items-center gap-3 flex-wrap">
+            <button
+              onClick={() => setShowCaptions(!showCaptions)}
+              className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-mono font-bold transition-all border ${
+                showCaptions 
+                  ? "bg-amber-400 text-slate-950 border-amber-300 shadow-lg shadow-amber-400/20" 
+                  : "bg-slate-900 text-slate-400 border-slate-800 hover:text-white"
+              }`}
+            >
+              <Subtitles className="h-4 w-4" />
+              <span>CC Captions: {showCaptions ? "ON" : "OFF"}</span>
+            </button>
+
             <button
               onClick={() => setIsCreatingPersona(true)}
               className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 to-emerald-500 px-4 py-2.5 text-xs font-mono font-bold text-slate-950 shadow-lg hover:brightness-110 transition-all"
@@ -666,8 +682,8 @@ export default function StudioPage() {
           <div className="flex items-center gap-4 text-slate-300">
             <span>{activePitchRate}</span>
             <span className="rounded bg-teal-900/80 px-2 py-0.5 text-[10px] text-teal-200 border border-teal-700/50 flex items-center gap-1">
-              <Gauge className="h-3 w-3 text-emerald-400" />
-              <span>Video Speed: <b>{videoSpeed.toFixed(1)}x</b></span>
+              <Subtitles className="h-3 w-3 text-amber-400" />
+              <span>Live Gold Karaoke Captions Synchronized</span>
             </span>
           </div>
         </div>
@@ -727,19 +743,19 @@ export default function StudioPage() {
               </div>
             </div>
 
-            {/* ⚡ Granular ±0.1x Video Speed Stepper & Calibration Controller */}
+            {/* ⚡ Granular ±0.1x Video Speed Stepper Controller */}
             <div className="rounded-2xl border border-teal-500/40 bg-slate-900/70 p-6 backdrop-blur-xl shadow-xl">
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                 <span className="text-xs font-bold uppercase tracking-wider text-teal-300 flex items-center gap-2">
                   <Gauge className="h-4 w-4 text-emerald-400" />
-                  <span>Granular Video Speed Stepper (Match Audio Cadence)</span>
+                  <span>Granular Video Speed Stepper</span>
                 </span>
                 <span className="font-mono text-xs font-bold text-emerald-400 bg-emerald-950/80 px-2.5 py-1 rounded-lg border border-emerald-700/50">
                   Video: {videoSpeed.toFixed(1)}x • Audio: {audioSpeed.toFixed(1)}x
                 </span>
               </div>
 
-              {/* Video Speed Stepper Controls (±0.1x Steppers) */}
+              {/* Video Speed Stepper Controls */}
               <div className="pt-4 flex flex-col gap-3">
                 <div className="flex items-center justify-between bg-obsidian-950 p-3 rounded-xl border border-slate-800">
                   <div className="flex flex-col">
@@ -747,7 +763,7 @@ export default function StudioPage() {
                       <Film className="h-3.5 w-3.5 text-teal-400" />
                       <span>Video Playback Speed (0.1x Stepper):</span>
                     </span>
-                    <span className="text-[11px] text-slate-400">Increase video speed to eliminate slow-motion lag</span>
+                    <span className="text-[11px] text-slate-400">Increase video speed to match natural speech delivery</span>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -830,9 +846,9 @@ export default function StudioPage() {
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                 <span className="text-xs font-bold uppercase tracking-wider text-pink-400 flex items-center gap-2">
                   <MessageSquare className="h-4 w-4" />
-                  <span>Narration Script &amp; Inline Paralinguistics</span>
+                  <span>Narration Script &amp; Live Teleprompter Text</span>
                 </span>
-                <span className="text-xs font-mono text-emerald-400">Audio Sync</span>
+                <span className="text-xs font-mono text-amber-400">Matched to Voice</span>
               </div>
 
               <div className="flex items-center gap-2 pt-3 flex-wrap">
@@ -894,7 +910,7 @@ export default function StudioPage() {
 
           </div>
 
-          {/* RIGHT: Live Google DeepMind Veo 3.1 Motion Picture Viewport (6 Cols) */}
+          {/* RIGHT: Live Google DeepMind Veo 3.1 Motion Picture Viewport + ON-SCREEN CLOSED CAPTIONS (6 Cols) */}
           <div className="lg:col-span-6 flex flex-col gap-6">
             
             <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl flex flex-col justify-between">
@@ -912,7 +928,7 @@ export default function StudioPage() {
                   </div>
                 </div>
 
-                {/* High-Definition Motion Picture Player with Dynamic Speed Rate */}
+                {/* High-Definition Motion Picture Player with ON-SCREEN BROADCAST CAPTIONS OVERLAY */}
                 <div className="mt-4 rounded-xl border border-slate-800 bg-obsidian-950 relative overflow-hidden flex flex-col items-center justify-center p-2 min-h-[460px]">
                   
                   <div className="relative w-full aspect-video overflow-hidden rounded-xl border border-slate-800 bg-slate-950 shadow-2xl">
@@ -947,33 +963,15 @@ export default function StudioPage() {
                     )}
 
                     {/* Lower-Third Live Presenter Overlay */}
-                    <div className="absolute bottom-4 left-4 flex items-center gap-3 rounded-xl border border-slate-700/80 bg-slate-950/85 px-3.5 py-2 backdrop-blur-md shadow-xl">
-                      <div className={`h-8 w-8 rounded-lg border flex items-center justify-center font-mono font-bold text-xs ${
-                        currentPersona.gender === "female"
-                          ? "bg-pink-500/20 border-pink-500/40 text-pink-300"
-                          : "bg-indigo-500/20 border-indigo-500/40 text-indigo-300"
-                      }`}>
-                        {currentPersona.gender === "female" ? "F" : "M"}
+                    <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
+                      <div className="flex items-center gap-1.5 rounded-full bg-slate-900/90 border border-emerald-500/50 px-2.5 py-1 text-[10px] font-mono text-emerald-300 backdrop-blur-md">
+                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                        <span>Google Veo 3.1 • C2PA Sealed</span>
                       </div>
-                      <div>
-                        <div className="font-mono text-xs font-bold text-white flex items-center gap-2">
-                          <span>{currentPersona.name}</span>
-                          <span className="rounded bg-emerald-950 px-1.5 py-0.2 text-[9px] text-emerald-400 border border-emerald-800/50">
-                            {isSpeakingClone ? `${videoSpeed.toFixed(1)}X VIDEO` : "READY"}
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-slate-400">{currentPersona.title}</div>
-                      </div>
-                    </div>
-
-                    {/* C2PA Provenance Top Badge */}
-                    <div className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-slate-900/90 border border-emerald-500/50 px-2.5 py-1 text-[10px] font-mono text-emerald-300 backdrop-blur-md">
-                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-                      <span>Google Veo 3.1 • C2PA Sealed</span>
                     </div>
 
                     {/* Floating Fine-Tune Stepper Over Viewport */}
-                    <div className="absolute top-3 left-3 flex items-center gap-1 rounded-xl bg-slate-950/90 border border-slate-700/80 px-2 py-1 backdrop-blur-md">
+                    <div className="absolute top-3 left-3 flex items-center gap-1 rounded-xl bg-slate-950/90 border border-slate-700/80 px-2 py-1 backdrop-blur-md z-10">
                       <button
                         onClick={() => adjustVideoSpeed(-0.1)}
                         className="h-6 w-6 rounded bg-slate-800 text-white font-mono font-bold flex items-center justify-center hover:bg-slate-700 text-xs"
@@ -990,30 +988,46 @@ export default function StudioPage() {
                         +
                       </button>
                     </div>
-                  </div>
 
-                  {/* Gold Karaoke Subtitles Bar with Audio Cadence Sync */}
-                  <div className="mt-3 w-full rounded-xl bg-slate-950/90 border border-slate-800/80 p-3 text-center">
-                    <div className="flex flex-wrap items-center justify-center gap-1 text-xs md:text-sm font-sans leading-relaxed">
-                      {cloneScript.split(" ").map((word, idx) => (
-                        <span
-                          key={idx}
-                          className={`transition-all duration-150 rounded px-1 ${
-                            spokenWordIndex === idx
-                              ? "bg-amber-400 text-slate-950 font-black scale-110 shadow-md shadow-amber-400/50"
-                              : spokenWordIndex > idx
-                              ? "text-teal-300 font-semibold"
-                              : "text-slate-400"
-                          }`}
-                        >
-                          {word}
-                        </span>
-                      ))}
-                    </div>
+                    {/* 🎬 BROADCAST-GRADE ON-SCREEN CLOSED CAPTIONS (CC) OVERLAY */}
+                    {showCaptions && (
+                      <div className="absolute bottom-3 left-3 right-3 z-10 flex flex-col items-center justify-end pointer-events-none">
+                        <div className="max-w-xl w-full rounded-2xl bg-slate-950/85 border border-slate-700/70 p-3.5 backdrop-blur-xl shadow-2xl text-center">
+                          <div className="flex items-center justify-center gap-1.5 mb-1.5">
+                            <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" />
+                            <span className="font-mono text-[10px] font-bold text-amber-300 uppercase tracking-widest">
+                              Live Broadcast Teleprompter
+                            </span>
+                          </div>
+
+                          <div className="flex flex-wrap items-center justify-center gap-1.5 text-xs md:text-sm font-sans font-medium leading-relaxed">
+                            {scriptWords.map((word, idx) => {
+                              const isActive = spokenWordIndex === idx;
+                              const isPast = spokenWordIndex > idx;
+                              return (
+                                <span
+                                  key={idx}
+                                  className={`transition-all duration-150 rounded px-1.5 py-0.5 ${
+                                    isActive
+                                      ? "bg-amber-400 text-slate-950 font-extrabold text-sm md:text-base scale-110 shadow-lg shadow-amber-400/60 ring-2 ring-white/50"
+                                      : isPast
+                                      ? "text-teal-300 font-semibold"
+                                      : "text-slate-400 opacity-80"
+                                  }`}
+                                >
+                                  {word}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                   </div>
 
                   {/* Audio Frequency Equalizer Bar */}
-                  <div className="mt-2 w-full flex items-center gap-1 h-6 px-4">
+                  <div className="mt-3 w-full flex items-center gap-1 h-6 px-4">
                     {[30, 60, 90, 45, 80, 100, 70, 40, 85, 95, 60, 50, 75, 90, 40, 65, 85, 55, 95, 70, 80, 45, 60, 90].map((h, i) => (
                       <div
                         key={i}
@@ -1027,30 +1041,27 @@ export default function StudioPage() {
 
               <div className="pt-4 border-t border-slate-800 flex items-center justify-between flex-wrap gap-4 text-xs font-mono">
                 <div className="flex items-center gap-3 text-slate-400">
-                  <span>Video Speed: <b className="text-emerald-400">{videoSpeed.toFixed(1)}x</b></span>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => adjustVideoSpeed(-0.1)}
-                      className="px-2 py-0.5 rounded bg-slate-800 text-slate-200 hover:bg-slate-700 font-bold"
-                    >
-                      -0.1x
-                    </button>
-                    <button
-                      onClick={() => adjustVideoSpeed(+0.1)}
-                      className="px-2 py-0.5 rounded bg-teal-500 text-slate-950 hover:bg-teal-400 font-bold"
-                    >
-                      +0.1x
-                    </button>
-                  </div>
+                  <span>Presenter: <b className="text-white">{currentPersona.name}</b></span>
+                  <span>Captions: <b className={showCaptions ? "text-amber-400" : "text-slate-500"}>{showCaptions ? "ACTIVE ON-SCREEN" : "MUTED"}</b></span>
                 </div>
 
-                <button
-                  onClick={handleToggleBroadcast}
-                  className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 px-4 py-2 text-xs font-bold text-slate-950 shadow-md shadow-teal-500/20 hover:brightness-110"
-                >
-                  <Play className="h-3.5 w-3.5 fill-current" />
-                  <span>{isSpeakingClone ? "Pause Motion" : `Play Motion (${videoSpeed.toFixed(1)}x)`}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowCaptions(!showCaptions)}
+                    className="px-3 py-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white border border-slate-700 flex items-center gap-1.5"
+                  >
+                    <Subtitles className="h-3.5 w-3.5 text-amber-400" />
+                    <span>{showCaptions ? "Hide CC" : "Show CC"}</span>
+                  </button>
+
+                  <button
+                    onClick={handleToggleBroadcast}
+                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 px-4 py-2 text-xs font-bold text-slate-950 shadow-md shadow-teal-500/20 hover:brightness-110"
+                  >
+                    <Play className="h-3.5 w-3.5 fill-current" />
+                    <span>{isSpeakingClone ? "Pause Motion" : `Play Motion (${videoSpeed.toFixed(1)}x)`}</span>
+                  </button>
+                </div>
               </div>
 
             </div>
