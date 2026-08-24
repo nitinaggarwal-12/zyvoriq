@@ -38,7 +38,7 @@ export default function DirectorPage() {
       id: "agent-1",
       name: "Director Swarm DAG Compiler",
       role: "Orchestration & Task Decomposition",
-      engine: "Gemini 2.5 Pro",
+      engine: "Gemini 3.7 Flash",
       status: "completed",
       progress: 100,
       latency: "120ms",
@@ -48,7 +48,7 @@ export default function DirectorPage() {
       id: "agent-2",
       name: "Research & Grounding Agent",
       role: "Google Search Grounding & Fact Anchor",
-      engine: "Gemini 2.5 Pro",
+      engine: "Gemini 3.7 Flash",
       status: "completed",
       progress: 100,
       latency: "840ms",
@@ -67,8 +67,8 @@ export default function DirectorPage() {
     {
       id: "agent-4",
       name: "Cinematic Video Agent",
-      role: "Google Veo 2 Storyboard Synthesis",
-      engine: "Veo 2 / Imagen 3",
+      role: "Google Veo 3.1 Storyboard Synthesis",
+      engine: "Google Veo 3.1 / Imagen 3",
       status: "completed",
       progress: 100,
       latency: "3.2s",
@@ -98,7 +98,7 @@ export default function DirectorPage() {
       id: "agent-7",
       name: "Veritas 5-Axis Consensus Auditor",
       role: "Deterministic Quality Gate & Hard Safety",
-      engine: "Gemini 2.5 + Claude 3.5",
+      engine: "Gemini 3.7 Flash Sovereign Core",
       status: "completed",
       progress: 100,
       latency: "1.1s",
@@ -108,7 +108,7 @@ export default function DirectorPage() {
       id: "agent-8",
       name: "Surgical Defect Auto-Repair",
       role: "Closed-Loop Defect Diffing",
-      engine: "Gemini 2.5 Pro",
+      engine: "Gemini 3.7 Flash",
       status: "idle",
       progress: 0,
       latency: "0ms",
@@ -382,7 +382,7 @@ export default function DirectorPage() {
                     <ChevronRight className="h-4 w-4 text-slate-500 group-hover:text-indigo-300 transition-all" />
                   </div>
                   <div className="mt-3 text-sm font-bold text-white">4-Pane Studio</div>
-                  <div className="text-xs text-slate-400 mt-1">Script, Veo 2 video, audio &amp; Draw.io canvas.</div>
+                  <div className="text-xs text-slate-400 mt-1">Script, Veo 3.1 video, audio &amp; Draw.io canvas.</div>
                 </div>
                 <div className="mt-4 text-xs font-mono font-bold text-indigo-300">4 Stems Synchronized</div>
               </Link>
