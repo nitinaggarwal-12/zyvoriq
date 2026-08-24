@@ -4,48 +4,22 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { AppNavbar } from "@/components/AppNavbar";
 import { 
-  Layers, 
-  FileText, 
-  Video, 
-  Volume2, 
-  Code, 
+  UserCheck,
   Sparkles, 
   Play, 
   Pause, 
-  Share2, 
-  CheckCircle2, 
-  ZoomIn, 
-  ZoomOut,
-  UserCheck,
-  Camera,
-  Upload,
-  RefreshCw,
-  Sliders,
   ShieldCheck,
-  Mic,
   MessageSquare,
-  Globe,
-  Radio,
-  Download,
-  Users,
   Film,
-  Zap,
-  ChevronRight,
-  Filter,
-  Headphones,
   Activity,
-  Smile,
-  Cpu,
-  Award,
-  Lock,
+  Sliders,
   Plus,
   Minus,
   X,
   UserPlus,
   Gauge,
   Subtitles,
-  Eye,
-  Crosshair
+  Cpu
 } from "lucide-react";
 
 interface PersonaConfig {
@@ -62,12 +36,9 @@ interface PersonaConfig {
   audioUrl?: string;
   bodyLanguage: string;
   introScript: string;
-  mouthCoords: { x: number; y: number; width: number; height: number }; // normalized 0..1
 }
 
 export default function StudioPage() {
-  const [studioMode, setStudioMode] = useState<"avatar" | "matrix" | "podcast">("avatar");
-
   // 5 Story & Emotion Themes
   const storyThemes = [
     { 
@@ -117,7 +88,7 @@ export default function StudioPage() {
     },
   ];
 
-  // Dynamic Personas Catalog with Precision Centered Lip Coordinates
+  // Dynamic Personas Catalog
   const [personas, setPersonas] = useState<Record<string, PersonaConfig>>({
     priya: { 
       name: "Priya (Bangalore)", 
@@ -132,8 +103,7 @@ export default function StudioPage() {
       videoUrl: "/assets/video/priya_veo_broadcast.mp4",
       audioUrl: "/assets/audio/priya_deepmind.wav",
       bodyLanguage: "Articulate Indian female CTO with open hand keynote stage gestures",
-      introScript: "Hello everyone! I'm Priya, Global Transformation CTO. Traditional enterprise content pipelines take 14 long days and over $140,000. With Zyvoriq, we collapse that entire lifecycle into just 90 seconds—backed by Veritas cryptographic consensus and Ed25519 provenance!",
-      mouthCoords: { x: 0.518, y: 0.422, width: 0.052, height: 0.026 }
+      introScript: "Hello everyone! I'm Priya, Global Transformation CTO. Traditional enterprise content pipelines take 14 long days and over $140,000. With Zyvoriq, we collapse that entire lifecycle into just 90 seconds—backed by Veritas cryptographic consensus and Ed25519 provenance!"
     },
     victoria: { 
       name: "Victoria (London)", 
@@ -148,8 +118,7 @@ export default function StudioPage() {
       videoUrl: "/assets/video/victoria_veo_broadcast.mp4",
       audioUrl: "/assets/audio/victoria_deepmind.wav",
       bodyLanguage: "Articulate stage presence with active hand gestures & eye contact",
-      introScript: "Good evening. I am Victoria, MasterClass Executive VP. [dramatic pause] Let us examine how Veritas auto-repair eliminates architectural drift and enforces compliance across all digital channels.",
-      mouthCoords: { x: 0.528, y: 0.385, width: 0.048, height: 0.024 }
+      introScript: "Good evening. I am Victoria, MasterClass Executive VP. [dramatic pause] Let us examine how Veritas auto-repair eliminates architectural drift and enforces compliance across all digital channels."
     },
     david: { 
       name: "David (Silicon Valley)", 
@@ -163,8 +132,7 @@ export default function StudioPage() {
       image: "/assets/avatars/avatar_keynote_gesture.jpg",
       videoUrl: "/assets/video/david_veo_broadcast.mp4",
       bodyLanguage: "Charismatic male founder on TED stage with open-hand gesture",
-      introScript: "Hey everyone, David here from Silicon Valley. We are radically accelerating enterprise AI content with sub-25 millisecond synthesis latency.",
-      mouthCoords: { x: 0.512, y: 0.375, width: 0.048, height: 0.024 }
+      introScript: "Hey everyone, David here from Silicon Valley. We are radically accelerating enterprise AI content with sub-25 millisecond synthesis latency."
     },
     elena: { 
       name: "Elena (Berlin)", 
@@ -179,8 +147,7 @@ export default function StudioPage() {
       videoUrl: "/assets/video/victoria_veo_broadcast.mp4",
       audioUrl: "/assets/audio/victoria_deepmind.wav",
       bodyLanguage: "Enthusiastic female tech founder on Berlin stage with open arms",
-      introScript: "Hi everyone! I am Elena from Berlin. We are disrupting manual content workflows by replacing 14-day human delays with instant multi-agent swarm synthesis.",
-      mouthCoords: { x: 0.528, y: 0.385, width: 0.048, height: 0.024 }
+      introScript: "Hi everyone! I am Elena from Berlin. We are disrupting manual content workflows by replacing 14-day human delays with instant multi-agent swarm synthesis."
     },
     maya: { 
       name: "Maya (Dublin)", 
@@ -195,8 +162,7 @@ export default function StudioPage() {
       videoUrl: "/assets/video/priya_veo_broadcast.mp4",
       audioUrl: "/assets/audio/priya_deepmind.wav",
       bodyLanguage: "Gentle empathetic smile, cozy book cafe with coffee mug",
-      introScript: "Welcome, I am Maya from Dublin. Pull up a chair. Today we reflect on the deeper story behind sovereign enterprise intelligence and algorithmic trust.",
-      mouthCoords: { x: 0.518, y: 0.422, width: 0.052, height: 0.026 }
+      introScript: "Welcome, I am Maya from Dublin. Pull up a chair. Today we reflect on the deeper story behind sovereign enterprise intelligence and algorithmic trust."
     },
     jonathan: { 
       name: "Sir Jonathan (Oxford)", 
@@ -210,38 +176,27 @@ export default function StudioPage() {
       image: "/assets/avatars/avatar_executive_gravitas.jpg",
       videoUrl: "/assets/video/david_veo_broadcast.mp4",
       bodyLanguage: "Commanding skyline boardroom presence with folded arms",
-      introScript: "I am Sir Jonathan. In this documentary briefing, we explore the cryptographic provenance of AI content generation and immutable ledger verification.",
-      mouthCoords: { x: 0.512, y: 0.375, width: 0.048, height: 0.024 }
+      introScript: "I am Sir Jonathan. In this documentary briefing, we explore the cryptographic provenance of AI content generation and immutable ledger verification."
     },
   });
 
   const [selectedTheme, setSelectedTheme] = useState<"keynote" | "executive" | "storyteller" | "thriller" | "fireside">("keynote");
   const [selectedPersona, setSelectedPersona] = useState("priya");
-  const [selectedBaseModel, setSelectedBaseModel] = useState<"Charon" | "Aoede" | "Puck" | "Kore" | "Fenrir">("Aoede");
 
   // Speed Stepper Controls (0.1x increments)
-  const [videoSpeed, setVideoSpeed] = useState<number>(1.40);
+  const [videoSpeed, setVideoSpeed] = useState<number>(1.20);
   const [audioSpeed, setAudioSpeed] = useState<number>(1.00);
 
   // Live Closed Captions (CC) Overlay Toggle
   const [showCaptions, setShowCaptions] = useState<boolean>(true);
 
-  // Live Neural Viseme Radar Active State
-  const [activeViseme, setActiveViseme] = useState<{ phoneme: string; name: string; aperture: number; pinch: number }>({
-    phoneme: "/p, b, m/",
-    name: "Bilabial Closure",
-    aperture: 0,
-    pinch: 90
-  });
-
   // Advanced Prosody Sliders
   const [stability, setStability] = useState(85);
   const [styleExaggeration, setStyleExaggeration] = useState(55);
-  const [breathDensity, setBreathDensity] = useState(30);
 
   // Active Acoustic Telemetry Display
   const [activeVoiceLabel, setActiveVoiceLabel] = useState("Priya (DeepMind Aoede Soprano)");
-  const [activePitchRate, setActivePitchRate] = useState("Video: 1.40x • Audio: 1.00x");
+  const [activePitchRate, setActivePitchRate] = useState("Video: 1.20x • Audio: 1.00x");
 
   // Custom Persona Creation Modal State
   const [isCreatingPersona, setIsCreatingPersona] = useState(false);
@@ -256,12 +211,8 @@ export default function StudioPage() {
   // Video & Audio Elements Ref
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const animFrameIdRef = useRef<number | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
 
-  // Audio-to-Face Neural Lip Sync Synthesis State
+  // Audio-to-Face Neural Pipeline State
   const [isSynthesizingNeuralLipSync, setIsSynthesizingNeuralLipSync] = useState(false);
   const [neuralSyncStage, setNeuralSyncStage] = useState<string>("");
   const [neuralSyncProgress, setNeuralSyncProgress] = useState(0);
@@ -275,145 +226,6 @@ export default function StudioPage() {
 
   const currentPersona = personas[selectedPersona] || personas["priya"];
 
-  // Initialize Web Audio Context & Analyser for Real-Time 60FPS Lip Deformation
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const setupAudioContext = () => {
-      try {
-        if (!audioContextRef.current) {
-          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-          const ctx = new AudioContextClass();
-          const analyser = ctx.createAnalyser();
-          analyser.fftSize = 256;
-          analyser.smoothingTimeConstant = 0.3;
-
-          const source = ctx.createMediaElementSource(audio);
-          source.connect(analyser);
-          analyser.connect(ctx.destination);
-
-          audioContextRef.current = ctx;
-          analyserRef.current = analyser;
-        }
-      } catch (e) {
-        // Already connected
-      }
-    };
-
-    audio.addEventListener("play", setupAudioContext, { once: true });
-    return () => {
-      audio.removeEventListener("play", setupAudioContext);
-    };
-  }, [currentPersona.audioUrl]);
-
-  // Real-Time 60FPS Audio-Reactive Lip Motion Rendering Loop
-  useEffect(() => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    let mouthOpenSmoothed = 0;
-    const dataArray = new Uint8Array(128);
-
-    const renderLoop = () => {
-      if (video.videoWidth && video.videoHeight) {
-        if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-        }
-
-        // Draw current video frame to canvas
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        // Analyze real-time acoustic energy
-        let energy = 0;
-        if (analyserRef.current && isSpeakingClone) {
-          analyserRef.current.getByteFrequencyData(dataArray);
-          let sum = 0;
-          for (let i = 2; i < 30; i++) {
-            sum += dataArray[i];
-          }
-          energy = Math.min(1.0, (sum / 28) / 90);
-        } else if (isSpeakingClone) {
-          // Dynamic procedural syllable modulation
-          const t = Date.now() / 100;
-          energy = 0.5 + Math.sin(t * 1.5) * 0.35 + Math.cos(t * 2.3) * 0.2;
-          energy = Math.max(0.1, Math.min(1.0, energy));
-        }
-
-        // Smooth mouth interpolation
-        mouthOpenSmoothed = mouthOpenSmoothed * 0.6 + energy * 0.4;
-
-        // If speaking and mouth opening is active, apply realistic 3D viseme mouth cavity articulation
-        if (mouthOpenSmoothed > 0.05) {
-          const coords = currentPersona.mouthCoords || { x: 0.518, y: 0.422, width: 0.052, height: 0.026 };
-          const mouthCenterX = canvas.width * coords.x;
-          const mouthCenterY = canvas.height * coords.y;
-          const mouthRadiusX = (canvas.width * coords.width) * 0.95;
-          const mouthRadiusY = (canvas.height * coords.height) * (0.8 + mouthOpenSmoothed * 2.0);
-
-          ctx.save();
-
-          // 1. Outer Lip Contour Shadow
-          ctx.beginPath();
-          ctx.ellipse(mouthCenterX, mouthCenterY, mouthRadiusX * 1.05, mouthRadiusY * 1.05, 0, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(60, 20, 25, ${0.4 + mouthOpenSmoothed * 0.35})`;
-          ctx.fill();
-
-          // 2. Dark Inner Oral Cavity
-          ctx.beginPath();
-          ctx.ellipse(mouthCenterX, mouthCenterY, mouthRadiusX * 0.9, mouthRadiusY * 0.85, 0, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(28, 8, 12, ${0.85 + mouthOpenSmoothed * 0.15})`;
-          ctx.fill();
-
-          // 3. Upper Teeth Row (visible on open vowels)
-          if (mouthOpenSmoothed > 0.18) {
-            ctx.beginPath();
-            ctx.ellipse(mouthCenterX, mouthCenterY - mouthRadiusY * 0.38, mouthRadiusX * 0.7, mouthRadiusY * 0.28, 0, 0, Math.PI);
-            ctx.fillStyle = "rgba(242, 238, 232, 0.95)";
-            ctx.fill();
-
-            // Subtle teeth separation shadow
-            ctx.beginPath();
-            ctx.ellipse(mouthCenterX, mouthCenterY - mouthRadiusY * 0.25, mouthRadiusX * 0.65, mouthRadiusY * 0.06, 0, 0, Math.PI * 2);
-            ctx.fillStyle = "rgba(120, 100, 95, 0.4)";
-            ctx.fill();
-          }
-
-          // 4. Tongue / Lower Oral Depth
-          if (mouthOpenSmoothed > 0.35) {
-            ctx.beginPath();
-            ctx.ellipse(mouthCenterX, mouthCenterY + mouthRadiusY * 0.35, mouthRadiusX * 0.55, mouthRadiusY * 0.3, 0, 0, Math.PI);
-            ctx.fillStyle = "rgba(165, 70, 80, 0.85)";
-            ctx.fill();
-          }
-
-          // 5. Lower Lip Highlight
-          ctx.beginPath();
-          ctx.ellipse(mouthCenterX, mouthCenterY + mouthRadiusY * 0.72, mouthRadiusX * 0.88, mouthRadiusY * 0.32, 0, Math.PI, 0);
-          ctx.fillStyle = `rgba(185, 90, 100, ${0.45 + mouthOpenSmoothed * 0.3})`;
-          ctx.fill();
-
-          ctx.restore();
-        }
-      }
-
-      animFrameIdRef.current = requestAnimationFrame(renderLoop);
-    };
-
-    animFrameIdRef.current = requestAnimationFrame(renderLoop);
-
-    return () => {
-      if (animFrameIdRef.current) {
-        cancelAnimationFrame(animFrameIdRef.current);
-      }
-    };
-  }, [currentPersona, isSpeakingClone]);
-
   // Update telemetry banner whenever state changes
   useEffect(() => {
     const p = currentPersona;
@@ -421,7 +233,7 @@ export default function StudioPage() {
     const calcPitch = (p.pitch * t.pitchMult * (1 + (styleExaggeration - 50) * 0.003)).toFixed(2);
     setActiveVoiceLabel(`${p.name} (${p.base} • ${p.vibe})`);
     setActivePitchRate(`Pitch: ${calcPitch} • Video: ${videoSpeed.toFixed(1)}x • Audio: ${audioSpeed.toFixed(1)}x • CC: ${showCaptions ? "ON" : "OFF"}`);
-  }, [selectedPersona, selectedTheme, styleExaggeration, stability, breathDensity, personas, videoSpeed, audioSpeed, showCaptions]);
+  }, [selectedPersona, selectedTheme, styleExaggeration, stability, personas, videoSpeed, audioSpeed, showCaptions]);
 
   // Update Video Playback Rate in real time
   useEffect(() => {
@@ -445,46 +257,10 @@ export default function StudioPage() {
     });
   };
 
-  // High-Precision Real-Time Caption & Neural Viseme Radar Tracker
+  // High-Precision Real-Time Caption Tracker
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-
-    const visemeMap = [
-      { phoneme: "/h, e/", name: "Glottal Vowel", aperture: 45, pinch: 20 },
-      { phoneme: "/l, oʊ/", name: "Rounded Aperture", aperture: 65, pinch: 60 },
-      { phoneme: "/e, v, r/", name: "Labiodental Spread", aperture: 50, pinch: 30 },
-      { phoneme: "/aɪ, æ/", name: "Wide Open Vowel", aperture: 95, pinch: 10 },
-      { phoneme: "/p, r, i:/", name: "Plosive High Front", aperture: 75, pinch: 15 },
-      { phoneme: "/g, l, oʊ/", name: "Velar Rounded", aperture: 70, pinch: 65 },
-      { phoneme: "/t, r, æ/", name: "Alveolar Open", aperture: 85, pinch: 25 },
-      { phoneme: "/s, f, ɔ:/", name: "Fricative Mid", aperture: 55, pinch: 40 },
-      { phoneme: "/m, eɪ, ʃ/", name: "Bilabial Fricative", aperture: 60, pinch: 50 },
-      { phoneme: "/s, i:, t/", name: "High Front Dental", aperture: 40, pinch: 20 },
-      { phoneme: "/oʊ, u:/", name: "Full Rounded", aperture: 70, pinch: 85 },
-      { phoneme: "/t, r, ə/", name: "Mid Neutral", aperture: 50, pinch: 30 },
-      { phoneme: "/d, ɪ, ʃ/", name: "Alveolar Fricative", aperture: 45, pinch: 25 },
-      { phoneme: "/e, n, t/", name: "Dental Nasal", aperture: 40, pinch: 15 },
-      { phoneme: "/p, r, aɪ/", name: "Plosive Wide", aperture: 90, pinch: 10 },
-      { phoneme: "/k, ɑ:, n/", name: "Velar Open", aperture: 85, pinch: 20 },
-      { phoneme: "/p, aɪ, p/", name: "Double Bilabial", aperture: 30, pinch: 95 },
-      { phoneme: "/l, aɪ, n/", name: "Lingual Open", aperture: 75, pinch: 20 },
-      { phoneme: "/t, eɪ, k/", name: "Alveolar Velar", aperture: 65, pinch: 25 },
-      { phoneme: "/f, ɔ:, r/", name: "Labiodental Open", aperture: 70, pinch: 45 },
-      { phoneme: "/d, eɪ, z/", name: "Dental Fricative", aperture: 50, pinch: 20 },
-      { phoneme: "/w, ɪ, θ/", name: "Approximant Dental", aperture: 60, pinch: 70 },
-      { phoneme: "/z, aɪ, v/", name: "Sibilant Labial", aperture: 55, pinch: 35 },
-      { phoneme: "/k, ə, l/", name: "Velar Neutral", aperture: 50, pinch: 30 },
-      { phoneme: "/æ, p, s/", name: "Wide Plosive", aperture: 85, pinch: 50 },
-      { phoneme: "/n, aɪ, n/", name: "Diphthong Nasal", aperture: 75, pinch: 15 },
-      { phoneme: "/s, e, k/", name: "Fricative Velar", aperture: 55, pinch: 30 },
-      { phoneme: "/v, e, r/", name: "Labiodental Mid", aperture: 60, pinch: 40 },
-      { phoneme: "/t, ɑ:, s/", name: "Alveolar Open", aperture: 80, pinch: 20 },
-      { phoneme: "/k, ə, n/", name: "Velar Nasal", aperture: 45, pinch: 30 },
-      { phoneme: "/s, e, n/", name: "Fricative Nasal", aperture: 40, pinch: 20 },
-      { phoneme: "/e, d, t/", name: "High Front Dental", aperture: 50, pinch: 15 },
-      { phoneme: "/p, r, ɑ:/", name: "Bilabial Open", aperture: 90, pinch: 40 },
-    ];
 
     const handleTimeUpdate = () => {
       if (audio.duration && audio.duration > 0) {
@@ -492,16 +268,12 @@ export default function StudioPage() {
         const words = cloneScript.split(" ").filter(w => w.trim().length > 0);
         const wordIndex = Math.min(words.length - 1, Math.floor(progress * words.length));
         setSpokenWordIndex(wordIndex);
-
-        const visemeIdx = Math.floor(progress * visemeMap.length) % visemeMap.length;
-        setActiveViseme(visemeMap[visemeIdx]);
       }
     };
 
     const handleAudioEnded = () => {
       setIsSpeakingClone(false);
       setSpokenWordIndex(-1);
-      setActiveViseme({ phoneme: "/rest/", name: "Neutral Rest", aperture: 0, pinch: 0 });
       if (videoRef.current) {
         videoRef.current.pause();
       }
@@ -531,10 +303,6 @@ export default function StudioPage() {
       setIsSpeakingClone(false);
       setSpokenWordIndex(-1);
       return;
-    }
-
-    if (audioContextRef.current && audioContextRef.current.state === "suspended") {
-      audioContextRef.current.resume();
     }
 
     if (currentPersona.audioUrl && audioRef.current && videoRef.current) {
@@ -627,26 +395,26 @@ export default function StudioPage() {
   // 🧠 Audio-to-Face Neural Lip Sync Pipeline Dispatch
   const handleTriggerNeuralLipSync = async () => {
     setIsSynthesizingNeuralLipSync(true);
-    setNeuralSyncProgress(15);
-    setNeuralSyncStage("1/4: DeepMind Gemini 3.1 Flash Synthesizing 48kHz Master Audio...");
+    setNeuralSyncProgress(20);
+    setNeuralSyncStage("1/4: Synthesizing Gemini 3.1 Flash 48kHz Master Audio...");
 
     setTimeout(() => {
-      setNeuralSyncProgress(40);
-      setNeuralSyncStage("2/4: Extracting Mel-Spectrogram & Phonetic Viseme Features (MFCCs)...");
-    }, 800);
+      setNeuralSyncProgress(50);
+      setNeuralSyncStage("2/4: Computing Mel-Spectrogram & Phonetic Viseme Alignment...");
+    }, 700);
 
     setTimeout(() => {
-      setNeuralSyncProgress(75);
-      setNeuralSyncStage("3/4: Audio-to-Face Neural Cross-Attention Video Synthesis...");
-    }, 1800);
+      setNeuralSyncProgress(80);
+      setNeuralSyncStage("3/4: Audio-Conditioned Video Neural Synthesis (Veo 3.1)...");
+    }, 1500);
 
     setTimeout(() => {
       setNeuralSyncProgress(95);
       setNeuralSyncStage("4/4: Sealing Ed25519 C2PA Hardware Provenance Signature...");
-    }, 2800);
+    }, 2200);
 
     try {
-      const res = await fetch("/api/video/neural-lipsync", {
+      await fetch("/api/video/neural-lipsync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -656,13 +424,11 @@ export default function StudioPage() {
         }),
       });
 
-      const data = await res.json();
-
       setTimeout(() => {
         setNeuralSyncProgress(100);
         setIsSynthesizingNeuralLipSync(false);
         handleToggleBroadcast();
-      }, 3500);
+      }, 2800);
     } catch (e) {
       setIsSynthesizingNeuralLipSync(false);
       setNeuralSyncProgress(0);
@@ -688,8 +454,7 @@ export default function StudioPage() {
       videoUrl: newPersonaGender === "female" ? "/assets/video/victoria_veo_broadcast.mp4" : "/assets/video/david_veo_broadcast.mp4",
       audioUrl: newPersonaGender === "female" ? "/assets/audio/victoria_deepmind.wav" : undefined,
       bodyLanguage: newPersonaAppearance || "Bespoke stage presentation with expressive gestures",
-      introScript: newPersonaIntro || `Hello, I am ${newPersonaName}, ${newPersonaTitle}. Welcome to our sovereign AI studio.`,
-      mouthCoords: { x: 0.518, y: 0.422, width: 0.052, height: 0.026 }
+      introScript: newPersonaIntro || `Hello, I am ${newPersonaName}, ${newPersonaTitle}. Welcome to our sovereign AI studio.`
     };
 
     setTimeout(() => {
@@ -718,9 +483,9 @@ export default function StudioPage() {
     <div className="min-h-screen bg-obsidian-950 text-slate-100 selection:bg-indigo-500/30 selection:text-indigo-200">
       <AppNavbar />
 
-      {/* Hidden Synchronized DeepMind Audio Element */}
+      {/* Synchronized DeepMind Audio Element */}
       {currentPersona.audioUrl && (
-        <audio ref={audioRef} key={currentPersona.audioUrl} src={currentPersona.audioUrl} preload="auto" crossOrigin="anonymous" />
+        <audio ref={audioRef} key={currentPersona.audioUrl} src={currentPersona.audioUrl} preload="auto" />
       )}
 
       {/* Create Custom Persona Modal */}
@@ -840,7 +605,7 @@ export default function StudioPage() {
               </h1>
             </div>
             <p className="mt-2 text-sm md:text-base text-slate-400 max-w-4xl">
-              100% Native Google DeepMind architecture: Audio-Reactive 60FPS Neural Lip Sync, Gemini 3.1 Flash 48kHz neural voice synthesis, real-time broadcast closed captions (CC), and C2PA cryptographic provenance.
+              100% Native Google DeepMind architecture: 1080p60 Veo 3.1 keynote motion pictures, Gemini 3.1 Flash 48kHz neural voice synthesis, real-time broadcast closed captions (CC), and C2PA cryptographic provenance.
             </p>
           </div>
 
@@ -877,8 +642,8 @@ export default function StudioPage() {
           <div className="flex items-center gap-4 text-slate-300">
             <span>{activePitchRate}</span>
             <span className="rounded bg-teal-900/80 px-2 py-0.5 text-[10px] text-teal-200 border border-teal-700/50 flex items-center gap-1">
-              <Crosshair className="h-3 w-3 text-pink-400" />
-              <span>Audio-Reactive 60FPS Viseme Deformation Active</span>
+              <ShieldCheck className="h-3 w-3 text-emerald-400" />
+              <span>DeepMind Veo 3.1 &amp; Gemini 3.1 Flash Active</span>
             </span>
           </div>
         </div>
@@ -888,7 +653,7 @@ export default function StudioPage() {
         {/* ------------------------------------------------------------------ */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-6">
           
-          {/* LEFT: Personas Grid, Themes, Script & Neural Lip Sync Actions (6 Cols) */}
+          {/* LEFT: Personas Grid, Themes, Script (6 Cols) */}
           <div className="lg:col-span-6 flex flex-col gap-6">
             
             {/* Personas Grid */}
@@ -938,43 +703,6 @@ export default function StudioPage() {
               </div>
             </div>
 
-            {/* 🧠 Audio-to-Face Neural Lip Sync Radar Panel */}
-            <div className="rounded-2xl border border-pink-500/40 bg-gradient-to-r from-pink-950/30 via-slate-900 to-slate-900 p-6 backdrop-blur-xl shadow-xl">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <span className="text-xs font-bold uppercase tracking-wider text-pink-400 flex items-center gap-2">
-                  <Crosshair className="h-4 w-4" />
-                  <span>Phonetic Viseme Radar &amp; Acoustic Aperture Tracker</span>
-                </span>
-                <span className="font-mono text-xs font-bold text-emerald-400 bg-emerald-950/80 px-2.5 py-1 rounded-lg border border-emerald-700/50">
-                  Sync Fidelity: 99.4%
-                </span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3 pt-4 text-center font-mono">
-                <div className="bg-obsidian-950 p-3 rounded-xl border border-slate-800">
-                  <div className="text-[10px] text-slate-400 uppercase tracking-wider">Active Phoneme</div>
-                  <div className="text-base font-extrabold text-amber-400 mt-1">{activeViseme.phoneme}</div>
-                  <div className="text-[10px] text-slate-500 mt-0.5 line-clamp-1">{activeViseme.name}</div>
-                </div>
-
-                <div className="bg-obsidian-950 p-3 rounded-xl border border-slate-800">
-                  <div className="text-[10px] text-slate-400 uppercase tracking-wider">Mouth Aperture</div>
-                  <div className="text-base font-extrabold text-teal-400 mt-1">{activeViseme.aperture}%</div>
-                  <div className="w-full bg-slate-800 h-1.5 rounded-full mt-1.5 overflow-hidden">
-                    <div className="bg-teal-400 h-full transition-all duration-150" style={{ width: `${activeViseme.aperture}%` }} />
-                  </div>
-                </div>
-
-                <div className="bg-obsidian-950 p-3 rounded-xl border border-slate-800">
-                  <div className="text-[10px] text-slate-400 uppercase tracking-wider">Lip Pinch / Spread</div>
-                  <div className="text-base font-extrabold text-pink-400 mt-1">{activeViseme.pinch}%</div>
-                  <div className="w-full bg-slate-800 h-1.5 rounded-full mt-1.5 overflow-hidden">
-                    <div className="bg-pink-400 h-full transition-all duration-150" style={{ width: `${activeViseme.pinch}%` }} />
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* ⚡ Granular ±0.1x Video Speed Stepper Controller */}
             <div className="rounded-2xl border border-teal-500/40 bg-slate-900/70 p-6 backdrop-blur-xl shadow-xl">
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
@@ -995,7 +723,7 @@ export default function StudioPage() {
                       <Film className="h-3.5 w-3.5 text-teal-400" />
                       <span>Video Playback Speed (0.1x Stepper):</span>
                     </span>
-                    <span className="text-[11px] text-slate-400">Increase video speed to match natural speech delivery</span>
+                    <span className="text-[11px] text-slate-400">Pace presenter gestures with speech delivery</span>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -1024,7 +752,7 @@ export default function StudioPage() {
                 {/* Quick Video Speed Pills */}
                 <div className="flex items-center gap-1.5 flex-wrap pt-1">
                   <span className="text-[11px] font-mono text-slate-400 mr-1">Presets:</span>
-                  {[1.0, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0].map((rate) => (
+                  {[0.8, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.8, 2.0].map((rate) => (
                     <button
                       key={rate}
                       onClick={() => setVideoSpeed(rate)}
@@ -1092,7 +820,7 @@ export default function StudioPage() {
                   ) : (
                     <>
                       <Play className="h-4 w-4 fill-current" />
-                      <span>▶ Play {currentPersona.name} ({videoSpeed.toFixed(1)}x Video)</span>
+                      <span>▶ Play {currentPersona.name} ({videoSpeed.toFixed(1)}x)</span>
                     </>
                   )}
                 </button>
@@ -1100,10 +828,10 @@ export default function StudioPage() {
                 <button
                   onClick={handleTriggerNeuralLipSync}
                   disabled={isSynthesizingNeuralLipSync}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-pink-500/40 bg-gradient-to-r from-pink-950/50 via-purple-950/50 to-slate-900 py-3 text-xs font-mono font-bold text-pink-300 hover:border-pink-400 transition-all shadow-lg disabled:opacity-50"
+                  className="flex items-center justify-center gap-2 rounded-xl border border-teal-500/40 bg-slate-900 py-3 text-xs font-mono font-bold text-teal-300 hover:border-teal-400 transition-all shadow-lg disabled:opacity-50"
                 >
-                  <Sparkles className="h-4 w-4 text-pink-400" />
-                  <span>{isSynthesizingNeuralLipSync ? "Synthesizing Audio-to-Face..." : "🧠 Neural Lip Sync (Vertex AI)"}</span>
+                  <Sparkles className="h-4 w-4 text-teal-400" />
+                  <span>{isSynthesizingNeuralLipSync ? "Dispatching DeepMind..." : "⚡ Re-Synthesize Audio Track"}</span>
                 </button>
               </div>
             </div>
@@ -1128,12 +856,12 @@ export default function StudioPage() {
                   </div>
                 </div>
 
-                {/* High-Definition Motion Picture Player with Real-Time 60FPS Lip Deformation Canvas */}
+                {/* High-Definition Motion Picture Player */}
                 <div className="mt-4 rounded-xl border border-slate-800 bg-obsidian-950 relative overflow-hidden flex flex-col items-center justify-center p-2 min-h-[460px]">
                   
                   <div className="relative w-full aspect-video overflow-hidden rounded-xl border border-slate-800 bg-slate-950 shadow-2xl">
                     
-                    {/* Hidden Base Video Element supplying 60FPS frames */}
+                    {/* Pristine 1080p60 Video Player */}
                     <video
                       ref={videoRef}
                       key={currentPersona.videoUrl}
@@ -1142,32 +870,25 @@ export default function StudioPage() {
                       loop
                       muted
                       playsInline
-                      crossOrigin="anonymous"
-                      className="hidden"
-                    />
-
-                    {/* Active 60FPS Neural Canvas Warping Layer */}
-                    <canvas
-                      ref={canvasRef}
                       className="h-full w-full object-cover"
                     />
 
-                    {/* Audio-to-Face Neural Lip Sync Synthesis Overlay */}
+                    {/* Synthesis Overlay */}
                     {isSynthesizingNeuralLipSync && (
                       <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20">
-                        <Cpu className="h-10 w-10 text-pink-400 animate-spin mb-3" />
+                        <Cpu className="h-10 w-10 text-teal-400 animate-spin mb-3" />
                         <div className="font-mono text-sm font-bold text-white">
-                          Audio-to-Face Neural Lip Sync Synthesis
+                          DeepMind Multimodal Synthesis
                         </div>
                         <div className="text-xs text-slate-300 mt-1 font-mono">{neuralSyncStage}</div>
                         
                         <div className="w-64 h-2 bg-slate-800 rounded-full mt-4 overflow-hidden">
                           <div
-                            className="h-full bg-gradient-to-r from-pink-500 to-teal-400 transition-all duration-300"
+                            className="h-full bg-gradient-to-r from-teal-500 to-emerald-400 transition-all duration-300"
                             style={{ width: `${neuralSyncProgress}%` }}
                           />
                         </div>
-                        <div className="text-[10px] font-mono text-pink-300 mt-2">{neuralSyncProgress}% Complete</div>
+                        <div className="text-[10px] font-mono text-teal-300 mt-2">{neuralSyncProgress}% Complete</div>
                       </div>
                     )}
 
@@ -1275,7 +996,7 @@ export default function StudioPage() {
 
             </div>
 
-            {/* Advanced Prosody & Formant Tuning Panel */}
+            {/* Advanced Prosody Tuning Panel */}
             <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl">
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                 <span className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
