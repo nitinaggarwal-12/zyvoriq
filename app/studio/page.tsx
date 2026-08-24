@@ -126,7 +126,7 @@ export default function StudioPage() {
       videoUrl: "/assets/video/priya_veo_broadcast.mp4",
       audioUrl: "/assets/audio/priya_deepmind.wav",
       bodyLanguage: "Articulate Indian female CTO with open hand keynote stage gestures",
-      introScript: "Hello! I am Priya, Global Transformation CTO. [dramatic pause] Traditional enterprise pipelines take 14 days and $140,000. Zyvoriq collapses this into 90 seconds with Veritas consensus and Ed25519 provenance."
+      introScript: "Hello everyone! I'm Priya, Global Transformation CTO. Traditional enterprise content pipelines take 14 long days and over $140,000. With Zyvoriq, we collapse that entire lifecycle into just 90 seconds—backed by Veritas cryptographic consensus and Ed25519 provenance!"
     },
     victoria: { 
       name: "Victoria (London)", 
@@ -239,11 +239,10 @@ export default function StudioPage() {
 
   // Virtual Clone Script & Playback
   const [cloneScript, setCloneScript] = useState(
-    "Hello! I am Priya, Global Transformation CTO. [dramatic pause] Traditional enterprise pipelines take 14 days and $140,000. Zyvoriq collapses this into 90 seconds with Veritas consensus and Ed25519 provenance."
+    "Hello everyone! I'm Priya, Global Transformation CTO. Traditional enterprise content pipelines take 14 long days and over $140,000. With Zyvoriq, we collapse that entire lifecycle into just 90 seconds—backed by Veritas cryptographic consensus and Ed25519 provenance!"
   );
   const [isSpeakingClone, setIsSpeakingClone] = useState(false);
   const [spokenWordIndex, setSpokenWordIndex] = useState(-1);
-  const [audioPlaybackProgress, setAudioPlaybackProgress] = useState(0);
 
   const currentPersona = personas[selectedPersona] || personas["priya"];
 
@@ -257,22 +256,14 @@ export default function StudioPage() {
     setActivePitchRate(`Pitch: ${calcPitch} • Rate: ${calcRate}x • Emotion: ${t.name}`);
   }, [selectedPersona, selectedTheme, styleExaggeration, stability, breathDensity, personas]);
 
-  // Audio-Video Tight Synchronization Hook
+  // Smooth Subtitle Progress Tracker
   useEffect(() => {
     const audio = audioRef.current;
-    const video = videoRef.current;
-    if (!audio || !video) return;
+    if (!audio) return;
 
     const handleTimeUpdate = () => {
-      if (audio.duration && video.duration) {
+      if (audio.duration) {
         const progress = audio.currentTime / audio.duration;
-        setAudioPlaybackProgress(progress);
-
-        const targetVideoTime = (audio.currentTime % video.duration);
-        if (Math.abs(video.currentTime - targetVideoTime) > 0.4) {
-          video.currentTime = targetVideoTime;
-        }
-
         const words = cloneScript.split(" ");
         const wordIndex = Math.min(words.length - 1, Math.floor(progress * words.length));
         setSpokenWordIndex(wordIndex);
@@ -282,10 +273,8 @@ export default function StudioPage() {
     const handleAudioEnded = () => {
       setIsSpeakingClone(false);
       setSpokenWordIndex(-1);
-      setAudioPlaybackProgress(0);
-      if (video) {
-        video.pause();
-        video.currentTime = 0;
+      if (videoRef.current) {
+        videoRef.current.pause();
       }
     };
 
@@ -298,7 +287,7 @@ export default function StudioPage() {
     };
   }, [cloneScript, selectedPersona]);
 
-  // Synchronized Persona Voice & Video Playback Trigger
+  // Synchronized Persona Voice & Smooth 60fps Video Playback Trigger
   const handleToggleBroadcast = () => {
     if (isSpeakingClone) {
       if (videoRef.current) {
@@ -315,10 +304,12 @@ export default function StudioPage() {
       return;
     }
 
+    // Play DeepMind 48kHz Neural Audio with smooth natural video playback
     if (currentPersona.audioUrl && audioRef.current && videoRef.current) {
       audioRef.current.currentTime = 0;
       videoRef.current.currentTime = 0;
-      videoRef.current.playbackRate = 0.95;
+      videoRef.current.playbackRate = 1.0; // Native fluid 60fps playback rate
+      
       videoRef.current.play().catch(() => {});
       audioRef.current.play().catch(() => {});
       setIsSpeakingClone(true);
@@ -327,6 +318,7 @@ export default function StudioPage() {
 
     if (videoRef.current) {
       videoRef.current.currentTime = 0;
+      videoRef.current.playbackRate = 1.0;
       videoRef.current.play().catch(() => {});
     }
 
@@ -639,7 +631,7 @@ export default function StudioPage() {
             <span>{activePitchRate}</span>
             <span className="rounded bg-teal-900/80 px-2 py-0.5 text-[10px] text-teal-200 border border-teal-700/50 flex items-center gap-1">
               <Lock className="h-3 w-3 text-emerald-400" />
-              <span>Audio-Video Cadence Lock Active</span>
+              <span>Fluid 60fps Video &amp; 48kHz DeepMind Audio</span>
             </span>
           </div>
         </div>
@@ -813,7 +805,7 @@ export default function StudioPage() {
 
                   <div className="flex items-center gap-2">
                     <span className="rounded bg-teal-950 px-2 py-0.5 text-[10px] font-mono text-teal-300 border border-teal-800/40">
-                      {currentPersona.gender.toUpperCase()} • 1080P60 MOTION
+                      {currentPersona.gender.toUpperCase()} • 1080P60 FLUID MOTION
                     </span>
                   </div>
                 </div>
@@ -915,7 +907,7 @@ export default function StudioPage() {
               <div className="pt-4 border-t border-slate-800 flex items-center justify-between flex-wrap gap-4 text-xs font-mono">
                 <div className="flex items-center gap-4 text-slate-400">
                   <span>Pose: <b className="text-white">{currentPersona.bodyLanguage}</b></span>
-                  <span>Cadence Lock: <b className="text-emerald-400">&lt; 10ms Sync</b></span>
+                  <span>Frame Rate: <b className="text-emerald-400">60 FPS Native</b></span>
                 </div>
 
                 <button
