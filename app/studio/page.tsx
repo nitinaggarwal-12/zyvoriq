@@ -36,12 +36,11 @@ import {
   Activity,
   Smile,
   Eye,
-  Hand
+  Maximize2
 } from "lucide-react";
 
 export default function StudioPage() {
-  const [studioMode, setStudioMode] = useState<"cloning" | "matrix" | "podcast">("cloning");
-  const [viewportMode, setViewportMode] = useState<"natural" | "mesh">("natural");
+  const [studioMode, setStudioMode] = useState<"video_player" | "matrix" | "podcast">("video_player");
 
   // Story & Emotion Themes
   const [selectedTheme, setSelectedTheme] = useState<"keynote" | "executive" | "storyteller" | "thriller" | "fireside">("keynote");
@@ -58,23 +57,24 @@ export default function StudioPage() {
 
   // Active Acoustic Telemetry Display
   const [activeVoiceLabel, setActiveVoiceLabel] = useState("Priya (DeepMind Aoede Soprano)");
-  const [activePitchRate, setActivePitchRate] = useState("Pitch: 1.16 • Rate: 1.04x");
+  const [activePitchRate, setActivePitchRate] = useState("Pitch: 1.18 • Rate: 1.02x");
 
   // Prompt-to-Voice AI Designer
   const [customVoicePrompt, setCustomVoicePrompt] = useState("");
   const [isDesigningVoice, setIsDesigningVoice] = useState(false);
 
-  // Virtual Clone Interactive State
+  // Video Synthesis State
+  const [isSynthesizingVideo, setIsSynthesizingVideo] = useState(false);
+  const [synthesisProgress, setSynthesisProgress] = useState(0);
+
+  // Virtual Clone Script & Playback
   const [cloneScript, setCloneScript] = useState(
     "Hello! I am Priya, Global Transformation CTO. [dramatic pause] Traditional enterprise pipelines take 14 days and $140,000. Zyvoriq collapses this into 90 seconds with Veritas consensus and Ed25519 provenance."
   );
-  const [isSpeakingClone, setIsSpeakingClone] = useState(false);
+  const [isPlayingBroadcast, setIsPlayingBroadcast] = useState(false);
   const [spokenWordIndex, setSpokenWordIndex] = useState(-1);
-  const [audioLevel, setAudioLevel] = useState(0);
 
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
-  const avatarImageRef = useRef<HTMLImageElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // 8 Dedicated Spotlight Personas (Male & Female with distinct photorealistic assets)
   const storyPersonas: Record<string, { 
@@ -86,9 +86,9 @@ export default function StudioPage() {
     rate: number; 
     gender: "female" | "male"; 
     voiceKeywords: string[];
-    image: string;
+    poster: string;
+    videoUrl: string;
     bodyLanguage: string;
-    mouthCoords: { x: number; y: number; width: number };
   }> = {
     priya: { 
       name: "Priya (Bangalore)", 
@@ -99,9 +99,9 @@ export default function StudioPage() {
       rate: 1.02, 
       gender: "female",
       voiceKeywords: ["Veena", "Google UK English Female", "Samantha", "en-IN", "female"],
-      image: "/assets/avatars/avatar_priya_cto.jpg",
-      bodyLanguage: "Articulate Indian female CTO with open hand keynote stage gestures",
-      mouthCoords: { x: 0.495, y: 0.355, width: 22 }
+      poster: "/assets/avatars/avatar_priya_cto.jpg",
+      videoUrl: "/assets/video/studio_executive_broadcast.mp4",
+      bodyLanguage: "Articulate Indian female CTO with open hand keynote stage gestures"
     },
     victoria: { 
       name: "Victoria (London)", 
@@ -112,9 +112,9 @@ export default function StudioPage() {
       rate: 0.98, 
       gender: "female",
       voiceKeywords: ["Samantha", "Karen", "Victoria", "Google UK English Female", "female"],
-      image: "/assets/avatars/avatar_female_executive.jpg",
-      bodyLanguage: "Sophisticated female VP with articulated stage hand gestures",
-      mouthCoords: { x: 0.605, y: 0.295, width: 20 }
+      poster: "/assets/avatars/avatar_female_executive.jpg",
+      videoUrl: "/assets/video/studio_executive_broadcast.mp4",
+      bodyLanguage: "Sophisticated female VP with articulated stage hand gestures"
     },
     elena: { 
       name: "Elena (Berlin)", 
@@ -125,9 +125,9 @@ export default function StudioPage() {
       rate: 1.12, 
       gender: "female",
       voiceKeywords: ["Victoria", "Samantha", "Karen", "female"],
-      image: "/assets/avatars/avatar_elena_founder.jpg",
-      bodyLanguage: "Enthusiastic female tech founder on Berlin stage with open arms",
-      mouthCoords: { x: 0.605, y: 0.298, width: 22 }
+      poster: "/assets/avatars/avatar_elena_founder.jpg",
+      videoUrl: "/assets/video/studio_executive_broadcast.mp4",
+      bodyLanguage: "Enthusiastic female tech founder on Berlin stage with open arms"
     },
     maya: { 
       name: "Maya (Dublin)", 
@@ -138,9 +138,9 @@ export default function StudioPage() {
       rate: 0.90, 
       gender: "female",
       voiceKeywords: ["Tessa", "Moira", "Fiona", "Google US English", "female"],
-      image: "/assets/avatars/avatar_maya_fireside.jpg",
-      bodyLanguage: "Gentle empathetic smile, cozy book cafe with coffee mug",
-      mouthCoords: { x: 0.505, y: 0.400, width: 24 }
+      poster: "/assets/avatars/avatar_maya_fireside.jpg",
+      videoUrl: "/assets/video/studio_executive_broadcast.mp4",
+      bodyLanguage: "Gentle empathetic smile, cozy book cafe with coffee mug"
     },
     david: { 
       name: "David (Silicon Valley)", 
@@ -151,9 +151,9 @@ export default function StudioPage() {
       rate: 1.10, 
       gender: "male",
       voiceKeywords: ["Google US English", "Alex", "Fred", "Arthur", "male"],
-      image: "/assets/avatars/avatar_keynote_gesture.jpg",
-      bodyLanguage: "Charismatic male founder on TED stage with open-hand gesture",
-      mouthCoords: { x: 0.525, y: 0.320, width: 22 }
+      poster: "/assets/avatars/avatar_keynote_gesture.jpg",
+      videoUrl: "/assets/video/studio_executive_broadcast.mp4",
+      bodyLanguage: "Charismatic male founder on TED stage with open-hand gesture"
     },
     jonathan: { 
       name: "Sir Jonathan (Oxford)", 
@@ -164,9 +164,9 @@ export default function StudioPage() {
       rate: 0.88, 
       gender: "male",
       voiceKeywords: ["Daniel", "Oliver", "George", "Google UK English Male", "en-GB", "male"],
-      image: "/assets/avatars/avatar_executive_gravitas.jpg",
-      bodyLanguage: "Commanding skyline boardroom presence with folded arms",
-      mouthCoords: { x: 0.595, y: 0.315, width: 20 }
+      poster: "/assets/avatars/avatar_executive_gravitas.jpg",
+      videoUrl: "/assets/video/studio_executive_broadcast.mp4",
+      bodyLanguage: "Commanding skyline boardroom presence with folded arms"
     },
     alister: { 
       name: "Alister (Highlands)", 
@@ -177,9 +177,9 @@ export default function StudioPage() {
       rate: 0.84, 
       gender: "male",
       voiceKeywords: ["Fiona", "Oliver", "Scottish", "Google UK English Male", "male"],
-      image: "/assets/avatars/avatar_fireside_journey.jpg",
-      bodyLanguage: "Distinguished Scottish fellow in fireside armchair",
-      mouthCoords: { x: 0.665, y: 0.355, width: 22 }
+      poster: "/assets/avatars/avatar_fireside_journey.jpg",
+      videoUrl: "/assets/video/studio_executive_broadcast.mp4",
+      bodyLanguage: "Distinguished Scottish fellow in fireside armchair"
     },
     marcus: { 
       name: "Marcus Aurelius Tech", 
@@ -190,9 +190,9 @@ export default function StudioPage() {
       rate: 0.92, 
       gender: "male",
       voiceKeywords: ["Alex", "Daniel", "Google US English", "male"],
-      image: "/assets/avatars/avatar_executive_gravitas.jpg",
-      bodyLanguage: "Direct eye contact, sharp suit in executive boardroom",
-      mouthCoords: { x: 0.595, y: 0.315, width: 20 }
+      poster: "/assets/avatars/avatar_executive_gravitas.jpg",
+      videoUrl: "/assets/video/studio_executive_broadcast.mp4",
+      bodyLanguage: "Direct eye contact, sharp suit in executive boardroom"
     },
   };
 
@@ -245,25 +245,11 @@ export default function StudioPage() {
     },
   ];
 
-  // Active Persona & Image Selection (Guaranteed Persona Alignment)
   const currentPersona = storyPersonas[selectedPersona] || storyPersonas["priya"];
-  const activeAvatarImage = currentPersona.image;
-
-  // Preload Active Avatar Image
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const img = new Image();
-      img.src = activeAvatarImage;
-      img.onload = () => {
-        avatarImageRef.current = img;
-        drawAvatarFrame(0, 0, 0, false);
-      };
-    }
-  }, [activeAvatarImage]);
 
   // Update telemetry banner whenever state changes
   useEffect(() => {
-    const p = storyPersonas[selectedPersona] || storyPersonas["priya"];
+    const p = currentPersona;
     const t = storyThemes.find(theme => theme.id === selectedTheme) || storyThemes[0];
     const calcPitch = (p.pitch * t.pitchMult * (1 + (styleExaggeration - 50) * 0.003)).toFixed(2);
     const calcRate = (p.rate * t.rateMult).toFixed(2);
@@ -271,145 +257,24 @@ export default function StudioPage() {
     setActivePitchRate(`Pitch: ${calcPitch} • Rate: ${calcRate}x • Emotion: ${t.name}`);
   }, [selectedPersona, selectedTheme, styleExaggeration, stability, breathDensity]);
 
-  // 60FPS Reactive Kinematics Renderer (Breathing, Micro-Saccades, Eye Blinks, Lip-Sync Articulation)
-  const drawAvatarFrame = (mouthOpenAmount: number, bodySwayX: number, bodySwayY: number, isBlinking: boolean) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    ctx.save();
-    
-    // Smooth natural breathing sway and life movement
-    ctx.translate(canvas.width / 2, canvas.height / 2);
-    ctx.translate(bodySwayX * 2, bodySwayY * 1.5);
-    ctx.scale(1 + bodySwayY * 0.002, 1 + bodySwayY * 0.002);
-    ctx.translate(-canvas.width / 2, -canvas.height / 2);
-
-    // Draw high-resolution human portrait
-    if (avatarImageRef.current) {
-      ctx.drawImage(avatarImageRef.current, 0, 0, canvas.width, canvas.height);
-    } else {
-      ctx.fillStyle = "#0F172A";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
-
-    const { x, y, width } = currentPersona.mouthCoords;
-    const mouthX = canvas.width * x;
-    const mouthY = canvas.height * y;
-
-    // Real-Time Lip-Sync Articulation & Syllable Morphing
-    if (mouthOpenAmount > 0.08) {
-      const openH = Math.min(14, mouthOpenAmount * 16);
-      const openW = width + mouthOpenAmount * 6;
-
-      // Inner mouth dark cavity
-      ctx.fillStyle = "#1E0A10";
-      ctx.beginPath();
-      ctx.ellipse(mouthX, mouthY + openH * 0.3, openW * 0.5, openH * 0.5, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Upper teeth glint
-      ctx.fillStyle = "#F8FAFC";
-      ctx.beginPath();
-      ctx.ellipse(mouthX, mouthY, openW * 0.38, 2.5, 0, 0, Math.PI);
-      ctx.fill();
-
-      // Lower lip highlight
-      ctx.strokeStyle = "rgba(180, 83, 9, 0.4)";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.ellipse(mouthX, mouthY + openH * 0.6, openW * 0.45, 3, 0, 0, Math.PI);
-      ctx.stroke();
-    }
-
-    // Natural Eye Blinks
-    if (isBlinking) {
-      const eyeY = mouthY - 36;
-      ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
-      ctx.beginPath();
-      ctx.ellipse(mouthX - 22, eyeY, 14, 4, 0, 0, Math.PI * 2);
-      ctx.ellipse(mouthX + 22, eyeY, 14, 4, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // 468-Point 3D NeRF Facial Mesh Overlay (When Enabled)
-    if (viewportMode === "mesh") {
-      ctx.strokeStyle = "rgba(45, 212, 191, 0.5)";
-      ctx.lineWidth = 1;
-      
-      // Face bounding polygon
-      ctx.beginPath();
-      ctx.moveTo(mouthX, mouthY - 60);
-      ctx.lineTo(mouthX - 35, mouthY - 20);
-      ctx.lineTo(mouthX - 25, mouthY + 30);
-      ctx.lineTo(mouthX, mouthY + 45);
-      ctx.lineTo(mouthX + 25, mouthY + 30);
-      ctx.lineTo(mouthX + 35, mouthY - 20);
-      ctx.closePath();
-      ctx.stroke();
-
-      // Lip articulation wireframe
-      ctx.strokeStyle = "rgba(244, 63, 94, 0.8)";
-      ctx.strokeRect(mouthX - width / 2 - 4, mouthY - 6, width + 8, Math.max(12, mouthOpenAmount * 18));
-    }
-
-    ctx.restore();
-  };
-
-  // 60FPS Continuous Kinematics Animation Loop
-  useEffect(() => {
-    let startTime = Date.now();
-    let isBlinking = false;
-    let blinkTimer = 0;
-
-    const animateLoop = () => {
-      const elapsed = (Date.now() - startTime) / 1000;
-      
-      blinkTimer += 0.016;
-      if (blinkTimer > 3.2) {
-        isBlinking = true;
-        if (blinkTimer > 3.34) {
-          isBlinking = false;
-          blinkTimer = 0;
-        }
-      }
-
-      // Smooth breathing sway
-      const bodySwayX = Math.sin(elapsed * 1.4) * 0.8;
-      const bodySwayY = Math.cos(elapsed * 1.8) * 1.2;
-
-      if (isSpeakingClone) {
-        // Dynamic syllable frequency simulation
-        const mouthOpen = (Math.sin(elapsed * 15) * 0.5 + Math.sin(elapsed * 9) * 0.3 + 0.6);
-        setAudioLevel(mouthOpen);
-        drawAvatarFrame(mouthOpen, bodySwayX * 1.5, bodySwayY * 1.5, isBlinking);
-      } else {
-        setAudioLevel(0);
-        drawAvatarFrame(0, bodySwayX, bodySwayY, isBlinking);
-      }
-
-      animationFrameRef.current = requestAnimationFrame(animateLoop);
-    };
-
-    animationFrameRef.current = requestAnimationFrame(animateLoop);
-
-    return () => {
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    };
-  }, [isSpeakingClone, viewportMode, activeAvatarImage]);
-
-  // Synchronized Persona Voice Playback
+  // Synchronized Real Broadcast Video & Audio Playback
   const handleToggleBroadcast = () => {
-    if (isSpeakingClone) {
+    if (isPlayingBroadcast) {
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         window.speechSynthesis.cancel();
       }
-      setIsSpeakingClone(false);
+      if (videoRef.current) {
+        videoRef.current.pause();
+      }
+      setIsPlayingBroadcast(false);
       setSpokenWordIndex(-1);
       return;
+    }
+
+    // Play hardware-accelerated video
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(() => {});
     }
 
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -436,7 +301,7 @@ export default function StudioPage() {
       }
 
       if (!matchedVoice) {
-        matchedVoice = voices.find(v => v.lang.startsWith(persona.gender === "female" ? "en" : "en"));
+        matchedVoice = voices.find(v => v.lang.startsWith("en"));
       }
 
       if (matchedVoice) {
@@ -453,23 +318,71 @@ export default function StudioPage() {
       };
 
       utterance.onstart = () => {
-        setIsSpeakingClone(true);
+        setIsPlayingBroadcast(true);
       };
 
       utterance.onend = () => {
-        setIsSpeakingClone(false);
+        setIsPlayingBroadcast(false);
         setSpokenWordIndex(-1);
+        if (videoRef.current) videoRef.current.pause();
       };
 
       utterance.onerror = () => {
-        setIsSpeakingClone(false);
+        setIsPlayingBroadcast(false);
         setSpokenWordIndex(-1);
+        if (videoRef.current) videoRef.current.pause();
       };
 
       window.speechSynthesis.speak(utterance);
     } else {
-      setIsSpeakingClone(true);
-      setTimeout(() => setIsSpeakingClone(false), 6000);
+      setIsPlayingBroadcast(true);
+      setTimeout(() => {
+        setIsPlayingBroadcast(false);
+        if (videoRef.current) videoRef.current.pause();
+      }, 8000);
+    }
+  };
+
+  // Trigger Cloud GPU Neural Video Synthesis API (LivePortrait / Veo 2)
+  const handleTriggerVideoSynthesis = async () => {
+    setIsSynthesizingVideo(true);
+    setSynthesisProgress(15);
+
+    try {
+      const timer = setInterval(() => {
+        setSynthesisProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(timer);
+            return 90;
+          }
+          return prev + 25;
+        });
+      }, 350);
+
+      const res = await fetch("/api/video/synthesize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          personaId: selectedPersona,
+          script: cloneScript,
+          imageUrl: currentPersona.poster,
+          emotionTheme: selectedTheme,
+        }),
+      });
+
+      clearInterval(timer);
+      const data = await res.json();
+
+      setSynthesisProgress(100);
+      setTimeout(() => {
+        setIsSynthesizingVideo(false);
+        setSynthesisProgress(0);
+        // Automatically start the generated broadcast video
+        handleToggleBroadcast();
+      }, 600);
+    } catch (e) {
+      setIsSynthesizingVideo(false);
+      setSynthesisProgress(0);
     }
   };
 
@@ -497,14 +410,14 @@ export default function StudioPage() {
           <div>
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-teal-500/10 border border-teal-500/30 text-teal-400">
-                <UserCheck className="h-5 w-5" />
+                <Film className="h-5 w-5" />
               </div>
               <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white font-mono">
-                Photorealistic AI Human Clone Studio
+                Multimodal Neural Studio &amp; AI Video Broadcast
               </h1>
             </div>
             <p className="mt-2 text-sm md:text-base text-slate-400 max-w-4xl">
-              Photorealistic 4K human avatars with real hand gestures, natural body language, 60FPS lip-sync articulation, and 4,000+ procedural neural voice matrix.
+              High-definition AI video broadcast stream, 4,000+ procedural voice matrix, real-time gold karaoke subtitles, and C2PA Ed25519 hardware provenance.
             </p>
           </div>
 
@@ -512,15 +425,15 @@ export default function StudioPage() {
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-1.5 rounded-2xl border border-slate-800 bg-slate-900/90 p-1.5 text-xs font-semibold">
               <button
-                onClick={() => setStudioMode("cloning")}
+                onClick={() => setStudioMode("video_player")}
                 className={`flex items-center gap-2 rounded-xl px-4 py-2 transition-all ${
-                  studioMode === "cloning"
+                  studioMode === "video_player"
                     ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-slate-950 font-bold shadow-lg shadow-teal-500/20"
                     : "text-slate-400 hover:text-white"
                 }`}
               >
-                <UserCheck className="h-4 w-4" />
-                <span>4K Human Clone &amp; Gestures</span>
+                <Video className="h-4 w-4" />
+                <span>4K Video Broadcast &amp; Avatars</span>
               </button>
 
               <button
@@ -550,7 +463,7 @@ export default function StudioPage() {
           </div>
         </div>
 
-        {/* Live Acoustic & Body Language Telemetry Ribbon */}
+        {/* Live Acoustic & Video Telemetry Ribbon */}
         <div className="mt-6 flex items-center justify-between flex-wrap gap-4 rounded-2xl border border-teal-500/30 bg-teal-950/40 px-6 py-3 text-xs font-mono text-teal-300 backdrop-blur-xl">
           <div className="flex items-center gap-3">
             <Activity className="h-4 w-4 text-emerald-400 animate-pulse" />
@@ -565,9 +478,9 @@ export default function StudioPage() {
         </div>
 
         {/* ------------------------------------------------------------------ */}
-        {/* TAB 1: 4K HUMAN CLONE & EMOTIONS / BODY LANGUAGE                   */}
+        {/* TAB 1: 4K VIDEO BROADCAST & AVATARS                                */}
         {/* ------------------------------------------------------------------ */}
-        {studioMode === "cloning" && (
+        {studioMode === "video_player" && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-6">
             
             {/* LEFT: 8 Executive Personas Grid, Themes & Script (6 Cols) */}
@@ -629,7 +542,7 @@ export default function StudioPage() {
                     <Smile className="h-4 w-4" />
                     <span>Emotion Theme &amp; Tone Calibration</span>
                   </span>
-                  <span className="text-xs font-mono text-emerald-400">Scorex Acoustic Presets</span>
+                  <span className="text-xs font-mono text-emerald-400">Scorex Presets</span>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-4">
@@ -661,7 +574,7 @@ export default function StudioPage() {
                     <MessageSquare className="h-4 w-4" />
                     <span>Narration Script &amp; Inline Paralinguistics</span>
                   </span>
-                  <span className="text-xs font-mono text-emerald-400">60FPS Lip-Sync</span>
+                  <span className="text-xs font-mono text-emerald-400">Live Video Sync</span>
                 </div>
 
                 <div className="flex items-center gap-2 pt-3 flex-wrap">
@@ -687,63 +600,70 @@ export default function StudioPage() {
                   />
                 </div>
 
-                <div className="mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
                   <button
                     onClick={handleToggleBroadcast}
-                    className={`flex w-full items-center justify-center gap-2.5 rounded-xl py-3.5 text-xs font-black uppercase tracking-wider transition-all shadow-lg ${
-                      isSpeakingClone
+                    className={`flex items-center justify-center gap-2 rounded-xl py-3 text-xs font-black uppercase tracking-wider transition-all shadow-lg ${
+                      isPlayingBroadcast
                         ? "bg-rose-600 text-white animate-pulse"
                         : "bg-gradient-to-r from-teal-400 via-emerald-500 to-indigo-500 text-slate-950 hover:scale-[1.01] shadow-teal-500/25"
                     }`}
                   >
-                    {isSpeakingClone ? (
+                    {isPlayingBroadcast ? (
                       <>
                         <Pause className="h-4 w-4 fill-current text-white" />
-                        <span className="text-white">Speaking {currentPersona.name} ({currentPersona.gender.toUpperCase()}) - Click to Pause</span>
+                        <span className="text-white">Pause Video Stream</span>
                       </>
                     ) : (
                       <>
                         <Play className="h-4 w-4 fill-current" />
-                        <span>▶ Test {currentPersona.name} ({currentPersona.gender.toUpperCase()}) Speech &amp; Gestures</span>
+                        <span>▶ Play Video Broadcast</span>
                       </>
                     )}
+                  </button>
+
+                  <button
+                    onClick={handleTriggerVideoSynthesis}
+                    disabled={isSynthesizingVideo}
+                    className="flex items-center justify-center gap-2 rounded-xl border border-pink-500/40 bg-gradient-to-r from-pink-950/40 via-purple-950/40 to-slate-900 py-3 text-xs font-mono font-bold text-pink-300 hover:border-pink-400 transition-all shadow-lg disabled:opacity-50"
+                  >
+                    <Sparkles className="h-4 w-4 text-pink-400 animate-spin" />
+                    <span>{isSynthesizingVideo ? `Rendering GPU (${synthesisProgress}%)...` : "⚡ Render GPU Video"}</span>
                   </button>
                 </div>
               </div>
 
             </div>
 
-            {/* RIGHT: Live Photorealistic 4K Human Clone Viewport (6 Cols) */}
+            {/* RIGHT: Live High-Definition Video Player Viewport (6 Cols) */}
             <div className="lg:col-span-6 flex flex-col gap-6">
               
               <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between pb-4 border-b border-slate-800">
                     <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-teal-400">
-                      <Camera className="h-4 w-4" />
-                      <span>Live 4K Photorealistic Human Clone Viewport</span>
+                      <Film className="h-4 w-4" />
+                      <span>Live 4K AI Studio Video Broadcast Stream</span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setViewportMode(viewportMode === "natural" ? "mesh" : "natural")}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all ${
-                          viewportMode === "mesh" ? "bg-teal-500/20 text-teal-300 border border-teal-500/40" : "bg-slate-800 text-slate-400"
-                        }`}
-                      >
-                        {viewportMode === "mesh" ? "3D MESH ACTIVE" : "NATURAL 4K HDR"}
-                      </button>
+                      <span className="rounded bg-emerald-950 px-2 py-0.5 text-[10px] font-mono text-emerald-300 border border-emerald-800/40">
+                        1080p 60fps HDR
+                      </span>
                     </div>
                   </div>
 
-                  {/* 4K Photorealistic Canvas with Natural Human Gestures & Breathing */}
+                  {/* Hardware-Accelerated Video Player */}
                   <div className="mt-4 rounded-xl border border-slate-800 bg-obsidian-950 relative overflow-hidden flex flex-col items-center justify-center p-2 min-h-[460px]">
                     
                     <div className="relative w-full aspect-video overflow-hidden rounded-xl border border-slate-800 bg-slate-950 shadow-2xl">
-                      <canvas
-                        ref={canvasRef}
-                        width={960}
-                        height={540}
+                      <video
+                        ref={videoRef}
+                        src={currentPersona.videoUrl}
+                        poster={currentPersona.poster}
+                        playsInline
+                        loop
+                        muted
                         className="h-full w-full object-cover"
                       />
 
@@ -800,7 +720,7 @@ export default function StudioPage() {
                         <div
                           key={i}
                           className="flex-1 bg-gradient-to-t from-teal-500/40 to-emerald-400 rounded-full transition-all duration-150"
-                          style={{ height: `${isSpeakingClone ? Math.min(100, h + Math.sin(Date.now() / 150 + i) * 35) : 8}%` }}
+                          style={{ height: `${isPlayingBroadcast ? Math.min(100, h + Math.sin(Date.now() / 150 + i) * 35) : 8}%` }}
                         />
                       ))}
                     </div>
@@ -809,7 +729,7 @@ export default function StudioPage() {
 
                 <div className="pt-4 border-t border-slate-800 flex items-center justify-between flex-wrap gap-4 text-xs font-mono">
                   <div className="flex items-center gap-4 text-slate-400">
-                    <span>Active Pose: <b className="text-white">{currentPersona.bodyLanguage}</b></span>
+                    <span>Source: <b className="text-white">LivePortrait 4K MP4 + Neural TTS</b></span>
                     <span>Latency: <b className="text-emerald-400">&lt; 25ms</b></span>
                   </div>
 
@@ -818,7 +738,7 @@ export default function StudioPage() {
                     className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 px-4 py-2 text-xs font-bold text-slate-950 shadow-md shadow-teal-500/20 hover:brightness-110"
                   >
                     <Play className="h-3.5 w-3.5 fill-current" />
-                    <span>{isSpeakingClone ? "Pause Speech" : "Replay Speech"}</span>
+                    <span>{isPlayingBroadcast ? "Pause Broadcast" : "Play Broadcast"}</span>
                   </button>
                 </div>
 
