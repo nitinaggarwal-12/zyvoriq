@@ -40,7 +40,8 @@ import {
   Lock,
   Plus,
   X,
-  UserPlus
+  UserPlus,
+  Gauge
 } from "lucide-react";
 
 interface PersonaConfig {
@@ -206,8 +207,9 @@ export default function StudioPage() {
   const [selectedTheme, setSelectedTheme] = useState<"keynote" | "executive" | "storyteller" | "thriller" | "fireside">("keynote");
   const [selectedPersona, setSelectedPersona] = useState("priya");
   const [selectedBaseModel, setSelectedBaseModel] = useState<"Charon" | "Aoede" | "Puck" | "Kore" | "Fenrir">("Aoede");
-  const [selectedAccent, setSelectedAccent] = useState("in_bangalore");
-  const [selectedArchetype, setSelectedArchetype] = useState("chief_architect");
+
+  // Speed & Tempo Controller (0.5x to 2.5x)
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.25);
 
   // Advanced Prosody Sliders
   const [stability, setStability] = useState(85);
@@ -216,7 +218,7 @@ export default function StudioPage() {
 
   // Active Acoustic Telemetry Display
   const [activeVoiceLabel, setActiveVoiceLabel] = useState("Priya (DeepMind Aoede Soprano)");
-  const [activePitchRate, setActivePitchRate] = useState("Pitch: 1.18 • Rate: 1.02x");
+  const [activePitchRate, setActivePitchRate] = useState("Pitch: 1.18 • Speed: 1.25x");
 
   // Custom Persona Creation Modal State
   const [isCreatingPersona, setIsCreatingPersona] = useState(false);
@@ -251,10 +253,19 @@ export default function StudioPage() {
     const p = currentPersona;
     const t = storyThemes.find(theme => theme.id === selectedTheme) || storyThemes[0];
     const calcPitch = (p.pitch * t.pitchMult * (1 + (styleExaggeration - 50) * 0.003)).toFixed(2);
-    const calcRate = (p.rate * t.rateMult).toFixed(2);
     setActiveVoiceLabel(`${p.name} (${p.base} • ${p.vibe})`);
-    setActivePitchRate(`Pitch: ${calcPitch} • Rate: ${calcRate}x • Emotion: ${t.name}`);
-  }, [selectedPersona, selectedTheme, styleExaggeration, stability, breathDensity, personas]);
+    setActivePitchRate(`Pitch: ${calcPitch} • Speed: ${playbackSpeed}x • Emotion: ${t.name}`);
+  }, [selectedPersona, selectedTheme, styleExaggeration, stability, breathDensity, personas, playbackSpeed]);
+
+  // Update Video and Audio Playback Rate whenever speed state changes
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = playbackSpeed;
+    }
+    if (audioRef.current) {
+      audioRef.current.playbackRate = playbackSpeed;
+    }
+  }, [playbackSpeed]);
 
   // Smooth Subtitle Progress Tracker
   useEffect(() => {
@@ -287,7 +298,7 @@ export default function StudioPage() {
     };
   }, [cloneScript, selectedPersona]);
 
-  // Synchronized Persona Voice & Smooth 60fps Video Playback Trigger
+  // Synchronized Persona Voice & Video Playback Trigger with Speed Multiplier
   const handleToggleBroadcast = () => {
     if (isSpeakingClone) {
       if (videoRef.current) {
@@ -304,11 +315,12 @@ export default function StudioPage() {
       return;
     }
 
-    // Play DeepMind 48kHz Neural Audio with smooth natural video playback
+    // Play DeepMind 48kHz Neural Audio with speed multiplier
     if (currentPersona.audioUrl && audioRef.current && videoRef.current) {
       audioRef.current.currentTime = 0;
       videoRef.current.currentTime = 0;
-      videoRef.current.playbackRate = 1.0; // Native fluid 60fps playback rate
+      audioRef.current.playbackRate = playbackSpeed;
+      videoRef.current.playbackRate = playbackSpeed;
       
       videoRef.current.play().catch(() => {});
       audioRef.current.play().catch(() => {});
@@ -318,7 +330,7 @@ export default function StudioPage() {
 
     if (videoRef.current) {
       videoRef.current.currentTime = 0;
-      videoRef.current.playbackRate = 1.0;
+      videoRef.current.playbackRate = playbackSpeed;
       videoRef.current.play().catch(() => {});
     }
 
@@ -332,7 +344,7 @@ export default function StudioPage() {
       const theme = storyThemes.find(t => t.id === selectedTheme) || storyThemes[0];
 
       const computedPitch = Math.max(0.5, Math.min(2.0, persona.pitch * theme.pitchMult * (1 + (styleExaggeration - 50) * 0.003)));
-      const computedRate = Math.max(0.5, Math.min(2.0, persona.rate * theme.rateMult));
+      const computedRate = Math.max(0.5, Math.min(2.5, persona.rate * theme.rateMult * (playbackSpeed / 1.0)));
 
       utterance.pitch = Number(computedPitch.toFixed(2));
       utterance.rate = Number(computedRate.toFixed(2));
@@ -387,7 +399,7 @@ export default function StudioPage() {
       setIsSpeakingClone(true);
       setTimeout(() => {
         setIsSpeakingClone(false);
-      }, 6000);
+      }, 6000 / playbackSpeed);
     }
   };
 
@@ -605,7 +617,7 @@ export default function StudioPage() {
               </h1>
             </div>
             <p className="mt-2 text-sm md:text-base text-slate-400 max-w-4xl">
-              100% Native Google DeepMind architecture: Veo 3.1 Fast 1080p60 motion pictures, Gemini 3.1 Flash 48kHz neural voice synthesis, custom persona generator, and C2PA cryptographic provenance.
+              100% Native Google DeepMind architecture: Veo 3.1 Fast 1080p60 motion pictures, Gemini 3.1 Flash 48kHz neural voice synthesis, dynamic speed/tempo controls, and C2PA cryptographic provenance.
             </p>
           </div>
 
@@ -630,8 +642,8 @@ export default function StudioPage() {
           <div className="flex items-center gap-4 text-slate-300">
             <span>{activePitchRate}</span>
             <span className="rounded bg-teal-900/80 px-2 py-0.5 text-[10px] text-teal-200 border border-teal-700/50 flex items-center gap-1">
-              <Lock className="h-3 w-3 text-emerald-400" />
-              <span>Fluid 60fps Video &amp; 48kHz DeepMind Audio</span>
+              <Gauge className="h-3 w-3 text-emerald-400" />
+              <span>Speed: {playbackSpeed}x Active</span>
             </span>
           </div>
         </div>
@@ -641,7 +653,7 @@ export default function StudioPage() {
         {/* ------------------------------------------------------------------ */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-6">
           
-          {/* LEFT: Personas Grid & Controls (6 Cols) */}
+          {/* LEFT: Personas Grid, Themes, Script & Speed Controls (6 Cols) */}
           <div className="lg:col-span-6 flex flex-col gap-6">
             
             {/* Personas Grid */}
@@ -688,6 +700,60 @@ export default function StudioPage() {
                     <div className="text-[11px] text-slate-400 mt-0.5 line-clamp-1 italic">{p.bodyLanguage}</div>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* ⚡ Video & Audio Speed / Tempo Multiplier Controller */}
+            <div className="rounded-2xl border border-teal-500/40 bg-slate-900/70 p-6 backdrop-blur-xl shadow-xl">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <span className="text-xs font-bold uppercase tracking-wider text-teal-300 flex items-center gap-2">
+                  <Gauge className="h-4 w-4 text-emerald-400" />
+                  <span>Video &amp; Audio Playback Speed Multiplier</span>
+                </span>
+                <span className="font-mono text-xs font-bold text-emerald-400 bg-emerald-950/80 px-2.5 py-1 rounded-lg border border-emerald-700/50">
+                  {playbackSpeed.toFixed(2)}x Speed
+                </span>
+              </div>
+
+              {/* Speed Preset Quick Buttons */}
+              <div className="grid grid-cols-5 gap-2 pt-4">
+                {[
+                  { label: "0.8x Slow", val: 0.8 },
+                  { label: "1.0x Normal", val: 1.0 },
+                  { label: "1.25x Natural", val: 1.25 },
+                  { label: "1.5x Brisk", val: 1.5 },
+                  { label: "2.0x Fast", val: 2.0 },
+                ].map((item) => (
+                  <button
+                    key={item.val}
+                    onClick={() => setPlaybackSpeed(item.val)}
+                    className={`py-2 px-1 text-center rounded-xl border text-xs font-mono font-bold transition-all ${
+                      playbackSpeed === item.val
+                        ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-slate-950 border-teal-400 shadow-md shadow-teal-500/20"
+                        : "bg-obsidian-950 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Continuous Precision Slider */}
+              <div className="pt-4">
+                <div className="flex justify-between text-xs font-mono text-slate-400 mb-1.5">
+                  <span>0.50x (Slow Motion)</span>
+                  <span className="text-teal-300 font-bold">Custom Tempo: {playbackSpeed.toFixed(2)}x</span>
+                  <span>2.50x (Double Speed)</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.50"
+                  max="2.50"
+                  step="0.05"
+                  value={playbackSpeed}
+                  onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
+                  className="w-full accent-teal-400 cursor-pointer h-2 bg-slate-800 rounded-lg"
+                />
               </div>
             </div>
 
@@ -774,7 +840,7 @@ export default function StudioPage() {
                   ) : (
                     <>
                       <Play className="h-4 w-4 fill-current" />
-                      <span>▶ Play {currentPersona.name} Motion Picture</span>
+                      <span>▶ Play {currentPersona.name} ({playbackSpeed}x)</span>
                     </>
                   )}
                 </button>
@@ -805,12 +871,12 @@ export default function StudioPage() {
 
                   <div className="flex items-center gap-2">
                     <span className="rounded bg-teal-950 px-2 py-0.5 text-[10px] font-mono text-teal-300 border border-teal-800/40">
-                      {currentPersona.gender.toUpperCase()} • 1080P60 FLUID MOTION
+                      {currentPersona.gender.toUpperCase()} • 1080P60 • {playbackSpeed}X
                     </span>
                   </div>
                 </div>
 
-                {/* High-Definition Motion Picture Player with Cadence Lock */}
+                {/* High-Definition Motion Picture Player with Dynamic Speed Rate */}
                 <div className="mt-4 rounded-xl border border-slate-800 bg-obsidian-950 relative overflow-hidden flex flex-col items-center justify-center p-2 min-h-[460px]">
                   
                   <div className="relative w-full aspect-video overflow-hidden rounded-xl border border-slate-800 bg-slate-950 shadow-2xl">
@@ -857,7 +923,7 @@ export default function StudioPage() {
                         <div className="font-mono text-xs font-bold text-white flex items-center gap-2">
                           <span>{currentPersona.name}</span>
                           <span className="rounded bg-emerald-950 px-1.5 py-0.2 text-[9px] text-emerald-400 border border-emerald-800/50">
-                            {isSpeakingClone ? "PLAYING MOTION" : "READY"}
+                            {isSpeakingClone ? `${playbackSpeed}X SPEED` : "READY"}
                           </span>
                         </div>
                         <div className="text-[10px] text-slate-400">{currentPersona.title}</div>
@@ -907,7 +973,7 @@ export default function StudioPage() {
               <div className="pt-4 border-t border-slate-800 flex items-center justify-between flex-wrap gap-4 text-xs font-mono">
                 <div className="flex items-center gap-4 text-slate-400">
                   <span>Pose: <b className="text-white">{currentPersona.bodyLanguage}</b></span>
-                  <span>Frame Rate: <b className="text-emerald-400">60 FPS Native</b></span>
+                  <span>Playback Speed: <b className="text-emerald-400">{playbackSpeed.toFixed(2)}x</b></span>
                 </div>
 
                 <button
@@ -915,7 +981,7 @@ export default function StudioPage() {
                   className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 px-4 py-2 text-xs font-bold text-slate-950 shadow-md shadow-teal-500/20 hover:brightness-110"
                 >
                   <Play className="h-3.5 w-3.5 fill-current" />
-                  <span>{isSpeakingClone ? "Pause Motion" : "Play Motion"}</span>
+                  <span>{isSpeakingClone ? "Pause Motion" : `Play Motion (${playbackSpeed}x)`}</span>
                 </button>
               </div>
 
