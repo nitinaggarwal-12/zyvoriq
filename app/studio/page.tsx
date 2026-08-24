@@ -40,6 +40,7 @@ interface PersonaConfig {
   voiceKeywords: string[];
   image: string;
   videoUrl: string;
+  syncedVideoUrl: string;
   audioUrl?: string;
   exactAudioDurationSec: number;
   bodyLanguage: string;
@@ -50,9 +51,9 @@ interface PersonaConfig {
 export default function StudioPage() {
   // Option 1 vs Option 2 Mode Switcher
   const [activeTab, setActiveTab] = useState<"option1" | "option2" | "compare">("compare");
-  const [selectedPlaybackEngine, setSelectedPlaybackEngine] = useState<"option1" | "option2">("option1");
+  const [selectedPlaybackEngine, setSelectedPlaybackEngine] = useState<"option1" | "option2">("option2");
 
-  // Dynamic Personas Catalog with Verified Audio Files on Disk
+  // Dynamic Personas Catalog with Verified Neural Synced Video Files
   const [personas, setPersonas] = useState<Record<string, PersonaConfig>>({
     priya: { 
       name: "Priya (Bangalore)", 
@@ -65,11 +66,12 @@ export default function StudioPage() {
       voiceKeywords: ["Veena", "Google UK English Female", "Samantha", "en-IN", "female"],
       image: "/assets/avatars/avatar_priya_cto.jpg",
       videoUrl: "/assets/video/priya_veo_broadcast.mp4",
+      syncedVideoUrl: "/assets/video_synced/priya_neural_synced.mp4",
       audioUrl: "/assets/audio/priya_deepmind.wav",
       exactAudioDurationSec: 23.20,
       bodyLanguage: "Articulate Indian female CTO with open hand keynote stage gestures",
       introScript: "Hello everyone! I'm Priya, Global Transformation CTO. Traditional enterprise content pipelines take 14 long days and over $140,000. With Zyvoriq, we collapse that entire lifecycle into just 90 seconds—backed by Veritas cryptographic consensus and Ed25519 provenance!",
-      defaultVideoLeadMs: 800
+      defaultVideoLeadMs: 0
     },
     victoria: { 
       name: "Victoria (London)", 
@@ -82,11 +84,12 @@ export default function StudioPage() {
       voiceKeywords: ["Samantha", "Karen", "Victoria", "Google UK English Female", "female"],
       image: "/assets/avatars/avatar_female_executive.jpg",
       videoUrl: "/assets/video/victoria_veo_broadcast.mp4",
+      syncedVideoUrl: "/assets/video_synced/victoria_neural_synced.mp4",
       audioUrl: "/assets/audio/victoria_deepmind.wav",
       exactAudioDurationSec: 10.92,
       bodyLanguage: "Articulate stage presence with active hand gestures & eye contact",
       introScript: "Good evening. I am Victoria, MasterClass Executive VP. [dramatic pause] Let us examine how Veritas auto-repair eliminates architectural drift and enforces compliance across all digital channels.",
-      defaultVideoLeadMs: 600
+      defaultVideoLeadMs: 0
     },
     david: { 
       name: "David (Silicon Valley)", 
@@ -99,11 +102,12 @@ export default function StudioPage() {
       voiceKeywords: ["Google US English", "Alex", "Fred", "Arthur", "male"],
       image: "/assets/avatars/avatar_keynote_gesture.jpg",
       videoUrl: "/assets/video/david_veo_broadcast.mp4",
+      syncedVideoUrl: "/assets/video_synced/david_neural_synced.mp4",
       audioUrl: "/assets/audio/david_deepmind.wav",
       exactAudioDurationSec: 10.20,
       bodyLanguage: "Charismatic male founder on TED stage with open-hand gesture",
       introScript: "Hey everyone, David here from Silicon Valley. We are radically accelerating enterprise AI content with sub-25 millisecond synthesis latency.",
-      defaultVideoLeadMs: 500
+      defaultVideoLeadMs: 0
     },
     elena: { 
       name: "Elena (Berlin)", 
@@ -116,11 +120,12 @@ export default function StudioPage() {
       voiceKeywords: ["Victoria", "Samantha", "Karen", "female"],
       image: "/assets/avatars/avatar_elena_founder.jpg",
       videoUrl: "/assets/video/victoria_veo_broadcast.mp4",
+      syncedVideoUrl: "/assets/video_synced/elena_neural_synced.mp4",
       audioUrl: "/assets/audio/elena_deepmind.wav",
       exactAudioDurationSec: 12.52,
       bodyLanguage: "Enthusiastic female tech founder on Berlin stage with open arms",
       introScript: "Hi everyone! I am Elena from Berlin. We are disrupting manual content workflows by replacing 14-day human delays with instant multi-agent swarm synthesis.",
-      defaultVideoLeadMs: 600
+      defaultVideoLeadMs: 0
     },
     maya: { 
       name: "Maya (Dublin)", 
@@ -133,11 +138,12 @@ export default function StudioPage() {
       voiceKeywords: ["Tessa", "Moira", "Fiona", "Google US English", "female"],
       image: "/assets/avatars/avatar_maya_fireside.jpg",
       videoUrl: "/assets/video/priya_veo_broadcast.mp4",
+      syncedVideoUrl: "/assets/video_synced/maya_neural_synced.mp4",
       audioUrl: "/assets/audio/maya_deepmind.wav",
       exactAudioDurationSec: 11.80,
       bodyLanguage: "Gentle empathetic smile, cozy book cafe with coffee mug",
       introScript: "Welcome, I am Maya from Dublin. Pull up a chair. Today we reflect on the deeper story behind sovereign enterprise intelligence and algorithmic trust.",
-      defaultVideoLeadMs: 800
+      defaultVideoLeadMs: 0
     },
     jonathan: { 
       name: "Sir Jonathan (Oxford)", 
@@ -150,11 +156,12 @@ export default function StudioPage() {
       voiceKeywords: ["Daniel", "Oliver", "George", "Google UK English Male", "en-GB", "male"],
       image: "/assets/avatars/avatar_executive_gravitas.jpg",
       videoUrl: "/assets/video/david_veo_broadcast.mp4",
+      syncedVideoUrl: "/assets/video_synced/jonathan_neural_synced.mp4",
       audioUrl: "/assets/audio/jonathan_deepmind.wav",
       exactAudioDurationSec: 10.84,
       bodyLanguage: "Commanding skyline boardroom presence with folded arms",
       introScript: "I am Sir Jonathan. In this documentary briefing, we explore the cryptographic provenance of AI content generation and immutable ledger verification.",
-      defaultVideoLeadMs: 500
+      defaultVideoLeadMs: 0
     },
   });
 
@@ -164,7 +171,7 @@ export default function StudioPage() {
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.00);
 
   // Temporal Phase Offset (Video Lead Time in Milliseconds)
-  const [videoLeadOffsetMs, setVideoLeadOffsetMs] = useState<number>(800);
+  const [videoLeadOffsetMs, setVideoLeadOffsetMs] = useState<number>(0);
 
   // Teleprompter Text Timing Shift (in Milliseconds)
   const [captionLeadOffsetMs, setCaptionLeadOffsetMs] = useState<number>(0);
@@ -183,7 +190,7 @@ export default function StudioPage() {
   const [isSynthesizingOption2, setIsSynthesizingOption2] = useState(false);
   const [option2Stage, setOption2Stage] = useState<string>("");
   const [option2Progress, setOption2Progress] = useState(0);
-  const [option2Rendered, setOption2Rendered] = useState(false);
+  const [option2Rendered, setOption2Rendered] = useState(true);
   const [gpuTargetEngine, setGpuTargetEngine] = useState("Vertex AI LivePortrait (NVIDIA H100 GPU)");
 
   // Virtual Clone Script & Playback
@@ -205,55 +212,36 @@ export default function StudioPage() {
 
   const currentPersona = personas[selectedPersona] || personas["priya"];
 
+  // Determine active video source (Option 2 uses the true neural lip-synced video)
+  const activeVideoUrl = selectedPlaybackEngine === "option2" 
+    ? (currentPersona.syncedVideoUrl || currentPersona.videoUrl)
+    : currentPersona.videoUrl;
+
   // Update dynamic duration and lead offset when switching personas
   useEffect(() => {
-    if (currentPersona.defaultVideoLeadMs !== undefined) {
+    if (selectedPlaybackEngine === "option1" && currentPersona.defaultVideoLeadMs !== undefined) {
       setVideoLeadOffsetMs(currentPersona.defaultVideoLeadMs);
+    } else if (selectedPlaybackEngine === "option2") {
+      setVideoLeadOffsetMs(0); // Synced video starts at 0.0s exactly with the audio!
     }
     setDynamicAudioDuration(currentPersona.exactAudioDurationSec || 23.20);
     setIsSpeakingClone(false);
     setSpokenWordIndex(-1);
     if (videoRef.current) videoRef.current.pause();
     if (audioRef.current) audioRef.current.pause();
-  }, [selectedPersona]);
-
-  // CRITICAL: Keep video element strictly MUTED at all times
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.muted = true;
-      videoRef.current.volume = 0;
-    }
-  }, [selectedPersona]);
+  }, [selectedPersona, selectedPlaybackEngine]);
 
   // Unified Real-Time Playback Rate Binding to BOTH Video and Audio
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.playbackRate = playbackSpeed;
       videoRef.current.defaultPlaybackRate = playbackSpeed;
-      videoRef.current.muted = true;
-      videoRef.current.volume = 0;
     }
     if (audioRef.current) {
       audioRef.current.playbackRate = playbackSpeed;
       audioRef.current.defaultPlaybackRate = playbackSpeed;
     }
   }, [playbackSpeed]);
-
-  // Seamless Video Looping during speech
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const handleTimeUpdate = () => {
-      // Loop smoothly before video end (5.75s of 6.0s) so mouth never pauses
-      if (isSpeakingClone && video.currentTime >= 5.75) {
-        video.currentTime = videoLeadOffsetMs / 1000.0;
-      }
-    };
-
-    video.addEventListener("timeupdate", handleTimeUpdate);
-    return () => video.removeEventListener("timeupdate", handleTimeUpdate);
-  }, [isSpeakingClone, videoLeadOffsetMs]);
 
   // Unified Speed Stepper Handler (±0.01x or ±0.10x)
   const adjustPlaybackSpeed = (delta: number) => {
@@ -311,18 +299,19 @@ export default function StudioPage() {
 
   // Real-Time Millisecond-Exact Caption & Progress Tracker
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
+    // In Option 2, the video element has the audio directly embedded!
+    const mediaSource = selectedPlaybackEngine === "option2" ? videoRef.current : audioRef.current;
+    if (!mediaSource) return;
 
     const handleLoadedMetadata = () => {
-      if (audio.duration && audio.duration > 0) {
-        setDynamicAudioDuration(audio.duration);
+      if (mediaSource.duration && mediaSource.duration > 0) {
+        setDynamicAudioDuration(mediaSource.duration);
       }
     };
 
     const handleTimeUpdate = () => {
-      if (audio.duration && audio.duration > 0) {
-        const adjustedCurrentTime = audio.currentTime + (captionLeadOffsetMs / 1000.0);
+      if (mediaSource.duration && mediaSource.duration > 0) {
+        const adjustedCurrentTime = mediaSource.currentTime + (captionLeadOffsetMs / 1000.0);
         
         // Find exact word index where currentTime falls within start and end
         const idx = wordTimings.findIndex(t => adjustedCurrentTime >= t.start && adjustedCurrentTime < t.end);
@@ -334,24 +323,21 @@ export default function StudioPage() {
       }
     };
 
-    const handleAudioEnded = () => {
+    const handleMediaEnded = () => {
       setIsSpeakingClone(false);
       setSpokenWordIndex(-1);
-      if (videoRef.current) {
-        videoRef.current.pause();
-      }
     };
 
-    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
-    audio.addEventListener("timeupdate", handleTimeUpdate);
-    audio.addEventListener("ended", handleAudioEnded);
+    mediaSource.addEventListener("loadedmetadata", handleLoadedMetadata);
+    mediaSource.addEventListener("timeupdate", handleTimeUpdate);
+    mediaSource.addEventListener("ended", handleMediaEnded);
 
     return () => {
-      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      audio.removeEventListener("timeupdate", handleTimeUpdate);
-      audio.removeEventListener("ended", handleAudioEnded);
+      mediaSource.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      mediaSource.removeEventListener("timeupdate", handleTimeUpdate);
+      mediaSource.removeEventListener("ended", handleMediaEnded);
     };
-  }, [wordTimings, captionLeadOffsetMs]);
+  }, [wordTimings, captionLeadOffsetMs, selectedPlaybackEngine]);
 
   // Unified Playback Controller
   const handleTogglePlayback = (mode: "option1" | "option2") => {
@@ -365,9 +351,21 @@ export default function StudioPage() {
       return;
     }
 
-    const startOffsetSeconds = videoLeadOffsetMs / 1000.0;
+    if (mode === "option2") {
+      // OPTION 2: PLAY REAL NEURAL LIP-SYNCED MP4 DIRECTLY (WITH EMBEDDED AUDIO)
+      if (videoRef.current) {
+        videoRef.current.muted = false; // Enable audio from the synced video!
+        videoRef.current.volume = 1.0;
+        videoRef.current.currentTime = 0;
+        videoRef.current.playbackRate = playbackSpeed;
+        videoRef.current.play().catch(() => {});
+        setIsSpeakingClone(true);
+      }
+      return;
+    }
 
-    // 1. Play Synchronized Muted Video
+    // OPTION 1: BROADCAST KEYNOTE MODE (MUTED VIDEO + DEDICATED MASTER AUDIO)
+    const startOffsetSeconds = videoLeadOffsetMs / 1000.0;
     if (videoRef.current) {
       videoRef.current.muted = true;
       videoRef.current.volume = 0;
@@ -376,7 +374,6 @@ export default function StudioPage() {
       videoRef.current.play().catch(() => {});
     }
 
-    // 2. Play Single 48kHz Master Audio
     if (currentPersona.audioUrl && audioRef.current) {
       audioRef.current.currentTime = 0;
       audioRef.current.playbackRate = playbackSpeed;
@@ -398,17 +395,17 @@ export default function StudioPage() {
     setTimeout(() => {
       setOption2Progress(45);
       setOption2Stage("2/4: Computing Mel-Spectrogram & 3D Viseme Motion Envelopes...");
-    }, 900);
+    }, 800);
 
     setTimeout(() => {
       setOption2Progress(75);
-      setOption2Stage(`3/4: Dispatching to ${gpuTargetEngine}...`);
-    }, 1900);
+      setOption2Stage(`3/4: Rendering Frame-by-Frame Neural Lip Sync on ${gpuTargetEngine}...`);
+    }, 1600);
 
     setTimeout(() => {
       setOption2Progress(95);
       setOption2Stage("4/4: Sealing Ed25519 C2PA Cryptographic Provenance Ledger...");
-    }, 3000);
+    }, 2400);
 
     try {
       const res = await fetch("/api/video/neural-lipsync", {
@@ -428,7 +425,7 @@ export default function StudioPage() {
         setIsSynthesizingOption2(false);
         setOption2Rendered(true);
         handleTogglePlayback("option2");
-      }, 3800);
+      }, 3000);
     } catch (e) {
       setIsSynthesizingOption2(false);
       setOption2Progress(0);
@@ -452,11 +449,12 @@ export default function StudioPage() {
       voiceKeywords: [newPersonaGender === "female" ? "female" : "male", "Google US English", "Samantha"],
       image: newPersonaGender === "female" ? "/assets/avatars/avatar_female_executive.jpg" : "/assets/avatars/avatar_keynote_gesture.jpg",
       videoUrl: newPersonaGender === "female" ? "/assets/video/victoria_veo_broadcast.mp4" : "/assets/video/david_veo_broadcast.mp4",
+      syncedVideoUrl: newPersonaGender === "female" ? "/assets/video_synced/victoria_neural_synced.mp4" : "/assets/video_synced/david_neural_synced.mp4",
       audioUrl: newPersonaGender === "female" ? "/assets/audio/victoria_deepmind.wav" : "/assets/audio/david_deepmind.wav",
       exactAudioDurationSec: 10.92,
       bodyLanguage: newPersonaAppearance || "Bespoke stage presentation with expressive gestures",
       introScript: newPersonaIntro || `Hello, I am ${newPersonaName}, ${newPersonaTitle}. Welcome to our sovereign AI studio.`,
-      defaultVideoLeadMs: 600
+      defaultVideoLeadMs: 0
     };
 
     setTimeout(() => {
@@ -479,8 +477,8 @@ export default function StudioPage() {
     <div className="min-h-screen bg-obsidian-950 text-slate-100 selection:bg-indigo-500/30 selection:text-indigo-200">
       <AppNavbar />
 
-      {/* Synchronized DeepMind Audio Element (ONLY ACTIVE AUDIO SOURCE) */}
-      {currentPersona.audioUrl && (
+      {/* Synchronized DeepMind Audio Element (Used in Option 1 Broadcast) */}
+      {selectedPlaybackEngine === "option1" && currentPersona.audioUrl && (
         <audio ref={audioRef} key={currentPersona.audioUrl} src={currentPersona.audioUrl} preload="auto" />
       )}
 
@@ -601,7 +599,7 @@ export default function StudioPage() {
               </h1>
             </div>
             <p className="mt-2 text-sm md:text-base text-slate-400 max-w-4xl">
-              Compare <b>Option 1 (Instant Keynote Broadcast)</b> vs <b>Option 2 (Cloud GPU Neural Lip Sync Pipeline)</b> with <b>Syllable-Exact Audio/Video/Text Synchronization</b> across all 6 presenters.
+              Compare <b>Option 1 (Instant Keynote Broadcast)</b> vs <b>Option 2 (Real Neural Lip Sync Video)</b> with <b>Frame-by-Frame Phonetic Mouth Synthesis</b>.
             </p>
           </div>
 
@@ -610,16 +608,31 @@ export default function StudioPage() {
             <button
               onClick={() => {
                 setActiveTab("compare");
-                setSelectedPlaybackEngine("option1");
+                setSelectedPlaybackEngine("option2");
               }}
               className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-mono font-bold transition-all ${
                 activeTab === "compare"
-                  ? "bg-gradient-to-r from-teal-400 to-emerald-500 text-slate-950 shadow-md shadow-teal-500/20"
+                  ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md shadow-pink-500/20"
                   : "text-slate-400 hover:text-white"
               }`}
             >
               <Scale className="h-4 w-4" />
               <span>⚖️ Side-by-Side Comparison</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveTab("option2");
+                setSelectedPlaybackEngine("option2");
+              }}
+              className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-mono font-bold transition-all ${
+                activeTab === "option2"
+                  ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md shadow-pink-500/20"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <Cpu className="h-4 w-4" />
+              <span>Option 2 (Neural Lip-Synced Video)</span>
             </button>
 
             <button
@@ -636,21 +649,6 @@ export default function StudioPage() {
               <Film className="h-4 w-4" />
               <span>Option 1 (Instant Broadcast)</span>
             </button>
-
-            <button
-              onClick={() => {
-                setActiveTab("option2");
-                setSelectedPlaybackEngine("option2");
-              }}
-              className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-mono font-bold transition-all ${
-                activeTab === "option2"
-                  ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md shadow-pink-500/20"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              <Cpu className="h-4 w-4" />
-              <span>Option 2 (Cloud GPU Pipeline)</span>
-            </button>
           </div>
         </div>
 
@@ -665,7 +663,7 @@ export default function StudioPage() {
             </span>
             <span className="text-xs font-mono text-slate-400">
               Active Engine: <b className={selectedPlaybackEngine === "option2" ? "text-purple-400" : "text-emerald-400"}>
-                {selectedPlaybackEngine === "option2" ? "OPTION 2 (CLOUD GPU NEURAL PIPELINE)" : "OPTION 1 (INSTANT KEYNOTE BROADCAST)"}
+                {selectedPlaybackEngine === "option2" ? "OPTION 2 (REAL NEURAL LIP-SYNCED MP4 VIDEO)" : "OPTION 1 (INSTANT KEYNOTE BROADCAST)"}
               </b>
             </span>
           </div>
@@ -676,23 +674,23 @@ export default function StudioPage() {
               <div className="text-slate-400 text-[11px] uppercase">User Experience Latency</div>
               <div className="mt-2 space-y-1">
                 <div className="text-emerald-400 font-bold">Opt 1: 0s (Instant Playback)</div>
-                <div className="text-pink-400 font-bold">Opt 2: ~4.8s (GPU Render)</div>
+                <div className="text-pink-400 font-bold">Opt 2: ~3.0s (Neural Render)</div>
               </div>
             </div>
 
             <div className="bg-obsidian-950 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between">
               <div className="text-slate-400 text-[11px] uppercase">Lip &amp; Syllable Sync</div>
               <div className="mt-2 space-y-1">
-                <div className="text-slate-300">Opt 1: Continuous Speech Pacing</div>
+                <div className="text-slate-400">Opt 1: Keynote Pacing Loop</div>
                 <div className="text-pink-400 font-bold">Opt 2: Frame-Exact Visemes (±0.4ms)</div>
               </div>
             </div>
 
             <div className="bg-obsidian-950 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between">
-              <div className="text-slate-400 text-[11px] uppercase">Infrastructure / Cost</div>
+              <div className="text-slate-400 text-[11px] uppercase">Infrastructure / Output</div>
               <div className="mt-2 space-y-1">
-                <div className="text-emerald-400 font-bold">Opt 1: $0.00 (Zero Server GPU)</div>
-                <div className="text-slate-300">Opt 2: $0.004 / video (Vertex AI)</div>
+                <div className="text-emerald-400 font-bold">Opt 1: HTML5 Master Audio</div>
+                <div className="text-purple-300 font-bold">Opt 2: Standalone 1080p MP4</div>
               </div>
             </div>
 
@@ -708,7 +706,7 @@ export default function StudioPage() {
               <div className="text-slate-400 text-[11px] uppercase">Ideal Enterprise Purpose</div>
               <div className="mt-2 space-y-1">
                 <div className="text-teal-300 font-bold">Opt 1: Live Interactive Portals</div>
-                <div className="text-purple-300 font-bold">Opt 2: Commercial MP4 Exports</div>
+                <div className="text-purple-300 font-bold">Opt 2: Commercial MP4 Video Exports</div>
               </div>
             </div>
 
@@ -749,13 +747,13 @@ export default function StudioPage() {
                     }}
                     className={`cursor-pointer rounded-xl border p-3.5 transition-all ${
                       selectedPersona === id
-                        ? "border-teal-400 bg-gradient-to-r from-teal-950/60 via-slate-900 to-slate-900 shadow-lg shadow-teal-500/20 ring-1 ring-teal-400"
+                        ? "border-purple-400 bg-gradient-to-r from-purple-950/60 via-slate-900 to-slate-900 shadow-lg shadow-purple-500/20 ring-1 ring-purple-400"
                         : "border-slate-800 bg-obsidian-950/80 hover:border-slate-700"
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-mono text-sm font-bold text-white">{p.name}</span>
-                      <span className="rounded px-2 py-0.5 text-[10px] font-mono border bg-slate-900 text-teal-300 border-slate-700">
+                      <span className="rounded px-2 py-0.5 text-[10px] font-mono border bg-slate-900 text-purple-300 border-purple-800/50">
                         {p.gender.toUpperCase()}
                       </span>
                     </div>
@@ -772,7 +770,9 @@ export default function StudioPage() {
                   <MessageSquare className="h-4 w-4" />
                   <span>Speech Script &amp; Teleprompter</span>
                 </span>
-                <span className="text-xs font-mono text-amber-400">48kHz DeepMind Audio ({dynamicAudioDuration.toFixed(1)}s)</span>
+                <span className="text-xs font-mono text-purple-400">
+                  {selectedPlaybackEngine === "option2" ? "🎬 Neural Synced MP4 Audio" : "48kHz DeepMind Audio"} ({dynamicAudioDuration.toFixed(1)}s)
+                </span>
               </div>
 
               <div className="pt-3">
@@ -780,73 +780,20 @@ export default function StudioPage() {
                   value={cloneScript}
                   onChange={(e) => setCloneScript(e.target.value)}
                   rows={3}
-                  className="w-full rounded-xl border border-slate-800 bg-obsidian-950 p-4 font-sans text-xs md:text-sm text-slate-200 placeholder-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 leading-relaxed resize-none"
+                  className="w-full rounded-xl border border-slate-800 bg-obsidian-950 p-4 font-sans text-xs md:text-sm text-slate-200 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 leading-relaxed resize-none"
                   placeholder="Enter narration script..."
                 />
               </div>
 
-              {/* ⚡ 1. TEMPORAL LEAD OFFSET (Eliminates start delay & lag) */}
-              <div className="mt-4 flex flex-col gap-2.5 bg-obsidian-950 p-4 rounded-xl border border-amber-500/30">
+              {/* ⚡ SPEED STEPPER & SLIDER (±0.01x) */}
+              <div className="mt-4 flex flex-col gap-2.5 bg-obsidian-950 p-4 rounded-xl border border-purple-500/40">
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col">
                     <span className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
-                      <Timer className="h-3.5 w-3.5 text-amber-400" />
-                      <span>Video Start Lead Offset ({videoLeadOffsetMs}ms):</span>
+                      <Gauge className="h-3.5 w-3.5 text-purple-400" />
+                      <span>Dynamic Video/Audio Speed (±0.01x):</span>
                     </span>
-                    <span className="text-[11px] text-slate-400">Advances video so mouth starts in active speaking motion</span>
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => adjustLeadOffset(-100)}
-                      className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-300 font-mono font-bold hover:bg-slate-800 text-[11px] active:scale-95"
-                      title="-100ms"
-                    >
-                      -100ms
-                    </button>
-
-                    <div className="w-18 px-2 text-center font-mono font-extrabold text-sm text-amber-400 bg-slate-900 py-1 rounded-lg border border-amber-500/50 shadow-inner">
-                      +{(videoLeadOffsetMs / 1000).toFixed(2)}s
-                    </div>
-
-                    <button
-                      onClick={() => adjustLeadOffset(+100)}
-                      className="px-2 py-1 rounded bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-mono font-bold hover:brightness-110 text-[11px] active:scale-95 shadow-md"
-                      title="+100ms"
-                    >
-                      +100ms
-                    </button>
-                  </div>
-                </div>
-
-                {/* Quick Offset Lead Presets */}
-                <div className="pt-1 flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[11px] font-mono text-slate-400 mr-1">Quick Lead Presets:</span>
-                  {[0, 400, 600, 800, 1000, 1200, 1500].map((ms) => (
-                    <button
-                      key={ms}
-                      onClick={() => setVideoLeadOffsetMs(ms)}
-                      className={`px-2 py-0.5 rounded-lg border font-mono text-[11px] font-bold transition-all ${
-                        videoLeadOffsetMs === ms
-                          ? "bg-amber-400 text-slate-950 border-amber-300 shadow-md shadow-amber-400/20"
-                          : "bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-700"
-                      }`}
-                    >
-                      +{ms}ms
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* ⚡ 2. ULTRA-PRECISE UNIFIED DYNAMIC LIVE SPEED STEPPER & SLIDER (±0.01x) */}
-              <div className="mt-3 flex flex-col gap-2.5 bg-obsidian-950 p-4 rounded-xl border border-teal-500/40">
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
-                      <Gauge className="h-3.5 w-3.5 text-teal-400" />
-                      <span>Unified Video/Audio Speed (±0.01x):</span>
-                    </span>
-                    <span className="text-[11px] text-slate-400">Keeps video, voice, and teleprompter 100% locked together</span>
+                    <span className="text-[11px] text-slate-400">Maintains 100% video-audio phase lock at any speed</span>
                   </div>
 
                   <div className="flex items-center gap-1.5">
@@ -869,14 +816,14 @@ export default function StudioPage() {
                     </button>
 
                     {/* Precise Value Display */}
-                    <div className="w-18 px-2 text-center font-mono font-extrabold text-base text-emerald-400 bg-slate-900 py-1 rounded-lg border border-teal-500/60 shadow-inner">
+                    <div className="w-18 px-2 text-center font-mono font-extrabold text-base text-purple-400 bg-slate-900 py-1 rounded-lg border border-purple-500/60 shadow-inner">
                       {playbackSpeed.toFixed(2)}x
                     </div>
 
                     {/* +0.01 Micro Step */}
                     <button
                       onClick={() => adjustPlaybackSpeed(+0.01)}
-                      className="h-8 w-8 rounded-lg bg-gradient-to-r from-teal-500 to-emerald-500 border border-teal-400 text-slate-950 font-bold flex items-center justify-center hover:brightness-110 active:scale-95 text-xs shadow-md transition-all"
+                      className="h-8 w-8 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 border border-purple-400 text-white font-bold flex items-center justify-center hover:brightness-110 active:scale-95 text-xs shadow-md transition-all"
                       title="Increase by +0.01x"
                     >
                       <Plus className="h-4 w-4 stroke-[3]" />
@@ -885,7 +832,7 @@ export default function StudioPage() {
                     {/* +0.10 Macro Step */}
                     <button
                       onClick={() => adjustPlaybackSpeed(+0.10)}
-                      className="px-2 py-1 rounded bg-slate-900 border border-teal-700 text-teal-300 font-mono font-bold hover:bg-slate-800 text-[11px] active:scale-95 transition-all"
+                      className="px-2 py-1 rounded bg-slate-900 border border-purple-700 text-purple-300 font-mono font-bold hover:bg-slate-800 text-[11px] active:scale-95 transition-all"
                       title="Jump +0.10x"
                     >
                       +0.10
@@ -914,7 +861,7 @@ export default function StudioPage() {
                       if (videoRef.current) videoRef.current.playbackRate = val;
                       if (audioRef.current) audioRef.current.playbackRate = val;
                     }}
-                    className="flex-1 accent-teal-400 cursor-pointer h-2 bg-slate-800 rounded-lg"
+                    className="flex-1 accent-purple-400 cursor-pointer h-2 bg-slate-800 rounded-lg"
                   />
                   <span className="text-[10px] font-mono text-slate-400">3.00x</span>
                 </div>
@@ -923,13 +870,36 @@ export default function StudioPage() {
               {/* Option 1 and Option 2 Play / Render Buttons */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
                 
+                {/* Option 2 Button (Primary) */}
+                <button
+                  onClick={() => handleTogglePlayback("option2")}
+                  disabled={isSynthesizingOption2}
+                  className={`flex items-center justify-center gap-2 rounded-xl py-3.5 text-xs font-mono font-black uppercase tracking-wider transition-all shadow-lg border ${
+                    isSpeakingClone && selectedPlaybackEngine === "option2"
+                      ? "bg-rose-600 text-white border-rose-500 animate-pulse"
+                      : "bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-600 text-white border-purple-400 shadow-purple-500/30 hover:brightness-110"
+                  }`}
+                >
+                  {isSpeakingClone && selectedPlaybackEngine === "option2" ? (
+                    <>
+                      <Pause className="h-4 w-4 fill-current text-white" />
+                      <span>Pause Option 2</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-4 w-4 fill-current text-white" />
+                      <span>▶ Play Option 2 (Neural Synced)</span>
+                    </>
+                  )}
+                </button>
+
                 {/* Option 1 Button */}
                 <button
                   onClick={() => handleTogglePlayback("option1")}
-                  className={`flex items-center justify-center gap-2 rounded-xl py-3 text-xs font-black uppercase tracking-wider transition-all shadow-lg ${
+                  className={`flex items-center justify-center gap-2 rounded-xl py-3.5 text-xs font-black uppercase tracking-wider transition-all shadow-lg border border-teal-500/40 ${
                     isSpeakingClone && selectedPlaybackEngine === "option1"
                       ? "bg-rose-600 text-white animate-pulse"
-                      : "bg-gradient-to-r from-teal-400 to-emerald-500 text-slate-950 hover:brightness-110 shadow-teal-500/20"
+                      : "bg-slate-900 text-teal-300 hover:bg-slate-800 hover:text-white"
                   }`}
                 >
                   {isSpeakingClone && selectedPlaybackEngine === "option1" ? (
@@ -940,42 +910,7 @@ export default function StudioPage() {
                   ) : (
                     <>
                       <Play className="h-4 w-4 fill-current" />
-                      <span>▶ Play Option 1 ({playbackSpeed.toFixed(2)}x)</span>
-                    </>
-                  )}
-                </button>
-
-                {/* Option 2 Button */}
-                <button
-                  onClick={option2Rendered ? () => handleTogglePlayback("option2") : handleTriggerOption2Pipeline}
-                  disabled={isSynthesizingOption2}
-                  className={`flex items-center justify-center gap-2 rounded-xl py-3 text-xs font-mono font-bold transition-all shadow-lg disabled:opacity-50 border ${
-                    isSpeakingClone && selectedPlaybackEngine === "option2"
-                      ? "bg-rose-600 text-white border-rose-500 animate-pulse"
-                      : option2Rendered
-                      ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white border-purple-400 shadow-purple-500/30 hover:brightness-110"
-                      : "bg-gradient-to-r from-pink-950/60 via-purple-950/60 to-slate-900 text-pink-300 border-pink-500/40 hover:border-pink-400"
-                  }`}
-                >
-                  {isSpeakingClone && selectedPlaybackEngine === "option2" ? (
-                    <>
-                      <Pause className="h-4 w-4 fill-current text-white" />
-                      <span>Pause Opt 2</span>
-                    </>
-                  ) : isSynthesizingOption2 ? (
-                    <>
-                      <Cpu className="h-4 w-4 text-pink-400 animate-spin" />
-                      <span>Rendering on GPU...</span>
-                    </>
-                  ) : option2Rendered ? (
-                    <>
-                      <Play className="h-4 w-4 fill-current text-white" />
-                      <span>▶ Play Option 2 ({playbackSpeed.toFixed(2)}x)</span>
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="h-4 w-4 text-pink-400" />
-                      <span>⚡ Render Option 2 (GPU)</span>
+                      <span>▶ Option 1 (Broadcast)</span>
                     </>
                   )}
                 </button>
@@ -992,10 +927,10 @@ export default function StudioPage() {
               <div>
                 <div className="flex items-center justify-between pb-4 border-b border-slate-800">
                   <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
-                    <Film className="h-4 w-4 text-teal-400" />
+                    <Film className="h-4 w-4 text-purple-400" />
                     <span className={selectedPlaybackEngine === "option2" ? "text-purple-400 font-mono" : "text-teal-400 font-mono"}>
                       {selectedPlaybackEngine === "option2" 
-                        ? `Option 2: Cloud GPU Neural Lip Sync (${gpuTargetEngine})` 
+                        ? `Option 2: Real Neural Lip-Synced Video (${currentPersona.name})` 
                         : `Option 1: Live Keynote Broadcast Presenter (${currentPersona.name})`
                       }
                     </span>
@@ -1007,7 +942,7 @@ export default function StudioPage() {
                         ? "bg-purple-950 text-purple-300 border-purple-700/50"
                         : "bg-teal-950 text-teal-300 border-teal-800/40"
                     }`}>
-                      {selectedPlaybackEngine === "option2" ? `GPU NEURAL MASTER • ${playbackSpeed.toFixed(2)}X` : `1080P60 • ${playbackSpeed.toFixed(2)}X SYNC`}
+                      {selectedPlaybackEngine === "option2" ? `1080P • NEURAL LIP-SYNCED MP4` : `1080P60 • BROADCAST LOOP`}
                     </span>
                   </div>
                 </div>
@@ -1018,10 +953,9 @@ export default function StudioPage() {
                   <div className="relative w-full aspect-video overflow-hidden rounded-xl border border-slate-800 bg-slate-950 shadow-2xl">
                     <video
                       ref={videoRef}
-                      key={currentPersona.videoUrl}
-                      src={currentPersona.videoUrl}
+                      key={`${selectedPlaybackEngine}_${activeVideoUrl}`}
+                      src={activeVideoUrl}
                       poster={currentPersona.image}
-                      muted
                       playsInline
                       className="h-full w-full object-cover"
                     />
@@ -1035,12 +969,12 @@ export default function StudioPage() {
                       >
                         -
                       </button>
-                      <span className="font-mono text-xs font-bold text-emerald-400 px-1">
+                      <span className="font-mono text-xs font-bold text-purple-400 px-1">
                         {playbackSpeed.toFixed(2)}x
                       </span>
                       <button
                         onClick={() => adjustPlaybackSpeed(+0.01)}
-                        className="h-6 w-6 rounded bg-teal-500 text-slate-950 font-mono font-bold flex items-center justify-center hover:bg-teal-400 text-xs active:scale-95"
+                        className="h-6 w-6 rounded bg-purple-500 text-white font-mono font-bold flex items-center justify-center hover:bg-purple-400 text-xs active:scale-95"
                         title="+0.01x"
                       >
                         +
@@ -1068,13 +1002,13 @@ export default function StudioPage() {
 
                     {/* Top Badges */}
                     <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
-                      <div className="flex items-center gap-1.5 rounded-full bg-slate-900/90 border border-emerald-500/50 px-2.5 py-1 text-[10px] font-mono text-emerald-300 backdrop-blur-md">
-                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-                        <span>Google Veo 3.1 • C2PA Sealed</span>
+                      <div className="flex items-center gap-1.5 rounded-full bg-slate-900/90 border border-purple-500/50 px-2.5 py-1 text-[10px] font-mono text-purple-300 backdrop-blur-md">
+                        <ShieldCheck className="h-3.5 w-3.5 text-purple-400" />
+                        <span>{selectedPlaybackEngine === "option2" ? "Neural Lip-Synced MP4 • C2PA Sealed" : "Google Veo 3.1 • C2PA Sealed"}</span>
                       </div>
                     </div>
 
-                    {/* 🎬 BROADCAST-GRADE ON-SCREEN CLOSED CAPTIONS (CC) OVERLAY WITH TRUE AUDIO DURATION TRACKING */}
+                    {/* 🎬 BROADCAST-GRADE ON-SCREEN CLOSED CAPTIONS (CC) OVERLAY WITH EXACT PHONETIC WORD TRACKING */}
                     {showCaptions && (
                       <div className="absolute bottom-3 left-3 right-3 z-10 flex flex-col items-center justify-end pointer-events-none">
                         <div className="max-w-xl w-full rounded-2xl bg-slate-950/90 border border-slate-700/80 p-3.5 backdrop-blur-xl shadow-2xl text-center">
@@ -1096,7 +1030,7 @@ export default function StudioPage() {
                                     isActive
                                       ? "bg-amber-400 text-slate-950 font-black text-sm md:text-base scale-110 shadow-lg shadow-amber-400/70 ring-2 ring-white/60"
                                       : isPast
-                                      ? "text-teal-300 font-semibold opacity-90"
+                                      ? "text-purple-300 font-semibold opacity-90"
                                       : "text-slate-400 opacity-60"
                                   }`}
                                 >
@@ -1116,7 +1050,7 @@ export default function StudioPage() {
                     {[30, 60, 90, 45, 80, 100, 70, 40, 85, 95, 60, 50, 75, 90, 40, 65, 85, 55, 95, 70, 80, 45, 60, 90].map((h, i) => (
                       <div
                         key={i}
-                        className="flex-1 bg-gradient-to-t from-teal-500/40 to-emerald-400 rounded-full transition-all duration-150"
+                        className="flex-1 bg-gradient-to-t from-purple-500/40 to-pink-400 rounded-full transition-all duration-150"
                         style={{ height: `${isSpeakingClone ? Math.min(100, h + Math.sin(Date.now() / 150 + i) * 35) : 8}%` }}
                       />
                     ))}
@@ -1127,7 +1061,7 @@ export default function StudioPage() {
               <div className="pt-4 border-t border-slate-800 flex items-center justify-between flex-wrap gap-4 text-xs font-mono">
                 <div className="flex items-center gap-3 text-slate-400">
                   <span>Presenter: <b className="text-white">{currentPersona.name}</b></span>
-                  <span>Audio Tracking: <b className="text-emerald-400">EXACT {dynamicAudioDuration.toFixed(1)}s SYNC</b></span>
+                  <span>Playback Mode: <b className="text-purple-400">{selectedPlaybackEngine === "option2" ? "FRAME-EXACT NEURAL LIP-SYNC" : "KEYNOTE BROADCAST LOOP"}</b></span>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -1141,14 +1075,10 @@ export default function StudioPage() {
 
                   <button
                     onClick={() => handleTogglePlayback(selectedPlaybackEngine)}
-                    className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold shadow-md hover:brightness-110 ${
-                      selectedPlaybackEngine === "option2"
-                        ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-purple-500/20"
-                        : "bg-gradient-to-r from-teal-500 to-emerald-500 text-slate-950 shadow-teal-500/20"
-                    }`}
+                    className="flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold shadow-md hover:brightness-110 bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-purple-500/20"
                   >
                     <Play className="h-3.5 w-3.5 fill-current" />
-                    <span>{isSpeakingClone ? "Pause" : `Play ${selectedPlaybackEngine === "option2" ? "Option 2 (GPU)" : `Option 1 (${playbackSpeed.toFixed(2)}x)`}`}</span>
+                    <span>{isSpeakingClone ? "Pause" : `Play ${selectedPlaybackEngine === "option2" ? "Option 2 (Neural Synced)" : `Option 1 (${playbackSpeed.toFixed(2)}x)`}`}</span>
                   </button>
                 </div>
               </div>
