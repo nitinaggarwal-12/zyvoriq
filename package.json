@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test:e2e": "node scratch/cloudtop_e2e_runner.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",
