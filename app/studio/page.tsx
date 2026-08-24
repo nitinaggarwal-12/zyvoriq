@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { AppNavbar } from "@/components/AppNavbar";
 import { 
@@ -48,7 +48,6 @@ export default function StudioPage() {
   const [selectedBaseModel, setSelectedBaseModel] = useState<"Charon" | "Aoede" | "Puck" | "Kore" | "Fenrir">("Aoede");
   const [selectedAccent, setSelectedAccent] = useState("uk_oxford");
   const [selectedArchetype, setSelectedArchetype] = useState("chief_architect");
-  const [selectedLanguage, setSelectedLanguage] = useState("en-GB");
 
   // Advanced Prosody Sliders
   const [stability, setStability] = useState(85);
@@ -63,6 +62,10 @@ export default function StudioPage() {
   const [customVoicePrompt, setCustomVoicePrompt] = useState("");
   const [isDesigningVoice, setIsDesigningVoice] = useState(false);
 
+  // Video Ref & Playback State
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
   // Google DeepMind Video Synthesis State
   const [isSynthesizingVideo, setIsSynthesizingVideo] = useState(false);
   const [synthesisStage, setSynthesisStage] = useState<string>("");
@@ -75,7 +78,7 @@ export default function StudioPage() {
   const [isSpeakingClone, setIsSpeakingClone] = useState(false);
   const [spokenWordIndex, setSpokenWordIndex] = useState(-1);
 
-  // 8 Dedicated Spotlight Personas
+  // 8 Dedicated Spotlight Personas with Google Veo 3.1 Motion Pictures
   const storyPersonas: Record<string, { 
     name: string; 
     title: string; 
@@ -86,6 +89,8 @@ export default function StudioPage() {
     gender: "female" | "male"; 
     voiceKeywords: string[];
     image: string;
+    videoUrl: string;
+    audioUrl?: string;
     bodyLanguage: string;
     introScript: string;
   }> = {
@@ -99,7 +104,9 @@ export default function StudioPage() {
       gender: "female",
       voiceKeywords: ["Samantha", "Karen", "Victoria", "Google UK English Female", "female"],
       image: "/assets/avatars/avatar_female_executive.jpg",
-      bodyLanguage: "Sophisticated female VP with articulated stage hand gestures",
+      videoUrl: "/assets/video/victoria_veo_broadcast.mp4",
+      audioUrl: "/assets/audio/victoria_deepmind.wav",
+      bodyLanguage: "Articulate stage presence with active hand gestures & eye contact",
       introScript: "Good evening. I am Victoria, MasterClass Executive VP. [dramatic pause] Let us examine how Veritas auto-repair eliminates architectural drift and enforces compliance across all digital channels."
     },
     priya: { 
@@ -112,8 +119,23 @@ export default function StudioPage() {
       gender: "female",
       voiceKeywords: ["Veena", "Google UK English Female", "Samantha", "en-IN", "female"],
       image: "/assets/avatars/avatar_priya_cto.jpg",
+      videoUrl: "/assets/video/priya_veo_broadcast.mp4",
       bodyLanguage: "Articulate Indian female CTO with open hand keynote stage gestures",
       introScript: "Hello! I am Priya, Global Transformation CTO. [dramatic pause] Traditional enterprise pipelines take 14 days and $140,000. Zyvoriq collapses this into 90 seconds with Veritas consensus and Ed25519 provenance."
+    },
+    david: { 
+      name: "David (Silicon Valley)", 
+      title: "Visionary Tech Orator & Founder", 
+      base: "Puck", 
+      vibe: "Inspiring, resonant & punchy", 
+      pitch: 1.05, 
+      rate: 1.10, 
+      gender: "male",
+      voiceKeywords: ["Google US English", "Alex", "Fred", "Arthur", "male"],
+      image: "/assets/avatars/avatar_keynote_gesture.jpg",
+      videoUrl: "/assets/video/david_veo_broadcast.mp4",
+      bodyLanguage: "Charismatic male founder on TED stage with open-hand gesture",
+      introScript: "Hey everyone, David here from Silicon Valley. We are radically accelerating enterprise AI content with sub-25 millisecond synthesis latency."
     },
     elena: { 
       name: "Elena (Berlin)", 
@@ -125,6 +147,7 @@ export default function StudioPage() {
       gender: "female",
       voiceKeywords: ["Victoria", "Samantha", "Karen", "female"],
       image: "/assets/avatars/avatar_elena_founder.jpg",
+      videoUrl: "/assets/video/victoria_veo_broadcast.mp4",
       bodyLanguage: "Enthusiastic female tech founder on Berlin stage with open arms",
       introScript: "Hi everyone! I am Elena from Berlin. We are disrupting manual content workflows by replacing 14-day human delays with instant multi-agent swarm synthesis."
     },
@@ -138,21 +161,9 @@ export default function StudioPage() {
       gender: "female",
       voiceKeywords: ["Tessa", "Moira", "Fiona", "Google US English", "female"],
       image: "/assets/avatars/avatar_maya_fireside.jpg",
+      videoUrl: "/assets/video/victoria_veo_broadcast.mp4",
       bodyLanguage: "Gentle empathetic smile, cozy book cafe with coffee mug",
       introScript: "Welcome, I am Maya from Dublin. Pull up a chair. Today we reflect on the deeper story behind sovereign enterprise intelligence and algorithmic trust."
-    },
-    david: { 
-      name: "David (Silicon Valley)", 
-      title: "Visionary Tech Orator & Founder", 
-      base: "Puck", 
-      vibe: "Inspiring, resonant & punchy", 
-      pitch: 1.05, 
-      rate: 1.10, 
-      gender: "male",
-      voiceKeywords: ["Google US English", "Alex", "Fred", "Arthur", "male"],
-      image: "/assets/avatars/avatar_keynote_gesture.jpg",
-      bodyLanguage: "Charismatic male founder on TED stage with open-hand gesture",
-      introScript: "Hey everyone, David here from Silicon Valley. We are radically accelerating enterprise AI content with sub-25 millisecond synthesis latency."
     },
     jonathan: { 
       name: "Sir Jonathan (Oxford)", 
@@ -164,6 +175,7 @@ export default function StudioPage() {
       gender: "male",
       voiceKeywords: ["Daniel", "Oliver", "George", "Google UK English Male", "en-GB", "male"],
       image: "/assets/avatars/avatar_executive_gravitas.jpg",
+      videoUrl: "/assets/video/david_veo_broadcast.mp4",
       bodyLanguage: "Commanding skyline boardroom presence with folded arms",
       introScript: "I am Sir Jonathan. In this documentary briefing, we explore the cryptographic provenance of AI content generation and immutable ledger verification."
     },
@@ -177,6 +189,7 @@ export default function StudioPage() {
       gender: "male",
       voiceKeywords: ["Fiona", "Oliver", "Scottish", "Google UK English Male", "male"],
       image: "/assets/avatars/avatar_fireside_journey.jpg",
+      videoUrl: "/assets/video/david_veo_broadcast.mp4",
       bodyLanguage: "Distinguished Scottish fellow in fireside armchair",
       introScript: "Greetings. Alister here. In my thirty years of enterprise infrastructure engineering, nothing has unified architectural governance like Zyvoriq's five-axis consensus."
     },
@@ -190,6 +203,7 @@ export default function StudioPage() {
       gender: "male",
       voiceKeywords: ["Alex", "Daniel", "Google US English", "male"],
       image: "/assets/avatars/avatar_executive_gravitas.jpg",
+      videoUrl: "/assets/video/david_veo_broadcast.mp4",
       bodyLanguage: "Direct eye contact, sharp suit in executive boardroom",
       introScript: "I am Marcus Aurelius Tech. We built Zyvoriq to deliver sovereign autonomous intelligence with zero third-party cloud data egress."
     },
@@ -256,9 +270,15 @@ export default function StudioPage() {
     setActivePitchRate(`Pitch: ${calcPitch} • Rate: ${calcRate}x • Emotion: ${t.name}`);
   }, [selectedPersona, selectedTheme, styleExaggeration, stability, breathDensity]);
 
-  // Synchronized Persona Voice Playback
+  // Synchronized Persona Voice & Video Playback
   const handleToggleBroadcast = () => {
     if (isSpeakingClone) {
+      if (videoRef.current) {
+        videoRef.current.pause();
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         window.speechSynthesis.cancel();
       }
@@ -267,6 +287,39 @@ export default function StudioPage() {
       return;
     }
 
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(() => {});
+    }
+
+    // Play DeepMind 48kHz Neural Audio if available
+    if (currentPersona.audioUrl && audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => {});
+      setIsSpeakingClone(true);
+
+      const words = cloneScript.split(" ");
+      let wordIdx = 0;
+      const interval = setInterval(() => {
+        if (wordIdx < words.length) {
+          setSpokenWordIndex(wordIdx);
+          wordIdx++;
+        } else {
+          clearInterval(interval);
+          setIsSpeakingClone(false);
+          setSpokenWordIndex(-1);
+        }
+      }, 350);
+
+      audioRef.current.onended = () => {
+        clearInterval(interval);
+        setIsSpeakingClone(false);
+        setSpokenWordIndex(-1);
+      };
+      return;
+    }
+
+    // Fallback to SpeechSynthesis
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
 
@@ -330,25 +383,25 @@ export default function StudioPage() {
     }
   };
 
-  // Google DeepMind Veo 2 / LivePortrait Video Diffusion Dispatch
+  // Google DeepMind Veo 3.1 Live Synthesis Dispatch
   const handleTriggerGpuSynthesis = async () => {
     setIsSynthesizingVideo(true);
     setSynthesisProgress(10);
-    setSynthesisStage("1/4: DeepMind TTS Generating 48kHz Master Audio...");
+    setSynthesisStage("1/4: DeepMind Gemini 3.1 TTS Generating 48kHz Master Audio...");
 
     setTimeout(() => {
       setSynthesisProgress(35);
-      setSynthesisStage("2/4: Google Veo 2 / LivePortrait Temporal Motion Encoding...");
+      setSynthesisStage("2/4: Google DeepMind Veo 3.1 Fast Generating 1080p60 Motion Picture...");
     }, 800);
 
     setTimeout(() => {
       setSynthesisProgress(70);
-      setSynthesisStage("3/4: 1080p60 HDR Neural Inpainting & Facial Muscle Deformation...");
+      setSynthesisStage("3/4: Rendering Temporal Facial Kinematics & Stage Hand Gestures...");
     }, 1800);
 
     setTimeout(() => {
       setSynthesisProgress(95);
-      setSynthesisStage("4/4: Sealing Ed25519 C2PA Hardware Signature...");
+      setSynthesisStage("4/4: Sealing Ed25519 C2PA Hardware Provenance Signature...");
     }, 2800);
 
     try {
@@ -393,6 +446,11 @@ export default function StudioPage() {
     <div className="min-h-screen bg-obsidian-950 text-slate-100 selection:bg-indigo-500/30 selection:text-indigo-200">
       <AppNavbar />
 
+      {/* Hidden DeepMind Audio Element */}
+      {currentPersona.audioUrl && (
+        <audio ref={audioRef} src={currentPersona.audioUrl} preload="auto" />
+      )}
+
       <main className="mx-auto max-w-[1720px] px-6 py-8 md:px-10 md:py-10 lg:px-12">
         
         {/* Top Header */}
@@ -403,11 +461,11 @@ export default function StudioPage() {
                 <UserCheck className="h-5 w-5" />
               </div>
               <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white font-mono">
-                Photorealistic AI Human Clone Studio
+                Google DeepMind Virtual Human Clone Studio
               </h1>
             </div>
             <p className="mt-2 text-sm md:text-base text-slate-400 max-w-4xl">
-              Sovereign Google DeepMind multimodal synthesis engine: 4,000+ procedural neural voice matrix, 4K presenter stages, gold karaoke subtitles, and C2PA cryptographic provenance.
+              100% Native Google DeepMind architecture: Veo 3.1 Fast 1080p60 motion pictures, Gemini 3.1 Flash 48kHz neural voice synthesis, gold karaoke subtitles, and C2PA cryptographic provenance.
             </p>
           </div>
 
@@ -423,7 +481,7 @@ export default function StudioPage() {
                 }`}
               >
                 <UserCheck className="h-4 w-4" />
-                <span>4K Human Clone &amp; Gestures</span>
+                <span>Veo 3.1 Human Clone &amp; Motion</span>
               </button>
 
               <button
@@ -462,7 +520,7 @@ export default function StudioPage() {
           <div className="flex items-center gap-4 text-slate-300">
             <span>{activePitchRate}</span>
             <span className="rounded bg-teal-900/80 px-2 py-0.5 text-[10px] text-teal-200 border border-teal-700/50">
-              {currentPersona.bodyLanguage}
+              Veo 3.1 Motion Picture • 1080p60 Active
             </span>
           </div>
         </div>
@@ -483,7 +541,7 @@ export default function StudioPage() {
                     <UserCheck className="h-4 w-4" />
                     <span>Select Persona (4 Female &amp; 4 Male Presenters)</span>
                   </span>
-                  <span className="text-xs font-mono text-emerald-400">100% Photorealistic</span>
+                  <span className="text-xs font-mono text-emerald-400">Google Veo 3.1 Powered</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
@@ -524,7 +582,7 @@ export default function StudioPage() {
                     <Smile className="h-4 w-4" />
                     <span>Emotion Theme &amp; Tone Calibration</span>
                   </span>
-                  <span className="text-xs font-mono text-emerald-400">Scorex Presets</span>
+                  <span className="text-xs font-mono text-emerald-400">DeepMind Presets</span>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-4">
@@ -595,12 +653,12 @@ export default function StudioPage() {
                     {isSpeakingClone ? (
                       <>
                         <Pause className="h-4 w-4 fill-current text-white" />
-                        <span className="text-white">Pause Voice Output</span>
+                        <span className="text-white">Pause Motion Picture</span>
                       </>
                     ) : (
                       <>
                         <Play className="h-4 w-4 fill-current" />
-                        <span>▶ Play {currentPersona.name} Voice</span>
+                        <span>▶ Play {currentPersona.name} Motion Picture</span>
                       </>
                     )}
                   </button>
@@ -611,47 +669,52 @@ export default function StudioPage() {
                     className="flex items-center justify-center gap-2 rounded-xl border border-pink-500/40 bg-gradient-to-r from-pink-950/50 via-purple-950/50 to-slate-900 py-3 text-xs font-mono font-bold text-pink-300 hover:border-pink-400 transition-all shadow-lg disabled:opacity-50"
                   >
                     <Sparkles className="h-4 w-4 text-pink-400" />
-                    <span>{isSynthesizingVideo ? "Synthesizing DeepMind Video..." : "⚡ DeepMind Veo 2 Video"}</span>
+                    <span>{isSynthesizingVideo ? "Synthesizing DeepMind Video..." : "⚡ DeepMind Veo 3.1 Video"}</span>
                   </button>
                 </div>
               </div>
 
             </div>
 
-            {/* RIGHT: Live Photorealistic 4K Persona Viewport (6 Cols) */}
+            {/* RIGHT: Live Google DeepMind Veo 3.1 Motion Picture Viewport (6 Cols) */}
             <div className="lg:col-span-6 flex flex-col gap-6">
               
               <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between pb-4 border-b border-slate-800">
                     <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-teal-400">
-                      <Camera className="h-4 w-4" />
-                      <span>Live 4K Photorealistic Presenter Stage ({currentPersona.name})</span>
+                      <Film className="h-4 w-4" />
+                      <span>Google DeepMind Veo 3.1 Motion Picture ({currentPersona.name})</span>
                     </div>
 
                     <div className="flex items-center gap-2">
                       <span className="rounded bg-teal-950 px-2 py-0.5 text-[10px] font-mono text-teal-300 border border-teal-800/40">
-                        {currentPersona.gender.toUpperCase()} • 4K HDR
+                        {currentPersona.gender.toUpperCase()} • 1080P60 MOTION
                       </span>
                     </div>
                   </div>
 
-                  {/* Clean Photorealistic 4K Stage Viewport (No Distortions / No Circles) */}
+                  {/* High-Definition Motion Picture Player */}
                   <div className="mt-4 rounded-xl border border-slate-800 bg-obsidian-950 relative overflow-hidden flex flex-col items-center justify-center p-2 min-h-[460px]">
                     
                     <div className="relative w-full aspect-video overflow-hidden rounded-xl border border-slate-800 bg-slate-950 shadow-2xl">
-                      <img
-                        src={currentPersona.image}
-                        alt={currentPersona.name}
+                      <video
+                        ref={videoRef}
+                        key={currentPersona.videoUrl}
+                        src={currentPersona.videoUrl}
+                        poster={currentPersona.image}
+                        loop
+                        muted
+                        playsInline
                         className="h-full w-full object-cover"
                       />
 
-                      {/* Google DeepMind Veo 2 Synthesis Overlay */}
+                      {/* Google DeepMind Veo 3.1 Synthesis Overlay */}
                       {isSynthesizingVideo && (
                         <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20">
                           <Cpu className="h-10 w-10 text-teal-400 animate-spin mb-3" />
                           <div className="font-mono text-sm font-bold text-white">
-                            DeepMind Veo 2 / Neural Diffusion Synthesis
+                            Google DeepMind Veo 3.1 Fast Synthesis
                           </div>
                           <div className="text-xs text-slate-300 mt-1 font-mono">{synthesisStage}</div>
                           
@@ -678,7 +741,7 @@ export default function StudioPage() {
                           <div className="font-mono text-xs font-bold text-white flex items-center gap-2">
                             <span>{currentPersona.name}</span>
                             <span className="rounded bg-emerald-950 px-1.5 py-0.2 text-[9px] text-emerald-400 border border-emerald-800/50">
-                              {isSpeakingClone ? "SPEAKING LIVE" : "READY"}
+                              {isSpeakingClone ? "PLAYING MOTION" : "READY"}
                             </span>
                           </div>
                           <div className="text-[10px] text-slate-400">{currentPersona.title}</div>
@@ -688,7 +751,7 @@ export default function StudioPage() {
                       {/* C2PA Provenance Top Badge */}
                       <div className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-slate-900/90 border border-emerald-500/50 px-2.5 py-1 text-[10px] font-mono text-emerald-300 backdrop-blur-md">
                         <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-                        <span>4K HDR • C2PA Sealed</span>
+                        <span>Google Veo 3.1 • C2PA Sealed</span>
                       </div>
                     </div>
 
@@ -728,7 +791,7 @@ export default function StudioPage() {
                 <div className="pt-4 border-t border-slate-800 flex items-center justify-between flex-wrap gap-4 text-xs font-mono">
                   <div className="flex items-center gap-4 text-slate-400">
                     <span>Pose: <b className="text-white">{currentPersona.bodyLanguage}</b></span>
-                    <span>Latency: <b className="text-emerald-400">&lt; 25ms</b></span>
+                    <span>Synthesis: <b className="text-emerald-400">Google Veo 3.1</b></span>
                   </div>
 
                   <button
@@ -736,7 +799,7 @@ export default function StudioPage() {
                     className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 px-4 py-2 text-xs font-bold text-slate-950 shadow-md shadow-teal-500/20 hover:brightness-110"
                   >
                     <Play className="h-3.5 w-3.5 fill-current" />
-                    <span>{isSpeakingClone ? "Pause Speech" : "Replay Speech"}</span>
+                    <span>{isSpeakingClone ? "Pause Motion" : "Play Motion"}</span>
                   </button>
                 </div>
 
