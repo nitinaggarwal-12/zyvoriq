@@ -1,0 +1,182 @@
+[
+  {
+    "word": "Hello",
+    "start": 0.208,
+    "end": 0.625
+  },
+  {
+    "word": "everyone!",
+    "start": 0.25,
+    "end": 1.167
+  },
+  {
+    "word": "I'm",
+    "start": 1.542,
+    "end": 2.042
+  },
+  {
+    "word": "Priya,",
+    "start": 1.708,
+    "end": 2.375
+  },
+  {
+    "word": "Global",
+    "start": 2.708,
+    "end": 3.375
+  },
+  {
+    "word": "Transformation",
+    "start": 3.0,
+    "end": 4.083
+  },
+  {
+    "word": "CTO.",
+    "start": 4.125,
+    "end": 5.208
+  },
+  {
+    "word": "Traditional",
+    "start": 5.167,
+    "end": 5.875
+  },
+  {
+    "word": "enterprise",
+    "start": 5.875,
+    "end": 6.75
+  },
+  {
+    "word": "content",
+    "start": 6.792,
+    "end": 7.292
+  },
+  {
+    "word": "pipelines",
+    "start": 7.333,
+    "end": 8.167
+  },
+  {
+    "word": "take",
+    "start": 8.083,
+    "end": 8.458
+  },
+  {
+    "word": "14",
+    "start": 8.708,
+    "end": 9.208
+  },
+  {
+    "word": "long",
+    "start": 9.208,
+    "end": 9.583
+  },
+  {
+    "word": "days",
+    "start": 9.375,
+    "end": 9.75
+  },
+  {
+    "word": "and",
+    "start": 10.083,
+    "end": 10.375
+  },
+  {
+    "word": "over",
+    "start": 10.167,
+    "end": 10.542
+  },
+  {
+    "word": "$140,000.",
+    "start": 10.375,
+    "end": 11.542
+  },
+  {
+    "word": "With",
+    "start": 11.792,
+    "end": 12.167
+  },
+  {
+    "word": "Zyvoriq,",
+    "start": 11.917,
+    "end": 12.5
+  },
+  {
+    "word": "we",
+    "start": 12.875,
+    "end": 13.125
+  },
+  {
+    "word": "collapse",
+    "start": 13.0,
+    "end": 13.792
+  },
+  {
+    "word": "that",
+    "start": 13.75,
+    "end": 14.125
+  },
+  {
+    "word": "entire",
+    "start": 13.917,
+    "end": 14.375
+  },
+  {
+    "word": "lifecycle",
+    "start": 14.375,
+    "end": 15.0
+  },
+  {
+    "word": "into",
+    "start": 15.25,
+    "end": 15.625
+  },
+  {
+    "word": "just",
+    "start": 15.5,
+    "end": 15.875
+  },
+  {
+    "word": "90",
+    "start": 16.042,
+    "end": 16.542
+  },
+  {
+    "word": "seconds\u2014backed",
+    "start": 16.5,
+    "end": 17.875
+  },
+  {
+    "word": "by",
+    "start": 18.0,
+    "end": 18.292
+  },
+  {
+    "word": "Veritas",
+    "start": 18.083,
+    "end": 19.0
+  },
+  {
+    "word": "cryptographic",
+    "start": 18.833,
+    "end": 19.875
+  },
+  {
+    "word": "consensus",
+    "start": 20.125,
+    "end": 20.75
+  },
+  {
+    "word": "and",
+    "start": 20.542,
+    "end": 20.833
+  },
+  {
+    "word": "Ed25519",
+    "start": 21.167,
+    "end": 22.083
+  },
+  {
+    "word": "provenance!",
+    "start": 21.958,
+    "end": 23.167
+  }
+]

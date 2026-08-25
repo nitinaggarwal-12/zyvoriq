@@ -32,8 +32,11 @@ import {
   Copy,
   SlidersHorizontal,
   Bookmark,
-  Wand2
+  Wand2,
+  Eye,
+  Mic
 } from "lucide-react";
+import priyaVisualTimings from "@/public/assets/timings/priya_visual_lipreading_timings.json";
 
 interface PersonaConfig {
   name: string;
@@ -229,6 +232,7 @@ export default function StudioPage() {
   const [newPersonaIntro, setNewPersonaIntro] = useState("");
   const [isSynthesizingNewPersona, setIsSynthesizingNewPersona] = useState(false);
   const [priyaVariant, setPriyaVariant] = useState<"master" | "lead120" | "expressive">("lead120");
+  const [alignmentMethod, setAlignmentMethod] = useState<"visual" | "acoustic">("visual");
 
   const currentPersona = personas[selectedPersona] || personas["priya"];
 
@@ -367,6 +371,10 @@ export default function StudioPage() {
   }, [cloneScript]);
 
   const wordTimings = useMemo(() => {
+    if (alignmentMethod === "visual" && selectedPersona === "priya" && priyaVisualTimings && priyaVisualTimings.length > 0) {
+      return priyaVisualTimings;
+    }
+
     const totalDuration = dynamicAudioDuration;
 
     const weights = wordsList.map((w) => {
@@ -395,7 +403,7 @@ export default function StudioPage() {
       accumulatedTime += duration;
       return { word, start, end: accumulatedTime };
     });
-  }, [wordsList, dynamicAudioDuration]);
+  }, [wordsList, dynamicAudioDuration, alignmentMethod, selectedPersona]);
 
   // Real-Time Millisecond-Exact Caption & Progress Tracker
   useEffect(() => {
@@ -1395,12 +1403,40 @@ export default function StudioPage() {
                     {/* 🎬 BROADCAST-GRADE ON-SCREEN CLOSED CAPTIONS (CC) OVERLAY WITH EXACT PHONETIC WORD TRACKING */}
                     {showCaptions && (
                       <div className="absolute bottom-3 left-3 right-3 z-10 flex flex-col items-center justify-end pointer-events-none">
-                        <div className="max-w-xl w-full rounded-2xl bg-slate-950/90 border border-slate-700/80 p-3.5 backdrop-blur-xl shadow-2xl text-center">
-                          <div className="flex items-center justify-center gap-1.5 mb-1.5">
-                            <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" />
-                            <span className="font-mono text-[10px] font-bold text-amber-300 uppercase tracking-widest">
-                              Syllable-Exact Live Teleprompter ({dynamicAudioDuration.toFixed(1)}s)
-                            </span>
+                        <div className="max-w-xl w-full rounded-2xl bg-slate-950/95 border border-slate-700/80 p-3.5 backdrop-blur-xl shadow-2xl text-center pointer-events-auto">
+                          <div className="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-slate-800">
+                            <div className="flex items-center gap-1.5">
+                              <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" />
+                              <span className="font-mono text-[10px] font-bold text-amber-300 uppercase tracking-wider">
+                                {alignmentMethod === "visual" ? "👁️ Visual Lip-Reading Word Sync" : "🎙️ Acoustic Waveform Word Sync"} ({dynamicAudioDuration.toFixed(1)}s)
+                              </span>
+                            </div>
+
+                            {/* Live Alignment Model Switcher */}
+                            <div className="flex items-center gap-1 bg-slate-900/90 p-0.5 rounded-lg border border-slate-700">
+                              <button
+                                onClick={() => setAlignmentMethod("visual")}
+                                className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold transition-all ${
+                                  alignmentMethod === "visual"
+                                    ? "bg-teal-500 text-slate-950 shadow-sm"
+                                    : "text-slate-400 hover:text-white"
+                                }`}
+                                title="Driven by visual mouth shape & viseme aperture"
+                              >
+                                👁️ Visual VSR
+                              </button>
+                              <button
+                                onClick={() => setAlignmentMethod("acoustic")}
+                                className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold transition-all ${
+                                  alignmentMethod === "acoustic"
+                                    ? "bg-purple-600 text-white shadow-sm"
+                                    : "text-slate-400 hover:text-white"
+                                }`}
+                                title="Driven by audio energy envelope"
+                              >
+                                🎙️ Acoustic
+                              </button>
+                            </div>
                           </div>
 
                           <div className="flex flex-wrap items-center justify-center gap-1.5 text-xs md:text-sm font-sans font-medium leading-relaxed">
