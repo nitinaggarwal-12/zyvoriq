@@ -584,9 +584,9 @@ export default function StudioPage() {
     <div className="min-h-screen bg-obsidian-950 text-slate-100 selection:bg-indigo-500/30 selection:text-indigo-200">
       <AppNavbar />
 
-      {/* Synchronized DeepMind Audio Element (Used in Option 1 Broadcast) */}
-      {selectedPlaybackEngine === "option1" && currentPersona.audioUrl && (
-        <audio ref={audioRef} key={currentPersona.audioUrl} src={currentPersona.audioUrl} preload="auto" />
+      {/* Synchronized DeepMind Master Audio Element (Active across both Option 1 and Option 2) */}
+      {currentPersona.audioUrl && (
+        <audio ref={audioRef} key={`${selectedPersona}_${currentPersona.audioUrl}`} src={currentPersona.audioUrl} preload="auto" />
       )}
 
       {/* Create Custom Persona Modal */}
