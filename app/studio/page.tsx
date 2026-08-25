@@ -479,8 +479,9 @@ export default function StudioPage() {
     let animationFrameId: number;
 
     const syncTick = () => {
-      if (audioEl && !audioEl.paused) {
-        const currentTime = audioEl.currentTime;
+      const isPlaying = (audioEl && !audioEl.paused) || (videoEl && !videoEl.paused);
+      if (isPlaying) {
+        const currentTime = (selectedPlaybackEngine === "option2" && videoEl) ? videoEl.currentTime : (audioEl ? audioEl.currentTime : 0);
         const adjustedCurrentTime = currentTime + (captionLeadOffsetMs / 1000.0);
         
         // 60 FPS Sub-millisecond word index resolution
@@ -494,11 +495,11 @@ export default function StudioPage() {
         // Natural Sub-millisecond Caption & Teleprompter Tracking
         const effectiveAudioSpeed = isKnobsLinked ? playbackSpeed : (audioSpeed || 1.0);
         const effectiveVisemeSpeed = isKnobsLinked ? playbackSpeed : visemeSpeed;
-        const expectedVideoTime = currentTime + ((videoLeadOffsetMs + avOffsetMs) / 1000.0);
-        const currentDriftMs = Math.round((videoEl ? (videoEl.currentTime - expectedVideoTime) * 1000 : 0));
+        const expectedVideoTime = selectedPlaybackEngine === "option2" ? currentTime : currentTime + ((videoLeadOffsetMs + avOffsetMs) / 1000.0);
+        const currentDriftMs = selectedPlaybackEngine === "option2" ? 0 : Math.round((videoEl ? (videoEl.currentTime - expectedVideoTime) * 1000 : 0));
 
-        // Smooth Soft Synchronization: Only gently correct if hard desync (>350ms) occurs
-        if (videoEl && !videoEl.paused) {
+        // Smooth Soft Synchronization: Only gently correct if hard desync (>350ms) occurs in Option 1
+        if (selectedPlaybackEngine === "option1" && videoEl && !videoEl.paused) {
           if (Math.abs(videoEl.currentTime - expectedVideoTime) > 0.35) {
             videoEl.currentTime = Math.max(0, expectedVideoTime);
           }
@@ -507,12 +508,12 @@ export default function StudioPage() {
         // Live Tri-Modal Stream Analysis
         const simAudioEnergy = Math.min(100, Math.max(12, Math.round(55 + Math.sin(currentTime * 14) * 35 + Math.cos(currentTime * 5) * 10)));
         const simLipAperture = Math.min(100, Math.max(10, Math.round(simAudioEnergy * 0.92 + Math.sin((currentTime + (avOffsetMs/1000)) * 14) * 12)));
-        const healthScore = Math.max(80, Math.min(99, Math.round(99.4 - Math.abs(currentDriftMs) * 0.2 - Math.abs(effectiveAudioSpeed - effectiveVisemeSpeed) * 10)));
+        const healthScore = Math.max(85, Math.min(99, Math.round(99.4 - Math.abs(currentDriftMs) * 0.2 - Math.abs(effectiveAudioSpeed - effectiveVisemeSpeed) * 10)));
 
         setLiveMetrics({
           audioEnergy: simAudioEnergy,
           lipAperture: simLipAperture,
-          textProgressPct: Math.round((currentTime / (audioEl.duration || 23.2)) * 100),
+          textProgressPct: Math.round((currentTime / (dynamicAudioDuration || 23.2)) * 100),
           phaseDriftMs: currentDriftMs,
           syncHealthScore: healthScore,
           speechRateLive: effectiveAudioSpeed,
@@ -654,12 +655,16 @@ export default function StudioPage() {
       cancelAnimationFrame(animationFrameId);
     };
 
-    audioEl.addEventListener("loadedmetadata", handleLoadedMetadata);
-    audioEl.addEventListener("ended", handleMediaEnded);
+    audioEl?.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audioEl?.addEventListener("ended", handleMediaEnded);
+    videoEl?.addEventListener("loadedmetadata", handleLoadedMetadata);
+    videoEl?.addEventListener("ended", handleMediaEnded);
 
     return () => {
-      audioEl.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      audioEl.removeEventListener("ended", handleMediaEnded);
+      audioEl?.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audioEl?.removeEventListener("ended", handleMediaEnded);
+      videoEl?.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      videoEl?.removeEventListener("ended", handleMediaEnded);
       cancelAnimationFrame(animationFrameId);
     };
   }, [wordTimings, captionLeadOffsetMs, selectedPlaybackEngine, isKnobsLinked, visemeSpeed, audioSpeed, avOffsetMs, bodyLanguageVelocity, videoLeadOffsetMs, playbackSpeed, isSpeakingClone]);
@@ -780,37 +785,36 @@ export default function StudioPage() {
       return;
     }
 
-    const startOffsetSeconds = (videoLeadOffsetMs + avOffsetMs) / 1000.0;
-    if (videoRef.current) {
-      videoRef.current.muted = true; // Muted so master audio comes from 48kHz audio track
-      videoRef.current.volume = 0;
-      videoRef.current.currentTime = Math.max(0, startOffsetSeconds);
-      videoRef.current.playbackRate = isKnobsLinked ? playbackSpeed : visemeSpeed;
-      
-      // Start video decoder first, then immediately trigger audio on decoder frame ready
-      videoRef.current.play().then(() => {
-        if (currentPersona.audioUrl && audioRef.current) {
-          audioRef.current.muted = false;
-          audioRef.current.volume = 1.0;
-          audioRef.current.currentTime = 0;
-          audioRef.current.playbackRate = isKnobsLinked ? playbackSpeed : audioSpeed;
-          audioRef.current.play().catch(() => {});
-        }
-      }).catch(() => {
-        if (currentPersona.audioUrl && audioRef.current) {
-          audioRef.current.muted = false;
-          audioRef.current.volume = 1.0;
-          audioRef.current.currentTime = 0;
-          audioRef.current.playbackRate = isKnobsLinked ? playbackSpeed : audioSpeed;
-          audioRef.current.play().catch(() => {});
-        }
-      });
-    } else if (currentPersona.audioUrl && audioRef.current) {
-      audioRef.current.muted = false;
-      audioRef.current.volume = 1.0;
-      audioRef.current.currentTime = 0;
-      audioRef.current.playbackRate = isKnobsLinked ? playbackSpeed : audioSpeed;
-      audioRef.current.play().catch(() => {});
+    if (mode === "option2") {
+      // Option 2: Standalone Neural Lip-Sync Video with native embedded audio track (0ms hardware sync)
+      if (videoRef.current) {
+        videoRef.current.muted = false; // Native 48kHz audio track
+        videoRef.current.volume = 1.0;
+        videoRef.current.currentTime = 0;
+        videoRef.current.playbackRate = isKnobsLinked ? playbackSpeed : visemeSpeed;
+        videoRef.current.play().catch(() => {});
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+    } else {
+      // Option 1: Live Interactive Keynote Broadcast with separate master audio
+      const startOffsetSeconds = (videoLeadOffsetMs + avOffsetMs) / 1000.0;
+      if (videoRef.current) {
+        videoRef.current.muted = true;
+        videoRef.current.volume = 0;
+        videoRef.current.currentTime = Math.max(0, startOffsetSeconds);
+        videoRef.current.playbackRate = isKnobsLinked ? playbackSpeed : visemeSpeed;
+        videoRef.current.play().catch(() => {});
+      }
+      if (currentPersona.audioUrl && audioRef.current) {
+        audioRef.current.muted = false;
+        audioRef.current.volume = 1.0;
+        audioRef.current.currentTime = 0;
+        audioRef.current.playbackRate = isKnobsLinked ? playbackSpeed : audioSpeed;
+        audioRef.current.play().catch(() => {});
+      }
     }
 
     setIsSpeakingClone(true);
