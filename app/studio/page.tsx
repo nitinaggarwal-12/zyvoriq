@@ -384,21 +384,20 @@ export default function StudioPage() {
 
   // Real-Time Millisecond-Exact Caption & Progress Tracker
   useEffect(() => {
-    // In decoupled mode, audio element drives the timeline; in linked mode, the video element drives
-    const mediaSource = (!isKnobsLinked || selectedPlaybackEngine === "option1") 
-      ? audioRef.current 
-      : videoRef.current;
-    if (!mediaSource) return;
+    const audioEl = audioRef.current;
+    const videoEl = videoRef.current;
+    if (!audioEl) return;
 
     const handleLoadedMetadata = () => {
-      if (mediaSource.duration && mediaSource.duration > 0) {
-        setDynamicAudioDuration(mediaSource.duration);
+      if (audioEl.duration && audioEl.duration > 0) {
+        setDynamicAudioDuration(audioEl.duration);
       }
     };
 
     const handleTimeUpdate = () => {
-      if (mediaSource.duration && mediaSource.duration > 0) {
-        const adjustedCurrentTime = mediaSource.currentTime + (captionLeadOffsetMs / 1000.0);
+      if (audioEl.duration && audioEl.duration > 0) {
+        const currentTime = audioEl.currentTime;
+        const adjustedCurrentTime = currentTime + (captionLeadOffsetMs / 1000.0);
         
         // Find exact word index where currentTime falls within start and end
         const idx = wordTimings.findIndex(t => adjustedCurrentTime >= t.start && adjustedCurrentTime < t.end);
@@ -407,26 +406,40 @@ export default function StudioPage() {
         } else if (adjustedCurrentTime >= wordTimings[wordTimings.length - 1]?.end) {
           setSpokenWordIndex(wordTimings.length - 1);
         }
+
+        // Active drift-lock: In decoupled mode, ensure video is precisely on phase
+        if (!isKnobsLinked && videoEl && !videoEl.paused) {
+          const expectedVideoTime = (currentTime * (visemeSpeed / audioSpeed)) + (avOffsetMs / 1000.0);
+          if (Math.abs(videoEl.currentTime - expectedVideoTime) > 0.25) {
+            videoEl.currentTime = Math.max(0, expectedVideoTime);
+          }
+        }
       }
     };
 
     const handleMediaEnded = () => {
-      if (videoRef.current) videoRef.current.pause();
-      if (audioRef.current) audioRef.current.pause();
+      if (videoEl) {
+        videoEl.pause();
+        videoEl.currentTime = 0;
+      }
+      if (audioEl) {
+        audioEl.pause();
+        audioEl.currentTime = 0;
+      }
       setIsSpeakingClone(false);
       setSpokenWordIndex(-1);
     };
 
-    mediaSource.addEventListener("loadedmetadata", handleLoadedMetadata);
-    mediaSource.addEventListener("timeupdate", handleTimeUpdate);
-    mediaSource.addEventListener("ended", handleMediaEnded);
+    audioEl.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audioEl.addEventListener("timeupdate", handleTimeUpdate);
+    audioEl.addEventListener("ended", handleMediaEnded);
 
     return () => {
-      mediaSource.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      mediaSource.removeEventListener("timeupdate", handleTimeUpdate);
-      mediaSource.removeEventListener("ended", handleMediaEnded);
+      audioEl.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audioEl.removeEventListener("timeupdate", handleTimeUpdate);
+      audioEl.removeEventListener("ended", handleMediaEnded);
     };
-  }, [wordTimings, captionLeadOffsetMs, selectedPlaybackEngine, isKnobsLinked]);
+  }, [wordTimings, captionLeadOffsetMs, selectedPlaybackEngine, isKnobsLinked, visemeSpeed, audioSpeed, avOffsetMs]);
 
   // Unified Playback Controller
   const handleTogglePlayback = (mode: "option1" | "option2") => {
@@ -1258,7 +1271,6 @@ export default function StudioPage() {
                       src={activeVideoUrl}
                       poster={currentPersona.image}
                       playsInline
-                      loop={selectedPlaybackEngine === "option1"}
                       className="h-full w-full object-cover"
                     />
 
