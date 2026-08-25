@@ -12,3 +12,5 @@ scratch/
 *.db-journal
 *.db-wal
 *.db-shm
+temp/
+.venv/

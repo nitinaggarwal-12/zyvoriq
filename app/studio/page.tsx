@@ -49,8 +49,8 @@ interface PersonaConfig {
 }
 
 export default function StudioPage() {
-  // Option 1 vs Option 2 Mode Switcher
-  const [activeTab, setActiveTab] = useState<"option1" | "option2" | "compare">("compare");
+  // Option 2 (3D Landmark Neural Synced Master) vs Option 1 (Broadcast Keynote Loop)
+  const [activeTab, setActiveTab] = useState<"option1" | "option2" | "compare">("option2");
   const [selectedPlaybackEngine, setSelectedPlaybackEngine] = useState<"option1" | "option2">("option2");
 
   // Dynamic Personas Catalog with Verified Neural Synced Video Files
@@ -957,6 +957,7 @@ export default function StudioPage() {
                       src={activeVideoUrl}
                       poster={currentPersona.image}
                       playsInline
+                      loop={selectedPlaybackEngine === "option1"}
                       className="h-full w-full object-cover"
                     />
 
