@@ -26,7 +26,12 @@ import {
   Unlock,
   Timer,
   RotateCcw,
-  Volume2
+  Volume2,
+  Check,
+  Copy,
+  SlidersHorizontal,
+  Bookmark,
+  Wand2
 } from "lucide-react";
 
 interface PersonaConfig {
@@ -170,6 +175,19 @@ export default function StudioPage() {
   // Speed Stepper Controls (0.01x increments) - UNIFIED SPEED BY DEFAULT
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.00);
 
+  // --------------------------------------------------------------------------
+  // INDEPENDENT MULTI-KNOB PARAMETER CALIBRATION DECK (SWEET SPOT TUNER)
+  // --------------------------------------------------------------------------
+  const [audioSpeed, setAudioSpeed] = useState<number>(1.00);               // Speech tempo (0.70x - 1.50x)
+  const [visemeSpeed, setVisemeSpeed] = useState<number>(1.00);             // Lip sync rate (0.70x - 1.50x)
+  const [avOffsetMs, setAvOffsetMs] = useState<number>(0);                  // Audio-to-Video phase shift (±500ms)
+  const [expressionIntensity, setExpressionIntensity] = useState<number>(100); // Face micro-motion (50% - 150%)
+  const [bodyLanguageVelocity, setBodyLanguageVelocity] = useState<number>(1.00); // Torso sway & gesture rate (0.5x - 2.0x)
+  const [mouthSharpness, setMouthSharpness] = useState<number>(75);         // Mouth crispness / Lanczos feather (0% - 100%)
+  const [isKnobsLinked, setIsKnobsLinked] = useState<boolean>(true);        // Link audio & lips by default
+  const [activePreset, setActivePreset] = useState<string>("broadcast");
+  const [copiedSweetSpot, setCopiedSweetSpot] = useState<boolean>(false);
+
   // Temporal Phase Offset (Video Lead Time in Milliseconds)
   const [videoLeadOffsetMs, setVideoLeadOffsetMs] = useState<number>(0);
 
@@ -233,24 +251,91 @@ export default function StudioPage() {
 
   // Unified Real-Time Playback Rate Binding to BOTH Video and Audio
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.playbackRate = playbackSpeed;
-      videoRef.current.defaultPlaybackRate = playbackSpeed;
+    if (isKnobsLinked) {
+      if (videoRef.current) {
+        videoRef.current.playbackRate = playbackSpeed;
+        videoRef.current.defaultPlaybackRate = playbackSpeed;
+      }
+      if (audioRef.current) {
+        audioRef.current.playbackRate = playbackSpeed;
+        audioRef.current.defaultPlaybackRate = playbackSpeed;
+      }
+    } else {
+      if (videoRef.current) {
+        const rate = Math.max(0.50, Math.min(3.00, Math.round(visemeSpeed * bodyLanguageVelocity * 100) / 100));
+        videoRef.current.playbackRate = rate;
+        videoRef.current.defaultPlaybackRate = rate;
+      }
+      if (audioRef.current) {
+        audioRef.current.playbackRate = audioSpeed;
+        audioRef.current.defaultPlaybackRate = audioSpeed;
+      }
     }
-    if (audioRef.current) {
-      audioRef.current.playbackRate = playbackSpeed;
-      audioRef.current.defaultPlaybackRate = playbackSpeed;
-    }
-  }, [playbackSpeed]);
+  }, [playbackSpeed, isKnobsLinked, audioSpeed, visemeSpeed, bodyLanguageVelocity]);
 
   // Unified Speed Stepper Handler (±0.01x or ±0.10x)
   const adjustPlaybackSpeed = (delta: number) => {
     setPlaybackSpeed((prev) => {
       const next = Math.max(0.50, Math.min(3.00, Math.round((prev + delta) * 100) / 100));
-      if (videoRef.current) videoRef.current.playbackRate = next;
-      if (audioRef.current) audioRef.current.playbackRate = next;
+      setAudioSpeed(next);
+      setVisemeSpeed(next);
       return next;
     });
+  };
+
+  // Sweet Spot Presets Dispatcher
+  const applySweetSpotPreset = (key: string) => {
+    setActivePreset(key);
+    if (key === "broadcast") {
+      setAudioSpeed(1.00);
+      setVisemeSpeed(1.00);
+      setPlaybackSpeed(1.00);
+      setAvOffsetMs(0);
+      setExpressionIntensity(100);
+      setBodyLanguageVelocity(1.00);
+      setMouthSharpness(75);
+    } else if (key === "keynote") {
+      setAudioSpeed(1.10);
+      setVisemeSpeed(1.10);
+      setPlaybackSpeed(1.10);
+      setAvOffsetMs(-20);
+      setExpressionIntensity(125);
+      setBodyLanguageVelocity(1.15);
+      setMouthSharpness(85);
+    } else if (key === "fireside") {
+      setAudioSpeed(0.92);
+      setVisemeSpeed(0.92);
+      setPlaybackSpeed(0.92);
+      setAvOffsetMs(10);
+      setExpressionIntensity(90);
+      setBodyLanguageVelocity(0.85);
+      setMouthSharpness(65);
+    } else if (key === "boardroom") {
+      setAudioSpeed(0.85);
+      setVisemeSpeed(0.85);
+      setPlaybackSpeed(0.85);
+      setAvOffsetMs(30);
+      setExpressionIntensity(80);
+      setBodyLanguageVelocity(0.75);
+      setMouthSharpness(70);
+    }
+  };
+
+  // Export Sweet Spot Calibration JSON to Clipboard
+  const handleCopySweetSpot = () => {
+    const config = {
+      persona: selectedPersona,
+      audioSpeed: isKnobsLinked ? playbackSpeed : audioSpeed,
+      visemeSpeed: isKnobsLinked ? playbackSpeed : visemeSpeed,
+      avOffsetMs,
+      expressionIntensity,
+      bodyLanguageVelocity,
+      mouthSharpness,
+      timestamp: new Date().toISOString()
+    };
+    navigator.clipboard.writeText(JSON.stringify(config, null, 2));
+    setCopiedSweetSpot(true);
+    setTimeout(() => setCopiedSweetSpot(false), 2500);
   };
 
   // Temporal Lead Offset Stepper (±50ms or ±100ms)
@@ -785,86 +870,276 @@ export default function StudioPage() {
                 />
               </div>
 
-              {/* ⚡ SPEED STEPPER & SLIDER (±0.01x) */}
-              <div className="mt-4 flex flex-col gap-2.5 bg-obsidian-950 p-4 rounded-xl border border-purple-500/40">
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
-                      <Gauge className="h-3.5 w-3.5 text-purple-400" />
-                      <span>Dynamic Video/Audio Speed (±0.01x):</span>
+              {/* ------------------------------------------------------------------ */}
+              {/* 🎛️ MULTI-KNOB PARAMETER CALIBRATION DECK (SWEET-SPOT TUNER)          */}
+              {/* ------------------------------------------------------------------ */}
+              <div className="mt-4 flex flex-col gap-3.5 bg-obsidian-950 p-4.5 rounded-2xl border border-purple-500/50 shadow-xl shadow-purple-950/20">
+                
+                {/* Deck Header: Title, Link Lock & Sweet Spot JSON Export */}
+                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <SlidersHorizontal className="h-4 w-4 text-purple-400" />
+                    <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
+                      Sweet-Spot Tuning Deck
                     </span>
-                    <span className="text-[11px] text-slate-400">Maintains 100% video-audio phase lock at any speed</span>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
-                    {/* -0.10 Macro Step */}
+                  <div className="flex items-center gap-2">
+                    {/* Link/Decouple Toggle */}
                     <button
-                      onClick={() => adjustPlaybackSpeed(-0.10)}
-                      className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-300 font-mono font-bold hover:bg-slate-800 text-[11px] active:scale-95 transition-all"
-                      title="Jump -0.10x"
+                      onClick={() => setIsKnobsLinked(!isKnobsLinked)}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold border flex items-center gap-1.5 transition-all ${
+                        isKnobsLinked
+                          ? "bg-purple-950/80 text-purple-300 border-purple-600/70"
+                          : "bg-amber-950/80 text-amber-300 border-amber-600/70"
+                      }`}
+                      title={isKnobsLinked ? "Audio & Lips synchronized together" : "Decoupled: Tune each parameter independently"}
                     >
-                      -0.10
+                      {isKnobsLinked ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
+                      <span>{isKnobsLinked ? "Sync Locked" : "Independent Knobs"}</span>
                     </button>
 
-                    {/* -0.01 Micro Step */}
+                    {/* Copy Sweet Spot Config */}
                     <button
-                      onClick={() => adjustPlaybackSpeed(-0.01)}
-                      className="h-8 w-8 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold flex items-center justify-center hover:bg-slate-700 active:scale-95 text-xs transition-all"
-                      title="Decrease by -0.01x"
+                      onClick={handleCopySweetSpot}
+                      className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold border bg-slate-900 border-slate-700 text-slate-300 hover:text-white flex items-center gap-1 transition-all"
+                      title="Copy calibrated sweet-spot parameters as JSON"
                     >
-                      <Minus className="h-4 w-4" />
+                      {copiedSweetSpot ? (
+                        <>
+                          <Check className="h-3 w-3 text-emerald-400" />
+                          <span className="text-emerald-400">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3 w-3 text-slate-400" />
+                          <span>Export Config</span>
+                        </>
+                      )}
                     </button>
+                  </div>
+                </div>
 
-                    {/* Precise Value Display */}
-                    <div className="w-18 px-2 text-center font-mono font-extrabold text-base text-purple-400 bg-slate-900 py-1 rounded-lg border border-purple-500/60 shadow-inner">
-                      {playbackSpeed.toFixed(2)}x
+                {/* 1-Click Sweet Spot Presets */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-mono uppercase text-slate-400 flex items-center gap-1">
+                    <Sparkles className="h-3 w-3 text-amber-400" />
+                    <span>Quick Sweet-Spot Presets:</span>
+                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                    {[
+                      { id: "broadcast", label: "🌟 Broadcast", desc: "1.0x Keynote Master" },
+                      { id: "keynote", label: "🚀 Dynamic Pitch", desc: "1.1x Fast & Energetic" },
+                      { id: "fireside", label: "🎙️ Fireside", desc: "0.92x Empathetic" },
+                      { id: "boardroom", label: "🏛️ Boardroom", desc: "0.85x Executive Gravitas" }
+                    ].map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => applySweetSpotPreset(p.id)}
+                        className={`p-2 rounded-xl text-left border transition-all ${
+                          activePreset === p.id
+                            ? "bg-purple-900/60 border-purple-400 text-white shadow-md shadow-purple-900/30 ring-1 ring-purple-400"
+                            : "bg-slate-900/80 border-slate-800 text-slate-300 hover:border-slate-700"
+                        }`}
+                      >
+                        <div className="font-mono text-xs font-bold">{p.label}</div>
+                        <div className="text-[9px] text-slate-400 mt-0.5 truncate">{p.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Grid of Independent Parameter Knobs */}
+                <div className="space-y-3 pt-1">
+                  
+                  {/* KNOB 1: Speech Rate & Audio Cadence */}
+                  <div className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <span className="text-slate-300 flex items-center gap-1.5">
+                        <Volume2 className="h-3.5 w-3.5 text-teal-400" />
+                        <span>Speech Rate / Audio Cadence:</span>
+                      </span>
+                      <span className="font-bold text-teal-400 bg-slate-900 px-2 py-0.5 rounded border border-teal-500/40">
+                        {(isKnobsLinked ? playbackSpeed : audioSpeed).toFixed(2)}x
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-[10px] font-mono text-slate-500">0.70x</span>
+                      <input
+                        type="range"
+                        min="0.70"
+                        max="1.50"
+                        step="0.01"
+                        value={isKnobsLinked ? playbackSpeed : audioSpeed}
+                        onChange={(e: any) => {
+                          const v = parseFloat(e.target.value);
+                          if (isKnobsLinked) {
+                            setPlaybackSpeed(v);
+                            setAudioSpeed(v);
+                            setVisemeSpeed(v);
+                          } else {
+                            setAudioSpeed(v);
+                            if (audioRef.current) audioRef.current.playbackRate = v;
+                          }
+                        }}
+                        className="flex-1 accent-teal-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
+                      />
+                      <span className="text-[10px] font-mono text-slate-500">1.50x</span>
+                    </div>
+                  </div>
+
+                  {/* KNOB 2: Lips & Viseme Articulation Speed */}
+                  <div className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <span className="text-slate-300 flex items-center gap-1.5">
+                        <Activity className="h-3.5 w-3.5 text-pink-400" />
+                        <span>Lips / Viseme Articulation Rate:</span>
+                      </span>
+                      <span className="font-bold text-pink-400 bg-slate-900 px-2 py-0.5 rounded border border-pink-500/40">
+                        {(isKnobsLinked ? playbackSpeed : visemeSpeed).toFixed(2)}x
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-[10px] font-mono text-slate-500">0.70x</span>
+                      <input
+                        type="range"
+                        min="0.70"
+                        max="1.50"
+                        step="0.01"
+                        value={isKnobsLinked ? playbackSpeed : visemeSpeed}
+                        onChange={(e: any) => {
+                          const v = parseFloat(e.target.value);
+                          if (isKnobsLinked) {
+                            setPlaybackSpeed(v);
+                            setAudioSpeed(v);
+                            setVisemeSpeed(v);
+                          } else {
+                            setVisemeSpeed(v);
+                            if (videoRef.current) videoRef.current.playbackRate = v * bodyLanguageVelocity;
+                          }
+                        }}
+                        className="flex-1 accent-pink-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
+                      />
+                      <span className="text-[10px] font-mono text-slate-500">1.50x</span>
+                    </div>
+                  </div>
+
+                  {/* KNOB 3: Temporal Lead / Audio-Video Sync Nudge (±10ms) */}
+                  <div className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <span className="text-slate-300 flex items-center gap-1.5">
+                        <Timer className="h-3.5 w-3.5 text-amber-400" />
+                        <span>AV Phase Sync Nudge (Time Lead):</span>
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setAvOffsetMs(prev => Math.max(-300, prev - 10))}
+                          className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-white text-[10px]"
+                          title="Nudge audio -10ms"
+                        >
+                          -10ms
+                        </button>
+                        <span className="font-bold text-amber-400 bg-slate-900 px-2 py-0.5 rounded border border-amber-500/40 min-w-[56px] text-center">
+                          {avOffsetMs > 0 ? `+${avOffsetMs}` : avOffsetMs} ms
+                        </span>
+                        <button
+                          onClick={() => setAvOffsetMs(prev => Math.min(300, prev + 10))}
+                          className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-white text-[10px]"
+                          title="Nudge audio +10ms"
+                        >
+                          +10ms
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-[10px] font-mono text-slate-500">-300ms</span>
+                      <input
+                        type="range"
+                        min="-300"
+                        max="300"
+                        step="10"
+                        value={avOffsetMs}
+                        onChange={(e: any) => setAvOffsetMs(parseInt(e.target.value))}
+                        className="flex-1 accent-amber-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
+                      />
+                      <span className="text-[10px] font-mono text-slate-500">+300ms</span>
+                    </div>
+                  </div>
+
+                  {/* KNOB 4 & 5: Facial Expressiveness & Body Language Velocity */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    
+                    {/* Expressiveness */}
+                    <div className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 flex flex-col gap-1">
+                      <div className="flex items-center justify-between text-[11px] font-mono">
+                        <span className="text-slate-300">Facial Expressiveness:</span>
+                        <span className="text-purple-300 font-bold">{expressionIntensity}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="50"
+                        max="150"
+                        step="5"
+                        value={expressionIntensity}
+                        onChange={(e: any) => setExpressionIntensity(parseInt(e.target.value))}
+                        className="accent-purple-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
+                      />
                     </div>
 
-                    {/* +0.01 Micro Step */}
-                    <button
-                      onClick={() => adjustPlaybackSpeed(+0.01)}
-                      className="h-8 w-8 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 border border-purple-400 text-white font-bold flex items-center justify-center hover:brightness-110 active:scale-95 text-xs shadow-md transition-all"
-                      title="Increase by +0.01x"
-                    >
-                      <Plus className="h-4 w-4 stroke-[3]" />
-                    </button>
+                    {/* Body Language Velocity */}
+                    <div className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 flex flex-col gap-1">
+                      <div className="flex items-center justify-between text-[11px] font-mono">
+                        <span className="text-slate-300">Body &amp; Torso Motion:</span>
+                        <span className="text-indigo-300 font-bold">{bodyLanguageVelocity.toFixed(2)}x</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0.50"
+                        max="2.00"
+                        step="0.05"
+                        value={bodyLanguageVelocity}
+                        onChange={(e: any) => setBodyLanguageVelocity(parseFloat(e.target.value))}
+                        className="accent-indigo-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
+                      />
+                    </div>
 
-                    {/* +0.10 Macro Step */}
-                    <button
-                      onClick={() => adjustPlaybackSpeed(+0.10)}
-                      className="px-2 py-1 rounded bg-slate-900 border border-purple-700 text-purple-300 font-mono font-bold hover:bg-slate-800 text-[11px] active:scale-95 transition-all"
-                      title="Jump +0.10x"
-                    >
-                      +0.10
-                    </button>
                   </div>
+
+                  {/* KNOB 6: Mouth Definition & Edge Crispness */}
+                  <div className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 flex flex-col gap-1">
+                    <div className="flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-slate-300">Mouth Crispness &amp; Feathering:</span>
+                      <span className="text-cyan-300 font-bold">{mouthSharpness}%</span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-[10px] font-mono text-slate-500">Soft Blend (0%)</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={mouthSharpness}
+                        onChange={(e: any) => setMouthSharpness(parseInt(e.target.value))}
+                        className="flex-1 accent-cyan-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
+                      />
+                      <span className="text-[10px] font-mono text-slate-500">Ultra-Sharp (100%)</span>
+                    </div>
+                  </div>
+
                 </div>
 
-                {/* Slider for Smooth Continuous Real-Time Scrubbing */}
-                <div className="pt-1 flex items-center gap-3">
-                  <span className="text-[10px] font-mono text-slate-400">0.50x</span>
-                  <input
-                    type="range"
-                    min="0.50"
-                    max="3.00"
-                    step="0.01"
-                    value={playbackSpeed}
-                    onInput={(e: any) => {
-                      const val = parseFloat(e.target.value);
-                      setPlaybackSpeed(val);
-                      if (videoRef.current) videoRef.current.playbackRate = val;
-                      if (audioRef.current) audioRef.current.playbackRate = val;
-                    }}
-                    onChange={(e: any) => {
-                      const val = parseFloat(e.target.value);
-                      setPlaybackSpeed(val);
-                      if (videoRef.current) videoRef.current.playbackRate = val;
-                      if (audioRef.current) audioRef.current.playbackRate = val;
-                    }}
-                    className="flex-1 accent-purple-400 cursor-pointer h-2 bg-slate-800 rounded-lg"
-                  />
-                  <span className="text-[10px] font-mono text-slate-400">3.00x</span>
+                {/* Reset Knobs Footer */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-[10px] font-mono text-slate-400">
+                  <span>Target Timing Drift: <b className="text-emerald-400">0.0 ms (Exact Clock Lock)</b></span>
+                  <button
+                    onClick={() => applySweetSpotPreset("broadcast")}
+                    className="text-slate-400 hover:text-white flex items-center gap-1 hover:underline"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    <span>Reset All Knobs</span>
+                  </button>
                 </div>
+
               </div>
 
               {/* Option 1 and Option 2 Play / Render Buttons */}
