@@ -710,12 +710,16 @@ export default function StudioPage() {
   }, [priyaVariant, liveMetrics.phaseDriftMs]);
 
   const handleApplyAiAutoTune = () => {
-    const activeDrift = liveMetrics.phaseDriftMs || 0;
-    const targetOffset = Math.abs(activeDrift) > 10 ? -activeDrift : (recommendedKnobs.avOffsetMs || 0);
-    const targetSpeed = recommendedKnobs.audioSpeed || 1.00;
-    const targetViseme = recommendedKnobs.visemeSpeed || 1.00;
-    const targetExp = recommendedKnobs.expressionIntensity || 100;
-    const targetSharp = recommendedKnobs.mouthSharpness || 80;
+    // Determine real physical delta between audio clock and video clock
+    const audioTime = audioRef.current ? audioRef.current.currentTime : 0;
+    const videoTime = videoRef.current ? videoRef.current.currentTime : 0;
+    const realClockGapMs = Math.round((videoTime - audioTime) * 1000);
+    const targetOffset = -realClockGapMs;
+
+    const targetSpeed = 1.00;
+    const targetViseme = 1.00;
+    const targetExp = 110;
+    const targetSharp = 85;
 
     setAudioSpeed(targetSpeed);
     setVisemeSpeed(targetViseme);
@@ -733,8 +737,9 @@ export default function StudioPage() {
     if (videoRef.current) {
       videoRef.current.playbackRate = targetViseme;
       videoRef.current.defaultPlaybackRate = targetViseme;
-      if (audioRef.current) {
-        videoRef.current.currentTime = Math.max(0, audioRef.current.currentTime + (targetOffset / 1000.0));
+      if (audioRef.current && !audioRef.current.paused) {
+        // Snap video timeline to exact audio timeline with zero drift!
+        videoRef.current.currentTime = audioRef.current.currentTime;
       }
     }
 
@@ -747,10 +752,10 @@ export default function StudioPage() {
 
     // Add calibration log to ledger and stream
     const calibReport: SecondDiagnosticReport = {
-      second: audioRef.current ? audioRef.current.currentTime : 0,
-      timeStr: (audioRef.current ? audioRef.current.currentTime : 0).toFixed(1) + "s",
+      second: audioTime,
+      timeStr: audioTime.toFixed(1) + "s",
       word: "⚡ Auto-Tune",
-      inSync: `AV Phase Calibrated (${targetOffset > 0 ? '+' : ''}${targetOffset}ms offset applied)`,
+      inSync: `AV Phase Calibrated (${targetOffset >= 0 ? '+' : ''}${targetOffset}ms offset applied)`,
       outOfSync: "None (Phase Convergence Locked to 0ms)",
       phaseDriftMs: 0,
       status: "LOCKED",
@@ -777,14 +782,30 @@ export default function StudioPage() {
 
     const startOffsetSeconds = (videoLeadOffsetMs + avOffsetMs) / 1000.0;
     if (videoRef.current) {
-      videoRef.current.muted = true; // Always muted so audioRef handles master uncompressed audio
+      videoRef.current.muted = true; // Muted so master audio comes from 48kHz audio track
       videoRef.current.volume = 0;
       videoRef.current.currentTime = Math.max(0, startOffsetSeconds);
       videoRef.current.playbackRate = isKnobsLinked ? playbackSpeed : visemeSpeed;
-      videoRef.current.play().catch(() => {});
-    }
-
-    if (currentPersona.audioUrl && audioRef.current) {
+      
+      // Start video decoder first, then immediately trigger audio on decoder frame ready
+      videoRef.current.play().then(() => {
+        if (currentPersona.audioUrl && audioRef.current) {
+          audioRef.current.muted = false;
+          audioRef.current.volume = 1.0;
+          audioRef.current.currentTime = 0;
+          audioRef.current.playbackRate = isKnobsLinked ? playbackSpeed : audioSpeed;
+          audioRef.current.play().catch(() => {});
+        }
+      }).catch(() => {
+        if (currentPersona.audioUrl && audioRef.current) {
+          audioRef.current.muted = false;
+          audioRef.current.volume = 1.0;
+          audioRef.current.currentTime = 0;
+          audioRef.current.playbackRate = isKnobsLinked ? playbackSpeed : audioSpeed;
+          audioRef.current.play().catch(() => {});
+        }
+      });
+    } else if (currentPersona.audioUrl && audioRef.current) {
       audioRef.current.muted = false;
       audioRef.current.volume = 1.0;
       audioRef.current.currentTime = 0;
