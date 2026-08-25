@@ -513,7 +513,7 @@ export default function StudioPage() {
           audioEnergy: simAudioEnergy,
           lipAperture: simLipAperture,
           textProgressPct: Math.round((currentTime / (audioEl.duration || 23.2)) * 100),
-          phaseDriftMs: currentDriftMs + avOffsetMs,
+          phaseDriftMs: currentDriftMs,
           syncHealthScore: healthScore,
           speechRateLive: effectiveAudioSpeed,
           visemeRateLive: effectiveVisemeSpeed,
@@ -537,8 +537,8 @@ export default function StudioPage() {
             wordProgression = Math.max(0, Math.min(1, (currentTime - currentWordObj.start) / (currentWordObj.end - currentWordObj.start)));
           }
 
-          // Exact physical clock drift in milliseconds
-          const physicalOffsetMs = Math.round((videoEl ? (videoEl.currentTime - currentTime) * 1000 : 0) + avOffsetMs);
+          // Exact physical clock drift in milliseconds (relative to expected synchronized timeline)
+          const physicalOffsetMs = currentDriftMs;
           const cleanWord = currentWord.replace(/[^a-zA-Z0-9$]/g, "").toLowerCase();
 
           // Phonetic classification & dynamic expected parameters
