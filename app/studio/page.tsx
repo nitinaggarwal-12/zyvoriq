@@ -422,10 +422,14 @@ export default function StudioPage() {
           setSpokenWordIndex(wordTimings.length - 1);
         }
 
-        // Active drift-lock: In decoupled mode, ensure video is precisely on phase
-        if (!isKnobsLinked && videoEl && !videoEl.paused) {
-          const expectedVideoTime = (currentTime * (visemeSpeed / audioSpeed)) + (avOffsetMs / 1000.0);
-          if (Math.abs(videoEl.currentTime - expectedVideoTime) > 0.25) {
+        // Active dynamic real-time synchronization on every clock tick
+        if (videoEl && !videoEl.paused) {
+          const effectiveAudioSpeed = isKnobsLinked ? playbackSpeed : (audioSpeed || 1.0);
+          const effectiveVisemeSpeed = isKnobsLinked ? playbackSpeed : (visemeSpeed * bodyLanguageVelocity);
+          const speedRatio = effectiveVisemeSpeed / effectiveAudioSpeed;
+          const expectedVideoTime = (currentTime * speedRatio) + ((videoLeadOffsetMs + avOffsetMs) / 1000.0);
+          
+          if (Math.abs(videoEl.currentTime - expectedVideoTime) > 0.08) {
             videoEl.currentTime = Math.max(0, expectedVideoTime);
           }
         }
@@ -454,9 +458,9 @@ export default function StudioPage() {
       audioEl.removeEventListener("timeupdate", handleTimeUpdate);
       audioEl.removeEventListener("ended", handleMediaEnded);
     };
-  }, [wordTimings, captionLeadOffsetMs, selectedPlaybackEngine, isKnobsLinked, visemeSpeed, audioSpeed, avOffsetMs]);
+  }, [wordTimings, captionLeadOffsetMs, selectedPlaybackEngine, isKnobsLinked, visemeSpeed, audioSpeed, avOffsetMs, bodyLanguageVelocity, videoLeadOffsetMs, playbackSpeed]);
 
-  // Unified Playback Controller
+  // Unified Real-Time Playback Controller
   const handleTogglePlayback = (mode: "option1" | "option2") => {
     setSelectedPlaybackEngine(mode);
 
@@ -468,37 +472,21 @@ export default function StudioPage() {
       return;
     }
 
-    if (mode === "option2") {
-      // OPTION 2: PLAY REAL NEURAL LIP-SYNCED MP4 WITH UNMUTED MASTER AUDIO
-      if (videoRef.current) {
-        videoRef.current.muted = false; // Always unmuted for full audio playback
-        videoRef.current.volume = 1.0;
-        videoRef.current.currentTime = 0;
-        videoRef.current.playbackRate = audioSpeed || playbackSpeed;
-        videoRef.current.play().catch((err) => {
-          console.error("Playback error:", err);
-        });
-        setIsSpeakingClone(true);
-      }
-      return;
-    }
-
-    // OPTION 1: BROADCAST KEYNOTE MODE (MUTED VIDEO + DEDICATED MASTER AUDIO)
-    const startOffsetSeconds = videoLeadOffsetMs / 1000.0;
+    const startOffsetSeconds = (videoLeadOffsetMs + avOffsetMs) / 1000.0;
     if (videoRef.current) {
-      videoRef.current.muted = true;
+      videoRef.current.muted = true; // Always muted so audioRef handles master uncompressed audio
       videoRef.current.volume = 0;
-      videoRef.current.currentTime = startOffsetSeconds;
+      videoRef.current.currentTime = Math.max(0, startOffsetSeconds);
       videoRef.current.playbackRate = isKnobsLinked ? playbackSpeed : (visemeSpeed * bodyLanguageVelocity);
       videoRef.current.play().catch(() => {});
     }
 
     if (currentPersona.audioUrl && audioRef.current) {
+      audioRef.current.muted = false;
+      audioRef.current.volume = 1.0;
       audioRef.current.currentTime = 0;
       audioRef.current.playbackRate = isKnobsLinked ? playbackSpeed : audioSpeed;
       audioRef.current.play().catch(() => {});
-      setIsSpeakingClone(true);
-      return;
     }
 
     setIsSpeakingClone(true);
@@ -1067,7 +1055,7 @@ export default function StudioPage() {
                   </div>
 
                   {/* KNOB 3: Temporal Lead / Audio-Video Sync Nudge (±10ms) */}
-                  <div className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 flex flex-col gap-1.5">
+                  <div className="bg-slate-950/80 p-2.5 rounded-xl border border-amber-500/30 flex flex-col gap-1.5">
                     <div className="flex items-center justify-between text-xs font-mono">
                       <span className="text-slate-300 flex items-center gap-1.5">
                         <Timer className="h-3.5 w-3.5 text-amber-400" />
@@ -1075,9 +1063,21 @@ export default function StudioPage() {
                       </span>
                       <div className="flex items-center gap-1">
                         <button
-                          onClick={() => setAvOffsetMs(prev => Math.max(-300, prev - 10))}
-                          className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-white text-[10px]"
-                          title="Nudge audio -10ms"
+                          onClick={() => {
+                            setAvOffsetMs(prev => {
+                              const nextVal = Math.max(-300, prev - 10);
+                              if (videoRef.current && audioRef.current && !audioRef.current.paused) {
+                                const effectiveAudioSpeed = isKnobsLinked ? playbackSpeed : (audioSpeed || 1.0);
+                                const effectiveVisemeSpeed = isKnobsLinked ? playbackSpeed : (visemeSpeed * bodyLanguageVelocity);
+                                const speedRatio = effectiveVisemeSpeed / effectiveAudioSpeed;
+                                const expectedVideoTime = (audioRef.current.currentTime * speedRatio) + ((videoLeadOffsetMs + nextVal) / 1000.0);
+                                videoRef.current.currentTime = Math.max(0, expectedVideoTime);
+                              }
+                              return nextVal;
+                            });
+                          }}
+                          className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-white text-[10px] active:scale-95 transition-all"
+                          title="Nudge audio -10ms immediately"
                         >
                           -10ms
                         </button>
@@ -1085,9 +1085,21 @@ export default function StudioPage() {
                           {avOffsetMs > 0 ? `+${avOffsetMs}` : avOffsetMs} ms
                         </span>
                         <button
-                          onClick={() => setAvOffsetMs(prev => Math.min(300, prev + 10))}
-                          className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-white text-[10px]"
-                          title="Nudge audio +10ms"
+                          onClick={() => {
+                            setAvOffsetMs(prev => {
+                              const nextVal = Math.min(300, prev + 10);
+                              if (videoRef.current && audioRef.current && !audioRef.current.paused) {
+                                const effectiveAudioSpeed = isKnobsLinked ? playbackSpeed : (audioSpeed || 1.0);
+                                const effectiveVisemeSpeed = isKnobsLinked ? playbackSpeed : (visemeSpeed * bodyLanguageVelocity);
+                                const speedRatio = effectiveVisemeSpeed / effectiveAudioSpeed;
+                                const expectedVideoTime = (audioRef.current.currentTime * speedRatio) + ((videoLeadOffsetMs + nextVal) / 1000.0);
+                                videoRef.current.currentTime = Math.max(0, expectedVideoTime);
+                              }
+                              return nextVal;
+                            });
+                          }}
+                          className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-white text-[10px] active:scale-95 transition-all"
+                          title="Nudge audio +10ms immediately"
                         >
                           +10ms
                         </button>
@@ -1101,7 +1113,17 @@ export default function StudioPage() {
                         max="300"
                         step="10"
                         value={avOffsetMs}
-                        onChange={(e: any) => setAvOffsetMs(parseInt(e.target.value))}
+                        onChange={(e: any) => {
+                          const v = parseInt(e.target.value);
+                          setAvOffsetMs(v);
+                          if (videoRef.current && audioRef.current && !audioRef.current.paused) {
+                            const effectiveAudioSpeed = isKnobsLinked ? playbackSpeed : (audioSpeed || 1.0);
+                            const effectiveVisemeSpeed = isKnobsLinked ? playbackSpeed : (visemeSpeed * bodyLanguageVelocity);
+                            const speedRatio = effectiveVisemeSpeed / effectiveAudioSpeed;
+                            const expectedVideoTime = (audioRef.current.currentTime * speedRatio) + ((videoLeadOffsetMs + v) / 1000.0);
+                            videoRef.current.currentTime = Math.max(0, expectedVideoTime);
+                          }
+                        }}
                         className="flex-1 accent-amber-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
                       />
                       <span className="text-[10px] font-mono text-slate-500">+300ms</span>
@@ -1140,7 +1162,13 @@ export default function StudioPage() {
                         max="2.00"
                         step="0.05"
                         value={bodyLanguageVelocity}
-                        onChange={(e: any) => setBodyLanguageVelocity(parseFloat(e.target.value))}
+                        onChange={(e: any) => {
+                          const v = parseFloat(e.target.value);
+                          setBodyLanguageVelocity(v);
+                          if (videoRef.current) {
+                            videoRef.current.playbackRate = (isKnobsLinked ? playbackSpeed : visemeSpeed) * v;
+                          }
+                        }}
                         className="accent-indigo-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
                       />
                     </div>
@@ -1310,7 +1338,10 @@ export default function StudioPage() {
                       src={activeVideoUrl}
                       poster={currentPersona.image}
                       playsInline
-                      className="h-full w-full object-cover"
+                      style={{
+                        filter: `contrast(${100 + (expressionIntensity - 100) * 0.4}%) saturate(${100 + (expressionIntensity - 100) * 0.3}%) brightness(${100 + (expressionIntensity - 100) * 0.1}%)`,
+                      }}
+                      className="h-full w-full object-cover transition-all duration-100"
                     />
 
                     {/* Floating Dynamic Fine-Tune Stepper Over Viewport (±0.01x) */}
