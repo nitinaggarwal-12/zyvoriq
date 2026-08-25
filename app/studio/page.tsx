@@ -417,12 +417,14 @@ export default function StudioPage() {
       }
     };
 
-    const handleTimeUpdate = () => {
-      if (audioEl.duration && audioEl.duration > 0) {
+    let animationFrameId: number;
+
+    const syncTick = () => {
+      if (audioEl && !audioEl.paused) {
         const currentTime = audioEl.currentTime;
         const adjustedCurrentTime = currentTime + (captionLeadOffsetMs / 1000.0);
         
-        // Find exact word index where currentTime falls within start and end
+        // 60 FPS Sub-millisecond word index resolution
         const idx = wordTimings.findIndex(t => adjustedCurrentTime >= t.start && adjustedCurrentTime < t.end);
         if (idx !== -1) {
           setSpokenWordIndex(idx);
@@ -430,7 +432,7 @@ export default function StudioPage() {
           setSpokenWordIndex(wordTimings.length - 1);
         }
 
-        // Active dynamic real-time synchronization on every clock tick
+        // 60 FPS Active Video-Audio Drift Lock
         if (videoEl && !videoEl.paused) {
           const effectiveAudioSpeed = isKnobsLinked ? playbackSpeed : (audioSpeed || 1.0);
           const effectiveVisemeSpeed = isKnobsLinked ? playbackSpeed : (visemeSpeed * bodyLanguageVelocity);
@@ -442,7 +444,15 @@ export default function StudioPage() {
           }
         }
       }
+
+      if (isSpeakingClone) {
+        animationFrameId = requestAnimationFrame(syncTick);
+      }
     };
+
+    if (isSpeakingClone) {
+      animationFrameId = requestAnimationFrame(syncTick);
+    }
 
     const handleMediaEnded = () => {
       if (videoEl) {
@@ -455,18 +465,18 @@ export default function StudioPage() {
       }
       setIsSpeakingClone(false);
       setSpokenWordIndex(-1);
+      cancelAnimationFrame(animationFrameId);
     };
 
     audioEl.addEventListener("loadedmetadata", handleLoadedMetadata);
-    audioEl.addEventListener("timeupdate", handleTimeUpdate);
     audioEl.addEventListener("ended", handleMediaEnded);
 
     return () => {
       audioEl.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      audioEl.removeEventListener("timeupdate", handleTimeUpdate);
       audioEl.removeEventListener("ended", handleMediaEnded);
+      cancelAnimationFrame(animationFrameId);
     };
-  }, [wordTimings, captionLeadOffsetMs, selectedPlaybackEngine, isKnobsLinked, visemeSpeed, audioSpeed, avOffsetMs, bodyLanguageVelocity, videoLeadOffsetMs, playbackSpeed]);
+  }, [wordTimings, captionLeadOffsetMs, selectedPlaybackEngine, isKnobsLinked, visemeSpeed, audioSpeed, avOffsetMs, bodyLanguageVelocity, videoLeadOffsetMs, playbackSpeed, isSpeakingClone]);
 
   // Unified Real-Time Playback Controller
   const handleTogglePlayback = (mode: "option1" | "option2") => {
