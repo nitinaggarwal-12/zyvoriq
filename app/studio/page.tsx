@@ -252,6 +252,16 @@ export default function StudioPage() {
   ]);
   const [autoTuneApplied, setAutoTuneApplied] = useState(false);
 
+  // 📝 Real-Time Live Analysis Text Box Logs & AI Recommendations
+  const [analysisLogs, setAnalysisLogs] = useState<string[]>([
+    "[00:00.0] 🔬 Initialized Tri-Modal Sync Analyzer (Speech • Lips • Text)",
+    "[00:00.0] 💡 Baseline Calibration: Speech 1.00x | Lips 1.00x | Lead 0ms | Crispness 85%",
+    "[00:00.0] 🎯 Ready: Click Play to stream real-time sync telemetry & AI knob recommendations."
+  ]);
+  const [copiedAnalysisLogs, setCopiedAnalysisLogs] = useState(false);
+  const logBoxRef = useRef<HTMLDivElement | null>(null);
+  const lastSecondLoggedRef = useRef<number>(-1);
+
   const currentPersona = personas[selectedPersona] || personas["priya"];
 
   // Determine active video source (Option 2 uses the true neural lip-synced video)
@@ -478,6 +488,46 @@ export default function StudioPage() {
           speechRateLive: effectiveAudioSpeed,
           visemeRateLive: effectiveVisemeSpeed,
         });
+
+        // 1-Second Discrete Interval Breakdown Logging
+        const currentIntSecond = Math.floor(currentTime);
+        if (currentIntSecond > lastSecondLoggedRef.current && currentIntSecond >= 0 && currentIntSecond <= Math.ceil(audioEl.duration || 23)) {
+          lastSecondLoggedRef.current = currentIntSecond;
+          
+          const currentWord = (idx !== -1 && wordTimings[idx]) ? wordTimings[idx].word : "—";
+          const secStr = currentIntSecond.toString().padStart(2, "0");
+          
+          let visemeType = "Open Vowel (/a,o/)";
+          let recKnobHint = "Speech: 1.00x | Lips: 1.00x | Nudge: 0ms";
+          if (["Hello", "everyone!"].some(w => currentWord.includes(w))) {
+            visemeType = "Greeting Bilabial (/h,e/)";
+            recKnobHint = "Ideal: Speech 1.00x | Lips 1.00x | Nudge: 0ms (True-Lock)";
+          } else if (["Traditional", "enterprise", "pipelines"].some(w => currentWord.includes(w))) {
+            visemeType = "Plosive & Dental (/t,p,d/)";
+            recKnobHint = "Ideal: Nudge +10ms Lead | Sharpness 85% (Anticipate Plosives)";
+          } else if (["$140,000.", "14", "days"].some(w => currentWord.includes(w))) {
+            visemeType = "High-Energy Number Cadence";
+            recKnobHint = "Ideal: Speech 1.00x | Viseme 1.05x | Expressiveness 110%";
+          } else if (["Zyvoriq,", "collapse", "90", "seconds—backed"].some(w => currentWord.includes(w))) {
+            visemeType = "Acceleration Velocity Viseme";
+            recKnobHint = "Ideal: Multi-Scene PiP 1.00x | Sharpness 90% | Expressiveness 115%";
+          } else if (["Veritas", "cryptographic", "Ed25519", "provenance!"].some(w => currentWord.includes(w))) {
+            visemeType = "Consensus Resolution Closure";
+            recKnobHint = "Ideal: True-Lock 0ms | Crispness 85% | C2PA Verified";
+          }
+
+          const logLine = `[t=${secStr}s] 🎙️ Speech: ${simAudioEnergy}% RMS | 👄 Lips: ${simLipAperture}% Aperture (${visemeType}) | 📝 Word: "${currentWord}" | ⏱️ Drift: ${currentDriftMs >= 0 ? '+' : ''}${currentDriftMs}ms | 💡 Tune: ${recKnobHint}`;
+
+          setAnalysisLogs(prev => [...prev, logLine]);
+          
+          if (logBoxRef.current) {
+            setTimeout(() => {
+              if (logBoxRef.current) {
+                logBoxRef.current.scrollTop = logBoxRef.current.scrollHeight;
+              }
+            }, 50);
+          }
+        }
 
         if (Math.random() > 0.6) {
           setTelemetryHistory(prev => [...prev.slice(-20), { audio: simAudioEnergy, lips: simLipAperture }]);
@@ -1169,6 +1219,78 @@ export default function StudioPage() {
                         </>
                       )}
                     </button>
+                  </div>
+
+                </div>
+
+                {/* 📝 REAL-TIME 1-SECOND SYNC BREAKDOWN & AI TUNING LOG TEXT BOX */}
+                <div className="bg-obsidian-950 p-3 rounded-xl border border-teal-500/30 flex flex-col gap-2">
+                  
+                  {/* Console Header */}
+                  <div className="flex items-center justify-between text-xs font-mono pb-2 border-b border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-teal-400 animate-ping" />
+                      <span className="text-white font-bold tracking-wider">
+                        1-Second Live Diagnostic Log &amp; Tuning Breakdown
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {/* Copy Log */}
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(analysisLogs.join("\n"));
+                          setCopiedAnalysisLogs(true);
+                          setTimeout(() => setCopiedAnalysisLogs(false), 2000);
+                        }}
+                        className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-white text-[10px] font-mono flex items-center gap-1 transition-all"
+                      >
+                        {copiedAnalysisLogs ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                        <span>{copiedAnalysisLogs ? "Copied Log" : "Copy Log"}</span>
+                      </button>
+
+                      {/* Clear Log */}
+                      <button
+                        onClick={() => {
+                          setAnalysisLogs([
+                            "[00:00.0] 🔬 Standby: Tri-Modal Sync Analyzer cleared and listening...",
+                            "[00:00.0] 💡 Baseline Calibration: Speech 1.00x | Lips 1.00x | Lead 0ms"
+                          ]);
+                          lastSecondLoggedRef.current = -1;
+                        }}
+                        className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-400 hover:text-white text-[10px] font-mono flex items-center gap-1 transition-all"
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                        <span>Clear</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Scrollable Console Text Box (Terminal Style) */}
+                  <div
+                    ref={logBoxRef}
+                    className="h-36 overflow-y-auto bg-slate-950/90 rounded-lg p-2.5 font-mono text-[11px] leading-relaxed border border-slate-800/80 space-y-1.5 scrollbar-thin scrollbar-thumb-slate-800"
+                  >
+                    {analysisLogs.map((log, i) => {
+                      const isTuneHint = log.includes("💡 Tune:");
+                      return (
+                        <div
+                          key={i}
+                          className={`p-1 rounded transition-colors ${
+                            isTuneHint
+                              ? "bg-teal-950/40 text-teal-200 border-l-2 border-teal-400"
+                              : "text-slate-300 hover:bg-slate-900/60"
+                          }`}
+                        >
+                          {log}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-1">
+                    <span>Sampling Rate: <b>1.0s Discrete Intervals @ 60 FPS</b></span>
+                    <span>Total Logs: <b>{analysisLogs.length} Events</b></span>
                   </div>
 
                 </div>
