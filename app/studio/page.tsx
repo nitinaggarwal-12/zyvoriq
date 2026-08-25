@@ -267,13 +267,13 @@ export default function StudioPage() {
   const [analysisLogs, setAnalysisLogs] = useState<string[]>([
     "[00:00.0] 🔬 Initialized Tri-Modal Sync Analyzer (Speech • Lips • Text)",
     "[00:00.0] 💡 Baseline Calibration: Speech 1.00x | Lips 1.00x | Lead 0ms | Crispness 85%",
-    "[00:00.0] 🎯 Ready: Click Play to stream real-time sync telemetry & AI knob recommendations."
+    "[00:00.0] 🎯 Ready: Click Play to stream real-time 0.1s sync telemetry & AI knob recommendations."
   ]);
 
   const [secondReports, setSecondReports] = useState<SecondDiagnosticReport[]>([
     {
       second: 0,
-      timeStr: "00:00s",
+      timeStr: "0.0s",
       word: "Standby",
       inSync: "Tri-modal acoustic, visual, and teleprompter clocks initialized at 0.0s.",
       outOfSync: "None (System Ready)",
@@ -283,9 +283,10 @@ export default function StudioPage() {
     }
   ]);
   const [reportViewMode, setReportViewMode] = useState<"table" | "console">("table");
+  const [reportIntervalSec, setReportIntervalSec] = useState<number>(0.1); // Default 0.1s (100ms / 10Hz)
   const [copiedAnalysisLogs, setCopiedAnalysisLogs] = useState(false);
   const logBoxRef = useRef<HTMLDivElement | null>(null);
-  const lastSecondLoggedRef = useRef<number>(-1);
+  const lastIntervalLoggedRef = useRef<number>(-1);
 
   const currentPersona = personas[selectedPersona] || personas["priya"];
 
@@ -514,78 +515,79 @@ export default function StudioPage() {
           visemeRateLive: effectiveVisemeSpeed,
         });
 
-        // 1-Second Discrete Interval Breakdown Logging
-        const currentIntSecond = Math.floor(currentTime);
-        if (currentIntSecond > lastSecondLoggedRef.current && currentIntSecond >= 0 && currentIntSecond <= Math.ceil(audioEl.duration || 23)) {
-          lastSecondLoggedRef.current = currentIntSecond;
+        // High-Precision Discrete Interval Breakdown Logging (0.1s / 100ms default)
+        const interval = reportIntervalSec || 0.1;
+        const currentIntervalIndex = Math.floor(currentTime / interval);
+        
+        if (currentIntervalIndex > lastIntervalLoggedRef.current && currentTime >= 0 && currentTime <= (audioEl.duration || 23.2)) {
+          lastIntervalLoggedRef.current = currentIntervalIndex;
           
+          const timeAtInterval = currentIntervalIndex * interval;
+          const secFormatted = timeAtInterval.toFixed(1) + "s";
           const currentWord = (idx !== -1 && wordTimings[idx]) ? wordTimings[idx].word : "—";
-          const secStr = currentIntSecond.toString().padStart(2, "0");
           
-          let visemeType = "Open Vowel (/a,o/)";
-          let recKnobHint = "Speech: 1.00x | Lips: 1.00x | Nudge: 0ms";
-          if (["Hello", "everyone!"].some(w => currentWord.includes(w))) {
-            visemeType = "Greeting Bilabial (/h,e/)";
-            recKnobHint = "Ideal: Speech 1.00x | Lips 1.00x | Nudge: 0ms (True-Lock)";
-          } else if (["Traditional", "enterprise", "pipelines"].some(w => currentWord.includes(w))) {
-            visemeType = "Plosive & Dental (/t,p,d/)";
-            recKnobHint = "Ideal: Nudge +10ms Lead | Sharpness 85% (Anticipate Plosives)";
-          } else if (["$140,000.", "14", "days"].some(w => currentWord.includes(w))) {
-            visemeType = "High-Energy Number Cadence";
-            recKnobHint = "Ideal: Speech 1.00x | Viseme 1.05x | Expressiveness 110%";
-          } else if (["Zyvoriq,", "collapse", "90", "seconds—backed"].some(w => currentWord.includes(w))) {
-            visemeType = "Acceleration Velocity Viseme";
-            recKnobHint = "Ideal: Multi-Scene PiP 1.00x | Sharpness 90% | Expressiveness 115%";
-          } else if (["Veritas", "cryptographic", "Ed25519", "provenance!"].some(w => currentWord.includes(w))) {
-            visemeType = "Consensus Resolution Closure";
-            recKnobHint = "Ideal: True-Lock 0ms | Crispness 85% | C2PA Verified";
-          }
-
-          let inSync = `Vocal onset in "${currentWord}" aligned with lip opening (${simLipAperture}%). Teleprompter word highlighted at exact millisecond.`;
-          let outOfSync = "None (Within ±15ms Broadcast Tolerance)";
+          // Physical clock difference in milliseconds
+          const physicalOffsetMs = Math.round((videoEl ? (videoEl.currentTime - currentTime) * 1000 : 0) + avOffsetMs);
+          
+          // Look up visual lip-reading status
+          const isVocalActive = simAudioEnergy > 30;
+          const isMouthOpen = simLipAperture > 32;
+          
+          // Rigorous Tri-Modal Desync Detection
+          let inSync = "";
+          let outOfSync = "";
           let status: "LOCKED" | "SLIGHT_DRIFT" | "DESYNCED" = "LOCKED";
+          let recKnobs = "";
 
-          if (currentIntSecond <= 4) {
-            inSync = `Vowel /e/ onset in "${currentWord}" matched 24kHz audio within 12ms. Zero jitter.`;
-            outOfSync = "None (Broadcaster Grade 99% Lock)";
-            status = "LOCKED";
-          } else if (currentIntSecond <= 10) {
-            inSync = `Speech rate (1.00x) and teleprompter text pacing matched.`;
-            outOfSync = `Dental plosives in "${currentWord}" had +18ms motor lag before phase lead applied.`;
+          if (Math.abs(physicalOffsetMs) > 40) {
+            status = "DESYNCED";
+            outOfSync = `🚨 Physical Desync: Video clock ${physicalOffsetMs > 0 ? 'leads' : 'lags'} Audio by ${Math.abs(physicalOffsetMs)}ms (>40ms threshold)`;
+            inSync = `Teleprompter active at ${timeAtInterval.toFixed(1)}s`;
+            recKnobs = `Nudge AV Phase ${physicalOffsetMs > 0 ? '-' : '+'}${Math.abs(physicalOffsetMs)}ms | Speed ${(physicalOffsetMs > 0 ? 1.05 : 0.95).toFixed(2)}x`;
+          } else if (isVocalActive && !isMouthOpen) {
+            status = "DESYNCED";
+            outOfSync = `🚨 Visible Mouth Lag: Loud acoustic energy (${simAudioEnergy}% RMS) on "${currentWord}" while mouth aperture is closed (${simLipAperture}%)`;
+            inSync = `Audio playback steady at ${effectiveAudioSpeed.toFixed(2)}x`;
+            recKnobs = `Anticipation Lead +15ms | Expressiveness 120% | Viseme Speed 1.05x`;
+          } else if (!isVocalActive && isMouthOpen) {
             status = "SLIGHT_DRIFT";
-          } else if (currentIntSecond <= 17) {
-            inSync = `90s Velocity Acceleration PiP multi-camera composition synchronized with video frame rate (24 FPS).`;
-            outOfSync = `Expressive mouth aperture under-stretched by 6% during emphatic speech syllables.`;
+            outOfSync = `⚠️ Ghost Articulation: Mouth opening (${simLipAperture}%) during inter-word phonetic silence (${simAudioEnergy}% RMS)`;
+            inSync = `Phase offset within ${physicalOffsetMs}ms`;
+            recKnobs = `Mouth Crispness 85% | Soft Blend 20%`;
+          } else if (Math.abs(physicalOffsetMs) >= 20) {
             status = "SLIGHT_DRIFT";
+            outOfSync = `⚠️ Timing Drift: ${physicalOffsetMs > 0 ? '+' : ''}${physicalOffsetMs}ms phase gap between speech acoustics and visual frames`;
+            inSync = `Phonetic trajectory matches "${currentWord}"`;
+            recKnobs = `Nudge AV Phase ${physicalOffsetMs > 0 ? '-' : '+'}${Math.abs(physicalOffsetMs)}ms to zero out drift`;
           } else {
-            inSync = `Ed25519 cryptographic consensus sealed. Zero frame drop, audio & video ending aligned to 23.20s cue.`;
-            outOfSync = "None (Cryptographic Consensus Locked)";
             status = "LOCKED";
+            inSync = `✅ Congruent: Vocal energy (${simAudioEnergy}%) locked to mouth aperture (${simLipAperture}%). Phase drift: ${physicalOffsetMs}ms`;
+            outOfSync = `None (Frame-Exact ±${Math.abs(physicalOffsetMs)}ms Lock)`;
+            recKnobs = `Maintain Calibrated Knobs`;
           }
 
           const newReport: SecondDiagnosticReport = {
-            second: currentIntSecond,
-            timeStr: `00:${secStr}s`,
+            second: timeAtInterval,
+            timeStr: secFormatted,
             word: currentWord,
             inSync,
             outOfSync,
-            phaseDriftMs: currentDriftMs + avOffsetMs,
+            phaseDriftMs: physicalOffsetMs,
             status,
-            recommendedKnobs: recKnobHint,
+            recommendedKnobs: recKnobs,
           };
 
-          setSecondReports(prev => [...prev, newReport]);
+          setSecondReports(prev => [...prev.slice(-100), newReport]);
 
-          const logLine = `[t=${secStr}s] 🎙️ Speech: ${simAudioEnergy}% RMS | 👄 Lips: ${simLipAperture}% Aperture (${visemeType}) | 📝 Word: "${currentWord}" | ⏱️ Drift: ${currentDriftMs >= 0 ? '+' : ''}${currentDriftMs}ms | 💡 Tune: ${recKnobHint}`;
-
-          setAnalysisLogs(prev => [...prev, logLine]);
+          const logLine = `[t=${secFormatted}] ${status === 'DESYNCED' ? '🚨' : status === 'SLIGHT_DRIFT' ? '⚠️' : '✅'} Word: "${currentWord}" | Drift: ${physicalOffsetMs >= 0 ? '+' : ''}${physicalOffsetMs}ms | Speech: ${simAudioEnergy}% | Lips: ${simLipAperture}% | 💡 ${recKnobs}`;
+          setAnalysisLogs(prev => [...prev.slice(-100), logLine]);
           
           if (logBoxRef.current) {
             setTimeout(() => {
               if (logBoxRef.current) {
                 logBoxRef.current.scrollTop = logBoxRef.current.scrollHeight;
               }
-            }, 50);
+            }, 30);
           }
         }
 
@@ -1283,19 +1285,40 @@ export default function StudioPage() {
 
                 </div>
 
-                {/* 📝 REAL-TIME 1-SECOND SYNC BREAKDOWN & AI TUNING LOG TEXT BOX */}
+                {/* 📝 REAL-TIME 0.1s SYNC BREAKDOWN & AI TUNING LOG TEXT BOX */}
                 <div className="bg-obsidian-950 p-3.5 rounded-xl border border-teal-500/30 flex flex-col gap-2.5">
                   
-                  {/* Console Header with Mode Toggle & Actions */}
+                  {/* Console Header with Interval Granularity Selector & Actions */}
                   <div className="flex items-center justify-between text-xs font-mono pb-2 border-b border-slate-800 flex-wrap gap-2">
                     <div className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-teal-400 animate-ping" />
                       <span className="text-white font-bold tracking-wider">
-                        1-Second Live Sync vs Desync Report &amp; Tuning Advisor
+                        High-Precision Sync vs Desync Diagnostic Ledger
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* Interval Granularity Selector (0.1s default) */}
+                      <div className="flex items-center gap-1 bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-800 text-[10px]">
+                        <span className="text-slate-400">Step:</span>
+                        {[0.1, 0.25, 0.5, 1.0].map((step) => (
+                          <button
+                            key={step}
+                            onClick={() => {
+                              setReportIntervalSec(step);
+                              lastIntervalLoggedRef.current = -1;
+                            }}
+                            className={`px-1.5 py-0.5 rounded font-bold transition-all ${
+                              reportIntervalSec === step
+                                ? "bg-teal-500 text-slate-950 shadow-sm"
+                                : "text-slate-400 hover:text-white"
+                            }`}
+                          >
+                            {step}s
+                          </button>
+                        ))}
+                      </div>
+
                       {/* View Switcher: Table vs Console */}
                       <div className="flex items-center bg-slate-900 rounded-lg p-0.5 border border-slate-800 text-[10px]">
                         <button
@@ -1306,7 +1329,7 @@ export default function StudioPage() {
                               : "text-slate-400 hover:text-white"
                           }`}
                         >
-                          📊 Sync Ledger
+                          📊 Ledger Table
                         </button>
                         <button
                           onClick={() => setReportViewMode("console")}
@@ -1316,7 +1339,7 @@ export default function StudioPage() {
                               : "text-slate-400 hover:text-white"
                           }`}
                         >
-                          📟 Live Stream
+                          📟 Terminal Log
                         </button>
                       </div>
 
@@ -1324,7 +1347,7 @@ export default function StudioPage() {
                       <button
                         onClick={() => {
                           const exportText = reportViewMode === "table"
-                            ? secondReports.map(r => `[${r.timeStr}] Word: "${r.word}" | IN SYNC: ${r.inSync} | OUT OF SYNC: ${r.outOfSync} | TUNE: ${r.recommendedKnobs}`).join("\n")
+                            ? secondReports.map(r => `[${r.timeStr}] [${r.status}] Word: "${r.word}" | IN SYNC: ${r.inSync} | OUT OF SYNC: ${r.outOfSync} | TUNE: ${r.recommendedKnobs}`).join("\n")
                             : analysisLogs.join("\n");
                           navigator.clipboard.writeText(exportText);
                           setCopiedAnalysisLogs(true);
@@ -1340,13 +1363,13 @@ export default function StudioPage() {
                       <button
                         onClick={() => {
                           setAnalysisLogs([
-                            "[00:00.0] 🔬 Standby: Tri-Modal Sync Analyzer cleared and listening...",
+                            "[00:00.0] 🔬 Standby: High-Precision Tri-Modal Sync Analyzer cleared and listening...",
                             "[00:00.0] 💡 Baseline Calibration: Speech 1.00x | Lips 1.00x | Lead 0ms"
                           ]);
                           setSecondReports([
                             {
                               second: 0,
-                              timeStr: "00:00s",
+                              timeStr: "0.0s",
                               word: "Standby",
                               inSync: "Clocks ready at 0.0s.",
                               outOfSync: "None",
@@ -1355,7 +1378,7 @@ export default function StudioPage() {
                               recommendedKnobs: "Speech 1.00x | Lips 1.00x | Lead 0ms"
                             }
                           ]);
-                          lastSecondLoggedRef.current = -1;
+                          lastIntervalLoggedRef.current = -1;
                         }}
                         className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-400 hover:text-white text-[10px] font-mono flex items-center gap-1 transition-all"
                       >
@@ -1365,26 +1388,40 @@ export default function StudioPage() {
                     </div>
                   </div>
 
-                  {/* Mode 1: 1-Second Sync vs Desync Diagnostic Table */}
+                  {/* Mode 1: High-Precision Sync vs Desync Diagnostic Table */}
                   {reportViewMode === "table" ? (
-                    <div className="h-44 overflow-y-auto bg-slate-950/95 rounded-lg border border-slate-800/90 scrollbar-thin scrollbar-thumb-slate-800">
+                    <div className="h-48 overflow-y-auto bg-slate-950/95 rounded-lg border border-slate-800/90 scrollbar-thin scrollbar-thumb-slate-800">
                       <table className="w-full text-left font-mono text-[11px] border-collapse">
                         <thead className="sticky top-0 bg-slate-900 border-b border-slate-800 text-[10px] uppercase text-slate-400">
                           <tr>
-                            <th className="py-1.5 px-2.5">Time</th>
+                            <th className="py-1.5 px-2">Time</th>
+                            <th className="py-1.5 px-2">Status</th>
                             <th className="py-1.5 px-2">Word</th>
                             <th className="py-1.5 px-2 text-emerald-400">✅ What Was IN SYNC</th>
-                            <th className="py-1.5 px-2 text-amber-400">⚠️ Out of Sync / Drift</th>
-                            <th className="py-1.5 px-2 text-teal-300">💡 Suggested Knobs</th>
+                            <th className="py-1.5 px-2 text-rose-400">🚨 Out of Sync / Issue</th>
+                            <th className="py-1.5 px-2 text-teal-300">💡 Suggested Remedy</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-900">
                           {secondReports.map((r, idx) => (
                             <tr key={idx} className="hover:bg-slate-900/50 transition-colors">
-                              <td className="py-1.5 px-2.5 font-bold text-slate-400 whitespace-nowrap">{r.timeStr}</td>
+                              <td className="py-1.5 px-2 font-bold text-slate-400 whitespace-nowrap">{r.timeStr}</td>
+                              <td className="py-1.5 px-2 whitespace-nowrap">
+                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${
+                                  r.status === "DESYNCED"
+                                    ? "bg-rose-950 text-rose-300 border-rose-600/70 animate-pulse"
+                                    : r.status === "SLIGHT_DRIFT"
+                                    ? "bg-amber-950 text-amber-300 border-amber-600/70"
+                                    : "bg-emerald-950 text-emerald-300 border-emerald-600/70"
+                                }`}>
+                                  {r.status === "DESYNCED" ? "🔴 DESYNC" : r.status === "SLIGHT_DRIFT" ? "🟡 DRIFT" : "🟢 LOCK"}
+                                </span>
+                              </td>
                               <td className="py-1.5 px-2 font-bold text-white whitespace-nowrap">{r.word}</td>
                               <td className="py-1.5 px-2 text-emerald-300/90">{r.inSync}</td>
-                              <td className="py-1.5 px-2 text-amber-300/90">{r.outOfSync}</td>
+                              <td className={`py-1.5 px-2 ${r.status === "DESYNCED" ? "text-rose-300 font-bold bg-rose-950/20" : r.status === "SLIGHT_DRIFT" ? "text-amber-300" : "text-slate-400"}`}>
+                                {r.outOfSync}
+                              </td>
                               <td className="py-1.5 px-2 text-teal-300 font-bold whitespace-nowrap">{r.recommendedKnobs}</td>
                             </tr>
                           ))}
@@ -1395,16 +1432,19 @@ export default function StudioPage() {
                     /* Mode 2: Scrollable Console Text Box (Terminal Style) */
                     <div
                       ref={logBoxRef}
-                      className="h-44 overflow-y-auto bg-slate-950/90 rounded-lg p-2.5 font-mono text-[11px] leading-relaxed border border-slate-800/80 space-y-1.5 scrollbar-thin scrollbar-thumb-slate-800"
+                      className="h-48 overflow-y-auto bg-slate-950/90 rounded-lg p-2.5 font-mono text-[11px] leading-relaxed border border-slate-800/80 space-y-1.5 scrollbar-thin scrollbar-thumb-slate-800"
                     >
                       {analysisLogs.map((log, i) => {
-                        const isTuneHint = log.includes("💡 Tune:");
+                        const isDesync = log.includes("🚨");
+                        const isDrift = log.includes("⚠️");
                         return (
                           <div
                             key={i}
                             className={`p-1 rounded transition-colors ${
-                              isTuneHint
-                                ? "bg-teal-950/40 text-teal-200 border-l-2 border-teal-400"
+                              isDesync
+                                ? "bg-rose-950/50 text-rose-200 border-l-2 border-rose-500"
+                                : isDrift
+                                ? "bg-amber-950/40 text-amber-200 border-l-2 border-amber-400"
                                 : "text-slate-300 hover:bg-slate-900/60"
                             }`}
                           >
@@ -1416,8 +1456,8 @@ export default function StudioPage() {
                   )}
 
                   <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-1 border-t border-slate-800/60">
-                    <span>Granularity: <b>Every 1 Second Time-Step (Discrete Analysis)</b></span>
-                    <span>Verified Log Count: <b>{secondReports.length} Steps</b></span>
+                    <span>Active Resolution: <b className="text-teal-300">{reportIntervalSec}s Time-Step ({Math.round(1/reportIntervalSec)} Hz Precision)</b></span>
+                    <span>Evaluated Points: <b>{secondReports.length} Steps</b></span>
                   </div>
 
                 </div>
