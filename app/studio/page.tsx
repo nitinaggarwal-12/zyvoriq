@@ -231,7 +231,7 @@ export default function StudioPage() {
   const [newPersonaAppearance, setNewPersonaAppearance] = useState("");
   const [newPersonaIntro, setNewPersonaIntro] = useState("");
   const [isSynthesizingNewPersona, setIsSynthesizingNewPersona] = useState(false);
-  const [priyaVariant, setPriyaVariant] = useState<"master" | "lead120" | "expressive">("lead120");
+  const [priyaVariant, setPriyaVariant] = useState<"director" | "lead120" | "master" | "expressive">("director");
   const [alignmentMethod, setAlignmentMethod] = useState<"visual" | "acoustic">("visual");
 
   const currentPersona = personas[selectedPersona] || personas["priya"];
@@ -242,7 +242,8 @@ export default function StudioPage() {
     : currentPersona.videoUrl;
 
   if (selectedPersona === "priya" && selectedPlaybackEngine === "option2") {
-    if (priyaVariant === "lead120") activeVideoUrl = "/assets/video_synced/priya_lead_120ms.mp4";
+    if (priyaVariant === "director") activeVideoUrl = "/assets/video_synced/priya_director_cut.mp4";
+    else if (priyaVariant === "lead120") activeVideoUrl = "/assets/video_synced/priya_lead_120ms.mp4";
     else if (priyaVariant === "expressive") activeVideoUrl = "/assets/video_synced/priya_expressive.mp4";
     else activeVideoUrl = "/assets/video_synced/priya_neural_synced.mp4";
   }
@@ -1301,8 +1302,18 @@ export default function StudioPage() {
 
                   <div className="flex items-center gap-2 flex-wrap">
                     {selectedPersona === "priya" && selectedPlaybackEngine === "option2" && (
-                      <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-purple-500/40">
-                        <span className="text-[10px] font-mono text-slate-400 px-1">Priya Tuning:</span>
+                      <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-purple-500/40 flex-wrap">
+                        <span className="text-[10px] font-mono text-slate-400 px-1">Priya Calibration:</span>
+                        <button
+                          onClick={() => setPriyaVariant("director")}
+                          className={`px-2.5 py-0.5 rounded-lg text-[10px] font-mono font-bold transition-all ${
+                            priyaVariant === "director"
+                              ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md ring-1 ring-white/50"
+                              : "text-emerald-400 hover:text-white"
+                          }`}
+                        >
+                          🎬 Director's Cut (Zero-Loop Multi-Scene)
+                        </button>
                         <button
                           onClick={() => setPriyaVariant("lead120")}
                           className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold transition-all ${
