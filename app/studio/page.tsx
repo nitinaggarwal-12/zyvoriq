@@ -987,14 +987,19 @@ export default function StudioPage() {
                 <div className="space-y-3 pt-1">
                   
                   {/* KNOB 1: Speech Rate & Audio Cadence */}
-                  <div className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 flex flex-col gap-1.5">
+                  <div className="bg-slate-950/80 p-2.5 rounded-xl border border-teal-500/30 flex flex-col gap-1.5">
                     <div className="flex items-center justify-between text-xs font-mono">
                       <span className="text-slate-300 flex items-center gap-1.5">
                         <Volume2 className="h-3.5 w-3.5 text-teal-400" />
                         <span>Speech Rate / Audio Cadence:</span>
+                        {!isKnobsLinked && (
+                          <span className="text-[9px] text-teal-400/80 uppercase font-bold tracking-tight bg-teal-950/80 px-1.5 py-0.5 rounded border border-teal-800/40">
+                            Independent Audio
+                          </span>
+                        )}
                       </span>
                       <span className="font-bold text-teal-400 bg-slate-900 px-2 py-0.5 rounded border border-teal-500/40">
-                        {(isKnobsLinked ? playbackSpeed : audioSpeed).toFixed(2)}x
+                        {audioSpeed.toFixed(2)}x
                       </span>
                     </div>
                     <div className="flex items-center gap-2.5">
@@ -1004,17 +1009,16 @@ export default function StudioPage() {
                         min="0.70"
                         max="1.50"
                         step="0.01"
-                        value={isKnobsLinked ? playbackSpeed : audioSpeed}
+                        value={audioSpeed}
                         onChange={(e: any) => {
                           const v = parseFloat(e.target.value);
+                          setAudioSpeed(v);
                           if (isKnobsLinked) {
-                            setPlaybackSpeed(v);
-                            setAudioSpeed(v);
                             setVisemeSpeed(v);
-                          } else {
-                            setAudioSpeed(v);
-                            if (audioRef.current) audioRef.current.playbackRate = v;
+                            setPlaybackSpeed(v);
+                            if (videoRef.current) videoRef.current.playbackRate = v;
                           }
+                          if (audioRef.current) audioRef.current.playbackRate = v;
                         }}
                         className="flex-1 accent-teal-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
                       />
@@ -1023,14 +1027,19 @@ export default function StudioPage() {
                   </div>
 
                   {/* KNOB 2: Lips & Viseme Articulation Speed */}
-                  <div className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 flex flex-col gap-1.5">
+                  <div className="bg-slate-950/80 p-2.5 rounded-xl border border-pink-500/30 flex flex-col gap-1.5">
                     <div className="flex items-center justify-between text-xs font-mono">
                       <span className="text-slate-300 flex items-center gap-1.5">
                         <Activity className="h-3.5 w-3.5 text-pink-400" />
                         <span>Lips / Viseme Articulation Rate:</span>
+                        {!isKnobsLinked && (
+                          <span className="text-[9px] text-pink-400/80 uppercase font-bold tracking-tight bg-pink-950/80 px-1.5 py-0.5 rounded border border-pink-800/40">
+                            Independent Visemes
+                          </span>
+                        )}
                       </span>
                       <span className="font-bold text-pink-400 bg-slate-900 px-2 py-0.5 rounded border border-pink-500/40">
-                        {(isKnobsLinked ? playbackSpeed : visemeSpeed).toFixed(2)}x
+                        {visemeSpeed.toFixed(2)}x
                       </span>
                     </div>
                     <div className="flex items-center gap-2.5">
@@ -1040,17 +1049,16 @@ export default function StudioPage() {
                         min="0.70"
                         max="1.50"
                         step="0.01"
-                        value={isKnobsLinked ? playbackSpeed : visemeSpeed}
+                        value={visemeSpeed}
                         onChange={(e: any) => {
                           const v = parseFloat(e.target.value);
+                          setVisemeSpeed(v);
                           if (isKnobsLinked) {
-                            setPlaybackSpeed(v);
                             setAudioSpeed(v);
-                            setVisemeSpeed(v);
-                          } else {
-                            setVisemeSpeed(v);
-                            if (videoRef.current) videoRef.current.playbackRate = v * bodyLanguageVelocity;
+                            setPlaybackSpeed(v);
+                            if (audioRef.current) audioRef.current.playbackRate = v;
                           }
+                          if (videoRef.current) videoRef.current.playbackRate = v * bodyLanguageVelocity;
                         }}
                         className="flex-1 accent-pink-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
                       />
