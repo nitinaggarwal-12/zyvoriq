@@ -184,7 +184,7 @@ export default function StudioPage() {
   const [expressionIntensity, setExpressionIntensity] = useState<number>(100); // Face micro-motion (50% - 150%)
   const [bodyLanguageVelocity, setBodyLanguageVelocity] = useState<number>(1.00); // Torso sway & gesture rate (0.5x - 2.0x)
   const [mouthSharpness, setMouthSharpness] = useState<number>(75);         // Mouth crispness / Lanczos feather (0% - 100%)
-  const [isKnobsLinked, setIsKnobsLinked] = useState<boolean>(true);        // Link audio & lips by default
+  const [isKnobsLinked, setIsKnobsLinked] = useState<boolean>(false);       // Independent by default so you can tune them separately!
   const [activePreset, setActivePreset] = useState<string>("broadcast");
   const [copiedSweetSpot, setCopiedSweetSpot] = useState<boolean>(false);
 
