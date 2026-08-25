@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { AppNavbar } from "@/components/AppNavbar";
+import { SparkArchitecturePanel } from "@/components/SparkArchitecturePanel";
 import { 
   Terminal, 
   Sparkles, 
@@ -478,6 +479,11 @@ export default function DirectorPage() {
             </div>
 
           </div>
+        </div>
+
+        {/* Spark Under The Hood Architecture Section */}
+        <div className="mt-8">
+          <SparkArchitecturePanel />
         </div>
 
       </main>

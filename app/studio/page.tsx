@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { AppNavbar } from "@/components/AppNavbar";
+import { SparkArchitecturePanel } from "@/components/SparkArchitecturePanel";
 import { 
   UserCheck,
   Sparkles, 
@@ -1381,6 +1382,11 @@ export default function StudioPage() {
 
           </div>
 
+        </div>
+
+        {/* Live Architecture Model Reference: Spark Under The Hood */}
+        <div className="mt-10">
+          <SparkArchitecturePanel />
         </div>
 
       </main>
