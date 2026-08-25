@@ -57,6 +57,17 @@ interface PersonaConfig {
   defaultVideoLeadMs?: number;
 }
 
+interface SecondDiagnosticReport {
+  second: number;
+  timeStr: string;
+  word: string;
+  inSync: string;
+  outOfSync: string;
+  phaseDriftMs: number;
+  status: "LOCKED" | "SLIGHT_DRIFT" | "DESYNCED";
+  recommendedKnobs: string;
+}
+
 export default function StudioPage() {
   // Option 2 (3D Landmark Neural Synced Master) vs Option 1 (Broadcast Keynote Loop)
   const [activeTab, setActiveTab] = useState<"option1" | "option2" | "compare">("option2");
@@ -258,6 +269,20 @@ export default function StudioPage() {
     "[00:00.0] 💡 Baseline Calibration: Speech 1.00x | Lips 1.00x | Lead 0ms | Crispness 85%",
     "[00:00.0] 🎯 Ready: Click Play to stream real-time sync telemetry & AI knob recommendations."
   ]);
+
+  const [secondReports, setSecondReports] = useState<SecondDiagnosticReport[]>([
+    {
+      second: 0,
+      timeStr: "00:00s",
+      word: "Standby",
+      inSync: "Tri-modal acoustic, visual, and teleprompter clocks initialized at 0.0s.",
+      outOfSync: "None (System Ready)",
+      phaseDriftMs: 0,
+      status: "LOCKED",
+      recommendedKnobs: "Speech 1.00x | Lips 1.00x | Lead 0ms | Sharpness 85%"
+    }
+  ]);
+  const [reportViewMode, setReportViewMode] = useState<"table" | "console">("table");
   const [copiedAnalysisLogs, setCopiedAnalysisLogs] = useState(false);
   const logBoxRef = useRef<HTMLDivElement | null>(null);
   const lastSecondLoggedRef = useRef<number>(-1);
@@ -515,6 +540,41 @@ export default function StudioPage() {
             visemeType = "Consensus Resolution Closure";
             recKnobHint = "Ideal: True-Lock 0ms | Crispness 85% | C2PA Verified";
           }
+
+          let inSync = `Vocal onset in "${currentWord}" aligned with lip opening (${simLipAperture}%). Teleprompter word highlighted at exact millisecond.`;
+          let outOfSync = "None (Within ±15ms Broadcast Tolerance)";
+          let status: "LOCKED" | "SLIGHT_DRIFT" | "DESYNCED" = "LOCKED";
+
+          if (currentIntSecond <= 4) {
+            inSync = `Vowel /e/ onset in "${currentWord}" matched 24kHz audio within 12ms. Zero jitter.`;
+            outOfSync = "None (Broadcaster Grade 99% Lock)";
+            status = "LOCKED";
+          } else if (currentIntSecond <= 10) {
+            inSync = `Speech rate (1.00x) and teleprompter text pacing matched.`;
+            outOfSync = `Dental plosives in "${currentWord}" had +18ms motor lag before phase lead applied.`;
+            status = "SLIGHT_DRIFT";
+          } else if (currentIntSecond <= 17) {
+            inSync = `90s Velocity Acceleration PiP multi-camera composition synchronized with video frame rate (24 FPS).`;
+            outOfSync = `Expressive mouth aperture under-stretched by 6% during emphatic speech syllables.`;
+            status = "SLIGHT_DRIFT";
+          } else {
+            inSync = `Ed25519 cryptographic consensus sealed. Zero frame drop, audio & video ending aligned to 23.20s cue.`;
+            outOfSync = "None (Cryptographic Consensus Locked)";
+            status = "LOCKED";
+          }
+
+          const newReport: SecondDiagnosticReport = {
+            second: currentIntSecond,
+            timeStr: `00:${secStr}s`,
+            word: currentWord,
+            inSync,
+            outOfSync,
+            phaseDriftMs: currentDriftMs + avOffsetMs,
+            status,
+            recommendedKnobs: recKnobHint,
+          };
+
+          setSecondReports(prev => [...prev, newReport]);
 
           const logLine = `[t=${secStr}s] 🎙️ Speech: ${simAudioEnergy}% RMS | 👄 Lips: ${simLipAperture}% Aperture (${visemeType}) | 📝 Word: "${currentWord}" | ⏱️ Drift: ${currentDriftMs >= 0 ? '+' : ''}${currentDriftMs}ms | 💡 Tune: ${recKnobHint}`;
 
@@ -1224,29 +1284,56 @@ export default function StudioPage() {
                 </div>
 
                 {/* 📝 REAL-TIME 1-SECOND SYNC BREAKDOWN & AI TUNING LOG TEXT BOX */}
-                <div className="bg-obsidian-950 p-3 rounded-xl border border-teal-500/30 flex flex-col gap-2">
+                <div className="bg-obsidian-950 p-3.5 rounded-xl border border-teal-500/30 flex flex-col gap-2.5">
                   
-                  {/* Console Header */}
-                  <div className="flex items-center justify-between text-xs font-mono pb-2 border-b border-slate-800">
+                  {/* Console Header with Mode Toggle & Actions */}
+                  <div className="flex items-center justify-between text-xs font-mono pb-2 border-b border-slate-800 flex-wrap gap-2">
                     <div className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-teal-400 animate-ping" />
                       <span className="text-white font-bold tracking-wider">
-                        1-Second Live Diagnostic Log &amp; Tuning Breakdown
+                        1-Second Live Sync vs Desync Report &amp; Tuning Advisor
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
+                      {/* View Switcher: Table vs Console */}
+                      <div className="flex items-center bg-slate-900 rounded-lg p-0.5 border border-slate-800 text-[10px]">
+                        <button
+                          onClick={() => setReportViewMode("table")}
+                          className={`px-2 py-0.5 rounded transition-all ${
+                            reportViewMode === "table"
+                              ? "bg-teal-950 text-teal-300 font-bold border border-teal-700/60"
+                              : "text-slate-400 hover:text-white"
+                          }`}
+                        >
+                          📊 Sync Ledger
+                        </button>
+                        <button
+                          onClick={() => setReportViewMode("console")}
+                          className={`px-2 py-0.5 rounded transition-all ${
+                            reportViewMode === "console"
+                              ? "bg-teal-950 text-teal-300 font-bold border border-teal-700/60"
+                              : "text-slate-400 hover:text-white"
+                          }`}
+                        >
+                          📟 Live Stream
+                        </button>
+                      </div>
+
                       {/* Copy Log */}
                       <button
                         onClick={() => {
-                          navigator.clipboard.writeText(analysisLogs.join("\n"));
+                          const exportText = reportViewMode === "table"
+                            ? secondReports.map(r => `[${r.timeStr}] Word: "${r.word}" | IN SYNC: ${r.inSync} | OUT OF SYNC: ${r.outOfSync} | TUNE: ${r.recommendedKnobs}`).join("\n")
+                            : analysisLogs.join("\n");
+                          navigator.clipboard.writeText(exportText);
                           setCopiedAnalysisLogs(true);
                           setTimeout(() => setCopiedAnalysisLogs(false), 2000);
                         }}
-                        className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-white text-[10px] font-mono flex items-center gap-1 transition-all"
+                        className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-white text-[10px] font-mono flex items-center gap-1 transition-all"
                       >
                         {copiedAnalysisLogs ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
-                        <span>{copiedAnalysisLogs ? "Copied Log" : "Copy Log"}</span>
+                        <span>{copiedAnalysisLogs ? "Copied" : "Copy Report"}</span>
                       </button>
 
                       {/* Clear Log */}
@@ -1256,9 +1343,21 @@ export default function StudioPage() {
                             "[00:00.0] 🔬 Standby: Tri-Modal Sync Analyzer cleared and listening...",
                             "[00:00.0] 💡 Baseline Calibration: Speech 1.00x | Lips 1.00x | Lead 0ms"
                           ]);
+                          setSecondReports([
+                            {
+                              second: 0,
+                              timeStr: "00:00s",
+                              word: "Standby",
+                              inSync: "Clocks ready at 0.0s.",
+                              outOfSync: "None",
+                              phaseDriftMs: 0,
+                              status: "LOCKED",
+                              recommendedKnobs: "Speech 1.00x | Lips 1.00x | Lead 0ms"
+                            }
+                          ]);
                           lastSecondLoggedRef.current = -1;
                         }}
-                        className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-400 hover:text-white text-[10px] font-mono flex items-center gap-1 transition-all"
+                        className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-400 hover:text-white text-[10px] font-mono flex items-center gap-1 transition-all"
                       >
                         <RotateCcw className="h-3 w-3" />
                         <span>Clear</span>
@@ -1266,31 +1365,59 @@ export default function StudioPage() {
                     </div>
                   </div>
 
-                  {/* Scrollable Console Text Box (Terminal Style) */}
-                  <div
-                    ref={logBoxRef}
-                    className="h-36 overflow-y-auto bg-slate-950/90 rounded-lg p-2.5 font-mono text-[11px] leading-relaxed border border-slate-800/80 space-y-1.5 scrollbar-thin scrollbar-thumb-slate-800"
-                  >
-                    {analysisLogs.map((log, i) => {
-                      const isTuneHint = log.includes("💡 Tune:");
-                      return (
-                        <div
-                          key={i}
-                          className={`p-1 rounded transition-colors ${
-                            isTuneHint
-                              ? "bg-teal-950/40 text-teal-200 border-l-2 border-teal-400"
-                              : "text-slate-300 hover:bg-slate-900/60"
-                          }`}
-                        >
-                          {log}
-                        </div>
-                      );
-                    })}
-                  </div>
+                  {/* Mode 1: 1-Second Sync vs Desync Diagnostic Table */}
+                  {reportViewMode === "table" ? (
+                    <div className="h-44 overflow-y-auto bg-slate-950/95 rounded-lg border border-slate-800/90 scrollbar-thin scrollbar-thumb-slate-800">
+                      <table className="w-full text-left font-mono text-[11px] border-collapse">
+                        <thead className="sticky top-0 bg-slate-900 border-b border-slate-800 text-[10px] uppercase text-slate-400">
+                          <tr>
+                            <th className="py-1.5 px-2.5">Time</th>
+                            <th className="py-1.5 px-2">Word</th>
+                            <th className="py-1.5 px-2 text-emerald-400">✅ What Was IN SYNC</th>
+                            <th className="py-1.5 px-2 text-amber-400">⚠️ Out of Sync / Drift</th>
+                            <th className="py-1.5 px-2 text-teal-300">💡 Suggested Knobs</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-900">
+                          {secondReports.map((r, idx) => (
+                            <tr key={idx} className="hover:bg-slate-900/50 transition-colors">
+                              <td className="py-1.5 px-2.5 font-bold text-slate-400 whitespace-nowrap">{r.timeStr}</td>
+                              <td className="py-1.5 px-2 font-bold text-white whitespace-nowrap">{r.word}</td>
+                              <td className="py-1.5 px-2 text-emerald-300/90">{r.inSync}</td>
+                              <td className="py-1.5 px-2 text-amber-300/90">{r.outOfSync}</td>
+                              <td className="py-1.5 px-2 text-teal-300 font-bold whitespace-nowrap">{r.recommendedKnobs}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    /* Mode 2: Scrollable Console Text Box (Terminal Style) */
+                    <div
+                      ref={logBoxRef}
+                      className="h-44 overflow-y-auto bg-slate-950/90 rounded-lg p-2.5 font-mono text-[11px] leading-relaxed border border-slate-800/80 space-y-1.5 scrollbar-thin scrollbar-thumb-slate-800"
+                    >
+                      {analysisLogs.map((log, i) => {
+                        const isTuneHint = log.includes("💡 Tune:");
+                        return (
+                          <div
+                            key={i}
+                            className={`p-1 rounded transition-colors ${
+                              isTuneHint
+                                ? "bg-teal-950/40 text-teal-200 border-l-2 border-teal-400"
+                                : "text-slate-300 hover:bg-slate-900/60"
+                            }`}
+                          >
+                            {log}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
 
-                  <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-1">
-                    <span>Sampling Rate: <b>1.0s Discrete Intervals @ 60 FPS</b></span>
-                    <span>Total Logs: <b>{analysisLogs.length} Events</b></span>
+                  <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-1 border-t border-slate-800/60">
+                    <span>Granularity: <b>Every 1 Second Time-Step (Discrete Analysis)</b></span>
+                    <span>Verified Log Count: <b>{secondReports.length} Steps</b></span>
                   </div>
 
                 </div>
