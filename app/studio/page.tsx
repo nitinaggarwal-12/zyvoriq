@@ -228,13 +228,20 @@ export default function StudioPage() {
   const [newPersonaAppearance, setNewPersonaAppearance] = useState("");
   const [newPersonaIntro, setNewPersonaIntro] = useState("");
   const [isSynthesizingNewPersona, setIsSynthesizingNewPersona] = useState(false);
+  const [priyaVariant, setPriyaVariant] = useState<"master" | "lead120" | "expressive">("lead120");
 
   const currentPersona = personas[selectedPersona] || personas["priya"];
 
   // Determine active video source (Option 2 uses the true neural lip-synced video)
-  const activeVideoUrl = selectedPlaybackEngine === "option2" 
+  let activeVideoUrl = selectedPlaybackEngine === "option2" 
     ? (currentPersona.syncedVideoUrl || currentPersona.videoUrl)
     : currentPersona.videoUrl;
+
+  if (selectedPersona === "priya" && selectedPlaybackEngine === "option2") {
+    if (priyaVariant === "lead120") activeVideoUrl = "/assets/video_synced/priya_lead_120ms.mp4";
+    else if (priyaVariant === "expressive") activeVideoUrl = "/assets/video_synced/priya_expressive.mp4";
+    else activeVideoUrl = "/assets/video_synced/priya_neural_synced.mp4";
+  }
 
   // Update dynamic duration and lead offset when switching personas
   useEffect(() => {
@@ -1231,7 +1238,43 @@ export default function StudioPage() {
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {selectedPersona === "priya" && selectedPlaybackEngine === "option2" && (
+                      <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-purple-500/40">
+                        <span className="text-[10px] font-mono text-slate-400 px-1">Priya Tuning:</span>
+                        <button
+                          onClick={() => setPriyaVariant("lead120")}
+                          className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold transition-all ${
+                            priyaVariant === "lead120"
+                              ? "bg-purple-600 text-white shadow-sm"
+                              : "text-slate-400 hover:text-white"
+                          }`}
+                        >
+                          ⚡ Anticipation Lead (+120ms)
+                        </button>
+                        <button
+                          onClick={() => setPriyaVariant("master")}
+                          className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold transition-all ${
+                            priyaVariant === "master"
+                              ? "bg-teal-600 text-white shadow-sm"
+                              : "text-slate-400 hover:text-white"
+                          }`}
+                        >
+                          🎯 True-Lock (0ms)
+                        </button>
+                        <button
+                          onClick={() => setPriyaVariant("expressive")}
+                          className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold transition-all ${
+                            priyaVariant === "expressive"
+                              ? "bg-pink-600 text-white shadow-sm"
+                              : "text-slate-400 hover:text-white"
+                          }`}
+                        >
+                          🔥 Expressive (1.4x)
+                        </button>
+                      </div>
+                    )}
+
                     <span className={`rounded px-2.5 py-0.5 text-[10px] font-mono border ${
                       selectedPlaybackEngine === "option2"
                         ? "bg-purple-950 text-purple-300 border-purple-700/50"
