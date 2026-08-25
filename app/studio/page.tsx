@@ -454,35 +454,15 @@ export default function StudioPage() {
     }
 
     if (mode === "option2") {
-      if (isKnobsLinked) {
-        // UNIFIED MP4 DIRECT PLAYBACK
-        if (videoRef.current) {
-          videoRef.current.muted = false; // Enable audio from the synced video!
-          videoRef.current.volume = 1.0;
-          videoRef.current.currentTime = 0;
-          videoRef.current.playbackRate = playbackSpeed;
-          videoRef.current.play().catch(() => {});
-          setIsSpeakingClone(true);
-        }
-      } else {
-        // INDEPENDENT DECOUPLED TUNING MODE (SEPARATE AUDIO SPEED & VIDEO SPEED)
-        const vRate = Math.max(0.50, Math.min(3.00, visemeSpeed * bodyLanguageVelocity));
-        const aRate = Math.max(0.50, Math.min(3.00, audioSpeed));
-        const offsetSec = avOffsetMs / 1000.0;
-
-        if (videoRef.current) {
-          videoRef.current.muted = true; // Mute video so independent audio plays
-          videoRef.current.volume = 0;
-          videoRef.current.currentTime = Math.max(0, offsetSec);
-          videoRef.current.playbackRate = vRate;
-          videoRef.current.play().catch(() => {});
-        }
-
-        if (currentPersona.audioUrl && audioRef.current) {
-          audioRef.current.currentTime = 0;
-          audioRef.current.playbackRate = aRate;
-          audioRef.current.play().catch(() => {});
-        }
+      // OPTION 2: PLAY REAL NEURAL LIP-SYNCED MP4 WITH UNMUTED MASTER AUDIO
+      if (videoRef.current) {
+        videoRef.current.muted = false; // Always unmuted for full audio playback
+        videoRef.current.volume = 1.0;
+        videoRef.current.currentTime = 0;
+        videoRef.current.playbackRate = audioSpeed || playbackSpeed;
+        videoRef.current.play().catch((err) => {
+          console.error("Playback error:", err);
+        });
         setIsSpeakingClone(true);
       }
       return;
