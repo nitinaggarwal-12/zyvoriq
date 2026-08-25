@@ -384,8 +384,10 @@ export default function StudioPage() {
 
   // Real-Time Millisecond-Exact Caption & Progress Tracker
   useEffect(() => {
-    // In Option 2, the video element has the audio directly embedded!
-    const mediaSource = selectedPlaybackEngine === "option2" ? videoRef.current : audioRef.current;
+    // In decoupled mode, audio element drives the timeline; in linked mode, the video element drives
+    const mediaSource = (!isKnobsLinked || selectedPlaybackEngine === "option1") 
+      ? audioRef.current 
+      : videoRef.current;
     if (!mediaSource) return;
 
     const handleLoadedMetadata = () => {
@@ -409,6 +411,8 @@ export default function StudioPage() {
     };
 
     const handleMediaEnded = () => {
+      if (videoRef.current) videoRef.current.pause();
+      if (audioRef.current) audioRef.current.pause();
       setIsSpeakingClone(false);
       setSpokenWordIndex(-1);
     };
@@ -422,7 +426,7 @@ export default function StudioPage() {
       mediaSource.removeEventListener("timeupdate", handleTimeUpdate);
       mediaSource.removeEventListener("ended", handleMediaEnded);
     };
-  }, [wordTimings, captionLeadOffsetMs, selectedPlaybackEngine]);
+  }, [wordTimings, captionLeadOffsetMs, selectedPlaybackEngine, isKnobsLinked]);
 
   // Unified Playback Controller
   const handleTogglePlayback = (mode: "option1" | "option2") => {
@@ -437,13 +441,35 @@ export default function StudioPage() {
     }
 
     if (mode === "option2") {
-      // OPTION 2: PLAY REAL NEURAL LIP-SYNCED MP4 DIRECTLY (WITH EMBEDDED AUDIO)
-      if (videoRef.current) {
-        videoRef.current.muted = false; // Enable audio from the synced video!
-        videoRef.current.volume = 1.0;
-        videoRef.current.currentTime = 0;
-        videoRef.current.playbackRate = playbackSpeed;
-        videoRef.current.play().catch(() => {});
+      if (isKnobsLinked) {
+        // UNIFIED MP4 DIRECT PLAYBACK
+        if (videoRef.current) {
+          videoRef.current.muted = false; // Enable audio from the synced video!
+          videoRef.current.volume = 1.0;
+          videoRef.current.currentTime = 0;
+          videoRef.current.playbackRate = playbackSpeed;
+          videoRef.current.play().catch(() => {});
+          setIsSpeakingClone(true);
+        }
+      } else {
+        // INDEPENDENT DECOUPLED TUNING MODE (SEPARATE AUDIO SPEED & VIDEO SPEED)
+        const vRate = Math.max(0.50, Math.min(3.00, visemeSpeed * bodyLanguageVelocity));
+        const aRate = Math.max(0.50, Math.min(3.00, audioSpeed));
+        const offsetSec = avOffsetMs / 1000.0;
+
+        if (videoRef.current) {
+          videoRef.current.muted = true; // Mute video so independent audio plays
+          videoRef.current.volume = 0;
+          videoRef.current.currentTime = Math.max(0, offsetSec);
+          videoRef.current.playbackRate = vRate;
+          videoRef.current.play().catch(() => {});
+        }
+
+        if (currentPersona.audioUrl && audioRef.current) {
+          audioRef.current.currentTime = 0;
+          audioRef.current.playbackRate = aRate;
+          audioRef.current.play().catch(() => {});
+        }
         setIsSpeakingClone(true);
       }
       return;
@@ -455,13 +481,13 @@ export default function StudioPage() {
       videoRef.current.muted = true;
       videoRef.current.volume = 0;
       videoRef.current.currentTime = startOffsetSeconds;
-      videoRef.current.playbackRate = playbackSpeed;
+      videoRef.current.playbackRate = isKnobsLinked ? playbackSpeed : (visemeSpeed * bodyLanguageVelocity);
       videoRef.current.play().catch(() => {});
     }
 
     if (currentPersona.audioUrl && audioRef.current) {
       audioRef.current.currentTime = 0;
-      audioRef.current.playbackRate = playbackSpeed;
+      audioRef.current.playbackRate = isKnobsLinked ? playbackSpeed : audioSpeed;
       audioRef.current.play().catch(() => {});
       setIsSpeakingClone(true);
       return;
