@@ -243,7 +243,7 @@ export default function StudioPage() {
     else activeVideoUrl = "/assets/video_synced/priya_neural_synced.mp4";
   }
 
-  // Update dynamic duration and lead offset when switching personas
+  // Update dynamic duration and lead offset when switching personas or calibration variants
   useEffect(() => {
     if (selectedPlaybackEngine === "option1" && currentPersona.defaultVideoLeadMs !== undefined) {
       setVideoLeadOffsetMs(currentPersona.defaultVideoLeadMs);
@@ -253,9 +253,16 @@ export default function StudioPage() {
     setDynamicAudioDuration(currentPersona.exactAudioDurationSec || 23.20);
     setIsSpeakingClone(false);
     setSpokenWordIndex(-1);
-    if (videoRef.current) videoRef.current.pause();
-    if (audioRef.current) audioRef.current.pause();
-  }, [selectedPersona, selectedPlaybackEngine]);
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+      videoRef.current.load();
+    }
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  }, [selectedPersona, selectedPlaybackEngine, priyaVariant]);
 
   // Unified Real-Time Playback Rate Binding to BOTH Video and Audio
   useEffect(() => {
