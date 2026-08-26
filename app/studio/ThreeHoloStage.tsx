@@ -257,7 +257,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       presenterTexture = avatarTex;
     }
 
-    const presenterGeo = new THREE.PlaneGeometry(2.4, 1.35, 32, 32);
+    const presenterGeo = new THREE.PlaneGeometry(1.9, 1.6, 32, 32);
     
     // Crystal Clear Holographic Depth & Fresnel Rim Shader Material
     const presenterMat = new THREE.ShaderMaterial({
