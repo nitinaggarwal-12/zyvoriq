@@ -312,6 +312,7 @@ export default function Gen7StudioPage() {
                 return (
                   <button
                     key={persona.id}
+                    data-testid={`persona-${persona.id}`}
                     onClick={() => handleSelectPersona(persona)}
                     className={`relative p-2.5 rounded-xl border text-left flex flex-col gap-2 transition-all group ${
                       isSelected
