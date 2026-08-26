@@ -84,7 +84,7 @@ export default function Gen7StudioPage() {
 
   // Dynamic Gen 7 Multi-Angle Video Source Resolver
   const activeVideoSrc = useMemo(() => {
-    const pId = selectedPersona.id;
+    const pId = selectedPersona.id.split("-")[0].toLowerCase();
     if (framingMode === "headshot") {
       return `/assets/video_synced/${pId}_neural_synced.mp4`;
     }
