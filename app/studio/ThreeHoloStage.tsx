@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { EnvironmentMode, FramingMode, PostureMode } from "@/lib/tier6/types";
+import { EnvironmentMode, FramingMode, PostureMode, SynthesisEngine } from "@/lib/tier6/types";
 
 export type CameraPreset = "70mm_close" | "35mm_wide" | "24mm_hero" | "stage_screen_focus" | "free_orbit";
 
@@ -13,6 +13,7 @@ interface ThreeHoloStageProps {
   environment: EnvironmentMode;
   framingMode: FramingMode;
   postureMode: PostureMode;
+  synthesisEngine?: SynthesisEngine;
   selectedPersonaName: string;
   selectedPersonaAvatar: string;
   activeScript: string;
@@ -25,6 +26,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
   environment,
   framingMode,
   postureMode,
+  synthesisEngine = "neural_viseme",
   selectedPersonaName,
   selectedPersonaAvatar,
   activeScript
@@ -34,6 +36,17 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
   const [audioLevel, setAudioLevel] = useState<number>(0);
   const [cameraPreset, setCameraPreset] = useState<CameraPreset>("70mm_close");
   const [focusedNode, setFocusedNode] = useState<string>("Overview");
+
+  // Synchronize Director Controls Framing Mode with Stage Camera Presets
+  useEffect(() => {
+    if (framingMode === "headshot") {
+      setCameraPreset("70mm_close");
+    } else if (framingMode === "half_body") {
+      setCameraPreset("35mm_wide");
+    } else if (framingMode === "full_body") {
+      setCameraPreset("24mm_hero");
+    }
+  }, [framingMode]);
 
   // Architecture Nodes Definition
   const ARCH_NODES = [
@@ -417,58 +430,82 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       }
       particleGeo.attributes.position.needsUpdate = true;
 
-      // Environment Color Updates
+      // Environment Color Updates & Particle Tuning
       if (environment === "keynote_arena") {
         mainSpotlight.color.setHex(0x00f0ff);
         rimMat.color.setHex(0x00f0ff);
         floorGlowLight.color.setHex(0x00f0ff);
-        presenterMat.uniforms.fresnelColor.value.setHex(0x00f0ff);
+        if (postureMode !== "interactive_hologram") presenterMat.uniforms.fresnelColor.value.setHex(0x00f0ff);
         scene.fog?.color.setHex(0x04060c);
       } else if (environment === "fireside_library") {
         mainSpotlight.color.setHex(0xf59e0b);
         rimMat.color.setHex(0xd97706);
         floorGlowLight.color.setHex(0xf59e0b);
-        presenterMat.uniforms.fresnelColor.value.setHex(0xf59e0b);
+        if (postureMode !== "interactive_hologram") presenterMat.uniforms.fresnelColor.value.setHex(0xf59e0b);
         scene.fog?.color.setHex(0x120c08);
       } else if (environment === "command_bunker") {
         mainSpotlight.color.setHex(0x10b981);
         rimMat.color.setHex(0x059669);
         floorGlowLight.color.setHex(0x10b981);
-        presenterMat.uniforms.fresnelColor.value.setHex(0x10b981);
+        if (postureMode !== "interactive_hologram") presenterMat.uniforms.fresnelColor.value.setHex(0x10b981);
         scene.fog?.color.setHex(0x04130c);
       } else if (environment === "executive_boardroom") {
         mainSpotlight.color.setHex(0x38bdf8);
         rimMat.color.setHex(0x818cf8);
         floorGlowLight.color.setHex(0x38bdf8);
-        presenterMat.uniforms.fresnelColor.value.setHex(0x818cf8);
+        if (postureMode !== "interactive_hologram") presenterMat.uniforms.fresnelColor.value.setHex(0x818cf8);
         scene.fog?.color.setHex(0x080f1d);
       }
 
-      // Multi-Camera Director Swarm Smooth Positioning
+      // 1. Dynamic Camera Framing Base Coordinate Calculation
+      let baseFramingZ = 2.1;
+      let baseFramingY = 1.15;
+
+      if (framingMode === "headshot") {
+        baseFramingZ = 1.45;
+        baseFramingY = 1.25;
+      } else if (framingMode === "half_body") {
+        baseFramingZ = 2.20;
+        baseFramingY = 1.10;
+      } else if (framingMode === "full_body") {
+        baseFramingZ = 3.40;
+        baseFramingY = 0.88;
+      }
+
+      // 2. Multi-Camera Director Preset Modulations
       let targetX = 0;
-      let targetY = 1.25;
-      let targetZ = 2.1;
+      let targetY = baseFramingY;
+      let targetZ = baseFramingZ;
 
       if (cameraPreset === "70mm_close") {
         targetX = 0;
-        targetY = 1.25;
-        targetZ = 2.1;
+        targetY = 1.22;
+        targetZ = 1.55;
       } else if (cameraPreset === "35mm_wide") {
         targetX = 0;
-        targetY = 1.0;
-        targetZ = 3.8;
+        targetY = 1.05;
+        targetZ = 2.85;
       } else if (cameraPreset === "24mm_hero") {
         targetX = 0;
-        targetY = 0.45;
-        targetZ = 2.8;
+        targetY = 0.55;
+        targetZ = 4.20;
       } else if (cameraPreset === "stage_screen_focus") {
         targetX = 1.2;
         targetY = 1.35;
         targetZ = 2.9;
       } else if (cameraPreset === "free_orbit") {
-        targetZ = 3.5;
+        targetZ = baseFramingZ * 1.3;
       }
 
+      // 3. AI Synthesis Engine: Automated Cinematic Camera Glide
+      if (synthesisEngine === "director_glide" && cameraPreset !== "free_orbit") {
+        const glideAngle = time * 0.0006;
+        targetX += Math.sin(glideAngle) * 1.1;
+        targetY += Math.sin(time * 0.0012) * 0.22;
+        targetZ += Math.cos(glideAngle) * 0.45;
+      }
+
+      // 4. Smooth Camera Damping
       if (cameraPreset === "free_orbit") {
         camera.position.x += (Math.sin(targetCameraAngleX) * targetZ - camera.position.x) * 0.08;
         camera.position.y += (targetY + targetCameraAngleY - camera.position.y) * 0.08;
@@ -479,22 +516,56 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
         camera.position.z += (targetZ - camera.position.z) * 0.06;
       }
 
+      // 5. Dynamic Presenter Posture & Locomotion Mechanics
+      let presenterX = 0;
+      let presenterY = 0.9;
+      const presenterZ = 0.4;
+      let lookTargetX = 0;
+      let lookTargetY = targetY;
+
+      if (presenterMesh) {
+        if (postureMode === "sitting") {
+          // Seated Executive in Armchair Height
+          presenterY = 0.58;
+          presenterMesh.position.set(0, presenterY, presenterZ);
+          presenterMesh.rotation.y = 0;
+          lookTargetY = 0.65;
+        } else if (postureMode === "walking") {
+          // Organic Keynote Presenter Stage Traversal
+          const walkX = Math.sin(time * 0.0011) * 0.95;
+          const walkBob = Math.abs(Math.sin(time * 0.0044)) * 0.025;
+          presenterX = walkX;
+          presenterY = 0.90 + walkBob;
+          presenterMesh.position.set(presenterX, presenterY, presenterZ);
+          presenterMesh.rotation.y = Math.cos(time * 0.0011) * 0.12; // Natural body orientation towards walking direction
+          lookTargetX = presenterX * 0.7;
+          lookTargetY = presenterY + 0.1;
+        } else if (postureMode === "interactive_hologram") {
+          // Ethereal Levitation & Volumetric Holographic Modulation
+          const floatY = 1.15 + Math.sin(time * 0.0022) * 0.07;
+          presenterY = floatY;
+          presenterMesh.position.set(0, presenterY, presenterZ);
+          presenterMesh.rotation.y = Math.sin(time * 0.0015) * 0.08;
+          
+          // Ethereal Hologram Fresnel Color Morph
+          const r = 0.1 + (Math.sin(time * 0.003) * 0.5 + 0.5) * 0.4;
+          const g = 0.6 + (Math.cos(time * 0.003) * 0.5 + 0.5) * 0.4;
+          const b = 1.0;
+          presenterMat.uniforms.fresnelColor.value.setRGB(r, g, b);
+          presenterMat.uniforms.curvature.value = 0.08 + Math.sin(time * 0.004) * 0.025;
+          lookTargetY = floatY;
+        } else {
+          // Standing Anchor
+          presenterMesh.position.set(0, 0.9, 0.4);
+          presenterMesh.rotation.y = 0;
+          lookTargetY = 0.9;
+        }
+      }
+
       if (cameraPreset === "stage_screen_focus") {
         camera.lookAt(0.6, 1.25, 0.2);
       } else {
-        camera.lookAt(0, targetY, 0.4);
-      }
-
-      // Rock-Solid Keynote Posture with Zero Body Distortion
-      if (presenterMesh) {
-        presenterMesh.scale.set(1.0, 1.0, 1.0);
-        if (postureMode === "sitting") {
-          presenterMesh.position.set(0, 0.65, 0.4);
-        } else if (postureMode === "walking") {
-          presenterMesh.position.x = 0;
-        } else {
-          presenterMesh.position.set(0, 0.9, 0.4);
-        }
+        camera.lookAt(lookTargetX, lookTargetY, 0.4);
       }
 
       renderer.render(scene, camera);

@@ -581,6 +581,7 @@ export default function Gen7StudioPage() {
                 environment={environmentMode}
                 framingMode={framingMode}
                 postureMode={postureMode}
+                synthesisEngine={synthesisEngine}
                 selectedPersonaName={selectedPersona.name}
                 selectedPersonaAvatar={selectedPersona.avatarUrl}
                 activeScript={scriptText}
