@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-console.log('🏛️ Generating Conformal 3D Humanoid Mesh with 52 ARKit Blendshapes for Priya...');
+console.log('🏛️ Calibrating 3D Humanoid Mesh UVs and Framing for Priya...');
 
 function buildConformalHumanoidMesh() {
   const gridX = 48;
@@ -25,25 +25,25 @@ function buildConformalHumanoidMesh() {
 
   for (let y = 0; y <= gridY; y++) {
     const v = y / gridY;
-    const posY = (v - 0.5) * height + 0.95; // Centered at y=0.95m
+    const posY = (v - 0.5) * height + 0.68; // Centered naturally on stage
 
     for (let x = 0; x <= gridX; x++) {
       const u = x / gridX;
       const posX = (u - 0.5) * width;
-      // Gentle natural 3D cylindrical depth curvature
-      const posZ = Math.sin(u * Math.PI) * 0.08;
+      // Gentle natural 3D depth curvature
+      const posZ = Math.sin(u * Math.PI) * 0.06;
 
       vertices.push(posX, posY, posZ);
       normals.push(0, 0, 1);
-      uvs.push(u, 1.0 - v); // Conformal 1:1 UV mapping
+      uvs.push(u, v); // Correct upright UV orientation
 
-      // Head & Facial region anchor (u around 0.49, v around 0.65 in 16:9 stage photo)
-      const mouthDistX = Math.abs(u - 0.492) / 0.035;
-      const mouthDistY = Math.abs(v - 0.63) / 0.035;
+      // Head & Facial region anchor in 16:9 stage photo
+      const mouthDistX = Math.abs(u - 0.492) / 0.04;
+      const mouthDistY = Math.abs(v - 0.38) / 0.04;
       const isMouth = (mouthDistX < 1.0 && mouthDistY < 1.0);
 
-      const eyeDistX = Math.abs(u - 0.492) / 0.045;
-      const eyeDistY = Math.abs(v - 0.70) / 0.025;
+      const eyeDistX = Math.abs(u - 0.492) / 0.05;
+      const eyeDistY = Math.abs(v - 0.46) / 0.03;
       const isEyes = (eyeDistX < 1.0 && eyeDistY < 1.0);
 
       if (isMouth) {
@@ -106,4 +106,4 @@ function buildConformalHumanoidMesh() {
 const geo = buildConformalHumanoidMesh();
 const outPath = path.join(__dirname, '../../public/assets/models/priya_humanoid_geometry.json');
 fs.writeFileSync(outPath, JSON.stringify(geo));
-console.log(`✅ Successfully generated Conformal 3D Humanoid Mesh for Priya: ${outPath} (${geo.vertices.length / 3} vertices)`);
+console.log(`✅ Successfully generated Upright Conformal 3D Mesh for Priya: ${outPath}`);

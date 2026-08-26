@@ -563,10 +563,10 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
           const swayX = Math.sin(time * 0.0008) * 0.04;
           const swayRot = Math.sin(time * 0.0008) * 0.015;
           const nod = (smoothAudioFlux > 0.1) ? Math.sin(time * 0.005) * 0.015 : 0;
-          presenterMesh.position.set(swayX, 0.1 + nod, 0.4);
+          presenterMesh.position.set(swayX, 0.0 + nod, 0.4);
           presenterMesh.rotation.y = swayRot;
           lookTargetX = swayX * 0.5;
-          lookTargetY = 1.35 + nod;
+          lookTargetY = 0.85 + nod;
         }
 
         // Continuous Torso & Shoulder Breathing Kinematics (Non-Repeating)
