@@ -62,7 +62,7 @@ export default function Gen7StudioPage() {
   const [showProvenanceModal, setShowProvenanceModal] = useState<boolean>(false);
 
   // Gen 7 Director State Controls
-  const [framingMode, setFramingMode] = useState<FramingMode>("full_body");
+  const [framingMode, setFramingMode] = useState<FramingMode>("headshot");
   const [postureMode, setPostureMode] = useState<PostureMode>("standing");
   const [environmentMode, setEnvironmentMode] = useState<EnvironmentMode>("keynote_arena");
   const [activeHologramNode, setActiveHologramNode] = useState<string>("agent_mesh");
@@ -107,7 +107,6 @@ export default function Gen7StudioPage() {
     if (video) {
       video.pause();
       setIsPlaying(false);
-      video.src = activeVideoSrc;
       video.load();
       setCurrentTime(0);
       setSpokenWordIndex(-1);
@@ -504,6 +503,7 @@ export default function Gen7StudioPage() {
               <video
                 ref={videoRef}
                 src={activeVideoSrc}
+                poster={selectedPersona.avatarUrl}
                 playsInline
                 preload="auto"
                 onPlay={() => setIsPlaying(true)}
