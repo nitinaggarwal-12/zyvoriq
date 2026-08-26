@@ -277,8 +277,10 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       new THREE.BufferAttribute(new Float32Array(priyaGeoData.morphTargets.browUp), 3)
     ];
 
-    // Photographic PBR Material with Lighting Response
-    const avatarTex = new THREE.TextureLoader().load(selectedPersonaAvatar);
+    // Photographic PBR Material with Transparent Alpha Cutout
+    const isPriya = selectedPersonaName.toLowerCase().includes("priya");
+    const avatarTextureSrc = isPriya ? "/assets/avatars/priya_cutout.png" : selectedPersonaAvatar;
+    const avatarTex = new THREE.TextureLoader().load(avatarTextureSrc);
     avatarTex.minFilter = THREE.LinearFilter;
     avatarTex.magFilter = THREE.LinearFilter;
 
@@ -286,12 +288,29 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       map: avatarTex,
       roughness: 0.4,
       metalness: 0.1,
+      transparent: true,
+      alphaTest: 0.05,
       side: THREE.DoubleSide
     });
 
     const presenterMesh = new THREE.Mesh(presenterGeo, presenterMat);
     presenterMesh.position.set(0, 0, 0.4);
     scene.add(presenterMesh);
+
+    // Anatomical 3D Oral Cavity Sub-Mesh Layer for Priya
+    const mouthTex = new THREE.TextureLoader().load("/assets/avatars/priya_oral_cavity.png");
+    mouthTex.minFilter = THREE.LinearFilter;
+    mouthTex.magFilter = THREE.LinearFilter;
+    const mouthGeo = new THREE.PlaneGeometry(0.18, 0.12);
+    const mouthMat = new THREE.MeshBasicMaterial({
+      map: mouthTex,
+      transparent: true,
+      depthWrite: false
+    });
+    const mouthMesh = new THREE.Mesh(mouthGeo, mouthMat);
+    mouthMesh.position.set(-0.015, 0.81, 0.385);
+    mouthMesh.scale.set(0, 0, 0);
+    scene.add(mouthMesh);
 
     // 9. Floating Ambient Holographic Dust
     const particleCount = 140;
@@ -422,6 +441,17 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
         // Dynamic Keynote Stage Head & Torso Dynamics to speech cadence
         presenterMesh.rotation.x = -jawDrop * 0.02;
         presenterMesh.rotation.y = Math.sin(time * 0.0008) * 0.03;
+
+        // Synchronize 3D Oral Cavity Sub-Mesh
+        if (mouthMesh) {
+          if (jawDrop > 0.05) {
+            mouthMesh.scale.set(jawDrop * 1.1, jawDrop * 1.2, 1.0);
+            mouthMesh.position.y = 0.81 - jawDrop * 0.015;
+            mouthMesh.position.x = presenterMesh.position.x - 0.015;
+          } else {
+            mouthMesh.scale.set(0, 0, 0);
+          }
+        }
       }
 
       // Update Screen with Audio Reactivity
