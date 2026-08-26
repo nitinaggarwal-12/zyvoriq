@@ -82,6 +82,25 @@ export default function Gen7StudioPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const animationFrameRef = useRef<number>(0);
 
+  // Dynamic Gen 7 Multi-Angle Video Source Resolver
+  const activeVideoSrc = useMemo(() => {
+    const pId = selectedPersona.id;
+    if (framingMode === "headshot") {
+      return `/assets/video_synced/${pId}_neural_synced.mp4`;
+    }
+    if (postureMode === "sitting") {
+      return `/assets/video_synced/${pId}_sitting.mp4`;
+    }
+    if (postureMode === "walking") {
+      return `/assets/video_synced/${pId}_walking.mp4`;
+    }
+    if (framingMode === "half_body") {
+      return `/assets/video_synced/${pId}_director_cut.mp4`;
+    }
+    // Full Body Standing Keynote default
+    return `/assets/video_synced/${pId}_fullbody_standing.mp4`;
+  }, [selectedPersona, framingMode, postureMode]);
+
   // Computed Word Timings
   const wordTimings = useMemo<ScriptWordTiming[]>(() => {
     return computePhoneticWordTimings(scriptText, 23.20);
@@ -89,8 +108,8 @@ export default function Gen7StudioPage() {
 
   // Active Veritas Cryptographic Seal
   const veritasSeal = useMemo<VeritasProvenanceSeal>(() => {
-    return generateVeritasSeal(selectedPersona, scriptText, selectedPersona.videoUrl);
-  }, [selectedPersona, scriptText]);
+    return generateVeritasSeal(selectedPersona, scriptText, activeVideoSrc);
+  }, [selectedPersona, scriptText, activeVideoSrc]);
 
   // Handle Persona Change
   const handleSelectPersona = (persona: ExecutivePersona) => {
@@ -457,15 +476,10 @@ export default function Gen7StudioPage() {
               {/* Main Video Stream */}
               <video
                 ref={videoRef}
-                src={selectedPersona.videoUrl}
+                key={activeVideoSrc}
+                src={activeVideoSrc}
                 playsInline
-                className={`w-full h-full object-cover transition-all duration-500 ${
-                  framingMode === "headshot"
-                    ? "scale-125 object-center"
-                    : framingMode === "half_body"
-                    ? "scale-105"
-                    : "scale-100"
-                }`}
+                className="w-full h-full object-cover transition-all duration-300"
               />
 
               {/* Gen 7 Interactive 3D Holographic Stage Overlay */}
