@@ -101,6 +101,19 @@ export default function Gen7StudioPage() {
     return `/assets/video_synced/${pId}_fullbody_standing.mp4`;
   }, [selectedPersona, framingMode, postureMode]);
 
+  // Smooth Source Switching without destroying DOM node
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.pause();
+      setIsPlaying(false);
+      video.src = activeVideoSrc;
+      video.load();
+      setCurrentTime(0);
+      setSpokenWordIndex(-1);
+    }
+  }, [activeVideoSrc]);
+
   // Computed Word Timings
   const wordTimings = useMemo<ScriptWordTiming[]>(() => {
     return computePhoneticWordTimings(scriptText, 23.20);
@@ -135,13 +148,12 @@ export default function Gen7StudioPage() {
     } else {
       video.muted = isMuted;
       try {
-        if (video.readyState < 2) {
-          video.load();
-        }
         await video.play();
         setIsPlaying(true);
-      } catch (err) {
-        console.error("Playback error:", err);
+      } catch (err: any) {
+        if (err.name !== "AbortError") {
+          console.error("Playback error:", err);
+        }
       }
     }
   };
@@ -480,7 +492,7 @@ export default function Gen7StudioPage() {
               {/* Main Video Stream */}
               <video
                 ref={videoRef}
-                key={activeVideoSrc}
+                src={activeVideoSrc}
                 playsInline
                 preload="auto"
                 onPlay={() => setIsPlaying(true)}
@@ -491,10 +503,7 @@ export default function Gen7StudioPage() {
                   setSpokenWordIndex(-1);
                 }}
                 className="w-full h-full object-cover transition-all duration-300"
-              >
-                <source src={activeVideoSrc} type="video/mp4" />
-                <source src={`/assets/video_synced/${selectedPersona.id}_neural_synced.mp4`} type="video/mp4" />
-              </video>
+              />
 
               {/* Gen 7 Interactive 3D Holographic Stage Overlay */}
               {postureMode === "interactive_hologram" && (
