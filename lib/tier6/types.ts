@@ -7,6 +7,7 @@
 export type FramingMode = "headshot" | "half_body" | "full_body";
 export type PostureMode = "standing" | "sitting" | "walking" | "interactive_hologram";
 export type EnvironmentMode = "keynote_arena" | "fireside_library" | "command_bunker" | "executive_boardroom";
+export type SynthesisEngine = "veo_motion" | "neural_viseme" | "director_glide";
 
 export interface ExecutivePersona {
   id: string;

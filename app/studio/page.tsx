@@ -42,6 +42,7 @@ import {
   FramingMode,
   PostureMode,
   EnvironmentMode,
+  SynthesisEngine,
   Gen7NeuroBiometrics
 } from "@/lib/tier6/types";
 import { computePhoneticWordTimings } from "@/lib/tier6/timing_engine";
@@ -62,6 +63,7 @@ export default function Gen7StudioPage() {
   const [showProvenanceModal, setShowProvenanceModal] = useState<boolean>(false);
 
   // Gen 7 Director State Controls
+  const [synthesisEngine, setSynthesisEngine] = useState<SynthesisEngine>("veo_motion");
   const [framingMode, setFramingMode] = useState<FramingMode>("headshot");
   const [postureMode, setPostureMode] = useState<PostureMode>("standing");
   const [environmentMode, setEnvironmentMode] = useState<EnvironmentMode>("keynote_arena");
@@ -82,9 +84,21 @@ export default function Gen7StudioPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const animationFrameRef = useRef<number>(0);
 
-  // Dynamic Gen 7 Multi-Angle Video Source Resolver
+  // Dynamic Gen 7 Multi-Engine & Multi-Angle Video Source Resolver
   const activeVideoSrc = useMemo(() => {
     const pId = selectedPersona.id.split("-")[0].toLowerCase();
+    
+    // 1. Full-Motion AI Video Diffusion Engine (Active Gesturing Hands & Body Movement)
+    if (synthesisEngine === "veo_motion") {
+      return `/assets/video_synced/${pId}_veo_synced.mp4`;
+    }
+
+    // 2. Exact 100% Phonetic Neural Lip-Sync Engine
+    if (synthesisEngine === "neural_viseme") {
+      return `/assets/video_synced/${pId}_neural_synced.mp4`;
+    }
+
+    // 3. Cinematic Multi-Camera Glide Mode
     if (framingMode === "headshot") {
       return `/assets/video_synced/${pId}_neural_synced.mp4`;
     }
@@ -99,7 +113,7 @@ export default function Gen7StudioPage() {
     }
     // Full Body Standing Keynote default
     return `/assets/video_synced/${pId}_fullbody_standing.mp4`;
-  }, [selectedPersona, framingMode, postureMode]);
+  }, [selectedPersona, synthesisEngine, framingMode, postureMode]);
 
   // Smooth Source Switching without destroying DOM node
   useEffect(() => {
@@ -347,6 +361,41 @@ export default function Gen7StudioPage() {
               </span>
             </div>
 
+            {/* 0. Synthesis Engine Selector */}
+            <div className="flex flex-col gap-1.5 pb-2 border-b border-slate-800/80">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-mono text-cyan-400 font-bold flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+                  <span>AI SYNTHESIS ENGINE</span>
+                </label>
+                <span className="text-[9px] font-mono text-slate-500 uppercase">Live Engine Switch</span>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {[
+                  { id: "veo_motion", label: "Full-Motion Video", sub: "Dynamic Hands & Body Motion", icon: "🎬" },
+                  { id: "neural_viseme", label: "Neural Lip-Sync", sub: "100% Syllable-Locked Audio", icon: "🎙️" },
+                  { id: "director_glide", label: "Camera Glide", sub: "Cinematic Multi-Camera", icon: "🎥" },
+                ].map((eng) => (
+                  <button
+                    key={eng.id}
+                    onClick={() => setSynthesisEngine(eng.id as SynthesisEngine)}
+                    className={`px-3 py-2 rounded-xl border text-left transition-all flex flex-col gap-0.5 ${
+                      synthesisEngine === eng.id
+                        ? "bg-cyan-500/20 border-cyan-400 text-cyan-300 font-bold shadow-lg shadow-cyan-500/10 ring-1 ring-cyan-400/50"
+                        : "bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>{eng.icon}</span>
+                      <span className="text-xs font-semibold">{eng.label}</span>
+                    </div>
+                    <span className="text-[9px] text-slate-400 leading-tight">{eng.sub}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* 1. Camera Framing Modes */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-mono text-slate-400 font-semibold">1. CAMERA FRAMING</label>
@@ -486,7 +535,16 @@ export default function Gen7StudioPage() {
               </div>
 
               {/* Mode Badges */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                <span className={`px-2.5 py-0.5 rounded text-[10px] font-mono font-bold border ${
+                  synthesisEngine === "veo_motion"
+                    ? "bg-cyan-950/80 border-cyan-500/50 text-cyan-300 shadow-sm shadow-cyan-500/20"
+                    : synthesisEngine === "neural_viseme"
+                    ? "bg-purple-950/80 border-purple-500/50 text-purple-300 shadow-sm shadow-purple-500/20"
+                    : "bg-slate-800 border-slate-700 text-slate-300"
+                }`}>
+                  {synthesisEngine === "veo_motion" ? "🎬 FULL-MOTION VIDEO" : synthesisEngine === "neural_viseme" ? "🎙️ NEURAL LIP-SYNC" : "🎥 CAMERA GLIDE"}
+                </span>
                 <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] font-mono text-cyan-300 font-bold">
                   {framingMode.toUpperCase().replace("_", " ")}
                 </span>
