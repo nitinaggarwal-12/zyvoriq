@@ -513,7 +513,13 @@ export default function Gen7StudioPage() {
                   setCurrentTime(0);
                   setSpokenWordIndex(-1);
                 }}
-                className="w-full h-full object-cover transition-all duration-300"
+                className={`w-full h-full object-cover transition-all duration-700 ease-out ${
+                  framingMode === "headshot"
+                    ? "scale-140 object-center"
+                    : framingMode === "half_body"
+                    ? "scale-115 object-center"
+                    : "scale-100 object-center"
+                }`}
               />
 
               {/* Gen 7 Interactive 3D Holographic Stage Overlay */}
