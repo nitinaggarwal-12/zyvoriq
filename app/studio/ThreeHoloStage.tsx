@@ -20,7 +20,6 @@ interface ThreeHoloStageProps {
 
 export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
   audioRef,
-  videoRef,
   isPlaying,
   environment,
   framingMode,
@@ -61,7 +60,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       0.1,
       100
     );
-    camera.position.set(0, 1.25, 2.2);
+    camera.position.set(0, 1.25, 2.1);
 
     // 3. Renderer Setup
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
@@ -82,6 +81,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
         audioCtx = new AudioContextClass();
         analyser = audioCtx.createAnalyser();
         analyser.fftSize = 64;
+        analyser.smoothingTimeConstant = 0.8;
         const source = audioCtx.createMediaElementSource(audioRef.current);
         source.connect(analyser);
         analyser.connect(audioCtx.destination);
@@ -162,7 +162,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
     let nodePulse = 0;
     const updateStageScreen = (vol: number) => {
       if (!ctx) return;
-      nodePulse += 0.035;
+      nodePulse += 0.025;
       ctx.fillStyle = "#050811";
       ctx.fillRect(0, 0, 1024, 512);
 
@@ -189,7 +189,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
 
       ctx.fillStyle = "#64748b";
       ctx.font = "12px monospace";
-      ctx.fillText(`DRAW.IO ARCHITECTURE STAGE SCREEN • ED25519 VERITAS VALIDATED • REAL-TIME ACOUSTIC FLUX: ${(vol * 100).toFixed(0)}%`, 40, 68);
+      ctx.fillText(`DRAW.IO ARCHITECTURE STAGE SCREEN • ED25519 VERITAS VALIDATED • ACOUSTIC FLUX: ${(vol * 100).toFixed(0)}%`, 40, 68);
 
       // Connectors with Flowing Signal
       ctx.strokeStyle = "rgba(56, 189, 248, 0.5)";
@@ -206,21 +206,21 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       ctx.stroke();
 
       // Flowing Signal Packets
-      const packetPos = (nodePulse * 90) % 680;
+      const packetPos = (nodePulse * 75) % 680;
       ctx.fillStyle = "#00f0ff";
       ctx.beginPath();
-      ctx.arc(180 + packetPos, 180, 4.5 + vol * 4, 0, Math.PI * 2);
+      ctx.arc(180 + packetPos, 180, 4.5 + vol * 3, 0, Math.PI * 2);
       ctx.fill();
 
       // Render Nodes
-      const activeIdx = Math.floor((nodePulse * 0.5) % ARCH_NODES.length);
+      const activeIdx = Math.floor((nodePulse * 0.4) % ARCH_NODES.length);
       ARCH_NODES.forEach((n, idx) => {
         const isActive = activeIdx === idx;
-        const radius = isActive ? 28 + Math.sin(nodePulse * 3) * 3 + vol * 8 : 22;
+        const radius = isActive ? 26 + Math.sin(nodePulse * 2) * 2 + vol * 4 : 22;
 
         ctx.fillStyle = isActive ? n.color : "rgba(15, 23, 42, 0.94)";
         ctx.strokeStyle = n.color;
-        ctx.lineWidth = isActive ? 4 : 1.5;
+        ctx.lineWidth = isActive ? 3.5 : 1.5;
 
         ctx.beginPath();
         ctx.arc(n.x, n.y, radius, 0, Math.PI * 2);
@@ -241,27 +241,24 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       screenTexture.needsUpdate = true;
     };
 
-    // 8. Presenter Mesh with Real-Time WebGL Phoneme Lip-Sync & Viseme Shader
+    // 8. Presenter Mesh: Clean Pristine Volumetric Depth Hologram (Zero Artificial Distortion)
     const textureLoader = new THREE.TextureLoader();
     const avatarTex = textureLoader.load(selectedPersonaAvatar);
     avatarTex.minFilter = THREE.LinearFilter;
     avatarTex.magFilter = THREE.LinearFilter;
 
-    const presenterGeo = new THREE.PlaneGeometry(2.4, 1.35, 64, 64);
+    const presenterGeo = new THREE.PlaneGeometry(2.4, 1.35, 32, 32);
     
-    // Viseme & Holographic Depth Shader Material
+    // Crystal Clear Holographic Depth & Fresnel Rim Shader Material
     const presenterMat = new THREE.ShaderMaterial({
       uniforms: {
         map: { value: avatarTex },
         fresnelColor: { value: new THREE.Color(0x00f0ff) },
         audioFlux: { value: 0.0 },
-        time: { value: 0.0 },
-        curvature: { value: 0.08 }
+        curvature: { value: 0.05 }
       },
       vertexShader: `
         uniform float curvature;
-        uniform float audioFlux;
-        uniform float time;
         varying vec2 vUv;
         varying vec3 vNormal;
         varying vec3 vViewPosition;
@@ -271,13 +268,8 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
           vNormal = normalize(normalMatrix * normal);
           
           vec3 pos = position;
-          // Volumetric cylinder curvature
+          // Smooth, non-deforming cylindrical curvature for natural 3D depth
           pos.z += sin((uv.x - 0.5) * 3.14159) * curvature;
-          
-          // Audio-reactive thoracic breathing expansion
-          if (uv.y < 0.45 && uv.y > 0.05) {
-            pos.z += sin(audioFlux * 6.28) * 0.03 * (0.45 - uv.y);
-          }
 
           vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
           vViewPosition = -mvPosition.xyz;
@@ -288,37 +280,20 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
         uniform sampler2D map;
         uniform vec3 fresnelColor;
         uniform float audioFlux;
-        uniform float time;
         varying vec2 vUv;
         varying vec3 vNormal;
         varying vec3 vViewPosition;
 
         void main() {
-          vec2 uvSample = vUv;
+          // Pure, undistorted avatar rendering
+          vec4 texColor = texture2D(map, vUv);
           
-          // 👄 REAL-TIME PHONEME VISEME MOUTH DEFORMER
-          // Centers on human facial mouth coordinate quadrant (u ~ 0.50, v ~ 0.45)
-          vec2 mouthCenter = vec2(0.50, 0.45);
-          float distToMouth = length((vUv - mouthCenter) * vec2(1.0, 1.5));
-          
-          if (distToMouth < 0.12 && audioFlux > 0.02) {
-            float mouthWeight = smoothstep(0.12, 0.0, distToMouth);
-            // Dynamic jaw drop & multi-frequency lip opening modulation
-            float jawMotion = (sin(time * 22.0) * 0.5 + 0.5) * audioFlux * 0.035 * mouthWeight;
-            float lipSpread = cos(time * 16.0) * audioFlux * 0.015 * mouthWeight;
-            
-            uvSample.y -= jawMotion;
-            uvSample.x += lipSpread * sign(vUv.x - 0.50);
-          }
-
-          vec4 texColor = texture2D(map, uvSample);
-          
-          // Fresnel Edge Rim Glow
+          // Subtle Fresnel Edge Rim Glow
           vec3 normal = normalize(vNormal);
           vec3 viewDir = normalize(vViewPosition);
-          float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 3.0);
+          float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 3.5);
           
-          vec3 finalColor = texColor.rgb + fresnel * fresnelColor * (0.35 + audioFlux * 0.5);
+          vec3 finalColor = texColor.rgb + fresnel * fresnelColor * (0.25 + audioFlux * 0.2);
           gl_FragColor = vec4(finalColor, texColor.a);
         }
       `,
@@ -331,7 +306,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
     scene.add(presenterMesh);
 
     // 9. Floating Ambient Holographic Dust
-    const particleCount = 160;
+    const particleCount = 140;
     const particleGeo = new THREE.BufferGeometry();
     const particlePos = new Float32Array(particleCount * 3);
     for (let i = 0; i < particleCount * 3; i += 3) {
@@ -342,9 +317,9 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
     particleGeo.setAttribute("position", new THREE.BufferAttribute(particlePos, 3));
     const particleMat = new THREE.PointsMaterial({
       color: 0x00f0ff,
-      size: 0.045,
+      size: 0.04,
       transparent: true,
-      opacity: 0.7
+      opacity: 0.6
     });
     const particles = new THREE.Points(particleGeo, particleMat);
     scene.add(particles);
@@ -384,11 +359,11 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
     // 11. Animation & Render Loop
     let frameCount = 0;
     let lastFpsUpdate = performance.now();
+    let smoothAudioFlux = 0;
     let animationId: number;
 
     const animate = (time: number) => {
       animationId = requestAnimationFrame(animate);
-      const timeSeconds = time * 0.001;
 
       // FPS calculation
       frameCount++;
@@ -398,38 +373,36 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
         lastFpsUpdate = time;
       }
 
-      // Audio Frequency Analysis
-      let currentVol = 0;
+      // Audio Frequency Analysis with Exponential Smoothing
+      let rawVol = 0;
       if (analyser && audioDataArray && isPlaying) {
         analyser.getByteFrequencyData(audioDataArray as Uint8Array<ArrayBuffer>);
         let sum = 0;
         for (let i = 0; i < audioDataArray.length; i++) {
           sum += audioDataArray[i];
         }
-        currentVol = sum / (audioDataArray.length * 255);
-        setAudioLevel(currentVol);
+        rawVol = sum / (audioDataArray.length * 255);
       } else if (isPlaying) {
-        // Fallback procedural acoustic rhythm when AudioContext is connecting
-        currentVol = 0.25 + Math.abs(Math.sin(timeSeconds * 6.0)) * 0.35;
-        setAudioLevel(currentVol);
+        rawVol = 0.2;
       }
 
+      smoothAudioFlux += (rawVol - smoothAudioFlux) * 0.12;
+      setAudioLevel(smoothAudioFlux);
+
       // Update Shader Uniforms
-      presenterMat.uniforms.audioFlux.value = currentVol;
-      presenterMat.uniforms.time.value = timeSeconds;
+      presenterMat.uniforms.audioFlux.value = smoothAudioFlux;
 
       // Update Screen with Audio Reactivity
-      updateStageScreen(currentVol);
+      updateStageScreen(smoothAudioFlux);
 
-      // Audio-Reactive Lighting Modulation
-      const dynamicLightIntensity = 4.0 + currentVol * 4.5;
-      mainSpotlight.intensity = dynamicLightIntensity;
-      floorGlowLight.intensity = 2.0 + currentVol * 3.5;
+      // Stable Lighting Rig (No flashing)
+      mainSpotlight.intensity = 4.5 + smoothAudioFlux * 1.5;
+      floorGlowLight.intensity = 2.5 + smoothAudioFlux * 1.0;
 
       // Floating Particles Drift
       const positions = particleGeo.attributes.position.array as Float32Array;
       for (let i = 1; i < particleCount * 3; i += 3) {
-        positions[i] += 0.002 + currentVol * 0.005;
+        positions[i] += 0.002;
         if (positions[i] > 4.8) positions[i] = 0;
       }
       particleGeo.attributes.position.needsUpdate = true;
@@ -461,10 +434,10 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
         scene.fog?.color.setHex(0x080f1d);
       }
 
-      // Multi-Camera Director Swarm Lerping
+      // Multi-Camera Director Swarm Smooth Positioning
       let targetX = 0;
       let targetY = 1.25;
-      let targetZ = 2.2;
+      let targetZ = 2.1;
 
       if (cameraPreset === "70mm_close") {
         targetX = 0;
@@ -486,15 +459,13 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
         targetZ = 3.5;
       }
 
-      // Audio-Reactive Thoracic Breathing & Subtle Camera Sway
-      const breathSway = isPlaying ? Math.sin(timeSeconds * 1.5) * (0.02 + currentVol * 0.03) : 0;
       if (cameraPreset === "free_orbit") {
         camera.position.x += (Math.sin(targetCameraAngleX) * targetZ - camera.position.x) * 0.08;
-        camera.position.y += (targetY + breathSway + targetCameraAngleY - camera.position.y) * 0.08;
+        camera.position.y += (targetY + targetCameraAngleY - camera.position.y) * 0.08;
         camera.position.z += (Math.cos(targetCameraAngleX) * targetZ - camera.position.z) * 0.08;
       } else {
         camera.position.x += (targetX - camera.position.x) * 0.06;
-        camera.position.y += (targetY + breathSway - camera.position.y) * 0.06;
+        camera.position.y += (targetY - camera.position.y) * 0.06;
         camera.position.z += (targetZ - camera.position.z) * 0.06;
       }
 
@@ -504,27 +475,15 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
         camera.lookAt(0, targetY, 0.4);
       }
 
-      // 🕺 NATURAL GESTURAL HEAD NOD & VOCAL SWAY
-      if (presenterMesh && isPlaying) {
-        presenterMesh.rotation.z = Math.sin(timeSeconds * 2.5) * 0.02 + currentVol * 0.015;
-        presenterMesh.rotation.y = Math.cos(timeSeconds * 1.8) * 0.025;
-        presenterMesh.position.y = 0.9 + Math.sin(timeSeconds * 3.0) * 0.01 + currentVol * 0.02;
-      } else if (presenterMesh) {
-        presenterMesh.rotation.set(0, 0, 0);
-        presenterMesh.position.set(0, 0.9, 0.4);
-      }
-
-      // Posture Adjustments
+      // Rock-Solid Keynote Posture with Zero Body Distortion
       if (presenterMesh) {
+        presenterMesh.scale.set(1.0, 1.0, 1.0);
         if (postureMode === "sitting") {
-          presenterMesh.position.y = 0.65;
-          presenterMesh.scale.set(0.9, 0.9, 0.9);
+          presenterMesh.position.set(0, 0.65, 0.4);
         } else if (postureMode === "walking") {
-          presenterMesh.position.x = Math.sin(timeSeconds * 1.2) * 0.4;
-        } else if (postureMode === "interactive_hologram") {
-          presenterMesh.scale.set(1.05 + currentVol * 0.04, 1.05 + currentVol * 0.04, 1.05);
+          presenterMesh.position.x = 0;
         } else {
-          presenterMesh.scale.set(1.0 + currentVol * 0.02, 1.0 + currentVol * 0.02, 1.0);
+          presenterMesh.position.set(0, 0.9, 0.4);
         }
       }
 
@@ -583,7 +542,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
               <span className="w-1 h-4 bg-cyan-400 animate-pulse delay-75" />
               <span className="w-1 h-2 bg-cyan-400 animate-pulse delay-150" />
             </span>
-            <span>48kHz Viseme Flux Active</span>
+            <span>48kHz Acoustic Flux Active</span>
           </div>
         )}
         <div className="px-3 py-1 bg-black/60 backdrop-blur-md rounded-full border border-emerald-500/40 text-emerald-400 font-mono text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-950/40">

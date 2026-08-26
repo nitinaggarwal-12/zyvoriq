@@ -197,8 +197,11 @@ export default function Gen7StudioPage() {
           return;
         }
 
-        if (!video.paused) {
-          const time = video.currentTime;
+        const audio = audioRef.current;
+        const activeMedia = (video && !video.paused) ? video : (audio && !audio.paused) ? audio : video;
+
+        if (activeMedia && !activeMedia.paused) {
+          const time = activeMedia.currentTime;
           setCurrentTime(time);
 
           // Find active word with +120ms anticipation lead
