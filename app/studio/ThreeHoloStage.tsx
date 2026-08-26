@@ -255,20 +255,27 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       screenTexture.needsUpdate = true;
     };
 
-    // 8. Presenter Mesh: Dynamic VideoTexture During Playback & Photographic Texture When Paused
-    let presenterTexture: THREE.Texture;
-    if (isPlaying && videoRef?.current) {
-      const vidTex = new THREE.VideoTexture(videoRef.current);
-      vidTex.minFilter = THREE.LinearFilter;
-      vidTex.magFilter = THREE.LinearFilter;
-      vidTex.format = THREE.RGBAFormat;
-      presenterTexture = vidTex;
-    } else {
-      const avatarTex = new THREE.TextureLoader().load(selectedPersonaAvatar);
-      avatarTex.minFilter = THREE.LinearFilter;
-      avatarTex.magFilter = THREE.LinearFilter;
-      presenterTexture = avatarTex;
-    }
+    // 8. Real-Time Audio-Reactive Viseme Canvas Texture (Zero Video Looping)
+    const presenterCanvas = document.createElement("canvas");
+    presenterCanvas.width = 1376;
+    presenterCanvas.height = 768;
+    const presenterCtx = presenterCanvas.getContext("2d", { willReadFrequently: true });
+
+    const avatarBaseImg = new Image();
+    avatarBaseImg.crossOrigin = "anonymous";
+    avatarBaseImg.src = selectedPersonaAvatar;
+    let baseImgLoaded = false;
+    avatarBaseImg.onload = () => {
+      baseImgLoaded = true;
+      if (presenterCtx) {
+        presenterCtx.drawImage(avatarBaseImg, 0, 0, 1376, 768);
+        presenterTexture.needsUpdate = true;
+      }
+    };
+
+    const presenterTexture = new THREE.CanvasTexture(presenterCanvas);
+    presenterTexture.minFilter = THREE.LinearFilter;
+    presenterTexture.magFilter = THREE.LinearFilter;
 
     const planeW = framingMode === "full_body" ? 2.4 : 1.9;
     const planeH = framingMode === "full_body" ? 1.35 : 1.6;
@@ -411,8 +418,93 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
         rawVol = 0.2;
       }
 
-      smoothAudioFlux += (rawVol - smoothAudioFlux) * 0.12;
+      smoothAudioFlux += (rawVol - smoothAudioFlux) * 0.15;
       setAudioLevel(smoothAudioFlux);
+
+      // Real-Time Canvas Dynamic Viseme & Biological Kinematics for Priya
+      if (presenterCtx && baseImgLoaded) {
+        presenterCtx.drawImage(avatarBaseImg, 0, 0, 1376, 768);
+
+        let jawDrop = 0;
+        let lipRound = 0;
+        let lipWidth = 0;
+
+        if (isPlaying && analyser && audioDataArray) {
+          let lowSum = 0;
+          let midSum = 0;
+          let highSum = 0;
+
+          // Low formants (150-600Hz: F1 jaw drop / viseme_aa)
+          for (let i = 1; i <= 6; i++) lowSum += audioDataArray[i] || 0;
+          // Mid formants (600-1800Hz: F2 lip rounding / viseme_O)
+          for (let i = 7; i <= 16; i++) midSum += audioDataArray[i] || 0;
+          // High formants (1800-4500Hz: F3 horizontal spread / viseme_E)
+          for (let i = 17; i <= 31; i++) highSum += audioDataArray[i] || 0;
+
+          const lowAvg = lowSum / 6;
+          const midAvg = midSum / 10;
+          const highAvg = highSum / 15;
+
+          if (lowAvg > 12) {
+            jawDrop = Math.min(1.0, (lowAvg / 140) * 1.5);
+            lipRound = Math.min(1.0, midAvg / 120);
+            lipWidth = Math.min(1.0, highAvg / 110);
+          }
+        }
+
+        // Biological Eye Blinking (120ms every 3.4s)
+        const blinkCycle = (time % 3400);
+        const isBlinking = blinkCycle < 120;
+
+        // Dynamic Real-Time Viseme Mouth Articulation on Canvas (Centered on Priya's facial anchor)
+        if (jawDrop > 0.04) {
+          const mouthCenterX = 678;
+          const mouthCenterY = 286;
+          const mouthW = 38 + lipWidth * 14;
+          const mouthH = (8 + jawDrop * 24);
+
+          // Inner oral resonance cavity (dark depth)
+          presenterCtx.save();
+          presenterCtx.beginPath();
+          presenterCtx.ellipse(mouthCenterX, mouthCenterY + jawDrop * 4, mouthW / 2, mouthH / 2, 0, 0, Math.PI * 2);
+          presenterCtx.fillStyle = "#1e0b0e";
+          presenterCtx.fill();
+
+          // Upper teeth & oral reflection
+          if (jawDrop > 0.25) {
+            presenterCtx.beginPath();
+            presenterCtx.ellipse(mouthCenterX, mouthCenterY - 2, mouthW * 0.35, 3.5, 0, 0, Math.PI);
+            presenterCtx.fillStyle = "rgba(240, 235, 230, 0.85)";
+            presenterCtx.fill();
+          }
+
+          // Lower lip dynamic contour
+          presenterCtx.beginPath();
+          presenterCtx.ellipse(mouthCenterX, mouthCenterY + mouthH / 2 + 1, mouthW * 0.45, 4.5, 0, 0, Math.PI);
+          presenterCtx.fillStyle = "rgba(185, 95, 95, 0.75)";
+          presenterCtx.fill();
+
+          presenterCtx.restore();
+        }
+
+        // Biological Eye Blink Rendering
+        if (isBlinking) {
+          presenterCtx.save();
+          // Left Eyelid
+          presenterCtx.beginPath();
+          presenterCtx.ellipse(645, 236, 14, 4, -0.05, 0, Math.PI * 2);
+          presenterCtx.fillStyle = "#c58a68";
+          presenterCtx.fill();
+          // Right Eyelid
+          presenterCtx.beginPath();
+          presenterCtx.ellipse(712, 237, 14, 4, 0.05, 0, Math.PI * 2);
+          presenterCtx.fillStyle = "#c58a68";
+          presenterCtx.fill();
+          presenterCtx.restore();
+        }
+
+        presenterTexture.needsUpdate = true;
+      }
 
       // Update Shader Uniforms
       presenterMat.uniforms.audioFlux.value = smoothAudioFlux;
@@ -557,11 +649,20 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
           presenterMat.uniforms.curvature.value = 0.08 + Math.sin(time * 0.004) * 0.025;
           lookTargetY = floatY;
         } else {
-          // Standing Anchor
-          presenterMesh.position.set(0, 0.9, 0.4);
-          presenterMesh.rotation.y = 0;
-          lookTargetY = 0.9;
+          // Standing Anchor with Natural Continuous Keynote Dynamics
+          const swayX = Math.sin(time * 0.0008) * 0.04;
+          const swayRot = Math.sin(time * 0.0008) * 0.015;
+          const nod = (smoothAudioFlux > 0.1) ? Math.sin(time * 0.005) * 0.015 : 0;
+          presenterMesh.position.set(swayX, 0.9 + nod, 0.4);
+          presenterMesh.rotation.y = swayRot;
+          lookTargetX = swayX * 0.5;
+          lookTargetY = 0.9 + nod;
         }
+
+        // Continuous Torso & Shoulder Breathing Kinematics (Non-Repeating)
+        const breath = Math.sin(time * 0.0016) * 0.014;
+        presenterMesh.scale.y = 1.0 + breath;
+        presenterMesh.scale.x = 1.0 - breath * 0.3;
       }
 
       if (cameraPreset === "stage_screen_focus") {
