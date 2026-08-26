@@ -63,7 +63,7 @@ export default function Gen7StudioPage() {
   const [showProvenanceModal, setShowProvenanceModal] = useState<boolean>(false);
 
   // Gen 7 Director State Controls
-  const [synthesisEngine, setSynthesisEngine] = useState<SynthesisEngine>("veo_motion");
+  const [synthesisEngine, setSynthesisEngine] = useState<SynthesisEngine>("neural_viseme");
   const [framingMode, setFramingMode] = useState<FramingMode>("headshot");
   const [postureMode, setPostureMode] = useState<PostureMode>("standing");
   const [environmentMode, setEnvironmentMode] = useState<EnvironmentMode>("keynote_arena");
@@ -90,10 +90,13 @@ export default function Gen7StudioPage() {
     
     // 1. Full-Motion AI Video Diffusion Engine (Active Gesturing Hands & Body Movement)
     if (synthesisEngine === "veo_motion") {
-      return `/assets/video_synced/${pId}_veo_synced.mp4`;
+      if (pId === "priya" || pId === "victoria" || pId === "david") {
+        return `/assets/video_synced/${pId}_veo_synced.mp4`;
+      }
+      return `/assets/video_synced/${pId}_neural_synced.mp4`;
     }
 
-    // 2. Exact 100% Phonetic Neural Lip-Sync Engine
+    // 2. Exact 100% Phonetic Neural Lip-Sync Engine (Persona-Locked)
     if (synthesisEngine === "neural_viseme") {
       return `/assets/video_synced/${pId}_neural_synced.mp4`;
     }
