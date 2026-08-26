@@ -65,7 +65,7 @@ export default function Gen7StudioPage() {
   const [viewMode, setViewMode] = useState<"3d_holo_stage" | "broadcast_stream">("3d_holo_stage");
 
   // Gen 7 Director State Controls
-  const [synthesisEngine, setSynthesisEngine] = useState<SynthesisEngine>("neural_viseme");
+  const [synthesisEngine, setSynthesisEngine] = useState<SynthesisEngine>("veo_motion");
   const [framingMode, setFramingMode] = useState<FramingMode>("headshot");
   const [postureMode, setPostureMode] = useState<PostureMode>("standing");
   const [environmentMode, setEnvironmentMode] = useState<EnvironmentMode>("keynote_arena");
