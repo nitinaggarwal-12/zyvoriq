@@ -47,6 +47,7 @@ import {
 } from "@/lib/tier6/types";
 import { computePhoneticWordTimings } from "@/lib/tier6/timing_engine";
 import { generateVeritasSeal } from "@/lib/tier6/veritas_engine";
+import { ThreeHoloStage } from "./ThreeHoloStage";
 
 export default function Gen7StudioPage() {
   // State
@@ -61,6 +62,7 @@ export default function Gen7StudioPage() {
   const [synthStage, setSynthStage] = useState<string>("");
   const [selectedResolution, setSelectedResolution] = useState<"1080p" | "4K">("1080p");
   const [showProvenanceModal, setShowProvenanceModal] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<"3d_holo_stage" | "broadcast_stream">("3d_holo_stage");
 
   // Gen 7 Director State Controls
   const [synthesisEngine, setSynthesisEngine] = useState<SynthesisEngine>("neural_viseme");
@@ -507,7 +509,7 @@ export default function Gen7StudioPage() {
           {/* Master Player Card */}
           <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 backdrop-blur-md shadow-2xl flex flex-col gap-4">
             
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3 flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <Video className="h-4 w-4 text-cyan-400" />
                 <h2 className="font-bold text-sm text-slate-100 tracking-wide">
@@ -515,28 +517,46 @@ export default function Gen7StudioPage() {
                 </h2>
               </div>
 
-              {/* Mode Badges */}
-              <div className="flex items-center gap-2 flex-wrap justify-end">
-                <span className={`px-2.5 py-0.5 rounded text-[10px] font-mono font-bold border ${
-                  synthesisEngine === "veo_motion"
-                    ? "bg-cyan-950/80 border-cyan-500/50 text-cyan-300 shadow-sm shadow-cyan-500/20"
-                    : synthesisEngine === "neural_viseme"
-                    ? "bg-purple-950/80 border-purple-500/50 text-purple-300 shadow-sm shadow-purple-500/20"
-                    : "bg-slate-800 border-slate-700 text-slate-300"
-                }`}>
-                  {synthesisEngine === "veo_motion" ? "🎬 FULL-MOTION VIDEO" : synthesisEngine === "neural_viseme" ? "🎙️ NEURAL LIP-SYNC" : "🎥 CAMERA GLIDE"}
-                </span>
-                <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] font-mono text-cyan-300 font-bold">
-                  {framingMode.toUpperCase().replace("_", " ")}
-                </span>
-                <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] font-mono text-purple-300 font-bold">
-                  {postureMode.toUpperCase().replace("_", " ")}
-                </span>
+              {/* View Mode Toggle */}
+              <div className="flex items-center gap-2">
+                <div className="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800">
+                  <button
+                    onClick={() => setViewMode("3d_holo_stage")}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
+                      viewMode === "3d_holo_stage"
+                        ? "bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 shadow-sm shadow-cyan-500/20"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    🌟 3D HOLO-STAGE
+                  </button>
+                  <button
+                    onClick={() => setViewMode("broadcast_stream")}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
+                      viewMode === "broadcast_stream"
+                        ? "bg-purple-500/20 border border-purple-500/40 text-purple-300 shadow-sm shadow-purple-500/20"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    🎬 2D STREAM
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Video Player Frame with Dynamic 4D World Environment & Hologram Shaders */}
-            <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-slate-800 shadow-2xl group">
+            {/* Viewport: 3D WebGL Holo-Stage or 2D Broadcast Stream */}
+            {viewMode === "3d_holo_stage" ? (
+              <ThreeHoloStage
+                videoRef={videoRef}
+                isPlaying={isPlaying}
+                environment={environmentMode}
+                framingMode={framingMode}
+                postureMode={postureMode}
+                selectedPersonaName={selectedPersona.name}
+                activeScript={scriptText}
+              />
+            ) : (
+              <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-slate-800 shadow-2xl group">
               
               {/* Dynamic Environmental Ambient Shader Layer */}
               <div
@@ -669,6 +689,7 @@ export default function Gen7StudioPage() {
                 </button>
               )}
             </div>
+          )}
 
             {/* Video Controls Bar */}
             <div className="flex items-center justify-between px-2 pt-1">

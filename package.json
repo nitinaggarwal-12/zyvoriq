@@ -9,12 +9,14 @@
     "test:e2e": "node scratch/cloudtop_e2e_runner.mjs"
   },
   "dependencies": {
+    "@types/three": "^0.185.4",
     "clsx": "^2.1.1",
     "lucide-react": "^0.475.0",
     "next": "15.4.10",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "tailwind-merge": "^3.0.1"
+    "tailwind-merge": "^3.0.1",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
