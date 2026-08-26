@@ -496,10 +496,48 @@ export default function Gen7StudioPage() {
               </div>
             </div>
 
-            {/* Video Player Frame with Dynamic 4D Hologram Overlay */}
-            <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-slate-800 shadow-inner group">
+            {/* Video Player Frame with Dynamic 4D World Environment & Hologram Shaders */}
+            <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-slate-800 shadow-2xl group">
               
-              {/* Main Video Stream */}
+              {/* Dynamic Environmental Ambient Shader Layer */}
+              <div
+                className={`absolute inset-0 pointer-events-none z-10 transition-all duration-1000 ${
+                  environmentMode === "fireside_library"
+                    ? "bg-gradient-to-t from-amber-950/50 via-orange-950/20 to-amber-900/30 mix-blend-color-dodge"
+                    : environmentMode === "command_bunker"
+                    ? "bg-gradient-to-t from-emerald-950/50 via-slate-950/20 to-cyan-950/40 mix-blend-screen"
+                    : environmentMode === "executive_boardroom"
+                    ? "bg-gradient-to-t from-indigo-950/40 via-purple-950/10 to-slate-900/40 mix-blend-overlay"
+                    : "bg-gradient-to-t from-cyan-950/30 via-transparent to-blue-950/40"
+                }`}
+              />
+
+              {/* Dynamic Locomotion Stage FX */}
+              {postureMode === "walking" && (
+                <div className="absolute inset-0 pointer-events-none z-10 border-y border-cyan-500/30 bg-cyan-500/5 animate-pulse flex flex-col justify-between p-4">
+                  <div className="flex justify-between items-center text-[9px] font-mono text-cyan-400">
+                    <span>[STAGE PAN TRAVERSAL: ACTIVE]</span>
+                    <span className="animate-ping">● LIVE TRACKING</span>
+                  </div>
+                  <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-400/80 to-transparent" />
+                </div>
+              )}
+
+              {/* Dynamic Framing Viewfinder Grid for Headshot mode */}
+              {framingMode === "headshot" && (
+                <div className="absolute inset-0 pointer-events-none z-10 p-6 flex flex-col justify-between">
+                  <div className="flex justify-between text-cyan-400/60 font-mono text-[9px]">
+                    <span>┌ 4K VIEW края</span>
+                    <span>AF-LOCK ┐</span>
+                  </div>
+                  <div className="flex justify-between text-cyan-400/60 font-mono text-[9px]">
+                    <span>└ 60 FPS</span>
+                    <span>1.65X ZOOM ┘</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Main Video Stream with Dynamic Camera Glide */}
               <video
                 ref={videoRef}
                 src={activeVideoSrc}
@@ -515,16 +553,20 @@ export default function Gen7StudioPage() {
                 }}
                 className={`w-full h-full object-cover transition-all duration-700 ease-out ${
                   framingMode === "headshot"
-                    ? "scale-140 object-center"
+                    ? "scale-[1.65] translate-y-4 object-center"
                     : framingMode === "half_body"
-                    ? "scale-115 object-center"
-                    : "scale-100 object-center"
+                    ? "scale-[1.22] translate-y-1 object-center"
+                    : "scale-100 translate-y-0 object-center"
+                } ${
+                  postureMode === "walking"
+                    ? "translate-x-2 duration-1000"
+                    : "translate-x-0"
                 }`}
               />
 
               {/* Gen 7 Interactive 3D Holographic Stage Overlay */}
               {postureMode === "interactive_hologram" && (
-                <div className="absolute inset-0 pointer-events-none flex items-center justify-between p-6">
+                <div className="absolute inset-0 z-20 pointer-events-none flex items-center justify-between p-6 bg-cyan-950/20 backdrop-blur-[1px]">
                   <div className="pointer-events-auto bg-slate-950/80 border border-cyan-500/50 rounded-xl p-3 backdrop-blur-md shadow-2xl flex flex-col gap-1.5 animate-pulse">
                     <span className="text-[9px] font-mono text-cyan-400 font-bold flex items-center gap-1">
                       <Box className="h-3 w-3" />
@@ -544,21 +586,23 @@ export default function Gen7StudioPage() {
               )}
 
               {/* Watermark & Badges Overlay */}
-              <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-mono text-emerald-400">
+              <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md border border-white/10 text-[10px] font-mono text-emerald-400">
                 <ShieldCheck className="h-3 w-3 text-emerald-400" />
                 <span>zk-SNARK Signed</span>
               </div>
 
-              <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded-md bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-mono text-slate-300">
+              <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-2 py-1 rounded-md bg-black/70 backdrop-blur-md border border-white/10 text-[10px] font-mono text-slate-300">
                 <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
                 <span>{selectedPersona.name}</span>
+                <span className="text-slate-500">•</span>
+                <span className="text-cyan-400 text-[9px] uppercase font-bold">{environmentMode.replace("_", " ")}</span>
               </div>
 
               {/* Play / Pause Big Center Button Overlay */}
               {!isPlaying && (
                 <button
                   onClick={handleTogglePlay}
-                  className="absolute inset-0 m-auto h-16 w-16 rounded-full bg-cyan-500/90 hover:bg-cyan-400 text-slate-950 flex items-center justify-center shadow-2xl transition-all hover:scale-105"
+                  className="absolute inset-0 m-auto h-16 w-16 z-20 rounded-full bg-cyan-500/90 hover:bg-cyan-400 text-slate-950 flex items-center justify-center shadow-2xl transition-all hover:scale-105"
                 >
                   <Play className="h-8 w-8 fill-current ml-1" />
                 </button>
