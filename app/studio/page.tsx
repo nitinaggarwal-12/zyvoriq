@@ -115,17 +115,24 @@ export default function Gen7StudioPage() {
     return `/assets/video_synced/${pId}_fullbody_standing.mp4`;
   }, [selectedPersona, synthesisEngine, framingMode, postureMode]);
 
-  // Smooth Source Switching without destroying DOM node
+  // Smooth Source Switching only when Persona or Synthesis Engine changes
+  const prevEngineRef = useRef<SynthesisEngine>(synthesisEngine);
+  const prevPersonaRef = useRef<string>(selectedPersona.id);
+
   useEffect(() => {
     const video = videoRef.current;
     if (video) {
-      video.pause();
-      setIsPlaying(false);
-      video.load();
-      setCurrentTime(0);
-      setSpokenWordIndex(-1);
+      if (prevEngineRef.current !== synthesisEngine || prevPersonaRef.current !== selectedPersona.id) {
+        const wasPlaying = isPlaying;
+        prevEngineRef.current = synthesisEngine;
+        prevPersonaRef.current = selectedPersona.id;
+        video.load();
+        if (wasPlaying) {
+          video.play().catch(() => {});
+        }
+      }
     }
-  }, [activeVideoSrc]);
+  }, [activeVideoSrc, synthesisEngine, selectedPersona.id, isPlaying]);
 
   // Computed Word Timings
   const wordTimings = useMemo<ScriptWordTiming[]>(() => {
@@ -559,39 +566,61 @@ export default function Gen7StudioPage() {
               
               {/* Dynamic Environmental Ambient Shader Layer */}
               <div
-                className={`absolute inset-0 pointer-events-none z-10 transition-all duration-1000 ${
+                className={`absolute inset-0 pointer-events-none z-10 transition-all duration-700 ${
                   environmentMode === "fireside_library"
-                    ? "bg-gradient-to-t from-amber-950/50 via-orange-950/20 to-amber-900/30 mix-blend-color-dodge"
+                    ? "bg-gradient-to-t from-amber-950/70 via-orange-950/30 to-amber-900/40 mix-blend-color-dodge ring-1 ring-inset ring-amber-500/30"
                     : environmentMode === "command_bunker"
-                    ? "bg-gradient-to-t from-emerald-950/50 via-slate-950/20 to-cyan-950/40 mix-blend-screen"
+                    ? "bg-gradient-to-t from-emerald-950/70 via-slate-950/30 to-cyan-950/50 mix-blend-screen ring-1 ring-inset ring-emerald-500/30"
                     : environmentMode === "executive_boardroom"
-                    ? "bg-gradient-to-t from-indigo-950/40 via-purple-950/10 to-slate-900/40 mix-blend-overlay"
-                    : "bg-gradient-to-t from-cyan-950/30 via-transparent to-blue-950/40"
+                    ? "bg-gradient-to-t from-indigo-950/60 via-purple-950/20 to-amber-900/30 mix-blend-overlay ring-1 ring-inset ring-indigo-500/30"
+                    : "bg-gradient-to-t from-cyan-950/40 via-transparent to-blue-950/50 ring-1 ring-inset ring-cyan-500/20"
                 }`}
               />
 
               {/* Dynamic Locomotion Stage FX */}
               {postureMode === "walking" && (
-                <div className="absolute inset-0 pointer-events-none z-10 border-y border-cyan-500/30 bg-cyan-500/5 animate-pulse flex flex-col justify-between p-4">
-                  <div className="flex justify-between items-center text-[9px] font-mono text-cyan-400">
-                    <span>[STAGE PAN TRAVERSAL: ACTIVE]</span>
-                    <span className="animate-ping">● LIVE TRACKING</span>
+                <div className="absolute inset-0 pointer-events-none z-10 border-y border-cyan-500/40 bg-cyan-500/10 animate-pulse flex flex-col justify-between p-4">
+                  <div className="flex justify-between items-center text-[10px] font-mono text-cyan-300 font-bold bg-black/60 px-3 py-1 rounded backdrop-blur-md self-start border border-cyan-500/30">
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-cyan-400 animate-ping" />
+                      STAGE PAN TRAVERSAL: ACTIVE
+                    </span>
                   </div>
-                  <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-400/80 to-transparent" />
+                  <div className="w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-lg shadow-cyan-400/50" />
+                </div>
+              )}
+
+              {/* Dynamic Sitting Executive Desk Lower-Third Horizon */}
+              {postureMode === "sitting" && (
+                <div className="absolute bottom-0 inset-x-0 h-16 pointer-events-none z-10 bg-gradient-to-t from-slate-950 via-slate-900/80 to-transparent border-t border-cyan-500/30 backdrop-blur-[2px] flex items-center justify-between px-6">
+                  <div className="flex items-center gap-2 text-[10px] font-mono text-slate-300 bg-black/70 px-2.5 py-1 rounded border border-slate-700">
+                    <Mic className="h-3 w-3 text-cyan-400" />
+                    <span>EXECUTIVE BOARDROOM PODIUM DESK</span>
+                  </div>
+                  <span className="text-[9px] font-mono text-cyan-400">ACOUSTIC ISOLATION: 100%</span>
                 </div>
               )}
 
               {/* Dynamic Framing Viewfinder Grid for Headshot mode */}
               {framingMode === "headshot" && (
                 <div className="absolute inset-0 pointer-events-none z-10 p-6 flex flex-col justify-between">
-                  <div className="flex justify-between text-cyan-400/60 font-mono text-[9px]">
-                    <span>┌ 4K VIEW края</span>
-                    <span>AF-LOCK ┐</span>
+                  <div className="flex justify-between text-cyan-300 font-mono text-[10px] font-bold">
+                    <span className="bg-black/50 px-2 py-0.5 rounded border border-cyan-500/30">┌ 4K UHD FACIAL TARGET</span>
+                    <span className="bg-black/50 px-2 py-0.5 rounded border border-cyan-500/30">AF-LOCK: ACTIVE ┐</span>
                   </div>
-                  <div className="flex justify-between text-cyan-400/60 font-mono text-[9px]">
-                    <span>└ 60 FPS</span>
-                    <span>1.65X ZOOM ┘</span>
+                  <div className="self-center text-cyan-400/40 text-xl font-mono">+</div>
+                  <div className="flex justify-between text-cyan-300 font-mono text-[10px] font-bold">
+                    <span className="bg-black/50 px-2 py-0.5 rounded border border-cyan-500/30">└ 60 FPS ULTRA-STABLE</span>
+                    <span className="bg-black/50 px-2 py-0.5 rounded border border-cyan-500/30">1.65X FOCAL ZOOM ┘</span>
                   </div>
+                </div>
+              )}
+
+              {/* Dynamic Framing Guides for Half Body mode */}
+              {framingMode === "half_body" && (
+                <div className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between">
+                  <div className="h-3 bg-black/60 border-b border-cyan-500/20" />
+                  <div className="h-3 bg-black/60 border-t border-cyan-500/20" />
                 </div>
               )}
 
@@ -611,9 +640,9 @@ export default function Gen7StudioPage() {
                 }}
                 className={`w-full h-full object-cover transition-all duration-700 ease-out ${
                   framingMode === "headshot"
-                    ? "scale-[1.65] translate-y-4 object-center"
+                    ? "scale-[1.65] translate-y-[6%] object-center"
                     : framingMode === "half_body"
-                    ? "scale-[1.22] translate-y-1 object-center"
+                    ? "scale-[1.25] translate-y-[2%] object-center"
                     : "scale-100 translate-y-0 object-center"
                 } ${
                   postureMode === "walking"
