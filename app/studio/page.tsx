@@ -561,7 +561,7 @@ export default function Gen7StudioPage() {
                   postureMode === "walking"
                     ? "translate-x-2 duration-1000"
                     : "translate-x-0"
-                }`}
+                } ${isPlaying ? "animate-subtle-breathing" : ""}`}
               />
 
               {/* Gen 7 Interactive 3D Holographic Stage Overlay */}

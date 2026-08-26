@@ -97,3 +97,16 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #2a3347;
 }
+
+@keyframes subtle-breathing {
+  0%, 100% {
+    transform: scale(1.0) translateY(0px);
+  }
+  50% {
+    transform: scale(1.008) translateY(-2px);
+  }
+}
+
+.animate-subtle-breathing {
+  animation: subtle-breathing 4s ease-in-out infinite;
+}
