@@ -277,60 +277,31 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       new THREE.BufferAttribute(new Float32Array(priyaGeoData.morphTargets.browUp), 3)
     ];
 
-    // Photographic PBR Material with Transparent Alpha Cutout
-    const isPriya = selectedPersonaName.toLowerCase().includes("priya");
-    const avatarTextureSrc = isPriya ? "/assets/avatars/priya_cutout.png" : selectedPersonaAvatar;
-    const avatarTex = new THREE.TextureLoader().load(avatarTextureSrc);
-    avatarTex.minFilter = THREE.LinearFilter;
-    avatarTex.magFilter = THREE.LinearFilter;
+    // Live High-Definition Video Texture for Full-Body Moving Presenter
+    let presenterTex: THREE.Texture;
+    if (videoRef?.current) {
+      presenterTex = new THREE.VideoTexture(videoRef.current);
+      presenterTex.minFilter = THREE.LinearFilter;
+      presenterTex.magFilter = THREE.LinearFilter;
+      presenterTex.format = THREE.RGBAFormat;
+    } else {
+      const isPriya = selectedPersonaName.toLowerCase().includes("priya");
+      const avatarTextureSrc = isPriya ? "/assets/avatars/priya_cutout.png" : selectedPersonaAvatar;
+      presenterTex = new THREE.TextureLoader().load(avatarTextureSrc);
+      presenterTex.minFilter = THREE.LinearFilter;
+      presenterTex.magFilter = THREE.LinearFilter;
+    }
 
     const presenterMat = new THREE.MeshStandardMaterial({
-      map: avatarTex,
-      roughness: 0.4,
-      metalness: 0.1,
-      transparent: true,
-      alphaTest: 0.05,
+      map: presenterTex,
+      roughness: 0.35,
+      metalness: 0.05,
       side: THREE.DoubleSide
     });
 
     const presenterMesh = new THREE.Mesh(presenterGeo, presenterMat);
     presenterMesh.position.set(0, 0, 0.4);
     scene.add(presenterMesh);
-
-    // Independent 3D Articulated Gesturing Arm & Hand for Priya
-    let armMesh: THREE.Mesh | null = null;
-    if (isPriya) {
-      const armTex = new THREE.TextureLoader().load("/assets/avatars/priya_arm_cutout.png");
-      armTex.minFilter = THREE.LinearFilter;
-      armTex.magFilter = THREE.LinearFilter;
-      const armGeo = new THREE.PlaneGeometry(0.85, 0.95);
-      const armMat = new THREE.MeshStandardMaterial({
-        map: armTex,
-        roughness: 0.4,
-        metalness: 0.1,
-        transparent: true,
-        alphaTest: 0.05,
-        side: THREE.DoubleSide
-      });
-      armMesh = new THREE.Mesh(armGeo, armMat);
-      armMesh.position.set(-0.35, 0.55, 0.42);
-      scene.add(armMesh);
-    }
-
-    // Anatomical 3D Oral Cavity Sub-Mesh Layer for Priya
-    const mouthTex = new THREE.TextureLoader().load("/assets/avatars/priya_oral_cavity.png");
-    mouthTex.minFilter = THREE.LinearFilter;
-    mouthTex.magFilter = THREE.LinearFilter;
-    const mouthGeo = new THREE.PlaneGeometry(0.18, 0.12);
-    const mouthMat = new THREE.MeshBasicMaterial({
-      map: mouthTex,
-      transparent: true,
-      depthWrite: false
-    });
-    const mouthMesh = new THREE.Mesh(mouthGeo, mouthMat);
-    mouthMesh.position.set(-0.015, 0.81, 0.385);
-    mouthMesh.scale.set(0, 0, 0);
-    scene.add(mouthMesh);
 
     // 9. Floating Ambient Holographic Dust
     const particleCount = 140;
@@ -462,27 +433,6 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
         presenterMesh.rotation.x = -jawDrop * 0.02;
         presenterMesh.rotation.y = Math.sin(time * 0.0008) * 0.03;
 
-        // Synchronize 3D Oral Cavity Sub-Mesh
-        if (mouthMesh) {
-          if (jawDrop > 0.05) {
-            mouthMesh.scale.set(jawDrop * 1.1, jawDrop * 1.2, 1.0);
-            mouthMesh.position.y = 0.81 - jawDrop * 0.015;
-            mouthMesh.position.x = presenterMesh.position.x - 0.015;
-          } else {
-            mouthMesh.scale.set(0, 0, 0);
-          }
-        }
-
-        // Dynamic Keynote Arm & Hand Gesturing Kinematics
-        if (armMesh) {
-          const gestureFlux = smoothAudioFlux > 0.08 ? smoothAudioFlux : 0;
-          const armLift = Math.sin(time * 0.002) * (gestureFlux * 0.35);
-          const armWave = Math.cos(time * 0.0015) * (gestureFlux * 0.25);
-          armMesh.rotation.z = 0.05 + armLift;
-          armMesh.rotation.x = -armWave;
-          armMesh.position.y = 0.55 + Math.sin(time * 0.0016) * 0.01 + (gestureFlux * 0.04);
-          armMesh.position.x = presenterMesh.position.x - 0.35;
-        }
       }
 
       // Update Screen with Audio Reactivity
