@@ -11,10 +11,6 @@ interface ThreeHoloStageProps {
   audioRef?: React.RefObject<HTMLAudioElement | null>;
   videoRef: React.RefObject<HTMLVideoElement | null>;
   isPlaying: boolean;
-  environment: EnvironmentMode;
-  framingMode: FramingMode;
-  postureMode: PostureMode;
-  synthesisEngine?: SynthesisEngine;
   selectedPersonaName: string;
   selectedPersonaAvatar: string;
   activeScript: string;
@@ -24,10 +20,6 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
   audioRef,
   videoRef,
   isPlaying,
-  environment,
-  framingMode,
-  postureMode,
-  synthesisEngine = "neural_viseme",
   selectedPersonaName,
   selectedPersonaAvatar,
   activeScript
@@ -38,16 +30,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
   const [cameraPreset, setCameraPreset] = useState<CameraPreset>("70mm_close");
   const [focusedNode, setFocusedNode] = useState<string>("Overview");
 
-  // Synchronize Director Controls Framing Mode with Stage Camera Presets
-  useEffect(() => {
-    if (framingMode === "headshot") {
-      setCameraPreset("70mm_close");
-    } else if (framingMode === "half_body") {
-      setCameraPreset("35mm_wide");
-    } else if (framingMode === "full_body") {
-      setCameraPreset("24mm_hero");
-    }
-  }, [framingMode]);
+
 
   // Architecture Nodes Definition
   const ARCH_NODES = [
@@ -451,47 +434,16 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       particleGeo.attributes.position.needsUpdate = true;
 
       // Environment Color Updates & Particle Tuning
-      if (environment === "keynote_arena") {
-        mainSpotlight.color.setHex(0x00f0ff);
-        rimMat.color.setHex(0x00f0ff);
-        floorGlowLight.color.setHex(0x00f0ff);
-        scene.fog?.color.setHex(0x04060c);
-      } else if (environment === "fireside_library") {
-        mainSpotlight.color.setHex(0xf59e0b);
-        rimMat.color.setHex(0xd97706);
-        floorGlowLight.color.setHex(0xf59e0b);
-        scene.fog?.color.setHex(0x120c08);
-      } else if (environment === "command_bunker") {
-        mainSpotlight.color.setHex(0x10b981);
-        rimMat.color.setHex(0x059669);
-        floorGlowLight.color.setHex(0x10b981);
-        scene.fog?.color.setHex(0x04130c);
-      } else if (environment === "executive_boardroom") {
-        mainSpotlight.color.setHex(0x38bdf8);
-        rimMat.color.setHex(0x818cf8);
-        floorGlowLight.color.setHex(0x38bdf8);
-        scene.fog?.color.setHex(0x080f1d);
-      }
+      // Keynote Arena Lighting Setup
+      mainSpotlight.color.setHex(0x00f0ff);
+      rimMat.color.setHex(0x00f0ff);
+      floorGlowLight.color.setHex(0x00f0ff);
+      scene.fog?.color.setHex(0x04060c);
 
-      // 1. Dynamic Camera Framing Base Coordinate Calculation
-      let baseFramingZ = 2.1;
-      let baseFramingY = 1.15;
-
-      if (framingMode === "headshot") {
-        baseFramingZ = 1.45;
-        baseFramingY = 1.25;
-      } else if (framingMode === "half_body") {
-        baseFramingZ = 2.20;
-        baseFramingY = 1.10;
-      } else if (framingMode === "full_body") {
-        baseFramingZ = 3.40;
-        baseFramingY = 0.88;
-      }
-
-      // 2. Multi-Camera Director Preset Modulations
+      // Multi-Camera Director Preset Modulations
       let targetX = 0;
-      let targetY = baseFramingY;
-      let targetZ = baseFramingZ;
+      let targetY = 1.15;
+      let targetZ = 2.10;
 
       if (cameraPreset === "70mm_close") {
         targetX = 0;
@@ -510,18 +462,10 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
         targetY = 1.35;
         targetZ = 2.9;
       } else if (cameraPreset === "free_orbit") {
-        targetZ = baseFramingZ * 1.3;
+        targetZ = 2.80;
       }
 
-      // 3. AI Synthesis Engine: Automated Cinematic Camera Glide
-      if (synthesisEngine === "director_glide" && cameraPreset !== "free_orbit") {
-        const glideAngle = time * 0.0006;
-        targetX += Math.sin(glideAngle) * 1.1;
-        targetY += Math.sin(time * 0.0012) * 0.22;
-        targetZ += Math.cos(glideAngle) * 0.45;
-      }
-
-      // 4. Smooth Camera Damping
+      // Smooth Camera Damping
       if (cameraPreset === "free_orbit") {
         camera.position.x += (Math.sin(targetCameraAngleX) * targetZ - camera.position.x) * 0.08;
         camera.position.y += (targetY + targetCameraAngleY - camera.position.y) * 0.08;
@@ -532,55 +476,20 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
         camera.position.z += (targetZ - camera.position.z) * 0.06;
       }
 
-      // 5. Dynamic Presenter Posture & Locomotion Mechanics
-      let presenterX = 0;
-      let presenterY = 0.9;
-      const presenterZ = 0.4;
+      // Dynamic Presenter Dynamics
       let lookTargetX = 0;
       let lookTargetY = targetY;
 
       if (presenterMesh) {
-        if (postureMode === "sitting") {
-          // Seated Executive in Armchair Height
-          presenterY = 0.58;
-          presenterMesh.position.set(0, presenterY, presenterZ);
-          presenterMesh.rotation.y = 0;
-          lookTargetY = 0.65;
-        } else if (postureMode === "walking") {
-          // Organic Keynote Presenter Stage Traversal
-          const walkX = Math.sin(time * 0.0011) * 0.95;
-          const walkBob = Math.abs(Math.sin(time * 0.0044)) * 0.025;
-          presenterX = walkX;
-          presenterY = 0.90 + walkBob;
-          presenterMesh.position.set(presenterX, presenterY, presenterZ);
-          presenterMesh.rotation.y = Math.cos(time * 0.0011) * 0.12; // Natural body orientation towards walking direction
-          lookTargetX = presenterX * 0.7;
-          lookTargetY = presenterY + 0.1;
-        } else if (postureMode === "interactive_hologram") {
-          // Ethereal Levitation & Volumetric Holographic Modulation
-          const floatY = 1.15 + Math.sin(time * 0.0022) * 0.07;
-          presenterY = floatY;
-          presenterMesh.position.set(0, presenterY, presenterZ);
-          presenterMesh.rotation.y = Math.sin(time * 0.0015) * 0.08;
-          
-          // Ethereal Hologram Fresnel Color Morph
-          const r = 0.1 + (Math.sin(time * 0.003) * 0.5 + 0.5) * 0.4;
-          const g = 0.6 + (Math.cos(time * 0.003) * 0.5 + 0.5) * 0.4;
-          const b = 1.0;
-          presenterMat.color.setRGB(r, g, b);
-          lookTargetY = floatY;
-        } else {
-          // Standing Anchor with Natural Continuous Keynote Dynamics
-          const swayX = Math.sin(time * 0.0008) * 0.04;
-          const swayRot = Math.sin(time * 0.0008) * 0.015;
-          const nod = (smoothAudioFlux > 0.1) ? Math.sin(time * 0.005) * 0.015 : 0;
-          presenterMesh.position.set(swayX, 0.0 + nod, 0.4);
-          presenterMesh.rotation.y = swayRot;
-          lookTargetX = swayX * 0.5;
-          lookTargetY = 0.85 + nod;
-        }
+        const swayX = Math.sin(time * 0.0008) * 0.04;
+        const swayRot = Math.sin(time * 0.0008) * 0.015;
+        const nod = (smoothAudioFlux > 0.1) ? Math.sin(time * 0.005) * 0.015 : 0;
+        presenterMesh.position.set(swayX, 0.0 + nod, 0.4);
+        presenterMesh.rotation.y = swayRot;
+        lookTargetX = swayX * 0.5;
+        lookTargetY = 0.85 + nod;
 
-        // Continuous Torso & Shoulder Breathing Kinematics (Non-Repeating)
+        // Continuous Torso & Shoulder Breathing Kinematics
         const breath = Math.sin(time * 0.0016) * 0.014;
         presenterMesh.scale.y = 1.0 + breath;
         presenterMesh.scale.x = 1.0 - breath * 0.3;
@@ -620,7 +529,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       }
       renderer.dispose();
     };
-  }, [environment, framingMode, postureMode, isPlaying, selectedPersonaAvatar, cameraPreset]);
+  }, [isPlaying, selectedPersonaAvatar, cameraPreset]);
 
   return (
     <div className="relative w-full h-[580px] rounded-2xl overflow-hidden bg-slate-950 border border-cyan-500/20 shadow-2xl">

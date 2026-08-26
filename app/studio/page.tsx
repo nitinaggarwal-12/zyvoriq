@@ -64,13 +64,6 @@ export default function Gen7StudioPage() {
   const [showProvenanceModal, setShowProvenanceModal] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<"3d_holo_stage" | "broadcast_stream">("3d_holo_stage");
 
-  // Gen 7 Director State Controls
-  const [synthesisEngine, setSynthesisEngine] = useState<SynthesisEngine>("veo_motion");
-  const [framingMode, setFramingMode] = useState<FramingMode>("headshot");
-  const [postureMode, setPostureMode] = useState<PostureMode>("standing");
-  const [environmentMode, setEnvironmentMode] = useState<EnvironmentMode>("keynote_arena");
-  const [activeHologramNode, setActiveHologramNode] = useState<string>("agent_mesh");
-
   // Dynamic Neuro-Biometrics Simulation
   const biometrics = useMemo<Gen7NeuroBiometrics>(() => {
     const pulseOffset = Math.sin(currentTime * 1.5) * 4;
@@ -89,22 +82,17 @@ export default function Gen7StudioPage() {
 
   // Clean Gen 7 Persona Master Broadcast Video Source Resolver
   const activeVideoSrc = useMemo(() => {
-    if (framingMode === "full_body" && selectedPersona.id === "priya") {
-      return `/assets/video/priya_10min_keynote_master.mp4`;
-    }
     return `/assets/video/${selectedPersona.id}_master.mp4`;
-  }, [selectedPersona.id, framingMode]);
+  }, [selectedPersona.id]);
 
-  // Smooth Source Switching only when Persona or Synthesis Engine changes
-  const prevEngineRef = useRef<SynthesisEngine>(synthesisEngine);
+  // Smooth Source Switching when Persona changes
   const prevPersonaRef = useRef<string>(selectedPersona.id);
 
   useEffect(() => {
     const video = videoRef.current;
     if (video) {
-      if (prevEngineRef.current !== synthesisEngine || prevPersonaRef.current !== selectedPersona.id) {
+      if (prevPersonaRef.current !== selectedPersona.id) {
         const wasPlaying = isPlaying;
-        prevEngineRef.current = synthesisEngine;
         prevPersonaRef.current = selectedPersona.id;
         video.load();
         if (wasPlaying) {
@@ -112,7 +100,7 @@ export default function Gen7StudioPage() {
         }
       }
     }
-  }, [activeVideoSrc, synthesisEngine, selectedPersona.id, isPlaying]);
+  }, [activeVideoSrc, selectedPersona.id, isPlaying]);
 
   // Computed Word Timings
   const wordTimings = useMemo<ScriptWordTiming[]>(() => {
@@ -456,10 +444,6 @@ export default function Gen7StudioPage() {
                 audioRef={audioRef}
                 videoRef={videoRef}
                 isPlaying={isPlaying}
-                environment={environmentMode}
-                framingMode={framingMode}
-                postureMode={postureMode}
-                synthesisEngine={synthesisEngine}
                 selectedPersonaName={selectedPersona.name}
                 selectedPersonaAvatar={selectedPersona.avatarUrl}
                 activeScript={scriptText}
@@ -470,68 +454,7 @@ export default function Gen7StudioPage() {
             <div className={`relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-slate-800 shadow-2xl group ${
               viewMode === "3d_holo_stage" ? "hidden" : "block"
             }`}>
-              
-              {/* Dynamic Environmental Ambient Shader Layer */}
-              <div
-                className={`absolute inset-0 pointer-events-none z-10 transition-all duration-700 ${
-                  environmentMode === "fireside_library"
-                    ? "bg-gradient-to-t from-amber-950/70 via-orange-950/30 to-amber-900/40 mix-blend-color-dodge ring-1 ring-inset ring-amber-500/30"
-                    : environmentMode === "command_bunker"
-                    ? "bg-gradient-to-t from-emerald-950/70 via-slate-950/30 to-cyan-950/50 mix-blend-screen ring-1 ring-inset ring-emerald-500/30"
-                    : environmentMode === "executive_boardroom"
-                    ? "bg-gradient-to-t from-indigo-950/60 via-purple-950/20 to-amber-900/30 mix-blend-overlay ring-1 ring-inset ring-indigo-500/30"
-                    : "bg-gradient-to-t from-cyan-950/40 via-transparent to-blue-950/50 ring-1 ring-inset ring-cyan-500/20"
-                }`}
-              />
-
-              {/* Dynamic Locomotion Stage FX */}
-              {postureMode === "walking" && (
-                <div className="absolute inset-0 pointer-events-none z-10 border-y border-cyan-500/40 bg-cyan-500/10 animate-pulse flex flex-col justify-between p-4">
-                  <div className="flex justify-between items-center text-[10px] font-mono text-cyan-300 font-bold bg-black/60 px-3 py-1 rounded backdrop-blur-md self-start border border-cyan-500/30">
-                    <span className="flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-cyan-400 animate-ping" />
-                      STAGE PAN TRAVERSAL: ACTIVE
-                    </span>
-                  </div>
-                  <div className="w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-lg shadow-cyan-400/50" />
-                </div>
-              )}
-
-              {/* Dynamic Sitting Executive Desk Lower-Third Horizon */}
-              {postureMode === "sitting" && (
-                <div className="absolute bottom-0 inset-x-0 h-16 pointer-events-none z-10 bg-gradient-to-t from-slate-950 via-slate-900/80 to-transparent border-t border-cyan-500/30 backdrop-blur-[2px] flex items-center justify-between px-6">
-                  <div className="flex items-center gap-2 text-[10px] font-mono text-slate-300 bg-black/70 px-2.5 py-1 rounded border border-slate-700">
-                    <Mic className="h-3 w-3 text-cyan-400" />
-                    <span>EXECUTIVE BOARDROOM PODIUM DESK</span>
-                  </div>
-                  <span className="text-[9px] font-mono text-cyan-400">ACOUSTIC ISOLATION: 100%</span>
-                </div>
-              )}
-
-              {/* Dynamic Framing Viewfinder Grid for Headshot mode */}
-              {framingMode === "headshot" && (
-                <div className="absolute inset-0 pointer-events-none z-10 p-6 flex flex-col justify-between">
-                  <div className="flex justify-between text-cyan-300 font-mono text-[10px] font-bold">
-                    <span className="bg-black/50 px-2 py-0.5 rounded border border-cyan-500/30">┌ 4K UHD FACIAL TARGET</span>
-                    <span className="bg-black/50 px-2 py-0.5 rounded border border-cyan-500/30">AF-LOCK: ACTIVE ┐</span>
-                  </div>
-                  <div className="self-center text-cyan-400/40 text-xl font-mono">+</div>
-                  <div className="flex justify-between text-cyan-300 font-mono text-[10px] font-bold">
-                    <span className="bg-black/50 px-2 py-0.5 rounded border border-cyan-500/30">└ 60 FPS ULTRA-STABLE</span>
-                    <span className="bg-black/50 px-2 py-0.5 rounded border border-cyan-500/30">1.65X FOCAL ZOOM ┘</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Dynamic Framing Guides for Half Body mode */}
-              {framingMode === "half_body" && (
-                <div className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between">
-                  <div className="h-3 bg-black/60 border-b border-cyan-500/20" />
-                  <div className="h-3 bg-black/60 border-t border-cyan-500/20" />
-                </div>
-              )}
-
-              {/* Main Video Stream with Dynamic Camera Glide */}
+              {/* Main Video Stream */}
               <video
                 ref={videoRef}
                 src={activeVideoSrc}
@@ -545,39 +468,8 @@ export default function Gen7StudioPage() {
                   setCurrentTime(0);
                   setSpokenWordIndex(-1);
                 }}
-                className={`w-full h-full object-cover transition-all duration-700 ease-out ${
-                  framingMode === "headshot"
-                    ? "scale-[1.65] translate-y-[6%] object-center"
-                    : framingMode === "half_body"
-                    ? "scale-[1.25] translate-y-[2%] object-center"
-                    : "scale-100 translate-y-0 object-center"
-                } ${
-                  postureMode === "walking"
-                    ? "translate-x-2 duration-1000"
-                    : "translate-x-0"
-                } ${isPlaying ? "animate-subtle-breathing" : ""}`}
+                className="w-full h-full object-cover"
               />
-
-              {/* Gen 7 Interactive 3D Holographic Stage Overlay */}
-              {postureMode === "interactive_hologram" && (
-                <div className="absolute inset-0 z-20 pointer-events-none flex items-center justify-between p-6 bg-cyan-950/20 backdrop-blur-[1px]">
-                  <div className="pointer-events-auto bg-slate-950/80 border border-cyan-500/50 rounded-xl p-3 backdrop-blur-md shadow-2xl flex flex-col gap-1.5 animate-pulse">
-                    <span className="text-[9px] font-mono text-cyan-400 font-bold flex items-center gap-1">
-                      <Box className="h-3 w-3" />
-                      <span>[VERTEX AI SWARM MESH]</span>
-                    </span>
-                    <span className="text-[10px] text-slate-300 font-mono">Status: 12 Nodes Synced</span>
-                  </div>
-
-                  <div className="pointer-events-auto bg-slate-950/80 border border-purple-500/50 rounded-xl p-3 backdrop-blur-md shadow-2xl flex flex-col gap-1.5 animate-bounce">
-                    <span className="text-[9px] font-mono text-purple-400 font-bold flex items-center gap-1">
-                      <Lock className="h-3 w-3" />
-                      <span>[zk-SNARK PROVENANCE]</span>
-                    </span>
-                    <span className="text-[10px] text-slate-300 font-mono">Proof: Validated (0ms)</span>
-                  </div>
-                </div>
-              )}
 
               {/* Watermark & Badges Overlay */}
               <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md border border-white/10 text-[10px] font-mono text-emerald-400">
@@ -589,7 +481,7 @@ export default function Gen7StudioPage() {
                 <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
                 <span>{selectedPersona.name}</span>
                 <span className="text-slate-500">•</span>
-                <span className="text-cyan-400 text-[9px] uppercase font-bold">{environmentMode.replace("_", " ")}</span>
+                <span className="text-cyan-400 text-[9px] uppercase font-bold">KEYNOTE ARENA</span>
               </div>
 
               {/* Play / Pause Big Center Button Overlay */}
