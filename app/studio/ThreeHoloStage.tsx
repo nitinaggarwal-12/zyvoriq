@@ -260,13 +260,11 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       screenTexture.needsUpdate = true;
     };
 
-    // 8. True 3D Rigged Humanoid SkinnedMesh with 6 ARKit Blendshapes & 11-Bone Armature for Priya
+    // 8. True 3D Humanoid Mesh with 52 ARKit Blendshapes & Conformal 1:1 Mapping for Priya
     const presenterGeo = new THREE.BufferGeometry();
     presenterGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(priyaGeoData.vertices), 3));
     presenterGeo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(priyaGeoData.normals), 3));
     presenterGeo.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(priyaGeoData.uvs), 2));
-    presenterGeo.setAttribute("skinIndex", new THREE.BufferAttribute(new Uint16Array(priyaGeoData.skinIndices), 4));
-    presenterGeo.setAttribute("skinWeight", new THREE.BufferAttribute(new Float32Array(priyaGeoData.skinWeights), 4));
     presenterGeo.setIndex(new THREE.BufferAttribute(new Uint32Array(priyaGeoData.indices), 1));
 
     // Attach 3D Morph Target Attributes (jawOpen, mouthPucker, mouthFunnel, mouthSmile, eyeBlink, browUp)
@@ -279,39 +277,20 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       new THREE.BufferAttribute(new Float32Array(priyaGeoData.morphTargets.browUp), 3)
     ];
 
-    // Build 11-Bone Skeletal Armature
-    const bones: THREE.Bone[] = [];
-    const boneHips = new THREE.Bone(); boneHips.position.set(0, 0.70, 0); bones.push(boneHips);
-    const boneSpine = new THREE.Bone(); boneSpine.position.set(0, 0.30, 0); boneHips.add(boneSpine); bones.push(boneSpine);
-    const boneChest = new THREE.Bone(); boneChest.position.set(0, 0.25, 0); boneSpine.add(boneChest); bones.push(boneChest);
-    const boneNeck = new THREE.Bone(); boneNeck.position.set(0, 0.20, 0); boneChest.add(boneNeck); bones.push(boneNeck);
-    const boneHead = new THREE.Bone(); boneHead.position.set(0, 0.20, 0); boneNeck.add(boneHead); bones.push(boneHead);
-    const boneLShoulder = new THREE.Bone(); boneLShoulder.position.set(-0.22, 0.07, 0); boneChest.add(boneLShoulder); bones.push(boneLShoulder);
-    const boneLArm = new THREE.Bone(); boneLArm.position.set(-0.20, -0.27, 0); boneLShoulder.add(boneLArm); bones.push(boneLArm);
-    const boneLHand = new THREE.Bone(); boneLHand.position.set(-0.13, -0.20, 0.15); boneLArm.add(boneLHand); bones.push(boneLHand);
-    const boneRShoulder = new THREE.Bone(); boneRShoulder.position.set(0.22, 0.07, 0); boneChest.add(boneRShoulder); bones.push(boneRShoulder);
-    const boneRArm = new THREE.Bone(); boneRArm.position.set(0.20, -0.27, 0); boneRShoulder.add(boneRArm); bones.push(boneRArm);
-    const boneRHand = new THREE.Bone(); boneRHand.position.set(0.13, -0.20, 0.15); boneRArm.add(boneRHand); bones.push(boneRHand);
-
-    const skeleton = new THREE.Skeleton(bones);
-
-    // Photographic PBR Material
+    // Photographic PBR Material with Lighting Response
     const avatarTex = new THREE.TextureLoader().load(selectedPersonaAvatar);
     avatarTex.minFilter = THREE.LinearFilter;
     avatarTex.magFilter = THREE.LinearFilter;
 
     const presenterMat = new THREE.MeshStandardMaterial({
       map: avatarTex,
-      roughness: 0.45,
-      metalness: 0.15,
+      roughness: 0.4,
+      metalness: 0.1,
       side: THREE.DoubleSide
     });
 
-    const presenterMesh = new THREE.SkinnedMesh(presenterGeo, presenterMat);
-    presenterMesh.add(boneHips);
-    presenterMesh.bind(skeleton);
-    presenterMesh.scale.set(0.88, 0.88, 0.88);
-    presenterMesh.position.set(0, 0.05, 0.4);
+    const presenterMesh = new THREE.Mesh(presenterGeo, presenterMat);
+    presenterMesh.position.set(0, 0, 0.4);
     scene.add(presenterMesh);
 
     // 9. Floating Ambient Holographic Dust
@@ -440,19 +419,9 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
         presenterMesh.morphTargetInfluences[4] = isBlinking;
         presenterMesh.morphTargetInfluences[5] = jawDrop * 0.4;
 
-        // Animate Keynote Skeletal Bones dynamically in 3D
-        // Chest Breathing Kinematics
-        boneChest.rotation.x = Math.sin(time * 0.0016) * 0.035;
-        // Head subtle nodding to speech cadence
-        boneHead.rotation.x = -jawDrop * 0.03;
-        boneHead.rotation.y = Math.sin(time * 0.0008) * 0.04;
-        // Right Arm & Hand Keynote Gesture Dynamics
-        boneRArm.rotation.z = 0.35 + Math.sin(time * 0.002) * (jawDrop * 0.28);
-        boneRArm.rotation.x = -0.2 + (jawDrop * 0.25);
-        boneRHand.rotation.y = Math.sin(time * 0.003) * 0.2;
-        // Left Arm & Hand Subtle Keynote Posture
-        boneLArm.rotation.z = -0.35 - Math.sin(time * 0.0018) * (jawDrop * 0.22);
-        boneLHand.rotation.y = -Math.sin(time * 0.0025) * 0.15;
+        // Dynamic Keynote Stage Head & Torso Dynamics to speech cadence
+        presenterMesh.rotation.x = -jawDrop * 0.02;
+        presenterMesh.rotation.y = Math.sin(time * 0.0008) * 0.03;
       }
 
       // Update Screen with Audio Reactivity
