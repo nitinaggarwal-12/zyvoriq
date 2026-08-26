@@ -20,6 +20,7 @@ interface ThreeHoloStageProps {
 
 export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
   audioRef,
+  videoRef,
   isPlaying,
   environment,
   framingMode,
@@ -241,18 +242,27 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       screenTexture.needsUpdate = true;
     };
 
-    // 8. Presenter Mesh: Clean Pristine Volumetric Depth Hologram (Zero Artificial Distortion)
-    const textureLoader = new THREE.TextureLoader();
-    const avatarTex = textureLoader.load(selectedPersonaAvatar);
-    avatarTex.minFilter = THREE.LinearFilter;
-    avatarTex.magFilter = THREE.LinearFilter;
+    // 8. Presenter Mesh: Dynamic VideoTexture During Playback & Photographic Texture When Paused
+    let presenterTexture: THREE.Texture;
+    if (isPlaying && videoRef?.current) {
+      const vidTex = new THREE.VideoTexture(videoRef.current);
+      vidTex.minFilter = THREE.LinearFilter;
+      vidTex.magFilter = THREE.LinearFilter;
+      vidTex.format = THREE.RGBAFormat;
+      presenterTexture = vidTex;
+    } else {
+      const avatarTex = new THREE.TextureLoader().load(selectedPersonaAvatar);
+      avatarTex.minFilter = THREE.LinearFilter;
+      avatarTex.magFilter = THREE.LinearFilter;
+      presenterTexture = avatarTex;
+    }
 
     const presenterGeo = new THREE.PlaneGeometry(2.4, 1.35, 32, 32);
     
     // Crystal Clear Holographic Depth & Fresnel Rim Shader Material
     const presenterMat = new THREE.ShaderMaterial({
       uniforms: {
-        map: { value: avatarTex },
+        map: { value: presenterTexture },
         fresnelColor: { value: new THREE.Color(0x00f0ff) },
         audioFlux: { value: 0.0 },
         curvature: { value: 0.05 }
