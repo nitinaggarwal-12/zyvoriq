@@ -125,7 +125,7 @@ export default function Gen7StudioPage() {
   };
 
   // Synchronized Master Playback
-  const handleTogglePlay = () => {
+  const handleTogglePlay = async () => {
     const video = videoRef.current;
     if (!video) return;
 
@@ -134,11 +134,15 @@ export default function Gen7StudioPage() {
       setIsPlaying(false);
     } else {
       video.muted = isMuted;
-      video.play().then(() => {
+      try {
+        if (video.readyState < 2) {
+          video.load();
+        }
+        await video.play();
         setIsPlaying(true);
-      }).catch(err => {
+      } catch (err) {
         console.error("Playback error:", err);
-      });
+      }
     }
   };
 
@@ -477,10 +481,20 @@ export default function Gen7StudioPage() {
               <video
                 ref={videoRef}
                 key={activeVideoSrc}
-                src={activeVideoSrc}
                 playsInline
+                preload="auto"
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onEnded={() => {
+                  setIsPlaying(false);
+                  setCurrentTime(0);
+                  setSpokenWordIndex(-1);
+                }}
                 className="w-full h-full object-cover transition-all duration-300"
-              />
+              >
+                <source src={activeVideoSrc} type="video/mp4" />
+                <source src={`/assets/video_synced/${selectedPersona.id}_neural_synced.mp4`} type="video/mp4" />
+              </video>
 
               {/* Gen 7 Interactive 3D Holographic Stage Overlay */}
               {postureMode === "interactive_hologram" && (
