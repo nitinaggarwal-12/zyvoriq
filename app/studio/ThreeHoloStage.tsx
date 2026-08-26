@@ -260,20 +260,23 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       new THREE.BufferAttribute(new Float32Array(priyaGeoData.morphTargets.browUp), 3)
     ];
 
-    // Live High-Definition Video Texture for Full-Body Moving Presenter
-    let presenterTex: THREE.Texture;
-    if (videoRef?.current) {
-      presenterTex = new THREE.VideoTexture(videoRef.current);
-      presenterTex.minFilter = THREE.LinearFilter;
-      presenterTex.magFilter = THREE.LinearFilter;
-      presenterTex.format = THREE.RGBAFormat;
-    } else {
-      const isPriya = selectedPersonaName.toLowerCase().includes("priya");
-      const avatarTextureSrc = isPriya ? "/assets/avatars/priya_cutout.png" : selectedPersonaAvatar;
-      presenterTex = new THREE.TextureLoader().load(avatarTextureSrc);
-      presenterTex.minFilter = THREE.LinearFilter;
-      presenterTex.magFilter = THREE.LinearFilter;
+    // Dedicated Live MP4 Video Stream for Three.js VideoTexture (Zero JPEGs)
+    const personaSlug = selectedPersonaName.toLowerCase().split(" ")[0] || "priya";
+    const stageVideo = document.createElement("video");
+    stageVideo.src = `/assets/video/${personaSlug}_master.mp4`;
+    stageVideo.crossOrigin = "anonymous";
+    stageVideo.loop = true;
+    stageVideo.muted = true;
+    stageVideo.playsInline = true;
+    stageVideo.preload = "auto";
+    if (isPlaying) {
+      stageVideo.play().catch(() => {});
     }
+
+    const presenterTex = new THREE.VideoTexture(stageVideo);
+    presenterTex.minFilter = THREE.LinearFilter;
+    presenterTex.magFilter = THREE.LinearFilter;
+    presenterTex.format = THREE.RGBAFormat;
 
     const presenterMat = new THREE.MeshStandardMaterial({
       map: presenterTex,
@@ -412,10 +415,17 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
         presenterMesh.morphTargetInfluences[4] = isBlinking;
         presenterMesh.morphTargetInfluences[5] = jawDrop * 0.4;
 
-        // Dynamic Keynote Stage Head & Torso Dynamics to speech cadence
-        presenterMesh.rotation.x = -jawDrop * 0.02;
-        presenterMesh.rotation.y = Math.sin(time * 0.0008) * 0.03;
-
+        // Update Live MP4 Video Texture Frame
+        if (isPlaying) {
+          if (stageVideo.paused) {
+            stageVideo.play().catch(() => {});
+          }
+          presenterTex.needsUpdate = true;
+        } else {
+          if (!stageVideo.paused) {
+            stageVideo.pause();
+          }
+        }
       }
 
       // Update Screen with Audio Reactivity
@@ -521,6 +531,8 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       container.removeEventListener("mousedown", onMouseDown);
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
+      stageVideo.pause();
+      stageVideo.src = "";
       if (audioCtx && audioCtx.state !== "closed") {
         audioCtx.close();
       }
@@ -529,7 +541,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       }
       renderer.dispose();
     };
-  }, [isPlaying, selectedPersonaAvatar, cameraPreset]);
+  }, [isPlaying, selectedPersonaName, selectedPersonaAvatar, cameraPreset]);
 
   return (
     <div className="relative w-full h-[580px] rounded-2xl overflow-hidden bg-slate-950 border border-cyan-500/20 shadow-2xl">
