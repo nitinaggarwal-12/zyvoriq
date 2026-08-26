@@ -11,6 +11,7 @@ interface ThreeHoloStageProps {
   framingMode: FramingMode;
   postureMode: PostureMode;
   selectedPersonaName: string;
+  selectedPersonaAvatar: string;
   activeScript: string;
 }
 
@@ -21,6 +22,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
   framingMode,
   postureMode,
   selectedPersonaName,
+  selectedPersonaAvatar,
   activeScript
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -95,6 +97,8 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
     const ctx = screenCanvas.getContext("2d");
 
     const screenTexture = new THREE.CanvasTexture(screenCanvas);
+    screenTexture.wrapS = THREE.RepeatWrapping;
+    screenTexture.repeat.x = -1;
     const screenGeo = new THREE.CylinderGeometry(4.8, 4.8, 2.4, 48, 1, true, Math.PI * 0.7, Math.PI * 0.6);
     const screenMat = new THREE.MeshBasicMaterial({
       map: screenTexture,
@@ -187,25 +191,26 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
     };
 
     // 7. Presenter Mesh in 3D Space
-    let videoTexture: THREE.VideoTexture | null = null;
-    let presenterMesh: THREE.Mesh | null = null;
-
-    if (videoRef.current) {
-      videoTexture = new THREE.VideoTexture(videoRef.current);
-      videoTexture.minFilter = THREE.LinearFilter;
-      videoTexture.magFilter = THREE.LinearFilter;
-      videoTexture.format = THREE.RGBAFormat;
-
-      const presenterGeo = new THREE.PlaneGeometry(2.4, 1.35);
-      const presenterMat = new THREE.MeshBasicMaterial({
-        map: videoTexture,
-        transparent: true,
-        side: THREE.DoubleSide
-      });
-      presenterMesh = new THREE.Mesh(presenterGeo, presenterMat);
-      presenterMesh.position.set(0, 0.9, 0.4);
-      scene.add(presenterMesh);
+    let presenterTexture: THREE.Texture;
+    if (isPlaying && videoRef.current) {
+      const vidTex = new THREE.VideoTexture(videoRef.current);
+      vidTex.minFilter = THREE.LinearFilter;
+      vidTex.magFilter = THREE.LinearFilter;
+      vidTex.format = THREE.RGBAFormat;
+      presenterTexture = vidTex;
+    } else {
+      presenterTexture = new THREE.TextureLoader().load(selectedPersonaAvatar);
     }
+
+    const presenterGeo = new THREE.PlaneGeometry(2.4, 1.35);
+    const presenterMat = new THREE.MeshBasicMaterial({
+      map: presenterTexture,
+      transparent: true,
+      side: THREE.DoubleSide
+    });
+    const presenterMesh = new THREE.Mesh(presenterGeo, presenterMat);
+    presenterMesh.position.set(0, 0.9, 0.4);
+    scene.add(presenterMesh);
 
     // 8. Floating Ambient Particle Dust
     const particleCount = 120;

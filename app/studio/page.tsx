@@ -553,6 +553,7 @@ export default function Gen7StudioPage() {
                 framingMode={framingMode}
                 postureMode={postureMode}
                 selectedPersonaName={selectedPersona.name}
+                selectedPersonaAvatar={selectedPersona.avatarUrl}
                 activeScript={scriptText}
               />
             ) : (
