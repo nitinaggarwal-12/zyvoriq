@@ -84,6 +84,7 @@ export default function Gen7StudioPage() {
 
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const animationFrameRef = useRef<number>(0);
 
   // Clean Gen 7 Persona Master Broadcast Video Source Resolver
@@ -136,20 +137,27 @@ export default function Gen7StudioPage() {
   // Synchronized Master Playback
   const handleTogglePlay = async () => {
     const video = videoRef.current;
+    const audio = audioRef.current;
     if (!video) return;
 
     if (!video.paused && isPlaying) {
       video.pause();
+      if (audio) audio.pause();
       setIsPlaying(false);
     } else {
       video.muted = isMuted;
       try {
         if (video.ended || (video.duration && video.currentTime >= video.duration - 0.05)) {
           video.currentTime = 0;
+          if (audio) audio.currentTime = 0;
           setCurrentTime(0);
           setSpokenWordIndex(-1);
         }
         await video.play();
+        if (audio) {
+          audio.currentTime = video.currentTime;
+          audio.play().catch(() => {});
+        }
         setIsPlaying(true);
       } catch (err: any) {
         if (err.name !== "AbortError") {
@@ -162,11 +170,16 @@ export default function Gen7StudioPage() {
   // Restart Playback
   const handleRestart = () => {
     const video = videoRef.current;
+    const audio = audioRef.current;
     if (video) {
       video.currentTime = 0;
+      if (audio) audio.currentTime = 0;
       setCurrentTime(0);
       setSpokenWordIndex(-1);
-      video.play().then(() => setIsPlaying(true)).catch(() => {});
+      video.play().then(() => {
+        setIsPlaying(true);
+        if (audio) audio.play().catch(() => {});
+      }).catch(() => {});
     }
   };
 
@@ -545,8 +558,17 @@ export default function Gen7StudioPage() {
             </div>
 
             {/* Viewport: 3D WebGL Holo-Stage or 2D Broadcast Stream */}
+            {/* Hidden Audio Element for Web Audio API Spectrum Analysis */}
+            <audio
+              ref={audioRef}
+              src={selectedPersona.audioUrl}
+              preload="auto"
+              className="hidden"
+            />
+
             {viewMode === "3d_holo_stage" ? (
               <ThreeHoloStage
+                audioRef={audioRef}
                 videoRef={videoRef}
                 isPlaying={isPlaying}
                 environment={environmentMode}
