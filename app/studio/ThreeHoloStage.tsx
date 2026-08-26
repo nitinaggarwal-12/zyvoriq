@@ -60,10 +60,24 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
     );
     camera.position.set(0, 1.25, 2.1);
 
-    // 3. Renderer Setup
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+    // 3. Renderer Setup with Safe Headless/Software WebGL Fallback
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+        powerPreference: "default",
+        failIfMajorPerformanceCaveat: false
+      });
+    } catch {
+      renderer = new THREE.WebGLRenderer({
+        antialias: false,
+        alpha: false,
+        failIfMajorPerformanceCaveat: false
+      });
+    }
     renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.25;
     container.appendChild(renderer.domElement);
