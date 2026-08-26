@@ -89,8 +89,11 @@ export default function Gen7StudioPage() {
 
   // Clean Gen 7 Persona Master Broadcast Video Source Resolver
   const activeVideoSrc = useMemo(() => {
+    if (framingMode === "full_body" && selectedPersona.id === "priya") {
+      return `/assets/video/priya_fullbody_master.mp4`;
+    }
     return `/assets/video/${selectedPersona.id}_master.mp4`;
-  }, [selectedPersona.id]);
+  }, [selectedPersona.id, framingMode]);
 
   // Smooth Source Switching only when Persona or Synthesis Engine changes
   const prevEngineRef = useRef<SynthesisEngine>(synthesisEngine);
