@@ -107,8 +107,12 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
     }
 
     // 5. Dynamic Lighting Rig
-    const ambientLight = new THREE.AmbientLight(0x0f172a, 1.0);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 2.2);
     scene.add(ambientLight);
+
+    const frontLight = new THREE.DirectionalLight(0xffffff, 3.0);
+    frontLight.position.set(0, 3.0, 4.5);
+    scene.add(frontLight);
 
     const mainSpotlight = new THREE.SpotLight(0x00f0ff, 4.5, 25, Math.PI / 4, 0.35, 1.4);
     mainSpotlight.position.set(0, 5.5, 3.5);
@@ -590,10 +594,10 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
           const swayX = Math.sin(time * 0.0008) * 0.04;
           const swayRot = Math.sin(time * 0.0008) * 0.015;
           const nod = (smoothAudioFlux > 0.1) ? Math.sin(time * 0.005) * 0.015 : 0;
-          presenterMesh.position.set(swayX, 0.9 + nod, 0.4);
+          presenterMesh.position.set(swayX, 0.1 + nod, 0.4);
           presenterMesh.rotation.y = swayRot;
           lookTargetX = swayX * 0.5;
-          lookTargetY = 0.9 + nod;
+          lookTargetY = 1.35 + nod;
         }
 
         // Continuous Torso & Shoulder Breathing Kinematics (Non-Repeating)
