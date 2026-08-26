@@ -297,6 +297,26 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
     presenterMesh.position.set(0, 0, 0.4);
     scene.add(presenterMesh);
 
+    // Independent 3D Articulated Gesturing Arm & Hand for Priya
+    let armMesh: THREE.Mesh | null = null;
+    if (isPriya) {
+      const armTex = new THREE.TextureLoader().load("/assets/avatars/priya_arm_cutout.png");
+      armTex.minFilter = THREE.LinearFilter;
+      armTex.magFilter = THREE.LinearFilter;
+      const armGeo = new THREE.PlaneGeometry(0.85, 0.95);
+      const armMat = new THREE.MeshStandardMaterial({
+        map: armTex,
+        roughness: 0.4,
+        metalness: 0.1,
+        transparent: true,
+        alphaTest: 0.05,
+        side: THREE.DoubleSide
+      });
+      armMesh = new THREE.Mesh(armGeo, armMat);
+      armMesh.position.set(-0.35, 0.55, 0.42);
+      scene.add(armMesh);
+    }
+
     // Anatomical 3D Oral Cavity Sub-Mesh Layer for Priya
     const mouthTex = new THREE.TextureLoader().load("/assets/avatars/priya_oral_cavity.png");
     mouthTex.minFilter = THREE.LinearFilter;
@@ -451,6 +471,17 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
           } else {
             mouthMesh.scale.set(0, 0, 0);
           }
+        }
+
+        // Dynamic Keynote Arm & Hand Gesturing Kinematics
+        if (armMesh) {
+          const gestureFlux = smoothAudioFlux > 0.08 ? smoothAudioFlux : 0;
+          const armLift = Math.sin(time * 0.002) * (gestureFlux * 0.35);
+          const armWave = Math.cos(time * 0.0015) * (gestureFlux * 0.25);
+          armMesh.rotation.z = 0.05 + armLift;
+          armMesh.rotation.x = -armWave;
+          armMesh.position.y = 0.55 + Math.sin(time * 0.0016) * 0.01 + (gestureFlux * 0.04);
+          armMesh.position.x = presenterMesh.position.x - 0.35;
         }
       }
 
