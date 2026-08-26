@@ -84,39 +84,10 @@ export default function Gen7StudioPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const animationFrameRef = useRef<number>(0);
 
-  // Dynamic Gen 7 Multi-Engine & Multi-Angle Video Source Resolver
+  // Clean Gen 7 Persona Master Broadcast Video Source Resolver
   const activeVideoSrc = useMemo(() => {
-    const pId = selectedPersona.id.split("-")[0].toLowerCase();
-    
-    // 1. Full-Motion AI Video Diffusion Engine (Active Gesturing Hands & Body Movement)
-    if (synthesisEngine === "veo_motion") {
-      if (pId === "priya" || pId === "victoria" || pId === "david") {
-        return `/assets/video_synced/${pId}_veo_synced.mp4`;
-      }
-      return `/assets/video_synced/${pId}_neural_synced.mp4`;
-    }
-
-    // 2. Exact 100% Phonetic Neural Lip-Sync Engine (Persona-Locked)
-    if (synthesisEngine === "neural_viseme") {
-      return `/assets/video_synced/${pId}_neural_synced.mp4`;
-    }
-
-    // 3. Cinematic Multi-Camera Glide Mode
-    if (framingMode === "headshot") {
-      return `/assets/video_synced/${pId}_neural_synced.mp4`;
-    }
-    if (postureMode === "sitting") {
-      return `/assets/video_synced/${pId}_sitting.mp4`;
-    }
-    if (postureMode === "walking") {
-      return `/assets/video_synced/${pId}_walking.mp4`;
-    }
-    if (framingMode === "half_body") {
-      return `/assets/video_synced/${pId}_director_cut.mp4`;
-    }
-    // Full Body Standing Keynote default
-    return `/assets/video_synced/${pId}_fullbody_standing.mp4`;
-  }, [selectedPersona, synthesisEngine, framingMode, postureMode]);
+    return `/assets/video/${selectedPersona.id}_master.mp4`;
+  }, [selectedPersona.id]);
 
   // Smooth Source Switching only when Persona or Synthesis Engine changes
   const prevEngineRef = useRef<SynthesisEngine>(synthesisEngine);
