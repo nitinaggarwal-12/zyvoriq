@@ -1,0 +1,115 @@
+{
+  "name": "PriyaSharma_3D_Humanoid_Rig",
+  "version": "7.0.0",
+  "vertexCount": 1150,
+  "triangleCount": 2112,
+  "morphTargets": [
+    "jawOpen",
+    "mouthPucker",
+    "mouthFunnel",
+    "mouthSmile",
+    "eyeBlink",
+    "browUp"
+  ],
+  "bones": [
+    {
+      "name": "Hips",
+      "parent": -1,
+      "position": [
+        0,
+        0.7,
+        0
+      ]
+    },
+    {
+      "name": "Spine",
+      "parent": 0,
+      "position": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "name": "Chest",
+      "parent": 1,
+      "position": [
+        0,
+        1.25,
+        0
+      ]
+    },
+    {
+      "name": "Neck",
+      "parent": 2,
+      "position": [
+        0,
+        1.45,
+        0
+      ]
+    },
+    {
+      "name": "Head",
+      "parent": 3,
+      "position": [
+        0,
+        1.65,
+        0
+      ]
+    },
+    {
+      "name": "LeftShoulder",
+      "parent": 2,
+      "position": [
+        -0.22,
+        1.32,
+        0
+      ]
+    },
+    {
+      "name": "LeftArm",
+      "parent": 5,
+      "position": [
+        -0.42,
+        1.05,
+        0
+      ]
+    },
+    {
+      "name": "LeftHand",
+      "parent": 6,
+      "position": [
+        -0.55,
+        0.85,
+        0.15
+      ]
+    },
+    {
+      "name": "RightShoulder",
+      "parent": 2,
+      "position": [
+        0.22,
+        1.32,
+        0
+      ]
+    },
+    {
+      "name": "RightArm",
+      "parent": 8,
+      "position": [
+        0.42,
+        1.05,
+        0
+      ]
+    },
+    {
+      "name": "RightHand",
+      "parent": 9,
+      "position": [
+        0.55,
+        0.85,
+        0.15
+      ]
+    }
+  ]
+}
