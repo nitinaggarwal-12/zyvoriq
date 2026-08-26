@@ -142,12 +142,17 @@ export default function Gen7StudioPage() {
     const video = videoRef.current;
     if (!video) return;
 
-    if (isPlaying) {
+    if (!video.paused && isPlaying) {
       video.pause();
       setIsPlaying(false);
     } else {
       video.muted = isMuted;
       try {
+        if (video.ended || (video.duration && video.currentTime >= video.duration - 0.05)) {
+          video.currentTime = 0;
+          setCurrentTime(0);
+          setSpokenWordIndex(-1);
+        }
         await video.play();
         setIsPlaying(true);
       } catch (err: any) {
@@ -165,9 +170,7 @@ export default function Gen7StudioPage() {
       video.currentTime = 0;
       setCurrentTime(0);
       setSpokenWordIndex(-1);
-      if (!isPlaying) {
-        video.play().then(() => setIsPlaying(true));
-      }
+      video.play().then(() => setIsPlaying(true)).catch(() => {});
     }
   };
 
@@ -175,20 +178,28 @@ export default function Gen7StudioPage() {
   useEffect(() => {
     const updateTeleprompter = () => {
       const video = videoRef.current;
-      if (video && !video.paused) {
-        const time = video.currentTime;
-        setCurrentTime(time);
-
-        // Find active word with +120ms anticipation lead
-        const lookupTime = time + 0.12;
-        let activeIdx = -1;
-        for (let i = 0; i < wordTimings.length; i++) {
-          if (lookupTime >= wordTimings[i].start && lookupTime <= wordTimings[i].end) {
-            activeIdx = i;
-            break;
-          }
+      if (video) {
+        if (video.ended || (video.duration && video.currentTime >= video.duration - 0.05)) {
+          setIsPlaying(false);
+          video.pause();
+          return;
         }
-        setSpokenWordIndex(activeIdx);
+
+        if (!video.paused) {
+          const time = video.currentTime;
+          setCurrentTime(time);
+
+          // Find active word with +120ms anticipation lead
+          const lookupTime = time + 0.12;
+          let activeIdx = -1;
+          for (let i = 0; i < wordTimings.length; i++) {
+            if (lookupTime >= wordTimings[i].start && lookupTime <= wordTimings[i].end) {
+              activeIdx = i;
+              break;
+            }
+          }
+          setSpokenWordIndex(activeIdx);
+        }
       }
       animationFrameRef.current = requestAnimationFrame(updateTeleprompter);
     };
