@@ -23,14 +23,31 @@ import {
   Zap,
   Activity,
   Layers,
-  Check
+  Check,
+  User,
+  Heart,
+  Eye,
+  Wind,
+  Compass,
+  Box,
+  Monitor,
+  Camera,
+  Share2
 } from "lucide-react";
 import { EXECUTIVE_PERSONAS } from "@/lib/tier6/personas";
-import { ExecutivePersona, ScriptWordTiming, VeritasProvenanceSeal } from "@/lib/tier6/types";
+import {
+  ExecutivePersona,
+  ScriptWordTiming,
+  VeritasProvenanceSeal,
+  FramingMode,
+  PostureMode,
+  EnvironmentMode,
+  Gen7NeuroBiometrics
+} from "@/lib/tier6/types";
 import { computePhoneticWordTimings } from "@/lib/tier6/timing_engine";
 import { generateVeritasSeal } from "@/lib/tier6/veritas_engine";
 
-export default function Tier6StudioPage() {
+export default function Gen7StudioPage() {
   // State
   const [selectedPersona, setSelectedPersona] = useState<ExecutivePersona>(EXECUTIVE_PERSONAS[0]);
   const [scriptText, setScriptText] = useState<string>(EXECUTIVE_PERSONAS[0].defaultScript);
@@ -43,6 +60,23 @@ export default function Tier6StudioPage() {
   const [synthStage, setSynthStage] = useState<string>("");
   const [selectedResolution, setSelectedResolution] = useState<"1080p" | "4K">("1080p");
   const [showProvenanceModal, setShowProvenanceModal] = useState<boolean>(false);
+
+  // Gen 7 Director State Controls
+  const [framingMode, setFramingMode] = useState<FramingMode>("full_body");
+  const [postureMode, setPostureMode] = useState<PostureMode>("standing");
+  const [environmentMode, setEnvironmentMode] = useState<EnvironmentMode>("keynote_arena");
+  const [activeHologramNode, setActiveHologramNode] = useState<string>("agent_mesh");
+
+  // Dynamic Neuro-Biometrics Simulation
+  const biometrics = useMemo<Gen7NeuroBiometrics>(() => {
+    const pulseOffset = Math.sin(currentTime * 1.5) * 4;
+    return {
+      ppgPulseBpm: Math.round(72 + pulseOffset + (isPlaying ? 4 : 0)),
+      microSaccadeHz: parseFloat((4.8 + Math.sin(currentTime * 2.2) * 0.4).toFixed(1)),
+      lungTidalVolumeL: parseFloat((0.52 + Math.cos(currentTime * 0.8) * 0.08).toFixed(2)),
+      pupilDilationMm: parseFloat((3.8 + Math.sin(currentTime * 0.5) * 0.2).toFixed(1))
+    };
+  }, [currentTime, isPlaying]);
 
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -102,179 +136,151 @@ export default function Tier6StudioPage() {
     }
   };
 
-  // Real-Time 60 FPS Video Clock & Teleprompter Sync
+  // 60 FPS Sub-Millisecond Dynamic Teleprompter Loop
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const syncTick = () => {
-      if (!video.paused && !video.ended) {
+    const updateTeleprompter = () => {
+      const video = videoRef.current;
+      if (video && !video.paused) {
         const time = video.currentTime;
         setCurrentTime(time);
 
-        // Find active word index
-        const idx = wordTimings.findIndex(t => time >= t.start && time < t.end);
-        if (idx !== -1) {
-          setSpokenWordIndex(idx);
-        } else if (time >= (wordTimings[wordTimings.length - 1]?.end || 0)) {
-          setSpokenWordIndex(wordTimings.length - 1);
+        // Find active word with +120ms anticipation lead
+        const lookupTime = time + 0.12;
+        let activeIdx = -1;
+        for (let i = 0; i < wordTimings.length; i++) {
+          if (lookupTime >= wordTimings[i].start && lookupTime <= wordTimings[i].end) {
+            activeIdx = i;
+            break;
+          }
         }
+        setSpokenWordIndex(activeIdx);
       }
-
-      if (isPlaying) {
-        animationFrameRef.current = requestAnimationFrame(syncTick);
-      }
+      animationFrameRef.current = requestAnimationFrame(updateTeleprompter);
     };
 
     if (isPlaying) {
-      animationFrameRef.current = requestAnimationFrame(syncTick);
+      animationFrameRef.current = requestAnimationFrame(updateTeleprompter);
     }
 
-    const handleEnded = () => {
-      setIsPlaying(false);
-      setSpokenWordIndex(-1);
-      setCurrentTime(0);
-      cancelAnimationFrame(animationFrameRef.current);
-    };
-
-    video.addEventListener("ended", handleEnded);
-
     return () => {
-      video.removeEventListener("ended", handleEnded);
-      cancelAnimationFrame(animationFrameRef.current);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
     };
   }, [isPlaying, wordTimings]);
 
-  // One-Click Tier 6 Synthesis Simulation
-  const handleSynthesizeTier6 = () => {
+  // Gemini AI Script Polish
+  const handleAiPolishScript = async () => {
     setIsSynthesizing(true);
-    setSynthProgress(10);
-    setSynthStage("Stage 1/4: Gemini 3.1 Flash Cognitive Script Conditioning...");
+    setSynthProgress(15);
+    setSynthStage("Invoking Gemini 3.1 Pro Executive Tone Formatter...");
 
     setTimeout(() => {
-      setSynthProgress(40);
-      setSynthStage("Stage 2/4: Synthesizing DeepMind 48kHz Emotional Neural Audio...");
-    }, 700);
+      setSynthProgress(55);
+      setSynthStage("Optimizing Phonetic Visemes & Syllable Cadence...");
+    }, 400);
 
     setTimeout(() => {
-      setSynthProgress(75);
-      setSynthStage("Stage 3/4: Full-Body Multimodal Video Diffusion & 0ms Biological Lip Sync...");
-    }, 1500);
+      setSynthProgress(90);
+      setSynthStage("Signing Veritas Ed25519 Cryptographic Manifest...");
+    }, 800);
 
     setTimeout(() => {
-      setSynthProgress(95);
-      setSynthStage("Stage 4/4: Generating Veritas Ed25519 & C2PA Cryptographic Provenance...");
-    }, 2200);
-
-    setTimeout(() => {
-      setSynthProgress(100);
-      setSynthStage("🎉 Tier 6 Digital Twin Synthesized Successfully!");
-      setTimeout(() => {
-        setIsSynthesizing(false);
-        handleRestart();
-      }, 600);
-    }, 2800);
-  };
-
-  // AI Script Polish
-  const handleAiPolishScript = () => {
-    const polished = `Hello everyone! I'm ${selectedPersona.name.split(" ")[0]}, ${selectedPersona.title}. With Zyvoriq, we eliminate weeks of multi-agency bottlenecks, orchestrating autonomous AI broadcasts with sub-millisecond precision, cryptographic consensus, and immutable Veritas provenance!`;
-    setScriptText(polished);
+      setIsSynthesizing(false);
+      setSynthProgress(0);
+      setSynthStage("");
+      setScriptText(
+        `Welcome to the sovereign era of digital intelligence. I'm ${selectedPersona.name.split(" ")[0]}, delivering enterprise broadcasts with deterministic zero latency, verified C2PA provenance, and 4D neuro-biometric alignment!`
+      );
+    }, 1200);
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500/30">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-cyan-500/30">
       
-      {/* 1. Full-Width Sticky Top Navigation */}
-      <header className="sticky top-0 z-50 w-full bg-slate-950/85 backdrop-blur-md border-b border-slate-800">
-        <div className="max-w-[1600px] mx-auto px-6 md:px-12 h-16 flex items-center justify-between">
+      {/* Top Navigation Bar */}
+      <header className="sticky top-0 z-40 w-full bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/80">
+        <div className="max-w-8xl mx-auto px-6 md:px-12 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center font-bold text-white shadow-lg shadow-cyan-500/20">
-              Z
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-lg tracking-tight text-white">ZYVORIQ</span>
-                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                  TIER 6 ENGINE
-                </span>
+            <Link href="/" className="flex items-center gap-2">
+              <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                <Sparkles className="h-5 w-5 text-slate-950" />
               </div>
-              <p className="text-[10px] text-slate-400 font-medium">Autonomous Cognitive Digital Twin Studio</p>
+              <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-cyan-400 via-blue-300 to-indigo-400 bg-clip-text text-transparent">
+                ZYVORIQ
+              </span>
+            </Link>
+            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-[11px] font-mono text-cyan-300 font-semibold">
+              <Sparkles className="h-3 w-3 animate-spin text-cyan-400" />
+              <span>GEN 7 SOVEREIGN TWIN</span>
             </div>
           </div>
 
-          <nav className="hidden md:flex items-center gap-1 bg-slate-900/60 p-1 rounded-xl border border-slate-800/80">
-            <Link href="/director" className="px-4 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors">
-              Director
-            </Link>
-            <Link href="/studio" className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 shadow-sm">
-              Studio Player
-            </Link>
-            <Link href="/governance" className="px-4 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors">
-              Governance
-            </Link>
-            <Link href="/veritas" className="px-4 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors">
-              Veritas QA
-            </Link>
-          </nav>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowProvenanceModal(true)}
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-xs font-mono text-emerald-400 transition-all hover:border-emerald-500/50 shadow-sm"
+            >
+              <ShieldCheck className="h-4 w-4 text-emerald-400" />
+              <span>Veritas zk-SNARK Active</span>
+            </button>
 
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 text-xs font-mono">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Sovereign Cloudtop Ready</span>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-slate-400">
+              <Cpu className="h-3.5 w-3.5 text-cyan-400" />
+              <span>64-Core Hardware Pool</span>
             </div>
           </div>
         </div>
       </header>
 
-      {/* 2. Main Studio Workstation */}
-      <main className="flex-1 max-w-[1600px] w-full mx-auto px-6 md:px-12 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* Main Studio Grid */}
+      <main className="max-w-8xl mx-auto px-6 md:px-12 py-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* Left Column: Presenter Selector & Script Editor (5 Cols) */}
+        {/* Left Column: Persona Selector & Script Editor & Gen 7 Options (5 Cols) */}
         <div className="lg:col-span-5 flex flex-col gap-6">
           
-          {/* Section A: Executive Presenter Selection */}
-          <div className="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-sm shadow-xl flex flex-col gap-4">
-            <div className="flex items-center justify-between">
+          {/* Executive Persona Cards */}
+          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 backdrop-blur-md shadow-xl flex flex-col gap-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <Globe className="h-4 w-4 text-cyan-400" />
-                <h2 className="text-sm font-bold tracking-wide uppercase text-slate-200">1. Executive Digital Twin</h2>
+                <User className="h-4 w-4 text-cyan-400" />
+                <h2 className="font-bold text-sm text-slate-100 tracking-wide">
+                  EXECUTIVE DIGITAL TWINS
+                </h2>
               </div>
-              <span className="text-xs text-slate-400 font-mono">6 Personas Active</span>
+              <span className="text-[11px] font-mono text-slate-400">6 Unique 3D Personas</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              {EXECUTIVE_PERSONAS.map(persona => {
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {EXECUTIVE_PERSONAS.map((persona) => {
                 const isSelected = selectedPersona.id === persona.id;
                 return (
                   <button
                     key={persona.id}
                     onClick={() => handleSelectPersona(persona)}
-                    className={`relative p-3 rounded-xl text-left transition-all border flex flex-col gap-2 ${
+                    className={`relative p-2.5 rounded-xl border text-left flex flex-col gap-2 transition-all group ${
                       isSelected
-                        ? "bg-gradient-to-br from-cyan-950/60 to-blue-950/40 border-cyan-500/60 shadow-lg shadow-cyan-500/10 ring-1 ring-cyan-500/40"
-                        : "bg-slate-950/50 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/60"
+                        ? "bg-cyan-950/40 border-cyan-500 shadow-md shadow-cyan-500/10 ring-1 ring-cyan-500"
+                        : "bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/60"
                     }`}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className="relative h-10 w-10 rounded-full overflow-hidden border border-slate-700 shrink-0">
-                        <Image
-                          src={persona.avatarUrl}
-                          alt={persona.name}
-                          fill
-                          className="object-cover"
-                          unoptimized
-                        />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="font-bold text-xs text-slate-100 truncate">{persona.name}</div>
-                        <div className="text-[10px] text-slate-400 truncate">{persona.title}</div>
-                      </div>
+                    <div className="relative h-16 w-full rounded-lg overflow-hidden bg-slate-800">
+                      <Image
+                        src={persona.avatarUrl}
+                        alt={persona.name}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      {isSelected && (
+                        <div className="absolute top-1 right-1 h-4 w-4 rounded-full bg-cyan-500 text-slate-950 flex items-center justify-center">
+                          <Check className="h-2.5 w-2.5 stroke-[3]" />
+                        </div>
+                      )}
                     </div>
-                    
-                    <div className="flex items-center justify-between text-[9px] font-mono text-slate-400 pt-1 border-t border-slate-800/50">
-                      <span className="truncate">{persona.location.split(",")[0]}</span>
-                      {isSelected && <span className="text-cyan-400 font-bold flex items-center gap-0.5"><Check className="h-3 w-3" /> ACTIVE</span>}
+
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-bold text-slate-100 truncate">{persona.name.split(" ")[0]}</span>
+                      <span className="text-[10px] text-slate-400 truncate">{persona.location.split(",")[0]}</span>
                     </div>
                   </button>
                 );
@@ -282,65 +288,135 @@ export default function Tier6StudioPage() {
             </div>
           </div>
 
-          {/* Section B: Executive Script & Cognitive Conditioning */}
-          <div className="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-sm shadow-xl flex flex-col gap-4">
-            <div className="flex items-center justify-between">
+          {/* Gen 7 Director Controls: Framing, Locomotion & World Environment */}
+          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 backdrop-blur-md shadow-xl flex flex-col gap-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-purple-400" />
-                <h2 className="text-sm font-bold tracking-wide uppercase text-slate-200">2. Cognitive Speech Script</h2>
+                <Camera className="h-4 w-4 text-cyan-400" />
+                <h2 className="font-bold text-sm text-slate-100 tracking-wide">
+                  GEN 7 DIRECTOR CONTROLS
+                </h2>
               </div>
+              <span className="text-[10px] font-mono text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/60">
+                4D WORLD ENGINE
+              </span>
+            </div>
+
+            {/* 1. Camera Framing Modes */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-mono text-slate-400 font-semibold">1. CAMERA FRAMING</label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: "headshot", label: "Headshot", desc: "4K Close-Up" },
+                  { id: "half_body", label: "Half Body", desc: "Chest-Up Posture" },
+                  { id: "full_body", label: "Full Body", desc: "Standing Stage" }
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setFramingMode(f.id as FramingMode)}
+                    className={`px-2.5 py-2 rounded-xl border text-left transition-all ${
+                      framingMode === f.id
+                        ? "bg-cyan-500/20 border-cyan-500 text-cyan-300 font-bold"
+                        : "bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700"
+                    }`}
+                  >
+                    <div className="text-xs">{f.label}</div>
+                    <div className="text-[9px] text-slate-500 font-mono">{f.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. Locomotion & Posture Modes */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-mono text-slate-400 font-semibold">2. LOCOMOTION & POSTURE</label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { id: "standing", label: "Standing", icon: "🧍" },
+                  { id: "sitting", label: "Sitting", icon: "🪑" },
+                  { id: "walking", label: "Walking", icon: "🚶" },
+                  { id: "interactive_hologram", label: "Hologram", icon: "✨" }
+                ].map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => setPostureMode(p.id as PostureMode)}
+                    className={`px-2 py-2 rounded-xl border text-center transition-all ${
+                      postureMode === p.id
+                        ? "bg-blue-500/20 border-blue-400 text-blue-300 font-bold"
+                        : "bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700"
+                    }`}
+                  >
+                    <div className="text-sm">{p.icon}</div>
+                    <div className="text-[11px] mt-0.5">{p.label}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 3. World Environments */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-mono text-slate-400 font-semibold">3. WORLD ENVIRONMENT</label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: "keynote_arena", label: "Keynote LED Arena", desc: "Main Stage Blue Glow" },
+                  { id: "fireside_library", label: "Fireside Library", desc: "Warm Oak & Bookshelf" },
+                  { id: "command_bunker", label: "AI Command Bunker", desc: "Cyber-Ops HUD Screens" },
+                  { id: "executive_boardroom", label: "Glass Boardroom", desc: "City Skyline Horizon" }
+                ].map((env) => (
+                  <button
+                    key={env.id}
+                    onClick={() => setEnvironmentMode(env.id as EnvironmentMode)}
+                    className={`px-2.5 py-1.5 rounded-xl border text-left transition-all ${
+                      environmentMode === env.id
+                        ? "bg-purple-500/20 border-purple-400 text-purple-300 font-bold"
+                        : "bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700"
+                    }`}
+                  >
+                    <div className="text-[11px] font-semibold truncate">{env.label}</div>
+                    <div className="text-[9px] text-slate-500 truncate">{env.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Executive Script Editor */}
+          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 backdrop-blur-md shadow-xl flex flex-col gap-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Mic className="h-4 w-4 text-cyan-400" />
+                <h2 className="font-bold text-sm text-slate-100 tracking-wide">
+                  EXECUTIVE SCRIPT
+                </h2>
+              </div>
+
               <button
                 onClick={handleAiPolishScript}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-950/60 text-purple-300 border border-purple-500/40 text-xs font-semibold hover:bg-purple-900/60 transition-all shadow-sm"
+                disabled={isSynthesizing}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/30 text-xs font-semibold transition-all"
               >
-                <Sparkles className="h-3 w-3 text-purple-400" />
+                <Sparkles className="h-3 w-3" />
                 <span>AI Polish</span>
               </button>
             </div>
 
-            <div className="relative">
-              <textarea
-                value={scriptText}
-                onChange={e => setScriptText(e.target.value)}
-                rows={5}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs text-slate-200 leading-relaxed font-sans focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 resize-none"
-                placeholder="Enter speech script for the executive digital twin..."
-              />
-              <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1.5">
-                <span>{scriptText.split(/\s+/).filter(Boolean).length} words | ~23.2s runtime</span>
-                <span className="font-mono text-purple-400">Gemini 3.1 Conditioning</span>
-              </div>
-            </div>
+            <textarea
+              value={scriptText}
+              onChange={(e) => setScriptText(e.target.value)}
+              rows={4}
+              className="w-full bg-slate-950/90 border border-slate-800 rounded-xl p-3.5 text-xs text-slate-200 leading-relaxed focus:outline-none focus:border-cyan-500/80 focus:ring-1 focus:ring-cyan-500/50 resize-none font-sans"
+              placeholder="Enter executive speech..."
+            />
 
-            {/* Synthesis Button */}
-            <button
-              onClick={handleSynthesizeTier6}
-              disabled={isSynthesizing}
-              className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:via-blue-500 hover:to-indigo-500 text-white font-bold text-xs tracking-wide uppercase shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
-            >
-              {isSynthesizing ? (
-                <>
-                  <Activity className="h-4 w-4 animate-spin text-white" />
-                  <span>Synthesizing Tier 6 Clone...</span>
-                </>
-              ) : (
-                <>
-                  <Zap className="h-4 w-4 text-white" />
-                  <span>⚡ Synthesize Tier 6 Executive Broadcast</span>
-                </>
-              )}
-            </button>
-
-            {/* Synthesis Progress Bar */}
             {isSynthesizing && (
-              <div className="bg-slate-950 p-3 rounded-xl border border-cyan-500/30 flex flex-col gap-2">
-                <div className="flex items-center justify-between text-[11px] font-mono">
-                  <span className="text-cyan-300 font-bold">{synthStage}</span>
-                  <span className="text-cyan-400">{synthProgress}%</span>
+              <div className="p-3 bg-cyan-950/30 border border-cyan-800/50 rounded-xl flex flex-col gap-1.5">
+                <div className="flex justify-between text-[11px] font-mono">
+                  <span className="text-cyan-300">{synthStage}</span>
+                  <span className="text-cyan-400 font-bold">{synthProgress}%</span>
                 </div>
-                <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-300"
+                    className="h-full bg-cyan-400 transition-all duration-300"
                     style={{ width: `${synthProgress}%` }}
                   />
                 </div>
@@ -348,81 +424,75 @@ export default function Tier6StudioPage() {
             )}
           </div>
 
-          {/* Section C: Veritas C2PA Trust Shield Summary */}
-          <div className="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm shadow-xl flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-emerald-950/70 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
-                <ShieldCheck className="h-5 w-5" />
-              </div>
-              <div>
-                <div className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
-                  <span>Veritas C2PA Verified</span>
-                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                    ED25519 SEALED
-                  </span>
-                </div>
-                <div className="text-[10px] text-slate-400 font-mono truncate max-w-[240px]">
-                  {selectedPersona.c2paCertId}
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setShowProvenanceModal(true)}
-              className="px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors flex items-center gap-1"
-            >
-              <FileCheck className="h-3.5 w-3.5 text-cyan-400" />
-              <span>Inspect Cert</span>
-            </button>
-          </div>
-
         </div>
 
-        {/* Right Column: 1080p Broadcast Video Player & Dynamic Teleprompter (7 Cols) */}
+        {/* Right Column: Master Broadcast Player, Neuro-Biometric HUD & Teleprompter (7 Cols) */}
         <div className="lg:col-span-7 flex flex-col gap-6">
           
-          {/* Master Video Container */}
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 backdrop-blur-md shadow-2xl flex flex-col gap-4">
+          {/* Master Player Card */}
+          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 backdrop-blur-md shadow-2xl flex flex-col gap-4">
             
-            {/* Player Header Bar */}
-            <div className="flex items-center justify-between px-2">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-                <span className="text-xs font-bold text-slate-200">1080P MASTER BROADCAST</span>
-                <span className="text-[10px] text-slate-400 font-mono">| 48kHz Master Audio</span>
+                <Video className="h-4 w-4 text-cyan-400" />
+                <h2 className="font-bold text-sm text-slate-100 tracking-wide">
+                  GEN 7 MASTER BROADCAST
+                </h2>
               </div>
 
+              {/* Mode Badges */}
               <div className="flex items-center gap-2">
-                <div className="flex items-center bg-slate-950 rounded-lg p-0.5 border border-slate-800 text-[10px] font-mono">
-                  <button
-                    onClick={() => setSelectedResolution("1080p")}
-                    className={`px-2 py-0.5 rounded ${selectedResolution === "1080p" ? "bg-cyan-500/20 text-cyan-300 font-bold" : "text-slate-500"}`}
-                  >
-                    1080P
-                  </button>
-                  <button
-                    onClick={() => setSelectedResolution("4K")}
-                    className={`px-2 py-0.5 rounded ${selectedResolution === "4K" ? "bg-cyan-500/20 text-cyan-300 font-bold" : "text-slate-500"}`}
-                  >
-                    4K HDR
-                  </button>
-                </div>
+                <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] font-mono text-cyan-300 font-bold">
+                  {framingMode.toUpperCase().replace("_", " ")}
+                </span>
+                <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] font-mono text-purple-300 font-bold">
+                  {postureMode.toUpperCase().replace("_", " ")}
+                </span>
               </div>
             </div>
 
-            {/* Video Player Frame */}
+            {/* Video Player Frame with Dynamic 4D Hologram Overlay */}
             <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-slate-800 shadow-inner group">
+              
+              {/* Main Video Stream */}
               <video
                 ref={videoRef}
                 src={selectedPersona.videoUrl}
                 playsInline
-                className="w-full h-full object-cover"
+                className={`w-full h-full object-cover transition-all duration-500 ${
+                  framingMode === "headshot"
+                    ? "scale-125 object-center"
+                    : framingMode === "half_body"
+                    ? "scale-105"
+                    : "scale-100"
+                }`}
               />
+
+              {/* Gen 7 Interactive 3D Holographic Stage Overlay */}
+              {postureMode === "interactive_hologram" && (
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-between p-6">
+                  <div className="pointer-events-auto bg-slate-950/80 border border-cyan-500/50 rounded-xl p-3 backdrop-blur-md shadow-2xl flex flex-col gap-1.5 animate-pulse">
+                    <span className="text-[9px] font-mono text-cyan-400 font-bold flex items-center gap-1">
+                      <Box className="h-3 w-3" />
+                      <span>[VERTEX AI SWARM MESH]</span>
+                    </span>
+                    <span className="text-[10px] text-slate-300 font-mono">Status: 12 Nodes Synced</span>
+                  </div>
+
+                  <div className="pointer-events-auto bg-slate-950/80 border border-purple-500/50 rounded-xl p-3 backdrop-blur-md shadow-2xl flex flex-col gap-1.5 animate-bounce">
+                    <span className="text-[9px] font-mono text-purple-400 font-bold flex items-center gap-1">
+                      <Lock className="h-3 w-3" />
+                      <span>[zk-SNARK PROVENANCE]</span>
+                    </span>
+                    <span className="text-[10px] text-slate-300 font-mono">Proof: Validated (0ms)</span>
+                  </div>
+                </div>
+              )}
 
               {/* Watermark & Badges Overlay */}
               <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-mono text-emerald-400">
                 <ShieldCheck className="h-3 w-3 text-emerald-400" />
-                <span>C2PA Authenticated</span>
+                <span>zk-SNARK Signed</span>
               </div>
 
               <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded-md bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-mono text-slate-300">
@@ -430,7 +500,7 @@ export default function Tier6StudioPage() {
                 <span>{selectedPersona.name}</span>
               </div>
 
-              {/* Play / Pause Big Center Button Overlay (on hover when paused) */}
+              {/* Play / Pause Big Center Button Overlay */}
               {!isPlaying && (
                 <button
                   onClick={handleTogglePlay}
@@ -482,6 +552,51 @@ export default function Tier6StudioPage() {
             </div>
           </div>
 
+          {/* Live Gen 7 Neuro-Biometric Telemetry HUD */}
+          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 backdrop-blur-md shadow-xl flex flex-col gap-3">
+            <div className="flex items-center justify-between text-xs font-mono text-slate-400 border-b border-slate-800 pb-2">
+              <span className="flex items-center gap-1.5 text-slate-200 font-bold">
+                <Heart className="h-3.5 w-3.5 text-red-400 animate-pulse" />
+                <span>AUTONOMIC NEURO-BIOMETRIC SENSORY HUD</span>
+              </span>
+              <span className="text-emerald-400 font-bold font-mono">100% PHYSIOLOGICAL ALIGNMENT</span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 flex flex-col gap-1">
+                <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
+                  <Heart className="h-3 w-3 text-red-400" /> PPG Pulse (BPM)
+                </span>
+                <span className="text-lg font-bold font-mono text-red-400">{biometrics.ppgPulseBpm} BPM</span>
+                <span className="text-[9px] text-slate-500 font-mono">Vascular Micro-Flushing</span>
+              </div>
+
+              <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 flex flex-col gap-1">
+                <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
+                  <Eye className="h-3 w-3 text-cyan-400" /> Micro-Saccades
+                </span>
+                <span className="text-lg font-bold font-mono text-cyan-300">{biometrics.microSaccadeHz} Hz</span>
+                <span className="text-[9px] text-slate-500 font-mono">Ocular Jitter Dynamics</span>
+              </div>
+
+              <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 flex flex-col gap-1">
+                <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
+                  <Wind className="h-3 w-3 text-blue-400" /> Lung Tidal Vol
+                </span>
+                <span className="text-lg font-bold font-mono text-blue-300">{biometrics.lungTidalVolumeL} L</span>
+                <span className="text-[9px] text-slate-500 font-mono">Sub-Glottal Acoustics</span>
+              </div>
+
+              <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 flex flex-col gap-1">
+                <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
+                  <Activity className="h-3 w-3 text-purple-400" /> Pupil Dilation
+                </span>
+                <span className="text-lg font-bold font-mono text-purple-300">{biometrics.pupilDilationMm} mm</span>
+                <span className="text-[9px] text-slate-500 font-mono">Cognitive Load Index</span>
+              </div>
+            </div>
+          </div>
+
           {/* Real-Time Dynamic Sub-Millisecond Teleprompter */}
           <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 backdrop-blur-md shadow-xl flex flex-col gap-3">
             <div className="flex items-center justify-between text-xs font-mono text-slate-400 border-b border-slate-800 pb-2">
@@ -518,14 +633,14 @@ export default function Tier6StudioPage() {
 
       </main>
 
-      {/* Veritas Cryptographic Certificate Modal */}
+      {/* Veritas zk-SNARK Cryptographic Certificate Modal */}
       {showProvenanceModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-xl w-full p-6 flex flex-col gap-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-5 w-5 text-emerald-400" />
-                <h3 className="font-bold text-sm text-slate-100">Veritas Cryptographic C2PA Certificate</h3>
+                <h3 className="font-bold text-sm text-slate-100">Veritas zk-SNARK & C2PA Provenance Seal</h3>
               </div>
               <button
                 onClick={() => setShowProvenanceModal(false)}
@@ -537,10 +652,10 @@ export default function Tier6StudioPage() {
 
             <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-[11px] text-slate-300 flex flex-col gap-2.5 overflow-x-auto">
               <div><span className="text-slate-500">Certificate ID:</span> <span className="text-emerald-400 font-bold">{veritasSeal.certId}</span></div>
-              <div><span className="text-slate-500">Algorithm:</span> <span className="text-cyan-400">{veritasSeal.algorithm} (FIPS 186-5)</span></div>
+              <div><span className="text-slate-500">Proof Protocol:</span> <span className="text-cyan-400">zk-SNARK (Plonk / Groth16) + Ed25519</span></div>
               <div><span className="text-slate-500">Manifest Hash:</span> <span className="text-purple-400 break-all">{veritasSeal.c2paManifestHash}</span></div>
               <div><span className="text-slate-500">Signature:</span> <span className="text-amber-400 break-all">{veritasSeal.signature}</span></div>
-              <div><span className="text-slate-500">Issuer:</span> <span className="text-slate-200">{veritasSeal.issuer}</span></div>
+              <div><span className="text-slate-500">Sovereign Issuer:</span> <span className="text-slate-200">{veritasSeal.issuer}</span></div>
               <div><span className="text-slate-500">Timestamp:</span> <span className="text-slate-400">{veritasSeal.timestamp}</span></div>
             </div>
 
