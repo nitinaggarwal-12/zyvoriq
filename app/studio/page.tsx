@@ -397,50 +397,22 @@ export default function Gen7StudioPage() {
                 </h2>
               </div>
 
-              {/* View Mode Switcher: Gemini 3.5 Transcribe vs Google Veo 2 vs 3D GLTF */}
+              {/* View Mode Switcher: Google Veo 3.1 Master Stream */}
               <div className="flex items-center gap-2">
                 <div className="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800 flex-wrap">
                   <button
                     onClick={() => {
                       if (videoRef.current) videoRef.current.pause();
                       setIsPlaying(false);
-                      setViewMode("gemini_transcribe");
-                    }}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
-                      viewMode === "gemini_transcribe"
-                        ? "bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 shadow-sm shadow-cyan-500/20"
-                        : "text-slate-400 hover:text-slate-200"
-                    }`}
-                  >
-                    🎙️ GEMINI 3.5 TRANSCRIBE
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (videoRef.current) videoRef.current.pause();
-                      setIsPlaying(false);
                       setViewMode("veo_video");
                     }}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
+                    className={`px-3 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
                       viewMode === "veo_video"
                         ? "bg-purple-500/20 border border-purple-500/40 text-purple-300 shadow-sm shadow-purple-500/20"
                         : "text-slate-400 hover:text-slate-200"
                     }`}
                   >
-                    🎬 VEO 2 VIDEO STUDIO
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (videoRef.current) videoRef.current.pause();
-                      setIsPlaying(false);
-                      setViewMode("3d_gltf_avatar");
-                    }}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
-                      viewMode === "3d_gltf_avatar"
-                        ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 shadow-sm shadow-emerald-500/20"
-                        : "text-slate-400 hover:text-slate-200"
-                    }`}
-                  >
-                    🧍 3D RIGGED GLTF
+                    🎬 GOOGLE VEO 3.1
                   </button>
                   <button
                     onClick={() => {
@@ -448,7 +420,7 @@ export default function Gen7StudioPage() {
                       setIsPlaying(false);
                       setViewMode("broadcast_stream");
                     }}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
+                    className={`px-3 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
                       viewMode === "broadcast_stream"
                         ? "bg-blue-500/20 border border-blue-500/40 text-blue-300 shadow-sm shadow-blue-500/20"
                         : "text-slate-400 hover:text-slate-200"
