@@ -440,9 +440,22 @@ export default function Gen7StudioPage() {
                 audioRef={audioRef}
                 videoRef={videoRef}
                 isPlaying={isPlaying}
+                isMuted={isMuted}
                 selectedPersonaName={selectedPersona.name}
                 selectedPersonaAvatar={selectedPersona.avatarUrl}
                 activeScript={scriptText}
+                onTimeUpdate={(t) => {
+                  setCurrentTime(t);
+                  const lookupTime = t + 0.12;
+                  let activeIdx = -1;
+                  for (let i = 0; i < wordTimings.length; i++) {
+                    if (lookupTime >= wordTimings[i].start && lookupTime <= wordTimings[i].end) {
+                      activeIdx = i;
+                      break;
+                    }
+                  }
+                  setSpokenWordIndex(activeIdx);
+                }}
               />
             )}
 

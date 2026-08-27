@@ -45,7 +45,10 @@ if (fs.existsSync(videoDir)) {
   for (const mp4 of mp4Files) {
     const fullPath = path.join(videoDir, mp4);
     try {
-      const probeOut = execSync(`ffprobe -v error -show_entries stream=codec_name,pix_fmt -of default=noprint_wrappers=1 "${fullPath}"`, { encoding: 'utf8' });
+      const probeOut = execSync(`ffprobe -v error -show_entries stream=codec_name,pix_fmt -of default=noprint_wrappers=1 "${fullPath}"`, {
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'ignore']
+      });
       if (probeOut.includes('codec_name=mpeg4')) {
         console.error(`❌ BANNED CODEC in [${mp4}]: Contains legacy mpeg4 (mp4v). Must be H.264 (avc1/yuv420p).`);
         violations++;
@@ -53,7 +56,7 @@ if (fs.existsSync(videoDir)) {
         console.log(`✅ Asset [${mp4}] verified compliant (H.264 yuv420p)`);
       }
     } catch {
-      // If ffprobe unavailable locally, skip local check
+      // If ffprobe unavailable, skip probing
     }
   }
 }

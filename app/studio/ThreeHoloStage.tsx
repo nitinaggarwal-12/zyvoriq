@@ -8,15 +8,19 @@ interface ThreeHoloStageProps {
   audioRef?: React.RefObject<HTMLAudioElement | null>;
   videoRef: React.RefObject<HTMLVideoElement | null>;
   isPlaying: boolean;
+  isMuted?: boolean;
   selectedPersonaName: string;
   selectedPersonaAvatar: string;
   activeScript: string;
+  onTimeUpdate?: (currentTime: number) => void;
 }
 
 export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
   isPlaying,
+  isMuted = false,
   selectedPersonaName,
   selectedPersonaAvatar,
+  onTimeUpdate,
 }) => {
   const stageVideoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -29,6 +33,13 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
   const videoSrc = cameraPreset === "fullbody_stage" && personaSlug === "priya"
     ? `/assets/video/priya_fullbody_master.mp4`
     : `/assets/video/${personaSlug}_master.mp4`;
+
+  // Synchronize Mute state
+  useEffect(() => {
+    if (stageVideoRef.current) {
+      stageVideoRef.current.muted = isMuted;
+    }
+  }, [isMuted]);
 
   // Architecture Nodes Definition for PiP Architecture Screen
   const ARCH_NODES = [
@@ -161,10 +172,16 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
     return () => cancelAnimationFrame(animationId);
   }, [isPlaying, cameraPreset, audioFlux]);
 
-  // Seamless Video Loop Handler
+  // Seamless Video Loop Handler & Teleprompter Time Synchronizer
   const handleTimeUpdate = () => {
     const video = stageVideoRef.current;
-    if (video && video.duration > 0 && video.currentTime >= video.duration - 0.08) {
+    if (!video) return;
+
+    if (onTimeUpdate) {
+      onTimeUpdate(video.currentTime);
+    }
+
+    if (video.duration > 0 && video.currentTime >= video.duration - 0.08) {
       video.currentTime = 0.01;
       video.play().catch(() => {});
     }
@@ -206,7 +223,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
         <div className={`relative transition-all duration-700 ease-out flex items-center justify-center ${
           cameraPreset === "70mm_close"
             ? "scale-125 translate-y-4 w-full h-full"
-            : cameraPreset === "24mm_hero"
+            : cameraPreset === "35mm_wide"
             ? "scale-110 -translate-y-2 w-full h-full"
             : cameraPreset === "pip_split"
             ? "w-full h-full grid grid-cols-1 md:grid-cols-2 p-6 gap-4"
@@ -236,7 +253,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
               className={`w-full h-full object-cover transition-transform duration-700 ${
                 cameraPreset === "70mm_close"
                   ? "scale-115 object-top"
-                  : cameraPreset === "24mm_hero"
+                  : cameraPreset === "35mm_wide"
                   ? "scale-105"
                   : "scale-100"
               }`}
