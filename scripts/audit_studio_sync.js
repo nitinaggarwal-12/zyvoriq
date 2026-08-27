@@ -49,20 +49,20 @@ const path = require('path');
 
   for (let i = 0; i < intervals.length; i++) {
     await new Promise(r => setTimeout(r, intervals[i]));
-    const state = await page.evaluate(() => {
+    const state = await page.evaluate((stepIdx) => {
       const audio = document.querySelector('audio');
       const video = document.querySelector('video');
       const highlighted = document.querySelector('.bg-cyan-500.text-slate-950') || 
                           document.querySelector('[class*="bg-cyan-500"]');
       return {
-        step: i + 1,
+        step: stepIdx + 1,
         audioTime: audio ? Number(audio.currentTime.toFixed(2)) : 0,
         audioPaused: audio ? audio.paused : true,
         videoTime: video ? Number(video.currentTime.toFixed(2)) : 0,
         videoMuted: video ? video.muted : false,
         activeWord: highlighted ? highlighted.innerText.trim() : null
       };
-    });
+    }, i);
     console.log(`⏱️ Checkpoint ${i + 1}: audioTime=${state.audioTime}s | paused=${state.audioPaused} | muted=${state.videoMuted} | word="${state.activeWord}"`);
     auditLogs.push(state);
     await page.screenshot({ path: path.join(captureDir, `sample_${i + 1}_t${state.audioTime}s.png`) });
