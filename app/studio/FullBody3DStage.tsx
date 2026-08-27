@@ -7,6 +7,7 @@ export type FullBodyCameraAngle = "full_stage" | "close_up" | "hero_low" | "scre
 
 interface FullBody3DStageProps {
   isPlaying: boolean;
+  isMuted?: boolean;
   selectedPersonaName: string;
   selectedPersonaAvatar: string;
   onTimeUpdate?: (currentTime: number) => void;
@@ -14,13 +15,38 @@ interface FullBody3DStageProps {
 
 export const FullBody3DStage: React.FC<FullBody3DStageProps> = ({
   isPlaying,
+  isMuted = false,
+  selectedPersonaName,
   selectedPersonaAvatar,
   onTimeUpdate,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [cameraAngle, setCameraAngle] = useState<FullBodyCameraAngle>("full_stage");
-  const [fps, setFps] = useState<number>(60);
   const [activeNode, setActiveNode] = useState<string>("Zero-Trust Ingress");
+  const fpsRef = useRef<HTMLSpanElement>(null);
+
+  const personaSlug = selectedPersonaName.toLowerCase().split(" ")[0] || "priya";
+  const videoSrc = `/assets/video/${personaSlug}_master.mp4`;
+
+  // Synchronize Mute
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = isMuted;
+    }
+  }, [isMuted]);
+
+  // Synchronize Play/Pause with Video Element
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (isPlaying) {
+      video.play().catch(() => {});
+    } else {
+      video.pause();
+    }
+  }, [isPlaying, videoSrc]);
 
   // Architecture Topology Nodes for curved backdrop display
   const TOPOLOGY_NODES = [
@@ -34,7 +60,8 @@ export const FullBody3DStage: React.FC<FullBody3DStageProps> = ({
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    const video = videoRef.current;
+    if (!container || !video) return;
 
     // 1. Three.js Scene & Fog
     const scene = new THREE.Scene();
@@ -212,14 +239,18 @@ export const FullBody3DStage: React.FC<FullBody3DStageProps> = ({
       screenTexture.needsUpdate = true;
     };
 
-    // 7. Full-Body Presenter Standing on Stage
+    // 7. Live 3D Presenter Mesh with VideoTexture & Avatar Fallback
     const texLoader = new THREE.TextureLoader();
     const avatarTexture = texLoader.load(selectedPersonaAvatar);
     avatarTexture.minFilter = THREE.LinearFilter;
     avatarTexture.magFilter = THREE.LinearFilter;
 
-    // Full-Length Presenter Plane
-    const presenterGeo = new THREE.PlaneGeometry(2.2, 1.4, 32, 32);
+    const videoTexture = new THREE.VideoTexture(video);
+    videoTexture.minFilter = THREE.LinearFilter;
+    videoTexture.magFilter = THREE.LinearFilter;
+    videoTexture.format = THREE.RGBAFormat;
+
+    const presenterGeo = new THREE.PlaneGeometry(2.3, 1.45, 32, 32);
     const presenterMat = new THREE.MeshStandardMaterial({
       map: avatarTexture,
       transparent: true,
@@ -290,27 +321,21 @@ export const FullBody3DStage: React.FC<FullBody3DStageProps> = ({
     let frameCount = 0;
     let lastFps = performance.now();
     let animId: number;
-    let timelineSeconds = 0;
 
     const animate = (time: number) => {
       animId = requestAnimationFrame(animate);
 
-      // FPS Calculation
+      // Smooth FPS calculation via direct DOM ref
       frameCount++;
       if (time - lastFps >= 1000) {
-        setFps(frameCount);
+        if (fpsRef.current) {
+          fpsRef.current.textContent = `${frameCount} FPS`;
+        }
         frameCount = 0;
         lastFps = time;
       }
 
       const t = time * 0.001;
-
-      if (isPlaying) {
-        timelineSeconds += 1 / 60;
-        if (onTimeUpdate) {
-          onTimeUpdate(timelineSeconds % 23.2);
-        }
-      }
 
       // Audio Flux Simulation
       const vol = isPlaying
@@ -369,17 +394,18 @@ export const FullBody3DStage: React.FC<FullBody3DStageProps> = ({
         camera.lookAt(0, ty, 0.4);
       }
 
-      // Continuous 3D Kinematics
-      if (isPlaying) {
-        presenter.rotation.z = Math.sin(t * 2.5) * 0.02 + vol * 0.015;
-        presenter.rotation.y = Math.cos(t * 1.8) * 0.025;
-        presenter.position.y = 0.92 + Math.sin(t * 3.0) * 0.01 + vol * 0.02;
-        presenter.scale.set(1.0 + vol * 0.03, 1.0 + vol * 0.03, 1.0);
+      // Dynamic Presenter Texture & Kinematics in 3D Space
+      if (isPlaying && video.readyState >= 2) {
+        presenterMat.map = videoTexture;
+        videoTexture.needsUpdate = true;
+        presenter.rotation.z = Math.sin(t * 2.5) * 0.015 + vol * 0.01;
+        presenter.rotation.y = Math.cos(t * 1.8) * 0.02;
+        presenter.position.y = 0.92 + Math.sin(t * 3.0) * 0.008;
       } else {
-        presenter.rotation.z = Math.sin(t * 1.2) * 0.008;
-        presenter.rotation.y = Math.cos(t * 0.9) * 0.01;
-        presenter.position.y = 0.92 + Math.sin(t * 1.5) * 0.006;
-        presenter.scale.set(1.0, 1.0, 1.0);
+        presenterMat.map = avatarTexture;
+        presenter.rotation.z = Math.sin(t * 1.2) * 0.005;
+        presenter.rotation.y = Math.cos(t * 0.9) * 0.008;
+        presenter.position.y = 0.92 + Math.sin(t * 1.5) * 0.004;
       }
 
       renderer.render(scene, camera);
@@ -406,10 +432,36 @@ export const FullBody3DStage: React.FC<FullBody3DStageProps> = ({
       }
       renderer.dispose();
     };
-  }, [isPlaying, selectedPersonaAvatar, cameraAngle]);
+  }, [selectedPersonaAvatar, videoSrc, cameraAngle]);
+
+  // Seamless Timecode Sync
+  const handleTimeUpdate = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (onTimeUpdate) {
+      onTimeUpdate(video.currentTime);
+    }
+
+    if (video.duration > 0 && video.currentTime >= video.duration - 0.08) {
+      video.currentTime = 0.01;
+      video.play().catch(() => {});
+    }
+  };
 
   return (
     <div className="relative w-full h-[580px] rounded-2xl overflow-hidden bg-slate-950 border border-cyan-500/30 shadow-2xl">
+      {/* Hidden Master Video Element providing VideoTexture to Three.js */}
+      <video
+        ref={videoRef}
+        src={videoSrc}
+        poster={selectedPersonaAvatar}
+        onTimeUpdate={handleTimeUpdate}
+        playsInline
+        preload="auto"
+        className="hidden"
+      />
+
       {/* Three.js 3D WebGL Canvas */}
       <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
@@ -417,10 +469,11 @@ export const FullBody3DStage: React.FC<FullBody3DStageProps> = ({
       <div className="absolute top-4 left-4 flex items-center gap-2 z-20 flex-wrap pointer-events-none">
         <div className="px-3 py-1 bg-black/70 backdrop-blur-md rounded-full border border-cyan-500/40 text-cyan-400 font-mono text-xs flex items-center gap-2 pointer-events-auto">
           <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-          3D FULL-BODY STAGE • {fps} FPS
+          <span>3D FULL-BODY STAGE • </span>
+          <span ref={fpsRef} className="font-bold">60 FPS</span>
         </div>
         <div className="px-2.5 py-1 bg-black/60 backdrop-blur-md rounded-full border border-slate-700 text-slate-300 font-mono text-[11px] pointer-events-auto">
-          {isPlaying ? "Live Broadcast Kinematics" : "Idle Breathing & Lighting"}
+          {isPlaying ? "Live Motion & Speech Diffusion" : "Idle Breathing & Lighting"}
         </div>
       </div>
 

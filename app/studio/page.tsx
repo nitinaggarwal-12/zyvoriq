@@ -454,6 +454,7 @@ export default function Gen7StudioPage() {
             {viewMode === "3d_fullbody" && (
               <FullBody3DStage
                 isPlaying={isPlaying}
+                isMuted={isMuted}
                 selectedPersonaName={selectedPersona.name}
                 selectedPersonaAvatar={selectedPersona.avatarUrl}
                 onTimeUpdate={(t) => {
