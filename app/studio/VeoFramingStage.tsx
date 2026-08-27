@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 
 interface VeoFramingStageProps {
+  videoUrl?: string;
   isPlaying: boolean;
   currentTime?: number;
   restartTrigger?: number;
@@ -10,6 +11,7 @@ interface VeoFramingStageProps {
 }
 
 export const VeoFramingStage: React.FC<VeoFramingStageProps> = ({
+  videoUrl = "/assets/video/priya_master.mp4",
   isPlaying,
   currentTime = 0,
   restartTrigger = 0,
@@ -90,7 +92,7 @@ export const VeoFramingStage: React.FC<VeoFramingStageProps> = ({
         <div className={`relative w-full h-full transition-transform duration-700 ease-out origin-center ${currentPreset.scale} ${currentPreset.offset}`}>
           <video
             ref={videoRef}
-            src="/assets/video/veo_priya_master.mp4"
+            src={videoUrl}
             playsInline
             muted
             loop

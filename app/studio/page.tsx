@@ -369,9 +369,10 @@ export default function Gen7StudioPage() {
               className="hidden"
             />
 
-            {/* Mode 1: Standing Keynote (Veo 3.1 Full-Body Keynote) */}
+            {/* Mode 1: Standing Keynote (Full-Body Keynote) */}
             {viewMode === "standing_keynote" && (
               <VeoVideoStage
+                videoUrl={selectedPersona.videoUrl}
                 isPlaying={isPlaying}
                 currentTime={currentTime}
                 restartTrigger={restartTrigger}
@@ -382,6 +383,7 @@ export default function Gen7StudioPage() {
             {/* Mode 2: Dynamic In-Browser Focal Framing Zoom (0ms) */}
             {viewMode === "dynamic_framing" && (
               <VeoFramingStage
+                videoUrl={selectedPersona.videoUrl}
                 isPlaying={isPlaying}
                 currentTime={currentTime}
                 restartTrigger={restartTrigger}
@@ -389,9 +391,10 @@ export default function Gen7StudioPage() {
               />
             )}
 
-            {/* Mode 3: Sitting Executive Posture (Veo 3.1 Boardroom) */}
+            {/* Mode 3: Sitting Executive Posture (Boardroom) */}
             {viewMode === "sitting_boardroom" && (
               <VeoSittingStage
+                videoUrl={selectedPersona.id === "maya" ? "/assets/video/maya_master.mp4" : selectedPersona.videoUrl}
                 isPlaying={isPlaying}
                 currentTime={currentTime}
                 restartTrigger={restartTrigger}

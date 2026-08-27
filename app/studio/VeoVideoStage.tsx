@@ -3,6 +3,7 @@
 import React, { useRef, useEffect } from "react";
 
 interface VeoVideoStageProps {
+  videoUrl?: string;
   isPlaying: boolean;
   currentTime?: number;
   restartTrigger?: number;
@@ -10,6 +11,7 @@ interface VeoVideoStageProps {
 }
 
 export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
+  videoUrl = "/assets/video/priya_master.mp4",
   isPlaying,
   currentTime = 0,
   restartTrigger = 0,
@@ -17,7 +19,6 @@ export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Guarantee strictly muted with zero volume to prevent any audio overlap
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -25,7 +26,6 @@ export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
     video.volume = 0;
   }, []);
 
-  // Sync play/pause state
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -37,17 +37,14 @@ export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
     }
   }, [isPlaying]);
 
-  // Sync current time on tab switch or seek without restarting
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    // Only adjust if drift > 0.4s to prevent jitter during smooth playback
     if (Math.abs(video.currentTime - currentTime) > 0.4) {
       video.currentTime = currentTime % (video.duration || 8);
     }
   }, [currentTime]);
 
-  // Instant Restart Trigger
   useEffect(() => {
     const video = videoRef.current;
     if (!video || restartTrigger === 0) return;
@@ -64,7 +61,7 @@ export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
     >
       <video
         ref={videoRef}
-        src="/assets/video/veo_priya_master.mp4"
+        src={videoUrl}
         playsInline
         muted
         loop
