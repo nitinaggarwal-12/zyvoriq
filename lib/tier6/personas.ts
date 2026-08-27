@@ -2,6 +2,21 @@ import { ExecutivePersona } from "./types";
 
 export const EXECUTIVE_PERSONAS: ExecutivePersona[] = [
   {
+    id: "aria",
+    name: "Aria Chen",
+    title: "Chief AI Architect & Quantum Systems VP",
+    location: "Singapore / Silicon Valley",
+    gender: "female",
+    avatarUrl: "/assets/avatars/aria.jpg",
+    videoUrl: "/assets/video/veo_aria_master.mp4",
+    audioUrl: "/assets/audio/aria.wav",
+    accent: "Global Executive English",
+    voiceStyle: "Visionary, Sharp & Authoritative",
+    defaultScript: "Welcome to Zyvoriq. We are transforming enterprise media production with instant cryptographic consensus and sovereign neural video pipelines.",
+    bio: "Aria pioneers sovereign neural video synthesis and cryptographic AI watermarking for Fortune 500 enterprises.",
+    c2paCertId: "C2PA-ED25519-ARIA-9901-VERITAS"
+  },
+  {
     id: "priya",
     name: "Priya Sharma",
     title: "Global Transformation CTO",
