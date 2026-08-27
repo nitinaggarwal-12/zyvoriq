@@ -283,9 +283,36 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
     stageVideo.muted = true;
     stageVideo.playsInline = true;
     stageVideo.preload = "auto";
+
+    // Seamless Zero-Black-Flash Looping Handler
+    stageVideo.addEventListener("timeupdate", () => {
+      if (stageVideo.duration > 0 && stageVideo.currentTime >= stageVideo.duration - 0.08) {
+        stageVideo.currentTime = 0.01;
+        stageVideo.play().catch(() => {});
+      }
+    });
+
     if (isPlaying) {
       stageVideo.play().catch(() => {});
     }
+
+    // Dynamic Radial Alpha Feather Mask to eliminate harsh rectangular card borders
+    const maskCanvas = document.createElement("canvas");
+    maskCanvas.width = 512;
+    maskCanvas.height = 512;
+    const maskCtx = maskCanvas.getContext("2d");
+    if (maskCtx) {
+      const grad = maskCtx.createRadialGradient(256, 256, 120, 256, 256, 256);
+      grad.addColorStop(0, "rgba(255, 255, 255, 1.0)");
+      grad.addColorStop(0.75, "rgba(255, 255, 255, 0.95)");
+      grad.addColorStop(0.92, "rgba(255, 255, 255, 0.45)");
+      grad.addColorStop(1.0, "rgba(255, 255, 255, 0.0)");
+      maskCtx.fillStyle = grad;
+      maskCtx.fillRect(0, 0, 512, 512);
+    }
+    const alphaMaskTex = new THREE.CanvasTexture(maskCanvas);
+    alphaMaskTex.minFilter = THREE.LinearFilter;
+    alphaMaskTex.magFilter = THREE.LinearFilter;
 
     const presenterTex = new THREE.VideoTexture(stageVideo);
     presenterTex.minFilter = THREE.LinearFilter;
@@ -294,6 +321,9 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
 
     const presenterMat = new THREE.MeshStandardMaterial({
       map: presenterTex,
+      alphaMap: alphaMaskTex,
+      transparent: true,
+      opacity: 0.98,
       roughness: 0.35,
       metalness: 0.05,
       side: THREE.DoubleSide
