@@ -24,20 +24,19 @@ async function run() {
 
   const page = await browser.newPage();
   await page.setViewport({ width: 1600, height: 1000 });
-  await page.setCacheEnabled(false);
 
   page.on('console', msg => console.log('   [PAGE LOG]:', msg.text()));
   page.on('pageerror', err => console.error('   [PAGE ERROR]:', err.message));
 
-  console.log("1. Navigating to http://127.0.0.1:3000/studio ...");
-  await page.goto("http://127.0.0.1:3000/studio", { waitUntil: "networkidle2", timeout: 30000 });
-  await sleep(2000);
+  console.log("1. Navigating to http://localhost:3000/studio ...");
+  await page.goto("http://localhost:3000/studio", { waitUntil: "networkidle2", timeout: 30000 });
+  await sleep(1500);
 
   await page.screenshot({ path: `${screenshotDir}/01_studio_with_create_button.png` });
   console.log("   📸 Captured 01_studio_with_create_button.png");
 
   console.log("2. Clicking '✨ Create New Act' button...");
-  const createBtn = await page.waitForSelector('[data-testid="create-act-button"]', { timeout: 15000 });
+  await page.waitForSelector('[data-testid="create-act-button"]', { timeout: 15000 });
   await page.$eval('[data-testid="create-act-button"]', el => el.click());
   await sleep(1000);
 
@@ -47,7 +46,7 @@ async function run() {
   console.log("3. Selecting '⚡ The Thunderstorm of Mushin' preset & 24s duration...");
   const clickedPreset = await page.evaluate(() => {
     const btns = Array.from(document.querySelectorAll('button'));
-    const b = btns.find(btn => btn.textContent.includes('Thunderstorm of Mushin'));
+    const b = btns.find(btn => btn.textContent && btn.textContent.includes('Thunderstorm of Mushin'));
     if (b) {
       b.click();
       return true;
@@ -59,7 +58,7 @@ async function run() {
 
   const clickedDur = await page.evaluate(() => {
     const btns = Array.from(document.querySelectorAll('button'));
-    const b = btns.find(btn => btn.textContent.includes('24s'));
+    const b = btns.find(btn => btn.textContent && btn.textContent.includes('24s'));
     if (b) {
       b.click();
       return true;
@@ -75,7 +74,7 @@ async function run() {
   console.log("4. Clicking 'Kickoff Veo 3.1 & DeepMind Dub Pipeline'...");
   await page.evaluate(() => {
     const btns = Array.from(document.querySelectorAll('button'));
-    const b = btns.find(btn => btn.textContent.includes('Kickoff Veo 3.1'));
+    const b = btns.find(btn => btn.textContent && btn.textContent.includes('Kickoff Veo 3.1'));
     if (b) b.click();
   });
 
@@ -88,7 +87,7 @@ async function run() {
   console.log("5. Testing 1-Click Omnichannel Publish...");
   await page.evaluate(() => {
     const btns = Array.from(document.querySelectorAll('button'));
-    const b = btns.find(btn => btn.textContent.includes('1-Click Omnichannel Publish'));
+    const b = btns.find(btn => btn.textContent && btn.textContent.includes('1-Click Omnichannel Publish'));
     if (b) b.click();
   });
   await sleep(800);
