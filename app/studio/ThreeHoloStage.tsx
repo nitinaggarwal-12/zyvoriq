@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 export type CameraPreset = "70mm_close" | "35mm_wide" | "24mm_hero" | "stage_screen_focus" | "free_orbit";
 
@@ -22,8 +23,9 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [fps, setFps] = useState<number>(60);
   const [audioLevel, setAudioLevel] = useState<number>(0);
-  const [cameraPreset, setCameraPreset] = useState<CameraPreset>("70mm_close");
+  const [cameraPreset, setCameraPreset] = useState<CameraPreset>("35mm_wide");
   const [focusedNode, setFocusedNode] = useState<string>("Overview");
+  const [isModelLoaded, setIsModelLoaded] = useState<boolean>(false);
 
   // Architecture Nodes Definition
   const ARCH_NODES = [
@@ -42,16 +44,16 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
     // 1. Scene Setup
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x03060f);
-    scene.fog = new THREE.FogExp2(0x03060f, 0.06);
+    scene.fog = new THREE.FogExp2(0x03060f, 0.05);
 
     // 2. Camera Setup
     const camera = new THREE.PerspectiveCamera(
-      42,
+      45,
       container.clientWidth / container.clientHeight,
       0.1,
       100
     );
-    camera.position.set(0, 1.42, 0.95);
+    camera.position.set(0, 1.25, 2.4);
 
     // 3. WebGL Renderer
     let renderer: THREE.WebGLRenderer;
@@ -97,24 +99,24 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
     }
 
     // 5. Cinematic Lighting Rig
-    const ambientLight = new THREE.AmbientLight(0xdbeafe, 1.8);
+    const ambientLight = new THREE.AmbientLight(0xdbeafe, 1.6);
     scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 2.8);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
     keyLight.position.set(1.5, 3.5, 3.0);
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0x38bdf8, 1.4);
+    const fillLight = new THREE.DirectionalLight(0x38bdf8, 1.2);
     fillLight.position.set(-2.0, 2.0, 2.5);
     scene.add(fillLight);
 
-    const mainSpotlight = new THREE.SpotLight(0x00f0ff, 4.0, 20, Math.PI / 4, 0.3, 1.2);
+    const mainSpotlight = new THREE.SpotLight(0x00f0ff, 3.8, 20, Math.PI / 4, 0.3, 1.2);
     mainSpotlight.position.set(0, 5.0, 2.5);
-    mainSpotlight.target.position.set(0, 1.2, 0);
+    mainSpotlight.target.position.set(0, 1.0, 0);
     scene.add(mainSpotlight);
     scene.add(mainSpotlight.target);
 
-    const rimLight = new THREE.PointLight(0x818cf8, 3.2, 12);
+    const rimLight = new THREE.PointLight(0x818cf8, 2.8, 12);
     rimLight.position.set(0, 2.2, -1.8);
     scene.add(rimLight);
 
@@ -145,7 +147,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
     gridHelper.position.y = -0.085;
     scene.add(gridHelper);
 
-    // 7. Curved Stage LED Screen (Positioned Safely BEHIND Priya at Z = -1.0)
+    // 7. Curved Stage LED Screen (Draw.io Cloud Architecture Backdrop at Z = -1.4)
     const screenCanvas = document.createElement("canvas");
     screenCanvas.width = 1024;
     screenCanvas.height = 512;
@@ -154,7 +156,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
     const screenTexture = new THREE.CanvasTexture(screenCanvas);
     screenTexture.wrapS = THREE.RepeatWrapping;
     screenTexture.repeat.x = -1;
-    const screenGeo = new THREE.CylinderGeometry(4.6, 4.6, 2.4, 64, 1, true, Math.PI * 0.70, Math.PI * 0.60);
+    const screenGeo = new THREE.CylinderGeometry(4.8, 4.8, 2.4, 64, 1, true, Math.PI * 0.70, Math.PI * 0.60);
     const screenMat = new THREE.MeshBasicMaterial({
       map: screenTexture,
       side: THREE.BackSide,
@@ -162,7 +164,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       opacity: 0.92
     });
     const stageScreen = new THREE.Mesh(screenGeo, screenMat);
-    stageScreen.position.set(0, 1.45, -1.0);
+    stageScreen.position.set(0, 1.45, -1.4);
     scene.add(stageScreen);
 
     let nodePulse = 0;
@@ -247,220 +249,54 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       screenTexture.needsUpdate = true;
     };
 
-    // 8. DIRECT 3D VOLUMETRIC HUMANOID AVATAR (Pure 3D Polygons & PBR Shaders)
-    const avatarGroup = new THREE.Group();
-    avatarGroup.position.set(0, 0, 0);
-    scene.add(avatarGroup);
+    // 8. 3D GLTF HUMANOID AVATAR LOADER (Pure 3D Rigged Character)
+    let mixer: THREE.AnimationMixer | null = null;
+    let characterModel: THREE.Group | null = null;
+    const gltfLoader = new GLTFLoader();
 
-    // Skin Material
-    const skinMat = new THREE.MeshStandardMaterial({
-      color: 0xc88e63, // Warm Indian skin tone for Priya
-      roughness: 0.52,
-      metalness: 0.04
-    });
+    gltfLoader.load(
+      "/assets/models/michelle.glb",
+      (gltf) => {
+        characterModel = gltf.scene;
+        characterModel.position.set(0, 0, 0);
+        characterModel.scale.set(0.011, 0.011, 0.011); // Michelle scale normalization
+        
+        characterModel.traverse((child) => {
+          if ((child as THREE.Mesh).isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
 
-    // Suit Blazer Material (Deep Executive Navy)
-    const suitMat = new THREE.MeshStandardMaterial({
-      color: 0x0f172a,
-      roughness: 0.65,
-      metalness: 0.12
-    });
+        scene.add(characterModel);
+        setIsModelLoaded(true);
 
-    // Satin Lapel & Inner Silk Blouse
-    const silkMat = new THREE.MeshStandardMaterial({
-      color: 0x020617,
-      roughness: 0.25,
-      metalness: 0.3
-    });
-
-    // Hair Material (Obsidian Black with subtle gloss)
-    const hairMat = new THREE.MeshStandardMaterial({
-      color: 0x110e0c,
-      roughness: 0.4,
-      metalness: 0.1
-    });
-
-    // Gold Accent & Veritas Pin
-    const goldMat = new THREE.MeshStandardMaterial({
-      color: 0xd97706,
-      roughness: 0.2,
-      metalness: 0.85
-    });
-
-    // --- Torso & Jacket ---
-    const torsoGeo = new THREE.CylinderGeometry(0.23, 0.27, 0.62, 32);
-    const torsoMesh = new THREE.Mesh(torsoGeo, suitMat);
-    torsoMesh.position.set(0, 0.85, 0);
-    avatarGroup.add(torsoMesh);
-
-    // V-Neck Silk Blouse Inset
-    const blouseGeo = new THREE.BufferGeometry();
-    const blouseVertices = new Float32Array([
-      -0.08, 1.15, 0.18,
-       0.08, 1.15, 0.18,
-       0.00, 0.88, 0.19
-    ]);
-    blouseGeo.setAttribute("position", new THREE.BufferAttribute(blouseVertices, 3));
-    blouseGeo.computeVertexNormals();
-    const blouseMesh = new THREE.Mesh(blouseGeo, silkMat);
-    avatarGroup.add(blouseMesh);
-
-    // Gold Executive Brooch Pin
-    const pinGeo = new THREE.CircleGeometry(0.016, 16);
-    const pinMesh = new THREE.Mesh(pinGeo, goldMat);
-    pinMesh.position.set(0.12, 1.08, 0.22);
-    avatarGroup.add(pinMesh);
-
-    // --- Neck ---
-    const neckGeo = new THREE.CylinderGeometry(0.075, 0.09, 0.14, 32);
-    const neckMesh = new THREE.Mesh(neckGeo, skinMat);
-    neckMesh.position.set(0, 1.21, 0);
-    avatarGroup.add(neckMesh);
-
-    // --- Head & Face Hierarchy ---
-    const headGroup = new THREE.Group();
-    headGroup.position.set(0, 1.35, 0);
-    avatarGroup.add(headGroup);
-
-    // Cranium & Face
-    const headGeo = new THREE.SphereGeometry(0.18, 32, 32);
-    headGeo.scale(0.92, 1.12, 0.98);
-    const headMesh = new THREE.Mesh(headGeo, skinMat);
-    headGroup.add(headMesh);
-
-    // 3D Executive Hair Style (Volumetric Front + Chignon Bun)
-    const hairTopGeo = new THREE.SphereGeometry(0.19, 32, 32);
-    hairTopGeo.scale(0.96, 1.15, 1.02);
-    const hairTopMesh = new THREE.Mesh(hairTopGeo, hairMat);
-    hairTopMesh.position.set(0, 0.02, -0.01);
-    headGroup.add(hairTopMesh);
-
-    const bunGeo = new THREE.SphereGeometry(0.085, 24, 24);
-    const bunMesh = new THREE.Mesh(bunGeo, hairMat);
-    bunMesh.position.set(0, 0.02, -0.16);
-    headGroup.add(bunMesh);
-
-    // 3D Volumetric Eyes & Eyelids
-    const eyeMat = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      roughness: 0.1,
-      metalness: 0.05
-    });
-    const irisMat = new THREE.MeshStandardMaterial({
-      color: 0x2b170c,
-      roughness: 0.2
-    });
-    const pupilMat = new THREE.MeshBasicMaterial({ color: 0x050505 });
-
-    // Left Eye
-    const leftEyeGroup = new THREE.Group();
-    leftEyeGroup.position.set(0.062, 0.035, 0.145);
-    const eyeGeo = new THREE.SphereGeometry(0.028, 20, 20);
-    const leftSclera = new THREE.Mesh(eyeGeo, eyeMat);
-    const irisGeo = new THREE.CircleGeometry(0.014, 16);
-    const leftIris = new THREE.Mesh(irisGeo, irisMat);
-    leftIris.position.set(0, 0, 0.026);
-    const pupilGeo = new THREE.CircleGeometry(0.007, 16);
-    const leftPupil = new THREE.Mesh(pupilGeo, pupilMat);
-    leftPupil.position.set(0, 0, 0.027);
-    leftEyeGroup.add(leftSclera, leftIris, leftPupil);
-    headGroup.add(leftEyeGroup);
-
-    // Right Eye
-    const rightEyeGroup = new THREE.Group();
-    rightEyeGroup.position.set(-0.062, 0.035, 0.145);
-    const rightSclera = new THREE.Mesh(eyeGeo, eyeMat);
-    const rightIris = new THREE.Mesh(irisGeo, irisMat);
-    rightIris.position.set(0, 0, 0.026);
-    const rightPupil = new THREE.Mesh(pupilGeo, pupilMat);
-    rightPupil.position.set(0, 0, 0.027);
-    rightEyeGroup.add(rightSclera, rightIris, rightPupil);
-    headGroup.add(rightEyeGroup);
-
-    // Eyelids for Biological Blinking
-    const eyelidGeo = new THREE.SphereGeometry(0.031, 20, 10, 0, Math.PI * 2, 0, Math.PI * 0.5);
-    const leftEyelid = new THREE.Mesh(eyelidGeo, skinMat);
-    leftEyelid.position.set(0.062, 0.038, 0.145);
-    leftEyelid.rotation.x = -Math.PI / 2;
-    leftEyelid.scale.set(1, 1, 0.01);
-    headGroup.add(leftEyelid);
-
-    const rightEyelid = new THREE.Mesh(eyelidGeo, skinMat);
-    rightEyelid.position.set(-0.062, 0.038, 0.145);
-    rightEyelid.rotation.x = -Math.PI / 2;
-    rightEyelid.scale.set(1, 1, 0.01);
-    headGroup.add(rightEyelid);
-
-    // Eyebrows
-    const browMat = new THREE.MeshBasicMaterial({ color: 0x15110d });
-    const browGeo = new THREE.BoxGeometry(0.045, 0.007, 0.01);
-    const leftBrow = new THREE.Mesh(browGeo, browMat);
-    leftBrow.position.set(0.065, 0.075, 0.16);
-    leftBrow.rotation.z = -0.08;
-    headGroup.add(leftBrow);
-
-    const rightBrow = new THREE.Mesh(browGeo, browMat);
-    rightBrow.position.set(-0.065, 0.075, 0.16);
-    rightBrow.rotation.z = 0.08;
-    headGroup.add(rightBrow);
-
-    // --- 3D Articulated Lower Jaw (Audio-Reactive Morphing) ---
-    const jawGroup = new THREE.Group();
-    jawGroup.position.set(0, -0.04, 0.08);
-    headGroup.add(jawGroup);
-
-    const jawGeo = new THREE.SphereGeometry(0.085, 24, 24);
-    jawGeo.scale(0.85, 0.65, 0.95);
-    const jawMesh = new THREE.Mesh(jawGeo, skinMat);
-    jawMesh.position.set(0, -0.05, 0.04);
-    jawGroup.add(jawMesh);
-
-    // Lips (Warm Rose Gloss)
-    const lipMat = new THREE.MeshStandardMaterial({
-      color: 0x9b3a4a,
-      roughness: 0.35,
-      metalness: 0.1
-    });
-    const upperLipGeo = new THREE.CylinderGeometry(0.008, 0.008, 0.042, 16);
-    const upperLip = new THREE.Mesh(upperLipGeo, lipMat);
-    upperLip.rotation.z = Math.PI / 2;
-    upperLip.position.set(0, -0.048, 0.165);
-    headGroup.add(upperLip);
-
-    const lowerLipGeo = new THREE.CylinderGeometry(0.009, 0.009, 0.038, 16);
-    const lowerLip = new THREE.Mesh(lowerLipGeo, lipMat);
-    lowerLip.rotation.z = Math.PI / 2;
-    lowerLip.position.set(0, -0.035, 0.09);
-    jawGroup.add(lowerLip);
-
-    // Keynote Boom Headset Microphone
-    const micCurve = new THREE.CylinderGeometry(0.003, 0.003, 0.14, 8);
-    const micStem = new THREE.Mesh(micCurve, goldMat);
-    micStem.rotation.z = Math.PI / 3;
-    micStem.rotation.x = 0.3;
-    micStem.position.set(0.12, -0.02, 0.11);
-    headGroup.add(micStem);
-
-    const micTipGeo = new THREE.SphereGeometry(0.009, 12, 12);
-    const micTip = new THREE.Mesh(micTipGeo, goldMat);
-    micTip.position.set(0.06, -0.055, 0.16);
-    headGroup.add(micTip);
-
-    // --- Articulated Arms & Keynote Gesture Rig ---
-    const leftArmGroup = new THREE.Group();
-    leftArmGroup.position.set(0.26, 1.12, 0);
-    const armGeo = new THREE.CylinderGeometry(0.055, 0.045, 0.42, 16);
-    const leftArm = new THREE.Mesh(armGeo, suitMat);
-    leftArm.position.set(0, -0.18, 0);
-    leftArmGroup.add(leftArm);
-    avatarGroup.add(leftArmGroup);
-
-    const rightArmGroup = new THREE.Group();
-    rightArmGroup.position.set(-0.26, 1.12, 0);
-    const rightArm = new THREE.Mesh(armGeo, suitMat);
-    rightArm.position.set(0, -0.18, 0);
-    rightArmGroup.add(rightArm);
-    avatarGroup.add(rightArmGroup);
+        // Setup Skeletal Animation
+        if (gltf.animations && gltf.animations.length > 0) {
+          mixer = new THREE.AnimationMixer(characterModel);
+          const clip = gltf.animations[0];
+          const action = mixer.clipAction(clip);
+          action.play();
+        }
+      },
+      undefined,
+      (err) => {
+        console.warn("GLTF Load error, trying xbot.glb fallback", err);
+        // Fallback to xbot.glb
+        gltfLoader.load("/assets/models/xbot.glb", (fallbackGltf) => {
+          characterModel = fallbackGltf.scene;
+          characterModel.position.set(0, 0, 0);
+          characterModel.scale.set(1.0, 1.0, 1.0);
+          scene.add(characterModel);
+          setIsModelLoaded(true);
+          if (fallbackGltf.animations && fallbackGltf.animations.length > 0) {
+            mixer = new THREE.AnimationMixer(characterModel);
+            const action = mixer.clipAction(fallbackGltf.animations[0]);
+            action.play();
+          }
+        });
+      }
+    );
 
     // 9. Floating Holographic Cyber Dust Particles
     const particleCount = 120;
@@ -513,14 +349,23 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
 
-    // 11. 60 FPS Animation & Real-Time Viseme Loop
+    // 11. 60 FPS Animation & Skeletal Playback Loop
     let frameCount = 0;
     let lastFpsUpdate = performance.now();
     let smoothAudioFlux = 0;
+    let lastClockTime = performance.now();
     let animationId: number;
 
     const animate = (time: number) => {
       animationId = requestAnimationFrame(animate);
+
+      // Delta time for Three.js AnimationMixer
+      const delta = (time - lastClockTime) * 0.001;
+      lastClockTime = time;
+
+      if (mixer && isPlaying) {
+        mixer.update(delta);
+      }
 
       // FPS tracking
       frameCount++;
@@ -546,35 +391,10 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       smoothAudioFlux += (rawVol - smoothAudioFlux) * 0.2;
       setAudioLevel(smoothAudioFlux);
 
-      // --- Volumetric 3D Jaw Drop (Exact Viseme Mouth Articulation) ---
-      let jawDrop = 0;
-      if (isPlaying) {
-        jawDrop = Math.min(0.32, smoothAudioFlux * 0.75);
+      // Subtle Keynote Head Swivel towards audience on audio
+      if (characterModel) {
+        characterModel.rotation.y = Math.sin(time * 0.0008) * 0.06;
       }
-      jawGroup.rotation.x = jawDrop;
-
-      // --- Biological Eye Blinking (120ms every 3.6s) ---
-      const blinkCycle = (time % 3600);
-      const isBlinking = blinkCycle < 140 ? Math.sin((blinkCycle / 140) * Math.PI) : 0;
-      leftEyelid.scale.z = Math.max(0.01, isBlinking);
-      rightEyelid.scale.z = Math.max(0.01, isBlinking);
-
-      // --- Dynamic Breathing & Keynote Gestures ---
-      const breath = Math.sin(time * 0.0018) * 0.012;
-      torsoMesh.scale.y = 1.0 + breath;
-      torsoMesh.scale.x = 1.0 - breath * 0.4;
-
-      // Natural Keynote Hand Gesture Kinematics
-      const gestureR = Math.sin(time * 0.0025) * 0.18 + (isPlaying ? smoothAudioFlux * 0.25 : 0);
-      rightArmGroup.rotation.x = -0.3 + gestureR * 0.6;
-      rightArmGroup.rotation.z = -0.15 + gestureR * 0.3;
-
-      const gestureL = Math.cos(time * 0.002) * 0.1;
-      leftArmGroup.rotation.x = -0.15 + gestureL * 0.4;
-
-      // Subtle Head Swivel towards audience
-      headGroup.rotation.y = Math.sin(time * 0.0009) * 0.08;
-      headGroup.rotation.x = Math.sin(time * 0.0014) * 0.03 + (smoothAudioFlux > 0.1 ? Math.sin(time * 0.008) * 0.015 : 0);
 
       // Particle Drift
       const positions = particleGeo.attributes.position.array as Float32Array;
@@ -592,27 +412,27 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       stageGlow.intensity = 1.8 + smoothAudioFlux * 1.2;
 
       // --- Camera Director Presets with Cinematic Framing ---
-      let lookTarget = new THREE.Vector3(0, 1.34, 0);
+      let lookTarget = new THREE.Vector3(0, 1.1, 0);
 
       if (cameraPreset === "70mm_close") {
-        camera.position.lerp(new THREE.Vector3(0, 1.38, 0.95), 0.08);
-        lookTarget = new THREE.Vector3(0, 1.34, 0);
+        camera.position.lerp(new THREE.Vector3(0, 1.45, 1.05), 0.08);
+        lookTarget = new THREE.Vector3(0, 1.4, 0);
       } else if (cameraPreset === "35mm_wide") {
         camera.position.lerp(new THREE.Vector3(0, 1.15, 2.3), 0.08);
-        lookTarget = new THREE.Vector3(0, 1.05, 0);
+        lookTarget = new THREE.Vector3(0, 1.0, 0);
       } else if (cameraPreset === "24mm_hero") {
         camera.position.lerp(new THREE.Vector3(0, 0.55, 1.8), 0.08);
-        lookTarget = new THREE.Vector3(0, 1.2, 0);
+        lookTarget = new THREE.Vector3(0, 1.15, 0);
       } else if (cameraPreset === "stage_screen_focus") {
         camera.position.lerp(new THREE.Vector3(1.1, 1.35, 2.1), 0.08);
-        lookTarget = new THREE.Vector3(0.3, 1.3, -0.6);
+        lookTarget = new THREE.Vector3(0.3, 1.3, -0.8);
       } else if (cameraPreset === "free_orbit") {
-        const radius = 1.8;
+        const radius = 2.0;
         const camX = Math.sin(targetCameraAngleX) * radius;
         const camZ = Math.cos(targetCameraAngleX) * radius;
-        const camY = 1.35 + targetCameraAngleY * 1.2;
+        const camY = 1.25 + targetCameraAngleY * 1.2;
         camera.position.lerp(new THREE.Vector3(camX, camY, camZ), 0.1);
-        lookTarget = new THREE.Vector3(0, 1.25, 0);
+        lookTarget = new THREE.Vector3(0, 1.0, 0);
       }
 
       camera.lookAt(lookTarget);
@@ -655,10 +475,10 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       <div className="absolute top-4 left-4 flex items-center gap-2 z-20 flex-wrap">
         <div className="px-3 py-1 bg-black/60 backdrop-blur-md rounded-full border border-cyan-500/40 text-cyan-400 font-mono text-xs flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-          3D VOLUMETRIC HOLO-STAGE • {fps} FPS
+          3D GLTF HOLO-STAGE • {fps} FPS
         </div>
         <div className="px-2.5 py-1 bg-black/60 backdrop-blur-md rounded-full border border-slate-700 text-slate-300 font-mono text-xs">
-          48kHz Acoustic Flux Active
+          {isModelLoaded ? "Rigged GLTF Avatar Active" : "Loading 3D Mesh..."}
         </div>
       </div>
 
@@ -683,8 +503,8 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
           <span className="text-slate-400 px-1.5 flex items-center gap-1">🎥 DIRECTOR CAM:</span>
           {(
             [
-              { id: "70mm_close", label: "70mm Close-Up" },
               { id: "35mm_wide", label: "35mm Wide Stage" },
+              { id: "70mm_close", label: "70mm Close-Up" },
               { id: "24mm_hero", label: "24mm Hero Angle" },
               { id: "stage_screen_focus", label: "Draw.io Zoom" },
               { id: "free_orbit", label: "3D Orbit 🔄" }
