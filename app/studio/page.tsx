@@ -49,6 +49,8 @@ import { computePhoneticWordTimings } from "@/lib/tier6/timing_engine";
 import { generateVeritasSeal } from "@/lib/tier6/veritas_engine";
 import { ThreeHoloStage } from "./ThreeHoloStage";
 import { FullBody3DStage } from "./FullBody3DStage";
+import { Avatar3DStage } from "./Avatar3DStage";
+import { NeuralTalkingStage } from "./NeuralTalkingStage";
 
 export default function Gen7StudioPage() {
   // State
@@ -63,7 +65,7 @@ export default function Gen7StudioPage() {
   const [synthStage, setSynthStage] = useState<string>("");
   const [selectedResolution, setSelectedResolution] = useState<"1080p" | "4K">("1080p");
   const [showProvenanceModal, setShowProvenanceModal] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<"3d_fullbody" | "3d_holo_stage" | "broadcast_stream">("3d_fullbody");
+  const [viewMode, setViewMode] = useState<"3d_rigged_avatar" | "neural_talking" | "3d_fullbody" | "3d_holo_stage" | "broadcast_stream">("3d_rigged_avatar");
 
   // Dynamic Neuro-Biometrics Simulation
   const biometrics = useMemo<Gen7NeuroBiometrics>(() => {
@@ -393,9 +395,37 @@ export default function Gen7StudioPage() {
                 </h2>
               </div>
 
-              {/* View Mode 3-Tab Switcher */}
+              {/* View Mode 4-Tab Switcher (Completely Independent Implementations) */}
               <div className="flex items-center gap-2">
                 <div className="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800 flex-wrap">
+                  <button
+                    onClick={() => {
+                      if (videoRef.current) videoRef.current.pause();
+                      setIsPlaying(false);
+                      setViewMode("3d_rigged_avatar");
+                    }}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
+                      viewMode === "3d_rigged_avatar"
+                        ? "bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 shadow-sm shadow-cyan-500/20"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    🧍 3D RIGGED AVATAR
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (videoRef.current) videoRef.current.pause();
+                      setIsPlaying(false);
+                      setViewMode("neural_talking");
+                    }}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
+                      viewMode === "neural_talking"
+                        ? "bg-purple-500/20 border border-purple-500/40 text-purple-300 shadow-sm shadow-purple-500/20"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    👄 NEURAL TALKING
+                  </button>
                   <button
                     onClick={() => {
                       if (videoRef.current) videoRef.current.pause();
@@ -404,21 +434,7 @@ export default function Gen7StudioPage() {
                     }}
                     className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
                       viewMode === "3d_fullbody"
-                        ? "bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 shadow-sm shadow-cyan-500/20"
-                        : "text-slate-400 hover:text-slate-200"
-                    }`}
-                  >
-                    💃 3D FULL-BODY
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (videoRef.current) videoRef.current.pause();
-                      setIsPlaying(false);
-                      setViewMode("3d_holo_stage");
-                    }}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
-                      viewMode === "3d_holo_stage"
-                        ? "bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 shadow-sm shadow-cyan-500/20"
+                        ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 shadow-sm shadow-emerald-500/20"
                         : "text-slate-400 hover:text-slate-200"
                     }`}
                   >
@@ -432,7 +448,7 @@ export default function Gen7StudioPage() {
                     }}
                     className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
                       viewMode === "broadcast_stream"
-                        ? "bg-purple-500/20 border border-purple-500/40 text-purple-300 shadow-sm shadow-purple-500/20"
+                        ? "bg-blue-500/20 border border-blue-500/40 text-blue-300 shadow-sm shadow-blue-500/20"
                         : "text-slate-400 hover:text-slate-200"
                     }`}
                   >
@@ -442,7 +458,7 @@ export default function Gen7StudioPage() {
               </div>
             </div>
 
-            {/* Persistent Audio & Video Elements for Audio Spectrum Analysis and Three.js Texture */}
+            {/* Persistent Audio Element */}
             <audio
               ref={audioRef}
               src={selectedPersona.audioUrl}
@@ -450,13 +466,13 @@ export default function Gen7StudioPage() {
               className="hidden"
             />
 
-            {/* 3D Full-Body Stage Viewport (Created from scratch, 60 FPS Three.js) */}
-            {viewMode === "3d_fullbody" && (
-              <FullBody3DStage
+            {/* Tab 1: 3D Rigged Humanoid Stage (Zero Video Dependency) */}
+            {viewMode === "3d_rigged_avatar" && (
+              <Avatar3DStage
                 isPlaying={isPlaying}
                 isMuted={isMuted}
                 selectedPersonaName={selectedPersona.name}
-                selectedPersonaAvatar={selectedPersona.avatarUrl}
+                audioUrl={selectedPersona.audioUrl}
                 onTimeUpdate={(t) => {
                   setCurrentTime(t);
                   const lookupTime = t + 0.12;
@@ -472,16 +488,36 @@ export default function Gen7StudioPage() {
               />
             )}
 
-            {/* 3D WebGL Multi-Cam Stage Viewport */}
-            {viewMode === "3d_holo_stage" && (
-              <ThreeHoloStage
-                audioRef={audioRef}
-                videoRef={videoRef}
+            {/* Tab 2: Neural Talking Viseme Diffusion Stage (Zero 3D Dependency) */}
+            {viewMode === "neural_talking" && (
+              <NeuralTalkingStage
                 isPlaying={isPlaying}
                 isMuted={isMuted}
                 selectedPersonaName={selectedPersona.name}
                 selectedPersonaAvatar={selectedPersona.avatarUrl}
-                activeScript={scriptText}
+                audioUrl={selectedPersona.audioUrl}
+                onTimeUpdate={(t) => {
+                  setCurrentTime(t);
+                  const lookupTime = t + 0.12;
+                  let activeIdx = -1;
+                  for (let i = 0; i < wordTimings.length; i++) {
+                    if (lookupTime >= wordTimings[i].start && lookupTime <= wordTimings[i].end) {
+                      activeIdx = i;
+                      break;
+                    }
+                  }
+                  setSpokenWordIndex(activeIdx);
+                }}
+              />
+            )}
+
+            {/* Tab 3: 3D Full-Body Stage */}
+            {viewMode === "3d_fullbody" && (
+              <FullBody3DStage
+                isPlaying={isPlaying}
+                isMuted={isMuted}
+                selectedPersonaName={selectedPersona.name}
+                selectedPersonaAvatar={selectedPersona.avatarUrl}
                 onTimeUpdate={(t) => {
                   setCurrentTime(t);
                   const lookupTime = t + 0.12;
