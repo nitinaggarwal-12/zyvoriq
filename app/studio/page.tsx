@@ -32,7 +32,8 @@ import {
   Box,
   Monitor,
   Camera,
-  Share2
+  Share2,
+  Film
 } from "lucide-react";
 import { EXECUTIVE_PERSONAS } from "@/lib/tier6/personas";
 import {
@@ -54,8 +55,12 @@ import { NeuralDiffusionPlayer } from "./NeuralDiffusionPlayer";
 import { GeminiTranscribeStage } from "./GeminiTranscribeStage";
 import { VeoVideoStage } from "./VeoVideoStage";
 import { PhoneticVisemeStage } from "@/components/PhoneticVisemeStage";
+import { AnimeCinemaStage } from "./AnimeCinemaStage";
 
 export default function Gen7StudioPage() {
+  // Studio Mode State: "anime" vs "executive"
+  const [activeStudioTab, setActiveStudioTab] = useState<"anime" | "executive">("anime");
+
   // State
   const [selectedPersona, setSelectedPersona] = useState<ExecutivePersona>(EXECUTIVE_PERSONAS[0]);
   const [scriptText, setScriptText] = useState<string>(EXECUTIVE_PERSONAS[0].defaultScript);
@@ -287,8 +292,48 @@ export default function Gen7StudioPage() {
         </div>
       </header>
 
-      {/* Main Studio Grid */}
-      <main className="max-w-8xl mx-auto px-6 md:px-12 py-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* Studio Tab Switcher (Netflix / Prime Video Style) */}
+      <div className="max-w-8xl mx-auto px-6 md:px-12 pt-6">
+        <div className="flex flex-wrap items-center gap-3 p-1.5 bg-slate-900/90 border border-slate-800 rounded-2xl w-fit backdrop-blur-xl shadow-xl">
+          <button
+            onClick={() => setActiveStudioTab("anime")}
+            className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-semibold text-xs transition-all ${
+              activeStudioTab === "anime"
+                ? "bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 text-white shadow-lg shadow-red-950/50"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+            }`}
+          >
+            <Film className="w-4 h-4 text-amber-300" />
+            <span>Anime Cinema Suite (Multilingual Stories)</span>
+            <span className="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-200 text-[10px] font-mono uppercase">
+              6 Dubs + CC
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveStudioTab("executive")}
+            className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-semibold text-xs transition-all ${
+              activeStudioTab === "executive"
+                ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-950/50"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+            }`}
+          >
+            <User className="w-4 h-4 text-cyan-300" />
+            <span>Executive Broadcasters (Priya & Twins)</span>
+            <span className="px-2 py-0.5 rounded-full bg-cyan-400/20 text-cyan-200 text-[10px] font-mono uppercase">
+              Veritas zk-SNARK
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      {activeStudioTab === "anime" ? (
+        <main className="max-w-8xl mx-auto px-6 md:px-12 py-8 flex-1 w-full">
+          <AnimeCinemaStage />
+        </main>
+      ) : (
+        <main className="max-w-8xl mx-auto px-6 md:px-12 py-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* Left Column: Persona Selector & Script Editor & Gen 7 Options (5 Cols) */}
         <div className="lg:col-span-5 flex flex-col gap-6">
@@ -622,6 +667,7 @@ export default function Gen7StudioPage() {
         </div>
 
       </main>
+      )}
 
       {/* Veritas zk-SNARK Cryptographic Certificate Modal */}
       {showProvenanceModal && (
