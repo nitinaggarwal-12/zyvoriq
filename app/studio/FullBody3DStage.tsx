@@ -250,18 +250,28 @@ export const FullBody3DStage: React.FC<FullBody3DStageProps> = ({
     videoTexture.magFilter = THREE.LinearFilter;
     videoTexture.format = THREE.RGBAFormat;
 
-    const presenterGeo = new THREE.PlaneGeometry(2.3, 1.45, 32, 32);
-    const presenterMat = new THREE.MeshStandardMaterial({
+    const presenterGeo = new THREE.PlaneGeometry(2.4, 1.45, 32, 32);
+    const presenterMat = new THREE.MeshBasicMaterial({
       map: avatarTexture,
       transparent: true,
-      roughness: 0.3,
-      metalness: 0.1,
       side: THREE.DoubleSide
     });
     const presenter = new THREE.Mesh(presenterGeo, presenterMat);
-    presenter.position.set(0, 0.92, 0.4);
-    presenter.castShadow = true;
+    presenter.position.set(0, 0.73, 0.3);
     scene.add(presenter);
+
+    // Presenter Stage Frame / Bezel
+    const frameGeo = new THREE.PlaneGeometry(2.44, 1.49);
+    const frameMat = new THREE.MeshBasicMaterial({
+      color: 0x06b6d4,
+      transparent: true,
+      opacity: 0.35,
+      wireframe: false,
+      side: THREE.BackSide
+    });
+    const presenterFrame = new THREE.Mesh(frameGeo, frameMat);
+    presenterFrame.position.set(0, 0.73, 0.29);
+    scene.add(presenterFrame);
 
     // 8. Floating Ambient Cyber Dust
     const dustCount = 120;
@@ -400,13 +410,16 @@ export const FullBody3DStage: React.FC<FullBody3DStageProps> = ({
         videoTexture.needsUpdate = true;
         presenter.rotation.z = Math.sin(t * 2.5) * 0.015 + vol * 0.01;
         presenter.rotation.y = Math.cos(t * 1.8) * 0.02;
-        presenter.position.y = 0.92 + Math.sin(t * 3.0) * 0.008;
+        presenter.position.y = 0.73 + Math.sin(t * 3.0) * 0.008;
       } else {
         presenterMat.map = avatarTexture;
         presenter.rotation.z = Math.sin(t * 1.2) * 0.005;
         presenter.rotation.y = Math.cos(t * 0.9) * 0.008;
-        presenter.position.y = 0.92 + Math.sin(t * 1.5) * 0.004;
+        presenter.position.y = 0.73 + Math.sin(t * 1.5) * 0.004;
       }
+      presenterFrame.position.y = presenter.position.y;
+      presenterFrame.rotation.z = presenter.rotation.z;
+      presenterFrame.rotation.y = presenter.rotation.y;
 
       renderer.render(scene, camera);
     };
