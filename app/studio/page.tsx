@@ -48,6 +48,7 @@ import {
 import { computePhoneticWordTimings } from "@/lib/tier6/timing_engine";
 import { generateVeritasSeal } from "@/lib/tier6/veritas_engine";
 import { ThreeHoloStage } from "./ThreeHoloStage";
+import { FullBody3DStage } from "./FullBody3DStage";
 
 export default function Gen7StudioPage() {
   // State
@@ -62,7 +63,7 @@ export default function Gen7StudioPage() {
   const [synthStage, setSynthStage] = useState<string>("");
   const [selectedResolution, setSelectedResolution] = useState<"1080p" | "4K">("1080p");
   const [showProvenanceModal, setShowProvenanceModal] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<"3d_holo_stage" | "broadcast_stream">("3d_holo_stage");
+  const [viewMode, setViewMode] = useState<"3d_fullbody" | "3d_holo_stage" | "broadcast_stream">("3d_fullbody");
 
   // Dynamic Neuro-Biometrics Simulation
   const biometrics = useMemo<Gen7NeuroBiometrics>(() => {
@@ -142,8 +143,8 @@ export default function Gen7StudioPage() {
             setSpokenWordIndex(-1);
           }
           await video.play().catch((e) => console.log("Video play notice:", e.name));
-        } else if (viewMode === "3d_holo_stage" && video) {
-          video.pause(); // Ensure 2D video is paused and silent to prevent any echo
+        } else if (video) {
+          video.pause(); // Ensure 2D video is paused and silent in 3D modes
         }
         setIsPlaying(true);
       } catch (err) {
@@ -310,6 +311,7 @@ export default function Gen7StudioPage() {
                         src={persona.avatarUrl}
                         alt={persona.name}
                         fill
+                        sizes="(max-width: 768px) 50vw, 200px"
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       {isSelected && (
@@ -391,9 +393,23 @@ export default function Gen7StudioPage() {
                 </h2>
               </div>
 
-              {/* View Mode Toggle */}
+              {/* View Mode 3-Tab Switcher */}
               <div className="flex items-center gap-2">
-                <div className="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800">
+                <div className="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800 flex-wrap">
+                  <button
+                    onClick={() => {
+                      if (videoRef.current) videoRef.current.pause();
+                      setIsPlaying(false);
+                      setViewMode("3d_fullbody");
+                    }}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
+                      viewMode === "3d_fullbody"
+                        ? "bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 shadow-sm shadow-cyan-500/20"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    💃 3D FULL-BODY
+                  </button>
                   <button
                     onClick={() => {
                       if (videoRef.current) videoRef.current.pause();
@@ -434,7 +450,28 @@ export default function Gen7StudioPage() {
               className="hidden"
             />
 
-            {/* 3D WebGL Holo-Stage Viewport */}
+            {/* 3D Full-Body Stage Viewport (Created from scratch, 60 FPS Three.js) */}
+            {viewMode === "3d_fullbody" && (
+              <FullBody3DStage
+                isPlaying={isPlaying}
+                selectedPersonaName={selectedPersona.name}
+                selectedPersonaAvatar={selectedPersona.avatarUrl}
+                onTimeUpdate={(t) => {
+                  setCurrentTime(t);
+                  const lookupTime = t + 0.12;
+                  let activeIdx = -1;
+                  for (let i = 0; i < wordTimings.length; i++) {
+                    if (lookupTime >= wordTimings[i].start && lookupTime <= wordTimings[i].end) {
+                      activeIdx = i;
+                      break;
+                    }
+                  }
+                  setSpokenWordIndex(activeIdx);
+                }}
+              />
+            )}
+
+            {/* 3D WebGL Multi-Cam Stage Viewport */}
             {viewMode === "3d_holo_stage" && (
               <ThreeHoloStage
                 audioRef={audioRef}
@@ -461,7 +498,7 @@ export default function Gen7StudioPage() {
 
             {/* 2D Broadcast Stream Viewport (Persistent Video Element) */}
             <div className={`relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-slate-800 shadow-2xl group ${
-              viewMode === "3d_holo_stage" ? "hidden" : "block"
+              viewMode === "broadcast_stream" ? "block" : "hidden"
             }`}>
               {/* Main Video Stream */}
               <video
