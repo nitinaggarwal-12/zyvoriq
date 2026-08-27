@@ -562,7 +562,7 @@ export default function Gen7StudioPage() {
               <div className="flex items-center gap-4 text-xs font-mono text-slate-400">
                 <div className="flex items-center gap-1">
                   <span className="text-cyan-400 font-bold">{currentTime.toFixed(1)}s</span>
-                  <span>/ 23.2s</span>
+                  <span>/ {audioDuration.toFixed(1)}s</span>
                 </div>
                 <div className="flex items-center gap-1 text-emerald-400 font-bold">
                   <Activity className="h-3.5 w-3.5" />
