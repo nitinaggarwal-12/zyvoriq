@@ -197,19 +197,70 @@ export function AnimeCinemaStage() {
               preload="auto"
             />
 
+            {/* Real-Time Active Speaker HUD (Top Left) */}
+            <div className="absolute top-4 left-4 z-30 pointer-events-none transition-all duration-300">
+              {activeCue ? (
+                <div
+                  className={`flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl backdrop-blur-xl border shadow-xl transition-all ${
+                    activeCue.speaker === "Aoi"
+                      ? "bg-cyan-950/80 border-cyan-500/50 text-cyan-200 shadow-cyan-950/50"
+                      : "bg-amber-950/80 border-amber-500/50 text-amber-200 shadow-amber-950/50"
+                  }`}
+                >
+                  <span className="flex h-2 w-2 relative">
+                    <span
+                      className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                        activeCue.speaker === "Aoi" ? "bg-cyan-400" : "bg-amber-400"
+                      }`}
+                    />
+                    <span
+                      className={`relative inline-flex rounded-full h-2 w-2 ${
+                        activeCue.speaker === "Aoi" ? "bg-cyan-500" : "bg-amber-500"
+                      }`}
+                    />
+                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-[11px] font-bold tracking-wider font-mono uppercase">
+                      {activeCue.speaker === "Aoi" ? "🥋 AOI (Apprentice)" : "⛩️ SENSEI REN (Zen Master)"}
+                    </span>
+                    <span className="text-[9px] text-zinc-300 font-sans">
+                      {activeCue.actName}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-black/60 backdrop-blur-md border border-zinc-800 text-zinc-400 text-[10px] font-mono">
+                  <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
+                  <span>Cinematic Establishing Shot (850ms Transition Lead)</span>
+                </div>
+              )}
+            </div>
+
             {/* Broadcast Subtitles Overlay (Netflix / Prime Gold Style) */}
             {subtitleLang !== "off" && activeCue && (
               <div className="absolute bottom-20 inset-x-8 flex justify-center pointer-events-none transition-all duration-300 z-30">
-                <div className="bg-black/75 backdrop-blur-md border border-zinc-700/50 px-6 py-3 rounded-2xl max-w-2xl text-center shadow-2xl">
+                <div
+                  className={`backdrop-blur-md px-6 py-3 rounded-2xl max-w-2xl text-center shadow-2xl border transition-all ${
+                    activeCue.speaker === "Aoi"
+                      ? "bg-slate-950/85 border-cyan-500/40 shadow-cyan-950/30"
+                      : "bg-stone-950/85 border-amber-500/40 shadow-amber-950/30"
+                  }`}
+                >
                   <div className="flex items-center justify-center gap-2 mb-1">
-                    <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                      {activeCue.speaker}
+                    <span
+                      className={`text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded border font-bold ${
+                        activeCue.speaker === "Aoi"
+                          ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
+                          : "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                      }`}
+                    >
+                      {activeCue.speaker === "Aoi" ? "🥋 AOI (Student)" : "⛩️ SENSEI REN (Master)"}
                     </span>
                     <span className="text-[10px] font-serif italic text-zinc-400">
                       {activeCue.philosophy}
                     </span>
                   </div>
-                  <p className="text-white font-medium text-sm md:text-base leading-relaxed text-amber-100/95 tracking-wide drop-shadow-md">
+                  <p className="text-white font-medium text-sm md:text-base leading-relaxed tracking-wide drop-shadow-md">
                     {activeCue.text[subtitleLang as keyof typeof activeCue.text] || activeCue.text.en}
                   </p>
                 </div>
