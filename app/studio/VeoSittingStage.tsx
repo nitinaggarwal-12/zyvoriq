@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Play, Pause } from "lucide-react";
 
-interface VeoVideoStageProps {
+interface VeoSittingStageProps {
   isPlaying: boolean;
   isMuted?: boolean;
   selectedPersonaName: string;
@@ -12,7 +12,7 @@ interface VeoVideoStageProps {
   onTimeUpdate?: (currentTime: number) => void;
 }
 
-export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
+export const VeoSittingStage: React.FC<VeoSittingStageProps> = ({
   isPlaying,
   isMuted = false,
   selectedPersonaName,
@@ -74,7 +74,7 @@ export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
     <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black border border-slate-800 shadow-2xl group flex items-center justify-center">
       <video
         ref={videoRef}
-        src="/assets/video/veo_priya_master.mp4"
+        src="/assets/video/veo_priya_sitting.mp4"
         playsInline
         loop
         autoPlay
