@@ -239,20 +239,16 @@ export const FullBody3DStage: React.FC<FullBody3DStageProps> = ({
       screenTexture.needsUpdate = true;
     };
 
-    // 7. Live 3D Presenter Mesh with VideoTexture & Avatar Fallback
-    const texLoader = new THREE.TextureLoader();
-    const avatarTexture = texLoader.load(selectedPersonaAvatar);
-    avatarTexture.minFilter = THREE.LinearFilter;
-    avatarTexture.magFilter = THREE.LinearFilter;
-
+    // 7. Live 3D Presenter Mesh with Native VideoTexture
     const videoTexture = new THREE.VideoTexture(video);
     videoTexture.minFilter = THREE.LinearFilter;
     videoTexture.magFilter = THREE.LinearFilter;
     videoTexture.format = THREE.RGBAFormat;
+    videoTexture.generateMipmaps = false;
 
     const presenterGeo = new THREE.PlaneGeometry(2.4, 1.45, 32, 32);
     const presenterMat = new THREE.MeshBasicMaterial({
-      map: avatarTexture,
+      map: videoTexture,
       transparent: true,
       side: THREE.DoubleSide
     });
@@ -405,14 +401,15 @@ export const FullBody3DStage: React.FC<FullBody3DStageProps> = ({
       }
 
       // Dynamic Presenter Texture & Kinematics in 3D Space
-      if (isPlaying || (!video.paused && video.currentTime > 0)) {
-        presenterMat.map = videoTexture;
+      if (video.readyState >= video.HAVE_CURRENT_DATA) {
         videoTexture.needsUpdate = true;
+      }
+
+      if (isPlaying) {
         presenter.rotation.z = Math.sin(t * 2.5) * 0.015 + vol * 0.01;
         presenter.rotation.y = Math.cos(t * 1.8) * 0.02;
         presenter.position.y = 0.73 + Math.sin(t * 3.0) * 0.008;
       } else {
-        presenterMat.map = avatarTexture;
         presenter.rotation.z = Math.sin(t * 1.2) * 0.005;
         presenter.rotation.y = Math.cos(t * 0.9) * 0.008;
         presenter.position.y = 0.73 + Math.sin(t * 1.5) * 0.004;
