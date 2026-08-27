@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 
-export type CameraPreset = "35mm_wide" | "70mm_close" | "24mm_hero" | "pip_split";
+export type CameraPreset = "fullbody_stage" | "35mm_wide" | "70mm_close" | "pip_split";
 
 interface ThreeHoloStageProps {
   audioRef?: React.RefObject<HTMLAudioElement | null>;
@@ -20,13 +20,15 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
 }) => {
   const stageVideoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [cameraPreset, setCameraPreset] = useState<CameraPreset>("35mm_wide");
+  const [cameraPreset, setCameraPreset] = useState<CameraPreset>("fullbody_stage");
   const [audioFlux, setAudioFlux] = useState<number>(0);
   const [focusedNode, setFocusedNode] = useState<string>("Zero-Trust Ingress");
   const [fps, setFps] = useState<number>(60);
 
   const personaSlug = selectedPersonaName.toLowerCase().split(" ")[0] || "priya";
-  const videoSrc = `/assets/video/${personaSlug}_master.mp4`;
+  const videoSrc = cameraPreset === "fullbody_stage" && personaSlug === "priya"
+    ? `/assets/video/priya_fullbody_master.mp4`
+    : `/assets/video/${personaSlug}_master.mp4`;
 
   // Architecture Nodes Definition for PiP Architecture Screen
   const ARCH_NODES = [
@@ -259,9 +261,9 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
           <span className="text-slate-400 px-1.5 flex items-center gap-1">🎥 DIRECTOR CAM:</span>
           {(
             [
+              { id: "fullbody_stage", label: "💃 Full-Body Stage" },
               { id: "35mm_wide", label: "🌐 35mm Keynote Wide" },
               { id: "70mm_close", label: "🎥 70mm Close-Up" },
-              { id: "24mm_hero", label: "⚡ 24mm Hero Angle" },
               { id: "pip_split", label: "📊 Draw.io PiP Split" }
             ] as const
           ).map((preset) => (
