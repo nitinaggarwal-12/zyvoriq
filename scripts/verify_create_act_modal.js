@@ -29,8 +29,8 @@ async function run() {
   page.on('pageerror', err => console.error('   [PAGE ERROR]:', err.message));
 
   console.log("1. Navigating to http://localhost:3000/studio ...");
-  await page.goto("http://localhost:3000/studio", { waitUntil: "networkidle2", timeout: 30000 });
-  await sleep(1500);
+  await page.goto("http://localhost:3000/studio", { waitUntil: "domcontentloaded", timeout: 30000 });
+  await sleep(2500);
 
   await page.screenshot({ path: `${screenshotDir}/01_studio_with_create_button.png` });
   console.log("   📸 Captured 01_studio_with_create_button.png");
