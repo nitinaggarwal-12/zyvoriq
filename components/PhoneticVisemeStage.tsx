@@ -124,7 +124,7 @@ export const PhoneticVisemeStage: React.FC<PhoneticVisemeStageProps> = ({
               </h3>
               <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-mono text-[10px] border border-cyan-500/40 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                WAV2LIP VISEME LOCK • 1:1 SYLLABLE ACCURACY
+                NEURAL PHONETIC VISEME LOCK • 1:1 SYLLABLE ACCURACY
               </span>
             </div>
             <p className="text-xs text-slate-400">

@@ -481,7 +481,7 @@ export default function Gen7StudioPage() {
                         : "text-slate-400 hover:text-slate-200"
                     }`}
                   >
-                    <span>👄 1:1 NEURAL LIP-SYNC (WAV2LIP)</span>
+                    <span>👄 1:1 NEURAL LIP-SYNC (PHONETIC VISEMES)</span>
                   </button>
                 </div>
               </div>
@@ -533,7 +533,7 @@ export default function Gen7StudioPage() {
               />
             )}
 
-            {/* Tab 2: 1:1 Neural Phonetic Lip-Sync (Wav2Lip Viseme Lock) */}
+            {/* Tab 2: 1:1 Neural Phonetic Lip-Sync (Viseme Lock) */}
             {viewMode === "broadcast_stream" && (
               <PhoneticVisemeStage
                 isPlaying={isPlaying}
