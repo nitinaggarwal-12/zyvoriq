@@ -409,7 +409,7 @@ export default function Gen7StudioPage() {
                         : "text-slate-400 hover:text-slate-200"
                     }`}
                   >
-                    🌟 3D HOLO-STAGE
+                    🎥 MULTI-CAM STAGE
                   </button>
                   <button
                     onClick={() => {
