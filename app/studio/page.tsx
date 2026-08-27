@@ -51,6 +51,8 @@ import { ThreeHoloStage } from "./ThreeHoloStage";
 import { FullBody3DStage } from "./FullBody3DStage";
 import { GLTFStage } from "./GLTFStage";
 import { NeuralDiffusionPlayer } from "./NeuralDiffusionPlayer";
+import { GeminiTranscribeStage } from "./GeminiTranscribeStage";
+import { VeoVideoStage } from "./VeoVideoStage";
 
 export default function Gen7StudioPage() {
   // State
@@ -65,7 +67,7 @@ export default function Gen7StudioPage() {
   const [synthStage, setSynthStage] = useState<string>("");
   const [selectedResolution, setSelectedResolution] = useState<"1080p" | "4K">("1080p");
   const [showProvenanceModal, setShowProvenanceModal] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<"3d_gltf_avatar" | "neural_diffusion" | "3d_fullbody" | "broadcast_stream">("3d_gltf_avatar");
+  const [viewMode, setViewMode] = useState<"gemini_transcribe" | "veo_video" | "3d_gltf_avatar" | "broadcast_stream">("gemini_transcribe");
 
   // Dynamic Neuro-Biometrics Simulation
   const biometrics = useMemo<Gen7NeuroBiometrics>(() => {
@@ -395,9 +397,37 @@ export default function Gen7StudioPage() {
                 </h2>
               </div>
 
-              {/* View Mode Switcher: 3D Rigged GLTF Avatar vs Neural Diffusion */}
+              {/* View Mode Switcher: Gemini 3.5 Transcribe vs Google Veo 2 vs 3D GLTF */}
               <div className="flex items-center gap-2">
                 <div className="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800 flex-wrap">
+                  <button
+                    onClick={() => {
+                      if (videoRef.current) videoRef.current.pause();
+                      setIsPlaying(false);
+                      setViewMode("gemini_transcribe");
+                    }}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
+                      viewMode === "gemini_transcribe"
+                        ? "bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 shadow-sm shadow-cyan-500/20"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    🎙️ GEMINI 3.5 TRANSCRIBE
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (videoRef.current) videoRef.current.pause();
+                      setIsPlaying(false);
+                      setViewMode("veo_video");
+                    }}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
+                      viewMode === "veo_video"
+                        ? "bg-purple-500/20 border border-purple-500/40 text-purple-300 shadow-sm shadow-purple-500/20"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    🎬 VEO 2 VIDEO STUDIO
+                  </button>
                   <button
                     onClick={() => {
                       if (videoRef.current) videoRef.current.pause();
@@ -406,25 +436,11 @@ export default function Gen7StudioPage() {
                     }}
                     className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
                       viewMode === "3d_gltf_avatar"
-                        ? "bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 shadow-sm shadow-cyan-500/20"
+                        ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 shadow-sm shadow-emerald-500/20"
                         : "text-slate-400 hover:text-slate-200"
                     }`}
                   >
-                    🧍 3D RIGGED GLTF AVATAR
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (videoRef.current) videoRef.current.pause();
-                      setIsPlaying(false);
-                      setViewMode("neural_diffusion");
-                    }}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
-                      viewMode === "neural_diffusion"
-                        ? "bg-purple-500/20 border border-purple-500/40 text-purple-300 shadow-sm shadow-purple-500/20"
-                        : "text-slate-400 hover:text-slate-200"
-                    }`}
-                  >
-                    🎬 NEURAL DIFFUSION 4K
+                    🧍 3D RIGGED GLTF
                   </button>
                   <button
                     onClick={() => {
@@ -452,12 +468,24 @@ export default function Gen7StudioPage() {
               className="hidden"
             />
 
-            {/* Option 1: True 3D Rigged GLTF Avatar Stage */}
-            {viewMode === "3d_gltf_avatar" && (
-              <GLTFStage
+            {/* Tab 1: Gemini 3.5 Transcribe & Voice Agent Studio */}
+            {viewMode === "gemini_transcribe" && (
+              <GeminiTranscribeStage
                 isPlaying={isPlaying}
                 isMuted={isMuted}
                 selectedPersonaName={selectedPersona.name}
+                audioUrl={selectedPersona.audioUrl}
+                onApplyScript={(cleaned) => setScriptText(cleaned)}
+              />
+            )}
+
+            {/* Tab 2: Google Veo 2 / Neural Video Diffusion Studio */}
+            {viewMode === "veo_video" && (
+              <VeoVideoStage
+                isPlaying={isPlaying}
+                isMuted={isMuted}
+                selectedPersonaName={selectedPersona.name}
+                selectedPersonaAvatar={selectedPersona.avatarUrl}
                 audioUrl={selectedPersona.audioUrl}
                 onTimeUpdate={(t) => {
                   setCurrentTime(t);
@@ -474,13 +502,12 @@ export default function Gen7StudioPage() {
               />
             )}
 
-            {/* Option 2: Neural Video Diffusion Player */}
-            {viewMode === "neural_diffusion" && (
-              <NeuralDiffusionPlayer
+            {/* Tab 3: 3D Rigged GLTF Avatar Stage */}
+            {viewMode === "3d_gltf_avatar" && (
+              <GLTFStage
                 isPlaying={isPlaying}
                 isMuted={isMuted}
                 selectedPersonaName={selectedPersona.name}
-                selectedPersonaAvatar={selectedPersona.avatarUrl}
                 audioUrl={selectedPersona.audioUrl}
                 onTimeUpdate={(t) => {
                   setCurrentTime(t);
