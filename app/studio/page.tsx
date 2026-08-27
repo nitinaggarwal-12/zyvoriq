@@ -49,8 +49,8 @@ import { computePhoneticWordTimings } from "@/lib/tier6/timing_engine";
 import { generateVeritasSeal } from "@/lib/tier6/veritas_engine";
 import { ThreeHoloStage } from "./ThreeHoloStage";
 import { FullBody3DStage } from "./FullBody3DStage";
-import { Avatar3DStage } from "./Avatar3DStage";
-import { NeuralTalkingStage } from "./NeuralTalkingStage";
+import { GLTFStage } from "./GLTFStage";
+import { NeuralDiffusionPlayer } from "./NeuralDiffusionPlayer";
 
 export default function Gen7StudioPage() {
   // State
@@ -65,7 +65,7 @@ export default function Gen7StudioPage() {
   const [synthStage, setSynthStage] = useState<string>("");
   const [selectedResolution, setSelectedResolution] = useState<"1080p" | "4K">("1080p");
   const [showProvenanceModal, setShowProvenanceModal] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<"3d_rigged_avatar" | "neural_talking" | "3d_fullbody" | "3d_holo_stage" | "broadcast_stream">("3d_rigged_avatar");
+  const [viewMode, setViewMode] = useState<"3d_gltf_avatar" | "neural_diffusion" | "3d_fullbody" | "broadcast_stream">("3d_gltf_avatar");
 
   // Dynamic Neuro-Biometrics Simulation
   const biometrics = useMemo<Gen7NeuroBiometrics>(() => {
@@ -395,50 +395,36 @@ export default function Gen7StudioPage() {
                 </h2>
               </div>
 
-              {/* View Mode 4-Tab Switcher (Completely Independent Implementations) */}
+              {/* View Mode Switcher: 3D Rigged GLTF Avatar vs Neural Diffusion */}
               <div className="flex items-center gap-2">
                 <div className="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800 flex-wrap">
                   <button
                     onClick={() => {
                       if (videoRef.current) videoRef.current.pause();
                       setIsPlaying(false);
-                      setViewMode("3d_rigged_avatar");
+                      setViewMode("3d_gltf_avatar");
                     }}
                     className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
-                      viewMode === "3d_rigged_avatar"
+                      viewMode === "3d_gltf_avatar"
                         ? "bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 shadow-sm shadow-cyan-500/20"
                         : "text-slate-400 hover:text-slate-200"
                     }`}
                   >
-                    🧍 3D RIGGED AVATAR
+                    🧍 3D RIGGED GLTF AVATAR
                   </button>
                   <button
                     onClick={() => {
                       if (videoRef.current) videoRef.current.pause();
                       setIsPlaying(false);
-                      setViewMode("neural_talking");
+                      setViewMode("neural_diffusion");
                     }}
                     className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
-                      viewMode === "neural_talking"
+                      viewMode === "neural_diffusion"
                         ? "bg-purple-500/20 border border-purple-500/40 text-purple-300 shadow-sm shadow-purple-500/20"
                         : "text-slate-400 hover:text-slate-200"
                     }`}
                   >
-                    👄 NEURAL TALKING
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (videoRef.current) videoRef.current.pause();
-                      setIsPlaying(false);
-                      setViewMode("3d_fullbody");
-                    }}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
-                      viewMode === "3d_fullbody"
-                        ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 shadow-sm shadow-emerald-500/20"
-                        : "text-slate-400 hover:text-slate-200"
-                    }`}
-                  >
-                    🎥 MULTI-CAM STAGE
+                    🎬 NEURAL DIFFUSION 4K
                   </button>
                   <button
                     onClick={() => {
@@ -466,9 +452,9 @@ export default function Gen7StudioPage() {
               className="hidden"
             />
 
-            {/* Tab 1: 3D Rigged Humanoid Stage (Zero Video Dependency) */}
-            {viewMode === "3d_rigged_avatar" && (
-              <Avatar3DStage
+            {/* Option 1: True 3D Rigged GLTF Avatar Stage */}
+            {viewMode === "3d_gltf_avatar" && (
+              <GLTFStage
                 isPlaying={isPlaying}
                 isMuted={isMuted}
                 selectedPersonaName={selectedPersona.name}
@@ -488,36 +474,14 @@ export default function Gen7StudioPage() {
               />
             )}
 
-            {/* Tab 2: Neural Talking Viseme Diffusion Stage (Zero 3D Dependency) */}
-            {viewMode === "neural_talking" && (
-              <NeuralTalkingStage
+            {/* Option 2: Neural Video Diffusion Player */}
+            {viewMode === "neural_diffusion" && (
+              <NeuralDiffusionPlayer
                 isPlaying={isPlaying}
                 isMuted={isMuted}
                 selectedPersonaName={selectedPersona.name}
                 selectedPersonaAvatar={selectedPersona.avatarUrl}
                 audioUrl={selectedPersona.audioUrl}
-                onTimeUpdate={(t) => {
-                  setCurrentTime(t);
-                  const lookupTime = t + 0.12;
-                  let activeIdx = -1;
-                  for (let i = 0; i < wordTimings.length; i++) {
-                    if (lookupTime >= wordTimings[i].start && lookupTime <= wordTimings[i].end) {
-                      activeIdx = i;
-                      break;
-                    }
-                  }
-                  setSpokenWordIndex(activeIdx);
-                }}
-              />
-            )}
-
-            {/* Tab 3: 3D Full-Body Stage */}
-            {viewMode === "3d_fullbody" && (
-              <FullBody3DStage
-                isPlaying={isPlaying}
-                isMuted={isMuted}
-                selectedPersonaName={selectedPersona.name}
-                selectedPersonaAvatar={selectedPersona.avatarUrl}
                 onTimeUpdate={(t) => {
                   setCurrentTime(t);
                   const lookupTime = t + 0.12;
