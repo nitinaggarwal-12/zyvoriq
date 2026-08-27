@@ -30,12 +30,9 @@ async function run() {
 
   // 2. Switch to Mode 2: Tier 6 Living Dojo
   console.log('🖱️ Switching to Tier 6 Living Dojo mode...');
-  await page.evaluate(() => {
-    const btns = Array.from(document.querySelectorAll('button'));
-    const dojoBtn = btns.find(b => b.innerText.includes('Tier 6 Living Dojo') || b.innerText.includes('Living Dojo'));
-    if (dojoBtn) dojoBtn.click();
-  });
-  await sleep(1000);
+  await page.waitForSelector('[data-testid="tier6-living-dojo-tab"]', { timeout: 10000 });
+  await page.click('[data-testid="tier6-living-dojo-tab"]');
+  await sleep(1500);
   console.log('📸 02: Mode 2 - Tier 6 Living Dojo Initial Stage...');
   await page.screenshot({ path: path.join(screenshotsDir, '02_tier6_living_dojo_initial.png'), fullPage: false });
 

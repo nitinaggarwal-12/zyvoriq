@@ -278,6 +278,7 @@ export function AnimeCinemaStage() {
           {/* Mode Switcher Tabs */}
           <div className="flex items-center gap-2 p-1.5 bg-black/60 border border-zinc-700/60 rounded-xl backdrop-blur-md">
             <button
+              data-testid="cinema-mode-tab"
               onClick={() => setStudioMode("cinema")}
               className={`px-4 py-2 rounded-lg text-xs font-semibold font-mono uppercase tracking-wider flex items-center gap-2 transition-all ${
                 studioMode === "cinema"
@@ -289,6 +290,7 @@ export function AnimeCinemaStage() {
               🎬 7-Act Cinema
             </button>
             <button
+              data-testid="tier6-living-dojo-tab"
               onClick={() => setStudioMode("living_dojo")}
               className={`px-4 py-2 rounded-lg text-xs font-semibold font-mono uppercase tracking-wider flex items-center gap-2 transition-all ${
                 studioMode === "living_dojo"
