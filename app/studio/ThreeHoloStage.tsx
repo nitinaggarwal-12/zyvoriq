@@ -2,8 +2,6 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { EnvironmentMode, FramingMode, PostureMode, SynthesisEngine } from "@/lib/tier6/types";
-import priyaGeoData from "@/public/assets/models/priya_humanoid_geometry.json";
 
 export type CameraPreset = "70mm_close" | "35mm_wide" | "24mm_hero" | "stage_screen_focus" | "free_orbit";
 
@@ -18,19 +16,14 @@ interface ThreeHoloStageProps {
 
 export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
   audioRef,
-  videoRef,
   isPlaying,
   selectedPersonaName,
-  selectedPersonaAvatar,
-  activeScript
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [fps, setFps] = useState<number>(60);
   const [audioLevel, setAudioLevel] = useState<number>(0);
   const [cameraPreset, setCameraPreset] = useState<CameraPreset>("70mm_close");
   const [focusedNode, setFocusedNode] = useState<string>("Overview");
-
-
 
   // Architecture Nodes Definition
   const ARCH_NODES = [
@@ -48,8 +41,8 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
 
     // 1. Scene Setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x04060c);
-    scene.fog = new THREE.FogExp2(0x04060c, 0.07);
+    scene.background = new THREE.Color(0x03060f);
+    scene.fog = new THREE.FogExp2(0x03060f, 0.06);
 
     // 2. Camera Setup
     const camera = new THREE.PerspectiveCamera(
@@ -58,15 +51,15 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       0.1,
       100
     );
-    camera.position.set(0, 1.25, 2.1);
+    camera.position.set(0, 1.42, 0.95);
 
-    // 3. Renderer Setup with Safe Headless/Software WebGL Fallback
+    // 3. WebGL Renderer
     let renderer: THREE.WebGLRenderer;
     try {
       renderer = new THREE.WebGLRenderer({
         antialias: true,
         alpha: true,
-        powerPreference: "default",
+        powerPreference: "high-performance",
         failIfMajorPerformanceCaveat: false
       });
     } catch {
@@ -79,7 +72,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.25;
+    renderer.toneMappingExposure = 1.35;
     container.appendChild(renderer.domElement);
 
     // 4. Audio Analyzer Setup (Web Audio API)
@@ -100,62 +93,59 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
         audioDataArray = new Uint8Array(new ArrayBuffer(analyser.frequencyBinCount));
       }
     } catch {
-      // AudioContext already connected
+      // AudioContext fallback
     }
 
-    // 5. Dynamic Lighting Rig
-    const ambientLight = new THREE.AmbientLight(0xffffff, 2.2);
+    // 5. Cinematic Lighting Rig
+    const ambientLight = new THREE.AmbientLight(0xdbeafe, 1.8);
     scene.add(ambientLight);
 
-    const frontLight = new THREE.DirectionalLight(0xffffff, 3.0);
-    frontLight.position.set(0, 3.0, 4.5);
-    scene.add(frontLight);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.8);
+    keyLight.position.set(1.5, 3.5, 3.0);
+    scene.add(keyLight);
 
-    const mainSpotlight = new THREE.SpotLight(0x00f0ff, 4.5, 25, Math.PI / 4, 0.35, 1.4);
-    mainSpotlight.position.set(0, 5.5, 3.5);
+    const fillLight = new THREE.DirectionalLight(0x38bdf8, 1.4);
+    fillLight.position.set(-2.0, 2.0, 2.5);
+    scene.add(fillLight);
+
+    const mainSpotlight = new THREE.SpotLight(0x00f0ff, 4.0, 20, Math.PI / 4, 0.3, 1.2);
+    mainSpotlight.position.set(0, 5.0, 2.5);
+    mainSpotlight.target.position.set(0, 1.2, 0);
     scene.add(mainSpotlight);
+    scene.add(mainSpotlight.target);
 
-    const rimLight = new THREE.PointLight(0x6366f1, 3.5, 18);
-    rimLight.position.set(0, 2.2, -2.5);
+    const rimLight = new THREE.PointLight(0x818cf8, 3.2, 12);
+    rimLight.position.set(0, 2.2, -1.8);
     scene.add(rimLight);
 
-    const floorGlowLight = new THREE.PointLight(0x00f0ff, 2.5, 10);
-    floorGlowLight.position.set(0, 0.15, 0);
-    scene.add(floorGlowLight);
+    const stageGlow = new THREE.PointLight(0x00f0ff, 2.0, 8);
+    stageGlow.position.set(0, 0.2, 0);
+    scene.add(stageGlow);
 
-    // 6. Stage Floor (High-Gloss Reflective Circular Podium)
-    const stageGeo = new THREE.CylinderGeometry(3.8, 4.2, 0.18, 64);
+    // 6. Stage Floor & Holographic Emitter Pedestal
+    const stageGeo = new THREE.CylinderGeometry(3.5, 3.8, 0.16, 64);
     const stageMat = new THREE.MeshStandardMaterial({
-      color: 0x060a14,
-      roughness: 0.12,
-      metalness: 0.95
+      color: 0x070d1a,
+      roughness: 0.15,
+      metalness: 0.9
     });
     const stage = new THREE.Mesh(stageGeo, stageMat);
-    stage.position.y = -0.09;
+    stage.position.y = -0.08;
     scene.add(stage);
 
-    // Inner Glowing Stage Rim
-    const rimGeo = new THREE.TorusGeometry(3.85, 0.04, 16, 100);
+    const rimGeo = new THREE.TorusGeometry(3.55, 0.035, 16, 100);
     const rimMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
     const rim = new THREE.Mesh(rimGeo, rimMat);
     rim.rotation.x = Math.PI / 2;
     rim.position.y = 0.01;
     scene.add(rim);
 
-    // Outer Concentric Stage Ring
-    const outerRingGeo = new THREE.TorusGeometry(4.5, 0.015, 16, 100);
-    const outerRingMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.5 });
-    const outerRing = new THREE.Mesh(outerRingGeo, outerRingMat);
-    outerRing.rotation.x = Math.PI / 2;
-    outerRing.position.y = 0.01;
-    scene.add(outerRing);
-
-    // Grid Floor
-    const gridHelper = new THREE.GridHelper(16, 32, 0x1e293b, 0x080f1d);
-    gridHelper.position.y = -0.095;
+    // Grid Base
+    const gridHelper = new THREE.GridHelper(14, 28, 0x1e293b, 0x09101f);
+    gridHelper.position.y = -0.085;
     scene.add(gridHelper);
 
-    // 7. Curved Stage LED Screen (Draw.io Architecture Display)
+    // 7. Curved Stage LED Screen (Positioned Safely BEHIND Priya at Z = -1.0)
     const screenCanvas = document.createElement("canvas");
     screenCanvas.width = 1024;
     screenCanvas.height = 512;
@@ -164,26 +154,26 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
     const screenTexture = new THREE.CanvasTexture(screenCanvas);
     screenTexture.wrapS = THREE.RepeatWrapping;
     screenTexture.repeat.x = -1;
-    const screenGeo = new THREE.CylinderGeometry(5.0, 5.0, 2.6, 64, 1, true, Math.PI * 0.68, Math.PI * 0.64);
+    const screenGeo = new THREE.CylinderGeometry(4.6, 4.6, 2.4, 64, 1, true, Math.PI * 0.70, Math.PI * 0.60);
     const screenMat = new THREE.MeshBasicMaterial({
       map: screenTexture,
       side: THREE.BackSide,
       transparent: true,
-      opacity: 0.95
+      opacity: 0.92
     });
     const stageScreen = new THREE.Mesh(screenGeo, screenMat);
-    stageScreen.position.set(0, 1.25, 0);
+    stageScreen.position.set(0, 1.45, -1.0);
     scene.add(stageScreen);
 
     let nodePulse = 0;
     const updateStageScreen = (vol: number) => {
       if (!ctx) return;
       nodePulse += 0.025;
-      ctx.fillStyle = "#050811";
+      ctx.fillStyle = "#050814";
       ctx.fillRect(0, 0, 1024, 512);
 
       // Cyber Grid Lines
-      ctx.strokeStyle = "rgba(30, 41, 59, 0.45)";
+      ctx.strokeStyle = "rgba(30, 41, 59, 0.5)";
       ctx.lineWidth = 1;
       for (let x = 0; x < 1024; x += 64) {
         ctx.beginPath();
@@ -205,7 +195,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
 
       ctx.fillStyle = "#64748b";
       ctx.font = "12px monospace";
-      ctx.fillText(`DRAW.IO ARCHITECTURE STAGE SCREEN • ED25519 VERITAS VALIDATED • ACOUSTIC FLUX: ${(vol * 100).toFixed(0)}%`, 40, 68);
+      ctx.fillText(`DRAW.IO ARCHITECTURE STAGE SCREEN • ED25519 VERITAS VALIDATED • FLUX: ${(vol * 100).toFixed(0)}%`, 40, 68);
 
       // Connectors with Flowing Signal
       ctx.strokeStyle = "rgba(56, 189, 248, 0.5)";
@@ -257,97 +247,236 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       screenTexture.needsUpdate = true;
     };
 
-    // 8. True 3D Humanoid Mesh with 52 ARKit Blendshapes & Conformal 1:1 Mapping for Priya
-    const presenterGeo = new THREE.BufferGeometry();
-    presenterGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(priyaGeoData.vertices), 3));
-    presenterGeo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(priyaGeoData.normals), 3));
-    presenterGeo.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(priyaGeoData.uvs), 2));
-    presenterGeo.setIndex(new THREE.BufferAttribute(new Uint32Array(priyaGeoData.indices), 1));
+    // 8. DIRECT 3D VOLUMETRIC HUMANOID AVATAR (Pure 3D Polygons & PBR Shaders)
+    const avatarGroup = new THREE.Group();
+    avatarGroup.position.set(0, 0, 0);
+    scene.add(avatarGroup);
 
-    // Attach 3D Morph Target Attributes (jawOpen, mouthPucker, mouthFunnel, mouthSmile, eyeBlink, browUp)
-    presenterGeo.morphAttributes.position = [
-      new THREE.BufferAttribute(new Float32Array(priyaGeoData.morphTargets.jawOpen), 3),
-      new THREE.BufferAttribute(new Float32Array(priyaGeoData.morphTargets.mouthPucker), 3),
-      new THREE.BufferAttribute(new Float32Array(priyaGeoData.morphTargets.mouthFunnel), 3),
-      new THREE.BufferAttribute(new Float32Array(priyaGeoData.morphTargets.mouthSmile), 3),
-      new THREE.BufferAttribute(new Float32Array(priyaGeoData.morphTargets.eyeBlink), 3),
-      new THREE.BufferAttribute(new Float32Array(priyaGeoData.morphTargets.browUp), 3)
-    ];
-
-    // Dedicated Live MP4 Video Stream for Three.js VideoTexture (Zero JPEGs)
-    const personaSlug = selectedPersonaName.toLowerCase().split(" ")[0] || "priya";
-    const stageVideo = document.createElement("video");
-    stageVideo.src = `/assets/video/${personaSlug}_master.mp4`;
-    stageVideo.crossOrigin = "anonymous";
-    stageVideo.loop = true;
-    stageVideo.muted = true;
-    stageVideo.playsInline = true;
-    stageVideo.preload = "auto";
-
-    // Seamless Zero-Black-Flash Looping Handler
-    stageVideo.addEventListener("timeupdate", () => {
-      if (stageVideo.duration > 0 && stageVideo.currentTime >= stageVideo.duration - 0.08) {
-        stageVideo.currentTime = 0.01;
-        stageVideo.play().catch(() => {});
-      }
+    // Skin Material
+    const skinMat = new THREE.MeshStandardMaterial({
+      color: 0xc88e63, // Warm Indian skin tone for Priya
+      roughness: 0.52,
+      metalness: 0.04
     });
 
-    if (isPlaying) {
-      stageVideo.play().catch(() => {});
-    }
+    // Suit Blazer Material (Deep Executive Navy)
+    const suitMat = new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      roughness: 0.65,
+      metalness: 0.12
+    });
 
-    // Dynamic Radial Alpha Feather Mask to eliminate harsh rectangular card borders
-    const maskCanvas = document.createElement("canvas");
-    maskCanvas.width = 512;
-    maskCanvas.height = 512;
-    const maskCtx = maskCanvas.getContext("2d");
-    if (maskCtx) {
-      const grad = maskCtx.createRadialGradient(256, 256, 120, 256, 256, 256);
-      grad.addColorStop(0, "rgba(255, 255, 255, 1.0)");
-      grad.addColorStop(0.75, "rgba(255, 255, 255, 0.95)");
-      grad.addColorStop(0.92, "rgba(255, 255, 255, 0.45)");
-      grad.addColorStop(1.0, "rgba(255, 255, 255, 0.0)");
-      maskCtx.fillStyle = grad;
-      maskCtx.fillRect(0, 0, 512, 512);
-    }
-    const alphaMaskTex = new THREE.CanvasTexture(maskCanvas);
-    alphaMaskTex.minFilter = THREE.LinearFilter;
-    alphaMaskTex.magFilter = THREE.LinearFilter;
+    // Satin Lapel & Inner Silk Blouse
+    const silkMat = new THREE.MeshStandardMaterial({
+      color: 0x020617,
+      roughness: 0.25,
+      metalness: 0.3
+    });
 
-    const presenterTex = new THREE.VideoTexture(stageVideo);
-    presenterTex.minFilter = THREE.LinearFilter;
-    presenterTex.magFilter = THREE.LinearFilter;
-    presenterTex.format = THREE.RGBAFormat;
+    // Hair Material (Obsidian Black with subtle gloss)
+    const hairMat = new THREE.MeshStandardMaterial({
+      color: 0x110e0c,
+      roughness: 0.4,
+      metalness: 0.1
+    });
 
-    const presenterMat = new THREE.MeshStandardMaterial({
-      map: presenterTex,
-      alphaMap: alphaMaskTex,
-      transparent: true,
-      opacity: 0.98,
+    // Gold Accent & Veritas Pin
+    const goldMat = new THREE.MeshStandardMaterial({
+      color: 0xd97706,
+      roughness: 0.2,
+      metalness: 0.85
+    });
+
+    // --- Torso & Jacket ---
+    const torsoGeo = new THREE.CylinderGeometry(0.23, 0.27, 0.62, 32);
+    const torsoMesh = new THREE.Mesh(torsoGeo, suitMat);
+    torsoMesh.position.set(0, 0.85, 0);
+    avatarGroup.add(torsoMesh);
+
+    // V-Neck Silk Blouse Inset
+    const blouseGeo = new THREE.BufferGeometry();
+    const blouseVertices = new Float32Array([
+      -0.08, 1.15, 0.18,
+       0.08, 1.15, 0.18,
+       0.00, 0.88, 0.19
+    ]);
+    blouseGeo.setAttribute("position", new THREE.BufferAttribute(blouseVertices, 3));
+    blouseGeo.computeVertexNormals();
+    const blouseMesh = new THREE.Mesh(blouseGeo, silkMat);
+    avatarGroup.add(blouseMesh);
+
+    // Gold Executive Brooch Pin
+    const pinGeo = new THREE.CircleGeometry(0.016, 16);
+    const pinMesh = new THREE.Mesh(pinGeo, goldMat);
+    pinMesh.position.set(0.12, 1.08, 0.22);
+    avatarGroup.add(pinMesh);
+
+    // --- Neck ---
+    const neckGeo = new THREE.CylinderGeometry(0.075, 0.09, 0.14, 32);
+    const neckMesh = new THREE.Mesh(neckGeo, skinMat);
+    neckMesh.position.set(0, 1.21, 0);
+    avatarGroup.add(neckMesh);
+
+    // --- Head & Face Hierarchy ---
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 1.35, 0);
+    avatarGroup.add(headGroup);
+
+    // Cranium & Face
+    const headGeo = new THREE.SphereGeometry(0.18, 32, 32);
+    headGeo.scale(0.92, 1.12, 0.98);
+    const headMesh = new THREE.Mesh(headGeo, skinMat);
+    headGroup.add(headMesh);
+
+    // 3D Executive Hair Style (Volumetric Front + Chignon Bun)
+    const hairTopGeo = new THREE.SphereGeometry(0.19, 32, 32);
+    hairTopGeo.scale(0.96, 1.15, 1.02);
+    const hairTopMesh = new THREE.Mesh(hairTopGeo, hairMat);
+    hairTopMesh.position.set(0, 0.02, -0.01);
+    headGroup.add(hairTopMesh);
+
+    const bunGeo = new THREE.SphereGeometry(0.085, 24, 24);
+    const bunMesh = new THREE.Mesh(bunGeo, hairMat);
+    bunMesh.position.set(0, 0.02, -0.16);
+    headGroup.add(bunMesh);
+
+    // 3D Volumetric Eyes & Eyelids
+    const eyeMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.1,
+      metalness: 0.05
+    });
+    const irisMat = new THREE.MeshStandardMaterial({
+      color: 0x2b170c,
+      roughness: 0.2
+    });
+    const pupilMat = new THREE.MeshBasicMaterial({ color: 0x050505 });
+
+    // Left Eye
+    const leftEyeGroup = new THREE.Group();
+    leftEyeGroup.position.set(0.062, 0.035, 0.145);
+    const eyeGeo = new THREE.SphereGeometry(0.028, 20, 20);
+    const leftSclera = new THREE.Mesh(eyeGeo, eyeMat);
+    const irisGeo = new THREE.CircleGeometry(0.014, 16);
+    const leftIris = new THREE.Mesh(irisGeo, irisMat);
+    leftIris.position.set(0, 0, 0.026);
+    const pupilGeo = new THREE.CircleGeometry(0.007, 16);
+    const leftPupil = new THREE.Mesh(pupilGeo, pupilMat);
+    leftPupil.position.set(0, 0, 0.027);
+    leftEyeGroup.add(leftSclera, leftIris, leftPupil);
+    headGroup.add(leftEyeGroup);
+
+    // Right Eye
+    const rightEyeGroup = new THREE.Group();
+    rightEyeGroup.position.set(-0.062, 0.035, 0.145);
+    const rightSclera = new THREE.Mesh(eyeGeo, eyeMat);
+    const rightIris = new THREE.Mesh(irisGeo, irisMat);
+    rightIris.position.set(0, 0, 0.026);
+    const rightPupil = new THREE.Mesh(pupilGeo, pupilMat);
+    rightPupil.position.set(0, 0, 0.027);
+    rightEyeGroup.add(rightSclera, rightIris, rightPupil);
+    headGroup.add(rightEyeGroup);
+
+    // Eyelids for Biological Blinking
+    const eyelidGeo = new THREE.SphereGeometry(0.031, 20, 10, 0, Math.PI * 2, 0, Math.PI * 0.5);
+    const leftEyelid = new THREE.Mesh(eyelidGeo, skinMat);
+    leftEyelid.position.set(0.062, 0.038, 0.145);
+    leftEyelid.rotation.x = -Math.PI / 2;
+    leftEyelid.scale.set(1, 1, 0.01);
+    headGroup.add(leftEyelid);
+
+    const rightEyelid = new THREE.Mesh(eyelidGeo, skinMat);
+    rightEyelid.position.set(-0.062, 0.038, 0.145);
+    rightEyelid.rotation.x = -Math.PI / 2;
+    rightEyelid.scale.set(1, 1, 0.01);
+    headGroup.add(rightEyelid);
+
+    // Eyebrows
+    const browMat = new THREE.MeshBasicMaterial({ color: 0x15110d });
+    const browGeo = new THREE.BoxGeometry(0.045, 0.007, 0.01);
+    const leftBrow = new THREE.Mesh(browGeo, browMat);
+    leftBrow.position.set(0.065, 0.075, 0.16);
+    leftBrow.rotation.z = -0.08;
+    headGroup.add(leftBrow);
+
+    const rightBrow = new THREE.Mesh(browGeo, browMat);
+    rightBrow.position.set(-0.065, 0.075, 0.16);
+    rightBrow.rotation.z = 0.08;
+    headGroup.add(rightBrow);
+
+    // --- 3D Articulated Lower Jaw (Audio-Reactive Morphing) ---
+    const jawGroup = new THREE.Group();
+    jawGroup.position.set(0, -0.04, 0.08);
+    headGroup.add(jawGroup);
+
+    const jawGeo = new THREE.SphereGeometry(0.085, 24, 24);
+    jawGeo.scale(0.85, 0.65, 0.95);
+    const jawMesh = new THREE.Mesh(jawGeo, skinMat);
+    jawMesh.position.set(0, -0.05, 0.04);
+    jawGroup.add(jawMesh);
+
+    // Lips (Warm Rose Gloss)
+    const lipMat = new THREE.MeshStandardMaterial({
+      color: 0x9b3a4a,
       roughness: 0.35,
-      metalness: 0.05,
-      side: THREE.DoubleSide
+      metalness: 0.1
     });
+    const upperLipGeo = new THREE.CylinderGeometry(0.008, 0.008, 0.042, 16);
+    const upperLip = new THREE.Mesh(upperLipGeo, lipMat);
+    upperLip.rotation.z = Math.PI / 2;
+    upperLip.position.set(0, -0.048, 0.165);
+    headGroup.add(upperLip);
 
-    const presenterMesh = new THREE.Mesh(presenterGeo, presenterMat);
-    presenterMesh.position.set(0, 0, 0.4);
-    scene.add(presenterMesh);
+    const lowerLipGeo = new THREE.CylinderGeometry(0.009, 0.009, 0.038, 16);
+    const lowerLip = new THREE.Mesh(lowerLipGeo, lipMat);
+    lowerLip.rotation.z = Math.PI / 2;
+    lowerLip.position.set(0, -0.035, 0.09);
+    jawGroup.add(lowerLip);
 
-    // 9. Floating Ambient Holographic Dust
-    const particleCount = 140;
+    // Keynote Boom Headset Microphone
+    const micCurve = new THREE.CylinderGeometry(0.003, 0.003, 0.14, 8);
+    const micStem = new THREE.Mesh(micCurve, goldMat);
+    micStem.rotation.z = Math.PI / 3;
+    micStem.rotation.x = 0.3;
+    micStem.position.set(0.12, -0.02, 0.11);
+    headGroup.add(micStem);
+
+    const micTipGeo = new THREE.SphereGeometry(0.009, 12, 12);
+    const micTip = new THREE.Mesh(micTipGeo, goldMat);
+    micTip.position.set(0.06, -0.055, 0.16);
+    headGroup.add(micTip);
+
+    // --- Articulated Arms & Keynote Gesture Rig ---
+    const leftArmGroup = new THREE.Group();
+    leftArmGroup.position.set(0.26, 1.12, 0);
+    const armGeo = new THREE.CylinderGeometry(0.055, 0.045, 0.42, 16);
+    const leftArm = new THREE.Mesh(armGeo, suitMat);
+    leftArm.position.set(0, -0.18, 0);
+    leftArmGroup.add(leftArm);
+    avatarGroup.add(leftArmGroup);
+
+    const rightArmGroup = new THREE.Group();
+    rightArmGroup.position.set(-0.26, 1.12, 0);
+    const rightArm = new THREE.Mesh(armGeo, suitMat);
+    rightArm.position.set(0, -0.18, 0);
+    rightArmGroup.add(rightArm);
+    avatarGroup.add(rightArmGroup);
+
+    // 9. Floating Holographic Cyber Dust Particles
+    const particleCount = 120;
     const particleGeo = new THREE.BufferGeometry();
     const particlePos = new Float32Array(particleCount * 3);
     for (let i = 0; i < particleCount * 3; i += 3) {
-      particlePos[i] = (Math.random() - 0.5) * 9.5;
-      particlePos[i + 1] = Math.random() * 4.8;
-      particlePos[i + 2] = (Math.random() - 0.5) * 9.5;
+      particlePos[i] = (Math.random() - 0.5) * 8.0;
+      particlePos[i + 1] = Math.random() * 4.0;
+      particlePos[i + 2] = (Math.random() - 0.5) * 8.0;
     }
     particleGeo.setAttribute("position", new THREE.BufferAttribute(particlePos, 3));
     const particleMat = new THREE.PointsMaterial({
       color: 0x00f0ff,
-      size: 0.04,
+      size: 0.035,
       transparent: true,
-      opacity: 0.6
+      opacity: 0.55
     });
     const particles = new THREE.Points(particleGeo, particleMat);
     scene.add(particles);
@@ -373,7 +502,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       prevMouseY = e.clientY;
 
       targetCameraAngleX -= deltaX * 0.005;
-      targetCameraAngleY = Math.max(-0.4, Math.min(0.4, targetCameraAngleY - deltaY * 0.005));
+      targetCameraAngleY = Math.max(-0.35, Math.min(0.35, targetCameraAngleY - deltaY * 0.005));
     };
 
     const onMouseUp = () => {
@@ -384,7 +513,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
 
-    // 11. Animation & Render Loop
+    // 11. 60 FPS Animation & Real-Time Viseme Loop
     let frameCount = 0;
     let lastFpsUpdate = performance.now();
     let smoothAudioFlux = 0;
@@ -393,7 +522,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
     const animate = (time: number) => {
       animationId = requestAnimationFrame(animate);
 
-      // FPS calculation
+      // FPS tracking
       frameCount++;
       if (time - lastFpsUpdate >= 1000) {
         setFps(frameCount);
@@ -401,7 +530,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
         lastFpsUpdate = time;
       }
 
-      // Audio Frequency Analysis with Exponential Smoothing
+      // Audio Frequency Processing
       let rawVol = 0;
       if (analyser && audioDataArray && isPlaying) {
         analyser.getByteFrequencyData(audioDataArray as Uint8Array<ArrayBuffer>);
@@ -411,150 +540,82 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
         }
         rawVol = sum / (audioDataArray.length * 255);
       } else if (isPlaying) {
-        rawVol = 0.2;
+        rawVol = 0.25;
       }
 
-      smoothAudioFlux += (rawVol - smoothAudioFlux) * 0.15;
+      smoothAudioFlux += (rawVol - smoothAudioFlux) * 0.2;
       setAudioLevel(smoothAudioFlux);
 
-      // True 3D Polygon Morph Target Vertex Deformation & Skeletal Kinematics for Priya
-      if (presenterMesh && presenterMesh.morphTargetInfluences) {
-        let jawDrop = 0;
-        let lipRound = 0;
-        let lipSmile = 0;
-
-        if (isPlaying && analyser && audioDataArray) {
-          let lowSum = 0;
-          let midSum = 0;
-          let highSum = 0;
-
-          // Low formants (150-600Hz: F1 jaw drop / jawOpen)
-          for (let i = 1; i <= 6; i++) lowSum += audioDataArray[i] || 0;
-          // Mid formants (600-1800Hz: F2 lip rounding / mouthPucker & mouthFunnel)
-          for (let i = 7; i <= 16; i++) midSum += audioDataArray[i] || 0;
-          // High formants (1800-4500Hz: F3 horizontal spread / mouthSmile)
-          for (let i = 17; i <= 31; i++) highSum += audioDataArray[i] || 0;
-
-          const lowAvg = lowSum / 6;
-          const midAvg = midSum / 10;
-          const highAvg = highSum / 15;
-
-          if (lowAvg > 12) {
-            jawDrop = Math.min(1.0, (lowAvg / 135) * 1.5);
-            lipRound = Math.min(1.0, midAvg / 115);
-            lipSmile = Math.min(1.0, highAvg / 105);
-          }
-        }
-
-        // Biological Eye Blinking (120ms every 3.4s)
-        const blinkCycle = (time % 3400);
-        const isBlinking = blinkCycle < 120 ? 1.0 : 0.0;
-
-        // Apply true 3D polygon vertex morphing via morphTargetInfluences
-        // 0: jawOpen, 1: mouthPucker, 2: mouthFunnel, 3: mouthSmile, 4: eyeBlink, 5: browUp
-        presenterMesh.morphTargetInfluences[0] = jawDrop;
-        presenterMesh.morphTargetInfluences[1] = lipRound * 0.7;
-        presenterMesh.morphTargetInfluences[2] = lipRound * 0.5 + jawDrop * 0.3;
-        presenterMesh.morphTargetInfluences[3] = lipSmile * 0.6;
-        presenterMesh.morphTargetInfluences[4] = isBlinking;
-        presenterMesh.morphTargetInfluences[5] = jawDrop * 0.4;
-
-        // Update Live MP4 Video Texture Frame
-        if (isPlaying) {
-          if (stageVideo.paused) {
-            stageVideo.play().catch(() => {});
-          }
-          presenterTex.needsUpdate = true;
-        } else {
-          if (!stageVideo.paused) {
-            stageVideo.pause();
-          }
-        }
+      // --- Volumetric 3D Jaw Drop (Exact Viseme Mouth Articulation) ---
+      let jawDrop = 0;
+      if (isPlaying) {
+        jawDrop = Math.min(0.32, smoothAudioFlux * 0.75);
       }
+      jawGroup.rotation.x = jawDrop;
 
-      // Update Screen with Audio Reactivity
-      updateStageScreen(smoothAudioFlux);
+      // --- Biological Eye Blinking (120ms every 3.6s) ---
+      const blinkCycle = (time % 3600);
+      const isBlinking = blinkCycle < 140 ? Math.sin((blinkCycle / 140) * Math.PI) : 0;
+      leftEyelid.scale.z = Math.max(0.01, isBlinking);
+      rightEyelid.scale.z = Math.max(0.01, isBlinking);
 
-      // Stable Lighting Rig (No flashing)
-      mainSpotlight.intensity = 4.5 + smoothAudioFlux * 1.5;
-      floorGlowLight.intensity = 2.5 + smoothAudioFlux * 1.0;
+      // --- Dynamic Breathing & Keynote Gestures ---
+      const breath = Math.sin(time * 0.0018) * 0.012;
+      torsoMesh.scale.y = 1.0 + breath;
+      torsoMesh.scale.x = 1.0 - breath * 0.4;
 
-      // Floating Particles Drift
+      // Natural Keynote Hand Gesture Kinematics
+      const gestureR = Math.sin(time * 0.0025) * 0.18 + (isPlaying ? smoothAudioFlux * 0.25 : 0);
+      rightArmGroup.rotation.x = -0.3 + gestureR * 0.6;
+      rightArmGroup.rotation.z = -0.15 + gestureR * 0.3;
+
+      const gestureL = Math.cos(time * 0.002) * 0.1;
+      leftArmGroup.rotation.x = -0.15 + gestureL * 0.4;
+
+      // Subtle Head Swivel towards audience
+      headGroup.rotation.y = Math.sin(time * 0.0009) * 0.08;
+      headGroup.rotation.x = Math.sin(time * 0.0014) * 0.03 + (smoothAudioFlux > 0.1 ? Math.sin(time * 0.008) * 0.015 : 0);
+
+      // Particle Drift
       const positions = particleGeo.attributes.position.array as Float32Array;
       for (let i = 1; i < particleCount * 3; i += 3) {
-        positions[i] += 0.002;
-        if (positions[i] > 4.8) positions[i] = 0;
+        positions[i] += 0.003;
+        if (positions[i] > 4.0) positions[i] = 0.0;
       }
       particleGeo.attributes.position.needsUpdate = true;
 
-      // Environment Color Updates & Particle Tuning
-      // Keynote Arena Lighting Setup
-      mainSpotlight.color.setHex(0x00f0ff);
-      rimMat.color.setHex(0x00f0ff);
-      floorGlowLight.color.setHex(0x00f0ff);
-      scene.fog?.color.setHex(0x04060c);
+      // Update 3D Stage Screen with Audio Flux
+      updateStageScreen(smoothAudioFlux);
 
-      // Multi-Camera Director Preset Modulations
-      let targetX = 0;
-      let targetY = 1.15;
-      let targetZ = 2.10;
+      // Responsive Stage Lights
+      mainSpotlight.intensity = 3.5 + smoothAudioFlux * 1.8;
+      stageGlow.intensity = 1.8 + smoothAudioFlux * 1.2;
+
+      // --- Camera Director Presets with Cinematic Framing ---
+      let lookTarget = new THREE.Vector3(0, 1.34, 0);
 
       if (cameraPreset === "70mm_close") {
-        targetX = 0;
-        targetY = 1.22;
-        targetZ = 1.55;
+        camera.position.lerp(new THREE.Vector3(0, 1.38, 0.95), 0.08);
+        lookTarget = new THREE.Vector3(0, 1.34, 0);
       } else if (cameraPreset === "35mm_wide") {
-        targetX = 0;
-        targetY = 1.05;
-        targetZ = 2.85;
+        camera.position.lerp(new THREE.Vector3(0, 1.15, 2.3), 0.08);
+        lookTarget = new THREE.Vector3(0, 1.05, 0);
       } else if (cameraPreset === "24mm_hero") {
-        targetX = 0;
-        targetY = 0.55;
-        targetZ = 4.20;
+        camera.position.lerp(new THREE.Vector3(0, 0.55, 1.8), 0.08);
+        lookTarget = new THREE.Vector3(0, 1.2, 0);
       } else if (cameraPreset === "stage_screen_focus") {
-        targetX = 1.2;
-        targetY = 1.35;
-        targetZ = 2.9;
+        camera.position.lerp(new THREE.Vector3(1.1, 1.35, 2.1), 0.08);
+        lookTarget = new THREE.Vector3(0.3, 1.3, -0.6);
       } else if (cameraPreset === "free_orbit") {
-        targetZ = 2.80;
+        const radius = 1.8;
+        const camX = Math.sin(targetCameraAngleX) * radius;
+        const camZ = Math.cos(targetCameraAngleX) * radius;
+        const camY = 1.35 + targetCameraAngleY * 1.2;
+        camera.position.lerp(new THREE.Vector3(camX, camY, camZ), 0.1);
+        lookTarget = new THREE.Vector3(0, 1.25, 0);
       }
 
-      // Smooth Camera Damping
-      if (cameraPreset === "free_orbit") {
-        camera.position.x += (Math.sin(targetCameraAngleX) * targetZ - camera.position.x) * 0.08;
-        camera.position.y += (targetY + targetCameraAngleY - camera.position.y) * 0.08;
-        camera.position.z += (Math.cos(targetCameraAngleX) * targetZ - camera.position.z) * 0.08;
-      } else {
-        camera.position.x += (targetX - camera.position.x) * 0.06;
-        camera.position.y += (targetY - camera.position.y) * 0.06;
-        camera.position.z += (targetZ - camera.position.z) * 0.06;
-      }
-
-      // Dynamic Presenter Dynamics
-      let lookTargetX = 0;
-      let lookTargetY = targetY;
-
-      if (presenterMesh) {
-        const swayX = Math.sin(time * 0.0008) * 0.04;
-        const swayRot = Math.sin(time * 0.0008) * 0.015;
-        const nod = (smoothAudioFlux > 0.1) ? Math.sin(time * 0.005) * 0.015 : 0;
-        presenterMesh.position.set(swayX, 0.0 + nod, 0.4);
-        presenterMesh.rotation.y = swayRot;
-        lookTargetX = swayX * 0.5;
-        lookTargetY = 0.85 + nod;
-
-        // Continuous Torso & Shoulder Breathing Kinematics
-        const breath = Math.sin(time * 0.0016) * 0.014;
-        presenterMesh.scale.y = 1.0 + breath;
-        presenterMesh.scale.x = 1.0 - breath * 0.3;
-      }
-
-      if (cameraPreset === "stage_screen_focus") {
-        camera.lookAt(0.6, 1.25, 0.2);
-      } else {
-        camera.lookAt(lookTargetX, lookTargetY, 0.4);
-      }
-
+      camera.lookAt(lookTarget);
       renderer.render(scene, camera);
     };
 
@@ -575,8 +636,6 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       container.removeEventListener("mousedown", onMouseDown);
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
-      stageVideo.pause();
-      stageVideo.src = "";
       if (audioCtx && audioCtx.state !== "closed") {
         audioCtx.close();
       }
@@ -585,7 +644,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       }
       renderer.dispose();
     };
-  }, [isPlaying, selectedPersonaName, selectedPersonaAvatar, cameraPreset]);
+  }, [isPlaying, selectedPersonaName, cameraPreset]);
 
   return (
     <div className="relative w-full h-[580px] rounded-2xl overflow-hidden bg-slate-950 border border-cyan-500/20 shadow-2xl">
@@ -596,62 +655,51 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       <div className="absolute top-4 left-4 flex items-center gap-2 z-20 flex-wrap">
         <div className="px-3 py-1 bg-black/60 backdrop-blur-md rounded-full border border-cyan-500/40 text-cyan-400 font-mono text-xs flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-          3D HOLO-STAGE • 60 FPS WEBGL
+          3D VOLUMETRIC HOLO-STAGE • {fps} FPS
         </div>
-        <div className="px-2.5 py-1 bg-black/50 backdrop-blur-md rounded-full border border-slate-700 text-slate-300 font-mono text-[11px]">
-          {fps} FPS
+        <div className="px-2.5 py-1 bg-black/60 backdrop-blur-md rounded-full border border-slate-700 text-slate-300 font-mono text-xs">
+          48kHz Acoustic Flux Active
         </div>
       </div>
 
-      {/* Veritas Cryptographic Signature & Real-Time Audio Frequency Reactor Badge */}
-      <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
-        {isPlaying && (
-          <div className="px-3 py-1 bg-cyan-950/80 backdrop-blur-md rounded-full border border-cyan-500/40 text-cyan-300 font-mono text-[11px] flex items-center gap-2 shadow-lg shadow-cyan-950/40">
-            <span className="flex items-center gap-0.5">
-              <span className="w-1 h-3 bg-cyan-400 animate-pulse" />
-              <span className="w-1 h-4 bg-cyan-400 animate-pulse delay-75" />
-              <span className="w-1 h-2 bg-cyan-400 animate-pulse delay-150" />
-            </span>
-            <span>48kHz Acoustic Flux Active</span>
-          </div>
-        )}
-        <div className="px-3 py-1 bg-black/60 backdrop-blur-md rounded-full border border-emerald-500/40 text-emerald-400 font-mono text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-950/40">
+      <div className="absolute top-4 right-4 z-20">
+        <div className="px-3 py-1 bg-black/60 backdrop-blur-md rounded-full border border-emerald-500/40 text-emerald-400 font-mono text-xs flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
           zk-SNARK Provenance Active
         </div>
       </div>
 
-      {/* Multi-Camera Director Swarm Selector Toolbar (Bottom Floating Bar) */}
-      <div className="absolute bottom-4 inset-x-4 z-20 flex items-center justify-between flex-wrap gap-2">
-        
-        {/* Active Stage Screen Diagram Telemetry Badge */}
-        <div className="px-3 py-1.5 bg-black/80 backdrop-blur-md rounded-xl border border-cyan-500/30 text-cyan-300 font-mono text-[11px] flex items-center gap-2">
+      {/* Bottom Stage Screen Node Indicator & Camera Director Controls */}
+      <div className="absolute bottom-4 left-4 right-4 z-20 flex flex-col sm:flex-row items-center justify-between gap-3 bg-black/70 backdrop-blur-md p-2.5 rounded-xl border border-white/10">
+        <div className="flex items-center gap-2 text-xs font-mono">
           <span className="text-cyan-400">⚡ Stage Screen Active Node:</span>
-          <span className="font-bold text-white bg-cyan-950/90 px-2 py-0.5 rounded border border-cyan-500/40">{focusedNode}</span>
+          <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold">
+            {focusedNode}
+          </span>
         </div>
 
-        {/* 1-Click Multi-Camera Director Swarm Angle Switcher */}
-        <div className="flex items-center bg-black/80 backdrop-blur-md p-1 rounded-xl border border-slate-800 gap-1 shadow-2xl">
-          <span className="text-[10px] font-mono text-slate-400 px-2 font-bold flex items-center gap-1">
-            🎥 DIRECTOR CAM:
-          </span>
-          {[
-            { id: "70mm_close", label: "70mm Close-Up" },
-            { id: "35mm_wide", label: "35mm Wide Stage" },
-            { id: "24mm_hero", label: "24mm Hero Angle" },
-            { id: "stage_screen_focus", label: "Draw.io Zoom" },
-            { id: "free_orbit", label: "3D Orbit 🖱️" }
-          ].map((cam) => (
+        {/* Camera Director Switcher */}
+        <div className="flex items-center gap-1 bg-slate-900/80 p-1 rounded-lg border border-slate-800 text-[11px] font-mono">
+          <span className="text-slate-400 px-1.5 flex items-center gap-1">🎥 DIRECTOR CAM:</span>
+          {(
+            [
+              { id: "70mm_close", label: "70mm Close-Up" },
+              { id: "35mm_wide", label: "35mm Wide Stage" },
+              { id: "24mm_hero", label: "24mm Hero Angle" },
+              { id: "stage_screen_focus", label: "Draw.io Zoom" },
+              { id: "free_orbit", label: "3D Orbit 🔄" }
+            ] as const
+          ).map((preset) => (
             <button
-              key={cam.id}
-              onClick={() => setCameraPreset(cam.id as CameraPreset)}
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all ${
-                cameraPreset === cam.id
-                  ? "bg-cyan-500/30 border border-cyan-400 text-cyan-200 shadow-sm shadow-cyan-500/30"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+              key={preset.id}
+              onClick={() => setCameraPreset(preset.id)}
+              className={`px-2 py-1 rounded transition-all ${
+                cameraPreset === preset.id
+                  ? "bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/20"
+                  : "text-slate-400 hover:text-slate-200"
               }`}
             >
-              {cam.label}
+              {preset.label}
             </button>
           ))}
         </div>
