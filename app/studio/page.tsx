@@ -53,6 +53,7 @@ import { GLTFStage } from "./GLTFStage";
 import { NeuralDiffusionPlayer } from "./NeuralDiffusionPlayer";
 import { GeminiTranscribeStage } from "./GeminiTranscribeStage";
 import { VeoVideoStage } from "./VeoVideoStage";
+import { PhoneticVisemeStage } from "@/components/PhoneticVisemeStage";
 
 export default function Gen7StudioPage() {
   // State
@@ -406,21 +407,22 @@ export default function Gen7StudioPage() {
               </div>
 
               {/* View Mode Switcher: Google Veo 3.1 Master Stream */}
+              {/* Mode Switcher Tabs */}
               <div className="flex items-center gap-2">
-                <div className="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800 flex-wrap">
+                <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 flex-wrap gap-1">
                   <button
                     onClick={() => {
                       if (videoRef.current) videoRef.current.pause();
                       setIsPlaying(false);
                       setViewMode("veo_video");
                     }}
-                    className={`px-3 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
                       viewMode === "veo_video"
                         ? "bg-purple-500/20 border border-purple-500/40 text-purple-300 shadow-sm shadow-purple-500/20"
                         : "text-slate-400 hover:text-slate-200"
                     }`}
                   >
-                    🎬 GOOGLE VEO 3.1
+                    <span>🎬 VEO 3.1 CINEMATIC STAGECRAFT</span>
                   </button>
                   <button
                     onClick={() => {
@@ -428,13 +430,13 @@ export default function Gen7StudioPage() {
                       setIsPlaying(false);
                       setViewMode("broadcast_stream");
                     }}
-                    className={`px-3 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
                       viewMode === "broadcast_stream"
-                        ? "bg-blue-500/20 border border-blue-500/40 text-blue-300 shadow-sm shadow-blue-500/20"
+                        ? "bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 shadow-sm shadow-cyan-500/20"
                         : "text-slate-400 hover:text-slate-200"
                     }`}
                   >
-                    🎬 2D STREAM
+                    <span>👄 1:1 NEURAL LIP-SYNC (WAV2LIP)</span>
                   </button>
                 </div>
               </div>
@@ -474,7 +476,7 @@ export default function Gen7StudioPage() {
               className="hidden"
             />
 
-            {/* Tab 1: Google Veo 3.1 Neural Video Studio */}
+            {/* Tab 1: Google Veo 3.1 Cinematic Stagecraft */}
             {viewMode === "veo_video" && (
               <VeoVideoStage
                 isPlaying={isPlaying}
@@ -486,50 +488,18 @@ export default function Gen7StudioPage() {
               />
             )}
 
-            {/* 2D Broadcast Stream Viewport (Persistent Video Element) */}
-            <div className={`relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-slate-800 shadow-2xl group ${
-              viewMode === "broadcast_stream" ? "block" : "hidden"
-            }`}>
-              {/* Main Video Stream */}
-              <video
-                ref={videoRef}
-                src={activeVideoSrc}
-                poster={selectedPersona.avatarUrl}
-                playsInline
-                preload="auto"
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => setIsPlaying(false)}
-                onEnded={() => {
-                  setIsPlaying(false);
-                  setCurrentTime(0);
-                  setSpokenWordIndex(-1);
-                }}
-                className="w-full h-full object-cover"
+            {/* Tab 2: 1:1 Neural Phonetic Lip-Sync (Wav2Lip Viseme Lock) */}
+            {viewMode === "broadcast_stream" && (
+              <PhoneticVisemeStage
+                isPlaying={isPlaying}
+                isMuted={isMuted}
+                avatarUrl={selectedPersona.avatarUrl}
+                personaName={selectedPersona.name}
+                audioRef={audioRef}
+                currentTime={currentTime}
+                onTogglePlay={handleTogglePlay}
               />
-
-              {/* Watermark & Badges Overlay */}
-              <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md border border-white/10 text-[10px] font-mono text-emerald-400">
-                <ShieldCheck className="h-3 w-3 text-emerald-400" />
-                <span>zk-SNARK Signed</span>
-              </div>
-
-              <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-2 py-1 rounded-md bg-black/70 backdrop-blur-md border border-white/10 text-[10px] font-mono text-slate-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
-                <span>{selectedPersona.name}</span>
-                <span className="text-slate-500">•</span>
-                <span className="text-cyan-400 text-[9px] uppercase font-bold">KEYNOTE ARENA</span>
-              </div>
-
-              {/* Play / Pause Big Center Button Overlay */}
-              {!isPlaying && (
-                <button
-                  onClick={handleTogglePlay}
-                  className="absolute inset-0 m-auto h-16 w-16 z-20 rounded-full bg-cyan-500/90 hover:bg-cyan-400 text-slate-950 flex items-center justify-center shadow-2xl transition-all hover:scale-105"
-                >
-                  <Play className="h-8 w-8 fill-current ml-1" />
-                </button>
-              )}
-            </div>
+            )}
 
             {/* Video Controls Bar */}
             <div className="flex items-center justify-between px-2 pt-1">
