@@ -34,6 +34,7 @@ import { generateVeritasSeal } from "@/lib/tier6/veritas_engine";
 import { VeoVideoStage } from "./VeoVideoStage";
 import { VeoFramingStage } from "./VeoFramingStage";
 import { VeoSittingStage } from "./VeoSittingStage";
+import { TwoDStreamStage } from "./TwoDStreamStage";
 
 export default function Gen7StudioPage() {
   // State
@@ -382,10 +383,9 @@ export default function Gen7StudioPage() {
             {viewMode === "standing_keynote" && (
               <VeoVideoStage
                 isPlaying={isPlaying}
-                isMuted={isMuted}
-                selectedPersonaName={selectedPersona.name}
-                audioUrl={activeAudioUrl}
+                currentTime={currentTime}
                 restartTrigger={restartTrigger}
+                onTogglePlay={handleTogglePlay}
               />
             )}
 
@@ -393,10 +393,9 @@ export default function Gen7StudioPage() {
             {viewMode === "dynamic_framing" && (
               <VeoFramingStage
                 isPlaying={isPlaying}
-                isMuted={isMuted}
-                selectedPersonaName={selectedPersona.name}
-                audioUrl={activeAudioUrl}
+                currentTime={currentTime}
                 restartTrigger={restartTrigger}
+                onTogglePlay={handleTogglePlay}
               />
             )}
 
@@ -404,26 +403,22 @@ export default function Gen7StudioPage() {
             {viewMode === "sitting_boardroom" && (
               <VeoSittingStage
                 isPlaying={isPlaying}
-                isMuted={isMuted}
-                selectedPersonaName={selectedPersona.name}
-                audioUrl={activeAudioUrl}
+                currentTime={currentTime}
                 restartTrigger={restartTrigger}
+                onTogglePlay={handleTogglePlay}
               />
             )}
 
-            {/* Mode 4: 2D Stream */}
+            {/* Mode 4: 2D Stream (Original 2D Persona Video) */}
             {viewMode === "2d_stream" && (
-              <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black border border-slate-800 shadow-2xl group flex items-center justify-center">
-                <video
-                  src={selectedPersona.videoUrl}
-                  poster={selectedPersona.avatarUrl}
-                  playsInline
-                  muted
-                  loop
-                  autoPlay
-                  className="w-full h-full object-cover"
-                />
-              </div>
+              <TwoDStreamStage
+                videoUrl={selectedPersona.videoUrl}
+                avatarUrl={selectedPersona.avatarUrl}
+                isPlaying={isPlaying}
+                currentTime={currentTime}
+                restartTrigger={restartTrigger}
+                onTogglePlay={handleTogglePlay}
+              />
             )}
 
             {/* Video Controls Bar */}
