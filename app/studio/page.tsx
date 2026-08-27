@@ -134,7 +134,7 @@ export default function Gen7StudioPage() {
       setIsPlaying(false);
     } else {
       try {
-        if (video) {
+        if (viewMode === "broadcast_stream" && video) {
           video.muted = isMuted;
           if (video.ended || (video.duration && video.currentTime >= video.duration - 0.05)) {
             video.currentTime = 0;
@@ -142,6 +142,8 @@ export default function Gen7StudioPage() {
             setSpokenWordIndex(-1);
           }
           await video.play().catch((e) => console.log("Video play notice:", e.name));
+        } else if (viewMode === "3d_holo_stage" && video) {
+          video.pause(); // Ensure 2D video is paused and silent to prevent any echo
         }
         setIsPlaying(true);
       } catch (err) {
@@ -153,17 +155,12 @@ export default function Gen7StudioPage() {
   // Restart Playback
   const handleRestart = () => {
     const video = videoRef.current;
-    const audio = audioRef.current;
     setCurrentTime(0);
     setSpokenWordIndex(-1);
 
-    if (video) {
+    if (viewMode === "broadcast_stream" && video) {
       video.currentTime = 0;
       video.play().catch(() => {});
-    }
-    if (audio) {
-      audio.currentTime = 0;
-      audio.play().catch(() => {});
     }
     setIsPlaying(true);
   };
