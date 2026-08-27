@@ -110,11 +110,11 @@ export default function Gen7StudioPage() {
   }, [activeVideoSrc, selectedPersona.id, isPlaying]);
 
   // Dynamic Persona Audio Duration State
-  const [audioDuration, setAudioDuration] = useState<number>(8.00);
+  const [audioDuration, setAudioDuration] = useState<number>(23.20);
 
   // Computed Word Timings (100% Dynamically Derived from Master Audio Buffer)
   const wordTimings = useMemo<ScriptWordTiming[]>(() => {
-    const dur = audioDuration > 0 ? audioDuration : 8.00;
+    const dur = audioDuration > 0 ? audioDuration : 23.20;
     return computePhoneticWordTimings(scriptText, dur);
   }, [scriptText, audioDuration]);
 
