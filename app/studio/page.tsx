@@ -132,24 +132,28 @@ export default function Gen7StudioPage() {
   };
 
   // Synchronized Master Playback (Single Source of Truth)
+  // Synchronized Master Playback (Single Audio Source of Truth)
   const handleTogglePlay = async () => {
+    const audio = audioRef.current;
     const video = videoRef.current;
 
     if (isPlaying) {
+      if (audio) audio.pause();
       if (video) video.pause();
       setIsPlaying(false);
     } else {
       try {
-        if (viewMode === "broadcast_stream" && video) {
-          video.muted = isMuted;
-          if (video.ended || (video.duration && video.currentTime >= video.duration - 0.05)) {
-            video.currentTime = 0;
+        if (audio) {
+          audio.muted = isMuted;
+          if (audio.ended || (audio.duration && audio.currentTime >= audio.duration - 0.05)) {
+            audio.currentTime = 0;
             setCurrentTime(0);
             setSpokenWordIndex(-1);
           }
-          await video.play().catch((e) => console.log("Video play notice:", e.name));
-        } else if (video) {
-          video.pause(); // Ensure 2D video is paused and silent in 3D modes
+          await audio.play().catch((e) => console.log("Audio play notice:", e.name));
+        }
+        if (video) {
+          video.play().catch(() => {});
         }
         setIsPlaying(true);
       } catch (err) {
@@ -434,11 +438,31 @@ export default function Gen7StudioPage() {
               </div>
             </div>
 
-            {/* Persistent Audio Element */}
+            {/* Persistent Audio Element (Master Speech Source) */}
             <audio
               ref={audioRef}
               src={selectedPersona.audioUrl}
               preload="auto"
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
+              onTimeUpdate={(e) => {
+                const time = e.currentTarget.currentTime;
+                setCurrentTime(time);
+                const lookupTime = time + 0.12;
+                let activeIdx = -1;
+                for (let i = 0; i < wordTimings.length; i++) {
+                  if (lookupTime >= wordTimings[i].start && lookupTime <= wordTimings[i].end) {
+                    activeIdx = i;
+                    break;
+                  }
+                }
+                setSpokenWordIndex(activeIdx);
+              }}
+              onEnded={() => {
+                setIsPlaying(false);
+                setCurrentTime(0);
+                setSpokenWordIndex(-1);
+              }}
               className="hidden"
             />
 
@@ -450,18 +474,7 @@ export default function Gen7StudioPage() {
                 selectedPersonaName={selectedPersona.name}
                 audioUrl={selectedPersona.audioUrl}
                 restartTrigger={restartTrigger}
-                onTimeUpdate={(t) => {
-                  setCurrentTime(t);
-                  const lookupTime = t + 0.12;
-                  let activeIdx = -1;
-                  for (let i = 0; i < wordTimings.length; i++) {
-                    if (lookupTime >= wordTimings[i].start && lookupTime <= wordTimings[i].end) {
-                      activeIdx = i;
-                      break;
-                    }
-                  }
-                  setSpokenWordIndex(activeIdx);
-                }}
+                onTogglePlay={handleTogglePlay}
               />
             )}
 

@@ -10,6 +10,7 @@ interface VeoVideoStageProps {
   audioUrl: string;
   restartTrigger?: number;
   onTimeUpdate?: (currentTime: number) => void;
+  onTogglePlay?: () => void;
 }
 
 export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
@@ -19,9 +20,9 @@ export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
   audioUrl,
   restartTrigger = 0,
   onTimeUpdate,
+  onTogglePlay,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [localPlaying, setLocalPlaying] = useState<boolean>(false);
 
   // Sync external isPlaying state with the real HTML5 video
   useEffect(() => {
@@ -30,10 +31,8 @@ export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
 
     if (isPlaying) {
       video.play().catch(() => {});
-      setLocalPlaying(true);
     } else {
       video.pause();
-      setLocalPlaying(false);
     }
   }, [isPlaying]);
 
@@ -44,31 +43,20 @@ export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
     video.currentTime = 0;
     if (isPlaying) {
       video.play().catch(() => {});
-      setLocalPlaying(true);
     }
   }, [restartTrigger]);
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.muted = isMuted;
-  }, [isMuted]);
-
-  const handleTimeUpdate = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (onTimeUpdate) onTimeUpdate(video.currentTime);
-  };
-
   const handleTogglePlay = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (video.paused) {
-      video.play().catch(() => {});
-      setLocalPlaying(true);
+    if (onTogglePlay) {
+      onTogglePlay();
     } else {
-      video.pause();
-      setLocalPlaying(false);
+      const video = videoRef.current;
+      if (!video) return;
+      if (video.paused) {
+        video.play().catch(() => {});
+      } else {
+        video.pause();
+      }
     }
   };
 
@@ -106,16 +94,13 @@ export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
 
       {/* Main Real Video Player Viewport */}
       <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-purple-500/40 shadow-2xl group flex items-center justify-center">
-        {/* Real Veo 3.1 MP4 Video */}
+        {/* Real Veo 3.1 MP4 Video - Muted so master audio produces the speech */}
         <video
           ref={videoRef}
           src="/assets/video/veo_priya_master.mp4"
           playsInline
           loop
-          autoPlay
-          onTimeUpdate={handleTimeUpdate}
-          onPlay={() => setLocalPlaying(true)}
-          onPause={() => setLocalPlaying(false)}
+          muted={true}
           className="w-full h-full object-cover"
         />
 
@@ -140,9 +125,9 @@ export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
         {/* Floating Play/Pause Overlay */}
         <button
           onClick={handleTogglePlay}
-          className="absolute z-30 p-4 rounded-full bg-black/60 backdrop-blur-md border border-purple-500/50 text-white shadow-2xl opacity-0 group-hover:opacity-100 transition-all hover:scale-110 hover:bg-purple-600/80"
+          className="absolute z-30 p-4 rounded-full bg-cyan-500/90 hover:bg-cyan-400 text-slate-950 shadow-2xl transition-all hover:scale-110 flex items-center justify-center"
         >
-          {localPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
+          {isPlaying ? <Pause className="w-7 h-7 fill-current" /> : <Play className="w-7 h-7 fill-current ml-0.5" />}
         </button>
       </div>
     </div>
