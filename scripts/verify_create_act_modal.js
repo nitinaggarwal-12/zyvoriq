@@ -24,6 +24,7 @@ async function run() {
 
   const page = await browser.newPage();
   await page.setViewport({ width: 1600, height: 1000 });
+  await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
   page.on('console', msg => console.log('   [PAGE LOG]:', msg.text()));
   page.on('pageerror', err => console.error('   [PAGE ERROR]:', err.message));

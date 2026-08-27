@@ -57,7 +57,7 @@ const NeuralDiffusionPlayer = dynamic(() => import("./NeuralDiffusionPlayer").th
 const GeminiTranscribeStage = dynamic(() => import("./GeminiTranscribeStage").then(m => m.GeminiTranscribeStage), { ssr: false });
 const VeoVideoStage = dynamic(() => import("./VeoVideoStage").then(m => m.VeoVideoStage), { ssr: false });
 const PhoneticVisemeStage = dynamic(() => import("@/components/PhoneticVisemeStage").then(m => m.PhoneticVisemeStage), { ssr: false });
-const AnimeCinemaStage = dynamic(() => import("./AnimeCinemaStage").then(m => m.AnimeCinemaStage), { ssr: false });
+import { AnimeCinemaStage } from "./AnimeCinemaStage";
 
 export default function Gen7StudioPage() {
   // Studio Mode State: "anime" vs "executive"
