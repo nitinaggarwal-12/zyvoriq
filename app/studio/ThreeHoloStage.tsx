@@ -274,28 +274,26 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       new THREE.BufferAttribute(new Float32Array(priyaGeoData.morphTargets.browUp), 3)
     ];
 
-    // Dedicated Unified Video Stream (Zero duplicate playback across 2D/3D)
+    // Dedicated Live MP4 Video Stream for Three.js VideoTexture (Zero JPEGs)
     const personaSlug = selectedPersonaName.toLowerCase().split(" ")[0] || "priya";
-    const activeVideo = videoRef?.current || document.createElement("video");
-    if (!videoRef?.current) {
-      activeVideo.src = `/assets/video/${personaSlug}_master.mp4`;
-      activeVideo.crossOrigin = "anonymous";
-      activeVideo.loop = true;
-      activeVideo.muted = true;
-      activeVideo.playsInline = true;
-      activeVideo.preload = "auto";
-    }
+    const stageVideo = document.createElement("video");
+    stageVideo.src = `/assets/video/${personaSlug}_master.mp4`;
+    stageVideo.crossOrigin = "anonymous";
+    stageVideo.loop = true;
+    stageVideo.muted = true;
+    stageVideo.playsInline = true;
+    stageVideo.preload = "auto";
 
     // Seamless Zero-Black-Flash Looping Handler
-    activeVideo.addEventListener("timeupdate", () => {
-      if (activeVideo.duration > 0 && activeVideo.currentTime >= activeVideo.duration - 0.08) {
-        activeVideo.currentTime = 0.01;
-        activeVideo.play().catch(() => {});
+    stageVideo.addEventListener("timeupdate", () => {
+      if (stageVideo.duration > 0 && stageVideo.currentTime >= stageVideo.duration - 0.08) {
+        stageVideo.currentTime = 0.01;
+        stageVideo.play().catch(() => {});
       }
     });
 
-    if (isPlaying && activeVideo.paused) {
-      activeVideo.play().catch(() => {});
+    if (isPlaying) {
+      stageVideo.play().catch(() => {});
     }
 
     // Dynamic Radial Alpha Feather Mask to eliminate harsh rectangular card borders
@@ -316,7 +314,7 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
     alphaMaskTex.minFilter = THREE.LinearFilter;
     alphaMaskTex.magFilter = THREE.LinearFilter;
 
-    const presenterTex = new THREE.VideoTexture(activeVideo);
+    const presenterTex = new THREE.VideoTexture(stageVideo);
     presenterTex.minFilter = THREE.LinearFilter;
     presenterTex.magFilter = THREE.LinearFilter;
     presenterTex.format = THREE.RGBAFormat;
@@ -577,10 +575,8 @@ export const ThreeHoloStage: React.FC<ThreeHoloStageProps> = ({
       container.removeEventListener("mousedown", onMouseDown);
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
-      if (!videoRef?.current) {
-        activeVideo.pause();
-        activeVideo.src = "";
-      }
+      stageVideo.pause();
+      stageVideo.src = "";
       if (audioCtx && audioCtx.state !== "closed") {
         audioCtx.close();
       }

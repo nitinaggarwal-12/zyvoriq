@@ -125,14 +125,12 @@ export default function Gen7StudioPage() {
     setSpokenWordIndex(-1);
   };
 
-  // Synchronized Master Playback
+  // Synchronized Master Playback (Single Source of Truth)
   const handleTogglePlay = async () => {
     const video = videoRef.current;
-    const audio = audioRef.current;
 
     if (isPlaying) {
       if (video) video.pause();
-      if (audio) audio.pause();
       setIsPlaying(false);
     } else {
       try {
@@ -144,13 +142,6 @@ export default function Gen7StudioPage() {
             setSpokenWordIndex(-1);
           }
           await video.play().catch((e) => console.log("Video play notice:", e.name));
-        }
-        if (audio) {
-          audio.muted = isMuted;
-          if (audio.ended || (audio.duration && audio.currentTime >= audio.duration - 0.05)) {
-            audio.currentTime = 0;
-          }
-          await audio.play().catch((e) => console.log("Audio play notice:", e.name));
         }
         setIsPlaying(true);
       } catch (err) {
@@ -407,7 +398,11 @@ export default function Gen7StudioPage() {
               <div className="flex items-center gap-2">
                 <div className="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800">
                   <button
-                    onClick={() => setViewMode("3d_holo_stage")}
+                    onClick={() => {
+                      if (videoRef.current) videoRef.current.pause();
+                      setIsPlaying(false);
+                      setViewMode("3d_holo_stage");
+                    }}
                     className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
                       viewMode === "3d_holo_stage"
                         ? "bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 shadow-sm shadow-cyan-500/20"
@@ -417,7 +412,11 @@ export default function Gen7StudioPage() {
                     🌟 3D HOLO-STAGE
                   </button>
                   <button
-                    onClick={() => setViewMode("broadcast_stream")}
+                    onClick={() => {
+                      if (videoRef.current) videoRef.current.pause();
+                      setIsPlaying(false);
+                      setViewMode("broadcast_stream");
+                    }}
                     className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all ${
                       viewMode === "broadcast_stream"
                         ? "bg-purple-500/20 border border-purple-500/40 text-purple-300 shadow-sm shadow-purple-500/20"
