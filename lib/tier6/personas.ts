@@ -12,7 +12,7 @@ export const EXECUTIVE_PERSONAS: ExecutivePersona[] = [
     audioUrl: "/assets/audio/priya.wav",
     accent: "Indian English (Executive Orator)",
     voiceStyle: "Authoritative, Visionary & Energetic",
-    defaultScript: "Hello everyone! I'm Priya, Global Transformation CTO. Traditional enterprise content pipelines take 14 long days and over $140,000. With Zyvoriq, we collapse that entire lifecycle into just 90 seconds—backed by Veritas cryptographic consensus and Ed25519 provenance!",
+    defaultScript: "Hello everyone! I'm Priya, Global Transformation CTO. Traditional enterprise content pipelines take 14 long days and over $140,000. With Zyvoriq, we collapse that entire lifecycle into just 90 seconds!",
     bio: "Priya leads global enterprise architecture and AI deployment across Tier-1 financial institutions and cloud hyperscalers.",
     c2paCertId: "C2PA-ED25519-PRIYA-8849-VERITAS"
   },
