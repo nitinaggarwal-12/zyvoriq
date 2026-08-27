@@ -3,6 +3,7 @@
 import React, { useRef, useEffect } from "react";
 
 interface VeoSittingStageProps {
+  videoUrl?: string;
   isPlaying: boolean;
   currentTime?: number;
   restartTrigger?: number;
@@ -10,6 +11,7 @@ interface VeoSittingStageProps {
 }
 
 export const VeoSittingStage: React.FC<VeoSittingStageProps> = ({
+  videoUrl = "/assets/video/veo_priya_sitting.mp4",
   isPlaying,
   currentTime = 0,
   restartTrigger = 0,
@@ -59,7 +61,7 @@ export const VeoSittingStage: React.FC<VeoSittingStageProps> = ({
     >
       <video
         ref={videoRef}
-        src="/assets/video/veo_priya_sitting.mp4"
+        src={videoUrl}
         playsInline
         muted
         loop
