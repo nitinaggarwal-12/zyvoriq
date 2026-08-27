@@ -8,7 +8,7 @@ export const EXECUTIVE_PERSONAS: ExecutivePersona[] = [
     location: "Bangalore, India",
     gender: "female",
     avatarUrl: "/assets/avatars/priya.jpg",
-    videoUrl: "/assets/video/priya_master.mp4",
+    videoUrl: "/assets/video/veo_priya_master.mp4",
     audioUrl: "/assets/audio/priya.wav",
     accent: "Indian English (Executive Orator)",
     voiceStyle: "Authoritative, Visionary & Energetic",

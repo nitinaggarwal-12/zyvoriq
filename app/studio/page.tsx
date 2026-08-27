@@ -67,7 +67,7 @@ export default function Gen7StudioPage() {
   const [synthStage, setSynthStage] = useState<string>("");
   const [selectedResolution, setSelectedResolution] = useState<"1080p" | "4K">("1080p");
   const [showProvenanceModal, setShowProvenanceModal] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<"gemini_transcribe" | "veo_video" | "3d_gltf_avatar" | "broadcast_stream">("gemini_transcribe");
+  const [viewMode, setViewMode] = useState<"veo_video" | "gemini_transcribe" | "3d_gltf_avatar" | "broadcast_stream">("veo_video");
 
   // Dynamic Neuro-Biometrics Simulation
   const biometrics = useMemo<Gen7NeuroBiometrics>(() => {
