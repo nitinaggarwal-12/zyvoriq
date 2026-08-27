@@ -108,10 +108,14 @@ export default function Gen7StudioPage() {
     }
   }, [activeVideoSrc, selectedPersona.id, isPlaying]);
 
-  // Computed Word Timings
+  // Dynamic Persona Audio Duration State
+  const [audioDuration, setAudioDuration] = useState<number>(26.50);
+
+  // Computed Word Timings (100% Dynamically Derived from Master Audio Buffer)
   const wordTimings = useMemo<ScriptWordTiming[]>(() => {
-    return computePhoneticWordTimings(scriptText, 23.20);
-  }, [scriptText]);
+    const dur = audioDuration > 0 ? audioDuration : 26.50;
+    return computePhoneticWordTimings(scriptText, dur);
+  }, [scriptText, audioDuration]);
 
   // Active Veritas Cryptographic Seal
   const veritasSeal = useMemo<VeritasProvenanceSeal>(() => {
@@ -179,26 +183,24 @@ export default function Gen7StudioPage() {
   // 60 FPS Sub-Millisecond Dynamic Teleprompter Loop
   useEffect(() => {
     const updateTeleprompter = () => {
+      const audio = audioRef.current;
       const video = videoRef.current;
-      if (video) {
-        if (video.ended || (video.duration && video.currentTime >= video.duration - 0.05)) {
+
+      if (audio) {
+        if (audio.ended || (audio.duration && audio.currentTime >= audio.duration - 0.05)) {
           setIsPlaying(false);
-          video.pause();
+          audio.pause();
+          if (video) video.pause();
           return;
         }
 
-        const audio = audioRef.current;
-        const activeMedia = (video && !video.paused) ? video : (audio && !audio.paused) ? audio : video;
-
-        if (activeMedia && !activeMedia.paused) {
-          const time = activeMedia.currentTime;
+        if (!audio.paused) {
+          const time = audio.currentTime;
           setCurrentTime(time);
 
-          // Find active word with +120ms anticipation lead
-          const lookupTime = time + 0.12;
           let activeIdx = -1;
           for (let i = 0; i < wordTimings.length; i++) {
-            if (lookupTime >= wordTimings[i].start && lookupTime <= wordTimings[i].end) {
+            if (time >= wordTimings[i].start && time <= wordTimings[i].end) {
               activeIdx = i;
               break;
             }
@@ -443,6 +445,12 @@ export default function Gen7StudioPage() {
               ref={audioRef}
               src={selectedPersona.audioUrl}
               preload="auto"
+              onLoadedMetadata={(e) => {
+                const dur = e.currentTarget.duration;
+                if (dur && !isNaN(dur) && dur > 0) {
+                  setAudioDuration(dur);
+                }
+              }}
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
               onTimeUpdate={(e) => {
