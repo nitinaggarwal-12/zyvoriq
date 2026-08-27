@@ -67,7 +67,8 @@ export default function Gen7StudioPage() {
   const [synthStage, setSynthStage] = useState<string>("");
   const [selectedResolution, setSelectedResolution] = useState<"1080p" | "4K">("1080p");
   const [showProvenanceModal, setShowProvenanceModal] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<"veo_video" | "gemini_transcribe" | "3d_gltf_avatar" | "broadcast_stream">("veo_video");
+  const [viewMode, setViewMode] = useState<"veo_video" | "broadcast_stream">("veo_video");
+  const [restartTrigger, setRestartTrigger] = useState<number>(0);
 
   // Dynamic Neuro-Biometrics Simulation
   const biometrics = useMemo<Gen7NeuroBiometrics>(() => {
@@ -162,6 +163,7 @@ export default function Gen7StudioPage() {
     const video = videoRef.current;
     setCurrentTime(0);
     setSpokenWordIndex(-1);
+    setRestartTrigger(prev => prev + 1);
 
     if (viewMode === "broadcast_stream" && video) {
       video.currentTime = 0;
@@ -440,47 +442,14 @@ export default function Gen7StudioPage() {
               className="hidden"
             />
 
-            {/* Tab 1: Gemini 3.5 Transcribe & Voice Agent Studio */}
-            {viewMode === "gemini_transcribe" && (
-              <GeminiTranscribeStage
-                isPlaying={isPlaying}
-                isMuted={isMuted}
-                selectedPersonaName={selectedPersona.name}
-                audioUrl={selectedPersona.audioUrl}
-                onApplyScript={(cleaned) => setScriptText(cleaned)}
-              />
-            )}
-
-            {/* Tab 2: Google Veo 2 / Neural Video Diffusion Studio */}
+            {/* Tab 1: Google Veo 3.1 Neural Video Studio */}
             {viewMode === "veo_video" && (
               <VeoVideoStage
                 isPlaying={isPlaying}
                 isMuted={isMuted}
                 selectedPersonaName={selectedPersona.name}
-                selectedPersonaAvatar={selectedPersona.avatarUrl}
                 audioUrl={selectedPersona.audioUrl}
-                onTimeUpdate={(t) => {
-                  setCurrentTime(t);
-                  const lookupTime = t + 0.12;
-                  let activeIdx = -1;
-                  for (let i = 0; i < wordTimings.length; i++) {
-                    if (lookupTime >= wordTimings[i].start && lookupTime <= wordTimings[i].end) {
-                      activeIdx = i;
-                      break;
-                    }
-                  }
-                  setSpokenWordIndex(activeIdx);
-                }}
-              />
-            )}
-
-            {/* Tab 3: 3D Rigged GLTF Avatar Stage */}
-            {viewMode === "3d_gltf_avatar" && (
-              <GLTFStage
-                isPlaying={isPlaying}
-                isMuted={isMuted}
-                selectedPersonaName={selectedPersona.name}
-                audioUrl={selectedPersona.audioUrl}
+                restartTrigger={restartTrigger}
                 onTimeUpdate={(t) => {
                   setCurrentTime(t);
                   const lookupTime = t + 0.12;

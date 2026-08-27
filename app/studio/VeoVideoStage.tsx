@@ -7,8 +7,8 @@ interface VeoVideoStageProps {
   isPlaying: boolean;
   isMuted?: boolean;
   selectedPersonaName: string;
-  selectedPersonaAvatar: string;
   audioUrl: string;
+  restartTrigger?: number;
   onTimeUpdate?: (currentTime: number) => void;
 }
 
@@ -17,19 +17,11 @@ export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
   isMuted = false,
   selectedPersonaName,
   audioUrl,
+  restartTrigger = 0,
   onTimeUpdate,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [activeShot, setActiveShot] = useState<number>(0);
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const [generationProgress, setGenerationProgress] = useState<number>(100);
   const [localPlaying, setLocalPlaying] = useState<boolean>(false);
-
-  const SHOTS = [
-    { id: 0, title: "Shot 1: Veo 3.1 Establishing Keynote", focal: "24mm Cinema Master", motion: "Authentic Human Speech & Body Kinematics" },
-    { id: 1, title: "Shot 2: 70mm Executive Close-Up", focal: "70mm Portrait Prime", motion: "Dynamic Eye Gaze & Natural Facial Diffusion" },
-    { id: 2, title: "Shot 3: Sovereign Stage Arc", focal: "35mm Anamorphic", motion: "Physical Stage Lighting & Spatial Movement" }
-  ];
 
   // Sync external isPlaying state with the real HTML5 video
   useEffect(() => {
@@ -44,6 +36,17 @@ export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
       setLocalPlaying(false);
     }
   }, [isPlaying]);
+
+  // Handle Instant Restart Trigger
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || restartTrigger === 0) return;
+    video.currentTime = 0;
+    if (isPlaying) {
+      video.play().catch(() => {});
+      setLocalPlaying(true);
+    }
+  }, [restartTrigger]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -120,10 +123,10 @@ export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
         <div className="absolute top-3 left-3 flex items-center gap-2 z-20 pointer-events-none">
           <div className="px-3 py-1 bg-black/70 backdrop-blur-md rounded-full border border-purple-500/40 text-purple-300 font-mono text-xs flex items-center gap-2 pointer-events-auto">
             <Film className="w-3.5 h-3.5 text-purple-400" />
-            <span>{SHOTS[activeShot].title}</span>
+            <span>Veo 3.1 Keynote Broadcast</span>
           </div>
           <div className="px-2.5 py-1 bg-black/60 backdrop-blur-md rounded-full border border-slate-700 text-slate-300 font-mono text-[11px] pointer-events-auto">
-            {SHOTS[activeShot].focal}
+            24mm Cinema Master
           </div>
         </div>
 
@@ -141,32 +144,6 @@ export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
         >
           {localPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
         </button>
-
-        {/* Bottom Shot Timeline Selector */}
-        <div className="absolute bottom-3 inset-x-3 z-20 flex items-center justify-between flex-wrap gap-2 pointer-events-none">
-          <div className="px-3 py-1.5 bg-black/80 backdrop-blur-md rounded-xl border border-purple-500/30 text-purple-300 font-mono text-[11px] flex items-center gap-2 pointer-events-auto">
-            <span className="text-purple-400">🎥 Camera Motion:</span>
-            <span className="font-bold text-white bg-purple-950/90 px-2 py-0.5 rounded border border-purple-500/40">
-              {SHOTS[activeShot].motion}
-            </span>
-          </div>
-
-          <div className="flex items-center bg-black/80 backdrop-blur-md p-1 rounded-xl border border-slate-800 gap-1 shadow-2xl pointer-events-auto">
-            {SHOTS.map((s, idx) => (
-              <button
-                key={s.id}
-                onClick={() => setActiveShot(idx)}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all ${
-                  activeShot === idx
-                    ? "bg-purple-500/30 border border-purple-400 text-purple-200 shadow-sm shadow-purple-500/30 font-bold"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
-                }`}
-              >
-                Shot {idx + 1}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );
