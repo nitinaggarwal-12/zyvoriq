@@ -34,7 +34,6 @@ import { generateVeritasSeal } from "@/lib/tier6/veritas_engine";
 import { VeoVideoStage } from "./VeoVideoStage";
 import { VeoFramingStage } from "./VeoFramingStage";
 import { VeoSittingStage } from "./VeoSittingStage";
-import { TwoDStreamStage } from "./TwoDStreamStage";
 
 export default function Gen7StudioPage() {
   // State
@@ -46,7 +45,7 @@ export default function Gen7StudioPage() {
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [spokenWordIndex, setSpokenWordIndex] = useState<number>(-1);
-  const [viewMode, setViewMode] = useState<"standing_keynote" | "dynamic_framing" | "sitting_boardroom" | "2d_stream">("standing_keynote");
+  const [viewMode, setViewMode] = useState<"standing_keynote" | "dynamic_framing" | "sitting_boardroom">("standing_keynote");
   const [restartTrigger, setRestartTrigger] = useState<number>(0);
   const [showProvenanceModal, setShowProvenanceModal] = useState<boolean>(false);
   const [isSynthesizing, setIsSynthesizing] = useState<boolean>(false);
@@ -357,16 +356,6 @@ export default function Gen7StudioPage() {
                 >
                   🪑 SITTING BOARDROOM
                 </button>
-                <button
-                  onClick={() => setViewMode("2d_stream")}
-                  className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
-                    viewMode === "2d_stream"
-                      ? "bg-blue-500/20 border border-blue-500/40 text-blue-300 shadow-sm"
-                      : "text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  🎬 2D STREAM
-                </button>
               </div>
             </div>
 
@@ -403,18 +392,6 @@ export default function Gen7StudioPage() {
             {/* Mode 3: Sitting Executive Posture (Veo 3.1 Boardroom) */}
             {viewMode === "sitting_boardroom" && (
               <VeoSittingStage
-                isPlaying={isPlaying}
-                currentTime={currentTime}
-                restartTrigger={restartTrigger}
-                onTogglePlay={handleTogglePlay}
-              />
-            )}
-
-            {/* Mode 4: 2D Stream (Original 2D Persona Video) */}
-            {viewMode === "2d_stream" && (
-              <TwoDStreamStage
-                videoUrl={selectedPersona.videoUrl}
-                avatarUrl={selectedPersona.avatarUrl}
                 isPlaying={isPlaying}
                 currentTime={currentTime}
                 restartTrigger={restartTrigger}
