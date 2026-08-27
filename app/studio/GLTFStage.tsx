@@ -167,20 +167,15 @@ export const GLTFStage: React.FC<GLTFStageProps> = ({
     let rightArmBone: THREE.Bone | null = null;
 
     loader.load(
-      "/assets/models/michelle.glb",
+      "/assets/models/xbot.glb",
       (gltf) => {
         modelRoot = gltf.scene;
-        modelRoot.scale.set(0.0125, 0.0125, 0.0125);
+        modelRoot.scale.set(1.0, 1.0, 1.0);
         modelRoot.position.set(0, 0, 0.2);
         modelRoot.traverse((child) => {
           if ((child as THREE.Mesh).isMesh) {
             child.castShadow = true;
             child.receiveShadow = true;
-            const mesh = child as THREE.Mesh;
-            if (mesh.material) {
-              (mesh.material as THREE.MeshStandardMaterial).roughness = 0.45;
-              (mesh.material as THREE.MeshStandardMaterial).metalness = 0.1;
-            }
           }
           if ((child as THREE.Bone).isBone) {
             const b = child as THREE.Bone;
@@ -193,20 +188,22 @@ export const GLTFStage: React.FC<GLTFStageProps> = ({
         scene.add(modelRoot);
         setIsLoadingModel(false);
 
-        // Animation Mixer if animations exist
+        // Animation Mixer
         if (gltf.animations && gltf.animations.length > 0) {
           const mixer = new THREE.AnimationMixer(modelRoot);
           mixerRef.current = mixer;
-          const action = mixer.clipAction(gltf.animations[0]);
+          // Find idle or first animation
+          const idleClip = gltf.animations.find(a => a.name.toLowerCase().includes("idle")) || gltf.animations[0];
+          const action = mixer.clipAction(idleClip);
           action.play();
         }
       },
       undefined,
       (err) => {
-        console.warn("Failed loading michelle.glb, falling back to xbot.glb", err);
-        loader.load("/assets/models/xbot.glb", (gltf2) => {
+        console.warn("Falling back to michelle.glb", err);
+        loader.load("/assets/models/michelle.glb", (gltf2) => {
           modelRoot = gltf2.scene;
-          modelRoot.scale.set(1.15, 1.15, 1.15);
+          modelRoot.scale.set(1.0, 1.0, 1.0);
           modelRoot.position.set(0, 0, 0.2);
           scene.add(modelRoot);
           setIsLoadingModel(false);
