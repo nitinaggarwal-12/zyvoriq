@@ -40,8 +40,8 @@ export default function Gen7StudioPage() {
   // State
   const [selectedPersona, setSelectedPersona] = useState<ExecutivePersona>(EXECUTIVE_PERSONAS[0]);
   const [scriptText, setScriptText] = useState<string>(EXECUTIVE_PERSONAS[0].defaultScript);
-  const [activeAudioUrl, setActiveAudioUrl] = useState<string>("/assets/audio/veo_priya_keynote.wav");
-  const [audioDuration, setAudioDuration] = useState<number>(21.0);
+  const [activeAudioUrl, setActiveAudioUrl] = useState<string>(EXECUTIVE_PERSONAS[0].audioUrl);
+  const [audioDuration, setAudioDuration] = useState<number>(23.2);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
@@ -53,10 +53,6 @@ export default function Gen7StudioPage() {
   const [synthSuccess, setSynthSuccess] = useState<boolean>(false);
 
   const audioRef = useRef<HTMLAudioElement>(null);
-
-  // Dynamic Video Sources per Persona
-  const standingVideoUrl = selectedPersona.id === "priya" ? "/assets/video/veo_priya_master.mp4" : selectedPersona.videoUrl;
-  const sittingVideoUrl = selectedPersona.id === "priya" ? "/assets/video/veo_priya_sitting.mp4" : selectedPersona.id === "maya" ? "/assets/video/maya_master.mp4" : selectedPersona.videoUrl;
 
   // Compute Word Timings dynamically based on audio duration
   const wordTimings = useMemo<ScriptWordTiming[]>(() => {
@@ -124,9 +120,8 @@ export default function Gen7StudioPage() {
     setIsPlaying(false);
     setSelectedPersona(persona);
     setScriptText(persona.defaultScript);
-    const defaultAudio = persona.id === "priya" ? "/assets/audio/veo_priya_keynote.wav" : persona.audioUrl;
-    setActiveAudioUrl(defaultAudio);
-    setAudioDuration(persona.id === "priya" ? 21.0 : 18.5);
+    setActiveAudioUrl(persona.audioUrl);
+    setAudioDuration(23.2);
     setCurrentTime(0);
     setSpokenWordIndex(-1);
     setRestartTrigger(prev => prev + 1);
@@ -388,7 +383,6 @@ export default function Gen7StudioPage() {
             {/* Mode 1: Standing Keynote (Veo 3.1 Full-Body Keynote) */}
             {viewMode === "standing_keynote" && (
               <VeoVideoStage
-                videoUrl={standingVideoUrl}
                 isPlaying={isPlaying}
                 currentTime={currentTime}
                 restartTrigger={restartTrigger}
@@ -399,7 +393,6 @@ export default function Gen7StudioPage() {
             {/* Mode 2: Dynamic In-Browser Focal Framing Zoom (0ms) */}
             {viewMode === "dynamic_framing" && (
               <VeoFramingStage
-                videoUrl={standingVideoUrl}
                 isPlaying={isPlaying}
                 currentTime={currentTime}
                 restartTrigger={restartTrigger}
@@ -410,7 +403,6 @@ export default function Gen7StudioPage() {
             {/* Mode 3: Sitting Executive Posture (Veo 3.1 Boardroom) */}
             {viewMode === "sitting_boardroom" && (
               <VeoSittingStage
-                videoUrl={sittingVideoUrl}
                 isPlaying={isPlaying}
                 currentTime={currentTime}
                 restartTrigger={restartTrigger}
