@@ -76,6 +76,7 @@ export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
         ref={videoRef}
         src="/assets/video/veo_priya_master.mp4"
         playsInline
+        muted
         loop
         autoPlay
         onTimeUpdate={handleTimeUpdate}

@@ -76,6 +76,7 @@ export const VeoSittingStage: React.FC<VeoSittingStageProps> = ({
         ref={videoRef}
         src="/assets/video/veo_priya_sitting.mp4"
         playsInline
+        muted
         loop
         autoPlay
         onTimeUpdate={handleTimeUpdate}
