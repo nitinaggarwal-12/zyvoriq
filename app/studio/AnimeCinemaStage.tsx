@@ -38,6 +38,7 @@ import {
   SubtitleLangCode,
   SubtitleCue
 } from "@/lib/tier6/anime_subtitles";
+import { CreateActModal } from "@/components/CreateActModal";
 
 interface LivingDojoMessage {
   id: string;
@@ -92,6 +93,7 @@ export function AnimeCinemaStage() {
   const [subtitleLang, setSubtitleLang] = useState<SubtitleLangCode>("en");
   const [showAudioSubMenu, setShowAudioSubMenu] = useState<boolean>(false);
   const [selectedActIndex, setSelectedActIndex] = useState<number>(0);
+  const [isCreateActOpen, setIsCreateActOpen] = useState<boolean>(false);
 
   // Living Dojo Mode State
   const [userInput, setUserInput] = useState<string>("");
@@ -276,31 +278,42 @@ export function AnimeCinemaStage() {
           </div>
 
           {/* Mode Switcher Tabs */}
-          <div className="flex items-center gap-2 p-1.5 bg-black/60 border border-zinc-700/60 rounded-xl backdrop-blur-md">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
-              data-testid="cinema-mode-tab"
-              onClick={() => setStudioMode("cinema")}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold font-mono uppercase tracking-wider flex items-center gap-2 transition-all ${
-                studioMode === "cinema"
-                  ? "bg-amber-500 text-black shadow-lg shadow-amber-500/20"
-                  : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-              }`}
+              data-testid="create-act-button"
+              onClick={() => setIsCreateActOpen(true)}
+              className="px-4 py-2 rounded-xl text-xs font-bold font-mono uppercase tracking-wider flex items-center gap-2 transition-all bg-gradient-to-r from-amber-500 via-rose-500 to-amber-400 hover:brightness-110 text-slate-950 shadow-lg shadow-amber-500/25 active:scale-95 border border-amber-400/40"
             >
-              <Film className="w-3.5 h-3.5" />
-              🎬 7-Act Cinema
+              <Sparkles className="w-3.5 h-3.5 fill-current" />
+              <span>✨ Create New Act</span>
             </button>
-            <button
-              data-testid="tier6-living-dojo-tab"
-              onClick={() => setStudioMode("living_dojo")}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold font-mono uppercase tracking-wider flex items-center gap-2 transition-all ${
-                studioMode === "living_dojo"
-                  ? "bg-gradient-to-r from-teal-500 to-emerald-400 text-black shadow-lg shadow-teal-500/20"
-                  : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-              }`}
-            >
-              <Radio className="w-3.5 h-3.5" />
-              ⛩️ Tier 6 Living Dojo
-            </button>
+
+            <div className="flex items-center gap-1.5 p-1.5 bg-black/60 border border-zinc-700/60 rounded-xl backdrop-blur-md">
+              <button
+                data-testid="cinema-mode-tab"
+                onClick={() => setStudioMode("cinema")}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold font-mono uppercase tracking-wider flex items-center gap-2 transition-all ${
+                  studioMode === "cinema"
+                    ? "bg-amber-500 text-black shadow-lg shadow-amber-500/20"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+                }`}
+              >
+                <Film className="w-3.5 h-3.5" />
+                🎬 7-Act Cinema
+              </button>
+              <button
+                data-testid="tier6-living-dojo-tab"
+                onClick={() => setStudioMode("living_dojo")}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold font-mono uppercase tracking-wider flex items-center gap-2 transition-all ${
+                  studioMode === "living_dojo"
+                    ? "bg-gradient-to-r from-teal-500 to-emerald-400 text-black shadow-lg shadow-teal-500/20"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+                }`}
+              >
+                <Radio className="w-3.5 h-3.5" />
+                ⛩️ Tier 6 Living Dojo
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -830,6 +843,12 @@ export function AnimeCinemaStage() {
           </div>
         </div>
       )}
+
+      {/* Interactive Studio Act & Episode Generator Modal */}
+      <CreateActModal
+        isOpen={isCreateActOpen}
+        onClose={() => setIsCreateActOpen(false)}
+      />
     </div>
   );
 }
