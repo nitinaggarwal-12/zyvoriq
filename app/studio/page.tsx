@@ -18,7 +18,10 @@ import {
   CheckCircle2,
   Lock,
   Globe,
-  Share2
+  Share2,
+  Zap,
+  Loader2,
+  Check
 } from "lucide-react";
 import { EXECUTIVE_PERSONAS } from "@/lib/tier6/personas";
 import {
@@ -36,6 +39,8 @@ export default function Gen7StudioPage() {
   // State
   const [selectedPersona, setSelectedPersona] = useState<ExecutivePersona>(EXECUTIVE_PERSONAS[0]);
   const [scriptText, setScriptText] = useState<string>(EXECUTIVE_PERSONAS[0].defaultScript);
+  const [activeAudioUrl, setActiveAudioUrl] = useState<string>(EXECUTIVE_PERSONAS[0].audioUrl);
+  const [audioDuration, setAudioDuration] = useState<number>(23.2);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
@@ -43,24 +48,79 @@ export default function Gen7StudioPage() {
   const [viewMode, setViewMode] = useState<"standing_keynote" | "dynamic_framing" | "sitting_boardroom">("standing_keynote");
   const [restartTrigger, setRestartTrigger] = useState<number>(0);
   const [showProvenanceModal, setShowProvenanceModal] = useState<boolean>(false);
+  const [isSynthesizing, setIsSynthesizing] = useState<boolean>(false);
+  const [synthSuccess, setSynthSuccess] = useState<boolean>(false);
 
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  // Compute Word Timings
+  // Compute Word Timings dynamically based on audio duration
   const wordTimings = useMemo<ScriptWordTiming[]>(() => {
-    return computePhoneticWordTimings(scriptText, 23.2);
-  }, [scriptText]);
+    return computePhoneticWordTimings(scriptText, audioDuration);
+  }, [scriptText, audioDuration]);
 
   // Active Veritas Cryptographic Seal
   const veritasSeal = useMemo<VeritasProvenanceSeal>(() => {
     return generateVeritasSeal(selectedPersona, scriptText, selectedPersona.videoUrl);
   }, [selectedPersona, scriptText]);
 
+  // Audio Playback Synchronization
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isPlaying) {
+      audio.play().catch(() => {});
+    } else {
+      audio.pause();
+    }
+  }, [isPlaying]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.muted = isMuted;
+  }, [isMuted]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || restartTrigger === 0) return;
+    audio.currentTime = 0;
+    if (isPlaying) {
+      audio.play().catch(() => {});
+    }
+  }, [restartTrigger]);
+
+  const handleAudioTimeUpdate = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const time = audio.currentTime;
+    setCurrentTime(time);
+
+    // Sync teleprompter word highlighting
+    const lookupTime = time + 0.12;
+    let activeIdx = -1;
+    for (let i = 0; i < wordTimings.length; i++) {
+      if (lookupTime >= wordTimings[i].start && lookupTime <= wordTimings[i].end) {
+        activeIdx = i;
+        break;
+      }
+    }
+    setSpokenWordIndex(activeIdx);
+  };
+
+  const handleAudioEnded = () => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setSpokenWordIndex(-1);
+  };
+
   // Handle Persona Change
   const handleSelectPersona = (persona: ExecutivePersona) => {
     setIsPlaying(false);
     setSelectedPersona(persona);
     setScriptText(persona.defaultScript);
+    setActiveAudioUrl(persona.audioUrl);
+    setAudioDuration(23.2);
     setCurrentTime(0);
     setSpokenWordIndex(-1);
     setRestartTrigger(prev => prev + 1);
@@ -77,6 +137,40 @@ export default function Gen7StudioPage() {
     setSpokenWordIndex(-1);
     setRestartTrigger(prev => prev + 1);
     setIsPlaying(true);
+  };
+
+  // Live Script Voice Synthesis with Gemini Neural Voice
+  const handleSynthesize = async () => {
+    if (!scriptText.trim()) return;
+    setIsSynthesizing(true);
+    setSynthSuccess(false);
+
+    try {
+      const res = await fetch("/api/tier6/synthesize-voice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          scriptText,
+          personaName: selectedPersona.name
+        })
+      });
+
+      const data = await res.json();
+      if (data.success && data.audioUrl) {
+        setActiveAudioUrl(data.audioUrl);
+        setAudioDuration(data.durationSeconds || 20);
+        setSynthSuccess(true);
+        setCurrentTime(0);
+        setSpokenWordIndex(-1);
+        setRestartTrigger(prev => prev + 1);
+        setIsPlaying(true);
+        setTimeout(() => setSynthSuccess(false), 4000);
+      }
+    } catch (err) {
+      console.error("Synthesis error:", err);
+    } finally {
+      setIsSynthesizing(false);
+    }
   };
 
   return (
@@ -170,23 +264,47 @@ export default function Gen7StudioPage() {
             </div>
           </div>
 
-          {/* Script Editor */}
+          {/* Script Editor with Live Synthesis Action */}
           <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 backdrop-blur-md shadow-xl flex flex-col gap-3">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3 flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <Mic className="h-4 w-4 text-cyan-400" />
                 <h2 className="font-bold text-sm text-slate-100 tracking-wide">
                   EXECUTIVE SCRIPT
                 </h2>
               </div>
+
+              {/* Synthesize Button */}
+              <button
+                onClick={handleSynthesize}
+                disabled={isSynthesizing}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs shadow-md shadow-cyan-500/20 transition-all disabled:opacity-50"
+              >
+                {isSynthesizing ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Synthesizing...</span>
+                  </>
+                ) : synthSuccess ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-emerald-950" />
+                    <span>Voice Ready!</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-3.5 w-3.5 fill-current" />
+                    <span>⚡ Synthesize Voice</span>
+                  </>
+                )}
+              </button>
             </div>
 
             <textarea
               value={scriptText}
               onChange={(e) => setScriptText(e.target.value)}
-              rows={6}
+              rows={8}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 transition-colors leading-relaxed resize-none font-sans"
-              placeholder="Enter your keynote script here..."
+              placeholder="Paste or write any custom presentation script here, then click ⚡ Synthesize Voice..."
             />
           </div>
         </div>
@@ -240,11 +358,13 @@ export default function Gen7StudioPage() {
               </div>
             </div>
 
-            {/* Persistent Audio Element */}
+            {/* Master Audio Element with Synchronization */}
             <audio
               ref={audioRef}
-              src={selectedPersona.audioUrl}
+              src={activeAudioUrl}
               preload="auto"
+              onTimeUpdate={handleAudioTimeUpdate}
+              onEnded={handleAudioEnded}
               className="hidden"
             />
 
@@ -254,9 +374,8 @@ export default function Gen7StudioPage() {
                 isPlaying={isPlaying}
                 isMuted={isMuted}
                 selectedPersonaName={selectedPersona.name}
-                audioUrl={selectedPersona.audioUrl}
+                audioUrl={activeAudioUrl}
                 restartTrigger={restartTrigger}
-                onTimeUpdate={(t) => setCurrentTime(t)}
               />
             )}
 
@@ -266,9 +385,8 @@ export default function Gen7StudioPage() {
                 isPlaying={isPlaying}
                 isMuted={isMuted}
                 selectedPersonaName={selectedPersona.name}
-                audioUrl={selectedPersona.audioUrl}
+                audioUrl={activeAudioUrl}
                 restartTrigger={restartTrigger}
-                onTimeUpdate={(t) => setCurrentTime(t)}
               />
             )}
 
@@ -278,9 +396,8 @@ export default function Gen7StudioPage() {
                 isPlaying={isPlaying}
                 isMuted={isMuted}
                 selectedPersonaName={selectedPersona.name}
-                audioUrl={selectedPersona.audioUrl}
+                audioUrl={activeAudioUrl}
                 restartTrigger={restartTrigger}
-                onTimeUpdate={(t) => setCurrentTime(t)}
               />
             )}
 
@@ -315,7 +432,7 @@ export default function Gen7StudioPage() {
               <div className="flex items-center gap-4 text-xs font-mono text-slate-400">
                 <div className="flex items-center gap-1">
                   <span className="text-cyan-400 font-bold">{currentTime.toFixed(1)}s</span>
-                  <span>/ 23.2s</span>
+                  <span>/ {audioDuration.toFixed(1)}s</span>
                 </div>
                 <div className="flex items-center gap-1 text-emerald-400 font-bold">
                   <Activity className="h-3.5 w-3.5" />
@@ -332,10 +449,10 @@ export default function Gen7StudioPage() {
                 <Mic className="h-3.5 w-3.5 text-cyan-400" />
                 <span>DYNAMIC TELEPROMPTER & PHONETIC CADENCE</span>
               </span>
-              <span className="text-cyan-400 font-bold">60 FPS SYNC</span>
+              <span className="text-cyan-400 font-bold font-mono">{audioDuration.toFixed(1)}s TOTAL</span>
             </div>
 
-            <div className="p-4 bg-slate-950 rounded-xl border border-slate-800/80 min-h-[90px] flex flex-wrap gap-x-2 gap-y-2 items-center leading-relaxed">
+            <div className="p-4 bg-slate-950 rounded-xl border border-slate-800/80 max-h-[160px] overflow-y-auto flex flex-wrap gap-x-2 gap-y-2 items-center leading-relaxed">
               {wordTimings.map((wt, idx) => {
                 const isSpoken = idx === spokenWordIndex;
                 const isPast = idx < spokenWordIndex;
