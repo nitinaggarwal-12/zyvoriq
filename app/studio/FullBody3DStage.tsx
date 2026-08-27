@@ -405,7 +405,7 @@ export const FullBody3DStage: React.FC<FullBody3DStageProps> = ({
       }
 
       // Dynamic Presenter Texture & Kinematics in 3D Space
-      if (isPlaying && video.readyState >= 2) {
+      if (isPlaying || (!video.paused && video.currentTime > 0)) {
         presenterMat.map = videoTexture;
         videoTexture.needsUpdate = true;
         presenter.rotation.z = Math.sin(t * 2.5) * 0.015 + vol * 0.01;
@@ -464,7 +464,7 @@ export const FullBody3DStage: React.FC<FullBody3DStageProps> = ({
 
   return (
     <div className="relative w-full h-[580px] rounded-2xl overflow-hidden bg-slate-950 border border-cyan-500/30 shadow-2xl">
-      {/* Hidden Master Video Element providing VideoTexture to Three.js */}
+      {/* Master Video Element with active DOM decoding for Three.js VideoTexture */}
       <video
         ref={videoRef}
         src={videoSrc}
@@ -472,7 +472,18 @@ export const FullBody3DStage: React.FC<FullBody3DStageProps> = ({
         onTimeUpdate={handleTimeUpdate}
         playsInline
         preload="auto"
-        className="hidden"
+        muted={isMuted}
+        crossOrigin="anonymous"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "16px",
+          height: "9px",
+          opacity: 0.01,
+          pointerEvents: "none",
+          zIndex: -1
+        }}
       />
 
       {/* Three.js 3D WebGL Canvas */}
