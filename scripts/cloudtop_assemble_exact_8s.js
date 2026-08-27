@@ -5,13 +5,13 @@ const LANGS = ['ja', 'en', 'es', 'fr', 'de', 'hi'];
 
 function run() {
   console.log("=============================================================================");
-  console.log("🎬 CLOUDTOP MASTERING: EXACT 8.000000s BLOCKS WITH 0.8s LEAD-IN & NO OVERLAP");
+  console.log("🎬 ZERO-LAG AUDIO MASTERING: CRISP 250ms LEAD-IN (0.25s) & EXACT 8.000s ACTS");
   console.log("=============================================================================");
 
   fs.mkdirSync('public/assets/audio/anime_dubs', { recursive: true });
 
   for (const L of LANGS) {
-    console.log(`\n🎌 [${L.toUpperCase()}] Mastering 7 Acts to 8.000s blocks...`);
+    console.log(`\n🎌 [${L.toUpperCase()}] Mastering 7 Acts with crisp 250ms reaction timing...`);
 
     // Acts 1 to 6
     for (let i = 1; i <= 6; i++) {
@@ -21,10 +21,10 @@ function run() {
       // Get raw duration
       const rawDur = parseFloat(execSync(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ${rawFile}`).toString().trim());
 
-      // If duration exceeds 6.0s, gently compress with atempo so it ends by 6.8s (giving 1.2s ending pause)
+      // If duration exceeds 6.2s, compress gently so it easily finishes before 7.0s
       let tempoFilter = '';
-      if (rawDur > 6.0) {
-        const t = (rawDur / 5.8).toFixed(3);
+      if (rawDur > 6.2) {
+        const t = (rawDur / 6.0).toFixed(3);
         tempoFilter = `,atempo=${t}`;
         console.log(`   Act ${i}: raw ${rawDur.toFixed(2)}s -> atempo=${t}`);
       } else {
@@ -34,8 +34,9 @@ function run() {
       // Pan: Aoi (Acts 1,3,5 -> c0=0.25, c1=0.95), Ren (Acts 2,4,6 -> c0=0.95, c1=0.25)
       const pan = (i % 2 === 1) ? 'pan=stereo|c0=0.25*c0|c1=0.95*c0' : 'pan=stereo|c0=0.95*c0|c1=0.25*c0';
 
+      // 250ms crisp lead-in (adelay=250|250)
       const cmd = `ffmpeg -y -i "${rawFile}" -filter_complex "
-        [0:a]silenceremove=start_periods=1:start_threshold=-45dB${tempoFilter},${pan},adelay=800|800[speech];
+        [0:a]silenceremove=start_periods=1:start_threshold=-45dB${tempoFilter},${pan},adelay=250|250[speech];
         aevalsrc=0:d=8.0:s=48000[silence];
         [silence][speech]amix=inputs=2:duration=first:dropout_transition=0[out]
       " -map '[out]' -ar 48000 "${outFile}"`;
@@ -43,16 +44,15 @@ function run() {
     }
 
     // Act 7 (Bow Scene - Mutual Dialogue)
-    const dur7a = parseFloat(execSync(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 scratch/cadence_dubs_v2/${L}_7a.wav`).toString().trim());
-    const dur7b = parseFloat(execSync(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 scratch/cadence_dubs_v2/${L}_7b.wav`).toString().trim());
-    console.log(`   Act 7: Aoi ${dur7a.toFixed(2)}s (delay 0.8s) | Ren ${dur7b.toFixed(2)}s (delay 4.0s)`);
+    // Aoi starts at 0.35s (adelay=350|350), Ren starts at 3.0s (adelay=3000|3000)
+    console.log(`   Act 7: Aoi (delay 0.35s) | Ren (delay 3.0s)`);
 
     const act7Cmd = `ffmpeg -y \
       -i scratch/cadence_dubs_v2/${L}_7a.wav \
       -i scratch/cadence_dubs_v2/${L}_7b.wav \
       -filter_complex "
-        [0:a]silenceremove=start_periods=1:start_threshold=-45dB,pan=stereo|c0=0.25*c0|c1=0.95*c0,adelay=800|800[a7a];
-        [1:a]silenceremove=start_periods=1:start_threshold=-45dB,pan=stereo|c0=0.95*c0|c1=0.25*c0,adelay=4000|4000[a7b];
+        [0:a]silenceremove=start_periods=1:start_threshold=-45dB,pan=stereo|c0=0.25*c0|c1=0.95*c0,adelay=350|350[a7a];
+        [1:a]silenceremove=start_periods=1:start_threshold=-45dB,pan=stereo|c0=0.95*c0|c1=0.25*c0,adelay=3000|3000[a7b];
         [a7a][a7b]amix=inputs=2:dropout_transition=0[a7speech];
         aevalsrc=0:d=8.0:s=48000[silence];
         [silence][a7speech]amix=inputs=2:duration=first:dropout_transition=0[out]

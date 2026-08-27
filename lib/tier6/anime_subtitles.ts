@@ -19,7 +19,7 @@ export interface SubtitleCue {
 export const ANIME_SUBTITLE_CUES: SubtitleCue[] = [
   {
     id: "act_1",
-    startTime: 0.80,
+    startTime: 0.25,
     endTime: 7.20,
     speaker: "Aoi",
     speakerRole: "Apprentice Samurai",
@@ -36,7 +36,7 @@ export const ANIME_SUBTITLE_CUES: SubtitleCue[] = [
   },
   {
     id: "act_2",
-    startTime: 8.80,
+    startTime: 8.25,
     endTime: 15.20,
     speaker: "Ren",
     speakerRole: "Zen Master",
@@ -53,7 +53,7 @@ export const ANIME_SUBTITLE_CUES: SubtitleCue[] = [
   },
   {
     id: "act_3",
-    startTime: 16.80,
+    startTime: 16.25,
     endTime: 23.00,
     speaker: "Aoi",
     speakerRole: "Apprentice Samurai",
@@ -70,7 +70,7 @@ export const ANIME_SUBTITLE_CUES: SubtitleCue[] = [
   },
   {
     id: "act_4",
-    startTime: 24.80,
+    startTime: 24.25,
     endTime: 31.20,
     speaker: "Ren",
     speakerRole: "Zen Master",
@@ -87,7 +87,7 @@ export const ANIME_SUBTITLE_CUES: SubtitleCue[] = [
   },
   {
     id: "act_5",
-    startTime: 32.80,
+    startTime: 32.25,
     endTime: 39.00,
     speaker: "Aoi",
     speakerRole: "Apprentice Samurai",
@@ -104,7 +104,7 @@ export const ANIME_SUBTITLE_CUES: SubtitleCue[] = [
   },
   {
     id: "act_6",
-    startTime: 40.80,
+    startTime: 40.25,
     endTime: 47.00,
     speaker: "Ren",
     speakerRole: "Zen Master",
@@ -121,8 +121,8 @@ export const ANIME_SUBTITLE_CUES: SubtitleCue[] = [
   },
   {
     id: "act_7a",
-    startTime: 48.80,
-    endTime: 51.50,
+    startTime: 48.35,
+    endTime: 50.80,
     speaker: "Aoi",
     speakerRole: "Apprentice Samurai",
     actName: "Act 7: The Synchronized Bow",
@@ -138,8 +138,8 @@ export const ANIME_SUBTITLE_CUES: SubtitleCue[] = [
   },
   {
     id: "act_7b",
-    startTime: 52.00,
-    endTime: 55.20,
+    startTime: 51.00,
+    endTime: 55.00,
     speaker: "Ren",
     speakerRole: "Zen Master",
     actName: "Act 7: The Synchronized Bow",
