@@ -22,7 +22,17 @@ let pgPool: Pool | null = null;
 let pgSchemaMigrated = false;
 
 export function getPostgresPool(): Pool | null {
-  const dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+  let dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.DATABASE_PRIVATE_URL;
+  
+  if (!dbUrl && process.env.PGHOST && process.env.PGUSER && process.env.PGDATABASE) {
+    const host = process.env.PGHOST;
+    const user = process.env.PGUSER;
+    const pass = process.env.PGPASSWORD ? `:${encodeURIComponent(process.env.PGPASSWORD)}` : "";
+    const port = process.env.PGPORT || "5432";
+    const db = process.env.PGDATABASE;
+    dbUrl = `postgresql://${user}${pass}@${host}:${port}/${db}`;
+  }
+
   if (!dbUrl) return null;
 
   if (!pgPool) {
