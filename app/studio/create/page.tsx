@@ -1,8 +1,6 @@
-"use client";
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Sparkles,
   Film,
@@ -33,21 +31,30 @@ import {
 } from "lucide-react";
 import { GENRE_CATEGORIES, GENRE_CONCEPTS, GenreConcept } from "@/components/CreateActModal";
 
-export default function StudioCreatePage() {
+function CreatePageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const targetTrackId = searchParams.get("trackId") || "";
+  const modeParam = searchParams.get("mode") || "";
 
   const [selectedGenre, setSelectedGenre] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isSpeakingPitch, setIsSpeakingPitch] = useState<string | null>(null);
 
-  const [title, setTitle] = useState("⚡ The Thunderstorm of Mushin");
-  const [prompt, setPrompt] = useState(
-    "Sensei Ren teaches Apprentice Aoi the concept of Mushin (Mind without Mind) during a night thunderstorm duel on the wooden dojo balcony."
+  const [title, setTitle] = useState(
+    targetTrackId ? "⚡ Act 2: Combustion Transition" : "⚡ The Thunderstorm of Mushin"
   );
-  const [duration, setDuration] = useState<number>(24);
-  const [destinationMode, setDestinationMode] = useState<"new_series" | "append_current">("new_series");
-  const [characterLock, setCharacterLock] = useState("ren_aoi");
-  const [visualStyle, setVisualStyle] = useState("ufotable_anime");
+  const [prompt, setPrompt] = useState(
+    targetTrackId
+      ? "Act 2 continuity scene: Transitioning to supersonic airflow and turbulent fuel injection dynamics within the combustion chamber."
+      : "Sensei Ren teaches Apprentice Aoi the concept of Mushin (Mind without Mind) during a night thunderstorm duel on the wooden dojo balcony."
+  );
+  const [duration, setDuration] = useState<number>(8);
+  const [destinationMode, setDestinationMode] = useState<"new_series" | "append_current">(
+    modeParam === "append_current" || targetTrackId ? "append_current" : "new_series"
+  );
+  const [characterLock, setCharacterLock] = useState(targetTrackId ? "david" : "ren_aoi");
+  const [visualStyle, setVisualStyle] = useState(targetTrackId ? "cinematic_4k" : "ufotable_anime");
   const [languages, setLanguages] = useState<string[]>(["ja", "en", "es", "fr", "de", "hi"]);
   const [autoVeritas, setAutoVeritas] = useState(true);
 
@@ -115,6 +122,8 @@ export default function StudioCreatePage() {
       keepalive: true,
       body: JSON.stringify({
         id: newJobId,
+        parentTrackId: destinationMode === "append_current" ? targetTrackId : undefined,
+        mode: destinationMode,
         title,
         prompt,
         duration,
@@ -746,5 +755,13 @@ export default function StudioCreatePage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function StudioCreatePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-950 flex items-center justify-center text-amber-400 font-mono text-sm">Loading Studio Creator...</div>}>
+      <CreatePageContent />
+    </Suspense>
   );
 }

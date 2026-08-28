@@ -11,6 +11,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       id,
+      parentTrackId,
+      mode = "new_series",
       title = "Custom AI Video Production",
       prompt = "A high-fidelity cinematic video scene",
       duration = 8,
@@ -207,25 +209,23 @@ export async function POST(req: NextRequest) {
     logs.push(`${getTs()} 🔒 Veritas Seal Certified: ${certId} (C2PA: ${c2paManifestHash.slice(0, 18)}...)`);
     logs.push(`${getTs()} ✨ Production Complete in ${((Date.now() - startTime) / 1000).toFixed(1)}s!`);
 
-    // Auto-save into permanent studio series library
-    db.saveStudioTrack({
-      id: jobId,
-      title,
-      subtitle: prompt.slice(0, 100),
-      category: characterLock.includes("ren") ? "anime" : "custom",
-      character: characterLock === "david" ? "David Kim" : characterLock.includes("ren") ? "Sensei Ren & Aoi" : "AI Creator",
-      videoSrc: videoUrl,
-      audioSrc: audioUrl,
-      duration: actualDuration,
-      acts: [
-        {
+    // Auto-save into permanent studio series library (support appending to parent series track)
+    if (parentTrackId && mode === "append_current") {
+      const existingTracks = db.getStudioTracks();
+      const existing = existingTracks.find((t: any) => t.id === parentTrackId);
+      if (existing) {
+        const currentActs = Array.isArray(existing.acts) ? existing.acts : JSON.parse(existing.acts || "[]");
+        const actNum = currentActs.length + 1;
+        const startTimeSec = currentActs.reduce((acc: number, a: any) => Math.max(acc, a.endTime || 0), 0);
+        const newAct = {
           id: `act_${Date.now()}`,
-          startTime: 0,
-          endTime: actualDuration,
-          speaker: characterLock.includes("ren") ? "Ren" : "Narrator",
+          startTime: startTimeSec,
+          endTime: startTimeSec + actualDuration,
+          speaker: characterLock === "david" ? "David Kim" : characterLock.includes("ren") ? "Ren" : "Narrator",
           speakerRole: "Primary Director",
-          actName: title,
+          actName: title || `Act ${actNum}: Next Horizon`,
           philosophy: geminiScript.philosophy || "Autonomous Neural Synthesis",
+          videoUrl,
           audioUrl,
           text: {
             ja: geminiScript.dialogueJa,
@@ -235,11 +235,85 @@ export async function POST(req: NextRequest) {
             de: geminiScript.dialogueDe,
             hi: geminiScript.dialogueHi
           }
-        }
-      ],
-      veritas_status: "CERTIFIED_VALID",
-      snark_proof_hash: c2paManifestHash
-    });
+        };
+
+        db.saveStudioTrack({
+          ...existing,
+          videoSrc: videoUrl,
+          audioSrc: audioUrl || existing.audioSrc,
+          duration: startTimeSec + actualDuration,
+          acts: [...currentActs, newAct],
+          veritas_status: "CERTIFIED_VALID",
+          snark_proof_hash: c2paManifestHash
+        });
+      } else {
+        db.saveStudioTrack({
+          id: jobId,
+          title,
+          subtitle: prompt.slice(0, 100),
+          category: characterLock.includes("ren") ? "anime" : "custom",
+          character: characterLock === "david" ? "David Kim" : characterLock.includes("ren") ? "Sensei Ren & Aoi" : "AI Creator",
+          videoSrc: videoUrl,
+          audioSrc: audioUrl,
+          duration: actualDuration,
+          acts: [
+            {
+              id: `act_${Date.now()}`,
+              startTime: 0,
+              endTime: actualDuration,
+              speaker: characterLock.includes("ren") ? "Ren" : "Narrator",
+              speakerRole: "Primary Director",
+              actName: title,
+              philosophy: geminiScript.philosophy || "Autonomous Neural Synthesis",
+              audioUrl,
+              text: {
+                ja: geminiScript.dialogueJa,
+                en: geminiScript.dialogueEn,
+                es: geminiScript.dialogueEs,
+                fr: geminiScript.dialogueFr,
+                de: geminiScript.dialogueDe,
+                hi: geminiScript.dialogueHi
+              }
+            }
+          ],
+          veritas_status: "CERTIFIED_VALID",
+          snark_proof_hash: c2paManifestHash
+        });
+      }
+    } else {
+      db.saveStudioTrack({
+        id: jobId,
+        title,
+        subtitle: prompt.slice(0, 100),
+        category: characterLock.includes("ren") ? "anime" : "custom",
+        character: characterLock === "david" ? "David Kim" : characterLock.includes("ren") ? "Sensei Ren & Aoi" : "AI Creator",
+        videoSrc: videoUrl,
+        audioSrc: audioUrl,
+        duration: actualDuration,
+        acts: [
+          {
+            id: `act_${Date.now()}`,
+            startTime: 0,
+            endTime: actualDuration,
+            speaker: characterLock.includes("ren") ? "Ren" : "Narrator",
+            speakerRole: "Primary Director",
+            actName: title,
+            philosophy: geminiScript.philosophy || "Autonomous Neural Synthesis",
+            audioUrl,
+            text: {
+              ja: geminiScript.dialogueJa,
+              en: geminiScript.dialogueEn,
+              es: geminiScript.dialogueEs,
+              fr: geminiScript.dialogueFr,
+              de: geminiScript.dialogueDe,
+              hi: geminiScript.dialogueHi
+            }
+          }
+        ],
+        veritas_status: "CERTIFIED_VALID",
+        snark_proof_hash: c2paManifestHash
+      });
+    }
 
     // Update DB job state to COMPLETED
     db.updateProductionJob(jobId, {
