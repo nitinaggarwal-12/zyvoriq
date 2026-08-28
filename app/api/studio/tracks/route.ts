@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       subtitle: body.subtitle || body.prompt?.slice(0, 80) || "AI Character Video Series",
       category: body.category || "custom",
       character: body.character || (body.characterLock === "priya" ? "Priya Sharma (Silicon Valley)" : body.characterLock === "david" ? "David Kim (Zurich)" : body.characterLock === "elena" ? "Elena Rostova (Tokyo)" : "Sensei Ren & Apprentice Aoi"),
-      videoSrc: (body.videoSrc || body.video_src || (body.characterLock?.includes("ren") ? "/assets/video/ren_and_aoi_conversation_synced.mp4" : body.characterLock === "david" ? "/assets/video/david_master.mp4" : "/assets/video/priya_4k_10act_master.mp4")).replace("/videos/", "/assets/video/"),
+      videoSrc: (body.videoSrc || body.video_src || "").replace("/videos/", "/assets/video/"),
       duration: body.duration || 24,
       acts: body.acts || [
         {

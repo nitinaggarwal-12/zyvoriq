@@ -333,8 +333,8 @@ export function AnimeCinemaStage() {
         title: newActData.title || "Custom AI Production Series",
         subtitle: newActData.script?.philosophy || "Multi-Modal Autonomous Series",
         category: newActData.characterLock === "ren_aoi" ? "anime" : "executive",
-        character: newActData.characterLock === "ren_aoi" ? "🥋 Sensei Ren & Aoi" : newActData.characterLock === "david" ? "👨‍💼 David Kim (Lead Infrastructure)" : "👩‍💼 Priya Sharma (Chief AI Officer)",
-        videoSrc: newActData.videoUrl || (newActData.characterLock === "ren_aoi" ? "/assets/video/ren_and_aoi_conversation_synced.mp4" : newActData.characterLock === "david" ? "/assets/video/david_master.mp4" : "/assets/video/priya_4k_10act_master.mp4"),
+        character: newActData.characterLock === "ren_aoi" ? "🥋 Sensei Ren & Aoi" : newActData.characterLock === "david" ? "👨‍💼 David Kim (Lead Infrastructure)" : newActData.characterLock === "elena" ? "👩‍💼 Elena Rostova (Product Strategy)" : "👩‍💼 Priya Sharma (Chief AI Officer)",
+        videoSrc: newActData.videoUrl || "",
         acts: [newCue],
         duration: newTrackDuration
       };

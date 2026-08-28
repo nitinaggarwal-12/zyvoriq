@@ -190,40 +190,11 @@ Return JSON strictly matching:
       });
     }
 
-    // 2. Synthesize Video Diffusion & TTS Audio for each Act
+    // 2. Synthesize Video Diffusion & TTS Audio for each Act (Strict Zero-Fallback Policy)
     const compiledActs: any[] = [];
     let cumulativeTime = 0;
     let primaryVideoUrl = "";
     let primaryOperationName = "veo_master_dispatch";
-
-    const defaultFallbackVideos = effectiveCharacterLock.includes("ren")
-      ? [
-          "/assets/video/ren_and_aoi_conversation_synced.mp4",
-          "/assets/video/ren_and_aoi_1min_master.mp4",
-          "/assets/video/ren_japanese_philosophy_1min.mp4",
-          "/assets/video/veo_ren_and_aoi_duo.mp4"
-        ]
-      : effectiveCharacterLock === "david"
-      ? [
-          "/assets/video/david_master.mp4"
-        ]
-      : effectiveCharacterLock === "elena"
-      ? [
-          "/assets/video/option_1_keynote_wide.mp4",
-          "/assets/video/option_4_tech_podium.mp4"
-        ]
-      : effectiveCharacterLock === "priya"
-      ? [
-          "/assets/video/priya_4k_10act_master.mp4",
-          "/assets/video/veo_priya_24s_master.mp4",
-          "/assets/video/veo_priya_keynote_21s.mp4",
-          "/assets/video/veo_priya_master.mp4"
-        ]
-      : [
-          "/assets/video/option_1_keynote_wide.mp4",
-          "/assets/video/option_4_tech_podium.mp4",
-          "/assets/video/priya_4k_10act_master.mp4"
-        ];
 
     const actProgressSlice = 70 / numActs;
 
@@ -241,9 +212,9 @@ Return JSON strictly matching:
         logs
       });
 
-      let actVideoUrl = defaultFallbackVideos[i % defaultFallbackVideos.length];
+      let actVideoUrl = "";
       let actActualDur = actTargetDur;
-      let actOpName = `act_${actNum}_fallback`;
+      let actOpName = `act_${actNum}_fresh`;
 
       if (!skipVeo && apiKey) {
         try {
@@ -274,12 +245,12 @@ Return JSON strictly matching:
           }
           logs.push(`${getTs()} 🎉 [Act ${actNum}/${numActs}] Veo 3.1 Rendered (${(veoResult.fileSize / 1024 / 1024).toFixed(2)} MB): ${actVideoUrl}`);
         } catch (veoErr: any) {
-          logs.push(`${getTs()} ⚠️ [Act ${actNum}/${numActs}] Veo diffusion note: ${veoErr.message}. Using continuity master footage.`);
-          actVideoUrl = defaultFallbackVideos[i % defaultFallbackVideos.length];
+          logs.push(`${getTs()} ⚠️ [Act ${actNum}/${numActs}] Veo diffusion note: ${veoErr.message}. Marked as unrendered.`);
+          actVideoUrl = "";
         }
       }
 
-      if (i === 0) {
+      if (i === 0 && actVideoUrl) {
         primaryVideoUrl = actVideoUrl;
       }
 
@@ -434,7 +405,7 @@ Return JSON strictly matching:
               : effectiveCharacterLock.includes("ren")
               ? "Sensei Ren & Aoi"
               : "Executive Presenter",
-          videoSrc: primaryVideoUrl || defaultFallbackVideos[0],
+          videoSrc: primaryVideoUrl || "",
           audioSrc: compiledActs[0]?.audioUrl,
           duration: totalActualDuration,
           acts: compiledActs,
@@ -458,7 +429,7 @@ Return JSON strictly matching:
             : effectiveCharacterLock.includes("ren")
             ? "Sensei Ren & Aoi"
             : "Executive Presenter",
-        videoSrc: primaryVideoUrl || defaultFallbackVideos[0],
+        videoSrc: primaryVideoUrl || "",
         audioSrc: compiledActs[0]?.audioUrl,
         duration: totalActualDuration,
         acts: compiledActs,
