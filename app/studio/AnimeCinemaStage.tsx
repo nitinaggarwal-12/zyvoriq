@@ -39,7 +39,6 @@ import {
   SubtitleLangCode,
   SubtitleCue
 } from "@/lib/tier6/anime_subtitles";
-import { CreateActModal } from "@/components/CreateActModal";
 
 interface LivingDojoMessage {
   id: string;
@@ -1152,14 +1151,6 @@ export function AnimeCinemaStage() {
           </div>
         </div>
       )}
-
-      {/* Interactive Studio Act & Episode Generator Modal */}
-      <CreateActModal
-        isOpen={isCreateActOpen}
-        onClose={() => setIsCreateActOpen(false)}
-        onActCreated={handleActCreated}
-        currentTrackTitle={activeTrack.title}
-      />
     </div>
   );
 }
