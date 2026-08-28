@@ -782,7 +782,11 @@ export function AnimeCinemaStage() {
                 preload="auto"
                 onTimeUpdate={handleTimeUpdate}
                 onLoadedMetadata={() => {
-                  if (videoRef.current) setDuration(videoRef.current.duration || activeTrack.duration);
+                  if (!isMultiFile && videoRef.current) {
+                    setDuration(videoRef.current.duration || activeTrack.duration);
+                  } else if (activeTrack) {
+                    setDuration(activeTrack.duration || (actsList.length * 8.0));
+                  }
                 }}
                 onEnded={() => {
                   if (selectedActIndex < actsList.length - 1) {
