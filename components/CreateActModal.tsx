@@ -212,7 +212,7 @@ export function CreateActModal({ isOpen, onClose, onActCreated }: CreateActModal
                 <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-teal-400" /> Duration & Act Structure
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   <button
                     onClick={() => setDuration(8)}
                     className={`p-3 rounded-xl border text-center transition-all flex flex-col items-center gap-1 ${
@@ -247,6 +247,18 @@ export function CreateActModal({ isOpen, onClose, onActCreated }: CreateActModal
                   >
                     <span className="text-sm font-bold font-mono">56s</span>
                     <span className="text-[10px] text-slate-400">7-Act Film</span>
+                  </button>
+
+                  <button
+                    onClick={() => setDuration(120)}
+                    className={`p-3 rounded-xl border text-center transition-all flex flex-col items-center gap-1 ${
+                      duration === 120
+                        ? "bg-amber-500/20 border-amber-500 text-amber-200 shadow-md shadow-amber-500/10"
+                        : "bg-slate-900/60 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800/60"
+                    }`}
+                  >
+                    <span className="text-sm font-bold font-mono">120s</span>
+                    <span className="text-[10px] text-slate-400">2-Min Film</span>
                   </button>
                 </div>
               </div>
