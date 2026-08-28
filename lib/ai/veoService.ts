@@ -33,7 +33,9 @@ export async function generateVeoVideo(
     throw new Error("GEMINI_API_KEY or GOOGLE_API_KEY environment variable is missing on server.");
   }
 
-  const durationSeconds = Math.max(4, Math.min(8, Math.round(options.durationSeconds || 8)));
+  // Google Veo 3.1 strictly requires durationSeconds to be exactly 4, 6, or 8
+  const rawDur = Math.round(options.durationSeconds || 8);
+  const durationSeconds = rawDur <= 5 ? 4 : rawDur <= 7 ? 6 : 8;
   const aspectRatio = options.aspectRatio || "16:9";
   const modelName =
     options.modelTier === "quality"
