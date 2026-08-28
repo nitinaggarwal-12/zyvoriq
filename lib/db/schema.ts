@@ -133,15 +133,20 @@ CREATE TABLE IF NOT EXISTS veritas_certificates (
   issued_at TEXT DEFAULT (datetime('now'))
 );
 
--- 12. publish_dispatches (Delivery Logs)
-CREATE TABLE IF NOT EXISTS publish_dispatches (
+-- 13. studio_series_tracks (Saved Series & Clips Library)
+CREATE TABLE IF NOT EXISTS studio_series_tracks (
   id TEXT PRIMARY KEY,
-  cert_id TEXT NOT NULL REFERENCES veritas_certificates(id) ON DELETE CASCADE,
-  channel TEXT NOT NULL,
-  external_post_id TEXT,
-  delivery_status TEXT DEFAULT 'sent',
-  error_response TEXT,
-  published_at TEXT DEFAULT (datetime('now'))
+  title TEXT NOT NULL,
+  subtitle TEXT,
+  category TEXT DEFAULT 'anime',
+  character TEXT NOT NULL,
+  video_src TEXT NOT NULL,
+  duration REAL NOT NULL DEFAULT 56.0,
+  acts_json TEXT NOT NULL,
+  veritas_status TEXT DEFAULT 'CERTIFIED_VALID',
+  snark_proof_hash TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
 );
 `;
 

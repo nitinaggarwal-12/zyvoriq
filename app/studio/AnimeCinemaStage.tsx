@@ -29,7 +29,8 @@ import {
   Compass,
   Scroll,
   Zap,
-  Download
+  Download,
+  FolderHeart
 } from "lucide-react";
 import {
   ANIME_SUBTITLE_CUES,
@@ -183,15 +184,42 @@ export function AnimeCinemaStage() {
 
   // Multi-Track Series Library State
   const [seriesTracks, setSeriesTracks] = useState<SeriesTrack[]>(DEFAULT_SERIES_TRACKS);
-  const [activeTrackId, setActiveTrackId] = useState<string>("track_anime_kaizen");
+  const [activeTrackId, setActiveTrackId] = useState<string>("track_kaizen");
 
-  const activeTrack = seriesTracks.find((t) => t.id === activeTrackId) || seriesTracks[0];
+  // Fetch tracks from persistent SQLite DB
+  useEffect(() => {
+    async function loadTracks() {
+      try {
+        const res = await fetch("/api/studio/tracks");
+        const data = await res.json();
+        if (data.success && Array.isArray(data.tracks) && data.tracks.length > 0) {
+          setSeriesTracks(data.tracks);
+          
+          // Check for URL query param ?track=...
+          if (typeof window !== "undefined") {
+            const params = new URLSearchParams(window.location.search);
+            const queryTrack = params.get("track");
+            if (queryTrack && data.tracks.some((t: any) => t.id === queryTrack)) {
+              setActiveTrackId(queryTrack);
+            } else if (!data.tracks.some((t: any) => t.id === activeTrackId)) {
+              setActiveTrackId(data.tracks[0].id);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load tracks from API:", e);
+      }
+    }
+    loadTracks();
+  }, []);
+
+  const activeTrack = seriesTracks.find((t) => t.id === activeTrackId) || seriesTracks[0] || DEFAULT_SERIES_TRACKS[0];
   const actsList = activeTrack.acts;
 
   // Cinema Mode State
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
-  const [duration, setDuration] = useState<number>(activeTrack.duration || 56.0);
+  const [duration, setDuration] = useState<number>(activeTrack?.duration || 56.0);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [audioLang, setAudioLang] = useState<AudioLangCode>("ja");
   const [subtitleLang, setSubtitleLang] = useState<SubtitleLangCode>("en");
@@ -493,13 +521,23 @@ export function AnimeCinemaStage() {
           })}
         </div>
 
-        <Link
-          href="/studio/create?mode=new_series"
-          className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-rose-500/20 hover:from-amber-500/30 hover:to-rose-500/30 border border-amber-500/50 text-amber-300 text-xs font-bold font-mono transition-all shrink-0 flex items-center gap-1.5 shadow-sm active:scale-95"
-        >
-          <Sparkles className="w-3.5 h-3.5 fill-current" />
-          <span>+ New Series Track</span>
-        </Link>
+        <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href="/studio/library"
+            className="px-3.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm"
+          >
+            <FolderHeart className="w-3.5 h-3.5 text-amber-400" />
+            <span>📚 Media Vault (Saved Clips)</span>
+          </Link>
+
+          <Link
+            href="/studio/create?mode=new_series"
+            className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-rose-500/20 hover:from-amber-500/30 hover:to-rose-500/30 border border-amber-500/50 text-amber-300 text-xs font-bold font-mono transition-all shrink-0 flex items-center gap-1.5 shadow-sm active:scale-95"
+          >
+            <Sparkles className="w-3.5 h-3.5 fill-current" />
+            <span>+ New Series Track</span>
+          </Link>
+        </div>
       </div>
 
       {/* Header Banner */}

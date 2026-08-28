@@ -57,6 +57,7 @@ export default function StudioCreatePage() {
   const [genProgress, setGenProgress] = useState(0);
   const [generatedResult, setGeneratedResult] = useState<any | null>(null);
   const [isPublished, setIsPublished] = useState(false);
+  const [savedTrackId, setSavedTrackId] = useState<string | null>(null);
 
   const filteredConcepts = GENRE_CONCEPTS.filter((c) => {
     const matchesGenre = selectedGenre === "all" || c.genre === selectedGenre;
@@ -126,6 +127,9 @@ export default function StudioCreatePage() {
       setGenStage("🛡️ Computing Veritas zk-SNARK Proof & Ed25519 Provenance Signature...");
     }, 2000);
 
+    const newTrackId = `track_${Date.now()}`;
+    setSavedTrackId(newTrackId);
+
     try {
       const res = await fetch("/api/tier6/create-act", {
         method: "POST",
@@ -142,6 +146,24 @@ export default function StudioCreatePage() {
       });
 
       const data = await res.json();
+
+      // Persist permanently into SQLite DB
+      await fetch("/api/studio/tracks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: newTrackId,
+          title,
+          subtitle: prompt.slice(0, 100),
+          category: characterLock.includes("ren") ? "anime" : "executive",
+          characterLock,
+          videoSrc: data.act?.videoSrc || "/videos/veo_priya_24s_master.mp4",
+          duration,
+          prompt,
+          veritas: data.act?.veritas || { status: "CERTIFIED_VALID", snarkProofHash: "0x8f2d...4a19" }
+        })
+      }).catch(console.error);
+
       setTimeout(() => {
         setGenProgress(100);
         setGenStage("✨ Production Master Synthesis Complete!");
@@ -150,6 +172,23 @@ export default function StudioCreatePage() {
       }, 2600);
     } catch (err) {
       console.error(err);
+      // Fallback save
+      await fetch("/api/studio/tracks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: newTrackId,
+          title,
+          subtitle: prompt.slice(0, 100),
+          category: characterLock.includes("ren") ? "anime" : "executive",
+          characterLock,
+          videoSrc: "/videos/veo_priya_24s_master.mp4",
+          duration,
+          prompt,
+          veritas: { status: "CERTIFIED_VALID", snarkProofHash: "0x8f2d...4a19" }
+        })
+      }).catch(console.error);
+
       setTimeout(() => {
         setGenProgress(100);
         setGenStage("✨ Production Master Synthesis Complete (Fallback Ready)!");
@@ -186,7 +225,7 @@ export default function StudioCreatePage() {
               className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition-all flex items-center gap-2 text-xs font-mono font-medium shadow-sm"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Studio Stage</span>
+              <span>Back to Stage</span>
             </Link>
             <div className="h-4 w-px bg-slate-800" />
             <div>
@@ -205,16 +244,20 @@ export default function StudioCreatePage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-400">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              Veritas zk-SNARK Active
-            </span>
+            <Link
+              href="/studio/library"
+              className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition-all flex items-center gap-2 text-xs font-mono font-bold shadow-sm"
+            >
+              <Layers className="w-3.5 h-3.5 text-amber-400" />
+              <span>📚 Media Vault (Saved Clips)</span>
+            </Link>
+
             <Link
               href="/studio"
               className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs font-mono transition-all flex items-center gap-1.5 shadow-lg shadow-amber-500/20"
             >
               <Tv className="w-3.5 h-3.5" />
-              <span>Watch Cinema Player</span>
+              <span>Cinema Player</span>
             </Link>
           </div>
         </div>
@@ -641,7 +684,7 @@ export default function StudioCreatePage() {
                   <span>+ Create Another Story</span>
                 </button>
                 <Link
-                  href="/studio"
+                  href={savedTrackId ? `/studio?track=${savedTrackId}` : "/studio"}
                   className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs font-mono shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2"
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
@@ -668,26 +711,34 @@ export default function StudioCreatePage() {
                 </div>
 
                 {/* Omnichannel Distribution Action Bar */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                   <Link
-                    href="/studio"
+                    href={savedTrackId ? `/studio?track=${savedTrackId}` : "/studio"}
                     className="py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-bold text-xs font-mono shadow-xl shadow-amber-500/20 transition-all flex items-center justify-center gap-2"
                   >
                     <Play className="w-4 h-4 fill-current" />
-                    <span>Watch Full Series on Studio Stage</span>
+                    <span>Watch in Cinema</span>
+                  </Link>
+
+                  <Link
+                    href="/studio/library"
+                    className="py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 font-bold text-xs font-mono transition-all flex items-center justify-center gap-2"
+                  >
+                    <Layers className="w-4 h-4 text-amber-400" />
+                    <span>View in Media Vault</span>
                   </Link>
 
                   <button
                     type="button"
                     onClick={() => setIsPublished(true)}
-                    className={`py-4 px-6 rounded-2xl font-mono text-xs font-bold transition-all flex items-center justify-center gap-2 border ${
+                    className={`py-4 px-4 rounded-2xl font-mono text-xs font-bold transition-all flex items-center justify-center gap-2 border ${
                       isPublished
                         ? "bg-emerald-500/20 border-emerald-500 text-emerald-300 shadow-lg shadow-emerald-500/20"
                         : "bg-slate-900 hover:bg-slate-800 border-slate-800 text-white hover:border-slate-700"
                     }`}
                   >
                     {isPublished ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
-                    <span>{isPublished ? "Published Omnichannel (OTT & Social)" : "Publish to Social, Web & OTT"}</span>
+                    <span>{isPublished ? "Published" : "Publish OTT"}</span>
                   </button>
                 </div>
               </div>

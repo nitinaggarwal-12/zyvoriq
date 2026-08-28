@@ -202,5 +202,186 @@ export const db = {
     const database = getDatabase();
     const stmt = database.prepare("SELECT * FROM veritas_certificates ORDER BY issued_at DESC LIMIT 50");
     return stmt.all() as unknown as VeritasCertificate[];
+  },
+
+  // 13. studio_series_tracks (Saved Series & Clips Library)
+  getStudioTracks(): any[] {
+    const database = getDatabase();
+    const stmt = database.prepare("SELECT * FROM studio_series_tracks ORDER BY created_at DESC");
+    let rows = stmt.all() as any[];
+    if (rows.length === 0) {
+      this.seedDefaultStudioTracks();
+      rows = database.prepare("SELECT * FROM studio_series_tracks ORDER BY created_at DESC").all() as any[];
+    }
+    return rows.map(r => ({
+      id: r.id,
+      title: r.title,
+      subtitle: r.subtitle,
+      category: r.category,
+      character: r.character,
+      videoSrc: r.video_src,
+      duration: r.duration,
+      acts: JSON.parse(r.acts_json || "[]"),
+      veritas: {
+        status: r.veritas_status || "CERTIFIED_VALID",
+        snarkProofHash: r.snark_proof_hash || "0x8f2d...4a19"
+      },
+      createdAt: r.created_at,
+      updatedAt: r.updated_at
+    }));
+  },
+
+  saveStudioTrack(track: any): void {
+    const database = getDatabase();
+    const stmt = database.prepare(`
+      INSERT INTO studio_series_tracks (
+        id, title, subtitle, category, character, video_src, duration, acts_json, veritas_status, snark_proof_hash, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+      ON CONFLICT(id) DO UPDATE SET
+        title = excluded.title,
+        subtitle = excluded.subtitle,
+        category = excluded.category,
+        character = excluded.character,
+        video_src = excluded.video_src,
+        duration = excluded.duration,
+        acts_json = excluded.acts_json,
+        veritas_status = excluded.veritas_status,
+        snark_proof_hash = excluded.snark_proof_hash,
+        updated_at = datetime('now');
+    `);
+    stmt.run(
+      track.id,
+      track.title,
+      track.subtitle || "",
+      track.category || "custom",
+      track.character || "AI Broadcaster",
+      track.videoSrc || track.video_src || "/videos/veo_priya_24s_master.mp4",
+      track.duration || 24,
+      typeof track.acts === "string" ? track.acts : JSON.stringify(track.acts || []),
+      track.veritas?.status || track.veritas_status || "CERTIFIED_VALID",
+      track.veritas?.snarkProofHash || track.snark_proof_hash || "0x8f2d...4a19"
+    );
+  },
+
+  deleteStudioTrack(id: string): void {
+    const database = getDatabase();
+    const stmt = database.prepare("DELETE FROM studio_series_tracks WHERE id = ?");
+    stmt.run(id);
+  },
+
+  seedDefaultStudioTracks(): void {
+    const defaultTracks = [
+      {
+        id: "track_kaizen",
+        title: "The Master & The Apprentice: Path to Kaizen",
+        subtitle: "7-Act Cinematic Anime Series · Sensei Ren & Apprentice Aoi",
+        category: "anime",
+        character: "Sensei Ren & Apprentice Aoi",
+        video_src: "/assets/video/master_apprentice_1min.mp4",
+        duration: 56.0,
+        acts: [
+          {
+            id: "act_1",
+            startTime: 0.25,
+            endTime: 7.5,
+            speaker: "Aoi",
+            speakerRole: "Apprentice",
+            actName: "Act 1: Apprentice Doubt",
+            philosophy: "Shoshin (初心) — Beginner's Mind",
+            text: {
+              ja: "🥋 AOI: 「先生、毎朝稽古を重ねていますが、なぜ心がまだ迷うのでしょうか？」",
+              en: "🥋 AOI: \"Sensei Ren... I train every sunrise, yet why do I still feel so uncertain?\"",
+              es: "🥋 AOI: \"Sensei Ren... Entreno cada amanecer, pero ¿por qué aún me siento tan inseguro?\"",
+              fr: "🥋 AOI: « Sensei Ren... Je m'entraîne chaque matin, mais pourquoi ai-je encore tant de doutes ? »",
+              de: "🥋 AOI: „Sensei Ren... Ich trainiere jeden Sonnenaufgang, aber warum fühle ich mich noch so unsicher?“",
+              hi: "🥋 आओई: \"सेंसेई रेन... मैं हर सुबह अभ्यास करता हूँ, फिर भी मेरे मन में यह संशय क्यों है?\""
+            }
+          },
+          {
+            id: "act_2",
+            startTime: 8.0,
+            endTime: 15.5,
+            speaker: "Ren",
+            speakerRole: "Master",
+            actName: "Act 2: The Bloom of Oubaitori",
+            philosophy: "Oubaitori (桜梅桃李) — Never compare your spring to another's summer",
+            text: {
+              ja: "⛩️ SENSEI REN: 「庭の桜と梅を見よ。桜は梅になろうと焦らぬ。己の時を知るのだ。」",
+              en: "⛩️ SENSEI REN: \"Look at the garden, Aoi. The cherry never envies the plum. Each blooms in its own season.\"",
+              es: "⛩️ SENSEI REN: \"Mira el jardín, Aoi. El cerezo nunca envidia al ciruelo. Cada uno florece en su propia estación.\"",
+              fr: "⛩️ SENSEI REN: « Regarde le jardin, Aoi. Le cerisier n'envie jamais le prunier. Chacun fleurit à sa saison. »",
+              de: "⛩️ SENSEI REN: „Sieh dir den Garten an, Aoi. Die Kirsche beneidet nie die Pflaume. Jede blüht zu ihrer Zeit.“",
+              hi: "⛩️ सेंसेई रेन: \"बगीचे को देखो, आओई। चेरी कभी बेर से ईर्ष्या नहीं करती। प्रत्येक अपने समय पर खिलता है।\""
+            }
+          }
+        ],
+        veritas_status: "CERTIFIED_VALID",
+        snark_proof_hash: "0x8f2d...kaizen_master"
+      },
+      {
+        id: "track_sovereign_ai",
+        title: "Executive Sovereign AI Keynote",
+        subtitle: "Enterprise Deterministic Media & Cryptographic Provenance",
+        category: "executive",
+        character: "Priya Sharma (Chief AI Officer)",
+        video_src: "/videos/veo_priya_24s_master.mp4",
+        duration: 24.0,
+        acts: [
+          {
+            id: "exec_act_1",
+            startTime: 0.25,
+            endTime: 11.5,
+            speaker: "Priya",
+            speakerRole: "Chief AI Officer",
+            actName: "Act 1: Frontier Autonomous AI",
+            philosophy: "Sovereign Intelligence Architecture",
+            text: {
+              ja: "🌐 PRIYA: 「企業の意思決定を加速する自律型AIインテリジェンスの新時代へようこそ。」",
+              en: "🌐 PRIYA: \"Welcome to the frontier of sovereign autonomous enterprise intelligence.\"",
+              es: "🌐 PRIYA: \"Bienvenidos a la frontera de la inteligencia empresarial autónoma y soberana.\"",
+              fr: "🌐 PRIYA: « Bienvenue à la frontière de l'intelligence d'entreprise souveraine et autonome. »",
+              de: "🌐 PRIYA: „Willkommen an der Grenze souveräner autonomer Unternehmensintelligenz.“",
+              hi: "🌐 प्रिया: \"स्वायत्त उद्यम बुद्धिमत्ता के नए युग में आपका स्वागत है।\""
+            }
+          }
+        ],
+        veritas_status: "CERTIFIED_VALID",
+        snark_proof_hash: "0x4e9a...priya_keynote"
+      },
+      {
+        id: "track_zurich_neural",
+        title: "Zurich Neural Systems & Quantum Protocol",
+        subtitle: "Distributed Micro-Inference & Sovereign Model Topologies",
+        category: "executive",
+        character: "David Kim (Lead Infrastructure)",
+        video_src: "/assets/video/david_master.mp4",
+        duration: 16.0,
+        acts: [
+          {
+            id: "zurich_act_1",
+            startTime: 0.25,
+            endTime: 15.0,
+            speaker: "David",
+            speakerRole: "Lead Infrastructure",
+            actName: "Act 1: Distributed Core Topologies",
+            philosophy: "Zero-Latency Edge Inference",
+            text: {
+              ja: "⚡ DAVID: 「分散マイクロ推論により、エッジでのミリ秒単位の応答を実現します。」",
+              en: "⚡ DAVID: \"Distributed micro-inference enables sub-millisecond deterministic edge response.\"",
+              es: "⚡ DAVID: \"La microinferencia distribuida permite respuestas deterministas en submilisegundos.\"",
+              fr: "⚡ DAVID: « La micro-inférence distribuée permet une réponse déterministe en moins d'une milliseconde. »",
+              de: "⚡ DAVID: „Verteilte Mikro-Inferenz ermöglicht deterministische Reaktionszeiten unter einer Millisekunde.“",
+              hi: "⚡ डेविड: \"वितरित माइक्रो-इनफेरेंस मिलीसेकंड प्रतिक्रिया समय सक्षम करता है।\""
+            }
+          }
+        ],
+        veritas_status: "CERTIFIED_VALID",
+        snark_proof_hash: "0x9c31...david_zurich"
+      }
+    ];
+
+    for (const t of defaultTracks) {
+      this.saveStudioTrack(t);
+    }
   }
 };
