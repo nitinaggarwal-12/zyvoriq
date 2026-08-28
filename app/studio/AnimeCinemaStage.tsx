@@ -264,6 +264,16 @@ export function AnimeCinemaStage() {
         (c) => currentTime >= c.startTime && currentTime <= (c.endTime || duration)
       ) || actsList[selectedActIndex] || actsList[0]);
 
+  // Ensure act audio stem loads immediately on act change
+  useEffect(() => {
+    if (audioRef.current && activeCue?.audioUrl) {
+      audioRef.current.load();
+      if (isPlaying) {
+        audioRef.current.play().catch(() => {});
+      }
+    }
+  }, [activeCue?.audioUrl, isPlaying]);
+
   // Update selected act on time progress for single master files
   useEffect(() => {
     if (!isMultiFile) {
@@ -930,10 +940,12 @@ export function AnimeCinemaStage() {
                           <div className="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800 space-y-2">
                             <div className="flex items-center gap-2 text-amber-400 font-mono text-xs font-semibold">
                               <Check className="w-4 h-4" />
-                              <span>Original Executive Speech Stem</span>
+                              <span>{activeTrack.category === "nature" ? "National Geographic English Narration (Charon 48kHz)" : "Original Executive Speech Stem"}</span>
                             </div>
                             <p className="text-[11px] text-zinc-400 leading-relaxed">
-                              Playing native 24-bit studio vocal audio synchronized with 4K broadcast video.
+                              {activeTrack.category === "nature"
+                                ? "Playing authoritative English nature documentary narration synthesized with Google DeepMind Neural TTS."
+                                : "Playing native 24-bit studio vocal audio synchronized with 4K broadcast video."}
                             </p>
                           </div>
                         )}
@@ -1063,7 +1075,7 @@ export function AnimeCinemaStage() {
                       title="Audio & Subtitles"
                     >
                       <Subtitles className="w-4 h-4" />
-                      <span>{isAnimeTrack ? `${audioLang.toUpperCase()} / ` : ""}{subtitleLang.toUpperCase()}</span>
+                      <span>{isAnimeTrack ? `${audioLang.toUpperCase()} / ` : "EN / "}{subtitleLang.toUpperCase()}</span>
                     </button>
 
                     <button
