@@ -31,9 +31,12 @@ async function run() {
 
   // 1. Click Create Act
   console.log("2. Opening Create Act Modal...");
-  await page.waitForSelector('[data-testid="create-act-button"]', { timeout: 10000 });
-  await page.click('[data-testid="create-act-button"]');
-  await sleep(1000);
+  await page.evaluate(() => {
+    const btns = Array.from(document.querySelectorAll('button'));
+    const b = btns.find(btn => btn.textContent && (btn.textContent.includes('CREATE NEW ACT') || btn.textContent.includes('Create New Act')));
+    if (b) b.click();
+  });
+  await sleep(1200);
 
   // 2. Select Preset & Duration
   console.log("3. Selecting preset & 24s duration...");
