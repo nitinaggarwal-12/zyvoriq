@@ -58,9 +58,26 @@ function StudioLibraryPageContent() {
     try {
       const res = await fetch("/api/studio/tracks");
       const data = await res.json();
-      if (data.success && Array.isArray(data.tracks) && data.tracks.length > 0) {
-        setTracks(data.tracks);
+      let serverTracks = (data.success && Array.isArray(data.tracks) && data.tracks.length > 0)
+        ? data.tracks
+        : CANONICAL_SERIES_TRACKS;
+
+      // Merge client-side localStorage tracks (preserves user creations across ephemeral server deploys)
+      if (typeof window !== "undefined") {
+        try {
+          const localStr = localStorage.getItem("zyvoriq_custom_production_tracks");
+          if (localStr) {
+            const localTracks = JSON.parse(localStr);
+            if (Array.isArray(localTracks)) {
+              const serverIds = new Set(serverTracks.map((t: any) => t.id));
+              const extraLocal = localTracks.filter((lt: any) => !serverIds.has(lt.id));
+              serverTracks = [...extraLocal, ...serverTracks];
+            }
+          }
+        } catch (e) {}
       }
+
+      setTracks(serverTracks);
     } catch (err) {
       console.error("Failed to load tracks:", err);
     } finally {

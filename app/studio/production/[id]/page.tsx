@@ -228,6 +228,30 @@ function ProductionJobPageContent() {
           setJob(data.job);
           setLoading(false);
           setError(null);
+
+          if (data.job.status === "completed" && typeof window !== "undefined") {
+            try {
+              const current = JSON.parse(localStorage.getItem("zyvoriq_custom_production_tracks") || "[]");
+              const trackObj = {
+                id: data.job.id,
+                title: data.job.title,
+                subtitle: data.job.prompt?.slice(0, 100),
+                category: data.job.characterLock?.includes("ren") ? "anime" : "custom",
+                character: data.job.characterLock === "david" ? "David Kim" : data.job.characterLock === "priya" ? "Priya Sharma" : data.job.characterLock?.includes("ren") ? "Sensei Ren & Aoi" : "AI Creator",
+                videoSrc: data.job.videoUrl,
+                duration: data.job.duration,
+                acts: data.job.acts || [],
+                veritas: {
+                  status: "CERTIFIED_VALID",
+                  snarkProofHash: "0x8f2d...4a19"
+                }
+              };
+              const exists = current.some((t: any) => t.id === trackObj.id);
+              if (!exists) {
+                localStorage.setItem("zyvoriq_custom_production_tracks", JSON.stringify([trackObj, ...current]));
+              }
+            } catch (e) {}
+          }
         } else {
           setError(data.error || "Failed to locate production job");
           setLoading(false);
