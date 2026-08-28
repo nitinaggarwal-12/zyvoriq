@@ -644,7 +644,32 @@ export function AnimeCinemaStage() {
     }
   };
 
-  const activeSpeaker = getSpeakerDisplay(activeCue?.speaker, activeCue?.speakerRole);
+  const trackMeta = `${activeTrack.title || ""} ${activeTrack.subtitle || ""} ${activeTrack.character || ""}`.toLowerCase();
+  const isElenaTrack = trackMeta.includes("elena");
+  const isPriyaTrack = trackMeta.includes("priya");
+
+  const effectiveSpeakerName =
+    isElenaTrack && (activeCue?.speaker === "David Kim" || activeCue?.speaker === "David" || !activeCue?.speaker)
+      ? "Elena Rostova"
+      : isPriyaTrack && (activeCue?.speaker === "David Kim" || activeCue?.speaker === "David" || !activeCue?.speaker)
+      ? "Priya Sharma"
+      : activeCue?.speaker;
+
+  const effectiveSpeakerRole =
+    isElenaTrack && (!activeCue?.speakerRole || activeCue?.speakerRole === "Lead Infrastructure" || activeCue?.speakerRole === "Primary Director")
+      ? "VP Product Strategy"
+      : isPriyaTrack && (!activeCue?.speakerRole || activeCue?.speakerRole === "Lead Infrastructure" || activeCue?.speakerRole === "Primary Director")
+      ? "Chief AI Officer"
+      : activeCue?.speakerRole;
+
+  const activeSpeaker = getSpeakerDisplay(effectiveSpeakerName, effectiveSpeakerRole);
+
+  const displayCharacter =
+    isElenaTrack && (activeTrack.character?.includes("David") || !activeTrack.character)
+      ? "👩‍💼 Elena Rostova"
+      : isPriyaTrack && (activeTrack.character?.includes("David") || !activeTrack.character)
+      ? "👩‍💼 Priya Sharma"
+      : activeTrack.character;
 
   return (
     <div className="space-y-8 animate-fadeIn">
@@ -716,7 +741,7 @@ export function AnimeCinemaStage() {
               {/* Persona Badge */}
               <span className="px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-300 font-mono text-xs flex items-center gap-1">
                 <Sparkles className="w-3 h-3 text-teal-400" />
-                <span>{activeTrack.character}</span>
+                <span>{displayCharacter}</span>
               </span>
 
               {/* Active Chapter indicator */}

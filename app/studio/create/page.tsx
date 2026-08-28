@@ -595,7 +595,18 @@ function CreatePageContent() {
 
                   <textarea
                     value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setPrompt(val);
+                      const low = val.toLowerCase();
+                      if (low.includes("elena") && characterLock !== "elena") {
+                        setCharacterLock("elena");
+                      } else if (low.includes("priya") && characterLock !== "priya") {
+                        setCharacterLock("priya");
+                      } else if (low.includes("david") && characterLock !== "david") {
+                        setCharacterLock("david");
+                      }
+                    }}
                     rows={4}
                     placeholder="Describe what happens in this scene, the philosophical dilemma, lighting, and action..."
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs text-slate-200 focus:outline-none focus:border-amber-500/80 leading-relaxed resize-none shadow-inner"

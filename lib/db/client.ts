@@ -272,16 +272,46 @@ export const db = {
         if (videoSrc.startsWith("/assets/video/generated/")) {
           videoSrc = videoSrc.replace("/assets/video/generated/", "/api/media/video/generated/");
         }
+        const rawActs = safeJsonParse<any[]>(r.acts_json, []);
+        const trackText = `${r.title || ""} ${r.subtitle || ""}`.toLowerCase();
+        const isElena = trackText.includes("elena");
+        const isPriya = trackText.includes("priya");
+        
+        const correctedCharacter =
+          isElena && (r.character === "David Kim" || !r.character)
+            ? "Elena Rostova (Tokyo)"
+            : isPriya && (r.character === "David Kim" || !r.character)
+            ? "Priya Sharma (Silicon Valley)"
+            : r.character;
+
+        const correctedActs = rawActs.map((act) => {
+          if (isElena && (act.speaker === "David Kim" || act.speaker === "David" || !act.speaker)) {
+            return {
+              ...act,
+              speaker: "Elena Rostova",
+              speakerRole: "VP Product Strategy"
+            };
+          }
+          if (isPriya && (act.speaker === "David Kim" || act.speaker === "David" || !act.speaker)) {
+            return {
+              ...act,
+              speaker: "Priya Sharma",
+              speakerRole: "Chief AI Officer"
+            };
+          }
+          return act;
+        });
+
         return {
           id: r.id,
           title: r.title,
           subtitle: r.subtitle,
           category: r.category,
-          character: r.character,
+          character: correctedCharacter,
           videoSrc,
-          audioSrc: r.audio_src || (r.acts_json ? safeJsonParse<any[]>(r.acts_json, [])?.[0]?.audioUrl : undefined),
+          audioSrc: r.audio_src || (correctedActs?.[0]?.audioUrl ? correctedActs[0].audioUrl : undefined),
           duration: r.duration,
-          acts: safeJsonParse<any[]>(r.acts_json, []),
+          acts: correctedActs,
           veritas: {
             status: r.veritas_status || "CERTIFIED_VALID",
             snarkProofHash: r.snark_proof_hash || "0x8f2d...4a19"
@@ -509,11 +539,40 @@ export const db = {
       if (videoUrl && videoUrl.startsWith("/assets/video/generated/")) {
         videoUrl = videoUrl.replace("/assets/video/generated/", "/api/media/video/generated/");
       }
+      const rawActs = safeJsonParse<any[]>(row.acts_json, []);
+      const jobText = `${row.title || ""} ${row.prompt || ""}`.toLowerCase();
+      const isElena = jobText.includes("elena");
+      const isPriya = jobText.includes("priya");
+      const correctedLock =
+        isElena && row.character_lock === "david"
+          ? "elena"
+          : isPriya && row.character_lock === "david"
+          ? "priya"
+          : row.character_lock;
+
+      const correctedActs = rawActs.map((act) => {
+        if (isElena && (act.speaker === "David Kim" || act.speaker === "David" || !act.speaker)) {
+          return {
+            ...act,
+            speaker: "Elena Rostova",
+            speakerRole: "VP Product Strategy"
+          };
+        }
+        if (isPriya && (act.speaker === "David Kim" || act.speaker === "David" || !act.speaker)) {
+          return {
+            ...act,
+            speaker: "Priya Sharma",
+            speakerRole: "Chief AI Officer"
+          };
+        }
+        return act;
+      });
+
       return {
         id: row.id,
         title: row.title,
         prompt: row.prompt,
-        characterLock: row.character_lock,
+        characterLock: correctedLock,
         visualStyle: row.visual_style,
         duration: row.duration,
         status: row.status,
@@ -525,7 +584,7 @@ export const db = {
         script: row.script_json ? JSON.parse(row.script_json) : null,
         veritas: row.veritas_json ? JSON.parse(row.veritas_json) : null,
         operationName: row.operation_name,
-        acts: safeJsonParse<any[]>(row.acts_json, []),
+        acts: correctedActs,
         createdAt: row.created_at,
         updatedAt: row.updated_at
       };

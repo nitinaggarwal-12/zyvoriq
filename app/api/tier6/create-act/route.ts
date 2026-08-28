@@ -38,6 +38,17 @@ export async function POST(req: NextRequest) {
       autoVeritas = true,
       skipVeo = false
     } = body;
+    const promptLower = `${title} ${prompt}`.toLowerCase();
+    const effectiveCharacterLock =
+      promptLower.includes("elena")
+        ? "elena"
+        : promptLower.includes("priya")
+        ? "priya"
+        : promptLower.includes("david")
+        ? "david"
+        : promptLower.includes("ren") || promptLower.includes("aoi") || promptLower.includes("dojo") || promptLower.includes("zen")
+        ? "ren_aoi"
+        : (characterLock || "custom");
 
     const requestedDuration = Math.max(4, Number(duration) || 8);
     const numActs = Math.max(1, Math.ceil(requestedDuration / 8));
@@ -54,7 +65,7 @@ export async function POST(req: NextRequest) {
     const logs: string[] = [
       `${getTs()} 🎬 Production Pipeline Initialized (${jobId})`,
       `${getTs()} 📝 Master Concept: "${prompt.slice(0, 100)}${prompt.length > 100 ? "..." : ""}"`,
-      `${getTs()} ⚙️ Target Runtime: ${requestedDuration}s (${numActs} Continuous Acts) | Style: ${visualStyle} | Cast: ${characterLock}`
+      `${getTs()} ⚙️ Target Runtime: ${requestedDuration}s (${numActs} Continuous Acts) | Style: ${visualStyle} | Cast: ${effectiveCharacterLock}`
     ];
 
     if (!apiKey) {
@@ -68,7 +79,7 @@ export async function POST(req: NextRequest) {
       id: jobId,
       title,
       prompt,
-      characterLock,
+      characterLock: effectiveCharacterLock,
       visualStyle,
       duration: requestedDuration,
       status: "processing",
@@ -185,24 +196,33 @@ Return JSON strictly matching:
     let primaryVideoUrl = "";
     let primaryOperationName = "veo_master_dispatch";
 
-    const defaultFallbackVideos = characterLock.includes("ren")
+    const defaultFallbackVideos = effectiveCharacterLock.includes("ren")
       ? [
           "/assets/video/ren_and_aoi_conversation_synced.mp4",
           "/assets/video/ren_and_aoi_1min_master.mp4",
           "/assets/video/ren_japanese_philosophy_1min.mp4",
           "/assets/video/veo_ren_and_aoi_duo.mp4"
         ]
-      : characterLock === "david"
+      : effectiveCharacterLock === "david"
       ? [
-          "/assets/video/david_master.mp4",
+          "/assets/video/david_master.mp4"
+        ]
+      : effectiveCharacterLock === "elena"
+      ? [
           "/assets/video/option_1_keynote_wide.mp4",
           "/assets/video/option_4_tech_podium.mp4"
         ]
-      : [
+      : effectiveCharacterLock === "priya"
+      ? [
           "/assets/video/priya_4k_10act_master.mp4",
           "/assets/video/veo_priya_24s_master.mp4",
           "/assets/video/veo_priya_keynote_21s.mp4",
           "/assets/video/veo_priya_master.mp4"
+        ]
+      : [
+          "/assets/video/option_1_keynote_wide.mp4",
+          "/assets/video/option_4_tech_podium.mp4",
+          "/assets/video/priya_4k_10act_master.mp4"
         ];
 
     const actProgressSlice = 70 / numActs;
@@ -268,23 +288,45 @@ Return JSON strictly matching:
       try {
         const speechText = act.dialogueEn || act.dialogueJa || act.title;
         const ttsResult = await synthesizeVoiceSpeech(speechText, {
-          characterLock,
+          characterLock: effectiveCharacterLock,
           jobId: `${jobId}_act${actNum}`
         });
         if (ttsResult) {
           actAudioUrl = ttsResult.audioUrl;
-          logs.push(`${getTs()} 🎙️ [Act ${actNum}/${numActs}] DeepMind 48kHz Neural Dub Stem Ready`);
+          logs.push(`${getTs()} 🎙️ [Act ${actNum}/${numActs}] DeepMind 48kHz Neural Dub Stem Ready (${effectiveCharacterLock})`);
         }
       } catch (ttsErr: any) {
         console.warn(`TTS generation warning for act ${actNum}:`, ttsErr.message);
       }
 
+      const speakerName =
+        effectiveCharacterLock === "elena"
+          ? "Elena Rostova"
+          : effectiveCharacterLock === "priya"
+          ? "Priya Sharma"
+          : effectiveCharacterLock === "david"
+          ? "David Kim"
+          : effectiveCharacterLock.includes("ren")
+          ? "Ren"
+          : "Executive Presenter";
+
+      const speakerRole =
+        effectiveCharacterLock === "elena"
+          ? "VP Product Strategy"
+          : effectiveCharacterLock === "priya"
+          ? "Chief AI Officer"
+          : effectiveCharacterLock === "david"
+          ? "Lead Infrastructure"
+          : effectiveCharacterLock.includes("ren")
+          ? "Zen Master"
+          : "Keynote Director";
+
       const newAct = {
         id: `act_${Date.now()}_${actNum}`,
         startTime: cumulativeTime,
         endTime: cumulativeTime + actActualDur,
-        speaker: characterLock === "david" ? "David Kim" : characterLock.includes("ren") ? "Ren" : "Narrator",
-        speakerRole: "Primary Director",
+        speaker: speakerName,
+        speakerRole: speakerRole,
         actName: act.title || `Act ${actNum}: Scene Continuation`,
         philosophy: act.philosophy || masterPhilosophy,
         actionDirection: act.actionDirection,
@@ -321,7 +363,7 @@ Return JSON strictly matching:
       title,
       prompt,
       duration: totalActualDuration,
-      characterLock,
+      characterLock: effectiveCharacterLock,
       visualStyle,
       languages,
       videoUrl: primaryVideoUrl,
@@ -381,9 +423,18 @@ Return JSON strictly matching:
           id: jobId,
           title,
           subtitle: prompt.slice(0, 100),
-          category: characterLock.includes("ren") ? "anime" : "custom",
-          character: characterLock === "david" ? "David Kim" : characterLock.includes("ren") ? "Sensei Ren & Aoi" : "AI Creator",
-          videoSrc: primaryVideoUrl,
+          category: effectiveCharacterLock.includes("ren") ? "anime" : "custom",
+          character:
+            effectiveCharacterLock === "elena"
+              ? "Elena Rostova (Tokyo)"
+              : effectiveCharacterLock === "priya"
+              ? "Priya Sharma (Silicon Valley)"
+              : effectiveCharacterLock === "david"
+              ? "David Kim (Zurich)"
+              : effectiveCharacterLock.includes("ren")
+              ? "Sensei Ren & Aoi"
+              : "Executive Presenter",
+          videoSrc: primaryVideoUrl || defaultFallbackVideos[0],
           audioSrc: compiledActs[0]?.audioUrl,
           duration: totalActualDuration,
           acts: compiledActs,
@@ -396,9 +447,18 @@ Return JSON strictly matching:
         id: jobId,
         title,
         subtitle: prompt.slice(0, 100),
-        category: characterLock.includes("ren") ? "anime" : "custom",
-        character: characterLock === "david" ? "David Kim" : characterLock.includes("ren") ? "Sensei Ren & Aoi" : "AI Creator",
-        videoSrc: primaryVideoUrl,
+        category: effectiveCharacterLock.includes("ren") ? "anime" : "custom",
+        character:
+          effectiveCharacterLock === "elena"
+            ? "Elena Rostova (Tokyo)"
+            : effectiveCharacterLock === "priya"
+            ? "Priya Sharma (Silicon Valley)"
+            : effectiveCharacterLock === "david"
+            ? "David Kim (Zurich)"
+            : effectiveCharacterLock.includes("ren")
+            ? "Sensei Ren & Aoi"
+            : "Executive Presenter",
+        videoSrc: primaryVideoUrl || defaultFallbackVideos[0],
         audioSrc: compiledActs[0]?.audioUrl,
         duration: totalActualDuration,
         acts: compiledActs,

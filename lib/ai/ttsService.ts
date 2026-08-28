@@ -44,16 +44,23 @@ export async function synthesizeVoiceSpeech(
 
   try {
     const cleanText = text.replace(/[*#_~`]/g, " ").replace(/\s+/g, " ").trim();
+    const char = (options.characterLock || "").toLowerCase();
     const voiceName =
-      options.characterLock === "david"
+      char === "david" || char.includes("david")
         ? "Puck"
-        : options.characterLock?.includes("ren")
+        : char.includes("ren")
         ? "Charon"
-        : options.characterLock === "aoi"
+        : char === "elena" || char.includes("elena")
         ? "Aoede"
-        : options.characterLock === "priya"
+        : char === "priya" || char.includes("priya")
         ? "Aoede"
-        : "Puck";
+        : char === "aoi" || char.includes("aoi")
+        ? "Aoede"
+        : char.includes("woman") || char.includes("female") || char.includes("lady")
+        ? "Aoede"
+        : char.includes("man") || char.includes("male")
+        ? "Puck"
+        : "Aoede";
 
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`,
