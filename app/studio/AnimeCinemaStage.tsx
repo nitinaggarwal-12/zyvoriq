@@ -214,6 +214,7 @@ export function AnimeCinemaStage() {
   ]);
   const [activeDojoAudio, setActiveDojoAudio] = useState<string | null>(null);
   const [isDojoAudioPlaying, setIsDojoAudioPlaying] = useState<boolean>(false);
+  const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState<boolean>(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -515,113 +516,141 @@ export function AnimeCinemaStage() {
 
   return (
     <div className="space-y-8 animate-fadeIn">
-      {/* Multi-Track Series Library Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-3 bg-zinc-950/80 border border-zinc-800/80 rounded-2xl backdrop-blur-xl mb-4 shadow-xl">
-        <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
-          <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 px-2 flex items-center gap-1.5 shrink-0">
-            <Layers className="w-3.5 h-3.5 text-amber-400" /> Active Series Track:
-          </span>
-          {seriesTracks.map((track) => {
-            const isCurrent = track.id === activeTrackId;
-            return (
-              <button
-                key={track.id}
-                onClick={() => handleTrackChange(track.id)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-2 shrink-0 border ${
-                  isCurrent
-                    ? "bg-amber-500/20 border-amber-500 text-amber-200 shadow-md shadow-amber-500/10 font-bold ring-1 ring-amber-400/40"
-                    : "bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-                }`}
-              >
-                <span>{track.category === "anime" ? "🥋" : track.category === "executive" ? "🌐" : "✨"}</span>
-                <span>{track.title}</span>
-                <span className="px-1.5 py-0.5 rounded-md bg-black/40 text-[10px] font-mono text-zinc-400">
-                  {track.acts.length} Acts · {Math.round(track.duration)}s
-                </span>
-              </button>
-            );
-          })}
-        </div>
+      {/* Sleek, Compact Series Workspace HUD */}
+      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 md:p-6 shadow-2xl backdrop-blur-xl space-y-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          {/* Left: Interactive Project Dropdown & Metadata */}
+          <div className="space-y-2 flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Interactive Series Switcher Dropdown */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
+                  className="px-3.5 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 border border-amber-500/40 text-amber-300 font-bold font-mono text-xs flex items-center gap-2 transition-all shadow-md shadow-amber-500/10 group"
+                >
+                  <Layers className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+                  <span className="truncate max-w-[260px] md:max-w-[380px] text-sm">{activeTrack.title}</span>
+                  <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-200 text-[10px] font-mono">
+                    {activeTrack.acts.length} Acts · {Math.round(activeTrack.duration)}s
+                  </span>
+                  <span className="text-xs text-slate-400">▾</span>
+                </button>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <Link
-            href="/studio/library"
-            className="px-3.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm"
-          >
-            <FolderHeart className="w-3.5 h-3.5 text-amber-400" />
-            <span>📚 Media Vault (Saved Clips)</span>
-          </Link>
+                {isProjectDropdownOpen && (
+                  <div className="absolute top-full left-0 mt-2 w-80 md:w-96 bg-slate-950 border border-slate-800 rounded-2xl p-2 shadow-2xl z-50 backdrop-blur-2xl space-y-1">
+                    <div className="px-3 py-1.5 text-[10px] font-mono text-slate-400 uppercase tracking-wider border-b border-slate-800 flex items-center justify-between">
+                      <span>Switch Project</span>
+                      <span>{seriesTracks.length} Series Total</span>
+                    </div>
+                    <div className="max-h-60 overflow-y-auto space-y-1 py-1">
+                      {seriesTracks.map((t) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => {
+                            handleTrackChange(t.id);
+                            setIsProjectDropdownOpen(false);
+                          }}
+                          className={`w-full text-left p-2.5 rounded-xl text-xs transition-all flex items-center justify-between ${
+                            t.id === activeTrackId
+                              ? "bg-amber-500/20 border border-amber-500/50 text-amber-200 font-bold"
+                              : "hover:bg-slate-900 text-slate-300"
+                          }`}
+                        >
+                          <div className="truncate pr-2">
+                            <div className="truncate font-semibold">{t.title}</div>
+                            <div className="text-[10px] text-slate-500">{t.character}</div>
+                          </div>
+                          <span className="text-[10px] font-mono shrink-0 text-slate-400 bg-slate-900 px-2 py-0.5 rounded-md">
+                            {t.acts.length} Acts · {Math.round(t.duration)}s
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="pt-1 border-t border-slate-800">
+                      <Link
+                        href="/studio/create?mode=new_series"
+                        className="w-full py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-amber-300 font-mono text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 fill-current" />
+                        <span>+ Start New Standalone Series</span>
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-          <Link
-            href="/studio/create?mode=new_series"
-            className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-rose-500/20 hover:from-amber-500/30 hover:to-rose-500/30 border border-amber-500/50 text-amber-300 text-xs font-bold font-mono transition-all shrink-0 flex items-center gap-1.5 shadow-sm active:scale-95"
-          >
-            <Sparkles className="w-3.5 h-3.5 fill-current" />
-            <span>+ New Series Track</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-zinc-900 via-zinc-900/90 to-black border border-zinc-800/80 p-6 md:p-8 shadow-2xl backdrop-blur-xl">
-        <div className="absolute top-0 right-0 w-96 h-full bg-radial-glow opacity-30 pointer-events-none" />
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <span className="px-3 py-1 bg-red-600/30 border border-red-500/40 text-red-300 font-mono text-xs uppercase tracking-widest rounded-full flex items-center gap-1.5 shadow-lg shadow-red-950/50">
-                <Film className="w-3.5 h-3.5 text-red-400" />
-                {activeTrack.category === "anime" ? "Anime Cinema Suite" : "Enterprise Keynote Suite"}
+              {/* Persona Badge */}
+              <span className="px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-300 font-mono text-xs flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-teal-400" />
+                <span>{activeTrack.character}</span>
               </span>
-              <span className="px-3 py-1 bg-teal-500/20 border border-teal-500/30 text-teal-300 font-mono text-xs uppercase tracking-wider rounded-full flex items-center gap-1">
-                <Sparkles className="w-3 h-3" />
-                {activeTrack.character}
+
+              {/* Active Chapter indicator */}
+              <span className="px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300 font-mono text-xs">
+                Act {selectedActIndex + 1} of {actsList.length}
               </span>
             </div>
-            <h2 className="text-2xl md:text-3xl font-serif tracking-tight text-white font-bold">
-              {activeTrack.title}
-            </h2>
-            <p className="text-zinc-400 text-sm mt-1 max-w-2xl">
-              {activeTrack.subtitle}
-            </p>
+
+            {activeTrack.subtitle && (
+              <p className="text-xs text-slate-400 line-clamp-1">
+                {activeTrack.subtitle}
+              </p>
+            )}
           </div>
 
-          {/* Mode Switcher Tabs */}
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* Right: Studio Sub-Mode & Quick Actions */}
+          <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+            {/* Mode Switcher */}
+            <div className="flex items-center gap-1 p-1 bg-slate-950 border border-slate-800 rounded-xl">
+              <button
+                type="button"
+                data-testid="cinema-mode-tab"
+                onClick={() => setStudioMode("cinema")}
+                className={`px-3.5 py-2 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
+                  studioMode === "cinema"
+                    ? "bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <Film className="w-3.5 h-3.5" />
+                <span>Cinema Stage</span>
+              </button>
+              <button
+                type="button"
+                data-testid="tier6-living-dojo-tab"
+                onClick={() => setStudioMode("living_dojo")}
+                className={`px-3.5 py-2 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
+                  studioMode === "living_dojo"
+                    ? "bg-teal-500 text-slate-950 shadow-md shadow-teal-500/20"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <Radio className="w-3.5 h-3.5" />
+                <span>Living Dojo</span>
+              </button>
+            </div>
+
+            {/* Direct Download Button */}
+            <a
+              href={`${activeTrack.videoSrc}${activeTrack.videoSrc.includes('?') ? '&' : '?'}download=true&filename=${encodeURIComponent(activeTrack.title.replace(/[^a-zA-Z0-9_-]/g, '_'))}.mp4`}
+              download={`${activeTrack.title.replace(/[^a-zA-Z0-9_-]/g, '_')}.mp4`}
+              className="px-3.5 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white font-mono text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Download MP4</span>
+            </a>
+
+            {/* Primary Add Act Button */}
             <Link
               href={`/studio/create?trackId=${activeTrack.id}&mode=append_current`}
               data-testid="create-act-button"
               className="px-4 py-2 rounded-xl text-xs font-bold font-mono uppercase tracking-wider flex items-center gap-2 transition-all bg-gradient-to-r from-amber-500 via-rose-500 to-amber-400 hover:brightness-110 text-slate-950 shadow-lg shadow-amber-500/25 active:scale-95 border border-amber-400/40"
             >
               <Sparkles className="w-3.5 h-3.5 fill-current" />
-              <span>+ Add Act {(activeTrack.acts?.length || 1) + 1} to Series</span>
+              <span>+ Add Act {(activeTrack.acts?.length || 1) + 1}</span>
             </Link>
-
-            <div className="flex items-center gap-1.5 p-1.5 bg-black/60 border border-zinc-700/60 rounded-xl backdrop-blur-md">
-              <button
-                data-testid="cinema-mode-tab"
-                onClick={() => setStudioMode("cinema")}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold font-mono uppercase tracking-wider flex items-center gap-2 transition-all ${
-                  studioMode === "cinema"
-                    ? "bg-amber-500 text-black shadow-lg shadow-amber-500/20"
-                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-                }`}
-              >
-                <Film className="w-3.5 h-3.5" />
-                🎬 {activeTrack.acts.length}-Act Cinema
-              </button>
-              <button
-                data-testid="tier6-living-dojo-tab"
-                onClick={() => setStudioMode("living_dojo")}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold font-mono uppercase tracking-wider flex items-center gap-2 transition-all ${
-                  studioMode === "living_dojo"
-                    ? "bg-gradient-to-r from-teal-500 to-emerald-400 text-black shadow-lg shadow-teal-500/20"
-                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-                }`}
-              >
-                <Radio className="w-3.5 h-3.5" />
-                ⛩️ Tier 6 Living Dojo
-              </button>
-            </div>
           </div>
         </div>
       </div>
