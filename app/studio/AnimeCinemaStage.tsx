@@ -204,8 +204,8 @@ export function AnimeCinemaStage() {
     }
   };
 
-  // Time Scrubbing
-  const handleSeek = (time: number) => {
+  // Time Scrubbing & Instant Play
+  const handleSeek = (time: number, autoPlay: boolean = false) => {
     const video = videoRef.current;
     const audio = audioRef.current;
     const loopTime = time % 56.0;
@@ -215,6 +215,11 @@ export function AnimeCinemaStage() {
     const actIdx = Math.floor(time / 8.0);
     if (actIdx < actsList.length) {
       setSelectedActIndex(actIdx);
+    }
+    if (autoPlay || isPlaying) {
+      if (video) video.play().catch(() => {});
+      if (audio) audio.play().catch(() => {});
+      setIsPlaying(true);
     }
   };
 
@@ -400,12 +405,12 @@ export function AnimeCinemaStage() {
                   onClick={() => {
                     const idx = actsList.length - 1;
                     setSelectedActIndex(idx);
-                    handleSeek(idx * 8.0);
+                    handleSeek(idx * 8.0, true);
                   }}
                   className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-amber-500/20"
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>Play Act {actsList.length}</span>
+                  <span>Play {recentNewAct?.title?.split(":")[0] || `Act ${actsList.length}`}</span>
                 </button>
                 <button
                   onClick={() => setRecentNewAct(null)}
@@ -718,7 +723,7 @@ export function AnimeCinemaStage() {
                     key={cue.id}
                     onClick={() => {
                       setSelectedActIndex(idx);
-                      handleSeek(idx * 8.0);
+                      handleSeek(idx * 8.0, true);
                     }}
                     className={`p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col gap-1.5 relative ${
                       isActive
