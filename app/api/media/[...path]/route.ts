@@ -93,14 +93,23 @@ export async function GET(
       }
     });
 
+    const isDownload = req.nextUrl.searchParams.get("download") === "true";
+    const downloadFilename = req.nextUrl.searchParams.get("filename") || path.basename(targetFile);
+
+    const headers: Record<string, string> = {
+      "Content-Length": fileSize.toString(),
+      "Content-Type": contentType,
+      "Accept-Ranges": "bytes",
+      "Cache-Control": "public, max-age=31536000, immutable"
+    };
+
+    if (isDownload) {
+      headers["Content-Disposition"] = `attachment; filename="${downloadFilename}"`;
+    }
+
     return new NextResponse(stream as any, {
       status: 200,
-      headers: {
-        "Content-Length": fileSize.toString(),
-        "Content-Type": contentType,
-        "Accept-Ranges": "bytes",
-        "Cache-Control": "public, max-age=31536000, immutable"
-      }
+      headers
     });
   } catch (err: any) {
     return new NextResponse(`Error serving media: ${err.message}`, { status: 500 });

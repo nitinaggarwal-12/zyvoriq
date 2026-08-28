@@ -83,7 +83,35 @@ function CreatePageContent() {
       .catch(() => {});
   }, [targetTrackId]);
 
+  const [apiHealth, setApiHealth] = useState<{ ok: boolean; configured: boolean; message?: string; model?: string } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/health/api-key")
+      .then(res => res.json())
+      .then(data => setApiHealth(data))
+      .catch(() => setApiHealth({ ok: false, configured: false, message: "Server connection error" }));
+  }, []);
+
   const activeTargetTrack = availableTracks.find((t: any) => t.id === selectedParentTrackId) || null;
+
+  // Suggested Act Continuations for Active Target Track
+  const continuitySuggestions = [
+    {
+      title: `⚡ Act ${(activeTargetTrack?.acts?.length || 1) + 1}: Combustion & Plasma Ignition`,
+      prompt: `Act ${(activeTargetTrack?.acts?.length || 1) + 1} continuity scene: Internal cross-section view showing supersonic air intake entering the scramjet combustor with glowing shock diamond plasma flames and thermal flow lines.`,
+      visualStyle: "ue5_raytraced"
+    },
+    {
+      title: `🔬 Act ${(activeTargetTrack?.acts?.length || 1) + 1}: Nanite CAD Stress Telemetry`,
+      prompt: `Act ${(activeTargetTrack?.acts?.length || 1) + 1} continuity scene: High-speed holographic sensor scan inspecting structural titanium lattice under extreme thermal and aerodynamic load at Mach 5.`,
+      visualStyle: "photorealistic_keynote"
+    },
+    {
+      title: `🚀 Act ${(activeTargetTrack?.acts?.length || 1) + 1}: Hypersonic Flight Deck Ascent`,
+      prompt: `Act ${(activeTargetTrack?.acts?.length || 1) + 1} continuity scene: Wide cinematic exterior view of the scramjet-powered craft penetrating the upper stratosphere leaving an incandescent ionization wake.`,
+      visualStyle: "cyberpunk_noir"
+    }
+  ];
 
   // Generation Pipeline State
   const [isGenerating, setIsGenerating] = useState(false);
@@ -466,10 +494,54 @@ function CreatePageContent() {
                     <Sliders className="w-4 h-4 text-amber-400" />
                     <span>Production Pipeline Parameters</span>
                   </h3>
-                  <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
-                    <Zap className="w-3 h-3" /> Ready to Synthesize
-                  </span>
+                  {apiHealth ? (
+                    <span className={`text-[11px] font-mono flex items-center gap-1.5 px-2.5 py-0.5 rounded-full ${
+                      apiHealth.ok
+                        ? "bg-emerald-500/15 border border-emerald-500/40 text-emerald-300"
+                        : "bg-rose-500/15 border border-rose-500/40 text-rose-300 animate-pulse"
+                    }`}>
+                      <span className={`w-2 h-2 rounded-full ${apiHealth.ok ? "bg-emerald-400" : "bg-rose-400"}`} />
+                      <span>{apiHealth.ok ? "Veo 3.1 & Gemini Active" : "API Key Missing on Server"}</span>
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
+                      <Zap className="w-3 h-3" /> Ready to Synthesize
+                    </span>
+                  )}
                 </div>
+
+                {/* 1-Click Continuity Prompts when Appending */}
+                {destinationMode === "append_current" && (
+                  <div className="space-y-2 bg-slate-950/80 p-3.5 rounded-2xl border border-amber-500/30">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400 font-bold flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" /> 1-Click Suggested Continuations
+                      </span>
+                      <span className="text-[9px] font-mono text-slate-500">Auto-Prompting</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-1.5">
+                      {continuitySuggestions.map((s, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setTitle(s.title);
+                            setPrompt(s.prompt);
+                            if (s.visualStyle) setVisualStyle(s.visualStyle);
+                          }}
+                          className="p-2 rounded-xl bg-slate-900 hover:bg-amber-500/10 border border-slate-800 hover:border-amber-500/50 text-left transition-all group shadow-sm"
+                        >
+                          <div className="text-[11px] font-bold text-amber-300 group-hover:text-amber-200">
+                            {s.title}
+                          </div>
+                          <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
+                            {s.prompt}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Selected Story Title & Prompt */}
                 <div className="space-y-3">

@@ -412,11 +412,11 @@ export default function ProductionJobPage() {
                     </Link>
 
                     <a
-                      href={job.videoUrl}
-                      download={`veo_${job.id}.mp4`}
-                      className="py-3 px-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white font-mono text-xs font-medium transition-all flex items-center justify-center gap-2 border border-slate-800 text-center"
+                      href={`${job.videoUrl || ''}${(job.videoUrl || '').includes('?') ? '&' : '?'}download=true&filename=${encodeURIComponent(job.title.replace(/[^a-zA-Z0-9_-]/g, '_'))}.mp4`}
+                      download={`${job.title.replace(/[^a-zA-Z0-9_-]/g, '_')}.mp4`}
+                      className="py-3 px-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white font-mono text-xs font-medium transition-all flex items-center justify-center gap-2 border border-slate-800 text-center shadow-sm"
                     >
-                      <Download className="w-4 h-4" />
+                      <Download className="w-4 h-4 text-emerald-400" />
                       <span>Download MP4</span>
                     </a>
 
