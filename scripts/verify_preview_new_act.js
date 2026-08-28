@@ -25,8 +25,8 @@ async function run() {
   await page.setViewport({ width: 1600, height: 1000 });
   await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
-  console.log("1. Navigating to /studio on localhost:3000...");
-  await page.goto("http://localhost:3000/studio", { waitUntil: "networkidle0", timeout: 30000 });
+  console.log("1. Navigating to /studio on localhost:3005...");
+  await page.goto("http://localhost:3005/studio", { waitUntil: "networkidle0", timeout: 30000 });
   await sleep(2500);
 
   // 1. Click Create Act
