@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { generateVeoVideo } from "@/lib/ai/veoService";
+import { generateVeoVideo, VeoGenerationProgress } from "@/lib/ai/veoService";
+import { db } from "@/lib/db/client";
 
-export const maxDuration = 300; // 5 minute timeout for long-running video diffusion
+export const maxDuration = 300; // 5-minute timeout for long-running video diffusion
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
+      id,
       title = "Custom AI Video Production",
       prompt = "A high-fidelity cinematic video scene",
       duration = 8,
@@ -18,7 +20,30 @@ export async function POST(req: NextRequest) {
       skipVeo = false
     } = body;
 
+    const jobId = id || `prod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const apiKey = process.env.GEMINI_API_KEY;
+    const startTime = Date.now();
+    const getTs = () => `[+${((Date.now() - startTime) / 1000).toFixed(1)}s]`;
+
+    const logs: string[] = [
+      `${getTs()} 🎬 Production Job Initialized (${jobId})`,
+      `${getTs()} 📝 Scene Prompt: "${prompt.slice(0, 100)}${prompt.length > 100 ? "..." : ""}"`,
+      `${getTs()} ⚙️ Visual Style: ${visualStyle} | Duration: ${duration}s | Cast: ${characterLock}`
+    ];
+
+    // Initialize in persistent SQLite DB
+    db.createProductionJob({
+      id: jobId,
+      title,
+      prompt,
+      characterLock,
+      visualStyle,
+      duration,
+      status: "processing",
+      progress: 12,
+      stageText: "Authoring Persona Dialogue & Script (Gemini 2.5 Flash)",
+      logs
+    });
 
     let geminiScript = {
       philosophy: "Autonomous Neural Synthesis",
@@ -36,6 +61,9 @@ export async function POST(req: NextRequest) {
     // 1. Author Script & Multi-Lingual Dialogue with Gemini
     if (apiKey) {
       try {
+        logs.push(`${getTs()} 🧠 Dispatching Gemini 2.5 Flash for 6-Language Dialogue & Storyboard AST...`);
+        db.updateProductionJob(jobId, { progress: 18, logs, stageText: "Compiling Multilingual Dialogue" });
+
         const scriptPrompt = characterLock.includes("ren")
           ? `You are the Master Storyboard Director for anime series featuring Sensei Ren and Apprentice Aoi. Prompt: "${prompt}" (Duration: ${duration}s, Style: ${visualStyle}). Return JSON matching: {philosophy, actionDirection, dialogueJa, dialogueEn, dialogueEs, dialogueFr, dialogueDe, dialogueHi, aoiResponse, wisdomKey}`
           : `You are the Executive Keynote & Creative Director for an AI video production "${title}". Prompt: "${prompt}" (Duration: ${duration}s, Style: ${visualStyle}). Return JSON matching: {philosophy, actionDirection, dialogueJa, dialogueEn, dialogueEs, dialogueFr, dialogueDe, dialogueHi, aoiResponse, wisdomKey}`;
@@ -57,8 +85,11 @@ export async function POST(req: NextRequest) {
         if (text) {
           const parsed = JSON.parse(text);
           geminiScript = { ...geminiScript, ...parsed };
+          logs.push(`${getTs()} ✅ Dialogue Compiled: JA, EN, ES, FR, DE, HI synchronized`);
+          db.updateProductionJob(jobId, { progress: 25, logs, script: geminiScript });
         }
-      } catch (err) {
+      } catch (err: any) {
+        logs.push(`${getTs()} ⚠️ Gemini Script warning: ${err.message}`);
         console.warn("Gemini script generator fallback:", err);
       }
     }
@@ -70,21 +101,36 @@ export async function POST(req: NextRequest) {
 
     if (!skipVeo && apiKey) {
       try {
-        console.log(`🎬 Launching Real Veo 3.1 Diffusion for prompt: "${prompt}"...`);
-        const enhancedPrompt = `${prompt}. High quality cinematic motion, 4k broadcast visuals, ${visualStyle.replace("_", " ")}, photorealistic lighting, seamless 24fps`;
+        logs.push(`${getTs()} 🚀 Dispatched to Google Veo 3.1 Fast Video Diffusion (GPU Cluster)...`);
+        db.updateProductionJob(jobId, {
+          progress: 30,
+          logs,
+          stageText: "Veo 3.1 Neural Diffusion in progress (Google GPU Cluster)"
+        });
+
+        const enhancedPrompt = `${prompt}. High quality cinematic motion, 4k broadcast visuals, ${visualStyle.replace(/_/g, " ")}, photorealistic lighting, seamless 24fps`;
         
         const veoResult = await generateVeoVideo(enhancedPrompt, {
           durationSeconds: Math.max(4, Math.min(8, Number(duration) || 8)),
           aspectRatio: "16:9",
-          modelTier: "fast"
+          modelTier: "fast",
+          onProgress: (p: VeoGenerationProgress) => {
+            const currentLogs = [...logs, `${getTs()} ${p.message}`];
+            db.updateProductionJob(jobId, {
+              progress: Math.min(94, Math.max(30, p.percent)),
+              stageText: p.message,
+              logs: currentLogs,
+              operationName: p.operationName
+            });
+          }
         });
 
         videoUrl = veoResult.videoUrl;
         actualDuration = veoResult.duration;
         operationName = veoResult.operationName;
-        console.log(`🎉 Real Veo 3.1 Video Rendered: ${videoUrl}`);
+        logs.push(`${getTs()} 🎉 Veo 3.1 Video Rendered & Saved (${(veoResult.fileSize / 1024 / 1024).toFixed(2)} MB): ${videoUrl}`);
       } catch (veoErr: any) {
-        console.error("Veo live generation error, using character fallback:", veoErr.message);
+        logs.push(`${getTs()} ⚠️ Veo Diffusion error: ${veoErr.message}. Fallback character master assigned.`);
         videoUrl = characterLock.includes("ren")
           ? "/assets/video/ren_and_aoi_conversation_synced.mp4"
           : characterLock === "david"
@@ -94,7 +140,9 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Veritas zk-SNARK & C2PA Provenance Seal
+    logs.push(`${getTs()} 🛡️ Computing Veritas zk-SNARK Proof & C2PA Ed25519 Provenance Signature...`);
     const manifestPayload = JSON.stringify({
+      jobId,
       title,
       prompt,
       duration: actualDuration,
@@ -126,9 +174,57 @@ export async function POST(req: NextRequest) {
       }
     };
 
+    logs.push(`${getTs()} 🔒 Veritas Seal Certified: ${certId} (C2PA: ${c2paManifestHash.slice(0, 18)}...)`);
+    logs.push(`${getTs()} ✨ Production Complete in ${((Date.now() - startTime) / 1000).toFixed(1)}s!`);
+
+    // Auto-save into permanent studio series library
+    db.saveStudioTrack({
+      id: jobId,
+      title,
+      subtitle: prompt.slice(0, 100),
+      category: characterLock.includes("ren") ? "anime" : "custom",
+      character: characterLock === "david" ? "David Kim" : characterLock.includes("ren") ? "Sensei Ren & Aoi" : "AI Creator",
+      videoSrc: videoUrl,
+      duration: actualDuration,
+      acts: [
+        {
+          id: `act_${Date.now()}`,
+          startTime: 0,
+          endTime: actualDuration,
+          speaker: characterLock.includes("ren") ? "Ren" : "Narrator",
+          speakerRole: "Primary Director",
+          actName: title,
+          philosophy: geminiScript.philosophy || "Autonomous Neural Synthesis",
+          text: {
+            ja: geminiScript.dialogueJa,
+            en: geminiScript.dialogueEn,
+            es: geminiScript.dialogueEs,
+            fr: geminiScript.dialogueFr,
+            de: geminiScript.dialogueDe,
+            hi: geminiScript.dialogueHi
+          }
+        }
+      ],
+      veritas_status: "CERTIFIED_VALID",
+      snark_proof_hash: c2paManifestHash
+    });
+
+    // Update DB job state to COMPLETED
+    db.updateProductionJob(jobId, {
+      status: "completed",
+      progress: 100,
+      stageText: "Production Master Complete",
+      logs,
+      videoUrl,
+      script: geminiScript,
+      veritas: veritasAudit,
+      operationName
+    });
+
     return NextResponse.json({
       success: true,
-      actId: `act_${Date.now()}`,
+      jobId,
+      id: jobId,
       title,
       duration: actualDuration,
       characterLock,
@@ -137,6 +233,7 @@ export async function POST(req: NextRequest) {
       veritasAudit,
       videoUrl,
       operationName,
+      logs,
       languagesGenerated: languages,
       timestamp: new Date().toISOString()
     });

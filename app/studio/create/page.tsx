@@ -106,154 +106,33 @@ export default function StudioCreatePage() {
   };
 
   const handleKickoffGeneration = async () => {
-    setIsGenerating(true);
-    setGeneratedResult(null);
-    setIsPublished(false);
-    setGenProgress(10);
-    setGenStage("🧠 Authoring Persona Dialogue & Narrative Script (Gemini 2.5 Flash)...");
+    const newJobId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    
+    // Asynchronously kickoff generation in background pipeline
+    fetch("/api/tier6/create-act", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: newJobId,
+        title,
+        prompt,
+        duration,
+        characterLock,
+        visualStyle,
+        languages,
+        autoVeritas
+      })
+    }).catch(console.error);
 
-    const startTime = Date.now();
-    const newTrackId = `track_${Date.now()}`;
-    setSavedTrackId(newTrackId);
-
-    // Live Progress Timer Interval while waiting for Veo 3.1
-    const progressInterval = setInterval(() => {
-      const elapsed = Math.round((Date.now() - startTime) / 1000);
-      if (elapsed < 3) {
-        setGenProgress(15);
-        setGenStage("🧠 Authoring Storyboard & Multi-Lingual Dialogue (Gemini 2.5 Flash)...");
-      } else if (elapsed < 8) {
-        setGenProgress(25);
-        setGenStage("🚀 Dispatched to Google Veo 3.1 Neural Video Diffusion GPU cluster...");
-      } else if (elapsed < 40) {
-        const pct = Math.min(88, 25 + Math.round(((elapsed - 8) / 32) * 63));
-        setGenProgress(pct);
-        setGenStage(`⚡ Veo 3.1 Neural Video Diffusion in progress (${elapsed}s elapsed — synthesizing 24fps motion frames)...`);
-      } else {
-        const pct = Math.min(94, 88 + Math.round(((elapsed - 40) / 25) * 6));
-        setGenProgress(pct);
-        setGenStage(`💾 Downloading Veo 3.1 master MP4 stream (${elapsed}s elapsed)...`);
-      }
-    }, 1000);
-
-    try {
-      const res = await fetch("/api/tier6/create-act", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title,
-          prompt,
-          duration,
-          characterLock,
-          visualStyle,
-          languages,
-          autoVeritas
-        })
-      });
-
-      clearInterval(progressInterval);
-      const data = await res.json();
-
-      if (!data.success && !data.videoUrl) {
-        throw new Error(data.error || "Generation failed");
-      }
-
-      setGenProgress(96);
-      setGenStage("🛡️ Computing Veritas zk-SNARK & C2PA Provenance Seal...");
-
-      const targetVideoSrc = (data.videoUrl || data.act?.videoSrc || "/assets/video/priya_4k_10act_master.mp4").replace("/videos/", "/assets/video/");
-
-      // Persist permanently into SQLite DB
-      await fetch("/api/studio/tracks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: newTrackId,
-          title,
-          subtitle: prompt.slice(0, 100),
-          category: characterLock.includes("ren") ? "anime" : "custom",
-          characterLock,
-          videoSrc: targetVideoSrc,
-          duration: data.duration || duration,
-          prompt,
-          veritas: data.veritasAudit || { status: "CERTIFIED_VALID", snarkProofHash: "0x8f2d...4a19" }
-        })
-      }).catch(console.error);
-
-      setGenProgress(100);
-      setGenStage("✨ Live Veo 3.1 Production Master Synthesized!");
-      setGeneratedResult({
-        ...data,
-        act: {
-          title,
-          prompt,
-          duration: data.duration || duration,
-          characterLock,
-          visualStyle,
-          videoSrc: targetVideoSrc,
-          veritas: data.veritasAudit || {
-            status: "CERTIFIED_VALID",
-            confidence: 0.9994,
-            snarkProofHash: "0x8f2d...4a19",
-            timestamp: new Date().toISOString()
-          }
-        }
-      });
-      setIsGenerating(false);
-    } catch (err: any) {
-      clearInterval(progressInterval);
-      console.error(err);
-      const fallbackVideoSrc = characterLock.includes("ren")
-        ? "/assets/video/ren_and_aoi_conversation_synced.mp4"
-        : characterLock === "david"
-        ? "/assets/video/david_master.mp4"
-        : "/assets/video/priya_4k_10act_master.mp4";
-
-      // Fallback save
-      await fetch("/api/studio/tracks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: newTrackId,
-          title,
-          subtitle: prompt.slice(0, 100),
-          category: characterLock.includes("ren") ? "anime" : "custom",
-          characterLock,
-          videoSrc: fallbackVideoSrc,
-          duration,
-          prompt,
-          veritas: { status: "CERTIFIED_VALID", snarkProofHash: "0x8f2d...4a19" }
-        })
-      }).catch(console.error);
-
-      setGenProgress(100);
-      setGenStage("✨ Production Master Synthesis Complete (Fallback Ready)!");
-      setGeneratedResult({
-        success: true,
-        act: {
-          title,
-          prompt,
-          duration,
-          characterLock,
-          visualStyle,
-          videoSrc: fallbackVideoSrc,
-          veritas: {
-            status: "CERTIFIED_VALID",
-            confidence: 0.9994,
-            snarkProofHash: "0x8f2d...4a19",
-            timestamp: new Date().toISOString()
-          }
-        }
-      });
-      setIsGenerating(false);
-    }
+    // Navigate immediately to dedicated, permanent, deep-linkable Production Monitor
+    router.push(`/studio/production/${newJobId}`);
   };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
       {/* Sticky Full-Width Header */}
       <header className="sticky top-0 z-40 w-full bg-slate-950/80 backdrop-blur-xl border-b border-slate-800">
-        <div className="max-w-[1600px] mx-auto px-6 md:px-12 py-4 flex items-center justify-between">
+        <div className="max-w-[1720px] mx-auto px-6 md:px-12 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
               href="/studio"
@@ -299,7 +178,7 @@ export default function StudioCreatePage() {
       </header>
 
       {/* Main Full-Width Multi-Column Canvas */}
-      <main className="flex-1 max-w-[1600px] w-full mx-auto px-6 md:px-12 py-8">
+      <main className="flex-1 max-w-[1720px] w-full mx-auto px-6 md:px-12 py-8">
         {!generatedResult ? (
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
             {/* LEFT COLUMN: Netflix / Prime Video Genre & Concept Hub (7 cols) */}

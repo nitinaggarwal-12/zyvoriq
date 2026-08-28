@@ -148,6 +148,26 @@ CREATE TABLE IF NOT EXISTS studio_series_tracks (
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now'))
 );
+
+-- 14. studio_production_jobs (Persistent Veo 3.1 & Script Pipeline Jobs)
+CREATE TABLE IF NOT EXISTS studio_production_jobs (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  prompt TEXT NOT NULL,
+  character_lock TEXT NOT NULL,
+  visual_style TEXT NOT NULL,
+  duration REAL NOT NULL DEFAULT 8.0,
+  status TEXT DEFAULT 'processing',
+  progress INTEGER DEFAULT 0,
+  stage_text TEXT,
+  logs_json TEXT DEFAULT '[]',
+  video_url TEXT,
+  script_json TEXT,
+  veritas_json TEXT,
+  operation_name TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
 `;
 
 export const POSTGRES_SCHEMA = `

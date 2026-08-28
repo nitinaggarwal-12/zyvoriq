@@ -103,7 +103,7 @@ export default function StudioLibraryPage() {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
       {/* Top Full-Width Sticky Navigation Header */}
       <header className="sticky top-0 z-40 w-full bg-slate-950/85 backdrop-blur-xl border-b border-slate-800">
-        <div className="max-w-[1600px] mx-auto px-6 md:px-12 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="max-w-[1720px] mx-auto px-6 md:px-12 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Link
               href="/studio"
@@ -149,7 +149,7 @@ export default function StudioLibraryPage() {
       </header>
 
       {/* Main Full-Width Content Container */}
-      <main className="flex-1 max-w-[1600px] w-full mx-auto px-6 md:px-12 py-8 space-y-8">
+      <main className="flex-1 max-w-[1720px] w-full mx-auto px-6 md:px-12 py-8 space-y-8">
         {/* Studio Metrics Ribbon */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="p-4 md:p-5 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl backdrop-blur-xl">

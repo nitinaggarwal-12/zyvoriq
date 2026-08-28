@@ -259,7 +259,7 @@ export default function Gen7StudioPage() {
       
       {/* Top Navigation Bar */}
       <header className="sticky top-0 z-40 w-full bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/80">
-        <div className="max-w-8xl mx-auto px-6 md:px-12 h-16 flex items-center justify-between">
+        <div className="max-w-[1720px] mx-auto px-6 md:px-12 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2">
               <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
@@ -293,7 +293,7 @@ export default function Gen7StudioPage() {
       </header>
 
       {/* Studio Tab Switcher (Netflix / Prime Video Style) */}
-      <div className="max-w-8xl mx-auto px-6 md:px-12 pt-6">
+      <div className="max-w-[1720px] mx-auto px-6 md:px-12 pt-6">
         <div className="flex flex-wrap items-center gap-3 p-1.5 bg-slate-900/90 border border-slate-800 rounded-2xl w-fit backdrop-blur-xl shadow-xl">
           <button
             onClick={() => setActiveStudioTab("anime")}
@@ -329,11 +329,11 @@ export default function Gen7StudioPage() {
 
       {/* Main Content Area */}
       {activeStudioTab === "anime" ? (
-        <main className="max-w-8xl mx-auto px-6 md:px-12 py-8 flex-1 w-full">
+        <main className="max-w-[1720px] mx-auto px-6 md:px-12 py-8 flex-1 w-full">
           <AnimeCinemaStage />
         </main>
       ) : (
-        <main className="max-w-8xl mx-auto px-6 md:px-12 py-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <main className="max-w-[1720px] mx-auto px-6 md:px-12 py-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* Left Column: Persona Selector & Script Editor & Gen 7 Options (5 Cols) */}
         <div className="lg:col-span-5 flex flex-col gap-6">

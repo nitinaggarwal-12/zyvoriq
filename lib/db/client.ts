@@ -317,5 +317,186 @@ export const db = {
         snark_proof_hash: t.veritas?.snarkProofHash || "0x8f2d...4a19"
       });
     }
+  },
+
+  createProductionJob(job: {
+    id: string;
+    title: string;
+    prompt: string;
+    characterLock: string;
+    visualStyle: string;
+    duration?: number;
+    status?: string;
+    progress?: number;
+    stageText?: string;
+    logs?: string[];
+  }): void {
+    const database = getDatabase();
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS studio_production_jobs (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        prompt TEXT NOT NULL,
+        character_lock TEXT NOT NULL,
+        visual_style TEXT NOT NULL,
+        duration REAL NOT NULL DEFAULT 8.0,
+        status TEXT DEFAULT 'processing',
+        progress INTEGER DEFAULT 0,
+        stage_text TEXT,
+        logs_json TEXT DEFAULT '[]',
+        video_url TEXT,
+        script_json TEXT,
+        veritas_json TEXT,
+        operation_name TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      );
+    `);
+    const stmt = database.prepare(`
+      INSERT INTO studio_production_jobs (
+        id, title, prompt, character_lock, visual_style, duration, status, progress, stage_text, logs_json, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+      ON CONFLICT(id) DO UPDATE SET
+        title = excluded.title,
+        prompt = excluded.prompt,
+        character_lock = excluded.character_lock,
+        visual_style = excluded.visual_style,
+        duration = excluded.duration,
+        status = excluded.status,
+        progress = excluded.progress,
+        stage_text = excluded.stage_text,
+        logs_json = excluded.logs_json,
+        updated_at = datetime('now');
+    `);
+    stmt.run(
+      job.id,
+      job.title,
+      job.prompt,
+      job.characterLock,
+      job.visualStyle,
+      job.duration || 8,
+      job.status || "processing",
+      job.progress || 0,
+      job.stageText || "Queued for Veo 3.1 & Gemini Synthesis",
+      JSON.stringify(job.logs || [])
+    );
+  },
+
+  updateProductionJob(id: string, updates: {
+    status?: string;
+    progress?: number;
+    stageText?: string;
+    logs?: string[];
+    videoUrl?: string;
+    script?: any;
+    veritas?: any;
+    operationName?: string;
+  }): void {
+    const database = getDatabase();
+    const existing = this.getProductionJob(id);
+    if (!existing) return;
+
+    const newLogs = updates.logs !== undefined ? updates.logs : existing.logs;
+
+    const stmt = database.prepare(`
+      UPDATE studio_production_jobs SET
+        status = COALESCE(?, status),
+        progress = COALESCE(?, progress),
+        stage_text = COALESCE(?, stage_text),
+        logs_json = ?,
+        video_url = COALESCE(?, video_url),
+        script_json = COALESCE(?, script_json),
+        veritas_json = COALESCE(?, veritas_json),
+        operation_name = COALESCE(?, operation_name),
+        updated_at = datetime('now')
+      WHERE id = ?;
+    `);
+    stmt.run(
+      updates.status !== undefined ? updates.status : null,
+      updates.progress !== undefined ? updates.progress : null,
+      updates.stageText !== undefined ? updates.stageText : null,
+      JSON.stringify(newLogs),
+      updates.videoUrl !== undefined ? updates.videoUrl : null,
+      updates.script !== undefined ? JSON.stringify(updates.script) : null,
+      updates.veritas !== undefined ? JSON.stringify(updates.veritas) : null,
+      updates.operationName !== undefined ? updates.operationName : null,
+      id
+    );
+  },
+
+  getProductionJob(id: string): any | null {
+    try {
+      const database = getDatabase();
+      database.exec(`
+        CREATE TABLE IF NOT EXISTS studio_production_jobs (
+          id TEXT PRIMARY KEY,
+          title TEXT NOT NULL,
+          prompt TEXT NOT NULL,
+          character_lock TEXT NOT NULL,
+          visual_style TEXT NOT NULL,
+          duration REAL NOT NULL DEFAULT 8.0,
+          status TEXT DEFAULT 'processing',
+          progress INTEGER DEFAULT 0,
+          stage_text TEXT,
+          logs_json TEXT DEFAULT '[]',
+          video_url TEXT,
+          script_json TEXT,
+          veritas_json TEXT,
+          operation_name TEXT,
+          created_at TEXT DEFAULT (datetime('now')),
+          updated_at TEXT DEFAULT (datetime('now'))
+        );
+      `);
+      const row = database.prepare("SELECT * FROM studio_production_jobs WHERE id = ?").get(id) as any;
+      if (!row) return null;
+      return {
+        id: row.id,
+        title: row.title,
+        prompt: row.prompt,
+        characterLock: row.character_lock,
+        visualStyle: row.visual_style,
+        duration: row.duration,
+        status: row.status,
+        progress: row.progress,
+        stageText: row.stage_text,
+        logs: JSON.parse(row.logs_json || "[]"),
+        videoUrl: row.video_url,
+        script: row.script_json ? JSON.parse(row.script_json) : null,
+        veritas: row.veritas_json ? JSON.parse(row.veritas_json) : null,
+        operationName: row.operation_name,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      };
+    } catch (e) {
+      console.error("Failed to query production job:", e);
+      return null;
+    }
+  },
+
+  getAllProductionJobs(): any[] {
+    try {
+      const database = getDatabase();
+      const rows = database.prepare("SELECT * FROM studio_production_jobs ORDER BY created_at DESC LIMIT 50").all() as any[];
+      return rows.map(row => ({
+        id: row.id,
+        title: row.title,
+        prompt: row.prompt,
+        characterLock: row.character_lock,
+        visualStyle: row.visual_style,
+        duration: row.duration,
+        status: row.status,
+        progress: row.progress,
+        stageText: row.stage_text,
+        logs: JSON.parse(row.logs_json || "[]"),
+        videoUrl: row.video_url,
+        script: row.script_json ? JSON.parse(row.script_json) : null,
+        veritas: row.veritas_json ? JSON.parse(row.veritas_json) : null,
+        operationName: row.operation_name,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      }));
+    } catch (e) {
+      return [];
+    }
   }
 };
