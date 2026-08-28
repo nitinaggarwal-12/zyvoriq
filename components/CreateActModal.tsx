@@ -49,68 +49,24 @@ export interface GenreConcept {
 }
 
 export const GENRE_CATEGORIES = [
-  { id: "all", label: "🎬 All Genres" },
-  { id: "martial_arts", label: "🥋 Zen & Martial Arts" },
-  { id: "executive", label: "🏢 Silicon Valley Keynotes" },
-  { id: "cyberpunk", label: "🌆 Cyberpunk & Sci-Fi" },
-  { id: "drama", label: "🌸 Emotional Anime Drama" },
-  { id: "security", label: "🛡️ Veritas Trust & Cryptography" },
-  { id: "cosmic", label: "🌌 Cosmic Odyssey" }
+  { id: "all", label: "🎬 All Categories" },
+  { id: "executive", label: "🧑‍💼 Humans & Executive Twins" },
+  { id: "anime", label: "🌸 Anime & Manga" },
+  { id: "cartoon", label: "🎨 Cartoon & Stylized Animation" },
+  { id: "cgi_3d", label: "🧊 3D Graphics & CGI Cinematic" },
+  { id: "nature", label: "🌿 Nature & Wildlife Documentaries" },
+  { id: "space", label: "🌌 Universe, Cosmos & Space" },
+  { id: "engineering", label: "⚙️ Machine Building & Engineering" },
+  { id: "medical", label: "🩺 Medical Equipment & Healthcare" },
+  { id: "security", label: "🛡️ Veritas Trust & Cryptography" }
 ];
 
 export const GENRE_CONCEPTS: GenreConcept[] = [
-  {
-    id: "mushin_thunder",
-    genre: "martial_arts",
-    genreEmoji: "🥋",
-    title: "⚡ The Thunderstorm of Mushin",
-    hook: "A rainy nighttime duel on a tatami balcony exploring the concept of Mind without Mind.",
-    prompt: "Sensei Ren teaches Apprentice Aoi the concept of Mushin (Mind without Mind) during a night thunderstorm duel on the wooden dojo balcony.",
-    characterLock: "ren_aoi",
-    visualStyle: "ufotable_anime",
-    recommendedDuration: 24,
-    speechSample: "Do not anchor your mind, Aoi. Like falling rain, true mastery strikes only when all thought is released."
-  },
-  {
-    id: "wabi_sabi",
-    genre: "drama",
-    genreEmoji: "🌸",
-    title: "🌸 Sakura Wabi-Sabi Duel",
-    hook: "Embracing imperfection and transience as cherry blossoms drift across the dojo garden.",
-    prompt: "Aoi struggles with perfectionism before Sensei Ren points to imperfect falling cherry blossoms, illustrating beauty in transience.",
-    characterLock: "ren_aoi",
-    visualStyle: "ufotable_anime",
-    recommendedDuration: 8,
-    speechSample: "Look at the garden, Aoi. Wabi-Sabi teaches that true beauty lives in the transient and the broken."
-  },
-  {
-    id: "sunrise_kata",
-    genre: "martial_arts",
-    genreEmoji: "🌅",
-    title: "🌅 Sunrise Katana Mastery",
-    hook: "Synchronized morning sword forms bathed in golden volcanic dawn light overlooking Mount Fuji.",
-    prompt: "Aoi and Sensei Ren perform synchronized morning kata facing the radiant golden sunrise across Mount Fuji.",
-    characterLock: "ren_aoi",
-    visualStyle: "ghibli_pastoral",
-    recommendedDuration: 56,
-    speechSample: "With every sunrise, we do not train for war—we train to align our heartbeat with the waking world."
-  },
-  {
-    id: "gaman_bamboo",
-    genre: "martial_arts",
-    genreEmoji: "🎋",
-    title: "🎋 The Unyielding Bamboo (Gaman)",
-    hook: "Enduring severe mountain snowstorms by learning to bend rather than snap.",
-    prompt: "During a harsh winter gale, Sensei Ren shows Aoi how green bamboo bends under heavy snow without breaking, demonstrating the spirit of Gaman.",
-    characterLock: "ren_aoi",
-    visualStyle: "ufotable_anime",
-    recommendedDuration: 8,
-    speechSample: "Gaman is not passive suffering; it is the quiet strength that bends in the storm and springs back triumphant."
-  },
+  // 1. Humans & Executive Digital Twins
   {
     id: "sovereign_ai_exec",
     genre: "executive",
-    genreEmoji: "🏢",
+    genreEmoji: "🧑‍💼",
     title: "🏢 Sovereign AI Enterprise Keynote",
     hook: "Priya delivers an authoritative mainstage keynote on autonomous corporate governance.",
     prompt: "Priya delivers an authoritative 4K keynote on enterprise zk-SNARK cryptographic provenance, deterministic media synthesis, and zero-drift neural broadcasting.",
@@ -131,18 +87,118 @@ export const GENRE_CONCEPTS: GenreConcept[] = [
     recommendedDuration: 56,
     speechSample: "By transitioning to decentralized sub-millisecond edge clusters, we unlocked 300% ARR expansion with zero latency overhead."
   },
+
+  // 2. Anime & Manga
   {
-    id: "quantum_topology",
-    genre: "cyberpunk",
-    genreEmoji: "🌆",
-    title: "🌆 Tokyo Neon Quantum Protocol",
-    hook: "David navigates high-frequency topological routing amidst rain-slicked Shinjuku skyscrapers.",
-    prompt: "David Kim uncovers a rogue neural thread in a distributed quantum cluster overlooking glowing holographic Tokyo neon billboards.",
+    id: "mushin_thunder",
+    genre: "anime",
+    genreEmoji: "🥋",
+    title: "⚡ The Thunderstorm of Mushin",
+    hook: "A rainy nighttime duel on a tatami balcony exploring the concept of Mind without Mind.",
+    prompt: "Sensei Ren teaches Apprentice Aoi the concept of Mushin (Mind without Mind) during a night thunderstorm duel on the wooden dojo balcony.",
+    characterLock: "ren_aoi",
+    visualStyle: "ufotable_anime",
+    recommendedDuration: 24,
+    speechSample: "Do not anchor your mind, Aoi. Like falling rain, true mastery strikes only when all thought is released."
+  },
+  {
+    id: "wabi_sabi",
+    genre: "anime",
+    genreEmoji: "🌸",
+    title: "🌸 Sakura Wabi-Sabi Duel",
+    hook: "Embracing imperfection and transience as cherry blossoms drift across the dojo garden.",
+    prompt: "Aoi struggles with perfectionism before Sensei Ren points to imperfect falling cherry blossoms, illustrating beauty in transience.",
+    characterLock: "ren_aoi",
+    visualStyle: "ufotable_anime",
+    recommendedDuration: 8,
+    speechSample: "Look at the garden, Aoi. Wabi-Sabi teaches that true beauty lives in the transient and the broken."
+  },
+
+  // 3. Cartoon & Stylized Animation
+  {
+    id: "retro_cartoon_lab",
+    genre: "cartoon",
+    genreEmoji: "🎨",
+    title: "🎨 Whimsical Inventor's Laboratory",
+    hook: "A wacky cartoon inventor creates a contraption that turns breakfast pancakes into rocket fuel.",
+    prompt: "Classic hand-drawn animation style with bouncy physics: an eccentric cartoon inventor activates a steam-powered pancake catapult in a cluttered whimsical workshop.",
+    characterLock: "ren_aoi",
+    visualStyle: "ghibli_pastoral",
+    recommendedDuration: 24,
+    speechSample: "Hold onto your toast! The Gravitational Batter Propeller is warming up for ignition!"
+  },
+
+  // 4. 3D Graphics & CGI Cinematic
+  {
+    id: "unreal_cyber_city",
+    genre: "cgi_3d",
+    genreEmoji: "🧊",
+    title: "🧊 Unreal Engine 5 Cyber-Metropolis",
+    hook: "Photorealistic ray-traced drone flythrough across holographic floating skylanes.",
+    prompt: "Hyper-detailed Unreal Engine 5 CGI render with Nanite geometry and Lumen global illumination: camera glides through a bustling futuristic mega-city with flying aero-transits and neon rain.",
     characterLock: "david",
     visualStyle: "cyberpunk_noir",
-    recommendedDuration: 24,
-    speechSample: "When quantum packets route through topological lattices, standard firewalls cease to exist. We must rebuild the trust fabric from scratch."
+    recommendedDuration: 56,
+    speechSample: "Initializing sub-atomic path tracing across Sector 9. Global illumination render lock engaged."
   },
+
+  // 5. Nature & Wildlife Documentaries
+  {
+    id: "savanna_predator",
+    genre: "nature",
+    genreEmoji: "🌿",
+    title: "🌿 Serengeti Thunderstorm & Lion Pride",
+    hook: "BBC Earth-style cinematic documentary following a lion pride during the Great Migration rainstorm.",
+    prompt: "Cinematic 8K wildlife documentary: golden hour sunlight breaks through dramatic storm clouds as a lion pride surveys the sweeping Serengeti plains with amber grasses rippling in the wind.",
+    characterLock: "ren_aoi",
+    visualStyle: "photorealistic_keynote",
+    recommendedDuration: 56,
+    speechSample: "Across the vast golden plains of the Serengeti, the coming rains signal a dramatic renewal of life and the ancient hunt."
+  },
+
+  // 6. Universe, Space & Cosmic Exploration
+  {
+    id: "deep_space_blackhole",
+    genre: "space",
+    genreEmoji: "🌌",
+    title: "🌌 Event Horizon: Journey into Gargantua",
+    hook: "Interstellar journey navigating the glowing gravitational lensing of a supermassive black hole.",
+    prompt: "Photorealistic deep space IMAX cinematography: an exploration starship approaches a supermassive black hole with a blinding gold-orange accretion disk warping starlight in relativistic physics.",
+    characterLock: "priya",
+    visualStyle: "cyberpunk_noir",
+    recommendedDuration: 120,
+    speechSample: "As we cross the photon sphere, time dilates exponentially. Starlight curves around the gravitational singularity."
+  },
+
+  // 7. Machines, Engineering & Manufacturing
+  {
+    id: "jet_engine_assembly",
+    genre: "engineering",
+    genreEmoji: "⚙️",
+    title: "⚙️ Building a Hypersonic Scramjet Engine",
+    hook: "Step-by-step engineering teardown and 5-axis CNC machining of titanium turbine blades.",
+    prompt: "Educational industrial engineering documentary: exploded 3D CAD holographic view showing titanium combustion chambers, ceramic heat shields, and fuel injectors assembling at Mach 7 tolerances.",
+    characterLock: "david",
+    visualStyle: "photorealistic_keynote",
+    recommendedDuration: 56,
+    speechSample: "Every micron counts. These titanium-aluminide turbine blades withstand temperatures hotter than molten volcanic magma."
+  },
+
+  // 8. Medical Equipment & Healthcare
+  {
+    id: "robotic_surgery_mri",
+    genre: "medical",
+    genreEmoji: "🩺",
+    title: "🩺 Da Vinci Robotic Micro-Surgery & MRI",
+    hook: "High-precision robotic microsurgery guided by real-time 7-Tesla neuro-MRI scanning.",
+    prompt: "State-of-the-art medical education footage: robotic surgical arms perform sub-millimeter suturing while real-time holographic MRI neural scans illuminate synaptic pathways in the background.",
+    characterLock: "elena",
+    visualStyle: "photorealistic_keynote",
+    recommendedDuration: 56,
+    speechSample: "With 7-Tesla intraoperative neuro-imaging, the robotic needle achieves sub-millimeter precision without disrupting vascular pathways."
+  },
+
+  // 9. Veritas Trust & Cryptography
   {
     id: "veritas_c2pa",
     genre: "security",
@@ -154,18 +210,6 @@ export const GENRE_CONCEPTS: GenreConcept[] = [
     visualStyle: "photorealistic_keynote",
     recommendedDuration: 56,
     speechSample: "In a world flooded with synthetic media, trust is math. Veritas zk-SNARK provides immutable proof for every spoken syllable."
-  },
-  {
-    id: "cosmic_warp",
-    genre: "cosmic",
-    genreEmoji: "🌌",
-    title: "🌌 Interstellar Warp Horizon",
-    hook: "Jonathan commands the bridge of an exploration flagship charting unexplored hyperspace routes.",
-    prompt: "Jonathan Vance gazes through the observation deck viewport as the starship prepares for hyperspace transit past a binary neutron star.",
-    characterLock: "priya",
-    visualStyle: "cyberpunk_noir",
-    recommendedDuration: 120,
-    speechSample: "Beyond the event horizon lies not darkness, but infinite possibility. Engage the primary quantum manifold."
   }
 ];
 
