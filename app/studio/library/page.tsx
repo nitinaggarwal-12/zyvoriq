@@ -41,10 +41,12 @@ interface SeriesTrack {
   createdAt?: string;
 }
 
+import { CANONICAL_SERIES_TRACKS } from "@/lib/tier6/default_tracks";
+
 export default function StudioLibraryPage() {
   const router = useRouter();
-  const [tracks, setTracks] = useState<SeriesTrack[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [tracks, setTracks] = useState<any[]>(CANONICAL_SERIES_TRACKS);
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -54,7 +56,7 @@ export default function StudioLibraryPage() {
     try {
       const res = await fetch("/api/studio/tracks");
       const data = await res.json();
-      if (data.success && Array.isArray(data.tracks)) {
+      if (data.success && Array.isArray(data.tracks) && data.tracks.length > 0) {
         setTracks(data.tracks);
       }
     } catch (err) {

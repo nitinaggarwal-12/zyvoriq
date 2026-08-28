@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
+import { CANONICAL_SERIES_TRACKS } from "@/lib/tier6/default_tracks";
 
 export async function GET(req: NextRequest) {
   try {
     const tracks = db.getStudioTracks();
+    if (!tracks || tracks.length === 0) {
+      return NextResponse.json({ success: true, tracks: CANONICAL_SERIES_TRACKS });
+    }
     return NextResponse.json({ success: true, tracks });
   } catch (err: any) {
-    console.error("Failed to get studio tracks:", err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    console.error("Failed to get studio tracks, using canonical fallback:", err);
+    return NextResponse.json({ success: true, tracks: CANONICAL_SERIES_TRACKS });
   }
 }
 
