@@ -84,6 +84,68 @@ const PRESET_DILEMMAS = [
 
 import { CANONICAL_SERIES_TRACKS, SeriesTrack } from "@/lib/tier6/default_tracks";
 
+function getSpeakerDisplay(speaker?: string, speakerRole?: string) {
+  const s = (speaker || "").toLowerCase();
+  if (s === "aoi") {
+    return {
+      badge: "🥋 AOI (Apprentice)",
+      subBadge: "🥋 AOI (Student)",
+      badgeColor: "bg-cyan-950/80 border-cyan-500/50 text-cyan-200 shadow-cyan-950/50",
+      subColor: "bg-cyan-500/20 text-cyan-300 border-cyan-500/40",
+      dotPing: "bg-cyan-400",
+      dotSolid: "bg-cyan-500"
+    };
+  }
+  if (s === "ren" || s === "sensei ren" || s.includes("ren")) {
+    return {
+      badge: "⛩️ SENSEI REN (Zen Master)",
+      subBadge: "⛩️ SENSEI REN (Master)",
+      badgeColor: "bg-amber-950/80 border-amber-500/50 text-amber-200 shadow-amber-950/50",
+      subColor: "bg-amber-500/20 text-amber-300 border-amber-500/40",
+      dotPing: "bg-amber-400",
+      dotSolid: "bg-amber-500"
+    };
+  }
+  if (s === "priya" || s.includes("priya")) {
+    return {
+      badge: "👩‍💼 PRIYA SHARMA (Chief AI Officer)",
+      subBadge: `👩‍💼 PRIYA (${speakerRole || "Chief AI Officer"})`,
+      badgeColor: "bg-purple-950/80 border-purple-500/50 text-purple-200 shadow-purple-950/50",
+      subColor: "bg-purple-500/20 text-purple-300 border-purple-500/40",
+      dotPing: "bg-purple-400",
+      dotSolid: "bg-purple-500"
+    };
+  }
+  if (s === "david" || s.includes("david")) {
+    return {
+      badge: "👨‍💼 DAVID KIM (Lead Infrastructure)",
+      subBadge: `👨‍💼 DAVID (${speakerRole || "Lead Infrastructure"})`,
+      badgeColor: "bg-emerald-950/80 border-emerald-500/50 text-emerald-200 shadow-emerald-950/50",
+      subColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+      dotPing: "bg-emerald-400",
+      dotSolid: "bg-emerald-500"
+    };
+  }
+  if (s === "elena" || s.includes("elena")) {
+    return {
+      badge: "👩‍💼 ELENA ROSTOVA (Product Strategy)",
+      subBadge: `👩‍💼 ELENA (${speakerRole || "VP Product"})`,
+      badgeColor: "bg-rose-950/80 border-rose-500/50 text-rose-200 shadow-rose-950/50",
+      subColor: "bg-rose-500/20 text-rose-300 border-rose-500/40",
+      dotPing: "bg-rose-400",
+      dotSolid: "bg-rose-500"
+    };
+  }
+  return {
+    badge: speakerRole ? `🎙️ ${(speaker || "Speaker").toUpperCase()} (${speakerRole.toUpperCase()})` : `🎙️ ${(speaker || "Speaker").toUpperCase()}`,
+    subBadge: speakerRole ? `${(speaker || "Speaker").toUpperCase()} (${speakerRole})` : (speaker || "Speaker").toUpperCase(),
+    badgeColor: "bg-teal-950/80 border-teal-500/50 text-teal-200 shadow-teal-950/50",
+    subColor: "bg-teal-500/20 text-teal-300 border-teal-500/40",
+    dotPing: "bg-teal-400",
+    dotSolid: "bg-teal-500"
+  };
+}
+
 export function AnimeCinemaStage() {
   const [studioMode, setStudioMode] = useState<"cinema" | "living_dojo">("cinema");
 
@@ -120,6 +182,7 @@ export function AnimeCinemaStage() {
 
   const activeTrack = seriesTracks.find((t) => t.id === activeTrackId) || seriesTracks[0] || CANONICAL_SERIES_TRACKS[0];
   const actsList = activeTrack.acts;
+  const isAnimeTrack = activeTrack.category === "anime" || activeTrack.id.includes("anime") || activeTrack.id.includes("ren");
 
   // Cinema Mode State
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -175,38 +238,51 @@ export function AnimeCinemaStage() {
     }
     if (audio) {
       audio.currentTime = 0;
-      audio.load();
+      if (targetTrack?.category !== "anime") {
+        audio.pause();
+      } else {
+        audio.load();
+      }
     }
   };
 
   // Synchronize Active Subtitle Cue in Cinema Mode
   const activeCue = actsList.find(
-    (c) => currentTime >= c.startTime && currentTime <= c.endTime
+    (c) => currentTime >= c.startTime && currentTime <= (c.endTime || duration)
   ) || actsList[selectedActIndex] || actsList[0];
 
   // Update selected act on time progress
   useEffect(() => {
-    const actIdx = Math.min(Math.floor(currentTime / 8.0), actsList.length - 1);
-    setSelectedActIndex(actIdx);
-  }, [currentTime, actsList.length]);
+    const idx = actsList.findIndex(
+      (c) => currentTime >= c.startTime && currentTime <= (c.endTime || duration)
+    );
+    if (idx !== -1) {
+      setSelectedActIndex(idx);
+    }
+  }, [currentTime, actsList, duration]);
 
   // Handle Newly Created Act / New Series Track
   const handleActCreated = (newActData: any, destinationMode: "new_series" | "append_current" = "new_series") => {
+    const isRen = newActData.characterLock === "ren_aoi";
+    const isDavid = newActData.characterLock === "david";
+    const defaultSpeaker = isRen ? "Ren" : isDavid ? "David" : "Priya";
+    const defaultSpeakerRole = isRen ? "Zen Master" : isDavid ? "Lead Infrastructure" : "Chief AI Officer";
+
     const newCue: SubtitleCue = {
       id: newActData.actId || `act_${Date.now()}`,
       startTime: 0.25,
       endTime: parseFloat(newActData.duration) || 7.5,
-      speaker: "Ren",
-      speakerRole: newActData.characterLock === "ren_aoi" ? "Zen Master" : "Chief AI Officer",
-      actName: newActData.title || `Act 1: ${newActData.script?.philosophy?.split("—")[0]?.trim() || "The Way of Mushin"}`,
-      philosophy: newActData.script?.philosophy || "Mushin (無心) — Mind without Mind",
+      speaker: defaultSpeaker,
+      speakerRole: defaultSpeakerRole,
+      actName: newActData.title || `Act 1: ${newActData.script?.philosophy?.split("—")[0]?.trim() || "The Sovereign Path"}`,
+      philosophy: newActData.script?.philosophy || "Autonomous Intelligence Architecture",
       text: {
-        ja: `⛩️ SENSEI REN: "${newActData.script?.dialogueJa || ""}"`,
-        en: `⛩️ SENSEI REN: "${newActData.script?.dialogueEn || ""}"`,
-        es: `⛩️ SENSEI REN: "${newActData.script?.dialogueEs || newActData.script?.dialogueEn || ""}"`,
-        fr: `⛩️ SENSEI REN: "${newActData.script?.dialogueFr || newActData.script?.dialogueEn || ""}"`,
-        de: `⛩️ SENSEI REN: "${newActData.script?.dialogueDe || newActData.script?.dialogueEn || ""}"`,
-        hi: `⛩️ गुरुजी रेन: "${newActData.script?.dialogueHi || newActData.script?.dialogueEn || ""}"`
+        ja: newActData.script?.dialogueJa || newActData.script?.dialogueEn || "",
+        en: newActData.script?.dialogueEn || "",
+        es: newActData.script?.dialogueEs || newActData.script?.dialogueEn || "",
+        fr: newActData.script?.dialogueFr || newActData.script?.dialogueEn || "",
+        de: newActData.script?.dialogueDe || newActData.script?.dialogueEn || "",
+        hi: newActData.script?.dialogueHi || newActData.script?.dialogueEn || ""
       }
     };
 
@@ -219,8 +295,8 @@ export function AnimeCinemaStage() {
         title: newActData.title || "Custom AI Production Series",
         subtitle: newActData.script?.philosophy || "Multi-Modal Autonomous Series",
         category: newActData.characterLock === "ren_aoi" ? "anime" : "executive",
-        character: newActData.characterLock === "ren_aoi" ? "🥋 Sensei Ren & Aoi" : "👩‍💼 Digital Twin Executive",
-        videoSrc: newActData.videoUrl || "/assets/video/ren_and_aoi_conversation_synced.mp4",
+        character: newActData.characterLock === "ren_aoi" ? "🥋 Sensei Ren & Aoi" : newActData.characterLock === "david" ? "👨‍💼 David Kim (Lead Infrastructure)" : "👩‍💼 Priya Sharma (Chief AI Officer)",
+        videoSrc: newActData.videoUrl || (newActData.characterLock === "ren_aoi" ? "/assets/video/ren_and_aoi_conversation_synced.mp4" : newActData.characterLock === "david" ? "/assets/video/david_master.mp4" : "/assets/video/priya_4k_10act_master.mp4"),
         acts: [newCue],
         duration: newTrackDuration
       };
@@ -234,7 +310,7 @@ export function AnimeCinemaStage() {
       const newIndex = actsList.length;
       newCue.startTime = newIndex * 8.0 + 0.25;
       newCue.endTime = newIndex * 8.0 + 7.5;
-      newCue.actName = newActData.title || `Act ${newIndex + 1}: ${newActData.script?.philosophy?.split("—")[0]?.trim() || "The Way of Mushin"}`;
+      newCue.actName = newActData.title || `Act ${newIndex + 1}: ${newActData.script?.philosophy?.split("—")[0]?.trim() || "The Sovereign Path"}`;
 
       setSeriesTracks((prev) =>
         prev.map((t) =>
@@ -255,7 +331,7 @@ export function AnimeCinemaStage() {
       video.currentTime = 0;
       video.play().catch(() => {});
     }
-    if (audio) {
+    if (isAnimeTrack && audio) {
       audio.currentTime = 0;
       audio.play().catch(() => {});
     }
@@ -265,12 +341,14 @@ export function AnimeCinemaStage() {
   // Audio track switching with exact timecode preservation
   const handleAudioLangChange = (code: AudioLangCode) => {
     setAudioLang(code);
-    const audio = audioRef.current;
-    if (audio) {
-      const wasPlaying = isPlaying;
-      audio.currentTime = currentTime;
-      if (wasPlaying) {
-        audio.play().catch(() => {});
+    if (isAnimeTrack) {
+      const audio = audioRef.current;
+      if (audio) {
+        const wasPlaying = isPlaying;
+        audio.currentTime = currentTime;
+        if (wasPlaying) {
+          audio.play().catch(() => {});
+        }
       }
     }
   };
@@ -279,16 +357,18 @@ export function AnimeCinemaStage() {
   const togglePlay = () => {
     const video = videoRef.current;
     const audio = audioRef.current;
-    if (!video || !audio) return;
+    if (!video) return;
 
     if (isPlaying) {
       video.pause();
-      audio.pause();
+      if (isAnimeTrack && audio) audio.pause();
       setIsPlaying(false);
     } else {
       video.play().catch(() => {});
-      audio.currentTime = video.currentTime;
-      audio.play().catch(() => {});
+      if (isAnimeTrack && audio) {
+        audio.currentTime = video.currentTime;
+        audio.play().catch(() => {});
+      }
       setIsPlaying(true);
     }
   };
@@ -297,17 +377,19 @@ export function AnimeCinemaStage() {
   const handleSeek = (time: number, autoPlay: boolean = false) => {
     const video = videoRef.current;
     const audio = audioRef.current;
-    const loopTime = time % 56.0;
+    const loopTime = duration > 0 ? time % duration : time;
     if (video) video.currentTime = loopTime;
-    if (audio) audio.currentTime = loopTime;
+    if (isAnimeTrack && audio) audio.currentTime = loopTime;
     setCurrentTime(time);
-    const actIdx = Math.floor(time / 8.0);
-    if (actIdx < actsList.length) {
-      setSelectedActIndex(actIdx);
+    const idx = actsList.findIndex(
+      (c) => time >= c.startTime && time <= (c.endTime || duration)
+    );
+    if (idx !== -1) {
+      setSelectedActIndex(idx);
     }
     if (autoPlay || isPlaying) {
       if (video) video.play().catch(() => {});
-      if (audio) audio.play().catch(() => {});
+      if (isAnimeTrack && audio) audio.play().catch(() => {});
       setIsPlaying(true);
     }
   };
@@ -317,10 +399,8 @@ export function AnimeCinemaStage() {
     const video = videoRef.current;
     const audio = audioRef.current;
     if (video) {
-      const baseOffset = selectedActIndex >= 7 ? selectedActIndex * 8.0 : 0;
-      const currentLogicalTime = baseOffset + (selectedActIndex >= 7 ? video.currentTime % 8.0 : video.currentTime);
-      setCurrentTime(currentLogicalTime);
-      if (audio && Math.abs(audio.currentTime - video.currentTime) > 0.12) {
+      setCurrentTime(video.currentTime);
+      if (isAnimeTrack && audio && Math.abs(audio.currentTime - video.currentTime) > 0.12) {
         audio.currentTime = video.currentTime;
       }
     }
@@ -395,6 +475,8 @@ export function AnimeCinemaStage() {
       setIsSimulating(false);
     }
   };
+
+  const activeSpeaker = getSpeakerDisplay(activeCue?.speaker, activeCue?.speakerRole);
 
   return (
     <div className="space-y-8 animate-fadeIn">
@@ -571,7 +653,7 @@ export function AnimeCinemaStage() {
                 ref={videoRef}
                 src={activeTrack.videoSrc}
                 className="w-full h-full object-cover"
-                muted={true}
+                muted={isAnimeTrack ? true : isMuted}
                 playsInline
                 onTimeUpdate={handleTimeUpdate}
                 onLoadedMetadata={() => {
@@ -579,44 +661,38 @@ export function AnimeCinemaStage() {
                 }}
                 onEnded={() => {
                   setIsPlaying(false);
-                  if (audioRef.current) audioRef.current.pause();
+                  if (isAnimeTrack && audioRef.current) audioRef.current.pause();
                 }}
                 onClick={togglePlay}
               />
 
-              {/* Dynamic Multilingual Dub Audio Element */}
-              <audio
-                ref={audioRef}
-                src={`/assets/audio/anime_dubs/dub_${audioLang}.mp3`}
-                muted={isMuted}
-                preload="auto"
-              />
+              {/* Dynamic Multilingual Dub Audio Element (Used only for Anime multi-dub) */}
+              {isAnimeTrack && (
+                <audio
+                  ref={audioRef}
+                  src={`/assets/audio/anime_dubs/dub_${audioLang}.mp3`}
+                  muted={isMuted}
+                  preload="auto"
+                />
+              )}
 
               {/* Real-Time Active Speaker HUD (Top Left) */}
               <div className="absolute top-4 left-4 z-30 pointer-events-none transition-all duration-300">
                 {activeCue ? (
                   <div
-                    className={`flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl backdrop-blur-xl border shadow-xl transition-all ${
-                      activeCue.speaker === "Aoi"
-                        ? "bg-cyan-950/80 border-cyan-500/50 text-cyan-200 shadow-cyan-950/50"
-                        : "bg-amber-950/80 border-amber-500/50 text-amber-200 shadow-amber-950/50"
-                    }`}
+                    className={`flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl backdrop-blur-xl border shadow-xl transition-all ${activeSpeaker.badgeColor}`}
                   >
                     <span className="flex h-2 w-2 relative">
                       <span
-                        className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                          activeCue.speaker === "Aoi" ? "bg-cyan-400" : "bg-amber-400"
-                        }`}
+                        className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${activeSpeaker.dotPing}`}
                       />
                       <span
-                        className={`relative inline-flex rounded-full h-2 w-2 ${
-                          activeCue.speaker === "Aoi" ? "bg-cyan-500" : "bg-amber-500"
-                        }`}
+                        className={`relative inline-flex rounded-full h-2 w-2 ${activeSpeaker.dotSolid}`}
                       />
                     </span>
                     <div className="flex flex-col">
                       <span className="text-[11px] font-bold tracking-wider font-mono uppercase">
-                        {activeCue.speaker === "Aoi" ? "🥋 AOI (Apprentice)" : "⛩️ SENSEI REN (Zen Master)"}
+                        {activeSpeaker.badge}
                       </span>
                       <span className="text-[9px] text-zinc-300 font-sans">
                         {activeCue.actName}
@@ -635,21 +711,13 @@ export function AnimeCinemaStage() {
               {subtitleLang !== "off" && activeCue && (
                 <div className="absolute bottom-20 inset-x-8 flex justify-center pointer-events-none transition-all duration-300 z-30">
                   <div
-                    className={`backdrop-blur-md px-6 py-3 rounded-2xl max-w-2xl text-center shadow-2xl border transition-all ${
-                      activeCue.speaker === "Aoi"
-                        ? "bg-slate-950/85 border-cyan-500/40 shadow-cyan-950/30"
-                        : "bg-stone-950/85 border-amber-500/40 shadow-amber-950/30"
-                    }`}
+                    className={`backdrop-blur-md px-6 py-3 rounded-2xl max-w-2xl text-center shadow-2xl border transition-all ${activeSpeaker.badgeColor}`}
                   >
                     <div className="flex items-center justify-center gap-2 mb-1">
                       <span
-                        className={`text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded border font-bold ${
-                          activeCue.speaker === "Aoi"
-                            ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
-                            : "bg-amber-500/20 text-amber-300 border-amber-500/40"
-                        }`}
+                        className={`text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded border font-bold ${activeSpeaker.subColor}`}
                       >
-                        {activeCue.speaker === "Aoi" ? "🥋 AOI (Student)" : "⛩️ SENSEI REN (Master)"}
+                        {activeSpeaker.subBadge}
                       </span>
                       <span className="text-[10px] font-serif italic text-zinc-400">
                         {activeCue.philosophy}
@@ -686,29 +754,41 @@ export function AnimeCinemaStage() {
                       <div>
                         <h4 className="text-xs font-mono uppercase tracking-widest text-zinc-400 mb-3 flex items-center gap-2">
                           <Volume2 className="w-3.5 h-3.5 text-amber-400" />
-                          Audio Dub Track
+                          Audio Track
                         </h4>
-                        <div className="space-y-1.5">
-                          {AUDIO_LANGUAGES.map((lang) => (
-                            <button
-                              key={lang.code}
-                              onClick={() => handleAudioLangChange(lang.code)}
-                              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left text-xs font-medium transition-all ${
-                                audioLang === lang.code
-                                  ? "bg-amber-500/20 text-amber-200 border border-amber-500/40 shadow-md"
-                                  : "text-zinc-300 hover:bg-zinc-800/80 hover:text-white border border-transparent"
-                              }`}
-                            >
-                              <span className="flex items-center gap-2">
-                                {audioLang === lang.code && <Check className="w-3.5 h-3.5 text-amber-400" />}
-                                {lang.label}
-                              </span>
-                              <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded bg-zinc-800 text-zinc-400">
-                                {lang.badge}
-                              </span>
-                            </button>
-                          ))}
-                        </div>
+                        {isAnimeTrack ? (
+                          <div className="space-y-1.5">
+                            {AUDIO_LANGUAGES.map((lang) => (
+                              <button
+                                key={lang.code}
+                                onClick={() => handleAudioLangChange(lang.code)}
+                                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left text-xs font-medium transition-all ${
+                                  audioLang === lang.code
+                                    ? "bg-amber-500/20 text-amber-200 border border-amber-500/40 shadow-md"
+                                    : "text-zinc-300 hover:bg-zinc-800/80 hover:text-white border border-transparent"
+                                }`}
+                              >
+                                <span className="flex items-center gap-2">
+                                  {audioLang === lang.code && <Check className="w-3.5 h-3.5 text-amber-400" />}
+                                  {lang.label}
+                                </span>
+                                <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded bg-zinc-800 text-zinc-400">
+                                  {lang.badge}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800 space-y-2">
+                            <div className="flex items-center gap-2 text-amber-400 font-mono text-xs font-semibold">
+                              <Check className="w-4 h-4" />
+                              <span>Original Executive Speech Stem</span>
+                            </div>
+                            <p className="text-[11px] text-zinc-400 leading-relaxed">
+                              Playing native 24-bit studio vocal audio synchronized with 4K broadcast video.
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       {/* Subtitles Column */}
@@ -794,7 +874,7 @@ export function AnimeCinemaStage() {
 
                     <span className="font-mono text-zinc-400 text-xs">
                       {Math.floor(currentTime / 60)}:
-                      {Math.floor(currentTime % 60).toString().padStart(2, "0")} / 0:56
+                      {Math.floor(currentTime % 60).toString().padStart(2, "0")} / {Math.floor(duration / 60)}:{Math.floor(duration % 60).toString().padStart(2, "0")}
                     </span>
                   </div>
 
@@ -805,7 +885,7 @@ export function AnimeCinemaStage() {
                       title="Audio & Subtitles"
                     >
                       <Subtitles className="w-4 h-4" />
-                      <span>{audioLang.toUpperCase()} / {subtitleLang.toUpperCase()}</span>
+                      <span>{isAnimeTrack ? `${audioLang.toUpperCase()} / ` : ""}{subtitleLang.toUpperCase()}</span>
                     </button>
 
                     <button
@@ -828,7 +908,7 @@ export function AnimeCinemaStage() {
                     Current Chapter (Act {selectedActIndex + 1} of {actsList.length})
                   </span>
                   <h4 className="text-sm font-semibold text-white">
-                    {actsList[selectedActIndex]?.actName || "Act 1: Apprentice Doubt"}
+                    {actsList[selectedActIndex]?.actName || "Act 1: Production Master"}
                   </h4>
                 </div>
               </div>
@@ -847,7 +927,7 @@ export function AnimeCinemaStage() {
                 <BookOpen className="w-4 h-4 text-amber-400" />
                 {actsList.length}-Act Story Navigator
               </h3>
-              <span className="text-xs font-mono text-zinc-500">{actsList.length * 8}s Total</span>
+              <span className="text-xs font-mono text-zinc-500">{Math.round(duration)}s Total</span>
             </div>
 
             <div className="space-y-2 max-h-[580px] overflow-y-auto pr-1">
@@ -860,7 +940,7 @@ export function AnimeCinemaStage() {
                     key={cue.id}
                     onClick={() => {
                       setSelectedActIndex(idx);
-                      handleSeek(idx * 8.0, true);
+                      handleSeek(cue.startTime, true);
                     }}
                     className={`p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col gap-1.5 relative ${
                       isActive

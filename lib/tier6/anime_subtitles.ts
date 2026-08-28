@@ -2,7 +2,7 @@ export interface SubtitleCue {
   id: string;
   startTime: number;
   endTime: number;
-  speaker: "Aoi" | "Ren" | "Both";
+  speaker: string;
   speakerRole: string;
   actName: string;
   philosophy: string;
