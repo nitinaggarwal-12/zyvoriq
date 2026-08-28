@@ -95,8 +95,8 @@ export default function Gen7StudioPage() {
 
   // Clean Gen 7 Persona Master Broadcast Video Source Resolver
   const activeVideoSrc = useMemo(() => {
-    return `/assets/video/${selectedPersona.id}_master.mp4`;
-  }, [selectedPersona.id]);
+    return selectedPersona.videoUrl || "";
+  }, [selectedPersona.videoUrl]);
 
   // Smooth Source Switching when Persona changes
   const prevPersonaRef = useRef<string>(selectedPersona.id);

@@ -27,7 +27,7 @@ export const FullBody3DStage: React.FC<FullBody3DStageProps> = ({
   const fpsRef = useRef<HTMLSpanElement>(null);
 
   const personaSlug = selectedPersonaName.toLowerCase().split(" ")[0] || "priya";
-  const videoSrc = `/assets/video/${personaSlug}_master.mp4`;
+  const videoSrc = personaSlug === "priya" ? "/assets/video/veo_priya_24s_master.mp4" : "";
 
   // Synchronize Mute
   useEffect(() => {

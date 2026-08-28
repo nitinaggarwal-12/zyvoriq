@@ -11,7 +11,7 @@ interface VeoFramingStageProps {
 }
 
 export const VeoFramingStage: React.FC<VeoFramingStageProps> = ({
-  videoUrl = "/assets/video/priya_master.mp4",
+  videoUrl = "/assets/video/veo_priya_master.mp4",
   isPlaying,
   currentTime = 0,
   restartTrigger = 0,

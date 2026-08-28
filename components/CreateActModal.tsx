@@ -122,7 +122,7 @@ export const GENRE_CONCEPTS: GenreConcept[] = [
     title: "🎨 Whimsical Inventor's Laboratory",
     hook: "A wacky cartoon inventor creates a contraption that turns breakfast pancakes into rocket fuel.",
     prompt: "Classic hand-drawn animation style with bouncy physics: an eccentric cartoon inventor activates a steam-powered pancake catapult in a cluttered whimsical workshop.",
-    characterLock: "ren_aoi",
+    characterLock: "custom",
     visualStyle: "ghibli_pastoral",
     recommendedDuration: 24,
     speechSample: "Hold onto your toast! The Gravitational Batter Propeller is warming up for ignition!"
@@ -150,7 +150,7 @@ export const GENRE_CONCEPTS: GenreConcept[] = [
     title: "🌿 Serengeti Thunderstorm & Lion Pride",
     hook: "BBC Earth-style cinematic documentary following a lion pride during the Great Migration rainstorm.",
     prompt: "Cinematic 8K wildlife documentary: golden hour sunlight breaks through dramatic storm clouds as a lion pride surveys the sweeping Serengeti plains with amber grasses rippling in the wind.",
-    characterLock: "ren_aoi",
+    characterLock: "custom",
     visualStyle: "photorealistic_keynote",
     recommendedDuration: 56,
     speechSample: "Across the vast golden plains of the Serengeti, the coming rains signal a dramatic renewal of life and the ancient hunt."
@@ -164,7 +164,7 @@ export const GENRE_CONCEPTS: GenreConcept[] = [
     title: "🌌 Event Horizon: Journey into Gargantua",
     hook: "Interstellar journey navigating the glowing gravitational lensing of a supermassive black hole.",
     prompt: "Photorealistic deep space IMAX cinematography: an exploration starship approaches a supermassive black hole with a blinding gold-orange accretion disk warping starlight in relativistic physics.",
-    characterLock: "priya",
+    characterLock: "custom",
     visualStyle: "cyberpunk_noir",
     recommendedDuration: 120,
     speechSample: "As we cross the photon sphere, time dilates exponentially. Starlight curves around the gravitational singularity."
@@ -204,8 +204,8 @@ export const GENRE_CONCEPTS: GenreConcept[] = [
     genre: "security",
     genreEmoji: "🛡️",
     title: "🛡️ Veritas zk-SNARK Cryptographic Shield",
-    hook: "Victoria explains frame-by-frame deepfake immunity and C2PA provenance signatures.",
-    prompt: "Victoria Sterling briefs sovereign security auditors on Ed25519 cryptographic seals and claim-level zero-drift grounding protocols.",
+    hook: "Priya explains frame-by-frame deepfake immunity and C2PA provenance signatures.",
+    prompt: "Priya Sharma briefs sovereign security auditors on Ed25519 cryptographic seals and claim-level zero-drift grounding protocols.",
     characterLock: "priya",
     visualStyle: "photorealistic_keynote",
     recommendedDuration: 56,
