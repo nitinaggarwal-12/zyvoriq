@@ -94,6 +94,8 @@ export function AnimeCinemaStage() {
   const [showAudioSubMenu, setShowAudioSubMenu] = useState<boolean>(false);
   const [selectedActIndex, setSelectedActIndex] = useState<number>(0);
   const [isCreateActOpen, setIsCreateActOpen] = useState<boolean>(false);
+  const [actsList, setActsList] = useState<SubtitleCue[]>(ANIME_SUBTITLE_CUES);
+  const [recentNewAct, setRecentNewAct] = useState<any>(null);
 
   // Living Dojo Mode State
   const [userInput, setUserInput] = useState<string>("");
@@ -120,15 +122,56 @@ export function AnimeCinemaStage() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Synchronize Active Subtitle Cue in Cinema Mode
-  const activeCue = ANIME_SUBTITLE_CUES.find(
+  const activeCue = actsList.find(
     (c) => currentTime >= c.startTime && currentTime <= c.endTime
-  );
+  ) || actsList[selectedActIndex];
 
   // Update selected act on time progress
   useEffect(() => {
-    const actIdx = Math.min(Math.floor(currentTime / 8.0), 6);
+    const actIdx = Math.min(Math.floor(currentTime / 8.0), actsList.length - 1);
     setSelectedActIndex(actIdx);
-  }, [currentTime]);
+  }, [currentTime, actsList.length]);
+
+  // Handle Newly Created Act from Generator Modal
+  const handleActCreated = (newActData: any) => {
+    const newIndex = actsList.length;
+    const startTime = newIndex * 8.0;
+    const newCue: SubtitleCue = {
+      id: newActData.actId || `act_${newIndex + 1}`,
+      startTime: startTime + 0.25,
+      endTime: startTime + 7.5,
+      speaker: "Ren",
+      speakerRole: "Zen Master",
+      actName: newActData.title || `Act ${newIndex + 1}: ${newActData.script?.philosophy?.split("—")[0]?.trim() || "The Way of Mushin"}`,
+      philosophy: newActData.script?.philosophy || "Mushin (無心) — Mind without Mind",
+      text: {
+        ja: `⛩️ SENSEI REN: "${newActData.script?.dialogueJa || ""}"`,
+        en: `⛩️ SENSEI REN: "${newActData.script?.dialogueEn || ""}"`,
+        es: `⛩️ SENSEI REN: "${newActData.script?.dialogueEs || newActData.script?.dialogueEn || ""}"`,
+        fr: `⛩️ SENSEI REN: "${newActData.script?.dialogueFr || newActData.script?.dialogueEn || ""}"`,
+        de: `⛩️ SENSEI REN: "${newActData.script?.dialogueDe || newActData.script?.dialogueEn || ""}"`,
+        hi: `⛩️ गुरुजी रेन: "${newActData.script?.dialogueHi || newActData.script?.dialogueEn || ""}"`
+      }
+    };
+
+    setActsList((prev) => [...prev, newCue]);
+    setSelectedActIndex(newIndex);
+    setRecentNewAct(newActData);
+    setIsCreateActOpen(false);
+
+    // Loop video time within master 56s footage to provide dynamic scene playback
+    const video = videoRef.current;
+    const audio = audioRef.current;
+    if (video) {
+      video.currentTime = (newIndex * 8.0) % 56.0;
+      video.play().catch(() => {});
+    }
+    if (audio) {
+      audio.currentTime = (newIndex * 8.0) % 56.0;
+      audio.play().catch(() => {});
+    }
+    setIsPlaying(true);
+  };
 
   // Audio track switching with exact timecode preservation
   const handleAudioLangChange = (code: AudioLangCode) => {
@@ -322,9 +365,54 @@ export function AnimeCinemaStage() {
       {/* MODE 1: 7-ACT CINEMA BROADCAST STAGE                                      */}
       {/* ========================================================================= */}
       {studioMode === "cinema" && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start animate-fadeIn">
-          {/* Cinema Player Column (8 Cols) */}
-          <div className="lg:col-span-8 space-y-4">
+        <div className="space-y-6 animate-fadeIn">
+          {/* Newly Created Act Notification Banner */}
+          {recentNewAct && (
+            <div className="bg-gradient-to-r from-amber-950/80 via-rose-950/70 to-slate-900 border border-amber-500/50 rounded-2xl p-4 md:p-5 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 backdrop-blur-xl">
+              <div className="flex items-center gap-3.5">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-amber-400 to-rose-500 flex items-center justify-center text-slate-950 shadow-lg shadow-amber-500/30 shrink-0">
+                  <Sparkles className="w-5 h-5 fill-current" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-md bg-amber-400/20 border border-amber-400/40 text-amber-300 text-[10px] font-mono font-bold uppercase">
+                      ✨ Added to Live Playlist
+                    </span>
+                    <span className="text-xs font-mono text-emerald-400">
+                      Veritas Score: {recentNewAct.veritasAudit?.vqsScore || "96.4"}/100
+                    </span>
+                  </div>
+                  <h3 className="text-base font-bold text-white font-serif mt-0.5">
+                    {recentNewAct.title || "Act 8: The Way of Mushin"} — <span className="text-amber-300 font-normal italic">{recentNewAct.script?.philosophy || "Mushin"}</span>
+                  </h3>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-end md:self-auto">
+                <button
+                  onClick={() => {
+                    const idx = actsList.length - 1;
+                    setSelectedActIndex(idx);
+                    handleSeek(idx * 8.0);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-amber-500/20"
+                >
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <span>Play Act {actsList.length}</span>
+                </button>
+                <button
+                  onClick={() => setRecentNewAct(null)}
+                  className="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-white text-xs font-mono transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Cinema Player Column (8 Cols) */}
+            <div className="lg:col-span-8 space-y-4">
             <div
               ref={containerRef}
               className="relative aspect-video bg-black rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl group select-none"
@@ -588,51 +676,64 @@ export function AnimeCinemaStage() {
                 <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
                 <div>
                   <span className="text-xs font-mono uppercase tracking-widest text-zinc-400">
-                    Current Chapter (Act {selectedActIndex + 1} of 7)
+                    Current Chapter (Act {selectedActIndex + 1} of {actsList.length})
                   </span>
                   <h4 className="text-sm font-semibold text-white">
-                    {ANIME_SUBTITLE_CUES[selectedActIndex]?.actName || "Act 1: Apprentice Doubt"}
+                    {actsList[selectedActIndex]?.actName || "Act 1: Apprentice Doubt"}
                   </h4>
                 </div>
               </div>
               <div className="text-right">
                 <span className="text-xs font-mono uppercase tracking-widest text-amber-400/90 bg-amber-950/40 border border-amber-500/30 px-3 py-1 rounded-full">
-                  {ANIME_SUBTITLE_CUES[selectedActIndex]?.philosophy.split("—")[0]}
+                  {actsList[selectedActIndex]?.philosophy.split("—")[0]}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* 7-Act Storyboard & Philosophy Timeline Column (4 Cols) */}
+          {/* Dynamic Storyboard & Philosophy Timeline Column (4 Cols) */}
           <div className="lg:col-span-4 space-y-3">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-mono uppercase tracking-widest text-zinc-400 flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-amber-400" />
-                7-Act Story Navigator
+                {actsList.length}-Act Story Navigator
               </h3>
-              <span className="text-xs font-mono text-zinc-500">56s Total</span>
+              <span className="text-xs font-mono text-zinc-500">{actsList.length * 8}s Total</span>
             </div>
 
             <div className="space-y-2 max-h-[580px] overflow-y-auto pr-1">
-              {ANIME_SUBTITLE_CUES.slice(0, 7).map((cue, idx) => {
+              {actsList.map((cue, idx) => {
                 const isActive = selectedActIndex === idx;
+                const isNewlyGenerated = idx >= 7;
                 const timecode = `${Math.floor(cue.startTime / 60)}:${Math.floor(cue.startTime % 60).toString().padStart(2, "0")}`;
                 return (
                   <div
                     key={cue.id}
-                    onClick={() => handleSeek(cue.startTime)}
-                    className={`p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col gap-1.5 ${
+                    onClick={() => {
+                      setSelectedActIndex(idx);
+                      handleSeek(idx * 8.0);
+                    }}
+                    className={`p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col gap-1.5 relative ${
                       isActive
                         ? "bg-gradient-to-r from-red-950/50 to-zinc-900 border-red-500/60 shadow-lg shadow-red-950/40"
+                        : isNewlyGenerated
+                        ? "bg-gradient-to-r from-amber-950/30 to-zinc-900/80 hover:bg-zinc-800/80 border-amber-500/50 hover:border-amber-400 shadow-md shadow-amber-500/10"
                         : "bg-zinc-900/60 hover:bg-zinc-800/80 border-zinc-800/80 hover:border-zinc-700"
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-mono font-semibold text-zinc-300 flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${isActive ? "bg-red-400" : "bg-zinc-600"}`} />
+                        <span className={`w-2 h-2 rounded-full ${isActive ? "bg-red-400" : isNewlyGenerated ? "bg-amber-400 animate-ping" : "bg-zinc-600"}`} />
                         {cue.actName}
                       </span>
-                      <span className="text-[11px] font-mono text-zinc-500">{timecode}</span>
+                      <div className="flex items-center gap-1.5">
+                        {isNewlyGenerated && (
+                          <span className="px-1.5 py-0.5 rounded bg-amber-400/20 border border-amber-400/50 text-[9px] font-mono text-amber-300 font-bold uppercase">
+                            ✨ AI ACT
+                          </span>
+                        )}
+                        <span className="text-[11px] font-mono text-zinc-500">{timecode}</span>
+                      </div>
                     </div>
                     <p className="text-xs text-amber-300/90 font-serif italic">
                       {cue.philosophy}
@@ -646,6 +747,7 @@ export function AnimeCinemaStage() {
             </div>
           </div>
         </div>
+      </div>
       )}
 
       {/* ========================================================================= */}
@@ -848,6 +950,7 @@ export function AnimeCinemaStage() {
       <CreateActModal
         isOpen={isCreateActOpen}
         onClose={() => setIsCreateActOpen(false)}
+        onActCreated={handleActCreated}
       />
     </div>
   );

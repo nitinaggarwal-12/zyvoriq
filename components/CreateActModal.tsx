@@ -471,8 +471,13 @@ export function CreateActModal({ isOpen, onClose, onActCreated }: CreateActModal
 
               <div className="flex items-center gap-3">
                 <button
-                  onClick={onClose}
-                  className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-colors flex items-center gap-2"
+                  onClick={() => {
+                    if (generatedResult && onActCreated) {
+                      onActCreated(generatedResult);
+                    }
+                    onClose();
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 hover:brightness-110 text-slate-950 text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-amber-500/25"
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
                   <span>Preview in Studio Stage</span>
