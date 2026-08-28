@@ -58,6 +58,20 @@ function CreatePageContent() {
   const [languages, setLanguages] = useState<string[]>(["ja", "en", "es", "fr", "de", "hi"]);
   const [autoVeritas, setAutoVeritas] = useState(true);
 
+  const [targetTrackTitle, setTargetTrackTitle] = useState<string>("");
+
+  useEffect(() => {
+    if (!targetTrackId) return;
+    fetch(`/api/studio/production/${targetTrackId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.job?.title) {
+          setTargetTrackTitle(data.job.title);
+        }
+      })
+      .catch(() => {});
+  }, [targetTrackId]);
+
   // Generation Pipeline State
   const [isGenerating, setIsGenerating] = useState(false);
   const [genStage, setGenStage] = useState("");
@@ -412,8 +426,12 @@ function CreatePageContent() {
                           <span>Append to Active</span>
                           {destinationMode === "append_current" && <Check className="w-3 h-3 text-amber-400" />}
                         </div>
-                        <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
-                          Chains onto your active series track
+                        <p className="text-[11px] text-amber-300/90 font-medium mt-0.5 leading-snug">
+                          {targetTrackTitle
+                            ? `🔗 Chaining onto "${targetTrackTitle}"`
+                            : targetTrackId
+                            ? `🔗 Chaining to ${targetTrackId.slice(0, 18)}...`
+                            : "Chains onto your active series track"}
                         </p>
                       </div>
                     </button>
@@ -478,9 +496,10 @@ function CreatePageContent() {
                       onChange={(e) => setVisualStyle(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-pink-500"
                     >
-                      <option value="ufotable_anime">🌸 Ufotable Anime (Volumetric Light)</option>
                       <option value="photorealistic_keynote">🎥 Photorealistic 4K Broadcast</option>
+                      <option value="ue5_raytraced">⚙️ Unreal Engine 5 (Raytraced / 3D CAD)</option>
                       <option value="cyberpunk_noir">🌆 Cinematic Cyberpunk Neon</option>
+                      <option value="ufotable_anime">🌸 Ufotable Anime (Volumetric Light)</option>
                       <option value="ghibli_pastoral">🎨 Studio Ghibli Watercolor</option>
                     </select>
                   </div>
