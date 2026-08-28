@@ -281,11 +281,8 @@ export const db = {
   getStudioTracks(): any[] {
     try {
       const database = getDatabase();
-      const stmt = database.prepare("SELECT * FROM studio_series_tracks ORDER BY created_at DESC");
-      let rows = stmt.all() as any[];
-      
-      // Purge obsolete prototype tracks from SQLite
       const obsoleteIds = [
+        "track_executive_sovereign",
         "track_scramjet_hypersonic",
         "track_abyssal_ocean",
         "track_neotokyo_cyberpunk",
@@ -297,26 +294,30 @@ export const db = {
       ];
       for (const obsId of obsoleteIds) {
         try {
-          database.prepare("DELETE FROM studio_series_tracks WHERE id = ?").run(obsId);
+          database.prepare("DELETE FROM studio_series_tracks WHERE id = ? OR title LIKE '%Earnings%'").run(obsId);
         } catch (_) {}
       }
 
-      // Sync and update canonical tracks
-      for (const canonical of CANONICAL_SERIES_TRACKS) {
-        this.saveStudioTrack({
-          id: canonical.id,
-          title: canonical.title,
-          subtitle: canonical.subtitle,
-          category: canonical.category,
-          character: canonical.character,
-          video_src: canonical.videoSrc,
-          duration: canonical.duration,
-          acts: canonical.acts,
-          veritas_status: canonical.veritas?.status || "CERTIFIED_VALID",
-          snark_proof_hash: canonical.veritas?.snarkProofHash || "0x8f2d...4a19"
-        });
+      let rows = database.prepare("SELECT * FROM studio_series_tracks ORDER BY created_at DESC").all() as any[];
+
+      // Only seed canonical tracks once if table is empty
+      if (rows.length === 0) {
+        for (const canonical of CANONICAL_SERIES_TRACKS) {
+          this.saveStudioTrack({
+            id: canonical.id,
+            title: canonical.title,
+            subtitle: canonical.subtitle,
+            category: canonical.category,
+            character: canonical.character,
+            video_src: canonical.videoSrc,
+            duration: canonical.duration,
+            acts: canonical.acts,
+            veritas_status: canonical.veritas?.status || "CERTIFIED_VALID",
+            snark_proof_hash: canonical.veritas?.snarkProofHash || "0x8f2d...4a19"
+          });
+        }
+        rows = database.prepare("SELECT * FROM studio_series_tracks ORDER BY created_at DESC").all() as any[];
       }
-      rows = database.prepare("SELECT * FROM studio_series_tracks ORDER BY created_at DESC").all() as any[];
 
       if (rows.length === 0) {
         return CANONICAL_SERIES_TRACKS;
@@ -681,12 +682,41 @@ export const db = {
 
   // === Dual-Engine Asynchronous PostgreSQL Methods ===
 
+  async deleteStudioTrackAsync(id: string): Promise<void> {
+    const pg = getPostgresPool();
+    if (pg) {
+      try {
+        await pg.query("DELETE FROM studio_series_tracks WHERE id = $1", [id]);
+      } catch (err: any) {
+        console.warn("Postgres delete error:", err.message);
+      }
+    }
+    this.deleteStudioTrack(id);
+  },
+
   async getStudioTracksAsync(): Promise<any[]> {
     const pg = getPostgresPool();
     if (!pg) {
       return this.getStudioTracks();
     }
     try {
+      const obsoleteIds = [
+        "track_executive_sovereign",
+        "track_scramjet_hypersonic",
+        "track_abyssal_ocean",
+        "track_neotokyo_cyberpunk",
+        "track_biotech_crispr",
+        "track_renaissance_painting",
+        "track_theatrical_hamlet",
+        "track_starlight_cartoon",
+        "track_hollywood_blockbuster"
+      ];
+      for (const obsId of obsoleteIds) {
+        try {
+          await pg.query("DELETE FROM studio_series_tracks WHERE id = $1 OR title LIKE '%Earnings%'", [obsId]);
+        } catch (_) {}
+      }
+
       const res = await pg.query("SELECT * FROM studio_series_tracks ORDER BY created_at DESC");
       if (res.rows.length === 0) {
         // Seed canonical tracks into PostgreSQL

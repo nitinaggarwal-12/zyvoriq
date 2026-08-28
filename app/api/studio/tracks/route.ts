@@ -76,8 +76,8 @@ export async function DELETE(req: NextRequest) {
     if (!id) {
       return NextResponse.json({ success: false, error: "Missing track ID" }, { status: 400 });
     }
-    db.deleteStudioTrack(id);
-    const tracks = db.getStudioTracks();
+    await db.deleteStudioTrackAsync(id);
+    const tracks = await db.getStudioTracksAsync();
     return NextResponse.json({ success: true, tracks });
   } catch (err: any) {
     console.error("Failed to delete studio track:", err);

@@ -65,25 +65,47 @@ function StudioLibraryPageContent() {
       // Merge client-side localStorage tracks (preserves user creations across ephemeral server deploys)
       if (typeof window !== "undefined") {
         try {
+          const deletedStr = localStorage.getItem("zyvoriq_deleted_track_ids") || "[]";
+          const deletedIds = new Set(JSON.parse(deletedStr));
+
+          const obsoleteIds = new Set([
+            "track_executive_sovereign",
+            "track_scramjet_hypersonic",
+            "track_abyssal_ocean",
+            "track_neotokyo_cyberpunk",
+            "track_biotech_crispr",
+            "track_renaissance_painting",
+            "track_theatrical_hamlet",
+            "track_starlight_cartoon",
+            "track_hollywood_blockbuster"
+          ]);
+
           const localStr = localStorage.getItem("zyvoriq_custom_production_tracks");
           if (localStr) {
             const localTracks = JSON.parse(localStr);
             if (Array.isArray(localTracks)) {
-              const obsoleteIds = new Set([
-                "track_scramjet_hypersonic",
-                "track_abyssal_ocean",
-                "track_neotokyo_cyberpunk",
-                "track_biotech_crispr",
-                "track_renaissance_painting",
-                "track_theatrical_hamlet",
-                "track_starlight_cartoon",
-                "track_hollywood_blockbuster"
-              ]);
+              // Clean local storage
+              const cleanedLocal = localTracks.filter((t: any) =>
+                !obsoleteIds.has(t.id) &&
+                !deletedIds.has(t.id) &&
+                !t.title?.toLowerCase().includes("earnings") &&
+                !t.id?.includes("executive_sovereign")
+              );
+              localStorage.setItem("zyvoriq_custom_production_tracks", JSON.stringify(cleanedLocal));
+
               const serverIds = new Set(serverTracks.map((t: any) => t.id));
-              const validLocal = localTracks.filter((lt: any) => !serverIds.has(lt.id) && !obsoleteIds.has(lt.id));
+              const validLocal = cleanedLocal.filter((lt: any) => !serverIds.has(lt.id));
               serverTracks = [...validLocal, ...serverTracks];
             }
           }
+
+          // Filter server tracks against obsolete/corrupted/deleted IDs
+          serverTracks = serverTracks.filter((t: any) =>
+            !obsoleteIds.has(t.id) &&
+            !deletedIds.has(t.id) &&
+            !t.title?.toLowerCase().includes("earnings") &&
+            !t.id?.includes("executive_sovereign")
+          );
         } catch (e) {}
       }
 
@@ -101,14 +123,35 @@ function StudioLibraryPageContent() {
 
   const handleDelete = async (id: string) => {
     try {
+      // 1. Immediately prune from client localStorage
+      if (typeof window !== "undefined") {
+        try {
+          const localStr = localStorage.getItem("zyvoriq_custom_production_tracks");
+          if (localStr) {
+            const localTracks = JSON.parse(localStr);
+            if (Array.isArray(localTracks)) {
+              const updated = localTracks.filter((t: any) => t.id !== id);
+              localStorage.setItem("zyvoriq_custom_production_tracks", JSON.stringify(updated));
+            }
+          }
+          const deletedStr = localStorage.getItem("zyvoriq_deleted_track_ids") || "[]";
+          const deletedList = JSON.parse(deletedStr);
+          deletedList.push(id);
+          localStorage.setItem("zyvoriq_deleted_track_ids", JSON.stringify(Array.from(new Set(deletedList))));
+        } catch (_) {}
+      }
+
+      // 2. Call backend DELETE
       const res = await fetch(`/api/studio/tracks?id=${id}`, { method: "DELETE" });
       const data = await res.json();
-      if (data.success) {
-        setTracks(tracks.filter((t) => t.id !== id));
-        setDeleteConfirmId(null);
-      }
+      
+      // Update UI state immediately
+      setTracks((prev) => prev.filter((t) => t.id !== id));
+      setDeleteConfirmId(null);
     } catch (err) {
       console.error("Failed to delete track:", err);
+      setTracks((prev) => prev.filter((t) => t.id !== id));
+      setDeleteConfirmId(null);
     }
   };
 
