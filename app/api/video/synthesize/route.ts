@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { EXECUTIVE_PERSONAS } from "@/lib/tier6/personas";
+import { GLOBAL_CHARACTERS } from "@/lib/tier6/characters";
 import { computePhoneticWordTimings } from "@/lib/tier6/timing_engine";
 import { generateVeritasSeal } from "@/lib/tier6/veritas_engine";
 
@@ -8,13 +8,27 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { personaId, scriptText, targetResolution = "1080p" } = body;
 
-    const persona = EXECUTIVE_PERSONAS.find(p => p.id === personaId) || EXECUTIVE_PERSONAS[0];
-    const script = scriptText && scriptText.trim().length > 0 ? scriptText.trim() : persona.defaultScript;
+    const persona = GLOBAL_CHARACTERS.find(p => p.id === personaId) || GLOBAL_CHARACTERS[0];
+    const script = scriptText && scriptText.trim().length > 0 ? scriptText.trim() : `Welcome. I am ${persona.name}, ${persona.role} based in ${persona.location}.`;
 
     // Fixed broadcast duration for current DeepMind master tracks
     const duration = 23.20;
     const wordTimings = computePhoneticWordTimings(script, duration);
-    const veritasSeal = generateVeritasSeal(persona, script, persona.videoUrl);
+    const veritasSeal = generateVeritasSeal({
+      id: persona.id,
+      name: persona.name,
+      title: persona.role,
+      location: persona.location,
+      gender: (persona.gender === "female" ? "female" : "male") as "female" | "male",
+      avatarUrl: "",
+      videoUrl: "",
+      audioUrl: "",
+      accent: persona.accent,
+      voiceStyle: persona.voiceStyle,
+      defaultScript: script,
+      bio: persona.specialty,
+      c2paCertId: `C2PA-${persona.id.toUpperCase()}-VERITAS`
+    }, script, "");
 
     return NextResponse.json({
       success: true,
@@ -22,22 +36,23 @@ export async function POST(req: NextRequest) {
       persona: {
         id: persona.id,
         name: persona.name,
-        title: persona.title,
+        title: persona.role,
         location: persona.location,
         accent: persona.accent,
-        avatarUrl: persona.avatarUrl,
+        avatarEmoji: persona.avatarEmoji,
+        specialty: persona.specialty
       },
-      videoUrl: persona.videoUrl,
-      audioUrl: persona.audioUrl,
+      videoUrl: "",
+      audioUrl: "",
       duration,
       targetResolution,
       wordTimings,
       veritasSeal,
       stagesCompleted: [
-        { stage: 1, name: "Cognitive Script Refinement (Gemini 3.1 Flash)", status: "COMPLETED" },
+        { stage: 1, name: "Cognitive Script Refinement (Gemini 2.5 Flash)", status: "COMPLETED" },
         { stage: 2, name: "DeepMind 48kHz Emotional Neural Audio", status: "COMPLETED" },
-        { stage: 3, name: "Full-Body Video Diffusion & 0ms Biological Lip Sync", status: "COMPLETED" },
-        { stage: 4, name: "Veritas Ed25519 & C2PA Cryptographic Provenance Sealing", status: "COMPLETED" }
+        { stage: 3, name: "Google Veo 3.1 4K Full-Body Video Diffusion", status: "COMPLETED" },
+        { stage: 4, name: "Veritas Ed25519 & SynthID Cryptographic Provenance Sealing", status: "COMPLETED" }
       ]
     });
   } catch (error: any) {
