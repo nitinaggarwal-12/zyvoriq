@@ -418,6 +418,34 @@ export function AnimeCinemaStage() {
     handleSeek(nextTime);
   };
 
+  // Keyboard Navigation & Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (["INPUT", "TEXTAREA", "SELECT"].includes((e.target as HTMLElement)?.tagName)) {
+        return;
+      }
+      if (e.code === "Space" || e.key === "k" || e.key === "K") {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === "j" || e.key === "J" || e.key === "ArrowLeft") {
+        e.preventDefault();
+        skipSeconds(-5);
+      } else if (e.key === "l" || e.key === "L" || e.key === "ArrowRight") {
+        e.preventDefault();
+        skipSeconds(5);
+      } else if (e.key === "m" || e.key === "M") {
+        e.preventDefault();
+        setIsMuted((prev) => !prev);
+      } else if (e.key === "f" || e.key === "F") {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isPlaying, duration, currentTime, isMuted]);
+
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
     if (document.fullscreenElement) {
@@ -668,8 +696,15 @@ export function AnimeCinemaStage() {
                   if (videoRef.current) setDuration(videoRef.current.duration || activeTrack.duration);
                 }}
                 onEnded={() => {
-                  setIsPlaying(false);
-                  if (audioRef.current) audioRef.current.pause();
+                  if (selectedActIndex < actsList.length - 1) {
+                    const nextIndex = selectedActIndex + 1;
+                    const nextAct = actsList[nextIndex];
+                    setSelectedActIndex(nextIndex);
+                    handleSeek(nextAct.startTime || (nextIndex * 8.0), true);
+                  } else {
+                    setIsPlaying(false);
+                    if (audioRef.current) audioRef.current.pause();
+                  }
                 }}
                 onClick={togglePlay}
               >
@@ -839,19 +874,49 @@ export function AnimeCinemaStage() {
 
               {/* Custom Cinema Player Control Bar */}
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/80 to-transparent p-4 flex flex-col gap-2 opacity-95 group-hover:opacity-100 transition-opacity z-20">
-                {/* Progress Scrubber */}
+                {/* Multi-Act Progress Scrubber with Act Partition Markers */}
                 <div
-                  className="w-full h-1.5 bg-zinc-700/60 rounded-full cursor-pointer relative overflow-hidden group/scrub"
+                  className="w-full h-2.5 bg-zinc-800/80 rounded-full cursor-pointer relative overflow-hidden group/scrub border border-zinc-700/50 shadow-inner"
                   onClick={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
                     const clickPos = (e.clientX - rect.left) / rect.width;
                     handleSeek(clickPos * duration);
                   }}
+                  onTouchStart={(e) => {
+                    const touch = e.touches[0];
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const clickPos = (touch.clientX - rect.left) / rect.width;
+                    handleSeek(Math.max(0, Math.min(1, clickPos)) * duration);
+                  }}
+                  onTouchMove={(e) => {
+                    const touch = e.touches[0];
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const clickPos = (touch.clientX - rect.left) / rect.width;
+                    handleSeek(Math.max(0, Math.min(1, clickPos)) * duration);
+                  }}
                 >
+                  {/* Progress Fill */}
                   <div
-                    className="h-full bg-gradient-to-r from-red-500 via-amber-400 to-amber-300 transition-all"
-                    style={{ width: `${(currentTime / duration) * 100}%` }}
+                    className="h-full bg-gradient-to-r from-rose-500 via-amber-400 to-amber-300 transition-all rounded-full"
+                    style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
                   />
+
+                  {/* Act Boundary Tick Marks */}
+                  {actsList.length > 1 && (
+                    <div className="absolute inset-0 pointer-events-none flex">
+                      {actsList.map((act, idx) => {
+                        const actPct = ((act.startTime || (idx * 8.0)) / (duration || 1)) * 100;
+                        if (actPct <= 0 || actPct >= 100) return null;
+                        return (
+                          <div
+                            key={idx}
+                            className="absolute top-0 bottom-0 w-0.5 bg-zinc-950/80 z-10"
+                            style={{ left: `${actPct}%` }}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between text-xs text-zinc-300 pt-1">

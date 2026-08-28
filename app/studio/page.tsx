@@ -36,6 +36,7 @@ import {
   Film
 } from "lucide-react";
 import { EXECUTIVE_PERSONAS } from "@/lib/tier6/personas";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import {
   ExecutivePersona,
   ScriptWordTiming,
@@ -330,7 +331,9 @@ export default function Gen7StudioPage() {
       {/* Main Content Area */}
       {activeStudioTab === "anime" ? (
         <main className="max-w-[1720px] mx-auto px-6 md:px-12 py-8 flex-1 w-full">
-          <AnimeCinemaStage />
+          <ErrorBoundary fallbackTitle="Anime Cinema Stage Isolated">
+            <AnimeCinemaStage />
+          </ErrorBoundary>
         </main>
       ) : (
         <main className="max-w-[1720px] mx-auto px-6 md:px-12 py-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8">

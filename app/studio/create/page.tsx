@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -30,6 +32,7 @@ import {
   Video
 } from "lucide-react";
 import { GENRE_CATEGORIES, GENRE_CONCEPTS, GenreConcept } from "@/components/CreateActModal";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 function CreatePageContent() {
   const router = useRouter();
@@ -969,7 +972,9 @@ function CreatePageContent() {
 export default function StudioCreatePage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-slate-950 flex items-center justify-center text-amber-400 font-mono text-sm">Loading Studio Creator...</div>}>
-      <CreatePageContent />
+      <ErrorBoundary fallbackTitle="Studio Creator Isolated">
+        <CreatePageContent />
+      </ErrorBoundary>
     </Suspense>
   );
 }

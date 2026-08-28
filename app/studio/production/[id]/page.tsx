@@ -24,6 +24,7 @@ import {
   ExternalLink,
   Plus
 } from "lucide-react";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 interface ProductionJob {
   id: string;
@@ -68,7 +69,7 @@ interface ProductionJob {
   createdAt: string;
 }
 
-export default function ProductionJobPage() {
+function ProductionJobPageContent() {
   const params = useParams();
   const router = useRouter();
   const jobId = (params?.id as string) || "";
@@ -603,5 +604,13 @@ export default function ProductionJobPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function ProductionJobPage() {
+  return (
+    <ErrorBoundary fallbackTitle="Production Pipeline Monitor Isolated">
+      <ProductionJobPageContent />
+    </ErrorBoundary>
   );
 }

@@ -18,6 +18,15 @@ import type {
 
 let dbInstance: DatabaseSync | null = null;
 
+export function safeJsonParse<T>(jsonStr: any, fallback: T): T {
+  if (!jsonStr || typeof jsonStr !== "string") return fallback;
+  try {
+    return JSON.parse(jsonStr) as T;
+  } catch {
+    return fallback;
+  }
+}
+
 export function getDatabase(): DatabaseSync {
   if (!dbInstance) {
     try {
@@ -25,13 +34,20 @@ export function getDatabase(): DatabaseSync {
       dbInstance = new DatabaseSync(dbPath);
       dbInstance.exec("PRAGMA foreign_keys = ON;");
       dbInstance.exec("PRAGMA journal_mode = WAL;");
+      dbInstance.exec("PRAGMA synchronous = NORMAL;");
       dbInstance.exec(SQLITE_SCHEMA);
+      dbInstance.exec(`
+        CREATE INDEX IF NOT EXISTS idx_studio_jobs_created ON studio_production_jobs (created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_studio_jobs_status ON studio_production_jobs (status);
+        CREATE INDEX IF NOT EXISTS idx_studio_tracks_created ON studio_series_tracks (created_at DESC);
+      `);
     } catch (err) {
       try {
         const tmpPath = path.resolve("/tmp", "zyvoriq.db");
         dbInstance = new DatabaseSync(tmpPath);
         dbInstance.exec("PRAGMA foreign_keys = ON;");
         dbInstance.exec("PRAGMA journal_mode = WAL;");
+        dbInstance.exec("PRAGMA synchronous = NORMAL;");
         dbInstance.exec(SQLITE_SCHEMA);
       } catch (e2) {
         dbInstance = new DatabaseSync(":memory:");
