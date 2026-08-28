@@ -19,6 +19,8 @@ import {
   Download,
   Share2,
   Volume2,
+  VolumeX,
+  Maximize2,
   Tv,
   Globe,
   Radio,
@@ -94,10 +96,120 @@ function ProductionJobPageContent() {
   const [isPiPClosedManually, setIsPiPClosedManually] = useState<boolean>(false);
 
   const logsEndRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
   const mainVideoContainerRef = useRef<HTMLDivElement>(null);
   const pipVideoRef = useRef<HTMLVideoElement>(null);
+
+  // Dual-Deck A/B Seamless Video Engine State
+  const [activeDeck, setActiveDeck] = useState<"A" | "B">("A");
+  const [isPlaying, setIsPlaying] = useState<boolean>(true);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [playbackTime, setPlaybackTime] = useState<number>(0);
+  const [actDuration, setActDuration] = useState<number>(8);
+
+  const videoDeckARef = useRef<HTMLVideoElement>(null);
+  const videoDeckBRef = useRef<HTMLVideoElement>(null);
+  const audioDeckARef = useRef<HTMLAudioElement>(null);
+  const audioDeckBRef = useRef<HTMLAudioElement>(null);
+
+  const handleActSelect = (idx: number) => {
+    setActiveActIndex(idx);
+    const acts = job?.acts || [];
+    const targetAct = acts[idx];
+    const targetVideo = targetAct?.videoUrl || job?.videoUrl;
+    const targetAudio = targetAct?.audioUrl;
+
+    if (activeDeck === "A") {
+      if (videoDeckARef.current) {
+        if (videoDeckARef.current.src !== targetVideo && targetVideo) {
+          videoDeckARef.current.src = targetVideo;
+        }
+        videoDeckARef.current.currentTime = 0;
+        videoDeckARef.current.play().catch(() => {});
+      }
+      if (audioDeckARef.current && targetAudio) {
+        audioDeckARef.current.src = targetAudio;
+        audioDeckARef.current.currentTime = 0;
+        audioDeckARef.current.play().catch(() => {});
+      }
+    } else {
+      if (videoDeckBRef.current) {
+        if (videoDeckBRef.current.src !== targetVideo && targetVideo) {
+          videoDeckBRef.current.src = targetVideo;
+        }
+        videoDeckBRef.current.currentTime = 0;
+        videoDeckBRef.current.play().catch(() => {});
+      }
+      if (audioDeckBRef.current && targetAudio) {
+        audioDeckBRef.current.src = targetAudio;
+        audioDeckBRef.current.currentTime = 0;
+        audioDeckBRef.current.play().catch(() => {});
+      }
+    }
+    setIsPlaying(true);
+  };
+
+  const handleDeckAEnded = () => {
+    const acts = job?.acts || [];
+    if (acts.length > 0 && activeActIndex < acts.length - 1) {
+      const nextIdx = activeActIndex + 1;
+      setActiveActIndex(nextIdx);
+      setActiveDeck("B");
+      if (videoDeckBRef.current) {
+        videoDeckBRef.current.currentTime = 0;
+        videoDeckBRef.current.play().catch(() => {});
+      }
+      if (audioDeckBRef.current) {
+        audioDeckBRef.current.currentTime = 0;
+        audioDeckBRef.current.play().catch(() => {});
+      }
+    } else {
+      setIsPlaying(false);
+    }
+  };
+
+  const handleDeckBEnded = () => {
+    const acts = job?.acts || [];
+    if (acts.length > 0 && activeActIndex < acts.length - 1) {
+      const nextIdx = activeActIndex + 1;
+      setActiveActIndex(nextIdx);
+      setActiveDeck("A");
+      if (videoDeckARef.current) {
+        videoDeckARef.current.currentTime = 0;
+        videoDeckARef.current.play().catch(() => {});
+      }
+      if (audioDeckARef.current) {
+        audioDeckARef.current.currentTime = 0;
+        audioDeckARef.current.play().catch(() => {});
+      }
+    } else {
+      setIsPlaying(false);
+    }
+  };
+
+  const togglePlay = () => {
+    const activeVideo = activeDeck === "A" ? videoDeckARef.current : videoDeckBRef.current;
+    const activeAudio = activeDeck === "A" ? audioDeckARef.current : audioDeckBRef.current;
+    if (activeVideo) {
+      if (activeVideo.paused) {
+        activeVideo.play().catch(() => {});
+        if (activeAudio) activeAudio.play().catch(() => {});
+        setIsPlaying(true);
+      } else {
+        activeVideo.pause();
+        if (activeAudio) activeAudio.pause();
+        setIsPlaying(false);
+      }
+    }
+  };
+
+  const toggleMute = () => {
+    const nextMuted = !isMuted;
+    setIsMuted(nextMuted);
+    if (videoDeckARef.current) videoDeckARef.current.muted = nextMuted;
+    if (videoDeckBRef.current) videoDeckBRef.current.muted = nextMuted;
+    if (audioDeckARef.current) audioDeckARef.current.muted = nextMuted;
+    if (audioDeckBRef.current) audioDeckBRef.current.muted = nextMuted;
+  };
 
   // Poll Job Status every 2.5s until complete
   useEffect(() => {
@@ -384,7 +496,7 @@ function ProductionJobPageContent() {
                         <button
                           type="button"
                           disabled={activeActIndex === 0}
-                          onClick={() => setActiveActIndex((prev) => Math.max(0, prev - 1))}
+                          onClick={() => handleActSelect(Math.max(0, activeActIndex - 1))}
                           className="p-1.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all"
                           title="Previous Act"
                         >
@@ -393,7 +505,7 @@ function ProductionJobPageContent() {
                         <button
                           type="button"
                           disabled={!job.acts || activeActIndex === (job.acts.length - 1)}
-                          onClick={() => setActiveActIndex((prev) => Math.min((job.acts?.length || 1) - 1, prev + 1))}
+                          onClick={() => handleActSelect(Math.min((job.acts?.length || 1) - 1, activeActIndex + 1))}
                           className="p-1.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all"
                           title="Next Act"
                         >
@@ -473,7 +585,7 @@ function ProductionJobPageContent() {
                                 <button
                                   key={act.id || trueIdx}
                                   type="button"
-                                  onClick={() => setActiveActIndex(trueIdx)}
+                                  onClick={() => handleActSelect(trueIdx)}
                                   className={`px-3.5 py-2 rounded-xl text-xs font-mono transition-all shrink-0 flex items-center gap-2 border ${
                                     isActive
                                       ? "bg-amber-500/20 border-amber-500 text-amber-200 font-bold shadow-md shadow-amber-500/10"
@@ -498,7 +610,7 @@ function ProductionJobPageContent() {
                             <button
                               key={act.id || idx}
                               type="button"
-                              onClick={() => setActiveActIndex(idx)}
+                              onClick={() => handleActSelect(idx)}
                               className={`p-2.5 rounded-xl text-left border transition-all ${
                                 isActive
                                   ? "bg-amber-500/20 border-amber-500 text-amber-200 shadow-md shadow-amber-500/10"
@@ -524,54 +636,173 @@ function ProductionJobPageContent() {
 
                 {/* 4K Master Video Player & Live Diffusion Viewport */}
                 {(() => {
-                  const currentAct = job.acts && job.acts.length > 0 ? (job.acts[activeActIndex] || job.acts[0]) : null;
-                  const activeVideoUrl = currentAct?.videoUrl || job.videoUrl;
-                  const activeAudioUrl = currentAct?.audioUrl || (job as any).audioUrl;
+                  const acts = job.acts && job.acts.length > 0 ? job.acts : null;
+                  const currentAct = acts ? acts[activeActIndex] || acts[0] : null;
+                  const nextAct = acts && activeActIndex < acts.length - 1 ? acts[activeActIndex + 1] : null;
+
+                  const deckAUrl = activeDeck === "A"
+                    ? (currentAct?.videoUrl || job.videoUrl)
+                    : (nextAct?.videoUrl || (acts ? acts[activeActIndex + 1]?.videoUrl : undefined));
+
+                  const deckBUrl = activeDeck === "B"
+                    ? (currentAct?.videoUrl || job.videoUrl)
+                    : (nextAct?.videoUrl || (acts ? acts[activeActIndex + 1]?.videoUrl : undefined));
+
+                  const audioDeckAUrl = activeDeck === "A"
+                    ? (currentAct?.audioUrl || (job as any).audioUrl)
+                    : nextAct?.audioUrl;
+
+                  const audioDeckBUrl = activeDeck === "B"
+                    ? (currentAct?.audioUrl || (job as any).audioUrl)
+                    : nextAct?.audioUrl;
 
                   return (
                     <div
                       ref={mainVideoContainerRef}
-                      className="relative rounded-3xl overflow-hidden aspect-video bg-black border border-slate-800 shadow-2xl group ring-1 ring-emerald-500/20"
+                      className="relative rounded-3xl overflow-hidden aspect-video bg-black border border-slate-800 shadow-2xl group ring-1 ring-emerald-500/20 select-none"
                     >
-                      {isCompleted && activeVideoUrl ? (
+                      {isCompleted && (job.videoUrl || currentAct?.videoUrl) ? (
                         <>
+                          {/* Video Deck A */}
                           <video
-                            key={activeVideoUrl}
-                            ref={videoRef}
-                            src={activeVideoUrl}
-                            controls
+                            ref={videoDeckARef}
+                            src={deckAUrl}
                             autoPlay
                             playsInline
                             preload="auto"
-                            className="w-full h-full object-cover"
-                            onPlay={() => { if (audioRef.current) audioRef.current.play().catch(() => {}); }}
-                            onPause={() => { if (audioRef.current) audioRef.current.pause(); }}
-                            onEnded={() => {
-                              if (job.acts && activeActIndex < job.acts.length - 1) {
-                                setActiveActIndex((prev) => prev + 1);
-                              }
+                            muted={isMuted}
+                            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                              activeDeck === "A" ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+                            }`}
+                            onPlay={() => {
+                              setIsPlaying(true);
+                              if (audioDeckARef.current) audioDeckARef.current.play().catch(() => {});
+                            }}
+                            onPause={() => {
+                              setIsPlaying(false);
+                              if (audioDeckARef.current) audioDeckARef.current.pause();
                             }}
                             onTimeUpdate={() => {
-                              if (videoRef.current && audioRef.current && Math.abs(videoRef.current.currentTime - audioRef.current.currentTime) > 0.15) {
-                                audioRef.current.currentTime = videoRef.current.currentTime;
+                              if (activeDeck === "A" && videoDeckARef.current) {
+                                setPlaybackTime(videoDeckARef.current.currentTime);
+                                if (audioDeckARef.current && Math.abs(videoDeckARef.current.currentTime - audioDeckARef.current.currentTime) > 0.15) {
+                                  audioDeckARef.current.currentTime = videoDeckARef.current.currentTime;
+                                }
                               }
                             }}
-                            onSeeking={() => {
-                              if (videoRef.current && audioRef.current) {
-                                audioRef.current.currentTime = videoRef.current.currentTime;
+                            onEnded={handleDeckAEnded}
+                            onLoadedMetadata={() => {
+                              if (videoDeckARef.current) setActDuration(videoDeckARef.current.duration || 8);
+                            }}
+                            onClick={togglePlay}
+                          />
+
+                          {/* Video Deck B (Seamless Preload Buffer) */}
+                          <video
+                            ref={videoDeckBRef}
+                            src={deckBUrl}
+                            playsInline
+                            preload="auto"
+                            muted={isMuted}
+                            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                              activeDeck === "B" ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+                            }`}
+                            onPlay={() => {
+                              setIsPlaying(true);
+                              if (audioDeckBRef.current) audioDeckBRef.current.play().catch(() => {});
+                            }}
+                            onPause={() => {
+                              setIsPlaying(false);
+                              if (audioDeckBRef.current) audioDeckBRef.current.pause();
+                            }}
+                            onTimeUpdate={() => {
+                              if (activeDeck === "B" && videoDeckBRef.current) {
+                                setPlaybackTime(videoDeckBRef.current.currentTime);
+                                if (audioDeckBRef.current && Math.abs(videoDeckBRef.current.currentTime - audioDeckBRef.current.currentTime) > 0.15) {
+                                  audioDeckBRef.current.currentTime = videoDeckBRef.current.currentTime;
+                                }
                               }
                             }}
-                          >
-                            <source src={activeVideoUrl} type="video/mp4" />
-                          </video>
-                          {activeAudioUrl && (
-                            <audio
-                              key={activeAudioUrl}
-                              ref={audioRef}
-                              src={activeAudioUrl}
-                              preload="auto"
-                            />
+                            onEnded={handleDeckBEnded}
+                            onLoadedMetadata={() => {
+                              if (videoDeckBRef.current) setActDuration(videoDeckBRef.current.duration || 8);
+                            }}
+                            onClick={togglePlay}
+                          />
+
+                          {/* Synchronized Neural TTS Audio Decks */}
+                          {audioDeckAUrl && (
+                            <audio ref={audioDeckARef} src={audioDeckAUrl} preload="auto" muted={isMuted} />
                           )}
+                          {audioDeckBUrl && (
+                            <audio ref={audioDeckBRef} src={audioDeckBUrl} preload="auto" muted={isMuted} />
+                          )}
+
+                          {/* Center Play Button Overlay (when paused) */}
+                          {!isPlaying && (
+                            <div
+                              onClick={togglePlay}
+                              className="absolute inset-0 flex items-center justify-center bg-black/40 z-20 cursor-pointer backdrop-blur-[2px]"
+                            >
+                              <div className="w-16 h-16 rounded-full bg-amber-500/90 text-slate-950 flex items-center justify-center shadow-2xl shadow-amber-500/50 hover:scale-110 transition-transform">
+                                <Play className="w-8 h-8 fill-current ml-1" />
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Persistent Luxury Cinema Controls Bar */}
+                          <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/90 via-black/60 to-transparent z-20 flex items-center justify-between gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 select-none">
+                            <div className="flex items-center gap-3">
+                              <button
+                                type="button"
+                                onClick={togglePlay}
+                                className="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-white transition-colors"
+                              >
+                                {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
+                              </button>
+
+                              {job.acts && job.acts.length > 1 && (
+                                <>
+                                  <button
+                                    type="button"
+                                    disabled={activeActIndex === 0}
+                                    onClick={() => handleActSelect(Math.max(0, activeActIndex - 1))}
+                                    className="p-1.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-300 disabled:opacity-30"
+                                    title="Previous Act"
+                                  >
+                                    <ChevronLeft className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={!job.acts || activeActIndex === (job.acts.length - 1)}
+                                    onClick={() => handleActSelect(Math.min((job.acts?.length || 1) - 1, activeActIndex + 1))}
+                                    className="p-1.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-300 disabled:opacity-30"
+                                    title="Next Act"
+                                  >
+                                    <ChevronRight className="w-3.5 h-3.5" />
+                                  </button>
+                                </>
+                              )}
+
+                              <div className="text-xs font-mono text-slate-300 flex items-center gap-1.5">
+                                <span className="text-amber-300 font-bold">
+                                  {job.acts && job.acts.length > 1 ? `Act ${activeActIndex + 1}/${job.acts.length}` : "4K Master"}
+                                </span>
+                                <span>·</span>
+                                <span>{Math.round(playbackTime)}s / {Math.round(actDuration)}s</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              <button
+                                type="button"
+                                onClick={toggleMute}
+                                className="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
+                              >
+                                {isMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
+                              </button>
+                            </div>
+                          </div>
                         </>
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center space-y-5 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
@@ -615,7 +846,7 @@ function ProductionJobPageContent() {
                         </div>
                       )}
 
-                      <div className="absolute top-4 left-4 flex items-center gap-2 z-20">
+                      <div className="absolute top-4 left-4 flex items-center gap-2 z-20 pointer-events-none">
                         <span className="px-3 py-1 rounded-full bg-slate-950/80 border border-slate-700/80 backdrop-blur-md text-[10px] font-mono font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5 shadow-md">
                           <Film className="w-3.5 h-3.5" />
                           <span>
@@ -912,7 +1143,7 @@ function ProductionJobPageContent() {
               <button
                 type="button"
                 disabled={activeActIndex === 0}
-                onClick={() => setActiveActIndex((prev) => Math.max(0, prev - 1))}
+                onClick={() => handleActSelect(Math.max(0, activeActIndex - 1))}
                 className="hover:text-white disabled:opacity-30 flex items-center gap-0.5"
               >
                 <ChevronLeft className="w-3 h-3" /> Prev
@@ -923,7 +1154,7 @@ function ProductionJobPageContent() {
               <button
                 type="button"
                 disabled={!job.acts || activeActIndex === (job.acts.length - 1)}
-                onClick={() => setActiveActIndex((prev) => Math.min((job.acts?.length || 1) - 1, prev + 1))}
+                onClick={() => handleActSelect(Math.min((job.acts?.length || 1) - 1, activeActIndex + 1))}
                 className="hover:text-white disabled:opacity-30 flex items-center gap-0.5"
               >
                 Next <ChevronRight className="w-3 h-3" />

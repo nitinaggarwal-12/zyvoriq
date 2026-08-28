@@ -713,7 +713,6 @@ export function AnimeCinemaStage() {
             >
               {/* Dynamic Video Stream based on Active Series Track */}
               <video
-                key={activeCue?.videoUrl || activeTrack.videoSrc}
                 ref={videoRef}
                 src={activeCue?.videoUrl || activeTrack.videoSrc}
                 className="w-full h-full object-cover"
@@ -740,10 +739,20 @@ export function AnimeCinemaStage() {
                 <source src={activeCue?.videoUrl || activeTrack.videoSrc} type="video/mp4" />
               </video>
 
+              {/* Background Preload Buffer for Next Act (Zero Network Delay) */}
+              {selectedActIndex < actsList.length - 1 && actsList[selectedActIndex + 1]?.videoUrl && (
+                <video
+                  src={actsList[selectedActIndex + 1].videoUrl}
+                  preload="auto"
+                  muted
+                  playsInline
+                  className="hidden"
+                />
+              )}
+
               {/* Dynamic Multilingual Dub or Neural TTS Audio Element */}
               {(isAnimeTrack || !!(activeTrack as any).audioSrc || !!activeCue?.audioUrl) && (
                 <audio
-                  key={activeCue?.audioUrl || (activeTrack as any).audioSrc || audioLang}
                   ref={audioRef}
                   src={activeCue?.audioUrl || (activeTrack as any).audioSrc || `/assets/audio/anime_dubs/dub_${audioLang}.mp3`}
                   muted={isMuted}
