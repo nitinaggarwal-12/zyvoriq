@@ -867,6 +867,7 @@ export function AnimeCinemaStage() {
             >
               {/* Dynamic Video Stream based on Active Series Track */}
               <video
+                key={`video_${activeTrack.id}_${isMultiFile ? selectedActIndex : "master"}`}
                 ref={videoRef}
                 src={activeCue?.videoUrl || activeTrack.videoSrc}
                 className="w-full h-full object-cover"
@@ -999,6 +1000,7 @@ export function AnimeCinemaStage() {
               {/* Dynamic Multilingual Dub or Neural TTS Audio Element */}
               {(isAnimeTrack || !!(activeTrack as any).audioSrc || !!activeCue?.audioUrl) && (
                 <audio
+                  key={`audio_${activeTrack.id}_${isMultiFile ? selectedActIndex : "master"}_${audioLang}`}
                   ref={audioRef}
                   src={activeCue?.audioUrl || (activeTrack as any).audioSrc || (isAnimeTrack ? `/assets/audio/anime_dubs/dub_${audioLang}.mp3` : undefined)}
                   muted={isMuted}

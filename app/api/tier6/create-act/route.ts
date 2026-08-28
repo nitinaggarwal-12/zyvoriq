@@ -4,6 +4,8 @@ import { generateVeoVideo, VeoGenerationProgress } from "@/lib/ai/veoService";
 import { synthesizeVoiceSpeech } from "@/lib/ai/ttsService";
 import { db } from "@/lib/db/client";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 export const maxDuration = 300; // 5-minute timeout for long-running video diffusion
 
 interface StoryboardAct {

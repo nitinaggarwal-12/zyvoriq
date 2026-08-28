@@ -2,14 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
 import { CANONICAL_SERIES_TRACKS } from "@/lib/tier6/default_tracks";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     db.seedDefaultStudioTracks();
     const tracks = db.getStudioTracks();
-    return NextResponse.json({ success: true, tracks: tracks.length > 0 ? tracks : CANONICAL_SERIES_TRACKS });
+    return NextResponse.json(
+      { success: true, tracks: tracks.length > 0 ? tracks : CANONICAL_SERIES_TRACKS },
+      { headers: { "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate" } }
+    );
   } catch (err: any) {
     console.error("Failed to get studio tracks, using canonical fallback:", err);
-    return NextResponse.json({ success: true, tracks: CANONICAL_SERIES_TRACKS });
+    return NextResponse.json(
+      { success: true, tracks: CANONICAL_SERIES_TRACKS },
+      { headers: { "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate" } }
+    );
   }
 }
 
