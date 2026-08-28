@@ -58,19 +58,32 @@ function CreatePageContent() {
   const [languages, setLanguages] = useState<string[]>(["ja", "en", "es", "fr", "de", "hi"]);
   const [autoVeritas, setAutoVeritas] = useState(true);
 
+  const [availableTracks, setAvailableTracks] = useState<any[]>([]);
+  const [selectedParentTrackId, setSelectedParentTrackId] = useState<string>(targetTrackId || "");
   const [targetTrackTitle, setTargetTrackTitle] = useState<string>("");
 
   useEffect(() => {
-    if (!targetTrackId) return;
-    fetch(`/api/studio/production/${targetTrackId}`)
+    fetch("/api/studio/tracks")
       .then(res => res.json())
       .then(data => {
-        if (data.success && data.job?.title) {
-          setTargetTrackTitle(data.job.title);
+        if (data.success && Array.isArray(data.tracks)) {
+          setAvailableTracks(data.tracks);
+          if (targetTrackId) {
+            const found = data.tracks.find((t: any) => t.id === targetTrackId);
+            if (found) {
+              setSelectedParentTrackId(found.id);
+              setTargetTrackTitle(found.title);
+            }
+          } else if (data.tracks.length > 0) {
+            setSelectedParentTrackId(data.tracks[0].id);
+            setTargetTrackTitle(data.tracks[0].title);
+          }
         }
       })
       .catch(() => {});
   }, [targetTrackId]);
+
+  const activeTargetTrack = availableTracks.find((t: any) => t.id === selectedParentTrackId) || null;
 
   // Generation Pipeline State
   const [isGenerating, setIsGenerating] = useState(false);
@@ -128,6 +141,7 @@ function CreatePageContent() {
 
   const handleKickoffGeneration = async () => {
     const newJobId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const effectiveParentTrackId = destinationMode === "append_current" ? (selectedParentTrackId || targetTrackId) : undefined;
     
     // Asynchronously kickoff generation in background pipeline with keepalive
     fetch("/api/tier6/create-act", {
@@ -136,7 +150,7 @@ function CreatePageContent() {
       keepalive: true,
       body: JSON.stringify({
         id: newJobId,
-        parentTrackId: destinationMode === "append_current" ? targetTrackId : undefined,
+        parentTrackId: effectiveParentTrackId,
         mode: destinationMode,
         title,
         prompt,
@@ -203,6 +217,109 @@ function CreatePageContent() {
 
       {/* Main Full-Width Multi-Column Canvas */}
       <main className="flex-1 max-w-[1720px] w-full mx-auto px-6 md:px-12 py-8">
+        {/* 🎯 Target Series Visual Routing Banner */}
+        <div className="mb-8">
+          {destinationMode === "append_current" ? (
+            <div className="p-5 md:p-6 rounded-3xl bg-gradient-to-r from-amber-950/80 via-slate-900 to-slate-950 border-2 border-amber-500/60 shadow-2xl shadow-amber-500/10 flex flex-col lg:flex-row lg:items-center justify-between gap-5 backdrop-blur-xl">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 shadow-lg shadow-amber-500/20">
+                  <Film className="w-7 h-7" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-3 py-1 rounded-full bg-amber-500 text-slate-950 font-mono text-xs font-bold uppercase tracking-wider shadow-sm flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 fill-current" />
+                      Appending Act {(activeTargetTrack?.acts?.length || 1) + 1}
+                    </span>
+                    <span className="text-xs font-mono text-slate-400">
+                      Target Series: <span className="text-amber-300 font-bold">{activeTargetTrack?.title || targetTrackTitle || "Active Series"}</span>
+                    </span>
+                  </div>
+                  <h2 className="text-lg md:text-2xl font-bold text-white font-serif tracking-tight">
+                    {activeTargetTrack?.title || targetTrackTitle || "Building a Hypersonic Scramjet Engine"}
+                  </h2>
+                  <p className="text-xs font-mono text-slate-400">
+                    Current Runtime: {activeTargetTrack?.duration || 8}s ({activeTargetTrack?.acts?.length || 1} Acts) ➔ Expanding to {(activeTargetTrack?.duration || 8) + duration}s Total
+                  </p>
+                </div>
+              </div>
+
+              {/* Quick Switch Dropdown & Action */}
+              <div className="flex items-center gap-3 shrink-0 flex-wrap">
+                {availableTracks.length > 1 && (
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-mono text-slate-400 uppercase block">Switch Series to Append</span>
+                    <select
+                      value={selectedParentTrackId}
+                      onChange={(e) => {
+                        setSelectedParentTrackId(e.target.value);
+                        const sel = availableTracks.find((t: any) => t.id === e.target.value);
+                        if (sel) {
+                          setTargetTrackTitle(sel.title);
+                          setTitle(`Act ${(sel.acts?.length || 1) + 1}: Continuity Scene`);
+                        }
+                      }}
+                      className="bg-slate-950 border border-amber-500/50 rounded-xl px-3 py-2 text-xs font-mono text-amber-200 focus:outline-none focus:border-amber-400 shadow-inner"
+                    >
+                      {availableTracks.map((t: any) => (
+                        <option key={t.id} value={t.id}>
+                          {t.title} ({t.acts?.length || 1} Acts)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setDestinationMode("new_series")}
+                  className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 text-xs font-mono text-slate-300 hover:text-white transition-all shadow-sm flex items-center gap-2 mt-4 lg:mt-0"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Start New Series Instead</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="p-5 md:p-6 rounded-3xl bg-gradient-to-r from-indigo-950/60 via-slate-900 to-slate-950 border border-indigo-500/40 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 backdrop-blur-xl">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shrink-0">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 font-mono text-[10px] uppercase font-bold tracking-wider">
+                      New Independent Series
+                    </span>
+                  </div>
+                  <h2 className="text-lg md:text-xl font-bold text-white font-serif mt-0.5">
+                    Creating Brand New Master Series (Act 1)
+                  </h2>
+                  <p className="text-xs font-mono text-slate-400">
+                    This will create an independent track with its own dedicated deep-linkable cinema player.
+                  </p>
+                </div>
+              </div>
+
+              {availableTracks.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDestinationMode("append_current");
+                    if (!selectedParentTrackId && availableTracks[0]) {
+                      setSelectedParentTrackId(availableTracks[0].id);
+                    }
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-mono font-bold transition-all flex items-center gap-2 shadow-sm shrink-0"
+                >
+                  <Film className="w-4 h-4" />
+                  <span>🔗 Append to an Existing Series Track</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
         {!generatedResult ? (
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
             {/* LEFT COLUMN: Netflix / Prime Video Genre & Concept Hub (7 cols) */}
