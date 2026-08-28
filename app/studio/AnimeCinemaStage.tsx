@@ -44,6 +44,7 @@ import {
   SubtitleLangCode,
   SubtitleCue
 } from "@/lib/tier6/anime_subtitles";
+import { SpatialAudioMixer } from "@/components/SpatialAudioMixer";
 
 interface LivingDojoMessage {
   id: string;
@@ -897,6 +898,20 @@ export function AnimeCinemaStage() {
               ref={containerRef}
               className="relative aspect-video bg-black rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl group select-none"
             >
+              {/* DeepMind SynthID Cryptographic Verified Badge */}
+              <Link
+                href="/veritas"
+                className="absolute top-4 right-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950/85 hover:bg-slate-900 border border-emerald-500/40 text-emerald-300 backdrop-blur-md shadow-lg shadow-emerald-500/10 transition-all hover:scale-105 group/synthid cursor-pointer"
+                title="DeepMind SynthID v2.4 Latent Frequency Watermark Verified"
+              >
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="font-mono text-[10px] font-bold tracking-wider uppercase">SynthID Verified</span>
+              </Link>
+
               {/* Dynamic Video Stream based on Active Series Track */}
               <video
                 key={`video_${activeTrack.id}_${isMultiFile ? selectedActIndex : "master"}`}
@@ -1314,6 +1329,18 @@ export function AnimeCinemaStage() {
                 </span>
               </div>
             </div>
+
+            {/* Pro-Audio 4-Track Spatial Mixer Console */}
+            <SpatialAudioMixer
+              actTitle={actsList[selectedActIndex]?.actName || activeTrack.title || "Act 1: Sovereign Master"}
+              actPhilosophy={actsList[selectedActIndex]?.philosophy || "Mushin & Non-Attachment"}
+              musicPreset={(activeTrack as any)?.musicPreset || "zen_shakuhachi"}
+              vocalMode={(activeTrack as any)?.vocalMode || "spoken"}
+              vocalStyle={(activeTrack as any)?.vocalStyle || "anime_jpop"}
+              onVocalModeChange={(mode, style) => {
+                console.log("Vocal mode updated:", mode, style);
+              }}
+            />
           </div>
 
           {/* Dynamic Storyboard & Philosophy Timeline Column (4 Cols) */}

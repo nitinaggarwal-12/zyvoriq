@@ -32,7 +32,7 @@ import {
   Video,
   Music
 } from "lucide-react";
-import { GENRE_CATEGORIES, GENRE_CONCEPTS, GenreConcept } from "@/lib/tier6/genre_concepts";
+import { GENRE_CLUSTERS, GENRE_CATEGORIES, GENRE_CONCEPTS, GenreConcept } from "@/lib/tier6/genre_concepts";
 import { GLOBAL_CHARACTERS, VISUAL_AESTHETICS } from "@/lib/tier6/characters";
 import { LYRIA_MUSIC_PRESETS } from "@/lib/ai/lyriaService";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -43,6 +43,7 @@ function CreatePageContent() {
   const targetTrackId = searchParams.get("trackId") || "";
   const modeParam = searchParams.get("mode") || "";
 
+  const [selectedCluster, setSelectedCluster] = useState<string>("all");
   const [selectedGenre, setSelectedGenre] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isSpeakingPitch, setIsSpeakingPitch] = useState<string | null>(null);
@@ -56,6 +57,12 @@ function CreatePageContent() {
       : "Sensei Ren teaches Apprentice Aoi the concept of Mushin (Mind without Mind) during a night thunderstorm duel on the wooden dojo balcony."
   );
   const [duration, setDuration] = useState<number>(8);
+  const [aspectRatio, setAspectRatio] = useState<"16:9" | "9:16" | "1:1">("16:9");
+  const [globalTransmute, setGlobalTransmute] = useState<boolean>(false);
+  const [previsLoading, setPrevisLoading] = useState<boolean>(false);
+  const [previsStoryboard, setPrevisStoryboard] = useState<any[] | null>(null);
+  const [showPrevisModal, setShowPrevisModal] = useState<boolean>(false);
+
   const [destinationMode, setDestinationMode] = useState<"new_series" | "append_current">(
     modeParam === "append_current" || targetTrackId ? "append_current" : "new_series"
   );
@@ -174,6 +181,38 @@ function CreatePageContent() {
     }
   };
 
+  const handleGeneratePrevis = async () => {
+    try {
+      setPrevisLoading(true);
+      setShowPrevisModal(true);
+      const res = await fetch("/api/storyboard/previs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt,
+          visualStyle,
+          characterLock,
+          aspectRatio
+        })
+      });
+      const data = await res.json();
+      if (data.success && (data.storyboard || data.previs?.storyboardGrid)) {
+        const rawFrames = data.storyboard || data.previs?.storyboardGrid;
+        const mapped = rawFrames.map((f: any, idx: number) => ({
+          shotNumber: f.frameNumber || f.shotNumber || idx + 1,
+          shotType: f.shotType?.includes(".") ? f.shotType : `${f.frameNumber || idx + 1}. ${f.shotType}`,
+          timecode: f.timecode || `0:0${idx * 2} - 0:0${(idx + 1) * 2}`,
+          desc: f.visualDescription || f.desc || f.lightingPrompt
+        }));
+        setPrevisStoryboard(mapped);
+      }
+    } catch (err) {
+      console.error("Previs error:", err);
+    } finally {
+      setPrevisLoading(false);
+    }
+  };
+
   const handleKickoffGeneration = async () => {
     const newJobId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const effectiveParentTrackId = destinationMode === "append_current" ? (selectedParentTrackId || targetTrackId) : undefined;
@@ -190,6 +229,8 @@ function CreatePageContent() {
         title,
         prompt,
         duration,
+        aspectRatio,
+        globalTransmute,
         characterLock,
         visualStyle,
         musicPreset,
@@ -436,9 +477,38 @@ function CreatePageContent() {
                   )}
                 </div>
 
+                {/* 4 Category Clusters Tabs */}
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 border-b border-slate-800/80 pb-3">
+                  {GENRE_CLUSTERS.map((cl) => {
+                    const isClSelected = selectedCluster === cl.id;
+                    return (
+                      <button
+                        key={cl.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCluster(cl.id as any);
+                          if (cl.id !== "all" && !cl.categoryIds.includes(selectedGenre)) {
+                            setSelectedGenre(cl.categoryIds[0]);
+                          } else if (cl.id === "all") {
+                            setSelectedGenre("all");
+                          }
+                        }}
+                        className={`px-3 py-2 rounded-xl text-xs font-mono font-semibold transition-all border text-left flex flex-col gap-0.5 ${
+                          isClSelected
+                            ? "bg-gradient-to-r from-amber-500/20 to-amber-600/10 border-amber-500/80 text-amber-200 shadow-md shadow-amber-500/10 font-bold"
+                            : "bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800/50"
+                        }`}
+                      >
+                        <span className="truncate">{cl.name}</span>
+                        <span className="text-[10px] text-slate-500 font-normal">{cl.badge}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
                 {/* Genre Category Pills (Netflix Style) */}
                 <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
-                  {GENRE_CATEGORIES.map((g) => {
+                  {GENRE_CATEGORIES.filter((g) => selectedCluster === "all" || g.cluster === selectedCluster || g.id === "all").map((g) => {
                     const isSelected = selectedGenre === g.id;
                     return (
                       <button
@@ -675,6 +745,119 @@ function CreatePageContent() {
                     </button>
                   </div>
                 </div>
+
+                {/* Aspect Ratio Selector */}
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
+                      <Tv className="w-3.5 h-3.5 text-cyan-400" /> Multi-Platform Aspect Ratio
+                    </label>
+                    <span className="text-[10px] font-mono text-cyan-400 font-bold">
+                      {aspectRatio === "9:16" ? "TikTok & Reels (9:16)" : aspectRatio === "1:1" ? "Square Feed (1:1)" : "Cinematic 4K (16:9)"}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2.5">
+                    {[
+                      { ratio: "9:16", label: "📱 9:16 Vertical", desc: "TikTok / Reels" },
+                      { ratio: "16:9", label: "🖥️ 16:9 Cinema", desc: "YouTube / TV" },
+                      { ratio: "1:1", label: "🔲 1:1 Square", desc: "LinkedIn Feed" }
+                    ].map((r) => (
+                      <button
+                        key={r.ratio}
+                        type="button"
+                        onClick={() => setAspectRatio(r.ratio as any)}
+                        className={`p-3 rounded-2xl border text-center transition-all ${
+                          aspectRatio === r.ratio
+                            ? "bg-cyan-500/20 border-cyan-500 text-cyan-200 shadow-md shadow-cyan-500/10 font-bold"
+                            : "bg-slate-950 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800/50"
+                        }`}
+                      >
+                        <div className="text-xs font-bold font-mono">{r.label}</div>
+                        <div className="text-[10px] text-slate-500 mt-0.5">{r.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 1-Click Global Cultural Transmutation */}
+                <div className={`p-4 rounded-2xl border transition-all ${
+                  globalTransmute
+                    ? "bg-gradient-to-r from-teal-950/60 via-slate-900 to-slate-950 border-teal-500 shadow-lg shadow-teal-500/10 ring-1 ring-teal-500/40"
+                    : "bg-slate-950/60 border-slate-800"
+                }`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${globalTransmute ? "bg-teal-500 text-slate-950" : "bg-slate-800 text-slate-400"}`}>
+                        <Globe className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-white">1-Click Global Cultural Transmutation</span>
+                          <span className="px-2 py-0.5 rounded-full bg-teal-500/20 border border-teal-500/40 text-teal-300 font-mono text-[9px] font-bold uppercase">
+                            6 Regional Masters
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          Simultaneously synthesizes 6 localized campaigns with regional environments, idioms & instruments
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setGlobalTransmute(!globalTransmute)}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        globalTransmute ? "bg-teal-500" : "bg-slate-800"
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          globalTransmute ? "translate-x-5" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {globalTransmute && (
+                    <div className="mt-3 pt-3 border-t border-teal-500/20 flex flex-wrap gap-2">
+                      {[
+                        { flag: "🇯🇵", name: "Japan / Anime (Ren & Aoi)" },
+                        { flag: "🇮🇳", name: "India / Vedic (Priya)" },
+                        { flag: "🇲🇽", name: "Latin America (Mateo)" },
+                        { flag: "🇺🇸", name: "North America (David)" },
+                        { flag: "🇦🇪", name: "MENA / Gulf (Tariq)" },
+                        { flag: "🇳🇴", name: "Nordic / EU (Astrid)" }
+                      ].map((reg, idx) => (
+                        <span
+                          key={idx}
+                          className="px-2.5 py-1 rounded-lg bg-teal-950/80 border border-teal-500/30 text-teal-200 text-xs font-mono flex items-center gap-1.5"
+                        >
+                          <span>{reg.flag}</span>
+                          <span>{reg.name}</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Instant 4-Shot Imagen 3 Pre-Vis Trigger */}
+                <button
+                  type="button"
+                  onClick={handleGeneratePrevis}
+                  disabled={previsLoading}
+                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-950 hover:from-indigo-900 hover:to-indigo-900 border border-indigo-500/50 hover:border-indigo-400 text-indigo-300 font-bold text-xs font-mono flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/10 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {previsLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                      <span>Generating 4-Shot Storyboard Pre-Vis (Imagen 3)...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 text-indigo-400" />
+                      <span>⚡ Instant 4-Shot Storyboard Pre-Vis (1.2s Preview)</span>
+                    </>
+                  )}
+                </button>
 
                 {/* Duration & Act Structure */}
                 <div className="space-y-2.5">
@@ -1044,6 +1227,107 @@ function CreatePageContent() {
                   </p>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* 4-Shot Imagen 3 Storyboard Pre-Vis Modal */}
+        {showPrevisModal && (
+          <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 md:p-8 animate-fadeIn">
+            <div className="bg-slate-900 border border-indigo-500/40 rounded-3xl p-6 md:p-8 max-w-5xl w-full shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white font-serif">
+                      ⚡ 4-Shot Visual Storyboard Pre-Vis (Imagen 3)
+                    </h3>
+                    <p className="text-xs text-slate-400 font-mono">
+                      DeepMind Imagen 3 Neural Pre-Visualization · 1.2s Diffusion Preview
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowPrevisModal(false)}
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-mono"
+                >
+                  ✕ Close Pre-Vis
+                </button>
+              </div>
+
+              {previsLoading ? (
+                <div className="py-16 flex flex-col items-center justify-center text-center space-y-4">
+                  <div className="w-12 h-12 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                  <div className="text-sm font-mono text-indigo-300 font-semibold">
+                    Synthesizing 4-Shot Pre-Vis Sequence with Imagen 3...
+                  </div>
+                  <p className="text-xs text-slate-500 max-w-md">
+                    Composing Wide Establishing, Character Focus, Macro Action, and Dramatic Close-Up compositions.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* 4-Shot Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {(previsStoryboard || [
+                      { shotNumber: 1, shotType: "1. Wide Establishing Shot", timecode: "0:00 - 0:02", desc: "Panoramic wide camera establishing atmospheric dojo balcony in rain." },
+                      { shotNumber: 2, shotType: "2. Medium Character Hero", timecode: "0:02 - 0:04", desc: "Medium profile of Sensei Ren holding wooden bokken in serene focus." },
+                      { shotNumber: 3, shotType: "3. Macro Action Motion", timecode: "0:04 - 0:06", desc: "Macro close-up on wooden bokken striking with water droplet splash physics." },
+                      { shotNumber: 4, shotType: "4. Dramatic Emotional Close-Up", timecode: "0:06 - 0:08", desc: "Extreme close-up on Apprentice Aoi's eyes entering Mushin clarity." }
+                    ]).map((shot: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className="p-3.5 rounded-2xl bg-slate-950 border border-indigo-500/30 space-y-2.5 flex flex-col justify-between"
+                      >
+                        <div className="aspect-video bg-slate-900 rounded-xl overflow-hidden border border-slate-800 relative flex items-center justify-center text-indigo-400 group">
+                          {shot.imageUrl ? (
+                            <img src={shot.imageUrl} alt={shot.shotType} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="flex flex-col items-center gap-1.5 p-3 text-center">
+                              <Film className="w-6 h-6 opacity-60 text-indigo-400" />
+                              <span className="text-[10px] font-mono text-slate-400">Pre-Vis Frame {idx + 1}</span>
+                            </div>
+                          )}
+                          <span className="absolute top-2 right-2 px-2 py-0.5 rounded bg-black/80 font-mono text-[9px] text-indigo-300">
+                            {shot.timecode || `0:0${idx * 2}`}
+                          </span>
+                        </div>
+
+                        <div>
+                          <div className="text-xs font-bold text-white font-mono">{shot.shotType}</div>
+                          <p className="text-[11px] text-slate-400 mt-1 leading-snug line-clamp-3">
+                            {shot.desc}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Pre-Vis Approval Action Bar */}
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+                    <div className="flex items-center gap-2 text-xs font-mono text-emerald-400">
+                      <Check className="w-4 h-4" />
+                      <span>4-Shot Composition Approved for 4K Veo 3.1 Diffusion</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowPrevisModal(false);
+                        handleKickoffGeneration();
+                      }}
+                      className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs font-mono flex items-center gap-2 shadow-lg shadow-amber-500/20"
+                    >
+                      <Zap className="w-4 h-4 fill-current" />
+                      <span>Approve & Launch Full 4K Diffusion</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

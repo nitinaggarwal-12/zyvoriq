@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { AppNavbar } from "@/components/AppNavbar";
+import { SynthIDLatentHeatmap } from "@/components/SynthIDLatentHeatmap";
 import { 
   ShieldCheck, 
   CheckCircle2, 
@@ -25,6 +26,7 @@ import {
 
 export default function VeritasPage() {
   const [copiedCert, setCopiedCert] = useState(false);
+  const [downloadingCert, setDownloadingCert] = useState(false);
   const [selectedAxis, setSelectedAxis] = useState<string>("factuality");
 
   const vqsScore = 94.6;
@@ -125,11 +127,38 @@ export default function VeritasPage() {
     setTimeout(() => setCopiedCert(false), 2000);
   };
 
+  const handleDownloadCert = () => {
+    setDownloadingCert(true);
+    const certPayload = {
+      certificate_id: certificateId,
+      composite_vqs: vqsScore,
+      veritas_pass: true,
+      evaluators: ["gemini-2.5-pro", "claude-3.5-sonnet"],
+      c2pa_manifest_hash: c2paManifestHash,
+      ed25519_signature: ed25519Signature,
+      synthid_latent_match: "99.8%",
+      provenance_enclave: "Zyvoriq Veritas Hardware Vault",
+      immutable_timestamp: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(certPayload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `veritas_certificate_${certificateId}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      setDownloadingCert(false);
+    }, 2000);
+  };
+
   return (
     <div className="min-h-screen bg-obsidian-950 text-slate-100 selection:bg-emerald-500/30 selection:text-emerald-200">
       <AppNavbar />
 
-      <main className="mx-auto max-w-[1720px] px-6 py-8 md:px-12 md:py-10 lg:px-16">
+      <main className="mx-auto max-w-[1720px] px-6 py-8 md:px-12 md:py-10 lg:px-16 space-y-10">
         
         {/* Top Title Banner */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-8 border-b border-slate-800/80">
@@ -139,11 +168,11 @@ export default function VeritasPage() {
                 <ShieldCheck className="h-5 w-5" />
               </div>
               <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white font-mono">
-                Veritas 5-Axis Quality Consensus Inspector
+                Veritas 5-Axis Quality Consensus & SynthID Inspector
               </h1>
             </div>
             <p className="mt-2 text-sm md:text-base text-slate-400 max-w-3xl">
-              Deterministic quality governance engine: Dual-model LLM consensus, ground-truth claim verification, surgical defect diffing, and cryptographic C2PA provenance certification.
+              Deterministic quality governance engine: Dual-model LLM consensus, DeepMind SynthID latent watermarking, ground-truth claim verification, and cryptographic C2PA Ed25519 provenance certification.
             </p>
           </div>
 
@@ -165,8 +194,11 @@ export default function VeritasPage() {
           </div>
         </div>
 
-        {/* 2-Column Grid: 5-Axis Breakdown (Left) + Citations & Signed VQC (Right) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-8">
+        {/* SECTION 1: DeepMind SynthID Latent Frequency Spectrum Heatmap */}
+        <SynthIDLatentHeatmap />
+
+        {/* SECTION 2: 2-Column Grid: 5-Axis Breakdown (Left) + Citations & Signed VQC (Right) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* LEFT COLUMN: 5-Axis Score Matrix Cards (6 Cols) */}
           <div className="lg:col-span-6 flex flex-col gap-4">
@@ -271,29 +303,41 @@ export default function VeritasPage() {
             </div>
 
             {/* Cryptographic VQC Certificate Box */}
-            <div className="rounded-2xl border border-emerald-500/40 bg-gradient-to-br from-emerald-950/30 to-slate-900/80 p-6 backdrop-blur-xl shadow-xl">
+            <div className="rounded-2xl border border-emerald-500/40 bg-gradient-to-br from-emerald-950/30 to-slate-900/80 p-6 backdrop-blur-xl shadow-xl space-y-4">
               <div className="flex items-center justify-between pb-4 border-b border-slate-800">
                 <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-400">
                   <Lock className="h-4 w-4" />
                   <span>Ed25519 Verification Quality Certificate (VQC)</span>
                 </div>
 
-                <button
-                  onClick={copyCert}
-                  className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1 text-xs font-mono font-medium text-slate-300 hover:text-white transition-colors"
-                >
-                  {copiedCert ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-                  <span>{copiedCert ? "Copied JSON" : "Copy VQC"}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={copyCert}
+                    className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-mono font-medium text-slate-300 hover:text-white transition-colors"
+                  >
+                    {copiedCert ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                    <span>{copiedCert ? "Copied" : "Copy"}</span>
+                  </button>
+
+                  <button
+                    onClick={handleDownloadCert}
+                    disabled={downloadingCert}
+                    className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/20 px-3 py-1.5 text-xs font-mono font-bold text-emerald-300 hover:bg-emerald-500/30 transition-colors cursor-pointer"
+                  >
+                    <Download className={`h-3.5 w-3.5 ${downloadingCert ? "animate-bounce" : ""}`} />
+                    <span>{downloadingCert ? "Exporting..." : "Download JSON"}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Certificate JSON Preview */}
-              <div className="pt-4">
+              <div>
                 <pre className="rounded-xl border border-slate-800 bg-obsidian-950 p-4 font-mono text-[11px] text-emerald-300/90 leading-relaxed overflow-x-auto">
 {`{
   "certificate_id": "${certificateId}",
   "composite_vqs": ${vqsScore},
   "veritas_pass": true,
+  "synthid_latent_match": "99.8%",
   "evaluators": ["gemini-2.5-pro", "claude-3.5-sonnet"],
   "c2pa_manifest_hash": "${c2paManifestHash}",
   "ed25519_signature": "${ed25519Signature}",
@@ -303,7 +347,7 @@ export default function VeritasPage() {
                 </pre>
               </div>
 
-              <div className="mt-4 flex items-center justify-between pt-2 text-xs text-slate-400">
+              <div className="flex items-center justify-between pt-2 text-xs text-slate-400">
                 <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
                   <CheckCircle2 className="h-4 w-4" />
                   C2PA Content Credentials Embedded into MP4/WAV

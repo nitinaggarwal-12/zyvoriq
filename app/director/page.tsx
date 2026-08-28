@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { AppNavbar } from "@/components/AppNavbar";
 import { SparkArchitecturePanel } from "@/components/SparkArchitecturePanel";
+import { DirectorCanvasInpainting } from "@/components/DirectorCanvasInpainting";
 import { 
   Terminal, 
   Sparkles, 
@@ -479,6 +480,11 @@ export default function DirectorPage() {
             </div>
 
           </div>
+        </div>
+
+        {/* Director Inpainting Canvas & Multi-Take Editor */}
+        <div className="mt-8">
+          <DirectorCanvasInpainting />
         </div>
 
         {/* Spark Under The Hood Architecture Section */}

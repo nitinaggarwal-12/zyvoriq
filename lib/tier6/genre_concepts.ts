@@ -1,711 +1,450 @@
 export interface GenreConcept {
   id: string;
   genre: string;
+  cluster: "media_entertainment" | "culture_community" | "lifestyle_living" | "knowledge_enterprise";
   genreEmoji: string;
   title: string;
   hook: string;
   prompt: string;
   characterLock: string;
   visualStyle: string;
+  musicPreset?: string;
   recommendedDuration: number;
   speechSample: string;
 }
 
+export interface GenreCluster {
+  id: "all" | "media_entertainment" | "culture_community" | "lifestyle_living" | "knowledge_enterprise";
+  name: string;
+  badge: string;
+  description: string;
+  categoryIds: string[];
+}
+
+export const GENRE_CLUSTERS: GenreCluster[] = [
+  {
+    id: "all",
+    name: "🌐 All Clusters (24 Pillars)",
+    badge: "Universal Catalog",
+    description: "Browse the complete 24-pillar universal spectrum across entertainment, culture, lifestyle, and enterprise sciences.",
+    categoryIds: ["all"]
+  },
+  {
+    id: "media_entertainment",
+    name: "🎬 Media & Entertainment",
+    badge: "Pillars 1–8",
+    description: "Music production, gaming, comedy, cinema drama, high fantasy, kinetic action, horror, and family animation.",
+    categoryIds: ["music", "gaming", "comedy", "cinema", "fantasy_scifi", "action_stunts", "horror_mystery", "kids_animation"]
+  },
+  {
+    id: "culture_community",
+    name: "🎙️ Culture & Community",
+    badge: "Pillars 9–12",
+    description: "Podcasts, video essays, lifestyle vlogs, investigative news, and true crime forensic mysteries.",
+    categoryIds: ["podcasts_essays", "vlogs_lifestyle", "news_investigative", "true_crime"]
+  },
+  {
+    id: "lifestyle_living",
+    name: "🌿 Lifestyle & Living",
+    badge: "Pillars 13–19",
+    description: "Culinary arts, haute couture, athletic performance, sacred Vedanta & wellness, pets, real estate, and DIY craft.",
+    categoryIds: ["culinary", "beauty_fashion", "fitness_sports", "wellness_faith", "pets_animals", "real_estate", "maker_diy"]
+  },
+  {
+    id: "knowledge_enterprise",
+    name: "👑 Knowledge, Enterprise & Science",
+    badge: "Pillars 20–24",
+    description: "Tech dev, global finance, Rajarshi leadership, AlphaFold deep science, and geopolitical world history.",
+    categoryIds: ["tech_hardware", "finance_wealth", "leadership_masterclass", "science_space", "history_geopolitics"]
+  }
+];
+
 export const GENRE_CATEGORIES = [
-  { id: "all", label: "🎬 All Categories" },
-  { id: "executive", label: "🧑‍💼 Humans & Executive Twins" },
-  { id: "anime", label: "🌸 Anime & Manga" },
-  { id: "cartoon", label: "🎨 Cartoon & Stylized Animation" },
-  { id: "cgi_3d", label: "🧊 3D Graphics & CGI Cinematic" },
-  { id: "nature", label: "🌿 Nature & Wildlife Documentaries" },
-  { id: "space", label: "🌌 Universe, Cosmos & Space" },
-  { id: "engineering", label: "⚙️ Machine Building & Engineering" },
-  { id: "medical", label: "🩺 Medical Equipment & Healthcare" },
-  { id: "security", label: "🛡️ Veritas Trust & Cryptography" }
+  { id: "all", label: "🌐 All 24 Pillars", cluster: "all" },
+  
+  // Cluster 1: Media & Entertainment (1-8)
+  { id: "music", label: "🎵 Music & Sound Production", cluster: "media_entertainment" },
+  { id: "gaming", label: "🎮 Gaming & Esports", cluster: "media_entertainment" },
+  { id: "comedy", label: "😂 Comedy & Satire", cluster: "media_entertainment" },
+  { id: "cinema", label: "🎭 Cinema, Fiction & Drama", cluster: "media_entertainment" },
+  { id: "fantasy_scifi", label: "🏰 High Fantasy & Sci-Fi", cluster: "media_entertainment" },
+  { id: "action_stunts", label: "💥 Action & Martial Stunts", cluster: "media_entertainment" },
+  { id: "horror_mystery", label: "🌑 Horror & Cosmic Mystery", cluster: "media_entertainment" },
+  { id: "kids_animation", label: "🧒 Kids & Family Animation", cluster: "media_entertainment" },
+
+  // Cluster 2: Culture & Community (9-12)
+  { id: "podcasts_essays", label: "🎙️ Podcasts & Video Essays", cluster: "culture_community" },
+  { id: "vlogs_lifestyle", label: "📺 Vlogs & Lifestyle Doc", cluster: "culture_community" },
+  { id: "news_investigative", label: "🔴 News & Investigative", cluster: "culture_community" },
+  { id: "true_crime", label: "🕵️ True Crime & Forensics", cluster: "culture_community" },
+
+  // Cluster 3: Lifestyle & Living (13-19)
+  { id: "culinary", label: "🍳 Culinary Arts & Gastronomy", cluster: "lifestyle_living" },
+  { id: "beauty_fashion", label: "💄 Beauty, Fashion & Aesthetics", cluster: "lifestyle_living" },
+  { id: "fitness_sports", label: "🏋️ Fitness & Performance", cluster: "lifestyle_living" },
+  { id: "wellness_faith", label: "🧘 Wellness, Vedanta & Sacred Faith", cluster: "lifestyle_living" },
+  { id: "pets_animals", label: "🐾 Pets & Animal Care", cluster: "lifestyle_living" },
+  { id: "real_estate", label: "🏡 Real Estate & Architecture", cluster: "lifestyle_living" },
+  { id: "maker_diy", label: "🔨 Maker, DIY & Renovation", cluster: "lifestyle_living" },
+
+  // Cluster 4: Knowledge, Enterprise & Science (20-24)
+  { id: "tech_hardware", label: "💻 Tech, Dev & Hardware", cluster: "knowledge_enterprise" },
+  { id: "finance_wealth", label: "💼 Finance, Wealth & Markets", cluster: "knowledge_enterprise" },
+  { id: "leadership_masterclass", label: "👑 Leadership & Masterclasses", cluster: "knowledge_enterprise" },
+  { id: "science_space", label: "🔬 Hard Science, Space & Bio", cluster: "knowledge_enterprise" },
+  { id: "history_geopolitics", label: "🌍 History, Geopolitics & Nature", cluster: "knowledge_enterprise" }
 ];
 
 export const GENRE_CONCEPTS: GenreConcept[] = [
   // ==========================================
-  // 1. Humans & Executive Digital Twins (6 Unique Templates)
+  // CLUSTER 1: MEDIA & ENTERTAINMENT (1-8)
   // ==========================================
   {
-    id: "exec_sovereign_ai",
-    genre: "executive",
-    genreEmoji: "🧑‍💼",
-    title: "🏢 Sovereign AI Enterprise Keynote",
-    hook: "Priya delivers an authoritative mainstage keynote on autonomous corporate governance.",
-    prompt: "Priya Sharma delivers an authoritative 4K keynote on enterprise zk-SNARK cryptographic provenance, deterministic media synthesis, and zero-drift neural broadcasting.",
-    characterLock: "priya",
-    visualStyle: "photorealistic_keynote",
-    recommendedDuration: 120,
-    speechSample: "Welcome to the frontier of sovereign enterprise intelligence—where every corporate decision is mathematically verifiable and cryptographically guaranteed."
+    id: "music_lofi_cyberpunk",
+    genre: "music",
+    cluster: "media_entertainment",
+    genreEmoji: "🎵",
+    title: "🎧 2099 Cyberpunk Synthwave Beat Lab",
+    hook: "Live studio session building a high-octane 128 BPM analog synth anthem with neon holographic instruments.",
+    prompt: "A neon-lit Tokyo music studio at night where an electronic music producer crafts a driving cyberpunk synthwave track with glowing Moog synths, modular patch cables, and holographic spectrum analyzers.",
+    characterLock: "kenji",
+    visualStyle: "cyberpunk_noir",
+    musicPreset: "cyberpunk_synth",
+    recommendedDuration: 24,
+    speechSample: "Every synthesizer frequency tells a story of the neon city. Let the 128 BPM analog pulse drive the night."
   },
   {
-    id: "exec_global_fintech",
-    genre: "executive",
-    genreEmoji: "🇬🇧",
-    title: "📊 London Global Market & Macro Strategy",
-    hook: "Marcus Vance breaks down sovereign treasury yields, cross-border liquidity, and algorithmic hedging.",
-    prompt: "Marcus Vance in a high-end London broadcasting studio with holographic market depth charts analyzing central bank digital sovereign liquidity.",
+    id: "gaming_esports_championship",
+    genre: "gaming",
+    cluster: "media_entertainment",
+    genreEmoji: "🎮",
+    title: "🏆 Grand Finals: Nexus Arena Championship",
+    hook: "High-stakes 5v5 tactical esports clutch moment in a massive illuminated stadium with cheering holographic crowds.",
+    prompt: "Massive illuminated esports arena stadium in Seoul with roaring crowds, giant 8K holographic game replay screens, neon laser lighting, and cinematic tracking camera following intense pro-gamers executing a championship winning move.",
+    characterLock: "aoi",
+    visualStyle: "ue5_raytraced",
+    musicPreset: "precision_industrial",
+    recommendedDuration: 24,
+    speechSample: "Three seconds left on the match clock. One shot, one perfect tactical flank, and the championship is sealed!"
+  },
+  {
+    id: "comedy_corporate_satire",
+    genre: "comedy",
+    cluster: "media_entertainment",
+    genreEmoji: "😂",
+    title: "👔 The Absurd 'AI Alignment' Meeting",
+    hook: "Witty stand-up comedy sketch roasting corporate buzzwords, infinite calendar invites, and unaligned coffee machines.",
+    prompt: "Witty, energetic comedy club performance where a stand-up comedian roasts modern corporate buzzwords with hilarious facial expressions, comedic timing, and responsive laughing crowd.",
+    characterLock: "david",
+    visualStyle: "photorealistic_keynote",
+    musicPreset: "executive_ambient",
+    recommendedDuration: 16,
+    speechSample: "We circled back so many times we accidentally invented a particle accelerator! Can we please just send an email?"
+  },
+  {
+    id: "cinema_noir_rain",
+    genre: "cinema",
+    cluster: "media_entertainment",
+    genreEmoji: "🎭",
+    title: "🌧️ Midnight Shadow: The Last Detective",
+    hook: "Cinematic 35mm film noir detective scene in rainy 1940s Chicago with trenchcoats, vintage cars, and amber lamplight.",
+    prompt: "Cinematic 35mm film grain detective scene on wet reflective city streets with steam rising from manholes, vintage sedans, and high-contrast dramatic Rembrandt lighting.",
+    characterLock: "marcus",
+    visualStyle: "imax_70mm",
+    musicPreset: "adaptive_cinematic",
+    recommendedDuration: 24,
+    speechSample: "In this city, the rain doesn't wash away secrets—it only reflects them on the wet asphalt."
+  },
+  {
+    id: "fantasy_dragon_citadel",
+    genre: "fantasy_scifi",
+    cluster: "media_entertainment",
+    genreEmoji: "🏰",
+    title: "🐉 Citadel of the Starlight Wyrm",
+    hook: "Epic high fantasy vista with floating monolithic fortresses, glowing rune portals, and soaring crystal dragons.",
+    prompt: "Breathtaking high fantasy landscape with majestic mountain citadels, glowing arcane spires, volumetric golden dawn sunbeams, and a crystalline dragon gliding through misty cloud valleys.",
+    characterLock: "elena",
+    visualStyle: "ghibli_pastoral",
+    musicPreset: "adaptive_cinematic",
+    recommendedDuration: 24,
+    speechSample: "The ancient starlight runes have awakened. For a thousand years they slept, but today the citadel takes flight."
+  },
+  {
+    id: "action_samurai_thunder",
+    genre: "action_stunts",
+    cluster: "media_entertainment",
+    genreEmoji: "💥",
+    title: "⚡ The Thunderstorm of Mushin",
+    hook: "Sensei Ren and Apprentice Aoi duel on a rain-slicked cedar balcony with sparks flying from wooden bokken blades.",
+    prompt: "Sensei Ren teaches Apprentice Aoi the concept of Mushin during an intense night thunderstorm duel on a wooden dojo balcony with volumetric rain, lightning flashes, and 24fps kinetic camera movement.",
+    characterLock: "ren_aoi",
+    visualStyle: "ufotable_anime",
+    musicPreset: "zen_shakuhachi",
+    recommendedDuration: 24,
+    speechSample: "Mushin is not emptiness—it is the total presence of mind where the storm and the blade become one."
+  },
+  {
+    id: "horror_cosmic_abyss",
+    genre: "horror_mystery",
+    cluster: "media_entertainment",
+    genreEmoji: "🌑",
+    title: "🌌 The Whispering Trench of Eldoria",
+    hook: "Psychological cosmic mystery in a deep-sea research lab when an ancient non-human signal starts pulsing from the ocean floor.",
+    prompt: "Moody atmospheric deep-sea submarine station interior with flickering emergency amber lights, bioluminescent teal glow, volumetric god rays through dark ocean portholes, and cinematic slow tracking camera pushing into claustrophobic suspense.",
+    characterLock: "david",
+    visualStyle: "imax_70mm",
+    musicPreset: "interstellar_drone",
+    recommendedDuration: 24,
+    speechSample: "The sonar isn't detecting an echo... it's detecting a voice that has been waiting in the abyss for ten million years."
+  },
+  {
+    id: "kids_magical_forest",
+    genre: "kids_animation",
+    cluster: "media_entertainment",
+    genreEmoji: "🧒",
+    title: "🦊 The Little Fox & The Glowing Acorn",
+    hook: "Heartwarming Pixar/Ghibli-style animated fable about a curious fox discovering a glowing acorn that heals the enchanted woods.",
+    prompt: "Vibrant, whimsical 3D animated forest with glowing moss, friendly woodland creatures, warm golden afternoon sunbeams, ambient starlight lighting, and a cinematic close-up shot of a charming fox exploring a magical ancient tree.",
+    characterLock: "aoi",
+    visualStyle: "ghibli_pastoral",
+    musicPreset: "adaptive_cinematic",
+    recommendedDuration: 16,
+    speechSample: "When you share a small spark of kindness, the whole forest lights up with magic!"
+  },
+
+  // ==========================================
+  // CLUSTER 2: CULTURE & COMMUNITY (9-12)
+  // ==========================================
+  {
+    id: "podcasts_dual_host_ai",
+    genre: "podcasts_essays",
+    cluster: "culture_community",
+    genreEmoji: "🎙️",
+    title: "🧠 The Sovereign Architect Podcast (Dual Host)",
+    hook: "Priya and David engage in a fast-paced, insightful debate on whether AGI will decentralize or centralize global power.",
+    prompt: "Modern broadcast podcast studio with high-end Shure microphones, acoustic wood paneling, warm Edison bulb lighting, and two intelligent hosts trading sharp counter-arguments.",
+    characterLock: "priya",
+    visualStyle: "photorealistic_keynote",
+    musicPreset: "executive_ambient",
+    recommendedDuration: 56,
+    speechSample: "If intelligence becomes infinite and zero-marginal-cost, the only scarce asset left is cryptographic truth."
+  },
+  {
+    id: "vlogs_tokyo_night_walk",
+    genre: "vlogs_lifestyle",
+    cluster: "culture_community",
+    genreEmoji: "📺",
+    title: "🏮 Tokyo Midnight Neon: A Solitary Walk",
+    hook: "Immersive 4K first-person lifestyle documentary walking through glowing Shinjuku alleyways in gentle spring rain.",
+    prompt: "Cinematic handheld 4K walk through Tokyo side-streets with glowing paper lanterns, steam from ramen stalls, neon reflections on wet cobblestone, and serene ambient city sounds.",
+    characterLock: "kenji",
+    visualStyle: "cyberpunk_noir",
+    musicPreset: "zen_shakuhachi",
+    recommendedDuration: 24,
+    speechSample: "In a city of fourteen million people, midnight brings a quiet solitude that feels like a temple."
+  },
+  {
+    id: "news_investigative_water",
+    genre: "news_investigative",
+    cluster: "culture_community",
+    genreEmoji: "🔴",
+    title: "💧 The Global Desalination Supergrid",
+    hook: "Investigative documentary on how solar-powered reverse osmosis is turning arid coastlines into green breadbaskets.",
+    prompt: "Investigative documentary news broadcast with aerial drone footage over massive coastal solar desalination facilities and automated robotic irrigation pipelines.",
+    characterLock: "elena",
+    visualStyle: "photorealistic_keynote",
+    musicPreset: "savannah_orchestral",
+    recommendedDuration: 56,
+    speechSample: "By pairing unlimited solar radiation with modern graphene membranes, fresh water scarcity is no longer an inevitability."
+  },
+  {
+    id: "true_crime_art_heist",
+    genre: "true_crime",
+    cluster: "culture_community",
+    genreEmoji: "🕵️",
+    title: "🖼️ The Vanishing of the Vermeer Canvas",
+    hook: "Gripping forensic breakdown of the unsolved 1990 Isabella Stewart Gardner Museum heist with archival evidence boards.",
+    prompt: "Dramatic investigative noir room with a massive pinned evidence board, red string connecting suspect photos, vintage blueprints, focused overhead halogen spotlight with golden dust motes, and a cinematic slow tracking camera shot.",
+    characterLock: "david",
+    visualStyle: "imax_70mm",
+    musicPreset: "interstellar_drone",
+    recommendedDuration: 24,
+    speechSample: "Eighty-one minutes inside the vault. Thirteen masterpieces vanished. Thirty-four years later, the frames still hang empty."
+  },
+
+  // ==========================================
+  // CLUSTER 3: LIFESTYLE & LIVING (13-19)
+  // ==========================================
+  {
+    id: "culinary_michelin_wagyu",
+    genre: "culinary",
+    cluster: "lifestyle_living",
+    genreEmoji: "🍳",
+    title: "🥩 The Art of A5 Miyazaki Wagyu Searing",
+    hook: "Sensory Michelin-star culinary masterclass showcasing the precise 54°C sear, Binchotan charcoal, and truffle glaze.",
+    prompt: "Ultra-high-definition macro culinary cinematography of A5 Wagyu beef sizzling on hot Binchotan charcoal with macro salt crystals melting, warm golden ambient kitchen lighting, and aromatic smoke rising in 120fps slow motion close-up.",
+    characterLock: "kenji",
+    visualStyle: "imax_70mm",
+    musicPreset: "zen_shakuhachi",
+    recommendedDuration: 24,
+    speechSample: "True culinary mastery is not adding ingredients—it is respecting the fire, the fat, and the exact second of caramelized perfection."
+  },
+  {
+    id: "beauty_haute_couture",
+    genre: "beauty_fashion",
+    cluster: "lifestyle_living",
+    genreEmoji: "💄",
+    title: "👗 Paris Runway: The Titanium Silk Collection",
+    hook: "Avant-garde haute couture fashion runway spectacle featuring flowing iridescent fabrics, architectural silhouettes, and starlight lighting.",
+    prompt: "Paris high-fashion runway inside a historic glass palace with supermodels walking to driving electronic beats, dramatic architectural lighting, and 4K macro fabric textures.",
+    characterLock: "elena",
+    visualStyle: "photorealistic_keynote",
+    musicPreset: "cyberpunk_synth",
+    recommendedDuration: 24,
+    speechSample: "Fashion is the architecture of human presence—where structural titanium meets the fluidity of raw silk."
+  },
+  {
+    id: "fitness_vo2max_triathlon",
+    genre: "fitness_sports",
+    cluster: "lifestyle_living",
+    genreEmoji: "🏋️",
+    title: "⚡ VO2 Max & The Human Endurance Threshold",
+    hook: "High-performance athletic breakdown of aerobic threshold training, lactate clearance, and biomechanical running efficiency.",
+    prompt: "Intense athletic training montage featuring elite marathon runners sprinting at dawn on misty mountain trails with biometric heart-rate HUD overlays and macro sweat droplet physics.",
+    characterLock: "marcus",
+    visualStyle: "imax_70mm",
+    musicPreset: "precision_industrial",
+    recommendedDuration: 24,
+    speechSample: "Your body does not stop when you are tired—it stops when your mind yields. Train the mind, and the lungs will follow."
+  },
+  {
+    id: "wellness_vedanta_nondual",
+    genre: "wellness_faith",
+    cluster: "lifestyle_living",
+    genreEmoji: "🧘",
+    title: "🕉️ Advaita Vedanta: The Observer & The Observed",
+    hook: "A deep philosophical journey through the Mandukya Upanishad revealing the illusion of separation and the peace of pure awareness.",
+    prompt: "Serene sacred Himalayan river bank at dawn with golden sunlight reflecting on sacred waters, floating lotus flowers, and a wise teacher sitting in peaceful meditation surrounded by volumetric starlight.",
+    characterLock: "priya",
+    visualStyle: "photorealistic_keynote",
+    musicPreset: "bollywood_fusion",
+    recommendedDuration: 56,
+    speechSample: "Tat Tvam Asi. You are not a drop in the ocean; you are the entire ocean in a single drop of conscious awareness."
+  },
+  {
+    id: "pets_snow_leopard_cubs",
+    genre: "pets_animals",
+    cluster: "lifestyle_living",
+    genreEmoji: "🐾",
+    title: "🐆 Snow Leopard Cubs of the High Karakoram",
+    hook: "Heartwarming and rare 8K wildlife footage of newborn snow leopard cubs playing on rocky Himalayan ledges.",
+    prompt: "Breathtaking BBC Earth style 8K wildlife documentary footage of an elusive snow leopard mother playing with two cubs on snow-dusted cliffs in the high Karakoram mountains.",
+    characterLock: "narrator",
+    visualStyle: "bbc_earth",
+    musicPreset: "savannah_orchestral",
+    recommendedDuration: 24,
+    speechSample: "In the highest mountains on Earth, life finds a way to flourish with playful grace amidst the freezing winds."
+  },
+  {
+    id: "real_estate_cliffside_villa",
+    genre: "real_estate",
+    cluster: "lifestyle_living",
+    genreEmoji: "🏡",
+    title: "🌊 Sovereign Glass Villa on the Amalfi Cliffs",
+    hook: "Architectural 4K cinematic tour of a minimalist glass and travertine cliffside estate overlooking the Mediterranean Sea.",
+    prompt: "Ultra-luxury architectural sweeping drone shot of a modern cliffside villa in Amalfi with infinity pool merging into azure sea, cantilevered marble terraces, and dramatic Mediterranean golden hour sunset lighting with ambient warm interior glow.",
+    characterLock: "elena",
+    visualStyle: "imax_70mm",
+    musicPreset: "executive_ambient",
+    recommendedDuration: 24,
+    speechSample: "Designed to blur the line between architecture and nature—where Italian travertine meets the infinite Mediterranean horizon."
+  },
+  {
+    id: "maker_bespoke_acoustic_guitar",
+    genre: "maker_diy",
+    cluster: "lifestyle_living",
+    genreEmoji: "🔨",
+    title: "🎸 Crafting a Master Brazilian Rosewood Guitar",
+    hook: "Mesmerizing artisan masterclass showing the hand-carving of spruce soundboards, bone nut fitting, and French polish lacquering.",
+    prompt: "Artisan woodcrafting workshop with fine spruce wood shavings falling in slow motion, precise chisel carving on guitar bracing, and warm golden workshop lamp illumination.",
+    characterLock: "marcus",
+    visualStyle: "imax_70mm",
+    musicPreset: "zen_shakuhachi",
+    recommendedDuration: 24,
+    speechSample: "A great guitar is not made by machines. It is carved by listening to how the wood vibrates under the chisel."
+  },
+
+  // ==========================================
+  // CLUSTER 4: KNOWLEDGE, ENTERPRISE & SCIENCE (20-24)
+  // ==========================================
+  {
+    id: "tech_quantum_teleportation",
+    genre: "tech_hardware",
+    cluster: "knowledge_enterprise",
+    genreEmoji: "💻",
+    title: "⚛️ Quantum State Teleportation & Entangled Logic",
+    hook: "Deep visual breakdown of Bell state measurement, photonic entanglement, and optical quantum repeaters.",
+    prompt: "Futuristic cryogenic quantum computing laboratory with glowing dilution refrigerators, laser optical tables, and 3D volumetric representations of entangled qubit Bloch spheres.",
+    characterLock: "david",
+    visualStyle: "ue5_raytraced",
+    musicPreset: "interstellar_drone",
+    recommendedDuration: 56,
+    speechSample: "By entangling two photons across kilometers of fiber, information travels without traversing the space between."
+  },
+  {
+    id: "finance_liquidity_corridors",
+    genre: "finance_wealth",
+    cluster: "knowledge_enterprise",
+    genreEmoji: "💼",
+    title: "📈 Central Bank Sovereign Liquidity & Gold Reserves",
+    hook: "Institutional macroeconomic breakdown of cross-border settlement, currency basket realignment, and bond yield curves.",
+    prompt: "Sleek institutional trading floor with multi-screen Bloomberg terminal arrays, real-time global capital flow heatmaps, and sharp macroeconomic analysis.",
     characterLock: "marcus",
     visualStyle: "photorealistic_keynote",
+    musicPreset: "executive_ambient",
     recommendedDuration: 56,
-    speechSample: "Global liquidity corridors are experiencing structural realignments. Sovereign portfolios must transition to real-time deterministic settlement."
+    speechSample: "Sovereign reserves are undergoing the most significant diversification in fifty years. Liquidity must settle deterministically."
   },
   {
-    id: "exec_biocybernetics_growth",
-    genre: "executive",
-    genreEmoji: "👩‍🔬",
-    title: "🧬 Bio-Cybernetic Neural Infrastructure ROI",
-    hook: "Elena breaks down cross-border neural infrastructure ROI for institutional shareholders.",
-    prompt: "Elena Rostova presents a crisp, data-driven executive briefing on multi-region inference margins, decentralized compute clusters, and 300% ARR growth.",
-    characterLock: "elena",
-    visualStyle: "photorealistic_keynote",
-    recommendedDuration: 56,
-    speechSample: "By transitioning to decentralized sub-millisecond edge clusters, we unlocked 300% ARR expansion with zero latency overhead."
-  },
-  {
-    id: "exec_open_compute",
-    genre: "executive",
-    genreEmoji: "🇪🇸",
-    title: "⚡ Decentralized Open Compute Ecosystems",
-    hook: "Carlos Mendoza delivers an impassioned talk on open-weights foundation models and developer autonomy.",
-    prompt: "Carlos Mendoza on a minimalist tech summit stage in Madrid, gesturing towards dynamic code architecture projections and open-source compute grids.",
-    characterLock: "carlos",
-    visualStyle: "photorealistic_keynote",
-    recommendedDuration: 24,
-    speechSample: "Monopolies fall when open compute rises. Today we release full sovereign model weights directly into the hands of the global developer community."
-  },
-  {
-    id: "exec_quantum_accelerator",
-    genre: "executive",
-    genreEmoji: "🇨🇳",
-    title: "💎 Quantum Supremacy & Cloud Superclusters",
-    hook: "Mei-Ling Zhou outlines the roadmap for fault-tolerant topological quantum supercomputers.",
-    prompt: "Mei-Ling Zhou in a high-tech Shanghai auditorium presenting cryogenic quantum processor roadmaps with floating glowing qubit lattice models.",
-    characterLock: "meiling",
-    visualStyle: "photorealistic_keynote",
-    recommendedDuration: 56,
-    speechSample: "With topological error suppression now exceeding threshold bounds, 10,000 logical qubits will transition from experimental theory to cloud production."
-  },
-  {
-    id: "exec_cognitive_ethics",
-    genre: "executive",
-    genreEmoji: "🇫🇷",
-    title: "⚖️ Cognitive Ethics & Synthetic Alignment",
-    hook: "Céleste Laurent presents the moral boundaries and legislative frameworks for autonomous agents.",
-    prompt: "Céleste Laurent at a Sorbonne international governance symposium delivering a measured, philosophical keynote on human cognitive sovereignty.",
-    characterLock: "celeste",
-    visualStyle: "photorealistic_keynote",
-    recommendedDuration: 24,
-    speechSample: "Synthetic agency without verifiable mathematical boundaries is reckless. We must anchor artificial intelligence to immutable ethical consensus."
-  },
-
-  // ==========================================
-  // 2. Anime & Manga (6 Unique Templates)
-  // ==========================================
-  {
-    id: "anime_mushin_thunder",
-    genre: "anime",
-    genreEmoji: "🥋",
-    title: "⚡ The Thunderstorm of Mushin",
-    hook: "A rainy nighttime duel on a tatami balcony exploring the concept of Mind without Mind.",
-    prompt: "Sensei Ren teaches Apprentice Aoi the concept of Mushin (Mind without Mind) during a night thunderstorm duel on the wooden dojo balcony.",
-    characterLock: "ren_aoi",
-    visualStyle: "ufotable_anime",
-    recommendedDuration: 24,
-    speechSample: "Do not anchor your mind, Aoi. Like falling rain, true mastery strikes only when all conscious hesitation is released."
-  },
-  {
-    id: "anime_wabi_sabi",
-    genre: "anime",
-    genreEmoji: "🌸",
-    title: "🌸 Sakura Wabi-Sabi Garden Duel",
-    hook: "Embracing imperfection and transience as cherry blossoms drift across the dojo garden.",
-    prompt: "Aoi struggles with perfectionism before Sensei Ren points to imperfect falling cherry blossoms, illustrating beauty in transience with poetic sword forms.",
-    characterLock: "ren_aoi",
-    visualStyle: "ufotable_anime",
-    recommendedDuration: 8,
-    speechSample: "Look at the garden, Aoi. Wabi-Sabi teaches that true beauty lives in the transient, the fleeting, and the broken."
-  },
-  {
-    id: "anime_cyber_katana",
-    genre: "anime",
-    genreEmoji: "🗡️",
-    title: "🏙️ Cyber-Katana Protocol: Neo-Shinjuku",
-    hook: "A lone swordsman leaps across neon-lit skyscrapers in rain-soaked 2099 Tokyo.",
-    prompt: "High-octane Ufotable anime action: a cybernetically enhanced samurai deflects laser gunfire with a glowing plasma katana across holographic Shibuya crossing.",
-    characterLock: "ren_aoi",
-    visualStyle: "ufotable_anime",
-    recommendedDuration: 24,
-    speechSample: "In the shadow of synthetic neon, the steel of ancient code remains unbroken."
-  },
-  {
-    id: "anime_spirit_shrine",
-    genre: "anime",
-    genreEmoji: "⛩️",
-    title: "⛩️ The Sacred Torii of Mount Hiei",
-    hook: "A mythical spirit fox guardian reveals ancient elemental magic at dawn amidst mountain mist.",
-    prompt: "Studio Ghibli watercolor aesthetic: a wandering shrine maiden awakens ancient celestial fox spirits beneath towering cedar trees and crimson Torii gates.",
-    characterLock: "ren_aoi",
-    visualStyle: "ghibli_pastoral",
-    recommendedDuration: 56,
-    speechSample: "Listen to the mountain wind. The ancient spirits speak not in words, but in the rustling of cedar needles."
-  },
-  {
-    id: "anime_mecha_orbital",
-    genre: "anime",
-    genreEmoji: "🤖",
-    title: "🚀 Mecha Wing: Orbital Stratosphere Dogfight",
-    hook: "Giant humanoid combat mechas clash above Earth's glowing curved horizon.",
-    prompt: "Cinematic anime mecha sequence: twin supersonic mecha suits engage in high-g laser maneuvering above Earth's aurora borealis with particle afterburners.",
-    characterLock: "david",
-    visualStyle: "ufotable_anime",
-    recommendedDuration: 56,
-    speechSample: "All thrusters to maximum overdrive! Synaptic link at 100 percent—orbital strike vector locked!"
-  },
-  {
-    id: "anime_blood_moon",
-    genre: "anime",
-    genreEmoji: "🌑",
-    title: "🌑 Blood Moon Eclipse: Shadow Blade Purge",
-    hook: "A dramatic sword master stands atop an ancient fortress as a crimson eclipse awakens demons.",
-    prompt: "Dark fantasy anime: glowing red lunar illumination casts deep shadows as a samurai unleashes a flaming circular sword arc against swirling shadow wraiths.",
-    characterLock: "ren_aoi",
-    visualStyle: "ufotable_anime",
-    recommendedDuration: 24,
-    speechSample: "When the crimson moon rises, only the purest blade can cut through the creeping veil of darkness."
-  },
-
-  // ==========================================
-  // 3. Cartoon & Stylized Animation (6 Unique Templates)
-  // ==========================================
-  {
-    id: "cartoon_pancake_rocket",
-    genre: "cartoon",
-    genreEmoji: "🎨",
-    title: "🥞 The Whimsical Gravity Pancake Launcher",
-    hook: "A wacky cartoon inventor creates a contraption that turns breakfast pancakes into rocket fuel.",
-    prompt: "Classic hand-drawn animation style with bouncy physics: an eccentric cartoon inventor activates a steam-powered pancake catapult in a cluttered whimsical workshop.",
-    characterLock: "custom",
-    visualStyle: "ghibli_pastoral",
-    recommendedDuration: 24,
-    speechSample: "Hold onto your toast! The Gravitational Batter Propeller is warming up for supersonic syrup ignition!"
-  },
-  {
-    id: "cartoon_pixel_dungeon",
-    genre: "cartoon",
-    genreEmoji: "👾",
-    title: "👾 16-Bit Pixel Dungeon Adventure",
-    hook: "A retro pixelated knight jumps over spinning fire traps to rescue a digital princess.",
-    prompt: "Vibrant retro pixel-art animation: an 8-bit hero sword-swings through glowing brick dungeons with gold coins popping and bouncy physics.",
-    characterLock: "custom",
-    visualStyle: "ghibli_pastoral",
-    recommendedDuration: 8,
-    speechSample: "Press Start! One extra life remaining, and the final dungeon boss is right behind that door!"
-  },
-  {
-    id: "cartoon_claymation_noir",
-    genre: "cartoon",
-    genreEmoji: "🧱",
-    title: "🧀 Claymation Detective: The Big Cheese Heist",
-    hook: "A stop-motion plasticine detective snoops through a rain-drenched miniature city.",
-    prompt: "Tactile claymation stop-motion animation: a miniature trench-coat detective dog with magnifying glass examines cheese crumbs under a flickering street lamp.",
-    characterLock: "custom",
-    visualStyle: "ghibli_pastoral",
-    recommendedDuration: 24,
-    speechSample: "It was a stormy Tuesday night in Swiss City. The Gouda vault had been cracked wide open, and the culprit left no fingerprints."
-  },
-  {
-    id: "cartoon_forest_bakery",
-    genre: "cartoon",
-    genreEmoji: "🍞",
-    title: "🦔 Woodland Bakery: Morning Sourdough",
-    hook: "Cute hand-drawn hedgehog and squirrel bakers preparing fresh honey pies in a giant hollow tree.",
-    prompt: "Cozy warm Ghibli pastoral aesthetic: gentle morning sunshine floods a wooden treehouse bakery where cute woodland animals knead fluffy golden bread dough.",
-    characterLock: "custom",
-    visualStyle: "ghibli_pastoral",
-    recommendedDuration: 24,
-    speechSample: "Fresh out of the stone oven! Warm blueberry scones and clover honey muffins for all forest creatures!"
-  },
-  {
-    id: "cartoon_doodle_universe",
-    genre: "cartoon",
-    genreEmoji: "✨",
-    title: "✏️ Living Doodle: Escape from the Sketchbook",
-    hook: "A drawn stickman comes to life and folds the notebook paper into a flying origami spaceship.",
-    prompt: "Dynamic mixed-media doodle animation: animated pencil sketch characters leap between ruled notebook lines, turning ink blots into glowing starry galaxies.",
-    characterLock: "custom",
-    visualStyle: "ghibli_pastoral",
-    recommendedDuration: 56,
-    speechSample: "Quick, fold the page diagonally! If we build this origami glider, we can fly right off the graph paper!"
-  },
-  {
-    id: "cartoon_super_pug",
-    genre: "cartoon",
-    genreEmoji: "🦸",
-    title: "🐶 Super-Pug & The Giant Tennis Ball Catastrophe",
-    hook: "A caped cartoon bulldog saves a bustling metropolis from thousands of rolling tennis balls.",
-    prompt: "Bright Saturday morning cartoon style: an adorable chubby pug in a red superhero cape flies through a colorful skyscraper city catching giant bouncing balls.",
-    characterLock: "custom",
-    visualStyle: "ghibli_pastoral",
-    recommendedDuration: 8,
-    speechSample: "Bark of Justice activated! No tennis ball shall bounce unchecked on my watch!"
-  },
-
-  // ==========================================
-  // 4. 3D Graphics & CGI Cinematic (6 Unique Templates)
-  // ==========================================
-  {
-    id: "cgi_unreal_metropolis",
-    genre: "cgi_3d",
-    genreEmoji: "🧊",
-    title: "🏙️ Unreal Engine 5 Cyber-Metropolis",
-    hook: "Photorealistic ray-traced drone flythrough across holographic floating skylanes.",
-    prompt: "Hyper-detailed Unreal Engine 5 CGI render with Nanite geometry and Lumen global illumination: camera glides through a bustling futuristic mega-city with flying aero-transits and neon rain.",
-    characterLock: "david",
-    visualStyle: "ue5_raytraced",
-    recommendedDuration: 56,
-    speechSample: "Initializing sub-atomic path tracing across Sector 9. Global illumination render lock engaged."
-  },
-  {
-    id: "cgi_hypercar_aerodynamics",
-    genre: "cgi_3d",
-    genreEmoji: "🏎️",
-    title: "💨 2000HP Hypercar Aerodynamic Windtunnel",
-    hook: "CFD smoke streams flow over exposed raw carbon fiber monocoque chassis at 400 km/h.",
-    prompt: "Ultra-photorealistic 3D automotive engineering render: illuminated neon wind tunnel showing colored air velocity streams carving around an aggressive carbon fiber hypercar.",
-    characterLock: "henrik",
-    visualStyle: "ue5_raytraced",
-    recommendedDuration: 24,
-    speechSample: "Ground-effect venturi tunnels generate 1,800 kilograms of downforce without creating parasitic drag."
-  },
-  {
-    id: "cgi_abyssal_subsea_rig",
-    genre: "cgi_3d",
-    genreEmoji: "🌊",
-    title: "⚓ 10,000m Abyssal Subsea Robotic Station",
-    hook: "A robotic submarine docks at a colossal glowing geothermal energy node on the ocean floor.",
-    prompt: "Cinematic CGI deep ocean render: heavy industrial subsea robotic drone with powerful halogen headlights docking at a glowing underwater geothermal turbine surrounded by swirling currents.",
-    characterLock: "david",
-    visualStyle: "ue5_raytraced",
-    recommendedDuration: 56,
-    speechSample: "Atmospheric pressure exceeding 1,000 bar. Titanium docking clamp secured to thermal extraction hub."
-  },
-  {
-    id: "cgi_fractal_prism_temple",
-    genre: "cgi_3d",
-    genreEmoji: "💎",
-    title: "💎 Ray-Traced Fractal Prism Sanctuary",
-    hook: "Infinite geometric glass architecture refracting volumetric rainbow caustics.",
-    prompt: "Hypnotic 3D CGI procedural mathematical temple made of pure crystalline glass and gold trim, refracting laser light beams into intricate infinite rainbow Mandelbrot fractals.",
-    characterLock: "custom",
-    visualStyle: "ue5_raytraced",
-    recommendedDuration: 24,
-    speechSample: "Light folded through infinite recursive dimensions. Every prism reflects the total geometry of the cosmos."
-  },
-  {
-    id: "cgi_ancient_tomb_photoreal",
-    genre: "cgi_3d",
-    genreEmoji: "🏛️",
-    title: "🏛️ Unreal Engine 5 Tomb of the Pharaoh Kings",
-    hook: "Photogrammetry 8K scans of hieroglyphic stone corridors illuminated by torchlight.",
-    prompt: "Hyper-realistic Unreal Engine 5 archaeology cinematic: cinematic slow push-in through a grand subterranean Egyptian vault with dust motes drifting in golden god-rays.",
-    characterLock: "custom",
-    visualStyle: "ue5_raytraced",
-    recommendedDuration: 56,
-    speechSample: "These stone reliefs have remained untouched in pitch darkness for over thirty-five centuries."
-  },
-  {
-    id: "cgi_exoskeleton_forge",
-    genre: "cgi_3d",
-    genreEmoji: "🛡️",
-    title: "🦾 Nanotech Exoskeleton Modular Assembly",
-    hook: "Liquid metallic alloy magnetic field forming sleek biomechanical armor plates.",
-    prompt: "Cutting-edge 3D CGI industrial visualization: micro-magnetic fields manipulate shimmering liquid titanium into form-fitting robotic armor plates around a testing mannequin.",
-    characterLock: "henrik",
-    visualStyle: "ue5_raytraced",
-    recommendedDuration: 24,
-    speechSample: "Lattice hardening complete. Tensile strength exceeds military-grade ballistic tungsten by four hundred percent."
-  },
-
-  // ==========================================
-  // 5. Nature & Wildlife Documentaries (6 Unique Templates)
-  // ==========================================
-  {
-    id: "nature_serengeti_pride",
-    genre: "nature",
-    genreEmoji: "🦁",
-    title: "🦁 Serengeti Thunderstorm & Lion Pride",
-    hook: "BBC Earth-style cinematic documentary following a lion pride during the Great Migration rainstorm.",
-    prompt: "Cinematic 8K wildlife documentary: golden hour sunlight breaks through dramatic storm clouds as a lion pride surveys the sweeping Serengeti plains with amber grasses rippling in the wind.",
-    characterLock: "narrator_nature",
-    visualStyle: "bbc_earth_8k",
-    recommendedDuration: 56,
-    speechSample: "Across the vast golden plains of the Serengeti, the coming rains signal a dramatic renewal of life and the ancient hunt."
-  },
-  {
-    id: "nature_bioluminescent_deep",
-    genre: "nature",
-    genreEmoji: "🦑",
-    title: "🌊 Mariana Trench: The Bioluminescent Abyssal Ballet",
-    hook: "Glowing alien-like jellyfish and siphonophores dancing in the midnight ocean zone.",
-    prompt: "Ultra-macro 8K deep-sea documentary: translucent bioluminescent comb jellies and glowing deep-sea squid pulsating with electric neon blue and emerald light in pitch black water.",
-    characterLock: "narrator_nature",
-    visualStyle: "bbc_earth_8k",
-    recommendedDuration: 56,
-    speechSample: "In a world of perpetual darkness miles beneath the surface, creatures communicate in silent flashes of living bioluminescent light."
-  },
-  {
-    id: "nature_amazon_dawn",
-    genre: "nature",
-    genreEmoji: "🦜",
-    title: "🦜 Amazonian Canopy: Dawn Chorus of the Rainforest",
-    hook: "Misty aerial camera sweeping over endless green canopy as scarlet macaws take flight.",
-    prompt: "Spectacular National Geographic drone cinematography: sunrise mist rising above emerald Amazon river bends as flocks of vibrant scarlet macaws burst from towering emergent trees.",
-    characterLock: "gabriel",
-    visualStyle: "bbc_earth_8k",
-    recommendedDuration: 24,
-    speechSample: "As the first golden rays pierce the emerald mist, twenty percent of the world's oxygen is exhaled in a glorious symphony of life."
-  },
-  {
-    id: "nature_arctic_ice_odyssey",
-    genre: "nature",
-    genreEmoji: "❄️",
-    title: "🐻‍❄️ Arctic Realm: Polar Bear Mother & Cubs",
-    hook: "A mother polar bear guides her twin cubs across glowing blue glacial pack ice.",
-    prompt: "Epic BBC Frozen Planet cinematography: mother polar bear and two fluffy cubs traversing massive sapphire-blue sea ice floes with colossal glaciers calving in the background.",
-    characterLock: "narrator_nature",
-    visualStyle: "bbc_earth_8k",
-    recommendedDuration: 56,
-    speechSample: "Navigating a world made entirely of frozen water, a mother's endurance is the sole lifeline for the next generation."
-  },
-  {
-    id: "nature_monarch_migration",
-    genre: "nature",
-    genreEmoji: "🦋",
-    title: "🦋 Millions of Monarchs: The Oyamel Fir Sanctuary",
-    hook: "Golden clouds of millions of orange monarch butterflies warming their wings in mountain sunbeams.",
-    prompt: "High-speed 1000fps macro wildlife footage: millions of monarch butterflies fluttering in golden sunlight through the misty Mexican fir mountain forest.",
-    characterLock: "narrator_nature",
-    visualStyle: "bbc_earth_8k",
-    recommendedDuration: 24,
-    speechSample: "Guided by an inherited magnetic compass, millions of fragile wings have journeyed three thousand miles to find this single sacred ridge."
-  },
-  {
-    id: "nature_coral_spawning",
-    genre: "nature",
-    genreEmoji: "🪸",
-    title: "🪸 Great Barrier Reef: The Midnight Coral Eclipse",
-    hook: "An underwater macro camera captures the once-a-year synchronized glowing coral spawn.",
-    prompt: "Luminescent 8K underwater macro cinema: thousands of fluorescent coral polyps simultaneously releasing millions of glowing pink and pearl spheres into the midnight ocean current.",
-    characterLock: "narrator_nature",
-    visualStyle: "bbc_earth_8k",
-    recommendedDuration: 24,
-    speechSample: "Triggered by the full moon's gravitational pull, the entire reef erupts in a mesmerizing snowstorm of underwater life."
-  },
-
-  // ==========================================
-  // 6. Universe, Cosmos & Space (6 Unique Templates)
-  // ==========================================
-  {
-    id: "space_event_horizon",
-    genre: "space",
-    genreEmoji: "🌌",
-    title: "🌌 Event Horizon: Journey into Gargantua",
-    hook: "Interstellar journey navigating the glowing gravitational lensing of a supermassive black hole.",
-    prompt: "Photorealistic deep space IMAX cinematography: an exploration starship approaches a supermassive black hole with a blinding gold-orange accretion disk warping starlight in relativistic physics.",
-    characterLock: "sarah",
-    visualStyle: "interstellar_sci_fi",
-    recommendedDuration: 120,
-    speechSample: "As we cross the photon sphere, time dilates exponentially. Starlight curves around the gravitational singularity."
-  },
-  {
-    id: "space_mars_colony_sol100",
-    genre: "space",
-    genreEmoji: "🔴",
-    title: "🔴 Martian Sol 100: The Olympus Mons Colony",
-    hook: "Pressurized geodesic biodomes glowing beneath twin Martian moons during an ochre dust storm.",
-    prompt: "Cinematic hard sci-fi exploration: rover camera panning across massive glass geodesic agricultural biodomes nested in red Martian volcanic canyons as dusk settles.",
-    characterLock: "sarah",
-    visualStyle: "interstellar_sci_fi",
-    recommendedDuration: 56,
-    speechSample: "One hundred sols on the Red Planet. Inside these geodesic biospheres, Earth's first interstellar crops are flourishing."
-  },
-  {
-    id: "space_pillars_creation",
-    genre: "space",
-    genreEmoji: "🔭",
-    title: "✨ Pillars of Creation: Inside the Stellar Nursery",
-    hook: "James Webb infrared camera flying through towering interstellar gas pillars birthing baby stars.",
-    prompt: "Spectacular volumetric space visualization: camera dives through colossal pillars of cosmic dust and interstellar hydrogen, revealing newborn proto-stars bursting with ultraviolet light.",
-    characterLock: "sarah",
-    visualStyle: "interstellar_sci_fi",
-    recommendedDuration: 56,
-    speechSample: "These towering columns of interstellar hydrogen stretch four light-years from base to tip—the sacred cosmic forge of new solar systems."
-  },
-  {
-    id: "space_europa_subsurface",
-    genre: "space",
-    genreEmoji: "🪐",
-    title: "🪐 Europa: Under the Alien Ice Sheet of Jupiter",
-    hook: "A robotic melt-probe dives into a dark, warm alien ocean beneath 20km of cracked ice.",
-    prompt: "Thrilling sci-fi exploration: submarine probe descends through ice crevices into Europa's pitch-black ocean, activating halogen beams to reveal hydrothermal vents teeming with alien microorganisms.",
-    characterLock: "sarah",
-    visualStyle: "interstellar_sci_fi",
-    recommendedDuration: 56,
-    speechSample: "We have breached the twenty-kilometer ice shell. Liquid water detected, heated by Jupiter's colossal gravitational tidal flexing."
-  },
-  {
-    id: "space_kilonova_collision",
-    genre: "space",
-    genreEmoji: "💥",
-    title: "💥 Kilonova: Cosmic Forge of Heavy Gold & Platinum",
-    hook: "Two dense neutron stars spiral into each other, generating gravitational spacetime waves.",
-    prompt: "Relativistic astrophysics simulation: twin ultra-dense neutron stars spinning at relativistic speeds before colliding in a blinding gamma-ray burst that forges gold atoms across spacetime.",
-    characterLock: "sarah",
-    visualStyle: "interstellar_sci_fi",
-    recommendedDuration: 24,
-    speechSample: "In a fraction of a millisecond, the collision of these stellar remnants creates a cosmic forge synthesizing every atom of gold in our universe."
-  },
-  {
-    id: "space_hyperspace_gateway",
-    genre: "space",
-    genreEmoji: "🛸",
-    title: "🛸 Alpha Centauri Hyperspace Gateway Transit",
-    hook: "A ring-shaped quantum accelerator folds space to transport a fleet to our nearest star system.",
-    prompt: "Epic IMAX space opera cinematography: a colossal 10km magnetic ring accelerator powers up in orbit, opening an iridescent shimmering Einstein-Rosen spacetime wormhole.",
-    characterLock: "david",
-    visualStyle: "interstellar_sci_fi",
-    recommendedDuration: 56,
-    speechSample: "Gateway ring alignment confirmed. Engaging Einstein-Rosen metric fold—four light years traversed in four seconds."
-  },
-
-  // ==========================================
-  // 7. Machine Building & Engineering (6 Unique Templates)
-  // ==========================================
-  {
-    id: "eng_scramjet_hypersonic",
-    genre: "engineering",
-    genreEmoji: "⚙️",
-    title: "🚀 Mach 7 Hypersonic Scramjet Engine Assembly",
-    hook: "Step-by-step engineering teardown and 5-axis CNC machining of titanium combustion chambers.",
-    prompt: "Educational industrial engineering documentary: exploded 3D CAD holographic view showing titanium combustion chambers, ceramic heat shields, and fuel injectors assembling at Mach 7 tolerances.",
-    characterLock: "henrik",
-    visualStyle: "machinery_engineering",
-    recommendedDuration: 56,
-    speechSample: "Every micron counts. These titanium-aluminide turbine blades withstand temperatures hotter than volcanic magma while air rushes in at Mach 7."
-  },
-  {
-    id: "eng_bionic_hand_actuator",
-    genre: "engineering",
-    genreEmoji: "🦾",
-    title: "🦾 60-DOF Humanoid Bionic Hand & Tendons",
-    hook: "Precision micro-motors and artificial synthetic tendons achieving delicate human dexterity.",
-    prompt: "High-tech robotics cleanroom footage: Dr. Henrik Weber tests high-torque brushless harmonic actuators inside a sleek carbon-fiber robotic hand delicately grasping a glass bulb.",
-    characterLock: "henrik",
-    visualStyle: "machinery_engineering",
-    recommendedDuration: 24,
-    speechSample: "Sixty degrees of freedom driven by sub-millimeter synthetic tendons, mimicking the exact kinetic responsiveness of human musculature."
-  },
-  {
-    id: "eng_tokamak_fusion_core",
-    genre: "engineering",
-    genreEmoji: "⚛️",
-    title: "⚛️ ITER Magnetic Confinement Tokamak Fusion Core",
-    hook: "Superconducting magnetic coils confining 150-million-degree glowing hydrogen plasma.",
-    prompt: "Grand industrial engineering showcase: inside a massive silver toroidal vacuum vessel where blinding magenta hydrogen plasma is magnetically suspended in zero-gravity vacuum.",
-    characterLock: "david",
-    visualStyle: "machinery_engineering",
-    recommendedDuration: 56,
-    speechSample: "Supercooled to negative 269 degrees, our niobium-tin electromagnets bottle a miniature sun hotter than the core of our own star."
-  },
-  {
-    id: "eng_euv_photolithography",
-    genre: "engineering",
-    genreEmoji: "🔬",
-    title: "🔬 1-Nanometer EUV Photolithography Chamber",
-    hook: "Extreme ultraviolet lasers pulsing 50,000 times per second on molten tin droplets to etch quantum chips.",
-    prompt: "Ultra-clean semiconductor fabrication suite: laser pulses vaporize micro-droplets of tin, projecting extreme ultraviolet light patterns onto silicon wafers with atomic precision.",
-    characterLock: "meiling",
-    visualStyle: "machinery_engineering",
-    recommendedDuration: 24,
-    speechSample: "Printing features smaller than a single strand of human DNA, this EUV optical mirror is the flattest man-made object on planet Earth."
-  },
-  {
-    id: "eng_space_elevator_tether",
-    genre: "engineering",
-    genreEmoji: "🏗️",
-    title: "🏗️ Carbon Nanotube Orbital Space Elevator",
-    hook: "A 36,000 km carbon nanotube ribbon climbing from an equatorial ocean platform into orbit.",
-    prompt: "Breathtaking macro-engineering documentary: magnetic climber car ascending a gleaming carbon nanotube ribbon from a Pacific ocean floating platform straight into geostationary orbit.",
-    characterLock: "henrik",
-    visualStyle: "machinery_engineering",
-    recommendedDuration: 56,
-    speechSample: "With a tensile strength fifty times greater than steel, this 36,000-kilometer carbon ribbon provides zero-emission transport into geostationary space."
-  },
-  {
-    id: "eng_hyperloop_maglev",
-    genre: "engineering",
-    genreEmoji: "🚄",
-    title: "🚄 1200 km/h MagLev Vacuum Tube Transit",
-    hook: "A sleek magnetic levitation pod gliding frictionlessly through depressurized steel tubes.",
-    prompt: "Futuristic transportation engineering: inside a sleek carbon pod accelerating silently through an illuminated steel vacuum tube across continental distances at airplane speeds.",
-    characterLock: "carlos",
-    visualStyle: "machinery_engineering",
-    recommendedDuration: 24,
-    speechSample: "By removing ninety-nine point nine percent of air friction, magnetic levitation pods cruise across continents using a fraction of the energy of commercial flight."
-  },
-
-  // ==========================================
-  // 8. Medical Equipment & Healthcare (6 Unique Templates)
-  // ==========================================
-  {
-    id: "med_robotic_surgery_mri",
-    genre: "medical",
-    genreEmoji: "🩺",
-    title: "🩺 Da Vinci Robotic Micro-Surgery & 7T MRI",
-    hook: "Sub-millimeter robotic suturing guided by real-time intraoperative neural MRI.",
-    prompt: "State-of-the-art medical education footage: robotic surgical arms perform sub-millimeter suturing while real-time holographic MRI neural scans illuminate synaptic pathways in the background.",
-    characterLock: "elena",
-    visualStyle: "biomedical_micro",
-    recommendedDuration: 56,
-    speechSample: "With 7-Tesla intraoperative neuro-imaging, the robotic needle achieves sub-millimeter precision without disrupting critical vascular pathways."
-  },
-  {
-    id: "med_crispr_dna_repair",
-    genre: "medical",
-    genreEmoji: "🧬",
-    title: "🧬 CRISPR-Cas9 Molecular DNA Strand Editing",
-    hook: "Nanoscale visualization of enzyme cutting and inserting corrective genetic sequences.",
-    prompt: "Hyper-detailed molecular 3D animation: Cas9 enzyme protein scans along a glowing double-helix DNA strand, precisely cleaving a mutated gene and stitching in healthy nucleotides.",
-    characterLock: "elena",
-    visualStyle: "biomedical_micro",
-    recommendedDuration: 24,
-    speechSample: "Targeted guide RNA leads the Cas9 endonuclease to the exact defective codon, replacing congenital mutations with therapeutic sequences."
-  },
-  {
-    id: "med_optical_bci_brain",
-    genre: "medical",
-    genreEmoji: "🧠",
-    title: "🧠 Optical Brain-Computer Interface Mapping",
-    hook: "Micro-electrode array mapping million-neuron firing patterns during human thought.",
-    prompt: "Advanced neuro-technology laboratory: holographic 3D brain map illuminates in cascading bursts of electric blue and violet light as a paralyzed patient controls a robotic limb with pure thought.",
-    characterLock: "celeste",
-    visualStyle: "biomedical_micro",
-    recommendedDuration: 24,
-    speechSample: "Decoding motor cortex neural spike trains at sub-millisecond resolution transforms intended motion into instantaneous physical reality."
-  },
-  {
-    id: "med_titanium_bionic_heart",
-    genre: "medical",
-    genreEmoji: "❤️",
-    title: "❤️ MagLev Continuous-Flow Titanium Bionic Heart",
-    hook: "An implantable artificial heart maintaining pulse-free continuous cardiovascular flow.",
-    prompt: "High-precision biomedical engineering render: sleek titanium artificial heart with magnetically levitated impeller spinning at 8,000 RPM in clear saline solution without mechanical friction.",
-    characterLock: "elena",
-    visualStyle: "biomedical_micro",
-    recommendedDuration: 24,
-    speechSample: "By eliminating mechanical ball bearings, the magnetically levitated impeller eliminates blood shear stress, promising decades of continuous circulatory support."
-  },
-  {
-    id: "med_nanobot_immunotherapy",
-    genre: "medical",
-    genreEmoji: "🔬",
-    title: "🔬 Nanobot Oncology Immunotherapy Swarm",
-    hook: "Smart nanoparticles hunting and dissolving metastatic tumor cells in the bloodstream.",
-    prompt: "Nanoscale biological thriller: glowing gold-coated nanobots navigate through a red blood cell capillary, attaching to cancerous cell membranes and releasing targeted therapeutic payloads.",
-    characterLock: "elena",
-    visualStyle: "biomedical_micro",
-    recommendedDuration: 56,
-    speechSample: "Programmed with tumor-specific aptamers, our nanorobotic swarm delivers localized cytotoxicity with zero collateral damage to healthy tissues."
-  },
-  {
-    id: "med_cellular_telomere_longevity",
-    genre: "medical",
-    genreEmoji: "⏳",
-    title: "⏳ Telomerase Cellular Reversal & Longevity",
-    hook: "Molecular biology visualization of reverse aging in human mitochondrial telomeres.",
-    prompt: "Stunning scientific visualization: glowing cellular nucleus where telomerase enzymes rebuild and lengthen protective chromosome caps, restoring cellular vitality.",
-    characterLock: "elena",
-    visualStyle: "biomedical_micro",
-    recommendedDuration: 24,
-    speechSample: "By extending the protective telomeric caps on chromosome ends, we restore the replicative lifespan of human cells at the foundational genetic tier."
-  },
-
-  // ==========================================
-  // 9. Veritas Trust & Cryptography (6 Unique Templates)
-  // ==========================================
-  {
-    id: "sec_veritas_zk_snark",
-    genre: "security",
-    genreEmoji: "🛡️",
-    title: "🛡️ Veritas zk-SNARK Cryptographic Shield",
-    hook: "Priya explains frame-by-frame deepfake immunity and C2PA provenance signatures.",
-    prompt: "Priya Sharma briefs sovereign security auditors on Ed25519 cryptographic seals and claim-level zero-drift grounding protocols.",
+    id: "leadership_rajarshi_sovereign",
+    genre: "leadership_masterclass",
+    cluster: "knowledge_enterprise",
+    genreEmoji: "👑",
+    title: "🏛️ The Rajarshi: Dharmic Sovereign Leadership",
+    hook: "Executive masterclass on ethical governance, detached decision-making (Nishkama Karma), and long-term institutional stewardship.",
+    prompt: "Commanding executive keynote stage where Priya Sharma breaks down the principles of the Rajarshi (Sage-King) leadership in the age of autonomous artificial intelligence.",
     characterLock: "priya",
     visualStyle: "photorealistic_keynote",
-    recommendedDuration: 56,
-    speechSample: "In a world flooded with synthetic media, trust is math. Veritas zk-SNARK provides immutable proof for every spoken syllable."
+    musicPreset: "executive_ambient",
+    recommendedDuration: 120,
+    speechSample: "True leadership is not the exercise of authority—it is the courageous stewardship of truth without attachment to personal ego."
   },
   {
-    id: "sec_hardware_enclave_hsm",
-    genre: "security",
-    genreEmoji: "🔐",
-    title: "🔐 Silicon-Anchored Ed25519 Enclave Security",
-    hook: "Hardware Root of Trust chips signing broadcast streams with zero tampering.",
-    prompt: "David Kim inside a high-security server vault demonstrating tamper-proof cryptographic hardware security modules signing 4K video frames in real-time.",
-    characterLock: "david",
-    visualStyle: "photorealistic_keynote",
-    recommendedDuration: 24,
-    speechSample: "Keys never leave the physical silicon enclave. Every pixel broadcast to the world carries an unforgeable hardware signature."
-  },
-  {
-    id: "sec_post_quantum_lattice",
-    genre: "security",
-    genreEmoji: "🕸️",
-    title: "🕸️ Post-Quantum Kyber-1024 Lattice Cryptography",
-    hook: "Multi-dimensional geometric lattices resisting quantum Shor's algorithm attacks.",
-    prompt: "Mei-Ling Zhou demonstrates multi-dimensional cryptographic lattices rotating in 3D holographic space, absorbing quantum interference with mathematical perfection.",
-    characterLock: "meiling",
-    visualStyle: "photorealistic_keynote",
-    recommendedDuration: 56,
-    speechSample: "Lattice-based cryptography transforms encryption into an insolvable geometric problem in thousands of dimensions—impenetrable even to quantum computers."
-  },
-  {
-    id: "sec_zk_private_rollup",
-    genre: "security",
-    genreEmoji: "⚡",
-    title: "⚡ Zero-Knowledge Private Rollup Proofs",
-    hook: "Mathematical SNARK verifying billions in transactions without revealing identity data.",
-    prompt: "Carlos Mendoza explains recursive zero-knowledge SNARK proof aggregation on an interactive holographic touchscreen displaying decentralized settlement trees.",
-    characterLock: "carlos",
-    visualStyle: "photorealistic_keynote",
-    recommendedDuration: 24,
-    speechSample: "We can verify the mathematical truth of ten thousand transactions in a single fifty-byte proof without revealing a single private account balance."
-  },
-  {
-    id: "sec_satellite_constellation_ledger",
-    genre: "security",
-    genreEmoji: "🛰️",
-    title: "🛰️ Orbital Cryptographic Validator Constellation",
-    hook: "Low-Earth orbit satellites cross-signing global data timestamps via laser links.",
-    prompt: "Cinematic aerospace defense visualization: constellation of low-Earth orbit satellites exchanging glowing green laser cryptographic proofs across Earth's night hemisphere.",
-    characterLock: "david",
-    visualStyle: "photorealistic_keynote",
-    recommendedDuration: 56,
-    speechSample: "By decentralizing our consensus clock across thirty orbital satellites, time and truth become immune to terrestrial state censorship."
-  },
-  {
-    id: "sec_deepfake_liveness_detector",
-    genre: "security",
-    genreEmoji: "🎯",
-    title: "🎯 12-Axis Neural Liveness & Vascular Scanner",
-    hook: "Sub-surface vascular blood flow analysis detecting synthetic video impersonation in real-time.",
-    prompt: "High-tech security forensic interface: side-by-side video screen tracking micro-pulse facial capillaries, iris photometrics, and corneal reflections to verify authentic human presence.",
+    id: "science_alphafold_cancer_cures",
+    genre: "science_space",
+    cluster: "knowledge_enterprise",
+    genreEmoji: "🔬",
+    title: "🧬 AlphaFold 3: Designing Atomic Targeted Medicines",
+    hook: "Revolutionary medical documentary on how DeepMind's AlphaFold 3 designs custom molecular binders to neutralize oncogenic mutations.",
+    prompt: "Photorealistic 3D molecular simulation rendered in 4K showing an AlphaFold designed synthetic protein locking perfectly onto an oncogenic receptor site with glowing atomic bond physics.",
     characterLock: "elena",
-    visualStyle: "photorealistic_keynote",
-    recommendedDuration: 24,
-    speechSample: "AI can generate pixels, but it cannot counterfeit the involuntary micro-vascular pulse of human capillary blood flow beneath the skin."
+    visualStyle: "ue5_raytraced",
+    musicPreset: "interstellar_drone",
+    recommendedDuration: 56,
+    speechSample: "For fifty years, protein folding was a biological grand mystery. Today, we design life-saving molecular keys in seconds."
+  },
+  {
+    id: "history_indus_valley_megacity",
+    genre: "history_geopolitics",
+    cluster: "knowledge_enterprise",
+    genreEmoji: "🌍",
+    title: "🏺 Mohenjo-Daro: The Bronze Age Urban Utopia",
+    hook: "Archaeological 4K reconstruction of the Indus Valley Civilization featuring advanced sanitation grids, dockyards, and trade seals.",
+    prompt: "Magnificent 4K archaeological aerial tracking shot of Mohenjo-Daro in 2500 BCE with baked-brick multistory avenues, granaries, public baths, and merchants trading carnelian beads under warm golden hour sunlight with volumetric dust.",
+    characterLock: "priya",
+    visualStyle: "imax_70mm",
+    musicPreset: "bollywood_fusion",
+    recommendedDuration: 56,
+    speechSample: "Five thousand years ago, an entire civilization built a metropolis without palaces or weapons of war—centered entirely on civic engineering."
   }
 ];

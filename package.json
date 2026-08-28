@@ -7,13 +7,15 @@
     "guard:legacy": "node scripts/governance/legacy_tech_guard.js",
     "build": "npm run guard:legacy && next build",
     "start": "next start -H 0.0.0.0 -p ${PORT:-3000}",
-    "test:e2e": "node scratch/cloudtop_e2e_runner.mjs"
+    "test:e2e": "node scripts/cloudtop_puppeteer_remote.js",
+    "test:sprints": "node scripts/e2e/test_all_sprints.mjs"
   },
   "dependencies": {
     "@pixiv/three-vrm": "^3.5.5",
     "@pixiv/three-vrm-materials-mtoon": "^3.5.5",
     "@types/three": "^0.185.4",
     "clsx": "^2.1.1",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.475.0",
     "next": "15.4.10",
     "pg": "^8.23.0",
@@ -23,6 +25,7 @@
     "three": "^0.185.1"
   },
   "devDependencies": {
+    "@types/jszip": "^3.4.0",
     "@types/node": "^22.10.0",
     "@types/pg": "^8.23.1",
     "@types/react": "^19.0.0",
