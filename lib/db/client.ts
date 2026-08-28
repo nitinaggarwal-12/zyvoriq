@@ -241,23 +241,37 @@ export const db = {
       const stmt = database.prepare("SELECT * FROM studio_series_tracks ORDER BY created_at DESC");
       let rows = stmt.all() as any[];
       
-      // Auto-sync canonical tracks
-      const existingIds = new Set(rows.map(r => r.id));
+      // Purge obsolete prototype tracks from SQLite
+      const obsoleteIds = [
+        "track_scramjet_hypersonic",
+        "track_abyssal_ocean",
+        "track_neotokyo_cyberpunk",
+        "track_biotech_crispr",
+        "track_renaissance_painting",
+        "track_theatrical_hamlet",
+        "track_starlight_cartoon",
+        "track_hollywood_blockbuster"
+      ];
+      for (const obsId of obsoleteIds) {
+        try {
+          database.prepare("DELETE FROM studio_series_tracks WHERE id = ?").run(obsId);
+        } catch (_) {}
+      }
+
+      // Sync and update canonical tracks
       for (const canonical of CANONICAL_SERIES_TRACKS) {
-        if (!existingIds.has(canonical.id)) {
-          this.saveStudioTrack({
-            id: canonical.id,
-            title: canonical.title,
-            subtitle: canonical.subtitle,
-            category: canonical.category,
-            character: canonical.character,
-            video_src: canonical.videoSrc,
-            duration: canonical.duration,
-            acts: canonical.acts,
-            veritas_status: canonical.veritas?.status || "CERTIFIED_VALID",
-            snark_proof_hash: canonical.veritas?.snarkProofHash || "0x8f2d...4a19"
-          });
-        }
+        this.saveStudioTrack({
+          id: canonical.id,
+          title: canonical.title,
+          subtitle: canonical.subtitle,
+          category: canonical.category,
+          character: canonical.character,
+          video_src: canonical.videoSrc,
+          duration: canonical.duration,
+          acts: canonical.acts,
+          veritas_status: canonical.veritas?.status || "CERTIFIED_VALID",
+          snark_proof_hash: canonical.veritas?.snarkProofHash || "0x8f2d...4a19"
+        });
       }
       rows = database.prepare("SELECT * FROM studio_series_tracks ORDER BY created_at DESC").all() as any[];
 

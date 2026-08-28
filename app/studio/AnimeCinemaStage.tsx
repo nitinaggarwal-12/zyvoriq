@@ -153,7 +153,7 @@ export function AnimeCinemaStage() {
 
   // Multi-Track Series Library State
   const [seriesTracks, setSeriesTracks] = useState<SeriesTrack[]>(CANONICAL_SERIES_TRACKS);
-  const [activeTrackId, setActiveTrackId] = useState<string>("track_anime_kaizen");
+  const [activeTrackId, setActiveTrackId] = useState<string>("track_wildlife_serengeti_120s");
 
   // Fetch tracks from persistent SQLite DB
   useEffect(() => {
