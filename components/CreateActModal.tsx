@@ -18,13 +18,15 @@ import {
   Volume2,
   FileCheck,
   Send,
-  Zap
+  Zap,
+  Layers
 } from "lucide-react";
 
 interface CreateActModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onActCreated?: (actData: any) => void;
+  onActCreated?: (actData: any, destinationMode?: "new_series" | "append_current") => void;
+  currentTrackTitle?: string;
 }
 
 const PRESET_IDEAS = [
@@ -46,12 +48,13 @@ const PRESET_IDEAS = [
   }
 ];
 
-export function CreateActModal({ isOpen, onClose, onActCreated }: CreateActModalProps) {
+export function CreateActModal({ isOpen, onClose, onActCreated, currentTrackTitle = "The Master & The Apprentice" }: CreateActModalProps) {
   const [title, setTitle] = useState("Act 8: The Way of Mushin");
   const [prompt, setPrompt] = useState(
     "Sensei Ren teaches Apprentice Aoi the concept of Mushin (Mind without Mind) during a night thunderstorm duel on the wooden dojo balcony."
   );
-  const [duration, setDuration] = useState<8 | 24 | 56>(8);
+  const [duration, setDuration] = useState<number>(8);
+  const [destinationMode, setDestinationMode] = useState<"new_series" | "append_current">("new_series");
   const [characterLock, setCharacterLock] = useState("ren_aoi");
   const [visualStyle, setVisualStyle] = useState("ufotable_anime");
   const [languages, setLanguages] = useState<string[]>(["ja", "en", "es", "fr", "de", "hi"]);
@@ -201,6 +204,58 @@ export function CreateActModal({ isOpen, onClose, onActCreated }: CreateActModal
                     {idea.title}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Destination Mode Selector: New Track vs Append */}
+            <div className="space-y-2.5">
+              <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-indigo-400" /> Production Destination
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDestinationMode("new_series")}
+                  className={`p-3.5 rounded-2xl border text-left transition-all flex items-start gap-3 ${
+                    destinationMode === "new_series"
+                      ? "bg-gradient-to-r from-indigo-950/60 to-slate-900 border-indigo-500 text-white shadow-lg shadow-indigo-500/15 ring-1 ring-indigo-500/50"
+                      : "bg-slate-900/60 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800/50"
+                  }`}
+                >
+                  <div className={`p-2 rounded-xl shrink-0 ${destinationMode === "new_series" ? "bg-indigo-500 text-white" : "bg-slate-800 text-slate-400"}`}>
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                      Start Brand New Series / Track
+                    </div>
+                    <div className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                      Creates an independent video track in your library
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDestinationMode("append_current")}
+                  className={`p-3.5 rounded-2xl border text-left transition-all flex items-start gap-3 ${
+                    destinationMode === "append_current"
+                      ? "bg-gradient-to-r from-amber-950/60 to-slate-900 border-amber-500 text-white shadow-lg shadow-amber-500/15 ring-1 ring-amber-500/50"
+                      : "bg-slate-900/60 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800/50"
+                  }`}
+                >
+                  <div className={`p-2 rounded-xl shrink-0 ${destinationMode === "append_current" ? "bg-amber-500 text-slate-950" : "bg-slate-800 text-slate-400"}`}>
+                    <Film className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                      Append to Active Series
+                    </div>
+                    <div className="text-[11px] text-slate-400 mt-0.5 leading-snug truncate max-w-[220px]">
+                      Adds as next sequel act to {currentTrackTitle}
+                    </div>
+                  </div>
+                </button>
               </div>
             </div>
 
@@ -485,7 +540,7 @@ export function CreateActModal({ isOpen, onClose, onActCreated }: CreateActModal
                 <button
                   onClick={() => {
                     if (generatedResult && onActCreated) {
-                      onActCreated(generatedResult);
+                      onActCreated(generatedResult, destinationMode);
                     }
                     onClose();
                   }}

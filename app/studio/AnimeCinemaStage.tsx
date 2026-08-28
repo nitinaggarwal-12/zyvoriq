@@ -81,20 +81,123 @@ const PRESET_DILEMMAS = [
   }
 ];
 
+export interface SeriesTrack {
+  id: string;
+  title: string;
+  subtitle: string;
+  category: "anime" | "executive" | "custom";
+  character: string;
+  videoSrc: string;
+  acts: SubtitleCue[];
+  duration: number;
+}
+
+export const DEFAULT_SERIES_TRACKS: SeriesTrack[] = [
+  {
+    id: "track_anime_kaizen",
+    title: "The Master & The Apprentice: Path to Kaizen",
+    subtitle: "7-Act Cinematic Anime Series · Sensei Ren & Apprentice Aoi",
+    category: "anime",
+    character: "🥋 Sensei Ren & Apprentice Aoi",
+    videoSrc: "/assets/video/ren_and_aoi_conversation_synced.mp4",
+    acts: ANIME_SUBTITLE_CUES,
+    duration: 56.0
+  },
+  {
+    id: "track_executive_sovereign",
+    title: "Executive Sovereign AI Keynote",
+    subtitle: "Frontier Autonomous Intelligence & Veritas zk-SNARK Provenance",
+    category: "executive",
+    character: "👩‍💼 Priya Sharma (Chief AI Officer)",
+    videoSrc: "/assets/video/priya_4k_10act_master.mp4",
+    acts: [
+      {
+        id: "exec_act_1",
+        startTime: 0.25,
+        endTime: 11.5,
+        speaker: "Ren",
+        speakerRole: "Chief AI Officer",
+        actName: "Act 1: Frontier Autonomous AI",
+        philosophy: "Sovereign Intelligence Architecture",
+        text: {
+          ja: "🌐 PRIYA: 「企業の意思決定を加速する自律型AIインテリジェンスの新時代へようこそ。」",
+          en: "🌐 PRIYA: \"Welcome to the frontier of sovereign autonomous enterprise intelligence.\"",
+          es: "🌐 PRIYA: \"Bienvenidos a la frontera de la inteligencia empresarial autónoma y soberana.\"",
+          fr: "🌐 PRIYA: « Bienvenue à la frontière de l'intelligence d'entreprise souveraine et autonome. »",
+          de: "🌐 PRIYA: „Willkommen an der Grenze souveräner autonomer Unternehmensintelligenz.“",
+          hi: "🌐 प्रिया: \"स्वायत्त उद्यम बुद्धिमत्ता के नए युग में आपका स्वागत है।\""
+        }
+      },
+      {
+        id: "exec_act_2",
+        startTime: 12.0,
+        endTime: 23.5,
+        speaker: "Ren",
+        speakerRole: "Chief AI Officer",
+        actName: "Act 2: Cryptographic zk-SNARK Sealing",
+        philosophy: "Veritas Zero-Drift Media Synthesis",
+        text: {
+          ja: "🌐 PRIYA: 「Veritas暗号化証明書により、すべての主張と動画フレームの真実性を保証します。」",
+          en: "🌐 PRIYA: \"Veritas zk-SNARK guarantees claim-level grounding and zero lip-sync drift.\"",
+          es: "🌐 PRIYA: \"Veritas zk-SNARK garantiza la veracidad y cero desfase labial.\"",
+          fr: "🌐 PRIYA: « Veritas zk-SNARK garantit l'ancrage des faits et zéro décalage labial. »",
+          de: "🌐 PRIYA: „Veritas zk-SNARK garantiert faktische Fundierung und 0ms Drift.“",
+          hi: "🌐 प्रिया: \"वेरिटास तकनीक हर दावे की प्रामाणिकता और सटीक लिप-सिंक सुनिश्चित करती है।\""
+        }
+      }
+    ],
+    duration: 24.0
+  },
+  {
+    id: "track_zurich_neural",
+    title: "Zurich Neural Systems & Quantum Protocol",
+    subtitle: "Distributed Micro-Inference & Sovereign Model Topologies",
+    category: "executive",
+    character: "👨‍💼 David Kim (Lead Infrastructure)",
+    videoSrc: "/assets/video/david_master.mp4",
+    acts: [
+      {
+        id: "zurich_act_1",
+        startTime: 0.25,
+        endTime: 15.0,
+        speaker: "Ren",
+        speakerRole: "Lead Infrastructure",
+        actName: "Act 1: Distributed Core Topologies",
+        philosophy: "Zero-Latency Edge Inference",
+        text: {
+          ja: "⚡ DAVID: 「分散マイクロ推論により、エッジでのミリ秒単位の応答を実現します。」",
+          en: "⚡ DAVID: \"Distributed micro-inference enables sub-millisecond deterministic edge response.\"",
+          es: "⚡ DAVID: \"La microinferencia distribuida permite respuestas deterministas en submilisegundos.\"",
+          fr: "⚡ DAVID: « La micro-inférence distribuée permet une réponse déterministe en moins d'une milliseconde. »",
+          de: "⚡ DAVID: „Verteilte Mikro-Inferenz ermöglicht deterministische Reaktionszeiten unter einer Millisekunde.“",
+          hi: "⚡ डेविड: \"वितरित माइक्रो-इनफेरेंस मिलीसेकंड प्रतिक्रिया समय सक्षम करता है।\""
+        }
+      }
+    ],
+    duration: 16.0
+  }
+];
+
 export function AnimeCinemaStage() {
   const [studioMode, setStudioMode] = useState<"cinema" | "living_dojo">("cinema");
+
+  // Multi-Track Series Library State
+  const [seriesTracks, setSeriesTracks] = useState<SeriesTrack[]>(DEFAULT_SERIES_TRACKS);
+  const [activeTrackId, setActiveTrackId] = useState<string>("track_anime_kaizen");
+
+  const activeTrack = seriesTracks.find((t) => t.id === activeTrackId) || seriesTracks[0];
+  const actsList = activeTrack.acts;
 
   // Cinema Mode State
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
-  const [duration, setDuration] = useState<number>(56.0);
+  const [duration, setDuration] = useState<number>(activeTrack.duration || 56.0);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [audioLang, setAudioLang] = useState<AudioLangCode>("ja");
   const [subtitleLang, setSubtitleLang] = useState<SubtitleLangCode>("en");
   const [showAudioSubMenu, setShowAudioSubMenu] = useState<boolean>(false);
   const [selectedActIndex, setSelectedActIndex] = useState<number>(0);
   const [isCreateActOpen, setIsCreateActOpen] = useState<boolean>(false);
-  const [actsList, setActsList] = useState<SubtitleCue[]>(ANIME_SUBTITLE_CUES);
   const [recentNewAct, setRecentNewAct] = useState<any>(null);
 
   // Living Dojo Mode State
@@ -121,10 +224,32 @@ export function AnimeCinemaStage() {
   const dojoAudioRef = useRef<HTMLAudioElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Switch Active Series Track
+  const handleTrackChange = (trackId: string) => {
+    setActiveTrackId(trackId);
+    setSelectedActIndex(0);
+    setCurrentTime(0);
+    setIsPlaying(false);
+    const targetTrack = seriesTracks.find((t) => t.id === trackId);
+    if (targetTrack) {
+      setDuration(targetTrack.duration);
+    }
+    const video = videoRef.current;
+    const audio = audioRef.current;
+    if (video) {
+      video.currentTime = 0;
+      video.load();
+    }
+    if (audio) {
+      audio.currentTime = 0;
+      audio.load();
+    }
+  };
+
   // Synchronize Active Subtitle Cue in Cinema Mode
   const activeCue = actsList.find(
     (c) => currentTime >= c.startTime && currentTime <= c.endTime
-  ) || actsList[selectedActIndex];
+  ) || actsList[selectedActIndex] || actsList[0];
 
   // Update selected act on time progress
   useEffect(() => {
@@ -132,17 +257,15 @@ export function AnimeCinemaStage() {
     setSelectedActIndex(actIdx);
   }, [currentTime, actsList.length]);
 
-  // Handle Newly Created Act from Generator Modal
-  const handleActCreated = (newActData: any) => {
-    const newIndex = actsList.length;
-    const startTime = newIndex * 8.0;
+  // Handle Newly Created Act / New Series Track
+  const handleActCreated = (newActData: any, destinationMode: "new_series" | "append_current" = "new_series") => {
     const newCue: SubtitleCue = {
-      id: newActData.actId || `act_${newIndex + 1}`,
-      startTime: startTime + 0.25,
-      endTime: startTime + 7.5,
+      id: newActData.actId || `act_${Date.now()}`,
+      startTime: 0.25,
+      endTime: parseFloat(newActData.duration) || 7.5,
       speaker: "Ren",
-      speakerRole: "Zen Master",
-      actName: newActData.title || `Act ${newIndex + 1}: ${newActData.script?.philosophy?.split("—")[0]?.trim() || "The Way of Mushin"}`,
+      speakerRole: newActData.characterLock === "ren_aoi" ? "Zen Master" : "Chief AI Officer",
+      actName: newActData.title || `Act 1: ${newActData.script?.philosophy?.split("—")[0]?.trim() || "The Way of Mushin"}`,
       philosophy: newActData.script?.philosophy || "Mushin (無心) — Mind without Mind",
       text: {
         ja: `⛩️ SENSEI REN: "${newActData.script?.dialogueJa || ""}"`,
@@ -154,20 +277,53 @@ export function AnimeCinemaStage() {
       }
     };
 
-    setActsList((prev) => [...prev, newCue]);
-    setSelectedActIndex(newIndex);
+    if (destinationMode === "new_series") {
+      // Create Brand New Standalone Track
+      const newTrackId = `track_${Date.now()}`;
+      const newTrackDuration = parseFloat(newActData.duration) || 24.0;
+      const newTrack: SeriesTrack = {
+        id: newTrackId,
+        title: newActData.title || "Custom AI Production Series",
+        subtitle: newActData.script?.philosophy || "Multi-Modal Autonomous Series",
+        category: newActData.characterLock === "ren_aoi" ? "anime" : "executive",
+        character: newActData.characterLock === "ren_aoi" ? "🥋 Sensei Ren & Aoi" : "👩‍💼 Digital Twin Executive",
+        videoSrc: newActData.videoUrl || "/assets/video/ren_and_aoi_conversation_synced.mp4",
+        acts: [newCue],
+        duration: newTrackDuration
+      };
+
+      setSeriesTracks((prev) => [...prev, newTrack]);
+      setActiveTrackId(newTrackId);
+      setSelectedActIndex(0);
+      setDuration(newTrackDuration);
+    } else {
+      // Append to Current Series Track
+      const newIndex = actsList.length;
+      newCue.startTime = newIndex * 8.0 + 0.25;
+      newCue.endTime = newIndex * 8.0 + 7.5;
+      newCue.actName = newActData.title || `Act ${newIndex + 1}: ${newActData.script?.philosophy?.split("—")[0]?.trim() || "The Way of Mushin"}`;
+
+      setSeriesTracks((prev) =>
+        prev.map((t) =>
+          t.id === activeTrackId
+            ? { ...t, acts: [...t.acts, newCue], duration: (newIndex + 1) * 8.0 }
+            : t
+        )
+      );
+      setSelectedActIndex(newIndex);
+    }
+
     setRecentNewAct(newActData);
     setIsCreateActOpen(false);
 
-    // Loop video time within master 56s footage to provide dynamic scene playback
     const video = videoRef.current;
     const audio = audioRef.current;
     if (video) {
-      video.currentTime = (newIndex * 8.0) % 56.0;
+      video.currentTime = 0;
       video.play().catch(() => {});
     }
     if (audio) {
-      audio.currentTime = (newIndex * 8.0) % 56.0;
+      audio.currentTime = 0;
       audio.play().catch(() => {});
     }
     setIsPlaying(true);
@@ -309,26 +465,63 @@ export function AnimeCinemaStage() {
 
   return (
     <div className="space-y-8 animate-fadeIn">
-      {/* Top Banner & Mode Switcher */}
-      <div className="bg-gradient-to-r from-red-950/50 via-amber-950/30 to-black border border-amber-500/20 rounded-2xl p-6 relative overflow-hidden backdrop-blur-xl shadow-2xl">
+      {/* Multi-Track Series Library Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-3 bg-zinc-950/80 border border-zinc-800/80 rounded-2xl backdrop-blur-xl mb-4 shadow-xl">
+        <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
+          <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 px-2 flex items-center gap-1.5 shrink-0">
+            <Layers className="w-3.5 h-3.5 text-amber-400" /> Active Series Track:
+          </span>
+          {seriesTracks.map((track) => {
+            const isCurrent = track.id === activeTrackId;
+            return (
+              <button
+                key={track.id}
+                onClick={() => handleTrackChange(track.id)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-2 shrink-0 border ${
+                  isCurrent
+                    ? "bg-amber-500/20 border-amber-500 text-amber-200 shadow-md shadow-amber-500/10 font-bold ring-1 ring-amber-400/40"
+                    : "bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+                }`}
+              >
+                <span>{track.category === "anime" ? "🥋" : track.category === "executive" ? "🌐" : "✨"}</span>
+                <span>{track.title}</span>
+                <span className="px-1.5 py-0.5 rounded-md bg-black/40 text-[10px] font-mono text-zinc-400">
+                  {track.acts.length} Acts · {Math.round(track.duration)}s
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          onClick={() => setIsCreateActOpen(true)}
+          className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-rose-500/20 hover:from-amber-500/30 hover:to-rose-500/30 border border-amber-500/50 text-amber-300 text-xs font-bold font-mono transition-all shrink-0 flex items-center gap-1.5 shadow-sm active:scale-95"
+        >
+          <Sparkles className="w-3.5 h-3.5 fill-current" />
+          <span>+ New Series Track</span>
+        </button>
+      </div>
+
+      {/* Header Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-zinc-900 via-zinc-900/90 to-black border border-zinc-800/80 p-6 md:p-8 shadow-2xl backdrop-blur-xl">
         <div className="absolute top-0 right-0 w-96 h-full bg-radial-glow opacity-30 pointer-events-none" />
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div>
             <div className="flex items-center gap-3 mb-2">
               <span className="px-3 py-1 bg-red-600/30 border border-red-500/40 text-red-300 font-mono text-xs uppercase tracking-widest rounded-full flex items-center gap-1.5 shadow-lg shadow-red-950/50">
                 <Film className="w-3.5 h-3.5 text-red-400" />
-                Anime Cinema Suite
+                {activeTrack.category === "anime" ? "Anime Cinema Suite" : "Enterprise Keynote Suite"}
               </span>
               <span className="px-3 py-1 bg-teal-500/20 border border-teal-500/30 text-teal-300 font-mono text-xs uppercase tracking-wider rounded-full flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />
-                Tier-6 Autonomous Living Engine
+                {activeTrack.character}
               </span>
             </div>
             <h2 className="text-2xl md:text-3xl font-serif tracking-tight text-white font-bold">
-              The Master & The Apprentice: <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-rose-300 to-amber-400">Path to Kaizen</span>
+              {activeTrack.title}
             </h2>
             <p className="text-zinc-400 text-sm mt-1 max-w-2xl">
-              Switch between the **56-second 7-Act Cinematic Master** or enter the **Tier-6 Interactive Living Dojo** to converse directly with Sensei Ren and Apprentice Aoi in real-time.
+              {activeTrack.subtitle}
             </p>
           </div>
 
@@ -354,7 +547,7 @@ export function AnimeCinemaStage() {
                 }`}
               >
                 <Film className="w-3.5 h-3.5" />
-                🎬 7-Act Cinema
+                🎬 {activeTrack.acts.length}-Act Cinema
               </button>
               <button
                 data-testid="tier6-living-dojo-tab"
@@ -374,7 +567,7 @@ export function AnimeCinemaStage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* MODE 1: 7-ACT CINEMA BROADCAST STAGE                                      */}
+      {/* MODE 1: CINEMA BROADCAST STAGE                                            */}
       {/* ========================================================================= */}
       {studioMode === "cinema" && (
         <div className="space-y-6 animate-fadeIn">
@@ -429,16 +622,17 @@ export function AnimeCinemaStage() {
               ref={containerRef}
               className="relative aspect-video bg-black rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl group select-none"
             >
-              {/* Master 56.0s 7-Act Video Stream */}
+              {/* Dynamic Video Stream based on Active Series Track */}
               <video
+                key={activeTrack.videoSrc}
                 ref={videoRef}
-                src="/assets/video/ren_and_aoi_conversation_synced.mp4"
+                src={activeTrack.videoSrc}
                 className="w-full h-full object-cover"
                 muted={true}
                 playsInline
                 onTimeUpdate={handleTimeUpdate}
                 onLoadedMetadata={() => {
-                  if (videoRef.current) setDuration(videoRef.current.duration || 56.0);
+                  if (videoRef.current) setDuration(videoRef.current.duration || activeTrack.duration);
                 }}
                 onEnded={() => {
                   setIsPlaying(false);
@@ -963,6 +1157,7 @@ export function AnimeCinemaStage() {
         isOpen={isCreateActOpen}
         onClose={() => setIsCreateActOpen(false)}
         onActCreated={handleActCreated}
+        currentTrackTitle={activeTrack.title}
       />
     </div>
   );
