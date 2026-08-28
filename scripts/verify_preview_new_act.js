@@ -26,7 +26,7 @@ async function run() {
   await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
   console.log("1. Navigating to /studio on localhost:3000...");
-  await page.goto("http://localhost:3000/studio", { waitUntil: "domcontentloaded", timeout: 30000 });
+  await page.goto("http://localhost:3000/studio", { waitUntil: "networkidle0", timeout: 30000 });
   await sleep(2500);
 
   // 1. Click Create Act
@@ -58,10 +58,6 @@ async function run() {
   });
   await sleep(3500);
 
-  // Screenshot: Generated Result Screen
-  await page.screenshot({ path: `${screenshotDir}/04_act_synthesized_veritas_passed.png` });
-  console.log("   📸 Captured 04_act_synthesized_veritas_passed.png");
-
   // 4. Click Preview in Studio Stage
   console.log("5. Clicking 'Preview in Studio Stage'...");
   await page.evaluate(() => {
@@ -69,14 +65,22 @@ async function run() {
     const previewBtn = btns.find(b => b.textContent && b.textContent.includes('Preview in Studio Stage'));
     if (previewBtn) previewBtn.click();
   });
-  await sleep(1200);
+  await sleep(2000);
 
-  // Screenshot: Studio Stage with Act 8 in Navigator and Banner
+  // Screenshot 1: Studio Stage with Act 8 Notification Banner
   await page.screenshot({ path: `${screenshotDir}/06_studio_stage_act8_live.png` });
   console.log("   📸 Captured 06_studio_stage_act8_live.png");
 
+  // Screenshot 2: Scroll slightly down to spotlight Story Navigator
+  await page.evaluate(() => {
+    window.scrollBy(0, 150);
+  });
+  await sleep(600);
+  await page.screenshot({ path: `${screenshotDir}/07_act8_in_story_navigator.png` });
+  console.log("   📸 Captured 07_act8_in_story_navigator.png");
+
   await browser.close();
-  console.log("🎉 Act 8 Preview Verification Completed Successfully!");
+  console.log("🎉 Act 8 Live Preview Verification Completed Successfully!");
 }
 
 run().catch((err) => {
