@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   Play,
   Pause,
@@ -493,13 +494,13 @@ export function AnimeCinemaStage() {
           })}
         </div>
 
-        <button
-          onClick={() => setIsCreateActOpen(true)}
+        <Link
+          href="/studio/create?mode=new_series"
           className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-rose-500/20 hover:from-amber-500/30 hover:to-rose-500/30 border border-amber-500/50 text-amber-300 text-xs font-bold font-mono transition-all shrink-0 flex items-center gap-1.5 shadow-sm active:scale-95"
         >
           <Sparkles className="w-3.5 h-3.5 fill-current" />
           <span>+ New Series Track</span>
-        </button>
+        </Link>
       </div>
 
       {/* Header Banner */}
@@ -527,14 +528,14 @@ export function AnimeCinemaStage() {
 
           {/* Mode Switcher Tabs */}
           <div className="flex items-center gap-2 flex-wrap">
-            <button
+            <Link
+              href="/studio/create"
               data-testid="create-act-button"
-              onClick={() => setIsCreateActOpen(true)}
               className="px-4 py-2 rounded-xl text-xs font-bold font-mono uppercase tracking-wider flex items-center gap-2 transition-all bg-gradient-to-r from-amber-500 via-rose-500 to-amber-400 hover:brightness-110 text-slate-950 shadow-lg shadow-amber-500/25 active:scale-95 border border-amber-400/40"
             >
               <Sparkles className="w-3.5 h-3.5 fill-current" />
               <span>✨ Create New Act</span>
-            </button>
+            </Link>
 
             <div className="flex items-center gap-1.5 p-1.5 bg-black/60 border border-zinc-700/60 rounded-xl backdrop-blur-md">
               <button
