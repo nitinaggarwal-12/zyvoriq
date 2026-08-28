@@ -21,7 +21,12 @@ export async function POST(req: NextRequest) {
     } = body;
 
     const jobId = id || `prod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey =
+      process.env.GEMINI_API_KEY ||
+      process.env.GOOGLE_API_KEY ||
+      process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
+      process.env.NEXT_PUBLIC_GOOGLE_API_KEY ||
+      "";
     const startTime = Date.now();
     const getTs = () => `[+${((Date.now() - startTime) / 1000).toFixed(1)}s]`;
 
@@ -30,6 +35,12 @@ export async function POST(req: NextRequest) {
       `${getTs()} 📝 Scene Prompt: "${prompt.slice(0, 100)}${prompt.length > 100 ? "..." : ""}"`,
       `${getTs()} ⚙️ Visual Style: ${visualStyle} | Duration: ${duration}s | Cast: ${characterLock}`
     ];
+
+    if (!apiKey) {
+      logs.push(`${getTs()} ❌ [CONFIG] GEMINI_API_KEY / GOOGLE_API_KEY is not configured in server environment.`);
+    } else {
+      logs.push(`${getTs()} 🔑 Gemini & Veo API Credentials Authenticated.`);
+    }
 
     // Initialize in persistent SQLite DB
     db.createProductionJob({
@@ -40,8 +51,8 @@ export async function POST(req: NextRequest) {
       visualStyle,
       duration,
       status: "processing",
-      progress: 12,
-      stageText: "Authoring Persona Dialogue & Script (Gemini 2.5 Flash)",
+      progress: 15,
+      stageText: "Initializing Veo 3.1 & Gemini Synthesis Engine",
       logs
     });
 

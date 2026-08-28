@@ -23,9 +23,14 @@ export async function generateVeoVideo(
   prompt: string,
   options: VeoOptions = {}
 ): Promise<{ videoUrl: string; duration: number; fileSize: number; operationName: string }> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey =
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
+    process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY environment variable is missing.");
+    throw new Error("GEMINI_API_KEY or GOOGLE_API_KEY environment variable is missing on server.");
   }
 
   const durationSeconds = Math.max(4, Math.min(8, Math.round(options.durationSeconds || 8)));

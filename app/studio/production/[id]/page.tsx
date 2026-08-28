@@ -298,38 +298,70 @@ export default function ProductionJobPage() {
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
               {/* Left Column (7 Cols): Video Player & Script Dialogue Breakdown */}
               <div className="xl:col-span-7 space-y-6">
-                {/* 4K Master Video Player */}
+                {/* 4K Master Video Player & Live Diffusion Viewport */}
                 <div className="relative rounded-3xl overflow-hidden aspect-video bg-black border border-slate-800 shadow-2xl group ring-1 ring-emerald-500/20">
-                  {job.videoUrl ? (
+                  {isCompleted && job.videoUrl ? (
                     <video
+                      key={job.videoUrl}
                       ref={videoRef}
                       src={job.videoUrl}
                       controls
                       autoPlay
                       playsInline
+                      preload="auto"
                       className="w-full h-full object-cover"
-                    />
+                    >
+                      <source src={job.videoUrl} type="video/mp4" />
+                    </video>
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center space-y-4 bg-slate-950">
-                      <div className="p-4 rounded-full bg-slate-900 border border-slate-800 text-amber-400 animate-pulse">
-                        <Film className="w-8 h-8" />
+                    <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center space-y-5 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-radial-glow opacity-20 pointer-events-none" />
+
+                      {/* Animated GPU Diffusion Core */}
+                      <div className="relative w-20 h-20 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shadow-2xl shadow-amber-500/20">
+                        <div className="absolute inset-0 rounded-full border-2 border-amber-400/50 border-t-transparent animate-spin" />
+                        <div className="w-12 h-12 rounded-full bg-slate-950 flex items-center justify-center border border-slate-800">
+                          <Cpu className="w-6 h-6 text-amber-400 animate-pulse" />
+                        </div>
                       </div>
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-bold text-white font-serif">Veo 3.1 Video Diffusion In Progress</h4>
-                        <p className="text-xs font-mono text-slate-400 max-w-sm">
-                          Rendering 24fps motion keyframes on Google Cloud GPU cluster. Stream will display upon completion.
+
+                      <div className="space-y-2 relative z-10 max-w-md">
+                        <div className="flex items-center justify-center gap-2">
+                          <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono text-[11px] font-bold uppercase tracking-wider animate-pulse">
+                            ⚡ Veo 3.1 GPU Diffusion Active
+                          </span>
+                        </div>
+                        <h4 className="text-base font-bold text-white font-serif tracking-tight">
+                          Synthesizing Neural Keyframes & 24fps Motion
+                        </h4>
+                        <p className="text-xs font-mono text-slate-400 leading-relaxed">
+                          {job.stageText || "Google Cloud GPU Cluster actively interpolating latent video space..."}
                         </p>
+                      </div>
+
+                      {/* High-Visibility Live Progress Bar */}
+                      <div className="w-full max-w-md space-y-2 relative z-10">
+                        <div className="flex items-center justify-between text-xs font-mono text-slate-400">
+                          <span className="text-amber-400 font-bold">Progress: {job.progress}%</span>
+                          <span>Est. ~35-45s Total</span>
+                        </div>
+                        <div className="w-full bg-slate-900 h-3 rounded-full overflow-hidden border border-slate-800 p-0.5 shadow-inner">
+                          <div
+                            className="h-full bg-gradient-to-r from-amber-500 via-rose-500 to-amber-400 transition-all duration-700 rounded-full shadow-lg shadow-amber-500/30"
+                            style={{ width: `${Math.max(8, job.progress)}%` }}
+                          />
+                        </div>
                       </div>
                     </div>
                   )}
 
-                  <div className="absolute top-4 left-4 flex items-center gap-2">
-                    <span className="px-3 py-1 rounded-full bg-slate-950/80 border border-slate-700/80 backdrop-blur-md text-[10px] font-mono font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <div className="absolute top-4 left-4 flex items-center gap-2 z-20">
+                    <span className="px-3 py-1 rounded-full bg-slate-950/80 border border-slate-700/80 backdrop-blur-md text-[10px] font-mono font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5 shadow-md">
                       <Film className="w-3.5 h-3.5" />
-                      <span>{isCompleted ? "4K Production Master" : "Veo 3.1 Synthesis"}</span>
+                      <span>{isCompleted ? "4K Production Master" : "Veo 3.1 Active Synthesis"}</span>
                     </span>
                     {isCompleted && (
-                      <span className="px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/50 backdrop-blur-md text-[10px] font-mono text-emerald-300 flex items-center gap-1">
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/50 backdrop-blur-md text-[10px] font-mono text-emerald-300 flex items-center gap-1 shadow-md">
                         <ShieldCheck className="w-3 h-3" />
                         <span>Veritas Certified</span>
                       </span>

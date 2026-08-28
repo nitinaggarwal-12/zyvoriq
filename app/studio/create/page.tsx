@@ -108,10 +108,11 @@ export default function StudioCreatePage() {
   const handleKickoffGeneration = async () => {
     const newJobId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     
-    // Asynchronously kickoff generation in background pipeline
+    // Asynchronously kickoff generation in background pipeline with keepalive
     fetch("/api/tier6/create-act", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      keepalive: true,
       body: JSON.stringify({
         id: newJobId,
         title,
