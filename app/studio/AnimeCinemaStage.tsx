@@ -32,7 +32,9 @@ import {
   Download,
   FolderHeart,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Users,
+  History
 } from "lucide-react";
 import {
   ANIME_SUBTITLE_CUES,
@@ -785,6 +787,36 @@ export function AnimeCinemaStage() {
                 <span>Living Dojo</span>
               </button>
             </div>
+
+            {/* Avatars & Cast Link */}
+            <Link
+              href="/studio/avatars"
+              className="px-3.5 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white font-mono text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm"
+              title="Browse 14 Global Avatars & Cast"
+            >
+              <Users className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Avatars</span>
+            </Link>
+
+            {/* Media Vault Link */}
+            <Link
+              href="/studio/library"
+              className="px-3.5 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white font-mono text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm"
+              title="Media Vault & Series Library"
+            >
+              <FolderHeart className="w-3.5 h-3.5 text-amber-400" />
+              <span>Vault</span>
+            </Link>
+
+            {/* Production History Link */}
+            <Link
+              href="/studio/history"
+              className="px-3.5 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white font-mono text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm"
+              title="Production Run History & Logs"
+            >
+              <History className="w-3.5 h-3.5 text-indigo-400" />
+              <span>History</span>
+            </Link>
 
             {/* Direct Download Button */}
             <a

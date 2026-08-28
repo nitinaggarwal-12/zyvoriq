@@ -935,5 +935,37 @@ export const db = {
       console.warn("PostgreSQL getProductionJobAsync fallback to SQLite:", err.message);
       return this.getProductionJob(id);
     }
+  },
+
+  async getAllProductionJobsAsync(): Promise<any[]> {
+    const pg = getPostgresPool();
+    if (!pg) {
+      return this.getAllProductionJobs();
+    }
+    try {
+      const res = await pg.query("SELECT * FROM studio_production_jobs ORDER BY created_at DESC LIMIT 100");
+      return res.rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        prompt: row.prompt,
+        characterLock: row.character_lock,
+        visualStyle: row.visual_style,
+        duration: parseFloat(row.duration || "8"),
+        status: row.status,
+        progress: row.progress,
+        stageText: row.stage_text,
+        logs: typeof row.logs_json === "string" ? safeJsonParse(row.logs_json, []) : (row.logs_json || []),
+        videoUrl: row.video_url,
+        script: typeof row.script_json === "string" ? safeJsonParse(row.script_json, null) : (row.script_json || null),
+        veritas: typeof row.veritas_json === "string" ? safeJsonParse(row.veritas_json, null) : (row.veritas_json || null),
+        operationName: row.operation_name,
+        acts: typeof row.acts_json === "string" ? safeJsonParse(row.acts_json, []) : (row.acts_json || []),
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      }));
+    } catch (err: any) {
+      console.warn("PostgreSQL getAllProductionJobsAsync fallback to SQLite:", err.message);
+      return this.getAllProductionJobs();
+    }
   }
 };

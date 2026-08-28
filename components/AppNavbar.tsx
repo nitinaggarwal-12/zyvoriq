@@ -13,7 +13,10 @@ import {
   ChevronDown, 
   Menu,
   X,
-  ChevronRight
+  ChevronRight,
+  Users,
+  Film,
+  History
 } from "lucide-react";
 
 export function AppNavbar() {
@@ -23,9 +26,12 @@ export function AppNavbar() {
   const [activeWorkspace, setActiveWorkspace] = useState("Enterprise Core (US-East)");
 
   const navItems = [
-    { name: "Director", href: "/director", icon: Terminal },
+    { name: "Studio Cinema", href: "/studio", icon: Layers },
+    { name: "Avatars & Cast", href: "/studio/avatars", icon: Users },
+    { name: "Create Video", href: "/studio/create", icon: Sparkles },
+    { name: "Media Vault", href: "/studio/library", icon: Film },
+    { name: "History", href: "/studio/history", icon: History },
     { name: "Veritas QA", href: "/veritas", icon: ShieldCheck },
-    { name: "Studio", href: "/studio", icon: Layers },
     { name: "Governance", href: "/governance", icon: Lock },
     { name: "Analytics", href: "/dashboard", icon: BarChart3 },
   ];
