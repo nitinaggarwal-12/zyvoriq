@@ -30,7 +30,9 @@ import {
   Scroll,
   Zap,
   Download,
-  FolderHeart
+  FolderHeart,
+  Loader2,
+  AlertCircle
 } from "lucide-react";
 import {
   ANIME_SUBTITLE_CUES,
@@ -195,6 +197,9 @@ export function AnimeCinemaStage() {
   const [selectedActIndex, setSelectedActIndex] = useState<number>(0);
   const [isCreateActOpen, setIsCreateActOpen] = useState<boolean>(false);
   const [recentNewAct, setRecentNewAct] = useState<any>(null);
+  const [videoError, setVideoError] = useState<boolean>(false);
+  const [isGeneratingActVideo, setIsGeneratingActVideo] = useState<boolean>(false);
+  const [generationStatus, setGenerationStatus] = useState<string>("");
 
   // Living Dojo Mode State
   const [userInput, setUserInput] = useState<string>("");
@@ -383,6 +388,72 @@ export function AnimeCinemaStage() {
           audio.play().catch(() => {});
         }
       }
+    }
+  };
+
+  // Reset video error on act or track switch
+  useEffect(() => {
+    setVideoError(false);
+    setIsGeneratingActVideo(false);
+  }, [selectedActIndex, activeTrackId]);
+
+  // Generate video on demand for missing or unrendered acts
+  const handleGenerateActVideo = async (actIndex: number) => {
+    const targetAct = actsList[actIndex];
+    if (!targetAct) return;
+    setIsGeneratingActVideo(true);
+    setGenerationStatus("Connecting to Google Veo 3.1 Neural Diffusion Model...");
+
+    try {
+      const res = await fetch("/api/tier6/create-act", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "append_current",
+          parentTrackId: activeTrack.id,
+          title: targetAct.actName,
+          prompt: `${targetAct.philosophy || targetAct.actName}: ${targetAct.text.en || targetAct.text.ja || ""}`,
+          duration: 8,
+          characterLock: "custom",
+          visualStyle: "cinematic_4k"
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.jobId) {
+        setGenerationStatus("Synthesizing 4K Video frames via Google Veo 3.1...");
+        let attempts = 0;
+        const pollInterval = setInterval(async () => {
+          attempts++;
+          try {
+            const pollRes = await fetch(`/api/tier6/production/${data.jobId}`);
+            const pollData = await pollRes.json();
+            if (pollData.status === "completed" && pollData.videoUrl) {
+              clearInterval(pollInterval);
+              setIsGeneratingActVideo(false);
+              setVideoError(false);
+              targetAct.videoUrl = pollData.videoUrl;
+              if (videoRef.current) {
+                videoRef.current.src = pollData.videoUrl;
+                videoRef.current.currentTime = 0;
+                videoRef.current.play().catch(() => {});
+              }
+            } else if (pollData.stageText) {
+              setGenerationStatus(pollData.stageText);
+            }
+          } catch (_) {}
+          if (attempts > 60) {
+            clearInterval(pollInterval);
+            setIsGeneratingActVideo(false);
+            setGenerationStatus("Generation timed out. Please try again.");
+          }
+        }, 4000);
+      } else {
+        setGenerationStatus("Failed to queue generation job.");
+        setIsGeneratingActVideo(false);
+      }
+    } catch (e: any) {
+      setGenerationStatus("Generation error: " + e.message);
+      setIsGeneratingActVideo(false);
     }
   };
 
@@ -812,10 +883,85 @@ export function AnimeCinemaStage() {
                     if (audioRef.current) audioRef.current.pause();
                   }
                 }}
+                onError={() => {
+                  setVideoError(true);
+                }}
+                onLoadedData={() => {
+                  setVideoError(false);
+                }}
                 onClick={togglePlay}
               >
                 <source src={activeCue?.videoUrl || activeTrack.videoSrc} type="video/mp4" />
               </video>
+
+              {/* Interactive Missing Act / On-Demand Veo 3.1 Render Screen */}
+              {(videoError || !activeCue?.videoUrl) && (
+                <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/95 via-stone-900/90 to-black z-30 p-8 flex flex-col justify-center items-center text-center border-2 border-dashed border-amber-500/40 rounded-2xl backdrop-blur-md animate-fadeIn">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-3 shadow-lg shadow-amber-500/10">
+                    <Sparkles className="w-7 h-7 animate-pulse" />
+                  </div>
+
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300 font-mono text-xs uppercase tracking-widest mb-2">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Act {selectedActIndex + 1} Video Asset Unrendered</span>
+                  </div>
+
+                  <h3 className="text-lg font-bold text-white mb-1 font-serif max-w-lg">
+                    {activeCue?.actName || `Act ${selectedActIndex + 1}`}
+                  </h3>
+
+                  <p className="text-xs text-amber-300/90 font-serif italic mb-3 max-w-md">
+                    "{activeCue?.philosophy}"
+                  </p>
+
+                  <div className="p-3.5 rounded-xl bg-zinc-900/80 border border-zinc-800 max-w-md w-full mb-5 text-left">
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 block mb-1">
+                      Scene Description / Script
+                    </span>
+                    <p className="text-xs text-zinc-300 leading-relaxed font-sans line-clamp-3">
+                      {activeCue?.text[subtitleLang === "off" ? "en" : subtitleLang]}
+                    </p>
+                  </div>
+
+                  {isGeneratingActVideo ? (
+                    <div className="flex flex-col items-center gap-3 w-full max-w-xs">
+                      <div className="flex items-center gap-2.5 text-amber-400 font-mono text-xs">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>{generationStatus || "Generating with Google Veo 3.1..."}</span>
+                      </div>
+                      <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                        <div className="bg-gradient-to-r from-amber-500 to-amber-300 h-full w-2/3 animate-pulse" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => handleGenerateActVideo(selectedActIndex)}
+                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-semibold text-xs font-mono uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-amber-500/20 transition-transform hover:scale-105"
+                      >
+                        <Sparkles className="w-4 h-4 fill-black" />
+                        <span>Synthesize Video via Veo 3.1</span>
+                      </button>
+
+                      {activeCue?.audioUrl && (
+                        <button
+                          onClick={() => {
+                            if (audioRef.current) {
+                              audioRef.current.currentTime = 0;
+                              audioRef.current.play().catch(() => {});
+                              setIsPlaying(true);
+                            }
+                          }}
+                          className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-mono text-xs uppercase tracking-wider flex items-center gap-2 transition-colors"
+                        >
+                          <Volume2 className="w-4 h-4 text-amber-400" />
+                          <span>Play Audio Stem</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Background Preload Buffer for Next Act (Zero Network Delay) */}
               {selectedActIndex < actsList.length - 1 && actsList[selectedActIndex + 1]?.videoUrl && (
