@@ -20,12 +20,25 @@ let dbInstance: DatabaseSync | null = null;
 
 export function getDatabase(): DatabaseSync {
   if (!dbInstance) {
-    const dbPath = path.resolve(process.cwd(), "dev.db");
-    dbInstance = new DatabaseSync(dbPath);
-    // Initialize Schema & Pragmas
-    dbInstance.exec("PRAGMA foreign_keys = ON;");
-    dbInstance.exec("PRAGMA journal_mode = WAL;");
-    dbInstance.exec(SQLITE_SCHEMA);
+    try {
+      const dbPath = path.resolve(process.cwd(), "dev.db");
+      dbInstance = new DatabaseSync(dbPath);
+      dbInstance.exec("PRAGMA foreign_keys = ON;");
+      dbInstance.exec("PRAGMA journal_mode = WAL;");
+      dbInstance.exec(SQLITE_SCHEMA);
+    } catch (err) {
+      try {
+        const tmpPath = path.resolve("/tmp", "zyvoriq.db");
+        dbInstance = new DatabaseSync(tmpPath);
+        dbInstance.exec("PRAGMA foreign_keys = ON;");
+        dbInstance.exec("PRAGMA journal_mode = WAL;");
+        dbInstance.exec(SQLITE_SCHEMA);
+      } catch (e2) {
+        dbInstance = new DatabaseSync(":memory:");
+        dbInstance.exec("PRAGMA foreign_keys = ON;");
+        dbInstance.exec(SQLITE_SCHEMA);
+      }
+    }
   }
   return dbInstance;
 }
