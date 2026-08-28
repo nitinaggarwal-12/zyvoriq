@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import {
   Sparkles,
   Play,
+  Pause,
   Film,
   RotateCcw,
   CheckCircle2,
@@ -22,7 +23,13 @@ import {
   Globe,
   Radio,
   ExternalLink,
-  Plus
+  Plus,
+  ChevronRight,
+  ChevronLeft,
+  LayoutGrid,
+  ListFilter,
+  MoveUp,
+  X
 } from "lucide-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -38,6 +45,7 @@ interface ProductionJob {
   stageText: string;
   logs: string[];
   videoUrl?: string;
+  acts?: any[];
   script?: {
     philosophy?: string;
     actionDirection?: string;
@@ -79,10 +87,17 @@ function ProductionJobPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [activeLang, setActiveLang] = useState<"en" | "ja" | "es" | "fr" | "de" | "hi">("en");
   const [copied, setCopied] = useState<boolean>(false);
+  const [activeActIndex, setActiveActIndex] = useState<number>(0);
+  const [actViewMode, setActViewMode] = useState<"strip" | "matrix">("strip");
+  const [actClusterIndex, setActClusterIndex] = useState<number>(0);
+  const [isPiPVisible, setIsPiPVisible] = useState<boolean>(false);
+  const [isPiPClosedManually, setIsPiPClosedManually] = useState<boolean>(false);
 
   const logsEndRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const mainVideoContainerRef = useRef<HTMLDivElement>(null);
+  const pipVideoRef = useRef<HTMLVideoElement>(null);
 
   // Poll Job Status every 2.5s until complete
   useEffect(() => {
@@ -128,6 +143,26 @@ function ProductionJobPageContent() {
       clearInterval(interval);
     };
   }, [jobId, job?.status]);
+
+  // Intersection Observer for Picture-in-Picture Floating Player
+  useEffect(() => {
+    const el = mainVideoContainerRef.current;
+    if (!el || typeof window === "undefined" || !("IntersectionObserver" in window)) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting && isCompleted && job?.videoUrl) {
+          setIsPiPVisible(true);
+        } else {
+          setIsPiPVisible(false);
+        }
+      },
+      { threshold: 0.15 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [job?.status, job?.videoUrl]);
 
   // Auto-scroll terminal logs
   useEffect(() => {
@@ -209,7 +244,29 @@ function ProductionJobPageContent() {
       </header>
 
       {/* Main Full-Width Content Container */}
-      <main className="flex-1 max-w-[1720px] w-full mx-auto px-6 md:px-12 py-8 space-y-8">
+      <main className="flex-1 max-w-[1720px] w-full mx-auto px-6 md:px-12 py-8 space-y-6">
+        {/* Unified Studio Top-Level Breadcrumb */}
+        <div className="flex items-center gap-2 text-xs font-mono text-slate-400 overflow-x-auto pb-1">
+          <Link href="/" className="hover:text-amber-300 transition-colors flex items-center gap-1">
+            Home
+          </Link>
+          <ChevronRight className="w-3 h-3 text-slate-600 shrink-0" />
+          <Link href="/studio" className="hover:text-amber-300 transition-colors flex items-center gap-1">
+            Studio Cinema
+          </Link>
+          <ChevronRight className="w-3 h-3 text-slate-600 shrink-0" />
+          <Link
+            href={`/studio?track=${jobId}`}
+            className="text-slate-300 hover:text-amber-300 transition-colors max-w-[240px] truncate"
+          >
+            {job?.title || "Production Series"}
+          </Link>
+          <ChevronRight className="w-3 h-3 text-slate-600 shrink-0" />
+          <span className="text-amber-400 font-bold flex items-center gap-1 shrink-0">
+            <Sparkles className="w-3 h-3 fill-current" /> Monitor #{jobId.slice(0, 16)}
+          </span>
+        </div>
+
         {loading ? (
           <div className="p-16 rounded-3xl bg-slate-900/60 border border-slate-800 text-center space-y-4">
             <div className="w-12 h-12 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
@@ -300,98 +357,285 @@ function ProductionJobPageContent() {
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
               {/* Left Column (7 Cols): Video Player & Script Dialogue Breakdown */}
               <div className="xl:col-span-7 space-y-6">
-                {/* 4K Master Video Player & Live Diffusion Viewport */}
-                <div className="relative rounded-3xl overflow-hidden aspect-video bg-black border border-slate-800 shadow-2xl group ring-1 ring-emerald-500/20">
-                  {isCompleted && job.videoUrl ? (
-                    <>
-                      <video
-                        key={job.videoUrl}
-                        ref={videoRef}
-                        src={job.videoUrl}
-                        controls
-                        autoPlay
-                        playsInline
-                        preload="auto"
-                        className="w-full h-full object-cover"
-                        onPlay={() => { if (audioRef.current) audioRef.current.play().catch(() => {}); }}
-                        onPause={() => { if (audioRef.current) audioRef.current.pause(); }}
-                        onTimeUpdate={() => {
-                          if (videoRef.current && audioRef.current && Math.abs(videoRef.current.currentTime - audioRef.current.currentTime) > 0.15) {
-                            audioRef.current.currentTime = videoRef.current.currentTime;
-                          }
-                        }}
-                        onSeeking={() => {
-                          if (videoRef.current && audioRef.current) {
-                            audioRef.current.currentTime = videoRef.current.currentTime;
-                          }
-                        }}
-                      >
-                        <source src={job.videoUrl} type="video/mp4" />
-                      </video>
-                      {(job as any).audioUrl && (
-                        <audio
-                          key={(job as any).audioUrl}
-                          ref={audioRef}
-                          src={(job as any).audioUrl}
-                          preload="auto"
-                        />
-                      )}
-                    </>
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center space-y-5 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
-                      <div className="absolute inset-0 bg-radial-glow opacity-20 pointer-events-none" />
-
-                      {/* Animated GPU Diffusion Core */}
-                      <div className="relative w-20 h-20 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shadow-2xl shadow-amber-500/20">
-                        <div className="absolute inset-0 rounded-full border-2 border-amber-400/50 border-t-transparent animate-spin" />
-                        <div className="w-12 h-12 rounded-full bg-slate-950 flex items-center justify-center border border-slate-800">
-                          <Cpu className="w-6 h-6 text-amber-400 animate-pulse" />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2 relative z-10 max-w-md">
-                        <div className="flex items-center justify-center gap-2">
-                          <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono text-[11px] font-bold uppercase tracking-wider animate-pulse">
-                            ⚡ Veo 3.1 GPU Diffusion Active
+                {/* Multi-Act Cinema Timeline Navigation */}
+                {job.acts && job.acts.length > 1 && (
+                  <div className="p-4 rounded-3xl bg-slate-900/90 border border-amber-500/30 shadow-xl backdrop-blur-xl space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+                      <div className="flex items-center gap-2.5">
+                        <Layers className="w-4 h-4 text-amber-400" />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-white font-mono uppercase tracking-wider">
+                              Multi-Act Cinema Timeline
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 font-mono text-[10px] font-bold">
+                              {job.acts.length} Acts · {Math.round(job.duration)}s Total
+                            </span>
+                          </div>
+                          <span className="text-[11px] font-mono text-slate-400">
+                            Current: <span className="text-amber-300 font-bold">Act {activeActIndex + 1}</span> of {job.acts.length} (Auto-advancing)
                           </span>
                         </div>
-                        <h4 className="text-base font-bold text-white font-serif tracking-tight">
-                          Synthesizing Neural Keyframes & 24fps Motion
-                        </h4>
-                        <p className="text-xs font-mono text-slate-400 leading-relaxed">
-                          {job.stageText || "Google Cloud GPU Cluster actively interpolating latent video space..."}
-                        </p>
                       </div>
 
-                      {/* High-Visibility Live Progress Bar */}
-                      <div className="w-full max-w-md space-y-2 relative z-10">
-                        <div className="flex items-center justify-between text-xs font-mono text-slate-400">
-                          <span className="text-amber-400 font-bold">Progress: {job.progress}%</span>
-                          <span>Est. ~35-45s Total</span>
-                        </div>
-                        <div className="w-full bg-slate-900 h-3 rounded-full overflow-hidden border border-slate-800 p-0.5 shadow-inner">
-                          <div
-                            className="h-full bg-gradient-to-r from-amber-500 via-rose-500 to-amber-400 transition-all duration-700 rounded-full shadow-lg shadow-amber-500/30"
-                            style={{ width: `${Math.max(8, job.progress)}%` }}
-                          />
+                      {/* Navigation Controls: View Mode & Scrub Buttons */}
+                      <div className="flex items-center gap-2 self-end sm:self-auto">
+                        {/* Previous / Next Act Quick Scrubbers */}
+                        <button
+                          type="button"
+                          disabled={activeActIndex === 0}
+                          onClick={() => setActiveActIndex((prev) => Math.max(0, prev - 1))}
+                          className="p-1.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all"
+                          title="Previous Act"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!job.acts || activeActIndex === (job.acts.length - 1)}
+                          onClick={() => setActiveActIndex((prev) => Math.min((job.acts?.length || 1) - 1, prev + 1))}
+                          className="p-1.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all"
+                          title="Next Act"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+
+                        <div className="h-4 w-px bg-slate-800" />
+
+                        {/* View Mode Toggle */}
+                        <div className="flex items-center p-0.5 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+                          <button
+                            type="button"
+                            onClick={() => setActViewMode("strip")}
+                            className={`px-2.5 py-1 rounded-lg font-mono text-[11px] transition-all flex items-center gap-1.5 ${
+                              actViewMode === "strip"
+                                ? "bg-amber-500 text-slate-950 font-bold shadow-sm"
+                                : "text-slate-400 hover:text-white"
+                            }`}
+                          >
+                            <ListFilter className="w-3.5 h-3.5" />
+                            <span>Strip</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setActViewMode("matrix")}
+                            className={`px-2.5 py-1 rounded-lg font-mono text-[11px] transition-all flex items-center gap-1.5 ${
+                              actViewMode === "matrix"
+                                ? "bg-amber-500 text-slate-950 font-bold shadow-sm"
+                                : "text-slate-400 hover:text-white"
+                            }`}
+                          >
+                            <LayoutGrid className="w-3.5 h-3.5" />
+                            <span>Matrix</span>
+                          </button>
                         </div>
                       </div>
                     </div>
-                  )}
 
-                  <div className="absolute top-4 left-4 flex items-center gap-2 z-20">
-                    <span className="px-3 py-1 rounded-full bg-slate-950/80 border border-slate-700/80 backdrop-blur-md text-[10px] font-mono font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5 shadow-md">
-                      <Film className="w-3.5 h-3.5" />
-                      <span>{isCompleted ? "4K Production Master" : "Veo 3.1 Active Synthesis"}</span>
-                    </span>
-                    {isCompleted && (
-                      <span className="px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/50 backdrop-blur-md text-[10px] font-mono text-emerald-300 flex items-center gap-1 shadow-md">
-                        <ShieldCheck className="w-3 h-3" />
-                        <span>Veritas Certified</span>
-                      </span>
+                    {/* Strip View (with cluster pills if > 8 acts) */}
+                    {actViewMode === "strip" ? (
+                      <div className="space-y-2.5">
+                        {(job.acts?.length || 0) > 8 && (
+                          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px] font-mono">
+                            <span className="text-slate-500 text-[10px] uppercase mr-1">Cluster:</span>
+                            {Array.from({ length: Math.ceil((job.acts?.length || 0) / 5) }).map((_, cIdx) => {
+                              const start = cIdx * 5 + 1;
+                              const end = Math.min((job.acts?.length || 0), (cIdx + 1) * 5);
+                              const isClusterActive = actClusterIndex === cIdx;
+                              return (
+                                <button
+                                  key={cIdx}
+                                  type="button"
+                                  onClick={() => setActClusterIndex(cIdx)}
+                                  className={`px-2.5 py-0.5 rounded-lg border transition-all ${
+                                    isClusterActive
+                                      ? "bg-amber-500/20 border-amber-500/50 text-amber-200 font-bold"
+                                      : "bg-slate-950 border-slate-800 text-slate-400 hover:text-white"
+                                  }`}
+                                >
+                                  Acts {start}–{end}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-slate-800">
+                          {(job.acts || [])
+                            .filter((_, idx) => {
+                              if ((job.acts?.length || 0) <= 8) return true;
+                              return Math.floor(idx / 5) === actClusterIndex;
+                            })
+                            .map((act: any, originalIdx: number) => {
+                              const trueIdx = (job.acts?.length || 0) <= 8 ? originalIdx : actClusterIndex * 5 + originalIdx;
+                              const isActive = activeActIndex === trueIdx;
+                              return (
+                                <button
+                                  key={act.id || trueIdx}
+                                  type="button"
+                                  onClick={() => setActiveActIndex(trueIdx)}
+                                  className={`px-3.5 py-2 rounded-xl text-xs font-mono transition-all shrink-0 flex items-center gap-2 border ${
+                                    isActive
+                                      ? "bg-amber-500/20 border-amber-500 text-amber-200 font-bold shadow-md shadow-amber-500/10"
+                                      : "bg-slate-950 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800/60"
+                                  }`}
+                                >
+                                  <Film className={`w-3.5 h-3.5 ${isActive ? "text-amber-400" : "text-slate-500"}`} />
+                                  <span>
+                                    Act {trueIdx + 1} ({Math.round(act.startTime)}s–{Math.round(act.endTime)}s)
+                                  </span>
+                                </button>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    ) : (
+                      /* Matrix Grid View */
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 max-h-56 overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-slate-800">
+                        {(job.acts || []).map((act: any, idx: number) => {
+                          const isActive = activeActIndex === idx;
+                          return (
+                            <button
+                              key={act.id || idx}
+                              type="button"
+                              onClick={() => setActiveActIndex(idx)}
+                              className={`p-2.5 rounded-xl text-left border transition-all ${
+                                isActive
+                                  ? "bg-amber-500/20 border-amber-500 text-amber-200 shadow-md shadow-amber-500/10"
+                                  : "bg-slate-950 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800/50"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between text-[10px] font-mono">
+                                <span className={`font-bold ${isActive ? "text-amber-300" : "text-slate-300"}`}>
+                                  Act {idx + 1}
+                                </span>
+                                <span>{Math.round(act.startTime)}s–{Math.round(act.endTime)}s</span>
+                              </div>
+                              <div className="text-[11px] font-sans font-medium line-clamp-1 mt-1 text-slate-200">
+                                {act.actName || `Scene ${idx + 1}`}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
-                </div>
+                )}
+
+                {/* 4K Master Video Player & Live Diffusion Viewport */}
+                {(() => {
+                  const currentAct = job.acts && job.acts.length > 0 ? (job.acts[activeActIndex] || job.acts[0]) : null;
+                  const activeVideoUrl = currentAct?.videoUrl || job.videoUrl;
+                  const activeAudioUrl = currentAct?.audioUrl || (job as any).audioUrl;
+
+                  return (
+                    <div
+                      ref={mainVideoContainerRef}
+                      className="relative rounded-3xl overflow-hidden aspect-video bg-black border border-slate-800 shadow-2xl group ring-1 ring-emerald-500/20"
+                    >
+                      {isCompleted && activeVideoUrl ? (
+                        <>
+                          <video
+                            key={activeVideoUrl}
+                            ref={videoRef}
+                            src={activeVideoUrl}
+                            controls
+                            autoPlay
+                            playsInline
+                            preload="auto"
+                            className="w-full h-full object-cover"
+                            onPlay={() => { if (audioRef.current) audioRef.current.play().catch(() => {}); }}
+                            onPause={() => { if (audioRef.current) audioRef.current.pause(); }}
+                            onEnded={() => {
+                              if (job.acts && activeActIndex < job.acts.length - 1) {
+                                setActiveActIndex((prev) => prev + 1);
+                              }
+                            }}
+                            onTimeUpdate={() => {
+                              if (videoRef.current && audioRef.current && Math.abs(videoRef.current.currentTime - audioRef.current.currentTime) > 0.15) {
+                                audioRef.current.currentTime = videoRef.current.currentTime;
+                              }
+                            }}
+                            onSeeking={() => {
+                              if (videoRef.current && audioRef.current) {
+                                audioRef.current.currentTime = videoRef.current.currentTime;
+                              }
+                            }}
+                          >
+                            <source src={activeVideoUrl} type="video/mp4" />
+                          </video>
+                          {activeAudioUrl && (
+                            <audio
+                              key={activeAudioUrl}
+                              ref={audioRef}
+                              src={activeAudioUrl}
+                              preload="auto"
+                            />
+                          )}
+                        </>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center space-y-5 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
+                          <div className="absolute inset-0 bg-radial-glow opacity-20 pointer-events-none" />
+
+                          {/* Animated GPU Diffusion Core */}
+                          <div className="relative w-20 h-20 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shadow-2xl shadow-amber-500/20">
+                            <div className="absolute inset-0 rounded-full border-2 border-amber-400/50 border-t-transparent animate-spin" />
+                            <div className="w-12 h-12 rounded-full bg-slate-950 flex items-center justify-center border border-slate-800">
+                              <Cpu className="w-6 h-6 text-amber-400 animate-pulse" />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2 relative z-10 max-w-md">
+                            <div className="flex items-center justify-center gap-2">
+                              <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono text-[11px] font-bold uppercase tracking-wider animate-pulse">
+                                ⚡ Veo 3.1 GPU Diffusion Active
+                              </span>
+                            </div>
+                            <h4 className="text-base font-bold text-white font-serif tracking-tight">
+                              Synthesizing Neural Keyframes & 24fps Motion
+                            </h4>
+                            <p className="text-xs font-mono text-slate-400 leading-relaxed">
+                              {job.stageText || "Google Cloud GPU Cluster actively interpolating latent video space..."}
+                            </p>
+                          </div>
+
+                          {/* High-Visibility Live Progress Bar */}
+                          <div className="w-full max-w-md space-y-2 relative z-10">
+                            <div className="flex items-center justify-between text-xs font-mono text-slate-400">
+                              <span className="text-amber-400 font-bold">Progress: {job.progress}%</span>
+                              <span>Est. ~35-45s per Act</span>
+                            </div>
+                            <div className="w-full bg-slate-900 h-3 rounded-full overflow-hidden border border-slate-800 p-0.5 shadow-inner">
+                              <div
+                                className="h-full bg-gradient-to-r from-amber-500 via-rose-500 to-amber-400 transition-all duration-700 rounded-full shadow-lg shadow-amber-500/30"
+                                style={{ width: `${Math.max(8, job.progress)}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="absolute top-4 left-4 flex items-center gap-2 z-20">
+                        <span className="px-3 py-1 rounded-full bg-slate-950/80 border border-slate-700/80 backdrop-blur-md text-[10px] font-mono font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5 shadow-md">
+                          <Film className="w-3.5 h-3.5" />
+                          <span>
+                            {isCompleted
+                              ? job.acts && job.acts.length > 1
+                                ? `Act ${activeActIndex + 1}/${job.acts.length} Master`
+                                : "4K Production Master"
+                              : "Veo 3.1 Active Synthesis"}
+                          </span>
+                        </span>
+                        {isCompleted && (
+                          <span className="px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/50 backdrop-blur-md text-[10px] font-mono text-emerald-300 flex items-center gap-1 shadow-md">
+                            <ShieldCheck className="w-3 h-3" />
+                            <span>Veritas Certified</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Primary Action Deck */}
                 {isCompleted && (
@@ -432,86 +676,93 @@ function ProductionJobPageContent() {
                 )}
 
                 {/* Multilingual Dialogue & Storyboard Deck */}
-                {job.script && (
-                  <div className="p-6 md:p-8 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-2xl backdrop-blur-xl space-y-6">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                      <div className="flex items-center gap-2">
-                        <Globe className="w-4 h-4 text-cyan-400" />
-                        <h3 className="text-sm font-bold text-white font-serif uppercase tracking-wider">
-                          DeepMind Multilingual Dub Track & Storyboard
-                        </h3>
+                {(() => {
+                  const currentAct = job.acts && job.acts.length > 0 ? (job.acts[activeActIndex] || job.acts[0]) : null;
+                  const activePhilosophy = currentAct?.philosophy || job.script?.philosophy || "Autonomous Neural Synthesis";
+                  const activeAction = currentAct?.actionDirection || job.script?.actionDirection || "Continuous cinematic motion.";
+                  const textObj = currentAct?.text || job.script || {};
+
+                  return (
+                    <div className="p-6 md:p-8 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-2xl backdrop-blur-xl space-y-6">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                        <div className="flex items-center gap-2">
+                          <Globe className="w-4 h-4 text-cyan-400" />
+                          <h3 className="text-sm font-bold text-white font-serif uppercase tracking-wider">
+                            {currentAct?.actName ? `${currentAct.actName} · Dialogue & Dub Track` : "DeepMind Multilingual Dub Track & Storyboard"}
+                          </h3>
+                        </div>
+
+                        {/* Language Switcher Tabs */}
+                        <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                          {[
+                            { code: "en", label: "🇺🇸 EN" },
+                            { code: "ja", label: "🇯🇵 JA" },
+                            { code: "es", label: "🇪🇸 ES" },
+                            { code: "fr", label: "🇫🇷 FR" },
+                            { code: "de", label: "🇩🇪 DE" },
+                            { code: "hi", label: "🇮🇳 HI" }
+                          ].map((lang) => (
+                            <button
+                              key={lang.code}
+                              onClick={() => setActiveLang(lang.code as any)}
+                              className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-all ${
+                                activeLang === lang.code
+                                  ? "bg-amber-500 text-slate-950 font-bold shadow-sm"
+                                  : "text-slate-400 hover:text-white"
+                              }`}
+                            >
+                              {lang.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
 
-                      {/* Language Switcher Tabs */}
-                      <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
-                        {[
-                          { code: "en", label: "🇺🇸 EN" },
-                          { code: "ja", label: "🇯🇵 JA" },
-                          { code: "es", label: "🇪🇸 ES" },
-                          { code: "fr", label: "🇫🇷 FR" },
-                          { code: "de", label: "🇩🇪 DE" },
-                          { code: "hi", label: "🇮🇳 HI" }
-                        ].map((lang) => (
-                          <button
-                            key={lang.code}
-                            onClick={() => setActiveLang(lang.code as any)}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-all ${
-                              activeLang === lang.code
-                                ? "bg-amber-500 text-slate-950 font-bold shadow-sm"
-                                : "text-slate-400 hover:text-white"
-                            }`}
-                          >
-                            {lang.label}
-                          </button>
-                        ))}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800/80 space-y-2">
+                          <span className="text-[10px] font-mono text-cyan-400 uppercase tracking-wider block">
+                            Philosophical Foundation
+                          </span>
+                          <p className="text-xs font-serif font-bold text-white leading-relaxed">
+                            {activePhilosophy}
+                          </p>
+                        </div>
+
+                        <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800/80 space-y-2">
+                          <span className="text-[10px] font-mono text-amber-400 uppercase tracking-wider block">
+                            Scene Action & Motion Direction
+                          </span>
+                          <p className="text-xs text-slate-300 leading-relaxed">
+                            {activeAction}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Active Translated Dialogue */}
+                      <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-slate-950 to-slate-950 border border-amber-500/30 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-mono text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                            <Volume2 className="w-3.5 h-3.5" />
+                            <span>Active Speech Dialogue ({activeLang.toUpperCase()})</span>
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-400">DeepMind 48kHz Neural Stems</span>
+                        </div>
+                        <p className="text-sm font-medium text-amber-100 font-serif leading-relaxed italic">
+                          {activeLang === "en" && (textObj.en || textObj.dialogueEn || textObj.ja || textObj.dialogueJa)}
+                          {activeLang === "ja" && (textObj.ja || textObj.dialogueJa)}
+                          {activeLang === "es" && (textObj.es || textObj.dialogueEs || textObj.en || textObj.dialogueEn)}
+                          {activeLang === "fr" && (textObj.fr || textObj.dialogueFr || textObj.en || textObj.dialogueEn)}
+                          {activeLang === "de" && (textObj.de || textObj.dialogueDe || textObj.en || textObj.dialogueEn)}
+                          {activeLang === "hi" && (textObj.hi || textObj.dialogueHi || textObj.en || textObj.dialogueEn)}
+                        </p>
+                        {job.script?.aoiResponse && (
+                          <p className="text-xs text-cyan-300 font-mono mt-2 pt-2 border-t border-slate-800">
+                            {job.script.aoiResponse}
+                          </p>
+                        )}
                       </div>
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800/80 space-y-2">
-                        <span className="text-[10px] font-mono text-cyan-400 uppercase tracking-wider block">
-                          Philosophical Foundation
-                        </span>
-                        <p className="text-xs font-serif font-bold text-white leading-relaxed">
-                          {job.script.philosophy}
-                        </p>
-                      </div>
-
-                      <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800/80 space-y-2">
-                        <span className="text-[10px] font-mono text-amber-400 uppercase tracking-wider block">
-                          Scene Action & Motion Direction
-                        </span>
-                        <p className="text-xs text-slate-300 leading-relaxed">
-                          {job.script.actionDirection}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Active Translated Dialogue */}
-                    <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-slate-950 to-slate-950 border border-amber-500/30 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-mono text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-                          <Volume2 className="w-3.5 h-3.5" />
-                          <span>Active Speech Dialogue ({activeLang.toUpperCase()})</span>
-                        </span>
-                        <span className="text-[10px] font-mono text-slate-400">DeepMind 48kHz Neural Stems</span>
-                      </div>
-                      <p className="text-sm font-medium text-amber-100 font-serif leading-relaxed italic">
-                        {activeLang === "en" && (job.script.dialogueEn || job.script.dialogueJa)}
-                        {activeLang === "ja" && job.script.dialogueJa}
-                        {activeLang === "es" && (job.script.dialogueEs || job.script.dialogueEn)}
-                        {activeLang === "fr" && (job.script.dialogueFr || job.script.dialogueEn)}
-                        {activeLang === "de" && (job.script.dialogueDe || job.script.dialogueEn)}
-                        {activeLang === "hi" && (job.script.dialogueHi || job.script.dialogueEn)}
-                      </p>
-                      {job.script.aoiResponse && (
-                        <p className="text-xs text-cyan-300 font-mono mt-2 pt-2 border-t border-slate-800">
-                          {job.script.aoiResponse}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
 
               {/* Right Column (5 Cols): Live Diagnostic Terminal Logs & Veritas Attestation */}
@@ -603,6 +854,84 @@ function ProductionJobPageContent() {
           </>
         )}
       </main>
+
+      {/* Floating Picture-in-Picture (PiP) Mini-Player */}
+      {isCompleted && isPiPVisible && !isPiPClosedManually && (job?.videoUrl || (job?.acts && job.acts[activeActIndex]?.videoUrl)) && (
+        <div className="fixed bottom-6 right-6 z-50 w-80 md:w-96 rounded-2xl bg-slate-950/95 border border-amber-500/40 shadow-2xl p-3 backdrop-blur-2xl animate-in slide-in-from-bottom-5 duration-300">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-800 mb-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[11px] font-bold font-mono text-white">
+                {job.acts && job.acts.length > 1 ? `Act ${activeActIndex + 1}/${job.acts.length}` : "Cinema Master"}
+              </span>
+              <span className="text-[10px] font-mono text-slate-400 truncate max-w-[120px]">
+                {job.title}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  mainVideoContainerRef.current?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                title="Scroll back to main player"
+              >
+                <MoveUp className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsPiPClosedManually(true)}
+                className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                title="Close floating player"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="relative aspect-video rounded-xl overflow-hidden bg-black border border-slate-800">
+            <video
+              ref={pipVideoRef}
+              src={job.acts && job.acts[activeActIndex]?.videoUrl ? job.acts[activeActIndex].videoUrl : job.videoUrl}
+              controls
+              autoPlay
+              muted
+              playsInline
+              className="w-full h-full object-cover"
+              onEnded={() => {
+                if (job.acts && activeActIndex < job.acts.length - 1) {
+                  setActiveActIndex((prev) => prev + 1);
+                }
+              }}
+            />
+          </div>
+
+          {job.acts && job.acts.length > 1 && (
+            <div className="flex items-center justify-between pt-2 text-[10px] font-mono text-slate-400">
+              <button
+                type="button"
+                disabled={activeActIndex === 0}
+                onClick={() => setActiveActIndex((prev) => Math.max(0, prev - 1))}
+                className="hover:text-white disabled:opacity-30 flex items-center gap-0.5"
+              >
+                <ChevronLeft className="w-3 h-3" /> Prev
+              </button>
+              <span className="text-amber-300 font-bold">
+                {Math.round(job.acts?.[activeActIndex]?.startTime || 0)}s–{Math.round(job.acts?.[activeActIndex]?.endTime || 8)}s
+              </span>
+              <button
+                type="button"
+                disabled={!job.acts || activeActIndex === (job.acts.length - 1)}
+                onClick={() => setActiveActIndex((prev) => Math.min((job.acts?.length || 1) - 1, prev + 1))}
+                className="hover:text-white disabled:opacity-30 flex items-center gap-0.5"
+              >
+                Next <ChevronRight className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

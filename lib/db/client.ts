@@ -367,6 +367,7 @@ export const db = {
     progress?: number;
     stageText?: string;
     logs?: string[];
+    acts?: any[];
   }): void {
     const database = getDatabase();
     database.exec(`
@@ -385,14 +386,19 @@ export const db = {
         script_json TEXT,
         veritas_json TEXT,
         operation_name TEXT,
+        acts_json TEXT DEFAULT '[]',
         created_at TEXT DEFAULT (datetime('now')),
         updated_at TEXT DEFAULT (datetime('now'))
       );
     `);
+    try {
+      database.exec("ALTER TABLE studio_production_jobs ADD COLUMN acts_json TEXT DEFAULT '[]';");
+    } catch (_) {}
+
     const stmt = database.prepare(`
       INSERT INTO studio_production_jobs (
-        id, title, prompt, character_lock, visual_style, duration, status, progress, stage_text, logs_json, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+        id, title, prompt, character_lock, visual_style, duration, status, progress, stage_text, logs_json, acts_json, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
       ON CONFLICT(id) DO UPDATE SET
         title = excluded.title,
         prompt = excluded.prompt,
@@ -403,6 +409,7 @@ export const db = {
         progress = excluded.progress,
         stage_text = excluded.stage_text,
         logs_json = excluded.logs_json,
+        acts_json = COALESCE(excluded.acts_json, studio_production_jobs.acts_json),
         updated_at = datetime('now');
     `);
     stmt.run(
@@ -415,7 +422,8 @@ export const db = {
       job.status || "processing",
       job.progress || 0,
       job.stageText || "Queued for Veo 3.1 & Gemini Synthesis",
-      JSON.stringify(job.logs || [])
+      JSON.stringify(job.logs || []),
+      JSON.stringify(job.acts || [])
     );
   },
 
@@ -428,6 +436,8 @@ export const db = {
     script?: any;
     veritas?: any;
     operationName?: string;
+    duration?: number;
+    acts?: any[];
   }): void {
     const database = getDatabase();
     const existing = this.getProductionJob(id);
@@ -445,6 +455,8 @@ export const db = {
         script_json = COALESCE(?, script_json),
         veritas_json = COALESCE(?, veritas_json),
         operation_name = COALESCE(?, operation_name),
+        duration = COALESCE(?, duration),
+        acts_json = COALESCE(?, acts_json),
         updated_at = datetime('now')
       WHERE id = ?;
     `);
@@ -457,6 +469,8 @@ export const db = {
       updates.script !== undefined ? JSON.stringify(updates.script) : null,
       updates.veritas !== undefined ? JSON.stringify(updates.veritas) : null,
       updates.operationName !== undefined ? updates.operationName : null,
+      updates.duration !== undefined ? updates.duration : null,
+      updates.acts !== undefined ? JSON.stringify(updates.acts) : null,
       id
     );
   },
@@ -480,10 +494,15 @@ export const db = {
           script_json TEXT,
           veritas_json TEXT,
           operation_name TEXT,
+          acts_json TEXT DEFAULT '[]',
           created_at TEXT DEFAULT (datetime('now')),
           updated_at TEXT DEFAULT (datetime('now'))
         );
       `);
+      try {
+        database.exec("ALTER TABLE studio_production_jobs ADD COLUMN acts_json TEXT DEFAULT '[]';");
+      } catch (_) {}
+
       const row = database.prepare("SELECT * FROM studio_production_jobs WHERE id = ?").get(id) as any;
       if (!row) return null;
       let videoUrl = row.video_url;
@@ -506,6 +525,7 @@ export const db = {
         script: row.script_json ? JSON.parse(row.script_json) : null,
         veritas: row.veritas_json ? JSON.parse(row.veritas_json) : null,
         operationName: row.operation_name,
+        acts: safeJsonParse<any[]>(row.acts_json, []),
         createdAt: row.created_at,
         updatedAt: row.updated_at
       };
@@ -534,6 +554,7 @@ export const db = {
         script: row.script_json ? JSON.parse(row.script_json) : null,
         veritas: row.veritas_json ? JSON.parse(row.veritas_json) : null,
         operationName: row.operation_name,
+        acts: safeJsonParse<any[]>(row.acts_json, []),
         createdAt: row.created_at,
         updatedAt: row.updated_at
       }));

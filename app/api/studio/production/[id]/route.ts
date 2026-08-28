@@ -33,6 +33,7 @@ export async function GET(
             ],
             videoUrl: track.videoSrc,
             audioUrl: track.audioSrc || track.acts?.[0]?.audioUrl,
+            acts: track.acts || [],
             script: {
               philosophy: track.acts?.[0]?.philosophy || "Autonomous Neural Synthesis",
               dialogueJa: track.acts?.[0]?.text?.ja || "",
@@ -48,6 +49,14 @@ export async function GET(
         });
       }
       return NextResponse.json({ success: false, error: "Production job not found" }, { status: 404 });
+    }
+
+    if (!job.acts || job.acts.length === 0) {
+      const tracks = db.getStudioTracks();
+      const track = tracks.find((t: any) => t.id === id);
+      if (track && Array.isArray(track.acts) && track.acts.length > 0) {
+        job.acts = track.acts;
+      }
     }
 
     return NextResponse.json({ success: true, job });

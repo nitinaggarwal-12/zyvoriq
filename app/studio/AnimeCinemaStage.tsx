@@ -713,11 +713,11 @@ export function AnimeCinemaStage() {
             >
               {/* Dynamic Video Stream based on Active Series Track */}
               <video
-                key={activeTrack.videoSrc}
+                key={activeCue?.videoUrl || activeTrack.videoSrc}
                 ref={videoRef}
-                src={activeTrack.videoSrc}
+                src={activeCue?.videoUrl || activeTrack.videoSrc}
                 className="w-full h-full object-cover"
-                muted={(isAnimeTrack || !!(activeTrack as any).audioSrc) ? true : isMuted}
+                muted={(isAnimeTrack || !!(activeTrack as any).audioSrc || !!activeCue?.audioUrl) ? true : isMuted}
                 playsInline
                 preload="auto"
                 onTimeUpdate={handleTimeUpdate}
@@ -737,15 +737,15 @@ export function AnimeCinemaStage() {
                 }}
                 onClick={togglePlay}
               >
-                <source src={activeTrack.videoSrc} type="video/mp4" />
+                <source src={activeCue?.videoUrl || activeTrack.videoSrc} type="video/mp4" />
               </video>
 
               {/* Dynamic Multilingual Dub or Neural TTS Audio Element */}
-              {(isAnimeTrack || !!(activeTrack as any).audioSrc) && (
+              {(isAnimeTrack || !!(activeTrack as any).audioSrc || !!activeCue?.audioUrl) && (
                 <audio
-                  key={(activeTrack as any).audioSrc || audioLang}
+                  key={activeCue?.audioUrl || (activeTrack as any).audioSrc || audioLang}
                   ref={audioRef}
-                  src={(activeTrack as any).audioSrc || `/assets/audio/anime_dubs/dub_${audioLang}.mp3`}
+                  src={activeCue?.audioUrl || (activeTrack as any).audioSrc || `/assets/audio/anime_dubs/dub_${audioLang}.mp3`}
                   muted={isMuted}
                   preload="auto"
                 />

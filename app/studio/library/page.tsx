@@ -22,7 +22,8 @@ import {
   Check,
   RefreshCw,
   FolderHeart,
-  Video
+  Video,
+  ChevronRight
 } from "lucide-react";
 
 interface SeriesTrack {
@@ -150,7 +151,22 @@ function StudioLibraryPageContent() {
       </header>
 
       {/* Main Full-Width Content Container */}
-      <main className="flex-1 max-w-[1720px] w-full mx-auto px-6 md:px-12 py-8 space-y-8">
+      <main className="flex-1 max-w-[1720px] w-full mx-auto px-6 md:px-12 py-8 space-y-6">
+        {/* Unified Studio Top-Level Breadcrumb */}
+        <div className="flex items-center gap-2 text-xs font-mono text-slate-400 overflow-x-auto pb-1">
+          <Link href="/" className="hover:text-amber-300 transition-colors flex items-center gap-1">
+            Home
+          </Link>
+          <ChevronRight className="w-3 h-3 text-slate-600 shrink-0" />
+          <Link href="/studio" className="hover:text-amber-300 transition-colors flex items-center gap-1">
+            Studio Cinema
+          </Link>
+          <ChevronRight className="w-3 h-3 text-slate-600 shrink-0" />
+          <span className="text-amber-400 font-bold flex items-center gap-1 shrink-0">
+            <FolderHeart className="w-3 h-3 text-amber-400" /> Media Vault &amp; Series Library
+          </span>
+        </div>
+
         {/* Studio Metrics Ribbon */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="p-4 md:p-5 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl backdrop-blur-xl">

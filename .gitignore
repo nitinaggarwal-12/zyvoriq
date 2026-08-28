@@ -15,3 +15,5 @@ scratch/
 temp/
 .venv/
 *_4k_*.mp4
+public/assets/video/generated/
+

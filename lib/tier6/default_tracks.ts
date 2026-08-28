@@ -4,7 +4,7 @@ export interface SeriesTrack {
   id: string;
   title: string;
   subtitle: string;
-  category: "anime" | "executive" | "nature" | "space" | "engineering" | "medical" | "custom";
+  category: "anime" | "executive" | "nature" | "space" | "engineering" | "medical" | "paintings" | "plays" | "cartoon" | "movies" | "custom" | string;
   character: string;
   videoSrc: string;
   acts: any[];
@@ -234,48 +234,14 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           es: "⚡ MAYA: \"Rascacielos lluviosos de Neo-Tokyo. Iniciando apretón de manos cuántico en nodos orbitales.\"",
           fr: "⚡ MAYA: « Gratte-ciel pluvieux de Néo-Tokyo. Lancement de la poignée de main quantique sur les nœuds orbitaux. »",
           de: "⚡ MAYA: „Regenverhangene Wolkenkratzer von Neo-Tokyo. Initiierung des Quanten-Handshakes über orbitale Knoten.“",
-          hi: "⚡ माया: \"नियो-टोक्यो की गगनचुंबी इमारतें। ऑर्बिटल नेटवर्क नोड्स पर क्वांटम हैंडशेक प्रारंभ।\""
-        }
-      },
-      {
-        id: "cyber_act_2",
-        startTime: 8.0,
-        endTime: 16.0,
-        speaker: "Maya",
-        speakerRole: "Cybernetics Security Architect",
-        actName: "Act 2: Neural Core Overclocking & Memory Exfiltration",
-        philosophy: "Direct Neural Interface Protocol",
-        text: {
-          ja: "⚡ MAYA: 「ニューラルコアを300%にオーバークロック。企業連合の秘密暗号キーの復号に成功しました。」",
-          en: "⚡ MAYA: \"Overclocking neural bio-chips to 300%. Successfully decrypting the megacorporation sovereign master keys.\"",
-          es: "⚡ MAYA: \"Sobrecargando biochips neuronales al 300%. Descifrando con éxito las claves maestras corporativas.\"",
-          fr: "⚡ MAYA: « Surcadençage des bio-puces neurales à 300 %. Déchiffrement réussi des clés maîtresses d'entreprise. »",
-          de: "⚡ MAYA: „Übertaktung neuronaler Biochips auf 300 %. Erfolgreiche Entschlüsselung der Master-Sicherheitsschlüssel.“",
-          hi: "⚡ माया: \"न्यूरल चिप्स को 300% ओवरक्लॉक किया। मेगाकॉर्पोरेशन की मास्टर सुरक्षा कुंजियों का सफल डिक्रिप्शन।\""
-        }
-      },
-      {
-        id: "cyber_act_3",
-        startTime: 16.0,
-        endTime: 24.0,
-        speaker: "Maya",
-        speakerRole: "Cybernetics Security Architect",
-        actName: "Act 3: Megacity Dawn & Autonomous Sovereignty",
-        philosophy: "Decentralized AI Independence",
-        text: {
-          ja: "⚡ MAYA: 「夜明けの光がサイバー都市を照らす。分散型AIプロトコルが完全な自律主権を獲得しました。」",
-          en: "⚡ MAYA: \"Dawn breaks over the cyber-grid. The sovereign decentralized protocol achieves perpetual autonomous freedom.\"",
-          es: "⚡ MAYA: \"Amanece sobre la red cibernética. El protocolo soberano logra una libertad autónoma perpetua.\"",
-          fr: "⚡ MAYA: « L'aube se lève sur la grille cybernétique. Le protocole souverain atteint l'autonomie perpétuelle. »",
-          de: "⚡ MAYA: „Morgendämmerung über dem Cyber-Netzwerk. Das souveräne Protokoll erlangt dauerhafte Autonomie.“",
-          hi: "⚡ माया: \"साइबर ग्रिड पर भोर। संप्रभु विकेंद्रीकृत प्रोटोकॉल ने पूर्ण स्वायत्तता प्राप्त की।\""
+          hi: "⚡ MAYA: \"Neo-Tokyo\""
         }
       }
     ],
-    duration: 24.0,
+    duration: 8.0,
     veritas: {
       status: "CERTIFIED_VALID",
-      snarkProofHash: "0x3f55ea1290b08dc6524ea801b7e9981"
+      snarkProofHash: "0x8f2d4e1082bc310d289aa84bb9084c66"
     }
   },
   {
@@ -342,6 +308,270 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
     veritas: {
       status: "CERTIFIED_VALID",
       snarkProofHash: "0x1d44fe9082bc310d289aa84bb9084c77"
+    }
+  },
+  {
+    id: "track_renaissance_painting",
+    title: "The Living Canvas: Renaissance Allegory & Oil Masterpiece",
+    subtitle: "3-Act Classical Oil Painting Animation · Caravaggio Chiaroscuro & Leonardo Alchemy",
+    category: "paintings",
+    character: "🎨 Maestro Leonardo (Renaissance Master)",
+    videoSrc: "/assets/video/option_5_authoritative_orator.mp4",
+    acts: [
+      {
+        id: "paint_act_1",
+        startTime: 0.25,
+        endTime: 8.0,
+        speaker: "Leonardo",
+        speakerRole: "Master Painter & Polymath",
+        actName: "Act 1: The Alchemy of Pigment & Primer",
+        philosophy: "Sfumato Layering Technique",
+        text: {
+          ja: "🎨 LEONARDO: 「砕いたラピスラズリと亜麻仁油がキャンバス上で混ざり合い、永遠の光を生み出します。」",
+          en: "🎨 LEONARDO: \"Crushed lapis lazuli and cold-pressed linseed oil blend upon the linen canvas, capturing immortal luminescence.\"",
+          es: "🎨 LEONARDO: \"El lapislázuli triturado y el aceite de linaza se funden sobre el lienzo, capturando una luz inmortal.\"",
+          fr: "🎨 LEONARDO: « Le lapis-lazuli broyé et l'huile de lin se mêlent sur la toile pour capturer une lumière éternelle. »",
+          de: "🎨 LEONARDO: „Zerstoßenes Lapislazuli und Leinöl verschmelzen auf der Leinwand und fangen ewiges Licht ein.“",
+          hi: "🎨 लियोनार्डो: \"पिसा हुआ लापिस लाजुली और अलसी का तेल कैनवास पर मिलकर अमर प्रकाश को कैद करते हैं।\""
+        }
+      },
+      {
+        id: "paint_act_2",
+        startTime: 8.0,
+        endTime: 16.0,
+        speaker: "Leonardo",
+        speakerRole: "Master Painter & Polymath",
+        actName: "Act 2: Chiaroscuro & The Golden Spiral",
+        philosophy: "Divine Geometric Proportions",
+        text: {
+          ja: "🎨 LEONARDO: 「光と影の劇的な対比——キアロスクーロによって、人物の魂がカンバスから浮かび上がります。」",
+          en: "🎨 LEONARDO: \"Through the dramatic drama of chiaroscuro, light and shadow carve the human soul directly from darkness.\"",
+          es: "🎨 LEONARDO: \"Mediante el claroscuro, la luz y la sombra tallan el alma humana directamente desde la oscuridad.\"",
+          fr: "🎨 LEONARDO: « Grâce au clair-obscur, l'ombre et la lumière sculptent l'âme humaine hors des ténèbres. »",
+          de: "🎨 LEONARDO: „Durch den dramatischen Hell-Dunkel-Kontrast formt das Licht die menschliche Seele aus der Finsternis.“",
+          hi: "🎨 लियोनार्डो: \"प्रकाश और छाया के नाटकीय संतुलन से मानव आत्मा अंधेरे से निकलकर जीवंत हो उठती है।\""
+        }
+      },
+      {
+        id: "paint_act_3",
+        startTime: 16.0,
+        endTime: 24.0,
+        speaker: "Leonardo",
+        speakerRole: "Master Painter & Polymath",
+        actName: "Act 3: The Canvas Breathes: Timeless Immortality",
+        philosophy: "Universal Aesthetic Harmony",
+        text: {
+          ja: "🎨 LEONARDO: 「絵画は五百年を超えて生き続ける。美とは、時代を超越した精神の呼吸そのものなのです。」",
+          en: "🎨 LEONARDO: \"The masterpiece breathes across five centuries. Art is not merely pigment—it is the eternal pulse of civilization.\"",
+          es: "🎨 LEONARDO: \"La obra maestra respira a través de cinco siglos. El arte es el pulso eterno de la civilización.\"",
+          fr: "🎨 LEONARDO: « Le chef-d'œuvre respire à travers cinq siècles. L'art est le battement éternel de notre humanité. »",
+          de: "🎨 LEONARDO: „Das Meisterwerk atmet über fünf Jahrhunderte hinweg. Kunst ist der unvergängliche Herzschlag der Zivilisation.“",
+          hi: "🎨 लियोनार्डो: \"यह उत्कृष्ट कृति पाँच शताब्दियों तक सांस लेती है। कला सभ्यता का शाश्वत स्पंदन है।\""
+        }
+      }
+    ],
+    duration: 24.0,
+    veritas: {
+      status: "CERTIFIED_VALID",
+      snarkProofHash: "0x88bb71c092da310d289ff84bb2347162"
+    }
+  },
+  {
+    id: "track_theatrical_hamlet",
+    title: "The Hamlet Soliloquy: Tragedy of the Crown",
+    subtitle: "3-Act Shakespearean Globe Theatre Stageplay & Royal Betrayal",
+    category: "plays",
+    character: "🎭 Lord Hamlet (Prince of Denmark)",
+    videoSrc: "/assets/video/option_4_tech_podium.mp4",
+    acts: [
+      {
+        id: "hamlet_act_1",
+        startTime: 0.25,
+        endTime: 8.0,
+        speaker: "Hamlet",
+        speakerRole: "Prince of Denmark",
+        actName: "Act 1: Midnight upon the Ramparts of Elsinore",
+        philosophy: "The Ghostly Revelation",
+        text: {
+          ja: "🎭 HAMLET: 「エルシノアの夜霧の中、父王の亡霊が現れ、王冠に隠された毒殺の真実を告げる。」",
+          en: "🎭 HAMLET: \"Upon the freezing battlements of Elsinore, the spectral shade of my father reveals the murderous usurpation.\"",
+          es: "🎭 HAMLET: \"En las heladas almenas de Elsinor, la sombra de mi padre revela la usurpación asesina.\"",
+          fr: "🎭 HAMLET: « Sur les remparts glacés d'Elseneur, le spectre de mon père révèle l'usurpation meurtrière. »",
+          de: "🎭 HAMLET: „Auf den eisigen Zinnen von Helsingör offenbart der Geist meines Vaters den blutigen Verrat.“",
+          hi: "🎭 हेमलेट: \"एल्सिनोर की बर्फीली प्राचीर पर, मेरे पिता का प्रेत विश्वासघात और हत्या का सच उजागर करता है।\""
+        }
+      },
+      {
+        id: "hamlet_act_2",
+        startTime: 8.0,
+        endTime: 16.0,
+        speaker: "Hamlet",
+        speakerRole: "Prince of Denmark",
+        actName: "Act 2: To Be or Not to Be: The Soliloquy",
+        philosophy: "Existential Resolve & Fate",
+        text: {
+          ja: "🎭 HAMLET: 「生きるべきか、死ぬべきか、それが問題だ。過酷な運命の矢に耐えるか、それとも立ち向かうべきか。」",
+          en: "🎭 HAMLET: \"To be, or not to be, that is the question: Whether 'tis nobler in the mind to suffer the slings of outrageous fortune.\"",
+          es: "🎭 HAMLET: \"Ser o no ser, esa es la cuestión: si es más noble para el alma sufrir las flechas de la fortuna injusta.\"",
+          fr: "🎭 HAMLET: « Être ou ne pas être, telle est la question : est-il plus noble de supporter les flèches de la fortune adverse ? »",
+          de: "🎭 HAMLET: „Sein oder Nichtsein, das ist hier die Frage: Ob 's edler im Gemüt, die Pfeile des wütenden Geschicks zu dulden.“",
+          hi: "🎭 हेमलेट: \"होना या न होना, यही प्रश्न है: क्या भाग्य के प्रहारों को सहना अधिक महान है या उनका अंत करना?\""
+        }
+      },
+      {
+        id: "hamlet_act_3",
+        startTime: 16.0,
+        endTime: 24.0,
+        speaker: "Hamlet",
+        speakerRole: "Prince of Denmark",
+        actName: "Act 3: The Mousetrap: Catching the King's Conscience",
+        philosophy: "The Catharsis of Drama",
+        text: {
+          ja: "🎭 HAMLET: 「劇こそが罠だ。これによって私は国王の良心を捕らえ、真実の裁きを下すのだ！」",
+          en: "🎭 HAMLET: \"The play's the thing wherein I'll catch the conscience of the King! Sound the trumpets of judgment!\"",
+          es: "🎭 HAMLET: \"¡La obra es la trampa donde atraparé la conciencia del Rey! ¡Que suenen las trompetas del juicio!\"",
+          fr: "🎭 HAMLET: « La pièce est le piège où j'attraperai la conscience du Roi ! Que sonnent les trompettes du jugement ! »",
+          de: "🎭 HAMLET: „Das Schauspiel ist die Schlinge, in die das Gewissen des Königs geht! Blast die Trompeten des Gerichts!“",
+          hi: "🎭 हेमलेट: \"यह नाटक ही वह जाल है जिसमें मैं राजा के अंतर्मन को पकड़ूंगा! न्याय के बिगुल बजाओ!\""
+        }
+      }
+    ],
+    duration: 24.0,
+    veritas: {
+      status: "CERTIFIED_VALID",
+      snarkProofHash: "0x55aa61f092ea310d289bb84bb9910471"
+    }
+  },
+  {
+    id: "track_starlight_cartoon",
+    title: "Barnaby & The Starlight Biscuit: Cosmic Pup Adventure",
+    subtitle: "3-Act 3D Pixar Style Animated Cartoon · The Galactic Odyssey",
+    category: "cartoon",
+    character: "🐾 Astro-Pup Barnaby (Cosmic Explorer)",
+    videoSrc: "/assets/video/veo_anime_kiri.mp4",
+    acts: [
+      {
+        id: "pup_act_1",
+        startTime: 0.25,
+        endTime: 8.0,
+        speaker: "Barnaby",
+        speakerRole: "Heroic Astro-Pup",
+        actName: "Act 1: Launch from the Backyard Observatory",
+        philosophy: "Pure Wholesome Curiosity",
+        text: {
+          ja: "🐾 BARNABY: 「ワン！ダンボールロケット発射！裏庭から夜空へ、宇宙一の骨型ビスケットを探す大冒険だワン！」",
+          en: "🐾 BARNABY: \"Woof! Cardboard rocket blastoff! Zooming past the doghouse into the starry cosmos for the legendary Golden Biscuit!\"",
+          es: "🐾 BARNABY: \"¡Guau! ¡Despegue del cohete de cartón! ¡Directo al cosmos en busca de la legendaria galleta dorada!\"",
+          fr: "🐾 BARNABY: « Ouah ! Décollage de la fusée en carton ! Vers les étoiles pour dénicher le légendaire Biscuit Doré ! »",
+          de: "🐾 BARNABY: „Wuff! Raketenstart aus dem Garten! Auf ins Weltall auf der Suche nach dem Goldenen Riesen-Keks!“",
+          hi: "🐾 बार्नाबी: \"भौंक! कार्डबोर्ड रॉकेट उड़ान! सुनहरे जादुई बिस्कुट की तलाश में अंतरिक्ष की सैर!\""
+        }
+      },
+      {
+        id: "pup_act_2",
+        startTime: 8.0,
+        endTime: 16.0,
+        speaker: "Barnaby",
+        speakerRole: "Heroic Astro-Pup",
+        actName: "Act 2: Slalom Through the Bubblegum Asteroids",
+        philosophy: "Playful Cosmic Acrobatics",
+        text: {
+          ja: "🐾 BARNABY: 「ピンクのバブルガム小惑星帯をジャンプ！星屑のクッキーの香りがしてきたぞ、もっとスピードアップだ！」",
+          en: "🐾 BARNABY: \"Bouncing through the pink bubblegum asteroid belt! Tail wagging at warp speed toward the cookie nebula!\"",
+          es: "🐾 BARNABY: \"¡Rebotando en los asteroides de chicle rosa! ¡Moviendo la colita a velocidad luz hacia la nebulosa!\"",
+          fr: "🐾 BARNABY: « Slalom entre les astéroïdes en chewing-gum rose ! La queue frétillante à la vitesse de la lumière ! »",
+          de: "🐾 BARNABY: „Slalom durch den Kaugummi-Asteroidengürtel! Mit vollem Schwung hinein in den Keks-Nebel!“",
+          hi: "🐾 बार्नाबी: \"गुलाबी बबल-गम उल्कापिंडों के बीच छलांग! खुशी से पूंछ हिलाते हुए कुकी नेबुला की ओर!\""
+        }
+      },
+      {
+        id: "pup_act_3",
+        startTime: 16.0,
+        endTime: 24.0,
+        speaker: "Barnaby",
+        speakerRole: "Heroic Astro-Pup",
+        actName: "Act 3: The Moon of Golden Biscuits & Friendship",
+        philosophy: "The Warmth of Best Friends",
+        text: {
+          ja: "🐾 BARNABY: 「月面で巨大な黄金ビスケットを発見！宇宙のエイリアンたちみんなで仲良く分け合って食べるんだワン！」",
+          en: "🐾 BARNABY: \"Landed on the Golden Biscuit Moon! Sharing crunchy galactic treats with alien friends under the sparkling Milky Way!\"",
+          es: "🐾 BARNABY: \"¡Aterrizamos en la Luna de Galletas! ¡Compartiendo deliciosos bocadillos cósmicos con amigos extraterrestres!\"",
+          fr: "🐾 BARNABY: « Atterrissage sur la Lune de Biscuit ! Partage de friandises croquantes avec tous nos amis extraterrestres ! »",
+          de: "🐾 BARNABY: „Landung auf dem Riesen-Keks-Mond! Knusprige Leckerlis für alle außerirdischen Freunde unter den Sternen!“",
+          hi: "🐾 बार्नाबी: \"गोल्डन बिस्कुट चांद पर सुरक्षित लैंडिंग! सभी एलियन दोस्तों के साथ मिलकर दावत!\""
+        }
+      }
+    ],
+    duration: 24.0,
+    veritas: {
+      status: "CERTIFIED_VALID",
+      snarkProofHash: "0x33cc81a092fb310d289aa84bb1199321"
+    }
+  },
+  {
+    id: "track_hollywood_blockbuster",
+    title: "Dune of Solitude: The Desert Oracle Chronicle",
+    subtitle: "3-Act IMAX 70mm Hollywood Action Blockbuster · Sandstorm Odyssey",
+    category: "movies",
+    character: "🎬 General Sean Sterling (Desert Vanguard)",
+    videoSrc: "/assets/video/option_1_keynote_wide.mp4",
+    acts: [
+      {
+        id: "dune_act_1",
+        startTime: 0.25,
+        endTime: 8.0,
+        speaker: "Sean",
+        speakerRole: "Vanguard Commander",
+        actName: "Act 1: The Crimson Sandstorm over the Citadel",
+        philosophy: "Cinematic Desert Atmosphere",
+        text: {
+          ja: "🎬 SEAN: 「砂嵐が沈黙の要塞を包み込む。太陽が沈む前に、オラクル神殿への侵攻を開始せよ。」",
+          en: "🎬 SEAN: \"A crimson sandstorm engulfs the sunken citadel. We breach the Oracle perimeter before the twin suns set.\"",
+          es: "🎬 SEAN: \"Una tormenta carmesí envuelve la ciudadela. Entramos al perímetro del Oráculo antes de la puesta de los soles.\"",
+          fr: "🎬 SEAN: « Une tempête cramoisie engloutit la citadelle. Percée du périmètre de l'Oracle avant le crépuscule. »",
+          de: "🎬 SEAN: „Ein karmesinroter Sandsturm verschlingt die Zitadelle. Durchbruch zur Orakel-Bastion vor Sonnenuntergang.“",
+          hi: "🎬 सीन: \"लाल रेत का तूफान प्राचीन किले को घेरता है। सूर्यास्त से पहले ओरेकल परिधि को भेदना होगा।\""
+        }
+      },
+      {
+        id: "dune_act_2",
+        startTime: 8.0,
+        endTime: 16.0,
+        speaker: "Sean",
+        speakerRole: "Vanguard Commander",
+        actName: "Act 2: Awakening the Obsidian Monolith",
+        philosophy: "Ancient Cosmic Power",
+        text: {
+          ja: "🎬 SEAN: 「黒曜石の巨石が共鳴を始めた。惑星の核に眠る古代のエネルギーグリッドが再起動する！」",
+          en: "🎬 SEAN: \"The obsidian monolith resonates with tectonic force. Planetary energy grids awaken from millennia of slumber!\"",
+          es: "🎬 SEAN: \"El monolito de obsidiana resuena con fuerza tectónica. ¡La red de energía planetaria vuelve a despertar!\"",
+          fr: "🎬 SEAN: « Le monolithe d'obsidienne résonne. Les réseaux d'énergie planétaire se réveillent après des millénaires ! »",
+          de: "🎬 SEAN: „Der Obsidian-Monolith erwacht mit tektonischer Wucht. Das uralte planetare Energienetz ist reaktiviert!“",
+          hi: "🎬 सीन: \"ओब्सीडियन का विशाल खंभा गूंजता है। सहस्राब्दियों की नींद के बाद ग्रह का ऊर्जा ग्रिड पुनः सक्रिय!\""
+        }
+      },
+      {
+        id: "dune_act_3",
+        startTime: 16.0,
+        endTime: 24.0,
+        speaker: "Sean",
+        speakerRole: "Vanguard Commander",
+        actName: "Act 3: Charge of the Sand-Riders: The Liberation",
+        philosophy: "Epic Climax & Triumph",
+        text: {
+          ja: "🎬 SEAN: 「全軍突撃！砂漠の民の自由を賭けて、砂丘の彼方へ勝利の進軍を続けよ！」",
+          en: "🎬 SEAN: \"All units, advance! Riding across the crest of the dunes to secure eternal liberation for our people!\"",
+          es: "🎬 SEAN: \"¡Todas las unidades, al ataque! ¡Cruzando la cresta de las dunas hacia la liberación eterna!\"",
+          fr: "🎬 SEAN: « Toutes les unités, en avant ! À travers les crêtes des dunes pour la libération éternelle ! »",
+          de: "🎬 SEAN: „Alle Einheiten, vorrücken! Über die Dünenkämme hinweg für die ewige Freiheit unseres Volkes!“",
+          hi: "🎬 सीन: \"सभी टुकड़ियां आगे बढ़ें! रेत के टीलों को पार करते हुए अपनी जनता के लिए अंतिम विजय प्राप्त करें!\""
+        }
+      }
+    ],
+    duration: 24.0,
+    veritas: {
+      status: "CERTIFIED_VALID",
+      snarkProofHash: "0x99dd61e092fa310d289ee84bb8810239"
     }
   }
 ];

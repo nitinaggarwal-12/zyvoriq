@@ -247,9 +247,39 @@ function CreatePageContent() {
       </header>
 
       {/* Main Full-Width Multi-Column Canvas */}
-      <main className="flex-1 max-w-[1720px] w-full mx-auto px-6 md:px-12 py-8">
+      <main className="flex-1 max-w-[1720px] w-full mx-auto px-6 md:px-12 py-8 space-y-6">
+        {/* Unified Studio Top-Level Breadcrumb */}
+        <div className="flex items-center gap-2 text-xs font-mono text-slate-400 overflow-x-auto pb-1">
+          <Link href="/" className="hover:text-amber-300 transition-colors flex items-center gap-1">
+            Home
+          </Link>
+          <ChevronRight className="w-3 h-3 text-slate-600 shrink-0" />
+          <Link href="/studio" className="hover:text-amber-300 transition-colors flex items-center gap-1">
+            Studio Cinema
+          </Link>
+          <ChevronRight className="w-3 h-3 text-slate-600 shrink-0" />
+          {targetTrackId ? (
+            <>
+              <Link
+                href={`/studio?track=${targetTrackId}`}
+                className="text-slate-300 hover:text-amber-300 transition-colors max-w-[200px] truncate"
+              >
+                {activeTargetTrack?.title || "Active Series"}
+              </Link>
+              <ChevronRight className="w-3 h-3 text-slate-600 shrink-0" />
+              <span className="text-amber-400 font-bold flex items-center gap-1 shrink-0">
+                <Sparkles className="w-3 h-3 fill-current" /> Append Act {(activeTargetTrack?.acts?.length || 1) + 1}
+              </span>
+            </>
+          ) : (
+            <span className="text-amber-400 font-bold flex items-center gap-1 shrink-0">
+              <Sparkles className="w-3 h-3 fill-current" /> Series Creator
+            </span>
+          )}
+        </div>
+
         {/* 🎯 Target Series Visual Routing Banner */}
-        <div className="mb-8">
+        <div>
           {destinationMode === "append_current" ? (
             <div className="p-5 md:p-6 rounded-3xl bg-gradient-to-r from-amber-950/80 via-slate-900 to-slate-950 border-2 border-amber-500/60 shadow-2xl shadow-amber-500/10 flex flex-col lg:flex-row lg:items-center justify-between gap-5 backdrop-blur-xl">
               <div className="flex items-center gap-4">
