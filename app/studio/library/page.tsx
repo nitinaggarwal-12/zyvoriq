@@ -42,8 +42,9 @@ interface SeriesTrack {
 }
 
 import { CANONICAL_SERIES_TRACKS } from "@/lib/tier6/default_tracks";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
-export default function StudioLibraryPage() {
+function StudioLibraryPageContent() {
   const router = useRouter();
   const [tracks, setTracks] = useState<any[]>(CANONICAL_SERIES_TRACKS);
   const [isLoading, setIsLoading] = useState(false);
@@ -361,12 +362,12 @@ export default function StudioLibraryPage() {
 
                     <div className="flex items-center justify-between pt-1 text-xs font-mono text-slate-400">
                       <a
-                        href={track.videoSrc}
-                        download
+                        href={`${track.videoSrc}${track.videoSrc.includes('?') ? '&' : '?'}download=true&filename=${encodeURIComponent(track.title.replace(/[^a-zA-Z0-9_-]/g, '_'))}.mp4`}
+                        download={`${track.title.replace(/[^a-zA-Z0-9_-]/g, '_')}.mp4`}
                         className="hover:text-white flex items-center gap-1 transition-colors"
                       >
-                        <Download className="w-3 h-3" />
-                        <span>Download 4K</span>
+                        <Download className="w-3 h-3 text-emerald-400" />
+                        <span>Download MP4</span>
                       </a>
 
                       {isDeleting ? (
@@ -403,5 +404,13 @@ export default function StudioLibraryPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function StudioLibraryPage() {
+  return (
+    <ErrorBoundary fallbackTitle="Studio Media Library Isolated">
+      <StudioLibraryPageContent />
+    </ErrorBoundary>
   );
 }
