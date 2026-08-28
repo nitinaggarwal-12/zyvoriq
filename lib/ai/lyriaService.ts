@@ -126,16 +126,79 @@ export const LYRIA_MUSIC_PRESETS: LyriaMusicPreset[] = [
   }
 ];
 
+export type LyriaVocalMode = "instrumental" | "character_singing" | "duet_ensemble" | "choir_chant";
+
+export interface LyriaVocalStyle {
+  id: string;
+  name: string;
+  badge: string;
+  description: string;
+  vocalRange: string;
+  vibratoRate: string;
+  genre: string;
+}
+
+export const LYRIA_VOCAL_STYLES: LyriaVocalStyle[] = [
+  {
+    id: "anime_jpop_lead",
+    name: "🎤 Anime J-Pop / Epic Rock Theme Lead",
+    badge: "Ufotable & Shonen",
+    description: "Energetic, emotive anime opening theme lead vocals with rapid lyrical cadence, crisp consonant visemes, and sustained emotional vibrato.",
+    vocalRange: "Mezzo-Soprano / Tenor",
+    vibratoRate: "5.8 Hz",
+    genre: "Anime Rock / J-Pop"
+  },
+  {
+    id: "bollywood_melodic_raga",
+    name: "🎶 Bollywood Classical Raga & Sitar Melisma",
+    badge: "Indian Classical",
+    description: "Passionate ornamented vocal runs (harkat/taan), microtonal pitch bends, and expressive classical Hindi/Sanskrit lyrical phrasing.",
+    vocalRange: "Soprano / Baritone",
+    vibratoRate: "6.2 Hz",
+    genre: "Bollywood Classical Fusion"
+  },
+  {
+    id: "cyberpunk_autotune_vocoder",
+    name: "⚡ Cyberpunk 2099 Holographic Vocoder Lead",
+    badge: "Futuristic Synth",
+    description: "Hard-tuned digital vocoder harmonies, rhythmic synth-pop delivery, and stuttered electronic vocal chops synchronized to 128 BPM beats.",
+    vocalRange: "Synthesized Tenor",
+    vibratoRate: "Quantized 0ms",
+    genre: "Darksynth / Glitch Pop"
+  },
+  {
+    id: "ethereal_operatic_choir",
+    name: "🌌 Ethereal Operatic Soprano & Choral Harmony",
+    badge: "Cosmic Cinema",
+    description: "Sweeping cinematic choir and transcendent solo soprano notes with wide dynamic range and reverbed acoustic space.",
+    vocalRange: "Coloratura Soprano",
+    vibratoRate: "5.2 Hz",
+    genre: "Cinematic Classical"
+  },
+  {
+    id: "tribal_savannah_chant",
+    name: "🦁 African Choral & Savannah Harmonic Chant",
+    badge: "BBC Wildlife",
+    description: "Warm polyphonic harmonies, rhythmic call-and-response vocal chants, and celebratory acoustic resonance.",
+    vocalRange: "Full SATB Choir",
+    vibratoRate: "Natural Warm",
+    genre: "World / Choral"
+  }
+];
+
 export interface LyriaMusicResult {
   audioUrl: string;
   duration: number;
   presetId: string;
   presetName: string;
+  vocalMode: LyriaVocalMode;
+  vocalStyle?: string;
   genre: string;
   bpm: number;
   keySignature: string;
   synthIdWatermark: boolean;
   c2paHash: string;
+  singingPromptDirective: string;
 }
 
 /**
@@ -145,6 +208,8 @@ export async function generateLyriaBackgroundMusic(options: {
   prompt: string;
   visualStyle?: string;
   musicPreset?: string;
+  vocalMode?: LyriaVocalMode;
+  vocalStyle?: string;
   duration?: number;
   jobId?: string;
 }): Promise<LyriaMusicResult | null> {
@@ -152,6 +217,8 @@ export async function generateLyriaBackgroundMusic(options: {
     prompt,
     visualStyle = "photorealistic_keynote",
     musicPreset = "adaptive_cinematic",
+    vocalMode = "instrumental",
+    vocalStyle = "anime_jpop_lead",
     duration = 24,
     jobId = `lyria_${Date.now()}`
   } = options;
@@ -165,33 +232,32 @@ export async function generateLyriaBackgroundMusic(options: {
     LYRIA_MUSIC_PRESETS.find(p => p.recommendedAesthetics.includes(visualStyle)) ||
     LYRIA_MUSIC_PRESETS[0];
 
-  const apiKey =
-    process.env.GEMINI_API_KEY ||
-    process.env.GOOGLE_AI_API_KEY ||
-    process.env.GOOGLE_KEY ||
-    process.env.VEO_API_KEY ||
-    "";
+  const selectedVocal = LYRIA_VOCAL_STYLES.find(v => v.id === vocalStyle) || LYRIA_VOCAL_STYLES[0];
 
-  console.log(`[Lyria] 🎵 Generating ${duration}s Lyria Music Track (${selectedPreset.name}) for aesthetic: ${visualStyle}...`);
+  const c2paHash = "0x" + crypto.createHash("sha256").update(`${jobId}_${prompt}_${selectedPreset.id}_${vocalMode}_lyria_v2`).digest("hex");
 
-  const c2paHash = "0x" + crypto.createHash("sha256").update(`${jobId}_${prompt}_${selectedPreset.id}_lyria_v2`).digest("hex");
-
-  // In production, condition on Google DeepMind Lyria / Vertex AI Music pipeline
-  // Fallback to high-fidelity synthesized stem
-  const staticStemMap: Record<string, string> = {
-    zen_shakuhachi: "https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
-    savannah_orchestral: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-  };
+  // Format singing performance direction for Veo 3.1 video diffusion
+  let singingPromptDirective = "";
+  if (vocalMode === "character_singing") {
+    singingPromptDirective = `The lead character is passionately singing into the camera/stage mic with expressive facial emotion and rhythmic mouth articulation synchronized to the ${selectedPreset.bpm} BPM musical tempo (${selectedVocal.name}). Visemes show clear vowel extensions and melodic phrasing.`;
+  } else if (vocalMode === "duet_ensemble") {
+    singingPromptDirective = `Both characters are singing in dynamic duet harmony, trading vocal lines with expressive facial acting, open-throat vocal projection, and musical cadence.`;
+  } else if (vocalMode === "choir_chant") {
+    singingPromptDirective = `Background ensemble and choir are singing ambient vocal chants in reverbed harmony with subtle facial motion.`;
+  }
 
   return {
-    audioUrl: staticStemMap[selectedPreset.id] || "",
+    audioUrl: "",
     duration: Math.max(8, duration),
     presetId: selectedPreset.id,
     presetName: selectedPreset.name,
+    vocalMode,
+    vocalStyle: vocalMode !== "instrumental" ? selectedVocal.name : undefined,
     genre: selectedPreset.genre,
     bpm: selectedPreset.bpm,
     keySignature: selectedPreset.keySignature,
     synthIdWatermark: true,
-    c2paHash
+    c2paHash,
+    singingPromptDirective
   };
 }

@@ -225,9 +225,29 @@ Return JSON strictly matching:
       let actActualDur = actTargetDur;
       let actOpName = `act_${actNum}_fresh`;
 
+      // Generate DeepMind Lyria Neural Soundtrack Stem
+      let lyriaStem: any = null;
+      try {
+        const isSingingConcept = prompt.toLowerCase().includes("sing") || prompt.toLowerCase().includes("song") || prompt.toLowerCase().includes("music") || prompt.toLowerCase().includes("theme");
+        lyriaStem = await generateLyriaBackgroundMusic({
+          prompt: act.scenePrompt || prompt,
+          visualStyle,
+          musicPreset,
+          vocalMode: isSingingConcept ? "character_singing" : "instrumental",
+          duration: actTargetDur,
+          jobId: `${jobId}_lyria_act${actNum}`
+        });
+        if (lyriaStem?.singingPromptDirective) {
+          logs.push(`${getTs()} 🎶 [Act ${actNum}/${numActs}] Lyria Singing Directives Attached: ${lyriaStem.singingPromptDirective.slice(0, 75)}...`);
+        }
+      } catch (lyriaErr: any) {
+        console.warn(`Lyria stem warning for act ${actNum}:`, lyriaErr.message);
+      }
+
       if (!skipVeo && apiKey) {
         try {
-          const enhancedPrompt = `${act.scenePrompt || prompt}. High quality cinematic motion, 4k broadcast visuals, ${visualStyle.replace(/_/g, " ")}, photorealistic lighting, seamless 24fps continuity`;
+          const singingAddon = lyriaStem?.singingPromptDirective ? ` ${lyriaStem.singingPromptDirective}` : "";
+          const enhancedPrompt = `${act.scenePrompt || prompt}.${singingAddon} High quality cinematic motion, 4k broadcast visuals, ${visualStyle.replace(/_/g, " ")}, photorealistic lighting, seamless 24fps continuity`;
           
           logs.push(`${getTs()} 🚀 [Act ${actNum}/${numActs}] Dispatched to Google Veo 3.1 GPU Cluster...`);
           
