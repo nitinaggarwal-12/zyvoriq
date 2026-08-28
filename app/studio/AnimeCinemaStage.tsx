@@ -1127,7 +1127,6 @@ export function AnimeCinemaStage() {
             <div className="space-y-2 max-h-[580px] overflow-y-auto pr-1">
               {actsList.map((cue, idx) => {
                 const isActive = selectedActIndex === idx;
-                const isNewlyGenerated = idx >= 7;
                 const timecode = `${Math.floor(cue.startTime / 60)}:${Math.floor(cue.startTime % 60).toString().padStart(2, "0")}`;
                 return (
                   <div
@@ -1139,22 +1138,15 @@ export function AnimeCinemaStage() {
                     className={`p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col gap-1.5 relative ${
                       isActive
                         ? "bg-gradient-to-r from-red-950/50 to-zinc-900 border-red-500/60 shadow-lg shadow-red-950/40"
-                        : isNewlyGenerated
-                        ? "bg-gradient-to-r from-amber-950/30 to-zinc-900/80 hover:bg-zinc-800/80 border-amber-500/50 hover:border-amber-400 shadow-md shadow-amber-500/10"
                         : "bg-zinc-900/60 hover:bg-zinc-800/80 border-zinc-800/80 hover:border-zinc-700"
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-mono font-semibold text-zinc-300 flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${isActive ? "bg-red-400" : isNewlyGenerated ? "bg-amber-400 animate-ping" : "bg-zinc-600"}`} />
+                        <span className={`w-2 h-2 rounded-full ${isActive ? "bg-red-400" : "bg-zinc-600"}`} />
                         {cue.actName}
                       </span>
                       <div className="flex items-center gap-1.5">
-                        {isNewlyGenerated && (
-                          <span className="px-1.5 py-0.5 rounded bg-amber-400/20 border border-amber-400/50 text-[9px] font-mono text-amber-300 font-bold uppercase">
-                            ✨ AI ACT
-                          </span>
-                        )}
                         <span className="text-[11px] font-mono text-zinc-500">{timecode}</span>
                       </div>
                     </div>
