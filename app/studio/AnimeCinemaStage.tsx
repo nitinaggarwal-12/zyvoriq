@@ -818,7 +818,7 @@ export function AnimeCinemaStage() {
               {(isAnimeTrack || !!(activeTrack as any).audioSrc || !!activeCue?.audioUrl) && (
                 <audio
                   ref={audioRef}
-                  src={activeCue?.audioUrl || (activeTrack as any).audioSrc || `/assets/audio/anime_dubs/dub_${audioLang}.mp3`}
+                  src={activeCue?.audioUrl || (activeTrack as any).audioSrc || (isAnimeTrack ? `/assets/audio/anime_dubs/dub_${audioLang}.mp3` : undefined)}
                   muted={isMuted}
                   preload="auto"
                 />
