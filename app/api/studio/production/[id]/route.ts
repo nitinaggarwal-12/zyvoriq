@@ -32,6 +32,7 @@ export async function GET(
               `[00:00.2] 🛡️ Veritas Attestation: ${track.veritas?.status || "CERTIFIED_VALID"}`
             ],
             videoUrl: track.videoSrc,
+            audioUrl: track.audioSrc || track.acts?.[0]?.audioUrl,
             script: {
               philosophy: track.acts?.[0]?.philosophy || "Autonomous Neural Synthesis",
               dialogueJa: track.acts?.[0]?.text?.ja || "",

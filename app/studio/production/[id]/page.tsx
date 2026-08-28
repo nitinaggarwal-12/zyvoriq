@@ -81,6 +81,7 @@ export default function ProductionJobPage() {
 
   const logsEndRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   // Poll Job Status every 2.5s until complete
   useEffect(() => {
@@ -301,18 +302,40 @@ export default function ProductionJobPage() {
                 {/* 4K Master Video Player & Live Diffusion Viewport */}
                 <div className="relative rounded-3xl overflow-hidden aspect-video bg-black border border-slate-800 shadow-2xl group ring-1 ring-emerald-500/20">
                   {isCompleted && job.videoUrl ? (
-                    <video
-                      key={job.videoUrl}
-                      ref={videoRef}
-                      src={job.videoUrl}
-                      controls
-                      autoPlay
-                      playsInline
-                      preload="auto"
-                      className="w-full h-full object-cover"
-                    >
-                      <source src={job.videoUrl} type="video/mp4" />
-                    </video>
+                    <>
+                      <video
+                        key={job.videoUrl}
+                        ref={videoRef}
+                        src={job.videoUrl}
+                        controls
+                        autoPlay
+                        playsInline
+                        preload="auto"
+                        className="w-full h-full object-cover"
+                        onPlay={() => { if (audioRef.current) audioRef.current.play().catch(() => {}); }}
+                        onPause={() => { if (audioRef.current) audioRef.current.pause(); }}
+                        onTimeUpdate={() => {
+                          if (videoRef.current && audioRef.current && Math.abs(videoRef.current.currentTime - audioRef.current.currentTime) > 0.15) {
+                            audioRef.current.currentTime = videoRef.current.currentTime;
+                          }
+                        }}
+                        onSeeking={() => {
+                          if (videoRef.current && audioRef.current) {
+                            audioRef.current.currentTime = videoRef.current.currentTime;
+                          }
+                        }}
+                      >
+                        <source src={job.videoUrl} type="video/mp4" />
+                      </video>
+                      {(job as any).audioUrl && (
+                        <audio
+                          key={(job as any).audioUrl}
+                          ref={audioRef}
+                          src={(job as any).audioUrl}
+                          preload="auto"
+                        />
+                      )}
+                    </>
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center space-y-5 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
                       <div className="absolute inset-0 bg-radial-glow opacity-20 pointer-events-none" />

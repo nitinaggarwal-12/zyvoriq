@@ -151,7 +151,7 @@ export async function generateVeoVideo(
   const filePath = path.join(outDir, fileName);
   fs.writeFileSync(filePath, buffer);
 
-  const publicUrl = `/assets/video/generated/${fileName}`;
+  const publicUrl = `/api/media/video/generated/${fileName}`;
 
   if (options.onProgress) {
     options.onProgress({

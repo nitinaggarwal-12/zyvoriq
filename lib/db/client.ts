@@ -236,6 +236,9 @@ export const db = {
         if (videoSrc.startsWith("/videos/")) {
           videoSrc = videoSrc.replace("/videos/", "/assets/video/");
         }
+        if (videoSrc.startsWith("/assets/video/generated/")) {
+          videoSrc = videoSrc.replace("/assets/video/generated/", "/api/media/video/generated/");
+        }
         return {
           id: r.id,
           title: r.title,
@@ -243,6 +246,7 @@ export const db = {
           category: r.category,
           character: r.character,
           videoSrc,
+          audioSrc: r.audio_src || (r.acts_json ? JSON.parse(r.acts_json)?.[0]?.audioUrl : undefined),
           duration: r.duration,
           acts: JSON.parse(r.acts_json || "[]"),
           veritas: {
@@ -449,6 +453,10 @@ export const db = {
       `);
       const row = database.prepare("SELECT * FROM studio_production_jobs WHERE id = ?").get(id) as any;
       if (!row) return null;
+      let videoUrl = row.video_url;
+      if (videoUrl && videoUrl.startsWith("/assets/video/generated/")) {
+        videoUrl = videoUrl.replace("/assets/video/generated/", "/api/media/video/generated/");
+      }
       return {
         id: row.id,
         title: row.title,
@@ -460,7 +468,8 @@ export const db = {
         progress: row.progress,
         stageText: row.stage_text,
         logs: JSON.parse(row.logs_json || "[]"),
-        videoUrl: row.video_url,
+        videoUrl,
+        audioUrl: row.audio_url || (row.script_json ? JSON.parse(row.script_json)?.audioUrl : undefined),
         script: row.script_json ? JSON.parse(row.script_json) : null,
         veritas: row.veritas_json ? JSON.parse(row.veritas_json) : null,
         operationName: row.operation_name,

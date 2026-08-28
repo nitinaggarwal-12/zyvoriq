@@ -368,11 +368,11 @@ export function AnimeCinemaStage() {
 
     if (isPlaying) {
       video.pause();
-      if (isAnimeTrack && audio) audio.pause();
+      if (audio) audio.pause();
       setIsPlaying(false);
     } else {
       video.play().catch(() => {});
-      if (isAnimeTrack && audio) {
+      if (audio) {
         audio.currentTime = video.currentTime;
         audio.play().catch(() => {});
       }
@@ -386,7 +386,7 @@ export function AnimeCinemaStage() {
     const audio = audioRef.current;
     const loopTime = duration > 0 ? time % duration : time;
     if (video) video.currentTime = loopTime;
-    if (isAnimeTrack && audio) audio.currentTime = loopTime;
+    if (audio) audio.currentTime = loopTime;
     setCurrentTime(time);
     const idx = actsList.findIndex(
       (c) => time >= c.startTime && time <= (c.endTime || duration)
@@ -396,7 +396,7 @@ export function AnimeCinemaStage() {
     }
     if (autoPlay || isPlaying) {
       if (video) video.play().catch(() => {});
-      if (isAnimeTrack && audio) audio.play().catch(() => {});
+      if (audio) audio.play().catch(() => {});
       setIsPlaying(true);
     }
   };
@@ -407,7 +407,7 @@ export function AnimeCinemaStage() {
     const audio = audioRef.current;
     if (video) {
       setCurrentTime(video.currentTime);
-      if (isAnimeTrack && audio && Math.abs(audio.currentTime - video.currentTime) > 0.12) {
+      if (audio && Math.abs(audio.currentTime - video.currentTime) > 0.15) {
         audio.currentTime = video.currentTime;
       }
     }
@@ -660,24 +660,28 @@ export function AnimeCinemaStage() {
                 ref={videoRef}
                 src={activeTrack.videoSrc}
                 className="w-full h-full object-cover"
-                muted={isAnimeTrack ? true : isMuted}
+                muted={(isAnimeTrack || !!(activeTrack as any).audioSrc) ? true : isMuted}
                 playsInline
+                preload="auto"
                 onTimeUpdate={handleTimeUpdate}
                 onLoadedMetadata={() => {
                   if (videoRef.current) setDuration(videoRef.current.duration || activeTrack.duration);
                 }}
                 onEnded={() => {
                   setIsPlaying(false);
-                  if (isAnimeTrack && audioRef.current) audioRef.current.pause();
+                  if (audioRef.current) audioRef.current.pause();
                 }}
                 onClick={togglePlay}
-              />
+              >
+                <source src={activeTrack.videoSrc} type="video/mp4" />
+              </video>
 
-              {/* Dynamic Multilingual Dub Audio Element (Used only for Anime multi-dub) */}
-              {isAnimeTrack && (
+              {/* Dynamic Multilingual Dub or Neural TTS Audio Element */}
+              {(isAnimeTrack || !!(activeTrack as any).audioSrc) && (
                 <audio
+                  key={(activeTrack as any).audioSrc || audioLang}
                   ref={audioRef}
-                  src={`/assets/audio/anime_dubs/dub_${audioLang}.mp3`}
+                  src={(activeTrack as any).audioSrc || `/assets/audio/anime_dubs/dub_${audioLang}.mp3`}
                   muted={isMuted}
                   preload="auto"
                 />

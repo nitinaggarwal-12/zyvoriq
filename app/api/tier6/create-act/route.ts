@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { generateVeoVideo, VeoGenerationProgress } from "@/lib/ai/veoService";
+import { synthesizeVoiceSpeech } from "@/lib/ai/ttsService";
 import { db } from "@/lib/db/client";
 
 export const maxDuration = 300; // 5-minute timeout for long-running video diffusion
@@ -150,7 +151,24 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 3. Veritas zk-SNARK & C2PA Provenance Seal
+    // 3. Synthesize DeepMind Neural Vocal Track
+    let audioUrl: string | undefined = undefined;
+    try {
+      logs.push(`${getTs()} 🎙️ Synthesizing DeepMind 48kHz Neural Vocal Dub Stem...`);
+      const speechText = geminiScript.dialogueEn || geminiScript.dialogueJa || title;
+      const ttsResult = await synthesizeVoiceSpeech(speechText, {
+        characterLock,
+        jobId
+      });
+      if (ttsResult) {
+        audioUrl = ttsResult.audioUrl;
+        logs.push(`${getTs()} 🎧 Neural Vocal Stems Rendered: ${audioUrl}`);
+      }
+    } catch (ttsErr: any) {
+      console.warn("TTS generation warning:", ttsErr.message);
+    }
+
+    // 4. Veritas zk-SNARK & C2PA Provenance Seal
     logs.push(`${getTs()} 🛡️ Computing Veritas zk-SNARK Proof & C2PA Ed25519 Provenance Signature...`);
     const manifestPayload = JSON.stringify({
       jobId,
@@ -161,6 +179,7 @@ export async function POST(req: NextRequest) {
       visualStyle,
       languages,
       videoUrl,
+      audioUrl,
       operationName,
       timestamp: new Date().toISOString()
     });
@@ -196,6 +215,7 @@ export async function POST(req: NextRequest) {
       category: characterLock.includes("ren") ? "anime" : "custom",
       character: characterLock === "david" ? "David Kim" : characterLock.includes("ren") ? "Sensei Ren & Aoi" : "AI Creator",
       videoSrc: videoUrl,
+      audioSrc: audioUrl,
       duration: actualDuration,
       acts: [
         {
@@ -206,6 +226,7 @@ export async function POST(req: NextRequest) {
           speakerRole: "Primary Director",
           actName: title,
           philosophy: geminiScript.philosophy || "Autonomous Neural Synthesis",
+          audioUrl,
           text: {
             ja: geminiScript.dialogueJa,
             en: geminiScript.dialogueEn,
@@ -243,6 +264,7 @@ export async function POST(req: NextRequest) {
       script: geminiScript,
       veritasAudit,
       videoUrl,
+      audioUrl,
       operationName,
       logs,
       languagesGenerated: languages,
