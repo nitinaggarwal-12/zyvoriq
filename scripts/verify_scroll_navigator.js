@@ -39,14 +39,22 @@ async function run() {
   });
   await sleep(500);
 
+  console.log("Clicking Kickoff Veo 3.1 button...");
   await page.evaluate(() => {
     const btns = Array.from(document.querySelectorAll('button'));
     const kickoff = btns.find(b => b.textContent && b.textContent.includes('Kickoff Veo 3.1'));
     if (kickoff) kickoff.click();
   });
-  await sleep(6500);
+
+  // Wait dynamically for synthesis completion and preview button
+  console.log("Waiting for 'Preview in Studio Stage' button to appear...");
+  await page.waitForFunction(() => {
+    const btns = Array.from(document.querySelectorAll('button'));
+    return btns.some(b => b.textContent && b.textContent.includes('Preview in Studio Stage'));
+  }, { timeout: 20000 });
 
   // 2. Click preview
+  console.log("Clicking 'Preview in Studio Stage'...");
   await page.evaluate(() => {
     const btns = Array.from(document.querySelectorAll('button'));
     const previewBtn = btns.find(b => b.textContent && b.textContent.includes('Preview in Studio Stage'));
@@ -55,13 +63,14 @@ async function run() {
   await sleep(2000);
 
   // 3. Scroll the navigator container directly down to reveal Act 8!
+  console.log("Scrolling Story Navigator container...");
   await page.evaluate(() => {
     const navContainers = document.querySelectorAll('.overflow-y-auto');
     navContainers.forEach(c => {
       c.scrollTop = c.scrollHeight;
     });
   });
-  await sleep(800);
+  await sleep(1000);
 
   await page.screenshot({ path: `${screenshotDir}/07_act8_in_story_navigator.png` });
   console.log("   📸 Captured 07_act8_in_story_navigator.png (Scrolled View)");
