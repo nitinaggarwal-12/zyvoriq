@@ -69,9 +69,19 @@ function StudioLibraryPageContent() {
           if (localStr) {
             const localTracks = JSON.parse(localStr);
             if (Array.isArray(localTracks)) {
+              const obsoleteIds = new Set([
+                "track_scramjet_hypersonic",
+                "track_abyssal_ocean",
+                "track_neotokyo_cyberpunk",
+                "track_biotech_crispr",
+                "track_renaissance_painting",
+                "track_theatrical_hamlet",
+                "track_starlight_cartoon",
+                "track_hollywood_blockbuster"
+              ]);
               const serverIds = new Set(serverTracks.map((t: any) => t.id));
-              const extraLocal = localTracks.filter((lt: any) => !serverIds.has(lt.id));
-              serverTracks = [...extraLocal, ...serverTracks];
+              const validLocal = localTracks.filter((lt: any) => !serverIds.has(lt.id) && !obsoleteIds.has(lt.id));
+              serverTracks = [...validLocal, ...serverTracks];
             }
           }
         } catch (e) {}

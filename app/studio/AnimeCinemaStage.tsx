@@ -244,11 +244,8 @@ export function AnimeCinemaStage() {
     }
     if (audio) {
       audio.currentTime = 0;
-      if (targetTrack?.category !== "anime") {
-        audio.pause();
-      } else {
-        audio.load();
-      }
+      audio.pause();
+      audio.load();
     }
   };
 
