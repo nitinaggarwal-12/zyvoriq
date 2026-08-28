@@ -47,16 +47,14 @@ import {
   Gen7NeuroBiometrics
 } from "@/lib/tier6/types";
 import { computePhoneticWordTimings } from "@/lib/tier6/timing_engine";
-import dynamic from "next/dynamic";
 import { generateVeritasSeal } from "@/lib/tier6/veritas_engine";
-
-const ThreeHoloStage = dynamic(() => import("./ThreeHoloStage").then(m => m.ThreeHoloStage), { ssr: false });
-const FullBody3DStage = dynamic(() => import("./FullBody3DStage").then(m => m.FullBody3DStage), { ssr: false });
-const GLTFStage = dynamic(() => import("./GLTFStage").then(m => m.GLTFStage), { ssr: false });
-const NeuralDiffusionPlayer = dynamic(() => import("./NeuralDiffusionPlayer").then(m => m.NeuralDiffusionPlayer), { ssr: false });
-const GeminiTranscribeStage = dynamic(() => import("./GeminiTranscribeStage").then(m => m.GeminiTranscribeStage), { ssr: false });
-const VeoVideoStage = dynamic(() => import("./VeoVideoStage").then(m => m.VeoVideoStage), { ssr: false });
-const PhoneticVisemeStage = dynamic(() => import("@/components/PhoneticVisemeStage").then(m => m.PhoneticVisemeStage), { ssr: false });
+import { ThreeHoloStage } from "./ThreeHoloStage";
+import { FullBody3DStage } from "./FullBody3DStage";
+import { GLTFStage } from "./GLTFStage";
+import { NeuralDiffusionPlayer } from "./NeuralDiffusionPlayer";
+import { GeminiTranscribeStage } from "./GeminiTranscribeStage";
+import { VeoVideoStage } from "./VeoVideoStage";
+import { PhoneticVisemeStage } from "@/components/PhoneticVisemeStage";
 import { AnimeCinemaStage } from "./AnimeCinemaStage";
 
 export default function Gen7StudioPage() {
