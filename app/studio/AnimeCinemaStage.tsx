@@ -920,7 +920,7 @@ export function AnimeCinemaStage() {
               </video>
 
               {/* Interactive Missing Act / On-Demand Veo 3.1 Render Screen */}
-              {(videoError || !activeCue?.videoUrl) && (
+              {(videoError || (isMultiFile ? !activeCue?.videoUrl : !activeTrack?.videoSrc)) && (
                 <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/95 via-stone-900/90 to-black z-30 p-8 flex flex-col justify-center items-center text-center border-2 border-dashed border-amber-500/40 rounded-2xl backdrop-blur-md animate-fadeIn">
                   <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-3 shadow-lg shadow-amber-500/10">
                     <Sparkles className="w-7 h-7 animate-pulse" />
