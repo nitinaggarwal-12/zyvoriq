@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { generateVeoVideo, VeoGenerationProgress } from "@/lib/ai/veoService";
 import { synthesizeVoiceSpeech } from "@/lib/ai/ttsService";
+import { generateLyriaBackgroundMusic, LYRIA_MUSIC_PRESETS } from "@/lib/ai/lyriaService";
 import { db } from "@/lib/db/client";
 import { GLOBAL_CHARACTERS, VISUAL_AESTHETICS } from "@/lib/tier6/characters";
 
@@ -37,6 +38,7 @@ export async function POST(req: NextRequest) {
       duration = 8,
       characterLock = "custom",
       visualStyle = "cinematic_4k",
+      musicPreset = "adaptive_cinematic",
       languages = ["ja", "en", "es", "fr", "de", "hi"],
       autoVeritas = true,
       skipVeo = false
@@ -66,16 +68,19 @@ export async function POST(req: NextRequest) {
     const startTime = Date.now();
     const getTs = () => `[+${((Date.now() - startTime) / 1000).toFixed(1)}s]`;
 
+    const lyriaPreset = LYRIA_MUSIC_PRESETS.find(p => p.id === musicPreset) || LYRIA_MUSIC_PRESETS[0];
+
     const logs: string[] = [
       `${getTs()} 🎬 Production Pipeline Initialized (${jobId})`,
       `${getTs()} 📝 Master Concept: "${prompt.slice(0, 100)}${prompt.length > 100 ? "..." : ""}"`,
-      `${getTs()} ⚙️ Target Runtime: ${requestedDuration}s (${numActs} Continuous Acts) | Style: ${visualStyle} | Cast: ${effectiveCharacterLock}`
+      `${getTs()} ⚙️ Target Runtime: ${requestedDuration}s (${numActs} Continuous Acts) | Style: ${visualStyle} | Cast: ${effectiveCharacterLock}`,
+      `${getTs()} 🎵 DeepMind Lyria Soundtrack: ${lyriaPreset.name} (${lyriaPreset.bpm > 0 ? `${lyriaPreset.bpm} BPM · ${lyriaPreset.keySignature}` : "Acapella"})`
     ];
 
     if (!apiKey) {
       logs.push(`${getTs()} ❌ [CONFIG] GEMINI_API_KEY / GOOGLE_API_KEY is not configured in server environment.`);
     } else {
-      logs.push(`${getTs()} 🔑 Gemini & Veo API Credentials Authenticated.`);
+      logs.push(`${getTs()} 🔑 Gemini, Veo & Lyria API Credentials Authenticated.`);
     }
 
     // Initialize in persistent SQLite / PostgreSQL DB

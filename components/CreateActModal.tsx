@@ -25,7 +25,8 @@ import {
   Shuffle,
   Compass,
   Radio,
-  Tag
+  Tag,
+  Music
 } from "lucide-react";
 
 interface CreateActModalProps {
@@ -44,6 +45,7 @@ import {
   GLOBAL_CHARACTERS,
   VISUAL_AESTHETICS
 } from "@/lib/tier6/characters";
+import { LYRIA_MUSIC_PRESETS } from "@/lib/ai/lyriaService";
 
 export { GENRE_CATEGORIES, GENRE_CONCEPTS };
 export type { GenreConcept };
@@ -61,6 +63,7 @@ export function CreateActModal({ isOpen, onClose, onActCreated, currentTrackTitl
   const [destinationMode, setDestinationMode] = useState<"new_series" | "append_current">("new_series");
   const [characterLock, setCharacterLock] = useState("ren_aoi");
   const [visualStyle, setVisualStyle] = useState("ufotable_anime");
+  const [musicPreset, setMusicPreset] = useState("adaptive_cinematic");
   const [languages, setLanguages] = useState<string[]>(["ja", "en", "es", "fr", "de", "hi"]);
   const [autoVeritas, setAutoVeritas] = useState(true);
 
@@ -152,6 +155,7 @@ export function CreateActModal({ isOpen, onClose, onActCreated, currentTrackTitl
           duration,
           characterLock,
           visualStyle,
+          musicPreset,
           languages,
           autoVeritas
         })
@@ -541,42 +545,63 @@ export function CreateActModal({ isOpen, onClose, onActCreated, currentTrackTitl
                 </select>
               </div>
 
-              {/* Multilingual Dubs */}
+              {/* DeepMind Lyria Neural Soundtrack */}
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
-                    <Globe className="w-3.5 h-3.5 text-indigo-400" /> Multilingual Dubs (DeepMind)
+                    <Music className="w-3.5 h-3.5 text-amber-400" /> Lyria Background Score & Ambience
                   </label>
-                  <span className="text-[10px] font-mono text-slate-500">250ms Zero-Drift</span>
+                  <span className="text-[10px] font-mono text-amber-400">Google Lyria 2.0</span>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    { code: "ja", label: "JA (Original)" },
-                    { code: "en", label: "EN (Dub)" },
-                    { code: "es", label: "ES (Doblaje)" },
-                    { code: "fr", label: "FR (Doublage)" },
-                    { code: "de", label: "DE (Synchron)" },
-                    { code: "hi", label: "HI (डबिंग)" }
-                  ].map((l) => {
-                    const isSelected = languages.includes(l.code);
-                    return (
-                      <button
-                        key={l.code}
-                        onClick={() => handleToggleLang(l.code)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium font-mono transition-all flex items-center gap-1.5 ${
-                          isSelected
-                            ? "bg-indigo-500/20 border border-indigo-500/50 text-indigo-200"
-                            : "bg-slate-900 border border-slate-800 text-slate-500 hover:text-slate-300"
-                        }`}
-                      >
-                        {isSelected && <Check className="w-3 h-3 text-indigo-400" />}
-                        <span>{l.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                <select
+                  value={musicPreset}
+                  onChange={(e) => setMusicPreset(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 font-medium focus:outline-none focus:border-amber-500"
+                >
+                  {LYRIA_MUSIC_PRESETS.map((preset) => (
+                    <option key={preset.id} value={preset.id}>
+                      {preset.name} — [{preset.badge} · {preset.bpm > 0 ? `${preset.bpm} BPM` : "Acapella"}]
+                    </option>
+                  ))}
+                </select>
               </div>
 
+            </div>
+
+            {/* Multilingual Dubs */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-indigo-400" /> Multilingual Dubs (DeepMind)
+                </label>
+                <span className="text-[10px] font-mono text-slate-500">250ms Zero-Drift</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { code: "ja", label: "JA (Original)" },
+                  { code: "en", label: "EN (Dub)" },
+                  { code: "es", label: "ES (Doblaje)" },
+                  { code: "fr", label: "FR (Doublage)" },
+                  { code: "de", label: "DE (Synchron)" },
+                  { code: "hi", label: "HI (डबिंग)" }
+                ].map((l) => {
+                  const isSelected = languages.includes(l.code);
+                  return (
+                    <button
+                      key={l.code}
+                      onClick={() => handleToggleLang(l.code)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium font-mono transition-all flex items-center gap-1.5 ${
+                        isSelected
+                          ? "bg-indigo-500/20 border border-indigo-500/50 text-indigo-200"
+                          : "bg-slate-900 border border-slate-800 text-slate-500 hover:text-slate-300"
+                      }`}
+                    >
+                      {isSelected && <Check className="w-3 h-3 text-indigo-400" />}
+                      <span>{l.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Veritas Quality Gate Checkbox */}

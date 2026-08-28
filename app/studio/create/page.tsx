@@ -29,10 +29,12 @@ import {
   Tag,
   Sliders,
   ChevronRight,
-  Video
+  Video,
+  Music
 } from "lucide-react";
 import { GENRE_CATEGORIES, GENRE_CONCEPTS, GenreConcept } from "@/lib/tier6/genre_concepts";
 import { GLOBAL_CHARACTERS, VISUAL_AESTHETICS } from "@/lib/tier6/characters";
+import { LYRIA_MUSIC_PRESETS } from "@/lib/ai/lyriaService";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 function CreatePageContent() {
@@ -59,6 +61,7 @@ function CreatePageContent() {
   );
   const [characterLock, setCharacterLock] = useState(targetTrackId ? "david" : "ren_aoi");
   const [visualStyle, setVisualStyle] = useState(targetTrackId ? "cinematic_4k" : "ufotable_anime");
+  const [musicPreset, setMusicPreset] = useState("adaptive_cinematic");
   const [languages, setLanguages] = useState<string[]>(["ja", "en", "es", "fr", "de", "hi"]);
   const [autoVeritas, setAutoVeritas] = useState(true);
 
@@ -189,6 +192,7 @@ function CreatePageContent() {
         duration,
         characterLock,
         visualStyle,
+        musicPreset,
         languages,
         autoVeritas
       })
@@ -745,6 +749,27 @@ function CreatePageContent() {
                       ))}
                     </select>
                   </div>
+                </div>
+
+                {/* DeepMind Lyria Neural Music & Ambience */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
+                      <Music className="w-3.5 h-3.5 text-amber-400" /> DeepMind Lyria Background Music & Score
+                    </label>
+                    <span className="text-[10px] font-mono text-amber-400">Google Lyria 2.0</span>
+                  </div>
+                  <select
+                    value={musicPreset}
+                    onChange={(e) => setMusicPreset(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                  >
+                    {LYRIA_MUSIC_PRESETS.map((preset) => (
+                      <option key={preset.id} value={preset.id}>
+                        {preset.name} — [{preset.badge} · {preset.bpm > 0 ? `${preset.bpm} BPM` : "Acapella"}]
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Multilingual Dubs (DeepMind) */}
