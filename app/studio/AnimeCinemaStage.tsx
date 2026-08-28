@@ -208,9 +208,14 @@ export function AnimeCinemaStage() {
   const handleSeek = (time: number) => {
     const video = videoRef.current;
     const audio = audioRef.current;
-    if (video) video.currentTime = time;
-    if (audio) audio.currentTime = time;
+    const loopTime = time % 56.0;
+    if (video) video.currentTime = loopTime;
+    if (audio) audio.currentTime = loopTime;
     setCurrentTime(time);
+    const actIdx = Math.floor(time / 8.0);
+    if (actIdx < actsList.length) {
+      setSelectedActIndex(actIdx);
+    }
   };
 
   // Time Updates from Video Element
@@ -218,7 +223,9 @@ export function AnimeCinemaStage() {
     const video = videoRef.current;
     const audio = audioRef.current;
     if (video) {
-      setCurrentTime(video.currentTime);
+      const baseOffset = selectedActIndex >= 7 ? selectedActIndex * 8.0 : 0;
+      const currentLogicalTime = baseOffset + (selectedActIndex >= 7 ? video.currentTime % 8.0 : video.currentTime);
+      setCurrentTime(currentLogicalTime);
       if (audio && Math.abs(audio.currentTime - video.currentTime) > 0.12) {
         audio.currentTime = video.currentTime;
       }
@@ -685,7 +692,7 @@ export function AnimeCinemaStage() {
               </div>
               <div className="text-right">
                 <span className="text-xs font-mono uppercase tracking-widest text-amber-400/90 bg-amber-950/40 border border-amber-500/30 px-3 py-1 rounded-full">
-                  {actsList[selectedActIndex]?.philosophy.split("—")[0]}
+                  {actsList[selectedActIndex]?.philosophy ? actsList[selectedActIndex].philosophy.split("—")[0] : "Mushin"}
                 </span>
               </div>
             </div>
