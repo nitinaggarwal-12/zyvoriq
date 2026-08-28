@@ -265,7 +265,7 @@ export const db = {
         return CANONICAL_SERIES_TRACKS;
       }
       return rows.map(r => {
-        let videoSrc = r.video_src || "/assets/video/priya_4k_10act_master.mp4";
+        let videoSrc = r.video_src || "";
         if (videoSrc.startsWith("/videos/")) {
           videoSrc = videoSrc.replace("/videos/", "/assets/video/");
         }
@@ -328,7 +328,7 @@ export const db = {
 
   saveStudioTrack(track: any): void {
     const database = getDatabase();
-    let videoSrc = track.videoSrc || track.video_src || "/assets/video/priya_4k_10act_master.mp4";
+    let videoSrc = track.videoSrc || track.video_src || "";
     if (videoSrc.startsWith("/videos/")) {
       videoSrc = videoSrc.replace("/videos/", "/assets/video/");
     }

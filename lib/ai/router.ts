@@ -89,39 +89,16 @@ export class ModelRouter {
             }));
           }
         }
-      } catch (err) {
-        console.warn("Live Gemini 3.7 Flash grounding failed, falling back to deterministic claims", err);
+      } catch (err: any) {
+        console.error("Live Gemini Flash grounding error:", err.message);
       }
     }
 
-    // High-Fidelity Deterministic Fallback
-    return [
-      {
-        id: "CLAIM-01",
-        claim_statement: "Quantum-Resistant multi-tenant architecture eliminates cross-tenant data leakage via PostgreSQL Row-Level Security (RLS).",
-        source_url: "https://postgresql.org/docs/16/ddl-rowsecurity.html",
-        confidence_score: 99.8,
-        verification_status: "verified"
-      },
-      {
-        id: "CLAIM-02",
-        claim_statement: "pgvector 1536-dimensional embeddings with ivfflat index achieves sub-15ms cosine similarity lookup on 10M rows.",
-        source_url: "https://github.com/pgvector/pgvector",
-        confidence_score: 98.5,
-        verification_status: "verified"
-      },
-      {
-        id: "CLAIM-03",
-        claim_statement: "C2PA Content Credentials embedding uses Ed25519 digital signatures with zero re-compression generational loss.",
-        source_url: "https://c2pa.org/specifications/specifications/2.1/specs/C2PA_Specification.html",
-        confidence_score: 100.0,
-        verification_status: "verified"
-      }
-    ];
+    return [];
   }
 
   /**
-   * Agent 3 & 6: Scripting & AST Graph Compilation (Gemini 3.7 Flash Hybrid Reasoning)
+   * Agent 3 & 6: Scripting & AST Graph Compilation (Gemini Flash Hybrid Reasoning)
    */
   public async dispatchScriptingAndAst(
     conceptPrompt: string,
@@ -130,14 +107,14 @@ export class ModelRouter {
   ): Promise<ScriptSceneResult[]> {
     if (this.hasGemini()) {
       try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=${this.geminiKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${this.geminiKey}`;
         const res = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             contents: [{
               parts: [{
-                text: `You are Zyvoriq's Scripting & AST Compiler powered by Gemini 3.7 Flash. Persona: "${personaTone}". Prohibited words: ["delve", "tapestry", "game-changer"]. Author a 3-scene storyboard based on: "${conceptPrompt}". Verified claims: ${JSON.stringify(claims)}. Return ONLY a JSON array of 3 scenes matching [{id, title, narration, videoShot, audioPrompt, diagramAstNode}].`
+                text: `You are Zyvoriq's Scripting & AST Compiler powered by Gemini. Persona: "${personaTone}". Prohibited words: ["delve", "tapestry", "game-changer"]. Author a 3-scene storyboard based on: "${conceptPrompt}". Verified claims: ${JSON.stringify(claims)}. Return ONLY a JSON array of 3 scenes matching [{id, title, narration, videoShot, audioPrompt, diagramAstNode}].`
               }]
             }]
           })
@@ -151,38 +128,12 @@ export class ModelRouter {
             return JSON.parse(jsonMatch[0]);
           }
         }
-      } catch (err) {
-        console.warn("Live Gemini 3.7 Flash scripting failed, falling back to deterministic scenes", err);
+      } catch (err: any) {
+        console.error("Live Gemini Flash scripting error:", err.message);
       }
     }
 
-    // High-Fidelity Deterministic Fallback
-    return [
-      {
-        id: 1,
-        title: "Scene 1: The Enterprise Bottleneck",
-        narration: "Traditional enterprise content pipelines take 14 days and cost $140,000 per brand line. Zyvoriq collapses this into 90 seconds.",
-        videoShot: "Macro cinematic shot of glowing server motherboards with data streams converging into a single quantum core.",
-        audioPrompt: "Deep authoritative baritone + subtle ambient low-frequency synth pad.",
-        diagramAstNode: "Client BFF Gateway -> Redis BullMQ Async Queue."
-      },
-      {
-        id: 2,
-        title: "Scene 2: Veritas 5-Axis Consensus",
-        narration: "Every single factual claim is anchored to primary source filings. If the Veritas score drops below 90, the auto-repair engine surgically patches the defect.",
-        videoShot: "Split-screen visualization of Gemini 3.7 Flash cross-examining claim nodes with green confirmation pulses.",
-        audioPrompt: "Crisp vocal formant with gold karaoke subtitle synchronization.",
-        diagramAstNode: "Veritas 5-Axis Consensus Enclave (Fact, Tone, Safety Gate)."
-      },
-      {
-        id: 3,
-        title: "Scene 3: Cryptographic Provenance",
-        narration: "Before omnichannel dispatch, every asset is cryptographically sealed with an Ed25519 digital signature and embedded C2PA Content Credentials.",
-        videoShot: "Close-up of a holographic cryptographic seal stamping onto 4K video and audio master stems.",
-        audioPrompt: "Resonant crescendo vocal cadence with stereo panning.",
-        diagramAstNode: "Ed25519 Signed VQC Certificate -> Omnichannel Webhook Dispatch."
-      }
-    ];
+    return [];
   }
 
   /**

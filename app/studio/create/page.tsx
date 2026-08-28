@@ -874,12 +874,20 @@ function CreatePageContent() {
               {/* Left Column (7 cols): 4K Video Master Player */}
               <div className="xl:col-span-7 space-y-4">
                 <div className="relative rounded-3xl overflow-hidden aspect-video bg-black border border-slate-800 shadow-2xl group ring-1 ring-emerald-500/30">
-                  <video
-                    src={generatedResult.act?.videoSrc || "/assets/video/priya_4k_10act_master.mp4"}
-                    controls
-                    autoPlay
-                    className="w-full h-full object-cover"
-                  />
+                  {generatedResult.act?.videoSrc || generatedResult.videoUrl ? (
+                    <video
+                      src={generatedResult.act?.videoSrc || generatedResult.videoUrl}
+                      controls
+                      autoPlay
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-zinc-950">
+                      <Sparkles className="w-10 h-10 text-amber-400 mb-3 animate-pulse" />
+                      <h4 className="text-base font-bold text-white mb-1">Act Storyboard & Dialogue Compiled</h4>
+                      <p className="text-xs text-zinc-400 max-w-sm">Video diffusion queued. Open in Cinema Stage to render on demand.</p>
+                    </div>
+                  )}
                   <div className="absolute top-4 left-4 pointer-events-none px-3 py-1 rounded-full bg-slate-950/80 border border-slate-700/80 backdrop-blur-md text-[11px] font-mono text-amber-300 flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                     <span>4K Cinema Master · 24fps Motion Locked</span>
