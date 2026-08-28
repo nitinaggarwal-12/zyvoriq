@@ -16,10 +16,16 @@ import {
   Tv,
   X,
   Volume2,
+  Volume1,
   FileCheck,
   Send,
   Zap,
-  Layers
+  Layers,
+  Search,
+  Shuffle,
+  Compass,
+  Radio,
+  Tag
 } from "lucide-react";
 
 interface CreateActModalProps {
@@ -29,31 +35,150 @@ interface CreateActModalProps {
   currentTrackTitle?: string;
 }
 
-const PRESET_IDEAS = [
+export interface GenreConcept {
+  id: string;
+  genre: string;
+  genreEmoji: string;
+  title: string;
+  hook: string;
+  prompt: string;
+  characterLock: string;
+  visualStyle: string;
+  recommendedDuration: number;
+  speechSample: string;
+}
+
+export const GENRE_CATEGORIES = [
+  { id: "all", label: "🎬 All Genres" },
+  { id: "martial_arts", label: "🥋 Zen & Martial Arts" },
+  { id: "executive", label: "🏢 Silicon Valley Keynotes" },
+  { id: "cyberpunk", label: "🌆 Cyberpunk & Sci-Fi" },
+  { id: "drama", label: "🌸 Emotional Anime Drama" },
+  { id: "security", label: "🛡️ Veritas Trust & Cryptography" },
+  { id: "cosmic", label: "🌌 Cosmic Odyssey" }
+];
+
+export const GENRE_CONCEPTS: GenreConcept[] = [
   {
+    id: "mushin_thunder",
+    genre: "martial_arts",
+    genreEmoji: "🥋",
     title: "⚡ The Thunderstorm of Mushin",
-    prompt: "Sensei Ren teaches Apprentice Aoi the concept of Mushin (Mind without Mind) during a night thunderstorm duel on the wooden dojo balcony."
+    hook: "A rainy nighttime duel on a tatami balcony exploring the concept of Mind without Mind.",
+    prompt: "Sensei Ren teaches Apprentice Aoi the concept of Mushin (Mind without Mind) during a night thunderstorm duel on the wooden dojo balcony.",
+    characterLock: "ren_aoi",
+    visualStyle: "ufotable_anime",
+    recommendedDuration: 24,
+    speechSample: "Do not anchor your mind, Aoi. Like falling rain, true mastery strikes only when all thought is released."
   },
   {
+    id: "wabi_sabi",
+    genre: "drama",
+    genreEmoji: "🌸",
     title: "🌸 Sakura Wabi-Sabi Duel",
-    prompt: "Aoi struggles with perfectionism before Sensei Ren points to imperfect falling cherry blossoms, illustrating beauty in transience."
+    hook: "Embracing imperfection and transience as cherry blossoms drift across the dojo garden.",
+    prompt: "Aoi struggles with perfectionism before Sensei Ren points to imperfect falling cherry blossoms, illustrating beauty in transience.",
+    characterLock: "ren_aoi",
+    visualStyle: "ufotable_anime",
+    recommendedDuration: 8,
+    speechSample: "Look at the garden, Aoi. Wabi-Sabi teaches that true beauty lives in the transient and the broken."
   },
   {
+    id: "sunrise_kata",
+    genre: "martial_arts",
+    genreEmoji: "🌅",
     title: "🌅 Sunrise Katana Mastery",
-    prompt: "Aoi and Sensei Ren perform synchronized morning kata facing the radiant golden sunrise across Mount Fuji."
+    hook: "Synchronized morning sword forms bathed in golden volcanic dawn light overlooking Mount Fuji.",
+    prompt: "Aoi and Sensei Ren perform synchronized morning kata facing the radiant golden sunrise across Mount Fuji.",
+    characterLock: "ren_aoi",
+    visualStyle: "ghibli_pastoral",
+    recommendedDuration: 56,
+    speechSample: "With every sunrise, we do not train for war—we train to align our heartbeat with the waking world."
   },
   {
-    title: "🏢 Executive Sovereign AI Briefing",
-    prompt: "Priya delivers an authoritative 4K keynote on enterprise zk-SNARK cryptographic provenance and zero-drift neural broadcasting."
+    id: "gaman_bamboo",
+    genre: "martial_arts",
+    genreEmoji: "🎋",
+    title: "🎋 The Unyielding Bamboo (Gaman)",
+    hook: "Enduring severe mountain snowstorms by learning to bend rather than snap.",
+    prompt: "During a harsh winter gale, Sensei Ren shows Aoi how green bamboo bends under heavy snow without breaking, demonstrating the spirit of Gaman.",
+    characterLock: "ren_aoi",
+    visualStyle: "ufotable_anime",
+    recommendedDuration: 8,
+    speechSample: "Gaman is not passive suffering; it is the quiet strength that bends in the storm and springs back triumphant."
+  },
+  {
+    id: "sovereign_ai_exec",
+    genre: "executive",
+    genreEmoji: "🏢",
+    title: "🏢 Sovereign AI Enterprise Keynote",
+    hook: "Priya delivers an authoritative mainstage keynote on autonomous corporate governance.",
+    prompt: "Priya delivers an authoritative 4K keynote on enterprise zk-SNARK cryptographic provenance, deterministic media synthesis, and zero-drift neural broadcasting.",
+    characterLock: "priya",
+    visualStyle: "photorealistic_keynote",
+    recommendedDuration: 120,
+    speechSample: "Welcome to the frontier of sovereign enterprise intelligence—where every decision is verifiable and cryptographically guaranteed."
+  },
+  {
+    id: "earnings_margin",
+    genre: "executive",
+    genreEmoji: "📈",
+    title: "📈 Q3 Global Earnings & Margin Expansion",
+    hook: "Elena breaks down cross-border neural infrastructure ROI for institutional shareholders.",
+    prompt: "Elena presents a crisp, data-driven executive briefing on multi-region inference margins, decentralized compute clusters, and 300% ARR growth.",
+    characterLock: "elena",
+    visualStyle: "photorealistic_keynote",
+    recommendedDuration: 56,
+    speechSample: "By transitioning to decentralized sub-millisecond edge clusters, we unlocked 300% ARR expansion with zero latency overhead."
+  },
+  {
+    id: "quantum_topology",
+    genre: "cyberpunk",
+    genreEmoji: "🌆",
+    title: "🌆 Tokyo Neon Quantum Protocol",
+    hook: "David navigates high-frequency topological routing amidst rain-slicked Shinjuku skyscrapers.",
+    prompt: "David Kim uncovers a rogue neural thread in a distributed quantum cluster overlooking glowing holographic Tokyo neon billboards.",
+    characterLock: "david",
+    visualStyle: "cyberpunk_noir",
+    recommendedDuration: 24,
+    speechSample: "When quantum packets route through topological lattices, standard firewalls cease to exist. We must rebuild the trust fabric from scratch."
+  },
+  {
+    id: "veritas_c2pa",
+    genre: "security",
+    genreEmoji: "🛡️",
+    title: "🛡️ Veritas zk-SNARK Cryptographic Shield",
+    hook: "Victoria explains frame-by-frame deepfake immunity and C2PA provenance signatures.",
+    prompt: "Victoria Sterling briefs sovereign security auditors on Ed25519 cryptographic seals and claim-level zero-drift grounding protocols.",
+    characterLock: "priya",
+    visualStyle: "photorealistic_keynote",
+    recommendedDuration: 56,
+    speechSample: "In a world flooded with synthetic media, trust is math. Veritas zk-SNARK provides immutable proof for every spoken syllable."
+  },
+  {
+    id: "cosmic_warp",
+    genre: "cosmic",
+    genreEmoji: "🌌",
+    title: "🌌 Interstellar Warp Horizon",
+    hook: "Jonathan commands the bridge of an exploration flagship charting unexplored hyperspace routes.",
+    prompt: "Jonathan Vance gazes through the observation deck viewport as the starship prepares for hyperspace transit past a binary neutron star.",
+    characterLock: "priya",
+    visualStyle: "cyberpunk_noir",
+    recommendedDuration: 120,
+    speechSample: "Beyond the event horizon lies not darkness, but infinite possibility. Engage the primary quantum manifold."
   }
 ];
 
 export function CreateActModal({ isOpen, onClose, onActCreated, currentTrackTitle = "The Master & The Apprentice" }: CreateActModalProps) {
-  const [title, setTitle] = useState("Act 8: The Way of Mushin");
+  const [selectedGenre, setSelectedGenre] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [isSpeakingPitch, setIsSpeakingPitch] = useState<string | null>(null);
+
+  const [title, setTitle] = useState("⚡ The Thunderstorm of Mushin");
   const [prompt, setPrompt] = useState(
     "Sensei Ren teaches Apprentice Aoi the concept of Mushin (Mind without Mind) during a night thunderstorm duel on the wooden dojo balcony."
   );
-  const [duration, setDuration] = useState<number>(8);
+  const [duration, setDuration] = useState<number>(24);
   const [destinationMode, setDestinationMode] = useState<"new_series" | "append_current">("new_series");
   const [characterLock, setCharacterLock] = useState("ren_aoi");
   const [visualStyle, setVisualStyle] = useState("ufotable_anime");
@@ -66,6 +191,45 @@ export function CreateActModal({ isOpen, onClose, onActCreated, currentTrackTitl
   const [genProgress, setGenProgress] = useState(0);
   const [generatedResult, setGeneratedResult] = useState<any | null>(null);
   const [isPublished, setIsPublished] = useState(false);
+
+  // Filtered concepts based on genre & search
+  const filteredConcepts = GENRE_CONCEPTS.filter((c) => {
+    const matchesGenre = selectedGenre === "all" || c.genre === selectedGenre;
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch =
+      !q ||
+      c.title.toLowerCase().includes(q) ||
+      c.hook.toLowerCase().includes(q) ||
+      c.prompt.toLowerCase().includes(q) ||
+      c.genre.toLowerCase().includes(q);
+    return matchesGenre && matchesSearch;
+  });
+
+  const handleSelectConcept = (concept: GenreConcept) => {
+    setTitle(concept.title);
+    setPrompt(concept.prompt);
+    setCharacterLock(concept.characterLock);
+    setVisualStyle(concept.visualStyle);
+    setDuration(concept.recommendedDuration);
+  };
+
+  const handleRandomize = () => {
+    const randomIndex = Math.floor(Math.random() * GENRE_CONCEPTS.length);
+    handleSelectConcept(GENRE_CONCEPTS[randomIndex]);
+  };
+
+  const handleListenSpeech = (concept: GenreConcept) => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(concept.speechSample);
+      utterance.rate = 0.95;
+      utterance.pitch = 1.0;
+      utterance.onstart = () => setIsSpeakingPitch(concept.id);
+      utterance.onend = () => setIsSpeakingPitch(null);
+      utterance.onerror = () => setIsSpeakingPitch(null);
+      window.speechSynthesis.speak(utterance);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -165,11 +329,148 @@ export function CreateActModal({ isOpen, onClose, onActCreated, currentTrackTitl
 
         {!generatedResult ? (
           <div className="space-y-6">
-            {/* Act Title & Prompt */}
+            {/* ========================================================================= */}
+            {/* NETFLIX / PRIME VIDEO GENRE & IDEA DISCOVERY HUB                          */}
+            {/* ========================================================================= */}
+            <div className="bg-gradient-to-br from-slate-900/90 via-slate-950 to-slate-900 border border-amber-500/30 rounded-3xl p-5 md:p-6 space-y-4 shadow-2xl backdrop-blur-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 font-mono text-[10px] uppercase font-bold tracking-wider flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" /> Netflix & Prime Concept Discovery
+                    </span>
+                    <span className="text-[11px] font-mono text-slate-400">
+                      {filteredConcepts.length} Blockbuster Concepts
+                    </span>
+                  </div>
+                  <h3 className="text-base font-bold text-white font-serif mt-1">
+                    Genre & Idea Generator <span className="text-amber-400 font-normal italic">+ Speech Pitch Previews</span>
+                  </h3>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleRandomize}
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-amber-400/60 text-amber-300 text-xs font-mono font-bold transition-all flex items-center gap-1.5 shrink-0 shadow-sm active:scale-95"
+                >
+                  <Shuffle className="w-3.5 h-3.5" />
+                  <span>🎲 Surprise Idea</span>
+                </button>
+              </div>
+
+              {/* Search Bar & Genre Filters */}
+              <div className="space-y-3">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search genres, story tropes, or keywords (e.g. samurai, leadership, cyberpunk, wabi-sabi)..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500/80 transition-colors"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white text-xs font-mono"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                {/* Genre Category Pills (Netflix Style) */}
+                <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
+                  {GENRE_CATEGORIES.map((g) => {
+                    const isSelected = selectedGenre === g.id;
+                    return (
+                      <button
+                        key={g.id}
+                        type="button"
+                        onClick={() => setSelectedGenre(g.id)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all shrink-0 border ${
+                          isSelected
+                            ? "bg-amber-500/20 border-amber-500 text-amber-200 shadow-md shadow-amber-500/10 font-bold"
+                            : "bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800/60"
+                        }`}
+                      >
+                        {g.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Netflix-Style Concept Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[260px] overflow-y-auto pr-1">
+                {filteredConcepts.map((concept) => {
+                  const isPlaying = isSpeakingPitch === concept.id;
+                  const isCurrent = title === concept.title;
+                  return (
+                    <div
+                      key={concept.id}
+                      className={`p-3.5 rounded-2xl border transition-all flex flex-col justify-between gap-2.5 relative group ${
+                        isCurrent
+                          ? "bg-gradient-to-r from-amber-950/40 via-slate-900 to-slate-950 border-amber-500/70 shadow-lg shadow-amber-500/10"
+                          : "bg-slate-950/80 hover:bg-slate-900/80 border-slate-800/80 hover:border-slate-700"
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400 px-2 py-0.5 rounded-md bg-amber-400/10 border border-amber-400/20 flex items-center gap-1">
+                            {concept.genreEmoji} {concept.genre.replace("_", " ")}
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-500">
+                            ⏱️ {concept.recommendedDuration}s
+                          </span>
+                        </div>
+                        <h4 className="text-xs font-bold text-white font-serif group-hover:text-amber-200 transition-colors">
+                          {concept.title}
+                        </h4>
+                        <p className="text-[11px] text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                          {concept.hook}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleListenSpeech(concept)}
+                          className={`px-2.5 py-1.5 rounded-lg text-[11px] font-mono font-semibold transition-all flex items-center gap-1.5 ${
+                            isPlaying
+                              ? "bg-teal-500 text-slate-950 font-bold animate-pulse"
+                              : "bg-slate-900 hover:bg-slate-800 text-teal-400 border border-teal-500/30"
+                          }`}
+                          title="Listen to Speech Pitch Preview"
+                        >
+                          <Volume2 className={`w-3.5 h-3.5 ${isPlaying ? "animate-spin" : ""}`} />
+                          <span>{isPlaying ? "Speaking..." : "🔊 Pitch Voice"}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSelectConcept(concept)}
+                          className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1.5 ${
+                            isCurrent
+                              ? "bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20"
+                              : "bg-slate-900 hover:bg-amber-500 hover:text-slate-950 border border-slate-700 text-slate-300"
+                          }`}
+                        >
+                          {isCurrent ? <Check className="w-3 h-3" /> : <Zap className="w-3 h-3 text-amber-400" />}
+                          <span>{isCurrent ? "Active Concept" : "⚡ Use Concept"}</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Act Title & Prompt Customization */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
-                  <Film className="w-3.5 h-3.5 text-amber-400" /> Act Title & Narrative Prompt
+                  <Film className="w-3.5 h-3.5 text-amber-400" /> Selected Story Title & Prompt
                 </label>
                 <span className="text-[11px] font-mono text-slate-500">Gemini 2.5 Flash Grounded</span>
               </div>
@@ -189,22 +490,6 @@ export function CreateActModal({ isOpen, onClose, onActCreated, currentTrackTitl
                 placeholder="Describe what happens in this scene, the philosophical dilemma, lighting, and action..."
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500/80 leading-relaxed resize-none"
               />
-
-              {/* Quick Inspiration Chips */}
-              <div className="flex flex-wrap gap-2 pt-1">
-                {PRESET_IDEAS.map((idea, i) => (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      setTitle(idea.title);
-                      setPrompt(idea.prompt);
-                    }}
-                    className="text-[11px] px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/40 text-slate-300 hover:text-white transition-all font-sans"
-                  >
-                    {idea.title}
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* Destination Mode Selector: New Track vs Append */}
