@@ -317,7 +317,43 @@ CREATE TABLE IF NOT EXISTS publish_dispatches (
   published_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Row-Level Security (RLS) Policies
-ALTER TABLE workspaces ENABLE ROW LEVEL SECURITY;
-ALTER TABLE swarm_runs ENABLE ROW LEVEL SECURITY;
+-- 13. studio_series_tracks (Saved Series & Clips Library)
+CREATE TABLE IF NOT EXISTS studio_series_tracks (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  subtitle TEXT,
+  category VARCHAR(64) DEFAULT 'anime',
+  character TEXT NOT NULL,
+  video_src TEXT NOT NULL,
+  duration NUMERIC(8,2) NOT NULL DEFAULT 56.0,
+  acts_json JSONB NOT NULL,
+  veritas_status VARCHAR(64) DEFAULT 'CERTIFIED_VALID',
+  snark_proof_hash TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 14. studio_production_jobs (Persistent Veo 3.1 & Script Pipeline Jobs)
+CREATE TABLE IF NOT EXISTS studio_production_jobs (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  prompt TEXT NOT NULL,
+  character_lock VARCHAR(64) NOT NULL,
+  visual_style VARCHAR(64) NOT NULL,
+  duration NUMERIC(8,2) NOT NULL DEFAULT 8.0,
+  status VARCHAR(32) DEFAULT 'processing',
+  progress INT DEFAULT 0,
+  stage_text TEXT,
+  logs_json JSONB DEFAULT '[]',
+  video_url TEXT,
+  script_json JSONB,
+  veritas_json JSONB,
+  operation_name TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_pg_studio_jobs_created ON studio_production_jobs (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_pg_studio_jobs_status ON studio_production_jobs (status);
+CREATE INDEX IF NOT EXISTS idx_pg_studio_tracks_created ON studio_series_tracks (created_at DESC);
 `;

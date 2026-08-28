@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await context.params;
-    const job = db.getProductionJob(id);
+    const job = await db.getProductionJobAsync(id);
 
     if (!job) {
       // Check if it exists in studio_series_tracks
-      const tracks = db.getStudioTracks();
+      const tracks = await db.getStudioTracksAsync();
       const track = tracks.find((t: any) => t.id === id);
       if (track) {
         return NextResponse.json({

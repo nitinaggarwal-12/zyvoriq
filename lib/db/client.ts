@@ -1,6 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import path from "node:path";
-import { SQLITE_SCHEMA } from "./schema";
+import { Pool } from "pg";
+import { SQLITE_SCHEMA, POSTGRES_SCHEMA } from "./schema";
 import { CANONICAL_SERIES_TRACKS } from "@/lib/tier6/default_tracks";
 import type { 
   Organization, 
@@ -17,6 +18,38 @@ import type {
 } from "./types";
 
 let dbInstance: DatabaseSync | null = null;
+let pgPool: Pool | null = null;
+let pgSchemaMigrated = false;
+
+export function getPostgresPool(): Pool | null {
+  const dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+  if (!dbUrl) return null;
+
+  if (!pgPool) {
+    try {
+      pgPool = new Pool({
+        connectionString: dbUrl,
+        ssl: dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1")
+          ? false
+          : { rejectUnauthorized: false },
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 5000,
+      });
+
+      if (!pgSchemaMigrated) {
+        pgSchemaMigrated = true;
+        pgPool.query(POSTGRES_SCHEMA).catch((err) => {
+          console.warn("PostgreSQL initial schema migration warning:", err.message);
+        });
+      }
+    } catch (e: any) {
+      console.warn("Failed to initialize PostgreSQL pool, falling back to SQLite:", e.message);
+      return null;
+    }
+  }
+  return pgPool;
+}
 
 export function safeJsonParse<T>(jsonStr: any, fallback: T): T {
   if (!jsonStr || typeof jsonStr !== "string") return fallback;
@@ -633,6 +666,234 @@ export const db = {
       }));
     } catch (e) {
       return [];
+    }
+  },
+
+  // === Dual-Engine Asynchronous PostgreSQL Methods ===
+
+  async getStudioTracksAsync(): Promise<any[]> {
+    const pg = getPostgresPool();
+    if (!pg) {
+      return this.getStudioTracks();
+    }
+    try {
+      const res = await pg.query("SELECT * FROM studio_series_tracks ORDER BY created_at DESC");
+      if (res.rows.length === 0) {
+        // Seed canonical tracks into PostgreSQL
+        for (const canonical of CANONICAL_SERIES_TRACKS) {
+          await this.saveStudioTrackAsync({
+            id: canonical.id,
+            title: canonical.title,
+            subtitle: canonical.subtitle,
+            category: canonical.category,
+            character: canonical.character,
+            video_src: canonical.videoSrc,
+            duration: canonical.duration,
+            acts: canonical.acts,
+            veritas_status: canonical.veritas?.status || "CERTIFIED_VALID",
+            snark_proof_hash: canonical.veritas?.snarkProofHash || "0x8f2d...4a19"
+          });
+        }
+        const freshRes = await pg.query("SELECT * FROM studio_series_tracks ORDER BY created_at DESC");
+        return freshRes.rows.map(r => ({
+          id: r.id,
+          title: r.title,
+          subtitle: r.subtitle,
+          category: r.category,
+          character: r.character,
+          videoSrc: r.video_src,
+          duration: parseFloat(r.duration),
+          acts: typeof r.acts_json === "string" ? safeJsonParse(r.acts_json, []) : (r.acts_json || []),
+          veritas: {
+            status: r.veritas_status || "CERTIFIED_VALID",
+            snarkProofHash: r.snark_proof_hash || "0x8f2d...4a19"
+          },
+          createdAt: r.created_at,
+          updatedAt: r.updated_at
+        }));
+      }
+
+      return res.rows.map(r => ({
+        id: r.id,
+        title: r.title,
+        subtitle: r.subtitle,
+        category: r.category,
+        character: r.character,
+        videoSrc: r.video_src,
+        duration: parseFloat(r.duration),
+        acts: typeof r.acts_json === "string" ? safeJsonParse(r.acts_json, []) : (r.acts_json || []),
+        veritas: {
+          status: r.veritas_status || "CERTIFIED_VALID",
+          snarkProofHash: r.snark_proof_hash || "0x8f2d...4a19"
+        },
+        createdAt: r.created_at,
+        updatedAt: r.updated_at
+      }));
+    } catch (err: any) {
+      console.warn("PostgreSQL getStudioTracksAsync fallback to SQLite:", err.message);
+      return this.getStudioTracks();
+    }
+  },
+
+  async saveStudioTrackAsync(track: any): Promise<void> {
+    const pg = getPostgresPool();
+    if (!pg) {
+      this.saveStudioTrack(track);
+      return;
+    }
+    try {
+      const actsJson = JSON.stringify(track.acts || []);
+      const query = `
+        INSERT INTO studio_series_tracks (
+          id, title, subtitle, category, character, video_src, duration, acts_json, veritas_status, snark_proof_hash, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now())
+        ON CONFLICT(id) DO UPDATE SET
+          title = EXCLUDED.title,
+          subtitle = EXCLUDED.subtitle,
+          category = EXCLUDED.category,
+          character = EXCLUDED.character,
+          video_src = EXCLUDED.video_src,
+          duration = EXCLUDED.duration,
+          acts_json = EXCLUDED.acts_json,
+          veritas_status = EXCLUDED.veritas_status,
+          snark_proof_hash = EXCLUDED.snark_proof_hash,
+          updated_at = now();
+      `;
+      await pg.query(query, [
+        track.id,
+        track.title,
+        track.subtitle || "",
+        track.category || "custom",
+        track.character,
+        track.videoSrc || track.video_src || "",
+        track.duration || 56.0,
+        actsJson,
+        track.veritas_status || track.veritas?.status || "CERTIFIED_VALID",
+        track.snark_proof_hash || track.veritas?.snarkProofHash || "0x8f2d...4a19"
+      ]);
+    } catch (err: any) {
+      console.warn("PostgreSQL saveStudioTrackAsync fallback to SQLite:", err.message);
+      this.saveStudioTrack(track);
+    }
+  },
+
+  async createProductionJobAsync(job: any): Promise<void> {
+    const pg = getPostgresPool();
+    if (!pg) {
+      this.createProductionJob(job);
+      return;
+    }
+    try {
+      const query = `
+        INSERT INTO studio_production_jobs (
+          id, title, prompt, character_lock, visual_style, duration, status, progress, stage_text, logs_json, script_json, operation_name, acts_json, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, now(), now())
+        ON CONFLICT (id) DO UPDATE SET
+          title = EXCLUDED.title,
+          prompt = EXCLUDED.prompt,
+          character_lock = EXCLUDED.character_lock,
+          visual_style = EXCLUDED.visual_style,
+          duration = EXCLUDED.duration,
+          status = EXCLUDED.status,
+          progress = EXCLUDED.progress,
+          stage_text = EXCLUDED.stage_text,
+          logs_json = EXCLUDED.logs_json,
+          script_json = EXCLUDED.script_json,
+          operation_name = EXCLUDED.operation_name,
+          acts_json = EXCLUDED.acts_json,
+          updated_at = now();
+      `;
+      await pg.query(query, [
+        job.id,
+        job.title,
+        job.prompt,
+        job.characterLock,
+        job.visualStyle,
+        job.duration || 8.0,
+        job.status || "processing",
+        job.progress || 0,
+        job.stageText || "Initialized",
+        JSON.stringify(job.logs || []),
+        job.script ? JSON.stringify(job.script) : null,
+        job.operationName || null,
+        job.acts ? JSON.stringify(job.acts) : "[]"
+      ]);
+    } catch (err: any) {
+      console.warn("PostgreSQL createProductionJobAsync fallback to SQLite:", err.message);
+      this.createProductionJob(job);
+    }
+  },
+
+  async updateProductionJobAsync(id: string, updates: any): Promise<void> {
+    const pg = getPostgresPool();
+    if (!pg) {
+      this.updateProductionJob(id, updates);
+      return;
+    }
+    try {
+      const query = `
+        UPDATE studio_production_jobs SET
+          status = COALESCE($1, status),
+          progress = COALESCE($2, progress),
+          stage_text = COALESCE($3, stage_text),
+          video_url = COALESCE($4, video_url),
+          script_json = COALESCE($5, script_json),
+          veritas_json = COALESCE($6, veritas_json),
+          operation_name = COALESCE($7, operation_name),
+          duration = COALESCE($8, duration),
+          acts_json = COALESCE($9, acts_json),
+          updated_at = now()
+        WHERE id = $10;
+      `;
+      await pg.query(query, [
+        updates.status !== undefined ? updates.status : null,
+        updates.progress !== undefined ? updates.progress : null,
+        updates.stageText !== undefined ? updates.stageText : null,
+        updates.videoUrl !== undefined ? updates.videoUrl : null,
+        updates.script !== undefined ? JSON.stringify(updates.script) : null,
+        updates.veritas !== undefined ? JSON.stringify(updates.veritas) : null,
+        updates.operationName !== undefined ? updates.operationName : null,
+        updates.duration !== undefined ? updates.duration : null,
+        updates.acts !== undefined ? JSON.stringify(updates.acts) : null,
+        id
+      ]);
+    } catch (err: any) {
+      console.warn("PostgreSQL updateProductionJobAsync fallback to SQLite:", err.message);
+      this.updateProductionJob(id, updates);
+    }
+  },
+
+  async getProductionJobAsync(id: string): Promise<any | null> {
+    const pg = getPostgresPool();
+    if (!pg) {
+      return this.getProductionJob(id);
+    }
+    try {
+      const res = await pg.query("SELECT * FROM studio_production_jobs WHERE id = $1", [id]);
+      if (res.rows.length === 0) return null;
+      const row = res.rows[0];
+      return {
+        id: row.id,
+        title: row.title,
+        prompt: row.prompt,
+        characterLock: row.character_lock,
+        visualStyle: row.visual_style,
+        duration: parseFloat(row.duration),
+        status: row.status,
+        progress: row.progress,
+        stageText: row.stage_text,
+        logs: typeof row.logs_json === "string" ? safeJsonParse(row.logs_json, []) : (row.logs_json || []),
+        videoUrl: row.video_url,
+        script: typeof row.script_json === "string" ? safeJsonParse(row.script_json, null) : (row.script_json || null),
+        veritas: typeof row.veritas_json === "string" ? safeJsonParse(row.veritas_json, null) : (row.veritas_json || null),
+        operationName: row.operation_name,
+        acts: typeof row.acts_json === "string" ? safeJsonParse(row.acts_json, []) : (row.acts_json || []),
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      };
+    } catch (err: any) {
+      console.warn("PostgreSQL getProductionJobAsync fallback to SQLite:", err.message);
+      return this.getProductionJob(id);
     }
   }
 };

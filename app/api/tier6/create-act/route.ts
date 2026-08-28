@@ -76,8 +76,8 @@ export async function POST(req: NextRequest) {
       logs.push(`${getTs()} 🔑 Gemini & Veo API Credentials Authenticated.`);
     }
 
-    // Initialize in persistent SQLite DB
-    db.createProductionJob({
+    // Initialize in persistent SQLite / PostgreSQL DB
+    await db.createProductionJobAsync({
       id: jobId,
       title,
       prompt,
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
     if (apiKey) {
       try {
         logs.push(`${getTs()} 🧠 Dispatching Gemini 2.5 Flash for ${numActs}-Act Storyboard AST & 6-Language Dialogue...`);
-        db.updateProductionJob(jobId, { progress: 15, logs, stageText: `Compiling ${numActs}-Act Storyboard & Multilingual Dialogue` });
+        await db.updateProductionJobAsync(jobId, { progress: 15, logs, stageText: `Compiling ${numActs}-Act Storyboard & Multilingual Dialogue` });
 
         const scriptPrompt = numActs === 1
           ? (characterLock.includes("ren")
@@ -208,7 +208,7 @@ Return JSON strictly matching:
         : 8;
 
       logs.push(`${getTs()} 🎬 [Act ${actNum}/${numActs}] "${act.title}" — Synthesizing scene diffusion...`);
-      db.updateProductionJob(jobId, {
+      await db.updateProductionJobAsync(jobId, {
         progress: Math.min(92, Math.round(20 + i * actProgressSlice)),
         stageText: `Act ${actNum}/${numActs}: Diffusing Scene Motion (${act.title})`,
         logs
@@ -230,12 +230,12 @@ Return JSON strictly matching:
             modelTier: "fast",
             onProgress: (p: VeoGenerationProgress) => {
               const currentProgress = Math.min(94, Math.round(20 + i * actProgressSlice + (p.percent / 100) * actProgressSlice));
-              db.updateProductionJob(jobId, {
+              db.updateProductionJobAsync(jobId, {
                 progress: currentProgress,
                 stageText: `Act ${actNum}/${numActs}: ${p.message}`,
                 logs: [...logs, `${getTs()} [Act ${actNum}/${numActs}] ${p.message}`],
                 operationName: p.operationName
-              });
+              }).catch(() => {});
             }
           });
 
@@ -318,7 +318,7 @@ Return JSON strictly matching:
       compiledActs.push(newAct);
       cumulativeTime += actActualDur;
 
-      db.updateProductionJob(jobId, {
+      await db.updateProductionJobAsync(jobId, {
         progress: Math.min(94, Math.round(20 + (i + 1) * actProgressSlice)),
         stageText: `Act ${actNum}/${numActs} Complete ➔ Advancing Timeline (${cumulativeTime}s Total)`,
         acts: compiledActs,
@@ -368,9 +368,9 @@ Return JSON strictly matching:
     logs.push(`${getTs()} 🔒 Veritas Seal Certified: ${certId} (C2PA: ${c2paManifestHash.slice(0, 18)}...)`);
     logs.push(`${getTs()} ✨ ${compiledActs.length}-Act Multi-Scene Master Production Complete in ${((Date.now() - startTime) / 1000).toFixed(1)}s (${totalActualDuration}s Total Runtime)!`);
 
-    // 4. Save into permanent SQLite series tracks library
+    // 4. Save into permanent SQLite / PostgreSQL series tracks library
     if (parentTrackId && mode === "append_current") {
-      const existingTracks = db.getStudioTracks();
+      const existingTracks = await db.getStudioTracksAsync();
       const existing = existingTracks.find((t: any) => t.id === parentTrackId);
       if (existing) {
         const currentActs = Array.isArray(existing.acts) ? existing.acts : JSON.parse(existing.acts || "[]");
@@ -382,7 +382,7 @@ Return JSON strictly matching:
           endTime: baseStartTime + act.endTime
         }));
 
-        db.saveStudioTrack({
+        await db.saveStudioTrackAsync({
           ...existing,
           videoSrc: primaryVideoUrl || existing.videoSrc,
           audioSrc: compiledActs[0]?.audioUrl || existing.audioSrc,
@@ -392,7 +392,7 @@ Return JSON strictly matching:
           snark_proof_hash: c2paManifestHash
         });
       } else {
-        db.saveStudioTrack({
+        await db.saveStudioTrackAsync({
           id: jobId,
           title,
           subtitle: prompt.slice(0, 100),
@@ -416,7 +416,7 @@ Return JSON strictly matching:
         });
       }
     } else {
-      db.saveStudioTrack({
+      await db.saveStudioTrackAsync({
         id: jobId,
         title,
         subtitle: prompt.slice(0, 100),
@@ -455,7 +455,7 @@ Return JSON strictly matching:
     };
 
     // Update DB job state to COMPLETED
-    db.updateProductionJob(jobId, {
+    await db.updateProductionJobAsync(jobId, {
       status: "completed",
       progress: 100,
       stageText: `Production Master Complete (${compiledActs.length} Acts, ${totalActualDuration}s)`,

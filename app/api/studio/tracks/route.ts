@@ -7,8 +7,7 @@ export const revalidate = 0;
 
 export async function GET(req: NextRequest) {
   try {
-    db.seedDefaultStudioTracks();
-    const tracks = db.getStudioTracks();
+    const tracks = await db.getStudioTracksAsync();
     return NextResponse.json(
       { success: true, tracks: tracks.length > 0 ? tracks : CANONICAL_SERIES_TRACKS },
       { headers: { "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate" } }
@@ -61,8 +60,8 @@ export async function POST(req: NextRequest) {
       }
     };
 
-    db.saveStudioTrack(track);
-    const allTracks = db.getStudioTracks();
+    await db.saveStudioTrackAsync(track);
+    const allTracks = await db.getStudioTracksAsync();
     return NextResponse.json({ success: true, track, tracks: allTracks });
   } catch (err: any) {
     console.error("Failed to save studio track:", err);
