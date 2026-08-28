@@ -231,22 +231,28 @@ export const db = {
       if (rows.length === 0) {
         return CANONICAL_SERIES_TRACKS;
       }
-      return rows.map(r => ({
-        id: r.id,
-        title: r.title,
-        subtitle: r.subtitle,
-        category: r.category,
-        character: r.character,
-        videoSrc: r.video_src,
-        duration: r.duration,
-        acts: JSON.parse(r.acts_json || "[]"),
-        veritas: {
-          status: r.veritas_status || "CERTIFIED_VALID",
-          snarkProofHash: r.snark_proof_hash || "0x8f2d...4a19"
-        },
-        createdAt: r.created_at,
-        updatedAt: r.updated_at
-      }));
+      return rows.map(r => {
+        let videoSrc = r.video_src || "/assets/video/priya_4k_10act_master.mp4";
+        if (videoSrc.startsWith("/videos/")) {
+          videoSrc = videoSrc.replace("/videos/", "/assets/video/");
+        }
+        return {
+          id: r.id,
+          title: r.title,
+          subtitle: r.subtitle,
+          category: r.category,
+          character: r.character,
+          videoSrc,
+          duration: r.duration,
+          acts: JSON.parse(r.acts_json || "[]"),
+          veritas: {
+            status: r.veritas_status || "CERTIFIED_VALID",
+            snarkProofHash: r.snark_proof_hash || "0x8f2d...4a19"
+          },
+          createdAt: r.created_at,
+          updatedAt: r.updated_at
+        };
+      });
     } catch (e) {
       console.error("Failed to query SQLite studio tracks:", e);
       return CANONICAL_SERIES_TRACKS;
@@ -255,6 +261,11 @@ export const db = {
 
   saveStudioTrack(track: any): void {
     const database = getDatabase();
+    let videoSrc = track.videoSrc || track.video_src || "/assets/video/priya_4k_10act_master.mp4";
+    if (videoSrc.startsWith("/videos/")) {
+      videoSrc = videoSrc.replace("/videos/", "/assets/video/");
+    }
+
     const stmt = database.prepare(`
       INSERT INTO studio_series_tracks (
         id, title, subtitle, category, character, video_src, duration, acts_json, veritas_status, snark_proof_hash, updated_at
@@ -277,7 +288,7 @@ export const db = {
       track.subtitle || "",
       track.category || "custom",
       track.character || "AI Broadcaster",
-      track.videoSrc || track.video_src || "/videos/veo_priya_24s_master.mp4",
+      videoSrc,
       track.duration || 24,
       typeof track.acts === "string" ? track.acts : JSON.stringify(track.acts || []),
       track.veritas?.status || track.veritas_status || "CERTIFIED_VALID",

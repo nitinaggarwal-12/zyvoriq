@@ -246,6 +246,13 @@ export function AnimeCinemaStage() {
     }
   };
 
+  // Keep duration synced with activeTrack
+  useEffect(() => {
+    if (activeTrack) {
+      setDuration(activeTrack.duration || 24.0);
+    }
+  }, [activeTrackId, activeTrack?.id, activeTrack?.duration]);
+
   // Synchronize Active Subtitle Cue in Cinema Mode
   const activeCue = actsList.find(
     (c) => currentTime >= c.startTime && currentTime <= (c.endTime || duration)
