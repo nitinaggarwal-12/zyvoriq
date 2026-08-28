@@ -97,6 +97,18 @@ function CreatePageContent() {
       .catch(() => {});
   }, [targetTrackId]);
 
+  useEffect(() => {
+    const conceptParam = searchParams.get("concept") || searchParams.get("pillar") || "";
+    if (conceptParam) {
+      const found = GENRE_CONCEPTS.find(c => c.id === conceptParam || c.genre === conceptParam);
+      if (found) {
+        handleSelectConcept(found);
+        setSelectedCluster(found.cluster);
+        setSelectedGenre(found.genre);
+      }
+    }
+  }, [searchParams]);
+
   const [apiHealth, setApiHealth] = useState<{ ok: boolean; configured: boolean; message?: string; model?: string } | null>(null);
 
   useEffect(() => {
