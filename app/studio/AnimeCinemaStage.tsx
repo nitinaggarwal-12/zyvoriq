@@ -254,20 +254,35 @@ export function AnimeCinemaStage() {
     }
   }, [activeTrackId, activeTrack?.id, activeTrack?.duration]);
 
-  // Synchronize Active Subtitle Cue in Cinema Mode
-  const activeCue = actsList.find(
-    (c) => currentTime >= c.startTime && currentTime <= (c.endTime || duration)
-  ) || actsList[selectedActIndex] || actsList[0];
+  // Multi-file acts detection
+  const isMultiFile = actsList.some((a) => a.videoUrl && a.videoUrl !== activeTrack.videoSrc);
 
-  // Update selected act on time progress
+  // Synchronize Active Subtitle Cue in Cinema Mode
+  const activeCue = isMultiFile
+    ? (actsList[selectedActIndex] || actsList[0])
+    : (actsList.find(
+        (c) => currentTime >= c.startTime && currentTime <= (c.endTime || duration)
+      ) || actsList[selectedActIndex] || actsList[0]);
+
+  // Update selected act on time progress for single master files
   useEffect(() => {
-    const idx = actsList.findIndex(
-      (c) => currentTime >= c.startTime && currentTime <= (c.endTime || duration)
-    );
-    if (idx !== -1) {
-      setSelectedActIndex(idx);
+    if (!isMultiFile) {
+      const idx = actsList.findIndex(
+        (c) => currentTime >= c.startTime && currentTime <= (c.endTime || duration)
+      );
+      if (idx !== -1 && idx !== selectedActIndex) {
+        setSelectedActIndex(idx);
+      }
     }
-  }, [currentTime, actsList, duration]);
+  }, [currentTime, actsList, duration, isMultiFile, selectedActIndex]);
+
+  // Keep video playing when act switches
+  useEffect(() => {
+    if (isPlaying && videoRef.current) {
+      videoRef.current.play().catch(() => {});
+      if (audioRef.current) audioRef.current.play().catch(() => {});
+    }
+  }, [selectedActIndex, isPlaying]);
 
   // Handle Newly Created Act / New Series Track
   const handleActCreated = (newActData: any, destinationMode: "new_series" | "append_current" = "new_series") => {
@@ -385,20 +400,48 @@ export function AnimeCinemaStage() {
   const handleSeek = (time: number, autoPlay: boolean = false) => {
     const video = videoRef.current;
     const audio = audioRef.current;
-    const loopTime = duration > 0 ? time % duration : time;
-    if (video) video.currentTime = loopTime;
-    if (audio) audio.currentTime = loopTime;
-    setCurrentTime(time);
-    const idx = actsList.findIndex(
-      (c) => time >= c.startTime && time <= (c.endTime || duration)
-    );
-    if (idx !== -1) {
-      setSelectedActIndex(idx);
-    }
-    if (autoPlay || isPlaying) {
-      if (video) video.play().catch(() => {});
-      if (audio) audio.play().catch(() => {});
-      setIsPlaying(true);
+
+    if (isMultiFile) {
+      const targetIndex = Math.min(
+        actsList.length - 1,
+        Math.max(0, Math.floor(time / 8.0))
+      );
+      const targetAct = actsList[targetIndex];
+      const actStart = targetAct?.startTime ?? (targetIndex * 8.0);
+      const actOffset = Math.max(0, time - actStart);
+
+      setSelectedActIndex(targetIndex);
+      setCurrentTime(time);
+
+      if (video) {
+        video.currentTime = actOffset;
+        if (autoPlay || isPlaying) {
+          video.play().catch(() => {});
+        }
+      }
+      if (audio) {
+        audio.currentTime = actOffset;
+        if (autoPlay || isPlaying) {
+          audio.play().catch(() => {});
+        }
+      }
+      if (autoPlay) setIsPlaying(true);
+    } else {
+      const loopTime = duration > 0 ? time % duration : time;
+      if (video) video.currentTime = loopTime;
+      if (audio) audio.currentTime = loopTime;
+      setCurrentTime(time);
+      const idx = actsList.findIndex(
+        (c) => time >= c.startTime && time <= (c.endTime || duration)
+      );
+      if (idx !== -1) {
+        setSelectedActIndex(idx);
+      }
+      if (autoPlay || isPlaying) {
+        if (video) video.play().catch(() => {});
+        if (audio) audio.play().catch(() => {});
+        setIsPlaying(true);
+      }
     }
   };
 
@@ -407,7 +450,15 @@ export function AnimeCinemaStage() {
     const video = videoRef.current;
     const audio = audioRef.current;
     if (video) {
-      setCurrentTime(video.currentTime);
+      if (isMultiFile) {
+        const currentAct = actsList[selectedActIndex];
+        const actStart = currentAct?.startTime ?? (selectedActIndex * 8.0);
+        const globalTime = Math.min(duration, actStart + video.currentTime);
+        setCurrentTime(globalTime);
+      } else {
+        setCurrentTime(video.currentTime);
+      }
+
       if (audio && Math.abs(audio.currentTime - video.currentTime) > 0.15) {
         audio.currentTime = video.currentTime;
       }
@@ -728,7 +779,20 @@ export function AnimeCinemaStage() {
                     const nextIndex = selectedActIndex + 1;
                     const nextAct = actsList[nextIndex];
                     setSelectedActIndex(nextIndex);
-                    handleSeek(nextAct.startTime || (nextIndex * 8.0), true);
+                    const nextStart = nextAct.startTime ?? (nextIndex * 8.0);
+                    setCurrentTime(nextStart);
+
+                    setTimeout(() => {
+                      if (videoRef.current) {
+                        videoRef.current.currentTime = 0;
+                        videoRef.current.play().catch(() => {});
+                      }
+                      if (audioRef.current) {
+                        audioRef.current.currentTime = 0;
+                        audioRef.current.play().catch(() => {});
+                      }
+                    }, 50);
+                    setIsPlaying(true);
                   } else {
                     setIsPlaying(false);
                     if (audioRef.current) audioRef.current.pause();
