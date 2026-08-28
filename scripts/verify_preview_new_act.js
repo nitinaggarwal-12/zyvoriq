@@ -56,7 +56,7 @@ async function run() {
     const kickoff = btns.find(b => b.textContent && b.textContent.includes('Kickoff Veo 3.1'));
     if (kickoff) kickoff.click();
   });
-  await sleep(3500);
+  await sleep(6500);
 
   // 4. Click Preview in Studio Stage
   console.log("5. Clicking 'Preview in Studio Stage'...");
@@ -65,7 +65,7 @@ async function run() {
     const previewBtn = btns.find(b => b.textContent && b.textContent.includes('Preview in Studio Stage'));
     if (previewBtn) previewBtn.click();
   });
-  await sleep(2000);
+  await sleep(2500);
 
   // Screenshot 1: Studio Stage with Act 8 Notification Banner
   await page.screenshot({ path: `${screenshotDir}/06_studio_stage_act8_live.png` });
