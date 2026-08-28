@@ -240,10 +240,27 @@ export const db = {
       const database = getDatabase();
       const stmt = database.prepare("SELECT * FROM studio_series_tracks ORDER BY created_at DESC");
       let rows = stmt.all() as any[];
-      if (rows.length === 0) {
-        this.seedDefaultStudioTracks();
-        rows = database.prepare("SELECT * FROM studio_series_tracks ORDER BY created_at DESC").all() as any[];
+      
+      // Auto-sync canonical tracks
+      const existingIds = new Set(rows.map(r => r.id));
+      for (const canonical of CANONICAL_SERIES_TRACKS) {
+        if (!existingIds.has(canonical.id)) {
+          this.saveStudioTrack({
+            id: canonical.id,
+            title: canonical.title,
+            subtitle: canonical.subtitle,
+            category: canonical.category,
+            character: canonical.character,
+            video_src: canonical.videoSrc,
+            duration: canonical.duration,
+            acts: canonical.acts,
+            veritas_status: canonical.veritas?.status || "CERTIFIED_VALID",
+            snark_proof_hash: canonical.veritas?.snarkProofHash || "0x8f2d...4a19"
+          });
+        }
       }
+      rows = database.prepare("SELECT * FROM studio_series_tracks ORDER BY created_at DESC").all() as any[];
+
       if (rows.length === 0) {
         return CANONICAL_SERIES_TRACKS;
       }
@@ -262,9 +279,9 @@ export const db = {
           category: r.category,
           character: r.character,
           videoSrc,
-          audioSrc: r.audio_src || (r.acts_json ? JSON.parse(r.acts_json)?.[0]?.audioUrl : undefined),
+          audioSrc: r.audio_src || (r.acts_json ? safeJsonParse<any[]>(r.acts_json, [])?.[0]?.audioUrl : undefined),
           duration: r.duration,
-          acts: JSON.parse(r.acts_json || "[]"),
+          acts: safeJsonParse<any[]>(r.acts_json, []),
           veritas: {
             status: r.veritas_status || "CERTIFIED_VALID",
             snarkProofHash: r.snark_proof_hash || "0x8f2d...4a19"
