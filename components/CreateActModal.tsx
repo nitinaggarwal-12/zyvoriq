@@ -35,183 +35,18 @@ interface CreateActModalProps {
   currentTrackTitle?: string;
 }
 
-export interface GenreConcept {
-  id: string;
-  genre: string;
-  genreEmoji: string;
-  title: string;
-  hook: string;
-  prompt: string;
-  characterLock: string;
-  visualStyle: string;
-  recommendedDuration: number;
-  speechSample: string;
-}
+import {
+  GENRE_CATEGORIES,
+  GENRE_CONCEPTS,
+  GenreConcept
+} from "@/lib/tier6/genre_concepts";
+import {
+  GLOBAL_CHARACTERS,
+  VISUAL_AESTHETICS
+} from "@/lib/tier6/characters";
 
-export const GENRE_CATEGORIES = [
-  { id: "all", label: "🎬 All Categories" },
-  { id: "executive", label: "🧑‍💼 Humans & Executive Twins" },
-  { id: "anime", label: "🌸 Anime & Manga" },
-  { id: "cartoon", label: "🎨 Cartoon & Stylized Animation" },
-  { id: "cgi_3d", label: "🧊 3D Graphics & CGI Cinematic" },
-  { id: "nature", label: "🌿 Nature & Wildlife Documentaries" },
-  { id: "space", label: "🌌 Universe, Cosmos & Space" },
-  { id: "engineering", label: "⚙️ Machine Building & Engineering" },
-  { id: "medical", label: "🩺 Medical Equipment & Healthcare" },
-  { id: "security", label: "🛡️ Veritas Trust & Cryptography" }
-];
-
-export const GENRE_CONCEPTS: GenreConcept[] = [
-  // 1. Humans & Executive Digital Twins
-  {
-    id: "sovereign_ai_exec",
-    genre: "executive",
-    genreEmoji: "🧑‍💼",
-    title: "🏢 Sovereign AI Enterprise Keynote",
-    hook: "Priya delivers an authoritative mainstage keynote on autonomous corporate governance.",
-    prompt: "Priya delivers an authoritative 4K keynote on enterprise zk-SNARK cryptographic provenance, deterministic media synthesis, and zero-drift neural broadcasting.",
-    characterLock: "priya",
-    visualStyle: "photorealistic_keynote",
-    recommendedDuration: 120,
-    speechSample: "Welcome to the frontier of sovereign enterprise intelligence—where every decision is verifiable and cryptographically guaranteed."
-  },
-  {
-    id: "earnings_margin",
-    genre: "executive",
-    genreEmoji: "📈",
-    title: "📈 Q3 Global Earnings & Margin Expansion",
-    hook: "Elena breaks down cross-border neural infrastructure ROI for institutional shareholders.",
-    prompt: "Elena presents a crisp, data-driven executive briefing on multi-region inference margins, decentralized compute clusters, and 300% ARR growth.",
-    characterLock: "elena",
-    visualStyle: "photorealistic_keynote",
-    recommendedDuration: 56,
-    speechSample: "By transitioning to decentralized sub-millisecond edge clusters, we unlocked 300% ARR expansion with zero latency overhead."
-  },
-
-  // 2. Anime & Manga
-  {
-    id: "mushin_thunder",
-    genre: "anime",
-    genreEmoji: "🥋",
-    title: "⚡ The Thunderstorm of Mushin",
-    hook: "A rainy nighttime duel on a tatami balcony exploring the concept of Mind without Mind.",
-    prompt: "Sensei Ren teaches Apprentice Aoi the concept of Mushin (Mind without Mind) during a night thunderstorm duel on the wooden dojo balcony.",
-    characterLock: "ren_aoi",
-    visualStyle: "ufotable_anime",
-    recommendedDuration: 24,
-    speechSample: "Do not anchor your mind, Aoi. Like falling rain, true mastery strikes only when all thought is released."
-  },
-  {
-    id: "wabi_sabi",
-    genre: "anime",
-    genreEmoji: "🌸",
-    title: "🌸 Sakura Wabi-Sabi Duel",
-    hook: "Embracing imperfection and transience as cherry blossoms drift across the dojo garden.",
-    prompt: "Aoi struggles with perfectionism before Sensei Ren points to imperfect falling cherry blossoms, illustrating beauty in transience.",
-    characterLock: "ren_aoi",
-    visualStyle: "ufotable_anime",
-    recommendedDuration: 8,
-    speechSample: "Look at the garden, Aoi. Wabi-Sabi teaches that true beauty lives in the transient and the broken."
-  },
-
-  // 3. Cartoon & Stylized Animation
-  {
-    id: "retro_cartoon_lab",
-    genre: "cartoon",
-    genreEmoji: "🎨",
-    title: "🎨 Whimsical Inventor's Laboratory",
-    hook: "A wacky cartoon inventor creates a contraption that turns breakfast pancakes into rocket fuel.",
-    prompt: "Classic hand-drawn animation style with bouncy physics: an eccentric cartoon inventor activates a steam-powered pancake catapult in a cluttered whimsical workshop.",
-    characterLock: "custom",
-    visualStyle: "ghibli_pastoral",
-    recommendedDuration: 24,
-    speechSample: "Hold onto your toast! The Gravitational Batter Propeller is warming up for ignition!"
-  },
-
-  // 4. 3D Graphics & CGI Cinematic
-  {
-    id: "unreal_cyber_city",
-    genre: "cgi_3d",
-    genreEmoji: "🧊",
-    title: "🧊 Unreal Engine 5 Cyber-Metropolis",
-    hook: "Photorealistic ray-traced drone flythrough across holographic floating skylanes.",
-    prompt: "Hyper-detailed Unreal Engine 5 CGI render with Nanite geometry and Lumen global illumination: camera glides through a bustling futuristic mega-city with flying aero-transits and neon rain.",
-    characterLock: "david",
-    visualStyle: "cyberpunk_noir",
-    recommendedDuration: 56,
-    speechSample: "Initializing sub-atomic path tracing across Sector 9. Global illumination render lock engaged."
-  },
-
-  // 5. Nature & Wildlife Documentaries
-  {
-    id: "savanna_predator",
-    genre: "nature",
-    genreEmoji: "🌿",
-    title: "🌿 Serengeti Thunderstorm & Lion Pride",
-    hook: "BBC Earth-style cinematic documentary following a lion pride during the Great Migration rainstorm.",
-    prompt: "Cinematic 8K wildlife documentary: golden hour sunlight breaks through dramatic storm clouds as a lion pride surveys the sweeping Serengeti plains with amber grasses rippling in the wind.",
-    characterLock: "custom",
-    visualStyle: "photorealistic_keynote",
-    recommendedDuration: 56,
-    speechSample: "Across the vast golden plains of the Serengeti, the coming rains signal a dramatic renewal of life and the ancient hunt."
-  },
-
-  // 6. Universe, Space & Cosmic Exploration
-  {
-    id: "deep_space_blackhole",
-    genre: "space",
-    genreEmoji: "🌌",
-    title: "🌌 Event Horizon: Journey into Gargantua",
-    hook: "Interstellar journey navigating the glowing gravitational lensing of a supermassive black hole.",
-    prompt: "Photorealistic deep space IMAX cinematography: an exploration starship approaches a supermassive black hole with a blinding gold-orange accretion disk warping starlight in relativistic physics.",
-    characterLock: "custom",
-    visualStyle: "cyberpunk_noir",
-    recommendedDuration: 120,
-    speechSample: "As we cross the photon sphere, time dilates exponentially. Starlight curves around the gravitational singularity."
-  },
-
-  // 7. Machines, Engineering & Manufacturing
-  {
-    id: "jet_engine_assembly",
-    genre: "engineering",
-    genreEmoji: "⚙️",
-    title: "⚙️ Building a Hypersonic Scramjet Engine",
-    hook: "Step-by-step engineering teardown and 5-axis CNC machining of titanium turbine blades.",
-    prompt: "Educational industrial engineering documentary: exploded 3D CAD holographic view showing titanium combustion chambers, ceramic heat shields, and fuel injectors assembling at Mach 7 tolerances.",
-    characterLock: "david",
-    visualStyle: "photorealistic_keynote",
-    recommendedDuration: 56,
-    speechSample: "Every micron counts. These titanium-aluminide turbine blades withstand temperatures hotter than molten volcanic magma."
-  },
-
-  // 8. Medical Equipment & Healthcare
-  {
-    id: "robotic_surgery_mri",
-    genre: "medical",
-    genreEmoji: "🩺",
-    title: "🩺 Da Vinci Robotic Micro-Surgery & MRI",
-    hook: "High-precision robotic microsurgery guided by real-time 7-Tesla neuro-MRI scanning.",
-    prompt: "State-of-the-art medical education footage: robotic surgical arms perform sub-millimeter suturing while real-time holographic MRI neural scans illuminate synaptic pathways in the background.",
-    characterLock: "elena",
-    visualStyle: "photorealistic_keynote",
-    recommendedDuration: 56,
-    speechSample: "With 7-Tesla intraoperative neuro-imaging, the robotic needle achieves sub-millimeter precision without disrupting vascular pathways."
-  },
-
-  // 9. Veritas Trust & Cryptography
-  {
-    id: "veritas_c2pa",
-    genre: "security",
-    genreEmoji: "🛡️",
-    title: "🛡️ Veritas zk-SNARK Cryptographic Shield",
-    hook: "Priya explains frame-by-frame deepfake immunity and C2PA provenance signatures.",
-    prompt: "Priya Sharma briefs sovereign security auditors on Ed25519 cryptographic seals and claim-level zero-drift grounding protocols.",
-    characterLock: "priya",
-    visualStyle: "photorealistic_keynote",
-    recommendedDuration: 56,
-    speechSample: "In a world flooded with synthetic media, trust is math. Veritas zk-SNARK provides immutable proof for every spoken syllable."
-  }
-];
+export { GENRE_CATEGORIES, GENRE_CONCEPTS };
+export type { GenreConcept };
 
 export function CreateActModal({ isOpen, onClose, onActCreated, currentTrackTitle = "The Master & The Apprentice" }: CreateActModalProps) {
   const [selectedGenre, setSelectedGenre] = useState<string>("all");
@@ -660,18 +495,23 @@ export function CreateActModal({ isOpen, onClose, onActCreated, currentTrackTitl
 
               {/* Character Continuity Lock */}
               <div className="space-y-2.5">
-                <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-cyan-400" /> Character Continuity Lock
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-cyan-400" /> Character & Speaker Lock
+                  </label>
+                  <span className="text-[10px] font-mono text-cyan-400">14 Global Personas</span>
+                </div>
                 <select
                   value={characterLock}
                   onChange={(e) => setCharacterLock(e.target.value)}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 font-medium focus:outline-none focus:border-amber-500"
                 >
-                  <option value="ren_aoi">🥋 Sensei Ren & Apprentice Aoi (Anime Master & Student)</option>
-                  <option value="priya">👩‍💼 Priya (Executive Digital Twin - Silicon Valley)</option>
-                  <option value="david">👨‍💼 David (Chief AI Architect - Zurich)</option>
-                  <option value="elena">👩‍🔬 Elena (VP Neural Research - Tokyo)</option>
+                  {GLOBAL_CHARACTERS.map((char) => (
+                    <option key={char.id} value={char.id}>
+                      {char.avatarEmoji} {char.name} ({char.role} · {char.location})
+                    </option>
+                  ))}
+                  <option value="custom">✨ Custom Dynamic Ensemble (Grounded from Prompt)</option>
                 </select>
               </div>
 
@@ -682,17 +522,22 @@ export function CreateActModal({ isOpen, onClose, onActCreated, currentTrackTitl
               
               {/* Visual Aesthetic */}
               <div className="space-y-2.5">
-                <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
-                  <Palette className="w-3.5 h-3.5 text-rose-400" /> Visual Aesthetic & Stagecraft
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
+                    <Palette className="w-3.5 h-3.5 text-rose-400" /> Visual Aesthetic & Stagecraft
+                  </label>
+                  <span className="text-[10px] font-mono text-rose-400">13 Global Palettes</span>
+                </div>
                 <select
                   value={visualStyle}
                   onChange={(e) => setVisualStyle(e.target.value)}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 font-medium focus:outline-none focus:border-amber-500"
                 >
-                  <option value="ufotable_anime">🌸 Ufotable Cinematic Anime (Sakura Rays & Volumetric Light)</option>
-                  <option value="cyberpunk_neo_dojo">⚡ Cyberpunk Neo-Dojo (Rain Reflections & Neon Katana)</option>
-                  <option value="executive_keynote">🏛️ Executive 4K Studio Keynote (Teleprompter & Stage Lights)</option>
+                  {VISUAL_AESTHETICS.map((style) => (
+                    <option key={style.id} value={style.id}>
+                      {style.label} — [{style.badge}]
+                    </option>
+                  ))}
                 </select>
               </div>
 

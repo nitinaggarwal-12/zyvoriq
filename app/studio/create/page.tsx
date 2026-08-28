@@ -31,7 +31,8 @@ import {
   ChevronRight,
   Video
 } from "lucide-react";
-import { GENRE_CATEGORIES, GENRE_CONCEPTS, GenreConcept } from "@/components/CreateActModal";
+import { GENRE_CATEGORIES, GENRE_CONCEPTS, GenreConcept } from "@/lib/tier6/genre_concepts";
+import { GLOBAL_CHARACTERS, VISUAL_AESTHETICS } from "@/lib/tier6/characters";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 function CreatePageContent() {
@@ -704,36 +705,44 @@ function CreatePageContent() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Character Continuity Lock */}
                   <div className="space-y-2">
-                    <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5 text-cyan-400" /> Character Lock
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-cyan-400" /> Character & Speaker Lock
+                      </label>
+                      <span className="text-[10px] font-mono text-cyan-400">14 Global Personas</span>
+                    </div>
                     <select
                       value={characterLock}
                       onChange={(e) => setCharacterLock(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
                     >
-                      <option value="ren_aoi">🥋 Sensei Ren & Apprentice Aoi</option>
-                      <option value="priya">👩‍💼 Priya (Silicon Valley Twin)</option>
-                      <option value="david">👨‍💼 David (Zurich AI Architect)</option>
-                      <option value="elena">👩‍🔬 Elena (Tokyo Neural Systems)</option>
+                      {GLOBAL_CHARACTERS.map((char) => (
+                        <option key={char.id} value={char.id}>
+                          {char.avatarEmoji} {char.name} ({char.role} · {char.location})
+                        </option>
+                      ))}
+                      <option value="custom">✨ Custom Dynamic Ensemble (From Prompt)</option>
                     </select>
                   </div>
 
                   {/* Visual Aesthetic & Stagecraft */}
                   <div className="space-y-2">
-                    <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
-                      <Palette className="w-3.5 h-3.5 text-pink-400" /> Visual Aesthetic
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
+                        <Palette className="w-3.5 h-3.5 text-pink-400" /> Visual Aesthetic
+                      </label>
+                      <span className="text-[10px] font-mono text-pink-400">13 Global Palettes</span>
+                    </div>
                     <select
                       value={visualStyle}
                       onChange={(e) => setVisualStyle(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-pink-500"
                     >
-                      <option value="photorealistic_keynote">🎥 Photorealistic 4K Broadcast</option>
-                      <option value="ue5_raytraced">⚙️ Unreal Engine 5 (Raytraced / 3D CAD)</option>
-                      <option value="cyberpunk_noir">🌆 Cinematic Cyberpunk Neon</option>
-                      <option value="ufotable_anime">🌸 Ufotable Anime (Volumetric Light)</option>
-                      <option value="ghibli_pastoral">🎨 Studio Ghibli Watercolor</option>
+                      {VISUAL_AESTHETICS.map((style) => (
+                        <option key={style.id} value={style.id}>
+                          {style.label} — [{style.badge}]
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>

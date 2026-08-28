@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { generateVeoVideo, VeoGenerationProgress } from "@/lib/ai/veoService";
 import { synthesizeVoiceSpeech } from "@/lib/ai/ttsService";
 import { db } from "@/lib/db/client";
+import { GLOBAL_CHARACTERS, VISUAL_AESTHETICS } from "@/lib/tier6/characters";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -40,17 +41,18 @@ export async function POST(req: NextRequest) {
       autoVeritas = true,
       skipVeo = false
     } = body;
-    const promptLower = `${title} ${prompt}`.toLowerCase();
-    const effectiveCharacterLock =
-      promptLower.includes("elena")
-        ? "elena"
-        : promptLower.includes("priya")
-        ? "priya"
-        : promptLower.includes("david")
-        ? "david"
-        : promptLower.includes("ren") || promptLower.includes("aoi") || promptLower.includes("dojo") || promptLower.includes("zen")
-        ? "ren_aoi"
-        : (characterLock || "custom");
+
+    const characterProfile = GLOBAL_CHARACTERS.find(c => c.id === characterLock);
+    const characterDesc = characterProfile 
+      ? `${characterProfile.name} (Role: ${characterProfile.role} · ${characterProfile.location}, Voice Style: ${characterProfile.voiceStyle}, Accent: ${characterProfile.accent}, Specialty: ${characterProfile.specialty})`
+      : (characterLock || "Custom Presenter");
+
+    const visualStyleProfile = VISUAL_AESTHETICS.find(v => v.id === visualStyle);
+    const visualDesc = visualStyleProfile
+      ? `${visualStyleProfile.label} (${visualStyleProfile.description})`
+      : visualStyle.replace(/_/g, " ");
+
+    const effectiveCharacterLock = characterProfile?.name || characterLock;
 
     const requestedDuration = Math.max(4, Number(duration) || 8);
     const numActs = Math.max(1, Math.ceil(requestedDuration / 8));
