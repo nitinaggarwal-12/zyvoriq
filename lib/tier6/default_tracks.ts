@@ -260,5 +260,74 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
       "status": "CERTIFIED_VALID",
       "snarkProofHash": "0x1f9048a729e018cbb490192837482a10"
     }
+  },
+  {
+    "id": "track_music_synthwave_2099",
+    "title": "2099 Cyberpunk Synthwave Beat Lab",
+    "subtitle": "3-Act 128 BPM Analog Modular Session with Holographic Synthesizers in Neo-Tokyo",
+    "category": "music",
+    "character": "🎹 Kenji Sato (Sound Architect)",
+    "videoSrc": "/assets/video/veo_music_synthwave_genuine.mp4",
+    "duration": 24,
+    "acts": [
+      {
+        "id": "music_act_1",
+        "startTime": 0,
+        "endTime": 8,
+        "videoUrl": "/assets/video/veo_music_synthwave_genuine.mp4",
+        "speaker": "Kenji Sato",
+        "speakerRole": "Electronic Music Producer",
+        "actName": "Act 1: Patching the Analog Moog",
+        "philosophy": "Raw Voltage & Harmonic Resonance",
+        "text": {
+          "ja": "🎵 KENJI: 「モジュラーシンセのパッチケーブルが接続され、128BPMのアナログパルスが響き渡る。」",
+          "en": "🎵 KENJI: \"Modular patch cables lock in as the 128 BPM analog pulse resonates through the Tokyo night.\"",
+          "es": "🎵 KENJI: \"Los cables modulares se conectan mientras el pulso analógico a 128 BPM resuena.\"",
+          "fr": "🎵 KENJI: « Les câbles modulaires se verrouillent alors que la pulsation analogique résonne. »",
+          "de": "🎵 KENJI: „Modulare Patchkabel rasten ein, während der analoge 128-BPM-Puls pulsiert.“",
+          "hi": "🎵 केनजी: \"मॉड्यूलर सिंथेसाइज़र के सुर 128 बीपीएम की धड़कन के साथ जीवंत हो उठते हैं।\""
+        }
+      },
+      {
+        "id": "music_act_2",
+        "startTime": 8,
+        "endTime": 16,
+        "videoUrl": "/assets/video/veo_music_synthwave_genuine.mp4",
+        "speaker": "Kenji Sato",
+        "speakerRole": "Electronic Music Producer",
+        "actName": "Act 2: The Holographic Spectrum Drop",
+        "philosophy": "Kinetic Bass Architecture",
+        "text": {
+          "ja": "🎵 KENJI: 「低周波のサブベースが炸裂し、ホログラフィックスペクトラムが夜空に光を描く。」",
+          "en": "🎵 KENJI: \"The sub-bass drops into pure harmonic overdrive, lighting up the holographic spectrum analyzers.\"",
+          "es": "🎵 KENJI: \"El subgrave desciende en sobremarcha armónica, iluminando el espectro holográfico.\"",
+          "fr": "🎵 KENJI: « Les basses profondes explosent en harmonie, illuminant les analyseurs holographiques. »",
+          "de": "🎵 KENJI: „Der Subbass fällt in reine harmonische Verzerrung und erhellt das Frequenzspektrum.“",
+          "hi": "🎵 केनजी: \"गहरा बेस गूंजता है और होलोग्राम तरंगों में प्रकाश बिखेरता है।\""
+        }
+      },
+      {
+        "id": "music_act_3",
+        "startTime": 16,
+        "endTime": 24,
+        "videoUrl": "/assets/video/veo_music_synthwave_genuine.mp4",
+        "speaker": "Kenji Sato",
+        "speakerRole": "Electronic Music Producer",
+        "actName": "Act 3: Master Track Outro & Reverb Tail",
+        "philosophy": "Infinite Acoustic Space",
+        "text": {
+          "ja": "🎵 KENJI: 「無限のリバーブテールが静寂に溶け込み、マスターセッションが完成する。」",
+          "en": "🎵 KENJI: \"An infinite spatial reverb tail fades into silence as the master synthesis completes.\"",
+          "es": "🎵 KENJI: \"Una reverberación espacial infinita se desvanece en silencio completando la síntesis maestra.\"",
+          "fr": "🎵 KENJI: « Une réverbération spatiale infinie s'éteint dans le silence alors que la session s'achève. »",
+          "de": "🎵 KENJI: „Ein unendlicher Hall verklingt in der Stille und vollendet die Master-Synthese.“",
+          "hi": "🎵 केनजी: \"अनंत गूंज शांत होकर मास्टर रिकॉर्डिंग को पूर्णता प्रदान करती है।\""
+        }
+      }
+    ],
+    "veritas": {
+      "status": "CERTIFIED_VALID",
+      "snarkProofHash": "0x3d7a8f1920bc482a1049de8170c1aa39"
+    }
   }
 ];
