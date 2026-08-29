@@ -795,23 +795,32 @@ export const db = {
         res = await pg.query("SELECT * FROM studio_series_tracks ORDER BY created_at DESC");
       }
 
-      return res.rows.map(r => ({
-        id: r.id,
-        title: r.title,
-        subtitle: r.subtitle,
-        category: r.category,
-        character: r.character,
-        videoSrc: r.video_src,
-        audioSrc: r.audio_src || (typeof r.acts_json === "string" ? safeJsonParse<any[]>(r.acts_json, [])?.[0]?.audioUrl : r.acts_json?.[0]?.audioUrl),
-        duration: parseFloat(r.duration),
-        acts: typeof r.acts_json === "string" ? safeJsonParse(r.acts_json, []) : (r.acts_json || []),
-        veritas: {
-          status: r.veritas_status || "CERTIFIED_VALID",
-          snarkProofHash: r.snark_proof_hash || "0x8f2d...4a19"
-        },
-        createdAt: r.created_at,
-        updatedAt: r.updated_at
-      }));
+      const canonicalMap = new Map(CANONICAL_SERIES_TRACKS.map(c => [c.id, c]));
+
+      return res.rows.map(r => {
+        const canonical = canonicalMap.get(r.id);
+        const acts = canonical ? canonical.acts : (typeof r.acts_json === "string" ? safeJsonParse(r.acts_json, []) : (r.acts_json || []));
+        const audioSrc = canonical?.audioSrc || r.audio_src || acts?.[0]?.audioUrl;
+        const videoSrc = canonical?.videoSrc || r.video_src;
+
+        return {
+          id: r.id,
+          title: canonical?.title || r.title,
+          subtitle: canonical?.subtitle || r.subtitle,
+          category: canonical?.category || r.category,
+          character: canonical?.character || r.character,
+          videoSrc,
+          audioSrc,
+          duration: canonical?.duration || parseFloat(r.duration),
+          acts,
+          veritas: {
+            status: r.veritas_status || "CERTIFIED_VALID",
+            snarkProofHash: r.snark_proof_hash || "0x8f2d...4a19"
+          },
+          createdAt: r.created_at,
+          updatedAt: r.updated_at
+        };
+      });
     } catch (err: any) {
       console.warn("PostgreSQL getStudioTracksAsync fallback to SQLite:", err.message);
       return this.getStudioTracks();
