@@ -69,7 +69,6 @@ function StudioLibraryPageContent() {
           const deletedIds = new Set(JSON.parse(deletedStr));
 
           const obsoleteIds = new Set([
-            "track_executive_sovereign",
             "track_scramjet_hypersonic",
             "track_abyssal_ocean",
             "track_neotokyo_cyberpunk",
@@ -88,8 +87,7 @@ function StudioLibraryPageContent() {
               const cleanedLocal = localTracks.filter((t: any) =>
                 !obsoleteIds.has(t.id) &&
                 !deletedIds.has(t.id) &&
-                !t.title?.toLowerCase().includes("earnings") &&
-                !t.id?.includes("executive_sovereign")
+                !t.title?.toLowerCase().includes("earnings")
               );
               localStorage.setItem("zyvoriq_custom_production_tracks", JSON.stringify(cleanedLocal));
 
@@ -103,8 +101,7 @@ function StudioLibraryPageContent() {
           serverTracks = serverTracks.filter((t: any) =>
             !obsoleteIds.has(t.id) &&
             !deletedIds.has(t.id) &&
-            !t.title?.toLowerCase().includes("earnings") &&
-            !t.id?.includes("executive_sovereign")
+            !t.title?.toLowerCase().includes("earnings")
           );
         } catch (e) {}
       }
@@ -305,11 +302,21 @@ function StudioLibraryPageContent() {
             {[
               { id: "all", label: "🎬 All Categories" },
               { id: "anime", label: "🌸 Anime Series" },
-              { id: "executive", label: "🧑‍💼 Executive Twins" },
-              { id: "nature", label: "🌿 Nature & Wildlife" },
-              { id: "space", label: "🌌 Space & Cosmos" },
-              { id: "engineering", label: "⚙️ Engineering & Machines" },
-              { id: "medical", label: "🩺 Medical Equipment" },
+              { id: "executive", label: "👩‍💼 Executive Keynotes" },
+              { id: "nature", label: "🦁 Wildlife & Nature" },
+              { id: "music", label: "🎵 Music & Sound" },
+              { id: "gaming", label: "🎮 Gaming & Esports" },
+              { id: "comedy", label: "😂 Comedy & Satire" },
+              { id: "cinema", label: "🎭 Cinema & Noir" },
+              { id: "fantasy_scifi", label: "🏰 Fantasy & Sci-Fi" },
+              { id: "action_stunts", label: "💥 Action & Stunts" },
+              { id: "podcasts_essays", label: "🎙️ Podcasts & Essays" },
+              { id: "culinary", label: "🍳 Culinary Arts" },
+              { id: "wellness_faith", label: "🕉️ Vedanta & Sacred" },
+              { id: "science_space", label: "🔬 Science & Bio" },
+              { id: "history_geopolitics", label: "🏺 History & Civilizations" },
+              { id: "finance_wealth", label: "📈 Finance & Macro" },
+              { id: "leadership_masterclass", label: "👑 Leadership" },
               { id: "custom", label: "✨ Custom Creations" }
             ].map((cat) => {
               const isSelected = selectedCategory === cat.id;

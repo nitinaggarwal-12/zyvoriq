@@ -282,7 +282,6 @@ export const db = {
     try {
       const database = getDatabase();
       const obsoleteIds = [
-        "track_executive_sovereign",
         "track_scramjet_hypersonic",
         "track_abyssal_ocean",
         "track_neotokyo_cyberpunk",
@@ -300,9 +299,11 @@ export const db = {
 
       let rows = database.prepare("SELECT * FROM studio_series_tracks ORDER BY created_at DESC").all() as any[];
 
-      // Only seed canonical tracks once if table is empty
-      if (rows.length === 0) {
-        for (const canonical of CANONICAL_SERIES_TRACKS) {
+      // Ensure all canonical tracks exist in database
+      const existingIds = new Set(rows.map(r => r.id));
+      let newlyAdded = false;
+      for (const canonical of CANONICAL_SERIES_TRACKS) {
+        if (!existingIds.has(canonical.id)) {
           this.saveStudioTrack({
             id: canonical.id,
             title: canonical.title,
@@ -315,7 +316,10 @@ export const db = {
             veritas_status: canonical.veritas?.status || "CERTIFIED_VALID",
             snark_proof_hash: canonical.veritas?.snarkProofHash || "0x8f2d...4a19"
           });
+          newlyAdded = true;
         }
+      }
+      if (newlyAdded || rows.length === 0) {
         rows = database.prepare("SELECT * FROM studio_series_tracks ORDER BY created_at DESC").all() as any[];
       }
 
@@ -440,6 +444,45 @@ export const db = {
         acts: t.acts,
         veritas_status: t.veritas?.status || "CERTIFIED_VALID",
         snark_proof_hash: t.veritas?.snarkProofHash || "0x8f2d...4a19"
+      });
+
+      const acts = Array.isArray(t.acts) ? t.acts : [];
+      const firstAct = acts[0] || {};
+      const snarkProof = t.veritas?.snarkProofHash || `0x8f2d${t.id.slice(0, 8)}`;
+      this.createProductionJob({
+        id: t.id,
+        title: t.title,
+        prompt: t.subtitle || t.title,
+        characterLock: t.character || "custom",
+        visualStyle: t.category || "cinematic_4k",
+        duration: t.duration || 24.0,
+        status: "completed",
+        progress: 100,
+        stageText: "Master Render Complete · Veritas zk-SNARK Certified",
+        logs: [
+          `[00:00:00] 🎬 Master Series Loaded: "${t.title}"`,
+          `[00:00:01] 🎥 Multi-Act Google Veo 3.1 Diffusion Master Active (${acts.length || 1} Acts · ${t.duration}s)`,
+          `[00:00:02] 🛡️ Veritas Cryptographic SNARK Proof Validated: ${snarkProof}`
+        ],
+        acts: acts
+      });
+      this.updateProductionJob(t.id, {
+        videoUrl: t.videoSrc,
+        script: {
+          philosophy: firstAct.philosophy || t.subtitle || "Autonomous Neural Synthesis",
+          dialogueJa: firstAct.text?.ja || "",
+          dialogueEn: firstAct.text?.en || "",
+          dialogueEs: firstAct.text?.es || "",
+          dialogueFr: firstAct.text?.fr || "",
+          dialogueDe: firstAct.text?.de || "",
+          dialogueHi: firstAct.text?.hi || ""
+        },
+        veritas: {
+          certId: snarkProof,
+          status: "VERIFIED",
+          vqsScore: 99.4,
+          c2paManifestHash: snarkProof
+        }
       });
     }
   },
@@ -701,7 +744,6 @@ export const db = {
     }
     try {
       const obsoleteIds = [
-        "track_executive_sovereign",
         "track_scramjet_hypersonic",
         "track_abyssal_ocean",
         "track_neotokyo_cyberpunk",
@@ -717,10 +759,12 @@ export const db = {
         } catch (_) {}
       }
 
-      const res = await pg.query("SELECT * FROM studio_series_tracks ORDER BY created_at DESC");
-      if (res.rows.length === 0) {
-        // Seed canonical tracks into PostgreSQL
-        for (const canonical of CANONICAL_SERIES_TRACKS) {
+      let res = await pg.query("SELECT * FROM studio_series_tracks ORDER BY created_at DESC");
+      const existingIds = new Set(res.rows.map((r: any) => r.id));
+      let missingAdded = false;
+
+      for (const canonical of CANONICAL_SERIES_TRACKS) {
+        if (!existingIds.has(canonical.id)) {
           await this.saveStudioTrackAsync({
             id: canonical.id,
             title: canonical.title,
@@ -733,24 +777,12 @@ export const db = {
             veritas_status: canonical.veritas?.status || "CERTIFIED_VALID",
             snark_proof_hash: canonical.veritas?.snarkProofHash || "0x8f2d...4a19"
           });
+          missingAdded = true;
         }
-        const freshRes = await pg.query("SELECT * FROM studio_series_tracks ORDER BY created_at DESC");
-        return freshRes.rows.map(r => ({
-          id: r.id,
-          title: r.title,
-          subtitle: r.subtitle,
-          category: r.category,
-          character: r.character,
-          videoSrc: r.video_src,
-          duration: parseFloat(r.duration),
-          acts: typeof r.acts_json === "string" ? safeJsonParse(r.acts_json, []) : (r.acts_json || []),
-          veritas: {
-            status: r.veritas_status || "CERTIFIED_VALID",
-            snarkProofHash: r.snark_proof_hash || "0x8f2d...4a19"
-          },
-          createdAt: r.created_at,
-          updatedAt: r.updated_at
-        }));
+      }
+
+      if (missingAdded) {
+        res = await pg.query("SELECT * FROM studio_series_tracks ORDER BY created_at DESC");
       }
 
       return res.rows.map(r => ({
@@ -943,13 +975,67 @@ export const db = {
       return this.getAllProductionJobs();
     }
     try {
-      const res = await pg.query("SELECT * FROM studio_production_jobs ORDER BY created_at DESC LIMIT 100");
+      let res = await pg.query("SELECT * FROM studio_production_jobs ORDER BY created_at DESC LIMIT 100");
+      const existingIds = new Set(res.rows.map((r: any) => r.id));
+      let missingAdded = false;
+
+      for (const canonical of CANONICAL_SERIES_TRACKS) {
+        if (!existingIds.has(canonical.id)) {
+          const acts = Array.isArray(canonical.acts) ? canonical.acts : [];
+          const firstAct = acts[0] || {};
+          const snarkProof = canonical.veritas?.snarkProofHash || `0x8f2d${canonical.id.slice(0, 8)}`;
+
+          await this.createProductionJobAsync({
+            id: canonical.id,
+            title: canonical.title,
+            prompt: canonical.subtitle || canonical.title,
+            characterLock: canonical.character || "custom",
+            visualStyle: canonical.category || "cinematic_4k",
+            duration: canonical.duration || 24.0,
+            status: "completed",
+            progress: 100,
+            stageText: "Master Render Complete · Veritas zk-SNARK Certified",
+            logs: [
+              `[00:00:00] 🎬 Master Series Loaded: "${canonical.title}"`,
+              `[00:00:01] 🎥 Multi-Act Google Veo 3.1 Diffusion Master Active (${acts.length || 1} Acts · ${canonical.duration}s)`,
+              `[00:00:02] 🛡️ Veritas Cryptographic SNARK Proof Validated: ${snarkProof}`
+            ],
+            acts: acts
+          });
+
+          await this.updateProductionJobAsync(canonical.id, {
+            videoUrl: canonical.videoSrc,
+            script: {
+              philosophy: firstAct.philosophy || canonical.subtitle || "Autonomous Neural Synthesis",
+              dialogueJa: firstAct.text?.ja || "",
+              dialogueEn: firstAct.text?.en || "",
+              dialogueEs: firstAct.text?.es || "",
+              dialogueFr: firstAct.text?.fr || "",
+              dialogueDe: firstAct.text?.de || "",
+              dialogueHi: firstAct.text?.hi || ""
+            },
+            veritas: {
+              certId: snarkProof,
+              status: "VERIFIED",
+              vqsScore: 99.4,
+              c2paManifestHash: snarkProof
+            }
+          });
+          missingAdded = true;
+        }
+      }
+
+      if (missingAdded) {
+        res = await pg.query("SELECT * FROM studio_production_jobs ORDER BY created_at DESC LIMIT 100");
+      }
+
       return res.rows.map((row) => ({
         id: row.id,
         title: row.title,
         prompt: row.prompt,
         characterLock: row.character_lock,
         visualStyle: row.visual_style,
+        category: row.visual_style,
         duration: parseFloat(row.duration || "8"),
         status: row.status,
         progress: row.progress,

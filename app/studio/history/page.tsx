@@ -38,6 +38,7 @@ interface ProductionJob {
   prompt: string;
   characterLock: string;
   visualStyle: string;
+  category?: string;
   duration: number;
   status: "processing" | "completed" | "failed";
   progress: number;
@@ -58,11 +59,32 @@ interface ProductionJob {
   updatedAt?: string;
 }
 
+const CATEGORY_TABS = [
+  { id: "all", label: "🌐 All Categories" },
+  { id: "anime", label: "🌸 Anime Series" },
+  { id: "executive", label: "👩‍💼 Executive Keynotes" },
+  { id: "nature", label: "🦁 Wildlife & Nature" },
+  { id: "music", label: "🎵 Music & Sound" },
+  { id: "gaming", label: "🎮 Gaming & Esports" },
+  { id: "comedy", label: "😂 Comedy & Satire" },
+  { id: "cinema", label: "🎭 Cinema & Noir" },
+  { id: "fantasy_scifi", label: "🏰 Fantasy & Sci-Fi" },
+  { id: "action_stunts", label: "💥 Action & Stunts" },
+  { id: "podcasts_essays", label: "🎙️ Podcasts & Essays" },
+  { id: "culinary", label: "🍳 Culinary Arts" },
+  { id: "wellness_faith", label: "🕉️ Vedanta & Sacred" },
+  { id: "science_space", label: "🔬 Science & Bio" },
+  { id: "history_geopolitics", label: "🏺 History & Civilizations" },
+  { id: "finance_wealth", label: "📈 Finance & Macro" },
+  { id: "leadership_masterclass", label: "👑 Leadership" }
+];
+
 function StudioHistoryPageContent() {
   const router = useRouter();
   const [jobs, setJobs] = useState<ProductionJob[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedLogsJob, setSelectedLogsJob] = useState<ProductionJob | null>(null);
 
@@ -77,7 +99,13 @@ function StudioHistoryPageContent() {
       const prodData = prodRes ? await prodRes.json().catch(() => null) : null;
       const tracksData = tracksRes ? await tracksRes.json().catch(() => null) : null;
 
-      const dynamicJobs: ProductionJob[] = (prodData?.success && Array.isArray(prodData.jobs)) ? prodData.jobs : [];
+      const dynamicJobs: ProductionJob[] = (prodData?.success && Array.isArray(prodData.jobs)) 
+        ? prodData.jobs.map((j: any) => ({
+            ...j,
+            category: j.category || j.visualStyle || "custom"
+          }))
+        : [];
+
       const trackJobs: ProductionJob[] = (tracksData?.success && Array.isArray(tracksData.tracks)) 
         ? tracksData.tracks.map((t: any) => ({
             id: t.id,
@@ -85,6 +113,7 @@ function StudioHistoryPageContent() {
             prompt: t.subtitle || t.title,
             characterLock: t.character || "custom",
             visualStyle: t.category || "cinematic_4k",
+            category: t.category || "custom",
             duration: t.duration || (t.acts?.length ? t.acts.length * 8 : 24),
             status: "completed" as const,
             progress: 100,
@@ -141,14 +170,16 @@ function StudioHistoryPageContent() {
 
   const filteredJobs = jobs.filter((job) => {
     const matchesStatus = statusFilter === "all" || job.status === statusFilter;
+    const matchesCategory = categoryFilter === "all" || job.category === categoryFilter || job.visualStyle === categoryFilter;
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
       !q ||
       job.title.toLowerCase().includes(q) ||
       job.prompt.toLowerCase().includes(q) ||
       job.characterLock.toLowerCase().includes(q) ||
+      (job.category && job.category.toLowerCase().includes(q)) ||
       job.id.toLowerCase().includes(q);
-    return matchesStatus && matchesSearch;
+    return matchesStatus && matchesCategory && matchesSearch;
   });
 
   const totalCompleted = jobs.filter((j) => j.status === "completed").length;
@@ -242,42 +273,68 @@ function StudioHistoryPageContent() {
         </div>
 
         {/* Filter & Search Bar */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-900/40 p-3 rounded-2xl border border-slate-800/80">
-          {/* Status Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
-            {[
-              { id: "all", label: "All Runs", count: jobs.length },
-              { id: "completed", label: "Completed", count: totalCompleted },
-              { id: "processing", label: "In Flight", count: totalInFlight },
-              { id: "failed", label: "Failed", count: jobs.filter((j) => j.status === "failed").length }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setStatusFilter(tab.id)}
-                className={`px-4 py-2 rounded-xl text-xs font-mono whitespace-nowrap transition-all flex items-center gap-2 ${
-                  statusFilter === tab.id
-                    ? "bg-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-500/20"
-                    : "bg-slate-900/80 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800"
-                }`}
-              >
-                <span>{tab.label}</span>
-                <span className={`px-1.5 py-0.2 text-[10px] rounded-full ${statusFilter === tab.id ? "bg-slate-950/20 text-slate-950 font-bold" : "bg-slate-800 text-slate-400"}`}>
-                  {tab.count}
-                </span>
-              </button>
-            ))}
+        <div className="space-y-3 bg-slate-900/40 p-4 rounded-2xl border border-slate-800/80">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            {/* Status Tabs */}
+            <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
+              {[
+                { id: "all", label: "All Runs", count: jobs.length },
+                { id: "completed", label: "Completed", count: totalCompleted },
+                { id: "processing", label: "In Flight", count: totalInFlight },
+                { id: "failed", label: "Failed", count: jobs.filter((j) => j.status === "failed").length }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setStatusFilter(tab.id)}
+                  className={`px-4 py-2 rounded-xl text-xs font-mono whitespace-nowrap transition-all flex items-center gap-2 ${
+                    statusFilter === tab.id
+                      ? "bg-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-500/20"
+                      : "bg-slate-900/80 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800"
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  <span className={`px-1.5 py-0.2 text-[10px] rounded-full ${statusFilter === tab.id ? "bg-slate-950/20 text-slate-950 font-bold" : "bg-slate-800 text-slate-400"}`}>
+                    {tab.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Search Box */}
+            <div className="relative w-full md:w-80">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by title, prompt, persona or category..."
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-amber-500"
+              />
+            </div>
           </div>
 
-          {/* Search Box */}
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by title, prompt, persona or job ID..."
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-amber-500"
-            />
+          {/* Category Filter Pills */}
+          <div className="flex items-center gap-2 overflow-x-auto pt-2 border-t border-slate-800/60 scrollbar-none">
+            {CATEGORY_TABS.map((cat) => {
+              const isSelected = categoryFilter === cat.id;
+              const count = cat.id === "all" ? jobs.length : jobs.filter(j => j.category === cat.id || j.visualStyle === cat.id).length;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setCategoryFilter(cat.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-mono whitespace-nowrap transition-all flex items-center gap-1.5 border ${
+                    isSelected
+                      ? "bg-amber-500/20 border-amber-500/80 text-amber-200 font-bold shadow-md shadow-amber-500/10"
+                      : "bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800/50"
+                  }`}
+                >
+                  <span>{cat.label}</span>
+                  {count > 0 && (
+                    <span className="text-[10px] opacity-70">({count})</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -354,6 +411,14 @@ function StudioHistoryPageContent() {
                     <p className="text-xs text-slate-400 line-clamp-1 max-w-2xl">{job.prompt}</p>
 
                     <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] font-mono text-slate-400">
+                      {job.category && (
+                        <>
+                          <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20 text-[10px] uppercase font-bold">
+                            {job.category.replace(/_/g, " ")}
+                          </span>
+                          <span className="text-slate-600">|</span>
+                        </>
+                      )}
                       <span className="flex items-center gap-1 text-slate-300">
                         <User className="w-3.5 h-3.5 text-cyan-400" />
                         {job.characterLock}
@@ -361,7 +426,7 @@ function StudioHistoryPageContent() {
                       <span className="text-slate-600">|</span>
                       <span className="flex items-center gap-1 text-slate-300">
                         <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                        {job.veritas?.certId || "Veritas zk-SNARK Certified"}
+                        {job.veritas?.certId ? `${job.veritas.certId.slice(0, 16)}...` : "Veritas zk-SNARK Certified"}
                       </span>
                     </div>
                   </div>

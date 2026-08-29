@@ -87,7 +87,10 @@ export function seedDatabase() {
     signer_public_key_id: "ed25519:pub:89a2f9104c81b740c5984ef2a1c098bb",
   });
 
-  console.log("✓ Successfully pre-seeded Organizations, Workspaces, Swarm Runs & Veritas VQC Certificates!");
+  // 6. Seed All Studio Canonical Tracks & Production Jobs Across All Categories
+  db.seedDefaultStudioTracks();
+
+  console.log("✓ Successfully pre-seeded Organizations, Workspaces, Swarm Runs, Studio Series Tracks & Production Jobs Across All Categories!");
 }
 
 seedDatabase();
