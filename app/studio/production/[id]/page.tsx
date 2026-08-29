@@ -659,6 +659,10 @@ function ProductionJobPageContent() {
                   const currentAct = acts ? acts[activeActIndex] || acts[0] : null;
                   const nextAct = acts && activeActIndex < acts.length - 1 ? acts[activeActIndex + 1] : null;
 
+                  const isMultiFile = acts && acts.length > 1;
+                  const currentActAudio = currentAct?.audioUrl;
+                  const effectiveAudioSrc = isMultiFile ? (currentActAudio || (job as any).audioUrl) : ((job as any).audioUrl || (job.acts && job.acts[0]?.audioUrl));
+
                   const deckAUrl = activeDeck === "A"
                     ? (currentAct?.videoUrl || job.videoUrl)
                     : (nextAct?.videoUrl || (acts ? acts[activeActIndex + 1]?.videoUrl : undefined));
@@ -666,13 +670,6 @@ function ProductionJobPageContent() {
                   const deckBUrl = activeDeck === "B"
                     ? (currentAct?.videoUrl || job.videoUrl)
                     : (nextAct?.videoUrl || (acts ? acts[activeActIndex + 1]?.videoUrl : undefined));
-
-                  const audioDeckAUrl = activeDeck === "A"
-                    ? (currentAct?.audioUrl || (job as any).audioUrl)
-                    : nextAct?.audioUrl;
-
-                  const audioDeckBUrl = activeDeck === "B"
-                  const masterAudioSrc = (job as any).audioUrl || (job.acts && job.acts[0]?.audioUrl);
 
                   return (
                     <div
@@ -683,17 +680,23 @@ function ProductionJobPageContent() {
                         <>
                           {/* Video Deck A */}
                           <video
-                            key={`video_deck_a_${deckAUrl}`}
+                            key={`video_deck_a_${deckAUrl}_act_${activeActIndex}`}
                             ref={videoDeckARef}
                             src={deckAUrl}
                             autoPlay
-                            loop
                             playsInline
                             preload="auto"
                             muted={isMuted}
                             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out ${
                               activeDeck === "A" ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
                             }`}
+                            onEnded={() => {
+                              if (activeActIndex < (job.acts?.length || 0) - 1) {
+                                handleActSelect(activeActIndex + 1);
+                              } else {
+                                setIsPlaying(false);
+                              }
+                            }}
                             onPlay={() => {
                               setIsPlaying(true);
                               if (masterAudioRef.current && masterAudioRef.current.paused) {
@@ -711,16 +714,22 @@ function ProductionJobPageContent() {
 
                           {/* Video Deck B (Seamless Preload Buffer) */}
                           <video
-                            key={`video_deck_b_${deckBUrl}`}
+                            key={`video_deck_b_${deckBUrl}_act_${activeActIndex}`}
                             ref={videoDeckBRef}
                             src={deckBUrl}
-                            loop
                             playsInline
                             preload="auto"
                             muted={isMuted}
                             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out ${
                               activeDeck === "B" ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
                             }`}
+                            onEnded={() => {
+                              if (activeActIndex < (job.acts?.length || 0) - 1) {
+                                handleActSelect(activeActIndex + 1);
+                              } else {
+                                setIsPlaying(false);
+                              }
+                            }}
                             onPlay={() => {
                               setIsPlaying(true);
                               if (masterAudioRef.current && masterAudioRef.current.paused) {
@@ -736,48 +745,30 @@ function ProductionJobPageContent() {
                             onClick={togglePlay}
                           />
 
-                          {/* Single Unbroken Master Soundtrack Stream */}
-                          {masterAudioSrc && (
+                          {/* Dynamic Act Audio Stream */}
+                          {effectiveAudioSrc && (
                             <audio
-                              key={`master_audio_track_${job.id}_${masterAudioSrc}`}
+                              key={`master_audio_track_${job.id}_act_${activeActIndex}_${effectiveAudioSrc}`}
                               ref={masterAudioRef}
-                              src={masterAudioSrc}
+                              src={effectiveAudioSrc}
                               preload="auto"
                               muted={isMuted}
                               onPlay={() => setIsPlaying(true)}
                               onPause={() => setIsPlaying(false)}
+                              onEnded={() => {
+                                if (activeActIndex < (job.acts?.length || 0) - 1) {
+                                  handleActSelect(activeActIndex + 1);
+                                } else {
+                                  setIsPlaying(false);
+                                }
+                              }}
                               onTimeUpdate={() => {
                                 if (masterAudioRef.current) {
                                   const t = masterAudioRef.current.currentTime;
                                   setPlaybackTime(t);
-                                  const dur = masterAudioRef.current.duration || job.duration || 60;
+                                  const dur = masterAudioRef.current.duration || (currentAct ? currentAct.endTime - currentAct.startTime : 15);
                                   setActDuration(dur);
-
-                                  const actsList = job.acts || [];
-                                  if (actsList.length > 1) {
-                                    const nextActIdx = actsList.findIndex((a: any) => t >= a.startTime && t < a.endTime);
-                                    if (nextActIdx !== -1 && nextActIdx !== activeActIndex) {
-                                      setActiveActIndex(nextActIdx);
-                                      if (activeDeck === "A") {
-                                        setActiveDeck("B");
-                                        if (videoDeckBRef.current) {
-                                          videoDeckBRef.current.currentTime = 0;
-                                          videoDeckBRef.current.play().catch(() => {});
-                                        }
-                                      } else {
-                                        setActiveDeck("A");
-                                        if (videoDeckARef.current) {
-                                          videoDeckARef.current.currentTime = 0;
-                                          videoDeckARef.current.play().catch(() => {});
-                                        }
-                                      }
-                                    }
-                                  }
                                 }
-                              }}
-                              onEnded={() => {
-                                setIsPlaying(false);
-                                setActiveActIndex(0);
                               }}
                             />
                           )}
