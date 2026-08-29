@@ -1093,10 +1093,11 @@ function CreatePageContent() {
                   <button
                     type="button"
                     onClick={handleKickoffGeneration}
-                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-bold text-sm font-mono shadow-xl shadow-amber-500/20 transition-all flex items-center justify-center gap-2 active:scale-[0.99]"
+                    disabled={isGenerating || previsLoading}
+                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-bold text-sm font-mono shadow-xl shadow-amber-500/20 transition-all flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-50"
                   >
                     <Zap className="w-4 h-4 fill-current" />
-                    <span>Kickoff Veo 3.1 & DeepMind Dub Pipeline</span>
+                    <span>Kickoff Veo 3.1 &amp; DeepMind Dub Pipeline</span>
                   </button>
                 )}
               </div>
