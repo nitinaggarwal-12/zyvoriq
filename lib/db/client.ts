@@ -289,11 +289,25 @@ export const db = {
         "track_renaissance_painting",
         "track_theatrical_hamlet",
         "track_starlight_cartoon",
-        "track_hollywood_blockbuster"
+        "track_hollywood_blockbuster",
+        "track_music_synthwave_2099",
+        "track_gaming_nexus_arena",
+        "track_comedy_ai_alignment",
+        "track_cinema_midnight_shadow",
+        "track_fantasy_starlight_wyrm",
+        "track_action_samurai_mushin",
+        "track_podcasts_sovereign_architect",
+        "track_culinary_miyazaki_wagyu",
+        "track_wellness_advaita_vedanta",
+        "track_science_alphafold_cures",
+        "track_history_mohenjo_daro",
+        "track_finance_sovereign_liquidity",
+        "track_leadership_rajarshi"
       ];
       for (const obsId of obsoleteIds) {
         try {
           database.prepare("DELETE FROM studio_series_tracks WHERE id = ? OR title LIKE '%Earnings%'").run(obsId);
+          database.prepare("DELETE FROM studio_production_jobs WHERE id = ?").run(obsId);
         } catch (_) {}
       }
 
@@ -751,11 +765,25 @@ export const db = {
         "track_renaissance_painting",
         "track_theatrical_hamlet",
         "track_starlight_cartoon",
-        "track_hollywood_blockbuster"
+        "track_hollywood_blockbuster",
+        "track_music_synthwave_2099",
+        "track_gaming_nexus_arena",
+        "track_comedy_ai_alignment",
+        "track_cinema_midnight_shadow",
+        "track_fantasy_starlight_wyrm",
+        "track_action_samurai_mushin",
+        "track_podcasts_sovereign_architect",
+        "track_culinary_miyazaki_wagyu",
+        "track_wellness_advaita_vedanta",
+        "track_science_alphafold_cures",
+        "track_history_mohenjo_daro",
+        "track_finance_sovereign_liquidity",
+        "track_leadership_rajarshi"
       ];
       for (const obsId of obsoleteIds) {
         try {
           await pg.query("DELETE FROM studio_series_tracks WHERE id = $1 OR title LIKE '%Earnings%'", [obsId]);
+          await pg.query("DELETE FROM studio_production_jobs WHERE id = $1", [obsId]);
         } catch (_) {}
       }
 
