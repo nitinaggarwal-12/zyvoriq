@@ -43,6 +43,7 @@ import {
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { MultiSensoryStudioSuite } from "@/components/MultiSensoryStudioSuite";
 import { AppNavbar } from "@/components/AppNavbar";
+import { sanitizeRouteParam } from "@/lib/utils/storageGuard";
 
 interface ProductionJob {
   id: string;
@@ -91,7 +92,8 @@ interface ProductionJob {
 function ProductionJobPageContent() {
   const params = useParams();
   const router = useRouter();
-  const jobId = (params?.id as string) || "";
+  const rawId = (params?.id as string) || "";
+  const jobId = sanitizeRouteParam(rawId);
 
   const [job, setJob] = useState<ProductionJob | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -339,9 +341,18 @@ function ProductionJobPageContent() {
       fetchJob();
     }, 2500);
 
+    // Background tab throttling recovery (Chromium timer throttle bypass)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchJob();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
       isMounted = false;
       clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [jobId, job?.status]);
 

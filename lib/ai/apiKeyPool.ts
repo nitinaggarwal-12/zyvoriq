@@ -10,12 +10,14 @@ export interface KeyEntry {
   tier?: string;
 }
 
+import { safeLocalStorageSetItem, safeLocalStorageGetItem } from "@/lib/utils/storageGuard";
+
 export const STORAGE_KEY = "zyvoriq_gemini_api_key_pool";
 
 export function getStoredKeyPool(): KeyEntry[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = safeLocalStorageGetItem(STORAGE_KEY);
     if (!raw) return [];
     return JSON.parse(raw);
   } catch (e) {
@@ -25,7 +27,7 @@ export function getStoredKeyPool(): KeyEntry[] {
 
 export function saveStoredKeyPool(pool: KeyEntry[]) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(pool));
+  safeLocalStorageSetItem(STORAGE_KEY, JSON.stringify(pool));
   
   // Set the primary alive key into cookie
   const activeKey = pool.find(k => k.status === "alive") || pool[0];
@@ -34,6 +36,21 @@ export function saveStoredKeyPool(pool: KeyEntry[]) {
   } else {
     document.cookie = "zyvoriq_gemini_api_key=; path=/; max-age=0";
   }
+}
+
+export function rotateToNextAliveKey(failedKey: string): KeyEntry | null {
+  const pool = getStoredKeyPool();
+  const updated = pool.map((k) =>
+    k.key === failedKey ? { ...k, status: "rate_limited" as const, lastChecked: new Date().toLocaleTimeString() } : k
+  );
+  saveStoredKeyPool(updated);
+
+  const nextAlive = updated.find((k) => k.status === "alive" && k.key !== failedKey);
+  if (nextAlive) {
+    document.cookie = `zyvoriq_gemini_api_key=${nextAlive.key}; path=/; max-age=31536000; SameSite=Strict`;
+    return nextAlive;
+  }
+  return null;
 }
 
 export function maskKey(key: string): string {
