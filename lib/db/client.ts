@@ -293,9 +293,6 @@ export const db = {
         "track_comedy_ai_alignment",
         "track_action_samurai_mushin",
         "track_podcasts_sovereign_architect",
-        "track_science_alphafold_cures",
-        "track_history_mohenjo_daro",
-        "track_finance_sovereign_liquidity",
         "track_leadership_rajarshi"
       ];
       for (const obsId of obsoleteIds) {
@@ -763,9 +760,6 @@ export const db = {
         "track_comedy_ai_alignment",
         "track_action_samurai_mushin",
         "track_podcasts_sovereign_architect",
-        "track_science_alphafold_cures",
-        "track_history_mohenjo_daro",
-        "track_finance_sovereign_liquidity",
         "track_leadership_rajarshi"
       ];
       for (const obsId of obsoleteIds) {
