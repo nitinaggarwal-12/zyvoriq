@@ -18,9 +18,96 @@ export interface SeriesTrack {
 
 export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
   {
+    "id": "track_wildlife_serengeti_120s",
+    "title": "Serengeti & Masai Mara: The 15-Act Wildlife Odyssey",
+    "subtitle": "15-Act 120s 4K African Wildlife Documentary · The Great Migration & Apex Predators",
+    "category": "nature",
+    "character": "🦁 Serengeti Apex Wildlife & Savannah Ecosystem",
+    "videoSrc": "/assets/video/serengeti_savannah_8s.mp4",
+    "duration": 120,
+    "acts": [
+      {
+        "id": "wildlife_act_1",
+        "startTime": 0,
+        "endTime": 8,
+        "videoUrl": "/assets/video/serengeti_savannah_8s.mp4",
+        "speaker": "Narrator",
+        "speakerRole": "National Geographic Documentarian",
+        "actName": "Act 1: Dawn Over the Serengeti Plain",
+        "philosophy": "The Awakening Savannah",
+        "text": {
+          "ja": "🦁 NARRATOR: 「夜明けの金色の光が地平線を照らし、百万頭のヌーが命がけの大移動を開始します。」",
+          "en": "🦁 NARRATOR: \"Golden dawn breaks across the endless acacia plains of the Serengeti as the great migration begins.\"",
+          "es": "🦁 NARRATOR: \"El amanecer dorado despierta las llanuras del Serengeti cuando comienza la gran migración.\"",
+          "fr": "🦁 NARRATOR: « L'aube dorée illumine les plaines du Serengeti alors que commence la grande migration. »",
+          "de": "🦁 NARRATOR: „Der goldene Sonnenaufgang erhellt die Serengeti-Ebene bei Beginn der großen Tierwanderung.“",
+          "hi": "🦁 सूत्रधार: \"सेरेनगेटी के सुनहरे मैदानों पर सुबह की पहली किरण के साथ महान प्रवासन का आरंभ होता है।\""
+        }
+      },
+      {
+        "id": "wildlife_act_2",
+        "startTime": 8,
+        "endTime": 16,
+        "videoUrl": "/assets/video/serengeti_lion.mp4",
+        "speaker": "Narrator",
+        "speakerRole": "National Geographic Documentarian",
+        "actName": "Act 2: The Lion Pride Awakens",
+        "philosophy": "Apex Predator Dominance",
+        "text": {
+          "ja": "🦁 NARRATOR: 「岩山の上で威厳あるライオンの群れが目覚め、獲物の気配を鋭く探ります。」",
+          "en": "🦁 NARRATOR: \"A powerful pride of lions stirs on the kopje rocks, scanning the morning horizon for prey.\"",
+          "es": "🦁 NARRATOR: \"Una manada de leones se despereza sobre las rocas, vigilando el horizonte en busca de presas.\"",
+          "fr": "🦁 NARRATOR: « Une troupe de lions s'éveille sur les rochers, scrutant l'horizon matinal en quête de proies. »",
+          "de": "🦁 NARRATOR: „Ein Löwenrudel erwacht auf den Felsen und späht den morgendlichen Horizont nach Beute ab.“",
+          "hi": "🦁 सूत्रधार: \"चट्टानों पर शेरों का झुंड जागता है और शिकार की तलाश में नज़रें दौड़ाता है।\""
+        }
+      },
+      {
+        "id": "wildlife_act_3",
+        "startTime": 16,
+        "endTime": 24,
+        "videoUrl": "/assets/video/serengeti_cheetah.mp4",
+        "speaker": "Narrator",
+        "speakerRole": "National Geographic Documentarian",
+        "actName": "Act 3: Cheetah in the Tall Grass",
+        "philosophy": "Silent Stalking & Focus",
+        "text": {
+          "ja": "🦁 NARRATOR: 「風に揺れる黄金の草むらの中、チーターが音もなくガゼルへと忍び寄ります。」",
+          "en": "🦁 NARRATOR: \"Crouched low in the whispering golden grass, a solitary cheetah locks eyes with a grazing gazelle.\"",
+          "es": "🦁 NARRATOR: \"Agachado en la hierba dorada, un guepardo solitario fija su mirada en una gacela.\"",
+          "fr": "🦁 NARRATOR: « Accroupi dans les herbes dorées, un guépard solitaire fixe une gazelle qui broute. »",
+          "de": "🦁 NARRATOR: „Geduckt im goldenen Gras fixiert ein einsamer Gepard eine grasende Gazelle.“",
+          "hi": "🦁 सूत्रधार: \"सुनहरी घास में छिपा एक चीता चरती हुई गज़ेल पर अपनी नज़रें गड़ाता है।\""
+        }
+      },
+      {
+        "id": "wildlife_act_4",
+        "startTime": 24,
+        "endTime": 32,
+        "videoUrl": "/assets/video/serengeti_act_4_cheetah_sprint.mp4",
+        "speaker": "Narrator",
+        "speakerRole": "National Geographic Documentarian",
+        "actName": "Act 4: The 70mph Cheetah Sprint",
+        "philosophy": "Aerodynamic Kinetic Power",
+        "text": {
+          "ja": "🦁 NARRATOR: 「時速110キロの爆発的な疾走！大地を蹴り、驚異的な敏捷性で獲物を追いつめます。」",
+          "en": "🦁 NARRATOR: \"Explosive acceleration at 70 miles per hour! A breathtaking sprint across the sunbaked earth.\"",
+          "es": "🦁 NARRATOR: \"¡Aceleración explosiva a más de 100 km/h! Una carrera asombrosa por la tierra árida.\"",
+          "fr": "🦁 NARRATOR: « Une accélération fulgurante à plus de 100 km/h ! Un sprint spectaculaire à travers la savane. »",
+          "de": "🦁 NARRATOR: „Explosive Beschleunigung auf über 100 km/h! Ein atemberaubender Sprint über den staubigen Boden.“",
+          "hi": "🦁 सूत्रधार: \"100 किमी प्रति घंटे की रफ्तार से विस्फोटक दौड़! सवाना की धरती पर रोमांचक पीछा।\""
+        }
+      }
+    ],
+    "veritas": {
+      "status": "CERTIFIED_VALID",
+      "snarkProofHash": "0x8f2d91a082bc310d289aa84bb9084e88"
+    }
+  },
+  {
     "id": "track_anime_kaizen",
     "title": "The Master & The Apprentice: Path to Kaizen",
-    "subtitle": "7-Act Cinematic Japanese Anime Series · Sensei Ren & Apprentice Aoi",
+    "subtitle": "7-Act 56s Cinematic Japanese Anime Series · Sensei Ren & Apprentice Aoi",
     "category": "anime",
     "character": "🥋 Sensei Ren & Apprentice Aoi",
     "videoSrc": "/assets/video/ren_and_aoi_conversation_synced.mp4",
@@ -83,123 +170,13 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
     }
   },
   {
-    "id": "track_wildlife_serengeti_120s",
-    "title": "Serengeti & Masai Mara: The 15-Act Wildlife Odyssey",
-    "subtitle": "15-Act 120s 4K African Wildlife Documentary · The Great Migration & Apex Predators",
-    "category": "nature",
-    "character": "🦁 Serengeti Apex Wildlife & Savannah Ecosystem",
-    "videoSrc": "/assets/video/serengeti_savannah_8s.mp4",
-    "duration": 120,
-    "acts": [
-      {
-        "id": "wildlife_act_1",
-        "startTime": 0,
-        "endTime": 8,
-        "videoUrl": "/assets/video/serengeti_savannah_8s.mp4",
-        "audioUrl": "/assets/audio/wildlife/act_1.wav",
-        "speaker": "Narrator",
-        "speakerRole": "National Geographic Documentarian",
-        "actName": "Act 1: Dawn Over the Serengeti Plain",
-        "philosophy": "The Awakening Savannah",
-        "text": {
-          "ja": "🦁 NARRATOR: 「夜明けの金色の光が地平線を照らし、百万頭のヌーが命がけの大移動を開始します。」",
-          "en": "🦁 NARRATOR: \"Golden dawn breaks across the endless acacia plains of the Serengeti as the great migration begins.\"",
-          "es": "🦁 NARRATOR: \"El amanecer dorado despierta las llanuras del Serengeti cuando comienza la gran migración.\"",
-          "fr": "🦁 NARRATOR: « L'aube dorée illumine les plaines du Serengeti alors que commence la grande migration. »",
-          "de": "🦁 NARRATOR: „Der goldene Sonnenaufgang erhellt die Serengeti-Ebene bei Beginn der großen Tierwanderung.“",
-          "hi": "🦁 सूत्रधार: \"सेरेनगेटी के सुनहरे मैदानों पर सुबह की पहली किरण के साथ महान प्रवासन का आरंभ होता है।\""
-        }
-      },
-      {
-        "id": "wildlife_act_2",
-        "startTime": 8,
-        "endTime": 16,
-        "videoUrl": "/assets/video/serengeti_lion.mp4",
-        "audioUrl": "/assets/audio/wildlife/act_2.wav",
-        "speaker": "Narrator",
-        "speakerRole": "National Geographic Documentarian",
-        "actName": "Act 2: The Lion Pride Awakens",
-        "philosophy": "Apex Predator Dominance",
-        "text": {
-          "ja": "🦁 NARRATOR: 「岩山の上で威厳あるライオンの群れが目覚め、獲物の気配を鋭く探ります。」",
-          "en": "🦁 NARRATOR: \"A powerful pride of lions stirs on the kopje rocks, scanning the morning horizon for prey.\"",
-          "es": "🦁 NARRATOR: \"Una manada de leones se despereza sobre las rocas, vigilando el horizonte en busca de presas.\"",
-          "fr": "🦁 NARRATOR: « Une troupe de lions s'éveille sur les rochers, scrutant l'horizon matinal en quête de proies. »",
-          "de": "🦁 NARRATOR: „Ein Löwenrudel erwacht auf den Felsen und späht den morgendlichen Horizont nach Beute ab.“",
-          "hi": "🦁 सूत्रधार: \"चट्टानों पर शेरों का झुंड जागता है और शिकार की तलाश में नज़रें दौड़ाता है।\""
-        }
-      },
-      {
-        "id": "wildlife_act_3",
-        "startTime": 16,
-        "endTime": 24,
-        "videoUrl": "/assets/video/serengeti_cheetah.mp4",
-        "audioUrl": "/assets/audio/wildlife/act_3.wav",
-        "speaker": "Narrator",
-        "speakerRole": "National Geographic Documentarian",
-        "actName": "Act 3: Cheetah in the Tall Grass",
-        "philosophy": "Silent Stalking & Focus",
-        "text": {
-          "ja": "🦁 NARRATOR: 「風に揺れる黄金の草むらの中、チーターが音もなくガゼルへと忍び寄ります。」",
-          "en": "🦁 NARRATOR: \"Crouched low in the whispering golden grass, a solitary cheetah locks eyes with a grazing gazelle.\"",
-          "es": "🦁 NARRATOR: \"Agachado en la hierba dorada, un guepardo solitario fija su mirada en una gacela.\"",
-          "fr": "🦁 NARRATOR: « Accroupi dans les herbes dorées, un guépard solitaire fixe une gazelle qui broute. »",
-          "de": "🦁 NARRATOR: „Geduckt im goldenen Gras fixiert ein einsamer Gepard eine grasende Gazelle.“",
-          "hi": "🦁 सूत्रधार: \"सुनहरी घास में छिपा एक चीता चरती हुई गज़ेल पर अपनी नज़रें गड़ाता है।\""
-        }
-      },
-      {
-        "id": "wildlife_act_4",
-        "startTime": 24,
-        "endTime": 32,
-        "videoUrl": "/assets/video/serengeti_act_4_cheetah_sprint.mp4",
-        "audioUrl": "/assets/audio/wildlife/act_4.wav",
-        "speaker": "Narrator",
-        "speakerRole": "National Geographic Documentarian",
-        "actName": "Act 4: The 70mph Cheetah Sprint",
-        "philosophy": "Aerodynamic Kinetic Power",
-        "text": {
-          "ja": "🦁 NARRATOR: 「時速110キロの爆発的な疾走！大地を蹴り、驚異的な敏捷性で獲物を追いつめます。」",
-          "en": "🦁 NARRATOR: \"Explosive acceleration at 70 miles per hour! A breathtaking sprint across the sunbaked earth.\"",
-          "es": "🦁 NARRATOR: \"¡Aceleración explosiva a más de 100 km/h! Una carrera asombrosa por la tierra árida.\"",
-          "fr": "🦁 NARRATOR: « Une accélération fulgurante à plus de 100 km/h ! Un sprint spectaculaire à travers la savane. »",
-          "de": "🦁 NARRATOR: „Explosive Beschleunigung auf über 100 km/h! Ein atemberaubender Sprint über den staubigen Boden.“",
-          "hi": "🦁 सूत्रधार: \"100 किमी प्रति घंटे की रफ्तार से विस्फोटक दौड़! सवाना की धरती पर रोमांचक पीछा।\""
-        }
-      },
-      {
-        "id": "wildlife_act_5",
-        "startTime": 32,
-        "endTime": 40,
-        "videoUrl": "/assets/video/serengeti_elephants.mp4",
-        "audioUrl": "/assets/audio/wildlife/act_5.wav",
-        "speaker": "Narrator",
-        "speakerRole": "National Geographic Documentarian",
-        "actName": "Act 5: Elephant Matriarch & The Herd",
-        "philosophy": "Ancestral Wisdom & Bond",
-        "text": {
-          "ja": "🦁 NARRATOR: 「長老の母ゾウに率いられた群れが、水場を求めてゆったりと赤い大地を進みます。」",
-          "en": "🦁 NARRATOR: \"Guided by the matriarch's ancestral memory, an elephant herd marches toward distant waterholes.\"",
-          "es": "🦁 NARRATOR: \"Guiada por la matriarca, una manada de elefantes marcha hacia los lejanos pozos de agua.\"",
-          "fr": "🦁 NARRATOR: « Guidé par la matriarche, un troupeau d'éléphants s'avance paisiblement vers les points d'eau. »",
-          "de": "🦁 NARRATOR: „Geleitet von der weisen Matriarchin zieht eine Elefantenherde zu fernen Wasserstellen.“",
-          "hi": "🦁 सूत्रधार: \"मातृसत्तात्मक हथिनी के नेतृत्व में हाथियों का झुंड पानी की तलाश में आगे बढ़ता है।\""
-        }
-      }
-    ],
-    "veritas": {
-      "status": "CERTIFIED_VALID",
-      "snarkProofHash": "0x8f2d91a082bc310d289aa84bb9084e88"
-    }
-  },
-  {
     "id": "track_fantasy_starlight_wyrm",
-    "title": "Citadel of the Starlight Wyrm",
-    "subtitle": "3-Act High Fantasy Epic with Floating Arcane Spires & Crystalline Dragon Flight",
+    "title": "Citadel of the Starlight Wyrm (32s Epic)",
+    "subtitle": "4-Act 32s High Fantasy Epic with Floating Arcane Spires & Crystalline Dragon Flight",
     "category": "fantasy_scifi",
     "character": "🏰 Elena Rostova (Arcane Chronicler)",
     "videoSrc": "/assets/video/veo_fantasy_wyrm_genuine.mp4",
-    "duration": 24,
+    "duration": 32,
     "acts": [
       {
         "id": "fantasy_act_1",
@@ -244,7 +221,25 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
         "videoUrl": "/assets/video/veo_fantasy_wyrm_genuine.mp4",
         "speaker": "Elena Rostova",
         "speakerRole": "Arcane Chronicler",
-        "actName": "Act 3: Oath of the Starlight Wardens",
+        "actName": "Act 3: Lightning Storm on Celestial Peaks",
+        "philosophy": "Elemental Primordial Power",
+        "text": {
+          "ja": "🏰 ELENA: 「天空の雷鳴が轟き、古代の守護結界が紫紺の稲妻と共に覚醒する。」",
+          "en": "🏰 ELENA: \"Arcane thunder echoes through the heavens as the celestial ward awakens with violet lightning.\"",
+          "es": "🏰 ELENA: \"El trueno arcano resuena en los cielos mientras la barrera celestial despierta.\"",
+          "fr": "🏰 ELENA: « Le tonnerre arcanique gronde dans les cieux alors que la barrière céleste s'éveille. »",
+          "de": "🏰 ELENA: „Arkaner Donner hallt durch die Himmel, während die Schutzbarriere erwacht.“",
+          "hi": "🏰 एलेना: \"आकाशीय गर्जना के साथ प्राचीन सुरक्षा चक्र जागृत हो उठता है।\""
+        }
+      },
+      {
+        "id": "fantasy_act_4",
+        "startTime": 24,
+        "endTime": 32,
+        "videoUrl": "/assets/video/veo_fantasy_wyrm_genuine.mp4",
+        "speaker": "Elena Rostova",
+        "speakerRole": "Arcane Chronicler",
+        "actName": "Act 4: Oath of the Starlight Wardens",
         "philosophy": "Eternal Guardian Vow",
         "text": {
           "ja": "🏰 ELENA: 「星々の加護のもと、聖なる誓いが結ばれ、浮遊都市は新たな黎明を迎える。」",
@@ -262,13 +257,361 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
     }
   },
   {
+    "id": "track_gaming_nexus_arena",
+    "title": "Grand Finals: Nexus Arena Championship (32s Master)",
+    "subtitle": "4-Act 32s Tactical Esports Arena Championship · Stadium Walkout to Victory Confetti",
+    "category": "gaming",
+    "character": "🎮 Aoi Takahashi (Esports Caster)",
+    "videoSrc": "/assets/video/veo_gaming_nexus_genuine.mp4",
+    "duration": 32,
+    "acts": [
+      {
+        "id": "gaming_act_1",
+        "startTime": 0,
+        "endTime": 8,
+        "videoUrl": "/assets/video/veo_gaming_nexus_genuine.mp4",
+        "speaker": "Aoi Takahashi",
+        "speakerRole": "Esports Lead Caster",
+        "actName": "Act 1: Stadium Walkout & Crowd Roar",
+        "philosophy": "Arena Kinetic Atmosphere",
+        "text": {
+          "ja": "🎮 AOI: 「超満員のネクサスアリーナ！5万人の大歓声の中、グランドファイナルが開幕します！」",
+          "en": "🎮 AOI: \"A sold-out Nexus Arena! 50,000 screaming fans roar as the Grand Finals kickoff!\"",
+          "es": "🎮 AOI: \"¡El Nexus Arena completamente lleno! ¡50.000 aficionados rugen al inicio de la Gran Final!\"",
+          "fr": "🎮 AOI: « L'arène Nexus comble ! 50 000 fans hurlent alors que la grande finale débute ! »",
+          "de": "🎮 AOI: „Eine ausverkaufte Nexus Arena! 50.000 Fans jubeln zum Start des großen Finales!“",
+          "hi": "🎮 आओई: \"खचाखच भरा नेक्सस एरिना! 50,000 प्रशंसकों के जयघोष के साथ ग्रैंड फाइनल्स की शुरुआत!\""
+        }
+      },
+      {
+        "id": "gaming_act_2",
+        "startTime": 8,
+        "endTime": 16,
+        "videoUrl": "/assets/video/veo_gaming_nexus_genuine.mp4",
+        "speaker": "Aoi Takahashi",
+        "speakerRole": "Esports Lead Caster",
+        "actName": "Act 2: Holographic Draft & Battle Stage",
+        "philosophy": "Macro Tactical Strategy",
+        "text": {
+          "ja": "🎮 AOI: 「ホログラフィックドラフト画面が点灯！両チームの伝説のアバターがステージ中央に顕現します！」",
+          "en": "🎮 AOI: \"The holographic draft screen ignites as both teams lock in their signature battle avatars!\"",
+          "es": "🎮 AOI: \"¡La pantalla holográfica se ilumina mientras ambos equipos eligen a sus avatares!\"",
+          "fr": "🎮 AOI: « L'écran holographique s'illumine alors que les équipes verrouillent leurs avatars ! »",
+          "de": "🎮 AOI: „Der holografische Draft-Bildschirm leuchtet auf, während die Teams ihre Avatare wählen!“",
+          "hi": "🎮 आओई: \"होलोग्राफिक स्क्रीन पर दोनों टीमें अपने मुख्य लड़ाकू अवतारों को चुनती हैं!\""
+        }
+      },
+      {
+        "id": "gaming_act_3",
+        "startTime": 16,
+        "endTime": 24,
+        "videoUrl": "/assets/video/veo_gaming_nexus_genuine.mp4",
+        "speaker": "Aoi Takahashi",
+        "speakerRole": "Esports Lead Caster",
+        "actName": "Act 3: 5v5 Team Fight Decisive Climax",
+        "philosophy": "Sub-Millisecond Execution",
+        "text": {
+          "ja": "🎮 AOI: 「決定的集団戦！超高速のスキルコンボが炸裂し、敵の防衛ラインを一瞬で粉砕！」",
+          "en": "🎮 AOI: \"Decisive 5v5 teamfight! Frame-perfect ultimate combos shatter the enemy defense in milliseconds!\"",
+          "es": "🎮 AOI: \"¡Pelea de equipo decisiva 5v5! ¡Los combos definitivos destrozan la defensa rival!\"",
+          "fr": "🎮 AOI: « Combat d'équipe décisif en 5v5 ! Les combos ultimes brisent la défense adverse ! »",
+          "de": "🎮 AOI: „Entscheidender 5v5-Teamkampf! Perfekte Combos durchbrechen die gegnerische Abwehr!“",
+          "hi": "🎮 आओई: \"निर्णायक 5v5 मुकाबला! सटीक रणनीतिक हमलों ने विरोधी खेमे को ध्वस्त कर दिया!\""
+        }
+      },
+      {
+        "id": "gaming_act_4",
+        "startTime": 24,
+        "endTime": 32,
+        "videoUrl": "/assets/video/veo_gaming_nexus_genuine.mp4",
+        "speaker": "Aoi Takahashi",
+        "speakerRole": "Esports Lead Caster",
+        "actName": "Act 4: Trophy Ceremony & Confetti Shower",
+        "philosophy": "Championship Glory",
+        "text": {
+          "ja": "🎮 AOI: 「GG！黄金のトロフィーが掲げられ、金色の紙吹雪がアリーナ全体に舞い散ります！」",
+          "en": "🎮 AOI: \"GG! The golden trophy is raised high as championship confetti showers the entire arena!\"",
+          "es": "🎮 AOI: \"¡GG! ¡El trofeo dorado se alza mientras el confeti inunda toda la arena!\"",
+          "fr": "🎮 AOI: « GG ! Le trophée doré est brandi alors que les confettis inondent l'arène ! »",
+          "de": "🎮 AOI: „GG! Der goldene Pokal wird emporgehoben, während Konfetti die Arena erfüllt!“",
+          "hi": "🎮 आओई: \"शानदार जीत! स्वर्णिम ट्रॉफी के साथ जश्न और आतिशबाजी का अद्भुत नज़ारा!\""
+        }
+      }
+    ],
+    "veritas": {
+      "status": "CERTIFIED_VALID",
+      "snarkProofHash": "0x7b2a9e018cbb490192837482a1049de8"
+    }
+  },
+  {
+    "id": "track_cinema_midnight_shadow",
+    "title": "Midnight Shadow: The Last Detective (32s Master)",
+    "subtitle": "4-Act 32s 35mm Chicago Film Noir Mystery in Heavy Rain",
+    "category": "cinema",
+    "character": "🕵️ Marcus Vance (Detective Cole)",
+    "videoSrc": "/assets/video/veo_cinema_noir_genuine.mp4",
+    "duration": 32,
+    "acts": [
+      {
+        "id": "noir_act_1",
+        "startTime": 0,
+        "endTime": 8,
+        "videoUrl": "/assets/video/veo_cinema_noir_genuine.mp4",
+        "speaker": "Detective Cole",
+        "speakerRole": "Film Noir Protagonist",
+        "actName": "Act 1: Rain Over Wabash Avenue",
+        "philosophy": "Hardboiled Realism",
+        "text": {
+          "ja": "🕵️ COLE: 「午前2時のシカゴ。雨はすべての罪を洗い流そうとするが、真実は消せない。」",
+          "en": "🕵️ COLE: \"2 AM in Chicago. Rain tries to wash away every sin, but truth leaves a stain.\"",
+          "es": "🕵️ COLE: \"2 AM en Chicago. La lluvia intenta lavar cada pecado, pero la verdad siempre deja marca.\"",
+          "fr": "🕵️ COLE: « 2h du matin à Chicago. La pluie tente d'effacer les péchés, mais la vérité persiste. »",
+          "de": "🕵️ COLE: „2 Uhr morgens in Chicago. Der Regen will alles reinwaschen, doch die Wahrheit bleibt.“",
+          "hi": "🕵️ कोल: \"रात के दो बजे की शिकागो की बारिश हर राज़ को अपने आगोश में समेट लेती है।\""
+        }
+      },
+      {
+        "id": "noir_act_2",
+        "startTime": 8,
+        "endTime": 16,
+        "videoUrl": "/assets/video/veo_cinema_noir_genuine.mp4",
+        "speaker": "Detective Cole",
+        "speakerRole": "Film Noir Protagonist",
+        "actName": "Act 2: Flickering Gas Streetlamp Shadows",
+        "philosophy": "Atmospheric Suspense",
+        "text": {
+          "ja": "🕵️ COLE: 「路地の街灯がチカチカと点滅し、濡れたアスファルトに怪しい影が伸びる。」",
+          "en": "🕵️ COLE: \"The flickering gas lamp hums in the mist, casting long, crooked shadows across the wet bricks.\"",
+          "es": "🕵️ COLE: \"La farola parpadea en la niebla, proyectando sombras alargadas sobre los ladrillos húmedos.\"",
+          "fr": "🕵️ COLE: « Le réverbère vacille dans la brume, projetant de longues ombres sur les pavés mouillés. »",
+          "de": "🕵️ COLE: „Die flackernde Gaslaterne wirft lange Schatten auf das nasse Pflaster.“",
+          "hi": "🕵️ कोल: \"स्ट्रीटलाइट की मद्धम रोशनी में भीगी सड़कों पर रहस्यमयी परछाइयां लहराती हैं।\""
+        }
+      },
+      {
+        "id": "noir_act_3",
+        "startTime": 16,
+        "endTime": 24,
+        "videoUrl": "/assets/video/veo_cinema_noir_genuine.mp4",
+        "speaker": "Detective Cole",
+        "speakerRole": "Film Noir Protagonist",
+        "actName": "Act 3: The Matchstick & Trenchcoat Clue",
+        "philosophy": "Cerebral Deduction",
+        "text": {
+          "ja": "🕵️ COLE: 「マッチの炎が一瞬だけ顔を照らす。探していた証拠は最初からここにあった。」",
+          "en": "🕵️ COLE: \"A struck match briefly cuts through the dark. The missing ledger was here all along.\"",
+          "es": "🕵️ COLE: \"Un fósforo encendido corta la oscuridad. El libro de cuentas perdido siempre estuvo aquí.\"",
+          "fr": "🕵️ COLE: « Une allumette craquée fend l'obscurité. Le registre manquant était là depuis le début. »",
+          "de": "🕵️ COLE: „Ein brennendes Streichholz erhellt die Dunkelheit. Die Beweise waren die ganze Zeit hier.“",
+          "hi": "🕵️ कोल: \"माचिस की एक तीली अंधेरे को चीरती है और खोया हुआ सुराग सामने आ जाता है।\""
+        }
+      },
+      {
+        "id": "noir_act_4",
+        "startTime": 24,
+        "endTime": 32,
+        "videoUrl": "/assets/video/veo_cinema_noir_genuine.mp4",
+        "speaker": "Detective Cole",
+        "speakerRole": "Film Noir Protagonist",
+        "actName": "Act 4: Disappearing into Midnight Fog",
+        "philosophy": "Solitary Resolution",
+        "text": {
+          "ja": "🕵️ COLE: 「コートの襟を立て、霧深い夜の闇へと姿を消す。事件は終わった。」",
+          "en": "🕵️ COLE: \"Collar pulled high against the chill, slipping into the midnight fog. Case closed.\"",
+          "es": "🕵️ COLE: \"Cuello alzado contra el frío, desvaneciéndose en la niebla de medianoche. Caso cerrado.\"",
+          "fr": "🕵️ COLE: « Col relevé contre le froid, s'effaçant dans le brouillard nocturne. Affaire classée. »",
+          "de": "🕵️ COLE: „Kragen hochgeschlagen gegen die Kälte, verschwindend im Mitternachtsnebel. Fall gelöst.“",
+          "hi": "🕵️ कोल: \"कोट का कॉलर उठाकर आधी रात के कोहरे में ओझल होते हुए, केस बंद।\""
+        }
+      }
+    ],
+    "veritas": {
+      "status": "CERTIFIED_VALID",
+      "snarkProofHash": "0x5a1920bc482a1049de8170c1aa3902f8"
+    }
+  },
+  {
+    "id": "track_culinary_miyazaki_wagyu",
+    "title": "The Art of A5 Miyazaki Wagyu Searing (32s Master)",
+    "subtitle": "4-Act 32s Michelin Masterclass on Binchotan Charcoal & 54°C Core Searing",
+    "category": "culinary",
+    "character": "🍳 Kenji Sato (Michelin Star Chef)",
+    "videoSrc": "/assets/video/veo_culinary_wagyu_genuine.mp4",
+    "duration": 32,
+    "acts": [
+      {
+        "id": "culinary_act_1",
+        "startTime": 0,
+        "endTime": 8,
+        "videoUrl": "/assets/video/veo_culinary_wagyu_genuine.mp4",
+        "speaker": "Kenji Sato",
+        "speakerRole": "Michelin Executive Chef",
+        "actName": "Act 1: A5 Snow Marbling Inspection",
+        "philosophy": "Ingredient Reverence",
+        "text": {
+          "ja": "🍳 SATO: 「見事なA5等級の霜降り。脂の融点は25度、体温で溶け出す極上の肉質です。」",
+          "en": "🍳 SATO: \"Pristine A5 BMS 12 marbling. The oleic acid melts at room temperature, pure perfection.\"",
+          "es": "🍳 SATO: \"Impecable marmoleado A5 BMS 12. La grasa se funde a temperatura ambiente.\"",
+          "fr": "🍳 SATO: « Persillage A5 BMS 12 parfait. Le gras fond à température ambiante, pure excellence. »",
+          "de": "🍳 SATO: „Perfekte A5-Marmorierung. Das Fett schmilzt bereits bei Raumtemperatur.“",
+          "hi": "🍳 सातो: \"अद्वितीय A5 ग्रेड मार्बलिंग, जो कमरे के तापमान पर ही पिघलने लगती है।\""
+        }
+      },
+      {
+        "id": "culinary_act_2",
+        "startTime": 8,
+        "endTime": 16,
+        "videoUrl": "/assets/video/veo_culinary_wagyu_genuine.mp4",
+        "speaker": "Kenji Sato",
+        "speakerRole": "Michelin Executive Chef",
+        "actName": "Act 2: The White Binchotan Charcoal Sear",
+        "philosophy": "Far-Infrared Precision",
+        "text": {
+          "ja": "🍳 SATO: 「白炭備長炭の遠赤外線で表面を一気にキャラメリゼ。メイラード反応が芳醇な香りを生む。」",
+          "en": "🍳 SATO: \"Seared over white Kishu Binchotan charcoal. Far-infrared heat triggers rapid Maillard caramelization.\"",
+          "es": "🍳 SATO: \"Sellado sobre carbón Binchotan. El calor infrarrojo desata la caramelización Maillard.\"",
+          "fr": "🍳 SATO: « Saisi au charbon Binchotan blanc. La chaleur infrarouge déclenche la caramélisation de Maillard. »",
+          "de": "🍳 SATO: „Scharf angebraten über weißer Binchotan-Kohle für optimale Maillard-Karamellisierung.“",
+          "hi": "🍳 सातो: \"चारकोल की आंच पर सतह का सटीक कैरामेलाइजेशन और अनूठा स्वाद।\""
+        }
+      },
+      {
+        "id": "culinary_act_3",
+        "startTime": 16,
+        "endTime": 24,
+        "videoUrl": "/assets/video/veo_culinary_wagyu_genuine.mp4",
+        "speaker": "Kenji Sato",
+        "speakerRole": "Michelin Executive Chef",
+        "actName": "Act 3: Core Resting & Internal Juices",
+        "philosophy": "Thermal Equilibrium",
+        "text": {
+          "ja": "🍳 SATO: 「5分間のレストで芯温を54度に均一化。肉汁が繊維全体に再循環します。」",
+          "en": "🍳 SATO: \"Five minutes of gentle resting allows the core temperature to stabilize at exactly 54 degrees Celsius.\"",
+          "es": "🍳 SATO: \"Cinco minutos de reposo permiten estabilizar la temperatura interna a 54°C.\"",
+          "fr": "🍳 SATO: « Cinq minutes de repos permettent d'atteindre une température à cœur idéale de 54°C. »",
+          "de": "🍳 SATO: „Fünf Minuten Ruhephase bringen die Kerntemperatur auf exakte 54°C.“",
+          "hi": "🍳 सातो: \"पांच मिनट का विश्राम तापमान को सटीक 54 डिग्री पर संतुलित करता है।\""
+        }
+      },
+      {
+        "id": "culinary_act_4",
+        "startTime": 24,
+        "endTime": 32,
+        "videoUrl": "/assets/video/veo_culinary_wagyu_genuine.mp4",
+        "speaker": "Kenji Sato",
+        "speakerRole": "Michelin Executive Chef",
+        "actName": "Act 4: Maldon Flake Salt & Service",
+        "philosophy": "Minimalist Perfection",
+        "text": {
+          "ja": "🍳 SATO: 「仕上げに結晶塩をひとつまみ。素材本来の旨味が口いっぱいに広がる至高の体験。」",
+          "en": "🍳 SATO: \"Finished with hand-harvested sea salt flakes. An ethereal gastronomic harmony.\"",
+          "es": "🍳 SATO: \"Finalizado con escamas de sal marina. Una armonía gastronómica inigualable.\"",
+          "fr": "🍳 SATO: « Sublimé par une pincée de fleur de sel. Une harmonie gastronomique sublime. »",
+          "de": "🍳 SATO: „Veredelt mit Meersalzflocken für vollendete Geschmacksharmonie.“",
+          "hi": "🍳 सातो: \"समुद्री नमक के कणों के साथ परोसा गया यह व्यंजन स्वाद का सर्वोच्च अनुभव है।\""
+        }
+      }
+    ],
+    "veritas": {
+      "status": "CERTIFIED_VALID",
+      "snarkProofHash": "0x892a018cbb490192837482a1049de817"
+    }
+  },
+  {
+    "id": "track_wellness_advaita_vedanta",
+    "title": "Advaita Vedanta: The Observer & The Observed (32s Master)",
+    "subtitle": "4-Act 32s Sacred Non-Dual Philosophy & Himalayan Hermitage Sunrise",
+    "category": "wellness_faith",
+    "character": "🕉️ Priya Sharma (Vedantic Scholar)",
+    "videoSrc": "/assets/video/veo_wellness_vedanta_genuine.mp4",
+    "duration": 32,
+    "acts": [
+      {
+        "id": "vedanta_act_1",
+        "startTime": 0,
+        "endTime": 8,
+        "videoUrl": "/assets/video/veo_wellness_vedanta_genuine.mp4",
+        "speaker": "Priya Sharma",
+        "speakerRole": "Vedantic Scholar",
+        "actName": "Act 1: Dawn Over the Sacred Ganges",
+        "philosophy": "Stillness of Consciousness",
+        "text": {
+          "ja": "🕉️ PRIYA: 「ヒマラヤの夜明け。川面を渡る静寂の中に、純粋な意識が目覚めます。」",
+          "en": "🕉️ PRIYA: \"Dawn breaks over the sacred Himalayan mist. In absolute silence, pure awareness awakens.\"",
+          "es": "🕉️ PRIYA: \"Amanece sobre la sagrada niebla del Himalaya. En el silencio absoluto despierta la consciencia pura.\"",
+          "fr": "🕉️ PRIYA: « L'aube se lève sur la brume sacrée de l'Himalaya. Dans le silence pur s'éveille la conscience. »",
+          "de": "🕉️ PRIYA: „Dämmerung über dem heiligen Himalaya-Nebel. In vollkommener Stille erwacht reines Bewusstsein.“",
+          "hi": "🕉️ प्रिया: \"हिमालय के पावन शिखर पर भोर की पहली किरण शुद्ध चेतना को जागृत करती है।\""
+        }
+      },
+      {
+        "id": "vedanta_act_2",
+        "startTime": 8,
+        "endTime": 16,
+        "videoUrl": "/assets/video/veo_wellness_vedanta_genuine.mp4",
+        "speaker": "Priya Sharma",
+        "speakerRole": "Vedantic Scholar",
+        "actName": "Act 2: The Flame of Unwavering Attention",
+        "philosophy": "Single-Pointed Focus (Ekagrata)",
+        "text": {
+          "ja": "🕉️ PRIYA: 「揺らぐことのない一筋の灯火。観る者と観られるものの境界が溶け合っていく。」",
+          "en": "🕉️ PRIYA: \"Like an unmoving flame in a windless place, the division between observer and observed dissolves.\"",
+          "es": "🕉️ PRIYA: \"Como una llama inmóvil sin viento, la división entre observador y observado se disuelve.\"",
+          "fr": "🕉️ PRIYA: « Telle une flamme immobile dans le calme, la frontière entre l'observateur et l'observé s'efface. »",
+          "de": "🕉️ PRIYA: „Wie eine unbewegte Flamme im windstillen Raum löst sich die Trennung von Beobachter und Beobachtetem auf.“",
+          "hi": "🕉️ प्रिया: \"अविचल दीपक की भांति दृष्टा और दृश्य का भेद मिट जाता है।\""
+        }
+      },
+      {
+        "id": "vedanta_act_3",
+        "startTime": 16,
+        "endTime": 24,
+        "videoUrl": "/assets/video/veo_wellness_vedanta_genuine.mp4",
+        "speaker": "Priya Sharma",
+        "speakerRole": "Vedantic Scholar",
+        "actName": "Act 3: Tat Tvam Asi (That Thou Art)",
+        "philosophy": "The Great Non-Dual Truth",
+        "text": {
+          "ja": "🕉️ PRIYA: 「『汝はそれなり』。無限の空間と自己がひとつであるという究極の理解。」",
+          "en": "🕉️ PRIYA: \"Tat Tvam Asi — 'That Thou Art'. The realization that the boundless cosmos and the self are one.\"",
+          "es": "🕉️ PRIYA: \"Tat Tvam Asi: 'Tú eres eso'. La realización de que el cosmos infinito y el ser son uno.\"",
+          "fr": "🕉️ PRIYA: « Tat Tvam Asi : 'Tu es cela'. La prise de conscience que l'univers infini et le soi ne font qu'un. »",
+          "de": "🕉️ PRIYA: „Tat Tvam Asi – ‚Das bist Du‘. Die Erkenntnis, dass der unendliche Kosmos und das Selbst eins sind.“",
+          "hi": "🕉️ प्रिया: \"तत्त्वमसि — 'वह तुम ही हो'। अनंत ब्रह्मांड और स्वयं के एक होने का दिव्य बोध।\""
+        }
+      },
+      {
+        "id": "vedanta_act_4",
+        "startTime": 24,
+        "endTime": 32,
+        "videoUrl": "/assets/video/veo_wellness_vedanta_genuine.mp4",
+        "speaker": "Priya Sharma",
+        "speakerRole": "Vedantic Scholar",
+        "actName": "Act 4: Infinite Peace (Shanti)",
+        "philosophy": "Abidance in the Absolute",
+        "text": {
+          "ja": "🕉️ PRIYA: 「シャンティ、シャンティ、シャンティ。永遠の平安が心を満たします。」",
+          "en": "🕉️ PRIYA: \"Om Shanti, Shanti, Shanti. Eternal peace pervades every realm of existence.\"",
+          "es": "🕉️ PRIYA: \"Om Shanti, Shanti, Shanti. La paz eterna inunda toda la existencia.\"",
+          "fr": "🕉️ PRIYA: « Om Shanti, Shanti, Shanti. La paix éternelle emplit chaque recoin de l'existence. »",
+          "de": "🕉️ PRIYA: „Om Shanti, Shanti, Shanti. Ewiger Friede erfüllt das gesamte Dasein.“",
+          "hi": "🕉️ प्रिया: \"ॐ शांति, शांति, शांति। शाश्वत शांति समस्त अस्तित्व में व्याप्त हो जाती है।\""
+        }
+      }
+    ],
+    "veritas": {
+      "status": "CERTIFIED_VALID",
+      "snarkProofHash": "0x918cbb490192837482a1049de8170c1a"
+    }
+  },
+  {
     "id": "track_music_synthwave_2099",
-    "title": "2099 Cyberpunk Synthwave Beat Lab",
-    "subtitle": "3-Act 128 BPM Analog Modular Session with Holographic Synthesizers in Neo-Tokyo",
+    "title": "2099 Cyberpunk Synthwave Beat Lab (32s Master)",
+    "subtitle": "4-Act 32s 128 BPM Analog Modular Session with Holographic Synthesizers in Neo-Tokyo",
     "category": "music",
     "character": "🎹 Kenji Sato (Sound Architect)",
     "videoSrc": "/assets/video/veo_music_synthwave_genuine.mp4",
-    "duration": 24,
+    "duration": 32,
     "acts": [
       {
         "id": "music_act_1",
@@ -313,15 +656,33 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
         "videoUrl": "/assets/video/veo_music_synthwave_genuine.mp4",
         "speaker": "Kenji Sato",
         "speakerRole": "Electronic Music Producer",
-        "actName": "Act 3: Master Track Outro & Reverb Tail",
+        "actName": "Act 3: Arpeggiator Resonance Build",
+        "philosophy": "Frequency Modulation",
+        "text": {
+          "ja": "🎵 KENJI: 「16分音符のアルペジオがビルドアップし、フィルターレゾナンスがピークに達する。」",
+          "en": "🎵 KENJI: \"The 16th-note arpeggio ramps up as the resonance peak sweeps across the stereo field.\"",
+          "es": "🎵 KENJI: \"El arpegio de semicorcheas aumenta mientras la resonancia barre el campo estéreo.\"",
+          "fr": "🎵 KENJI: « L'arpège en doubles-croches s'intensifie alors que la résonance balaie l'espace stéréo. »",
+          "de": "🎵 KENJI: „Das 16tel-Arpeggio baut sich auf und der Resonanzfilter öffnet das Stereofeld.“",
+          "hi": "🎵 केनजी: \"तेज धुन के साथ संगीत की ऊर्जा अपने चरम पर पहुंचती है।\""
+        }
+      },
+      {
+        "id": "music_act_4",
+        "startTime": 24,
+        "endTime": 32,
+        "videoUrl": "/assets/video/veo_music_synthwave_genuine.mp4",
+        "speaker": "Kenji Sato",
+        "speakerRole": "Electronic Music Producer",
+        "actName": "Act 4: Master Track Outro & Spatial Decay",
         "philosophy": "Infinite Acoustic Space",
         "text": {
-          "ja": "🎵 KENJI: 「無限のリバーブテールが静寂に溶け込み、マスターセッションが完成する。」",
-          "en": "🎵 KENJI: \"An infinite spatial reverb tail fades into silence as the master synthesis completes.\"",
-          "es": "🎵 KENJI: \"Una reverberación espacial infinita se desvanece en silencio completando la síntesis maestra.\"",
-          "fr": "🎵 KENJI: « Une réverbération spatiale infinie s'éteint dans le silence alors que la session s'achève. »",
-          "de": "🎵 KENJI: „Ein unendlicher Hall verklingt in der Stille und vollendet die Master-Synthese.“",
-          "hi": "🎵 केनजी: \"अनंत गूंज शांत होकर मास्टर रिकॉर्डिंग को पूर्णता प्रदान करती है।\""
+          "ja": "🎵 KENJI: 「無限のリバーブテールが静寂に溶け込み、32秒のマスターセッションが完成する。」",
+          "en": "🎵 KENJI: \"An infinite spatial reverb tail fades into silence as the 32-second master synthesis completes.\"",
+          "es": "🎵 KENJI: \"Una reverberación espacial infinita se desvanece en silencio completando la síntesis maestra de 32 segundos.\"",
+          "fr": "🎵 KENJI: « Une réverbération spatiale infinie s'éteint dans le silence alors que la session de 32s s'achève. »",
+          "de": "🎵 KENJI: „Ein unendlicher Hall verklingt in der Stille und vollendet die 32-Sekunden-Mastersynthese.“",
+          "hi": "🎵 केनजी: \"अनंत गूंज शांत होकर 32 सेकंड की मास्टर रिकॉर्डिंग को पूर्णता प्रदान करती है।\""
         }
       }
     ],
