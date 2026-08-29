@@ -695,7 +695,7 @@ function ProductionJobPageContent() {
                             playsInline
                             preload="auto"
                             muted={isMuted}
-                            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out ${
                               activeDeck === "A" ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
                             }`}
                             onPlay={() => {
@@ -728,7 +728,7 @@ function ProductionJobPageContent() {
                             playsInline
                             preload="auto"
                             muted={isMuted}
-                            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out ${
                               activeDeck === "B" ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
                             }`}
                             onPlay={() => {
