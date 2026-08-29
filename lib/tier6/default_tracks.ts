@@ -191,5 +191,74 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
       "status": "CERTIFIED_VALID",
       "snarkProofHash": "0x8f2d91a082bc310d289aa84bb9084e88"
     }
+  },
+  {
+    "id": "track_fantasy_starlight_wyrm",
+    "title": "Citadel of the Starlight Wyrm",
+    "subtitle": "3-Act High Fantasy Epic with Floating Arcane Spires & Crystalline Dragon Flight",
+    "category": "fantasy_scifi",
+    "character": "🏰 Elena Rostova (Arcane Chronicler)",
+    "videoSrc": "/assets/video/veo_fantasy_wyrm_genuine.mp4",
+    "duration": 24,
+    "acts": [
+      {
+        "id": "fantasy_act_1",
+        "startTime": 0,
+        "endTime": 8,
+        "videoUrl": "/assets/video/veo_fantasy_wyrm_genuine.mp4",
+        "speaker": "Elena Rostova",
+        "speakerRole": "Arcane Chronicler",
+        "actName": "Act 1: Awakening of the Floating Runes",
+        "philosophy": "Ancient Celestial Resonance",
+        "text": {
+          "ja": "🏰 ELENA: 「千年の眠りから覚めた星光のルーンが、浮遊要塞の尖塔を黄金色に染め上げる。」",
+          "en": "🏰 ELENA: \"Awakened from a thousand-year slumber, the starlight runes bathe the floating citadel in golden fire.\"",
+          "es": "🏰 ELENA: \"Despertadas de un sueño milenario, las runas estelares bañan la ciudadela flotante en fuego dorado.\"",
+          "fr": "🏰 ELENA: « Éveillées d'un sommeil millénaire, les runes stellaires baignent la citadelle flottante de lumière dorée. »",
+          "de": "🏰 ELENA: „Erwacht aus tausendjährigem Schlaf tauchen die Sternenrunen die schwebende Zitadelle in goldenes Licht.“",
+          "hi": "🏰 एलेना: \"हजारों साल की नींद से जागे रहस्यमयी संकेत तैरते किले को सुनहरे प्रकाश से भर देते हैं।\""
+        }
+      },
+      {
+        "id": "fantasy_act_2",
+        "startTime": 8,
+        "endTime": 16,
+        "videoUrl": "/assets/video/veo_fantasy_wyrm_genuine.mp4",
+        "speaker": "Elena Rostova",
+        "speakerRole": "Arcane Chronicler",
+        "actName": "Act 2: Flight of the Crystal Dragon",
+        "philosophy": "Majesty of the Skies",
+        "text": {
+          "ja": "🏰 ELENA: 「雲海を裂いて飛翔する水晶竜。その翼が放つプリズムが天空を虹色に染める。」",
+          "en": "🏰 ELENA: \"Shattering the sea of clouds, the crystalline dragon takes flight, its prismatic wings painting the sky.\"",
+          "es": "🏰 ELENA: \"Surcando el mar de nubes, el dragón de cristal alza el vuelo, pintando el cielo con sus alas prismáticas.\"",
+          "fr": "🏰 ELENA: « Fendant la mer de nuages, le dragon de cristal s'élance, peignant le ciel de ses ailes prismatiques. »",
+          "de": "🏰 ELENA: „Das Wolkenmeer durchbrechend steigt der Kristalldrache empor und taucht den Himmel in Prismenfarben.“",
+          "hi": "🏰 एलेना: \"बादलों को चीरता हुआ क्रिस्टल ड्रैगन आसमान में अपने रंग बिखेरता है।\""
+        }
+      },
+      {
+        "id": "fantasy_act_3",
+        "startTime": 16,
+        "endTime": 24,
+        "videoUrl": "/assets/video/veo_fantasy_wyrm_genuine.mp4",
+        "speaker": "Elena Rostova",
+        "speakerRole": "Arcane Chronicler",
+        "actName": "Act 3: Oath of the Starlight Wardens",
+        "philosophy": "Eternal Guardian Vow",
+        "text": {
+          "ja": "🏰 ELENA: 「星々の加護のもと、聖なる誓いが結ばれ、浮遊都市は新たな黎明を迎える。」",
+          "en": "🏰 ELENA: \"Under the celestial gaze of ancient constellations, the sacred covenant is renewed for all eternity.\"",
+          "es": "🏰 ELENA: \"Bajo la mirada celeste de constelaciones ancestrales, el pacto sagrado se renueva por la eternidad.\"",
+          "fr": "🏰 ELENA: « Sous le regard céleste des constellations ancestrales, le pacte sacré est scellé pour l'éternité. »",
+          "de": "🏰 ELENA: „Unter dem Himmelsblick uralter Sternbilder wird der heilige Bund für alle Ewigkeit erneuert.“",
+          "hi": "🏰 एलेना: \"तारों की छत्रछाया में प्राचीन प्रतिज्ञा सदा के लिए अमर हो जाती है।\""
+        }
+      }
+    ],
+    "veritas": {
+      "status": "CERTIFIED_VALID",
+      "snarkProofHash": "0x1f9048a729e018cbb490192837482a10"
+    }
   }
 ];
