@@ -108,15 +108,18 @@ function ProductionJobPageContent() {
 
   const videoDeckARef = useRef<HTMLVideoElement>(null);
   const videoDeckBRef = useRef<HTMLVideoElement>(null);
-  const audioDeckARef = useRef<HTMLAudioElement>(null);
-  const audioDeckBRef = useRef<HTMLAudioElement>(null);
+  const masterAudioRef = useRef<HTMLAudioElement>(null);
 
   const handleActSelect = (idx: number) => {
     setActiveActIndex(idx);
     const acts = job?.acts || [];
     const targetAct = acts[idx];
     const targetVideo = targetAct?.videoUrl || job?.videoUrl;
-    const targetAudio = targetAct?.audioUrl;
+
+    if (masterAudioRef.current && targetAct) {
+      masterAudioRef.current.currentTime = targetAct.startTime;
+      masterAudioRef.current.play().catch(() => {});
+    }
 
     if (activeDeck === "A") {
       if (videoDeckARef.current) {
@@ -126,11 +129,6 @@ function ProductionJobPageContent() {
         videoDeckARef.current.currentTime = 0;
         videoDeckARef.current.play().catch(() => {});
       }
-      if (audioDeckARef.current && targetAudio) {
-        audioDeckARef.current.src = targetAudio;
-        audioDeckARef.current.currentTime = 0;
-        audioDeckARef.current.play().catch(() => {});
-      }
     } else {
       if (videoDeckBRef.current) {
         if (videoDeckBRef.current.src !== targetVideo && targetVideo) {
@@ -138,11 +136,6 @@ function ProductionJobPageContent() {
         }
         videoDeckBRef.current.currentTime = 0;
         videoDeckBRef.current.play().catch(() => {});
-      }
-      if (audioDeckBRef.current && targetAudio) {
-        audioDeckBRef.current.src = targetAudio;
-        audioDeckBRef.current.currentTime = 0;
-        audioDeckBRef.current.play().catch(() => {});
       }
     }
     setIsPlaying(true);
@@ -158,12 +151,10 @@ function ProductionJobPageContent() {
         videoDeckBRef.current.currentTime = 0;
         videoDeckBRef.current.play().catch(() => {});
       }
-      if (audioDeckBRef.current) {
-        audioDeckBRef.current.currentTime = 0;
-        audioDeckBRef.current.play().catch(() => {});
-      }
     } else {
-      setIsPlaying(false);
+      if (!masterAudioRef.current || masterAudioRef.current.ended) {
+        setIsPlaying(false);
+      }
     }
   };
 
@@ -177,26 +168,31 @@ function ProductionJobPageContent() {
         videoDeckARef.current.currentTime = 0;
         videoDeckARef.current.play().catch(() => {});
       }
-      if (audioDeckARef.current) {
-        audioDeckARef.current.currentTime = 0;
-        audioDeckARef.current.play().catch(() => {});
-      }
     } else {
-      setIsPlaying(false);
+      if (!masterAudioRef.current || masterAudioRef.current.ended) {
+        setIsPlaying(false);
+      }
     }
   };
 
   const togglePlay = () => {
     const activeVideo = activeDeck === "A" ? videoDeckARef.current : videoDeckBRef.current;
-    const activeAudio = activeDeck === "A" ? audioDeckARef.current : audioDeckBRef.current;
-    if (activeVideo) {
+    if (masterAudioRef.current) {
+      if (masterAudioRef.current.paused) {
+        masterAudioRef.current.play().catch(() => {});
+        if (activeVideo) activeVideo.play().catch(() => {});
+        setIsPlaying(true);
+      } else {
+        masterAudioRef.current.pause();
+        if (activeVideo) activeVideo.pause();
+        setIsPlaying(false);
+      }
+    } else if (activeVideo) {
       if (activeVideo.paused) {
         activeVideo.play().catch(() => {});
-        if (activeAudio) activeAudio.play().catch(() => {});
         setIsPlaying(true);
       } else {
         activeVideo.pause();
-        if (activeAudio) activeAudio.pause();
         setIsPlaying(false);
       }
     }
@@ -207,8 +203,7 @@ function ProductionJobPageContent() {
     setIsMuted(nextMuted);
     if (videoDeckARef.current) videoDeckARef.current.muted = nextMuted;
     if (videoDeckBRef.current) videoDeckBRef.current.muted = nextMuted;
-    if (audioDeckARef.current) audioDeckARef.current.muted = nextMuted;
-    if (audioDeckBRef.current) audioDeckBRef.current.muted = nextMuted;
+    if (masterAudioRef.current) masterAudioRef.current.muted = nextMuted;
   };
 
   // Poll Job Status every 2.5s until complete
@@ -677,8 +672,7 @@ function ProductionJobPageContent() {
                     : nextAct?.audioUrl;
 
                   const audioDeckBUrl = activeDeck === "B"
-                    ? (currentAct?.audioUrl || (job as any).audioUrl)
-                    : nextAct?.audioUrl;
+                  const masterAudioSrc = (job as any).audioUrl || (job.acts && job.acts[0]?.audioUrl);
 
                   return (
                     <div
@@ -693,6 +687,7 @@ function ProductionJobPageContent() {
                             ref={videoDeckARef}
                             src={deckAUrl}
                             autoPlay
+                            loop
                             playsInline
                             preload="auto"
                             muted={isMuted}
@@ -701,20 +696,15 @@ function ProductionJobPageContent() {
                             }`}
                             onPlay={() => {
                               setIsPlaying(true);
-                              if (audioDeckARef.current) audioDeckARef.current.play().catch(() => {});
+                              if (masterAudioRef.current && masterAudioRef.current.paused) {
+                                masterAudioRef.current.play().catch(() => {});
+                              }
                             }}
                             onPause={() => {
                               setIsPlaying(false);
-                              if (audioDeckARef.current) audioDeckARef.current.pause();
-                            }}
-                            onTimeUpdate={() => {
-                              if (activeDeck === "A" && videoDeckARef.current) {
-                                setPlaybackTime(videoDeckARef.current.currentTime);
+                              if (masterAudioRef.current && !masterAudioRef.current.paused) {
+                                masterAudioRef.current.pause();
                               }
-                            }}
-                            onEnded={handleDeckAEnded}
-                            onLoadedMetadata={() => {
-                              if (videoDeckARef.current) setActDuration(videoDeckARef.current.duration || 8);
                             }}
                             onClick={togglePlay}
                           />
@@ -724,6 +714,7 @@ function ProductionJobPageContent() {
                             key={`video_deck_b_${deckBUrl}`}
                             ref={videoDeckBRef}
                             src={deckBUrl}
+                            loop
                             playsInline
                             preload="auto"
                             muted={isMuted}
@@ -732,48 +723,82 @@ function ProductionJobPageContent() {
                             }`}
                             onPlay={() => {
                               setIsPlaying(true);
-                              if (audioDeckBRef.current) audioDeckBRef.current.play().catch(() => {});
+                              if (masterAudioRef.current && masterAudioRef.current.paused) {
+                                masterAudioRef.current.play().catch(() => {});
+                              }
                             }}
                             onPause={() => {
                               setIsPlaying(false);
-                              if (audioDeckBRef.current) audioDeckBRef.current.pause();
-                            }}
-                            onTimeUpdate={() => {
-                              if (activeDeck === "B" && videoDeckBRef.current) {
-                                setPlaybackTime(videoDeckBRef.current.currentTime);
+                              if (masterAudioRef.current && !masterAudioRef.current.paused) {
+                                masterAudioRef.current.pause();
                               }
-                            }}
-                            onEnded={handleDeckBEnded}
-                            onLoadedMetadata={() => {
-                              if (videoDeckBRef.current) setActDuration(videoDeckBRef.current.duration || 8);
                             }}
                             onClick={togglePlay}
                           />
 
-                          {/* Synchronized Neural TTS Audio Decks */}
-                          {audioDeckAUrl && (
+                          {/* Single Unbroken Master Soundtrack Stream */}
+                          {masterAudioSrc && (
                             <audio
-                              key={`audio_a_${activeActIndex}_${audioDeckAUrl}`}
-                              ref={audioDeckARef}
-                              src={audioDeckAUrl}
+                              key={`master_audio_track_${job.id}_${masterAudioSrc}`}
+                              ref={masterAudioRef}
+                              src={masterAudioSrc}
                               preload="auto"
                               muted={isMuted}
+                              onPlay={() => setIsPlaying(true)}
+                              onPause={() => setIsPlaying(false)}
+                              onTimeUpdate={() => {
+                                if (masterAudioRef.current) {
+                                  const t = masterAudioRef.current.currentTime;
+                                  setPlaybackTime(t);
+                                  const dur = masterAudioRef.current.duration || job.duration || 60;
+                                  setActDuration(dur);
+
+                                  const actsList = job.acts || [];
+                                  if (actsList.length > 1) {
+                                    const nextActIdx = actsList.findIndex((a: any) => t >= a.startTime && t < a.endTime);
+                                    if (nextActIdx !== -1 && nextActIdx !== activeActIndex) {
+                                      setActiveActIndex(nextActIdx);
+                                      if (activeDeck === "A") {
+                                        setActiveDeck("B");
+                                        if (videoDeckBRef.current) {
+                                          videoDeckBRef.current.currentTime = 0;
+                                          videoDeckBRef.current.play().catch(() => {});
+                                        }
+                                      } else {
+                                        setActiveDeck("A");
+                                        if (videoDeckARef.current) {
+                                          videoDeckARef.current.currentTime = 0;
+                                          videoDeckARef.current.play().catch(() => {});
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }}
                               onEnded={() => {
-                                if (activeDeck === "A") handleDeckAEnded();
+                                setIsPlaying(false);
+                                setActiveActIndex(0);
                               }}
                             />
                           )}
-                          {audioDeckBUrl && (
-                            <audio
-                              key={`audio_b_${activeActIndex}_${audioDeckBUrl}`}
-                              ref={audioDeckBRef}
-                              src={audioDeckBUrl}
-                              preload="auto"
-                              muted={isMuted}
-                              onEnded={() => {
-                                if (activeDeck === "B") handleDeckBEnded();
-                              }}
-                            />
+
+                          {/* Real-Time Gold Karaoke Subtitle HUD */}
+                          {currentAct?.text && (
+                            <div className="absolute top-6 inset-x-6 z-20 flex flex-col items-center pointer-events-none transition-all duration-300">
+                              <div className="px-5 py-2.5 rounded-full bg-black/75 backdrop-blur-md border border-amber-500/30 shadow-2xl flex items-center gap-3 text-center max-w-2xl">
+                                <span className="px-2.5 py-0.5 rounded-md bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider">
+                                  {currentAct.speaker || "Lead Vocalist"}
+                                </span>
+                                <p className="text-amber-300 font-bold text-sm md:text-base drop-shadow-md truncate">
+                                  {currentAct.text.hi || currentAct.text.ja || currentAct.text.en}
+                                </p>
+                              </div>
+                              {currentAct.text.en && (
+                                <p className="mt-1.5 text-xs text-slate-300 font-medium px-4 py-1 rounded-full bg-black/50 backdrop-blur-sm border border-slate-700/40 drop-shadow">
+                                  {currentAct.text.en}
+                                </p>
+                              )}
+                            </div>
                           )}
 
                           {/* Center Play Button Overlay (when paused) */}
