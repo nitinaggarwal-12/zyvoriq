@@ -349,16 +349,31 @@ function StudioLibraryPageContent() {
             <div>
               <h3 className="text-base font-bold text-white font-serif">No Productions Found</h3>
               <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
-                No series matched your filter query. Create a brand new series track with Veo 3.1 & DeepMind dubbing.
+                No series matched your query &ldquo;{searchQuery || selectedCategory}&rdquo;. Reset your filters or create a new series track.
               </p>
             </div>
-            <Link
-              href="/studio/create?mode=new_series"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-mono font-bold text-xs shadow-lg shadow-amber-500/20"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Create Series Now</span>
-            </Link>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              {(searchQuery || selectedCategory !== "all") && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSelectedCategory("all");
+                  }}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-mono font-bold text-xs transition-all shadow-sm"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Reset All Filters</span>
+                </button>
+              )}
+              <Link
+                href="/studio/create?mode=new_series"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-mono font-bold text-xs shadow-lg shadow-amber-500/20"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Create Series Now</span>
+              </Link>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -372,18 +387,26 @@ function StudioLibraryPageContent() {
                   {/* Video Viewport / Header */}
                   <div>
                     <div className="relative aspect-video bg-black overflow-hidden border-b border-slate-800/80">
-                      <video
-                        src={track.videoSrc}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        muted
-                        playsInline
-                        onMouseEnter={(e) => (e.currentTarget as HTMLVideoElement).play().catch(() => {})}
-                        onMouseLeave={(e) => {
-                          const v = e.currentTarget as HTMLVideoElement;
-                          v.pause();
-                          v.currentTime = 0;
-                        }}
-                      />
+                      {track.videoSrc ? (
+                        <video
+                          src={track.videoSrc}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          muted
+                          playsInline
+                          onMouseEnter={(e) => (e.currentTarget as HTMLVideoElement).play().catch(() => {})}
+                          onMouseLeave={(e) => {
+                            const v = e.currentTarget as HTMLVideoElement;
+                            v.pause();
+                            v.currentTime = 0;
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-slate-900 via-indigo-950/40 to-slate-950 flex flex-col items-center justify-center p-4 text-center">
+                          <Film className="w-8 h-8 text-amber-400/80 mb-2" />
+                          <span className="text-xs font-mono font-bold text-white">{track.title}</span>
+                          <span className="text-[10px] font-mono text-slate-400 mt-1">Multi-Act Continuity Series</span>
+                        </div>
+                      )}
 
                       <div className="absolute top-3 left-3 flex items-center gap-2">
                         <span className="px-2.5 py-1 rounded-full bg-slate-950/80 border border-slate-700/80 backdrop-blur-md text-[10px] font-mono font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1">

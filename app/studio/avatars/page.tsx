@@ -257,23 +257,33 @@ function AvatarsPageContent() {
                   {/* Bottom Actions */}
                   <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-3">
                     <button
+                      type="button"
                       onClick={() => handlePlayVoice(char)}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-mono font-medium border transition-all flex items-center gap-1.5 ${
+                      className={`px-3.5 py-2 rounded-xl text-xs font-mono font-medium border transition-all flex items-center gap-2 ${
                         playingVoiceId === char.id
-                          ? "bg-indigo-500 text-white border-indigo-400 shadow-md shadow-indigo-500/20 animate-pulse"
+                          ? "bg-gradient-to-r from-indigo-600 to-indigo-500 text-white border-indigo-400 shadow-md shadow-indigo-500/25"
                           : "bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border-slate-800"
                       }`}
                     >
-                      <Volume2 className="w-3.5 h-3.5" />
-                      <span>{playingVoiceId === char.id ? "Speaking..." : "Pitch Voice"}</span>
+                      {playingVoiceId === char.id ? (
+                        <div className="flex items-center gap-0.5 h-3">
+                          <span className="w-0.5 h-full bg-white animate-pulse" style={{ animationDelay: "0ms" }} />
+                          <span className="w-0.5 h-2/3 bg-white animate-pulse" style={{ animationDelay: "150ms" }} />
+                          <span className="w-0.5 h-full bg-white animate-pulse" style={{ animationDelay: "300ms" }} />
+                          <span className="w-0.5 h-1/2 bg-white animate-pulse" style={{ animationDelay: "450ms" }} />
+                        </div>
+                      ) : (
+                        <Volume2 className="w-3.5 h-3.5 text-indigo-400" />
+                      )}
+                      <span>{playingVoiceId === char.id ? "Auditioning..." : "Audition Voice"}</span>
                     </button>
 
                     <Link
-                      href={`/studio/create?character=${char.id}`}
-                      className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-all flex items-center gap-1.5 shadow-lg shadow-amber-500/10"
+                      href={`/studio/create?characterLock=${char.id}`}
+                      className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-all flex items-center gap-1.5 shadow-lg shadow-amber-500/10 hover:scale-105 active:scale-95"
                     >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>Create Series</span>
+                      <Sparkles className="w-3.5 h-3.5 fill-current" />
+                      <span>Create Video</span>
                     </Link>
                   </div>
                 </div>
