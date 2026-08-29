@@ -274,12 +274,16 @@ export function AnimeCinemaStage() {
   // Ensure act audio stem loads immediately on act change
   useEffect(() => {
     if (audioRef.current && (activeCue?.audioUrl || (activeTrack as any).audioSrc)) {
+      const isPerAct = Boolean(activeCue?.audioUrl);
+      if (isPerAct) {
+        audioRef.current.currentTime = 0;
+      }
       audioRef.current.load();
       if (isPlaying) {
-        audioRef.current.play().catch(() => {});
+        audioRef.current.play().then(() => setAudioAutoplayBlocked(false)).catch(() => setAudioAutoplayBlocked(true));
       }
     }
-  }, [activeCue?.audioUrl, (activeTrack as any).audioSrc, selectedActIndex, isPlaying]);
+  }, [activeCue?.audioUrl, selectedActIndex, isPlaying]);
 
   // Keep video playing when act switches
   useEffect(() => {
@@ -460,8 +464,9 @@ export function AnimeCinemaStage() {
     } else {
       video.play().catch(() => {});
       if (audio) {
-        audio.currentTime = isMultiFile ? currentTime : video.currentTime;
-        audio.play().catch(() => {});
+        const isPerAct = Boolean(activeCue?.audioUrl);
+        audio.currentTime = isPerAct ? (video.currentTime || 0) : (isMultiFile ? currentTime : video.currentTime);
+        audio.play().then(() => setAudioAutoplayBlocked(false)).catch(() => setAudioAutoplayBlocked(true));
       }
       setIsPlaying(true);
     }
@@ -493,9 +498,10 @@ export function AnimeCinemaStage() {
         }
       }
       if (audio) {
-        audio.currentTime = time;
+        const isPerAct = Boolean(targetAct?.audioUrl);
+        audio.currentTime = isPerAct ? actOffset : time;
         if (autoPlay || isPlaying) {
-          audio.play().catch(() => {});
+          audio.play().then(() => setAudioAutoplayBlocked(false)).catch(() => setAudioAutoplayBlocked(true));
         }
       }
       if (autoPlay) setIsPlaying(true);
@@ -512,7 +518,7 @@ export function AnimeCinemaStage() {
       }
       if (autoPlay || isPlaying) {
         if (video) video.play().catch(() => {});
-        if (audio) audio.play().catch(() => {});
+        if (audio) audio.play().then(() => setAudioAutoplayBlocked(false)).catch(() => setAudioAutoplayBlocked(true));
         setIsPlaying(true);
       }
     }
@@ -528,8 +534,12 @@ export function AnimeCinemaStage() {
         const actStart = currentAct?.startTime ?? (selectedActIndex * (duration / actsList.length));
         const globalTime = Math.min(duration, actStart + video.currentTime);
         setCurrentTime(globalTime);
-        if (audio && Math.abs(audio.currentTime - globalTime) > 0.4) {
-          audio.currentTime = globalTime;
+        if (audio) {
+          const isPerAct = Boolean(currentAct?.audioUrl);
+          const targetAudioTime = isPerAct ? video.currentTime : globalTime;
+          if (Math.abs(audio.currentTime - targetAudioTime) > 0.4) {
+            audio.currentTime = targetAudioTime;
+          }
         }
       } else {
         setCurrentTime(video.currentTime);
@@ -925,8 +935,9 @@ export function AnimeCinemaStage() {
                 onPlaying={() => {
                   setIsVideoBuffering(false);
                   if (audioRef.current && isPlaying) {
-                    audioRef.current.currentTime = isMultiFile ? currentTime : (videoRef.current?.currentTime || 0);
-                    audioRef.current.play().catch(() => setAudioAutoplayBlocked(true));
+                    const isPerAct = Boolean(activeCue?.audioUrl);
+                    audioRef.current.currentTime = isPerAct ? (videoRef.current?.currentTime || 0) : (isMultiFile ? currentTime : (videoRef.current?.currentTime || 0));
+                    audioRef.current.play().then(() => setAudioAutoplayBlocked(false)).catch(() => setAudioAutoplayBlocked(true));
                   }
                 }}
                 onCanPlay={() => {
@@ -949,8 +960,9 @@ export function AnimeCinemaStage() {
                         videoRef.current.play().catch(() => {});
                       }
                       if (audioRef.current) {
-                        audioRef.current.currentTime = nextStart;
-                        audioRef.current.play().catch(() => {});
+                        const isPerActNext = Boolean(nextAct?.audioUrl);
+                        audioRef.current.currentTime = isPerActNext ? 0 : nextStart;
+                        audioRef.current.play().then(() => setAudioAutoplayBlocked(false)).catch(() => setAudioAutoplayBlocked(true));
                       }
                     }, 50);
                     setIsPlaying(true);
@@ -975,15 +987,22 @@ export function AnimeCinemaStage() {
                 <div
                   onClick={() => {
                     if (audioRef.current) {
-                      audioRef.current.currentTime = isMultiFile ? currentTime : (videoRef.current?.currentTime || 0);
+                      const isPerAct = Boolean(activeCue?.audioUrl);
+                      audioRef.current.currentTime = isPerAct ? (videoRef.current?.currentTime || 0) : (isMultiFile ? currentTime : (videoRef.current?.currentTime || 0));
                       audioRef.current.play().then(() => {
                         setAudioAutoplayBlocked(false);
-                      }).catch(() => {});
+                        setIsMuted(false);
+                      }).catch((err) => {
+                        console.warn("Manual audio unlock failed:", err);
+                      });
+                    }
+                    if (videoRef.current && videoRef.current.paused) {
+                      videoRef.current.play().catch(() => {});
                     }
                   }}
                   className="absolute top-16 inset-x-6 z-40 flex justify-center cursor-pointer animate-bounce"
                 >
-                  <div className="px-5 py-2.5 rounded-full bg-amber-500/90 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-2xl shadow-amber-500/50 flex items-center gap-2.5 transition-transform hover:scale-105">
+                  <div className="px-5 py-2.5 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-2xl shadow-amber-500/50 flex items-center gap-2.5 transition-transform hover:scale-105">
                     <Volume2 className="w-4 h-4 fill-slate-950 animate-pulse" />
                     <span>Audio Auto-Paused by Browser · Tap to Enable Studio Sound</span>
                   </div>
@@ -1054,7 +1073,7 @@ export function AnimeCinemaStage() {
                           onClick={() => {
                             if (audioRef.current) {
                               audioRef.current.currentTime = 0;
-                              audioRef.current.play().catch(() => {});
+                              audioRef.current.play().then(() => setAudioAutoplayBlocked(false)).catch(() => setAudioAutoplayBlocked(true));
                               setIsPlaying(true);
                             }
                           }}
@@ -1081,15 +1100,28 @@ export function AnimeCinemaStage() {
               )}
 
               {/* Dynamic Multilingual Dub or Neural TTS Audio Element */}
-              {(isAnimeTrack || !!(activeTrack as any).audioSrc || !!activeCue?.audioUrl) && (
-                <audio
-                  key={`audio_${activeTrack.id}_${(activeTrack as any).audioSrc ? "master" : selectedActIndex}_${audioLang}`}
-                  ref={audioRef}
-                  src={(activeTrack as any).audioSrc || activeCue?.audioUrl || (isAnimeTrack ? `/assets/audio/anime_dubs/dub_${audioLang}.mp3` : undefined)}
-                  muted={isMuted}
-                  preload="auto"
-                />
-              )}
+              {(() => {
+                const isPerAct = Boolean(activeCue?.audioUrl);
+                const effectiveAudioSrc = isPerAct
+                  ? activeCue?.audioUrl
+                  : ((activeTrack as any).audioSrc || (isAnimeTrack ? `/assets/audio/anime_dubs/dub_${audioLang}.mp3` : undefined));
+
+                if (!effectiveAudioSrc && !isAnimeTrack) return null;
+
+                return (
+                  <audio
+                    key={`audio_${activeTrack.id}_act_${selectedActIndex}_${effectiveAudioSrc}_${audioLang}`}
+                    ref={audioRef}
+                    src={effectiveAudioSrc}
+                    muted={isMuted}
+                    preload="auto"
+                    onPlay={() => setAudioAutoplayBlocked(false)}
+                    onError={() => {
+                      console.warn("Audio load error for:", effectiveAudioSrc);
+                    }}
+                  />
+                );
+              })()}
 
               {/* Real-Time Active Speaker HUD (Top Left) */}
               <div className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 z-30 pointer-events-none transition-all duration-300 max-w-[85%]">
