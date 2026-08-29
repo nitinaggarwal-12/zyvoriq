@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -229,7 +229,13 @@ function CreatePageContent() {
     }
   };
 
+  const isSubmittingRef = useRef<boolean>(false);
+
   const handleKickoffGeneration = async () => {
+    if (isSubmittingRef.current || isGenerating) return;
+    isSubmittingRef.current = true;
+    setIsGenerating(true);
+
     const newJobId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const effectiveParentTrackId = destinationMode === "append_current" ? (selectedParentTrackId || targetTrackId) : undefined;
     
