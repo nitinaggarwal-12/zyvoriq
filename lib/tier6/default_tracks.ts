@@ -1646,7 +1646,7 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
         "id": "hindi_hiphop_act_2",
         "startTime": 15,
         "endTime": 30,
-        "videoUrl": "/assets/video/veo_hindi_desi_hiphop_master.mp4",
+        "videoUrl": "/assets/video/veo_hindi_hiphop_act2.mp4",
         "speaker": "Kabir Verma",
         "speakerRole": "Desi Hip-Hop MC",
         "actName": "Act 2: Premier Padmini Cabs & Smoke Flare Flow (15s - 30s)",
