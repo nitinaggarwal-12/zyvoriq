@@ -49,11 +49,14 @@ async function sleep(ms) {
   const BASE_URL = 'https://zyvoriq.up.railway.app';
 
   const targets = [
-    { name: '01_cinema_stage_4track_mixer.png', path: '/studio', label: 'Studio Cinema & 4-Track Mixer' },
-    { name: '02_creator_hub_24pillars_transmutation.png', path: '/studio/create', label: '24-Pillars Creator Hub' },
-    { name: '03_director_canvas_inpainting.png', path: '/director', label: 'Director Canvas Inpainting' },
-    { name: '04_avatars_studio_voice_vault.png', path: '/studio/avatars', label: 'Avatars Studio & Dubbing' },
-    { name: '05_veritas_synthid_inspector.png', path: '/veritas', label: 'Veritas zk-SNARK & SynthID' }
+    { name: '01_history_multi_category_runs.png', path: '/studio/history', label: 'Multi-Category Production History' },
+    { name: '02_library_all_categories_vault.png', path: '/studio/library', label: '16-Pillar Series Library & Media Vault' },
+    { name: '03_production_monitor_live_job.png', path: '/studio/production/track_executive_sovereign', label: 'Executive Sovereign AI Production Monitor' },
+    { name: '04_cinema_stage_4track_mixer.png', path: '/studio?track=track_wildlife_serengeti_120s', label: 'Cinema Stage Serengeti 15-Act 120s Master' },
+    { name: '05_creator_hub_24pillars_transmutation.png', path: '/studio/create', label: '24-Pillars Creator Hub' },
+    { name: '06_director_canvas_inpainting.png', path: '/director', label: 'Director Canvas Inpainting' },
+    { name: '07_avatars_studio_voice_vault.png', path: '/studio/avatars', label: 'Avatars Studio & Dubbing' },
+    { name: '08_veritas_synthid_inspector.png', path: '/veritas', label: 'Veritas zk-SNARK & SynthID' }
   ];
 
   for (const t of targets) {
