@@ -16,13 +16,16 @@ import {
   ChevronRight,
   Users,
   Film,
-  History
+  History,
+  Key
 } from "lucide-react";
+import { ApiKeyModal } from "@/components/ApiKeyModal";
 
 export function AppNavbar() {
   const pathname = usePathname();
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
   const [activeWorkspace, setActiveWorkspace] = useState("Enterprise Core (US-East)");
 
   const navItems = [
@@ -121,8 +124,19 @@ export function AppNavbar() {
           })}
         </nav>
 
-        {/* RIGHT: Live Swarm Badge & Primary Action CTA */}
-        <div className="flex items-center gap-4">
+        {/* RIGHT: Live Swarm Badge, API Key Manager & Primary Action CTA */}
+        <div className="flex items-center gap-3 sm:gap-4">
+          <button
+            type="button"
+            onClick={() => setApiKeyModalOpen(true)}
+            className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-950/40 hover:bg-amber-900/50 px-3.5 py-2 text-xs font-bold text-amber-300 transition-all hover:scale-105 active:scale-95 shadow-sm"
+            title="Google Gemini & Veo Multi-Key Pool Manager"
+          >
+            <Key className="w-3.5 h-3.5 text-amber-400" />
+            <span className="font-mono text-xs hidden sm:inline">API Keys</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          </button>
+
           <div className="hidden xl:flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3.5 py-1.5 text-xs text-emerald-300">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
@@ -149,6 +163,12 @@ export function AppNavbar() {
           </button>
         </div>
       </div>
+
+      {/* Google Gemini & Veo Multi-Key Load Balancer & Health Sentinel Modal */}
+      <ApiKeyModal
+        isOpen={apiKeyModalOpen}
+        onClose={() => setApiKeyModalOpen(false)}
+      />
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
