@@ -1226,7 +1226,7 @@ export function AnimeCinemaStage() {
                   {actsList.length > 1 && (
                     <div className="absolute inset-0 pointer-events-none flex">
                       {actsList.map((act, idx) => {
-                        const actPct = ((act.startTime || (idx * 8.0)) / (duration || 1)) * 100;
+                        const actPct = ((act.startTime ?? (idx * (duration / actsList.length))) / (duration || 1)) * 100;
                         if (actPct <= 0 || actPct >= 100) return null;
                         return (
                           <div
