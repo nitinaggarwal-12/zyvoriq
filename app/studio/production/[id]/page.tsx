@@ -41,6 +41,7 @@ import {
   Check
 } from "lucide-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { MultiSensoryStudioSuite } from "@/components/MultiSensoryStudioSuite";
 
 interface ProductionJob {
   id: string;
@@ -1265,6 +1266,40 @@ function ProductionJobPageContent() {
                         </div>
                       )}
                     </div>
+                  );
+                })()}
+
+                {/* Google Multi-Sensory Neural Studio Suite (Eyes, Ears, Skin, Brain, Heart) */}
+                {(() => {
+                  const currentAct = job.acts && job.acts.length > 0 ? (job.acts[activeActIndex] || job.acts[0]) : null;
+                  const durationCalc = (job.acts?.length || 1) * 15.0;
+                  return (
+                    <MultiSensoryStudioSuite
+                      actIndex={activeActIndex}
+                      actTitle={currentAct?.actName || `Act ${activeActIndex + 1}`}
+                      actPhilosophy={currentAct?.philosophy || job.script?.philosophy || "Autonomous Neural Synthesis"}
+                      videoUrl={currentAct?.videoUrl || job.videoUrl}
+                      audioUrl={currentAct?.audioUrl || (job as any).audioSrc}
+                      speaker={currentAct?.speaker || "Lead Commander"}
+                      duration={durationCalc}
+                      currentTime={activeActIndex * 15.0}
+                      isPlaying={isPlaying}
+                      onAuditionAudioSolo={() => {
+                        if (masterAudioRef.current) {
+                          masterAudioRef.current.currentTime = 0;
+                          masterAudioRef.current.play().catch(() => {});
+                          setIsPlaying(true);
+                        }
+                      }}
+                      onAuditionVideoSolo={() => {
+                        const activeVideo = activeDeck === "A" ? videoDeckARef.current : videoDeckBRef.current;
+                        if (activeVideo) {
+                          activeVideo.currentTime = 0;
+                          activeVideo.play().catch(() => {});
+                          setIsPlaying(true);
+                        }
+                      }}
+                    />
                   );
                 })()}
 

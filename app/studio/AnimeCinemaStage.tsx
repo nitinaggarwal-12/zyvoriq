@@ -49,6 +49,7 @@ import {
   SubtitleCue
 } from "@/lib/tier6/anime_subtitles";
 import { SpatialAudioMixer } from "@/components/SpatialAudioMixer";
+import { MultiSensoryStudioSuite } from "@/components/MultiSensoryStudioSuite";
 
 interface LivingDojoMessage {
   id: string;
@@ -1606,6 +1607,33 @@ export function AnimeCinemaStage() {
                 </div>
               )}
             </div>
+
+            {/* Google Multi-Sensory Neural Studio Suite (Eyes, Ears, Skin, Brain, Heart) */}
+            <MultiSensoryStudioSuite
+              actIndex={selectedActIndex}
+              actTitle={actsList[selectedActIndex]?.actName || `Act ${selectedActIndex + 1}`}
+              actPhilosophy={actsList[selectedActIndex]?.philosophy || "Mushin & Non-Attachment"}
+              videoUrl={actsList[selectedActIndex]?.videoUrl || activeTrack.videoSrc}
+              audioUrl={actsList[selectedActIndex]?.audioUrl || (activeTrack as any).audioSrc}
+              speaker={actsList[selectedActIndex]?.speaker || "Lead Speaker"}
+              duration={duration}
+              currentTime={currentTime}
+              isPlaying={isPlaying}
+              onAuditionAudioSolo={() => {
+                if (audioRef.current) {
+                  audioRef.current.currentTime = 0;
+                  audioRef.current.play().then(() => setAudioAutoplayBlocked(false)).catch(() => {});
+                  setIsPlaying(true);
+                }
+              }}
+              onAuditionVideoSolo={() => {
+                if (videoRef.current) {
+                  videoRef.current.currentTime = 0;
+                  videoRef.current.play().catch(() => {});
+                  setIsPlaying(true);
+                }
+              }}
+            />
 
             {/* Pro-Audio 4-Track Spatial Mixer Console */}
             <SpatialAudioMixer
