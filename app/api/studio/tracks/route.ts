@@ -7,9 +7,24 @@ export const revalidate = 0;
 
 export async function GET(req: NextRequest) {
   try {
-    const tracks = await db.getStudioTracksAsync();
+    const dbTracks = await db.getStudioTracksAsync();
+    const tracksMap = new Map<string, any>();
+
+    // Seed canonical tracks first
+    for (const t of CANONICAL_SERIES_TRACKS) {
+      tracksMap.set(t.id, t);
+    }
+
+    // Merge any custom user created tracks
+    for (const t of dbTracks) {
+      if (!tracksMap.has(t.id)) {
+        tracksMap.set(t.id, t);
+      }
+    }
+
+    const tracks = Array.from(tracksMap.values());
     return NextResponse.json(
-      { success: true, tracks: tracks.length > 0 ? tracks : CANONICAL_SERIES_TRACKS },
+      { success: true, tracks },
       { headers: { "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate" } }
     );
   } catch (err: any) {

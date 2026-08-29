@@ -259,8 +259,8 @@ export function AnimeCinemaStage() {
     }
   }, [activeTrackId, activeTrack?.id, activeTrack?.duration]);
 
-  // Multi-file acts detection
-  const isMultiFile = actsList.some((a) => a.videoUrl && a.videoUrl !== activeTrack.videoSrc);
+  // Multi-file acts detection (all tracks with acts are multi-act productions)
+  const isMultiFile = actsList.length > 1;
 
   // Synchronize Active Subtitle Cue in Cinema Mode
   const activeCue = isMultiFile
@@ -271,25 +271,13 @@ export function AnimeCinemaStage() {
 
   // Ensure act audio stem loads immediately on act change
   useEffect(() => {
-    if (audioRef.current && activeCue?.audioUrl) {
+    if (audioRef.current && (activeCue?.audioUrl || (activeTrack as any).audioSrc)) {
       audioRef.current.load();
       if (isPlaying) {
         audioRef.current.play().catch(() => {});
       }
     }
-  }, [activeCue?.audioUrl, isPlaying]);
-
-  // Update selected act on time progress for single master files
-  useEffect(() => {
-    if (!isMultiFile) {
-      const idx = actsList.findIndex(
-        (c) => currentTime >= c.startTime && currentTime <= (c.endTime || duration)
-      );
-      if (idx !== -1 && idx !== selectedActIndex) {
-        setSelectedActIndex(idx);
-      }
-    }
-  }, [currentTime, actsList, duration, isMultiFile, selectedActIndex]);
+  }, [activeCue?.audioUrl, (activeTrack as any).audioSrc, selectedActIndex, isPlaying]);
 
   // Keep video playing when act switches
   useEffect(() => {
@@ -483,12 +471,14 @@ export function AnimeCinemaStage() {
     const audio = audioRef.current;
 
     if (isMultiFile) {
-      const targetIndex = Math.min(
-        actsList.length - 1,
-        Math.max(0, Math.floor(time / 8.0))
-      );
+      const targetIndex = actsList.findIndex(
+        (c) => time >= c.startTime && time < c.endTime
+      ) !== -1
+        ? actsList.findIndex((c) => time >= c.startTime && time < c.endTime)
+        : Math.min(actsList.length - 1, Math.max(0, Math.floor((time / (duration || 60)) * actsList.length)));
+
       const targetAct = actsList[targetIndex];
-      const actStart = targetAct?.startTime ?? (targetIndex * 8.0);
+      const actStart = targetAct?.startTime ?? (targetIndex * (duration / actsList.length));
       const actOffset = Math.max(0, time - actStart);
 
       setSelectedActIndex(targetIndex);
@@ -501,7 +491,7 @@ export function AnimeCinemaStage() {
         }
       }
       if (audio) {
-        audio.currentTime = actOffset;
+        audio.currentTime = time;
         if (autoPlay || isPlaying) {
           audio.play().catch(() => {});
         }
@@ -533,15 +523,15 @@ export function AnimeCinemaStage() {
     if (video) {
       if (isMultiFile) {
         const currentAct = actsList[selectedActIndex];
-        const actStart = currentAct?.startTime ?? (selectedActIndex * 8.0);
+        const actStart = currentAct?.startTime ?? (selectedActIndex * (duration / actsList.length));
         const globalTime = Math.min(duration, actStart + video.currentTime);
         setCurrentTime(globalTime);
       } else {
         setCurrentTime(video.currentTime);
       }
 
-      if (audio && Math.abs(audio.currentTime - video.currentTime) > 0.15) {
-        audio.currentTime = video.currentTime;
+      if (audio && Math.abs(audio.currentTime - currentTime) > 0.3) {
+        audio.currentTime = currentTime;
       }
     }
   };
@@ -914,7 +904,7 @@ export function AnimeCinemaStage() {
 
               {/* Dynamic Video Stream based on Active Series Track */}
               <video
-                key={`video_${activeTrack.id}_${isMultiFile ? selectedActIndex : "master"}`}
+                key={`video_${activeTrack.id}_act_${selectedActIndex}_${activeCue?.videoUrl}`}
                 ref={videoRef}
                 src={activeCue?.videoUrl || activeTrack.videoSrc}
                 className="w-full h-full object-cover"
@@ -923,18 +913,14 @@ export function AnimeCinemaStage() {
                 preload="auto"
                 onTimeUpdate={handleTimeUpdate}
                 onLoadedMetadata={() => {
-                  if (!isMultiFile && videoRef.current) {
-                    setDuration(videoRef.current.duration || activeTrack.duration);
-                  } else if (activeTrack) {
-                    setDuration(activeTrack.duration || (actsList.length * 8.0));
-                  }
+                  setDuration(activeTrack.duration || (actsList.length * 15.0));
                 }}
                 onEnded={() => {
                   if (selectedActIndex < actsList.length - 1) {
                     const nextIndex = selectedActIndex + 1;
                     const nextAct = actsList[nextIndex];
                     setSelectedActIndex(nextIndex);
-                    const nextStart = nextAct.startTime ?? (nextIndex * 8.0);
+                    const nextStart = nextAct?.startTime ?? (nextIndex * (duration / actsList.length));
                     setCurrentTime(nextStart);
 
                     setTimeout(() => {
@@ -943,7 +929,7 @@ export function AnimeCinemaStage() {
                         videoRef.current.play().catch(() => {});
                       }
                       if (audioRef.current) {
-                        audioRef.current.currentTime = 0;
+                        audioRef.current.currentTime = nextStart;
                         audioRef.current.play().catch(() => {});
                       }
                     }, 50);
@@ -1047,9 +1033,9 @@ export function AnimeCinemaStage() {
               {/* Dynamic Multilingual Dub or Neural TTS Audio Element */}
               {(isAnimeTrack || !!(activeTrack as any).audioSrc || !!activeCue?.audioUrl) && (
                 <audio
-                  key={`audio_${activeTrack.id}_${isMultiFile ? selectedActIndex : "master"}_${audioLang}`}
+                  key={`audio_${activeTrack.id}_${(activeTrack as any).audioSrc ? "master" : selectedActIndex}_${audioLang}`}
                   ref={audioRef}
-                  src={activeCue?.audioUrl || (activeTrack as any).audioSrc || (isAnimeTrack ? `/assets/audio/anime_dubs/dub_${audioLang}.mp3` : undefined)}
+                  src={(activeTrack as any).audioSrc || activeCue?.audioUrl || (isAnimeTrack ? `/assets/audio/anime_dubs/dub_${audioLang}.mp3` : undefined)}
                   muted={isMuted}
                   preload="auto"
                 />
