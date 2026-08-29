@@ -802,6 +802,7 @@ export const db = {
         category: r.category,
         character: r.character,
         videoSrc: r.video_src,
+        audioSrc: r.audio_src || (typeof r.acts_json === "string" ? safeJsonParse<any[]>(r.acts_json, [])?.[0]?.audioUrl : r.acts_json?.[0]?.audioUrl),
         duration: parseFloat(r.duration),
         acts: typeof r.acts_json === "string" ? safeJsonParse(r.acts_json, []) : (r.acts_json || []),
         veritas: {

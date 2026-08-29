@@ -7,6 +7,7 @@ export interface SeriesTrack {
   category: string;
   character: string;
   videoSrc: string;
+  audioSrc?: string;
   acts: any[];
   duration: number;
   veritas?: {
@@ -569,7 +570,8 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🏰 ELENA: « Éveillées d'un sommeil millénaire, les runes stellaires baignent la citadelle flottante de lumière dorée. »",
           "de": "🏰 ELENA: „Erwacht aus tausendjährigem Schlaf tauchen die Sternenrunen die schwebende Zitadelle in goldenes Licht.“",
           "hi": "🏰 एलेना: \"हजारों साल की नींद से जागे रहस्यमयी संकेत तैरते किले को सुनहरे प्रकाश से भर देते हैं।\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_fantasy_act1.wav"
       },
       {
         "id": "fantasy_act_2",
@@ -587,7 +589,8 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🏰 ELENA: « Fendant la mer de nuages, le dragon de cristal s'élance, peignant le ciel de ses ailes prismatiques. »",
           "de": "🏰 ELENA: „Das Wolkenmeer durchbrechend steigt der Kristalldrache empor und taucht den Himmel in Prismenfarben.“",
           "hi": "🏰 एलेना: \"बादलों को चीरता हुआ क्रिस्टल ड्रैगन आसमान में अपने रंग बिखेरता है।\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_fantasy_act2.wav"
       },
       {
         "id": "fantasy_act_3",
@@ -605,7 +608,8 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🏰 ELENA: « Le tonnerre arcanique gronde dans les cieux alors que la barrière céleste s'éveille. »",
           "de": "🏰 ELENA: „Arkaner Donner hallt durch die Himmel, während die Schutzbarriere erwacht.“",
           "hi": "🏰 एलेना: \"आकाशीय गर्जना के साथ प्राचीन सुरक्षा चक्र जागृत हो उठता है।\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_fantasy_act3.wav"
       },
       {
         "id": "fantasy_act_4",
@@ -623,13 +627,15 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🏰 ELENA: « Sous le regard céleste des constellations ancestrales, le pacte sacré est scellé pour l'éternité. »",
           "de": "🏰 ELENA: „Unter dem Himmelsblick uralter Sternbilder wird der heilige Bund für alle Ewigkeit erneuert.“",
           "hi": "🏰 एलेना: \"तारों की छत्रछाया में प्राचीन प्रतिज्ञा सदा के लिए अमर हो जाती है।\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_fantasy_act4.wav"
       }
     ],
     "veritas": {
       "status": "CERTIFIED_VALID",
       "snarkProofHash": "0x1f9048a729e018cbb490192837482a10"
-    }
+    },
+    "audioSrc": "/assets/audio/audio_fantasy_act1.wav"
   },
   {
     "id": "track_gaming_nexus_arena",
@@ -656,7 +662,8 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🎮 AOI: « L'arène Nexus comble ! 50 000 fans hurlent alors que la grande finale débute ! »",
           "de": "🎮 AOI: „Eine ausverkaufte Nexus Arena! 50.000 Fans jubeln zum Start des großen Finales!“",
           "hi": "🎮 आओई: \"खचाखच भरा नेक्सस एरिना! 50,000 प्रशंसकों के जयघोष के साथ ग्रैंड फाइनल्स की शुरुआत!\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_gaming_act1.wav"
       },
       {
         "id": "gaming_act_2",
@@ -674,7 +681,8 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🎮 AOI: « L'écran holographique s'illumine alors que les équipes verrouillent leurs avatars ! »",
           "de": "🎮 AOI: „Der holografische Draft-Bildschirm leuchtet auf, während die Teams ihre Avatare wählen!“",
           "hi": "🎮 आओई: \"होलोग्राफिक स्क्रीन पर दोनों टीमें अपने मुख्य लड़ाकू अवतारों को चुनती हैं!\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_gaming_act2.wav"
       },
       {
         "id": "gaming_act_3",
@@ -692,7 +700,8 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🎮 AOI: « Combat d'équipe décisif en 5v5 ! Les combos ultimes brisent la défense adverse ! »",
           "de": "🎮 AOI: „Entscheidender 5v5-Teamkampf! Perfekte Combos durchbrechen die gegnerische Abwehr!“",
           "hi": "🎮 आओई: \"निर्णायक 5v5 मुकाबला! सटीक रणनीतिक हमलों ने विरोधी खेमे को ध्वस्त कर दिया!\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_gaming_act3.wav"
       },
       {
         "id": "gaming_act_4",
@@ -710,13 +719,15 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🎮 AOI: « GG ! Le trophée doré est brandi alors que les confettis inondent l'arène ! »",
           "de": "🎮 AOI: „GG! Der goldene Pokal wird emporgehoben, während Konfetti die Arena erfüllt!“",
           "hi": "🎮 आओई: \"शानदार जीत! स्वर्णिम ट्रॉफी के साथ जश्न और आतिशबाजी का अद्भुत नज़ारा!\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_gaming_act4.wav"
       }
     ],
     "veritas": {
       "status": "CERTIFIED_VALID",
       "snarkProofHash": "0x7b2a9e018cbb490192837482a1049de8"
-    }
+    },
+    "audioSrc": "/assets/audio/audio_gaming_act1.wav"
   },
   {
     "id": "track_cinema_midnight_shadow",
@@ -1352,7 +1363,8 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🎤 MAYA: « (Chant) Sous la pluie et les néons de Shibuya, le premier accord de guitare résonne — libère ton énergie. »",
           "de": "🎤 MAYA: „(Gesang) Durch den Regen über Shibuyas Neonlichtern erklingt der erste Gitarrenakkord.“",
           "hi": "🎤 माया: \"(गाते हुए) टोक्यो की बारिश और नियॉन रोशनियों के बीच, गिटार की पहली धुन दिल को छू जाती है।\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_human_music_act1.wav"
       },
       {
         "id": "human_music_act_2",
@@ -1370,7 +1382,8 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🎤 MAYA: « (Chant) Ressens la basse faire vibrer le ciel nocturne ! Toute la foule chante d'une seule voix ! »",
           "de": "🎤 MAYA: „(Gesang) Spüre den Bass durch den Nachthimmel dröhnen, während die Menge mitsingt!“",
           "hi": "🎤 माया: \"(गाते हुए) भारी बेस की गूंज रात की खामोशी को चीरती है और पूरा शहर झूम उठता है!\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_human_music_act2.wav"
       },
       {
         "id": "human_music_act_3",
@@ -1388,7 +1401,8 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🎤 MAYA: « (Chant) Le projecteur violet éclaire le solo de guitare flamboyant ! Nous repoussons toutes les limites ! »",
           "de": "🎤 MAYA: „(Gesang) Das violette Scheinwerferlicht fängt das feurige Gitarrensolo ein! Keine Grenzen heute Nacht!“",
           "hi": "🎤 माया: \"(गाते हुए) बैंगनी रोशनी में गिटार का सोलो गूंजता है! आज रात कोई सीमा हमें नहीं रोक सकती!\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_human_music_act3.wav"
       },
       {
         "id": "human_music_act_4",
@@ -1406,13 +1420,15 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🎤 MAYA: « (Chant) Tenir la dernière note éclatante sur l'horizon de l'aube. Merci Tokyo, nous sommes éternels ! »",
           "de": "🎤 MAYA: „(Gesang) Der letzte hohe Ton hallt über den Horizont. Danke Tokio, wir bleiben unvergessen!“",
           "hi": "🎤 माया: \"(गाते हुए) भोर की पहली किरण के साथ अंतिम सुर गूंजता है। शुक्रिया टोक्यो, हमारी धुन हमेशा अमर रहेगी!\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_human_music_act4.wav"
       }
     ],
     "veritas": {
       "status": "CERTIFIED_VALID",
       "snarkProofHash": "0x8a920bc482a1049de8170c1aa3902f99"
-    }
+    },
+    "audioSrc": "/assets/audio/audio_human_music_act1.wav"
   },
   {
     "id": "track_music_anime_idol_30s",
@@ -1439,7 +1455,8 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🌟 ARIA: « (Voix Anime) Bienvenue sur la scène cosmique étoilée ! Micros d'énergie activés, illuminons l'univers ! »",
           "de": "🌟 ARIA: „(Anime-Gesang) Willkommen auf der kosmischen Sternenbühne! Energiemikrofone bereit, lasst uns strahlen!“",
           "hi": "🌟 आरिया: \"(एनिमे गायन) तारों से सजे ब्रह्मांडीय मंच पर स्वागत है! ऊर्जावान माइक तैयार है, चमकने का समय आ गया है!\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_anime_music_act1.wav"
       },
       {
         "id": "anime_music_act_2",
@@ -1457,7 +1474,8 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🌟 ARIA: « (Chant) Dansant sur sept cristaux prismatiques, envoyant des sourires à travers toute la galaxie ! »",
           "de": "🌟 ARIA: „(Gesang) Wir tanzen über sieben Prismenkristalle und senden Freude durch die ganze Galaxie!“",
           "hi": "🌟 आरिया: \"(गाते हुए) सतरंगी क्रिस्टलों पर थिरकते हुए पूरी आकाशगंगा में खुशियों के रंग बिखेरते हैं!\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_anime_music_act2.wav"
       },
       {
         "id": "anime_music_act_3",
@@ -1475,7 +1493,8 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🌟 ARIA: « (Chant) Explosion de supernova ! Sous la pluie de confettis stellaires, notre lien devient infini ! »",
           "de": "🌟 ARIA: „(Gesang) Supernova-Explosion! Im Sternenkonfetti-Regen wird unsere Verbindung unendlich!“",
           "hi": "🌟 आरिया: \"(गाते हुए) सुपरनोवा का दिव्य प्रकाश! तारों की आतिशबाजी में हमारा यह अटूट बंधन हमेशा अमर रहेगा!\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_anime_music_act3.wav"
       },
       {
         "id": "anime_music_act_4",
@@ -1493,13 +1512,15 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🌟 ARIA: « (Voix Anime) Je vous aime tous ! La chanson d'Aria résonnera dans vos cœurs pour toujours ! Bye bye☆ »",
           "de": "🌟 ARIA: „(Anime-Gesang) Ich liebe euch alle! Arias Lied wird für immer in euren Herzen klingen! Bye bye☆“",
           "hi": "🌟 आरिया: \"(एनिमे स्वर) आप सभी को ढेर सारा प्यार! आरिया का यह गीत आपके दिलों में सदा गूंजता रहेगा! बाय बाय☆!\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_anime_music_act4.wav"
       }
     ],
     "veritas": {
       "status": "CERTIFIED_VALID",
       "snarkProofHash": "0x7c1920bc482a1049de8170c1aa3902a7"
-    }
+    },
+    "audioSrc": "/assets/audio/audio_anime_music_act1.wav"
   },
   {
     "id": "track_hindi_sufi_romantic_60s",
@@ -1526,13 +1547,14 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🎤 AARAV: « (Chant en Hindi) Alors que le soleil d'or se couche sur les arches de Delhi, les notes de sitar guident mon âme vers toi. »",
           "de": "🎤 AARAV: „(Gesang auf Hindi) Wenn die goldene Sonne hinter den Bögen Delhis versinkt, tragen die Sitarklänge meine Seele zu dir.“",
           "hi": "🎤 आरव: \"(गाते हुए) केसरिया रास्तों पर जब शाम ढले, तेरी यादों की महक हवा में घुले... दिल की हर धड़कन बस तेरा नाम ले।\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_hindi_sufi_act1.wav"
       },
       {
         "id": "hindi_sufi_act_2",
         "startTime": 15,
         "endTime": 30,
-        "videoUrl": "/assets/video/veo_hindi_sufi_song_master.mp4",
+        "videoUrl": "/assets/video/veo_hindi_sufi_act2.mp4",
         "speaker": "Meera Sen",
         "speakerRole": "Classical Female Vocalist",
         "actName": "Act 2: Marigold Rain & Silk Dupatta Swirl (15s - 30s)",
@@ -1544,7 +1566,8 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🎤 MEERA: « (Chant en Hindi) Une pluie de fleurs dorées tombe comme une bénédiction quand nos regards s'unissent. »",
           "de": "🎤 MEERA: „(Gesang auf Hindi) Ein Regen aus goldenen Blütenblättern fällt herab, wenn unsere Blicke sich treffen.“",
           "hi": "🎤 मीरा: \"(गाते हुए) गेंदे के फूलों सी महके यह जहां, तेरे संग बीते यह खुशियों का समां... तू है मेरा आसमां, तू ही मेरा कारवां।\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_hindi_sufi_act2.wav"
       },
       {
         "id": "hindi_sufi_act_3",
@@ -1562,7 +1585,8 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🎤 AARAV & MEERA: « (Duo) Le rythme du tabla s'accélère en pure extase tandis que nos voix s'élèvent sous les étoiles ! »",
           "de": "🎤 AARAV & MEERA: „(Duett) Der Rhythmus der Tablas steigert sich zur Ekstase, während unsere Stimmen in den Sternenhimmel steigen!“",
           "hi": "🎤 आरव और मीरा: \"(युगलबंदी) मौला मेरे मौला, यह कैसा असर है... तेरे बिना अब तो सूना यह सफर है! इश्क़ का यह रंग कभी ना छूटेगा।\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_hindi_sufi_act3.wav"
       },
       {
         "id": "hindi_sufi_act_4",
@@ -1580,13 +1604,15 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🎤 AARAV: « (Chant en Hindi) Sous la lueur dorée des lanternes de cuivre, cette mélodie demeure scellée pour l'éternité. »",
           "de": "🎤 AARAV: „(Gesang auf Hindi) Im warmen Glanz der Messinglaternen bleibt diese Melodie für immer versiegelt.“",
           "hi": "🎤 आरव: \"(गाते हुए) रूह से रूह का यह बंधन कभी ना टूटेगा... ओ सनम, तेरा साथ ही मेरी इबादत है।\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_hindi_sufi_act4.wav"
       }
     ],
     "veritas": {
       "status": "CERTIFIED_VALID",
       "snarkProofHash": "0x6f1920bc482a1049de8170c1aa3902f66"
-    }
+    },
+    "audioSrc": "/assets/audio/audio_hindi_sufi_act1.wav"
   },
   {
     "id": "track_hindi_desi_hiphop_60s",
@@ -1613,7 +1639,8 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🎤 KABIR: « (Rap en Hindi) La pluie frappe les rues de Mumbai au rythme des basses 808. De la rue au monde entier ! »",
           "de": "🎤 KABIR: „(Rap auf Hindi) Der Regen peitscht über Mumbai, während der 808-Bass einsetzt. Aus den Straßen in die Welt!“",
           "hi": "🎤 कबीर: \"(रैप) मुंबई की बारिश में भीगा यह शहर, मेरे शब्दों का देखो यह कैसा कहर! गली से निकले हैं, दुनिया हिलाएंगे!\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_hindi_hiphop_act1.wav"
       },
       {
         "id": "hindi_hiphop_act_2",
@@ -1631,7 +1658,8 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🎤 KABIR: « (Rap en Hindi) Taxis jaunes et fumigènes éclairant la route — un débit ultra-rapide et implacable ! »",
           "de": "🎤 KABIR: „(Rap auf Hindi) Gelbe Taxis und bunte Rauchfackeln – ein unaufhaltsamer, rasanter Flow!“",
           "hi": "🎤 कबीर: \"(रैप) काली-पीली टैक्सी, नियॉन की बत्ती, मेहनत की कमाई से पाई यह गद्दी! रुकना नहीं आता, रफ्तार हमारी है!\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_hindi_hiphop_act2.wav"
       },
       {
         "id": "hindi_hiphop_act_3",
@@ -1649,7 +1677,8 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🎤 KABIR: « (Rap en Hindi) Tout le groupe en parfaite synchronisation ! B-boys virevoltant sous les projecteurs ! »",
           "de": "🎤 KABIR: „(Rap auf Hindi) Die gesamte Crew tanzt synchron im Regen unter den Straßenlaternen!“",
           "hi": "🎤 कबीर: \"(रैप) बी-बॉयज का डांस और बीट्स का यह संगम, जो भी सुनेगा वो झूम उठेगा हरदम! असली हिप-हॉप का यह नया दौर है!\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_hindi_hiphop_act3.wav"
       },
       {
         "id": "hindi_hiphop_act_4",
@@ -1667,12 +1696,14 @@ export const CANONICAL_SERIES_TRACKS: SeriesTrack[] = [
           "fr": "🎤 KABIR: « (Rap en Hindi) Lâcher de micro devant le pont Sea Link. C'est notre ville, notre héritage ! »",
           "de": "🎤 KABIR: „(Rap auf Hindi) Mic Drop vor der Kulisse der Sea Link Bridge. Das ist Mumbai, das ist unser Erbe!“",
           "hi": "🎤 कबीर: \"(रैप) सी-लिंक के सामने गिराया यह माइक, असली मेहनत से पाया सबका यह लाइक! जय हिंद, जय मुंबई!\""
-        }
+        },
+        "audioUrl": "/assets/audio/audio_hindi_hiphop_act4.wav"
       }
     ],
     "veritas": {
       "status": "CERTIFIED_VALID",
       "snarkProofHash": "0x5e1920bc482a1049de8170c1aa3902e55"
-    }
+    },
+    "audioSrc": "/assets/audio/audio_hindi_hiphop_act1.wav"
   }
 ];
