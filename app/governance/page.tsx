@@ -16,6 +16,7 @@ import {
 
 export default function GovernancePage() {
   const [apiKeyCreated, setApiKeyCreated] = useState(false);
+  const [copiedHashId, setCopiedHashId] = useState<string | null>(null);
   const [logs, setLogs] = useState<any[]>([
     {
       id: "LOG-vqc_89f3a12ce94",
@@ -35,6 +36,14 @@ export default function GovernancePage() {
     }
   ]);
   const [loading, setLoading] = useState(false);
+
+  const handleCopyHash = (hash: string, id: string) => {
+    if (typeof window !== "undefined") {
+      navigator.clipboard.writeText(hash);
+      setCopiedHashId(id);
+      setTimeout(() => setCopiedHashId(null), 2000);
+    }
+  };
 
   const fetchLogs = async () => {
     try {
@@ -124,8 +133,18 @@ export default function GovernancePage() {
                     <div className="text-xs text-slate-300 mt-1">{log.action}</div>
 
                     <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-slate-800/60 text-[10px] font-mono">
-                      <span className="text-slate-500 truncate max-w-[360px]">{log.hash}</span>
-                      <span className="text-emerald-400 font-bold">{log.status}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyHash(log.hash, log.id)}
+                        className="text-slate-500 hover:text-amber-300 transition-colors truncate max-w-[360px] text-left flex items-center gap-1.5 group cursor-pointer"
+                        title="Click to copy hash"
+                      >
+                        <span className="truncate">{log.hash}</span>
+                        <span className="text-amber-400 font-bold text-[9px] shrink-0">
+                          {copiedHashId === log.id ? "✓ Copied" : "📋"}
+                        </span>
+                      </button>
+                      <span className="text-emerald-400 font-bold shrink-0">{log.status}</span>
                     </div>
                   </div>
                 ))}

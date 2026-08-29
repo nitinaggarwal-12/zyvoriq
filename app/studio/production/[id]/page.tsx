@@ -492,6 +492,33 @@ function ProductionJobPageContent() {
           </div>
         ) : (
           <>
+            {/* 🎉 Celebratory Post-Generation Instant Cinema Stage Watch Banner */}
+            {isCompleted && (
+              <div className="p-4 md:p-5 rounded-3xl bg-gradient-to-r from-emerald-950/80 via-teal-950/70 to-slate-950 border-2 border-emerald-500/60 shadow-2xl shadow-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 backdrop-blur-xl animate-fadeIn">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0 shadow-lg shadow-emerald-500/20">
+                    <Sparkles className="w-5 h-5 fill-current" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm md:text-base font-bold text-white font-serif">
+                      🎉 4K Diffusion &amp; Neural Audio Synthesis Complete!
+                    </h3>
+                    <p className="text-xs font-mono text-emerald-300">
+                      Act is rendered in 4K, synchronized with 24-bit audio, and certified under Veritas zk-SNARK governance.
+                    </p>
+                  </div>
+                </div>
+
+                <Link
+                  href={`/studio?track=${jobId}`}
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500 hover:brightness-110 text-slate-950 font-bold text-xs font-mono flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 shrink-0 transition-transform active:scale-95"
+                >
+                  <Tv className="w-4 h-4 fill-current" />
+                  <span>🎬 Watch in Cinema Stage</span>
+                </Link>
+              </div>
+            )}
+
             {/* Header Ribbon & Status Bar */}
             <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-900/90 to-slate-950 border border-slate-800 shadow-2xl backdrop-blur-2xl flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               <div className="space-y-2">

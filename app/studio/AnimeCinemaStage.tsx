@@ -201,6 +201,34 @@ export function AnimeCinemaStage() {
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [audioLang, setAudioLang] = useState<AudioLangCode>("ja");
   const [subtitleLang, setSubtitleLang] = useState<SubtitleLangCode>("en");
+
+  // Restore saved subtitle & audio preferences on load
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedSub = localStorage.getItem("zyvoriq_preferred_subtitle_lang") as SubtitleLangCode;
+      if (savedSub && ["ja", "en", "es", "fr", "de", "hi", "none"].includes(savedSub)) {
+        setSubtitleLang(savedSub);
+      }
+      const savedAud = localStorage.getItem("zyvoriq_preferred_audio_lang") as AudioLangCode;
+      if (savedAud && ["ja", "en", "es", "fr", "de", "hi"].includes(savedAud)) {
+        setAudioLang(savedAud);
+      }
+    }
+  }, []);
+
+  const handleSetSubtitleLang = (code: SubtitleLangCode) => {
+    setSubtitleLang(code);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("zyvoriq_preferred_subtitle_lang", code);
+    }
+  };
+
+  const handleSetAudioLang = (code: AudioLangCode) => {
+    setAudioLang(code);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("zyvoriq_preferred_audio_lang", code);
+    }
+  };
   const [showAudioSubMenu, setShowAudioSubMenu] = useState<boolean>(false);
   const [selectedActIndex, setSelectedActIndex] = useState<number>(0);
   const [isCreateActOpen, setIsCreateActOpen] = useState<boolean>(false);
@@ -428,6 +456,9 @@ export function AnimeCinemaStage() {
   // Audio track switching with exact timecode preservation
   const handleAudioLangChange = (code: AudioLangCode) => {
     setAudioLang(code);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("zyvoriq_preferred_audio_lang", code);
+    }
     if (isAnimeTrack) {
       const audio = audioRef.current;
       if (audio) {
@@ -1305,7 +1336,7 @@ export function AnimeCinemaStage() {
                           {SUBTITLE_LANGUAGES.map((sub) => (
                             <button
                               key={sub.code}
-                              onClick={() => setSubtitleLang(sub.code)}
+                              onClick={() => handleSetSubtitleLang(sub.code)}
                               className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left text-xs font-medium transition-all ${
                                 subtitleLang === sub.code
                                   ? "bg-amber-500/20 text-amber-200 border border-amber-500/40 shadow-md"

@@ -413,6 +413,29 @@ function CreatePageContent() {
                   <span>Start New Series Instead</span>
                 </button>
               </div>
+
+              {/* 🎬 Previous Act Context Inspector for Seamless Creative Continuity */}
+              {activeTargetTrack && activeTargetTrack.acts && activeTargetTrack.acts.length > 0 && (
+                <div className="w-full mt-4 p-4 rounded-2xl bg-black/60 border border-amber-500/30 text-xs font-mono space-y-2">
+                  <div className="flex items-center justify-between text-[11px] text-amber-400 font-bold uppercase tracking-wider">
+                    <span className="flex items-center gap-1.5">
+                      <Film className="w-3.5 h-3.5" />
+                      <span>Previous Act {(activeTargetTrack.acts.length)} Context Reference</span>
+                    </span>
+                    <span className="text-slate-400 font-normal">
+                      Character: <span className="text-white font-bold">{activeTargetTrack.character || "Default"}</span>
+                    </span>
+                  </div>
+
+                  <div className="text-slate-300 leading-relaxed bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+                    <span className="text-slate-500 block text-[10px] uppercase font-bold mb-0.5">Scene Continuity &amp; Dialogue:</span>
+                    &ldquo;{activeTargetTrack.acts[activeTargetTrack.acts.length - 1]?.dialogue ||
+                      activeTargetTrack.acts[activeTargetTrack.acts.length - 1]?.prompt ||
+                      activeTargetTrack.subtitle ||
+                      "Continuity storyline ongoing."}&rdquo;
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="p-5 md:p-6 rounded-3xl bg-gradient-to-r from-indigo-950/60 via-slate-900 to-slate-950 border border-indigo-500/40 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 backdrop-blur-xl">
