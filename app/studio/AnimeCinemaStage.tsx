@@ -458,7 +458,7 @@ export function AnimeCinemaStage() {
     } else {
       video.play().catch(() => {});
       if (audio) {
-        audio.currentTime = video.currentTime;
+        audio.currentTime = isMultiFile ? currentTime : video.currentTime;
         audio.play().catch(() => {});
       }
       setIsPlaying(true);
@@ -526,12 +526,14 @@ export function AnimeCinemaStage() {
         const actStart = currentAct?.startTime ?? (selectedActIndex * (duration / actsList.length));
         const globalTime = Math.min(duration, actStart + video.currentTime);
         setCurrentTime(globalTime);
+        if (audio && Math.abs(audio.currentTime - globalTime) > 0.4) {
+          audio.currentTime = globalTime;
+        }
       } else {
         setCurrentTime(video.currentTime);
-      }
-
-      if (audio && Math.abs(audio.currentTime - currentTime) > 0.3) {
-        audio.currentTime = currentTime;
+        if (audio && Math.abs(audio.currentTime - video.currentTime) > 0.4) {
+          audio.currentTime = video.currentTime;
+        }
       }
     }
   };
