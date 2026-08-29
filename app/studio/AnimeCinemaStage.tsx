@@ -1092,12 +1092,12 @@ export function AnimeCinemaStage() {
               )}
 
               {/* Real-Time Active Speaker HUD (Top Left) */}
-              <div className="absolute top-4 left-4 z-30 pointer-events-none transition-all duration-300">
+              <div className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 z-30 pointer-events-none transition-all duration-300 max-w-[85%]">
                 {activeCue ? (
                   <div
-                    className={`flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl backdrop-blur-xl border shadow-xl transition-all ${activeSpeaker.badgeColor}`}
+                    className={`flex items-center gap-2 sm:gap-2.5 px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-lg sm:rounded-xl backdrop-blur-xl border shadow-xl transition-all ${activeSpeaker.badgeColor}`}
                   >
-                    <span className="flex h-2 w-2 relative">
+                    <span className="flex h-2 w-2 relative shrink-0">
                       <span
                         className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${activeSpeaker.dotPing}`}
                       />
@@ -1105,17 +1105,17 @@ export function AnimeCinemaStage() {
                         className={`relative inline-flex rounded-full h-2 w-2 ${activeSpeaker.dotSolid}`}
                       />
                     </span>
-                    <div className="flex flex-col">
-                      <span className="text-[11px] font-bold tracking-wider font-mono uppercase">
+                    <div className="flex flex-col truncate">
+                      <span className="text-[10px] sm:text-[11px] font-bold tracking-wider font-mono uppercase truncate">
                         {activeSpeaker.badge}
                       </span>
-                      <span className="text-[9px] text-zinc-300 font-sans">
+                      <span className="text-[8px] sm:text-[9px] text-zinc-300 font-sans truncate">
                         {activeCue.actName}
                       </span>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-black/60 backdrop-blur-md border border-zinc-800 text-zinc-400 text-[10px] font-mono">
+                  <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-md border border-zinc-800 text-zinc-400 text-[9px] sm:text-[10px] font-mono">
                     <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
                     <span>Cinematic Orientation (600ms Visual Lead-in)</span>
                   </div>
@@ -1124,17 +1124,17 @@ export function AnimeCinemaStage() {
 
               {/* Broadcast Subtitles Overlay (Netflix / Prime Gold Style) */}
               {subtitleLang !== "off" && activeCue && (
-                <div className="absolute bottom-20 inset-x-8 flex justify-center pointer-events-none transition-all duration-300 z-30">
+                <div className="absolute bottom-14 sm:bottom-20 inset-x-2.5 sm:inset-x-8 flex justify-center pointer-events-none transition-all duration-300 z-30">
                   <div
-                    className={`backdrop-blur-md px-6 py-3 rounded-2xl max-w-2xl text-center shadow-2xl border transition-all ${activeSpeaker.badgeColor}`}
+                    className={`backdrop-blur-md px-3.5 py-2 sm:px-6 sm:py-3 rounded-xl sm:rounded-2xl max-w-2xl text-center shadow-2xl border transition-all ${activeSpeaker.badgeColor}`}
                   >
-                    <div className="flex items-center justify-center gap-2 mb-1">
+                    <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
                       <span
-                        className={`text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded border font-bold ${activeSpeaker.subColor}`}
+                        className={`text-[9px] sm:text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded border font-bold ${activeSpeaker.subColor}`}
                       >
                         {activeSpeaker.subBadge}
                       </span>
-                      <span className="text-[10px] font-serif italic text-zinc-400">
+                      <span className="text-[9px] sm:text-[10px] font-serif italic text-zinc-400">
                         {activeCue.philosophy}
                       </span>
                     </div>

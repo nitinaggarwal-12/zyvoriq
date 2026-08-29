@@ -125,14 +125,34 @@ export function SpatialAudioMixer({
         return new Blob([buffer], { type: "audio/wav" });
       };
 
-      const voiceBlob = createSyntheticWavBlob(440);
-      const musicBlob = createSyntheticWavBlob(220);
+      let voiceBlob = createSyntheticWavBlob(440);
+      let musicBlob = createSyntheticWavBlob(220);
+
+      // Fetch live audio stems if URLs are provided
+      if (voiceAudioUrl) {
+        try {
+          const res = await fetch(voiceAudioUrl);
+          if (res.ok) {
+            voiceBlob = await res.blob();
+          }
+        } catch (_) {}
+      }
+
+      if (musicAudioUrl) {
+        try {
+          const res = await fetch(musicAudioUrl);
+          if (res.ok) {
+            musicBlob = await res.blob();
+          }
+        } catch (_) {}
+      }
+
       const foleyBlob = createSyntheticWavBlob(110);
       const ambienceBlob = createSyntheticWavBlob(55);
 
       // Add 4 Stems to Zip
-      zip.file("01_dialogue_stem_48khz.wav", voiceBlob);
-      zip.file("02_lyria_music_stem_48khz.wav", musicBlob);
+      zip.file("01_dialogue_lead_vocal_stem_48khz.wav", voiceBlob);
+      zip.file("02_lyria_music_accompaniment_stem_48khz.wav", musicBlob);
       zip.file("03_v2a_foley_sfx_stem_48khz.wav", foleyBlob);
       zip.file("04_spatial_ambience_stem_48khz.wav", ambienceBlob);
 
