@@ -689,6 +689,7 @@ function ProductionJobPageContent() {
                         <>
                           {/* Video Deck A */}
                           <video
+                            key={`video_deck_a_${deckAUrl}`}
                             ref={videoDeckARef}
                             src={deckAUrl}
                             autoPlay
@@ -709,9 +710,6 @@ function ProductionJobPageContent() {
                             onTimeUpdate={() => {
                               if (activeDeck === "A" && videoDeckARef.current) {
                                 setPlaybackTime(videoDeckARef.current.currentTime);
-                                if (audioDeckARef.current && Math.abs(videoDeckARef.current.currentTime - audioDeckARef.current.currentTime) > 0.15) {
-                                  audioDeckARef.current.currentTime = videoDeckARef.current.currentTime;
-                                }
                               }
                             }}
                             onEnded={handleDeckAEnded}
@@ -723,6 +721,7 @@ function ProductionJobPageContent() {
 
                           {/* Video Deck B (Seamless Preload Buffer) */}
                           <video
+                            key={`video_deck_b_${deckBUrl}`}
                             ref={videoDeckBRef}
                             src={deckBUrl}
                             playsInline
@@ -742,9 +741,6 @@ function ProductionJobPageContent() {
                             onTimeUpdate={() => {
                               if (activeDeck === "B" && videoDeckBRef.current) {
                                 setPlaybackTime(videoDeckBRef.current.currentTime);
-                                if (audioDeckBRef.current && Math.abs(videoDeckBRef.current.currentTime - audioDeckBRef.current.currentTime) > 0.15) {
-                                  audioDeckBRef.current.currentTime = videoDeckBRef.current.currentTime;
-                                }
                               }
                             }}
                             onEnded={handleDeckBEnded}
@@ -756,10 +752,28 @@ function ProductionJobPageContent() {
 
                           {/* Synchronized Neural TTS Audio Decks */}
                           {audioDeckAUrl && (
-                            <audio ref={audioDeckARef} src={audioDeckAUrl} preload="auto" muted={isMuted} />
+                            <audio
+                              key={`audio_a_${activeActIndex}_${audioDeckAUrl}`}
+                              ref={audioDeckARef}
+                              src={audioDeckAUrl}
+                              preload="auto"
+                              muted={isMuted}
+                              onEnded={() => {
+                                if (activeDeck === "A") handleDeckAEnded();
+                              }}
+                            />
                           )}
                           {audioDeckBUrl && (
-                            <audio ref={audioDeckBRef} src={audioDeckBUrl} preload="auto" muted={isMuted} />
+                            <audio
+                              key={`audio_b_${activeActIndex}_${audioDeckBUrl}`}
+                              ref={audioDeckBRef}
+                              src={audioDeckBUrl}
+                              preload="auto"
+                              muted={isMuted}
+                              onEnded={() => {
+                                if (activeDeck === "B") handleDeckBEnded();
+                              }}
+                            />
                           )}
 
                           {/* Center Play Button Overlay (when paused) */}
