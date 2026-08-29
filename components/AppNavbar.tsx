@@ -106,7 +106,9 @@ export function AppNavbar() {
         <nav className="hidden lg:flex items-center gap-2 rounded-2xl border border-slate-800/80 bg-slate-900/50 p-1.5 backdrop-blur-xl">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+            const isActive = item.href === "/studio"
+              ? (pathname === "/studio" || pathname.startsWith("/studio/production"))
+              : (pathname === item.href || (item.href !== "/studio" && pathname.startsWith(item.href + "/")));
             return (
               <Link
                 key={item.href}
@@ -196,6 +198,22 @@ export function AppNavbar() {
                 </Link>
               );
             })}
+
+            {/* Mobile API Key Manager Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setApiKeyModalOpen(true);
+              }}
+              className="flex items-center justify-between rounded-xl px-4 py-3.5 text-base font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 transition-colors mt-2"
+            >
+              <div className="flex items-center gap-3">
+                <Key className="h-5 w-5 text-amber-400" />
+                <span>Google API Keys Pool</span>
+              </div>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            </button>
           </div>
         </div>
       )}

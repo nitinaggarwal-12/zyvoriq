@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { MultiSensoryStudioSuite } from "@/components/MultiSensoryStudioSuite";
+import { AppNavbar } from "@/components/AppNavbar";
 
 interface ProductionJob {
   id: string;
@@ -383,8 +384,10 @@ function ProductionJobPageContent() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
-      {/* Sticky Full-Width Navbar (Zero Gutters) */}
-      <header className="sticky top-0 z-40 w-full bg-slate-950/80 backdrop-blur-xl border-b border-slate-800">
+      <AppNavbar />
+
+      {/* Sub-Header Breadcrumb Bar */}
+      <div className="w-full bg-slate-950/80 backdrop-blur-xl border-b border-slate-800">
         <div className="max-w-[1720px] w-full mx-auto px-6 md:px-12 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
@@ -437,11 +440,11 @@ function ProductionJobPageContent() {
               className="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs font-mono shadow-md shadow-amber-500/20 transition-all flex items-center gap-1.5"
             >
               <Tv className="w-3.5 h-3.5" />
-              <span>Cinema Stage</span>
+              <span>🎬 Cinema Stage</span>
             </Link>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Main Full-Width Content Container */}
       <main className="flex-1 max-w-[1720px] w-full mx-auto px-6 md:px-12 py-8 space-y-6">

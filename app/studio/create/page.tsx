@@ -30,18 +30,22 @@ import {
   Sliders,
   ChevronRight,
   Video,
-  Music
+  Music,
+  Key
 } from "lucide-react";
 import { GENRE_CLUSTERS, GENRE_CATEGORIES, GENRE_CONCEPTS, GenreConcept } from "@/lib/tier6/genre_concepts";
 import { GLOBAL_CHARACTERS, VISUAL_AESTHETICS } from "@/lib/tier6/characters";
 import { LYRIA_MUSIC_PRESETS } from "@/lib/ai/lyriaService";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { AppNavbar } from "@/components/AppNavbar";
+import { ApiKeyModal } from "@/components/ApiKeyModal";
 
 function CreatePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const targetTrackId = searchParams.get("trackId") || "";
   const modeParam = searchParams.get("mode") || "";
+  const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
 
   const [selectedCluster, setSelectedCluster] = useState<string>("all");
   const [selectedGenre, setSelectedGenre] = useState<string>("all");
@@ -257,8 +261,10 @@ function CreatePageContent() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
-      {/* Sticky Full-Width Header */}
-      <header className="sticky top-0 z-40 w-full bg-slate-950/80 backdrop-blur-xl border-b border-slate-800">
+      <AppNavbar />
+
+      {/* Sub-Header Breadcrumb Bar */}
+      <div className="w-full bg-slate-950/80 backdrop-blur-xl border-b border-slate-800">
         <div className="max-w-[1720px] mx-auto px-6 md:px-12 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
@@ -285,12 +291,21 @@ function CreatePageContent() {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setApiKeyModalOpen(true)}
+              className="px-3.5 py-2 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 border border-amber-500/40 text-amber-300 text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-sm"
+            >
+              <Key className="w-3.5 h-3.5 text-amber-400" />
+              <span>API Keys Pool</span>
+            </button>
+
             <Link
               href="/studio/library"
               className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition-all flex items-center gap-2 text-xs font-mono font-bold shadow-sm"
             >
               <Layers className="w-3.5 h-3.5 text-amber-400" />
-              <span>📚 Media Vault (Saved Clips)</span>
+              <span>📚 Media Vault</span>
             </Link>
 
             <Link
@@ -302,7 +317,7 @@ function CreatePageContent() {
             </Link>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Main Full-Width Multi-Column Canvas */}
       <main className="flex-1 max-w-[1720px] w-full mx-auto px-6 md:px-12 py-8 space-y-6">
@@ -615,18 +630,27 @@ function CreatePageContent() {
                     <span>Production Pipeline Parameters</span>
                   </h3>
                   {apiHealth ? (
-                    <span className={`text-[11px] font-mono flex items-center gap-1.5 px-2.5 py-0.5 rounded-full ${
-                      apiHealth.ok
-                        ? "bg-emerald-500/15 border border-emerald-500/40 text-emerald-300"
-                        : "bg-rose-500/15 border border-rose-500/40 text-rose-300 animate-pulse"
-                    }`}>
+                    <button
+                      type="button"
+                      onClick={() => setApiKeyModalOpen(true)}
+                      className={`text-[11px] font-mono flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-all hover:scale-105 ${
+                        apiHealth.ok
+                          ? "bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25"
+                          : "bg-rose-500/15 border border-rose-500/40 text-rose-300 hover:bg-rose-500/25 animate-pulse"
+                      }`}
+                      title="Click to Open API Key Load Balancer"
+                    >
                       <span className={`w-2 h-2 rounded-full ${apiHealth.ok ? "bg-emerald-400" : "bg-rose-400"}`} />
-                      <span>{apiHealth.ok ? "Veo 3.1 & Gemini Active" : "API Key Missing on Server"}</span>
-                    </span>
+                      <span>{apiHealth.ok ? "🟢 Keys Active (Veo 3.1)" : "🔑 Add API Key (Required)"}</span>
+                    </button>
                   ) : (
-                    <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setApiKeyModalOpen(true)}
+                      className="text-[11px] font-mono text-emerald-400 hover:underline flex items-center gap-1"
+                    >
                       <Zap className="w-3 h-3" /> Ready to Synthesize
-                    </span>
+                    </button>
                   )}
                 </div>
 
@@ -1344,6 +1368,12 @@ function CreatePageContent() {
           </div>
         )}
       </main>
+
+      {/* Google Gemini & Veo Multi-Key Load Balancer Modal */}
+      <ApiKeyModal
+        isOpen={apiKeyModalOpen}
+        onClose={() => setApiKeyModalOpen(false)}
+      />
     </div>
   );
 }

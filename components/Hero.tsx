@@ -39,20 +39,20 @@ export function Hero() {
         {/* Hero Actions */}
         <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
           <Link
-            href="/director"
+            href="/studio"
             className="group flex w-full sm:w-auto items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-teal-400 via-emerald-400 to-teal-500 px-8 py-4 text-sm font-black uppercase tracking-wider text-slate-950 shadow-xl shadow-teal-500/25 transition-all duration-300 hover:scale-[1.02] hover:shadow-teal-500/35 active:scale-[0.98]"
           >
             <Sparkles className="h-4 w-4 transition-transform group-hover:rotate-12" />
-            <span>Try Interactive Director</span>
+            <span>Launch Cinema Studio</span>
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
 
           <Link
-            href="/veritas"
+            href="/director"
             className="flex w-full sm:w-auto items-center justify-center gap-2.5 rounded-2xl border border-slate-700/80 bg-slate-900/60 px-7 py-4 text-sm font-bold text-slate-200 backdrop-blur-xl transition-all duration-200 hover:border-slate-500 hover:bg-slate-800/80"
           >
             <ShieldCheck className="h-4 w-4 text-emerald-400" />
-            <span>Inspect Veritas Quality Gate</span>
+            <span>Mission Control DAG</span>
           </Link>
         </div>
 

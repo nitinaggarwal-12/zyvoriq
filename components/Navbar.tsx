@@ -2,10 +2,12 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Sparkles, ShieldCheck, ArrowUpRight, Menu, X, Terminal, Layers, Lock, BarChart3 } from "lucide-react";
+import { Sparkles, ShieldCheck, ArrowUpRight, Menu, X, Terminal, Layers, Lock, BarChart3, Key } from "lucide-react";
+import { ApiKeyModal } from "@/components/ApiKeyModal";
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-800/70 bg-obsidian-950/85 backdrop-blur-2xl transition-all duration-200">
@@ -80,19 +82,31 @@ export function Navbar() {
             <span className="font-mono text-xs">VQC Governed</span>
           </div>
 
+          {/* API Key Manager Button */}
+          <button
+            type="button"
+            onClick={() => setApiKeyModalOpen(true)}
+            className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-950/40 hover:bg-amber-900/50 px-3.5 py-2 text-xs font-bold text-amber-300 transition-all hover:scale-105 active:scale-95 shadow-sm"
+            title="Google Gemini & Veo Multi-Key Pool Manager"
+          >
+            <Key className="w-3.5 h-3.5 text-amber-400" />
+            <span className="font-mono text-xs hidden sm:inline">API Keys</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          </button>
+
           <Link
-            href="/dashboard"
+            href="/studio"
             className="rounded-xl border border-slate-700/80 bg-slate-900/60 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-200 backdrop-blur transition-all duration-200 hover:border-slate-600 hover:bg-slate-800"
           >
-            Dashboard
+            Studio
           </Link>
 
           <Link
-            href="/director"
+            href="/studio"
             className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 via-emerald-400 to-teal-500 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-slate-950 shadow-lg shadow-teal-500/20 transition-all duration-200 hover:scale-[1.02] hover:shadow-teal-500/30 active:scale-[0.98]"
           >
             <Sparkles className="h-3.5 w-3.5" />
-            <span>Launch Mission Control</span>
+            <span>Launch Cinema Studio</span>
           </Link>
         </div>
 
@@ -161,17 +175,23 @@ export function Navbar() {
             </Link>
             <div className="pt-4">
               <Link
-                href="/director"
+                href="/studio"
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 to-emerald-400 py-3 text-center text-sm font-black uppercase tracking-wider text-slate-950 shadow-lg"
               >
                 <Sparkles className="h-4 w-4" />
-                <span>Launch Mission Control</span>
+                <span>Launch Cinema Studio</span>
               </Link>
             </div>
           </div>
         </div>
       )}
+
+      {/* Google Gemini & Veo Multi-Key Load Balancer Modal */}
+      <ApiKeyModal
+        isOpen={apiKeyModalOpen}
+        onClose={() => setApiKeyModalOpen(false)}
+      />
     </header>
   );
 }

@@ -44,6 +44,7 @@ interface SeriesTrack {
 
 import { CANONICAL_SERIES_TRACKS } from "@/lib/tier6/default_tracks";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { AppNavbar } from "@/components/AppNavbar";
 
 function StudioLibraryPageContent() {
   const router = useRouter();
@@ -170,8 +171,10 @@ function StudioLibraryPageContent() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
-      {/* Top Full-Width Sticky Navigation Header */}
-      <header className="sticky top-0 z-40 w-full bg-slate-950/85 backdrop-blur-xl border-b border-slate-800">
+      <AppNavbar />
+
+      {/* Sub-Header Breadcrumb Bar */}
+      <div className="w-full bg-slate-950/85 backdrop-blur-xl border-b border-slate-800">
         <div className="max-w-[1720px] mx-auto px-6 md:px-12 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Link
@@ -215,7 +218,7 @@ function StudioLibraryPageContent() {
             </Link>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Main Full-Width Content Container */}
       <main className="flex-1 max-w-[1720px] w-full mx-auto px-6 md:px-12 py-8 space-y-6">

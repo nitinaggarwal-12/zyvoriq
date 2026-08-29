@@ -31,6 +31,7 @@ import {
   Video
 } from "lucide-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { AppNavbar } from "@/components/AppNavbar";
 
 interface ProductionJob {
   id: string;
@@ -188,9 +189,11 @@ function StudioHistoryPageContent() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-amber-500/30 selection:text-amber-200">
-      {/* Top Breadcrumb Bar */}
-      <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl">
-        <div className="max-w-[1600px] mx-auto px-6 sm:px-8 lg:px-12 h-16 flex items-center justify-between">
+      <AppNavbar />
+
+      {/* Sub-Header Breadcrumb Bar */}
+      <div className="border-b border-slate-800/80 bg-slate-950/60 backdrop-blur-md">
+        <div className="max-w-[1720px] mx-auto px-6 sm:px-8 lg:px-12 h-14 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
               href="/studio"
@@ -201,9 +204,9 @@ function StudioHistoryPageContent() {
             </Link>
             <div className="h-4 w-[1px] bg-slate-800" />
             <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
-              <span className="text-slate-200 font-bold">Studio</span>
+              <Link href="/studio" className="hover:text-slate-200">Studio</Link>
               <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
-              <span className="text-amber-400 font-bold">Production History</span>
+              <span className="text-amber-400 font-bold">Production History &amp; DAG Jobs</span>
             </div>
           </div>
 
@@ -225,7 +228,7 @@ function StudioHistoryPageContent() {
             </Link>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Main Container */}
       <main className="max-w-[1600px] mx-auto px-6 sm:px-8 lg:px-12 py-10 space-y-8">
