@@ -203,6 +203,8 @@ export function AnimeCinemaStage() {
   const [videoError, setVideoError] = useState<boolean>(false);
   const [isGeneratingActVideo, setIsGeneratingActVideo] = useState<boolean>(false);
   const [generationStatus, setGenerationStatus] = useState<string>("");
+  const [audioAutoplayBlocked, setAudioAutoplayBlocked] = useState<boolean>(false);
+  const [isVideoBuffering, setIsVideoBuffering] = useState<boolean>(false);
 
   // Living Dojo Mode State
   const [userInput, setUserInput] = useState<string>("");
@@ -914,6 +916,22 @@ export function AnimeCinemaStage() {
                 playsInline
                 preload="auto"
                 onTimeUpdate={handleTimeUpdate}
+                onWaiting={() => {
+                  setIsVideoBuffering(true);
+                  if (audioRef.current && isPlaying) {
+                    audioRef.current.pause();
+                  }
+                }}
+                onPlaying={() => {
+                  setIsVideoBuffering(false);
+                  if (audioRef.current && isPlaying) {
+                    audioRef.current.currentTime = isMultiFile ? currentTime : (videoRef.current?.currentTime || 0);
+                    audioRef.current.play().catch(() => setAudioAutoplayBlocked(true));
+                  }
+                }}
+                onCanPlay={() => {
+                  setIsVideoBuffering(false);
+                }}
                 onLoadedMetadata={() => {
                   setDuration(activeTrack.duration || (actsList.length * 15.0));
                 }}
@@ -951,6 +969,36 @@ export function AnimeCinemaStage() {
               >
                 <source src={activeCue?.videoUrl || activeTrack.videoSrc} type="video/mp4" />
               </video>
+
+              {/* Browser Autoplay Unmute & Audio Activation Spotlight Banner */}
+              {audioAutoplayBlocked && (
+                <div
+                  onClick={() => {
+                    if (audioRef.current) {
+                      audioRef.current.currentTime = isMultiFile ? currentTime : (videoRef.current?.currentTime || 0);
+                      audioRef.current.play().then(() => {
+                        setAudioAutoplayBlocked(false);
+                      }).catch(() => {});
+                    }
+                  }}
+                  className="absolute top-16 inset-x-6 z-40 flex justify-center cursor-pointer animate-bounce"
+                >
+                  <div className="px-5 py-2.5 rounded-full bg-amber-500/90 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-2xl shadow-amber-500/50 flex items-center gap-2.5 transition-transform hover:scale-105">
+                    <Volume2 className="w-4 h-4 fill-slate-950 animate-pulse" />
+                    <span>Audio Auto-Paused by Browser · Tap to Enable Studio Sound</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Network Buffering Indicator */}
+              {isVideoBuffering && !videoError && (
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] z-30 flex flex-col items-center justify-center pointer-events-none">
+                  <Loader2 className="w-10 h-10 text-amber-400 animate-spin mb-2" />
+                  <span className="text-xs font-mono text-amber-200 tracking-wider uppercase bg-black/70 px-3 py-1 rounded-full border border-amber-500/30">
+                    Buffering 4K Stream...
+                  </span>
+                </div>
+              )}
 
               {/* Interactive Missing Act / On-Demand Veo 3.1 Render Screen */}
               {(videoError || (isMultiFile ? !activeCue?.videoUrl : !activeTrack?.videoSrc)) && (
