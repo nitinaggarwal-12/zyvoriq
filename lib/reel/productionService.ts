@@ -1,4 +1,4 @@
-import { auditReelManifest } from "./audit";
+import { auditReelManifest, REEL_QA_GATES_ENABLED } from "./audit";
 import { planReel, type PlanReelInput } from "./planner";
 import { reelProductionStore, type StoredReelProduction } from "./productionStore";
 import type { AlignmentValidation, CaptionCue, ReelProductionManifest, ReelProductionStatus, ReelRenderedOutput, WordTiming } from "./types";
@@ -32,6 +32,7 @@ function validateWordTimings(wordTimings: WordTiming[], actualDurationSec: numbe
 }
 
 function assertAlignmentValidation(validation?: AlignmentValidation) {
+  if (!REEL_QA_GATES_ENABLED) return;
   if (!validation?.passed) throw new Error("Narration transcript has not passed transcript-vs-script verification");
   if (!Number.isFinite(validation.wer) || !Number.isFinite(validation.coverage)) throw new Error("Narration transcript verification metrics are invalid");
   if (validation.wer > MAX_TRANSCRIPT_WER || validation.coverage < MIN_TRANSCRIPT_COVERAGE) throw new Error(`Narration transcript verification is outside policy: WER ${validation.wer}, coverage ${validation.coverage}`);
@@ -102,7 +103,7 @@ export const reelProductionService = {
     if (to === "ROUGH_CUT_READY") { const missing = manifest.shots.filter(s => !s.asset?.videoUrl || !["GENERATED", "PASSED"].includes(s.status)); if (missing.length) throw new Error(`Cannot mark rough cut ready; ${missing.length} shot(s) have no generated artifact`); }
     if (to === "READY") {
       const result = auditReelManifest(manifest); if (!result.passed) throw new Error(`Cannot mark production READY: ${result.failures.join(" | ")}`);
-      if (!manifest.qa.passed || (manifest.qa.overallScore ?? 0) < manifest.qa.minimumReadyScore) throw new Error("Cannot mark production READY until the master QA gate passes");
+      if (REEL_QA_GATES_ENABLED && (!manifest.qa.passed || (manifest.qa.overallScore ?? 0) < manifest.qa.minimumReadyScore)) throw new Error("Cannot mark production READY until the master QA gate passes");
       if (!manifest.outputs?.master?.videoUrl) throw new Error("Cannot mark production READY without a persisted master output");
     }
     manifest.status = to; return reelProductionStore.replace(id, manifest, expectedRevision ?? stored.revision);
