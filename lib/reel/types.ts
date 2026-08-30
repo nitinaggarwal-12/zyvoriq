@@ -26,6 +26,13 @@ export type TransitionType =
   | "dip"
   | "graphic";
 
+export interface WordTiming {
+  word: string;
+  startSec: number;
+  endSec: number;
+  speaker?: string;
+}
+
 export interface ContinuityState {
   character?: string;
   wardrobe?: string;
@@ -58,6 +65,8 @@ export interface ReelShot {
     videoUrl: string;
     actualDurationSec?: number;
     operationName?: string;
+    provider?: string;
+    model?: string;
   };
   qa?: {
     score?: number;
@@ -92,6 +101,10 @@ export interface ReelProductionManifest {
     musicUrl?: string;
     actualDurationSec?: number;
     timingSource: "actual-alignment" | "pending";
+    wordTimings?: WordTiming[];
+    provider?: string;
+    model?: string;
+    voice?: string;
   };
   shots: ReelShot[];
   qa: {
