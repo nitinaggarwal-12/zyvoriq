@@ -29,6 +29,7 @@ export async function generateProductionShot(input: {
   );
 
   return {
+    assetKey: asset.key,
     videoUrl: asset.url,
     actualDurationSec: probe.durationSec,
     operationName: generated.operationName,
