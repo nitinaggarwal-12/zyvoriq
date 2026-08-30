@@ -1,6 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+const ASSET_URL_PREFIX = "/api/reels/assets/";
+
 function configuredRoot() {
   return process.env.ZYVORIQ_ASSET_ROOT || process.env.RAILWAY_VOLUME_MOUNT_PATH || "";
 }
@@ -21,6 +23,18 @@ function resolveAssetPath(key: string) {
   return { clean, target };
 }
 
+export function assetUrlToKey(url: string) {
+  if (!url.startsWith(ASSET_URL_PREFIX)) throw new Error(`Asset URL is not owned by the Reel asset store: ${url}`);
+  const encoded = url.slice(ASSET_URL_PREFIX.length);
+  const decoded = encoded.split("/").map(segment => decodeURIComponent(segment)).join("/");
+  return safeKey(decoded);
+}
+
+export function getAssetFilePath(keyOrUrl: string) {
+  const key = keyOrUrl.startsWith(ASSET_URL_PREFIX) ? assetUrlToKey(keyOrUrl) : safeKey(keyOrUrl);
+  return resolveAssetPath(key).target;
+}
+
 export function getAssetStoreCapability() {
   const root = configuredRoot();
   return {
@@ -37,7 +51,7 @@ export async function writeAsset(key: string, data: Buffer) {
   const { clean, target } = resolveAssetPath(key);
   await fs.mkdir(path.dirname(target), { recursive: true });
   await fs.writeFile(target, data);
-  return { key: clean, url: `/api/reels/assets/${clean.split("/").map(encodeURIComponent).join("/")}`, bytes: data.length };
+  return { key: clean, url: `${ASSET_URL_PREFIX}${clean.split("/").map(encodeURIComponent).join("/")}`, bytes: data.length };
 }
 
 export async function readAsset(key: string) {
