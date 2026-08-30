@@ -1,4 +1,5 @@
 import { getDatabase, getPostgresPool } from "@/lib/db/client";
+import { enrichManifestV2 } from "./manifestV2";
 import type { ReelProductionManifest } from "./types";
 
 export interface StoredReelProduction {
@@ -35,7 +36,7 @@ function fromSqlite(row: any): StoredReelProduction {
   return {
     id: String(row.id),
     revision: Number(row.revision),
-    manifest: JSON.parse(String(row.manifest_json)) as ReelProductionManifest,
+    manifest: enrichManifestV2(JSON.parse(String(row.manifest_json)) as ReelProductionManifest),
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
   };
@@ -45,7 +46,7 @@ function fromPostgres(row: any): StoredReelProduction {
   return {
     id: String(row.id),
     revision: Number(row.revision),
-    manifest: row.manifest_json as ReelProductionManifest,
+    manifest: enrichManifestV2(row.manifest_json as ReelProductionManifest),
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
   };
@@ -67,6 +68,7 @@ function ensureSqliteTable() {
 export const reelProductionStore = {
   async create(manifest: ReelProductionManifest): Promise<StoredReelProduction> {
     const now = new Date().toISOString();
+    const normalized = enrichManifestV2(manifest);
     const pool = await ensurePostgresTable();
     if (pool) {
       const result = await pool.query(
@@ -74,9 +76,9 @@ export const reelProductionStore = {
          VALUES ($1, 1, $2::jsonb, $3, $3)
          ON CONFLICT (id) DO NOTHING
          RETURNING *`,
-        [manifest.id, JSON.stringify(manifest), now]
+        [normalized.id, JSON.stringify(normalized), now]
       );
-      if (!result.rows[0]) throw new Error(`Production ${manifest.id} already exists`);
+      if (!result.rows[0]) throw new Error(`Production ${normalized.id} already exists`);
       return fromPostgres(result.rows[0]);
     }
 
@@ -84,8 +86,8 @@ export const reelProductionStore = {
     database.prepare(
       `INSERT INTO reel_productions (id, revision, manifest_json, created_at, updated_at)
        VALUES (?, 1, ?, ?, ?)`
-    ).run(manifest.id, JSON.stringify(manifest), now, now);
-    return { id: manifest.id, revision: 1, manifest, createdAt: now, updatedAt: now };
+    ).run(normalized.id, JSON.stringify(normalized), now, now);
+    return { id: normalized.id, revision: 1, manifest: normalized, createdAt: now, updatedAt: now };
   },
 
   async get(id: string): Promise<StoredReelProduction | null> {
@@ -116,10 +118,9 @@ export const reelProductionStore = {
   async replace(id: string, manifest: ReelProductionManifest, expectedRevision?: number): Promise<StoredReelProduction> {
     const current = await this.get(id);
     if (!current) throw new Error(`Production ${id} not found`);
-    if (expectedRevision !== undefined && current.revision !== expectedRevision) {
-      throw new Error(`Production ${id} changed concurrently (expected revision ${expectedRevision}, found ${current.revision})`);
-    }
+    if (expectedRevision !== undefined && current.revision !== expectedRevision) throw new Error(`Production ${id} changed concurrently (expected revision ${expectedRevision}, found ${current.revision})`);
 
+    const normalized = enrichManifestV2(manifest);
     const nextRevision = current.revision + 1;
     const now = new Date().toISOString();
     const pool = await ensurePostgresTable();
@@ -129,17 +130,15 @@ export const reelProductionStore = {
          SET revision = $2, manifest_json = $3::jsonb, updated_at = $4
          WHERE id = $1 AND revision = $5
          RETURNING *`,
-        [id, nextRevision, JSON.stringify(manifest), now, current.revision]
+        [id, nextRevision, JSON.stringify(normalized), now, current.revision]
       );
       if (!result.rows[0]) throw new Error(`Production ${id} changed concurrently`);
       return fromPostgres(result.rows[0]);
     }
 
     const database = ensureSqliteTable();
-    const result = database.prepare(
-      `UPDATE reel_productions SET revision = ?, manifest_json = ?, updated_at = ? WHERE id = ? AND revision = ?`
-    ).run(nextRevision, JSON.stringify(manifest), now, id, current.revision);
+    const result = database.prepare(`UPDATE reel_productions SET revision = ?, manifest_json = ?, updated_at = ? WHERE id = ? AND revision = ?`).run(nextRevision, JSON.stringify(normalized), now, id, current.revision);
     if (Number(result.changes) !== 1) throw new Error(`Production ${id} changed concurrently`);
-    return { id, revision: nextRevision, manifest, createdAt: current.createdAt, updatedAt: now };
+    return { id, revision: nextRevision, manifest: normalized, createdAt: current.createdAt, updatedAt: now };
   },
 };
