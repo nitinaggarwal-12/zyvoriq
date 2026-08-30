@@ -246,6 +246,38 @@ export function AnimeCinemaStage() {
     };
   }, [activeTrackId]);
 
+  // Native OS MediaSession API Integration (Lock Screen, AirPods, TouchBar Controls)
+  useEffect(() => {
+    if (typeof window === "undefined" || !("mediaSession" in navigator)) return;
+    if (activeTrack) {
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: activeTrack.title,
+          artist: activeTrack.character || "Zyvoriq Autonomous Cinema",
+          album: activeTrack.subtitle || "Google Veo 3.1 & DeepMind Stems",
+          artwork: [
+            { src: "/favicon.ico", sizes: "96x96", type: "image/png" }
+          ]
+        });
+
+        navigator.mediaSession.setActionHandler("play", () => {
+          if (videoRef.current?.paused) togglePlay();
+        });
+        navigator.mediaSession.setActionHandler("pause", () => {
+          if (!videoRef.current?.paused) togglePlay();
+        });
+        navigator.mediaSession.setActionHandler("seekbackward", () => {
+          skipSeconds(-5);
+        });
+        navigator.mediaSession.setActionHandler("seekforward", () => {
+          skipSeconds(5);
+        });
+      } catch (e) {
+        // MediaMetadata not supported in some older environments
+      }
+    }
+  }, [activeTrack]);
+
   const [showAudioSubMenu, setShowAudioSubMenu] = useState<boolean>(false);
   const [selectedActIndex, setSelectedActIndex] = useState<number>(0);
   const [isCreateActOpen, setIsCreateActOpen] = useState<boolean>(false);
