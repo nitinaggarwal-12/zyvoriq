@@ -2,6 +2,8 @@ import type { ReelProductionManifest, ReelShot, WordTiming, CaptionCue } from ".
 
 export interface ReelFrameEvidence {
   frame: number;
+  objectId: string;
+  canonicalUrl: string;
   timeSec: number;
   shotId: string | null;
   shotFrame: number | null;
@@ -51,7 +53,7 @@ function shotAt(shots: ReelShot[], t: number) {
   return shots.find(s => t >= s.editorialStartSec && t < s.editorialStartSec + s.editorialDurationSec) || null;
 }
 
-export function buildInspectionPackage(manifest: ReelProductionManifest, fps = 30) {
+export function buildInspectionPackage(manifest: ReelProductionManifest, fps = 30, revision = 0) {
   const durationSec = Number(manifest.audio.actualDurationSec || manifest.plannedDurationSec || 0);
   const frameCount = Math.max(0, Math.ceil(durationSec * fps));
   const chars = manifest.continuity?.characters || [];
@@ -65,8 +67,12 @@ export function buildInspectionPackage(manifest: ReelProductionManifest, fps = 3
     const boundary = boundaries.find(b => Math.abs(t - b.toTimeSec) <= 1 / fps);
     const characterId = shot?.continuityIn?.characterId || shot?.continuityOut?.characterId;
     const environmentId = shot?.continuityIn?.environmentId || shot?.continuityOut?.environmentId;
+    const objectId = `zyvoriq:${manifest.id}:r${revision}:frame:${frame}`;
+    const canonicalUrl = `/studio/inspector?productionId=${encodeURIComponent(manifest.id)}&frame=${frame}&object=${encodeURIComponent(objectId)}`;
     frames.push({
       frame,
+      objectId,
+      canonicalUrl,
       timeSec: t,
       shotId: shot?.id || null,
       shotFrame: shot ? Math.max(0, Math.floor((t - shot.editorialStartSec) * fps)) : null,
@@ -100,9 +106,10 @@ export function buildInspectionPackage(manifest: ReelProductionManifest, fps = 3
   }
 
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedAt: new Date().toISOString(),
     productionId: manifest.id,
+    revision,
     fps,
     durationSec,
     frameCount,
@@ -122,6 +129,6 @@ export function buildInspectionPackage(manifest: ReelProductionManifest, fps = 3
       qa: manifest.qa,
     },
     frames,
-    note: "Expected timeline evidence is derived from the canonical manifest and real alignment. Observed multimodal quality scores remain null until real evaluators produce evidence."
+    note: "Expected timeline evidence is derived from the canonical manifest and real alignment. Every virtual frame has a revision-scoped object ID and canonical inspector URL. Observed multimodal quality scores remain null until real evaluators produce evidence."
   };
 }
