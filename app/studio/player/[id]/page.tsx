@@ -7,7 +7,6 @@ import { AppNavbar } from "@/components/AppNavbar";
 import { ArrowLeft, Captions, ChevronLeft, ChevronRight, Copy, Film, Music2, Pause, Play, Volume2, VolumeX } from "lucide-react";
 
 type Graph = any;
-
 type ToggleProps = { label: string; enabled: boolean; onChange: (next: boolean) => void };
 
 export default function ComposableMediaPlayerPage() {
@@ -23,14 +22,21 @@ export default function ComposableMediaPlayerPage() {
   const [autoAdvance, setAutoAdvance] = useState(true);
   const [speechOn, setSpeechOn] = useState(true);
   const [musicOn, setMusicOn] = useState(true);
+  const [sfxOn, setSfxOn] = useState(true);
+  const [ambienceOn, setAmbienceOn] = useState(true);
   const [captionsOn, setCaptionsOn] = useState(true);
   const [speechTrackId, setSpeechTrackId] = useState("");
   const [musicTrackId, setMusicTrackId] = useState("");
+  const [sfxTrackId, setSfxTrackId] = useState("");
+  const [ambienceTrackId, setAmbienceTrackId] = useState("");
   const [captionTrackId, setCaptionTrackId] = useState("");
   const [timeSec, setTimeSec] = useState(0);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const speechRef = useRef<HTMLAudioElement | null>(null);
   const musicRef = useRef<HTMLAudioElement | null>(null);
+  const sfxRef = useRef<HTMLAudioElement | null>(null);
+  const ambienceRef = useRef<HTMLAudioElement | null>(null);
+  const shouldAutoPlayNextRef = useRef(false);
 
   useEffect(() => {
     if (!productionId) return;
@@ -43,9 +49,11 @@ export default function ComposableMediaPlayerPage() {
         setSelectedClipIds(enabled);
         setSpeechTrackId(d.graph.tracks?.speech?.find((t: any) => t.available)?.id || "");
         setMusicTrackId(d.graph.tracks?.music?.find((t: any) => t.available)?.id || "");
+        setSfxTrackId(d.graph.tracks?.sfx?.find((t: any) => t.available)?.id || "");
+        setAmbienceTrackId(d.graph.tracks?.ambience?.find((t: any) => t.available)?.id || "");
         setCaptionTrackId(d.graph.tracks?.captions?.find((t: any) => t.available)?.id || "");
         if (requestedObjectId) {
-          const target = (d.graph.clips || []).find((c: any) => c.objectId === requestedObjectId);
+          const target = (d.graph.clips || []).find((c: any) => c.objectId === requestedObjectId || c.optionObjectId === requestedObjectId);
           if (target) {
             const idx = enabled.indexOf(target.id);
             if (idx >= 0) setClipIndex(idx);
@@ -67,25 +75,24 @@ export default function ComposableMediaPlayerPage() {
   const clip = activeClips[clipIndex] || null;
   const speech = graph?.tracks?.speech?.find((t: any) => t.id === speechTrackId && t.available);
   const music = graph?.tracks?.music?.find((t: any) => t.id === musicTrackId && t.available);
+  const sfx = graph?.tracks?.sfx?.find((t: any) => t.id === sfxTrackId && t.available);
+  const ambience = graph?.tracks?.ambience?.find((t: any) => t.id === ambienceTrackId && t.available);
   const captionObject = graph?.objects?.find((o: any) => o.id === graph?.tracks?.captions?.find((t: any) => t.id === captionTrackId)?.objectId);
   const captionCues = (captionObject?.metadata?.cues || []) as any[];
   const caption = captionsOn ? captionCues.find(c => timeSec >= Number(c.startSec || 0) && timeSec <= Number(c.endSec || 0))?.text || "" : "";
 
+  const syncOne = (audio: HTMLAudioElement | null, globalTime: number, enabled: boolean, shouldPlay: boolean) => {
+    if (!audio) return;
+    if (Math.abs(audio.currentTime - globalTime) > 0.18) audio.currentTime = Math.max(0, globalTime);
+    audio.muted = !enabled;
+    if (shouldPlay && enabled) void audio.play().catch(() => {}); else audio.pause();
+  };
+
   const syncLayers = (globalTime: number, shouldPlay: boolean) => {
-    const speechAudio = speechRef.current;
-    const musicAudio = musicRef.current;
-    for (const audio of [speechAudio, musicAudio]) {
-      if (!audio) continue;
-      if (Math.abs(audio.currentTime - globalTime) > 0.18) audio.currentTime = Math.max(0, globalTime);
-    }
-    if (speechAudio) {
-      speechAudio.muted = !speechOn;
-      if (shouldPlay && speechOn) void speechAudio.play().catch(() => {}); else speechAudio.pause();
-    }
-    if (musicAudio) {
-      musicAudio.muted = !musicOn;
-      if (shouldPlay && musicOn) void musicAudio.play().catch(() => {}); else musicAudio.pause();
-    }
+    syncOne(speechRef.current, globalTime, speechOn, shouldPlay);
+    syncOne(musicRef.current, globalTime, musicOn, shouldPlay);
+    syncOne(sfxRef.current, globalTime, sfxOn, shouldPlay);
+    syncOne(ambienceRef.current, globalTime, ambienceOn, shouldPlay);
   };
 
   const playClip = async () => {
@@ -101,11 +108,14 @@ export default function ComposableMediaPlayerPage() {
     videoRef.current?.pause();
     speechRef.current?.pause();
     musicRef.current?.pause();
+    sfxRef.current?.pause();
+    ambienceRef.current?.pause();
     setPlaying(false);
   };
 
   const go = (delta: number) => {
     if (!activeClips.length) return;
+    shouldAutoPlayNextRef.current = false;
     pauseAll();
     setClipIndex(i => Math.max(0, Math.min(activeClips.length - 1, i + delta)));
   };
@@ -116,6 +126,10 @@ export default function ComposableMediaPlayerPage() {
     v.currentTime = Math.max(0, clip.trimInSec || 0);
     setTimeSec(clip.startSec);
     syncLayers(clip.startSec, false);
+    if (shouldAutoPlayNextRef.current) {
+      shouldAutoPlayNextRef.current = false;
+      setTimeout(() => void playClip(), 0);
+    }
   };
 
   const onTime = () => {
@@ -127,12 +141,18 @@ export default function ComposableMediaPlayerPage() {
     syncLayers(global, !v.paused);
     if (v.currentTime >= clip.trimOutSec - 0.03) {
       if (autoAdvance && clipIndex < activeClips.length - 1) {
+        shouldAutoPlayNextRef.current = true;
         pauseAll();
         setClipIndex(i => i + 1);
-        setTimeout(() => void playClip(), 30);
       } else pauseAll();
     }
   };
+
+  useEffect(() => {
+    const v = videoRef.current;
+    const global = clip ? clip.startSec + Math.max(0, (v?.currentTime || clip.trimInSec) - clip.trimInSec) : 0;
+    syncLayers(global, Boolean(v && !v.paused));
+  }, [speechOn, musicOn, sfxOn, ambienceOn, speechTrackId, musicTrackId, sfxTrackId, ambienceTrackId]);
 
   const copyRef = async (value: string) => navigator.clipboard?.writeText(value).catch(() => {});
   const toggleClip = (id: string) => setSelectedClipIds(ids => ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]);
@@ -160,6 +180,8 @@ export default function ComposableMediaPlayerPage() {
           <div className="mx-auto mt-3 flex max-w-[520px] items-center justify-between text-xs text-slate-500"><span>{clip ? `${clip.label} · ${clipIndex + 1}/${activeClips.length}` : "No selected clips"}</span><span>{timeSec.toFixed(2)}s</span></div>
           <audio ref={speechRef} src={speech?.url || undefined} preload="metadata" />
           <audio ref={musicRef} src={music?.url || undefined} preload="metadata" />
+          <audio ref={sfxRef} src={sfx?.url || undefined} preload="metadata" />
+          <audio ref={ambienceRef} src={ambience?.url || undefined} preload="metadata" />
         </section>
 
         <aside className="space-y-4">
@@ -173,7 +195,11 @@ export default function ComposableMediaPlayerPage() {
             <TrackSelect label="Speech language / voice" value={speechTrackId} onChange={setSpeechTrackId} tracks={graph.tracks.speech}/>
             <div className="mt-3"><Toggle label="Music" enabled={musicOn} onChange={setMusicOn}/></div>
             <TrackSelect label="Music style" value={musicTrackId} onChange={setMusicTrackId} tracks={graph.tracks.music}/>
-            <div className="mt-3 text-[11px] leading-5 text-slate-500">Only independently persisted variants are selectable. The player never plays embedded clip audio plus a selected stem at the same time: video is always muted and selected audio stems are synchronized to the canonical timeline.</div>
+            <div className="mt-3"><Toggle label="SFX" enabled={sfxOn} onChange={setSfxOn}/></div>
+            <TrackSelect label="SFX option" value={sfxTrackId} onChange={setSfxTrackId} tracks={graph.tracks.sfx}/>
+            <div className="mt-3"><Toggle label="Ambience / nature" enabled={ambienceOn} onChange={setAmbienceOn}/></div>
+            <TrackSelect label="Ambience option" value={ambienceTrackId} onChange={setAmbienceTrackId} tracks={graph.tracks.ambience}/>
+            <div className="mt-3 text-[11px] leading-5 text-slate-500">Only independently persisted variants are selectable. Source video is always muted, so embedded clip audio never double-plays against selected stems. Speech, music, SFX and ambience are independently synchronized to the same canonical timeline.</div>
           </Panel>
 
           <Panel title="Captions" icon={Captions}>
