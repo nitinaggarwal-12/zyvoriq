@@ -3,21 +3,20 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  Terminal, 
-  ShieldCheck, 
-  Layers, 
-  BarChart3, 
-  Sparkles, 
-  Lock, 
-  ChevronDown, 
+import {
+  ShieldCheck,
+  Layers,
+  BarChart3,
+  Sparkles,
+  Lock,
+  ChevronDown,
   Menu,
   X,
   ChevronRight,
   Users,
   Film,
   History,
-  Key
+  Key,
 } from "lucide-react";
 import { ApiKeyModal } from "@/components/ApiKeyModal";
 
@@ -32,69 +31,61 @@ export function AppNavbar() {
     { name: "Studio Cinema", href: "/studio", icon: Layers },
     { name: "Avatars & Cast", href: "/studio/avatars", icon: Users },
     { name: "Create Video", href: "/studio/create", icon: Sparkles },
-    { name: "Media Vault", href: "/studio/library", icon: Film },
+    { name: "Library", href: "/studio/library", icon: Film },
     { name: "History", href: "/studio/history", icon: History },
     { name: "Veritas QA", href: "/veritas", icon: ShieldCheck },
     { name: "Governance", href: "/governance", icon: Lock },
     { name: "Analytics", href: "/dashboard", icon: BarChart3 },
   ];
 
+  const isItemActive = (href: string) => {
+    if (href === "/studio") {
+      return pathname === "/studio" || pathname.startsWith("/studio/production");
+    }
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-800/70 bg-obsidian-950/85 backdrop-blur-2xl transition-all duration-200">
       <div className="mx-auto flex h-20 w-full max-w-[1720px] items-center justify-between px-6 sm:px-8 lg:px-12">
-        
-        {/* LEFT: Brand & Workspace Switcher */}
         <div className="flex items-center gap-5 sm:gap-8">
           <Link href="/" className="group flex items-center gap-3.5" aria-label="Zyvoriq Home">
-            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 via-emerald-500 to-cyan-600 p-[1px] shadow-lg shadow-teal-500/20 group-hover:scale-105 transition-transform">
-              <div className="flex h-full w-full items-center justify-center rounded-[11px] bg-obsidian-950 font-mono text-lg font-black text-teal-300">
-                Z
-              </div>
+            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 via-emerald-500 to-cyan-600 p-[1px] shadow-lg shadow-teal-500/20 transition-transform group-hover:scale-105">
+              <div className="flex h-full w-full items-center justify-center rounded-[11px] bg-obsidian-950 font-mono text-lg font-black text-teal-300">Z</div>
             </div>
             <div className="flex flex-col">
-              <span className="font-mono text-xl font-extrabold tracking-tight text-white flex items-center gap-1.5">
+              <span className="flex items-center gap-1.5 font-mono text-xl font-extrabold tracking-tight text-white">
                 ZYVORIQ<span className="text-teal-400">.</span>
-                <span className="rounded bg-teal-950/80 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-teal-300 border border-teal-800/50">
-                  Engine
-                </span>
+                <span className="rounded border border-teal-800/50 bg-teal-950/80 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-teal-300">Engine</span>
               </span>
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
-                Autonomous Intelligence
-              </span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Autonomous Intelligence</span>
             </div>
           </Link>
 
-          {/* Workspace Dropdown */}
           <div className="relative hidden md:block">
             <button
               onClick={() => setWorkspaceMenuOpen(!workspaceMenuOpen)}
-              className="flex items-center gap-2 rounded-xl border border-slate-800/90 bg-slate-900/70 px-3.5 py-2 text-xs font-medium text-slate-300 hover:border-slate-700 hover:text-white transition-colors"
+              className="flex items-center gap-2 rounded-xl border border-slate-800/90 bg-slate-900/70 px-3.5 py-2 text-xs font-medium text-slate-300 transition-colors hover:border-slate-700 hover:text-white"
             >
-              <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
               <span className="font-mono text-xs">{activeWorkspace}</span>
               <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
             </button>
 
             {workspaceMenuOpen && (
-              <div className="absolute left-0 top-full mt-2 w-72 rounded-2xl border border-slate-800 bg-obsidian-900/95 p-2.5 shadow-2xl backdrop-blur-2xl z-50">
-                <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                  Active Workspace
-                </div>
-                {["Enterprise Core (US-East)", "Media Studio Labs (EU-West)", "FinTech Alpha Persona (Asia-South)"].map((ws) => (
+              <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-2xl border border-slate-800 bg-obsidian-900/95 p-2.5 shadow-2xl backdrop-blur-2xl">
+                <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Active Workspace</div>
+                {["Enterprise Core (US-East)", "Media Studio Labs (EU-West)", "FinTech Alpha Persona (Asia-South)"].map((workspace) => (
                   <button
-                    key={ws}
+                    key={workspace}
                     onClick={() => {
-                      setActiveWorkspace(ws);
+                      setActiveWorkspace(workspace);
                       setWorkspaceMenuOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between rounded-xl px-3.5 py-2.5 text-left text-xs transition-colors ${
-                      activeWorkspace === ws
-                        ? "bg-teal-500/15 text-teal-300 font-bold"
-                        : "text-slate-300 hover:bg-slate-800/70 hover:text-white"
-                    }`}
+                    className={`flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-left text-xs transition-colors ${activeWorkspace === workspace ? "bg-teal-500/15 font-bold text-teal-300" : "text-slate-300 hover:bg-slate-800/70 hover:text-white"}`}
                   >
-                    <span>{ws}</span>
-                    {activeWorkspace === ws && <div className="h-1.5 w-1.5 rounded-full bg-teal-400" />}
+                    <span>{workspace}</span>
+                    {activeWorkspace === workspace && <div className="h-1.5 w-1.5 rounded-full bg-teal-400" />}
                   </button>
                 ))}
               </div>
@@ -102,63 +93,54 @@ export function AppNavbar() {
           </div>
         </div>
 
-        {/* CENTER: Clean Spacious Nav Tabs */}
-        <nav className="hidden lg:flex items-center gap-2 rounded-2xl border border-slate-800/80 bg-slate-900/50 p-1.5 backdrop-blur-xl">
+        <nav className="hidden items-center gap-2 rounded-2xl border border-slate-800/80 bg-slate-900/50 p-1.5 backdrop-blur-xl lg:flex">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = item.href === "/studio"
-              ? (pathname === "/studio" || pathname.startsWith("/studio/production"))
-              : (pathname === item.href || (item.href !== "/studio" && pathname.startsWith(item.href + "/")));
+            const active = isItemActive(item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-150 ${
-                  isActive
-                    ? "bg-gradient-to-r from-teal-500/20 to-emerald-500/10 text-teal-300 border border-teal-500/40 shadow-sm font-bold"
-                    : "text-slate-300 hover:text-white hover:bg-slate-800/50"
-                }`}
+                className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-150 ${active ? "border border-teal-500/40 bg-gradient-to-r from-teal-500/20 to-emerald-500/10 font-bold text-teal-300 shadow-sm" : "text-slate-300 hover:bg-slate-800/50 hover:text-white"}`}
               >
-                <Icon className={`h-4 w-4 ${isActive ? "text-teal-400" : "text-slate-400"}`} />
+                <Icon className={`h-4 w-4 ${active ? "text-teal-400" : "text-slate-400"}`} />
                 <span>{item.name}</span>
               </Link>
             );
           })}
         </nav>
 
-        {/* RIGHT: Live Swarm Badge, API Key Manager & Primary Action CTA */}
         <div className="flex items-center gap-3 sm:gap-4">
           <button
             type="button"
             onClick={() => setApiKeyModalOpen(true)}
-            className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-950/40 hover:bg-amber-900/50 px-3.5 py-2 text-xs font-bold text-amber-300 transition-all hover:scale-105 active:scale-95 shadow-sm"
+            className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-950/40 px-3.5 py-2 text-xs font-bold text-amber-300 shadow-sm transition-all hover:scale-105 hover:bg-amber-900/50 active:scale-95"
             title="Google Gemini & Veo Multi-Key Pool Manager"
           >
-            <Key className="w-3.5 h-3.5 text-amber-400" />
-            <span className="font-mono text-xs hidden sm:inline">API Keys</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <Key className="h-3.5 w-3.5 text-amber-400" />
+            <span className="hidden font-mono text-xs sm:inline">API Keys</span>
+            <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
           </button>
 
-          <div className="hidden xl:flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3.5 py-1.5 text-xs text-emerald-300">
+          <div className="hidden items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3.5 py-1.5 text-xs text-emerald-300 xl:flex">
             <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
             </span>
             <span className="font-mono text-xs font-semibold">9 Swarms Active</span>
           </div>
 
           <Link
             href="/director"
-            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 via-emerald-400 to-teal-500 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-slate-950 shadow-lg shadow-teal-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 via-emerald-400 to-teal-500 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-slate-950 shadow-lg shadow-teal-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <Sparkles className="h-3.5 w-3.5 fill-current" />
             <span>Launch Swarm</span>
           </Link>
 
-          {/* Mobile Menu Toggle Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="flex lg:hidden items-center justify-center p-2.5 rounded-xl border border-slate-800 bg-slate-900 text-slate-300 hover:text-white"
+            className="flex items-center justify-center rounded-xl border border-slate-800 bg-slate-900 p-2.5 text-slate-300 hover:text-white lg:hidden"
             aria-label="Toggle navigation menu"
           >
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -166,32 +148,23 @@ export function AppNavbar() {
         </div>
       </div>
 
-      {/* Google Gemini & Veo Multi-Key Load Balancer & Health Sentinel Modal */}
-      <ApiKeyModal
-        isOpen={apiKeyModalOpen}
-        onClose={() => setApiKeyModalOpen(false)}
-      />
+      <ApiKeyModal isOpen={apiKeyModalOpen} onClose={() => setApiKeyModalOpen(false)} />
 
-      {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-b border-slate-800 bg-obsidian-950/98 px-6 py-6 backdrop-blur-2xl">
+        <div className="border-b border-slate-800 bg-obsidian-950/98 px-6 py-6 backdrop-blur-2xl lg:hidden">
           <div className="flex flex-col gap-2.5">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href;
+              const active = isItemActive(item.href);
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center justify-between rounded-xl px-4 py-3.5 text-base font-semibold transition-colors ${
-                    isActive
-                      ? "bg-teal-500/15 text-teal-300 border border-teal-500/30"
-                      : "text-slate-300 hover:bg-slate-800/60 hover:text-white"
-                  }`}
+                  className={`flex items-center justify-between rounded-xl px-4 py-3.5 text-base font-semibold transition-colors ${active ? "border border-teal-500/30 bg-teal-500/15 text-teal-300" : "text-slate-300 hover:bg-slate-800/60 hover:text-white"}`}
                 >
                   <div className="flex items-center gap-3">
-                    <Icon className={`h-5 w-5 ${isActive ? "text-teal-400" : "text-slate-400"}`} />
+                    <Icon className={`h-5 w-5 ${active ? "text-teal-400" : "text-slate-400"}`} />
                     <span>{item.name}</span>
                   </div>
                   <ChevronRight className="h-4 w-4 text-slate-500" />
@@ -199,20 +172,19 @@ export function AppNavbar() {
               );
             })}
 
-            {/* Mobile API Key Manager Button */}
             <button
               type="button"
               onClick={() => {
                 setMobileMenuOpen(false);
                 setApiKeyModalOpen(true);
               }}
-              className="flex items-center justify-between rounded-xl px-4 py-3.5 text-base font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 transition-colors mt-2"
+              className="mt-2 flex items-center justify-between rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-base font-semibold text-amber-300 transition-colors hover:bg-amber-500/20"
             >
               <div className="flex items-center gap-3">
                 <Key className="h-5 w-5 text-amber-400" />
                 <span>Google API Keys Pool</span>
               </div>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
             </button>
           </div>
         </div>
