@@ -1,0 +1,140 @@
+name: Apply transcript numeric normalization fix
+
+on:
+  push:
+    branches:
+      - fix/transcript-numeric-normalization
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/transcript-numeric-normalization
+          fetch-depth: 0
+      - name: Patch worker safely
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('scripts/reel_worker_v2.mjs')
+          s = p.read_text()
+
+          old_norm = '''function normalizeWords(t) { return String(t).normalize("NFKC").toLowerCase().replace(/[’‘]/g, "'").replace(/[^\\p{L}\\p{N}']+/gu, " ").trim().split(/\\s+/).filter(Boolean); }'''
+          new_norm = '''const NUMBER_WORDS = new Map(Object.entries({
+  zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
+  ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19,
+  twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90,
+}));
+function normalizeWords(t) {
+  const raw = String(t).normalize("NFKC").toLowerCase().replace(/[’‘]/g, "'").replace(/[^\\p{L}\\p{N}']+/gu, " ").trim().split(/\\s+/).filter(Boolean);
+  const out = [];
+  for (let i = 0; i < raw.length; i++) {
+    let w = raw[i];
+    if (w === "can't") w = "cannot";
+    else if (w === "won't" || w === "wont") w = "willnot";
+    else if (w === "mustn't") w = "mustnot";
+    if (NUMBER_WORDS.has(w)) {
+      let n = NUMBER_WORDS.get(w);
+      if (n >= 20 && n % 10 === 0 && i + 1 < raw.length && NUMBER_WORDS.has(raw[i + 1])) {
+        const next = NUMBER_WORDS.get(raw[i + 1]);
+        if (next > 0 && next < 10) { n += next; i += 1; }
+      }
+      out.push(String(n));
+      if (raw[i + 1] === "percent") i += 1;
+    } else {
+      out.push(w);
+    }
+  }
+  return out;
+}'''
+          if old_norm not in s:
+              raise SystemExit('normalizeWords source pattern not found; refusing unsafe patch')
+          s = s.replace(old_norm, new_norm, 1)
+
+          anchor = 'await recoverLegacyAmbiguousTtsFailures();\n'
+          recovery = r'''
+
+async function recoverLegacyTranscriptMismatchFailures() {
+  const failed = await pool.query(`
+    SELECT id, production_id
+    FROM reel_operations
+    WHERE kind='NARRATION'
+      AND status='FAILED'
+      AND last_error LIKE 'Narration transcript mismatch:%'
+      AND result_json->>'stage'='AUDIO_PERSISTED'
+    ORDER BY updated_at ASC
+  `);
+  for (const row of failed.rows) {
+    await pool.query(`
+      UPDATE reel_operations
+      SET status='QUEUED', attempt=0, provider_operation_name='tts-audio-persisted',
+          last_error=NULL, lease_owner=NULL, lease_expires_at=NULL, updated_at=NOW()
+      WHERE id=$1
+    `, [row.id]);
+    const p = await pool.query(`SELECT revision, manifest_json FROM reel_productions WHERE id=$1`, [row.production_id]);
+    if (!p.rows[0]) continue;
+    const m = p.rows[0].manifest_json || {};
+    if (m.status === "FAILED") m.status = "AUDIO_GENERATING";
+    if (m.qa?.failures && Array.isArray(m.qa.failures)) {
+      m.qa.failures = m.qa.failures.filter(x => !String(x).startsWith("Narration transcript mismatch:"));
+    }
+    await pool.query(`
+      UPDATE reel_productions
+      SET revision=revision+1, manifest_json=$3::jsonb, updated_at=NOW()
+      WHERE id=$1 AND revision=$2
+    `, [row.production_id, Number(p.rows[0].revision), JSON.stringify(m)]);
+    console.log(`[reel-worker] recovered transcript mismatch operation ${row.id} from persisted audio`);
+  }
+}
+await recoverLegacyTranscriptMismatchFailures();
+'''
+          if anchor not in s:
+              raise SystemExit('recovery insertion anchor not found; refusing unsafe patch')
+          s = s.replace(anchor, anchor + recovery, 1)
+
+          old_err = 'if (!v.passed) throw new Error(`Narration transcript mismatch: WER ${v.wer}, coverage ${v.coverage}`);'
+          new_err = 'if (!v.passed) throw new Error(`Narration transcript mismatch: WER ${v.wer}, coverage ${v.coverage}${missing.length ? `, missing critical tokens: ${missing.join(", ")}` : ""}`);'
+          if old_err not in s:
+              raise SystemExit('validation error source pattern not found; refusing unsafe patch')
+          s = s.replace(old_err, new_err, 1)
+
+          p.write_text(s)
+          PY
+
+      - name: Syntax QA
+        run: node --check scripts/reel_worker_v2.mjs
+
+      - name: Regression QA for numeric speech normalization
+        shell: bash
+        run: |
+          node <<'NODE'
+          const NUMBER_WORDS = new Map(Object.entries({zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,twenty:20,thirty:30,forty:40,fifty:50,sixty:60,seventy:70,eighty:80,ninety:90}));
+          function normalizeWords(t){const raw=String(t).normalize('NFKC').toLowerCase().replace(/[’‘]/g,"'").replace(/[^\p{L}\p{N}']+/gu,' ').trim().split(/\s+/).filter(Boolean);const out=[];for(let i=0;i<raw.length;i++){let w=raw[i];if(w==="can't")w='cannot';else if(w==="won't"||w==='wont')w='willnot';else if(w==="mustn't")w='mustnot';if(NUMBER_WORDS.has(w)){let n=NUMBER_WORDS.get(w);if(n>=20&&n%10===0&&i+1<raw.length&&NUMBER_WORDS.has(raw[i+1])){const next=NUMBER_WORDS.get(raw[i+1]);if(next>0&&next<10){n+=next;i++;}}out.push(String(n));if(raw[i+1]==='percent')i++;}else out.push(w);}return out;}
+          const cases = [
+            ['3 habits quietly killing your focus','three habits quietly killing your focus'],
+            ['21 ways to improve focus','twenty one ways to improve focus'],
+            ['30% better','thirty percent better'],
+            ["you can't ignore this",'you cannot ignore this'],
+          ];
+          for (const [a,b] of cases) {
+            const na = normalizeWords(a).join(' '), nb = normalizeWords(b).join(' ');
+            if (na !== nb) throw new Error(`${a} != ${b}: ${na} vs ${nb}`);
+          }
+          console.log('numeric/contraction normalization QA passed');
+          NODE
+
+      - name: Remove temporary workflow and commit fix
+        shell: bash
+        run: |
+          rm .github/workflows/_fix_transcript_numeric.yml
+          git config user.name "zyvoriq-fix-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add scripts/reel_worker_v2.mjs .github/workflows/_fix_transcript_numeric.yml
+          git commit -m "fix(reels): normalize spoken numbers in transcript QA"
+          git push origin HEAD:fix/transcript-numeric-normalization
