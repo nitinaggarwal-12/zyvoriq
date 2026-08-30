@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Sparkles, Clapperboard, Captions, Mic2, Image as ImageIcon, Copy, Check, Instagram, Youtube, ChevronDown, Loader2, CircleAlert, Database, Film, AudioLines } from "lucide-react";
+import { ArrowLeft, Sparkles, Clapperboard, Captions, Mic2, Image as ImageIcon, Copy, Check, Instagram, Youtube, ChevronDown, Loader2, CircleAlert, Database, Film, AudioLines, Video } from "lucide-react";
 import type { ReelProductionManifest } from "@/lib/reel/types";
 
 type StoredProduction = {
@@ -34,13 +34,20 @@ export function ReelStudio() {
   const [production, setProduction] = useState<StoredProduction | null>(null);
   const [building, setBuilding] = useState(false);
   const [generatingNarration, setGeneratingNarration] = useState(false);
+  const [generatingShot, setGeneratingShot] = useState(false);
   const [error, setError] = useState("");
 
   const manifest = production?.manifest || null;
+  const generatedShotCount = manifest?.shots.filter(s => Boolean(s.asset?.videoUrl)).length || 0;
+  const totalShotCount = manifest?.shots.length || 0;
+  const canGenerateShot = Boolean(manifest && ["SHOTS_PLANNED", "VIDEO_GENERATING", "REPAIRING"].includes(manifest.status) && generatedShotCount < totalShotCount);
   const script = useMemo(() => scriptLines(manifest, topic), [manifest, topic]);
   const scenes = useMemo(() => manifest?.shots.map((shot) => {
     const end = shot.editorialStartSec + shot.editorialDurationSec;
-    return `${shot.editorialStartSec.toFixed(1)}–${end.toFixed(1)}s · ${shot.visualIntent} · source ${shot.generationDurationSec}s`;
+    const evidence = shot.asset?.actualDurationSec
+      ? `generated ${shot.asset.actualDurationSec.toFixed(2)}s · ${shot.asset.model || "provider"}`
+      : `needs ${shot.generationDurationSec}s source`;
+    return `${shot.editorialStartSec.toFixed(1)}–${end.toFixed(1)}s · ${shot.visualIntent} · ${evidence}`;
   }) || [], [manifest]);
   const captions = useMemo(() => manifest?.shots
     .filter(s => s.scriptText.trim())
@@ -53,12 +60,7 @@ export function ReelStudio() {
       const response = await fetch("/api/reels/productions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          topic,
-          tone,
-          platform,
-          requestedDurationSec: durationNumber(duration),
-        }),
+        body: JSON.stringify({ topic, tone, platform, requestedDurationSec: durationNumber(duration) }),
       });
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || "Failed to create production");
@@ -69,6 +71,12 @@ export function ReelStudio() {
     } finally {
       setBuilding(false);
     }
+  };
+
+  const refreshProduction = async (id: string) => {
+    const response = await fetch(`/api/reels/productions/${encodeURIComponent(id)}`, { cache: "no-store" });
+    const data = await response.json();
+    if (response.ok && data.success) setProduction(data.production);
   };
 
   const generateNarration = async () => {
@@ -87,13 +95,31 @@ export function ReelStudio() {
       setActiveTab("Scenes");
     } catch (err: any) {
       setError(err?.message || "Narration generation failed");
-      try {
-        const refresh = await fetch(`/api/reels/productions/${encodeURIComponent(production.id)}`, { cache: "no-store" });
-        const refreshed = await refresh.json();
-        if (refresh.ok && refreshed.success) setProduction(refreshed.production);
-      } catch {}
+      try { await refreshProduction(production.id); } catch {}
     } finally {
       setGeneratingNarration(false);
+    }
+  };
+
+  const generateNextShot = async () => {
+    if (!production) return;
+    setGeneratingShot(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/reels/productions/${encodeURIComponent(production.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "generateNextShot", expectedRevision: production.revision, modelTier: "fast" }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || "Shot generation failed");
+      setProduction(data.production);
+      setActiveTab("Scenes");
+    } catch (err: any) {
+      setError(err?.message || "Shot generation failed");
+      try { await refreshProduction(production.id); } catch {}
+    } finally {
+      setGeneratingShot(false);
     }
   };
 
@@ -102,6 +128,8 @@ export function ReelStudio() {
     setCopied(true);
     setTimeout(() => setCopied(false), 1200);
   };
+
+  const busy = building || generatingNarration || generatingShot;
 
   return (
     <div className="min-h-screen bg-[#07090d] text-slate-100">
@@ -125,29 +153,34 @@ export function ReelStudio() {
         <aside className="h-fit rounded-[26px] border border-white/10 bg-white/[0.025] p-5 lg:sticky lg:top-24">
           <div className="text-xs font-bold uppercase tracking-[0.16em] text-pink-300">Creative brief</div>
           <h1 className="mt-2 text-2xl font-black tracking-[-0.03em] text-white">What do you want to post?</h1>
-
           <label className="mt-6 block text-xs font-bold text-slate-500">IDEA OR TOPIC</label>
           <textarea value={topic} onChange={(e) => setTopic(e.target.value)} rows={5} className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-black/20 p-4 text-sm leading-6 text-white outline-none transition placeholder:text-slate-700 focus:border-pink-300/35" placeholder="e.g. 3 things nobody tells you about starting a business" />
-
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
             <Field label="Tone" value={tone} onChange={setTone} options={["Confident & conversational", "Warm & relatable", "Fast & energetic", "Expert & credible", "Playful & witty"]} />
             <Field label="Length" value={duration} onChange={setDuration} options={["15 sec", "30 sec", "45 sec", "60 sec"]} />
             <Field label="Platform" value={platform} onChange={setPlatform} options={["Instagram Reels", "YouTube Shorts", "TikTok"]} />
           </div>
 
-          <button onClick={buildProduction} disabled={building || generatingNarration || !topic.trim()} className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-3.5 text-sm font-black text-slate-950 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50">
+          <button onClick={buildProduction} disabled={busy || !topic.trim()} className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-3.5 text-sm font-black text-slate-950 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50">
             {building ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             {building ? "Building…" : production ? "Create new plan" : "Build reel plan"}
           </button>
 
-          {production?.manifest.status === "SCRIPT_READY" && (
-            <button onClick={generateNarration} disabled={generatingNarration} className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-pink-300/25 bg-pink-300/10 py-3.5 text-sm font-black text-pink-100 transition hover:bg-pink-300/15 disabled:cursor-not-allowed disabled:opacity-50">
+          {manifest?.status === "SCRIPT_READY" && (
+            <button onClick={generateNarration} disabled={busy} className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-pink-300/25 bg-pink-300/10 py-3.5 text-sm font-black text-pink-100 transition hover:bg-pink-300/15 disabled:cursor-not-allowed disabled:opacity-50">
               {generatingNarration ? <Loader2 className="h-4 w-4 animate-spin" /> : <AudioLines className="h-4 w-4" />}
               {generatingNarration ? "Generating + aligning…" : "Generate real narration"}
             </button>
           )}
 
-          <p className="mt-3 text-center text-[11px] leading-5 text-slate-600">The manifest is persisted first. Audio/video states advance only when real artifacts and timing evidence exist.</p>
+          {canGenerateShot && (
+            <button onClick={generateNextShot} disabled={busy} className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-teal-300/25 bg-teal-300/10 py-3.5 text-sm font-black text-teal-100 transition hover:bg-teal-300/15 disabled:cursor-not-allowed disabled:opacity-50">
+              {generatingShot ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />}
+              {generatingShot ? "Generating + probing…" : `Generate next shot (${generatedShotCount}/${totalShotCount})`}
+            </button>
+          )}
+
+          <p className="mt-3 text-center text-[11px] leading-5 text-slate-600">States advance only when real persisted artifacts and measurable timing/media evidence exist.</p>
           {error && <div className="mt-4 flex gap-2 rounded-xl border border-red-400/20 bg-red-400/5 p-3 text-xs leading-5 text-red-200"><CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />{error}</div>}
         </aside>
 
@@ -157,10 +190,9 @@ export function ReelStudio() {
               <button key={tab} onClick={() => setActiveTab(tab)} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${activeTab === tab ? "bg-white text-slate-950" : "text-slate-500 hover:bg-white/5 hover:text-white"}`}>{tab}</button>
             ))}
           </div>
-
           <div className="p-5 sm:p-8">
             {activeTab === "Script" && <ScriptPanel script={script} copied={copied} onCopy={copyText} />}
-            {activeTab === "Scenes" && <ListPanel icon={Clapperboard} eyebrow="CANONICAL SHOT PLAN" title={manifest ? `${manifest.shots.length} editorial shots` : "Build a plan to create shots"} items={scenes.length ? scenes : ["No persisted shot plan yet."]} />}
+            {activeTab === "Scenes" && <ListPanel icon={Clapperboard} eyebrow="CANONICAL SHOT PLAN" title={manifest ? `${generatedShotCount}/${totalShotCount} real source clips generated` : "Build a plan to create shots"} items={scenes.length ? scenes : ["No persisted shot plan yet."]} />}
             {activeTab === "Captions" && <ListPanel icon={Captions} eyebrow={manifest?.audio.timingSource === "actual-alignment" ? "ALIGNED NARRATION SOURCE" : "DRAFT CAPTION SOURCE"} title={manifest?.audio.timingSource === "actual-alignment" ? `${manifest.audio.wordTimings?.length || 0} words aligned to the waveform` : "Final timing waits for real narration"} items={captions.length ? captions : ["Captions are not marked synchronized until real audio alignment exists."]} />}
             {activeTab === "Cover" && <CoverPanel topic={topic} />}
           </div>
@@ -170,14 +202,8 @@ export function ReelStudio() {
           <div className="rounded-[30px] border border-white/10 bg-[#0a0d12] p-3">
             <div className="relative aspect-[9/16] overflow-hidden rounded-[24px] bg-[radial-gradient(circle_at_70%_20%,rgba(244,114,182,0.32),transparent_28%),radial-gradient(circle_at_30%_75%,rgba(45,212,191,0.22),transparent_28%),linear-gradient(160deg,#19111d,#0b1016_58%,#0a1515)]">
               <div className="absolute inset-x-5 top-5 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-white/50"><span>Plan preview</span><span>{manifest ? `${manifest.plannedDurationSec}s` : duration}</span></div>
-              <div className="absolute inset-x-5 top-[26%] text-center">
-                <div className="text-3xl font-black leading-none tracking-[-0.05em] text-white">{topic || "Your Reel hook"}</div>
-                <div className="mx-auto mt-4 h-1.5 w-16 rounded-full bg-pink-300" />
-              </div>
-              <div className="absolute inset-x-5 bottom-20 rounded-2xl bg-black/35 p-4 backdrop-blur-md">
-                <div className="text-sm font-bold text-white">{manifest ? manifest.shots[0]?.scriptText || "Visual hook" : "Build the production plan first."}</div>
-                <div className="mt-2 text-[10px] text-white/50">Editor-rendered caption safe zone</div>
-              </div>
+              <div className="absolute inset-x-5 top-[26%] text-center"><div className="text-3xl font-black leading-none tracking-[-0.05em] text-white">{topic || "Your Reel hook"}</div><div className="mx-auto mt-4 h-1.5 w-16 rounded-full bg-pink-300" /></div>
+              <div className="absolute inset-x-5 bottom-20 rounded-2xl bg-black/35 p-4 backdrop-blur-md"><div className="text-sm font-bold text-white">{manifest ? manifest.shots[0]?.scriptText || "Visual hook" : "Build the production plan first."}</div><div className="mt-2 text-[10px] text-white/50">Editor-rendered caption safe zone</div></div>
               <div className="absolute inset-x-5 bottom-5 flex items-center justify-between text-[10px] text-white/40"><span>{manifest?.status || "DRAFT"}</span><span>9:16</span></div>
             </div>
           </div>
@@ -189,18 +215,26 @@ export function ReelStudio() {
               <Status icon={Film} label="State" value={manifest?.status || "DRAFT"} />
               <Status icon={Mic2} label="Narration" value={manifest?.audio.narrationUrl ? `${manifest.audio.actualDurationSec?.toFixed(2)}s` : "Pending"} />
               <Status icon={Captions} label="Timing" value={manifest?.audio.timingSource === "actual-alignment" ? `${manifest.audio.wordTimings?.length || 0} words aligned` : "Pending"} />
+              <Status icon={Video} label="Video sources" value={manifest ? `${generatedShotCount}/${totalShotCount}` : "Pending"} />
               <Status icon={AudioLines} label="Voice model" value={manifest?.audio.model || "Pending"} />
               <Status icon={Instagram} label="Primary" value={manifest?.platform || platform} />
               <Status icon={Youtube} label="Shorts variant" value="Not generated" />
             </div>
-            {production && manifest?.status === "SCRIPT_READY" && <div className="mt-5 rounded-xl border border-amber-300/15 bg-amber-300/5 p-3 text-[11px] leading-5 text-amber-100/70">Next required step: synthesize a real narration waveform and transcribe it for word-level timing.</div>}
-            {production && manifest?.status === "SHOTS_PLANNED" && <div className="mt-5 rounded-xl border border-emerald-300/15 bg-emerald-300/5 p-3 text-[11px] leading-5 text-emerald-100/70">Narration is real and aligned. The shot timeline was rebuilt against its actual duration. Video assets are still pending.</div>}
-            {production && manifest?.status === "FAILED" && <div className="mt-5 rounded-xl border border-red-300/15 bg-red-300/5 p-3 text-[11px] leading-5 text-red-100/70">The last production step failed. No downstream stage has been marked complete.</div>}
+            {manifest?.status === "SCRIPT_READY" && <TruthNote tone="amber">Next: create a real narration waveform and word-level alignment.</TruthNote>}
+            {manifest?.status === "SHOTS_PLANNED" && <TruthNote tone="green">Narration is real and aligned. Generate the first dependency-eligible Veo source clip.</TruthNote>}
+            {manifest?.status === "VIDEO_GENERATING" && <TruthNote tone="green">{generatedShotCount}/{totalShotCount} source clips are persisted and probed. Continue with the next eligible shot.</TruthNote>}
+            {manifest?.status === "ROUGH_CUT_READY" && <TruthNote tone="green">All source clips exist. Timeline assembly and audio mixing are the next gate; no final Reel is claimed yet.</TruthNote>}
+            {manifest?.status === "FAILED" && <TruthNote tone="red">The last production step failed. No downstream stage has been marked complete.</TruthNote>}
           </div>
         </aside>
       </main>
     </div>
   );
+}
+
+function TruthNote({ tone, children }: { tone: "amber" | "green" | "red"; children: React.ReactNode }) {
+  const cls = tone === "green" ? "border-emerald-300/15 bg-emerald-300/5 text-emerald-100/70" : tone === "red" ? "border-red-300/15 bg-red-300/5 text-red-100/70" : "border-amber-300/15 bg-amber-300/5 text-amber-100/70";
+  return <div className={`mt-5 rounded-xl border p-3 text-[11px] leading-5 ${cls}`}>{children}</div>;
 }
 
 function Field({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: string[] }) {
