@@ -2,13 +2,14 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Sparkles, Menu, X, PlayCircle } from "lucide-react";
+import { Sparkles, Menu, X, PlayCircle, Library } from "lucide-react";
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const nav = [
     ["Reel Studio", "/studio"],
+    ["Library", "/studio/library"],
     ["How it works", "#multimodal"],
     ["Use cases", "#use-cases"],
     ["Trust", "/veritas"],
@@ -37,7 +38,10 @@ export function Navbar() {
         </nav>
 
         <div className="hidden items-center gap-3 sm:flex">
-          <a href="#reel-demo" className="hidden items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-300 transition hover:text-white md:flex">
+          <Link href="/studio/library" className="hidden items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-300 transition hover:bg-white/5 hover:text-white md:flex">
+            <Library className="h-4 w-4" /> Library
+          </Link>
+          <a href="#reel-demo" className="hidden items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-300 transition hover:text-white xl:flex">
             <PlayCircle className="h-4 w-4" /> See demo
           </a>
           <Link href="/studio" className="flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-black text-slate-950 transition hover:scale-[1.02] active:scale-[0.98]">
