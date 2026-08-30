@@ -165,10 +165,53 @@ async function recoverLegacyAmbiguousVeoFailures() {
 }
 await recoverLegacyAmbiguousVeoFailures();
 
+async function recoverLegacyVeoInlineDataFailures() {
+  const failed = await pool.query(`
+    SELECT id, production_id, target_id
+    FROM reel_operations
+    WHERE kind='SHOT'
+      AND status='FAILED'
+      AND last_error LIKE '%inlineData%supported by this model%'
+    ORDER BY updated_at ASC
+  `);
+  for (const row of failed.rows) {
+    const reset = await pool.query(`
+      UPDATE reel_operations
+      SET status='QUEUED', attempt=0, provider_operation_name=NULL, result_json=NULL,
+          last_error=NULL, lease_owner=NULL, lease_expires_at=NULL, updated_at=NOW()
+      WHERE id=$1 AND status='FAILED'
+      RETURNING id
+    `, [row.id]);
+    if (!reset.rows[0]) continue;
+    const p = await pool.query(`SELECT revision, manifest_json FROM reel_productions WHERE id=$1`, [row.production_id]);
+    if (!p.rows[0]) continue;
+    const m = p.rows[0].manifest_json || {};
+    m.qa = m.qa || { minimumReadyScore: 90, passed: false, warnings: [], failures: [] };
+    if (Array.isArray(m.qa.failures)) {
+      m.qa.failures = m.qa.failures.filter(x => !(String(x).includes('inlineData') && String(x).includes('supported by this model')));
+    }
+    const shot = Array.isArray(m.shots) ? m.shots.find(x => x.id === row.target_id) : null;
+    if (shot && !shot.asset?.videoUrl) {
+      shot.status = 'FAILED';
+      if (shot.qa?.failures && Array.isArray(shot.qa.failures)) {
+        shot.qa.failures = shot.qa.failures.filter(x => !(String(x).includes('inlineData') && String(x).includes('supported by this model')));
+      }
+    }
+    if (m.status === 'FAILED') m.status = 'REPAIRING';
+    await pool.query(`
+      UPDATE reel_productions
+      SET revision=revision+1, manifest_json=$3::jsonb, updated_at=NOW()
+      WHERE id=$1 AND revision=$2
+    `, [row.production_id, Number(p.rows[0].revision), JSON.stringify(m)]);
+    console.log(`[reel-worker] recovered legacy Veo inlineData rejection ${row.id} with corrected image wire format`);
+  }
+}
+await recoverLegacyVeoInlineDataFailures();
+
 async function publishHeartbeat() {
   await pool.query(`INSERT INTO reel_worker_heartbeats(worker_id,worker_role,metadata_json) VALUES($1,'reel-production',$2::jsonb)
     ON CONFLICT(worker_id) DO UPDATE SET heartbeat_at=NOW(),metadata_json=EXCLUDED.metadata_json`,
-    [workerId, JSON.stringify({ pid: process.pid, version: "v2.2", assetRootConfigured: Boolean(assetRoot()), geminiConfigured: Boolean(apiKey()) })]);
+    [workerId, JSON.stringify({ pid: process.pid, version: "v2.3", assetRootConfigured: Boolean(assetRoot()), geminiConfigured: Boolean(apiKey()) })]);
 }
 await publishHeartbeat();
 const heartbeatTimer = setInterval(() => publishHeartbeat().catch(e => console.error(`[reel-worker] heartbeat failed: ${e?.message || e}`)), heartbeatMs);
@@ -444,7 +487,7 @@ async function generateShot(op, manifest, shot) {
     await updateOperation(op.id, { providerOperationName: dispatchMarker });
 
     const instance = { prompt: shot.generationPrompt };
-    if (ref) instance.image = { inlineData: { mimeType: "image/png", data: ref.buffer.toString("base64") } };
+    if (ref) instance.image = { mimeType: "image/png", bytesBase64Encoded: ref.buffer.toString("base64") };
 
     let d;
     try {
