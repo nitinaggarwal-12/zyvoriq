@@ -1,76 +1,91 @@
-# NFR-001 — Non-Functional Requirements & Performance SLAs
+# NFR-001 — Non-Functional Requirements
 
-| Metadata Attribute | Value |
+| Attribute | Value |
 | :--- | :--- |
-| **Document ID** | NFR-001 |
-| **Title** | Zyvoriq System Non-Functional Requirements & Performance SLAs |
-| **Owner** | Lead System Architect & SRE Lead |
-| **Approvers** | CTO, VP of Engineering, Security Lead, Product Lead |
-| **Version** | 1.0.0 |
-| **Status** | Approved |
-| **Priority** | P0 |
-| **Created Date** | 2026-08-23 |
-| **Last Reviewed Date** | 2026-08-23 |
-| **Quality Gate** | QG-NFR-01 (NFR Baseline Approved) |
-| **Assurance Score** | 99/100 |
-| **Parent References**| STR-001, PRD-000, ARC-001 |
+| Document ID | NFR-001 |
+| Owner | Architecture / SRE / Security |
+| Version | 2.0.0 |
+| Status | Active |
+| Priority | P0 |
+| Parents | PRD-000, ARC-001 |
 
----
+## 1. P0 production invariants
 
-## 1. Performance & Latency Budgets
+- **NFR-001A — Durable execution:** Long-running production jobs must persist state, support idempotent retries and resume from checkpoints after process/provider failure.
+- **NFR-001B — Durable assets:** Generated inputs/intermediates/final masters required for recovery or lineage must be stored durably; application-local disk may not be the sole production copy.
+- **NFR-001C — Failure isolation:** A failed provider call or failed shot must not corrupt/restart completed independent work.
+- **NFR-001D — Tenant/memory isolation:** Creator, brand, audience, unpublished-content and learned-preference data must remain scoped to authorized tenant/workspace/persona contexts.
+- **NFR-001E — Economic observability:** Cost must be attributable to provider, model, shot, retry, QA, rendering and variant where measurable.
 
-| Metric | Target SLA | Maximum Allowable (P99) | Mitigation Trigger |
-| :--- | :---: | :---: | :--- |
-| **Time to First Token (TTFT)** | $< 800\text{ms}$ | $1500\text{ms}$ | Switch to secondary fast provider (Gemini Flash) |
-| **Full Swarm Synthesis (4 Formats)**| $< 35\text{s}$ | $60\text{s}$ | Parallelize sub-agent execution queues |
-| **Veritas Consensus Evaluation** | $< 4.5\text{s}$ | $8.0\text{s}$ | Async parallelized multi-model evaluation |
-| **UI Page Load & First Contentful Paint** | $< 900\text{ms}$ | $1800\text{ms}$ | Edge CDN caching + Next.js Server Components |
-| **In-Browser Audio Playback Latency** | $< 120\text{ms}$ | $300\text{ms}$ | Pre-buffered audio streaming chunk chunks |
+## 2. Reliability
 
----
+Required behaviors:
 
-## 2. Scalability & System Concurrency
+1. Persist every externally meaningful production state transition.
+2. Use stable production/run/asset IDs.
+3. Use idempotency for operations that may be retried.
+4. Detect stalled jobs via lease/heartbeat or equivalent mechanism.
+5. Separate retryable provider failures from permanent validation/policy failures.
+6. Preserve successful independent branches when one dependency fails.
+7. Never advance to an artifact-dependent state before the artifact is durably addressable.
+8. Keep provider request/result metadata sufficient for debugging and provenance.
 
-1. **Concurrent Swarm Tasks**: The backend queue must support **5,000 simultaneous generation tasks** without message drops or memory saturation.
-2. **Horizontal Autoscaling**: Worker nodes autoscale dynamically based on queue depth ($> 50$ pending tasks triggers worker expansion).
-3. **Database Connection Pooling**: PgBouncer configuration sustaining up to 10,000 concurrent client connections with $< 5\text{ms}$ pool wait times.
+Availability/throughput SLOs must be established from measured workload and business tier. They are not declared achieved in this document before infrastructure evidence exists.
 
----
+## 3. Performance and progressive latency
 
-## 3. Availability, Reliability & Fault Tolerance
+The experience should progressively surface useful intermediate results (brief → hook/script → storyboard → narration → shots → rough cut → QA) rather than blocking behind one long request.
 
-```
-[Primary Model: Gemini 2.5 Pro] ──► (Timeout > 5s or HTTP 5xx) ──► [Fallback Model: Claude 3.5 Sonnet / OpenAI]
-```
+Track at minimum:
 
-- **Platform Uptime**: $\ge 99.9\%$ monthly availability excluding scheduled maintenance.
-- **Circuit Breaker Pattern**: If an upstream model provider fails 3 consecutive requests within 30 seconds, trip circuit breaker and route 100% traffic to secondary fallback for 120 seconds.
-- **Data Durability**: Multi-region PostgreSQL replication with automated 15-minute point-in-time recovery (PITR) and daily encrypted cold backups.
+- time to accepted job;
+- time to script/storyboard;
+- time to first generated media;
+- time to rough cut;
+- time to first publishable output;
+- per-provider latency and queue time.
 
----
+Provider routing may trade latency against quality/cost only within user/workspace policy.
 
-## 4. Security, Compliance & Data Isolation
+## 4. Media integrity
 
-1. **Tenant Isolation**: Multi-tenant Row-Level Security (RLS) enforced at the PostgreSQL engine level; cross-tenant queries impossible by design.
-2. **Encryption**:
-   - At Rest: AES-GCM-256 for all databases, vector indices, and S3/GCS asset buckets.
-   - In Transit: TLS 1.3 mandatory with HSTS enabled.
-3. **Zero-Training Guarantee**: Enterprise API contracts ensure zero prompt data or customer assets are stored or utilized for public model training.
-4. **GDPR & Right-to-be-Forgotten**: Hard workspace deletion purge pipeline permanently destroys all assets, embeddings, and telemetry within 24 hours of request.
+- Probe actual source media properties before assembly.
+- Normalize frame rate, resolution/aspect handling and audio parameters explicitly.
+- Reject impossible trim ranges.
+- Detect missing/zero-byte/undecodable assets.
+- Keep final render and source lineage immutable once approved; edits produce a new manifest/version.
 
----
+## 5. Security and privacy
 
-## 5. Cost & COGS Guardrails
+- Enforce authorization at service/data boundaries, not only in UI.
+- Store secrets through deployment secret management, never repository source.
+- Encrypt data in transit and at rest using supported platform controls.
+- Treat user uploads, URLs, metadata and third-party tool outputs as untrusted.
+- Track external-provider privacy/residency/training policies as routing constraints where required.
+- Support deletion/retention controls for user/project/memory data as product tiers require.
+- Do not state a compliance certification or cryptographic guarantee unless independently established.
 
-- **Maximum Model Inference Budget**: $\le \$0.45$ per complete multimodal campaign bundle (Text, Audio, Video Storyboard, Code/Diagram).
-- **Storage Optimization**: Automated tiering of raw intermediate generation tokens to cold storage after 30 days.
+## 6. Economic safeguards
 
----
+- Predict expected generation complexity/cost before expensive execution when possible.
+- Cap retries per failure strategy; repeated failures escalate to another provider, simplified shot or alternate representation.
+- Cache/reuse approved assets/references where rights and intent allow.
+- Measure wasted-inference rate.
+- Optimize **cost per publishable minute**, not merely API price per call.
 
-## 6. Document Sign-off (QG-NFR-01)
+## 7. Observability
 
-- [x] All latency and throughput SLAs quantified with P95/P99 thresholds.
-- [x] Multi-model circuit breakers and failover routes established.
-- [x] SOC2/GDPR tenant isolation and encryption standards defined.
+Every production should make it possible to answer:
 
-**Exit Status:** `NFR BASELINE APPROVED (PASS)`
+- What state is it in?
+- What is blocking progress?
+- Which provider/model generated each asset?
+- Which attempts failed and why?
+- Which quality gate rejected it?
+- What repair was performed?
+- What did the run cost?
+- Which artifacts are canonical?
+
+## 8. Build/regression governance
+
+`npm run docs:validate` is a required build precheck for canonical traceability. Runtime implementation must add unit/integration/E2E coverage as described in QAT-001; documentation validation does not substitute for runtime tests.
