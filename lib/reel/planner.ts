@@ -9,7 +9,8 @@ export interface PlanReelInput {
   scriptText?: string;
 }
 
-const clampDuration = (n: number) => Math.max(8, Math.min(90, Number(n.toFixed(3))));
+const clock = (n: number) => Number(n.toFixed(6));
+const clampDuration = (n: number) => Math.max(8, Math.min(90, clock(n)));
 
 function chooseGenerationDuration(editorialDurationSec: number): 4 | 6 | 8 {
   if (editorialDurationSec <= 3.5) return 4;
@@ -37,24 +38,16 @@ function buildScript(topic: string, targetSec: number) {
 }
 
 function splitIntoEditorialBeats(script: string, targetSec: number): string[] {
-  // Keep every editorial segment safely below an 8s generator boundary.
-  // Empty segments are valid visual-only b-roll when a supplied script is short.
   const desiredShotCount = Math.max(2, Math.ceil(targetSec / 6));
   const words = script.trim().split(/\s+/).filter(Boolean);
   const chunks = Array.from({ length: desiredShotCount }, () => "");
   if (!words.length) return chunks;
-
   const wordsPerChunk = Math.max(1, Math.ceil(words.length / desiredShotCount));
-  for (let i = 0; i < desiredShotCount; i++) {
-    chunks[i] = words.slice(i * wordsPerChunk, (i + 1) * wordsPerChunk).join(" ");
-  }
+  for (let i = 0; i < desiredShotCount; i++) chunks[i] = words.slice(i * wordsPerChunk, (i + 1) * wordsPerChunk).join(" ");
   return chunks;
 }
 
 function transitionFor(index: number, total: number): { type: TransitionType; durationSec: number } {
-  // REL-01 invariant: editorialDurationSec is each shot's exact contribution to the
-  // master timeline. Non-zero overlaps (xfade/whip/dissolve) require explicit source
-  // handle accounting before they are allowed in the canonical planner.
   if (index === total - 1) return { type: "hard-cut", durationSec: 0 };
   if (index === 0) return { type: "cut-on-action", durationSec: 0 };
   if (index % 4 === 2) return { type: "match-cut", durationSec: 0 };
@@ -81,7 +74,7 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
   let cursor = 0;
   const shots: ReelShot[] = beats.map((beat, i) => {
     const remaining = requestedDurationSec - cursor;
-    const editorialDurationSec = Number((i === beats.length - 1 ? remaining : perShot).toFixed(3));
+    const editorialDurationSec = clock(i === beats.length - 1 ? remaining : perShot);
     const generationDurationSec = chooseGenerationDuration(editorialDurationSec);
     const previousAction = i === 0 ? "Presenter is composed and ready to begin." : `Continue naturally from shot ${i}.`;
     const actionOut = i === beats.length - 1 ? "Finish with a confident readable hold." : `End on a clean gesture or motion vector that can motivate shot ${i + 2}.`;
@@ -93,40 +86,21 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
       ? "Relevant b-roll that literally supports the spoken beat; no decorative stock-like imagery."
       : "Presenter-driven explanation with a purposeful change in framing or camera motion.";
 
-    const continuityIn = {
-      character: bible.characterLock,
-      wardrobe: bible.wardrobeLock,
-      environment: bible.environmentLock,
-      lighting: bible.colorLanguage,
-      action: previousAction,
-      camera: bible.cameraLanguage
-    };
+    const continuityIn = { character: bible.characterLock, wardrobe: bible.wardrobeLock, environment: bible.environmentLock, lighting: bible.colorLanguage, action: previousAction, camera: bible.cameraLanguage };
     const continuityOut = { ...continuityIn, action: actionOut };
     const narrative = beat || `Visual continuation for ${topic}; support the surrounding narration without introducing a new claim.`;
 
     const shot: ReelShot = {
       id: `shot_${String(i + 1).padStart(2, "0")}`,
       order: i + 1,
-      editorialStartSec: Number(cursor.toFixed(3)),
+      editorialStartSec: clock(cursor),
       editorialDurationSec,
       generationDurationSec,
       trimInSec: 0,
       trimOutSec: editorialDurationSec,
       scriptText: beat,
       visualIntent,
-      generationPrompt: [
-        visualIntent,
-        `Narrative beat: ${narrative}`,
-        `Tone: ${tone}.`,
-        bible.visualStyle,
-        bible.characterLock,
-        bible.wardrobeLock,
-        bible.environmentLock,
-        bible.cameraLanguage,
-        `Continuity start: ${previousAction}`,
-        `Continuity end: ${actionOut}`,
-        "Do not render captions, subtitles, logos or UI text inside the generated video; those are composited later."
-      ].join(" "),
+      generationPrompt: [visualIntent, `Narrative beat: ${narrative}`, `Tone: ${tone}.`, bible.visualStyle, bible.characterLock, bible.wardrobeLock, bible.environmentLock, bible.cameraLanguage, `Continuity start: ${previousAction}`, `Continuity end: ${actionOut}`, "Do not render captions, subtitles, logos or UI text inside the generated video; those are composited later."].join(" "),
       continuityIn,
       continuityOut,
       transitionOut: transitionFor(i, beats.length),
@@ -134,7 +108,7 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
       status: "PLANNED",
       qa: { warnings: [], failures: [] }
     };
-    cursor += editorialDurationSec;
+    cursor = clock(cursor + editorialDurationSec);
     return shot;
   });
 
@@ -146,18 +120,13 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
     platform: input.platform || "Instagram Reels",
     aspectRatio: "9:16",
     requestedDurationSec,
-    plannedDurationSec: Number(cursor.toFixed(3)),
+    plannedDurationSec: clock(cursor),
     topic,
     tone,
     masterScript,
     creativeBible: bible,
     audio: { masterClock: "narration", timingSource: "pending" },
     shots,
-    qa: {
-      minimumReadyScore: 90,
-      passed: false,
-      warnings: ["Narration waveform alignment, generated media inspection and final master QA are pending."],
-      failures: []
-    }
+    qa: { minimumReadyScore: 90, passed: false, warnings: ["Narration waveform alignment, generated media inspection and final master QA are pending."], failures: [] }
   };
 }
