@@ -1,4 +1,4 @@
-import type { CaptionCue, ReelProductionManifest, WordTiming } from "./types";
+import type { BoundaryState, CaptionCue, PerformanceCue, ReelProductionManifest, WordTiming } from "./types";
 
 const clock = (n: number) => Number(n.toFixed(6));
 
@@ -40,7 +40,7 @@ function compileCaptionCues(wordTimings: WordTiming[]): { words: WordTiming[]; c
 function syncBoundaries(manifest: ReelProductionManifest) {
   if (!manifest.continuity) return;
   const existing = new Map(manifest.continuity.boundaries.map(boundary => [`${boundary.fromShotId}:${boundary.toShotId}`, boundary]));
-  manifest.continuity.boundaries = manifest.shots.slice(0, -1).map((from, index) => {
+  manifest.continuity.boundaries = manifest.shots.slice(0, -1).map((from, index): BoundaryState => {
     const to = manifest.shots[index + 1];
     const prior = existing.get(`${from.id}:${to.id}`);
     const samePresenter = Boolean(from.continuityOut.characterId && from.continuityOut.characterId === to.continuityIn.characterId);
@@ -68,7 +68,7 @@ function syncBoundaries(manifest: ReelProductionManifest) {
 function syncPerformance(manifest: ReelProductionManifest) {
   const track = manifest.continuity?.performanceTracks.find(item => item.characterId === "character_presenter");
   if (!track) return;
-  track.cues = manifest.shots.filter(shot => shot.continuityIn.characterId === track.characterId).map(shot => ({
+  track.cues = manifest.shots.filter(shot => shot.continuityIn.characterId === track.characterId).map((shot): PerformanceCue => ({
     startSec: shot.editorialStartSec,
     endSec: clock(shot.editorialStartSec + shot.editorialDurationSec),
     emotion: shot.continuityIn.emotion || { emotion: "engaged", intensity: 0.5 },
