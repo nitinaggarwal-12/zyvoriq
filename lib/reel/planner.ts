@@ -9,7 +9,7 @@ export interface PlanReelInput {
   scriptText?: string;
 }
 
-const clampDuration = (n: number) => Math.max(8, Math.min(90, Math.round(n)));
+const clampDuration = (n: number) => Math.max(8, Math.min(90, Number(n.toFixed(3))));
 
 function chooseGenerationDuration(editorialDurationSec: number): 4 | 6 | 8 {
   if (editorialDurationSec <= 3.5) return 4;
@@ -52,10 +52,12 @@ function splitIntoEditorialBeats(script: string, targetSec: number): string[] {
 }
 
 function transitionFor(index: number, total: number): { type: TransitionType; durationSec: number } {
+  // REL-01 invariant: editorialDurationSec is each shot's exact contribution to the
+  // master timeline. Non-zero overlaps (xfade/whip/dissolve) require explicit source
+  // handle accounting before they are allowed in the canonical planner.
   if (index === total - 1) return { type: "hard-cut", durationSec: 0 };
   if (index === 0) return { type: "cut-on-action", durationSec: 0 };
   if (index % 4 === 2) return { type: "match-cut", durationSec: 0 };
-  if (index % 5 === 3) return { type: "whip", durationSec: 0.16 };
   return { type: "hard-cut", durationSec: 0 };
 }
 
@@ -79,7 +81,7 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
   let cursor = 0;
   const shots: ReelShot[] = beats.map((beat, i) => {
     const remaining = requestedDurationSec - cursor;
-    const editorialDurationSec = Number((i === beats.length - 1 ? remaining : perShot).toFixed(2));
+    const editorialDurationSec = Number((i === beats.length - 1 ? remaining : perShot).toFixed(3));
     const generationDurationSec = chooseGenerationDuration(editorialDurationSec);
     const previousAction = i === 0 ? "Presenter is composed and ready to begin." : `Continue naturally from shot ${i}.`;
     const actionOut = i === beats.length - 1 ? "Finish with a confident readable hold." : `End on a clean gesture or motion vector that can motivate shot ${i + 2}.`;
@@ -105,7 +107,7 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
     const shot: ReelShot = {
       id: `shot_${String(i + 1).padStart(2, "0")}`,
       order: i + 1,
-      editorialStartSec: Number(cursor.toFixed(2)),
+      editorialStartSec: Number(cursor.toFixed(3)),
       editorialDurationSec,
       generationDurationSec,
       trimInSec: 0,
@@ -144,7 +146,7 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
     platform: input.platform || "Instagram Reels",
     aspectRatio: "9:16",
     requestedDurationSec,
-    plannedDurationSec: Number(cursor.toFixed(2)),
+    plannedDurationSec: Number(cursor.toFixed(3)),
     topic,
     tone,
     masterScript,
