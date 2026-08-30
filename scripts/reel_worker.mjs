@@ -12,27 +12,32 @@ const API_BASE = "https://generativelanguage.googleapis.com";
 const SAMPLE_RATE = 24000;
 const SAMPLE_WIDTH = 2;
 const CHANNELS = 1;
+const MAX_WER = 0.06;
+const MIN_COVERAGE = 0.97;
 const workerId = `reel-worker-${process.pid}-${crypto.randomUUID().slice(0, 8)}`;
 const pollMs = Math.max(500, Number(process.env.ZYVORIQ_WORKER_POLL_MS || 1500));
 
 function dbUrl() {
-  return process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.DATABASE_PRIVATE_URL || "";
+  const direct = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.DATABASE_PRIVATE_URL;
+  if (direct) return direct;
+  if (process.env.PGHOST && process.env.PGUSER && process.env.PGDATABASE) {
+    const pass = process.env.PGPASSWORD ? `:${encodeURIComponent(process.env.PGPASSWORD)}` : "";
+    return `postgresql://${encodeURIComponent(process.env.PGUSER)}${pass}@${process.env.PGHOST}:${process.env.PGPORT || "5432"}/${process.env.PGDATABASE}`;
+  }
+  return "";
 }
-function apiKey() {
-  return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
-}
-function assetRoot() {
-  return process.env.ZYVORIQ_ASSET_ROOT || process.env.RAILWAY_VOLUME_MOUNT_PATH || "";
-}
+function apiKey() { return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || ""; }
+function assetRoot() { return process.env.ZYVORIQ_ASSET_ROOT || process.env.RAILWAY_VOLUME_MOUNT_PATH || ""; }
 
-if (!dbUrl()) {
+const databaseUrl = dbUrl();
+if (!databaseUrl) {
   console.error("[reel-worker] Postgres is not configured; durable paid operations are disabled.");
   process.exit(0);
 }
 
 const pool = new Pool({
-  connectionString: dbUrl(),
-  ssl: dbUrl().includes("localhost") || dbUrl().includes("127.0.0.1") ? false : { rejectUnauthorized: false },
+  connectionString: databaseUrl,
+  ssl: databaseUrl.includes("localhost") || databaseUrl.includes("127.0.0.1") ? false : { rejectUnauthorized: false },
   max: 3,
   idleTimeoutMillis: 30000,
 });
@@ -162,12 +167,14 @@ function lcsLength(a, b) {
   }
   return dp[b.length];
 }
+function criticalTokens(words) {
+  const critical = new Set(["no","not","never","without","cannot","can't","wont","won't","must","mustn't"]);
+  return words.filter(w => critical.has(w) || /^\d+(?:[.,]\d+)?%?$/.test(w));
+}
 function validateTranscript(expectedText, timings, durationSec) {
   let lastStart = -1, lastEnd = -1;
   for (const t of timings) {
-    if (!t.word || t.startSec < 0 || t.endSec < t.startSec || t.startSec + 0.001 < lastStart || t.endSec + 0.001 < lastEnd || t.endSec > durationSec + 0.25) {
-      throw new Error("Narration timestamps failed structural validation");
-    }
+    if (!t.word || t.startSec < 0 || t.endSec < t.startSec || t.startSec + 0.001 < lastStart || t.endSec + 0.001 < lastEnd || t.endSec > durationSec + 0.25) throw new Error("Narration timestamps failed structural validation");
     lastStart = t.startSec; lastEnd = t.endSec;
   }
   const expected = normalizeWords(expectedText);
@@ -175,28 +182,30 @@ function validateTranscript(expectedText, timings, durationSec) {
   if (!expected.length || !actual.length) throw new Error("Transcript verification has no comparable words");
   const wer = editDistance(expected, actual) / expected.length;
   const coverage = lcsLength(expected, actual) / expected.length;
-  const validation = { expectedWords: expected.length, actualWords: actual.length, wer: Number(wer.toFixed(4)), coverage: Number(coverage.toFixed(4)), passed: wer <= 0.12 && coverage >= 0.94 };
-  if (!validation.passed) throw new Error(`Narration transcript mismatch: WER ${validation.wer}, coverage ${validation.coverage}`);
+  const actualCounts = new Map(); for (const w of actual) actualCounts.set(w, (actualCounts.get(w) || 0) + 1);
+  const missingCritical = [];
+  for (const token of criticalTokens(expected)) {
+    const count = actualCounts.get(token) || 0;
+    if (count <= 0) missingCritical.push(token); else actualCounts.set(token, count - 1);
+  }
+  const validation = { expectedWords: expected.length, actualWords: actual.length, wer: Number(wer.toFixed(4)), coverage: Number(coverage.toFixed(4)), passed: wer <= MAX_WER && coverage >= MIN_COVERAGE && missingCritical.length === 0, missingCritical };
+  if (!validation.passed) throw new Error(`Narration transcript mismatch: WER ${validation.wer}, coverage ${validation.coverage}, missing critical ${missingCritical.join(",") || "none"}`);
   return validation;
 }
 
 async function getProduction(id) {
   const result = await pool.query(`SELECT * FROM reel_productions WHERE id=$1`, [id]);
   if (!result.rows[0]) throw new Error(`Production ${id} not found`);
-  const row = result.rows[0];
-  return { revision: Number(row.revision), manifest: row.manifest_json };
+  return { revision: Number(result.rows[0].revision), manifest: result.rows[0].manifest_json };
 }
 async function saveManifest(id, revision, manifest) {
-  const result = await pool.query(
-    `UPDATE reel_productions SET revision=revision+1, manifest_json=$3::jsonb, updated_at=NOW() WHERE id=$1 AND revision=$2 RETURNING revision`,
-    [id, revision, JSON.stringify(manifest)]
-  );
+  const result = await pool.query(`UPDATE reel_productions SET revision=revision+1, manifest_json=$3::jsonb, updated_at=NOW() WHERE id=$1 AND revision=$2 RETURNING revision`, [id, revision, JSON.stringify(manifest)]);
   if (!result.rows[0]) throw new Error(`Production ${id} changed concurrently while worker was attaching evidence`);
   return Number(result.rows[0].revision);
 }
 async function updateOperation(id, patch) {
   const fields = []; const values = [id]; let n = 2;
-  const mapping = { status:"status", providerOperationName:"provider_operation_name", result:"result_json", lastError:"last_error", leaseExpiresAt:"lease_expires_at" };
+  const mapping = { status:"status", providerOperationName:"provider_operation_name", result:"result_json", lastError:"last_error", leaseExpiresAt:"lease_expires_at", leaseOwner:"lease_owner" };
   for (const [key, column] of Object.entries(mapping)) {
     if (!(key in patch)) continue;
     fields.push(`${column}=$${n++}${key === "result" ? "::jsonb" : ""}`);
@@ -221,10 +230,33 @@ async function claim() {
     FROM candidate c WHERE o.id=c.id RETURNING o.*`, [workerId]);
   return result.rows[0] || null;
 }
+async function markProductionRunning(op) {
+  const current = await getProduction(op.production_id); const manifest = current.manifest;
+  if (op.kind === "NARRATION" && manifest.status === "SCRIPT_READY") manifest.status = "AUDIO_GENERATING";
+  if (op.kind === "SHOT") {
+    const shot = manifest.shots.find(s => s.id === op.target_id);
+    if (!shot) throw new Error(`Shot ${op.target_id} not found`);
+    if (["PLANNED","FAILED"].includes(shot.status)) shot.status = "GENERATING";
+    if (["SHOTS_PLANNED","REPAIRING"].includes(manifest.status)) manifest.status = "VIDEO_GENERATING";
+  }
+  await saveManifest(op.production_id, current.revision, manifest);
+}
+async function markProductionFailed(op, message) {
+  try {
+    const current = await getProduction(op.production_id); const manifest = current.manifest;
+    if (op.kind === "SHOT") { const shot = manifest.shots.find(s => s.id === op.target_id); if (shot) { shot.status = "FAILED"; shot.qa = shot.qa || {warnings:[],failures:[]}; shot.qa.failures = [...(shot.qa.failures || []), message]; } }
+    manifest.status = "FAILED";
+    manifest.qa = manifest.qa || { minimumReadyScore:90, passed:false, warnings:[], failures:[] };
+    manifest.qa.passed = false; manifest.qa.failures = [...(manifest.qa.failures || []), message];
+    await saveManifest(op.production_id, current.revision, manifest);
+  } catch (error) { console.error(`[reel-worker] failed to mark production failed: ${error?.message || error}`); }
+}
 
 async function generateNarrationResult(op, manifest) {
   if (!apiKey()) throw new Error("Gemini API key is missing");
   if (!assetRoot()) throw new Error("Durable asset root is missing");
+  if (op.provider_operation_name === "tts-dispatch-started") throw new Error("AMBIGUOUS_TTS_RESULT_NO_AUTORETRY: prior worker died after TTS dispatch; explicit user retry required to avoid duplicate spend");
+  await updateOperation(op.id, { providerOperationName:"tts-dispatch-started" });
   const model = process.env.ZYVORIQ_TTS_MODEL || "gemini-3.1-flash-tts-preview";
   const voice = process.env.ZYVORIQ_TTS_VOICE || "Kore";
   const prompt = ["Synthesize speech for the transcript below. Do not speak these instructions.", `Performance direction: ${manifest.tone}. Natural social-video delivery, clear articulation, no added words.`, "TRANSCRIPT START", manifest.masterScript, "TRANSCRIPT END"].join("\n");
@@ -256,6 +288,7 @@ function replanToAudioClock(manifest, durationSec) {
   const count = manifest.shots.length;
   if (!count) throw new Error("Cannot replan production with no shots");
   const per = durationSec / count;
+  if (per > 8) throw new Error(`Narration master requires ${per.toFixed(3)}s per existing shot, exceeding the 8s source limit; shot decomposition must be expanded before generation`);
   let cursor = 0;
   for (let i=0;i<count;i++) {
     const shot = manifest.shots[i];
@@ -266,8 +299,8 @@ function replanToAudioClock(manifest, durationSec) {
     shot.trimInSec = 0;
     shot.trimOutSec = editorial;
     shot.generationDurationSec = editorial <= 3.5 ? 4 : editorial <= 5.5 ? 6 : 8;
-    shot.status = "PLANNED"; delete shot.asset;
-    cursor += editorial;
+    shot.status = "PLANNED"; delete shot.asset; if (shot.continuityIn) delete shot.continuityIn.referenceFrameUrl;
+    cursor = Number((cursor + editorial).toFixed(6));
   }
   manifest.plannedDurationSec = Number(durationSec.toFixed(6));
 }
@@ -286,12 +319,13 @@ async function extractDependencyFrame(productionId, shot, manifest) {
   if (!dependency?.asset?.videoUrl) throw new Error(`Continuity dependency ${shot.dependsOnShotIds.at(-1)} has no media`);
   const source = assetPath(dependency.asset.videoUrl).target;
   const tmp = path.join(os.tmpdir(), `zyvoriq-ref-${crypto.randomUUID()}.png`);
+  const editorialEndFrameSec = Math.max(Number(dependency.trimInSec || 0), Number(dependency.trimOutSec || 0) - (1 / 30));
   try {
-    await execFileAsync("ffmpeg", ["-y","-sseof","-0.08","-i",source,"-frames:v","1","-vf","scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920",tmp], {timeout:30000,maxBuffer:2*1024*1024});
+    await execFileAsync("ffmpeg", ["-y","-ss",String(editorialEndFrameSec),"-i",source,"-frames:v","1","-vf","scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920",tmp], {timeout:30000,maxBuffer:2*1024*1024});
     const buffer = await fs.readFile(tmp);
     const digest = crypto.createHash("sha256").update(buffer).digest("hex").slice(0,16);
     const saved = await writeAsset(`reels/${productionId}/references/${shot.id}-from-${dependency.id}-${digest}.png`, buffer);
-    return { buffer, url:saved.url, dependencyId:dependency.id };
+    return { buffer, url:saved.url, dependencyId:dependency.id, sourceTimeSec:Number(editorialEndFrameSec.toFixed(6)) };
   } finally { try { await fs.unlink(tmp); } catch {} }
 }
 async function probeVideoBuffer(buffer) {
@@ -306,8 +340,9 @@ async function probeVideoBuffer(buffer) {
 function veoModel(tier) { return tier === "quality" ? "veo-3.1-generate-preview" : tier === "lite" ? "veo-3.1-lite-generate-preview" : "veo-3.1-fast-generate-preview"; }
 async function generateShotResult(op, manifest, shot) {
   if (!apiKey()) throw new Error("Gemini API key is missing");
+  if (!assetRoot()) throw new Error("Durable asset root is missing");
   const tier = op.payload_json?.modelTier || "fast"; const model = veoModel(tier);
-  let reference = await extractDependencyFrame(op.production_id, shot, manifest);
+  const reference = await extractDependencyFrame(op.production_id, shot, manifest);
   let operationName = op.provider_operation_name;
   if (!operationName) {
     const instance = { prompt:shot.generationPrompt };
@@ -329,7 +364,7 @@ async function generateShotResult(op, manifest, shot) {
   const buffer = Buffer.from(await download.arrayBuffer()); if (!buffer.length) throw new Error("Veo returned empty MP4");
   const probe = await probeVideoBuffer(buffer); if (probe.durationSec + 0.05 < shot.trimOutSec) throw new Error(`${shot.id} source ${probe.durationSec}s is shorter than trim ${shot.trimOutSec}s`);
   const digest = crypto.createHash("sha256").update(buffer).digest("hex").slice(0,16); const asset=await writeAsset(`reels/${op.production_id}/shots/${shot.id}-${digest}.mp4`,buffer);
-  return { videoUrl:asset.url, actualDurationSec:probe.durationSec, operationName, provider:"google-veo", model, probe, continuityReferenceUrl:reference?.url, continuityDependencyId:reference?.dependencyId };
+  return { videoUrl:asset.url, actualDurationSec:probe.durationSec, operationName, provider:"google-veo", model, probe, continuityReferenceUrl:reference?.url, continuityDependencyId:reference?.dependencyId, continuityReferenceTimeSec:reference?.sourceTimeSec };
 }
 async function applyShot(op, result) {
   const current=await getProduction(op.production_id); const manifest=current.manifest; const shot=manifest.shots.find(s=>s.id===op.target_id); if(!shot) throw new Error(`Shot ${op.target_id} not found`);
@@ -342,7 +377,7 @@ async function applyShot(op, result) {
 
 async function renderRoughResult(op, manifest) {
   if (!assetRoot()) throw new Error("Durable asset root is missing");
-  if (!manifest.audio?.narrationUrl || !manifest.audio?.actualDurationSec) throw new Error("Actual narration is required");
+  if (!manifest.audio?.narrationUrl || !manifest.audio?.actualDurationSec || !manifest.audio?.alignmentValidation?.passed) throw new Error("Validated actual narration is required");
   const masterDuration=Number(manifest.audio.actualDurationSec); if(Math.abs(masterDuration-Number(manifest.plannedDurationSec))>0.002)throw new Error(`Audio master ${masterDuration}s differs from timeline ${manifest.plannedDurationSec}s`);
   const temp=path.join(os.tmpdir(),`zyvoriq-rough-${crypto.randomUUID()}.mp4`); const args=["-y"];
   for(const shot of manifest.shots){if(!shot.asset?.videoUrl)throw new Error(`${shot.id} has no source`);args.push("-i",assetPath(shot.asset.videoUrl).target);}
@@ -356,6 +391,7 @@ async function renderRoughResult(op, manifest) {
 async function applyRough(op,result){const current=await getProduction(op.production_id);const manifest=current.manifest;if(manifest.status!=="ROUGH_CUT_READY")throw new Error(`Rough cut no longer applies to ${manifest.status}`);manifest.outputs={...(manifest.outputs||{}),narratedRoughCut:result};manifest.status="MIXING";await saveManifest(op.production_id,current.revision,manifest);}
 
 async function processOperation(op) {
+  await markProductionRunning(op);
   const current=await getProduction(op.production_id); let result=op.result_json;
   if(op.kind==="NARRATION"){
     if(!result){result=await generateNarrationResult(op,current.manifest);await updateOperation(op.id,{result});}
@@ -368,7 +404,7 @@ async function processOperation(op) {
     if(!result){result=await renderRoughResult(op,current.manifest);await updateOperation(op.id,{result});}
     await applyRough(op,result);
   }else throw new Error(`Unsupported operation kind ${op.kind}`);
-  await updateOperation(op.id,{status:"SUCCEEDED",lastError:null,leaseExpiresAt:null});
+  await updateOperation(op.id,{status:"SUCCEEDED",lastError:null,leaseExpiresAt:null,leaseOwner:null});
 }
 
 console.log(`[reel-worker] started ${workerId}`);
@@ -376,6 +412,13 @@ for(;;){
   try{
     const op=await claim();
     if(!op){await sleep(pollMs);continue;}
-    try{await processOperation(op);}catch(error){const message=String(error?.message||error).slice(0,2000);const retry=Number(op.attempt||0)<3;await pool.query(`UPDATE reel_operations SET status=$2,last_error=$3,lease_owner=NULL,lease_expires_at=NULL,updated_at=NOW() WHERE id=$1`,[op.id,retry?"QUEUED":"FAILED",message]);console.error(`[reel-worker] ${op.id} ${retry?"retry":"failed"}: ${message}`);}
+    try{await processOperation(op);}catch(error){
+      const message=String(error?.message||error).slice(0,2000);
+      const ambiguousTts=message.includes("AMBIGUOUS_TTS_RESULT_NO_AUTORETRY");
+      const retry=!ambiguousTts && Number(op.attempt||0)<3;
+      await pool.query(`UPDATE reel_operations SET status=$2,last_error=$3,lease_owner=NULL,lease_expires_at=NULL,updated_at=NOW() WHERE id=$1`,[op.id,retry?"QUEUED":"FAILED",message]);
+      if(!retry) await markProductionFailed(op,message);
+      console.error(`[reel-worker] ${op.id} ${retry?"retry":"failed"}: ${message}`);
+    }
   }catch(error){console.error(`[reel-worker] loop error: ${error?.message||error}`);await sleep(Math.max(pollMs,3000));}
 }
