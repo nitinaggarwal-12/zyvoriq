@@ -105,6 +105,32 @@ export function getDatabase(): DatabaseSync {
   return dbInstance;
 }
 
+// Synchronous SQLite Retry Wrapper for Busy Lock Resilience
+export function withRetry<T>(operation: () => T, maxRetries = 5, baseDelayMs = 50): T {
+  let attempt = 0;
+  while (true) {
+    try {
+      return operation();
+    } catch (err: any) {
+      attempt++;
+      if (
+        (err?.message?.includes("busy") ||
+          err?.code === "SQLITE_BUSY" ||
+          err?.message?.includes("database is locked")) &&
+        attempt <= maxRetries
+      ) {
+        const delay = baseDelayMs * Math.pow(2, attempt - 1);
+        const start = Date.now();
+        while (Date.now() - start < delay) {
+          // Synchronous wait for lock release
+        }
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
 // Cosine Distance Helper for 1536-dim embeddings
 export function cosineDistance(a: number[], b: number[]): number {
   if (a.length !== b.length || a.length === 0) return 1.0;

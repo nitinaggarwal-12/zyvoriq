@@ -51,3 +51,22 @@ export function sanitizeRouteParam(rawParam: string): string {
     return String(rawParam).replace(/[^a-zA-Z0-9_-]/g, "");
   }
 }
+
+export function defragmentStorage(): void {
+  if (typeof window === "undefined") return;
+  try {
+    // Compact key pool and remove duplicates
+    const keyPoolRaw = localStorage.getItem("zyvoriq_gemini_api_key_pool");
+    if (keyPoolRaw) {
+      const parsed = JSON.parse(keyPoolRaw);
+      if (Array.isArray(parsed)) {
+        const uniqueKeys = Array.from(new Set(parsed.map((k: any) => k.key))).map(
+          (k) => parsed.find((item: any) => item.key === k)
+        );
+        localStorage.setItem("zyvoriq_gemini_api_key_pool", JSON.stringify(uniqueKeys));
+      }
+    }
+  } catch (e) {
+    console.warn("Storage defragmentation notice:", e);
+  }
+}

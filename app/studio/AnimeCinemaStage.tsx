@@ -229,6 +229,23 @@ export function AnimeCinemaStage() {
       localStorage.setItem("zyvoriq_preferred_audio_lang", code);
     }
   };
+
+  // GPU Memory & Detached Video Element Cleanup Hook
+  useEffect(() => {
+    return () => {
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.removeAttribute("src");
+        videoRef.current.load();
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.removeAttribute("src");
+        audioRef.current.load();
+      }
+    };
+  }, [activeTrackId]);
+
   const [showAudioSubMenu, setShowAudioSubMenu] = useState<boolean>(false);
   const [selectedActIndex, setSelectedActIndex] = useState<number>(0);
   const [isCreateActOpen, setIsCreateActOpen] = useState<boolean>(false);

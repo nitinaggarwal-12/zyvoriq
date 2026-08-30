@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -65,8 +65,11 @@ function AvatarsPageContent() {
     return matchesCat && matchesSearch;
   });
 
+  const currentAuditionIdRef = useRef<string | null>(null);
+
   const handlePlayVoice = (char: CharacterProfile) => {
     if (playingVoiceId === char.id) {
+      currentAuditionIdRef.current = null;
       setPlayingVoiceId(null);
       if (typeof window !== "undefined") {
         window.speechSynthesis?.cancel();
@@ -74,6 +77,7 @@ function AvatarsPageContent() {
       return;
     }
 
+    currentAuditionIdRef.current = char.id;
     setPlayingVoiceId(char.id);
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
@@ -82,11 +86,23 @@ function AvatarsPageContent() {
       );
       utterance.rate = 1.0;
       utterance.pitch = char.gender === "female" ? 1.05 : 0.95;
-      utterance.onend = () => setPlayingVoiceId(null);
-      utterance.onerror = () => setPlayingVoiceId(null);
+      utterance.onend = () => {
+        if (currentAuditionIdRef.current === char.id) {
+          setPlayingVoiceId(null);
+        }
+      };
+      utterance.onerror = () => {
+        if (currentAuditionIdRef.current === char.id) {
+          setPlayingVoiceId(null);
+        }
+      };
       window.speechSynthesis.speak(utterance);
     } else {
-      setTimeout(() => setPlayingVoiceId(null), 3000);
+      setTimeout(() => {
+        if (currentAuditionIdRef.current === char.id) {
+          setPlayingVoiceId(null);
+        }
+      }, 3000);
     }
   };
 
