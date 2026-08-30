@@ -6,6 +6,7 @@ import { ArrowLeft, Sparkles, Clapperboard, Captions, Mic2, Image as ImageIcon, 
 import type { ReelProductionManifest } from "@/lib/reel/types";
 
 type StoredProduction = { id: string; revision: number; manifest: ReelProductionManifest; createdAt: string; updatedAt: string };
+type DurableOperation = { id: string; status: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED"; lastError?: string };
 
 function durationNumber(value: string) {
   const parsed = Number.parseInt(value, 10);
@@ -16,6 +17,8 @@ function scriptLines(manifest: ReelProductionManifest | null, topic: string) {
   if (!manifest) return [`Enter a brief for ${topic || "your topic"}, then build a persisted production plan.`];
   return (manifest.masterScript.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [manifest.masterScript]).map(s => s.trim()).filter(Boolean);
 }
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export function ReelStudio() {
   const [topic, setTopic] = useState("3 habits quietly killing your focus");
@@ -44,7 +47,30 @@ export function ReelStudio() {
   const refreshProduction = async (id: string) => {
     const response = await fetch(`/api/reels/productions/${encodeURIComponent(id)}`, { cache: "no-store" });
     const data = await response.json();
-    if (response.ok && data.success) setProduction(data.production);
+    if (!response.ok || !data.success) throw new Error(data.error || "Failed to refresh production");
+    setProduction(data.production);
+    return data.production as StoredProduction;
+  };
+
+  const waitForOperation = async (operationId: string, productionId: string) => {
+    const deadline = Date.now() + 10 * 60 * 1000;
+    while (Date.now() < deadline) {
+      const response = await fetch(`/api/reels/operations/${encodeURIComponent(operationId)}`, { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || "Failed to read operation status");
+      const queued = data.operation as DurableOperation;
+      if (queued.status === "SUCCEEDED") {
+        await refreshProduction(productionId);
+        return;
+      }
+      if (queued.status === "FAILED") {
+        await refreshProduction(productionId).catch(() => undefined);
+        throw new Error(queued.lastError || "Production operation failed");
+      }
+      await sleep(1500);
+    }
+    await refreshProduction(productionId).catch(() => undefined);
+    throw new Error("The production is still running. Its durable job will continue even if this page stops polling.");
   };
 
   const runAction = async (action: string, op: typeof operation, extra: Record<string, unknown> = {}) => {
@@ -61,6 +87,7 @@ export function ReelStudio() {
       if (!response.ok || !data.success) throw new Error(data.error || `${action} failed`);
       setProduction(data.production);
       if (action === "generateNarration" || action === "generateNextShot") setActiveTab("Scenes");
+      if (data.queued && data.operation?.id) await waitForOperation(String(data.operation.id), production.id);
     } catch (err: any) {
       setError(err?.message || `${action} failed`);
       try { await refreshProduction(production.id); } catch {}
@@ -167,6 +194,7 @@ export function ReelStudio() {
               <Status icon={Youtube} label="Final variant" value="Not generated" />
             </div>
             {manifest?.status === "SCRIPT_READY" && <TruthNote tone="amber">Next: create real narration and word-level alignment.</TruthNote>}
+            {manifest?.status === "AUDIO_GENERATING" && <TruthNote tone="amber">Narration is running in the durable production worker. This page may disconnect without cancelling the job.</TruthNote>}
             {manifest?.status === "SHOTS_PLANNED" && <TruthNote tone="green">Narration is aligned. Generate the first dependency-eligible Veo source clip.</TruthNote>}
             {manifest?.status === "VIDEO_GENERATING" && <TruthNote tone="green">{generatedShotCount}/{totalShotCount} source clips are persisted and probed.</TruthNote>}
             {manifest?.status === "ROUGH_CUT_READY" && <TruthNote tone="green">All source clips exist. Render the exact-duration narrated rough cut.</TruthNote>}
