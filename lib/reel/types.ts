@@ -33,6 +33,15 @@ export interface WordTiming {
   speaker?: string;
 }
 
+export interface AlignmentValidation {
+  expectedWords: number;
+  actualWords: number;
+  wer: number;
+  coverage: number;
+  passed: boolean;
+  missingCritical?: string[];
+}
+
 export interface ContinuityState {
   character?: string;
   wardrobe?: string;
@@ -113,6 +122,7 @@ export interface ReelProductionManifest {
     actualDurationSec?: number;
     timingSource: "actual-alignment" | "pending";
     wordTimings?: WordTiming[];
+    alignmentValidation?: AlignmentValidation;
     provider?: string;
     model?: string;
     voice?: string;
