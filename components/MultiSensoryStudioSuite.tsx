@@ -118,7 +118,16 @@ export function MultiSensoryStudioSuite({
     if (!ctx) return;
 
     let phase = 0;
-    const render = () => {
+    let lastTime = performance.now();
+    const fpsInterval = 1000 / 60; // 60 FPS Cap on 120Hz/144Hz displays
+
+    const render = (currentTimeMs: number) => {
+      animationFrameRef.current = requestAnimationFrame(render);
+
+      const elapsed = currentTimeMs - lastTime;
+      if (elapsed < fpsInterval) return;
+      lastTime = currentTimeMs - (elapsed % fpsInterval);
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const width = canvas.width;
       const height = canvas.height;
@@ -147,10 +156,9 @@ export function MultiSensoryStudioSuite({
       }
 
       phase += isPlaying ? 0.12 : 0.02;
-      animationFrameRef.current = requestAnimationFrame(render);
     };
 
-    render();
+    animationFrameRef.current = requestAnimationFrame(render);
 
     return () => {
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);

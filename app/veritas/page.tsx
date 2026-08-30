@@ -24,6 +24,16 @@ import {
   Copy
 } from "lucide-react";
 
+function canonicalStringify(obj: any): string {
+  if (typeof obj !== "object" || obj === null) return JSON.stringify(obj);
+  if (Array.isArray(obj)) return "[" + obj.map(canonicalStringify).join(",") + "]";
+  const sortedKeys = Object.keys(obj).sort();
+  const kvPairs = sortedKeys.map(
+    (key) => JSON.stringify(key) + ":" + canonicalStringify(obj[key])
+  );
+  return "{" + kvPairs.join(",") + "}";
+}
+
 export default function VeritasPage() {
   const [copiedCert, setCopiedCert] = useState(false);
   const [downloadingCert, setDownloadingCert] = useState(false);

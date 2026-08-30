@@ -68,12 +68,64 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { apiKey } = body;
+    const { apiKey, action } = body;
 
     if (!apiKey) {
       const response = NextResponse.json({ ok: false, message: "API key is required." });
       response.cookies.delete("zyvoriq_gemini_api_key");
       return response;
+    }
+
+    const cleanKey = apiKey.trim();
+
+    // If validating a key securely without URL query param leakage
+    if (action === "validate") {
+      const startTime = performance.now();
+      try {
+        const testRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${cleanKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: "ping" }] }]
+            })
+          }
+        );
+
+        const latencyMs = Math.round(performance.now() - startTime);
+
+        if (testRes.ok || testRes.status === 200 || testRes.status === 400) {
+          return NextResponse.json({
+            ok: true,
+            status: "alive",
+            latencyMs,
+            tier: "Veo 3.1 & Gemini 2.5 TTS"
+          });
+        } else if (testRes.status === 429) {
+          return NextResponse.json({
+            ok: false,
+            status: "rate_limited",
+            latencyMs,
+            error: "Quota / Rate Limit Exceeded (429)"
+          });
+        } else {
+          const errData = await testRes.json().catch(() => ({}));
+          return NextResponse.json({
+            ok: false,
+            status: "dead",
+            latencyMs,
+            error: errData.error?.message || `HTTP ${testRes.status} Unauthorized`
+          });
+        }
+      } catch (err: any) {
+        return NextResponse.json({
+          ok: false,
+          status: "dead",
+          latencyMs: Math.round(performance.now() - startTime),
+          error: err.message || "Network Timeout"
+        });
+      }
     }
 
     const response = NextResponse.json({
@@ -82,7 +134,7 @@ export async function POST(req: NextRequest) {
       message: "API Key verified and saved into session cookie."
     });
 
-    response.cookies.set("zyvoriq_gemini_api_key", apiKey.trim(), {
+    response.cookies.set("zyvoriq_gemini_api_key", cleanKey, {
       path: "/",
       maxAge: 60 * 60 * 24 * 365, // 1 year
       httpOnly: false,

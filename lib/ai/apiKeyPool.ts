@@ -62,37 +62,35 @@ export function maskKey(key: string): string {
 export async function testSingleKey(key: string): Promise<{ status: "alive" | "dead" | "rate_limited"; latencyMs: number; error?: string; tier?: string }> {
   const startTime = performance.now();
   try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${key.trim()}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: "ping" }] }]
-        })
-      }
-    );
+    const res = await fetch("/api/health/api-key", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        apiKey: key.trim(),
+        action: "validate"
+      })
+    });
 
-    const latencyMs = Math.round(performance.now() - startTime);
+    const data = await res.json().catch(() => ({}));
+    const latencyMs = data.latencyMs || Math.round(performance.now() - startTime);
 
-    if (res.ok || res.status === 200 || res.status === 400) {
+    if (data.status === "alive" || data.ok) {
       return {
         status: "alive",
         latencyMs,
-        tier: "Veo 3.1 & Gemini 2.5 TTS"
+        tier: data.tier || "Veo 3.1 & Gemini 2.5 TTS"
       };
-    } else if (res.status === 429) {
+    } else if (data.status === "rate_limited") {
       return {
         status: "rate_limited",
         latencyMs,
-        error: "Quota / Rate Limit Exceeded (429)"
+        error: data.error || "Quota / Rate Limit Exceeded (429)"
       };
     } else {
-      const err = await res.json().catch(() => ({}));
       return {
         status: "dead",
         latencyMs,
-        error: err.error?.message || `HTTP ${res.status} Unauthorized`
+        error: data.error || data.message || `API error ${res.status}`
       };
     }
   } catch (e: any) {

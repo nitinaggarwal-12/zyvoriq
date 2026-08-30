@@ -78,6 +78,7 @@ export function getDatabase(): DatabaseSync {
       dbInstance.exec("PRAGMA foreign_keys = ON;");
       dbInstance.exec("PRAGMA journal_mode = WAL;");
       dbInstance.exec("PRAGMA synchronous = NORMAL;");
+      dbInstance.exec("PRAGMA busy_timeout = 5000;");
       dbInstance.exec(SQLITE_SCHEMA);
       dbInstance.exec(`
         CREATE INDEX IF NOT EXISTS idx_studio_jobs_created ON studio_production_jobs (created_at DESC);
@@ -91,10 +92,12 @@ export function getDatabase(): DatabaseSync {
         dbInstance.exec("PRAGMA foreign_keys = ON;");
         dbInstance.exec("PRAGMA journal_mode = WAL;");
         dbInstance.exec("PRAGMA synchronous = NORMAL;");
+        dbInstance.exec("PRAGMA busy_timeout = 5000;");
         dbInstance.exec(SQLITE_SCHEMA);
       } catch (e2) {
         dbInstance = new DatabaseSync(":memory:");
         dbInstance.exec("PRAGMA foreign_keys = ON;");
+        dbInstance.exec("PRAGMA busy_timeout = 5000;");
         dbInstance.exec(SQLITE_SCHEMA);
       }
     }

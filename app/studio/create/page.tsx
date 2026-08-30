@@ -239,11 +239,10 @@ function CreatePageContent() {
     const newJobId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const effectiveParentTrackId = destinationMode === "append_current" ? (selectedParentTrackId || targetTrackId) : undefined;
     
-    // Asynchronously kickoff generation in background pipeline with keepalive
+    // Asynchronously kickoff generation in background pipeline
     fetch("/api/tier6/create-act", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      keepalive: true,
       body: JSON.stringify({
         id: newJobId,
         parentTrackId: effectiveParentTrackId,
