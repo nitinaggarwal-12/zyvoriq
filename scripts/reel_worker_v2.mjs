@@ -122,10 +122,53 @@ async function recoverLegacyTranscriptMismatchFailures() {
 }
 await recoverLegacyTranscriptMismatchFailures();
 
+async function recoverLegacyAmbiguousVeoFailures() {
+  const failed = await pool.query(`
+    SELECT id, production_id, target_id
+    FROM reel_operations
+    WHERE kind='SHOT'
+      AND status='FAILED'
+      AND last_error LIKE '%AMBIGUOUS_VEO_DISPATCH_NO_OPERATION_ID%'
+    ORDER BY updated_at ASC
+  `);
+  for (const row of failed.rows) {
+    const reset = await pool.query(`
+      UPDATE reel_operations
+      SET status='QUEUED', attempt=0, provider_operation_name='veo-dispatch-started', result_json=NULL,
+          last_error=NULL, lease_owner=NULL, lease_expires_at=NULL, updated_at=NOW()
+      WHERE id=$1 AND status='FAILED'
+      RETURNING id
+    `, [row.id]);
+    if (!reset.rows[0]) continue;
+    const p = await pool.query(`SELECT revision, manifest_json FROM reel_productions WHERE id=$1`, [row.production_id]);
+    if (!p.rows[0]) continue;
+    const m = p.rows[0].manifest_json || {};
+    m.qa = m.qa || { minimumReadyScore: 90, passed: false, warnings: [], failures: [] };
+    if (Array.isArray(m.qa.failures)) {
+      m.qa.failures = m.qa.failures.filter(x => !String(x).includes('AMBIGUOUS_VEO_DISPATCH_NO_OPERATION_ID'));
+    }
+    const shot = Array.isArray(m.shots) ? m.shots.find(x => x.id === row.target_id) : null;
+    if (shot && !shot.asset?.videoUrl) {
+      shot.status = 'FAILED';
+      if (shot.qa?.failures && Array.isArray(shot.qa.failures)) {
+        shot.qa.failures = shot.qa.failures.filter(x => !String(x).includes('AMBIGUOUS_VEO_DISPATCH_NO_OPERATION_ID'));
+      }
+    }
+    if (m.status === 'FAILED') m.status = 'REPAIRING';
+    await pool.query(`
+      UPDATE reel_productions
+      SET revision=revision+1, manifest_json=$3::jsonb, updated_at=NOW()
+      WHERE id=$1 AND revision=$2
+    `, [row.production_id, Number(p.rows[0].revision), JSON.stringify(m)]);
+    console.log(`[reel-worker] recovered legacy ambiguous Veo operation ${row.id} for one bounded redispatch`);
+  }
+}
+await recoverLegacyAmbiguousVeoFailures();
+
 async function publishHeartbeat() {
   await pool.query(`INSERT INTO reel_worker_heartbeats(worker_id,worker_role,metadata_json) VALUES($1,'reel-production',$2::jsonb)
     ON CONFLICT(worker_id) DO UPDATE SET heartbeat_at=NOW(),metadata_json=EXCLUDED.metadata_json`,
-    [workerId, JSON.stringify({ pid: process.pid, version: "v2.1", assetRootConfigured: Boolean(assetRoot()), geminiConfigured: Boolean(apiKey()) })]);
+    [workerId, JSON.stringify({ pid: process.pid, version: "v2.2", assetRootConfigured: Boolean(assetRoot()), geminiConfigured: Boolean(apiKey()) })]);
 }
 await publishHeartbeat();
 const heartbeatTimer = setInterval(() => publishHeartbeat().catch(e => console.error(`[reel-worker] heartbeat failed: ${e?.message || e}`)), heartbeatMs);
@@ -383,7 +426,85 @@ async function applyNarration(op, result) { await assertApplicable(op); const c 
 async function extractReference(op, shot, manifest) { if (!shot.dependsOnShotIds?.length) return null; const dep = manifest.shots.find(s => s.id === shot.dependsOnShotIds.at(-1)); if (!dep?.asset?.videoUrl) throw new Error("Continuity dependency has no media"); const tmp = path.join(os.tmpdir(), `zyvoriq-ref-${crypto.randomUUID()}.png`), t = Math.max(Number(dep.trimInSec || 0), Number(dep.trimOutSec || 0) - 1 / 30); try { await execFileAsync("ffmpeg", ["-y", "-ss", String(t), "-i", assetPath(dep.asset.videoUrl).target, "-frames:v", "1", "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920", tmp], { timeout: 30000, maxBuffer: 2e6 }); const b = await fs.readFile(tmp), digest = crypto.createHash("sha256").update(b).digest("hex").slice(0, 16), saved = await writeAsset(`reels/${op.production_id}/references/${shot.id}-from-${dep.id}-${digest}.png`, b); return { buffer: b, url: saved.url, dependencyId: dep.id }; } finally { try { await fs.unlink(tmp); } catch {} } }
 async function probeVideo(buffer) { const tmp = path.join(os.tmpdir(), `zyvoriq-probe-${crypto.randomUUID()}.mp4`); try { await fs.writeFile(tmp, buffer); const { stdout } = await execFileAsync("ffprobe", ["-v", "error", "-show_entries", "format=duration:stream=codec_name,width,height,r_frame_rate", "-of", "json", tmp], { timeout: 30000, maxBuffer: 2e6 }); const p = JSON.parse(stdout), s = p.streams?.find(x => x.width && x.height) || p.streams?.[0] || {}; return { durationSec: Number(Number(p.format?.duration || 0).toFixed(6)), codec: s.codec_name, width: Number(s.width || 0), height: Number(s.height || 0), frameRate: s.r_frame_rate }; } finally { try { await fs.unlink(tmp); } catch {} } }
 function veoModel(t) { return t === "quality" ? "veo-3.1-generate-preview" : t === "lite" ? "veo-3.1-lite-generate-preview" : "veo-3.1-fast-generate-preview"; }
-async function generateShot(op, manifest, shot) { if (!apiKey() || !assetRoot()) throw new Error("Veo prerequisites missing"); const tier = op.payload_json?.modelTier || "fast", model = veoModel(tier), ref = await extractReference(op, shot, manifest); let name = op.provider_operation_name; if (!name) { if (Number(op.attempt || 0) > 1) throw new Error("AMBIGUOUS_VEO_DISPATCH_NO_OPERATION_ID"); await assertApplicable(op, { beforeDispatch: true }); const instance = { prompt: shot.generationPrompt }; if (ref) instance.image = { inlineData: { mimeType: "image/png", data: ref.buffer.toString("base64") } }; const d = await fetch(`${API_BASE}/v1beta/models/${model}:predictLongRunning`, { method: "POST", headers: { "x-goog-api-key": apiKey(), "Content-Type": "application/json" }, body: JSON.stringify({ instances: [instance], parameters: { aspectRatio: "9:16", durationSeconds: shot.generationDurationSec } }) }); const j = await d.json(); if (!d.ok || j.error) throw new Error(`Veo dispatch failed: ${j.error?.message || d.status}`); name = j.name; if (!name) throw new Error("Veo returned no operation name"); await updateOperation(op.id, { providerOperationName: name }); } let uri = null; for (let i = 0; i < 60; i++) { await sleep(5000); if (i % 3 === 0) { await operationHeartbeat(op.id); await assertApplicable(op); } const p = await fetch(`${API_BASE}/v1beta/${name}`, { headers: { "x-goog-api-key": apiKey() } }), j = await p.json(); if (!p.ok || j.error) throw new Error(`Veo polling failed: ${j.error?.message || p.status}`); if (j.done) { uri = j.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri; if (!uri) throw new Error("Veo completed without video URI"); break; } } if (!uri) throw new Error(`Veo operation ${name} timed out`); await assertApplicable(op); const sep = uri.includes("?") ? "&" : "?", dl = await fetch(`${uri}${sep}key=${apiKey()}`); if (!dl.ok) throw new Error(`Veo download failed (${dl.status})`); const buffer = Buffer.from(await dl.arrayBuffer()), probe = await probeVideo(buffer); if (probe.durationSec + .05 < shot.trimOutSec) throw new Error(`${shot.id} source ${probe.durationSec}s shorter than trim ${shot.trimOutSec}s`); await assertApplicable(op); const digest = crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 16), asset = await writeAsset(`reels/${op.production_id}/shots/${shot.id}-${digest}.mp4`, buffer); return { videoUrl: asset.url, actualDurationSec: probe.durationSec, operationName: name, provider: "google-veo", model, continuityReferenceUrl: ref?.url }; }
+async function generateShot(op, manifest, shot) {
+  if (!apiKey() || !assetRoot()) throw new Error("Veo prerequisites missing");
+  const tier = op.payload_json?.modelTier || "fast";
+  const model = veoModel(tier);
+  const ref = await extractReference(op, shot, manifest);
+  const prior = String(op.provider_operation_name || "");
+  const dispatchMarkers = new Set(["veo-dispatch-started", "veo-recovery-dispatch-started"]);
+  let name = prior && !dispatchMarkers.has(prior) ? prior : null;
+
+  if (!name) {
+    if (prior === "veo-recovery-dispatch-started") {
+      throw new Error("AMBIGUOUS_VEO_DISPATCH_AFTER_BOUNDED_RECOVERY");
+    }
+    await assertApplicable(op, { beforeDispatch: true });
+    const dispatchMarker = prior === "veo-dispatch-started" ? "veo-recovery-dispatch-started" : "veo-dispatch-started";
+    await updateOperation(op.id, { providerOperationName: dispatchMarker });
+
+    const instance = { prompt: shot.generationPrompt };
+    if (ref) instance.image = { inlineData: { mimeType: "image/png", data: ref.buffer.toString("base64") } };
+
+    let d;
+    try {
+      d = await fetch(`${API_BASE}/v1beta/models/${model}:predictLongRunning`, {
+        method: "POST",
+        headers: { "x-goog-api-key": apiKey(), "Content-Type": "application/json" },
+        body: JSON.stringify({ instances: [instance], parameters: { aspectRatio: "9:16", durationSeconds: shot.generationDurationSec } }),
+      });
+    } catch (error) {
+      throw error;
+    }
+
+    let j;
+    try {
+      j = await d.json();
+    } catch (error) {
+      throw new Error(`Veo dispatch returned an unreadable Operation response (${d.status})`);
+    }
+
+    if (!d.ok || j?.error) {
+      await updateOperation(op.id, { providerOperationName: null });
+      throw new Error(`Veo dispatch failed: ${j?.error?.message || d.status}`);
+    }
+
+    name = j?.name;
+    if (!name) {
+      throw new Error("Veo dispatch succeeded without operation name");
+    }
+    await updateOperation(op.id, { providerOperationName: name });
+  }
+
+  let uri = null;
+  for (let i = 0; i < 60; i++) {
+    await sleep(5000);
+    if (i % 3 === 0) {
+      await operationHeartbeat(op.id);
+      await assertApplicable(op);
+    }
+    const p = await fetch(`${API_BASE}/v1beta/${name}`, { headers: { "x-goog-api-key": apiKey() } });
+    const j = await p.json();
+    if (!p.ok || j.error) throw new Error(`Veo polling failed: ${j.error?.message || p.status}`);
+    if (j.done) {
+      uri = j.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri;
+      if (!uri) throw new Error("Veo completed without video URI");
+      break;
+    }
+  }
+  if (!uri) throw new Error(`Veo operation ${name} timed out`);
+  await assertApplicable(op);
+  const sep = uri.includes("?") ? "&" : "?";
+  const dl = await fetch(`${uri}${sep}key=${apiKey()}`);
+  if (!dl.ok) throw new Error(`Veo download failed (${dl.status})`);
+  const buffer = Buffer.from(await dl.arrayBuffer());
+  const probe = await probeVideo(buffer);
+  if (probe.durationSec + .05 < shot.trimOutSec) throw new Error(`${shot.id} source ${probe.durationSec}s shorter than trim ${shot.trimOutSec}s`);
+  await assertApplicable(op);
+  const digest = crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 16);
+  const asset = await writeAsset(`reels/${op.production_id}/shots/${shot.id}-${digest}.mp4`, buffer);
+  return { videoUrl: asset.url, actualDurationSec: probe.durationSec, operationName: name, provider: "google-veo", model, continuityReferenceUrl: ref?.url };
+}
 async function applyShot(op, result) { await assertApplicable(op); const c = await getProduction(op.production_id), m = c.manifest, s = m.shots.find(x => x.id === op.target_id); if (!s) throw new Error("Shot removed"); s.asset = { videoUrl: result.videoUrl, actualDurationSec: result.actualDurationSec, operationName: result.operationName, provider: result.provider, model: result.model }; s.status = "GENERATED"; if (result.continuityReferenceUrl) s.continuityIn.referenceFrameUrl = result.continuityReferenceUrl; m.status = m.shots.every(x => x.asset?.videoUrl && ["GENERATED", "PASSED"].includes(x.status)) ? "ROUGH_CUT_READY" : "VIDEO_GENERATING"; await saveManifest(op.production_id, c.revision, m); }
 async function renderRough(op, m) { await assertApplicable(op, { beforeDispatch: true }); if (!assetRoot() || !m.audio?.narrationUrl || !m.audio?.actualDurationSec || !m.audio?.alignmentValidation?.passed) throw new Error("Validated narration and durable storage required"); const d = Number(m.audio.actualDurationSec), tmp = path.join(os.tmpdir(), `zyvoriq-rough-${crypto.randomUUID()}.mp4`), args = ["-y"]; for (const s of m.shots) { if (!s.asset?.videoUrl) throw new Error(`${s.id} has no source`); args.push("-i", assetPath(s.asset.videoUrl).target); } args.push("-i", assetPath(m.audio.narrationUrl).target); const f = []; m.shots.forEach((s, i) => f.push(`[${i}:v]trim=start=${s.trimInSec}:end=${s.trimOutSec},setpts=PTS-STARTPTS,scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30[v${i}]`)); f.push(`${m.shots.map((_, i) => `[v${i}]`).join("")}concat=n=${m.shots.length}:v=1:a=0[vout]`); f.push(`[${m.shots.length}:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000[aout]`); args.push("-filter_complex", f.join(";"), "-map", "[vout]", "-map", "[aout]", "-t", String(d), "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", tmp); try { await execFileAsync("ffmpeg", args, { timeout: 300000, maxBuffer: 4e6 }); await assertApplicable(op); const buffer = await fs.readFile(tmp), probe = await probeVideo(buffer); if (Math.abs(probe.durationSec - d) > .08) throw new Error(`Rough cut duration drift ${probe.durationSec} vs ${d}`); const digest = crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 16), asset = await writeAsset(`reels/${op.production_id}/renders/narrated-rough-${digest}.mp4`, buffer); return { videoUrl: asset.url, actualDurationSec: probe.durationSec, kind: "narrated-rough-cut", codec: probe.codec, width: probe.width, height: probe.height, frameRate: probe.frameRate, renderedAt: new Date().toISOString() }; } finally { try { await fs.unlink(tmp); } catch {} } }
 async function applyRough(op, result) { await assertApplicable(op); const c = await getProduction(op.production_id), m = c.manifest; m.outputs = { ...(m.outputs || {}), narratedRoughCut: result }; m.status = "MIXING"; await saveManifest(op.production_id, c.revision, m); }
@@ -422,7 +543,7 @@ for (;;) {
     } catch (error) {
       const message = String(error?.message || error).slice(0, 2000);
       const cancelled = message.startsWith("OPERATION_CANCELLED");
-      const ambiguous = message.includes("AMBIGUOUS_TTS_RESULT_AFTER_BOUNDED_RECOVERY") || message.includes("AMBIGUOUS_VEO_DISPATCH_NO_OPERATION_ID");
+      const ambiguous = message.includes("AMBIGUOUS_TTS_RESULT_AFTER_BOUNDED_RECOVERY") || message.includes("AMBIGUOUS_VEO_DISPATCH_AFTER_BOUNDED_RECOVERY") || message.includes("AMBIGUOUS_VEO_DISPATCH_NO_OPERATION_ID");
       const retry = !cancelled && !ambiguous && Number(op.attempt || 0) < 3;
       await pool.query(`UPDATE reel_operations SET status=$2,last_error=$3,lease_owner=NULL,lease_expires_at=NULL,updated_at=NOW() WHERE id=$1`, [op.id, cancelled ? "CANCELLED" : retry ? "QUEUED" : "FAILED", message]);
       if (!cancelled && !retry) await markTerminalFailure(op, message);
