@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const { planReel } = require('../../.tmp-reel-v2/planner.js');
 const { auditReelManifest } = require('../../.tmp-reel-v2/audit.js');
 const { enrichManifestV2 } = require('../../.tmp-reel-v2/manifestV2.js');
+const { chooseBoundaryOperation, selectProvider } = require('../../.tmp-reel-v2/providerContracts.js');
 
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 
@@ -15,6 +16,12 @@ assert.equal(planned.musicPlan.continuousAcrossVisualCuts, true, 'music plan mus
 for (const id of ['QG-TRANSCRIPT-01','QG-CAP-01','QG-PERF-01','QG-LIP-01','QG-EMO-01','QG-BND-01','QG-OBJ-01','QG-VIS-01','QG-AUD-01','QG-SEM-01','QG-WHOLE-01']) {
   assert.equal(planned.qa.gates[id].status, 'PENDING', `${id} must fail closed until evidence exists`);
 }
+
+const boundary = planned.continuity.boundaries[0];
+assert.ok(['EDIT_VIDEO','GENERATE_VIDEO','EXTEND_VIDEO','INTERPOLATE_BOUNDARY','REPAIR'].includes(chooseBoundaryOperation(boundary).operation));
+assert.throws(() => selectProvider({ capabilities: [] }, 'LIP_SYNC'), /No enabled provider satisfies LIP_SYNC/, 'provider routing must fail closed without a compatible provider');
+const selected = selectProvider({ capabilities: [{ providerId:'verified-test-provider', operation:'PERFORMANCE_RENDER', enabled:true, supportsContinuousIdentity:true, supportsAudioDrivenPerformance:true, priority:10 }] }, 'PERFORMANCE_RENDER', { supportsContinuousIdentity:true, supportsAudioDrivenPerformance:true });
+assert.equal(selected.providerId, 'verified-test-provider');
 
 const aligned = clone(planned);
 aligned.status = 'SHOTS_PLANNED';
