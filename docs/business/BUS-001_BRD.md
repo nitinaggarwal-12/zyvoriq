@@ -4,7 +4,7 @@
 | :--- | :--- |
 | Document ID | BUS-001 |
 | Owner | Product / Business Operations |
-| Version | 2.0.0 |
+| Version | 2.1.0 |
 | Status | Active |
 | Priority | P0 |
 | Parent | STR-001 |
@@ -32,6 +32,8 @@ Long-form video, multi-format campaigns and autonomous campaign management are e
 - **BR-006 — Sustainable economics:** The system must optimize quality, provider cost, retries and latency together and expose attributable production cost.
 - **BR-007 — Personalized intelligence:** Creator, brand and audience context must improve decisions while remaining scoped, inspectable and tenant-isolated.
 - **BR-008 — Outcome loop:** Platform-native derivatives, distribution and measured outcomes must eventually feed future creative decisions.
+- **BR-009 — Autonomous campaigns:** Zyvoriq must eventually plan governed multi-asset campaigns from a creator/business objective while respecting autonomy, evidence, rights and approval policy.
+- **BR-010 — Platform ecosystem:** Stable APIs, SDKs, interoperability and semantic recipes must expose Zyvoriq capabilities without coupling customers to internal provider choices.
 
 Canonical mappings are maintained in `docs/governance/traceability.json`.
 
@@ -49,9 +51,13 @@ The production behaves like one directed piece rather than independent AI clips.
 
 Users edit semantically, lock what must not change, branch variants, and receive creative decisions informed by brief quality, hook/narrative reasoning, contextual taste and scoped creator/brand/audience memory.
 
-### R7+ — Trust, Distribution & Learning
+### R7–R9 — Trust, Distribution & Learning
 
-Claims/rights/provenance, platform-native variants, publishing and outcome telemetry close the loop. Later releases extend into autonomous campaign planning and an ecosystem/API surface.
+Claims/rights/provenance, platform-native variants, publishing and outcome telemetry close the learning loop with explicit uncertainty and tenant controls.
+
+### R10–R11 — Autonomous Campaigns & Ecosystem
+
+Zyvoriq evolves from single-asset execution to governed objective-to-portfolio planning, then exposes stable platform capabilities and semantic recipes for partners/developers.
 
 ## 5. Business success measures
 
@@ -80,8 +86,8 @@ Numeric goals are hypotheses/targets until observed; they must not be represente
 
 ## 7. Trust and business constraints
 
-- Do not claim factual verification, rights clearance, C2PA/provenance support, lip sync or synchronization unless the implementation and evidence actually support the claim.
-- Identity/voice/likeness usage must support consent, scope and revocation as the relevant features mature.
+- Do not claim factual verification, rights clearance, C2PA/provenance support, lip sync or synchronization unless implementation and evidence support the claim.
+- Identity/voice/likeness usage must support consent, scope and revocation as relevant capabilities mature.
 - Customer memories, unpublished content and brand intelligence may not leak across tenants/brands.
 - A model router must consider privacy, residency, rights and policy—not quality/cost alone.
 - High-risk content/workflows may require human approval even when automated creative quality is high.
