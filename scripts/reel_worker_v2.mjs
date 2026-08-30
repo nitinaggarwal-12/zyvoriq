@@ -11,25 +11,31 @@ const execFileAsync = promisify(execFile);
 const API_BASE = "https://generativelanguage.googleapis.com";
 const SAMPLE_RATE = 24000, SAMPLE_WIDTH = 2, CHANNELS = 1;
 const MAX_WER = 0.06, MIN_COVERAGE = 0.97;
-const workerId = `reel-worker-${process.pid}-${crypto.randomUUID().slice(0,8)}`;
+const workerId = `reel-worker-${process.pid}-${crypto.randomUUID().slice(0, 8)}`;
 const pollMs = Math.max(500, Number(process.env.ZYVORIQ_WORKER_POLL_MS || 1500));
 const heartbeatMs = 15000;
 
-function dbUrl(){
-  const direct=process.env.DATABASE_URL||process.env.POSTGRES_URL||process.env.DATABASE_PRIVATE_URL;
-  if(direct)return direct;
-  if(process.env.PGHOST&&process.env.PGUSER&&process.env.PGDATABASE){
-    const pass=process.env.PGPASSWORD?`:${encodeURIComponent(process.env.PGPASSWORD)}`:"";
-    return `postgresql://${encodeURIComponent(process.env.PGUSER)}${pass}@${process.env.PGHOST}:${process.env.PGPORT||"5432"}/${process.env.PGDATABASE}`;
+function dbUrl() {
+  const direct = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.DATABASE_PRIVATE_URL;
+  if (direct) return direct;
+  if (process.env.PGHOST && process.env.PGUSER && process.env.PGDATABASE) {
+    const pass = process.env.PGPASSWORD ? `:${encodeURIComponent(process.env.PGPASSWORD)}` : "";
+    return `postgresql://${encodeURIComponent(process.env.PGUSER)}${pass}@${process.env.PGHOST}:${process.env.PGPORT || "5432"}/${process.env.PGDATABASE}`;
   }
   return "";
 }
-function apiKey(){return process.env.GEMINI_API_KEY||process.env.GOOGLE_API_KEY||"";}
-function assetRoot(){return process.env.ZYVORIQ_ASSET_ROOT||process.env.RAILWAY_VOLUME_MOUNT_PATH||"";}
-const databaseUrl=dbUrl();
-if(!databaseUrl){console.error("[reel-worker] Postgres is required");process.exit(1);}
-const pool=new Pool({connectionString:databaseUrl,ssl:databaseUrl.includes("localhost")||databaseUrl.includes("127.0.0.1")?false:{rejectUnauthorized:false},max:3,idleTimeoutMillis:30000});
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function apiKey() { return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || ""; }
+function assetRoot() { return process.env.ZYVORIQ_ASSET_ROOT || process.env.RAILWAY_VOLUME_MOUNT_PATH || ""; }
+
+const databaseUrl = dbUrl();
+if (!databaseUrl) { console.error("[reel-worker] Postgres is required"); process.exit(1); }
+const pool = new Pool({
+  connectionString: databaseUrl,
+  ssl: databaseUrl.includes("localhost") || databaseUrl.includes("127.0.0.1") ? false : { rejectUnauthorized: false },
+  max: 3,
+  idleTimeoutMillis: 30000,
+});
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 await pool.query(`
 CREATE TABLE IF NOT EXISTS reel_operations (
@@ -46,51 +52,227 @@ CREATE TABLE IF NOT EXISTS reel_worker_heartbeats (
 CREATE INDEX IF NOT EXISTS idx_reel_operations_status_created ON reel_operations(status,created_at);
 `);
 
-async function publishHeartbeat(){
+async function recoverLegacyAmbiguousTtsFailures() {
+  const failed = await pool.query(`
+    SELECT id, production_id
+    FROM reel_operations
+    WHERE kind='NARRATION'
+      AND status='FAILED'
+      AND last_error LIKE '%AMBIGUOUS_TTS_RESULT_NO_AUTORETRY%'
+    ORDER BY updated_at ASC
+  `);
+  for (const row of failed.rows) {
+    await pool.query(`
+      UPDATE reel_operations
+      SET status='QUEUED', attempt=0, provider_operation_name=NULL, result_json=NULL,
+          last_error=NULL, lease_owner=NULL, lease_expires_at=NULL, updated_at=NOW()
+      WHERE id=$1
+    `, [row.id]);
+    const p = await pool.query(`SELECT revision, manifest_json FROM reel_productions WHERE id=$1`, [row.production_id]);
+    if (!p.rows[0]) continue;
+    const m = p.rows[0].manifest_json || {};
+    if (m.status === "FAILED") m.status = "AUDIO_GENERATING";
+    if (m.qa?.failures && Array.isArray(m.qa.failures)) {
+      m.qa.failures = m.qa.failures.filter(x => !String(x).includes("AMBIGUOUS_TTS_RESULT_NO_AUTORETRY"));
+    }
+    await pool.query(`
+      UPDATE reel_productions
+      SET revision=revision+1, manifest_json=$3::jsonb, updated_at=NOW()
+      WHERE id=$1 AND revision=$2
+    `, [row.production_id, Number(p.rows[0].revision), JSON.stringify(m)]);
+    console.log(`[reel-worker] recovered legacy ambiguous TTS operation ${row.id}`);
+  }
+}
+await recoverLegacyAmbiguousTtsFailures();
+
+async function publishHeartbeat() {
   await pool.query(`INSERT INTO reel_worker_heartbeats(worker_id,worker_role,metadata_json) VALUES($1,'reel-production',$2::jsonb)
     ON CONFLICT(worker_id) DO UPDATE SET heartbeat_at=NOW(),metadata_json=EXCLUDED.metadata_json`,
-    [workerId,JSON.stringify({pid:process.pid,version:"v2",assetRootConfigured:Boolean(assetRoot()),geminiConfigured:Boolean(apiKey())})]);
+    [workerId, JSON.stringify({ pid: process.pid, version: "v2.1", assetRootConfigured: Boolean(assetRoot()), geminiConfigured: Boolean(apiKey()) })]);
 }
 await publishHeartbeat();
-const heartbeatTimer=setInterval(()=>publishHeartbeat().catch(e=>console.error(`[reel-worker] heartbeat failed: ${e?.message||e}`)),heartbeatMs);
+const heartbeatTimer = setInterval(() => publishHeartbeat().catch(e => console.error(`[reel-worker] heartbeat failed: ${e?.message || e}`)), heartbeatMs);
 heartbeatTimer.unref();
 
-function safeKey(key){const n=String(key).replace(/\\/g,"/").replace(/^\/+/,"");if(!n||n.includes("..")||n.startsWith("/"))throw new Error("Invalid asset key");return n;}
-function assetKeyFromUrl(url){const p="/api/reels/assets/";if(!String(url).startsWith(p))throw new Error(`Non-owned asset URL: ${url}`);return safeKey(String(url).slice(p.length).split("/").map(decodeURIComponent).join("/"));}
-function assetPath(keyOrUrl){const root=assetRoot();if(!root)throw new Error("Durable asset storage is not configured");const key=String(keyOrUrl).startsWith("/api/reels/assets/")?assetKeyFromUrl(keyOrUrl):safeKey(keyOrUrl);const rr=path.resolve(root),target=path.resolve(root,key);if(!target.startsWith(`${rr}${path.sep}`))throw new Error("Asset path escaped durable root");return{key,target};}
-async function writeAsset(key,buffer){const r=assetPath(key);await fs.mkdir(path.dirname(r.target),{recursive:true});await fs.writeFile(r.target,buffer);return{key:r.key,url:`/api/reels/assets/${r.key.split("/").map(encodeURIComponent).join("/")}`};}
-function wavFromPcm(pcm){const h=Buffer.alloc(44),br=SAMPLE_RATE*CHANNELS*SAMPLE_WIDTH;h.write("RIFF",0);h.writeUInt32LE(36+pcm.length,4);h.write("WAVE",8);h.write("fmt ",12);h.writeUInt32LE(16,16);h.writeUInt16LE(1,20);h.writeUInt16LE(CHANNELS,22);h.writeUInt32LE(SAMPLE_RATE,24);h.writeUInt32LE(br,28);h.writeUInt16LE(CHANNELS*SAMPLE_WIDTH,32);h.writeUInt16LE(SAMPLE_WIDTH*8,34);h.write("data",36);h.writeUInt32LE(pcm.length,40);return Buffer.concat([h,pcm]);}
-function findAudioData(v){if(!v||typeof v!=="object")return null;for(const k of["output_audio","outputAudio"]){const c=v[k];if(c&&typeof c.data==="string")return c.data;}if((v.type==="audio"||v.mime_type==="audio/L16"||v.mimeType==="audio/L16")&&typeof v.data==="string")return v.data;for(const c of Object.values(v)){if(Array.isArray(c)){for(const i of c){const f=findAudioData(i);if(f)return f;}}else if(c&&typeof c==="object"){const f=findAudioData(c);if(f)return f;}}return null;}
-function offsetToSec(v){if(typeof v==="number"&&Number.isFinite(v))return v;if(typeof v==="string"){const n=Number.parseFloat(v.replace(/s$/i,""));return Number.isFinite(n)?n:null;}if(v&&typeof v==="object"){const s=Number(v.seconds||0),n=Number(v.nanos||v.nanoseconds||0);if(Number.isFinite(s)&&Number.isFinite(n))return s+n/1e9;}return null;}
-function extractWordTimings(v){const out=[];const visit=n=>{if(!n||typeof n!=="object")return;const s=offsetToSec(n.start_offset??n.startOffset),e=offsetToSec(n.end_offset??n.endOffset),w=n.word??n.text;if(typeof w==="string"&&s!==null&&e!==null)out.push({word:w.trim(),startSec:Number(s.toFixed(6)),endSec:Number(e.toFixed(6))});for(const c of Object.values(n))Array.isArray(c)?c.forEach(visit):(c&&typeof c==="object"&&visit(c));};visit(v);return out.filter(t=>t.word&&t.endSec>=t.startSec).sort((a,b)=>a.startSec-b.startSec||a.endSec-b.endSec);}
-function normalizeWords(t){return String(t).normalize("NFKC").toLowerCase().replace(/[’‘]/g,"'").replace(/[^\p{L}\p{N}']+/gu," ").trim().split(/\s+/).filter(Boolean);}
-function editDistance(a,b){const p=Array.from({length:b.length+1},(_,i)=>i);for(let i=1;i<=a.length;i++){const c=[i];for(let j=1;j<=b.length;j++)c[j]=Math.min(c[j-1]+1,p[j]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));for(let j=0;j<=b.length;j++)p[j]=c[j];}return p[b.length];}
-function lcsLength(a,b){const d=Array(b.length+1).fill(0);for(const x of a){let diag=0;for(let j=1;j<=b.length;j++){const prior=d[j];d[j]=x===b[j-1]?diag+1:Math.max(d[j],d[j-1]);diag=prior;}}return d[b.length];}
-function validateTranscript(expectedText,timings,durationSec){let ps=-1,pe=-1;for(const t of timings){if(!t.word||t.startSec<0||t.endSec<t.startSec||t.startSec+.001<ps||t.endSec+.001<pe||t.endSec>durationSec+.25)throw new Error("Narration timestamps failed structural validation");ps=t.startSec;pe=t.endSec;}const expected=normalizeWords(expectedText),actual=normalizeWords(timings.map(t=>t.word).join(" "));if(!expected.length||!actual.length)throw new Error("Transcript verification has no comparable words");const wer=editDistance(expected,actual)/expected.length,coverage=lcsLength(expected,actual)/expected.length;const critical=new Set(["no","not","never","without","cannot","can't","wont","won't","must","mustn't"]);const counts=new Map();for(const w of actual)counts.set(w,(counts.get(w)||0)+1);const missing=[];for(const w of expected.filter(w=>critical.has(w)||/^\d+(?:[.,]\d+)?%?$/.test(w))){const c=counts.get(w)||0;if(c<=0)missing.push(w);else counts.set(w,c-1);}const v={expectedWords:expected.length,actualWords:actual.length,wer:Number(wer.toFixed(4)),coverage:Number(coverage.toFixed(4)),passed:wer<=MAX_WER&&coverage>=MIN_COVERAGE&&missing.length===0,missingCritical:missing};if(!v.passed)throw new Error(`Narration transcript mismatch: WER ${v.wer}, coverage ${v.coverage}`);return v;}
+function safeKey(key) { const n = String(key).replace(/\\/g, "/").replace(/^\/+/, ""); if (!n || n.includes("..") || n.startsWith("/")) throw new Error("Invalid asset key"); return n; }
+function assetKeyFromUrl(url) { const p = "/api/reels/assets/"; if (!String(url).startsWith(p)) throw new Error(`Non-owned asset URL: ${url}`); return safeKey(String(url).slice(p.length).split("/").map(decodeURIComponent).join("/")); }
+function assetPath(keyOrUrl) { const root = assetRoot(); if (!root) throw new Error("Durable asset storage is not configured"); const key = String(keyOrUrl).startsWith("/api/reels/assets/") ? assetKeyFromUrl(keyOrUrl) : safeKey(keyOrUrl); const rr = path.resolve(root), target = path.resolve(root, key); if (!target.startsWith(`${rr}${path.sep}`)) throw new Error("Asset path escaped durable root"); return { key, target }; }
+async function writeAsset(key, buffer) { const r = assetPath(key); await fs.mkdir(path.dirname(r.target), { recursive: true }); await fs.writeFile(r.target, buffer); return { key: r.key, url: `/api/reels/assets/${r.key.split("/").map(encodeURIComponent).join("/")}` }; }
+async function readAsset(keyOrUrl) { return fs.readFile(assetPath(keyOrUrl).target); }
+function wavFromPcm(pcm) { const h = Buffer.alloc(44), br = SAMPLE_RATE * CHANNELS * SAMPLE_WIDTH; h.write("RIFF", 0); h.writeUInt32LE(36 + pcm.length, 4); h.write("WAVE", 8); h.write("fmt ", 12); h.writeUInt32LE(16, 16); h.writeUInt16LE(1, 20); h.writeUInt16LE(CHANNELS, 22); h.writeUInt32LE(SAMPLE_RATE, 24); h.writeUInt32LE(br, 28); h.writeUInt16LE(CHANNELS * SAMPLE_WIDTH, 32); h.writeUInt16LE(SAMPLE_WIDTH * 8, 34); h.write("data", 36); h.writeUInt32LE(pcm.length, 40); return Buffer.concat([h, pcm]); }
+function findAudioData(v) { if (!v || typeof v !== "object") return null; for (const k of ["output_audio", "outputAudio"]) { const c = v[k]; if (c && typeof c.data === "string") return c.data; } if ((v.type === "audio" || v.mime_type === "audio/L16" || v.mimeType === "audio/L16") && typeof v.data === "string") return v.data; for (const c of Object.values(v)) { if (Array.isArray(c)) { for (const i of c) { const f = findAudioData(i); if (f) return f; } } else if (c && typeof c === "object") { const f = findAudioData(c); if (f) return f; } } return null; }
+function offsetToSec(v) { if (typeof v === "number" && Number.isFinite(v)) return v; if (typeof v === "string") { const n = Number.parseFloat(v.replace(/s$/i, "")); return Number.isFinite(n) ? n : null; } if (v && typeof v === "object") { const s = Number(v.seconds || 0), n = Number(v.nanos || v.nanoseconds || 0); if (Number.isFinite(s) && Number.isFinite(n)) return s + n / 1e9; } return null; }
+function extractWordTimings(v) { const out = []; const visit = n => { if (!n || typeof n !== "object") return; const s = offsetToSec(n.start_offset ?? n.startOffset), e = offsetToSec(n.end_offset ?? n.endOffset), w = n.word ?? n.text; if (typeof w === "string" && s !== null && e !== null) out.push({ word: w.trim(), startSec: Number(s.toFixed(6)), endSec: Number(e.toFixed(6)) }); for (const c of Object.values(n)) Array.isArray(c) ? c.forEach(visit) : (c && typeof c === "object" && visit(c)); }; visit(v); return out.filter(t => t.word && t.endSec >= t.startSec).sort((a, b) => a.startSec - b.startSec || a.endSec - b.endSec); }
+function normalizeWords(t) { return String(t).normalize("NFKC").toLowerCase().replace(/[’‘]/g, "'").replace(/[^\p{L}\p{N}']+/gu, " ").trim().split(/\s+/).filter(Boolean); }
+function editDistance(a, b) { const p = Array.from({ length: b.length + 1 }, (_, i) => i); for (let i = 1; i <= a.length; i++) { const c = [i]; for (let j = 1; j <= b.length; j++) c[j] = Math.min(c[j - 1] + 1, p[j] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); for (let j = 0; j <= b.length; j++) p[j] = c[j]; } return p[b.length]; }
+function lcsLength(a, b) { const d = Array(b.length + 1).fill(0); for (const x of a) { let diag = 0; for (let j = 1; j <= b.length; j++) { const prior = d[j]; d[j] = x === b[j - 1] ? diag + 1 : Math.max(d[j], d[j - 1]); diag = prior; } } return d[b.length]; }
+function validateTranscript(expectedText, timings, durationSec) { let ps = -1, pe = -1; for (const t of timings) { if (!t.word || t.startSec < 0 || t.endSec < t.startSec || t.startSec + .001 < ps || t.endSec + .001 < pe || t.endSec > durationSec + .25) throw new Error("Narration timestamps failed structural validation"); ps = t.startSec; pe = t.endSec; } const expected = normalizeWords(expectedText), actual = normalizeWords(timings.map(t => t.word).join(" ")); if (!expected.length || !actual.length) throw new Error("Transcript verification has no comparable words"); const wer = editDistance(expected, actual) / expected.length, coverage = lcsLength(expected, actual) / expected.length; const critical = new Set(["no", "not", "never", "without", "cannot", "can't", "wont", "won't", "must", "mustn't"]); const counts = new Map(); for (const w of actual) counts.set(w, (counts.get(w) || 0) + 1); const missing = []; for (const w of expected.filter(w => critical.has(w) || /^\d+(?:[.,]\d+)?%?$/.test(w))) { const c = counts.get(w) || 0; if (c <= 0) missing.push(w); else counts.set(w, c - 1); } const v = { expectedWords: expected.length, actualWords: actual.length, wer: Number(wer.toFixed(4)), coverage: Number(coverage.toFixed(4)), passed: wer <= MAX_WER && coverage >= MIN_COVERAGE && missing.length === 0, missingCritical: missing }; if (!v.passed) throw new Error(`Narration transcript mismatch: WER ${v.wer}, coverage ${v.coverage}`); return v; }
 
-async function getProduction(id){const r=await pool.query(`SELECT * FROM reel_productions WHERE id=$1`,[id]);if(!r.rows[0])throw new Error(`Production ${id} not found`);return{revision:Number(r.rows[0].revision),manifest:r.rows[0].manifest_json};}
-async function saveManifest(id,revision,manifest){const r=await pool.query(`UPDATE reel_productions SET revision=revision+1,manifest_json=$3::jsonb,updated_at=NOW() WHERE id=$1 AND revision=$2 RETURNING revision`,[id,revision,JSON.stringify(manifest)]);if(!r.rows[0])throw new Error(`Production ${id} changed concurrently while worker was attaching evidence`);return Number(r.rows[0].revision);}
-async function updateOperation(id,patch){const fields=[],values=[id];let n=2;const map={status:"status",providerOperationName:"provider_operation_name",result:"result_json",lastError:"last_error",leaseExpiresAt:"lease_expires_at",leaseOwner:"lease_owner"};for(const[k,col]of Object.entries(map)){if(!(k in patch))continue;fields.push(`${col}=$${n++}${k==="result"?"::jsonb":""}`);values.push(k==="result"?JSON.stringify(patch[k]):patch[k]);}fields.push("updated_at=NOW()");await pool.query(`UPDATE reel_operations SET ${fields.join(",")} WHERE id=$1`,values);}
-async function operationHeartbeat(id){await pool.query(`UPDATE reel_operations SET lease_expires_at=NOW()+INTERVAL '10 minutes',updated_at=NOW() WHERE id=$1 AND lease_owner=$2`,[id,workerId]);}
-async function claim(){const r=await pool.query(`WITH c AS(SELECT id FROM reel_operations WHERE status='QUEUED' OR(status='RUNNING' AND lease_expires_at<NOW()) ORDER BY created_at ASC FOR UPDATE SKIP LOCKED LIMIT 1) UPDATE reel_operations o SET status='RUNNING',attempt=o.attempt+1,lease_owner=$1,lease_expires_at=NOW()+INTERVAL '10 minutes',updated_at=NOW() FROM c WHERE o.id=c.id RETURNING o.*`,[workerId]);return r.rows[0]||null;}
-async function controlFor(op){const r=await pool.query(`SELECT * FROM reel_production_controls WHERE production_id=$1`,[op.production_id]);if(!r.rows[0])throw new Error("OPERATION_CANCELLED: missing production control");const c=r.rows[0];if(c.cancelled_at)throw new Error("OPERATION_CANCELLED: production cancelled or superseded");if(String(c.generation_token)!==String(op.payload_json?.generationToken||""))throw new Error("OPERATION_CANCELLED: generation token no longer applies");return c;}
-async function assertApplicable(op,{beforeDispatch=false}={}){await controlFor(op);const current=await getProduction(op.production_id);if(op.kind==="NARRATION"&&!['SCRIPT_READY','AUDIO_GENERATING'].includes(current.manifest.status))throw new Error(`OPERATION_CANCELLED: narration no longer applies to ${current.manifest.status}`);if(op.kind==="SHOT"){const s=current.manifest.shots.find(x=>x.id===op.target_id);if(!s)throw new Error("OPERATION_CANCELLED: shot removed");if(s.asset?.videoUrl)throw new Error("OPERATION_CANCELLED: shot already has media");if(!['PLANNED','FAILED','GENERATING'].includes(s.status))throw new Error(`OPERATION_CANCELLED: shot no longer applies to ${s.status}`);}if(op.kind==="ROUGH_CUT"&&current.manifest.status!=="ROUGH_CUT_READY")throw new Error(`OPERATION_CANCELLED: rough cut no longer applies to ${current.manifest.status}`);if(beforeDispatch&&op.status==="CANCELLED")throw new Error("OPERATION_CANCELLED: operation cancelled");return current;}
+async function getProduction(id) { const r = await pool.query(`SELECT * FROM reel_productions WHERE id=$1`, [id]); if (!r.rows[0]) throw new Error(`Production ${id} not found`); return { revision: Number(r.rows[0].revision), manifest: r.rows[0].manifest_json }; }
+async function saveManifest(id, revision, manifest) { const r = await pool.query(`UPDATE reel_productions SET revision=revision+1,manifest_json=$3::jsonb,updated_at=NOW() WHERE id=$1 AND revision=$2 RETURNING revision`, [id, revision, JSON.stringify(manifest)]); if (!r.rows[0]) throw new Error(`Production ${id} changed concurrently while worker was attaching evidence`); return Number(r.rows[0].revision); }
+async function updateOperation(id, patch) { const fields = [], values = [id]; let n = 2; const map = { status: "status", providerOperationName: "provider_operation_name", result: "result_json", lastError: "last_error", leaseExpiresAt: "lease_expires_at", leaseOwner: "lease_owner" }; for (const [k, col] of Object.entries(map)) { if (!(k in patch)) continue; fields.push(`${col}=$${n++}${k === "result" ? "::jsonb" : ""}`); values.push(k === "result" ? JSON.stringify(patch[k]) : patch[k]); } fields.push("updated_at=NOW()"); await pool.query(`UPDATE reel_operations SET ${fields.join(",")} WHERE id=$1`, values); }
+async function operationHeartbeat(id) { await pool.query(`UPDATE reel_operations SET lease_expires_at=NOW()+INTERVAL '10 minutes',updated_at=NOW() WHERE id=$1 AND lease_owner=$2`, [id, workerId]); }
+async function claim() { const r = await pool.query(`WITH c AS(SELECT id FROM reel_operations WHERE status='QUEUED' OR(status='RUNNING' AND lease_expires_at<NOW()) ORDER BY created_at ASC FOR UPDATE SKIP LOCKED LIMIT 1) UPDATE reel_operations o SET status='RUNNING',attempt=o.attempt+1,lease_owner=$1,lease_expires_at=NOW()+INTERVAL '10 minutes',updated_at=NOW() FROM c WHERE o.id=c.id RETURNING o.*`, [workerId]); return r.rows[0] || null; }
+async function controlFor(op) { const r = await pool.query(`SELECT * FROM reel_production_controls WHERE production_id=$1`, [op.production_id]); if (!r.rows[0]) throw new Error("OPERATION_CANCELLED: missing production control"); const c = r.rows[0]; if (c.cancelled_at) throw new Error("OPERATION_CANCELLED: production cancelled or superseded"); if (String(c.generation_token) !== String(op.payload_json?.generationToken || "")) throw new Error("OPERATION_CANCELLED: generation token no longer applies"); return c; }
+async function assertApplicable(op, { beforeDispatch = false } = {}) { await controlFor(op); const current = await getProduction(op.production_id); if (op.kind === "NARRATION" && !["SCRIPT_READY", "AUDIO_GENERATING"].includes(current.manifest.status)) throw new Error(`OPERATION_CANCELLED: narration no longer applies to ${current.manifest.status}`); if (op.kind === "SHOT") { const s = current.manifest.shots.find(x => x.id === op.target_id); if (!s) throw new Error("OPERATION_CANCELLED: shot removed"); if (s.asset?.videoUrl) throw new Error("OPERATION_CANCELLED: shot already has media"); if (!["PLANNED", "FAILED", "GENERATING"].includes(s.status)) throw new Error(`OPERATION_CANCELLED: shot no longer applies to ${s.status}`); } if (op.kind === "ROUGH_CUT" && current.manifest.status !== "ROUGH_CUT_READY") throw new Error(`OPERATION_CANCELLED: rough cut no longer applies to ${current.manifest.status}`); if (beforeDispatch && op.status === "CANCELLED") throw new Error("OPERATION_CANCELLED: operation cancelled"); return current; }
 
-async function markRunning(op){const c=await assertApplicable(op);const m=c.manifest;if(op.kind==="NARRATION"&&m.status==="SCRIPT_READY")m.status="AUDIO_GENERATING";if(op.kind==="SHOT"){const s=m.shots.find(x=>x.id===op.target_id);if(['PLANNED','FAILED'].includes(s.status))s.status="GENERATING";if(['SHOTS_PLANNED','REPAIRING'].includes(m.status))m.status="VIDEO_GENERATING";}await saveManifest(op.production_id,c.revision,m);}
-async function markTerminalFailure(op,message){try{const c=await getProduction(op.production_id),m=c.manifest;m.qa=m.qa||{minimumReadyScore:90,passed:false,warnings:[],failures:[]};m.qa.passed=false;m.qa.failures=[...(m.qa.failures||[]),message];if(op.kind==="SHOT"){const s=m.shots.find(x=>x.id===op.target_id);if(s){s.status="FAILED";s.qa=s.qa||{warnings:[],failures:[]};s.qa.failures=[...(s.qa.failures||[]),message];}m.status="REPAIRING";}else if(op.kind==="ROUGH_CUT")m.status="REPAIRING";else m.status="FAILED";await saveManifest(op.production_id,c.revision,m);}catch(e){console.error(`[reel-worker] failure-state update failed: ${e?.message||e}`);}}
+async function markRunning(op) { const c = await assertApplicable(op); const m = c.manifest; if (op.kind === "NARRATION" && m.status === "SCRIPT_READY") m.status = "AUDIO_GENERATING"; if (op.kind === "SHOT") { const s = m.shots.find(x => x.id === op.target_id); if (["PLANNED", "FAILED"].includes(s.status)) s.status = "GENERATING"; if (["SHOTS_PLANNED", "REPAIRING"].includes(m.status)) m.status = "VIDEO_GENERATING"; } await saveManifest(op.production_id, c.revision, m); }
+async function markTerminalFailure(op, message) { try { const c = await getProduction(op.production_id), m = c.manifest; m.qa = m.qa || { minimumReadyScore: 90, passed: false, warnings: [], failures: [] }; m.qa.passed = false; m.qa.failures = [...(m.qa.failures || []), message]; if (op.kind === "SHOT") { const s = m.shots.find(x => x.id === op.target_id); if (s) { s.status = "FAILED"; s.qa = s.qa || { warnings: [], failures: [] }; s.qa.failures = [...(s.qa.failures || []), message]; } m.status = "REPAIRING"; } else if (op.kind === "ROUGH_CUT") m.status = "REPAIRING"; else m.status = "FAILED"; await saveManifest(op.production_id, c.revision, m); } catch (e) { console.error(`[reel-worker] failure-state update failed: ${e?.message || e}`); } }
 
-async function generateNarration(op,manifest){if(!apiKey())throw new Error("Gemini API key is missing");if(!assetRoot())throw new Error("Durable asset root is missing");if(op.provider_operation_name==="tts-dispatch-started")throw new Error("AMBIGUOUS_TTS_RESULT_NO_AUTORETRY");await assertApplicable(op,{beforeDispatch:true});await updateOperation(op.id,{providerOperationName:"tts-dispatch-started"});const model=process.env.ZYVORIQ_TTS_MODEL||"gemini-3.1-flash-tts-preview",voice=process.env.ZYVORIQ_TTS_VOICE||"Kore";const prompt=["Synthesize speech for the transcript below. Do not speak these instructions.",`Performance direction: ${manifest.tone}. Natural social-video delivery, clear articulation, no added words.`,"TRANSCRIPT START",manifest.masterScript,"TRANSCRIPT END"].join("\n");const r=await fetch(`${API_BASE}/v1beta/interactions`,{method:"POST",headers:{"x-goog-api-key":apiKey(),"Content-Type":"application/json"},body:JSON.stringify({model,input:prompt,response_format:{type:"audio"},generation_config:{speech_config:[{voice}]}})});const j=await r.json();if(!r.ok)throw new Error(`Gemini TTS failed (${r.status})`);const b64=findAudioData(j);if(!b64)throw new Error("Gemini TTS returned no audio payload");const pcm=Buffer.from(b64,"base64"),durationSec=pcm.length/(SAMPLE_RATE*CHANNELS*SAMPLE_WIDTH),wav=wavFromPcm(pcm);const start=await fetch(`${API_BASE}/upload/v1beta/files`,{method:"POST",headers:{"x-goog-api-key":apiKey(),"X-Goog-Upload-Protocol":"resumable","X-Goog-Upload-Command":"start","X-Goog-Upload-Header-Content-Length":String(wav.length),"X-Goog-Upload-Header-Content-Type":"audio/wav","Content-Type":"application/json"},body:JSON.stringify({file:{display_name:`zyvoriq-${op.production_id}-narration.wav`}})});if(!start.ok)throw new Error(`Gemini upload init failed (${start.status})`);const u=start.headers.get("x-goog-upload-url");if(!u)throw new Error("Gemini upload returned no URL");const up=await fetch(u,{method:"POST",headers:{"Content-Length":String(wav.length),"X-Goog-Upload-Offset":"0","X-Goog-Upload-Command":"upload, finalize","Content-Type":"audio/wav"},body:new Uint8Array(wav)});const uj=await up.json();if(!up.ok)throw new Error(`Gemini upload failed (${up.status})`);const uri=uj?.file?.uri||uj?.uri;if(!uri)throw new Error("Gemini upload returned no file URI");const tr=await fetch(`${API_BASE}/v1beta/interactions`,{method:"POST",headers:{"x-goog-api-key":apiKey(),"Content-Type":"application/json"},body:JSON.stringify({model:"gemini-3.5-transcribe",input:[{type:"audio",uri,mime_type:"audio/wav"}],generation_config:{transcription_config:{mode:{type:"verbatim",timestamp_granularities:["word"]}}}})});const tj=await tr.json();if(!tr.ok)throw new Error(`Gemini transcription failed (${tr.status})`);const timings=extractWordTimings(tj);if(!timings.length)throw new Error("No word-level timestamps returned");const validation=validateTranscript(manifest.masterScript,timings,durationSec);await assertApplicable(op);const digest=crypto.createHash("sha256").update(wav).digest("hex").slice(0,16),asset=await writeAsset(`reels/${op.production_id}/narration-${digest}.wav`,wav);return{narrationUrl:asset.url,actualDurationSec:Number(durationSec.toFixed(6)),wordTimings:timings,provider:"google-gemini",model,voice,alignmentValidation:validation};}
-function replan(m,d){const count=m.shots.length;if(!count)throw new Error("Cannot replan production with no shots");const per=d/count;if(per>8)throw new Error(`Narration master requires ${per.toFixed(3)}s per existing shot, exceeding 8s source limit`);let cursor=0;for(let i=0;i<count;i++){const s=m.shots[i],ed=Number((i===count-1?d-cursor:per).toFixed(6));s.editorialStartSec=Number(cursor.toFixed(6));s.editorialDurationSec=ed;s.trimInSec=0;s.trimOutSec=ed;s.generationDurationSec=ed<=3.5?4:ed<=5.5?6:8;s.status="PLANNED";delete s.asset;if(s.continuityIn)delete s.continuityIn.referenceFrameUrl;cursor=Number((cursor+ed).toFixed(6));}m.plannedDurationSec=Number(d.toFixed(6));}
-async function applyNarration(op,result){await assertApplicable(op);const c=await getProduction(op.production_id),m=c.manifest;replan(m,result.actualDurationSec);m.audio={...m.audio,masterClock:"narration",narrationUrl:result.narrationUrl,actualDurationSec:result.actualDurationSec,timingSource:"actual-alignment",wordTimings:result.wordTimings,provider:result.provider,model:result.model,voice:result.voice,alignmentValidation:result.alignmentValidation};m.status="SHOTS_PLANNED";await saveManifest(op.production_id,c.revision,m);}
-async function extractReference(op,shot,manifest){if(!shot.dependsOnShotIds?.length)return null;const dep=manifest.shots.find(s=>s.id===shot.dependsOnShotIds.at(-1));if(!dep?.asset?.videoUrl)throw new Error("Continuity dependency has no media");const tmp=path.join(os.tmpdir(),`zyvoriq-ref-${crypto.randomUUID()}.png`),t=Math.max(Number(dep.trimInSec||0),Number(dep.trimOutSec||0)-1/30);try{await execFileAsync("ffmpeg",["-y","-ss",String(t),"-i",assetPath(dep.asset.videoUrl).target,"-frames:v","1","-vf","scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920",tmp],{timeout:30000,maxBuffer:2e6});const b=await fs.readFile(tmp),digest=crypto.createHash("sha256").update(b).digest("hex").slice(0,16),saved=await writeAsset(`reels/${op.production_id}/references/${shot.id}-from-${dep.id}-${digest}.png`,b);return{buffer:b,url:saved.url,dependencyId:dep.id};}finally{try{await fs.unlink(tmp);}catch{}}}
-async function probeVideo(buffer){const tmp=path.join(os.tmpdir(),`zyvoriq-probe-${crypto.randomUUID()}.mp4`);try{await fs.writeFile(tmp,buffer);const{stdout}=await execFileAsync("ffprobe",["-v","error","-show_entries","format=duration:stream=codec_name,width,height,r_frame_rate","-of","json",tmp],{timeout:30000,maxBuffer:2e6});const p=JSON.parse(stdout),s=p.streams?.find(x=>x.width&&x.height)||p.streams?.[0]||{};return{durationSec:Number(Number(p.format?.duration||0).toFixed(6)),codec:s.codec_name,width:Number(s.width||0),height:Number(s.height||0),frameRate:s.r_frame_rate};}finally{try{await fs.unlink(tmp);}catch{}}}
-function veoModel(t){return t==="quality"?"veo-3.1-generate-preview":t==="lite"?"veo-3.1-lite-generate-preview":"veo-3.1-fast-generate-preview";}
-async function generateShot(op,manifest,shot){if(!apiKey()||!assetRoot())throw new Error("Veo prerequisites missing");const tier=op.payload_json?.modelTier||"fast",model=veoModel(tier),ref=await extractReference(op,shot,manifest);let name=op.provider_operation_name;if(!name){if(Number(op.attempt||0)>1)throw new Error("AMBIGUOUS_VEO_DISPATCH_NO_OPERATION_ID");await assertApplicable(op,{beforeDispatch:true});const instance={prompt:shot.generationPrompt};if(ref)instance.image={inlineData:{mimeType:"image/png",data:ref.buffer.toString("base64")}};const d=await fetch(`${API_BASE}/v1beta/models/${model}:predictLongRunning`,{method:"POST",headers:{"x-goog-api-key":apiKey(),"Content-Type":"application/json"},body:JSON.stringify({instances:[instance],parameters:{aspectRatio:"9:16",durationSeconds:shot.generationDurationSec}})});const j=await d.json();if(!d.ok||j.error)throw new Error(`Veo dispatch failed: ${j.error?.message||d.status}`);name=j.name;if(!name)throw new Error("Veo returned no operation name");await updateOperation(op.id,{providerOperationName:name});}let uri=null;for(let i=0;i<60;i++){await sleep(5000);if(i%3===0){await operationHeartbeat(op.id);await assertApplicable(op);}const p=await fetch(`${API_BASE}/v1beta/${name}`,{headers:{"x-goog-api-key":apiKey()}}),j=await p.json();if(!p.ok||j.error)throw new Error(`Veo polling failed: ${j.error?.message||p.status}`);if(j.done){uri=j.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri;if(!uri)throw new Error("Veo completed without video URI");break;}}if(!uri)throw new Error(`Veo operation ${name} timed out`);await assertApplicable(op);const sep=uri.includes("?")?"&":"?",dl=await fetch(`${uri}${sep}key=${apiKey()}`);if(!dl.ok)throw new Error(`Veo download failed (${dl.status})`);const buffer=Buffer.from(await dl.arrayBuffer()),probe=await probeVideo(buffer);if(probe.durationSec+.05<shot.trimOutSec)throw new Error(`${shot.id} source ${probe.durationSec}s shorter than trim ${shot.trimOutSec}s`);await assertApplicable(op);const digest=crypto.createHash("sha256").update(buffer).digest("hex").slice(0,16),asset=await writeAsset(`reels/${op.production_id}/shots/${shot.id}-${digest}.mp4`,buffer);return{videoUrl:asset.url,actualDurationSec:probe.durationSec,operationName:name,provider:"google-veo",model,continuityReferenceUrl:ref?.url};}
-async function applyShot(op,result){await assertApplicable(op);const c=await getProduction(op.production_id),m=c.manifest,s=m.shots.find(x=>x.id===op.target_id);if(!s)throw new Error("Shot removed");s.asset={videoUrl:result.videoUrl,actualDurationSec:result.actualDurationSec,operationName:result.operationName,provider:result.provider,model:result.model};s.status="GENERATED";if(result.continuityReferenceUrl)s.continuityIn.referenceFrameUrl=result.continuityReferenceUrl;m.status=m.shots.every(x=>x.asset?.videoUrl&&["GENERATED","PASSED"].includes(x.status))?"ROUGH_CUT_READY":"VIDEO_GENERATING";await saveManifest(op.production_id,c.revision,m);}
-async function renderRough(op,m){await assertApplicable(op,{beforeDispatch:true});if(!assetRoot()||!m.audio?.narrationUrl||!m.audio?.actualDurationSec||!m.audio?.alignmentValidation?.passed)throw new Error("Validated narration and durable storage required");const d=Number(m.audio.actualDurationSec),tmp=path.join(os.tmpdir(),`zyvoriq-rough-${crypto.randomUUID()}.mp4`),args=["-y"];for(const s of m.shots){if(!s.asset?.videoUrl)throw new Error(`${s.id} has no source`);args.push("-i",assetPath(s.asset.videoUrl).target);}args.push("-i",assetPath(m.audio.narrationUrl).target);const f=[];m.shots.forEach((s,i)=>f.push(`[${i}:v]trim=start=${s.trimInSec}:end=${s.trimOutSec},setpts=PTS-STARTPTS,scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30[v${i}]`));f.push(`${m.shots.map((_,i)=>`[v${i}]`).join("")}concat=n=${m.shots.length}:v=1:a=0[vout]`);f.push(`[${m.shots.length}:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000[aout]`);args.push("-filter_complex",f.join(";"),"-map","[vout]","-map","[aout]","-t",String(d),"-c:v","libx264","-preset","medium","-crf","18","-pix_fmt","yuv420p","-c:a","aac","-b:a","192k","-movflags","+faststart",tmp);try{await execFileAsync("ffmpeg",args,{timeout:300000,maxBuffer:4e6});await assertApplicable(op);const buffer=await fs.readFile(tmp),probe=await probeVideo(buffer);if(Math.abs(probe.durationSec-d)>.08)throw new Error(`Rough cut duration drift ${probe.durationSec} vs ${d}`);const digest=crypto.createHash("sha256").update(buffer).digest("hex").slice(0,16),asset=await writeAsset(`reels/${op.production_id}/renders/narrated-rough-${digest}.mp4`,buffer);return{videoUrl:asset.url,actualDurationSec:probe.durationSec,kind:"narrated-rough-cut",codec:probe.codec,width:probe.width,height:probe.height,frameRate:probe.frameRate,renderedAt:new Date().toISOString()};}finally{try{await fs.unlink(tmp);}catch{}}}
-async function applyRough(op,result){await assertApplicable(op);const c=await getProduction(op.production_id),m=c.manifest;m.outputs={...(m.outputs||{}),narratedRoughCut:result};m.status="MIXING";await saveManifest(op.production_id,c.revision,m);}
+async function transcribeAndValidateNarration(op, manifest, checkpoint, wav) {
+  const start = await fetch(`${API_BASE}/upload/v1beta/files`, {
+    method: "POST",
+    headers: {
+      "x-goog-api-key": apiKey(),
+      "X-Goog-Upload-Protocol": "resumable",
+      "X-Goog-Upload-Command": "start",
+      "X-Goog-Upload-Header-Content-Length": String(wav.length),
+      "X-Goog-Upload-Header-Content-Type": "audio/wav",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ file: { display_name: `zyvoriq-${op.production_id}-narration.wav` } }),
+  });
+  if (!start.ok) throw new Error(`Gemini upload init failed (${start.status})`);
+  const u = start.headers.get("x-goog-upload-url");
+  if (!u) throw new Error("Gemini upload returned no URL");
+  const up = await fetch(u, { method: "POST", headers: { "Content-Length": String(wav.length), "X-Goog-Upload-Offset": "0", "X-Goog-Upload-Command": "upload, finalize", "Content-Type": "audio/wav" }, body: new Uint8Array(wav) });
+  const uj = await up.json();
+  if (!up.ok) throw new Error(`Gemini upload failed (${up.status})`);
+  const uri = uj?.file?.uri || uj?.uri;
+  if (!uri) throw new Error("Gemini upload returned no file URI");
+  const tr = await fetch(`${API_BASE}/v1beta/interactions`, {
+    method: "POST",
+    headers: { "x-goog-api-key": apiKey(), "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "gemini-3.5-transcribe", input: [{ type: "audio", uri, mime_type: "audio/wav" }], generation_config: { transcription_config: { mode: { type: "verbatim", timestamp_granularities: ["word"] } } } }),
+  });
+  const tj = await tr.json();
+  if (!tr.ok) throw new Error(`Gemini transcription failed (${tr.status})`);
+  const timings = extractWordTimings(tj);
+  if (!timings.length) throw new Error("No word-level timestamps returned");
+  const validation = validateTranscript(manifest.masterScript, timings, checkpoint.actualDurationSec);
+  await assertApplicable(op);
+  return { ...checkpoint, stage: "COMPLETE", wordTimings: timings, alignmentValidation: validation };
+}
 
-async function processOperation(op){await assertApplicable(op);await markRunning(op);const current=await getProduction(op.production_id);let result=op.result_json;if(op.kind==="NARRATION"){if(!result){result=await generateNarration(op,current.manifest);await updateOperation(op.id,{result});}await applyNarration(op,result);}else if(op.kind==="SHOT"){const shot=current.manifest.shots.find(s=>s.id===op.target_id);if(!shot)throw new Error("Shot not found");if(!result){result=await generateShot(op,current.manifest,shot);await updateOperation(op.id,{result});}await applyShot(op,result);}else if(op.kind==="ROUGH_CUT"){if(!result){result=await renderRough(op,current.manifest);await updateOperation(op.id,{result});}await applyRough(op,result);}else throw new Error(`Unsupported operation ${op.kind}`);await updateOperation(op.id,{status:"SUCCEEDED",lastError:null,leaseExpiresAt:null,leaseOwner:null});}
+async function generateNarration(op, manifest, existingCheckpoint = null) {
+  if (!apiKey()) throw new Error("Gemini API key is missing");
+  if (!assetRoot()) throw new Error("Durable asset root is missing");
+
+  let checkpoint = existingCheckpoint;
+  let wav;
+
+  if (checkpoint?.stage === "AUDIO_PERSISTED" && checkpoint.narrationUrl) {
+    wav = await readAsset(checkpoint.narrationUrl);
+    await updateOperation(op.id, { providerOperationName: "tts-audio-persisted" });
+  } else {
+    const prior = String(op.provider_operation_name || "");
+    if (prior === "tts-recovery-dispatch-started") throw new Error("AMBIGUOUS_TTS_RESULT_AFTER_BOUNDED_RECOVERY");
+    await assertApplicable(op, { beforeDispatch: true });
+    await updateOperation(op.id, { providerOperationName: prior === "tts-dispatch-started" ? "tts-recovery-dispatch-started" : "tts-dispatch-started" });
+
+    const model = process.env.ZYVORIQ_TTS_MODEL || "gemini-3.1-flash-tts-preview";
+    const voice = process.env.ZYVORIQ_TTS_VOICE || "Kore";
+    const prompt = [
+      "Synthesize speech for the transcript below. Do not speak these instructions.",
+      `Performance direction: ${manifest.tone}. Natural social-video delivery, clear articulation, no added words.`,
+      "TRANSCRIPT START",
+      manifest.masterScript,
+      "TRANSCRIPT END",
+    ].join("\n");
+
+    let r;
+    try {
+      r = await fetch(`${API_BASE}/v1beta/interactions`, {
+        method: "POST",
+        headers: { "x-goog-api-key": apiKey(), "Content-Type": "application/json" },
+        body: JSON.stringify({ model, input: prompt, response_format: { type: "audio" }, generation_config: { speech_config: [{ voice }] } }),
+      });
+    } catch (e) {
+      throw e;
+    }
+    const j = await r.json();
+    if (!r.ok) {
+      await updateOperation(op.id, { providerOperationName: null });
+      throw new Error(`Gemini TTS failed (${r.status})`);
+    }
+    const b64 = findAudioData(j);
+    if (!b64) {
+      await updateOperation(op.id, { providerOperationName: null });
+      throw new Error("Gemini TTS returned no audio payload");
+    }
+
+    const pcm = Buffer.from(b64, "base64");
+    const durationSec = pcm.length / (SAMPLE_RATE * CHANNELS * SAMPLE_WIDTH);
+    wav = wavFromPcm(pcm);
+    const digest = crypto.createHash("sha256").update(wav).digest("hex").slice(0, 16);
+    const asset = await writeAsset(`reels/${op.production_id}/narration-${digest}.wav`, wav);
+    checkpoint = {
+      stage: "AUDIO_PERSISTED",
+      narrationUrl: asset.url,
+      actualDurationSec: Number(durationSec.toFixed(6)),
+      provider: "google-gemini",
+      model,
+      voice,
+      audioSha256: crypto.createHash("sha256").update(wav).digest("hex"),
+    };
+    await updateOperation(op.id, { result: checkpoint, providerOperationName: "tts-audio-persisted" });
+  }
+
+  return transcribeAndValidateNarration(op, manifest, checkpoint, wav);
+}
+
+function replan(m, d) { const count = m.shots.length; if (!count) throw new Error("Cannot replan production with no shots"); const per = d / count; if (per > 8) throw new Error(`Narration master requires ${per.toFixed(3)}s per existing shot, exceeding 8s source limit`); let cursor = 0; for (let i = 0; i < count; i++) { const s = m.shots[i], ed = Number((i === count - 1 ? d - cursor : per).toFixed(6)); s.editorialStartSec = Number(cursor.toFixed(6)); s.editorialDurationSec = ed; s.trimInSec = 0; s.trimOutSec = ed; s.generationDurationSec = ed <= 3.5 ? 4 : ed <= 5.5 ? 6 : 8; s.status = "PLANNED"; delete s.asset; if (s.continuityIn) delete s.continuityIn.referenceFrameUrl; cursor = Number((cursor + ed).toFixed(6)); } m.plannedDurationSec = Number(d.toFixed(6)); }
+async function applyNarration(op, result) { await assertApplicable(op); const c = await getProduction(op.production_id), m = c.manifest; replan(m, result.actualDurationSec); m.audio = { ...m.audio, masterClock: "narration", narrationUrl: result.narrationUrl, actualDurationSec: result.actualDurationSec, timingSource: "actual-alignment", wordTimings: result.wordTimings, provider: result.provider, model: result.model, voice: result.voice, alignmentValidation: result.alignmentValidation }; m.status = "SHOTS_PLANNED"; await saveManifest(op.production_id, c.revision, m); }
+async function extractReference(op, shot, manifest) { if (!shot.dependsOnShotIds?.length) return null; const dep = manifest.shots.find(s => s.id === shot.dependsOnShotIds.at(-1)); if (!dep?.asset?.videoUrl) throw new Error("Continuity dependency has no media"); const tmp = path.join(os.tmpdir(), `zyvoriq-ref-${crypto.randomUUID()}.png`), t = Math.max(Number(dep.trimInSec || 0), Number(dep.trimOutSec || 0) - 1 / 30); try { await execFileAsync("ffmpeg", ["-y", "-ss", String(t), "-i", assetPath(dep.asset.videoUrl).target, "-frames:v", "1", "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920", tmp], { timeout: 30000, maxBuffer: 2e6 }); const b = await fs.readFile(tmp), digest = crypto.createHash("sha256").update(b).digest("hex").slice(0, 16), saved = await writeAsset(`reels/${op.production_id}/references/${shot.id}-from-${dep.id}-${digest}.png`, b); return { buffer: b, url: saved.url, dependencyId: dep.id }; } finally { try { await fs.unlink(tmp); } catch {} } }
+async function probeVideo(buffer) { const tmp = path.join(os.tmpdir(), `zyvoriq-probe-${crypto.randomUUID()}.mp4`); try { await fs.writeFile(tmp, buffer); const { stdout } = await execFileAsync("ffprobe", ["-v", "error", "-show_entries", "format=duration:stream=codec_name,width,height,r_frame_rate", "-of", "json", tmp], { timeout: 30000, maxBuffer: 2e6 }); const p = JSON.parse(stdout), s = p.streams?.find(x => x.width && x.height) || p.streams?.[0] || {}; return { durationSec: Number(Number(p.format?.duration || 0).toFixed(6)), codec: s.codec_name, width: Number(s.width || 0), height: Number(s.height || 0), frameRate: s.r_frame_rate }; } finally { try { await fs.unlink(tmp); } catch {} } }
+function veoModel(t) { return t === "quality" ? "veo-3.1-generate-preview" : t === "lite" ? "veo-3.1-lite-generate-preview" : "veo-3.1-fast-generate-preview"; }
+async function generateShot(op, manifest, shot) { if (!apiKey() || !assetRoot()) throw new Error("Veo prerequisites missing"); const tier = op.payload_json?.modelTier || "fast", model = veoModel(tier), ref = await extractReference(op, shot, manifest); let name = op.provider_operation_name; if (!name) { if (Number(op.attempt || 0) > 1) throw new Error("AMBIGUOUS_VEO_DISPATCH_NO_OPERATION_ID"); await assertApplicable(op, { beforeDispatch: true }); const instance = { prompt: shot.generationPrompt }; if (ref) instance.image = { inlineData: { mimeType: "image/png", data: ref.buffer.toString("base64") } }; const d = await fetch(`${API_BASE}/v1beta/models/${model}:predictLongRunning`, { method: "POST", headers: { "x-goog-api-key": apiKey(), "Content-Type": "application/json" }, body: JSON.stringify({ instances: [instance], parameters: { aspectRatio: "9:16", durationSeconds: shot.generationDurationSec } }) }); const j = await d.json(); if (!d.ok || j.error) throw new Error(`Veo dispatch failed: ${j.error?.message || d.status}`); name = j.name; if (!name) throw new Error("Veo returned no operation name"); await updateOperation(op.id, { providerOperationName: name }); } let uri = null; for (let i = 0; i < 60; i++) { await sleep(5000); if (i % 3 === 0) { await operationHeartbeat(op.id); await assertApplicable(op); } const p = await fetch(`${API_BASE}/v1beta/${name}`, { headers: { "x-goog-api-key": apiKey() } }), j = await p.json(); if (!p.ok || j.error) throw new Error(`Veo polling failed: ${j.error?.message || p.status}`); if (j.done) { uri = j.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri; if (!uri) throw new Error("Veo completed without video URI"); break; } } if (!uri) throw new Error(`Veo operation ${name} timed out`); await assertApplicable(op); const sep = uri.includes("?") ? "&" : "?", dl = await fetch(`${uri}${sep}key=${apiKey()}`); if (!dl.ok) throw new Error(`Veo download failed (${dl.status})`); const buffer = Buffer.from(await dl.arrayBuffer()), probe = await probeVideo(buffer); if (probe.durationSec + .05 < shot.trimOutSec) throw new Error(`${shot.id} source ${probe.durationSec}s shorter than trim ${shot.trimOutSec}s`); await assertApplicable(op); const digest = crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 16), asset = await writeAsset(`reels/${op.production_id}/shots/${shot.id}-${digest}.mp4`, buffer); return { videoUrl: asset.url, actualDurationSec: probe.durationSec, operationName: name, provider: "google-veo", model, continuityReferenceUrl: ref?.url }; }
+async function applyShot(op, result) { await assertApplicable(op); const c = await getProduction(op.production_id), m = c.manifest, s = m.shots.find(x => x.id === op.target_id); if (!s) throw new Error("Shot removed"); s.asset = { videoUrl: result.videoUrl, actualDurationSec: result.actualDurationSec, operationName: result.operationName, provider: result.provider, model: result.model }; s.status = "GENERATED"; if (result.continuityReferenceUrl) s.continuityIn.referenceFrameUrl = result.continuityReferenceUrl; m.status = m.shots.every(x => x.asset?.videoUrl && ["GENERATED", "PASSED"].includes(x.status)) ? "ROUGH_CUT_READY" : "VIDEO_GENERATING"; await saveManifest(op.production_id, c.revision, m); }
+async function renderRough(op, m) { await assertApplicable(op, { beforeDispatch: true }); if (!assetRoot() || !m.audio?.narrationUrl || !m.audio?.actualDurationSec || !m.audio?.alignmentValidation?.passed) throw new Error("Validated narration and durable storage required"); const d = Number(m.audio.actualDurationSec), tmp = path.join(os.tmpdir(), `zyvoriq-rough-${crypto.randomUUID()}.mp4`), args = ["-y"]; for (const s of m.shots) { if (!s.asset?.videoUrl) throw new Error(`${s.id} has no source`); args.push("-i", assetPath(s.asset.videoUrl).target); } args.push("-i", assetPath(m.audio.narrationUrl).target); const f = []; m.shots.forEach((s, i) => f.push(`[${i}:v]trim=start=${s.trimInSec}:end=${s.trimOutSec},setpts=PTS-STARTPTS,scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30[v${i}]`)); f.push(`${m.shots.map((_, i) => `[v${i}]`).join("")}concat=n=${m.shots.length}:v=1:a=0[vout]`); f.push(`[${m.shots.length}:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000[aout]`); args.push("-filter_complex", f.join(";"), "-map", "[vout]", "-map", "[aout]", "-t", String(d), "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", tmp); try { await execFileAsync("ffmpeg", args, { timeout: 300000, maxBuffer: 4e6 }); await assertApplicable(op); const buffer = await fs.readFile(tmp), probe = await probeVideo(buffer); if (Math.abs(probe.durationSec - d) > .08) throw new Error(`Rough cut duration drift ${probe.durationSec} vs ${d}`); const digest = crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 16), asset = await writeAsset(`reels/${op.production_id}/renders/narrated-rough-${digest}.mp4`, buffer); return { videoUrl: asset.url, actualDurationSec: probe.durationSec, kind: "narrated-rough-cut", codec: probe.codec, width: probe.width, height: probe.height, frameRate: probe.frameRate, renderedAt: new Date().toISOString() }; } finally { try { await fs.unlink(tmp); } catch {} } }
+async function applyRough(op, result) { await assertApplicable(op); const c = await getProduction(op.production_id), m = c.manifest; m.outputs = { ...(m.outputs || {}), narratedRoughCut: result }; m.status = "MIXING"; await saveManifest(op.production_id, c.revision, m); }
+
+async function processOperation(op) {
+  await assertApplicable(op);
+  await markRunning(op);
+  const current = await getProduction(op.production_id);
+  let result = op.result_json;
+  if (op.kind === "NARRATION") {
+    if (!result || result.stage !== "COMPLETE") {
+      result = await generateNarration(op, current.manifest, result);
+      await updateOperation(op.id, { result, providerOperationName: "tts-complete" });
+    }
+    await applyNarration(op, result);
+  } else if (op.kind === "SHOT") {
+    const shot = current.manifest.shots.find(s => s.id === op.target_id);
+    if (!shot) throw new Error("Shot not found");
+    if (!result) { result = await generateShot(op, current.manifest, shot); await updateOperation(op.id, { result }); }
+    await applyShot(op, result);
+  } else if (op.kind === "ROUGH_CUT") {
+    if (!result) { result = await renderRough(op, current.manifest); await updateOperation(op.id, { result }); }
+    await applyRough(op, result);
+  } else throw new Error(`Unsupported operation ${op.kind}`);
+  await updateOperation(op.id, { status: "SUCCEEDED", lastError: null, leaseExpiresAt: null, leaseOwner: null });
+}
 
 console.log(`[reel-worker] dedicated worker started ${workerId}`);
-for(;;){try{await publishHeartbeat();const op=await claim();if(!op){await sleep(pollMs);continue;}try{await processOperation(op);}catch(error){const message=String(error?.message||error).slice(0,2000),cancelled=message.startsWith("OPERATION_CANCELLED"),ambiguous=message.includes("AMBIGUOUS_TTS_RESULT_NO_AUTORETRY")||message.includes("AMBIGUOUS_VEO_DISPATCH_NO_OPERATION_ID"),retry=!cancelled&&!ambiguous&&Number(op.attempt||0)<3;await pool.query(`UPDATE reel_operations SET status=$2,last_error=$3,lease_owner=NULL,lease_expires_at=NULL,updated_at=NOW() WHERE id=$1`,[op.id,cancelled?"CANCELLED":retry?"QUEUED":"FAILED",message]);if(!cancelled&&!retry)await markTerminalFailure(op,message);console.error(`[reel-worker] ${op.id} ${cancelled?"cancelled":retry?"retry":"failed"}: ${message}`);}}catch(error){console.error(`[reel-worker] loop error: ${error?.message||error}`);await sleep(Math.max(pollMs,3000));}}
+for (;;) {
+  try {
+    await publishHeartbeat();
+    const op = await claim();
+    if (!op) { await sleep(pollMs); continue; }
+    try {
+      await processOperation(op);
+    } catch (error) {
+      const message = String(error?.message || error).slice(0, 2000);
+      const cancelled = message.startsWith("OPERATION_CANCELLED");
+      const ambiguous = message.includes("AMBIGUOUS_TTS_RESULT_AFTER_BOUNDED_RECOVERY") || message.includes("AMBIGUOUS_VEO_DISPATCH_NO_OPERATION_ID");
+      const retry = !cancelled && !ambiguous && Number(op.attempt || 0) < 3;
+      await pool.query(`UPDATE reel_operations SET status=$2,last_error=$3,lease_owner=NULL,lease_expires_at=NULL,updated_at=NOW() WHERE id=$1`, [op.id, cancelled ? "CANCELLED" : retry ? "QUEUED" : "FAILED", message]);
+      if (!cancelled && !retry) await markTerminalFailure(op, message);
+      console.error(`[reel-worker] ${op.id} ${cancelled ? "cancelled" : retry ? "retry" : "failed"}: ${message}`);
+    }
+  } catch (error) {
+    console.error(`[reel-worker] loop error: ${error?.message || error}`);
+    await sleep(Math.max(pollMs, 3000));
+  }
+}
