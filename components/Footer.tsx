@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Instagram, Github, Sparkles } from "lucide-react";
+import { Github, Sparkles } from "lucide-react";
 
 export function Footer() {
   return (
