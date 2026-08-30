@@ -39,6 +39,7 @@ export interface AlignmentValidation {
   wer: number;
   coverage: number;
   passed: boolean;
+  missingCritical?: string[];
 }
 
 export interface ContinuityState {
