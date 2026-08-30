@@ -11,6 +11,16 @@ function safeKey(key: string) {
   return normalized;
 }
 
+function resolveAssetPath(key: string) {
+  const root = configuredRoot();
+  if (!root) throw new Error("Durable asset storage is not configured");
+  const clean = safeKey(key);
+  const target = path.resolve(root, clean);
+  const resolvedRoot = path.resolve(root);
+  if (!target.startsWith(`${resolvedRoot}${path.sep}`) && target !== resolvedRoot) throw new Error("Asset path escaped configured root");
+  return { clean, target };
+}
+
 export function getAssetStoreCapability() {
   const root = configuredRoot();
   return {
@@ -21,25 +31,27 @@ export function getAssetStoreCapability() {
 }
 
 export async function writeAsset(key: string, data: Buffer) {
-  const root = configuredRoot();
-  if (!root) {
+  if (!configuredRoot()) {
     throw new Error("Durable asset storage is not configured. Set ZYVORIQ_ASSET_ROOT or attach a Railway volume.");
   }
-  const clean = safeKey(key);
-  const target = path.resolve(root, clean);
-  const resolvedRoot = path.resolve(root);
-  if (!target.startsWith(`${resolvedRoot}${path.sep}`) && target !== resolvedRoot) throw new Error("Asset path escaped configured root");
+  const { clean, target } = resolveAssetPath(key);
   await fs.mkdir(path.dirname(target), { recursive: true });
   await fs.writeFile(target, data);
   return { key: clean, url: `/api/reels/assets/${clean.split("/").map(encodeURIComponent).join("/")}`, bytes: data.length };
 }
 
 export async function readAsset(key: string) {
-  const root = configuredRoot();
-  if (!root) throw new Error("Durable asset storage is not configured");
-  const clean = safeKey(key);
-  const target = path.resolve(root, clean);
-  const resolvedRoot = path.resolve(root);
-  if (!target.startsWith(`${resolvedRoot}${path.sep}`) && target !== resolvedRoot) throw new Error("Asset path escaped configured root");
+  const { target } = resolveAssetPath(key);
   return fs.readFile(target);
+}
+
+export async function deleteAsset(key: string) {
+  const { target } = resolveAssetPath(key);
+  try {
+    await fs.unlink(target);
+    return true;
+  } catch (error: any) {
+    if (error?.code === "ENOENT") return false;
+    throw error;
+  }
 }
