@@ -1,161 +1,124 @@
-# STR-001 — Product Vision & Principles
+# STR-001 — Product Vision & Strategic North Star
 
-| Metadata Attribute | Value |
+| Attribute | Value |
 | :--- | :--- |
-| **Document ID** | STR-001 |
-| **Title** | Zyvoriq Product Vision, Principles & Strategic North Star |
-| **Owner** | Chief Product Officer / Founder |
-| **Approvers** | Executive Leadership, CTO, Lead Architect |
-| **Version** | 1.0.0 |
-| **Status** | Approved |
-| **Priority** | P0 |
-| **Created Date** | 2026-08-23 |
-| **Last Reviewed Date** | 2026-08-23 |
-| **Quality Gate** | QG-STR-01 (Strategy Aligned) |
-| **Assurance Score** | 98/100 |
-| **Dependencies** | None (Root Strategy Artifact) |
+| Document ID | STR-001 |
+| Owner | Founder / Chief Product Officer |
+| Version | 2.0.0 |
+| Status | Active |
+| Priority | P0 |
+| Last Reviewed | 2026-08-30 |
+| Governance | GOV-002 |
 
----
+## 1. Vision
 
-## 1. Executive Summary
+**Zyvoriq is an Autonomous Creative Operating System.**
 
-Zyvoriq is an **AI-Native Idea-to-Impact Platform** designed to orchestrate the entire lifecycle of high-trust, humanized multimodal content—transforming raw concepts into validated, channel-optimized digital assets (video, neural audio, technical code, and interactive diagrams) with enterprise-grade quality assurance and autonomous policy governance.
+It turns an objective into successful media by deciding what should be created, orchestrating the best available models and tools, maintaining semantic/visual/audio continuity, editing the production, verifying quality and evidence, repairing defects, adapting for distribution, and learning from real outcomes.
 
-In the current paradigm, generative AI tools produce disconnected drafts fraught with hallucinations, generic tone, and high compliance risks. Zyvoriq solves this by combining multi-agent autonomous synthesis with the **Veritas Quality Matrix** (multi-engine consensus, fact verification, and tone fidelity) and dynamic **Autonomy Policy Guardrails**, empowering teams to scale production from idea to global impact with zero compromise on brand safety or editorial voice.
+The near-term wedge is **excellent short-form social video**: one brief → one genuinely publishable 30–60 second Reel/Short without manual stitching. The architecture must remain extensible to longer video, campaigns and additional content formats.
 
----
+## 2. Category promise
 
-## 2. Problem & Market Opportunity
+> Give Zyvoriq the outcome you want. Zyvoriq determines the strongest creative path, produces it with interchangeable providers, preserves your identity and intent, verifies the assembled result, repairs what is wrong, and learns what works.
 
-### 2.1 The Content Production Crisis
-1. **The "Garbage In, Slop Out" Epidemic**: Generative AI has dropped the marginal cost of text generation to zero, creating an overwhelming flood of generic, low-signal content ("AI slop") that damages brand trust.
-2. **Disconnected Tool Silos**: A modern multimedia campaign requires 6–8 distinct tools: a scriptwriter (LLM), voiceover generator, video rendering tool, graphic designer, code runner, compliance checker, and social scheduler. Context is fragmented at every handoff.
-3. **Absence of Systematic Assurance**: Traditional platforms offer no built-in verification for factual accuracy, compliance, brand tone alignment, or multi-model cross-validation prior to publication.
-4. **Binary Autonomy**: Existing tools are either purely manual copilot editors or opaque "black box" autogenerators with no fine-grained approval guardrails.
+Zyvoriq is not defined by whichever video, voice, music or language model is strongest in a given quarter. The durable product is the intelligence and production control plane above those models.
 
-### 2.2 The Market Opportunity
-The global content creation, marketing automation, and multimodal generative AI market is expanding rapidly, transitioning from single-prompt chat interfaces to **autonomous multi-agent workflow engines**. Zyvoriq occupies the premier position at the intersection of **Multimodal Generation**, **Automated Quality Assurance**, and **Autonomous Policy Governance**.
+## 3. Governing objective
 
----
+Maximize **successful creative outcomes** while minimizing user effort, creative sameness, risk, cost, latency and loss of creator identity.
 
-## 3. Future-State User Experience
+This means the system may recommend not generating, shortening a piece, changing format, reusing an existing asset, qualifying an unsupported claim, or seeking approval rather than blindly producing more media.
 
-When interacting with Zyvoriq:
-1. **Idea Ingestion**: A creator, marketer, or engineer enters a single thesis, technical spec, or voice prompt into the **Director Console**.
-2. **Collaborative Agent Orchestration**: A swarm of specialized agents (Research, Scripting, Visual Storyboarding, Voice Casting, Code Verification) decomposes the objective into an executable dependency graph.
-3. **Veritas Quality Gate Evaluation**: Before any asset is rendered, it passes through the Veritas matrix, receiving automated scores for Factuality (≥95%), Brand Voice Alignment (≥92%), Safety/Compliance (100%), and Multi-Engine Consensus.
-4. **Adaptive Multimodal Synthesis**: Assets are compiled across formats:
-   - High-fidelity cinematic video briefs and social shorts.
-   - 5-band neural audio with localized accents and emotional tract convolution.
-   - Executable, lint-checked code artifacts and interactive architecture diagrams.
-5. **Policy-Governed Omnichannel Deployment**: Assets are scheduled, localized, and published across YouTube, LinkedIn, X, Substack, and developer portals under the user's defined autonomy tier.
-6. **Telemetry & Continuous Learning**: Real-time engagement telemetry feeds back into the user's **Persona & Memory Vault**, optimizing future generation iterations.
+## 4. Strategic objectives
 
----
+- **OBJ-001 — Publishability:** Move from objective/brief to publishable media with minimal substantive human repair.
+- **OBJ-002 — Model independence:** Upstream model improvements should improve Zyvoriq rather than obsolete it.
+- **OBJ-003 — Identity and intent:** Preserve creator identity, brand intent, audience value and locked semantics across generation and repair.
+- **OBJ-004 — Evidence-based quality:** Verify the assembled production and repair the smallest affected unit; never equate provider success with product completion.
+- **OBJ-005 — Outcome learning:** Improve future creative decisions from real behavior and performance without optimizing only vanity engagement.
 
-## 4. Target User Archetypes
+## 5. Zyvoriq Constitution
 
-```
-┌───────────────────────────┬─────────────────────────────────────────────────────────────┐
-│ Archetype                 │ Primary Need & Value Delivered                              │
-├───────────────────────────┼─────────────────────────────────────────────────────────────┤
-│ 1. Enterprise Marketing   │ Scalable multi-channel campaigns with guaranteed brand tone │
-│    & Brand Teams          │ and strict enterprise compliance guardrails.                │
-│                           │                                                             │
-│ 2. DevRel & Technical     │ High-accuracy technical tutorials, interactive code demos,  │
-│    Creators               │ and architectural diagrams with zero code hallucination.    │
-│                           │                                                             │
-│ 3. Independent Creators   │ 10x production leverage to generate video, audio, podcasts, │
-│    & Media Studios        │ and newsletters from a single core creative thesis.         │
-│                           │                                                             │
-│ 4. Founders & Executives  │ High-leverage executive briefs, thought leadership, and     │
-│                           │ company updates translated into multi-format assets.        │
-└───────────────────────────┴─────────────────────────────────────────────────────────────┘
-```
+Every subsystem follows these principles:
 
----
+1. Preserve explicit user intent.
+2. Protect identity, rights, privacy and safety.
+3. Never fabricate evidence, provenance, synchronization or verification.
+4. Never mutate locked semantics/assets silently.
+5. Prefer authenticity over synthetic perfection.
+6. Optimize long-term outcomes, not engagement alone.
+7. Preserve creator distinctiveness; resist AI homogenization.
+8. Repair the smallest affected dependency closure.
+9. Minimize unnecessary generation and retries.
+10. Explain material decisions and repairs.
+11. Quantify uncertainty where it matters.
+12. Escalate low-confidence/high-risk decisions.
+13. Do not mark work `READY`, `VERIFIED` or `COMPLETED` without required artifacts and gates.
+14. Know when not to generate.
 
-## 5. Category Definition
+## 6. Decision priority when objectives conflict
 
-**Category:** *Autonomous Content Intelligence & Multimodal Assurance Platform (ACIA)*.
+1. Safety / identity / legal / rights.
+2. Factual integrity.
+3. Explicit user intent.
+4. Locked project constraints.
+5. Brand requirements.
+6. Audience value.
+7. Creative quality and taste.
+8. Business objective.
+9. Performance optimization.
+10. Cost and latency.
 
-Zyvoriq defines a new software category that unifies:
-- Multi-agent generative synthesis.
-- Multi-engine consensus verification (Veritas).
-- Enterprise policy-based autonomy controls.
-- Continuous audience telemetry feedback loops.
+Lower priorities may not override hard constraints above them.
 
----
+## 7. Core defensible moats
 
-## 6. Strategic Differentiation & Core Moats
+1. **Production Manifest** — semantic source code for media.
+2. **Decision Engine** — chooses what should happen next.
+3. **Provider Router** — task-level model independence backed by telemetry.
+4. **Continuity Graph** — persistent character, environment, object, action, camera and cross-modal state.
+5. **Taste / Distinctiveness Engine** — contextual creative judgment rather than generic polish.
+6. **Quality Engine** — independent multimodal and boundary evaluation.
+7. **Repair Engine** — dependency-aware smallest-unit self-healing.
+8. **Creator DNA** — scoped, inspectable creator memory.
+9. **Brand DNA** — machine-enforceable brand and policy memory.
+10. **Audience DNA** — audience questions, fatigue, language and behavior.
+11. **Content Genome** — structured creative features joined to outcomes.
+12. **Evidence / Rights Engine** — claim, source, identity and usage traceability.
+13. **Economic Engine** — quality × cost × latency optimization.
+14. **Distribution Intelligence** — platform-native packaging and sequencing.
+15. **Outcome Learning Loop** — improvement from publish behavior and downstream results.
 
-```
-                     ┌──────────────────────────────┐
-                     │     Zyvoriq Strategic Moat   │
-                     └──────────────┬───────────────┘
-                                    │
-       ┌────────────────────────────┼────────────────────────────┐
-       ▼                            ▼                            ▼
-┌──────────────┐             ┌──────────────┐             ┌──────────────┐
-│   Veritas    │             │   Dynamic    │             │  Multi-Tier  │
-│   Quality    │             │   Persona    │             │   Autonomy   │
-│   Matrix     │             │ Memory Vault │             │  Governance  │
-└──────────────┘             └──────────────┘             └──────────────┘
-```
+## 8. Near-term focus and non-goals
 
-1. **The Veritas Quality Guarantee**: Unlike unvalidated wrappers, every asset includes a verifiable cryptographic Quality & Factuality certificate.
-2. **Deep Persona & Style Memory**: Zyvoriq learns stylistic nuances, vocabulary blacklist/whitelist, narrative rhythms, and visual branding guidelines per workspace.
-3. **Dynamic Autonomy Slider**: Seamlessly shifts workflows between *Supervised* (human approves every step), *Co-Pilot* (agent executes, human signs off final gates), and *Autonomous* (automated publish within pre-cleared confidence bounds).
-4. **Provider-Agnostic Model Routing**: Dynamically routes workloads to the frontier foundation model best suited for each modality (e.g., Gemini 2.5 Pro for deep reasoning, Veo 2 for video, Claude for copy nuance, DeepMind neural TTS for audio).
+### P0 focus
 
----
+`Brief → Script → Narration → Real Timing → Shot Plan → Continuity → Generation → Assembly → Audio Mix → Captions → Master Render → Whole-Reel QA → Boundary QA → Targeted Repair → READY`
 
-## 7. Core Product Principles
+### Deliberate non-goals for the current core
 
-1. **Truth Over Fluency**: A polished sentence containing a hallucination is a critical failure. Veritas validates before rendering.
-2. **Human in the Loop, by Choice**: Autonomy is a continuum, not a binary switch. Users retain cryptographic veto and audit rights.
-3. **Multimodal Native, Not Multi-Tab**: Code, audio, video, diagrams, and text are derived from a unified semantic graph rather than stitched together across disparate tools.
-4. **Zero-Egress Brand Privacy**: Customer proprietary data and fine-tuned persona vaults are never used to train third-party models.
-5. **Measurable Business Impact**: We do not measure success by tokens generated, but by publishing confidence, time-to-impact, and audience resonance.
+- Building proprietary foundation video, voice, music, image or general-purpose language models.
+- Becoming a frame-by-frame replacement for every professional NLE before semantic editing is excellent.
+- Claiming guaranteed factuality, copyright safety, quality or synchronization without evidence.
+- Optimizing solely for watch time or viral reach.
 
----
+## 9. North-star measures
 
-## 8. Strategic Boundaries & Explicit Non-Goals
+Primary: **Publishable First-Render Rate (PFRR)** — percentage of completed productions a user would publish without substantive manual correction.
 
-### In Scope (Core Focus)
-- End-to-end idea-to-asset synthesis (Video, Audio, Code, Diagrams, Written).
-- Real-time quality evaluation and auto-repair pipelines.
-- Multi-channel adaptation, scheduling, and distribution connectors.
-- Enterprise governance, RBAC, and policy audit logs.
+Strategic companion measures:
 
-### Explicit Out-of-Scope (Non-Goals)
-- **Generic Chatbot / Unstructured LLM Playground**: Zyvoriq is an orchestration engine, not a generic prompt box.
-- **Raw Video Editing Suite (NLE)**: Zyvoriq produces compiled, structured video sequences and storyboards; it does not replace Adobe Premiere or DaVinci Resolve for manual frame cutting.
-- **Ad Buying & Budget Management**: Zyvoriq distributes and tracks organic & sponsored content; it is not a DSP or programmatic ad bidding network.
+- cost per publishable minute;
+- human creative effort saved;
+- time to first publishable output;
+- targeted repair success;
+- regeneration/waste rate;
+- creator retention and publishing frequency;
+- objective-specific audience/business outcomes.
 
----
+Targets are defined in MET-001 and remain targets until measured with reproducible evidence.
 
-## 9. North Star Metric & Key Performance Indicators
+## 10. Source-of-truth chain
 
-### North Star Metric (NSM)
-> **High-Confidence Assets Published (HCAP)**: The weekly volume of multimodal assets generated and deployed with a Veritas Quality Score $\ge 90$ and zero manual rollbacks.
-
-### Supporting KPIs
-- **Time-to-Validated-Impact (TTVI)**: Reduction in hours from raw concept to published multimodal campaign (Target: $>80\%$ reduction vs baseline).
-- **Veritas First-Pass Yield (FPY)**: Percentage of generated assets meeting quality gates without requiring auto-repair loops (Target: $\ge 88\%$).
-- **Persona Fidelity Score**: User rating of brand voice consistency across channels (Target: $\ge 4.7 / 5.0$).
-- **7-Day Publish Retention**: Percentage of active workspaces that publish at least 2 verified assets per week (Target: $\ge 65\%$).
-
----
-
-## 10. Document Quality Gate Approval (QG-STR-01)
-
-| Gate Check | Evaluation Criterion | Result |
-| :--- | :--- | :--- |
-| **Completeness** | All 10 strategic dimensions articulated | **PASS** |
-| **Differentiation** | Clear boundary vs generic AI chat & NLE suites | **PASS** |
-| **Principle Integrity** | Actionable constraints provided for engineering & design | **PASS** |
-| **Traceability** | Serves as parent reference for BUS-001, RES-001, and PRD-000 | **PASS** |
-
-**Exit Decision:** `STRATEGY ALIGNED (PASS)`  
-**Sign-off:** *Chief Product Officer & Architecture Council (2026-08-23)*
+Canonical documentation starts at [docs/INDEX.md](../INDEX.md). Machine-readable requirement, architecture and delivery traceability is governed by [GOV-002](../governance/GOV-002_Traceability_Model.md).
