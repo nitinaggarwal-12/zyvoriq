@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Sparkles, Clapperboard, Captions, Mic2, Image as ImageIcon, Copy, Check, Instagram, Youtube, ChevronDown, Loader2, CircleAlert, Database, Film } from "lucide-react";
+import { ArrowLeft, Sparkles, Clapperboard, Captions, Mic2, Image as ImageIcon, Copy, Check, Instagram, Youtube, ChevronDown, Loader2, CircleAlert, Database, Film, AudioLines } from "lucide-react";
 import type { ReelProductionManifest } from "@/lib/reel/types";
 
 type StoredProduction = {
@@ -33,6 +33,7 @@ export function ReelStudio() {
   const [copied, setCopied] = useState(false);
   const [production, setProduction] = useState<StoredProduction | null>(null);
   const [building, setBuilding] = useState(false);
+  const [generatingNarration, setGeneratingNarration] = useState(false);
   const [error, setError] = useState("");
 
   const manifest = production?.manifest || null;
@@ -67,6 +68,32 @@ export function ReelStudio() {
       setError(err?.message || "Failed to create production");
     } finally {
       setBuilding(false);
+    }
+  };
+
+  const generateNarration = async () => {
+    if (!production) return;
+    setGeneratingNarration(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/reels/productions/${encodeURIComponent(production.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "generateNarration", expectedRevision: production.revision }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || "Narration generation failed");
+      setProduction(data.production);
+      setActiveTab("Scenes");
+    } catch (err: any) {
+      setError(err?.message || "Narration generation failed");
+      try {
+        const refresh = await fetch(`/api/reels/productions/${encodeURIComponent(production.id)}`, { cache: "no-store" });
+        const refreshed = await refresh.json();
+        if (refresh.ok && refreshed.success) setProduction(refreshed.production);
+      } catch {}
+    } finally {
+      setGeneratingNarration(false);
     }
   };
 
@@ -108,11 +135,19 @@ export function ReelStudio() {
             <Field label="Platform" value={platform} onChange={setPlatform} options={["Instagram Reels", "YouTube Shorts", "TikTok"]} />
           </div>
 
-          <button onClick={buildProduction} disabled={building || !topic.trim()} className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-3.5 text-sm font-black text-slate-950 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50">
+          <button onClick={buildProduction} disabled={building || generatingNarration || !topic.trim()} className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-3.5 text-sm font-black text-slate-950 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50">
             {building ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            {building ? "Building…" : "Build reel plan"}
+            {building ? "Building…" : production ? "Create new plan" : "Build reel plan"}
           </button>
-          <p className="mt-3 text-center text-[11px] leading-5 text-slate-600">Creates a persistent production manifest. It does not pretend audio or video has rendered.</p>
+
+          {production?.manifest.status === "SCRIPT_READY" && (
+            <button onClick={generateNarration} disabled={generatingNarration} className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-pink-300/25 bg-pink-300/10 py-3.5 text-sm font-black text-pink-100 transition hover:bg-pink-300/15 disabled:cursor-not-allowed disabled:opacity-50">
+              {generatingNarration ? <Loader2 className="h-4 w-4 animate-spin" /> : <AudioLines className="h-4 w-4" />}
+              {generatingNarration ? "Generating + aligning…" : "Generate real narration"}
+            </button>
+          )}
+
+          <p className="mt-3 text-center text-[11px] leading-5 text-slate-600">The manifest is persisted first. Audio/video states advance only when real artifacts and timing evidence exist.</p>
           {error && <div className="mt-4 flex gap-2 rounded-xl border border-red-400/20 bg-red-400/5 p-3 text-xs leading-5 text-red-200"><CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />{error}</div>}
         </aside>
 
@@ -126,7 +161,7 @@ export function ReelStudio() {
           <div className="p-5 sm:p-8">
             {activeTab === "Script" && <ScriptPanel script={script} copied={copied} onCopy={copyText} />}
             {activeTab === "Scenes" && <ListPanel icon={Clapperboard} eyebrow="CANONICAL SHOT PLAN" title={manifest ? `${manifest.shots.length} editorial shots` : "Build a plan to create shots"} items={scenes.length ? scenes : ["No persisted shot plan yet."]} />}
-            {activeTab === "Captions" && <ListPanel icon={Captions} eyebrow="DRAFT CAPTION SOURCE" title="Final timing waits for real narration" items={captions.length ? captions : ["Captions are not marked synchronized until real audio alignment exists."]} />}
+            {activeTab === "Captions" && <ListPanel icon={Captions} eyebrow={manifest?.audio.timingSource === "actual-alignment" ? "ALIGNED NARRATION SOURCE" : "DRAFT CAPTION SOURCE"} title={manifest?.audio.timingSource === "actual-alignment" ? `${manifest.audio.wordTimings?.length || 0} words aligned to the waveform` : "Final timing waits for real narration"} items={captions.length ? captions : ["Captions are not marked synchronized until real audio alignment exists."]} />}
             {activeTab === "Cover" && <CoverPanel topic={topic} />}
           </div>
         </section>
@@ -152,12 +187,15 @@ export function ReelStudio() {
             <div className="mt-4 space-y-3 text-sm">
               <Status icon={Database} label="Manifest" value={production ? `Persisted r${production.revision}` : "Not created"} />
               <Status icon={Film} label="State" value={manifest?.status || "DRAFT"} />
-              <Status icon={Mic2} label="Narration" value={manifest?.audio.narrationUrl ? "Artifact attached" : "Pending"} />
-              <Status icon={Captions} label="Timing" value={manifest?.audio.timingSource === "actual-alignment" ? "Aligned" : "Pending"} />
+              <Status icon={Mic2} label="Narration" value={manifest?.audio.narrationUrl ? `${manifest.audio.actualDurationSec?.toFixed(2)}s` : "Pending"} />
+              <Status icon={Captions} label="Timing" value={manifest?.audio.timingSource === "actual-alignment" ? `${manifest.audio.wordTimings?.length || 0} words aligned` : "Pending"} />
+              <Status icon={AudioLines} label="Voice model" value={manifest?.audio.model || "Pending"} />
               <Status icon={Instagram} label="Primary" value={manifest?.platform || platform} />
               <Status icon={Youtube} label="Shorts variant" value="Not generated" />
             </div>
-            {production && <div className="mt-5 rounded-xl border border-amber-300/15 bg-amber-300/5 p-3 text-[11px] leading-5 text-amber-100/70">Next required production step: real narration synthesis + actual timing alignment. Video generation remains intentionally unclaimed until artifacts exist.</div>}
+            {production && manifest?.status === "SCRIPT_READY" && <div className="mt-5 rounded-xl border border-amber-300/15 bg-amber-300/5 p-3 text-[11px] leading-5 text-amber-100/70">Next required step: synthesize a real narration waveform and transcribe it for word-level timing.</div>}
+            {production && manifest?.status === "SHOTS_PLANNED" && <div className="mt-5 rounded-xl border border-emerald-300/15 bg-emerald-300/5 p-3 text-[11px] leading-5 text-emerald-100/70">Narration is real and aligned. The shot timeline was rebuilt against its actual duration. Video assets are still pending.</div>}
+            {production && manifest?.status === "FAILED" && <div className="mt-5 rounded-xl border border-red-300/15 bg-red-300/5 p-3 text-[11px] leading-5 text-red-100/70">The last production step failed. No downstream stage has been marked complete.</div>}
           </div>
         </aside>
       </main>
@@ -179,10 +217,10 @@ function ListPanel({ icon: Icon, eyebrow, title, items }: { icon: React.Componen
 
 function CoverPanel({ topic }: { topic: string }) {
   const base = topic.trim() || "YOUR NEXT REEL";
-  const options = [base.toUpperCase(), `WHY ${base.toUpperCase()}`, `STOP IGNORING THIS`];
+  const options = [base.toUpperCase(), `WHY ${base.toUpperCase()}`, "STOP IGNORING THIS"];
   return <div><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05] text-pink-200"><ImageIcon className="h-5 w-5" /></div><div className="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-pink-300">COVER DIRECTIONS</div><h2 className="mt-2 text-3xl font-black tracking-[-0.035em] text-white">Creative options, not generated assets yet.</h2><div className="mt-8 grid gap-4 md:grid-cols-3">{options.map((title, i) => <div key={`${i}-${title}`} className="aspect-[4/5] rounded-[22px] border border-white/10 bg-[radial-gradient(circle_at_70%_20%,rgba(244,114,182,0.24),transparent_25%),linear-gradient(150deg,#17111b,#0b1015)] p-5"><div className="text-xs font-bold text-slate-500">OPTION {i + 1}</div><div className="mt-20 text-xl font-black leading-tight tracking-[-0.035em] text-white">{title}</div></div>)}</div></div>;
 }
 
 function Status({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string }) {
-  return <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2 text-slate-400"><Icon className="h-4 w-4" /><span>{label}</span></div><span className="max-w-[150px] truncate text-xs font-semibold text-slate-500">{value}</span></div>;
+  return <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2 text-slate-400"><Icon className="h-4 w-4" /><span>{label}</span></div><span className="max-w-[155px] truncate text-xs font-semibold text-slate-500">{value}</span></div>;
 }
