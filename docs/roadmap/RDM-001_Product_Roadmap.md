@@ -1,55 +1,88 @@
-# RDM-001 — Outcome-Based Product Roadmap
+# RDM-001 — Outcome-Gated Product Roadmap
 
-| Metadata Attribute | Value |
+| Attribute | Value |
 | :--- | :--- |
-| **Document ID** | RDM-001 |
-| **Title** | Zyvoriq Outcome-Driven Product Roadmap (V1 → V1.5 → V2) |
-| **Owner** | Chief Product Officer |
-| **Approvers** | Executive Leadership, CTO |
-| **Version** | 1.0.0 |
-| **Status** | Approved |
-| **Priority** | P0 |
-| **Created Date** | 2026-08-23 |
-| **Last Reviewed Date** | 2026-08-23 |
-| **Quality Gate** | QG-RDM-01 (Roadmap Aligned) |
-| **Assurance Score** | 98/100 |
-| **Parent Reference** | STR-001, SCP-001 |
+| Document ID | RDM-001 |
+| Owner | Product / Engineering Leadership |
+| Version | 2.0.0 |
+| Status | Active |
+| Priority | P0 |
+| Parents | STR-001, PRD-000 |
 
----
+This roadmap is **exit-criteria driven**, not date-promise driven. A later release does not compensate for an incomplete earlier production invariant.
 
-## 1. Roadmap Milestones & Outcome Targets
+## REL-01 — Production Core
 
-```
-Q3 2026: V1 (MVP Foundation)       Q4 2026: V1.5 (Pro Automation)     Q1 2027: V2 (Enterprise Swarm)
-┌──────────────────────────────┐  ┌──────────────────────────────┐  ┌──────────────────────────────┐
-│ • Director Swarm Synthesis   │  │ • Persona Memory Vault Tuning│  │ • Custom Multi-Agent Builder │
-│ • Veritas Quality 5-Axis QA  │──► • Multi-Lingual Neural Dub   │──► • Enterprise SAML / SSO / VPC│
-│ • 4 Core Modalities Output   │  │ • In-Browser Asset Canvas    │  │ • Fine-Tuned Tenant Models   │
-│ • 1-Click Publishing (4 Chan)│  │ • Webhook Event Architecture │  │ • Marketplace Ecosystem      │
-└──────────────────────────────┘  └──────────────────────────────┘  └──────────────────────────────┘
-```
+**Outcome:** one brief → real, persisted 30–60 second Reel without manual stitching.
 
----
+Includes canonical manifest/state, durable jobs/assets, narration master/real timing, shot planning, provider contract, dynamic assembly/audio mix, final render and truthful Studio progress.
 
-## 2. Detailed Milestone Deliverables
+**Exit:** real master artifact exists/decodes, requested timeline is valid, status is truthful and restart/retry does not lose completed independent work.
 
-### Milestone 1: V1 Foundation (Target: Q3 2026)
-- **Outcome**: Enable $< 45\text{min}$ idea-to-publish loop with $\ge 92$ Veritas score.
-- **Key Epics**: `EPIC-DIR-01` (Director Console), `EPIC-VER-01` (Veritas Matrix), `EPIC-STU-01` (Multimodal Studio), `EPIC-PUB-01` (Social Connectors).
+## REL-02 — Continuity
 
-### Milestone 2: V1.5 Pro Automation (Target: Q4 2026)
-- **Outcome**: Double recurring publish retention through automated style memory adaptation.
-- **Key Epics**: `EPIC-MEM-01` (Persona Memory Vault), `EPIC-DUB-01` (Neural Dubbing in 30+ Languages), `EPIC-API-01` (Developer SDK).
+**Outcome:** multi-shot output feels like one production rather than independent model calls.
 
-### Milestone 3: V2 Enterprise Swarm (Target: Q1 2027)
-- **Outcome**: Land $50k+ ARR enterprise contracts with full compliance and security certifications.
-- **Key Epics**: `EPIC-ENT-01` (Enterprise SSO & RBAC), `EPIC-SOV-01` (Sovereign VPC Deployments), `EPIC-MKT-01` (Custom Agent Marketplace).
+Includes character/environment/object/action/camera/emotion state, dependency-aware generation and reference conditioning where supported.
 
----
+**Exit:** continuity evidence is captured at dependent boundaries and no required state is silently discarded between shots.
 
-## 3. Document Sign-off (QG-RDM-01)
+## REL-03 — Quality & Repair
 
-- [x] Phased outcome targets mapped to engineering epics.
-- [x] Measurable release success criteria established for each milestone.
+**Outcome:** Zyvoriq watches/listens to the assembled Reel, identifies blocking defects and repairs the minimum affected scope.
 
-**Exit Status:** `ROADMAP APPROVED (PASS)`
+Includes asset QA, whole-Reel QA, boundary audits, cross-modal checks, repair dependency invalidation and re-audit.
+
+**Exit:** blocking defects prevent READY; targeted repair preserves locks/unaffected artifacts.
+
+## REL-04 — Creator Experience
+
+**Outcome:** creators control sophisticated productions without requiring a traditional NLE for common edits.
+
+Includes semantic editing, locks/intent locks, branching, restore points, semantic diffs and clearer quality explanations.
+
+## REL-05 — Creative Intelligence
+
+**Outcome:** Zyvoriq makes better creative decisions, not just better renders.
+
+Includes brief intelligence, diverse concept search, hook/narrative reasoning, contextual taste, feasibility, retention signals, anti-overproduction and anti-homogenization.
+
+## REL-06 — Personalization
+
+**Outcome:** output becomes recognizably specific to the creator/brand/audience while memories remain scoped and correctable.
+
+Includes Creator DNA, Brand DNA, Audience DNA, persona separation, negative preferences, confidence/recency and memory controls.
+
+## REL-07 — Evidence, Rights & Enterprise Trust
+
+**Outcome:** serious organizations can understand claims, rights, provenance, policy decisions and approval state.
+
+Includes evidence/freshness, visual-claim checks, identity/media rights metadata, provenance, policy-as-code, role/approval foundations and tenant controls.
+
+## REL-08 — Distribution
+
+**Outcome:** one semantic production generates platform-native variants and can move into approved publishing workflows.
+
+Includes Instagram/Shorts/TikTok/LinkedIn adaptation, localization foundations, device/platform preflight and distribution connectors.
+
+## REL-09 — Performance Learning
+
+**Outcome:** future content measurably improves from real publish behavior/outcomes.
+
+Includes Content Genome, experiment discipline, causal-confidence controls, portfolio/series intelligence, audience feedback and content inventory/reuse.
+
+## REL-10 — Autonomous Campaign Director
+
+**Outcome:** user supplies a business/creator objective and Zyvoriq plans a coherent content portfolio/campaign subject to autonomy policy and approval gates.
+
+## REL-11 — Platform & Ecosystem
+
+**Outcome:** external teams can build on Zyvoriq's control plane.
+
+Includes stable SDK/API surfaces, semantic recipes, interoperability, marketplace governance and potential Quality/Router/Continuity services.
+
+## Prioritization rule
+
+Do not pull REL-04+ work forward if it hides incomplete REL-01–03 correctness. Homepage polish, extra modalities and marketplace breadth are lower priority than end-to-end production, continuity, quality and repair.
+
+Detailed active epics/stories are in [DEL-001](../delivery/DEL-001_Backlog_Plan.md); machine-readable release mappings are in `docs/governance/traceability.json`.
