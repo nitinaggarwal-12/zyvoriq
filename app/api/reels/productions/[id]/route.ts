@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { reelProductionService } from "@/lib/reel/productionService";
 import { operationKey, reelOperationQueue } from "@/lib/reel/operationQueue";
+import type { ReelOperation } from "@/lib/reel/operationQueue";
 import type { ReelProductionStatus } from "@/lib/reel/types";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +20,7 @@ export async function GET(
     const { id } = await context.params;
     const production = await reelProductionService.get(id);
     if (!production) return NextResponse.json({ success: false, error: "Production not found" }, { status: 404 });
-    let operations = [];
+    let operations: ReelOperation[] = [];
     try { operations = await reelOperationQueue.latestForProduction(id, 12); } catch {}
     return NextResponse.json({ success: true, production, operations }, { headers: { "Cache-Control": "no-store" } });
   } catch (error: any) {
@@ -57,12 +58,7 @@ export async function PATCH(
         manifestRevision: current.revision,
         fingerprint: fingerprint({ script: current.manifest.masterScript, tone: current.manifest.tone }),
       });
-      const operation = await reelOperationQueue.enqueue({
-        productionId: id,
-        kind: "NARRATION",
-        idempotencyKey,
-        payload: { manifestRevision: current.revision },
-      });
+      const operation = await reelOperationQueue.enqueue({ productionId: id, kind: "NARRATION", idempotencyKey, payload: { manifestRevision: current.revision } });
       return NextResponse.json({ success: true, queued: true, operation, production: current }, { status: 202 });
     }
 
@@ -94,13 +90,7 @@ export async function PATCH(
         manifestRevision: current.revision,
         fingerprint: fingerprint({ prompt: shot.generationPrompt, duration: shot.generationDurationSec, modelTier, dependencyEvidence }),
       });
-      const operation = await reelOperationQueue.enqueue({
-        productionId: id,
-        kind: "SHOT",
-        targetId: shot.id,
-        idempotencyKey,
-        payload: { manifestRevision: current.revision, modelTier },
-      });
+      const operation = await reelOperationQueue.enqueue({ productionId: id, kind: "SHOT", targetId: shot.id, idempotencyKey, payload: { manifestRevision: current.revision, modelTier } });
       return NextResponse.json({ success: true, queued: true, operation, production: current, shotId: shot.id }, { status: 202 });
     }
 
