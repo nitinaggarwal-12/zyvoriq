@@ -32,6 +32,19 @@ async function ensureTables() {
   return pool;
 }
 
+async function getControl(productionId: string): Promise<ProductionControl | null> {
+  const pool = await ensureTables();
+  const result = await pool.query(`SELECT * FROM reel_production_controls WHERE production_id=$1`, [productionId]);
+  if (!result.rows[0]) return null;
+  const row = result.rows[0];
+  return {
+    productionId: row.production_id,
+    generationToken: row.generation_token,
+    cancelledAt: row.cancelled_at ? new Date(row.cancelled_at).toISOString() : undefined,
+    supersededBy: row.superseded_by || undefined,
+  };
+}
+
 export interface ProductionControl {
   productionId: string;
   generationToken: string;
@@ -51,16 +64,10 @@ export const reelProductionControl = {
       [productionId, generationToken]
     );
     const row = result.rows[0];
-    return { productionId: row.production_id, generationToken: row.generation_token, cancelledAt: row.cancelled_at?.toISOString?.(), supersededBy: row.superseded_by || undefined };
-  },
-
-  async get(productionId: string): Promise<ProductionControl | null> {
-    const pool = await ensureTables();
-    const result = await pool.query(`SELECT * FROM reel_production_controls WHERE production_id=$1`, [productionId]);
-    if (!result.rows[0]) return null;
-    const row = result.rows[0];
     return { productionId: row.production_id, generationToken: row.generation_token, cancelledAt: row.cancelled_at ? new Date(row.cancelled_at).toISOString() : undefined, supersededBy: row.superseded_by || undefined };
   },
+
+  get: getControl,
 
   async cancel(productionId: string, supersededBy?: string) {
     const pool = await ensureTables();
@@ -80,7 +87,7 @@ export const reelProductionControl = {
   },
 
   async requireActive(productionId: string) {
-    const control = await this.get(productionId);
+    const control = await getControl(productionId);
     if (!control) throw new Error(`Production ${productionId} has no durable control record`);
     if (control.cancelledAt) throw new Error(`Production ${productionId} is cancelled${control.supersededBy ? ` and superseded by ${control.supersededBy}` : ""}`);
     return control;
@@ -98,13 +105,16 @@ export const reelProductionControl = {
     if (!result.rows[0]) return { healthy: false, reason: "no_worker_heartbeat" as const };
     const row = result.rows[0];
     const ageSec = Number(row.age_sec || 0);
+    const metadata = row.metadata_json || {};
+    const fresh = ageSec <= maxAgeSec;
+    const ready = metadata.ready !== false && Boolean(metadata.assetRootConfigured) && Boolean(metadata.geminiConfigured) && Boolean(metadata.ffmpeg) && Boolean(metadata.ffprobe);
     return {
-      healthy: ageSec <= maxAgeSec,
+      healthy: fresh && ready,
       workerId: String(row.worker_id),
       heartbeatAt: new Date(row.heartbeat_at).toISOString(),
       ageSec: Number(ageSec.toFixed(1)),
-      metadata: row.metadata_json || {},
-      reason: ageSec <= maxAgeSec ? undefined : "stale_worker_heartbeat",
+      metadata,
+      reason: !fresh ? "stale_worker_heartbeat" : !ready ? "worker_prerequisites_unavailable" : undefined,
     };
   },
 };
