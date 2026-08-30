@@ -101,13 +101,17 @@ for (const gate of registry.qualityGates || []) {
   requireRefs(gate.id, "storyIds", stories);
 }
 
+// A requirement is traceable when it is refined by a child requirement or mapped to a
+// component/epic/story/gate. This lets business requirements sit above functional/NFR work
+// without forcing every engineering epic to repeat the business requirement ID.
 const mappedRequirements = new Set();
+for (const req of registry.requirements || []) for (const id of req.parentIds || []) mappedRequirements.add(id);
 for (const component of registry.components || []) for (const id of component.requirementIds || []) mappedRequirements.add(id);
 for (const epic of registry.epics || []) for (const id of epic.requirementIds || []) mappedRequirements.add(id);
 for (const story of registry.stories || []) for (const id of story.requirementIds || []) mappedRequirements.add(id);
 for (const gate of registry.qualityGates || []) for (const id of gate.requirementIds || []) mappedRequirements.add(id);
 for (const req of registry.requirements || []) {
-  if (!mappedRequirements.has(req.id)) error(`${req.id} is not mapped to a component, epic, story or quality gate`);
+  if (!mappedRequirements.has(req.id)) error(`${req.id} has no child requirement or implementation/quality mapping`);
 }
 
 const epicStoryCount = new Map((registry.epics || []).map(e => [e.id, 0]));
@@ -139,7 +143,6 @@ function validateRelativeMarkdownLinks(file) {
 validateRelativeMarkdownLinks("docs/INDEX.md");
 for (const doc of registry.documents || []) validateRelativeMarkdownLinks(doc.file);
 
-// Detect dependency cycles among epics and stories. Cycles make execution order impossible.
 function detectCycles(items, dependencyField) {
   const ids = new Set(items.map(x => x.id));
   const visiting = new Set();
