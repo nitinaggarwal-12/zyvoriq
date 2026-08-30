@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { reelProductionService } from "@/lib/reel/productionService";
 import { generateAlignedNarration } from "@/lib/reel/geminiNarration";
 import { generateProductionShot } from "@/lib/reel/veoProduction";
+import { renderNarratedRoughCut } from "@/lib/reel/roughCutRenderer";
 import { deleteAsset } from "@/lib/reel/assetStore";
 import type { ReelProductionStatus, WordTiming } from "@/lib/reel/types";
 
@@ -89,14 +90,10 @@ export async function PATCH(
           .filter(s => Boolean(s.asset?.videoUrl) && ["GENERATED", "PASSED"].includes(s.status))
           .map(s => s.id)
       );
-      const shot = current.manifest.shots.find(s =>
-        s.status === "PLANNED" && s.dependsOnShotIds.every(dep => completedIds.has(dep))
-      );
+      const shot = current.manifest.shots.find(s => s.status === "PLANNED" && s.dependsOnShotIds.every(dep => completedIds.has(dep)));
       if (!shot) {
         const remaining = current.manifest.shots.filter(s => s.status === "PLANNED");
-        if (remaining.length === 0) {
-          return NextResponse.json({ success: true, production: current, generated: null, message: "No planned shots remain." });
-        }
+        if (remaining.length === 0) return NextResponse.json({ success: true, production: current, generated: null, message: "No planned shots remain." });
         return NextResponse.json({ success: false, error: "No shot is currently eligible; continuity dependencies are unresolved." }, { status: 409 });
       }
 
@@ -127,6 +124,33 @@ export async function PATCH(
           try { await deleteAsset(generated.assetKey); } catch {}
         }
         throw generationError;
+      }
+    }
+
+    if (action === "renderNarratedRoughCut") {
+      const current = await reelProductionService.get(id);
+      if (!current) return NextResponse.json({ success: false, error: "Production not found" }, { status: 404 });
+      if (current.manifest.status !== "ROUGH_CUT_READY") {
+        return NextResponse.json({ success: false, error: `Narrated rough-cut render requires ROUGH_CUT_READY; production is ${current.manifest.status}` }, { status: 409 });
+      }
+      if (expectedRevision !== undefined && expectedRevision !== current.revision) {
+        return NextResponse.json({ success: false, error: `Production changed concurrently (expected revision ${expectedRevision}, found ${current.revision})` }, { status: 409 });
+      }
+
+      let rendered: Awaited<ReturnType<typeof renderNarratedRoughCut>> | null = null;
+      try {
+        rendered = await renderNarratedRoughCut(current.manifest);
+        const production = await reelProductionService.attachNarratedRoughCut({
+          id,
+          output: rendered.output,
+          expectedRevision: current.revision,
+        });
+        return NextResponse.json({ success: true, production, rendered: rendered.output });
+      } catch (renderError) {
+        if (rendered?.assetKey) {
+          try { await deleteAsset(rendered.assetKey); } catch {}
+        }
+        throw renderError;
       }
     }
 
@@ -168,7 +192,7 @@ export async function PATCH(
     return NextResponse.json({ success: false, error: `Unsupported action: ${action}` }, { status: 400 });
   } catch (error: any) {
     const message = error?.message || "Failed to update production";
-    const conflict = message.includes("concurrently") || message.includes("requires SCRIPT_READY") || message.includes("not allowed");
+    const conflict = message.includes("concurrently") || message.includes("requires SCRIPT_READY") || message.includes("not allowed") || message.includes("requires ROUGH_CUT_READY");
     return NextResponse.json({ success: false, error: message }, { status: conflict ? 409 : 400 });
   }
 }
