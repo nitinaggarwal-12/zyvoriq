@@ -8,7 +8,8 @@
     "docs:validate": "node scripts/governance/validate_docs_traceability.mjs",
     "check": "npm run guard:legacy && npm run docs:validate && next build",
     "build": "npm run guard:legacy && next build",
-    "start": "next start -H 0.0.0.0 -p ${PORT:-3000}",
+    "worker:reels": "node scripts/reel_worker.mjs",
+    "start": "sh -c 'node scripts/reel_worker.mjs & exec next start -H 0.0.0.0 -p ${PORT:-3000}'",
     "test:e2e": "node scripts/cloudtop_puppeteer_remote.js",
     "test:sprints": "node scripts/e2e/test_all_sprints.mjs"
   },
