@@ -20,7 +20,7 @@ export async function GET(
     const { key } = await context.params;
     const assetKey = key.map(decodeURIComponent).join("/");
     const data = await readAsset(assetKey);
-    return new NextResponse(data, {
+    return new Response(new Uint8Array(data), {
       status: 200,
       headers: {
         "Content-Type": contentType(assetKey),
