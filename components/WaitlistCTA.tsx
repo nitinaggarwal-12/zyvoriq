@@ -1,123 +1,37 @@
 "use client";
 
-import React, { useState } from "react";
-import { Sparkles, CheckCircle2, ArrowRight, ShieldCheck, Mail, User } from "lucide-react";
+import React from "react";
+import Link from "next/link";
+import { ArrowRight, Sparkles, CheckCircle2 } from "lucide-react";
 
 export function WaitlistCTA() {
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState("Chief Architect / CTO");
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email.includes("@")) {
-      setSubmitted(true);
-    }
-  };
-
   return (
-    <section id="waitlist" className="relative mx-auto max-w-8xl px-6 md:px-12 lg:px-16 py-16 lg:py-24">
-      {/* Background ambient glow */}
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <div className="h-[350px] w-[700px] rounded-full bg-gradient-to-r from-teal-500/20 via-emerald-500/15 to-indigo-500/20 blur-[120px]" />
-      </div>
-
-      <div className="relative rounded-3xl border border-slate-800 bg-obsidian-900/90 p-8 md:p-14 lg:p-16 backdrop-blur-2xl shadow-2xl overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-          {/* Left Column: Copy & Value Proposition */}
-          <div className="lg:col-span-7 space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-950/50 px-3.5 py-1 text-xs font-mono font-bold text-teal-300">
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>EARLY ACCESS INVITATION</span>
-            </div>
-
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
-              What Would You Create if the Production Friction Disappeared?
-            </h2>
-
-            <p className="text-base sm:text-lg text-slate-300 max-w-2xl leading-relaxed">
-              Join the private preview of Zyvoriq. Be among the first to deploy autonomous lifecycle intelligence, Veritas claim-level auto-repair, and native multi-modal publishing.
-            </p>
-
-            <div className="flex flex-wrap gap-4 pt-2 text-xs text-slate-400 font-mono">
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-4 w-4 text-teal-400" />
-                No Hallucination AI Guarantee
-              </span>
-              <span className="flex items-center gap-1.5">
-                <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                QGV-001 Quality Standard
-              </span>
-            </div>
-          </div>
-
-          {/* Right Column: Interactive Form */}
-          <div className="lg:col-span-5">
-            {submitted ? (
-              <div className="rounded-2xl border border-emerald-500/40 bg-emerald-950/40 p-8 text-center backdrop-blur-xl">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-300">
-                  <CheckCircle2 className="h-6 w-6" />
-                </div>
-                <h3 className="mt-4 text-xl font-bold text-white">Priority Access Reserved</h3>
-                <p className="mt-2 text-xs text-emerald-200">
-                  We've reserved your position in the upcoming cohort for <strong>{email}</strong> ({role}). Check your inbox shortly for our blueprint walkthrough.
-                </p>
+    <section id="waitlist" className="relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(236,72,153,0.12),transparent_34%),radial-gradient(circle_at_72%_35%,rgba(45,212,191,0.10),transparent_26%)]" />
+      <div className="relative mx-auto max-w-[1500px] px-6 py-20 md:px-10 lg:py-28">
+        <div className="overflow-hidden rounded-[36px] border border-white/10 bg-gradient-to-br from-white/[0.07] to-white/[0.025] p-8 sm:p-12 lg:p-16">
+          <div className="grid gap-10 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-sm font-semibold text-slate-300">
+                <Sparkles className="h-4 w-4 text-pink-300" />
+                Your next Reel can start with one sentence
               </div>
-            ) : (
-              <form
-                onSubmit={handleSubmit}
-                className="rounded-2xl border border-slate-800/90 bg-slate-950/90 p-6 sm:p-8 backdrop-blur-xl shadow-xl space-y-4"
-              >
-                <div>
-                  <label htmlFor="access-role" className="block text-xs font-mono font-bold uppercase text-slate-400 mb-1.5">
-                    Your Primary Role
-                  </label>
-                  <div className="relative">
-                    <select
-                      id="access-role"
-                      value={role}
-                      onChange={(e) => setRole(e.target.value)}
-                      className="w-full rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-xs font-semibold text-slate-200 outline-none transition-colors focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
-                    >
-                      <option>Chief Architect / CTO</option>
-                      <option>Founder / CEO</option>
-                      <option>Staff Engineer / Tech Lead</option>
-                      <option>Developer Relations / Evangelist</option>
-                      <option>Product Manager / Strategist</option>
-                    </select>
-                  </div>
-                </div>
+              <h2 className="mt-6 max-w-4xl text-4xl font-black tracking-[-0.045em] text-white sm:text-5xl lg:text-6xl">Stop staring at a blank timeline.</h2>
+              <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-400">Bring the idea. Zyvoriq helps shape the hook, script, visual beats, captions and variants so you can spend more time making the content feel like you.</p>
+              <div className="mt-7 flex flex-wrap gap-x-5 gap-y-3 text-sm text-slate-400">
+                {["Editable creative decisions", "Brand-aware output", "Short-form first", "Repurpose without copy-paste"].map((item) => (
+                  <span key={item} className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-teal-300" />{item}</span>
+                ))}
+              </div>
+            </div>
 
-                <div>
-                  <label htmlFor="access-email" className="block text-xs font-mono font-bold uppercase text-slate-400 mb-1.5">
-                    Work Email Address
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="access-email"
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="alex@company.io"
-                      className="w-full rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-xs text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 via-emerald-400 to-teal-500 py-3.5 text-xs font-black uppercase tracking-wider text-slate-950 shadow-lg shadow-teal-500/20 transition-all duration-200 hover:scale-[1.01] hover:shadow-teal-500/30 active:scale-[0.99]"
-                >
-                  <span>Request Priority Access</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </button>
-
-                <p className="text-center text-[10px] text-slate-500 font-mono">
-                  Guaranteed privacy • Zero synthetic spam • Encrypted credentials
-                </p>
-              </form>
-            )}
+            <div className="flex flex-col gap-3 sm:min-w-[250px]">
+              <Link href="/studio" className="group flex items-center justify-center gap-2 rounded-2xl bg-white px-6 py-4 text-sm font-black text-slate-950 transition hover:scale-[1.02] active:scale-[0.98]">
+                Create a Reel <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+              </Link>
+              <a href="#multimodal" className="flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.035] px-6 py-4 text-sm font-bold text-white transition hover:bg-white/[0.07]">Explore the workflow</a>
+              <p className="text-center text-xs leading-5 text-slate-600">No fake signup confirmation. Start with the product experience.</p>
+            </div>
           </div>
         </div>
       </div>
