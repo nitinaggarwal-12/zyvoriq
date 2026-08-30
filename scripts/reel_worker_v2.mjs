@@ -85,6 +85,40 @@ async function recoverLegacyAmbiguousTtsFailures() {
 }
 await recoverLegacyAmbiguousTtsFailures();
 
+async function recoverLegacyTranscriptMismatchFailures() {
+  const failed = await pool.query(`
+    SELECT id, production_id
+    FROM reel_operations
+    WHERE kind='NARRATION'
+      AND status='FAILED'
+      AND last_error LIKE 'Narration transcript mismatch:%'
+      AND result_json->>'stage'='AUDIO_PERSISTED'
+    ORDER BY updated_at ASC
+  `);
+  for (const row of failed.rows) {
+    await pool.query(`
+      UPDATE reel_operations
+      SET status='QUEUED', attempt=0, provider_operation_name='tts-audio-persisted',
+          last_error=NULL, lease_owner=NULL, lease_expires_at=NULL, updated_at=NOW()
+      WHERE id=$1
+    `, [row.id]);
+    const p = await pool.query(`SELECT revision, manifest_json FROM reel_productions WHERE id=$1`, [row.production_id]);
+    if (!p.rows[0]) continue;
+    const m = p.rows[0].manifest_json || {};
+    if (m.status === "FAILED") m.status = "AUDIO_GENERATING";
+    if (m.qa?.failures && Array.isArray(m.qa.failures)) {
+      m.qa.failures = m.qa.failures.filter(x => !String(x).startsWith("Narration transcript mismatch:"));
+    }
+    await pool.query(`
+      UPDATE reel_productions
+      SET revision=revision+1, manifest_json=$3::jsonb, updated_at=NOW()
+      WHERE id=$1 AND revision=$2
+    `, [row.production_id, Number(p.rows[0].revision), JSON.stringify(m)]);
+    console.log(`[reel-worker] recovered transcript mismatch operation ${row.id} from persisted audio`);
+  }
+}
+await recoverLegacyTranscriptMismatchFailures();
+
 async function publishHeartbeat() {
   await pool.query(`INSERT INTO reel_worker_heartbeats(worker_id,worker_role,metadata_json) VALUES($1,'reel-production',$2::jsonb)
     ON CONFLICT(worker_id) DO UPDATE SET heartbeat_at=NOW(),metadata_json=EXCLUDED.metadata_json`,
@@ -103,10 +137,36 @@ function wavFromPcm(pcm) { const h = Buffer.alloc(44), br = SAMPLE_RATE * CHANNE
 function findAudioData(v) { if (!v || typeof v !== "object") return null; for (const k of ["output_audio", "outputAudio"]) { const c = v[k]; if (c && typeof c.data === "string") return c.data; } if ((v.type === "audio" || v.mime_type === "audio/L16" || v.mimeType === "audio/L16") && typeof v.data === "string") return v.data; for (const c of Object.values(v)) { if (Array.isArray(c)) { for (const i of c) { const f = findAudioData(i); if (f) return f; } } else if (c && typeof c === "object") { const f = findAudioData(c); if (f) return f; } } return null; }
 function offsetToSec(v) { if (typeof v === "number" && Number.isFinite(v)) return v; if (typeof v === "string") { const n = Number.parseFloat(v.replace(/s$/i, "")); return Number.isFinite(n) ? n : null; } if (v && typeof v === "object") { const s = Number(v.seconds || 0), n = Number(v.nanos || v.nanoseconds || 0); if (Number.isFinite(s) && Number.isFinite(n)) return s + n / 1e9; } return null; }
 function extractWordTimings(v) { const out = []; const visit = n => { if (!n || typeof n !== "object") return; const s = offsetToSec(n.start_offset ?? n.startOffset), e = offsetToSec(n.end_offset ?? n.endOffset), w = n.word ?? n.text; if (typeof w === "string" && s !== null && e !== null) out.push({ word: w.trim(), startSec: Number(s.toFixed(6)), endSec: Number(e.toFixed(6)) }); for (const c of Object.values(n)) Array.isArray(c) ? c.forEach(visit) : (c && typeof c === "object" && visit(c)); }; visit(v); return out.filter(t => t.word && t.endSec >= t.startSec).sort((a, b) => a.startSec - b.startSec || a.endSec - b.endSec); }
-function normalizeWords(t) { return String(t).normalize("NFKC").toLowerCase().replace(/[’‘]/g, "'").replace(/[^\p{L}\p{N}']+/gu, " ").trim().split(/\s+/).filter(Boolean); }
+const NUMBER_WORDS = new Map(Object.entries({
+  zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
+  ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19,
+  twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90,
+}));
+function normalizeWords(t) {
+  const raw = String(t).normalize("NFKC").toLowerCase().replace(/[’‘]/g, "'").replace(/[^\p{L}\p{N}']+/gu, " ").trim().split(/\s+/).filter(Boolean);
+  const out = [];
+  for (let i = 0; i < raw.length; i++) {
+    let w = raw[i];
+    if (w === "can't") w = "cannot";
+    else if (w === "won't" || w === "wont") w = "willnot";
+    else if (w === "mustn't") w = "mustnot";
+    if (NUMBER_WORDS.has(w)) {
+      let n = NUMBER_WORDS.get(w);
+      if (n >= 20 && n % 10 === 0 && i + 1 < raw.length && NUMBER_WORDS.has(raw[i + 1])) {
+        const next = NUMBER_WORDS.get(raw[i + 1]);
+        if (next > 0 && next < 10) { n += next; i += 1; }
+      }
+      out.push(String(n));
+      if (raw[i + 1] === "percent") i += 1;
+    } else {
+      out.push(w);
+    }
+  }
+  return out;
+}
 function editDistance(a, b) { const p = Array.from({ length: b.length + 1 }, (_, i) => i); for (let i = 1; i <= a.length; i++) { const c = [i]; for (let j = 1; j <= b.length; j++) c[j] = Math.min(c[j - 1] + 1, p[j] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); for (let j = 0; j <= b.length; j++) p[j] = c[j]; } return p[b.length]; }
 function lcsLength(a, b) { const d = Array(b.length + 1).fill(0); for (const x of a) { let diag = 0; for (let j = 1; j <= b.length; j++) { const prior = d[j]; d[j] = x === b[j - 1] ? diag + 1 : Math.max(d[j], d[j - 1]); diag = prior; } } return d[b.length]; }
-function validateTranscript(expectedText, timings, durationSec) { let ps = -1, pe = -1; for (const t of timings) { if (!t.word || t.startSec < 0 || t.endSec < t.startSec || t.startSec + .001 < ps || t.endSec + .001 < pe || t.endSec > durationSec + .25) throw new Error("Narration timestamps failed structural validation"); ps = t.startSec; pe = t.endSec; } const expected = normalizeWords(expectedText), actual = normalizeWords(timings.map(t => t.word).join(" ")); if (!expected.length || !actual.length) throw new Error("Transcript verification has no comparable words"); const wer = editDistance(expected, actual) / expected.length, coverage = lcsLength(expected, actual) / expected.length; const critical = new Set(["no", "not", "never", "without", "cannot", "can't", "wont", "won't", "must", "mustn't"]); const counts = new Map(); for (const w of actual) counts.set(w, (counts.get(w) || 0) + 1); const missing = []; for (const w of expected.filter(w => critical.has(w) || /^\d+(?:[.,]\d+)?%?$/.test(w))) { const c = counts.get(w) || 0; if (c <= 0) missing.push(w); else counts.set(w, c - 1); } const v = { expectedWords: expected.length, actualWords: actual.length, wer: Number(wer.toFixed(4)), coverage: Number(coverage.toFixed(4)), passed: wer <= MAX_WER && coverage >= MIN_COVERAGE && missing.length === 0, missingCritical: missing }; if (!v.passed) throw new Error(`Narration transcript mismatch: WER ${v.wer}, coverage ${v.coverage}`); return v; }
+function validateTranscript(expectedText, timings, durationSec) { let ps = -1, pe = -1; for (const t of timings) { if (!t.word || t.startSec < 0 || t.endSec < t.startSec || t.startSec + .001 < ps || t.endSec + .001 < pe || t.endSec > durationSec + .25) throw new Error("Narration timestamps failed structural validation"); ps = t.startSec; pe = t.endSec; } const expected = normalizeWords(expectedText), actual = normalizeWords(timings.map(t => t.word).join(" ")); if (!expected.length || !actual.length) throw new Error("Transcript verification has no comparable words"); const wer = editDistance(expected, actual) / expected.length, coverage = lcsLength(expected, actual) / expected.length; const critical = new Set(["no", "not", "never", "without", "cannot", "can't", "wont", "won't", "must", "mustn't"]); const counts = new Map(); for (const w of actual) counts.set(w, (counts.get(w) || 0) + 1); const missing = []; for (const w of expected.filter(w => critical.has(w) || /^\d+(?:[.,]\d+)?%?$/.test(w))) { const c = counts.get(w) || 0; if (c <= 0) missing.push(w); else counts.set(w, c - 1); } const v = { expectedWords: expected.length, actualWords: actual.length, wer: Number(wer.toFixed(4)), coverage: Number(coverage.toFixed(4)), passed: wer <= MAX_WER && coverage >= MIN_COVERAGE && missing.length === 0, missingCritical: missing }; if (!v.passed) throw new Error(`Narration transcript mismatch: WER ${v.wer}, coverage ${v.coverage}${missing.length ? `, missing critical tokens: ${missing.join(", ")}` : ""}`); return v; }
 
 async function getProduction(id) { const r = await pool.query(`SELECT * FROM reel_productions WHERE id=$1`, [id]); if (!r.rows[0]) throw new Error(`Production ${id} not found`); return { revision: Number(r.rows[0].revision), manifest: r.rows[0].manifest_json }; }
 async function saveManifest(id, revision, manifest) { const r = await pool.query(`UPDATE reel_productions SET revision=revision+1,manifest_json=$3::jsonb,updated_at=NOW() WHERE id=$1 AND revision=$2 RETURNING revision`, [id, revision, JSON.stringify(manifest)]); if (!r.rows[0]) throw new Error(`Production ${id} changed concurrently while worker was attaching evidence`); return Number(r.rows[0].revision); }
