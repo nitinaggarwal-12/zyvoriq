@@ -1,149 +1,99 @@
-# BUS-001 — Business Requirements Document (BRD)
+# BUS-001 — Business Requirements Document
 
-| Metadata Attribute | Value |
+| Attribute | Value |
 | :--- | :--- |
-| **Document ID** | BUS-001 |
-| **Title** | Zyvoriq Platform Business Requirements Document |
-| **Owner** | VP of Product / Business Operations |
-| **Approvers** | Chief Product Officer, VP of Engineering, Head of QA |
-| **Version** | 1.0.0 |
-| **Status** | Approved |
-| **Priority** | P0 |
-| **Created Date** | 2026-08-23 |
-| **Last Reviewed Date** | 2026-08-23 |
-| **Quality Gate** | QG-BRD-01 (Business Approved) |
-| **Assurance Score** | 97/100 |
-| **Parent Strategy** | STR-001 (Product Vision & Principles) |
+| Document ID | BUS-001 |
+| Owner | Product / Business Operations |
+| Version | 2.0.0 |
+| Status | Active |
+| Priority | P0 |
+| Parent | STR-001 |
+| Governance | GOV-002 |
 
----
+## 1. Business problem
 
-## 1. Executive Summary
+Generative media is increasingly easy to produce but difficult to make consistently **publishable**. Users still coordinate idea selection, scripting, voice, short video clips, continuity, editing, music, captions, quality review, regeneration, platform adaptation and performance analysis across disconnected tools. Upstream models improve quickly, creating vendor-dependency risk for products that merely wrap a single provider.
 
-This Business Requirements Document (BRD) details the market demand, functional business capabilities, regulatory guardrails, and commercial economics for **Zyvoriq**. Zyvoriq enables commercial enterprises, media studios, and technical creators to scale omnichannel multimodal content production while compressing cycle times from weeks to minutes and eliminating brand hallucination risk.
+Zyvoriq solves the orchestration and decision problem: turn a creative/business objective into coherent, verified and repairable media while keeping the underlying generation providers replaceable.
 
----
+## 2. Initial market wedge
 
-## 2. Business Problem & Opportunity
+The first product must excel at **short-form social video** for creators, brands, social teams and experts/educators. Instagram Reels is the primary initial experience, with YouTube Shorts and TikTok-style variants following the same semantic production source.
 
-### 2.1 The Legacy Content Bottleneck
-Enterprises spend an average of **$140,000 to $450,000 annually per brand line** coordinating cross-functional content production across siloed freelance networks and agencies. The current workflow suffers from:
-1. **Prolonged Cycle Time**: 7–14 business days from initial brief to multi-channel deployment.
-2. **Quality & Brand Inconsistency**: Fragmented handoffs between copywriters, motion designers, and audio engineers dilute brand voice.
-3. **Severe AI Risk & Liability**: 64% of enterprise marketing leaders cite hallucination and copyright liability as top barriers to adopting AI generation at scale.
-4. **Sub-optimal Distribution**: Campaigns are rarely adapted to channel-native best practices (e.g., aspect ratios, pacing, audio dynamics, platform hashtags).
+Long-form video, multi-format campaigns and autonomous campaign management are expansions of the same control plane, not separate architectures.
 
-### 2.2 Commercial Opportunity
-By automating multi-agent generation with cryptographic **Veritas Quality Assurance** and **Autonomy Controls**, Zyvoriq captures market demand across high-growth segments:
-- **Enterprise ARR**: $24k - $120k / year seat + usage licenses.
-- **Prosumer / Creator MRR**: $49 - $249 / month subscriptions.
+## 3. Business requirements
 
----
+- **BR-001 — Publishable production:** One brief must be able to produce a complete short-form video, not merely a storyboard or disconnected clips.
+- **BR-002 — Provider independence:** Production semantics must be owned by Zyvoriq and survive provider/model substitution.
+- **BR-003 — Continuity:** Character, environment, object, action, camera, narration, music, ambience, captions and story continuity must be managed across source clips.
+- **BR-004 — Evidence-based quality:** Product completion must be based on artifact evidence and applicable quality gates, with publishability measured independently of provider claims.
+- **BR-005 — Repairability:** Failed sections must be repairable without unnecessary regeneration of accepted or locked work; long-running jobs must be resumable.
+- **BR-006 — Sustainable economics:** The system must optimize quality, provider cost, retries and latency together and expose attributable production cost.
+- **BR-007 — Personalized intelligence:** Creator, brand and audience context must improve decisions while remaining scoped, inspectable and tenant-isolated.
+- **BR-008 — Outcome loop:** Platform-native derivatives, distribution and measured outcomes must eventually feed future creative decisions.
 
-## 3. Business Objectives & Success Metrics
+Canonical mappings are maintained in `docs/governance/traceability.json`.
 
-```
-┌──────────────────────────────────────┬──────────────────────────────┬─────────────────────────┐
-│ Business Objective                   │ Baseline / Competitor Avg    │ Zyvoriq V1 Target       │
-├──────────────────────────────────────┼──────────────────────────────┼─────────────────────────┤
-│ 1. Time from Concept to Publish      │ 72–120 hours                 │ < 45 minutes            │
-│ 2. Content Quality / Fact Check Cost │ $150 – $350 / asset (manual) │ < $0.80 / asset (auto)  │
-│ 3. Omnichannel Asset Multiplier      │ 1 brief → 1.5 assets         │ 1 brief → 6+ formats    │
-│ 4. First-Pass Verification Yield     │ N/A (Manual iterations)      │ ≥ 88% passing gates     │
-│ 5. Audit Compliance Readout          │ Manual legal spreadsheet     │ Real-time cryptolog     │
-└──────────────────────────────────────┴──────────────────────────────┴─────────────────────────┘
-```
+## 4. Required user outcomes
 
----
+### R1 — Production Core
 
-## 4. Current-State vs. Target-State Workflow
+A user enters a topic/brief and receives a real production job with persisted status and, when successful, an assembled 30–60 second vertical master containing video, narration, captions and owned audio treatment. No manual stitching is required.
 
-```mermaid
-flowchart TD
-    subgraph Legacy["Legacy Fragmented Workflow (15 Days Total)"]
-        direction LR
-        L1["Briefing Doc"] --> L2["Copywriter (3d)"]
-        L2 --> L3["Graphic Designer (3d)"]
-        L3 --> L4["Voice Actor (2d)"]
-        L4 --> L5["Video Editor (4d)"]
-        L5 --> L6["Legal QA (3d)"]
-        L6 --> L7["Manual Post (15d Total)"]
-    end
+### R2–R3 — Continuity, Quality & Repair
 
-    subgraph Zyvoriq["Zyvoriq AI-Native Target Workflow (< 45 Minutes)"]
-        direction LR
-        Z1["Raw Idea Brief"] --> Z2["Director Swarm"]
-        Z2 --> Z3["Veritas QA Gate (Auto)"]
-        Z3 --> Z4["Multimodal Synthesis"]
-        Z4 --> Z5["Autonomy Signoff"]
-        Z5 --> Z6["Omnichannel Publish (< 45m)"]
-    end
-```
+The production behaves like one directed piece rather than independent AI clips. Whole-Reel and cut-boundary audits identify blocking failures, and repair regenerates the minimum affected dependency closure.
 
----
+### R4–R6 — Control, Intelligence & Personalization
 
-## 5. Core Business Requirements (BR-xxx)
+Users edit semantically, lock what must not change, branch variants, and receive creative decisions informed by brief quality, hook/narrative reasoning, contextual taste and scoped creator/brand/audience memory.
 
-### 5.1 Content Ingestion & Orchestration
-- **`BR-ING-001`**: System must accept multimodal input concepts (text thesis, audio voice note, GitHub repository URL, PDF briefing) as raw input.
-- **`BR-ING-002`**: System must decompose raw concepts into structured agent tasks (Scripting, Visual Storyboarding, Voice Script, Code Architecture).
-- **`BR-ING-003`**: System must support real-time execution streaming in the Director Console with step-by-step telemetry.
+### R7+ — Trust, Distribution & Learning
 
-### 5.2 Veritas Quality Assurance & Verification
-- **`BR-VER-001`**: System must compute a deterministic composite **Veritas Quality Score** (0–100) prior to asset release.
-- **`BR-VER-002`**: System must perform multi-engine semantic consensus checking across at least 2 independent LLM evaluators.
-- **`BR-VER-003`**: System must verify factual claims against verified grounding data sources (Google Search, uploaded enterprise documentation).
-- **`BR-VER-004`**: System must automatically initiate self-repair loops for assets scoring below workspace-defined quality thresholds.
+Claims/rights/provenance, platform-native variants, publishing and outcome telemetry close the loop. Later releases extend into autonomous campaign planning and an ecosystem/API surface.
 
-### 5.3 Multimodal Synthesis Engine
-- **`BR-SYN-001`**: System must generate production-ready 1080p/4K cinematic video storyboards and social vertical shorts (9:16).
-- **`BR-SYN-002`**: System must generate 5-band neural audio performances with emotional dynamic range and multi-lingual dubbing.
-- **`BR-SYN-003`**: System must generate verified, syntactically valid code snippets and executable architecture diagrams (SVG/Draw.io XML).
+## 5. Business success measures
 
-### 5.4 Governance, Policy & Autonomy
-- **`BR-GOV-001`**: System must provide 3 operational autonomy modes:
-  - *Supervised Mode*: Human must approve each intermediate agent milestone.
-  - *Co-Pilot Mode*: Agents execute independently; human signs off on final publishing gate.
-  - *Autonomous Mode*: Automatic publish permitted only when Veritas Quality Score $\ge 95$ and safety confidence $= 100\%$.
-- **`BR-GOV-002`**: System must maintain an immutable, tamper-evident audit log for all generative actions, prompt changes, and publish events.
+The primary measure is **Publishable First-Render Rate (PFRR)**, not the number of generated assets.
 
-### 5.5 Distribution & Scheduling
-- **`BR-DIS-001`**: System must support direct 1-click publishing and scheduled delivery to YouTube, LinkedIn, X, Substack, and custom webhooks.
-- **`BR-DIS-002`**: System must adapt copy, aspect ratios, thumbnails, and hashtag sets natively for each connected destination.
+Supporting measures:
 
----
+- time to first publishable output;
+- manual edit minutes per published asset;
+- cost per publishable minute;
+- regeneration and wasted-inference rate;
+- targeted repair success;
+- publish conversion (completed project → actually published);
+- creator/team retention;
+- objective-specific downstream outcomes.
 
-## 6. Business Rules & Constraints (BR-RULE)
+Numeric goals are hypotheses/targets until observed; they must not be represented as achieved guarantees.
 
-1. **`BR-RULE-001` (Zero Silent Failure)**: Any generation task failing quality thresholds must trigger an explicit alert in the Director console with targeted diagnostic rationale.
-2. **`BR-RULE-002` (Data Isolation)**: Enterprise workspace assets and persona memory vectors must be strictly partitioned with tenant-isolated row-level security.
-3. **`BR-RULE-003` (Content Provenance)**: All synthesized media must embed C2PA-compliant content credentials and watermarking metadata.
+## 6. Economic principles
 
----
+1. Budget expensive generation where it contributes most to perceived outcome.
+2. Reuse approved assets and references when allowed.
+3. Stop repeated failing strategies and escalate to another provider, simpler shot or alternate representation.
+4. Attribute cost by provider, shot, retry, QA, render, localization and variant.
+5. Prefer cost per **publishable** output over cost per generation call.
 
-## 7. Financial & Economics Model (Value Hypothesis)
+## 7. Trust and business constraints
 
-- **Cost of Generation Goods Sold (COGS)**: Target $< \$0.45$ in foundation model API consumption per complete multimodal asset bundle.
-- **Customer Gross Margin**: Projected at $\ge 78\%$ on SaaS subscriptions and usage tiers.
-- **Customer ROI**: Expected $8.5\times$ ROI realized by customers within 60 days via headcount repurposing and accelerated campaign velocity.
+- Do not claim factual verification, rights clearance, C2PA/provenance support, lip sync or synchronization unless the implementation and evidence actually support the claim.
+- Identity/voice/likeness usage must support consent, scope and revocation as the relevant features mature.
+- Customer memories, unpublished content and brand intelligence may not leak across tenants/brands.
+- A model router must consider privacy, residency, rights and policy—not quality/cost alone.
+- High-risk content/workflows may require human approval even when automated creative quality is high.
 
----
+## 8. Non-goals for the initial wedge
 
-## 8. Risk Management & Mitigations
+- Building proprietary frontier foundation models.
+- Being a generic prompt/chat application.
+- Replacing every professional video-editing feature before semantic production control is reliable.
+- Promising guaranteed virality, factuality, copyright safety or engagement.
+- Building ad bidding/buying as a core R1 capability.
 
-| Risk ID | Risk Description | Severity | Mitigation Strategy |
-| :--- | :--- | :--- | :--- |
-| **RSK-001** | Upstream Foundation Model Outages | High | Multi-provider fallback routing (Gemini ↔ Claude ↔ OpenAI). |
-| **RSK-002** | Social Media API Rate Limits | Medium | Exponential backoff retry queue with smart rate throttling. |
-| **RSK-003** | Copyright / IP Infringement Claims | High | Integrated C2PA provenance, commercial indemnity & IP filters. |
-| **RSK-004** | Style Drift Over Long Campaigns | Medium | Vector-grounded Persona Vault with periodic drift re-evals. |
+## 9. Business acceptance
 
----
-
-## 9. Quality Gate Exit Criteria (QG-BRD-01)
-
-- [x] All business requirements assigned unique, traceable identifiers (`BR-xxx`).
-- [x] Clear baseline vs target-state performance metrics established.
-- [x] Financial margins and COGS targets defined.
-- [x] Signed off by Product & Business Leadership.
-
-**Exit Status:** `BUSINESS APPROVED (PASS)`
+BUS-001 is satisfied through traceable PRD requirements, architecture components, release epics, stories and quality gates. [GOV-002](../governance/GOV-002_Traceability_Model.md) defines the no-orphan/no-fake-completion policy.
