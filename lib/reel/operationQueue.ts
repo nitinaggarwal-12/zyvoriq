@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { getPostgresPool } from "@/lib/db/client";
 
 export type ReelOperationKind = "NARRATION" | "SHOT" | "ROUGH_CUT";
-export type ReelOperationStatus = "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED";
+export type ReelOperationStatus = "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED" | "CANCELLED";
 
 export interface ReelOperation {
   id: string;
@@ -78,8 +78,9 @@ export function operationKey(input: {
   targetId?: string;
   manifestRevision: number;
   fingerprint: string;
+  generationToken?: string;
 }) {
-  return [input.productionId, input.kind, input.targetId || "production", input.manifestRevision, input.fingerprint].join(":");
+  return [input.productionId, input.generationToken || "legacy", input.kind, input.targetId || "production", input.manifestRevision, input.fingerprint].join(":");
 }
 
 export const reelOperationQueue = {
