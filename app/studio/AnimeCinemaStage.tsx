@@ -597,8 +597,10 @@ export function AnimeCinemaStage() {
       if (audio) audio.pause();
       setIsPlaying(false);
     } else {
+      video.preservesPitch = true;
       video.play().catch(() => {});
       if (audio) {
+        audio.preservesPitch = true;
         const isPerAct = Boolean(activeCue?.audioUrl);
         audio.currentTime = isPerAct ? (video.currentTime || 0) : (isMultiFile ? currentTime : video.currentTime);
         audio.play().then(() => setAudioAutoplayBlocked(false)).catch(() => setAudioAutoplayBlocked(true));

@@ -39,7 +39,6 @@ export default function VeritasPage() {
   const [downloadingCert, setDownloadingCert] = useState(false);
   const [selectedAxis, setSelectedAxis] = useState<string>("factuality");
 
-  const vqsScore = 94.6;
   const certificateId = "vqc_89f3a12ce94";
   const ed25519Signature = "MEQCIFz9...ed25519...3a89f921";
   const c2paManifestHash = "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
@@ -96,6 +95,15 @@ export default function VeritasPage() {
       penalty: "Cadence entropy within high human band.",
     },
   ];
+
+  const vqsScore =
+    axes.length > 0
+      ? parseFloat(
+          axes
+            .reduce((acc, a) => acc + a.score * (parseFloat(a.weight) / 100), 0)
+            .toFixed(1)
+        )
+      : 94.6;
 
   const citations = [
     {

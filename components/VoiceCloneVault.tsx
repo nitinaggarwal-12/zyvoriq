@@ -59,18 +59,39 @@ export function VoiceCloneVault() {
       setHasSample(false);
       setCloneReady(false);
       setIsRecording(true);
-    } else {
-      setIsRecording(false);
       if (recordingSeconds >= 3) {
         setHasSample(true);
       }
     }
   };
 
-  const handleSimulateUpload = () => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("audio/") && !file.name.match(/\.(wav|mp3|ogg|webm|m4a)$/i)) {
+      setUploadError("Invalid file type: Please upload a valid .WAV, .MP3, or .OGG audio file.");
+      setTimeout(() => setUploadError(null), 4000);
+      return;
+    }
+
+    setUploadError(null);
     setRecordingSeconds(30);
     setHasSample(true);
     setCloneReady(false);
+  };
+
+  const handleSimulateUpload = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    } else {
+      setRecordingSeconds(30);
+      setHasSample(true);
+      setCloneReady(false);
+    }
   };
 
   const handleSynthesizeClone = () => {
@@ -162,15 +183,30 @@ export function VoiceCloneVault() {
                   <span>{isRecording ? "Stop Recording" : "🔴 Record 30s"}</span>
                 </button>
 
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="audio/wav,audio/mp3,audio/mpeg,audio/ogg,audio/webm,audio/m4a"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+
                 <button
+                  type="button"
                   onClick={handleSimulateUpload}
-                  className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono border border-slate-700 transition-colors flex items-center gap-1.5"
+                  className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono border border-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  <span>Upload .WAV</span>
+                  <span>Upload .WAV / .MP3</span>
                 </button>
               </div>
             </div>
+
+            {uploadError && (
+              <div className="p-3 rounded-xl bg-rose-950/80 border border-rose-500/50 text-rose-300 text-xs font-mono">
+                ⚠️ {uploadError}
+              </div>
+            )}
 
             {/* Simulated Live Audio Waveform */}
             <div className="h-28 bg-slate-950 rounded-xl p-4 border border-slate-800 flex items-center justify-between gap-1">

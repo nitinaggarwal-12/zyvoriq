@@ -45,6 +45,38 @@ export default function GovernancePage() {
     }
   };
 
+  const handleExportCSV = () => {
+    const sanitizeCell = (val: string) => {
+      const str = String(val || "").replace(/"/g, '""');
+      // Prevent CSV formula injection (=, +, -, @, \t, \r)
+      if (/^[=+\-@\t\r]/.test(str)) {
+        return `"'${str}"`;
+      }
+      return `"${str}"`;
+    };
+
+    const headers = ["ID", "Timestamp", "Agent", "Action", "Hash", "Status"];
+    const rows = logs.map((l) =>
+      [
+        sanitizeCell(l.id),
+        sanitizeCell(l.timestamp),
+        sanitizeCell(l.agent),
+        sanitizeCell(l.action),
+        sanitizeCell(l.hash),
+        sanitizeCell(l.status)
+      ].join(",")
+    );
+
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `zyvoriq_soc2_audit_trail_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const fetchLogs = async () => {
     try {
       setLoading(true);
@@ -189,7 +221,11 @@ export default function GovernancePage() {
                 Compliance &amp; Export Center
               </div>
               <div className="flex flex-col gap-2">
-                <button className="w-full flex items-center justify-between rounded-xl border border-slate-800 bg-obsidian-950 p-3 text-xs text-slate-200 hover:border-teal-500/50 hover:text-white transition-colors">
+                <button
+                  type="button"
+                  onClick={handleExportCSV}
+                  className="w-full flex items-center justify-between rounded-xl border border-slate-800 bg-obsidian-950 p-3 text-xs text-slate-200 hover:border-teal-500/50 hover:text-white transition-colors cursor-pointer"
+                >
                   <span>Export Cryptographic SOC-2 Audit CSV</span>
                   <Download className="h-4 w-4 text-slate-400" />
                 </button>
