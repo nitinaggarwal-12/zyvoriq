@@ -2,11 +2,12 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Sparkles, Clapperboard, Captions, Mic2, Image as ImageIcon, Copy, Check, Instagram, Youtube, ChevronDown, Loader2, CircleAlert, Database, Film, AudioLines, Video } from "lucide-react";
+import { ArrowLeft, Sparkles, Clapperboard, Captions, Mic2, Image as ImageIcon, Copy, Check, Instagram, Youtube, ChevronDown, Loader2, CircleAlert, Database, Film, AudioLines, Video, Download } from "lucide-react";
 import type { ReelProductionManifest } from "@/lib/reel/types";
 
 type StoredProduction = { id: string; revision: number; manifest: ReelProductionManifest; createdAt: string; updatedAt: string };
 type DurableOperation = { id: string; status: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED"; lastError?: string };
+type StudioOperation = "plan" | "narration" | "shot" | "rough" | "all" | null;
 
 function durationNumber(value: string) {
   const parsed = Number.parseInt(value, 10);
@@ -28,7 +29,7 @@ export function ReelStudio() {
   const [activeTab, setActiveTab] = useState("Script");
   const [copied, setCopied] = useState(false);
   const [production, setProduction] = useState<StoredProduction | null>(null);
-  const [operation, setOperation] = useState<"plan" | "narration" | "shot" | "rough" | null>(null);
+  const [operation, setOperation] = useState<StudioOperation>(null);
   const [error, setError] = useState("");
   const [selectedShotId, setSelectedShotId] = useState<string | null>(null);
 
@@ -40,6 +41,7 @@ export function ReelStudio() {
   const selectedShot = (selectedShotId ? manifest?.shots.find(s => s.id === selectedShotId && s.asset?.videoUrl) : undefined) || (!roughCut ? generatedShots[0] : undefined);
   const previewVideoUrl = selectedShot?.asset?.videoUrl || roughCut?.videoUrl || null;
   const canGenerateShot = Boolean(manifest && ["SHOTS_PLANNED", "VIDEO_GENERATING", "REPAIRING"].includes(manifest.status) && generatedShotCount < totalShotCount);
+  const canGenerateAll = Boolean(manifest && !roughCut && ["SCRIPT_READY", "SHOTS_PLANNED", "VIDEO_GENERATING", "REPAIRING", "ROUGH_CUT_READY"].includes(manifest.status));
   const script = useMemo(() => scriptLines(manifest, topic), [manifest, topic]);
   const scenes = useMemo(() => manifest?.shots.map((shot) => {
     const end = shot.editorialStartSec + shot.editorialDurationSec;
@@ -63,10 +65,7 @@ export function ReelStudio() {
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || "Failed to read operation status");
       const queued = data.operation as DurableOperation;
-      if (queued.status === "SUCCEEDED") {
-        await refreshProduction(productionId);
-        return;
-      }
+      if (queued.status === "SUCCEEDED") return refreshProduction(productionId);
       if (queued.status === "FAILED") {
         await refreshProduction(productionId).catch(() => undefined);
         throw new Error(queued.lastError || "Production operation failed");
@@ -77,24 +76,74 @@ export function ReelStudio() {
     throw new Error("The production is still running. Its durable job will continue even if this page stops polling.");
   };
 
-  const runAction = async (action: string, op: typeof operation, extra: Record<string, unknown> = {}) => {
+  const dispatchAction = async (current: StoredProduction, action: string, extra: Record<string, unknown> = {}) => {
+    const response = await fetch(`/api/reels/productions/${encodeURIComponent(current.id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, expectedRevision: current.revision, ...extra }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.error || `${action} failed`);
+    setProduction(data.production);
+    if (data.queued && data.operation?.id) return waitForOperation(String(data.operation.id), current.id);
+    return data.production as StoredProduction;
+  };
+
+  const runAction = async (action: string, op: StudioOperation, extra: Record<string, unknown> = {}) => {
     if (!production) return;
     setOperation(op);
     setError("");
     try {
-      const response = await fetch(`/api/reels/productions/${encodeURIComponent(production.id)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, expectedRevision: production.revision, ...extra }),
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.error || `${action} failed`);
-      setProduction(data.production);
       if (action === "generateNarration" || action === "generateNextShot") setActiveTab("Scenes");
-      if (data.queued && data.operation?.id) await waitForOperation(String(data.operation.id), production.id);
+      await dispatchAction(production, action, extra);
     } catch (err: any) {
       setError(err?.message || `${action} failed`);
       try { await refreshProduction(production.id); } catch {}
+    } finally {
+      setOperation(null);
+    }
+  };
+
+  const generateAllMp4 = async () => {
+    if (!production) return;
+    const productionId = production.id;
+    setOperation("all");
+    setError("");
+    setActiveTab("Scenes");
+    setSelectedShotId(null);
+    try {
+      let current = await refreshProduction(productionId);
+
+      // A single Studio action orchestrates the existing durable operations. Each paid
+      // generation remains independently persisted/idempotent, and shots stay sequential
+      // so predecessor-frame continuity is never bypassed.
+      if (current.manifest.status === "SCRIPT_READY") {
+        current = await dispatchAction(current, "generateNarration");
+      }
+
+      for (;;) {
+        const remaining = current.manifest.shots.filter(s => !s.asset?.videoUrl);
+        if (!remaining.length) break;
+        if (!["SHOTS_PLANNED", "VIDEO_GENERATING", "REPAIRING"].includes(current.manifest.status)) {
+          throw new Error(`Cannot continue all-clips generation while production is ${current.manifest.status}`);
+        }
+        current = await dispatchAction(current, "generateNextShot", { modelTier: "fast" });
+      }
+
+      if (!current.manifest.outputs?.narratedRoughCut) {
+        if (current.manifest.status !== "ROUGH_CUT_READY") {
+          current = await refreshProduction(productionId);
+        }
+        if (current.manifest.status === "ROUGH_CUT_READY") {
+          current = await dispatchAction(current, "renderNarratedRoughCut");
+        }
+      }
+
+      setProduction(current);
+      setSelectedShotId(null);
+    } catch (err: any) {
+      setError(err?.message || "Generate all clips + MP4 failed");
+      try { await refreshProduction(productionId); } catch {}
     } finally {
       setOperation(null);
     }
@@ -127,6 +176,11 @@ export function ReelStudio() {
   };
 
   const busy = operation !== null;
+  const generateAllBusyLabel = manifest?.status === "SCRIPT_READY"
+    ? "Generating narration…"
+    : generatedShotCount < totalShotCount
+      ? `Generating all · ${generatedShotCount}/${totalShotCount}`
+      : "Combining one MP4…";
 
   return (
     <div className="min-h-screen bg-[#07090d] text-slate-100">
@@ -153,10 +207,13 @@ export function ReelStudio() {
           </div>
 
           <ActionButton onClick={buildProduction} disabled={busy || !topic.trim()} active={operation === "plan"} icon={Sparkles} idle={production ? "Create new plan" : "Build reel plan"} busyLabel="Building…" primary />
+          {canGenerateAll && <ActionButton onClick={generateAllMp4} disabled={busy} active={operation === "all"} icon={Film} idle={generatedShotCount ? `Generate remaining + MP4 (${generatedShotCount}/${totalShotCount})` : "Generate all clips + MP4"} busyLabel={generateAllBusyLabel} primary />}
+          {roughCut?.videoUrl && <a href={roughCut.videoUrl} download className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-300/25 bg-emerald-300/[0.07] py-3.5 text-sm font-black text-emerald-100 transition hover:bg-emerald-300/[0.12]"><Download className="h-4 w-4" />Download combined MP4</a>}
           {manifest?.status === "SCRIPT_READY" && <ActionButton onClick={() => runAction("generateNarration", "narration")} disabled={busy} active={operation === "narration"} icon={AudioLines} idle="Generate real narration" busyLabel="Generating + aligning…" />}
           {canGenerateShot && <ActionButton onClick={() => runAction("generateNextShot", "shot", { modelTier: "fast" })} disabled={busy} active={operation === "shot"} icon={Video} idle={`Generate next shot (${generatedShotCount}/${totalShotCount})`} busyLabel="Generating + probing…" />}
           {manifest?.status === "ROUGH_CUT_READY" && <ActionButton onClick={() => runAction("renderNarratedRoughCut", "rough")} disabled={busy} active={operation === "rough"} icon={Film} idle="Render narrated rough cut" busyLabel="Rendering + probing…" />}
 
+          {canGenerateAll && <p className="mt-3 text-center text-[11px] leading-5 text-slate-500">Generate all runs clips sequentially for continuity, reuses completed clips, then renders one narrated MP4.</p>}
           <p className="mt-3 text-center text-[11px] leading-5 text-slate-600">States advance only when persisted artifacts and measurable media evidence exist.</p>
           {error && <div className="mt-4 flex gap-2 rounded-xl border border-red-400/20 bg-red-400/5 p-3 text-xs leading-5 text-red-200"><CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />{error}</div>}
         </aside>
@@ -199,7 +256,7 @@ export function ReelStudio() {
               <Status icon={Mic2} label="Narration" value={manifest?.audio.narrationUrl ? `${manifest.audio.actualDurationSec?.toFixed(2)}s` : "Pending"} />
               <Status icon={Captions} label="Timing" value={manifest?.audio.timingSource === "actual-alignment" ? `${manifest.audio.wordTimings?.length || 0} words aligned` : "Pending"} />
               <Status icon={Video} label="Video sources" value={manifest ? `${generatedShotCount}/${totalShotCount}` : "Pending"} />
-              <Status icon={Film} label="Narrated rough cut" value={roughCut ? `${roughCut.actualDurationSec.toFixed(2)}s` : "Pending"} />
+              <Status icon={Film} label="Combined MP4" value={roughCut ? `${roughCut.actualDurationSec.toFixed(2)}s` : "Pending"} />
               <Status icon={Instagram} label="Primary" value={manifest?.platform || platform} />
               <Status icon={Youtube} label="Final variant" value="Not generated" />
             </div>
@@ -207,8 +264,8 @@ export function ReelStudio() {
             {manifest?.status === "AUDIO_GENERATING" && <TruthNote tone="amber">Narration is running in the durable production worker. This page may disconnect without cancelling the job.</TruthNote>}
             {manifest?.status === "SHOTS_PLANNED" && <TruthNote tone="green">Narration is aligned. Generate the first dependency-eligible Veo source clip.</TruthNote>}
             {manifest?.status === "VIDEO_GENERATING" && <TruthNote tone="green">{generatedShotCount}/{totalShotCount} source clips are persisted and probed.</TruthNote>}
-            {manifest?.status === "ROUGH_CUT_READY" && <TruthNote tone="green">All source clips exist. Render the exact-duration narrated rough cut.</TruthNote>}
-            {manifest?.status === "MIXING" && <TruthNote tone="amber">Narrated rough cut exists. Captions, music/SFX mix, master render and QA are still pending.</TruthNote>}
+            {manifest?.status === "ROUGH_CUT_READY" && <TruthNote tone="green">All source clips exist. Render the exact-duration combined MP4.</TruthNote>}
+            {manifest?.status === "MIXING" && <TruthNote tone="amber">Combined narrated MP4 exists. Captions, music/SFX mix, master render and QA are still pending.</TruthNote>}
             {manifest?.status === "FAILED" && <TruthNote tone="red">The last production step failed. No downstream stage has been marked complete.</TruthNote>}
           </div>
         </aside>
@@ -238,7 +295,6 @@ function ScriptPanel({ script, copied, onCopy }: { script: string[]; copied: boo
 function ListPanel({ icon: Icon, eyebrow, title, items }: { icon: React.ComponentType<{ className?: string }>; eyebrow: string; title: string; items: string[] }) {
   return <div><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05] text-pink-200"><Icon className="h-5 w-5" /></div><div className="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-pink-300">{eyebrow}</div><h2 className="mt-2 text-3xl font-black tracking-[-0.035em] text-white">{title}</h2><div className="mt-8 space-y-3">{items.map((item, i) => <div key={`${i}-${item.slice(0, 24)}`} className="flex gap-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4"><div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-xs font-black text-slate-500">{i + 1}</div><div className="text-sm leading-7 text-slate-300">{item}</div></div>)}</div></div>;
 }
-
 
 function ScenesPanel({ manifest, title, selectedShotId, onReview, fallbackItems }: { manifest: ReelProductionManifest | null; title: string; selectedShotId: string | null; onReview: (id: string) => void; fallbackItems: string[] }) {
   return <div>
