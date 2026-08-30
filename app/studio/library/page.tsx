@@ -1,535 +1,193 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
-  Film,
-  Sparkles,
-  Clock,
-  User,
-  ShieldCheck,
-  Globe,
-  Play,
-  Share2,
-  Trash2,
+  AudioLines,
+  Captions,
   Download,
-  Search,
-  Plus,
-  ArrowLeft,
-  Tv,
-  Layers,
-  Check,
+  FileJson,
+  Film,
+  FolderOpen,
+  Image as ImageIcon,
+  Loader2,
+  Music2,
+  Play,
   RefreshCw,
-  FolderHeart,
+  ScanSearch,
+  Search,
+  Sparkles,
   Video,
-  ChevronRight
 } from "lucide-react";
-
-interface SeriesTrack {
-  id: string;
-  title: string;
-  subtitle?: string;
-  category: string;
-  character: string;
-  videoSrc: string;
-  duration: number;
-  acts: any[];
-  veritas?: {
-    status: string;
-    snarkProofHash: string;
-  };
-  createdAt?: string;
-}
-
-import { CANONICAL_SERIES_TRACKS } from "@/lib/tier6/default_tracks";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppNavbar } from "@/components/AppNavbar";
 
-function StudioLibraryPageContent() {
-  const router = useRouter();
-  const [tracks, setTracks] = useState<any[]>(CANONICAL_SERIES_TRACKS);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+type Production = { id: string; revision: number; manifest: any; createdAt?: string; updatedAt?: string };
+type LegacyTrack = { id: string; title?: string; subtitle?: string; category?: string; character?: string; videoSrc?: string; duration?: number; createdAt?: string; acts?: any[] };
+type AssetKind = "Final" | "Video" | "Audio" | "Image" | "Text" | "Evidence" | "Legacy";
+type LibraryAsset = {
+  id: string;
+  productionId?: string;
+  title: string;
+  subtitle?: string;
+  kind: AssetKind;
+  url?: string;
+  duration?: number;
+  model?: string;
+  createdAt?: string;
+  payload?: unknown;
+};
 
-  const fetchTracks = async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch("/api/studio/tracks");
-      const data = await res.json();
-      let serverTracks = (data.success && Array.isArray(data.tracks) && data.tracks.length > 0)
-        ? data.tracks
-        : CANONICAL_SERIES_TRACKS;
+const tabs: Array<"All" | AssetKind> = ["All", "Final", "Video", "Audio", "Image", "Text", "Evidence", "Legacy"];
 
-      // Merge client-side localStorage tracks (preserves user creations across ephemeral server deploys)
-      if (typeof window !== "undefined") {
-        try {
-          const deletedStr = localStorage.getItem("zyvoriq_deleted_track_ids") || "[]";
-          const deletedIds = new Set(JSON.parse(deletedStr));
+function collectProductionAssets(p: Production): LibraryAsset[] {
+  const m = p.manifest || {};
+  const out: LibraryAsset[] = [];
+  const createdAt = p.updatedAt || p.createdAt || m.createdAt;
+  const push = (asset: Omit<LibraryAsset, "productionId" | "createdAt">) => out.push({ ...asset, productionId: p.id, createdAt });
 
-          const obsoleteIds = new Set([
-            "track_scramjet_hypersonic",
-            "track_abyssal_ocean",
-            "track_neotokyo_cyberpunk",
-            "track_biotech_crispr",
-            "track_renaissance_painting",
-            "track_theatrical_hamlet",
-            "track_starlight_cartoon",
-            "track_hollywood_blockbuster"
-          ]);
+  if (m.outputs?.master?.videoUrl) push({ id: `${p.id}:master`, title: m.topic || "Final master", subtitle: "Final master MP4", kind: "Final", url: m.outputs.master.videoUrl, duration: m.outputs.master.actualDurationSec });
+  if (m.outputs?.narratedRoughCut?.videoUrl) push({ id: `${p.id}:rough`, title: m.topic || "Narrated Reel", subtitle: "Combined narrated MP4", kind: "Final", url: m.outputs.narratedRoughCut.videoUrl, duration: m.outputs.narratedRoughCut.actualDurationSec });
 
-          const localStr = localStorage.getItem("zyvoriq_custom_production_tracks");
-          if (localStr) {
-            const localTracks = JSON.parse(localStr);
-            if (Array.isArray(localTracks)) {
-              // Clean local storage
-              const cleanedLocal = localTracks.filter((t: any) =>
-                !obsoleteIds.has(t.id) &&
-                !deletedIds.has(t.id) &&
-                !t.title?.toLowerCase().includes("earnings")
-              );
-              localStorage.setItem("zyvoriq_custom_production_tracks", JSON.stringify(cleanedLocal));
+  for (const [i, s] of (m.shots || []).entries()) {
+    if (s.asset?.videoUrl) push({ id: `${p.id}:shot:${s.id}`, title: `Shot ${i + 1}`, subtitle: s.visualIntent || s.scriptText, kind: "Video", url: s.asset.videoUrl, duration: s.asset.actualDurationSec || s.editorialDurationSec, model: s.asset.model });
+    if (s.continuityIn?.referenceFrameUrl) push({ id: `${p.id}:ref:${s.id}`, title: `Shot ${i + 1} continuity frame`, subtitle: "Persisted predecessor reference frame", kind: "Image", url: s.continuityIn.referenceFrameUrl });
+  }
 
-              const serverIds = new Set(serverTracks.map((t: any) => t.id));
-              const validLocal = cleanedLocal.filter((lt: any) => !serverIds.has(lt.id));
-              serverTracks = [...validLocal, ...serverTracks];
-            }
-          }
+  if (m.audio?.narrationUrl) push({ id: `${p.id}:narration`, title: "Narration", subtitle: `${m.audio.voice || "Voice"} · ${m.audio.model || "provider"}`, kind: "Audio", url: m.audio.narrationUrl, duration: m.audio.actualDurationSec, model: m.audio.model });
+  if (m.audio?.musicUrl) push({ id: `${p.id}:music`, title: "Music", subtitle: "Production music stem", kind: "Audio", url: m.audio.musicUrl, duration: m.musicPlan?.durationSec });
 
-          // Filter server tracks against obsolete/corrupted/deleted IDs
-          serverTracks = serverTracks.filter((t: any) =>
-            !obsoleteIds.has(t.id) &&
-            !deletedIds.has(t.id) &&
-            !t.title?.toLowerCase().includes("earnings")
-          );
-        } catch (e) {}
-      }
+  if (m.masterScript) push({ id: `${p.id}:script`, title: "Master script", subtitle: `${String(m.masterScript).length} characters`, kind: "Text", payload: m.masterScript });
+  if (m.captions?.cues?.length) push({ id: `${p.id}:captions`, title: "Captions", subtitle: `${m.captions.cues.length} timed cues`, kind: "Text", payload: m.captions });
+  if (m.audio?.wordTimings?.length) push({ id: `${p.id}:words`, title: "Word alignment", subtitle: `${m.audio.wordTimings.length} timed words`, kind: "Evidence", payload: m.audio.wordTimings });
+  if (m.continuity) push({ id: `${p.id}:continuity`, title: "Continuity package", subtitle: "Characters, environments, performance, boundaries and object state", kind: "Evidence", payload: m.continuity });
+  if (m.qa) push({ id: `${p.id}:qa`, title: "QA evidence", subtitle: m.qa.passed ? "Passed" : "Inspection / repair evidence", kind: "Evidence", payload: m.qa });
+  push({ id: `${p.id}:manifest`, title: "Production manifest", subtitle: `Revision ${p.revision} · ${m.status || "UNKNOWN"}`, kind: "Evidence", payload: m });
+  return out;
+}
 
-      setTracks(serverTracks);
-    } catch (err) {
-      console.error("Failed to load tracks:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchTracks();
-  }, []);
-
-  const handleDelete = async (id: string) => {
-    try {
-      // 1. Immediately prune from client localStorage
-      if (typeof window !== "undefined") {
-        try {
-          const localStr = localStorage.getItem("zyvoriq_custom_production_tracks");
-          if (localStr) {
-            const localTracks = JSON.parse(localStr);
-            if (Array.isArray(localTracks)) {
-              const updated = localTracks.filter((t: any) => t.id !== id);
-              localStorage.setItem("zyvoriq_custom_production_tracks", JSON.stringify(updated));
-            }
-          }
-          const deletedStr = localStorage.getItem("zyvoriq_deleted_track_ids") || "[]";
-          const deletedList = JSON.parse(deletedStr);
-          deletedList.push(id);
-          localStorage.setItem("zyvoriq_deleted_track_ids", JSON.stringify(Array.from(new Set(deletedList))));
-        } catch (_) {}
-      }
-
-      // 2. Call backend DELETE
-      const res = await fetch(`/api/studio/tracks?id=${id}`, { method: "DELETE" });
-      const data = await res.json();
-      
-      // Update UI state immediately
-      setTracks((prev) => prev.filter((t) => t.id !== id));
-      setDeleteConfirmId(null);
-    } catch (err) {
-      console.error("Failed to delete track:", err);
-      setTracks((prev) => prev.filter((t) => t.id !== id));
-      setDeleteConfirmId(null);
-    }
-  };
-
-  // Filter tracks
-  const filteredTracks = tracks.filter((t) => {
-    const matchesCategory = selectedCategory === "all" || t.category === selectedCategory;
-    const q = searchQuery.toLowerCase().trim();
-    const matchesSearch =
-      !q ||
-      t.title.toLowerCase().includes(q) ||
-      (t.subtitle && t.subtitle.toLowerCase().includes(q)) ||
-      t.character.toLowerCase().includes(q) ||
-      t.category.toLowerCase().includes(q);
-    return matchesCategory && matchesSearch;
-  });
-
-  const totalActs = tracks.reduce((acc, t) => acc + (t.acts?.length || 1), 0);
-  const totalRuntimeSeconds = tracks.reduce((acc, t) => acc + (t.duration || 0), 0);
-
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
-      <AppNavbar />
-
-      {/* Sub-Header Breadcrumb Bar */}
-      <div className="w-full bg-slate-950/85 backdrop-blur-xl border-b border-slate-800">
-        <div className="max-w-[1720px] mx-auto px-6 md:px-12 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/studio"
-              className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition-all flex items-center gap-2 text-xs font-mono font-medium shadow-sm"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Studio Stage</span>
-            </Link>
-            <div className="h-4 w-px bg-slate-800" />
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-amber-400 font-mono text-xs font-bold uppercase tracking-widest flex items-center gap-1.5">
-                  <FolderHeart className="w-3.5 h-3.5" /> Media Vault & Library
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-[10px]">
-                  SQLite Persistent Storage
-                </span>
-              </div>
-              <h1 className="text-xl md:text-2xl font-bold text-white font-serif tracking-tight">
-                All Saved Productions & Video Series
-              </h1>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 flex-wrap">
-            <button
-              onClick={fetchTracks}
-              className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white transition-all"
-              title="Refresh Library"
-            >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin text-amber-400" : ""}`} />
-            </button>
-
-            <Link
-              href="/studio/create?mode=new_series"
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-rose-500 to-amber-400 hover:brightness-110 text-slate-950 font-bold text-xs font-mono transition-all flex items-center gap-1.5 shadow-lg shadow-amber-500/20"
-            >
-              <Plus className="w-4 h-4 stroke-[3]" />
-              <span>+ Create New Series Track</span>
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Full-Width Content Container */}
-      <main className="flex-1 max-w-[1720px] w-full mx-auto px-6 md:px-12 py-8 space-y-6">
-        {/* Unified Studio Top-Level Breadcrumb */}
-        <div className="flex items-center gap-2 text-xs font-mono text-slate-400 overflow-x-auto pb-1">
-          <Link href="/" className="hover:text-amber-300 transition-colors flex items-center gap-1">
-            Home
-          </Link>
-          <ChevronRight className="w-3 h-3 text-slate-600 shrink-0" />
-          <Link href="/studio" className="hover:text-amber-300 transition-colors flex items-center gap-1">
-            Studio Cinema
-          </Link>
-          <ChevronRight className="w-3 h-3 text-slate-600 shrink-0" />
-          <span className="text-amber-400 font-bold flex items-center gap-1 shrink-0">
-            <FolderHeart className="w-3 h-3 text-amber-400" /> Media Vault &amp; Series Library
-          </span>
-        </div>
-
-        {/* Studio Metrics Ribbon */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="p-4 md:p-5 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl backdrop-blur-xl">
-            <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider block">Total Series Tracks</span>
-            <div className="text-2xl md:text-3xl font-bold text-white font-serif mt-1 flex items-center gap-2">
-              <Layers className="w-5 h-5 text-amber-400" />
-              <span>{tracks.length}</span>
-            </div>
-          </div>
-
-          <div className="p-4 md:p-5 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl backdrop-blur-xl">
-            <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider block">Total Master Acts</span>
-            <div className="text-2xl md:text-3xl font-bold text-white font-serif mt-1 flex items-center gap-2">
-              <Film className="w-5 h-5 text-indigo-400" />
-              <span>{totalActs}</span>
-            </div>
-          </div>
-
-          <div className="p-4 md:p-5 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl backdrop-blur-xl">
-            <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider block">Total Master Runtime</span>
-            <div className="text-2xl md:text-3xl font-bold text-white font-serif mt-1 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-cyan-400" />
-              <span>{Math.round(totalRuntimeSeconds)}s</span>
-            </div>
-          </div>
-
-          <div className="p-4 md:p-5 rounded-2xl bg-slate-900/80 border border-emerald-500/30 shadow-xl backdrop-blur-xl">
-            <span className="text-[11px] font-mono text-emerald-400 uppercase tracking-wider block">Veritas zk-SNARK Sealed</span>
-            <div className="text-2xl md:text-3xl font-bold text-emerald-300 font-serif mt-1 flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-emerald-400" />
-              <span>100%</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Search Bar & Category Navigation */}
-        <div className="space-y-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            {/* Search Input */}
-            <div className="relative flex-1 max-w-xl">
-              <Search className="w-4 h-4 text-slate-500 absolute left-4 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search series by title, character, script phrases, or philosophy..."
-                className="w-full bg-slate-900 border border-slate-800 rounded-2xl pl-11 pr-4 py-3 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500/80 transition-colors shadow-inner"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white text-xs font-mono"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-
-            <span className="text-xs font-mono text-slate-400">
-              Showing {filteredTracks.length} of {tracks.length} Productions
-            </span>
-          </div>
-
-          {/* Category Filter Buttons */}
-          <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
-            {[
-              { id: "all", label: "🎬 All Categories" },
-              { id: "anime", label: "🌸 Anime Series" },
-              { id: "executive", label: "👩‍💼 Executive Keynotes" },
-              { id: "nature", label: "🦁 Wildlife & Nature" },
-              { id: "music", label: "🎵 Music & Sound" },
-              { id: "gaming", label: "🎮 Gaming & Esports" },
-              { id: "comedy", label: "😂 Comedy & Satire" },
-              { id: "cinema", label: "🎭 Cinema & Noir" },
-              { id: "fantasy_scifi", label: "🏰 Fantasy & Sci-Fi" },
-              { id: "action_stunts", label: "💥 Action & Stunts" },
-              { id: "podcasts_essays", label: "🎙️ Podcasts & Essays" },
-              { id: "culinary", label: "🍳 Culinary Arts" },
-              { id: "wellness_faith", label: "🕉️ Vedanta & Sacred" },
-              { id: "science_space", label: "🔬 Science & Bio" },
-              { id: "history_geopolitics", label: "🏺 History & Civilizations" },
-              { id: "finance_wealth", label: "📈 Finance & Macro" },
-              { id: "leadership_masterclass", label: "👑 Leadership" },
-              { id: "custom", label: "✨ Custom Creations" }
-            ].map((cat) => {
-              const isSelected = selectedCategory === cat.id;
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-medium transition-all shrink-0 border ${
-                    isSelected
-                      ? "bg-amber-500/20 border-amber-500 text-amber-200 shadow-md shadow-amber-500/10 font-bold"
-                      : "bg-slate-900/60 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800/60"
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Video Series & Clips Grid */}
-        {filteredTracks.length === 0 ? (
-          <div className="p-12 rounded-3xl bg-slate-900/40 border border-dashed border-slate-800 text-center space-y-4">
-            <div className="p-4 rounded-full bg-slate-800/60 text-slate-400 w-16 h-16 mx-auto flex items-center justify-center">
-              <Film className="w-8 h-8" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-white font-serif">No Productions Found</h3>
-              <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
-                No series matched your query &ldquo;{searchQuery || selectedCategory}&rdquo;. Reset your filters or create a new series track.
-              </p>
-            </div>
-            <div className="flex items-center justify-center gap-3 pt-2">
-              {(searchQuery || selectedCategory !== "all") && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchQuery("");
-                    setSelectedCategory("all");
-                  }}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-mono font-bold text-xs transition-all shadow-sm"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Reset All Filters</span>
-                </button>
-              )}
-              <Link
-                href="/studio/create?mode=new_series"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-mono font-bold text-xs shadow-lg shadow-amber-500/20"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Create Series Now</span>
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredTracks.map((track) => {
-              const isDeleting = deleteConfirmId === track.id;
-              return (
-                <div
-                  key={track.id}
-                  className="bg-slate-900/90 border border-slate-800/90 hover:border-amber-500/50 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-xl transition-all group flex flex-col justify-between"
-                >
-                  {/* Video Viewport / Header */}
-                  <div>
-                    <div className="relative aspect-video bg-black overflow-hidden border-b border-slate-800/80">
-                      {track.videoSrc ? (
-                        <video
-                          src={track.videoSrc}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          muted
-                          playsInline
-                          onMouseEnter={(e) => (e.currentTarget as HTMLVideoElement).play().catch(() => {})}
-                          onMouseLeave={(e) => {
-                            const v = e.currentTarget as HTMLVideoElement;
-                            v.pause();
-                            v.currentTime = 0;
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-slate-900 via-indigo-950/40 to-slate-950 flex flex-col items-center justify-center p-4 text-center">
-                          <Film className="w-8 h-8 text-amber-400/80 mb-2" />
-                          <span className="text-xs font-mono font-bold text-white">{track.title}</span>
-                          <span className="text-[10px] font-mono text-slate-400 mt-1">Multi-Act Continuity Series</span>
-                        </div>
-                      )}
-
-                      <div className="absolute top-3 left-3 flex items-center gap-2">
-                        <span className="px-2.5 py-1 rounded-full bg-slate-950/80 border border-slate-700/80 backdrop-blur-md text-[10px] font-mono font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1">
-                          <span>{track.category === "anime" ? "🥋" : track.category === "executive" ? "🧑‍💼" : "✨"}</span>
-                          <span>{track.category}</span>
-                        </span>
-                        <span className="px-2.5 py-1 rounded-full bg-slate-950/80 border border-slate-700/80 backdrop-blur-md text-[10px] font-mono text-slate-300">
-                          {track.acts?.length || 1} Acts · {Math.round(track.duration)}s
-                        </span>
-                      </div>
-
-                      <div className="absolute bottom-3 right-3">
-                        <span className="px-2 py-0.5 rounded-md bg-emerald-950/80 border border-emerald-500/40 text-[10px] font-mono text-emerald-300 flex items-center gap-1 backdrop-blur-md">
-                          <ShieldCheck className="w-3 h-3" />
-                          <span>Veritas zk-SNARK</span>
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Series Information */}
-                    <div className="p-6 space-y-3">
-                      <div>
-                        <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-1">
-                          <span className="flex items-center gap-1 text-cyan-400">
-                            <User className="w-3 h-3" /> {track.character}
-                          </span>
-                          <span>{track.createdAt ? new Date(track.createdAt).toLocaleDateString() : "Active Master"}</span>
-                        </div>
-                        <h3 className="text-base font-bold text-white font-serif group-hover:text-amber-200 transition-colors">
-                          {track.title}
-                        </h3>
-                        {track.subtitle && (
-                          <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
-                            {track.subtitle}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* DeepMind Dub Stems Tags */}
-                      <div className="flex items-center gap-1.5 flex-wrap pt-2">
-                        {["JA", "EN", "ES", "FR", "DE", "HI"].map((lang) => (
-                          <span
-                            key={lang}
-                            className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-[10px] font-mono text-slate-400"
-                          >
-                            {lang}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions Bar */}
-                  <div className="p-6 pt-0 border-t border-slate-800/80 mt-4 space-y-3">
-                    <div className="grid grid-cols-2 gap-2 pt-3">
-                      <Link
-                        href={`/studio?track=${track.id}`}
-                        className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs font-mono shadow-md shadow-amber-500/15 transition-all flex items-center justify-center gap-1.5"
-                      >
-                        <Play className="w-3.5 h-3.5 fill-current" />
-                        <span>Watch Stage</span>
-                      </Link>
-
-                      <Link
-                        href={`/studio/create?trackId=${track.id}&mode=append_current`}
-                        className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-mono text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-slate-700"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>+ Add Act</span>
-                      </Link>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-1 text-xs font-mono text-slate-400">
-                      <a
-                        href={`${track.videoSrc}${track.videoSrc.includes('?') ? '&' : '?'}download=true&filename=${encodeURIComponent(track.title.replace(/[^a-zA-Z0-9_-]/g, '_'))}.mp4`}
-                        download={`${track.title.replace(/[^a-zA-Z0-9_-]/g, '_')}.mp4`}
-                        className="hover:text-white flex items-center gap-1 transition-colors"
-                      >
-                        <Download className="w-3 h-3 text-emerald-400" />
-                        <span>Download MP4</span>
-                      </a>
-
-                      {isDeleting ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-rose-400 text-[10px]">Confirm?</span>
-                          <button
-                            onClick={() => handleDelete(track.id)}
-                            className="text-rose-400 hover:text-rose-300 font-bold underline text-[10px]"
-                          >
-                            Yes, Delete
-                          </button>
-                          <button
-                            onClick={() => setDeleteConfirmId(null)}
-                            className="text-slate-500 hover:text-slate-300 text-[10px]"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setDeleteConfirmId(track.id)}
-                          className="hover:text-rose-400 flex items-center gap-1 transition-colors"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                          <span>Delete</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </main>
-    </div>
-  );
+function downloadPayload(asset: LibraryAsset) {
+  const body = typeof asset.payload === "string" ? asset.payload : JSON.stringify(asset.payload, null, 2);
+  const blob = new Blob([body || ""], { type: typeof asset.payload === "string" ? "text/plain" : "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${asset.id.replace(/[^a-z0-9-_]+/gi, "-")}.${typeof asset.payload === "string" ? "txt" : "json"}`;
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 export default function StudioLibraryPage() {
-  return (
-    <ErrorBoundary fallbackTitle="Studio Media Library Isolated">
-      <StudioLibraryPageContent />
-    </ErrorBoundary>
-  );
+  const [productions, setProductions] = useState<Production[]>([]);
+  const [legacy, setLegacy] = useState<LegacyTrack[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [tab, setTab] = useState<(typeof tabs)[number]>("All");
+  const [query, setQuery] = useState("");
+  const [openProduction, setOpenProduction] = useState<string | null>(null);
+
+  const load = async () => {
+    setLoading(true); setError("");
+    try {
+      const [prodRes, trackRes] = await Promise.all([
+        fetch("/api/reels/productions?limit=100", { cache: "no-store" }),
+        fetch("/api/studio/tracks", { cache: "no-store" }).catch(() => null),
+      ]);
+      const prodData = await prodRes.json();
+      if (!prodRes.ok || !prodData.success) throw new Error(prodData.error || "Failed to load Reel productions");
+      setProductions(Array.isArray(prodData.productions) ? prodData.productions : []);
+
+      const serverTracks = trackRes?.ok ? (await trackRes.json()).tracks || [] : [];
+      let localTracks: LegacyTrack[] = [];
+      try {
+        const saved = localStorage.getItem("zyvoriq_custom_production_tracks");
+        if (saved) localTracks = JSON.parse(saved) || [];
+      } catch {}
+      const byId = new Map<string, LegacyTrack>();
+      [...localTracks, ...(Array.isArray(serverTracks) ? serverTracks : [])].forEach((t: LegacyTrack) => t?.id && byId.set(t.id, t));
+      setLegacy(Array.from(byId.values()));
+    } catch (e: any) { setError(e?.message || String(e)); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const productionAssets = useMemo(() => productions.flatMap(collectProductionAssets), [productions]);
+  const legacyAssets = useMemo<LibraryAsset[]>(() => legacy.map(t => ({
+    id: `legacy:${t.id}`,
+    title: t.title || t.id,
+    subtitle: [t.category, t.character, t.subtitle].filter(Boolean).join(" · "),
+    kind: "Legacy",
+    url: t.videoSrc,
+    duration: t.duration,
+    createdAt: t.createdAt,
+    payload: t,
+  })), [legacy]);
+  const assets = useMemo(() => [...productionAssets, ...legacyAssets], [productionAssets, legacyAssets]);
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return assets.filter(a => (tab === "All" || a.kind === tab) && (!q || `${a.title} ${a.subtitle || ""} ${a.kind} ${a.model || ""}`.toLowerCase().includes(q)));
+  }, [assets, tab, query]);
+
+  const counts = useMemo(() => Object.fromEntries(tabs.map(t => [t, t === "All" ? assets.length : assets.filter(a => a.kind === t).length])), [assets]);
+
+  return <div className="min-h-screen bg-[#07090d] text-slate-100">
+    <AppNavbar />
+    <main className="mx-auto max-w-[1720px] px-5 py-8 md:px-10">
+      <div className="flex flex-col gap-5 border-b border-white/10 pb-7 xl:flex-row xl:items-end xl:justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-teal-300"><FolderOpen className="h-4 w-4"/> Content Library</div>
+          <h1 className="mt-2 text-3xl font-black tracking-[-0.04em] text-white md:text-4xl">Everything Zyvoriq has actually persisted.</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">Final Reels, individual Veo clips, narration, music, continuity frames, scripts, captions, QA evidence, manifests and legacy Studio tracks. No demo cards are injected when storage is empty.</p>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={load} disabled={loading} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-xs font-bold hover:bg-white/[0.06] disabled:opacity-50"><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}/>Refresh</button>
+          <Link href="/studio" className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-black text-slate-950"><Sparkles className="h-4 w-4"/>Create</Link>
+        </div>
+      </div>
+
+      <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
+        <Metric label="Productions" value={productions.length}/><Metric label="Final MP4s" value={counts.Final || 0}/><Metric label="Video clips" value={counts.Video || 0}/><Metric label="Audio assets" value={counts.Audio || 0}/><Metric label="Images" value={counts.Image || 0}/><Metric label="Evidence/Text" value={(counts.Evidence || 0) + (counts.Text || 0)}/>
+      </div>
+
+      <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.02] p-4 md:p-5">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex flex-wrap gap-2">{tabs.map(t => <button key={t} onClick={() => setTab(t)} className={`rounded-xl px-3.5 py-2 text-xs font-bold ${tab === t ? "bg-white text-slate-950" : "border border-white/10 text-slate-400 hover:text-white"}`}>{t} <span className="ml-1 opacity-60">{counts[t] || 0}</span></button>)}</div>
+          <label className="relative block min-w-[260px]"><Search className="absolute left-3 top-3 h-4 w-4 text-slate-600"/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search content, model, type…" className="w-full rounded-xl border border-white/10 bg-black/20 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-teal-300/30"/></label>
+        </div>
+      </section>
+
+      {error && <div className="mt-5 rounded-2xl border border-red-400/20 bg-red-400/5 p-4 text-sm text-red-200">{error}</div>}
+      {loading ? <div className="flex items-center justify-center gap-3 py-24 text-slate-500"><Loader2 className="h-5 w-5 animate-spin"/>Loading persisted content…</div> : visible.length === 0 ? <div className="mt-6 rounded-3xl border border-dashed border-white/10 p-16 text-center text-slate-500">No persisted assets match this view.</div> : (
+        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">{visible.map(asset => <AssetCard key={asset.id} asset={asset}/>)}</div>
+      )}
+
+      <section className="mt-10">
+        <div className="mb-4 flex items-center justify-between"><div><div className="text-xs font-black uppercase tracking-[0.16em] text-pink-300">Production groups</div><h2 className="mt-1 text-2xl font-black">Browse each Reel and every piece inside it</h2></div><Link href="/studio/inspector" className="inline-flex items-center gap-2 rounded-xl border border-pink-300/20 px-3 py-2 text-xs font-bold text-pink-100"><ScanSearch className="h-4 w-4"/>Evidence Inspector</Link></div>
+        <div className="space-y-3">{productions.map(p => { const m = p.manifest || {}; const pa = collectProductionAssets(p); const expanded = openProduction === p.id; return <div key={p.id} className="rounded-2xl border border-white/10 bg-white/[0.02]">
+          <button onClick={() => setOpenProduction(expanded ? null : p.id)} className="flex w-full items-center justify-between gap-4 p-4 text-left"><div className="min-w-0"><div className="truncate font-black text-white">{m.topic || p.id}</div><div className="mt-1 text-xs text-slate-500">{m.status} · {m.plannedDurationSec || m.requestedDurationSec || 0}s · {pa.length} persisted pieces · rev {p.revision}</div></div><span className="rounded-lg border border-white/10 px-2 py-1 text-[10px] font-bold text-slate-400">{expanded ? "HIDE" : "SHOW ALL"}</span></button>
+          {expanded && <div className="grid gap-3 border-t border-white/10 p-4 md:grid-cols-2 xl:grid-cols-4">{pa.map(a => <AssetCard key={a.id} asset={a} compact/>)}</div>}
+        </div>; })}</div>
+      </section>
+    </main>
+  </div>;
+}
+
+function Metric({ label, value }: { label: string; value: number }) { return <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4"><div className="text-[10px] font-bold uppercase tracking-wider text-slate-600">{label}</div><div className="mt-2 text-2xl font-black text-white">{value}</div></div>; }
+
+function kindIcon(kind: AssetKind) {
+  if (kind === "Final") return Film; if (kind === "Video" || kind === "Legacy") return Video; if (kind === "Audio") return AudioLines; if (kind === "Image") return ImageIcon; if (kind === "Text") return Captions; return FileJson;
+}
+
+function AssetCard({ asset, compact = false }: { asset: LibraryAsset; compact?: boolean }) {
+  const Icon = kindIcon(asset.kind);
+  const isVideo = Boolean(asset.url && (asset.kind === "Final" || asset.kind === "Video" || asset.kind === "Legacy"));
+  const isAudio = Boolean(asset.url && asset.kind === "Audio");
+  const isImage = Boolean(asset.url && asset.kind === "Image");
+  return <article className={`overflow-hidden rounded-2xl border border-white/10 bg-[#0b0e13] ${compact ? "p-3" : ""}`}>
+    {!compact && <div className="aspect-video bg-black/30">{isVideo ? <video src={asset.url} controls preload="metadata" playsInline className="h-full w-full object-cover"/> : isAudio ? <div className="flex h-full items-center justify-center p-4"><audio src={asset.url} controls preload="metadata" className="w-full"/></div> : isImage ? <img src={asset.url} alt="" className="h-full w-full object-cover"/> : <div className="flex h-full items-center justify-center"><Icon className="h-10 w-10 text-slate-700"/></div>}</div>}
+    <div className={compact ? "" : "p-4"}>
+      <div className="flex items-start justify-between gap-3"><div className="min-w-0"><div className="text-[10px] font-black uppercase tracking-[0.14em] text-teal-300">{asset.kind}</div><h3 className="mt-1 truncate text-sm font-black text-white">{asset.title}</h3>{asset.subtitle && <div className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{asset.subtitle}</div>}</div><Icon className="h-4 w-4 shrink-0 text-slate-500"/></div>
+      <div className="mt-3 flex flex-wrap gap-2 text-[10px] text-slate-600">{asset.duration ? <span>{asset.duration.toFixed(2)}s</span> : null}{asset.model ? <span>{asset.model}</span> : null}{asset.productionId ? <span className="truncate">{asset.productionId.slice(0, 14)}…</span> : null}</div>
+      <div className="mt-3 flex flex-wrap gap-2">{asset.url && <a href={asset.url} target="_blank" className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-[10px] font-bold hover:bg-white/5"><Play className="h-3 w-3"/>Open</a>}{asset.url && <a href={asset.url} download className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-[10px] font-bold hover:bg-white/5"><Download className="h-3 w-3"/>Download</a>}{asset.payload !== undefined && <button onClick={() => downloadPayload(asset)} className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-[10px] font-bold hover:bg-white/5"><Download className="h-3 w-3"/>Export</button>}{asset.productionId && <Link href={`/studio/inspector?productionId=${encodeURIComponent(asset.productionId)}`} className="inline-flex items-center gap-1 rounded-lg border border-pink-300/20 px-2.5 py-1.5 text-[10px] font-bold text-pink-100"><ScanSearch className="h-3 w-3"/>Inspect</Link>}</div>
+    </div>
+  </article>;
 }
