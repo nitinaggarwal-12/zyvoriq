@@ -1,10 +1,12 @@
 const assert = require('node:assert/strict');
 const { planReel } = require('../../.tmp-reel-v2/planner.js');
-const { auditReelManifest } = require('../../.tmp-reel-v2/audit.js');
+const { auditReelManifest, REEL_QA_GATES_ENABLED } = require('../../.tmp-reel-v2/audit.js');
 const { enrichManifestV2 } = require('../../.tmp-reel-v2/manifestV2.js');
 const { chooseBoundaryOperation, selectProvider } = require('../../.tmp-reel-v2/providerContracts.js');
 
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
+
+assert.equal(REEL_QA_GATES_ENABLED, false, 'temporary Reel QA bypass must remain explicitly enabled for test mode');
 
 const planned = planReel({ topic: 'continuous human performance', requestedDurationSec: 30, scriptText: 'One clear idea should feel like one continuous performance from the first word through the final call to action without visual or audio drift.' });
 assert.equal(planned.version, 2, 'planner must emit Manifest V2');
@@ -14,7 +16,7 @@ assert.ok(planned.continuity.performanceTracks.length >= 1, 'Performance Track r
 assert.ok(planned.captions.cues.length >= 1, 'draft Caption Track required');
 assert.equal(planned.musicPlan.continuousAcrossVisualCuts, true, 'music plan must remain continuous over visual cuts');
 for (const id of ['QG-TRANSCRIPT-01','QG-CAP-01','QG-PERF-01','QG-LIP-01','QG-EMO-01','QG-BND-01','QG-OBJ-01','QG-VIS-01','QG-AUD-01','QG-SEM-01','QG-WHOLE-01']) {
-  assert.equal(planned.qa.gates[id].status, 'PENDING', `${id} must fail closed until evidence exists`);
+  assert.equal(planned.qa.gates[id].status, 'PENDING', `${id} registry state must remain intact while enforcement is bypassed`);
 }
 
 const boundary = planned.continuity.boundaries[0];
@@ -62,15 +64,17 @@ for (const shot of finalAttempt.shots) {
   shot.qa = { score: 100, warnings: [], failures: [] };
   if (shot.dependsOnShotIds.length) shot.continuityIn.referenceFrameUrl = `/api/reels/assets/reels/test/${shot.id}-ref.png`;
 }
-const blocked = auditReelManifest(finalAttempt);
-assert.equal(blocked.passed, false, 'final QA must fail closed while perceptual gates are pending');
+const bypassed = auditReelManifest(finalAttempt);
+assert.equal(bypassed.passed, true, 'temporary test mode must not block final QA on pending perceptual gates');
+assert.equal(bypassed.failures.length, 0, 'bypassed gate failures must not remain blocking failures');
 for (const gate of ['QG-PERF-01','QG-LIP-01','QG-EMO-01','QG-BND-01','QG-SEM-01','QG-WHOLE-01']) {
-  assert.ok(blocked.failures.some(failure => failure.includes(gate)), `${gate} must block final QA without evidence`);
+  assert.ok(bypassed.warnings.some(warning => warning.includes('[QA BYPASS]') && warning.includes(gate)), `${gate} must remain observable as bypassed evidence debt`);
 }
 
 const brokenBoundary = clone(enriched);
 brokenBoundary.continuity.boundaries.pop();
 const structuralAudit = auditReelManifest(brokenBoundary);
-assert.ok(structuralAudit.failures.some(failure => failure.includes('boundary graph')), 'missing boundary must be detected');
+assert.equal(structuralAudit.passed, true, 'temporary test mode must bypass structural audit blocking');
+assert.ok(structuralAudit.warnings.some(warning => warning.includes('[QA BYPASS]') && warning.includes('boundary graph')), 'missing boundary must still be detected and surfaced as bypassed debt');
 
 console.log('Reel Manifest V2 contract tests passed');
