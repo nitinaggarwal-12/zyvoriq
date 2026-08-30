@@ -75,6 +75,17 @@ export interface ReelShot {
   };
 }
 
+export interface ReelRenderedOutput {
+  videoUrl: string;
+  actualDurationSec: number;
+  kind: "narrated-rough-cut" | "master";
+  codec?: string;
+  width?: number;
+  height?: number;
+  frameRate?: string;
+  renderedAt: string;
+}
+
 export interface ReelProductionManifest {
   id: string;
   version: 1;
@@ -107,6 +118,10 @@ export interface ReelProductionManifest {
     voice?: string;
   };
   shots: ReelShot[];
+  outputs?: {
+    narratedRoughCut?: ReelRenderedOutput;
+    master?: ReelRenderedOutput;
+  };
   qa: {
     minimumReadyScore: number;
     overallScore?: number;
