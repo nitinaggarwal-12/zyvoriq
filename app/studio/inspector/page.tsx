@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, Copy, Download, Film, Music2, Mic2, ScanSearch } from "lucide-react";
@@ -9,6 +9,10 @@ type Production = { id: string; manifest: any; updatedAt: string };
 type Inspection = any;
 
 export default function ReelInspectorPage() {
+  return <Suspense fallback={<div className="min-h-screen bg-[#07090d] p-8 text-slate-500">Loading inspection evidence…</div>}><ReelInspectorContent /></Suspense>;
+}
+
+function ReelInspectorContent() {
   const search = useSearchParams();
   const requestedProductionId = search.get("productionId") || "";
   const requestedFrame = Math.max(0, Number(search.get("frame") || 0));
