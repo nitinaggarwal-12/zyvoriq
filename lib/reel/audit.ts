@@ -7,6 +7,8 @@ export interface ReelAuditResult {
   failures: string[];
 }
 
+const MAX_TRANSCRIPT_WER = 0.06;
+const MIN_TRANSCRIPT_COVERAGE = 0.97;
 const finalQaStates = new Set(["AUDITING", "APPROVAL_REQUIRED", "READY"]);
 
 export function auditReelManifest(manifest: ReelProductionManifest): ReelAuditResult {
@@ -20,8 +22,9 @@ export function auditReelManifest(manifest: ReelProductionManifest): ReelAuditRe
     if (manifest.audio.timingSource !== "actual-alignment") failures.push("Speech-led production has no actual narration alignment; heuristic timing is not accepted as sync evidence.");
     if (!manifest.audio.wordTimings?.length) failures.push("Speech-led production has no word-level alignment evidence.");
     if (!manifest.audio.alignmentValidation?.passed) failures.push("Speech-led production has no passing transcript-vs-script verification evidence.");
-    if ((manifest.audio.alignmentValidation?.wer ?? 1) > 0.12) failures.push("Narration word-error-rate exceeds the accepted transcript policy.");
-    if ((manifest.audio.alignmentValidation?.coverage ?? 0) < 0.94) failures.push("Narration transcript coverage is below the accepted policy.");
+    if ((manifest.audio.alignmentValidation?.wer ?? 1) > MAX_TRANSCRIPT_WER) failures.push("Narration word-error-rate exceeds the accepted transcript policy.");
+    if ((manifest.audio.alignmentValidation?.coverage ?? 0) < MIN_TRANSCRIPT_COVERAGE) failures.push("Narration transcript coverage is below the accepted policy.");
+    if (manifest.audio.alignmentValidation?.missingCritical?.length) failures.push(`Narration is missing critical transcript tokens: ${manifest.audio.alignmentValidation.missingCritical.join(", ")}.`);
   }
 
   let expectedStart = 0;
