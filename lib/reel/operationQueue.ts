@@ -117,4 +117,27 @@ export const reelOperationQueue = {
     );
     return result.rows.map(fromRow);
   },
+
+  async retryAmbiguousNarration(id: string): Promise<ReelOperation> {
+    const pool = await ensureTable();
+    const result = await pool.query(
+      `UPDATE reel_operations
+       SET status='QUEUED',
+           provider_operation_name=NULL,
+           result_json=NULL,
+           last_error=NULL,
+           lease_owner=NULL,
+           lease_expires_at=NULL,
+           updated_at=NOW()
+       WHERE id=$1
+         AND kind='NARRATION'
+         AND status='FAILED'
+         AND provider_operation_name='tts-dispatch-started'
+         AND COALESCE(last_error,'') LIKE '%AMBIGUOUS_TTS_RESULT_NO_AUTORETRY%'
+       RETURNING *`,
+      [id]
+    );
+    if (!result.rows[0]) throw new Error("Narration retry is only available for a failed ambiguous TTS dispatch");
+    return fromRow(result.rows[0]);
+  },
 };
