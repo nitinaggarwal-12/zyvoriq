@@ -1,38 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GLOBAL_CHARACTERS } from "@/lib/tier6/characters";
-import { computePhoneticWordTimings } from "@/lib/tier6/timing_engine";
-import { generateVeritasSeal } from "@/lib/tier6/veritas_engine";
+import { planReel } from "@/lib/reel/planner";
 
+/**
+ * Compatibility endpoint for the old Studio contract.
+ *
+ * IMPORTANT: this endpoint no longer invents video/audio URLs, fixed durations,
+ * word timestamps or COMPLETED generation stages. Long-form media must move
+ * through the Reel production manifest so each generated 4/6/8s source shot
+ * can be audited, repaired and assembled against a canonical timeline.
+ */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { personaId, scriptText, targetResolution = "1080p" } = body;
-
     const persona = GLOBAL_CHARACTERS.find(p => p.id === personaId) || GLOBAL_CHARACTERS[0];
-    const script = scriptText && scriptText.trim().length > 0 ? scriptText.trim() : `Welcome. I am ${persona.name}, ${persona.role} based in ${persona.location}.`;
+    const script = scriptText?.trim() || `Welcome. I am ${persona.name}, ${persona.role} based in ${persona.location}.`;
+    const requestedDurationSec = Number(body.durationSeconds || body.requestedDurationSec || Math.max(8, Math.ceil(script.split(/\s+/).length / 2.15)));
 
-    // Fixed broadcast duration for current DeepMind master tracks
-    const duration = 23.20;
-    const wordTimings = computePhoneticWordTimings(script, duration);
-    const veritasSeal = generateVeritasSeal({
-      id: persona.id,
-      name: persona.name,
-      title: persona.role,
-      location: persona.location,
-      gender: (persona.gender === "female" ? "female" : "male") as "female" | "male",
-      avatarUrl: "",
-      videoUrl: "",
-      audioUrl: "",
-      accent: persona.accent,
-      voiceStyle: persona.voiceStyle,
-      defaultScript: script,
-      bio: persona.specialty,
-      c2paCertId: `C2PA-${persona.id.toUpperCase()}-VERITAS`
-    }, script, "");
+    const manifest = planReel({
+      topic: body.topic || `${persona.name} presentation`,
+      tone: persona.voiceStyle || "Confident & conversational",
+      platform: body.platform || "Instagram Reels",
+      requestedDurationSec,
+      scriptText: script
+    });
 
     return NextResponse.json({
       success: true,
-      pipeline: "ZYVORIQ-TIER-6-COGNITIVE-DIFFUSION",
+      pipeline: "ZYVORIQ-REEL-PRODUCTION-V1",
+      status: manifest.status,
+      message: "Production manifest created. Media is not marked complete until real artifacts exist and pass final QA.",
       persona: {
         id: persona.id,
         name: persona.name,
@@ -42,20 +40,22 @@ export async function POST(req: NextRequest) {
         avatarEmoji: persona.avatarEmoji,
         specialty: persona.specialty
       },
-      videoUrl: "",
-      audioUrl: "",
-      duration,
       targetResolution,
-      wordTimings,
-      veritasSeal,
-      stagesCompleted: [
-        { stage: 1, name: "Cognitive Script Refinement (Gemini 2.5 Flash)", status: "COMPLETED" },
-        { stage: 2, name: "DeepMind 48kHz Emotional Neural Audio", status: "COMPLETED" },
-        { stage: 3, name: "Google Veo 3.1 4K Full-Body Video Diffusion", status: "COMPLETED" },
-        { stage: 4, name: "Veritas Ed25519 & SynthID Cryptographic Provenance Sealing", status: "COMPLETED" }
+      videoUrl: null,
+      audioUrl: null,
+      wordTimings: [],
+      timingSource: "pending-actual-audio-alignment",
+      manifest,
+      stages: [
+        { name: "Script & shot planning", status: "COMPLETED" },
+        { name: "Master narration synthesis + actual alignment", status: "PENDING" },
+        { name: "Dependency-aware 4/6/8s video generation", status: "PENDING" },
+        { name: "Editorial assembly + audio mix", status: "PENDING" },
+        { name: "Whole-master multimodal audit", status: "PENDING" },
+        { name: "Provenance sealing", status: "PENDING" }
       ]
-    });
+    }, { status: 202 });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, status: "FAILED", error: error?.message || "Unable to create production manifest" }, { status: 500 });
   }
 }
