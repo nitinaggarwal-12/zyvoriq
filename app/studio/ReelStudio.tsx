@@ -30,11 +30,15 @@ export function ReelStudio() {
   const [production, setProduction] = useState<StoredProduction | null>(null);
   const [operation, setOperation] = useState<"plan" | "narration" | "shot" | "rough" | null>(null);
   const [error, setError] = useState("");
+  const [selectedShotId, setSelectedShotId] = useState<string | null>(null);
 
   const manifest = production?.manifest || null;
   const generatedShotCount = manifest?.shots.filter(s => Boolean(s.asset?.videoUrl)).length || 0;
   const totalShotCount = manifest?.shots.length || 0;
   const roughCut = manifest?.outputs?.narratedRoughCut;
+  const generatedShots = manifest?.shots.filter(s => Boolean(s.asset?.videoUrl)) || [];
+  const selectedShot = (selectedShotId ? manifest?.shots.find(s => s.id === selectedShotId && s.asset?.videoUrl) : undefined) || (!roughCut ? generatedShots[0] : undefined);
+  const previewVideoUrl = selectedShot?.asset?.videoUrl || roughCut?.videoUrl || null;
   const canGenerateShot = Boolean(manifest && ["SHOTS_PLANNED", "VIDEO_GENERATING", "REPAIRING"].includes(manifest.status) && generatedShotCount < totalShotCount);
   const script = useMemo(() => scriptLines(manifest, topic), [manifest, topic]);
   const scenes = useMemo(() => manifest?.shots.map((shot) => {
@@ -161,7 +165,7 @@ export function ReelStudio() {
           <div className="flex flex-wrap items-center gap-1 border-b border-white/5 p-3">{["Script", "Scenes", "Captions", "Cover"].map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${activeTab === tab ? "bg-white text-slate-950" : "text-slate-500 hover:bg-white/5 hover:text-white"}`}>{tab}</button>)}</div>
           <div className="p-5 sm:p-8">
             {activeTab === "Script" && <ScriptPanel script={script} copied={copied} onCopy={copyText} />}
-            {activeTab === "Scenes" && <ListPanel icon={Clapperboard} eyebrow="CANONICAL SHOT PLAN" title={manifest ? `${generatedShotCount}/${totalShotCount} real source clips generated` : "Build a plan to create shots"} items={scenes.length ? scenes : ["No persisted shot plan yet."]} />}
+            {activeTab === "Scenes" && <ScenesPanel manifest={manifest} title={manifest ? `${generatedShotCount}/${totalShotCount} real source clips generated` : "Build a plan to create shots"} selectedShotId={selectedShot?.id || null} onReview={id => setSelectedShotId(id)} fallbackItems={scenes.length ? scenes : ["No persisted shot plan yet."]} />}
             {activeTab === "Captions" && <ListPanel icon={Captions} eyebrow={manifest?.audio.timingSource === "actual-alignment" ? "ALIGNED NARRATION SOURCE" : "DRAFT CAPTION SOURCE"} title={manifest?.audio.timingSource === "actual-alignment" ? `${manifest.audio.wordTimings?.length || 0} words aligned to the waveform` : "Final timing waits for real narration"} items={captions.length ? captions : ["Captions are not marked synchronized until real audio alignment exists."]} />}
             {activeTab === "Cover" && <CoverPanel topic={topic} />}
           </div>
@@ -169,8 +173,14 @@ export function ReelStudio() {
 
         <aside className="h-fit lg:sticky lg:top-24">
           <div className="rounded-[30px] border border-white/10 bg-[#0a0d12] p-3">
-            {roughCut?.videoUrl ? (
-              <video key={roughCut.videoUrl} className="aspect-[9/16] w-full rounded-[24px] bg-black object-cover" src={roughCut.videoUrl} controls playsInline preload="metadata" />
+            {previewVideoUrl ? (
+              <div>
+                <div className="mb-3 flex items-center justify-between px-1">
+                  <div><div className="text-[10px] font-bold uppercase tracking-[0.16em] text-pink-300">{selectedShot ? `Shot ${Math.max(1, (manifest?.shots.findIndex(s => s.id === selectedShot.id) ?? 0) + 1)} review` : "Narrated rough cut"}</div><div className="mt-1 text-xs text-slate-500">{selectedShot ? `${selectedShot.editorialStartSec.toFixed(1)}–${(selectedShot.editorialStartSec + selectedShot.editorialDurationSec).toFixed(1)}s · ${selectedShot.asset?.model || "generated source"}` : "Full production preview"}</div></div>
+                  {selectedShot && roughCut?.videoUrl && <button onClick={() => setSelectedShotId(null)} className="rounded-lg border border-white/10 px-2.5 py-1.5 text-[10px] font-bold text-slate-400 hover:text-white">ROUGH CUT</button>}
+                </div>
+                <video key={previewVideoUrl} className="aspect-[9/16] w-full rounded-[24px] bg-black object-cover" src={previewVideoUrl} controls playsInline preload="metadata" />
+              </div>
             ) : (
               <div className="relative aspect-[9/16] overflow-hidden rounded-[24px] bg-[radial-gradient(circle_at_70%_20%,rgba(244,114,182,0.32),transparent_28%),radial-gradient(circle_at_30%_75%,rgba(45,212,191,0.22),transparent_28%),linear-gradient(160deg,#19111d,#0b1016_58%,#0a1515)]">
                 <div className="absolute inset-x-5 top-5 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-white/50"><span>Plan preview</span><span>{manifest ? `${manifest.plannedDurationSec}s` : duration}</span></div>
@@ -227,6 +237,33 @@ function ScriptPanel({ script, copied, onCopy }: { script: string[]; copied: boo
 
 function ListPanel({ icon: Icon, eyebrow, title, items }: { icon: React.ComponentType<{ className?: string }>; eyebrow: string; title: string; items: string[] }) {
   return <div><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05] text-pink-200"><Icon className="h-5 w-5" /></div><div className="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-pink-300">{eyebrow}</div><h2 className="mt-2 text-3xl font-black tracking-[-0.035em] text-white">{title}</h2><div className="mt-8 space-y-3">{items.map((item, i) => <div key={`${i}-${item.slice(0, 24)}`} className="flex gap-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4"><div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-xs font-black text-slate-500">{i + 1}</div><div className="text-sm leading-7 text-slate-300">{item}</div></div>)}</div></div>;
+}
+
+
+function ScenesPanel({ manifest, title, selectedShotId, onReview, fallbackItems }: { manifest: ReelProductionManifest | null; title: string; selectedShotId: string | null; onReview: (id: string) => void; fallbackItems: string[] }) {
+  return <div>
+    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05] text-pink-200"><Clapperboard className="h-5 w-5" /></div>
+    <div className="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-pink-300">CANONICAL SHOT PLAN</div>
+    <h2 className="mt-2 text-3xl font-black tracking-[-0.035em] text-white">{title}</h2>
+    {!manifest ? <div className="mt-8"><div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 text-sm text-slate-300">{fallbackItems[0]}</div></div> : (
+      <div className="mt-8 space-y-3">{manifest.shots.map((shot, i) => {
+        const end = shot.editorialStartSec + shot.editorialDurationSec;
+        const generated = Boolean(shot.asset?.videoUrl);
+        const selected = selectedShotId === shot.id;
+        return <div key={shot.id} className={`rounded-2xl border p-4 transition ${selected ? "border-pink-300/40 bg-pink-300/[0.06]" : "border-white/10 bg-white/[0.025]"}`}>
+          <div className="flex gap-4">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-xs font-black text-slate-500">{i + 1}</div>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm leading-7 text-slate-300">{shot.editorialStartSec.toFixed(1)}–{end.toFixed(1)}s · {shot.visualIntent}</div>
+              <div className={`mt-1 text-xs font-semibold ${generated ? "text-emerald-300/80" : "text-slate-600"}`}>{generated ? `Generated ${shot.asset?.actualDurationSec?.toFixed(2) || "?"}s · ${shot.asset?.model || "provider"}` : `Needs ${shot.generationDurationSec}s source`}</div>
+              {generated && <button onClick={() => onReview(shot.id)} className="mt-3 inline-flex items-center gap-2 rounded-xl border border-pink-300/25 bg-pink-300/[0.06] px-3 py-2 text-xs font-black text-pink-100 transition hover:border-pink-300/50 hover:bg-pink-300/[0.1]" aria-label={`Review shot ${i + 1}`}><Video className="h-4 w-4" />{selected ? "Reviewing shot" : `Review shot ${i + 1}`}</button>}
+            </div>
+          </div>
+        </div>;
+      })}</div>
+    )}
+    {manifest && manifest.shots.some(s => s.asset?.videoUrl) && <div className="mt-4 text-xs leading-5 text-slate-600">Select <span className="font-bold text-slate-400">Review shot</span> to play the real generated source in the preview panel. Browser video controls support play, pause, seek, volume and full-screen review.</div>}
+  </div>;
 }
 
 function CoverPanel({ topic }: { topic: string }) {
