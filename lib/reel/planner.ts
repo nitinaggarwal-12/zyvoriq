@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { ReelProductionManifest, ReelShot, TransitionType } from "./types";
+import { BoundaryStrategy, QualityGateId, ReelProductionManifest, ReelShot, TransitionType } from "./types";
 
 export interface PlanReelInput {
   topic: string;
@@ -54,10 +54,33 @@ function transitionFor(index: number, total: number): { type: TransitionType; du
   return { type: "hard-cut", durationSec: 0 };
 }
 
+function boundaryStrategy(type: TransitionType): BoundaryStrategy {
+  if (type === "cut-on-action") return "CUT_ON_ACTION";
+  if (type === "match-cut") return "MATCH_CUT";
+  if (type === "jump-cut") return "JUMP_CUT";
+  if (type === "graphic") return "GRAPHIC_TRANSITION";
+  return "HARD_CUT";
+}
+
+function initialGates(): ReelProductionManifest["qa"]["gates"] {
+  const ids: QualityGateId[] = [
+    "QG-TRANSCRIPT-01", "QG-CAP-01", "QG-PERF-01", "QG-LIP-01", "QG-EMO-01",
+    "QG-BND-01", "QG-OBJ-01", "QG-VIS-01", "QG-AUD-01", "QG-SEM-01", "QG-WHOLE-01"
+  ];
+  return Object.fromEntries(ids.map(id => [id, { id, status: "PENDING" as const }])) as ReelProductionManifest["qa"]["gates"];
+}
+
+function safeZoneProfile(platform: ReelProductionManifest["platform"]): "instagram-reels" | "youtube-shorts" | "tiktok" {
+  if (platform === "YouTube Shorts") return "youtube-shorts";
+  if (platform === "TikTok") return "tiktok";
+  return "instagram-reels";
+}
+
 export function planReel(input: PlanReelInput): ReelProductionManifest {
   const requestedDurationSec = clampDuration(input.requestedDurationSec || 30);
   const topic = input.topic.trim() || "your topic";
   const tone = input.tone || "Confident & conversational";
+  const platform = input.platform || "Instagram Reels";
   const masterScript = (input.scriptText || "").trim() || buildScript(topic, requestedDurationSec);
   const beats = splitIntoEditorialBeats(masterScript, requestedDurationSec);
   const perShot = requestedDurationSec / beats.length;
@@ -85,8 +108,21 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
       : i % 3 === 1
       ? "Relevant b-roll that literally supports the spoken beat; no decorative stock-like imagery."
       : "Presenter-driven explanation with a purposeful change in framing or camera motion.";
+    const presenterShot = i % 3 !== 1;
+    const emotion = { emotion: i === beats.length - 1 ? "confident" : i === 0 ? "curious" : "engaged", intensity: i === 0 ? 0.65 : 0.55, gestureEnergy: presenterShot ? 0.45 : 0.2 };
 
-    const continuityIn = { character: bible.characterLock, wardrobe: bible.wardrobeLock, environment: bible.environmentLock, lighting: bible.colorLanguage, action: previousAction, camera: bible.cameraLanguage };
+    const continuityIn = {
+      character: bible.characterLock,
+      characterId: presenterShot ? "character_presenter" : undefined,
+      wardrobe: bible.wardrobeLock,
+      environment: bible.environmentLock,
+      environmentId: "environment_primary",
+      lighting: bible.colorLanguage,
+      action: previousAction,
+      camera: bible.cameraLanguage,
+      eyeline: presenterShot ? "camera" : undefined,
+      emotion
+    };
     const continuityOut = { ...continuityIn, action: actionOut };
     const narrative = beat || `Visual continuation for ${topic}; support the surrounding narration without introducing a new claim.`;
 
@@ -100,11 +136,11 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
       trimOutSec: editorialDurationSec,
       scriptText: beat,
       visualIntent,
-      generationPrompt: [visualIntent, `Narrative beat: ${narrative}`, `Tone: ${tone}.`, bible.visualStyle, bible.characterLock, bible.wardrobeLock, bible.environmentLock, bible.cameraLanguage, `Continuity start: ${previousAction}`, `Continuity end: ${actionOut}`, "Do not render captions, subtitles, logos or UI text inside the generated video; those are composited later."].join(" "),
+      generationPrompt: [visualIntent, `Narrative beat: ${narrative}`, `Tone: ${tone}.`, bible.visualStyle, bible.characterLock, bible.wardrobeLock, bible.environmentLock, bible.cameraLanguage, `Continuity start: ${previousAction}`, `Continuity end: ${actionOut}`, `Emotional state: ${emotion.emotion} at intensity ${emotion.intensity}.`, "Do not render captions, subtitles, logos or UI text inside the generated video; those are composited later."].join(" "),
       continuityIn,
       continuityOut,
       transitionOut: transitionFor(i, beats.length),
-      dependsOnShotIds: i > 0 && i % 3 !== 1 ? [`shot_${String(i).padStart(2, "0")}`] : [],
+      dependsOnShotIds: i > 0 && presenterShot ? [`shot_${String(i).padStart(2, "0")}`] : [],
       status: "PLANNED",
       qa: { warnings: [], failures: [] }
     };
@@ -112,12 +148,44 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
     return shot;
   });
 
+  const boundaries = shots.slice(0, -1).map((shot, i) => {
+    const next = shots[i + 1];
+    const samePresenter = Boolean(shot.continuityOut.characterId && shot.continuityOut.characterId === next.continuityIn.characterId);
+    return {
+      id: `boundary_${shot.id}_${next.id}`,
+      fromShotId: shot.id,
+      toShotId: next.id,
+      strategy: boundaryStrategy(shot.transitionOut.type),
+      fromTimeSec: clock(shot.editorialStartSec + shot.editorialDurationSec),
+      toTimeSec: next.editorialStartSec,
+      expected: {
+        preserveIdentity: samePresenter,
+        preserveWardrobe: samePresenter,
+        preserveEnvironment: true,
+        preserveObjects: true,
+        preserveEmotion: samePresenter,
+        preserveMotion: shot.transitionOut.type === "cut-on-action" || shot.transitionOut.type === "match-cut",
+        continuousAudio: true
+      }
+    };
+  });
+
+  const draftCaptionCues = shots.filter(s => s.scriptText.trim()).map((shot, i) => ({
+    id: `caption_draft_${String(i + 1).padStart(2, "0")}`,
+    startSec: shot.editorialStartSec,
+    endSec: clock(shot.editorialStartSec + shot.editorialDurationSec),
+    text: shot.scriptText.trim(),
+    wordIds: [],
+    lines: [shot.scriptText.trim()],
+    position: "lower-third" as const
+  }));
+
   return {
     id: `reel_${crypto.randomUUID()}`,
-    version: 1,
+    version: 2,
     createdAt: new Date().toISOString(),
     status: "SHOTS_PLANNED",
-    platform: input.platform || "Instagram Reels",
+    platform,
     aspectRatio: "9:16",
     requestedDurationSec,
     plannedDurationSec: clock(cursor),
@@ -126,7 +194,45 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
     masterScript,
     creativeBible: bible,
     audio: { masterClock: "narration", timingSource: "pending" },
+    captions: { timingSource: "draft", cues: draftCaptionCues, safeZoneProfile: safeZoneProfile(platform) },
+    continuity: {
+      characters: [{
+        id: "character_presenter",
+        role: "presenter",
+        canonicalReferenceImages: [],
+        appearance: { description: bible.characterLock },
+        wardrobe: [bible.wardrobeLock],
+        accessories: [],
+        gestureStyle: "Natural conversational emphasis; avoid repetitive synthetic gestures.",
+        gazeStyle: "Maintain camera eyeline for direct-address presenter beats.",
+        emotionalRange: ["curious", "engaged", "reflective", "confident"]
+      }],
+      environments: [{
+        id: "environment_primary",
+        description: bible.environmentLock,
+        palette: bible.colorLanguage,
+        keyObjects: [],
+        cameraAxis: bible.cameraLanguage
+      }],
+      performanceTracks: [{
+        id: "performance_presenter",
+        characterId: "character_presenter",
+        audioTrack: "master-narration",
+        mode: "persistent-performer",
+        cues: shots.filter(s => s.continuityIn.characterId === "character_presenter").map(s => ({
+          startSec: s.editorialStartSec,
+          endSec: clock(s.editorialStartSec + s.editorialDurationSec),
+          emotion: s.continuityIn.emotion || { emotion: "engaged", intensity: 0.5 },
+          gaze: "camera" as const,
+          gesture: s.continuityOut.action,
+          speakingEnergy: s.continuityIn.emotion?.intensity || 0.5
+        }))
+      }],
+      boundaries,
+      objectStateGraph: Object.fromEntries(shots.map(s => [s.id, s.continuityIn.objectStates || []]))
+    },
+    musicPlan: { sections: [{ startSec: 0, endSec: clock(cursor), intent: "Continuous supportive underscore following the narrative arc.", energy: 0.45 }], continuousAcrossVisualCuts: true, duckUnderSpeech: true },
     shots,
-    qa: { minimumReadyScore: 90, passed: false, warnings: ["Narration waveform alignment, generated media inspection and final master QA are pending."], failures: [] }
+    qa: { minimumReadyScore: 90, passed: false, gates: initialGates(), warnings: ["Narration waveform alignment, generated media inspection, lip-sync verification, boundary QA and final master QA are pending."], failures: [] }
   };
 }
