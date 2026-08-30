@@ -2,24 +2,26 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Sparkles, WandSparkles, Clapperboard, Captions, Mic2, Image as ImageIcon, Copy, Check, RotateCcw, Smartphone, Instagram, Youtube, ChevronDown } from "lucide-react";
+import { ArrowLeft, Sparkles, Clapperboard, Captions, Mic2, Image as ImageIcon, Copy, Check, Instagram, Youtube, ChevronDown, Loader2, CircleAlert, Database, Film } from "lucide-react";
+import type { ReelProductionManifest } from "@/lib/reel/types";
 
-const hooks = [
-  "Most people get this wrong—and it costs them attention.",
-  "If I had to start from zero today, I would do these 3 things first.",
-  "The third mistake looks productive, but it quietly kills your results.",
-];
+type StoredProduction = {
+  id: string;
+  revision: number;
+  manifest: ReelProductionManifest;
+  createdAt: string;
+  updatedAt: string;
+};
 
-function buildScript(topic: string) {
-  const subject = topic.trim() || "your topic";
-  return [
-    `Hook: ${hooks[0]}`,
-    `Beat 1: Name the common problem around ${subject} in one clear sentence.`,
-    `Beat 2: Show the surprising insight or contrast with a concrete example.`,
-    `Beat 3: Give the viewer one practical action they can try today.`,
-    `Payoff: Reframe ${subject} in a memorable way.`,
-    `CTA: Save this and send it to someone who needs it.`,
-  ];
+function durationNumber(value: string) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : 30;
+}
+
+function scriptLines(manifest: ReelProductionManifest | null, topic: string) {
+  if (!manifest) return [`Enter a brief for ${topic || "your topic"}, then build a persisted production plan.`];
+  const sentences = manifest.masterScript.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [manifest.masterScript];
+  return sentences.map(s => s.trim()).filter(Boolean);
 }
 
 export function ReelStudio() {
@@ -29,20 +31,47 @@ export function ReelStudio() {
   const [platform, setPlatform] = useState("Instagram Reels");
   const [activeTab, setActiveTab] = useState("Script");
   const [copied, setCopied] = useState(false);
+  const [production, setProduction] = useState<StoredProduction | null>(null);
+  const [building, setBuilding] = useState(false);
+  const [error, setError] = useState("");
 
-  const script = useMemo(() => buildScript(topic), [topic]);
-  const scenes = [
-    "0–2s · Tight talking-head opener with large on-screen hook",
-    "2–8s · Fast cut to relatable distraction / phone / open tabs",
-    "8–16s · Return to creator; reveal mistake #1 and #2 with punch-in cuts",
-    "16–24s · Pattern interrupt; show mistake #3 with contrasting b-roll",
-    "24–30s · Clean payoff + save/share CTA; hold final frame for readability",
-  ];
-  const captions = ["MOST PEOPLE GET THIS WRONG", "#1 CONSTANT CONTEXT SWITCHING", "#2 BUSY ≠ FOCUSED", "#3 THE PRODUCTIVE-LOOKING TRAP", "SAVE THIS FOR YOUR NEXT DEEP-WORK SESSION"];
+  const manifest = production?.manifest || null;
+  const script = useMemo(() => scriptLines(manifest, topic), [manifest, topic]);
+  const scenes = useMemo(() => manifest?.shots.map((shot) => {
+    const end = shot.editorialStartSec + shot.editorialDurationSec;
+    return `${shot.editorialStartSec.toFixed(1)}–${end.toFixed(1)}s · ${shot.visualIntent} · source ${shot.generationDurationSec}s`;
+  }) || [], [manifest]);
+  const captions = useMemo(() => manifest?.shots
+    .filter(s => s.scriptText.trim())
+    .map(s => s.scriptText.trim().toUpperCase()) || [], [manifest]);
+
+  const buildProduction = async () => {
+    setBuilding(true);
+    setError("");
+    try {
+      const response = await fetch("/api/reels/productions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic,
+          tone,
+          platform,
+          requestedDurationSec: durationNumber(duration),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || "Failed to create production");
+      setProduction(data.production);
+      setActiveTab("Script");
+    } catch (err: any) {
+      setError(err?.message || "Failed to create production");
+    } finally {
+      setBuilding(false);
+    }
+  };
 
   const copyText = async () => {
-    const text = script.join("\n");
-    try { await navigator.clipboard.writeText(text); } catch {}
+    try { await navigator.clipboard.writeText(script.join("\n")); } catch {}
     setCopied(true);
     setTimeout(() => setCopied(false), 1200);
   };
@@ -55,15 +84,18 @@ export function ReelStudio() {
             <Link href="/" className="rounded-xl p-2 text-slate-500 transition hover:bg-white/5 hover:text-white" aria-label="Back home"><ArrowLeft className="h-5 w-5" /></Link>
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-300 via-orange-200 to-teal-300 font-black text-slate-950">Z</div>
-              <div><div className="font-black tracking-[-0.02em] text-white">Reel Studio</div><div className="text-[11px] text-slate-600">Zyvoriq creative workspace</div></div>
+              <div><div className="font-black tracking-[-0.02em] text-white">Reel Studio</div><div className="text-[11px] text-slate-600">Production-manifest workspace</div></div>
             </div>
           </div>
-          <div className="hidden items-center gap-2 text-xs font-medium text-slate-500 sm:flex"><span className="h-2 w-2 rounded-full bg-emerald-400" /> Draft saved locally</div>
+          <div className="hidden items-center gap-2 text-xs font-medium text-slate-500 sm:flex">
+            <span className={`h-2 w-2 rounded-full ${production ? "bg-emerald-400" : "bg-slate-700"}`} />
+            {production ? `Persisted · rev ${production.revision}` : "Not yet persisted"}
+          </div>
         </div>
       </header>
 
       <main className="mx-auto grid max-w-[1600px] gap-5 px-5 py-6 md:px-8 lg:grid-cols-[360px_1fr_360px]">
-        <aside className="h-fit rounded-[26px] border border-white/8 bg-white/[0.025] p-5 lg:sticky lg:top-24">
+        <aside className="h-fit rounded-[26px] border border-white/10 bg-white/[0.025] p-5 lg:sticky lg:top-24">
           <div className="text-xs font-bold uppercase tracking-[0.16em] text-pink-300">Creative brief</div>
           <h1 className="mt-2 text-2xl font-black tracking-[-0.03em] text-white">What do you want to post?</h1>
 
@@ -76,13 +108,15 @@ export function ReelStudio() {
             <Field label="Platform" value={platform} onChange={setPlatform} options={["Instagram Reels", "YouTube Shorts", "TikTok"]} />
           </div>
 
-          <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-3.5 text-sm font-black text-slate-950 transition hover:scale-[1.01] active:scale-[0.99]">
-            <Sparkles className="h-4 w-4" /> Build reel plan
+          <button onClick={buildProduction} disabled={building || !topic.trim()} className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-3.5 text-sm font-black text-slate-950 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50">
+            {building ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {building ? "Building…" : "Build reel plan"}
           </button>
-          <p className="mt-3 text-center text-[11px] leading-5 text-slate-600">Adjust the creative direction first. Generation stays editable at every step.</p>
+          <p className="mt-3 text-center text-[11px] leading-5 text-slate-600">Creates a persistent production manifest. It does not pretend audio or video has rendered.</p>
+          {error && <div className="mt-4 flex gap-2 rounded-xl border border-red-400/20 bg-red-400/5 p-3 text-xs leading-5 text-red-200"><CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />{error}</div>}
         </aside>
 
-        <section className="min-w-0 rounded-[26px] border border-white/8 bg-[#0a0d12]">
+        <section className="min-w-0 rounded-[26px] border border-white/10 bg-[#0a0d12]">
           <div className="flex flex-wrap items-center gap-1 border-b border-white/5 p-3">
             {["Script", "Scenes", "Captions", "Cover"].map((tab) => (
               <button key={tab} onClick={() => setActiveTab(tab)} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${activeTab === tab ? "bg-white text-slate-950" : "text-slate-500 hover:bg-white/5 hover:text-white"}`}>{tab}</button>
@@ -91,33 +125,39 @@ export function ReelStudio() {
 
           <div className="p-5 sm:p-8">
             {activeTab === "Script" && <ScriptPanel script={script} copied={copied} onCopy={copyText} />}
-            {activeTab === "Scenes" && <ListPanel icon={Clapperboard} eyebrow="SHOT PLAN" title="A vertical story, beat by beat" items={scenes} />}
-            {activeTab === "Captions" && <ListPanel icon={Captions} eyebrow="ON-SCREEN TEXT" title="Readable without sound" items={captions} />}
+            {activeTab === "Scenes" && <ListPanel icon={Clapperboard} eyebrow="CANONICAL SHOT PLAN" title={manifest ? `${manifest.shots.length} editorial shots` : "Build a plan to create shots"} items={scenes.length ? scenes : ["No persisted shot plan yet."]} />}
+            {activeTab === "Captions" && <ListPanel icon={Captions} eyebrow="DRAFT CAPTION SOURCE" title="Final timing waits for real narration" items={captions.length ? captions : ["Captions are not marked synchronized until real audio alignment exists."]} />}
             {activeTab === "Cover" && <CoverPanel topic={topic} />}
           </div>
         </section>
 
         <aside className="h-fit lg:sticky lg:top-24">
-          <div className="rounded-[30px] border border-white/8 bg-[#0a0d12] p-3">
+          <div className="rounded-[30px] border border-white/10 bg-[#0a0d12] p-3">
             <div className="relative aspect-[9/16] overflow-hidden rounded-[24px] bg-[radial-gradient(circle_at_70%_20%,rgba(244,114,182,0.32),transparent_28%),radial-gradient(circle_at_30%_75%,rgba(45,212,191,0.22),transparent_28%),linear-gradient(160deg,#19111d,#0b1016_58%,#0a1515)]">
-              <div className="absolute inset-x-5 top-5 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-white/50"><span>Preview</span><span>{duration}</span></div>
+              <div className="absolute inset-x-5 top-5 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-white/50"><span>Plan preview</span><span>{manifest ? `${manifest.plannedDurationSec}s` : duration}</span></div>
               <div className="absolute inset-x-5 top-[26%] text-center">
                 <div className="text-3xl font-black leading-none tracking-[-0.05em] text-white">{topic || "Your Reel hook"}</div>
                 <div className="mx-auto mt-4 h-1.5 w-16 rounded-full bg-pink-300" />
               </div>
-              <div className="absolute inset-x-5 bottom-20 rounded-2xl bg-black/35 p-4 backdrop-blur-md"><div className="text-sm font-bold text-white">The third one looks productive—but isn’t.</div><div className="mt-2 text-[10px] text-white/50">Caption safe zone</div></div>
-              <div className="absolute inset-x-5 bottom-5 flex items-center justify-between text-[10px] text-white/40"><span>@yourhandle</span><span>9:16</span></div>
+              <div className="absolute inset-x-5 bottom-20 rounded-2xl bg-black/35 p-4 backdrop-blur-md">
+                <div className="text-sm font-bold text-white">{manifest ? manifest.shots[0]?.scriptText || "Visual hook" : "Build the production plan first."}</div>
+                <div className="mt-2 text-[10px] text-white/50">Editor-rendered caption safe zone</div>
+              </div>
+              <div className="absolute inset-x-5 bottom-5 flex items-center justify-between text-[10px] text-white/40"><span>{manifest?.status || "DRAFT"}</span><span>9:16</span></div>
             </div>
           </div>
 
-          <div className="mt-4 rounded-[24px] border border-white/8 bg-white/[0.025] p-5">
-            <div className="text-xs font-bold uppercase tracking-[0.15em] text-slate-600">Output</div>
+          <div className="mt-4 rounded-[24px] border border-white/10 bg-white/[0.025] p-5">
+            <div className="text-xs font-bold uppercase tracking-[0.15em] text-slate-600">Production truth</div>
             <div className="mt-4 space-y-3 text-sm">
-              <Status icon={Instagram} label="Instagram Reel" value="9:16" />
-              <Status icon={Captions} label="Captions" value="Prepared" />
-              <Status icon={Mic2} label="Voice direction" value={tone.split(" ")[0]} />
-              <Status icon={Youtube} label="Shorts variant" value="Ready to adapt" />
+              <Status icon={Database} label="Manifest" value={production ? `Persisted r${production.revision}` : "Not created"} />
+              <Status icon={Film} label="State" value={manifest?.status || "DRAFT"} />
+              <Status icon={Mic2} label="Narration" value={manifest?.audio.narrationUrl ? "Artifact attached" : "Pending"} />
+              <Status icon={Captions} label="Timing" value={manifest?.audio.timingSource === "actual-alignment" ? "Aligned" : "Pending"} />
+              <Status icon={Instagram} label="Primary" value={manifest?.platform || platform} />
+              <Status icon={Youtube} label="Shorts variant" value="Not generated" />
             </div>
+            {production && <div className="mt-5 rounded-xl border border-amber-300/15 bg-amber-300/5 p-3 text-[11px] leading-5 text-amber-100/70">Next required production step: real narration synthesis + actual timing alignment. Video generation remains intentionally unclaimed until artifacts exist.</div>}
           </div>
         </aside>
       </main>
@@ -126,21 +166,23 @@ export function ReelStudio() {
 }
 
 function Field({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: string[] }) {
-  return <label className="block"><span className="text-xs font-bold text-slate-500">{label.toUpperCase()}</span><div className="relative mt-2"><select value={value} onChange={(e) => onChange(e.target.value)} className="w-full appearance-none rounded-xl border border-white/8 bg-black/20 px-3 py-3 pr-9 text-sm text-slate-200 outline-none focus:border-pink-300/30">{options.map((o) => <option key={o}>{o}</option>)}</select><ChevronDown className="pointer-events-none absolute right-3 top-3.5 h-4 w-4 text-slate-600" /></div></label>;
+  return <label className="block"><span className="text-xs font-bold text-slate-500">{label.toUpperCase()}</span><div className="relative mt-2"><select value={value} onChange={(e) => onChange(e.target.value)} className="w-full appearance-none rounded-xl border border-white/10 bg-black/20 px-3 py-3 pr-9 text-sm text-slate-200 outline-none focus:border-pink-300/30">{options.map((o) => <option key={o}>{o}</option>)}</select><ChevronDown className="pointer-events-none absolute right-3 top-3.5 h-4 w-4 text-slate-600" /></div></label>;
 }
 
 function ScriptPanel({ script, copied, onCopy }: { script: string[]; copied: boolean; onCopy: () => void }) {
-  return <div><div className="flex items-start justify-between gap-4"><div><div className="text-xs font-bold uppercase tracking-[0.16em] text-pink-300">REEL SCRIPT</div><h2 className="mt-2 text-3xl font-black tracking-[-0.035em] text-white">Retention-first, not paragraph-first.</h2></div><button onClick={onCopy} className="flex shrink-0 items-center gap-2 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-xs font-bold text-slate-400 hover:text-white">{copied ? <Check className="h-4 w-4 text-emerald-300" /> : <Copy className="h-4 w-4" />}{copied ? "Copied" : "Copy"}</button></div><div className="mt-8 space-y-3">{script.map((line, i) => <div key={i} className="rounded-2xl border border-white/7 bg-white/[0.025] p-4 text-sm leading-7 text-slate-300"><span className="mr-3 inline-flex h-6 w-6 items-center justify-center rounded-lg bg-white/[0.05] text-[10px] font-black text-slate-500">{i + 1}</span>{line}</div>)}</div></div>;
+  return <div><div className="flex items-start justify-between gap-4"><div><div className="text-xs font-bold uppercase tracking-[0.16em] text-pink-300">MASTER SCRIPT</div><h2 className="mt-2 text-3xl font-black tracking-[-0.035em] text-white">The script is part of the production manifest.</h2></div><button onClick={onCopy} className="flex shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs font-bold text-slate-400 hover:text-white">{copied ? <Check className="h-4 w-4 text-emerald-300" /> : <Copy className="h-4 w-4" />}{copied ? "Copied" : "Copy"}</button></div><div className="mt-8 space-y-3">{script.map((line, i) => <div key={`${i}-${line.slice(0, 20)}`} className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 text-sm leading-7 text-slate-300"><span className="mr-3 inline-flex h-6 w-6 items-center justify-center rounded-lg bg-white/[0.05] text-[10px] font-black text-slate-500">{i + 1}</span>{line}</div>)}</div></div>;
 }
 
-function ListPanel({ icon: Icon, eyebrow, title, items }: { icon: any; eyebrow: string; title: string; items: string[] }) {
-  return <div><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05] text-pink-200"><Icon className="h-5 w-5" /></div><div className="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-pink-300">{eyebrow}</div><h2 className="mt-2 text-3xl font-black tracking-[-0.035em] text-white">{title}</h2><div className="mt-8 space-y-3">{items.map((item, i) => <div key={item} className="flex gap-4 rounded-2xl border border-white/7 bg-white/[0.025] p-4"><div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-xs font-black text-slate-500">{i + 1}</div><div className="text-sm leading-7 text-slate-300">{item}</div></div>)}</div></div>;
+function ListPanel({ icon: Icon, eyebrow, title, items }: { icon: React.ComponentType<{ className?: string }>; eyebrow: string; title: string; items: string[] }) {
+  return <div><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05] text-pink-200"><Icon className="h-5 w-5" /></div><div className="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-pink-300">{eyebrow}</div><h2 className="mt-2 text-3xl font-black tracking-[-0.035em] text-white">{title}</h2><div className="mt-8 space-y-3">{items.map((item, i) => <div key={`${i}-${item.slice(0, 24)}`} className="flex gap-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4"><div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-xs font-black text-slate-500">{i + 1}</div><div className="text-sm leading-7 text-slate-300">{item}</div></div>)}</div></div>;
 }
 
 function CoverPanel({ topic }: { topic: string }) {
-  return <div><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05] text-pink-200"><ImageIcon className="h-5 w-5" /></div><div className="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-pink-300">COVER FRAME</div><h2 className="mt-2 text-3xl font-black tracking-[-0.035em] text-white">Make the grid earn the tap.</h2><div className="mt-8 grid gap-4 md:grid-cols-3">{["3 HABITS KILLING YOUR FOCUS", "YOU'RE NOT LAZY. YOU'RE DISTRACTED.", "STOP DOING #3"].map((title, i) => <div key={title} className="aspect-[4/5] rounded-[22px] border border-white/8 bg-[radial-gradient(circle_at_70%_20%,rgba(244,114,182,0.24),transparent_25%),linear-gradient(150deg,#17111b,#0b1015)] p-5"><div className="text-xs font-bold text-slate-500">OPTION {i + 1}</div><div className="mt-20 text-xl font-black leading-tight tracking-[-0.035em] text-white">{title}</div></div>)}</div></div>;
+  const base = topic.trim() || "YOUR NEXT REEL";
+  const options = [base.toUpperCase(), `WHY ${base.toUpperCase()}`, `STOP IGNORING THIS`];
+  return <div><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05] text-pink-200"><ImageIcon className="h-5 w-5" /></div><div className="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-pink-300">COVER DIRECTIONS</div><h2 className="mt-2 text-3xl font-black tracking-[-0.035em] text-white">Creative options, not generated assets yet.</h2><div className="mt-8 grid gap-4 md:grid-cols-3">{options.map((title, i) => <div key={`${i}-${title}`} className="aspect-[4/5] rounded-[22px] border border-white/10 bg-[radial-gradient(circle_at_70%_20%,rgba(244,114,182,0.24),transparent_25%),linear-gradient(150deg,#17111b,#0b1015)] p-5"><div className="text-xs font-bold text-slate-500">OPTION {i + 1}</div><div className="mt-20 text-xl font-black leading-tight tracking-[-0.035em] text-white">{title}</div></div>)}</div></div>;
 }
 
-function Status({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
-  return <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2 text-slate-400"><Icon className="h-4 w-4" /><span>{label}</span></div><span className="text-xs font-semibold text-slate-600">{value}</span></div>;
+function Status({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string }) {
+  return <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2 text-slate-400"><Icon className="h-4 w-4" /><span>{label}</span></div><span className="max-w-[150px] truncate text-xs font-semibold text-slate-500">{value}</span></div>;
 }
