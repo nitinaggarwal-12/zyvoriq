@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { writeAsset } from "./assetStore";
+import { getAssetStoreCapability, writeAsset } from "./assetStore";
 import type { WordTiming } from "./types";
 
 const API_BASE = "https://generativelanguage.googleapis.com";
@@ -95,9 +95,7 @@ function extractWordTimings(value: unknown): WordTiming[] {
     }
   };
   visit(value);
-  return timings
-    .filter(t => t.word && t.endSec >= t.startSec)
-    .sort((a, b) => a.startSec - b.startSec || a.endSec - b.endSec);
+  return timings.filter(t => t.word && t.endSec >= t.startSec).sort((a, b) => a.startSec - b.startSec || a.endSec - b.endSec);
 }
 
 async function generatePcm(text: string, tone: string) {
@@ -114,10 +112,7 @@ async function generatePcm(text: string, tone: string) {
 
   const response = await fetch(`${API_BASE}/v1beta/interactions`, {
     method: "POST",
-    headers: {
-      "x-goog-api-key": key,
-      "Content-Type": "application/json",
-    },
+    headers: { "x-goog-api-key": key, "Content-Type": "application/json" },
     body: JSON.stringify({
       model,
       input: prompt,
@@ -171,18 +166,11 @@ async function transcribeWithWordTimings(uri: string) {
   const key = apiKey();
   const response = await fetch(`${API_BASE}/v1beta/interactions`, {
     method: "POST",
-    headers: {
-      "x-goog-api-key": key,
-      "Content-Type": "application/json",
-    },
+    headers: { "x-goog-api-key": key, "Content-Type": "application/json" },
     body: JSON.stringify({
       model: "gemini-3.5-transcribe",
       input: [{ type: "audio", uri, mime_type: "audio/wav" }],
-      generation_config: {
-        transcription_config: {
-          mode: { type: "verbatim", timestamp_granularities: ["word"] },
-        },
-      },
+      generation_config: { transcription_config: { mode: { type: "verbatim", timestamp_granularities: ["word"] } } },
     }),
   });
   const json = await response.json();
@@ -194,6 +182,12 @@ async function transcribeWithWordTimings(uri: string) {
 
 export async function generateAlignedNarration(input: { productionId: string; text: string; tone: string }) {
   if (!input.text.trim()) throw new Error("Cannot synthesize empty narration");
+  const storage = getAssetStoreCapability();
+  if (!storage.configured || !storage.durable) {
+    throw new Error("Real narration requires durable asset storage. Configure ZYVORIQ_ASSET_ROOT or attach a Railway volume before generation.");
+  }
+  apiKey();
+
   const { pcm, model, voice } = await generatePcm(input.text, input.tone);
   if (!pcm.length) throw new Error("Gemini TTS returned an empty PCM stream");
   const durationSec = pcm.length / (SAMPLE_RATE * CHANNELS * SAMPLE_WIDTH);
