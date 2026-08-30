@@ -32,12 +32,25 @@ function assertNarrationArtifact(manifest: ReelProductionManifest) {
   if (manifest.audio.timingSource !== "actual-alignment") throw new Error("Actual narration alignment is required");
 }
 
+function replanAgainstNarration(manifest: ReelProductionManifest, actualDurationSec: number) {
+  const replanned = planReel({
+    topic: manifest.topic,
+    tone: manifest.tone,
+    platform: manifest.platform,
+    requestedDurationSec: actualDurationSec,
+    scriptText: manifest.masterScript,
+  });
+  manifest.plannedDurationSec = replanned.plannedDurationSec;
+  manifest.shots = replanned.shots;
+  manifest.creativeBible = replanned.creativeBible;
+}
+
 export const reelProductionService = {
   async create(input: PlanReelInput): Promise<StoredReelProduction> {
     const manifest = planReel(input);
-    // Planner creates a fully decomposed shot plan. This is planning evidence only,
-    // not proof that audio/video generation has happened.
-    manifest.status = "SHOTS_PLANNED";
+    // The first shot plan is a creative draft only. For speech-led productions,
+    // the canonical timeline is rebuilt after a real narration artifact is aligned.
+    manifest.status = "SCRIPT_READY";
     return reelProductionStore.create(manifest);
   },
 
@@ -56,6 +69,7 @@ export const reelProductionService = {
     assertTransition(manifest.status, to);
 
     if (to === "AUDIO_READY") assertNarrationArtifact(manifest);
+    if (to === "SHOTS_PLANNED") assertNarrationArtifact(manifest);
     if (to === "ROUGH_CUT_READY") {
       const missing = manifest.shots.filter(s => !s.asset?.videoUrl || !["GENERATED", "PASSED"].includes(s.status));
       if (missing.length) throw new Error(`Cannot mark rough cut ready; ${missing.length} shot(s) have no generated artifact`);
@@ -83,12 +97,16 @@ export const reelProductionService = {
     if (!stored) throw new Error(`Production ${input.id} not found`);
     if (!input.narrationUrl.trim()) throw new Error("narrationUrl is required");
     if (!Number.isFinite(input.actualDurationSec) || input.actualDurationSec <= 0) throw new Error("actualDurationSec must be positive");
+    if (stored.manifest.status !== "AUDIO_GENERATING") {
+      throw new Error(`Narration can only be attached while AUDIO_GENERATING; production is ${stored.manifest.status}`);
+    }
 
     const manifest = structuredClone(stored.manifest);
+    replanAgainstNarration(manifest, input.actualDurationSec);
     manifest.audio.narrationUrl = input.narrationUrl;
     manifest.audio.actualDurationSec = input.actualDurationSec;
     manifest.audio.timingSource = input.timingSource;
-    if (manifest.status === "AUDIO_GENERATING") manifest.status = "AUDIO_READY";
+    manifest.status = "AUDIO_READY";
     return reelProductionStore.replace(input.id, manifest, input.expectedRevision ?? stored.revision);
   },
 
@@ -104,6 +122,9 @@ export const reelProductionService = {
     if (!stored) throw new Error(`Production ${input.id} not found`);
     if (!input.videoUrl.trim()) throw new Error("videoUrl is required");
     if (!Number.isFinite(input.actualDurationSec) || input.actualDurationSec <= 0) throw new Error("actualDurationSec must be positive");
+    if (!["SHOTS_PLANNED", "VIDEO_GENERATING", "REPAIRING"].includes(stored.manifest.status)) {
+      throw new Error(`Shot assets cannot be attached while production is ${stored.manifest.status}`);
+    }
 
     const manifest = structuredClone(stored.manifest);
     const shot = manifest.shots.find(s => s.id === input.shotId);
