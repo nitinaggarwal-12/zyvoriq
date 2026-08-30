@@ -1,145 +1,41 @@
 "use client";
 
 import React from "react";
-import { Terminal, Cpu, GitPullRequest, ShieldCheck, ArrowUpRight, Sparkles, Building2, Users } from "lucide-react";
+import { Camera, Store, Users, GraduationCap, ArrowUpRight } from "lucide-react";
 
-interface SolutionPath {
-  id: string;
-  badge: string;
-  icon: any;
-  title: string;
-  description: string;
-  deliverables: string[];
-  cta: string;
-}
-
-const SOLUTIONS: SolutionPath[] = [
-  {
-    id: "architects",
-    badge: "For Technical Leaders",
-    icon: Terminal,
-    title: "Engineering Thought Leadership & RFCs",
-    description:
-      "Transform complex distributed systems architectures, post-mortems, and Git pull requests into authoritative, evidence-backed whitepapers and diagrams.",
-    deliverables: [
-      "Zero-fluff technical deep dives",
-      "Interactive SVG & Draw.io system topologies",
-      "P99 latency & benchmark citations",
-    ],
-    cta: "Explore Architect Workflow",
-  },
-  {
-    id: "founders",
-    badge: "For Founders & Product Teams",
-    icon: Cpu,
-    title: "Zero-to-One Product Launches",
-    description:
-      "Convert PRD-000 blueprints, sprint release notes, and product roadmaps into high-impact executive announcements, video keynotes, and investor updates.",
-    deliverables: [
-      "Master product narrative",
-      "Native Substack, LinkedIn & X campaigns",
-      "Executive video storyboards & voice narration",
-    ],
-    cta: "Explore Founder Workflow",
-  },
-  {
-    id: "devrel",
-    badge: "For Developer Relations",
-    icon: GitPullRequest,
-    title: "API & Developer Education",
-    description:
-      "Turn code repositories and API references into verified code walkthroughs, tutorial series, and visual architectural cheat sheets.",
-    deliverables: [
-      "Syntax-verified code snippets",
-      "Interactive multi-slide carousel guides",
-      "Podcasts with procedural voice dubbing",
-    ],
-    cta: "Explore DevRel Workflow",
-  },
-  {
-    id: "enterprise",
-    badge: "For Enterprise Organizations",
-    icon: Building2,
-    title: "Governed Brand & Provenance Publishing",
-    description:
-      "Enforce QGV-001 quality gates across thousands of organizational artifacts with automated claim verification, RBAC, and cryptographic proof.",
-    deliverables: [
-      "100% Veritas factual auto-repair",
-      "Strict TRU-001 provenance tracking",
-      "Emergency kill-switch & policy governance",
-    ],
-    cta: "Explore Enterprise Workflow",
-  },
+const USE_CASES = [
+  { icon: Camera, label: "Creators", title: "Turn ideas into a repeatable Reel engine", body: "Go from rough thought to hook, script, scene plan, voice direction, captions, cover and multiple cuts without losing your personal style.", examples: ["Personal brand", "Education", "Lifestyle", "Storytelling"] },
+  { icon: Store, label: "Brands", title: "Make social creative that feels native", body: "Convert product launches, offers and customer stories into short-form concepts designed for feeds—not resized ads with AI copy pasted on top.", examples: ["Product demos", "UGC concepts", "Campaign variants", "Launch teasers"] },
+  { icon: Users, label: "Social teams", title: "Create more without flattening the brand", body: "Give teams a shared creative system for ideation, adaptation, approvals and reusable brand context across recurring social content.", examples: ["Content calendars", "A/B hooks", "Approvals", "Repurposing"] },
+  { icon: GraduationCap, label: "Experts", title: "Turn knowledge into watchable short-form", body: "Transform expertise, lessons, FAQs and long-form material into concise visual stories that are easier to understand and easier to share.", examples: ["How-tos", "Explainers", "Myth vs fact", "Series"] },
 ];
 
 export function UseCasesSection() {
   return (
-    <section id="use-cases" className="relative mx-auto max-w-8xl px-6 md:px-12 lg:px-16 py-16 lg:py-24">
-      {/* Section Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-10 border-b border-slate-800/80">
-        <div>
-          <div className="inline-flex items-center gap-2 rounded-lg bg-teal-500/10 px-3 py-1 text-xs font-mono font-bold text-teal-300 border border-teal-500/20">
-            <Users className="h-3.5 w-3.5" />
-            <span>SOLUTIONS & DOMAIN PATHS</span>
-          </div>
-          <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl md:text-5xl">
-            Engineered for High-Stakes Creators
-          </h2>
-          <p className="mt-2 max-w-3xl text-base text-slate-400">
-            One underlying intelligence engine. Tailored workflows for technical leaders, founders, developer advocates, and enterprise organizations.
-          </p>
+    <section id="use-cases" className="border-y border-white/5 bg-white/[0.015]">
+      <div className="mx-auto max-w-[1500px] px-6 py-20 md:px-10 lg:py-28">
+        <div className="max-w-3xl">
+          <div className="text-sm font-bold text-teal-300">BUILT FOR THE FEED</div>
+          <h2 className="mt-4 text-4xl font-black tracking-[-0.04em] text-white sm:text-5xl">Different creators. One short-form workflow.</h2>
+          <p className="mt-5 text-lg leading-8 text-slate-400">The output changes with the audience, channel and brand—not just the prompt.</p>
         </div>
-      </div>
 
-      {/* Solutions Grid */}
-      <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        {SOLUTIONS.map((item) => {
-          const Icon = item.icon;
-          return (
-            <div
-              key={item.id}
-              className="glass-panel p-6 rounded-3xl border border-slate-800/80 flex flex-col justify-between transition-all duration-300 hover:border-teal-500/40 hover:-translate-y-1"
-            >
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-teal-400">
-                    {item.badge}
-                  </span>
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-800 bg-slate-950 text-slate-400">
-                    <Icon className="h-4 w-4" />
-                  </div>
-                </div>
-
-                <h3 className="mt-5 text-xl font-bold text-white leading-snug">{item.title}</h3>
-                <p className="mt-2 text-xs text-slate-400 leading-relaxed">{item.description}</p>
-
-                <div className="mt-6 space-y-2 border-t border-slate-800/60 pt-4">
-                  <span className="text-[10px] font-mono uppercase text-slate-500 font-semibold">
-                    Core Outputs:
-                  </span>
-                  <ul className="space-y-1.5 text-xs text-slate-300">
-                    {item.deliverables.map((del, idx) => (
-                      <li key={idx} className="flex items-center gap-2">
-                        <span className="h-1 w-1 rounded-full bg-teal-400" />
-                        <span>{del}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+        <div className="mt-12 grid gap-4 md:grid-cols-2">
+          {USE_CASES.map(({ icon: Icon, label, title, body, examples }) => (
+            <div key={label} className="group rounded-[28px] border border-white/8 bg-[#0b0f15] p-6 sm:p-8 transition hover:border-white/15 hover:bg-[#0d1219]">
+              <div className="flex items-center justify-between">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.055] text-teal-200"><Icon className="h-5 w-5" /></div>
+                <ArrowUpRight className="h-5 w-5 text-slate-700 transition group-hover:text-slate-400" />
               </div>
-
-              <div className="mt-8 pt-4 border-t border-slate-800/60">
-                <a
-                  href="#director"
-                  className="flex items-center justify-between text-xs font-bold text-teal-300 hover:text-teal-200 transition-colors"
-                >
-                  <span>{item.cta}</span>
-                  <ArrowUpRight className="h-4 w-4" />
-                </a>
+              <div className="mt-7 text-xs font-bold uppercase tracking-[0.16em] text-pink-300">{label}</div>
+              <h3 className="mt-2 max-w-xl text-2xl font-black tracking-[-0.025em] text-white">{title}</h3>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-400">{body}</p>
+              <div className="mt-6 flex flex-wrap gap-2">
+                {examples.map((example) => <span key={example} className="rounded-full bg-white/[0.045] px-3 py-1.5 text-xs font-medium text-slate-400">{example}</span>)}
               </div>
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
     </section>
   );
