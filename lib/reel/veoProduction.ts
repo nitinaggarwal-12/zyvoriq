@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { generateVeoVideoBytes } from "@/lib/ai/veoService";
-import { writeAsset } from "./assetStore";
+import { getAssetStoreCapability, writeAsset } from "./assetStore";
 import { probeVideoBuffer } from "./mediaProbe";
 import type { ReelShot } from "./types";
 
@@ -9,6 +9,11 @@ export async function generateProductionShot(input: {
   shot: ReelShot;
   modelTier?: "fast" | "quality" | "lite";
 }) {
+  const storage = getAssetStoreCapability();
+  if (!storage.configured || !storage.durable) {
+    throw new Error("Real video generation requires durable asset storage. Configure ZYVORIQ_ASSET_ROOT or attach a Railway volume before generation.");
+  }
+
   const generated = await generateVeoVideoBytes(input.shot.generationPrompt, {
     durationSeconds: input.shot.generationDurationSec,
     aspectRatio: "9:16",
@@ -17,16 +22,11 @@ export async function generateProductionShot(input: {
 
   const probe = await probeVideoBuffer(generated.buffer);
   if (probe.durationSec + 0.05 < input.shot.trimOutSec) {
-    throw new Error(
-      `${input.shot.id} generated ${probe.durationSec}s, shorter than required trimOut ${input.shot.trimOutSec}s`
-    );
+    throw new Error(`${input.shot.id} generated ${probe.durationSec}s, shorter than required trimOut ${input.shot.trimOutSec}s`);
   }
 
   const digest = crypto.createHash("sha256").update(generated.buffer).digest("hex").slice(0, 16);
-  const asset = await writeAsset(
-    `reels/${input.productionId}/shots/${input.shot.id}-${digest}.mp4`,
-    generated.buffer
-  );
+  const asset = await writeAsset(`reels/${input.productionId}/shots/${input.shot.id}-${digest}.mp4`, generated.buffer);
 
   return {
     assetKey: asset.key,
