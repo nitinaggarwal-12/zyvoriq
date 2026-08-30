@@ -4,7 +4,7 @@
 | :--- | :--- |
 | Document ID | PRD-000 |
 | Owner | Principal Product Manager |
-| Version | 2.0.0 |
+| Version | 2.1.0 |
 | Status | Active |
 | Priority | P0 |
 | Parents | STR-001, BUS-001 |
@@ -67,10 +67,12 @@ A planning response, storyboard, simulated preview or collection of generated cl
 - **FR-014 Scoped memory:** Maintain inspectable, correctable Creator DNA, Brand DNA and Audience DNA with scope, confidence, evidence and recency.
 - **FR-015 Evidence/rights:** Represent factual/visual claims, evidence quality/freshness, provenance and identity/media rights without overstating clearance.
 
-### Distribution and learning — P2
+### Distribution, learning and platform — P2
 
 - **FR-016 Cross-format/platform adaptation:** Derive platform-native variants from shared semantic content, not simple resizing/transcription.
 - **FR-017 Outcome learning:** Join production features to publishing/behavioral outcomes through a Content Genome, experimentation and confidence-aware learning.
+- **FR-018 Autonomous campaign planning:** Plan a governed multi-asset content portfolio/campaign from a creator or business objective while honoring autonomy, evidence, rights and approval policies.
+- **FR-019 Platform/SDK:** Expose stable, versioned APIs/SDK/interoperability and governed semantic recipes without exposing provider-specific internals as the contract.
 
 ## 4. Long-form continuity requirements
 
