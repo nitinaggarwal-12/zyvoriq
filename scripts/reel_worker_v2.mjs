@@ -1,6 +1,8 @@
 import crypto from "node:crypto";
 import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -14,6 +16,7 @@ const MAX_WER = 0.06, MIN_COVERAGE = 0.97;
 const workerId = `reel-worker-${process.pid}-${crypto.randomUUID().slice(0, 8)}`;
 const pollMs = Math.max(500, Number(process.env.ZYVORIQ_WORKER_POLL_MS || 1500));
 const heartbeatMs = 15000;
+const assetServerPort = Math.max(1, Number(process.env.ZYVORIQ_ASSET_SERVER_PORT || 8080));
 
 function dbUrl() {
   const direct = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.DATABASE_PRIVATE_URL;
@@ -133,6 +136,100 @@ function assetKeyFromUrl(url) { const p = "/api/reels/assets/"; if (!String(url)
 function assetPath(keyOrUrl) { const root = assetRoot(); if (!root) throw new Error("Durable asset storage is not configured"); const key = String(keyOrUrl).startsWith("/api/reels/assets/") ? assetKeyFromUrl(keyOrUrl) : safeKey(keyOrUrl); const rr = path.resolve(root), target = path.resolve(root, key); if (!target.startsWith(`${rr}${path.sep}`)) throw new Error("Asset path escaped durable root"); return { key, target }; }
 async function writeAsset(key, buffer) { const r = assetPath(key); await fs.mkdir(path.dirname(r.target), { recursive: true }); await fs.writeFile(r.target, buffer); return { key: r.key, url: `/api/reels/assets/${r.key.split("/").map(encodeURIComponent).join("/")}` }; }
 async function readAsset(keyOrUrl) { return fs.readFile(assetPath(keyOrUrl).target); }
+
+
+function assetContentType(key) {
+  if (key.endsWith(".wav")) return "audio/wav";
+  if (key.endsWith(".mp3")) return "audio/mpeg";
+  if (key.endsWith(".mp4")) return "video/mp4";
+  if (key.endsWith(".png")) return "image/png";
+  if (key.endsWith(".jpg") || key.endsWith(".jpeg")) return "image/jpeg";
+  return "application/octet-stream";
+}
+
+function parseByteRange(value, size) {
+  if (!value) return null;
+  const match = /^bytes=(\d*)-(\d*)$/.exec(String(value).trim());
+  if (!match) return { invalid: true };
+  let start;
+  let end;
+  if (!match[1] && match[2]) {
+    const suffix = Number(match[2]);
+    if (!Number.isFinite(suffix) || suffix <= 0) return { invalid: true };
+    start = Math.max(0, size - suffix);
+    end = size - 1;
+  } else {
+    start = Number(match[1]);
+    end = match[2] ? Number(match[2]) : size - 1;
+  }
+  if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start || start >= size) return { invalid: true };
+  end = Math.min(end, size - 1);
+  return { start, end };
+}
+
+const assetServer = http.createServer(async (req, res) => {
+  try {
+    if (!assetRoot()) {
+      res.writeHead(503, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: false, error: "asset_storage_unavailable" }));
+      return;
+    }
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      res.writeHead(405, { Allow: "GET, HEAD" });
+      res.end();
+      return;
+    }
+    const url = new URL(req.url || "/", "http://worker.local");
+    const prefix = "/internal/reel-assets/";
+    if (!url.pathname.startsWith(prefix)) {
+      res.writeHead(404);
+      res.end();
+      return;
+    }
+    const encoded = url.pathname.slice(prefix.length);
+    const key = encoded.split("/").map(decodeURIComponent).join("/");
+    const resolved = assetPath(key);
+    const stat = await fs.stat(resolved.target);
+    if (!stat.isFile()) {
+      res.writeHead(404);
+      res.end();
+      return;
+    }
+    const size = Number(stat.size);
+    const range = parseByteRange(req.headers.range, size);
+    const common = {
+      "Content-Type": assetContentType(resolved.key),
+      "Accept-Ranges": "bytes",
+      "Cache-Control": "private, max-age=3600",
+    };
+    if (range?.invalid) {
+      res.writeHead(416, { ...common, "Content-Range": `bytes */${size}` });
+      res.end();
+      return;
+    }
+    if (range) {
+      const length = range.end - range.start + 1;
+      res.writeHead(206, {
+        ...common,
+        "Content-Length": String(length),
+        "Content-Range": `bytes ${range.start}-${range.end}/${size}`,
+      });
+      if (req.method === "HEAD") { res.end(); return; }
+      createReadStream(resolved.target, { start: range.start, end: range.end }).pipe(res);
+      return;
+    }
+    res.writeHead(200, { ...common, "Content-Length": String(size) });
+    if (req.method === "HEAD") { res.end(); return; }
+    createReadStream(resolved.target).pipe(res);
+  } catch (error) {
+    const missing = error?.code === "ENOENT";
+    res.writeHead(missing ? 404 : 500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ success: false, error: missing ? "asset_not_found" : String(error?.message || error) }));
+  }
+});
+assetServer.listen(assetServerPort, "::", () => {
+  console.log(`[reel-worker] private asset server listening on ${assetServerPort}`);
+});
 function wavFromPcm(pcm) { const h = Buffer.alloc(44), br = SAMPLE_RATE * CHANNELS * SAMPLE_WIDTH; h.write("RIFF", 0); h.writeUInt32LE(36 + pcm.length, 4); h.write("WAVE", 8); h.write("fmt ", 12); h.writeUInt32LE(16, 16); h.writeUInt16LE(1, 20); h.writeUInt16LE(CHANNELS, 22); h.writeUInt32LE(SAMPLE_RATE, 24); h.writeUInt32LE(br, 28); h.writeUInt16LE(CHANNELS * SAMPLE_WIDTH, 32); h.writeUInt16LE(SAMPLE_WIDTH * 8, 34); h.write("data", 36); h.writeUInt32LE(pcm.length, 40); return Buffer.concat([h, pcm]); }
 function findAudioData(v) { if (!v || typeof v !== "object") return null; for (const k of ["output_audio", "outputAudio"]) { const c = v[k]; if (c && typeof c.data === "string") return c.data; } if ((v.type === "audio" || v.mime_type === "audio/L16" || v.mimeType === "audio/L16") && typeof v.data === "string") return v.data; for (const c of Object.values(v)) { if (Array.isArray(c)) { for (const i of c) { const f = findAudioData(i); if (f) return f; } } else if (c && typeof c === "object") { const f = findAudioData(c); if (f) return f; } } return null; }
 function offsetToSec(v) { if (typeof v === "number" && Number.isFinite(v)) return v; if (typeof v === "string") { const n = Number.parseFloat(v.replace(/s$/i, "")); return Number.isFinite(n) ? n : null; } if (v && typeof v === "object") { const s = Number(v.seconds || 0), n = Number(v.nanos || v.nanoseconds || 0); if (Number.isFinite(s) && Number.isFinite(n)) return s + n / 1e9; } return null; }
