@@ -3,6 +3,9 @@ import { planReel, type PlanReelInput } from "./planner";
 import { reelProductionStore, type StoredReelProduction } from "./productionStore";
 import type { AlignmentValidation, ReelProductionManifest, ReelProductionStatus, ReelRenderedOutput, WordTiming } from "./types";
 
+const MAX_TRANSCRIPT_WER = 0.06;
+const MIN_TRANSCRIPT_COVERAGE = 0.97;
+
 const allowedTransitions: Record<ReelProductionStatus, ReelProductionStatus[]> = {
   PLANNING: ["SCRIPT_READY", "FAILED"],
   SCRIPT_READY: ["AUDIO_GENERATING", "FAILED"],
@@ -42,7 +45,10 @@ function validateWordTimings(wordTimings: WordTiming[], actualDurationSec: numbe
 function assertAlignmentValidation(validation?: AlignmentValidation) {
   if (!validation?.passed) throw new Error("Narration transcript has not passed transcript-vs-script verification");
   if (!Number.isFinite(validation.wer) || !Number.isFinite(validation.coverage)) throw new Error("Narration transcript verification metrics are invalid");
-  if (validation.wer > 0.12 || validation.coverage < 0.94) throw new Error(`Narration transcript verification is outside policy: WER ${validation.wer}, coverage ${validation.coverage}`);
+  if (validation.wer > MAX_TRANSCRIPT_WER || validation.coverage < MIN_TRANSCRIPT_COVERAGE) {
+    throw new Error(`Narration transcript verification is outside policy: WER ${validation.wer}, coverage ${validation.coverage}`);
+  }
+  if (validation.missingCritical?.length) throw new Error(`Narration transcript is missing critical tokens: ${validation.missingCritical.join(", ")}`);
 }
 
 function assertNarrationArtifact(manifest: ReelProductionManifest) {
