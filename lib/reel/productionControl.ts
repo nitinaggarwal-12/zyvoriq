@@ -107,7 +107,7 @@ export const reelProductionControl = {
     const ageSec = Number(row.age_sec || 0);
     const metadata = row.metadata_json || {};
     const fresh = ageSec <= maxAgeSec;
-    const ready = metadata.ready !== false && Boolean(metadata.assetRootConfigured) && Boolean(metadata.geminiConfigured) && Boolean(metadata.ffmpeg) && Boolean(metadata.ffprobe);
+    const ready = metadata.ready !== false && Boolean(metadata.assetRootConfigured) && Boolean(metadata.geminiConfigured);
     return {
       healthy: fresh && ready,
       workerId: String(row.worker_id),
