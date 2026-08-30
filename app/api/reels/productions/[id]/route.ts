@@ -45,13 +45,12 @@ export async function PATCH(
     if (action === "generateNarration") {
       const current = await reelProductionService.get(id);
       if (!current) return NextResponse.json({ success: false, error: "Production not found" }, { status: 404 });
-      if (current.manifest.status !== "SCRIPT_READY" && current.manifest.status !== "AUDIO_GENERATING") {
-        return NextResponse.json({ success: false, error: `Narration generation requires SCRIPT_READY/AUDIO_GENERATING; production is ${current.manifest.status}` }, { status: 409 });
+      if (current.manifest.status !== "SCRIPT_READY") {
+        return NextResponse.json({ success: false, error: `Narration generation requires SCRIPT_READY; production is ${current.manifest.status}` }, { status: 409 });
       }
       if (expectedRevision !== undefined && expectedRevision !== current.revision) {
         return NextResponse.json({ success: false, error: `Production changed concurrently (expected revision ${expectedRevision}, found ${current.revision})` }, { status: 409 });
       }
-
       const idempotencyKey = operationKey({
         productionId: id,
         kind: "NARRATION",
@@ -64,12 +63,7 @@ export async function PATCH(
         idempotencyKey,
         payload: { manifestRevision: current.revision },
       });
-      let production = current;
-      if (current.manifest.status === "SCRIPT_READY") {
-        try { production = await reelProductionService.transition(id, "AUDIO_GENERATING", current.revision); }
-        catch { production = (await reelProductionService.get(id)) || current; }
-      }
-      return NextResponse.json({ success: true, queued: true, operation, production }, { status: 202 });
+      return NextResponse.json({ success: true, queued: true, operation, production: current }, { status: 202 });
     }
 
     if (action === "generateNextShot") {
