@@ -1,14 +1,15 @@
+import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { reelProductionService } from "@/lib/reel/productionService";
-import { generateAlignedNarration } from "@/lib/reel/geminiNarration";
-import { generateProductionShot } from "@/lib/reel/veoProduction";
-import { renderNarratedRoughCut } from "@/lib/reel/roughCutRenderer";
-import { deleteAsset } from "@/lib/reel/assetStore";
-import type { ReelProductionStatus, WordTiming } from "@/lib/reel/types";
+import { operationKey, reelOperationQueue } from "@/lib/reel/operationQueue";
+import type { ReelProductionStatus } from "@/lib/reel/types";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-export const maxDuration = 300;
+
+function fingerprint(value: unknown) {
+  return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex").slice(0, 24);
+}
 
 export async function GET(
   _req: NextRequest,
@@ -18,7 +19,9 @@ export async function GET(
     const { id } = await context.params;
     const production = await reelProductionService.get(id);
     if (!production) return NextResponse.json({ success: false, error: "Production not found" }, { status: 404 });
-    return NextResponse.json({ success: true, production }, { headers: { "Cache-Control": "no-store" } });
+    let operations = [];
+    try { operations = await reelOperationQueue.latestForProduction(id, 12); } catch {}
+    return NextResponse.json({ success: true, production, operations }, { headers: { "Cache-Control": "no-store" } });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error?.message || "Failed to load production" }, { status: 500 });
   }
@@ -42,37 +45,31 @@ export async function PATCH(
     if (action === "generateNarration") {
       const current = await reelProductionService.get(id);
       if (!current) return NextResponse.json({ success: false, error: "Production not found" }, { status: 404 });
-      if (current.manifest.status !== "SCRIPT_READY") {
-        return NextResponse.json({ success: false, error: `Narration generation requires SCRIPT_READY; production is ${current.manifest.status}` }, { status: 409 });
+      if (current.manifest.status !== "SCRIPT_READY" && current.manifest.status !== "AUDIO_GENERATING") {
+        return NextResponse.json({ success: false, error: `Narration generation requires SCRIPT_READY/AUDIO_GENERATING; production is ${current.manifest.status}` }, { status: 409 });
+      }
+      if (expectedRevision !== undefined && expectedRevision !== current.revision) {
+        return NextResponse.json({ success: false, error: `Production changed concurrently (expected revision ${expectedRevision}, found ${current.revision})` }, { status: 409 });
       }
 
-      const generating = await reelProductionService.transition(id, "AUDIO_GENERATING", expectedRevision ?? current.revision);
-      try {
-        const narration = await generateAlignedNarration({
-          productionId: id,
-          text: generating.manifest.masterScript,
-          tone: generating.manifest.tone,
-        });
-        const audioReady = await reelProductionService.attachNarration({
-          id,
-          narrationUrl: narration.narrationUrl,
-          actualDurationSec: narration.actualDurationSec,
-          timingSource: "actual-alignment",
-          wordTimings: narration.wordTimings,
-          provider: narration.provider,
-          model: narration.model,
-          voice: narration.voice,
-          expectedRevision: generating.revision,
-        });
-        const planned = await reelProductionService.transition(id, "SHOTS_PLANNED", audioReady.revision);
-        return NextResponse.json({ success: true, production: planned });
-      } catch (generationError) {
-        const latest = await reelProductionService.get(id);
-        if (latest?.manifest.status === "AUDIO_GENERATING") {
-          try { await reelProductionService.transition(id, "FAILED", latest.revision); } catch {}
-        }
-        throw generationError;
+      const idempotencyKey = operationKey({
+        productionId: id,
+        kind: "NARRATION",
+        manifestRevision: current.revision,
+        fingerprint: fingerprint({ script: current.manifest.masterScript, tone: current.manifest.tone }),
+      });
+      const operation = await reelOperationQueue.enqueue({
+        productionId: id,
+        kind: "NARRATION",
+        idempotencyKey,
+        payload: { manifestRevision: current.revision },
+      });
+      let production = current;
+      if (current.manifest.status === "SCRIPT_READY") {
+        try { production = await reelProductionService.transition(id, "AUDIO_GENERATING", current.revision); }
+        catch { production = (await reelProductionService.get(id)) || current; }
       }
+      return NextResponse.json({ success: true, queued: true, operation, production }, { status: 202 });
     }
 
     if (action === "generateNextShot") {
@@ -84,47 +81,33 @@ export async function PATCH(
       if (expectedRevision !== undefined && expectedRevision !== current.revision) {
         return NextResponse.json({ success: false, error: `Production changed concurrently (expected revision ${expectedRevision}, found ${current.revision})` }, { status: 409 });
       }
-
-      const completedIds = new Set(
-        current.manifest.shots
-          .filter(s => Boolean(s.asset?.videoUrl) && ["GENERATED", "PASSED"].includes(s.status))
-          .map(s => s.id)
-      );
-      const shot = current.manifest.shots.find(s => s.status === "PLANNED" && s.dependsOnShotIds.every(dep => completedIds.has(dep)));
+      const completedIds = new Set(current.manifest.shots.filter(s => Boolean(s.asset?.videoUrl) && ["GENERATED", "PASSED"].includes(s.status)).map(s => s.id));
+      const shot = current.manifest.shots.find(s => ["PLANNED", "FAILED"].includes(s.status) && s.dependsOnShotIds.every(dep => completedIds.has(dep)));
       if (!shot) {
-        const remaining = current.manifest.shots.filter(s => s.status === "PLANNED");
-        if (remaining.length === 0) return NextResponse.json({ success: true, production: current, generated: null, message: "No planned shots remain." });
+        const remaining = current.manifest.shots.filter(s => ["PLANNED", "FAILED"].includes(s.status));
+        if (!remaining.length) return NextResponse.json({ success: true, production: current, queued: false, message: "No ungenerated shots remain." });
         return NextResponse.json({ success: false, error: "No shot is currently eligible; continuity dependencies are unresolved." }, { status: 409 });
       }
-
-      let generated: Awaited<ReturnType<typeof generateProductionShot>> | null = null;
-      try {
-        generated = await generateProductionShot({
-          productionId: id,
-          shot,
-          modelTier: body.modelTier === "quality" || body.modelTier === "lite" ? body.modelTier : "fast",
-        });
-        const production = await reelProductionService.attachShotAsset({
-          id,
-          shotId: shot.id,
-          videoUrl: generated.videoUrl,
-          actualDurationSec: generated.actualDurationSec,
-          operationName: generated.operationName,
-          provider: generated.provider,
-          model: generated.model,
-          expectedRevision: current.revision,
-        });
-        return NextResponse.json({
-          success: true,
-          production,
-          generated: { shotId: shot.id, probe: generated.probe, provider: generated.provider, model: generated.model },
-        });
-      } catch (generationError) {
-        if (generated?.assetKey) {
-          try { await deleteAsset(generated.assetKey); } catch {}
-        }
-        throw generationError;
-      }
+      const modelTier = body.modelTier === "quality" || body.modelTier === "lite" ? body.modelTier : "fast";
+      const dependencyEvidence = shot.dependsOnShotIds.map(depId => {
+        const dep = current.manifest.shots.find(s => s.id === depId);
+        return { id: depId, url: dep?.asset?.videoUrl || null };
+      });
+      const idempotencyKey = operationKey({
+        productionId: id,
+        kind: "SHOT",
+        targetId: shot.id,
+        manifestRevision: current.revision,
+        fingerprint: fingerprint({ prompt: shot.generationPrompt, duration: shot.generationDurationSec, modelTier, dependencyEvidence }),
+      });
+      const operation = await reelOperationQueue.enqueue({
+        productionId: id,
+        kind: "SHOT",
+        targetId: shot.id,
+        idempotencyKey,
+        payload: { manifestRevision: current.revision, modelTier },
+      });
+      return NextResponse.json({ success: true, queued: true, operation, production: current, shotId: shot.id }, { status: 202 });
     }
 
     if (action === "renderNarratedRoughCut") {
@@ -136,52 +119,18 @@ export async function PATCH(
       if (expectedRevision !== undefined && expectedRevision !== current.revision) {
         return NextResponse.json({ success: false, error: `Production changed concurrently (expected revision ${expectedRevision}, found ${current.revision})` }, { status: 409 });
       }
-
-      let rendered: Awaited<ReturnType<typeof renderNarratedRoughCut>> | null = null;
-      try {
-        rendered = await renderNarratedRoughCut(current.manifest);
-        const production = await reelProductionService.attachNarratedRoughCut({
-          id,
-          output: rendered.output,
-          expectedRevision: current.revision,
-        });
-        return NextResponse.json({ success: true, production, rendered: rendered.output });
-      } catch (renderError) {
-        if (rendered?.assetKey) {
-          try { await deleteAsset(rendered.assetKey); } catch {}
-        }
-        throw renderError;
-      }
+      const idempotencyKey = operationKey({
+        productionId: id,
+        kind: "ROUGH_CUT",
+        manifestRevision: current.revision,
+        fingerprint: fingerprint({ audio: current.manifest.audio.narrationUrl, duration: current.manifest.audio.actualDurationSec, shots: current.manifest.shots.map(s => [s.id, s.asset?.videoUrl, s.trimInSec, s.trimOutSec]) }),
+      });
+      const operation = await reelOperationQueue.enqueue({ productionId: id, kind: "ROUGH_CUT", idempotencyKey, payload: { manifestRevision: current.revision } });
+      return NextResponse.json({ success: true, queued: true, operation, production: current }, { status: 202 });
     }
 
-    if (action === "attachNarration") {
-      const wordTimings = Array.isArray(body.wordTimings) ? body.wordTimings as WordTiming[] : [];
-      const production = await reelProductionService.attachNarration({
-        id,
-        narrationUrl: String(body.narrationUrl || ""),
-        actualDurationSec: Number(body.actualDurationSec),
-        timingSource: "actual-alignment",
-        wordTimings,
-        provider: body.provider ? String(body.provider) : undefined,
-        model: body.model ? String(body.model) : undefined,
-        voice: body.voice ? String(body.voice) : undefined,
-        expectedRevision,
-      });
-      return NextResponse.json({ success: true, production });
-    }
-
-    if (action === "attachShotAsset") {
-      const production = await reelProductionService.attachShotAsset({
-        id,
-        shotId: String(body.shotId || ""),
-        videoUrl: String(body.videoUrl || ""),
-        actualDurationSec: Number(body.actualDurationSec),
-        operationName: body.operationName ? String(body.operationName) : undefined,
-        provider: body.provider ? String(body.provider) : undefined,
-        model: body.model ? String(body.model) : undefined,
-        expectedRevision,
-      });
-      return NextResponse.json({ success: true, production });
+    if (action === "attachNarration" || action === "attachShotAsset") {
+      return NextResponse.json({ success: false, error: `${action} is disabled; production evidence may only be attached by the durable worker` }, { status: 410 });
     }
 
     if (action === "auditManifest") {
@@ -192,7 +141,7 @@ export async function PATCH(
     return NextResponse.json({ success: false, error: `Unsupported action: ${action}` }, { status: 400 });
   } catch (error: any) {
     const message = error?.message || "Failed to update production";
-    const conflict = message.includes("concurrently") || message.includes("requires SCRIPT_READY") || message.includes("not allowed") || message.includes("requires ROUGH_CUT_READY");
+    const conflict = message.includes("concurrently") || message.includes("requires") || message.includes("not allowed") || message.includes("dependency");
     return NextResponse.json({ success: false, error: message }, { status: conflict ? 409 : 400 });
   }
 }
