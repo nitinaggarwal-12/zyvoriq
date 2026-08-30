@@ -6,7 +6,8 @@
     "dev": "next dev",
     "guard:legacy": "node scripts/governance/legacy_tech_guard.js",
     "docs:validate": "node scripts/governance/validate_docs_traceability.mjs",
-    "build": "npm run guard:legacy && npm run docs:validate && next build",
+    "check": "npm run guard:legacy && npm run docs:validate && next build",
+    "build": "npm run guard:legacy && next build",
     "start": "next start -H 0.0.0.0 -p ${PORT:-3000}",
     "test:e2e": "node scripts/cloudtop_puppeteer_remote.js",
     "test:sprints": "node scripts/e2e/test_all_sprints.mjs"
