@@ -1,3 +1,4 @@
+import { attachReelArtifactIndex } from "@/lib/artifact/identity";
 import type { BoundaryState, CaptionCue, PerformanceCue, ReelProductionManifest, WordTiming } from "./types";
 
 const clock = (n: number) => Number(n.toFixed(6));
@@ -79,8 +80,10 @@ function syncPerformance(manifest: ReelProductionManifest) {
 }
 
 export function enrichManifestV2(input: ReelProductionManifest): ReelProductionManifest {
-  if (input.version !== 2) return input;
   const manifest = structuredClone(input);
+  attachReelArtifactIndex(manifest);
+  if (manifest.version !== 2) return manifest;
+
   syncBoundaries(manifest);
   syncPerformance(manifest);
 
@@ -122,5 +125,8 @@ export function enrichManifestV2(input: ReelProductionManifest): ReelProductionM
     };
   }
 
+  // Rebuild after enrichment so newly materialized captions/audio/output references
+  // immediately receive canonical identities too.
+  attachReelArtifactIndex(manifest);
   return manifest;
 }
