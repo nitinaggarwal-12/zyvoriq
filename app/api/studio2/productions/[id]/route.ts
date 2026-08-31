@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { operationKey, reelOperationQueue } from "@/lib/reel/operationQueue";
+import { operationKey, reelOperationQueue, type ReelOperation } from "@/lib/reel/operationQueue";
 import { reelProductionControl } from "@/lib/reel/productionControl";
 import { studio2Service } from "@/lib/studio2/service";
 import type { Studio2SubjectMode } from "@/lib/studio2/planner";
@@ -35,7 +35,7 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ id: st
     const { id } = await context.params;
     const production = await studio2Service.get(id);
     if (!production) return NextResponse.json({ success: false, error: "Studio2 production not found" }, { status: 404 });
-    let operations = [];
+    let operations: ReelOperation[] = [];
     try { operations = await reelOperationQueue.latestForProduction(id, 20); } catch {}
     return NextResponse.json({ success: true, production, operations }, { headers: { "Cache-Control": "no-store" } });
   } catch (error: any) {
@@ -61,7 +61,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
     if (action === "setSubjectMode") {
       const mode = String(body.mode) as Studio2SubjectMode;
-      if (!['PRESENTER', 'NO_PERSON'].includes(mode)) return NextResponse.json({ success: false, error: "mode must be PRESENTER or NO_PERSON" }, { status: 400 });
+      if (!["PRESENTER", "NO_PERSON"].includes(mode)) return NextResponse.json({ success: false, error: "mode must be PRESENTER or NO_PERSON" }, { status: 400 });
       const production = await studio2Service.setSubjectMode(id, String(body.shotId || ""), mode, current.revision);
       return NextResponse.json({ success: true, production });
     }
