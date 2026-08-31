@@ -2,8 +2,8 @@ const CLOCK_DIGITS = 6;
 const MIN_SCENE_SEC = 0.12;
 const FPS = 30;
 const MAX_BOUNDARY_DRIFT_MS = 50;
-const MAX_LOCAL_EXTENSION_RATIO = 1.35;
-const MAX_LOCAL_EXTENSION_SEC = 1.25;
+const MAX_LOCAL_EXTENSION_RATIO = 1.20;
+const MAX_LOCAL_EXTENSION_SEC = 0.75;
 const MAX_RETIME_FACTOR = 1.10;
 
 const NUMBER_WORDS = new Map(Object.entries({
@@ -258,6 +258,19 @@ function updateDependentTiming(manifest) {
         gaze: "camera",
         gesture: shot.continuityOut?.action,
         speakingEnergy: shot.continuityIn?.emotion?.intensity || 0.5,
+      }));
+  }
+  if (manifest.captions?.timingSource === "draft") {
+    manifest.captions.cues = manifest.shots
+      .filter(shot => String(shot.scriptText || "").trim())
+      .map((shot, index) => ({
+        id: `caption_draft_${String(index + 1).padStart(2, "0")}`,
+        startSec: clock(shot.editorialStartSec),
+        endSec: clock(Number(shot.editorialStartSec) + Number(shot.editorialDurationSec)),
+        text: String(shot.scriptText || "").trim(),
+        wordIds: [],
+        lines: [String(shot.scriptText || "").trim()],
+        position: "lower-third",
       }));
   }
   if (manifest.musicPlan?.sections?.length) manifest.musicPlan.sections[manifest.musicPlan.sections.length - 1].endSec = clock(manifest.audio.actualDurationSec);
