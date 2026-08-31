@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { reelProductionService } from "@/lib/reel/productionService";
 import { reelProductionControl } from "@/lib/reel/productionControl";
+import { resolveReelCreationIntent } from "@/lib/reel/creationCatalog";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -20,6 +21,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const topic = String(body.topic || "").trim();
     if (!topic) return NextResponse.json({ success: false, error: "topic is required" }, { status: 400 });
+    const creationIntent = resolveReelCreationIntent(body.creationIntent);
 
     const production = await reelProductionService.create({
       topic,
@@ -27,6 +29,7 @@ export async function POST(req: NextRequest) {
       platform: body.platform,
       requestedDurationSec: Number(body.requestedDurationSec || 30),
       scriptText: body.scriptText,
+      creationIntent,
     });
 
     let control = null;
