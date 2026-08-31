@@ -1,5 +1,5 @@
 const assert = require("node:assert/strict");
-const { syncStudio1TimelineToNarration } = require("../../.tmp-reel-v2/studio1/timelineSync.js");
+const { syncStudio1TimelineToNarration } = require("../../.tmp-studio1-sync/studio1/timelineSync.js");
 
 function shot(id, scriptText, duration = 6) {
   return {
