@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Captions, ChevronDown, CircleAlert, Copy, Download, Film, FlaskConical, Loader2, PlayCircle, RefreshCw, Sparkles, UserRoundCheck, Video } from "lucide-react";
+import { ArrowLeft, Captions, ChevronDown, CircleAlert, Copy, Download, Film, FlaskConical, FolderOpen, Loader2, PlayCircle, RefreshCw, Sparkles, UserRoundCheck, Video } from "lucide-react";
 import type { ReelProductionManifest } from "@/lib/reel/types";
 
 type StoredProduction = { id: string; revision: number; manifest: ReelProductionManifest; createdAt: string; updatedAt: string };
@@ -10,6 +10,7 @@ type DurableOperation = { id: string; status: "QUEUED" | "RUNNING" | "SUCCEEDED"
 type Studio1Operation = "plan" | "all" | "fresh" | "rough" | `regen:${string}` | null;
 type SubjectMode = "PRESENTER" | "NO_PERSON";
 type Studio1Meta = {
+  projectTitle?: string;
   presenterContinuity: boolean;
   environmentContinuity: boolean;
   generationRound: number;
@@ -35,9 +36,43 @@ export function Studio1() {
   const [error, setError] = useState("");
   const [selectedShotId, setSelectedShotId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [hydrating, setHydrating] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const productionId = new URLSearchParams(window.location.search).get("productionId");
+    if (!productionId) {
+      setHydrating(false);
+      return;
+    }
+
+    (async () => {
+      try {
+        const response = await fetch(`/api/studio1/productions/${encodeURIComponent(productionId)}`, { cache: "no-store" });
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.error || "Failed to restore Studio1 project");
+        if (cancelled) return;
+        const restored = data.production as StoredProduction;
+        setProduction(restored);
+        setTopic(restored.manifest.topic || "");
+        setTone(restored.manifest.tone || "Confident & conversational");
+        setDuration(`${restored.manifest.requestedDurationSec || 30} sec`);
+        setPlatform(restored.manifest.platform || "Instagram Reels");
+        setSelectedShotId(null);
+        setActiveTab("Scenes");
+      } catch (err: any) {
+        if (!cancelled) setError(err?.message || "Failed to restore Studio1 project");
+      } finally {
+        if (!cancelled) setHydrating(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, []);
 
   const manifest = production?.manifest || null;
   const meta = ((manifest as any)?.studio1 || null) as Studio1Meta | null;
+  const projectTitle = meta?.projectTitle || manifest?.topic || "New Studio1 project";
   const generatedShots = manifest?.shots.filter(shot => Boolean(shot.asset?.videoUrl)) || [];
   const generatedShotCount = generatedShots.length;
   const totalShotCount = manifest?.shots.length || 0;
@@ -98,6 +133,7 @@ export function Studio1() {
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || "Failed to create Studio1 plan");
       setProduction(data.production);
+      window.history.replaceState(null, "", `/studio1?productionId=${encodeURIComponent(data.production.id)}`);
       setSelectedShotId(null);
       setActiveTab("Scenes");
     } catch (err: any) { setError(err?.message || "Failed to create Studio1 plan"); }
@@ -169,22 +205,30 @@ export function Studio1() {
     setCopied(true); setTimeout(() => setCopied(false), 1200);
   };
 
+  if (hydrating) {
+    return <div className="flex min-h-screen items-center justify-center bg-[#07090d] text-slate-100"><div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 text-sm font-bold text-slate-300"><Loader2 className="h-5 w-5 animate-spin text-violet-300" />Restoring your Studio1 project…</div></div>;
+  }
+
   return <div className="min-h-screen bg-[#07090d] text-slate-100">
     <header className="sticky top-0 z-40 border-b border-white/5 bg-[#07090d]/92 backdrop-blur-2xl">
-      <div className="mx-auto flex max-w-[1600px] items-center justify-between px-5 py-4 md:px-8">
-        <div className="flex items-center gap-4">
+      <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-5 py-4 md:px-8">
+        <div className="flex min-w-0 items-center gap-4">
           <Link href="/" className="rounded-xl p-2 text-slate-500 hover:bg-white/5 hover:text-white" aria-label="Back home"><ArrowLeft className="h-5 w-5" /></Link>
-          <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-300 via-white to-cyan-300 font-black text-slate-950">1</div>
-          <div><div className="font-black text-white">Studio 1 · Isolated Clone Lab</div><div className="text-[11px] text-slate-600">Cloned from Studio2 behavior · Studio2 remains untouched</div></div>
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-300 via-white to-cyan-300 font-black text-slate-950">1</div>
+          <div className="min-w-0"><div className="truncate font-black text-white">{production ? projectTitle : "Studio 1 · Isolated Clone Lab"}</div><div className="text-[11px] text-slate-600">{production ? `Saved · revision ${production.revision} · ${manifest?.status}` : "New project · durable state begins when you build the plan"}</div></div>
         </div>
-        <Link href="/studio2" className="rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-slate-400 hover:text-white">Open Studio2 baseline</Link>
+        <div className="flex shrink-0 items-center gap-2">
+          <Link href="/studio/library" className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-slate-400 hover:text-white"><FolderOpen className="h-4 w-4" />Library</Link>
+          <a href="/studio1" className="rounded-xl border border-violet-300/20 bg-violet-300/[0.06] px-3 py-2 text-xs font-black text-violet-100">New project</a>
+          <Link href="/studio2" className="hidden rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-slate-400 hover:text-white xl:block">Open Studio2 baseline</Link>
+        </div>
       </div>
     </header>
 
     <main className="mx-auto grid max-w-[1600px] gap-5 px-5 py-6 md:px-8 lg:grid-cols-[360px_1fr_360px]">
       <aside className="h-fit rounded-[26px] border border-white/10 bg-white/[0.025] p-5 lg:sticky lg:top-24">
-        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-violet-300"><FlaskConical className="h-4 w-4" /> Studio1 clone</div>
-        <h1 className="mt-2 text-2xl font-black tracking-[-0.03em] text-white">Safe lab for the next repair stack.</h1>
+        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-violet-300"><FlaskConical className="h-4 w-4" /> Studio1 project</div>
+        <h1 className="mt-2 text-2xl font-black tracking-[-0.03em] text-white">{production ? projectTitle : "Start a durable creation workspace."}</h1>
         <label className="mt-6 block text-xs font-bold text-slate-500">IDEA OR TOPIC</label>
         <textarea value={topic} onChange={event => setTopic(event.target.value)} rows={5} className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-black/20 p-4 text-sm leading-6 text-white outline-none focus:border-violet-300/35" />
         <div className="mt-5 grid gap-3">
@@ -198,14 +242,14 @@ export function Studio1() {
           <Toggle label="Environment continuity" note="Locks location, background, lighting and major props." checked={meta?.environmentContinuity !== false} onChange={enabled => setToggle("setEnvironmentContinuity", enabled)} />
         </div>}
 
-        <ActionButton onClick={buildPlan} disabled={busy || !topic.trim()} active={operation === "plan"} icon={Sparkles} idle={production ? "Create new Studio1 plan" : "Build Studio1 plan"} busyLabel="Building…" primary />
+        <ActionButton onClick={buildPlan} disabled={busy || !topic.trim()} active={operation === "plan"} icon={Sparkles} idle={production ? "Create new project from these settings" : "Build Studio1 plan"} busyLabel="Building…" primary />
         {production && <ActionButton onClick={() => generateThroughRoughCut(false)} disabled={busy} active={operation === "all"} icon={Film} idle={generatedShotCount ? `Generate remaining + MP4 (${generatedShotCount}/${totalShotCount})` : "Generate all clips + MP4"} busyLabel="Generating…" primary />}
         {production && generatedShotCount > 0 && <ActionButton onClick={() => generateThroughRoughCut(true)} disabled={busy} active={operation === "fresh"} icon={RefreshCw} idle="Generate ALL clips fresh" busyLabel="Fresh generation…" />}
         {fullReelStale && <ActionButton onClick={rebuildFullReel} disabled={busy} active={operation === "rough"} icon={Film} idle="Rebuild Full Reel" busyLabel="Rebuilding…" primary />}
         {roughCut?.videoUrl && <button onClick={() => setSelectedShotId(null)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-violet-300/30 bg-violet-300/[0.09] py-3.5 text-sm font-black text-violet-50"><PlayCircle className="h-4 w-4" />Play Full Reel · {roughCut.actualDurationSec.toFixed(1)}s</button>}
         {roughCut?.videoUrl && <a href={roughCut.videoUrl} download className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-300/25 bg-emerald-300/[0.07] py-3.5 text-sm font-black text-emerald-100"><Download className="h-4 w-4" />Download Full Reel</a>}
         {error && <div className="mt-4 flex gap-2 rounded-xl border border-red-400/20 bg-red-400/5 p-3 text-xs leading-5 text-red-200"><CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />{error}</div>}
-        <p className="mt-4 text-[11px] leading-5 text-slate-600">Studio1 uses only /studio1 routes and studio1_-prefixed productions. This initial clone does not modify Studio2 or the shared worker.</p>
+        <p className="mt-4 text-[11px] leading-5 text-slate-600">Every Studio1 project now has a durable URL. Refreshing or reopening from Library restores the server-side production revision before the editor is shown.</p>
       </aside>
 
       <section className="min-w-0 rounded-[26px] border border-white/10 bg-[#0a0d12]">
@@ -214,7 +258,7 @@ export function Studio1() {
           {activeTab === "Scenes" && <div>
             <div className="text-xs font-black uppercase tracking-[0.16em] text-violet-300">ISOLATED TEST CLIPS</div>
             <h2 className="mt-2 text-3xl font-black tracking-[-0.035em] text-white">{manifest ? `${generatedShotCount}/${totalShotCount} clips generated · round ${meta?.generationRound || 1}` : "Build a Studio1 plan"}</h2>
-            {!manifest ? <div className="mt-8 rounded-2xl border border-dashed border-white/10 p-6 text-sm text-slate-600">Studio1 starts from Studio2's current continuity behavior but stores its own productions.</div> : <div className="mt-8 space-y-4">{manifest.shots.map((shot, index) => {
+            {!manifest ? <div className="mt-8 rounded-2xl border border-dashed border-white/10 p-6 text-sm text-slate-600">Create a project here or open an existing Studio1 project from Library.</div> : <div className="mt-8 space-y-4">{manifest.shots.map((shot, index) => {
               const options = meta?.clipOptions?.[shot.id] || [];
               const mode = meta?.subjectModes?.[shot.id] || "PRESENTER";
               const regenerating = operation === `regen:${shot.id}`;
@@ -245,7 +289,7 @@ export function Studio1() {
         </div>
         <div className="mt-4 rounded-[24px] border border-white/10 bg-white/[0.025] p-5">
           <div className="text-xs font-black uppercase tracking-[0.15em] text-slate-600">Studio1 truth</div>
-          <div className="mt-4 space-y-3 text-sm"><Truth label="Production" value={production?.id || "Not created"} /><Truth label="Revision" value={production ? `r${production.revision}` : "—"} /><Truth label="State" value={manifest?.status || "DRAFT"} /><Truth label="Identity" value={meta?.presenterContinuity ? "Canonical anchor ON" : "Anchor OFF"} /><Truth label="Environment" value={meta?.environmentContinuity !== false ? "Continuity ON" : "Continuity OFF"} /><Truth label="Generation round" value={String(meta?.generationRound || 0)} /><Truth label="Clips" value={manifest ? `${generatedShotCount}/${totalShotCount}` : "0"} /><Truth label="Combined MP4" value={roughCut ? "Ready" : "Pending"} /></div>
+          <div className="mt-4 space-y-3 text-sm"><Truth label="Project" value={projectTitle} /><Truth label="Production" value={production?.id || "Not created"} /><Truth label="Revision" value={production ? `r${production.revision}` : "—"} /><Truth label="State" value={manifest?.status || "DRAFT"} /><Truth label="Identity" value={meta?.presenterContinuity ? "Canonical anchor ON" : "Anchor OFF"} /><Truth label="Environment" value={meta?.environmentContinuity !== false ? "Continuity ON" : "Continuity OFF"} /><Truth label="Generation round" value={String(meta?.generationRound || 0)} /><Truth label="Clips" value={manifest ? `${generatedShotCount}/${totalShotCount}` : "0"} /><Truth label="Combined MP4" value={roughCut ? "Ready" : "Pending"} /></div>
         </div>
       </aside>
     </main>

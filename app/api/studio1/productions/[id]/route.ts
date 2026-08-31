@@ -54,6 +54,18 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     if (!current) return NextResponse.json({ success: false, error: "Studio1 production not found" }, { status: 404 });
     if (expectedRevision !== undefined && current.revision !== expectedRevision) return NextResponse.json({ success: false, error: `Production changed concurrently (expected revision ${expectedRevision}, found ${current.revision})` }, { status: 409 });
 
+    if (action === "renameProject") {
+      const production = await studio1Service.renameProject(id, String(body.projectTitle || ""), current.revision);
+      return NextResponse.json({ success: true, production });
+    }
+
+    if (action === "duplicateProject") {
+      const production = await studio1Service.duplicateProject(id);
+      let control = null;
+      try { control = await reelProductionControl.register(production.id); } catch {}
+      return NextResponse.json({ success: true, production, duplicated: true, productionControl: control ? { generationToken: control.generationToken } : null }, { status: 201 });
+    }
+
     if (action === "setPresenterContinuity") {
       const production = await studio1Service.setPresenterContinuity(id, Boolean(body.enabled), current.revision);
       return NextResponse.json({ success: true, production });
@@ -126,5 +138,20 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     const unavailable = message.includes("worker unavailable") || message.includes("requires Postgres");
     const conflict = message.includes("concurrently") || message.includes("requires") || message.includes("not allowed") || message.includes("not found") || message.includes("dependency");
     return NextResponse.json({ success: false, error: message }, { status: unavailable ? 503 : conflict ? 409 : 400 });
+  }
+}
+
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await context.params;
+    if (!id.startsWith("studio1_")) return NextResponse.json({ success: false, error: "Studio1 may only delete studio1_-prefixed productions" }, { status: 403 });
+    const body = await req.json().catch(() => ({}));
+    const expectedRevision = body.expectedRevision === undefined ? undefined : Number(body.expectedRevision);
+    await studio1Service.deleteProject(id, expectedRevision);
+    return NextResponse.json({ success: true, deletedId: id }, { headers: { "Cache-Control": "no-store" } });
+  } catch (error: any) {
+    const message = error?.message || "Failed to delete Studio1 production";
+    const conflict = message.includes("concurrently") || message.includes("not found");
+    return NextResponse.json({ success: false, error: message }, { status: conflict ? 409 : 400 });
   }
 }

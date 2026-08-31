@@ -5,18 +5,21 @@ import Link from "next/link";
 import {
   AudioLines,
   Captions,
+  Copy,
   Download,
   FileJson,
   Film,
   FolderOpen,
   Image as ImageIcon,
   Loader2,
-  Music2,
+  Pencil,
   Play,
+  Plus,
   RefreshCw,
   ScanSearch,
   Search,
   Sparkles,
+  Trash2,
   Video,
 } from "lucide-react";
 import { AppNavbar } from "@/components/AppNavbar";
@@ -65,6 +68,10 @@ function collectProductionAssets(p: Production): LibraryAsset[] {
   return out;
 }
 
+function projectTitle(p: Production) {
+  return p.manifest?.studio1?.projectTitle || p.manifest?.topic || p.id;
+}
+
 function downloadPayload(asset: LibraryAsset) {
   const body = typeof asset.payload === "string" ? asset.payload : JSON.stringify(asset.payload, null, 2);
   const blob = new Blob([body || ""], { type: typeof asset.payload === "string" ? "text/plain" : "application/json" });
@@ -77,8 +84,10 @@ function downloadPayload(asset: LibraryAsset) {
 
 export default function StudioLibraryPage() {
   const [productions, setProductions] = useState<Production[]>([]);
+  const [studio1Projects, setStudio1Projects] = useState<Production[]>([]);
   const [legacy, setLegacy] = useState<LegacyTrack[]>([]);
   const [loading, setLoading] = useState(true);
+  const [managing, setManaging] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<(typeof tabs)[number]>("All");
   const [query, setQuery] = useState("");
@@ -87,13 +96,16 @@ export default function StudioLibraryPage() {
   const load = async () => {
     setLoading(true); setError("");
     try {
-      const [prodRes, trackRes] = await Promise.all([
+      const [prodRes, studio1Res, trackRes] = await Promise.all([
         fetch("/api/reels/productions?limit=100", { cache: "no-store" }),
+        fetch("/api/studio1/productions?limit=100", { cache: "no-store" }),
         fetch("/api/studio/tracks", { cache: "no-store" }).catch(() => null),
       ]);
-      const prodData = await prodRes.json();
+      const [prodData, studio1Data] = await Promise.all([prodRes.json(), studio1Res.json()]);
       if (!prodRes.ok || !prodData.success) throw new Error(prodData.error || "Failed to load Reel productions");
+      if (!studio1Res.ok || !studio1Data.success) throw new Error(studio1Data.error || "Failed to load Studio1 projects");
       setProductions(Array.isArray(prodData.productions) ? prodData.productions : []);
+      setStudio1Projects(Array.isArray(studio1Data.productions) ? studio1Data.productions : []);
 
       const serverTracks = trackRes?.ok ? (await trackRes.json()).tracks || [] : [];
       let localTracks: LegacyTrack[] = [];
@@ -109,6 +121,55 @@ export default function StudioLibraryPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const renameProject = async (project: Production) => {
+    const nextTitle = window.prompt("Rename Studio1 project", projectTitle(project));
+    if (!nextTitle?.trim() || nextTitle.trim() === projectTitle(project)) return;
+    setManaging(project.id); setError("");
+    try {
+      const response = await fetch(`/api/studio1/productions/${encodeURIComponent(project.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "renameProject", projectTitle: nextTitle.trim(), expectedRevision: project.revision }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || "Failed to rename project");
+      setStudio1Projects(items => items.map(item => item.id === project.id ? data.production : item));
+      setProductions(items => items.map(item => item.id === project.id ? data.production : item));
+    } catch (e: any) { setError(e?.message || "Failed to rename Studio1 project"); }
+    finally { setManaging(null); }
+  };
+
+  const duplicateProject = async (project: Production) => {
+    setManaging(project.id); setError("");
+    try {
+      const response = await fetch(`/api/studio1/productions/${encodeURIComponent(project.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "duplicateProject", expectedRevision: project.revision }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || "Failed to duplicate project");
+      window.location.href = `/studio1?productionId=${encodeURIComponent(data.production.id)}`;
+    } catch (e: any) { setError(e?.message || "Failed to duplicate Studio1 project"); setManaging(null); }
+  };
+
+  const deleteProject = async (project: Production) => {
+    if (!window.confirm(`Delete “${projectTitle(project)}”? This removes the project record from Library.`)) return;
+    setManaging(project.id); setError("");
+    try {
+      const response = await fetch(`/api/studio1/productions/${encodeURIComponent(project.id)}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ expectedRevision: project.revision }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || "Failed to delete project");
+      setStudio1Projects(items => items.filter(item => item.id !== project.id));
+      setProductions(items => items.filter(item => item.id !== project.id));
+    } catch (e: any) { setError(e?.message || "Failed to delete Studio1 project"); }
+    finally { setManaging(null); }
+  };
 
   const productionAssets = useMemo(() => productions.flatMap(collectProductionAssets), [productions]);
   const legacyAssets = useMemo<LibraryAsset[]>(() => legacy.map(t => ({
@@ -135,18 +196,40 @@ export default function StudioLibraryPage() {
       <div className="flex flex-col gap-5 border-b border-white/10 pb-7 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-teal-300"><FolderOpen className="h-4 w-4"/> Content Library</div>
-          <h1 className="mt-2 text-3xl font-black tracking-[-0.04em] text-white md:text-4xl">Everything Zyvoriq has actually persisted.</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">Final Reels, individual Veo clips, narration, music, continuity frames, scripts, captions, QA evidence, manifests and legacy Studio tracks. No demo cards are injected when storage is empty.</p>
+          <h1 className="mt-2 text-3xl font-black tracking-[-0.04em] text-white md:text-4xl">Projects you can reopen, plus every persisted asset.</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">Studio1 projects are editable workspaces. Final Reels, clips, narration, continuity frames, scripts, captions and evidence remain browsable as assets underneath.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button onClick={load} disabled={loading} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-xs font-bold hover:bg-white/[0.06] disabled:opacity-50"><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}/>Refresh</button>
-          <Link href="/studio" className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-black text-slate-950"><Sparkles className="h-4 w-4"/>Create</Link>
+          <Link href="/studio1" className="inline-flex items-center gap-2 rounded-xl bg-violet-200 px-4 py-2.5 text-xs font-black text-slate-950"><Plus className="h-4 w-4"/>New Studio1 project</Link>
+          <Link href="/studio" className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-xs font-black text-white"><Sparkles className="h-4 w-4"/>Studio Cinema</Link>
         </div>
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
         <Metric label="Productions" value={productions.length}/><Metric label="Final MP4s" value={counts.Final || 0}/><Metric label="Video clips" value={counts.Video || 0}/><Metric label="Audio assets" value={counts.Audio || 0}/><Metric label="Images" value={counts.Image || 0}/><Metric label="Evidence/Text" value={(counts.Evidence || 0) + (counts.Text || 0)}/>
       </div>
+
+      <section className="mt-7 rounded-3xl border border-violet-300/15 bg-violet-300/[0.025] p-5 md:p-6">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div><div className="text-xs font-black uppercase tracking-[0.16em] text-violet-300">Studio1 projects</div><h2 className="mt-1 text-2xl font-black text-white">Editable workspaces · {studio1Projects.length}</h2><p className="mt-1 text-xs text-slate-500">Open/Edit restores the exact production revision after refresh. Rename, duplicate and delete operate on the durable project record.</p></div>
+          <Link href="/studio1" className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-black text-slate-950"><Plus className="h-4 w-4"/>Create project</Link>
+        </div>
+        {loading ? <div className="mt-5 flex items-center gap-2 text-sm text-slate-500"><Loader2 className="h-4 w-4 animate-spin"/>Loading Studio1 projects…</div> : studio1Projects.length === 0 ? <div className="mt-5 rounded-2xl border border-dashed border-white/10 p-8 text-center text-sm text-slate-500">No Studio1 projects yet. Create one and it will remain editable here.</div> : <div className="mt-5 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">{studio1Projects.map(project => {
+          const m = project.manifest || {};
+          const busy = managing === project.id;
+          const generated = (m.shots || []).filter((shot: any) => shot.asset?.videoUrl).length;
+          return <article key={project.id} className="rounded-2xl border border-white/10 bg-[#0b0e13] p-4">
+            <div className="flex items-start justify-between gap-4"><div className="min-w-0"><h3 className="truncate text-base font-black text-white">{projectTitle(project)}</h3><div className="mt-1 text-xs text-slate-500">{m.status || "DRAFT"} · {generated}/{m.shots?.length || 0} clips · revision {project.revision}</div><div className="mt-2 truncate font-mono text-[10px] text-slate-700">{project.id}</div></div>{busy && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-violet-300"/>}</div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link href={`/studio1?productionId=${encodeURIComponent(project.id)}`} className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-[11px] font-black text-slate-950"><Pencil className="h-3.5 w-3.5"/>Open / Edit</Link>
+              <button onClick={() => renameProject(project)} disabled={Boolean(managing)} className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-[11px] font-bold text-slate-300 hover:bg-white/5 disabled:opacity-40"><Pencil className="h-3.5 w-3.5"/>Rename</button>
+              <button onClick={() => duplicateProject(project)} disabled={Boolean(managing)} className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-[11px] font-bold text-slate-300 hover:bg-white/5 disabled:opacity-40"><Copy className="h-3.5 w-3.5"/>Duplicate</button>
+              <button onClick={() => deleteProject(project)} disabled={Boolean(managing)} className="inline-flex items-center gap-1.5 rounded-lg border border-red-400/20 px-3 py-2 text-[11px] font-bold text-red-200 hover:bg-red-400/5 disabled:opacity-40"><Trash2 className="h-3.5 w-3.5"/>Delete</button>
+            </div>
+          </article>;
+        })}</div>}
+      </section>
 
       <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.02] p-4 md:p-5">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
@@ -163,7 +246,7 @@ export default function StudioLibraryPage() {
       <section className="mt-10">
         <div className="mb-4 flex items-center justify-between"><div><div className="text-xs font-black uppercase tracking-[0.16em] text-pink-300">Production groups</div><h2 className="mt-1 text-2xl font-black">Browse each Reel and every piece inside it</h2></div><Link href="/studio/inspector" className="inline-flex items-center gap-2 rounded-xl border border-pink-300/20 px-3 py-2 text-xs font-bold text-pink-100"><ScanSearch className="h-4 w-4"/>Evidence Inspector</Link></div>
         <div className="space-y-3">{productions.map(p => { const m = p.manifest || {}; const pa = collectProductionAssets(p); const expanded = openProduction === p.id; return <div key={p.id} className="rounded-2xl border border-white/10 bg-white/[0.02]">
-          <button onClick={() => setOpenProduction(expanded ? null : p.id)} className="flex w-full items-center justify-between gap-4 p-4 text-left"><div className="min-w-0"><div className="truncate font-black text-white">{m.topic || p.id}</div><div className="mt-1 text-xs text-slate-500">{m.status} · {m.plannedDurationSec || m.requestedDurationSec || 0}s · {pa.length} persisted pieces · rev {p.revision}</div></div><span className="rounded-lg border border-white/10 px-2 py-1 text-[10px] font-bold text-slate-400">{expanded ? "HIDE" : "SHOW ALL"}</span></button>
+          <button onClick={() => setOpenProduction(expanded ? null : p.id)} className="flex w-full items-center justify-between gap-4 p-4 text-left"><div className="min-w-0"><div className="truncate font-black text-white">{m.studio1?.projectTitle || m.topic || p.id}</div><div className="mt-1 text-xs text-slate-500">{m.status} · {m.plannedDurationSec || m.requestedDurationSec || 0}s · {pa.length} persisted pieces · rev {p.revision}</div></div><span className="rounded-lg border border-white/10 px-2 py-1 text-[10px] font-bold text-slate-400">{expanded ? "HIDE" : "SHOW ALL"}</span></button>
           {expanded && <div className="grid gap-3 border-t border-white/10 p-4 md:grid-cols-2 xl:grid-cols-4">{pa.map(a => <AssetCard key={a.id} asset={a} compact/>)}</div>}
         </div>; })}</div>
       </section>
