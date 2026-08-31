@@ -2,8 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Captions, ChevronDown, CircleAlert, Copy, Download, Film, FlaskConical, FolderOpen, Loader2, PlayCircle, RefreshCw, Sparkles, UserRoundCheck, Video } from "lucide-react";
-import type { ReelProductionManifest } from "@/lib/reel/types";
+import { ArrowDown, ArrowLeft, ArrowUp, Captions, ChevronDown, CircleAlert, Copy, Download, Film, FlaskConical, FolderOpen, Loader2, Pencil, PlayCircle, Plus, RefreshCw, Save, Sparkles, Trash2, UserRoundCheck, Video, X } from "lucide-react";
+import type { ReelProductionManifest, ReelShot } from "@/lib/reel/types";
 
 type StoredProduction = { id: string; revision: number; manifest: ReelProductionManifest; createdAt: string; updatedAt: string };
 type DurableOperation = { id: string; status: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED"; lastError?: string };
@@ -33,8 +33,12 @@ export function Studio1() {
   const [activeTab, setActiveTab] = useState("Scenes");
   const [production, setProduction] = useState<StoredProduction | null>(null);
   const [operation, setOperation] = useState<Studio1Operation>(null);
+  const [sceneBusy, setSceneBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [selectedShotId, setSelectedShotId] = useState<string | null>(null);
+  const [editingShotId, setEditingShotId] = useState<string | null>(null);
+  const [draftVisual, setDraftVisual] = useState("");
+  const [draftScript, setDraftScript] = useState("");
   const [copied, setCopied] = useState(false);
   const [hydrating, setHydrating] = useState(true);
 
@@ -81,7 +85,7 @@ export function Studio1() {
   const previewUrl = selectedShot?.asset?.videoUrl || roughCut?.videoUrl || generatedShots[0]?.asset?.videoUrl || null;
   const previewLabel = selectedShot ? `Clip ${Math.max(1, (manifest?.shots.findIndex(shot => shot.id === selectedShot.id) ?? 0) + 1)}` : roughCut ? "Full Reel" : generatedShots.length ? "First generated clip" : "Preview";
   const script = useMemo(() => manifest ? (manifest.masterScript.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [manifest.masterScript]).map(line => line.trim()).filter(Boolean) : [], [manifest]);
-  const busy = operation !== null;
+  const busy = operation !== null || sceneBusy !== null;
   const fullReelStale = Boolean(manifest && !roughCut && generatedShotCount === totalShotCount && totalShotCount > 0 && manifest.status === "ROUGH_CUT_READY");
 
   const refresh = async (id: string) => {
@@ -135,6 +139,7 @@ export function Studio1() {
       setProduction(data.production);
       window.history.replaceState(null, "", `/studio1?productionId=${encodeURIComponent(data.production.id)}`);
       setSelectedShotId(null);
+      setEditingShotId(null);
       setActiveTab("Scenes");
     } catch (err: any) { setError(err?.message || "Failed to create Studio1 plan"); }
     finally { setOperation(null); }
@@ -177,6 +182,37 @@ export function Studio1() {
     try { setProduction(await dispatch(production, "regenerateShot", { shotId, modelTier: "fast" })); }
     catch (err: any) { setError(err?.message || `Failed to regenerate ${shotId}`); }
     finally { setOperation(null); }
+  };
+
+  const sceneAction = async (shotId: string, action: "addShotAfter" | "deleteShot" | "moveShot", extra: Record<string, unknown> = {}) => {
+    if (!production) return;
+    if (action === "deleteShot" && !window.confirm("Delete this scene? Its narration beat and duration will be merged into the neighboring scene.")) return;
+    setSceneBusy(`${action}:${shotId}`); setError("");
+    try {
+      const next = await dispatch(production, action, { shotId, ...extra });
+      setProduction(next);
+      setSelectedShotId(null);
+      setEditingShotId(null);
+    } catch (err: any) { setError(err?.message || `Failed to ${action}`); }
+    finally { setSceneBusy(null); }
+  };
+
+  const beginEditShot = (shot: ReelShot) => {
+    setEditingShotId(shot.id);
+    setDraftVisual(shot.visualIntent);
+    setDraftScript(shot.scriptText);
+  };
+
+  const saveShot = async (shotId: string) => {
+    if (!production) return;
+    setSceneBusy(`editShot:${shotId}`); setError("");
+    try {
+      const next = await dispatch(production, "editShot", { shotId, visualIntent: draftVisual, scriptText: draftScript });
+      setProduction(next);
+      setEditingShotId(null);
+      setSelectedShotId(null);
+    } catch (err: any) { setError(err?.message || "Failed to save scene"); }
+    finally { setSceneBusy(null); }
   };
 
   const setToggle = async (action: "setPresenterContinuity" | "setEnvironmentContinuity", enabled: boolean) => {
@@ -249,23 +285,41 @@ export function Studio1() {
         {roughCut?.videoUrl && <button onClick={() => setSelectedShotId(null)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-violet-300/30 bg-violet-300/[0.09] py-3.5 text-sm font-black text-violet-50"><PlayCircle className="h-4 w-4" />Play Full Reel · {roughCut.actualDurationSec.toFixed(1)}s</button>}
         {roughCut?.videoUrl && <a href={roughCut.videoUrl} download className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-300/25 bg-emerald-300/[0.07] py-3.5 text-sm font-black text-emerald-100"><Download className="h-4 w-4" />Download Full Reel</a>}
         {error && <div className="mt-4 flex gap-2 rounded-xl border border-red-400/20 bg-red-400/5 p-3 text-xs leading-5 text-red-200"><CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />{error}</div>}
-        <p className="mt-4 text-[11px] leading-5 text-slate-600">Every Studio1 project now has a durable URL. Refreshing or reopening from Library restores the server-side production revision before the editor is shown.</p>
+        <p className="mt-4 text-[11px] leading-5 text-slate-600">Every scene mutation is saved as a new server revision. Refreshing or reopening from Library restores the latest durable project before the editor is shown.</p>
       </aside>
 
       <section className="min-w-0 rounded-[26px] border border-white/10 bg-[#0a0d12]">
         <div className="flex flex-wrap items-center gap-1 border-b border-white/5 p-3">{["Scenes", "Script", "Captions"].map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`rounded-xl px-4 py-2 text-sm font-bold ${activeTab === tab ? "bg-white text-slate-950" : "text-slate-500 hover:bg-white/5 hover:text-white"}`}>{tab}</button>)}</div>
         <div className="p-5 sm:p-8">
           {activeTab === "Scenes" && <div>
-            <div className="text-xs font-black uppercase tracking-[0.16em] text-violet-300">ISOLATED TEST CLIPS</div>
-            <h2 className="mt-2 text-3xl font-black tracking-[-0.035em] text-white">{manifest ? `${generatedShotCount}/${totalShotCount} clips generated · round ${meta?.generationRound || 1}` : "Build a Studio1 plan"}</h2>
+            <div className="text-xs font-black uppercase tracking-[0.16em] text-violet-300">EDITABLE TIMELINE</div>
+            <div className="mt-2 flex flex-col gap-3 md:flex-row md:items-end md:justify-between"><h2 className="text-3xl font-black tracking-[-0.035em] text-white">{manifest ? `${generatedShotCount}/${totalShotCount} clips generated · round ${meta?.generationRound || 1}` : "Build a Studio1 plan"}</h2>{manifest && <div className="text-xs text-slate-500">Edit · split/add · move · delete · regenerate</div>}</div>
             {!manifest ? <div className="mt-8 rounded-2xl border border-dashed border-white/10 p-6 text-sm text-slate-600">Create a project here or open an existing Studio1 project from Library.</div> : <div className="mt-8 space-y-4">{manifest.shots.map((shot, index) => {
               const options = meta?.clipOptions?.[shot.id] || [];
               const mode = meta?.subjectModes?.[shot.id] || "PRESENTER";
               const regenerating = operation === `regen:${shot.id}`;
+              const editing = editingShotId === shot.id;
+              const mutating = sceneBusy?.endsWith(`:${shot.id}`) || false;
               return <div key={shot.id} className={`rounded-2xl border p-4 ${selectedShotId === shot.id ? "border-violet-300/35 bg-violet-300/[0.05]" : "border-white/10 bg-white/[0.025]"}`}>
                 <div className="flex items-start gap-4"><div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-xs font-black text-slate-500">{index + 1}</div><div className="min-w-0 flex-1">
-                  <div className="text-sm leading-6 text-slate-300">{shot.visualIntent}</div>
-                  <div className="mt-1 text-xs text-slate-600">{shot.asset?.videoUrl ? `Current · ${shot.asset.actualDurationSec?.toFixed(2) || "?"}s · ${shot.asset.model || "provider"}` : `Pending · needs ${shot.generationDurationSec}s source`}</div>
+                  <div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0 flex-1"><div className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-600">{shot.editorialStartSec.toFixed(1)}s → {(shot.editorialStartSec + shot.editorialDurationSec).toFixed(1)}s · {shot.editorialDurationSec.toFixed(1)}s</div>{!editing && <><div className="mt-1 text-sm leading-6 text-slate-300">{shot.visualIntent}</div>{shot.scriptText && <div className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">“{shot.scriptText}”</div>}</>}</div>
+                    <div className="flex shrink-0 flex-wrap gap-1.5">
+                      <IconButton label="Move up" disabled={busy || index === 0} onClick={() => sceneAction(shot.id, "moveShot", { direction: -1 })}><ArrowUp className="h-3.5 w-3.5" /></IconButton>
+                      <IconButton label="Move down" disabled={busy || index === manifest.shots.length - 1} onClick={() => sceneAction(shot.id, "moveShot", { direction: 1 })}><ArrowDown className="h-3.5 w-3.5" /></IconButton>
+                      <IconButton label="Edit scene" disabled={busy} onClick={() => beginEditShot(shot)}><Pencil className="h-3.5 w-3.5" /></IconButton>
+                      <IconButton label="Add scene after" disabled={busy} onClick={() => sceneAction(shot.id, "addShotAfter")}><Plus className="h-3.5 w-3.5" /></IconButton>
+                      <IconButton label="Delete scene" disabled={busy || manifest.shots.length <= 2} danger onClick={() => sceneAction(shot.id, "deleteShot")}><Trash2 className="h-3.5 w-3.5" /></IconButton>
+                    </div>
+                  </div>
+
+                  {editing && <div className="mt-4 space-y-3 rounded-xl border border-violet-300/15 bg-black/20 p-4">
+                    <label className="block"><span className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">Visual direction</span><textarea value={draftVisual} onChange={event => setDraftVisual(event.target.value)} rows={3} className="mt-1.5 w-full resize-y rounded-xl border border-white/10 bg-black/20 p-3 text-sm leading-6 text-white outline-none focus:border-violet-300/30" /></label>
+                    <label className="block"><span className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">Spoken script for this scene</span><textarea value={draftScript} onChange={event => setDraftScript(event.target.value)} rows={3} className="mt-1.5 w-full resize-y rounded-xl border border-white/10 bg-black/20 p-3 text-sm leading-6 text-white outline-none focus:border-violet-300/30" /></label>
+                    <div className="text-[11px] leading-5 text-amber-200/70">Changing spoken script invalidates narration and captions so Studio1 regenerates them from the new project revision. Visual changes archive the current clip as an option and mark this scene for regeneration.</div>
+                    <div className="flex gap-2"><button onClick={() => saveShot(shot.id)} disabled={busy || !draftVisual.trim()} className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-black text-slate-950 disabled:opacity-40">{mutating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}Save scene</button><button onClick={() => setEditingShotId(null)} disabled={busy} className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-bold text-slate-400"><X className="h-3.5 w-3.5" />Cancel</button></div>
+                  </div>}
+
+                  <div className="mt-3 text-xs text-slate-600">{shot.asset?.videoUrl ? `Current · ${shot.asset.actualDurationSec?.toFixed(2) || "?"}s · ${shot.asset.model || "provider"}` : mutating ? "Saving project revision…" : `Pending · needs ${shot.generationDurationSec}s source`}</div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <select value={mode} onChange={event => setSubjectMode(shot.id, event.target.value as SubjectMode)} disabled={busy} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs font-bold text-slate-300"><option value="PRESENTER">PRESENTER · canonical identity</option><option value="NO_PERSON">NO PERSON · strict B-roll</option></select>
                     {shot.asset?.videoUrl && <button onClick={() => setSelectedShotId(shot.id)} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-slate-300 hover:text-white"><Video className="mr-1 inline h-3.5 w-3.5" />Review</button>}
@@ -276,7 +330,7 @@ export function Studio1() {
               </div>;
             })}</div>}
           </div>}
-          {activeTab === "Script" && <div><div className="flex items-start justify-between gap-4"><div><div className="text-xs font-black uppercase tracking-[0.16em] text-violet-300">MASTER SCRIPT</div><h2 className="mt-2 text-3xl font-black text-white">Same baseline script behavior as Studio2.</h2></div><button onClick={copyScript} disabled={!manifest} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-bold text-slate-400"><Copy className="mr-1 inline h-4 w-4" />{copied ? "Copied" : "Copy"}</button></div><div className="mt-8 space-y-3">{script.length ? script.map((line, index) => <div key={`${index}-${line.slice(0, 18)}`} className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 text-sm leading-7 text-slate-300">{line}</div>) : <div className="text-sm text-slate-600">Build a plan first.</div>}</div></div>}
+          {activeTab === "Script" && <div><div className="flex items-start justify-between gap-4"><div><div className="text-xs font-black uppercase tracking-[0.16em] text-violet-300">MASTER SCRIPT</div><h2 className="mt-2 text-3xl font-black text-white">Durable script assembled from the editable scene timeline.</h2></div><button onClick={copyScript} disabled={!manifest} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-bold text-slate-400"><Copy className="mr-1 inline h-4 w-4" />{copied ? "Copied" : "Copy"}</button></div><div className="mt-8 space-y-3">{script.length ? script.map((line, index) => <div key={`${index}-${line.slice(0, 18)}`} className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 text-sm leading-7 text-slate-300">{line}</div>) : <div className="text-sm text-slate-600">Build a plan first.</div>}</div></div>}
           {activeTab === "Captions" && <div><Captions className="h-8 w-8 text-violet-300" /><div className="mt-5 text-xs font-black uppercase tracking-[0.16em] text-violet-300">CAPTION SOURCE</div><h2 className="mt-2 text-3xl font-black text-white">{manifest?.audio.timingSource === "actual-alignment" ? `${manifest.audio.wordTimings?.length || 0} words aligned` : "Waiting for real narration alignment"}</h2></div>}
         </div>
       </section>
@@ -289,7 +343,7 @@ export function Studio1() {
         </div>
         <div className="mt-4 rounded-[24px] border border-white/10 bg-white/[0.025] p-5">
           <div className="text-xs font-black uppercase tracking-[0.15em] text-slate-600">Studio1 truth</div>
-          <div className="mt-4 space-y-3 text-sm"><Truth label="Project" value={projectTitle} /><Truth label="Production" value={production?.id || "Not created"} /><Truth label="Revision" value={production ? `r${production.revision}` : "—"} /><Truth label="State" value={manifest?.status || "DRAFT"} /><Truth label="Identity" value={meta?.presenterContinuity ? "Canonical anchor ON" : "Anchor OFF"} /><Truth label="Environment" value={meta?.environmentContinuity !== false ? "Continuity ON" : "Continuity OFF"} /><Truth label="Generation round" value={String(meta?.generationRound || 0)} /><Truth label="Clips" value={manifest ? `${generatedShotCount}/${totalShotCount}` : "0"} /><Truth label="Combined MP4" value={roughCut ? "Ready" : "Pending"} /></div>
+          <div className="mt-4 space-y-3 text-sm"><Truth label="Project" value={projectTitle} /><Truth label="Production" value={production?.id || "Not created"} /><Truth label="Revision" value={production ? `r${production.revision}` : "—"} /><Truth label="State" value={manifest?.status || "DRAFT"} /><Truth label="Identity" value={meta?.presenterContinuity ? "Canonical anchor ON" : "Anchor OFF"} /><Truth label="Environment" value={meta?.environmentContinuity !== false ? "Continuity ON" : "Continuity OFF"} /><Truth label="Generation round" value={String(meta?.generationRound || 0)} /><Truth label="Scenes" value={manifest ? `${totalShotCount}` : "0"} /><Truth label="Clips" value={manifest ? `${generatedShotCount}/${totalShotCount}` : "0"} /><Truth label="Combined MP4" value={roughCut ? "Ready" : "Pending"} /></div>
         </div>
       </aside>
     </main>
@@ -299,6 +353,7 @@ export function Studio1() {
 function ActionButton({ onClick, disabled, active, icon: Icon, idle, busyLabel, primary = false }: { onClick: () => void; disabled: boolean; active: boolean; icon: React.ComponentType<{ className?: string }>; idle: string; busyLabel: string; primary?: boolean }) {
   return <button onClick={onClick} disabled={disabled} className={`mt-3 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-black disabled:opacity-50 ${primary ? "bg-white text-slate-950" : "border border-violet-300/20 bg-white/[0.04] text-white"}`}>{active ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}{active ? busyLabel : idle}</button>;
 }
+function IconButton({ label, disabled, onClick, danger = false, children }: { label: string; disabled: boolean; onClick: () => void; danger?: boolean; children: React.ReactNode }) { return <button type="button" aria-label={label} title={label} disabled={disabled} onClick={onClick} className={`rounded-lg border p-2 disabled:opacity-30 ${danger ? "border-red-400/20 text-red-300 hover:bg-red-400/5" : "border-white/10 text-slate-400 hover:bg-white/5 hover:text-white"}`}>{children}</button>; }
 function Field({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: string[] }) { return <label><span className="text-xs font-bold text-slate-500">{label.toUpperCase()}</span><div className="relative mt-2"><select value={value} onChange={event => onChange(event.target.value)} className="w-full appearance-none rounded-xl border border-white/10 bg-black/20 px-3 py-3 pr-9 text-sm text-slate-200 outline-none">{options.map(option => <option key={option}>{option}</option>)}</select><ChevronDown className="pointer-events-none absolute right-3 top-3.5 h-4 w-4 text-slate-600" /></div></label>; }
 function Toggle({ label, note, checked, onChange }: { label: string; note: string; checked: boolean; onChange: (enabled: boolean) => void }) { return <label className="flex items-center justify-between rounded-2xl border border-violet-300/15 bg-violet-300/[0.05] p-4"><div><div className="flex items-center gap-2 text-sm font-black text-white"><UserRoundCheck className="h-4 w-4 text-violet-300" />{label}</div><div className="mt-1 text-[11px] leading-5 text-slate-500">{note}</div></div><input type="checkbox" checked={checked} onChange={event => onChange(event.target.checked)} className="h-5 w-5 accent-violet-300" /></label>; }
 function Truth({ label, value }: { label: string; value: string }) { return <div className="flex items-center justify-between gap-3"><span className="text-slate-400">{label}</span><span className="max-w-[190px] truncate text-xs font-semibold text-slate-500">{value}</span></div>; }
