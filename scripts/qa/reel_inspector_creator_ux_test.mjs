@@ -3,6 +3,7 @@ import fs from "node:fs";
 
 const page = fs.readFileSync("app/studio/inspector/page.tsx", "utf8");
 const listRoute = fs.readFileSync("app/api/reels/productions/route.ts", "utf8");
+const detailRoute = fs.readFileSync("app/api/reels/productions/[id]/route.ts", "utf8");
 const inspectionRoute = fs.readFileSync("app/api/reels/productions/[id]/inspection/route.ts", "utf8");
 
 for (const label of [
@@ -37,9 +38,12 @@ assert.ok(page.includes("combinedVideoUrl"), "Inspector must distinguish combine
 assert.ok(page.includes("globalSec - Number(selectedShot?.startSec || 0)"), "Source-clip fallback must seek using clip-local time");
 assert.ok(page.includes("Number(selectedShot?.startSec || 0) + localSec"), "Source-clip playback must map local time back to the global Reel timeline");
 
-for (const route of [listRoute, inspectionRoute]) {
-  assert.ok(route.includes("suppressUncertifiedStudio1Outputs"), "Generic Reel surfaces must suppress uncertified Studio1 combined outputs");
+for (const route of [listRoute, detailRoute, inspectionRoute]) {
+  assert.ok(route.includes("suppressUncertifiedStudio1Outputs"), "Every generic Reel read surface must suppress uncertified Studio1 combined outputs");
   assert.ok(route.includes('startsWith("studio1_")'), "Studio1 suppression must stay scoped to Studio1 productions");
 }
+
+assert.ok(detailRoute.includes("Studio1 productions must be mutated through the Studio1 API"), "Generic production PATCH must reject Studio1 mutations so exact-sync and certification cannot be bypassed");
+assert.ok(detailRoute.indexOf('id.startsWith("studio1_")') < detailRoute.indexOf("const body = await req.json()"), "Studio1 mutation guard must run before generic action dispatch");
 
 console.log("Reel Inspector creator UX and stale-output safety QA passed");
