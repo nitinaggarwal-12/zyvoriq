@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { reelProductionService } from "@/lib/reel/productionService";
 import { reelProductionControl } from "@/lib/reel/productionControl";
 import { resolveReelCreationIntent } from "@/lib/reel/creationCatalog";
+import { suppressUncertifiedStudio1Outputs } from "@/lib/studio1/fullReelCertification";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -10,7 +11,8 @@ export async function GET(req: NextRequest) {
   try {
     const limit = Number(req.nextUrl.searchParams.get("limit") || 25);
     const productions = await reelProductionService.list(limit);
-    return NextResponse.json({ success: true, productions }, { headers: { "Cache-Control": "no-store" } });
+    const safeProductions = productions.map(production => production.id.startsWith("studio1_") ? suppressUncertifiedStudio1Outputs(production) : production);
+    return NextResponse.json({ success: true, productions: safeProductions }, { headers: { "Cache-Control": "no-store" } });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error?.message || "Failed to list productions" }, { status: 500 });
   }

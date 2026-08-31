@@ -5,6 +5,7 @@ import { operationKey, reelOperationQueue } from "@/lib/reel/operationQueue";
 import { reelProductionControl } from "@/lib/reel/productionControl";
 import type { ReelOperation } from "@/lib/reel/operationQueue";
 import type { ReelProductionStatus } from "@/lib/reel/types";
+import { suppressUncertifiedStudio1Outputs } from "@/lib/studio1/fullReelCertification";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -27,9 +28,10 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ id: st
     const { id } = await context.params;
     const production = await reelProductionService.get(id);
     if (!production) return NextResponse.json({ success: false, error: "Production not found" }, { status: 404 });
+    const safeProduction = production.id.startsWith("studio1_") ? suppressUncertifiedStudio1Outputs(production) : production;
     let operations: ReelOperation[] = [];
     try { operations = await reelOperationQueue.latestForProduction(id, 12); } catch {}
-    return NextResponse.json({ success: true, production, operations }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ success: true, production: safeProduction, operations }, { headers: { "Cache-Control": "no-store" } });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error?.message || "Failed to load production" }, { status: 500 });
   }
@@ -38,6 +40,7 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ id: st
 export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
+    if (id.startsWith("studio1_")) return NextResponse.json({ success: false, error: "Studio1 productions must be mutated through the Studio1 API so exact narration-sync and certification contracts cannot be bypassed" }, { status: 403 });
     const body = await req.json();
     const action = String(body.action || "");
     const expectedRevision = body.expectedRevision === undefined ? undefined : Number(body.expectedRevision);
