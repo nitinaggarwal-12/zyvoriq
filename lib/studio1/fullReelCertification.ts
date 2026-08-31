@@ -1,4 +1,4 @@
-import { attachReelArtifactIndex } from "../artifact/identity";
+import { attachReelArtifactIndex } from "../artifact/identity.ts";
 import type { ReelProductionManifest } from "../reel/types";
 
 export type Studio1TimelineQa = {
