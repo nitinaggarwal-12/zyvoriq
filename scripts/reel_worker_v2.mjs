@@ -6,7 +6,8 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
-import pg from "pg";
+import pg from "pg"; 
+import { ensureCharacterSheet, firstFrameForShot, seedForShot } from "./characterAnchor.mjs";
 
 const { Pool } = pg;
 const execFileAsync = promisify(execFile);
