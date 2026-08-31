@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { BoundaryStrategy, QualityGateId, ReelProductionManifest, ReelShot, TransitionType } from "./types";
+import { BoundaryStrategy, QualityGateId, ReelCreationIntent, ReelProductionManifest, ReelShot, TransitionType } from "./types";
 
 export interface PlanReelInput {
   topic: string;
@@ -7,6 +7,7 @@ export interface PlanReelInput {
   platform?: ReelProductionManifest["platform"];
   requestedDurationSec?: number;
   scriptText?: string;
+  creationIntent?: ReelCreationIntent;
 }
 
 const clock = (n: number) => Number(n.toFixed(6));
@@ -18,8 +19,16 @@ function chooseGenerationDuration(editorialDurationSec: number): 4 | 6 | 8 {
   return 8;
 }
 
-function buildScript(topic: string, targetSec: number) {
-  const beats = [
+function buildScript(topic: string, targetSec: number, intent?: ReelCreationIntent) {
+  const categoryBeats = intent?.conceptId ? [
+    intent.conceptSpeechSample || intent.conceptHook || `Open immediately on the strongest moment of ${topic}.`,
+    intent.conceptHook || `Set the stakes and context for ${topic} without wasting the opening seconds.`,
+    `Move into the defining detail of ${topic} and make the progression visually obvious.`,
+    `Show the contrast, consequence, or turning point that makes this story worth watching.`,
+    `Build to a clear payoff that feels native to ${intent.categoryLabel || "this category"}.`,
+    `Finish on a memorable image or line that completes the idea and earns the viewer's attention.`
+  ] : null;
+  const beats = categoryBeats || [
     `Most people misunderstand ${topic}, and it quietly costs them results.`,
     `Here is the first thing to notice: the obvious behavior is usually not the real problem.`,
     `Second, look for the hidden tradeoff and show one concrete example the viewer recognizes immediately.`,
@@ -81,18 +90,35 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
   const topic = input.topic.trim() || "your topic";
   const tone = input.tone || "Confident & conversational";
   const platform = input.platform || "Instagram Reels";
-  const masterScript = (input.scriptText || "").trim() || buildScript(topic, requestedDurationSec);
+  const creationIntent = input.creationIntent;
+  const masterScript = (input.scriptText || "").trim() || buildScript(topic, requestedDurationSec, creationIntent);
   const beats = splitIntoEditorialBeats(masterScript, requestedDurationSec);
   const perShot = requestedDurationSec / beats.length;
 
+  const selectedVisualStyle = creationIntent?.visualStyleDescription
+    ? `${creationIntent.visualStyleLabel || creationIntent.visualStyleId}: ${creationIntent.visualStyleDescription}. Preserve social-first readability and do not render text in scene pixels.`
+    : "Premium social-first cinematic realism; intentional vertical composition; no generated text in scene pixels.";
+  const selectedCharacter = creationIntent?.characterDescription
+    ? `Primary performer identity: ${creationIntent.characterDescription} Maintain the same face, body proportions, age, hair, skin tone and distinguishing features whenever this performer appears.`
+    : "Maintain the same face, body proportions, age, hair, skin tone and distinguishing features whenever the primary presenter appears.";
+  const selectedEnvironment = creationIntent?.conceptPrompt
+    ? `Concept world and scene direction: ${creationIntent.conceptPrompt} Preserve spatial layout, key props, weather and time-of-day whenever the sequence remains in the same location.`
+    : "Maintain spatial layout, key props, weather and time-of-day within a continuous location block.";
+
   const bible = {
-    visualStyle: "Premium social-first cinematic realism; intentional vertical composition; no generated text in scene pixels.",
-    characterLock: "Maintain the same face, body proportions, age, hair, skin tone and distinguishing features whenever the primary presenter appears.",
+    visualStyle: selectedVisualStyle,
+    characterLock: selectedCharacter,
     wardrobeLock: "Maintain identical wardrobe, accessories and grooming within a continuous location/time block.",
-    environmentLock: "Maintain spatial layout, key props, weather and time-of-day within a continuous location block.",
+    environmentLock: selectedEnvironment,
     cameraLanguage: "9:16 social framing; deliberate mix of tight presenter shots, medium action shots and relevant b-roll; preserve eyeline and screen direction across contiguous action.",
     colorLanguage: "Consistent white balance, contrast and saturation across the full production; final master grade owns the look."
   };
+
+  const categoryDirection = [
+    creationIntent?.categoryLabel ? `Content category: ${creationIntent.categoryLabel}.` : "",
+    creationIntent?.conceptTitle ? `Selected concept: ${creationIntent.conceptTitle}.` : "",
+    creationIntent?.conceptHook ? `Creative hook: ${creationIntent.conceptHook}.` : "",
+  ].filter(Boolean).join(" ");
 
   let cursor = 0;
   const shots: ReelShot[] = beats.map((beat, i) => {
@@ -102,11 +128,15 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
     const previousAction = i === 0 ? "Presenter is composed and ready to begin." : `Continue naturally from shot ${i}.`;
     const actionOut = i === beats.length - 1 ? "Finish with a confident readable hold." : `End on a clean gesture or motion vector that can motivate shot ${i + 2}.`;
     const visualIntent = i === 0
-      ? "High-retention opening: tight presenter or visually surprising action; immediate subject clarity."
+      ? creationIntent?.conceptId
+        ? "High-retention opening inside the selected concept world; establish subject, genre and stakes immediately."
+        : "High-retention opening: tight presenter or visually surprising action; immediate subject clarity."
       : i === beats.length - 1
       ? "Payoff and CTA with clean negative space for editor-rendered captions."
       : i % 3 === 1
-      ? "Relevant b-roll that literally supports the spoken beat; no decorative stock-like imagery."
+      ? creationIntent?.conceptId
+        ? "Category-native visual storytelling or b-roll that directly advances the selected concept; avoid generic stock-like imagery."
+        : "Relevant b-roll that literally supports the spoken beat; no decorative stock-like imagery."
       : "Presenter-driven explanation with a purposeful change in framing or camera motion.";
     const presenterShot = i % 3 !== 1;
     const emotion = { emotion: i === beats.length - 1 ? "confident" : i === 0 ? "curious" : "engaged", intensity: i === 0 ? 0.65 : 0.55, gestureEnergy: presenterShot ? 0.45 : 0.2 };
@@ -136,7 +166,7 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
       trimOutSec: editorialDurationSec,
       scriptText: beat,
       visualIntent,
-      generationPrompt: [visualIntent, `Narrative beat: ${narrative}`, `Tone: ${tone}.`, bible.visualStyle, bible.characterLock, bible.wardrobeLock, bible.environmentLock, bible.cameraLanguage, `Continuity start: ${previousAction}`, `Continuity end: ${actionOut}`, `Emotional state: ${emotion.emotion} at intensity ${emotion.intensity}.`, "Do not render captions, subtitles, logos or UI text inside the generated video; those are composited later."].join(" "),
+      generationPrompt: [visualIntent, categoryDirection, `Narrative beat: ${narrative}`, `Tone: ${tone}.`, bible.visualStyle, bible.characterLock, bible.wardrobeLock, bible.environmentLock, bible.cameraLanguage, `Continuity start: ${previousAction}`, `Continuity end: ${actionOut}`, `Emotional state: ${emotion.emotion} at intensity ${emotion.intensity}.`, "Do not render captions, subtitles, logos or UI text inside the generated video; those are composited later."].filter(Boolean).join(" "),
       continuityIn,
       continuityOut,
       transitionOut: transitionFor(i, beats.length),
@@ -195,6 +225,7 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
     plannedDurationSec: clock(cursor),
     topic,
     tone,
+    creationIntent,
     masterScript,
     creativeBible: bible,
     audio: { masterClock: "narration", timingSource: "pending" },
@@ -207,6 +238,7 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
         appearance: { description: bible.characterLock },
         wardrobe: [bible.wardrobeLock],
         accessories: [],
+        voiceProfile: creationIntent?.characterName,
         gestureStyle: "Natural conversational emphasis; avoid repetitive synthetic gestures.",
         gazeStyle: "Maintain camera eyeline for direct-address presenter beats.",
         emotionalRange: ["curious", "engaged", "reflective", "confident"]
@@ -235,7 +267,7 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
       boundaries,
       objectStateGraph: Object.fromEntries(shots.map(s => [s.id, s.continuityIn.objectStates || []]))
     },
-    musicPlan: { sections: [{ startSec: 0, endSec: clock(cursor), intent: "Continuous supportive underscore following the narrative arc.", energy: 0.45 }], continuousAcrossVisualCuts: true, duckUnderSpeech: true },
+    musicPlan: { sections: [{ startSec: 0, endSec: clock(cursor), intent: creationIntent?.musicPreset ? `Continuous supportive underscore. Planning direction: ${creationIntent.musicPreset}.` : "Continuous supportive underscore following the narrative arc.", energy: 0.45 }], continuousAcrossVisualCuts: true, duckUnderSpeech: true },
     shots,
     qa: { minimumReadyScore: 90, passed: false, gates: initialGates(), warnings: ["Narration waveform alignment, generated media inspection, lip-sync verification, boundary QA and final master QA are pending."], failures: [] }
   };

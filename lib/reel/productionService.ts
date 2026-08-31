@@ -48,7 +48,7 @@ function assertNarrationArtifact(manifest: ReelProductionManifest) {
 }
 
 function replanAgainstNarration(manifest: ReelProductionManifest, actualDurationSec: number) {
-  const replanned = planReel({ topic: manifest.topic, tone: manifest.tone, platform: manifest.platform, requestedDurationSec: actualDurationSec, scriptText: manifest.masterScript });
+  const replanned = planReel({ topic: manifest.topic, tone: manifest.tone, platform: manifest.platform, requestedDurationSec: actualDurationSec, scriptText: manifest.masterScript, creationIntent: manifest.creationIntent });
   manifest.version = replanned.version;
   manifest.plannedDurationSec = replanned.plannedDurationSec;
   manifest.shots = replanned.shots;
