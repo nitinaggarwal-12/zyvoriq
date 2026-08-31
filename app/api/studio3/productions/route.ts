@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       requestedDurationSec: Number(body.requestedDurationSec || 30),
     });
     const production = await reelProductionStore.create(manifest);
-    await reelProductionControl.ensure(production.id);
+    await reelProductionControl.register(production.id);
     return NextResponse.json({ success: true, production }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error?.message || "Failed to create Studio3 production" }, { status: 500 });
