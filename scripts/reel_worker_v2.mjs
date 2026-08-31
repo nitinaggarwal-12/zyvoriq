@@ -494,7 +494,7 @@ async function generateShot(op, manifest, shot) {
       d = await fetch(`${API_BASE}/v1beta/models/${model}:predictLongRunning`, {
         method: "POST",
         headers: { "x-goog-api-key": apiKey(), "Content-Type": "application/json" },
-        body: JSON.stringify({ instances: [instance], parameters: { aspectRatio: "9:16", durationSeconds: shot.generationDurationSec } }),
+        body: JSON.stringify({ instances: [instance], parameters: { aspectRatio: "9:16", durationSeconds: shot.generationDurationSec, seed, negativePrompt: "different person, changing face, inconsistent character, morphing, on-screen text, captions, watermark, logo" } }),
       });
     } catch (error) {
       throw error;
