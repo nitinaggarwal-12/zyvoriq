@@ -116,7 +116,7 @@ const suppressed = suppressUncertifiedStudio1Outputs({
 });
 assert.equal(suppressed.manifest.outputs?.narratedRoughCut, undefined, "uncertified Full Reel output must be suppressed");
 assert.equal(suppressed.manifest.outputs?.master, undefined, "uncertified master output must be suppressed");
-assert.ok(!suppressed.manifest.artifacts.some(item => item.kind === "reel"), "suppressed legacy Reel must not leak through canonical artifact descriptors");
+assert.ok(!suppressed.manifest.artifacts?.some(item => item.kind === "reel"), "suppressed legacy Reel must not leak through canonical artifact descriptors");
 
 const storeSource = fs.readFileSync("lib/reel/productionStore.ts", "utf8");
 const apiSource = fs.readFileSync("app/api/artifacts/[id]/route.ts", "utf8");
