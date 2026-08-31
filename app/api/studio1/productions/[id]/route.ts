@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { operationKey, reelOperationQueue, type ReelOperation } from "@/lib/reel/operationQueue";
 import { reelProductionControl } from "@/lib/reel/productionControl";
+import { suppressUncertifiedStudio1Outputs } from "@/lib/studio1/fullReelCertification";
 import { studio1Service } from "@/lib/studio1/service";
 import { planStudio1ProductionTimeline, syncStudio1ProductionTimeline } from "@/lib/studio1/timelineSyncService";
 import type { Studio1SubjectMode } from "@/lib/studio1/planner";
@@ -11,6 +12,10 @@ export const revalidate = 0;
 
 function fingerprint(value: unknown) {
   return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex").slice(0, 24);
+}
+
+function presentProduction<T extends { manifest: any }>(production: T) {
+  return suppressUncertifiedStudio1Outputs(production as any) as T;
 }
 
 async function paidContext(id: string) {
@@ -38,7 +43,7 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ id: st
     if (!production) return NextResponse.json({ success: false, error: "Studio1 production not found" }, { status: 404 });
     let operations: ReelOperation[] = [];
     try { operations = await reelOperationQueue.latestForProduction(id, 20); } catch {}
-    return NextResponse.json({ success: true, production, operations }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ success: true, production: presentProduction(production), operations }, { headers: { "Cache-Control": "no-store" } });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error?.message || "Failed to load Studio1 production" }, { status: 500 });
   }
@@ -57,70 +62,70 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
     if (action === "renameProject") {
       const production = await studio1Service.renameProject(id, String(body.projectTitle || ""), current.revision);
-      return NextResponse.json({ success: true, production });
+      return NextResponse.json({ success: true, production: presentProduction(production) });
     }
 
     if (action === "duplicateProject") {
       const production = await studio1Service.duplicateProject(id);
       let control = null;
       try { control = await reelProductionControl.register(production.id); } catch {}
-      return NextResponse.json({ success: true, production, duplicated: true, productionControl: control ? { generationToken: control.generationToken } : null }, { status: 201 });
+      return NextResponse.json({ success: true, production: presentProduction(production), duplicated: true, productionControl: control ? { generationToken: control.generationToken } : null }, { status: 201 });
     }
 
     if (action === "editShot") {
       const production = await studio1Service.editShot(id, String(body.shotId || ""), String(body.visualIntent || ""), String(body.scriptText || ""), current.revision);
-      return NextResponse.json({ success: true, production });
+      return NextResponse.json({ success: true, production: presentProduction(production) });
     }
 
     if (action === "addShotAfter") {
       const production = await studio1Service.addShotAfter(id, String(body.shotId || ""), current.revision);
-      return NextResponse.json({ success: true, production });
+      return NextResponse.json({ success: true, production: presentProduction(production) });
     }
 
     if (action === "deleteShot") {
       const production = await studio1Service.deleteShot(id, String(body.shotId || ""), current.revision);
-      return NextResponse.json({ success: true, production });
+      return NextResponse.json({ success: true, production: presentProduction(production) });
     }
 
     if (action === "moveShot") {
       const direction = Number(body.direction) === -1 ? -1 : Number(body.direction) === 1 ? 1 : 0;
       if (!direction) return NextResponse.json({ success: false, error: "direction must be -1 or 1" }, { status: 400 });
       const production = await studio1Service.moveShot(id, String(body.shotId || ""), direction, current.revision);
-      return NextResponse.json({ success: true, production });
+      return NextResponse.json({ success: true, production: presentProduction(production) });
     }
 
     if (action === "setPresenterContinuity") {
       const production = await studio1Service.setPresenterContinuity(id, Boolean(body.enabled), current.revision);
-      return NextResponse.json({ success: true, production });
+      return NextResponse.json({ success: true, production: presentProduction(production) });
     }
 
     if (action === "setEnvironmentContinuity") {
       const production = await studio1Service.setEnvironmentContinuity(id, Boolean(body.enabled), current.revision);
-      return NextResponse.json({ success: true, production });
+      return NextResponse.json({ success: true, production: presentProduction(production) });
     }
 
     if (action === "setSubjectMode") {
       const mode = String(body.mode) as Studio1SubjectMode;
       if (!["PRESENTER", "NO_PERSON"].includes(mode)) return NextResponse.json({ success: false, error: "mode must be PRESENTER or NO_PERSON" }, { status: 400 });
       const production = await studio1Service.setSubjectMode(id, String(body.shotId || ""), mode, current.revision);
-      return NextResponse.json({ success: true, production });
+      return NextResponse.json({ success: true, production: presentProduction(production) });
     }
 
     if (action === "selectOption") {
       const production = await studio1Service.selectOption(id, String(body.shotId || ""), String(body.optionId || ""), current.revision);
-      return NextResponse.json({ success: true, production });
+      return NextResponse.json({ success: true, production: presentProduction(production) });
     }
 
     if (action === "generateAllFresh") {
       const production = await studio1Service.prepareFreshAll(id, current.revision);
-      return NextResponse.json({ success: true, production, fresh: true });
+      return NextResponse.json({ success: true, production: presentProduction(production), fresh: true });
     }
 
     if (action === "regenerateShot") {
       current = await studio1Service.prepareShotRegeneration(id, String(body.shotId || ""), current.revision);
       const modelTier = body.modelTier === "quality" || body.modelTier === "lite" ? body.modelTier : "fast";
       const operation = await enqueueShot(current, String(body.shotId || ""), modelTier, crypto.randomUUID());
-      return NextResponse.json({ success: true, queued: true, operation, production: current }, { status: 202 });
+      return NextResponse.json({ success: true, queued: true, operation, production: presentProduction(current) }, { status: 202 });
     }
 
     if (action === "generateNarration") {
@@ -129,7 +134,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       const fp = fingerprint({ script: current.manifest.masterScript, tone: current.manifest.tone, studio1: true });
       const idempotencyKey = operationKey({ productionId: id, generationToken: control.generationToken, kind: "NARRATION", manifestRevision: current.revision, fingerprint: fp });
       const operation = await reelOperationQueue.enqueue({ productionId: id, kind: "NARRATION", idempotencyKey, payload: { manifestRevision: current.revision, generationToken: control.generationToken, semanticFingerprint: fp, studio1: true } });
-      return NextResponse.json({ success: true, queued: true, operation, production: current }, { status: 202 });
+      return NextResponse.json({ success: true, queued: true, operation, production: presentProduction(current) }, { status: 202 });
     }
 
     if (action === "generateNextShot") {
@@ -143,12 +148,12 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       const shot = current.manifest.shots.find(item => ["PLANNED", "FAILED"].includes(item.status) && !item.asset?.videoUrl && item.dependsOnShotIds.every(dep => completedIds.has(dep)));
       if (!shot) {
         const remaining = current.manifest.shots.filter(item => ["PLANNED", "FAILED"].includes(item.status) && !item.asset?.videoUrl);
-        if (!remaining.length) return NextResponse.json({ success: true, production: current, queued: false, message: "No ungenerated Studio1 shots remain." });
+        if (!remaining.length) return NextResponse.json({ success: true, production: presentProduction(current), queued: false, message: "No ungenerated Studio1 shots remain." });
         return NextResponse.json({ success: false, error: "No Studio1 shot is eligible yet; environment continuity dependency is unresolved." }, { status: 409 });
       }
       const modelTier = body.modelTier === "quality" || body.modelTier === "lite" ? body.modelTier : "fast";
       const operation = await enqueueShot(current, shot.id, modelTier);
-      return NextResponse.json({ success: true, queued: true, operation, production: current, shotId: shot.id }, { status: 202 });
+      return NextResponse.json({ success: true, queued: true, operation, production: presentProduction(current), shotId: shot.id }, { status: 202 });
     }
 
     if (action === "renderNarratedRoughCut") {
@@ -167,7 +172,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       });
       const idempotencyKey = operationKey({ productionId: id, generationToken: control.generationToken, kind: "ROUGH_CUT", manifestRevision: current.revision, fingerprint: fp });
       const operation = await reelOperationQueue.enqueue({ productionId: id, kind: "ROUGH_CUT", idempotencyKey, payload: { manifestRevision: current.revision, generationToken: control.generationToken, semanticFingerprint: fp, studio1: true, narrationSyncedTimeline: true } });
-      return NextResponse.json({ success: true, queued: true, operation, production: current, timelineSync: (current.manifest as any).studio1?.timelineSync }, { status: 202 });
+      return NextResponse.json({ success: true, queued: true, operation, production: presentProduction(current), timelineSync: (current.manifest as any).studio1?.timelineSync }, { status: 202 });
     }
 
     return NextResponse.json({ success: false, error: `Unsupported Studio1 action: ${action}` }, { status: 400 });
