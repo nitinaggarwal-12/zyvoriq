@@ -16,6 +16,10 @@ type SceneAlignmentEvidence = {
   exactRatio?: number;
 };
 
+type NarratedRoughCutWithQa = NonNullable<NonNullable<ReelProductionManifest["outputs"]>["narratedRoughCut"]> & {
+  timelineQa?: Studio1TimelineQa;
+};
+
 function hasSemanticTimelineEvidence(manifest: ReelProductionManifest) {
   const sync = (manifest as any).studio1?.timelineSync;
   const scenes = Array.isArray(sync?.sceneAlignment) ? sync.sceneAlignment as SceneAlignmentEvidence[] : [];
@@ -43,7 +47,7 @@ function hasSemanticTimelineEvidence(manifest: ReelProductionManifest) {
 }
 
 export function isCertifiedStudio1RoughCut(manifest: ReelProductionManifest) {
-  const roughCut = manifest.outputs?.narratedRoughCut as (typeof manifest.outputs.narratedRoughCut & { timelineQa?: Studio1TimelineQa }) | undefined;
+  const roughCut = manifest.outputs?.narratedRoughCut as NarratedRoughCutWithQa | undefined;
   const qa = roughCut?.timelineQa;
   const allowed = Number(qa?.maxAllowedBoundaryDriftMs ?? 50);
   const drift = Number(qa?.maxBoundaryDriftMs ?? Number.POSITIVE_INFINITY);
