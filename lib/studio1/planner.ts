@@ -6,6 +6,7 @@ export type Studio1SubjectMode = "PRESENTER" | "NO_PERSON";
 
 export type Studio1Metadata = {
   schemaVersion: 1;
+  projectTitle?: string;
   presenterContinuity: boolean;
   environmentContinuity: boolean;
   generationRound: number;
@@ -22,6 +23,7 @@ export type Studio1Metadata = {
 function studio1Meta(manifest: ReelProductionManifest): Studio1Metadata {
   const meta = (manifest as any).studio1 as Studio1Metadata;
   if (typeof meta.environmentContinuity !== "boolean") meta.environmentContinuity = true;
+  if (!meta.projectTitle) meta.projectTitle = manifest.topic;
   return meta;
 }
 
@@ -76,6 +78,7 @@ export function planStudio1(input: PlanReelInput): ReelProductionManifest {
   const subjectModes = Object.fromEntries(manifest.shots.map(shot => [shot.id, "PRESENTER" as Studio1SubjectMode]));
   const meta: Studio1Metadata = {
     schemaVersion: 1,
+    projectTitle: input.topic,
     presenterContinuity: true,
     environmentContinuity: true,
     generationRound: 1,
