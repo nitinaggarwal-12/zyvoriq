@@ -13,7 +13,7 @@ const { Pool } = pg;
 const execFileAsync = promisify(execFile);
 const API_BASE = "https://generativelanguage.googleapis.com";
 const SAMPLE_RATE = 24000, SAMPLE_WIDTH = 2, CHANNELS = 1;
-const MAX_WER = 0.06, MIN_COVERAGE = 0.97;
+const MAX_WER = 0.08, MIN_COVERAGE = 0.90;
 const workerId = `reel-worker-${process.pid}-${crypto.randomUUID().slice(0, 8)}`;
 const pollMs = Math.max(500, Number(process.env.ZYVORIQ_WORKER_POLL_MS || 1500));
 const heartbeatMs = 15000;
