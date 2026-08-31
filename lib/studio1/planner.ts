@@ -38,8 +38,15 @@ export function applyStudio1ShotPrompt(manifest: ReelProductionManifest, shotId:
   shot.dependsOnShotIds = meta.environmentContinuity && previous ? [previous.id] : [];
 
   const environmentRule = meta.environmentContinuity
-    ? "STUDIO1 ENVIRONMENT LOCK: Treat the established location as one continuous physical set across clips. Preserve the same room or location, background geometry, wall and floor materials, furniture placement, major props, lighting direction, color temperature, time-of-day and camera-side spatial relationships. Change only the action/framing required by this shot. Do not invent electronics, tools, machinery, screens, desks, lab equipment, workshop activity, new furniture, or other task-specific objects unless the brief or this shot explicitly requires them."
+    ? "STUDIO1 ENVIRONMENT LOCK: Treat the established location as one continuous physical set across clips. The previous-scene visual reference supplied by the worker is authoritative for the set. Preserve the same room or location, background geometry, wall and floor materials, furniture placement, major props, lighting direction, color temperature, time-of-day and camera-side spatial relationships. Change only the action/framing required by this shot. Do not invent a living room, office, studio, outdoor location, electronics, tools, machinery, screens, desks, lab equipment, workshop activity, new furniture, or another new set unless the brief or this shot explicitly requires a location change."
     : "STUDIO1 ENVIRONMENT MODE: Environment continuity is disabled for this experiment.";
+
+  const semanticOnsetRule = [
+    "STUDIO1 SEMANTIC ONSET LOCK: the very first rendered frame of this clip must already communicate the CURRENT scene's narration beat and visual objective.",
+    "Do not spend the opening seconds establishing the room, waiting in a neutral pose, completing the previous scene's action, walking into position, revealing the subject later, or otherwise visually catching up to narration.",
+    "Start with the relevant subject/action/state already underway at time 0.000 and develop it naturally through the clip.",
+    shot.scriptText ? `The current spoken beat is: ${shot.scriptText}` : "",
+  ].filter(Boolean).join(" ");
 
   if (mode === "NO_PERSON") {
     delete shot.continuityIn.characterId;
@@ -47,6 +54,7 @@ export function applyStudio1ShotPrompt(manifest: ReelProductionManifest, shotId:
     shot.generationPrompt = [
       base,
       environmentRule,
+      semanticOnsetRule,
       "STUDIO1 SUBJECT RULE: This shot is explicit B-roll with NO visible people, faces, presenters, human silhouettes, reflections, portraits, photographs of people, or person-like figures. Preserve the established environment and visual language without introducing a new human identity."
     ].join(" ");
     return;
@@ -63,8 +71,9 @@ export function applyStudio1ShotPrompt(manifest: ReelProductionManifest, shotId:
   shot.generationPrompt = [
     base,
     environmentRule,
+    semanticOnsetRule,
     meta.presenterContinuity
-      ? "STUDIO1 IDENTITY LOCK: The same canonical presenter must appear in this shot. Identity continuity is mandatory: identical face, age, skin tone, hair, body proportions, wardrobe and distinguishing features. Do not substitute, cast, morph into, or introduce a different presenter. The canonical reference frame supplied by the production worker is authoritative."
+      ? "STUDIO1 IDENTITY LOCK: The same canonical presenter must appear in this shot. Identity continuity is mandatory: identical face, age, skin tone, hair, body proportions, wardrobe and distinguishing features. Do not substitute, cast, morph into, or introduce a different presenter. The canonical reference frame supplied by the production worker is authoritative for identity, while the previous-scene reference is authoritative for the environment."
       : "STUDIO1 PRESENTER MODE: A presenter is allowed, but canonical identity anchoring is disabled for this experiment."
   ].join(" ");
 }
