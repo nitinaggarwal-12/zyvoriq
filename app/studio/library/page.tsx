@@ -40,6 +40,8 @@ type LibraryAsset = {
   payload?: unknown;
 };
 
+type DirectClip = { id: string; url: string; duration?: number; model?: string };
+
 const tabs: Array<"All" | AssetKind> = ["All", "Final", "Video", "Audio", "Image", "Text", "Evidence", "Legacy"];
 
 function collectProductionAssets(p: Production): LibraryAsset[] {
@@ -80,6 +82,31 @@ function downloadPayload(asset: LibraryAsset) {
   a.download = `${asset.id.replace(/[^a-z0-9-_]+/gi, "-")}.${typeof asset.payload === "string" ? "txt" : "json"}`;
   a.click();
   URL.revokeObjectURL(a.href);
+}
+
+function absoluteMediaUrl(url: string) {
+  try { return new URL(url, window.location.origin).toString(); }
+  catch { return url; }
+}
+
+async function copyMediaUrl(url: string) {
+  const absolute = absoluteMediaUrl(url);
+  try {
+    await navigator.clipboard.writeText(absolute);
+  } catch {
+    window.prompt("Copy media link", absolute);
+  }
+}
+
+function DirectMediaActions({ url, label, compact = false }: { url: string; label: string; compact?: boolean }) {
+  const classes = compact
+    ? "inline-flex items-center gap-1 rounded-lg border border-white/10 px-2 py-1.5 text-[10px] font-bold hover:bg-white/5"
+    : "inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-2 text-[11px] font-bold text-slate-200 hover:bg-white/5";
+  return <div className="flex flex-wrap gap-2">
+    <a href={url} target="_blank" rel="noreferrer" className={classes}><Play className="h-3 w-3"/>Play {label}</a>
+    <button type="button" onClick={() => copyMediaUrl(url)} className={classes}><Copy className="h-3 w-3"/>Copy {label} Link</button>
+    <a href={url} download className={classes}><Download className="h-3 w-3"/>Download</a>
+  </div>;
 }
 
 export default function StudioLibraryPage() {
@@ -212,13 +239,16 @@ export default function StudioLibraryPage() {
 
       <section className="mt-7 rounded-3xl border border-violet-300/15 bg-violet-300/[0.025] p-5 md:p-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div><div className="text-xs font-black uppercase tracking-[0.16em] text-violet-300">Studio1 projects</div><h2 className="mt-1 text-2xl font-black text-white">Editable workspaces · {studio1Projects.length}</h2><p className="mt-1 text-xs text-slate-500">Open/Edit restores the exact production revision after refresh. Rename, duplicate and delete operate on the durable project record.</p></div>
+          <div><div className="text-xs font-black uppercase tracking-[0.16em] text-violet-300">Studio1 projects</div><h2 className="mt-1 text-2xl font-black text-white">Editable workspaces · {studio1Projects.length}</h2><p className="mt-1 text-xs text-slate-500">Open/Edit restores the exact production revision. Certified Full Reel and generated clip media remain directly accessible here.</p></div>
           <Link href="/studio1" className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-black text-slate-950"><Plus className="h-4 w-4"/>Create project</Link>
         </div>
         {loading ? <div className="mt-5 flex items-center gap-2 text-sm text-slate-500"><Loader2 className="h-4 w-4 animate-spin"/>Loading Studio1 projects…</div> : studio1Projects.length === 0 ? <div className="mt-5 rounded-2xl border border-dashed border-white/10 p-8 text-center text-sm text-slate-500">No Studio1 projects yet. Create one and it will remain editable here.</div> : <div className="mt-5 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">{studio1Projects.map(project => {
           const m = project.manifest || {};
           const busy = managing === project.id;
           const generated = (m.shots || []).filter((shot: any) => shot.asset?.videoUrl).length;
+          const fullReelUrl = m.outputs?.master?.videoUrl || m.outputs?.narratedRoughCut?.videoUrl || null;
+          const fullReelDuration = m.outputs?.master?.videoUrl ? m.outputs?.master?.actualDurationSec : m.outputs?.narratedRoughCut?.actualDurationSec;
+          const directClips: DirectClip[] = (m.shots || []).flatMap((shot: any) => shot.asset?.videoUrl ? [{ id: String(shot.id), url: String(shot.asset.videoUrl), duration: shot.asset.actualDurationSec, model: shot.asset.model }] : []);
           return <article key={project.id} className="rounded-2xl border border-white/10 bg-[#0b0e13] p-4">
             <div className="flex items-start justify-between gap-4"><div className="min-w-0"><h3 className="truncate text-base font-black text-white">{projectTitle(project)}</h3><div className="mt-1 text-xs text-slate-500">{m.status || "DRAFT"} · {generated}/{m.shots?.length || 0} clips · revision {project.revision}</div><div className="mt-2 truncate font-mono text-[10px] text-slate-700">{project.id}</div></div>{busy && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-violet-300"/>}</div>
             <div className="mt-4 flex flex-wrap gap-2">
@@ -227,6 +257,21 @@ export default function StudioLibraryPage() {
               <button onClick={() => duplicateProject(project)} disabled={Boolean(managing)} className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-[11px] font-bold text-slate-300 hover:bg-white/5 disabled:opacity-40"><Copy className="h-3.5 w-3.5"/>Duplicate</button>
               <button onClick={() => deleteProject(project)} disabled={Boolean(managing)} className="inline-flex items-center gap-1.5 rounded-lg border border-red-400/20 px-3 py-2 text-[11px] font-bold text-red-200 hover:bg-red-400/5 disabled:opacity-40"><Trash2 className="h-3.5 w-3.5"/>Delete</button>
             </div>
+
+            {(fullReelUrl || directClips.length > 0) && <div className="mt-4 border-t border-white/10 pt-4">
+              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-teal-300">Direct media</div>
+              {fullReelUrl && <div className="mt-2 rounded-xl border border-teal-300/15 bg-teal-300/[0.035] p-3">
+                <div className="mb-2 flex items-center justify-between gap-3"><div className="text-xs font-black text-white">Full Reel</div>{Number(fullReelDuration) > 0 && <div className="text-[10px] text-slate-500">{Number(fullReelDuration).toFixed(2)}s</div>}</div>
+                <DirectMediaActions url={fullReelUrl} label="Reel" />
+              </div>}
+              {directClips.length > 0 && <details className="mt-2 rounded-xl border border-white/10 bg-black/15 p-3">
+                <summary className="cursor-pointer text-xs font-black text-slate-300">Generated clips · {directClips.length}</summary>
+                <div className="mt-3 space-y-2">{directClips.map((clip, index) => <div key={clip.id} className="rounded-lg border border-white/5 bg-white/[0.02] p-2.5">
+                  <div className="mb-2 flex items-center justify-between gap-3"><div className="text-[11px] font-bold text-slate-300">Clip {index + 1}</div><div className="text-[10px] text-slate-600">{clip.duration ? `${Number(clip.duration).toFixed(2)}s` : ""}{clip.model ? ` · ${clip.model}` : ""}</div></div>
+                  <DirectMediaActions url={clip.url} label={`Clip ${index + 1}`} compact />
+                </div>)}</div>
+              </details>}
+            </div>}
           </article>;
         })}</div>}
       </section>
@@ -270,7 +315,13 @@ function AssetCard({ asset, compact = false }: { asset: LibraryAsset; compact?: 
     <div className={compact ? "" : "p-4"}>
       <div className="flex items-start justify-between gap-3"><div className="min-w-0"><div className="text-[10px] font-black uppercase tracking-[0.14em] text-teal-300">{asset.kind}</div><h3 className="mt-1 truncate text-sm font-black text-white">{asset.title}</h3>{asset.subtitle && <div className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{asset.subtitle}</div>}</div><Icon className="h-4 w-4 shrink-0 text-slate-500"/></div>
       <div className="mt-3 flex flex-wrap gap-2 text-[10px] text-slate-600">{asset.duration ? <span>{asset.duration.toFixed(2)}s</span> : null}{asset.model ? <span>{asset.model}</span> : null}{asset.productionId ? <span className="truncate">{asset.productionId.slice(0, 14)}…</span> : null}</div>
-      <div className="mt-3 flex flex-wrap gap-2">{asset.url && <a href={asset.url} target="_blank" className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-[10px] font-bold hover:bg-white/5"><Play className="h-3 w-3"/>Open</a>}{asset.url && <a href={asset.url} download className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-[10px] font-bold hover:bg-white/5"><Download className="h-3 w-3"/>Download</a>}{asset.payload !== undefined && <button onClick={() => downloadPayload(asset)} className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-[10px] font-bold hover:bg-white/5"><Download className="h-3 w-3"/>Export</button>}{asset.productionId && <Link href={`/studio/inspector?productionId=${encodeURIComponent(asset.productionId)}`} className="inline-flex items-center gap-1 rounded-lg border border-pink-300/20 px-2.5 py-1.5 text-[10px] font-bold text-pink-100"><ScanSearch className="h-3 w-3"/>Inspect</Link>}</div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {asset.url && <a href={asset.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-[10px] font-bold hover:bg-white/5"><Play className="h-3 w-3"/>Open</a>}
+        {asset.url && <button type="button" onClick={() => copyMediaUrl(asset.url!)} className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-[10px] font-bold hover:bg-white/5"><Copy className="h-3 w-3"/>Copy link</button>}
+        {asset.url && <a href={asset.url} download className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-[10px] font-bold hover:bg-white/5"><Download className="h-3 w-3"/>Download</a>}
+        {asset.payload !== undefined && <button onClick={() => downloadPayload(asset)} className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-[10px] font-bold hover:bg-white/5"><Download className="h-3 w-3"/>Export</button>}
+        {asset.productionId && <Link href={`/studio/inspector?productionId=${encodeURIComponent(asset.productionId)}`} className="inline-flex items-center gap-1 rounded-lg border border-pink-300/20 px-2.5 py-1.5 text-[10px] font-bold text-pink-100"><ScanSearch className="h-3 w-3"/>Inspect</Link>}
+      </div>
     </div>
   </article>;
 }
