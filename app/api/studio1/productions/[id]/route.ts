@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { operationKey, reelOperationQueue, type ReelOperation } from "@/lib/reel/operationQueue";
 import { reelProductionControl } from "@/lib/reel/productionControl";
 import { studio1Service } from "@/lib/studio1/service";
-import { syncStudio1ProductionTimeline } from "@/lib/studio1/timelineSyncService";
+import { planStudio1ProductionTimeline, syncStudio1ProductionTimeline } from "@/lib/studio1/timelineSyncService";
 import type { Studio1SubjectMode } from "@/lib/studio1/planner";
 
 export const dynamic = "force-dynamic";
@@ -133,6 +133,11 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     }
 
     if (action === "generateNextShot") {
+      const hasAnyClip = current.manifest.shots.some(item => Boolean(item.asset?.videoUrl));
+      const exactVersion = Number((current.manifest as any).studio1?.timelineSync?.version || 0);
+      if (!hasAnyClip && current.manifest.audio?.alignmentValidation?.passed && exactVersion < 2) {
+        current = await planStudio1ProductionTimeline(id, current.revision);
+      }
       if (!["SHOTS_PLANNED", "VIDEO_GENERATING", "REPAIRING"].includes(current.manifest.status)) return NextResponse.json({ success: false, error: `Shot generation is not allowed while production is ${current.manifest.status}` }, { status: 409 });
       const completedIds = new Set(current.manifest.shots.filter(item => item.asset?.videoUrl && ["GENERATED", "PASSED"].includes(item.status)).map(item => item.id));
       const shot = current.manifest.shots.find(item => ["PLANNED", "FAILED"].includes(item.status) && !item.asset?.videoUrl && item.dependsOnShotIds.every(dep => completedIds.has(dep)));
@@ -169,7 +174,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   } catch (error: any) {
     const message = error?.message || "Failed to update Studio1 production";
     const unavailable = message.includes("worker unavailable") || message.includes("requires Postgres");
-    const conflict = message.includes("concurrently") || message.includes("requires") || message.includes("not allowed") || message.includes("not found") || message.includes("dependency");
+    const conflict = message.includes("concurrently") || message.includes("requires") || message.includes("not allowed") || message.includes("not found") || message.includes("dependency") || message.includes("regeneration") || message.includes("align");
     return NextResponse.json({ success: false, error: message }, { status: unavailable ? 503 : conflict ? 409 : 400 });
   }
 }

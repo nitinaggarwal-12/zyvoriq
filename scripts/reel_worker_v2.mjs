@@ -8,6 +8,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import pg from "pg"; 
 import { ensureCharacterSheet, firstFrameForShot, seedForShot } from "./characterAnchor.mjs";
+import { buildStudio1RenderPlan, buildStudio1VisualFilter, synchronizeStudio1ManifestTimeline } from "./studio1_timeline_sync.mjs";
 
 const { Pool } = pg;
 const execFileAsync = promisify(execFile);
@@ -212,7 +213,7 @@ await recoverLegacyVeoInlineDataFailures();
 async function publishHeartbeat() {
   await pool.query(`INSERT INTO reel_worker_heartbeats(worker_id,worker_role,metadata_json) VALUES($1,'reel-production',$2::jsonb)
     ON CONFLICT(worker_id) DO UPDATE SET heartbeat_at=NOW(),metadata_json=EXCLUDED.metadata_json`,
-    [workerId, JSON.stringify({ pid: process.pid, version: "v2.3", assetRootConfigured: Boolean(assetRoot()), geminiConfigured: Boolean(apiKey()) })]);
+    [workerId, JSON.stringify({ pid: process.pid, version: "v2.4", assetRootConfigured: Boolean(assetRoot()), geminiConfigured: Boolean(apiKey()) })]);
 }
 await publishHeartbeat();
 const heartbeatTimer = setInterval(() => publishHeartbeat().catch(e => console.error(`[reel-worker] heartbeat failed: ${e?.message || e}`)), heartbeatMs);
@@ -466,7 +467,21 @@ async function generateNarration(op, manifest, existingCheckpoint = null) {
 }
 
 function replan(m, d) { const count = m.shots.length; if (!count) throw new Error("Cannot replan production with no shots"); const per = d / count; if (per > 8) throw new Error(`Narration master requires ${per.toFixed(3)}s per existing shot, exceeding 8s source limit`); let cursor = 0; for (let i = 0; i < count; i++) { const s = m.shots[i], ed = Number((i === count - 1 ? d - cursor : per).toFixed(6)); s.editorialStartSec = Number(cursor.toFixed(6)); s.editorialDurationSec = ed; s.trimInSec = 0; s.trimOutSec = ed; s.generationDurationSec = ed <= 3.5 ? 4 : ed <= 5.5 ? 6 : 8; s.status = "PLANNED"; delete s.asset; if (s.continuityIn) delete s.continuityIn.referenceFrameUrl; cursor = Number((cursor + ed).toFixed(6)); } m.plannedDurationSec = Number(d.toFixed(6)); }
-async function applyNarration(op, result) { await assertApplicable(op); const c = await getProduction(op.production_id), m = c.manifest; replan(m, result.actualDurationSec); try { await ensureCharacterSheet(m, op.production_id, writeAsset); } catch (e) { console.warn(`[reel-worker] character sheet skipped: ${e?.message || e}`); } m.audio = { ...m.audio, masterClock: "narration", narrationUrl: result.narrationUrl, actualDurationSec: result.actualDurationSec, timingSource: "actual-alignment", wordTimings: result.wordTimings, provider: result.provider, model: result.model, voice: result.voice, alignmentValidation: result.alignmentValidation }; m.status = "SHOTS_PLANNED"; await saveManifest(op.production_id, c.revision, m); }
+function synchronizeStudio1DraftCaptions(m) { if (m.captions?.timingSource !== "draft") return; m.captions.cues = m.shots.filter(s => String(s.scriptText || "").trim()).map((s, i) => ({ id: m.captions?.cues?.[i]?.id || `caption_draft_${String(i + 1).padStart(2, "0")}`, startSec: Number(Number(s.editorialStartSec).toFixed(6)), endSec: Number((Number(s.editorialStartSec) + Number(s.editorialDurationSec)).toFixed(6)), text: String(s.scriptText).trim(), wordIds: [], lines: [String(s.scriptText).trim()], position: "lower-third" })); }
+async function applyNarration(op, result) {
+  await assertApplicable(op);
+  const c = await getProduction(op.production_id), m = c.manifest;
+  m.audio = { ...m.audio, masterClock: "narration", narrationUrl: result.narrationUrl, actualDurationSec: result.actualDurationSec, timingSource: "actual-alignment", wordTimings: result.wordTimings, provider: result.provider, model: result.model, voice: result.voice, alignmentValidation: result.alignmentValidation };
+  if (op.payload_json?.studio1) {
+    synchronizeStudio1ManifestTimeline(m, { mode: "plan", resetAssets: true });
+    synchronizeStudio1DraftCaptions(m);
+  } else {
+    replan(m, result.actualDurationSec);
+  }
+  try { await ensureCharacterSheet(m, op.production_id, writeAsset); } catch (e) { console.warn(`[reel-worker] character sheet skipped: ${e?.message || e}`); }
+  m.status = "SHOTS_PLANNED";
+  await saveManifest(op.production_id, c.revision, m);
+}
 async function extractReference(op, shot, manifest) { if (!shot.dependsOnShotIds?.length) return null; const dep = manifest.shots.find(s => s.id === shot.dependsOnShotIds.at(-1)); if (!dep?.asset?.videoUrl) throw new Error("Continuity dependency has no media"); const tmp = path.join(os.tmpdir(), `zyvoriq-ref-${crypto.randomUUID()}.png`), t = Math.max(Number(dep.trimInSec || 0), Number(dep.trimOutSec || 0) - 1 / 30); try { await execFileAsync("ffmpeg", ["-y", "-ss", String(t), "-i", assetPath(dep.asset.videoUrl).target, "-frames:v", "1", "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920", tmp], { timeout: 30000, maxBuffer: 2e6 }); const b = await fs.readFile(tmp), digest = crypto.createHash("sha256").update(b).digest("hex").slice(0, 16), saved = await writeAsset(`reels/${op.production_id}/references/${shot.id}-from-${dep.id}-${digest}.png`, b); return { buffer: b, url: saved.url, dependencyId: dep.id }; } finally { try { await fs.unlink(tmp); } catch {} } }
 async function probeVideo(buffer) { const tmp = path.join(os.tmpdir(), `zyvoriq-probe-${crypto.randomUUID()}.mp4`); try { await fs.writeFile(tmp, buffer); const { stdout } = await execFileAsync("ffprobe", ["-v", "error", "-show_entries", "format=duration:stream=codec_name,width,height,r_frame_rate", "-of", "json", tmp], { timeout: 30000, maxBuffer: 2e6 }); const p = JSON.parse(stdout), s = p.streams?.find(x => x.width && x.height) || p.streams?.[0] || {}; return { durationSec: Number(Number(p.format?.duration || 0).toFixed(6)), codec: s.codec_name, width: Number(s.width || 0), height: Number(s.height || 0), frameRate: s.r_frame_rate }; } finally { try { await fs.unlink(tmp); } catch {} } }
 function veoModel(t) { return t === "quality" ? "veo-3.1-generate-preview" : t === "lite" ? "veo-3.1-lite-generate-preview" : "veo-3.1-fast-generate-preview"; }
@@ -568,8 +583,75 @@ async function generateShot(op, manifest, shot) {
   return { videoUrl: asset.url, actualDurationSec: probe.durationSec, operationName: name, provider: "google-veo", model, continuityReferenceUrl: ref?.url };
 }
 async function applyShot(op, result) { await assertApplicable(op); const c = await getProduction(op.production_id), m = c.manifest, s = m.shots.find(x => x.id === op.target_id); if (!s) throw new Error("Shot removed"); s.asset = { videoUrl: result.videoUrl, actualDurationSec: result.actualDurationSec, operationName: result.operationName, provider: result.provider, model: result.model }; s.status = "GENERATED"; if (result.continuityReferenceUrl) s.continuityIn.referenceFrameUrl = result.continuityReferenceUrl; m.status = m.shots.every(x => x.asset?.videoUrl && ["GENERATED", "PASSED"].includes(x.status)) ? "ROUGH_CUT_READY" : "VIDEO_GENERATING"; await saveManifest(op.production_id, c.revision, m); }
-async function renderRough(op, m) { await assertApplicable(op, { beforeDispatch: true }); if (!assetRoot() || !m.audio?.narrationUrl || !m.audio?.actualDurationSec || !m.audio?.alignmentValidation?.passed) throw new Error("Validated narration and durable storage required"); const d = Number(m.audio.actualDurationSec), tmp = path.join(os.tmpdir(), `zyvoriq-rough-${crypto.randomUUID()}.mp4`), args = ["-y"]; for (const s of m.shots) { if (!s.asset?.videoUrl) throw new Error(`${s.id} has no source`); args.push("-i", assetPath(s.asset.videoUrl).target); } args.push("-i", assetPath(m.audio.narrationUrl).target); const f = []; m.shots.forEach((s, i) => f.push(`[${i}:v]trim=start=${s.trimInSec}:end=${s.trimOutSec},setpts=PTS-STARTPTS,scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30[v${i}]`)); f.push(`${m.shots.map((_, i) => `[v${i}]`).join("")}concat=n=${m.shots.length}:v=1:a=0[vout]`); f.push(`[${m.shots.length}:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000[aout]`); args.push("-filter_complex", f.join(";"), "-map", "[vout]", "-map", "[aout]", "-t", String(d), "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", tmp); try { await execFileAsync("ffmpeg", args, { timeout: 300000, maxBuffer: 4e6 }); await assertApplicable(op); const buffer = await fs.readFile(tmp), probe = await probeVideo(buffer); if (Math.abs(probe.durationSec - d) > .08) throw new Error(`Rough cut duration drift ${probe.durationSec} vs ${d}`); const digest = crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 16), asset = await writeAsset(`reels/${op.production_id}/renders/narrated-rough-${digest}.mp4`, buffer); return { videoUrl: asset.url, actualDurationSec: probe.durationSec, kind: "narrated-rough-cut", codec: probe.codec, width: probe.width, height: probe.height, frameRate: probe.frameRate, renderedAt: new Date().toISOString() }; } finally { try { await fs.unlink(tmp); } catch {} } }
-async function applyRough(op, result) { await assertApplicable(op); const c = await getProduction(op.production_id), m = c.manifest; m.outputs = { ...(m.outputs || {}), narratedRoughCut: result }; m.status = "MIXING"; await saveManifest(op.production_id, c.revision, m); }
+
+function assertStudio1RenderAdaptation(plan) {
+  for (const scene of plan.scenes) {
+    if (scene.targetSec <= scene.sourceSec + 0.003) continue;
+    const deficitSec = scene.targetSec - scene.sourceSec;
+    const ratio = scene.targetSec / scene.sourceSec;
+    if (deficitSec > 0.75 || ratio > 1.2) {
+      throw new Error(`Studio1 scene ${scene.shotId} needs selective regeneration: narration slot ${scene.targetSec.toFixed(2)}s exceeds source ${scene.sourceSec.toFixed(2)}s by ${deficitSec.toFixed(2)}s`);
+    }
+  }
+}
+
+async function renderRough(op, m) {
+  await assertApplicable(op, { beforeDispatch: true });
+  if (!assetRoot() || !m.audio?.narrationUrl || !m.audio?.actualDurationSec || !m.audio?.alignmentValidation?.passed) throw new Error("Validated narration and durable storage required");
+  const d = Number(m.audio.actualDurationSec), tmp = path.join(os.tmpdir(), `zyvoriq-rough-${crypto.randomUUID()}.mp4`), args = ["-y"];
+  for (const s of m.shots) { if (!s.asset?.videoUrl) throw new Error(`${s.id} has no source`); args.push("-i", assetPath(s.asset.videoUrl).target); }
+  args.push("-i", assetPath(m.audio.narrationUrl).target);
+  const studio1 = op.payload_json?.studio1 === true;
+  let timelineQa = null;
+  let renderPlan = null;
+  if (studio1) {
+    if (!op.payload_json?.narrationSyncedTimeline) throw new Error("Studio1 exact render requires narrationSyncedTimeline operation evidence");
+    if (Number(m.studio1?.timelineSync?.version || 0) < 2) throw new Error("Studio1 exact render requires timelineSync version 2");
+    renderPlan = buildStudio1RenderPlan(m);
+    assertStudio1RenderAdaptation(renderPlan);
+  }
+  const f = [];
+  if (studio1) {
+    renderPlan.scenes.forEach(scene => f.push(buildStudio1VisualFilter(m.shots[scene.inputIndex], scene)));
+  } else {
+    m.shots.forEach((s, i) => f.push(`[${i}:v]trim=start=${s.trimInSec}:end=${s.trimOutSec},setpts=PTS-STARTPTS,scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30[v${i}]`));
+  }
+  f.push(`${m.shots.map((_, i) => `[v${i}]`).join("")}concat=n=${m.shots.length}:v=1:a=0[vout]`);
+  f.push(`[${m.shots.length}:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000[aout]`);
+  args.push("-filter_complex", f.join(";"), "-map", "[vout]", "-map", "[aout]", "-t", String(d), "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", tmp);
+  try {
+    await execFileAsync("ffmpeg", args, { timeout: 300000, maxBuffer: 4e6 });
+    await assertApplicable(op);
+    const buffer = await fs.readFile(tmp), probe = await probeVideo(buffer);
+    if (Math.abs(probe.durationSec - d) > .08) throw new Error(`Rough cut duration drift ${probe.durationSec} vs ${d}`);
+    if (studio1) {
+      timelineQa = {
+        version: 1,
+        timingContract: "narration-master-clock",
+        fps: renderPlan.fps,
+        expectedDurationSec: renderPlan.expectedDurationSec,
+        renderedVideoClockSec: renderPlan.renderedVideoClockSec,
+        outputDurationSec: probe.durationSec,
+        maxBoundaryDriftMs: renderPlan.maxBoundaryDriftMs,
+        maxAllowedBoundaryDriftMs: Number(m.studio1?.timelineSync?.maxAllowedBoundaryDriftMs || 50),
+        passed: renderPlan.maxBoundaryDriftMs <= Number(m.studio1?.timelineSync?.maxAllowedBoundaryDriftMs || 50),
+        scenes: renderPlan.scenes,
+        renderedAt: new Date().toISOString(),
+      };
+      if (!timelineQa.passed) throw new Error(`Studio1 timeline QA failed: max boundary drift ${timelineQa.maxBoundaryDriftMs}ms`);
+    }
+    const digest = crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 16), asset = await writeAsset(`reels/${op.production_id}/renders/narrated-rough-${digest}.mp4`, buffer);
+    return { videoUrl: asset.url, actualDurationSec: probe.durationSec, kind: "narrated-rough-cut", codec: probe.codec, width: probe.width, height: probe.height, frameRate: probe.frameRate, renderedAt: new Date().toISOString(), ...(timelineQa ? { timelineQa } : {}) };
+  } finally { try { await fs.unlink(tmp); } catch {} }
+}
+async function applyRough(op, result) {
+  await assertApplicable(op);
+  const c = await getProduction(op.production_id), m = c.manifest;
+  m.outputs = { ...(m.outputs || {}), narratedRoughCut: result };
+  if (result.timelineQa && m.studio1?.timelineSync) m.studio1.timelineSync.renderQa = result.timelineQa;
+  m.status = "MIXING";
+  await saveManifest(op.production_id, c.revision, m);
+}
 
 async function processOperation(op) {
   await assertApplicable(op);
@@ -606,7 +688,8 @@ for (;;) {
       const message = String(error?.message || error).slice(0, 2000);
       const cancelled = message.startsWith("OPERATION_CANCELLED");
       const ambiguous = message.includes("AMBIGUOUS_TTS_RESULT_AFTER_BOUNDED_RECOVERY") || message.includes("AMBIGUOUS_VEO_DISPATCH_AFTER_BOUNDED_RECOVERY") || message.includes("AMBIGUOUS_VEO_DISPATCH_NO_OPERATION_ID");
-      const retry = !cancelled && !ambiguous && Number(op.attempt || 0) < 3;
+      const deterministic = message.startsWith("Studio1");
+      const retry = !cancelled && !ambiguous && !deterministic && Number(op.attempt || 0) < 3;
       await pool.query(`UPDATE reel_operations SET status=$2,last_error=$3,lease_owner=NULL,lease_expires_at=NULL,updated_at=NOW() WHERE id=$1`, [op.id, cancelled ? "CANCELLED" : retry ? "QUEUED" : "FAILED", message]);
       if (!cancelled && !retry) await markTerminalFailure(op, message);
       console.error(`[reel-worker] ${op.id} ${cancelled ? "cancelled" : retry ? "retry" : "failed"}: ${message}`);
