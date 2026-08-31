@@ -477,7 +477,7 @@ async function generateShot(op, manifest, shot) {
   const ref = await extractReference(op, shot, manifest);
   const prior = String(op.provider_operation_name || "");
   const dispatchMarkers = new Set(["veo-dispatch-started", "veo-recovery-dispatch-started"]);
-  let name = prior && !dispatchMarkers.has(prior) ? prior : null;
+  let name = prior && !dispatchMarkers.has(prior) ? prior : null;   if (name) console.log(`[reel-worker] [anchor] SKIPPED for ${shot.id} — resuming existing Veo op, no new dispatch`);
 
   if (!name) {
     if (prior === "veo-recovery-dispatch-started") {
@@ -496,7 +496,8 @@ async function generateShot(op, manifest, shot) {
     } catch (e) {
       console.warn(`[reel-worker] anchor frame failed: ${e?.message || e}`);
     }
-    if (anchorFrame) {
+      if (anchorFrame) {
+      console.log(`[reel-worker] [anchor] applied canonical first frame to ${shot.id}`);
       instance.image = { mimeType: "image/png", bytesBase64Encoded: anchorFrame.toString("base64") };
     } else if (ref) {
       instance.image = { mimeType: "image/png", bytesBase64Encoded: ref.buffer.toString("base64") };
