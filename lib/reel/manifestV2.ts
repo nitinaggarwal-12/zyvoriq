@@ -1,4 +1,4 @@
-import { attachReelArtifactIndex } from "@/lib/artifact/identity";
+import { attachReelArtifactIndex } from "../artifact/identity";
 import type { BoundaryState, CaptionCue, PerformanceCue, ReelProductionManifest, WordTiming } from "./types";
 
 const clock = (n: number) => Number(n.toFixed(6));
