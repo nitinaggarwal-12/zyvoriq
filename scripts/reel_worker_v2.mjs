@@ -225,6 +225,7 @@ function assetPath(keyOrUrl) { const root = assetRoot(); if (!root) throw new Er
 async function writeAsset(key, buffer) { const r = assetPath(key); await fs.mkdir(path.dirname(r.target), { recursive: true }); await fs.writeFile(r.target, buffer); return { key: r.key, url: `/api/reels/assets/${r.key.split("/").map(encodeURIComponent).join("/")}` }; }
 async function readAsset(keyOrUrl) { return fs.readFile(assetPath(keyOrUrl).target); }
 
+
 function assetContentType(key) {
   if (key.endsWith(".wav")) return "audio/wav";
   if (key.endsWith(".mp3")) return "audio/mpeg";
@@ -401,8 +402,10 @@ async function transcribeAndValidateNarration(op, manifest, checkpoint, wav) {
 async function generateNarration(op, manifest, existingCheckpoint = null) {
   if (!apiKey()) throw new Error("Gemini API key is missing");
   if (!assetRoot()) throw new Error("Durable asset root is missing");
+
   let checkpoint = existingCheckpoint;
   let wav;
+
   if (checkpoint?.stage === "AUDIO_PERSISTED" && checkpoint.narrationUrl) {
     wav = await readAsset(checkpoint.narrationUrl);
     await updateOperation(op.id, { providerOperationName: "tts-audio-persisted" });
@@ -411,23 +414,55 @@ async function generateNarration(op, manifest, existingCheckpoint = null) {
     if (prior === "tts-recovery-dispatch-started") throw new Error("AMBIGUOUS_TTS_RESULT_AFTER_BOUNDED_RECOVERY");
     await assertApplicable(op, { beforeDispatch: true });
     await updateOperation(op.id, { providerOperationName: prior === "tts-dispatch-started" ? "tts-recovery-dispatch-started" : "tts-dispatch-started" });
+
     const model = process.env.ZYVORIQ_TTS_MODEL || "gemini-3.1-flash-tts-preview";
     const voice = process.env.ZYVORIQ_TTS_VOICE || "Kore";
-    const prompt = ["Synthesize speech for the transcript below. Do not speak these instructions.", `Performance direction: ${manifest.tone}. Natural social-video delivery, clear articulation, no added words.`, "TRANSCRIPT START", manifest.masterScript, "TRANSCRIPT END"].join("\n");
+    const prompt = [
+      "Synthesize speech for the transcript below. Do not speak these instructions.",
+      `Performance direction: ${manifest.tone}. Natural social-video delivery, clear articulation, no added words.`,
+      "TRANSCRIPT START",
+      manifest.masterScript,
+      "TRANSCRIPT END",
+    ].join("\n");
+
     let r;
-    try { r = await fetch(`${API_BASE}/v1beta/interactions`, { method: "POST", headers: { "x-goog-api-key": apiKey(), "Content-Type": "application/json" }, body: JSON.stringify({ model, input: prompt, response_format: { type: "audio" }, generation_config: { speech_config: [{ voice }] } }) }); } catch (e) { throw e; }
+    try {
+      r = await fetch(`${API_BASE}/v1beta/interactions`, {
+        method: "POST",
+        headers: { "x-goog-api-key": apiKey(), "Content-Type": "application/json" },
+        body: JSON.stringify({ model, input: prompt, response_format: { type: "audio" }, generation_config: { speech_config: [{ voice }] } }),
+      });
+    } catch (e) {
+      throw e;
+    }
     const j = await r.json();
-    if (!r.ok) { await updateOperation(op.id, { providerOperationName: null }); throw new Error(`Gemini TTS failed (${r.status})`); }
+    if (!r.ok) {
+      await updateOperation(op.id, { providerOperationName: null });
+      throw new Error(`Gemini TTS failed (${r.status})`);
+    }
     const b64 = findAudioData(j);
-    if (!b64) { await updateOperation(op.id, { providerOperationName: null }); throw new Error("Gemini TTS returned no audio payload"); }
+    if (!b64) {
+      await updateOperation(op.id, { providerOperationName: null });
+      throw new Error("Gemini TTS returned no audio payload");
+    }
+
     const pcm = Buffer.from(b64, "base64");
     const durationSec = pcm.length / (SAMPLE_RATE * CHANNELS * SAMPLE_WIDTH);
     wav = wavFromPcm(pcm);
     const digest = crypto.createHash("sha256").update(wav).digest("hex").slice(0, 16);
     const asset = await writeAsset(`reels/${op.production_id}/narration-${digest}.wav`, wav);
-    checkpoint = { stage: "AUDIO_PERSISTED", narrationUrl: asset.url, actualDurationSec: Number(durationSec.toFixed(6)), provider: "google-gemini", model, voice, audioSha256: crypto.createHash("sha256").update(wav).digest("hex") };
+    checkpoint = {
+      stage: "AUDIO_PERSISTED",
+      narrationUrl: asset.url,
+      actualDurationSec: Number(durationSec.toFixed(6)),
+      provider: "google-gemini",
+      model,
+      voice,
+      audioSha256: crypto.createHash("sha256").update(wav).digest("hex"),
+    };
     await updateOperation(op.id, { result: checkpoint, providerOperationName: "tts-audio-persisted" });
   }
+
   return transcribeAndValidateNarration(op, manifest, checkpoint, wav);
 }
 
@@ -437,8 +472,12 @@ async function applyNarration(op, result) {
   await assertApplicable(op);
   const c = await getProduction(op.production_id), m = c.manifest;
   m.audio = { ...m.audio, masterClock: "narration", narrationUrl: result.narrationUrl, actualDurationSec: result.actualDurationSec, timingSource: "actual-alignment", wordTimings: result.wordTimings, provider: result.provider, model: result.model, voice: result.voice, alignmentValidation: result.alignmentValidation };
-  if (op.payload_json?.studio1) { synchronizeStudio1ManifestTimeline(m, { mode: "plan", resetAssets: true }); synchronizeStudio1DraftCaptions(m); }
-  else replan(m, result.actualDurationSec);
+  if (op.payload_json?.studio1) {
+    synchronizeStudio1ManifestTimeline(m, { mode: "plan", resetAssets: true });
+    synchronizeStudio1DraftCaptions(m);
+  } else {
+    replan(m, result.actualDurationSec);
+  }
   try { await ensureCharacterSheet(m, op.production_id, writeAsset); } catch (e) { console.warn(`[reel-worker] character sheet skipped: ${e?.message || e}`); }
   m.status = "SHOTS_PLANNED";
   await saveManifest(op.production_id, c.revision, m);
@@ -453,35 +492,82 @@ async function generateShot(op, manifest, shot) {
   const ref = await extractReference(op, shot, manifest);
   const prior = String(op.provider_operation_name || "");
   const dispatchMarkers = new Set(["veo-dispatch-started", "veo-recovery-dispatch-started"]);
-  let name = prior && !dispatchMarkers.has(prior) ? prior : null; if (name) console.log(`[reel-worker] [anchor] SKIPPED for ${shot.id} — resuming existing Veo op, no new dispatch`);
+  let name = prior && !dispatchMarkers.has(prior) ? prior : null;   if (name) console.log(`[reel-worker] [anchor] SKIPPED for ${shot.id} — resuming existing Veo op, no new dispatch`);
+
   if (!name) {
-    if (prior === "veo-recovery-dispatch-started") throw new Error("AMBIGUOUS_VEO_DISPATCH_AFTER_BOUNDED_RECOVERY");
+    if (prior === "veo-recovery-dispatch-started") {
+      throw new Error("AMBIGUOUS_VEO_DISPATCH_AFTER_BOUNDED_RECOVERY");
+    }
     await assertApplicable(op, { beforeDispatch: true });
     const dispatchMarker = prior === "veo-dispatch-started" ? "veo-recovery-dispatch-started" : "veo-dispatch-started";
     await updateOperation(op.id, { providerOperationName: dispatchMarker });
+
+
     const instance = { prompt: shot.generationPrompt };
+
     let anchorFrame = null;
-    try { anchorFrame = await firstFrameForShot(manifest, shot, op.production_id, writeAsset, readAsset); } catch (e) { console.warn(`[reel-worker] anchor frame failed: ${e?.message || e}`); }
-    if (anchorFrame) { console.log(`[reel-worker] [anchor] applied canonical first frame to ${shot.id}`); instance.image = { mimeType: "image/png", bytesBase64Encoded: anchorFrame.toString("base64") }; }
-    else if (ref) instance.image = { mimeType: "image/png", bytesBase64Encoded: ref.buffer.toString("base64") };
+    try {
+      anchorFrame = await firstFrameForShot(manifest, shot, op.production_id, writeAsset, readAsset);
+    } catch (e) {
+      console.warn(`[reel-worker] anchor frame failed: ${e?.message || e}`);
+    }
+      if (anchorFrame) {
+      console.log(`[reel-worker] [anchor] applied canonical first frame to ${shot.id}`);
+      instance.image = { mimeType: "image/png", bytesBase64Encoded: anchorFrame.toString("base64") };
+    } else if (ref) {
+      instance.image = { mimeType: "image/png", bytesBase64Encoded: ref.buffer.toString("base64") };
+    }
     const seed = seedForShot(op.production_id, shot.id);
+
+
+
+    
+
     let d;
-    try { d = await fetch(`${API_BASE}/v1beta/models/${model}:predictLongRunning`, { method: "POST", headers: { "x-goog-api-key": apiKey(), "Content-Type": "application/json" }, body: JSON.stringify({ instances: [instance], parameters: { aspectRatio: "9:16", durationSeconds: shot.generationDurationSec, seed, negativePrompt: "different person, changing face, inconsistent character, morphing, on-screen text, captions, watermark, logo" } }) }); } catch (error) { throw error; }
+    try {
+      d = await fetch(`${API_BASE}/v1beta/models/${model}:predictLongRunning`, {
+        method: "POST",
+        headers: { "x-goog-api-key": apiKey(), "Content-Type": "application/json" },
+        body: JSON.stringify({ instances: [instance], parameters: { aspectRatio: "9:16", durationSeconds: shot.generationDurationSec, seed, negativePrompt: "different person, changing face, inconsistent character, morphing, on-screen text, captions, watermark, logo" } }),
+      });
+    } catch (error) {
+      throw error;
+    }
+
     let j;
-    try { j = await d.json(); } catch (error) { throw new Error(`Veo dispatch returned an unreadable Operation response (${d.status})`); }
-    if (!d.ok || j?.error) { await updateOperation(op.id, { providerOperationName: null }); throw new Error(`Veo dispatch failed: ${j?.error?.message || d.status}`); }
+    try {
+      j = await d.json();
+    } catch (error) {
+      throw new Error(`Veo dispatch returned an unreadable Operation response (${d.status})`);
+    }
+
+    if (!d.ok || j?.error) {
+      await updateOperation(op.id, { providerOperationName: null });
+      throw new Error(`Veo dispatch failed: ${j?.error?.message || d.status}`);
+    }
+
     name = j?.name;
-    if (!name) throw new Error("Veo dispatch succeeded without operation name");
+    if (!name) {
+      throw new Error("Veo dispatch succeeded without operation name");
+    }
     await updateOperation(op.id, { providerOperationName: name });
   }
+
   let uri = null;
   for (let i = 0; i < 60; i++) {
     await sleep(5000);
-    if (i % 3 === 0) { await operationHeartbeat(op.id); await assertApplicable(op); }
+    if (i % 3 === 0) {
+      await operationHeartbeat(op.id);
+      await assertApplicable(op);
+    }
     const p = await fetch(`${API_BASE}/v1beta/${name}`, { headers: { "x-goog-api-key": apiKey() } });
     const j = await p.json();
     if (!p.ok || j.error) throw new Error(`Veo polling failed: ${j.error?.message || p.status}`);
-    if (j.done) { uri = j.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri; if (!uri) throw new Error("Veo completed without video URI"); break; }
+    if (j.done) {
+      uri = j.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri;
+      if (!uri) throw new Error("Veo completed without video URI");
+      break;
+    }
   }
   if (!uri) throw new Error(`Veo operation ${name} timed out`);
   await assertApplicable(op);
@@ -498,7 +584,17 @@ async function generateShot(op, manifest, shot) {
 }
 async function applyShot(op, result) { await assertApplicable(op); const c = await getProduction(op.production_id), m = c.manifest, s = m.shots.find(x => x.id === op.target_id); if (!s) throw new Error("Shot removed"); s.asset = { videoUrl: result.videoUrl, actualDurationSec: result.actualDurationSec, operationName: result.operationName, provider: result.provider, model: result.model }; s.status = "GENERATED"; if (result.continuityReferenceUrl) s.continuityIn.referenceFrameUrl = result.continuityReferenceUrl; m.status = m.shots.every(x => x.asset?.videoUrl && ["GENERATED", "PASSED"].includes(x.status)) ? "ROUGH_CUT_READY" : "VIDEO_GENERATING"; await saveManifest(op.production_id, c.revision, m); }
 
-function assertStudio1RenderAdaptation(plan) { for (const scene of plan.scenes) { if (scene.targetSec <= scene.sourceSec + 0.003) continue; const deficitSec = scene.targetSec - scene.sourceSec, ratio = scene.targetSec / scene.sourceSec; if (deficitSec > 0.75 || ratio > 1.2) throw new Error(`Studio1 scene ${scene.shotId} needs selective regeneration: narration slot ${scene.targetSec.toFixed(2)}s exceeds source ${scene.sourceSec.toFixed(2)}s by ${deficitSec.toFixed(2)}s`); } }
+function assertStudio1RenderAdaptation(plan) {
+  for (const scene of plan.scenes) {
+    if (scene.targetSec <= scene.sourceSec + 0.003) continue;
+    const deficitSec = scene.targetSec - scene.sourceSec;
+    const ratio = scene.targetSec / scene.sourceSec;
+    if (deficitSec > 0.75 || ratio > 1.2) {
+      throw new Error(`Studio1 scene ${scene.shotId} needs selective regeneration: narration slot ${scene.targetSec.toFixed(2)}s exceeds source ${scene.sourceSec.toFixed(2)}s by ${deficitSec.toFixed(2)}s`);
+    }
+  }
+}
+
 async function renderRough(op, m) {
   await assertApplicable(op, { beforeDispatch: true });
   if (!assetRoot() || !m.audio?.narrationUrl || !m.audio?.actualDurationSec || !m.audio?.alignmentValidation?.passed) throw new Error("Validated narration and durable storage required");
@@ -506,7 +602,8 @@ async function renderRough(op, m) {
   for (const s of m.shots) { if (!s.asset?.videoUrl) throw new Error(`${s.id} has no source`); args.push("-i", assetPath(s.asset.videoUrl).target); }
   args.push("-i", assetPath(m.audio.narrationUrl).target);
   const studio1 = op.payload_json?.studio1 === true;
-  let timelineQa = null, renderPlan = null;
+  let timelineQa = null;
+  let renderPlan = null;
   if (studio1) {
     if (!op.payload_json?.narrationSyncedTimeline) throw new Error("Studio1 exact render requires narrationSyncedTimeline operation evidence");
     if (Number(m.studio1?.timelineSync?.version || 0) < 2) throw new Error("Studio1 exact render requires timelineSync version 2");
@@ -514,8 +611,11 @@ async function renderRough(op, m) {
     assertStudio1RenderAdaptation(renderPlan);
   }
   const f = [];
-  if (studio1) renderPlan.scenes.forEach(scene => f.push(buildStudio1VisualFilter(m.shots[scene.inputIndex], scene)));
-  else m.shots.forEach((s, i) => f.push(`[${i}:v]trim=start=${s.trimInSec}:end=${s.trimOutSec},setpts=PTS-STARTPTS,scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30[v${i}]`));
+  if (studio1) {
+    renderPlan.scenes.forEach(scene => f.push(buildStudio1VisualFilter(m.shots[scene.inputIndex], scene)));
+  } else {
+    m.shots.forEach((s, i) => f.push(`[${i}:v]trim=start=${s.trimInSec}:end=${s.trimOutSec},setpts=PTS-STARTPTS,scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30[v${i}]`));
+  }
   f.push(`${m.shots.map((_, i) => `[v${i}]`).join("")}concat=n=${m.shots.length}:v=1:a=0[vout]`);
   f.push(`[${m.shots.length}:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000[aout]`);
   args.push("-filter_complex", f.join(";"), "-map", "[vout]", "-map", "[aout]", "-t", String(d), "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", tmp);
@@ -525,24 +625,54 @@ async function renderRough(op, m) {
     const buffer = await fs.readFile(tmp), probe = await probeVideo(buffer);
     if (Math.abs(probe.durationSec - d) > .08) throw new Error(`Rough cut duration drift ${probe.durationSec} vs ${d}`);
     if (studio1) {
-      timelineQa = { version: 1, timingContract: "narration-master-clock", fps: renderPlan.fps, expectedDurationSec: renderPlan.expectedDurationSec, renderedVideoClockSec: renderPlan.renderedVideoClockSec, outputDurationSec: probe.durationSec, maxBoundaryDriftMs: renderPlan.maxBoundaryDriftMs, maxAllowedBoundaryDriftMs: Number(m.studio1?.timelineSync?.maxAllowedBoundaryDriftMs || 50), passed: renderPlan.maxBoundaryDriftMs <= Number(m.studio1?.timelineSync?.maxAllowedBoundaryDriftMs || 50), scenes: renderPlan.scenes, renderedAt: new Date().toISOString() };
+      timelineQa = {
+        version: 1,
+        timingContract: "narration-master-clock",
+        fps: renderPlan.fps,
+        expectedDurationSec: renderPlan.expectedDurationSec,
+        renderedVideoClockSec: renderPlan.renderedVideoClockSec,
+        outputDurationSec: probe.durationSec,
+        maxBoundaryDriftMs: renderPlan.maxBoundaryDriftMs,
+        maxAllowedBoundaryDriftMs: Number(m.studio1?.timelineSync?.maxAllowedBoundaryDriftMs || 50),
+        passed: renderPlan.maxBoundaryDriftMs <= Number(m.studio1?.timelineSync?.maxAllowedBoundaryDriftMs || 50),
+        scenes: renderPlan.scenes,
+        renderedAt: new Date().toISOString(),
+      };
       if (!timelineQa.passed) throw new Error(`Studio1 timeline QA failed: max boundary drift ${timelineQa.maxBoundaryDriftMs}ms`);
     }
     const digest = crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 16), asset = await writeAsset(`reels/${op.production_id}/renders/narrated-rough-${digest}.mp4`, buffer);
     return { videoUrl: asset.url, actualDurationSec: probe.durationSec, kind: "narrated-rough-cut", codec: probe.codec, width: probe.width, height: probe.height, frameRate: probe.frameRate, renderedAt: new Date().toISOString(), ...(timelineQa ? { timelineQa } : {}) };
   } finally { try { await fs.unlink(tmp); } catch {} }
 }
-async function applyRough(op, result) { await assertApplicable(op); const c = await getProduction(op.production_id), m = c.manifest; m.outputs = { ...(m.outputs || {}), narratedRoughCut: result }; if (result.timelineQa && m.studio1?.timelineSync) m.studio1.timelineSync.renderQa = result.timelineQa; m.status = "MIXING"; await saveManifest(op.production_id, c.revision, m); }
+async function applyRough(op, result) {
+  await assertApplicable(op);
+  const c = await getProduction(op.production_id), m = c.manifest;
+  m.outputs = { ...(m.outputs || {}), narratedRoughCut: result };
+  if (result.timelineQa && m.studio1?.timelineSync) m.studio1.timelineSync.renderQa = result.timelineQa;
+  m.status = "MIXING";
+  await saveManifest(op.production_id, c.revision, m);
+}
 
 async function processOperation(op) {
   await assertApplicable(op);
   await markRunning(op);
   const current = await getProduction(op.production_id);
   let result = op.result_json;
-  if (op.kind === "NARRATION") { if (!result || result.stage !== "COMPLETE") { result = await generateNarration(op, current.manifest, result); await updateOperation(op.id, { result, providerOperationName: "tts-complete" }); } await applyNarration(op, result); }
-  else if (op.kind === "SHOT") { const shot = current.manifest.shots.find(s => s.id === op.target_id); if (!shot) throw new Error("Shot not found"); if (!result) { result = await generateShot(op, current.manifest, shot); await updateOperation(op.id, { result }); } await applyShot(op, result); }
-  else if (op.kind === "ROUGH_CUT") { if (!result) { result = await renderRough(op, current.manifest); await updateOperation(op.id, { result }); } await applyRough(op, result); }
-  else throw new Error(`Unsupported operation ${op.kind}`);
+  if (op.kind === "NARRATION") {
+    if (!result || result.stage !== "COMPLETE") {
+      result = await generateNarration(op, current.manifest, result);
+      await updateOperation(op.id, { result, providerOperationName: "tts-complete" });
+    }
+    await applyNarration(op, result);
+  } else if (op.kind === "SHOT") {
+    const shot = current.manifest.shots.find(s => s.id === op.target_id);
+    if (!shot) throw new Error("Shot not found");
+    if (!result) { result = await generateShot(op, current.manifest, shot); await updateOperation(op.id, { result }); }
+    await applyShot(op, result);
+  } else if (op.kind === "ROUGH_CUT") {
+    if (!result) { result = await renderRough(op, current.manifest); await updateOperation(op.id, { result }); }
+    await applyRough(op, result);
+  } else throw new Error(`Unsupported operation ${op.kind}`);
   await updateOperation(op.id, { status: "SUCCEEDED", lastError: null, leaseExpiresAt: null, leaseOwner: null });
 }
 
@@ -552,8 +682,9 @@ for (;;) {
     await publishHeartbeat();
     const op = await claim();
     if (!op) { await sleep(pollMs); continue; }
-    try { await processOperation(op); }
-    catch (error) {
+    try {
+      await processOperation(op);
+    } catch (error) {
       const message = String(error?.message || error).slice(0, 2000);
       const cancelled = message.startsWith("OPERATION_CANCELLED");
       const ambiguous = message.includes("AMBIGUOUS_TTS_RESULT_AFTER_BOUNDED_RECOVERY") || message.includes("AMBIGUOUS_VEO_DISPATCH_AFTER_BOUNDED_RECOVERY") || message.includes("AMBIGUOUS_VEO_DISPATCH_NO_OPERATION_ID");
