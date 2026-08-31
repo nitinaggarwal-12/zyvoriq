@@ -1,4 +1,5 @@
 import { getDatabase, getPostgresPool } from "@/lib/db/client";
+import { attachReelArtifactIndex } from "../artifact/identity";
 import { enrichManifestV2 } from "./manifestV2";
 import type { ReelProductionManifest } from "./types";
 
@@ -32,11 +33,15 @@ CREATE TABLE IF NOT EXISTS reel_productions (
 CREATE INDEX IF NOT EXISTS idx_reel_productions_updated ON reel_productions(updated_at DESC);
 `;
 
+function normalizeManifest(manifest: ReelProductionManifest) {
+  return attachReelArtifactIndex(enrichManifestV2(manifest));
+}
+
 function fromSqlite(row: any): StoredReelProduction {
   return {
     id: String(row.id),
     revision: Number(row.revision),
-    manifest: enrichManifestV2(JSON.parse(String(row.manifest_json)) as ReelProductionManifest),
+    manifest: normalizeManifest(JSON.parse(String(row.manifest_json)) as ReelProductionManifest),
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
   };
@@ -46,7 +51,7 @@ function fromPostgres(row: any): StoredReelProduction {
   return {
     id: String(row.id),
     revision: Number(row.revision),
-    manifest: enrichManifestV2(row.manifest_json as ReelProductionManifest),
+    manifest: normalizeManifest(row.manifest_json as ReelProductionManifest),
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
   };
@@ -68,7 +73,7 @@ function ensureSqliteTable() {
 export const reelProductionStore = {
   async create(manifest: ReelProductionManifest): Promise<StoredReelProduction> {
     const now = new Date().toISOString();
-    const normalized = enrichManifestV2(manifest);
+    const normalized = normalizeManifest(manifest);
     const pool = await ensurePostgresTable();
     if (pool) {
       const result = await pool.query(
@@ -120,7 +125,7 @@ export const reelProductionStore = {
     if (!current) throw new Error(`Production ${id} not found`);
     if (expectedRevision !== undefined && current.revision !== expectedRevision) throw new Error(`Production ${id} changed concurrently (expected revision ${expectedRevision}, found ${current.revision})`);
 
-    const normalized = enrichManifestV2(manifest);
+    const normalized = normalizeManifest(manifest);
     const nextRevision = current.revision + 1;
     const now = new Date().toISOString();
     const pool = await ensurePostgresTable();

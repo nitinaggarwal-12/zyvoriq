@@ -78,5 +78,11 @@ export function suppressUncertifiedStudio1Outputs<T extends { manifest: ReelProd
   }
   const complete = clone.manifest.shots.length > 0 && clone.manifest.shots.every(shot => Boolean(shot.asset?.videoUrl) && ["GENERATED", "PASSED"].includes(shot.status));
   if (complete && clone.manifest.audio?.narrationUrl && clone.manifest.audio?.alignmentValidation?.passed) clone.manifest.status = "ROUGH_CUT_READY";
+  // Artifact descriptors are presentation data derived from the manifest. Any
+  // precomputed descriptors may still contain the now-suppressed Full Reel URL,
+  // so invalidate them. The canonical artifact resolver rebuilds a fresh index
+  // from this already-sanitized manifest.
+  delete (clone.manifest as any).artifact;
+  delete (clone.manifest as any).artifacts;
   return clone;
 }
