@@ -12,6 +12,8 @@ export interface PlanReelInput {
 
 const clock = (n: number) => Number(n.toFixed(6));
 const clampDuration = (n: number) => Math.max(8, Math.min(90, clock(n)));
+const countWords = (value: string) => value.trim().split(/\s+/).filter(Boolean).length;
+const normalizeSpaces = (value: string) => value.trim().replace(/\s+/g, " ");
 
 function chooseGenerationDuration(editorialDurationSec: number): 4 | 6 | 8 {
   if (editorialDurationSec <= 3.5) return 4;
@@ -19,41 +21,134 @@ function chooseGenerationDuration(editorialDurationSec: number): 4 | 6 | 8 {
   return 8;
 }
 
-function buildScript(topic: string, targetSec: number, intent?: ReelCreationIntent) {
-  const categoryBeats = intent?.conceptId ? [
-    intent.conceptSpeechSample || intent.conceptHook || `Open immediately on the strongest moment of ${topic}.`,
-    intent.conceptHook || `Set the stakes and context for ${topic} without wasting the opening seconds.`,
-    `Move into the defining detail of ${topic} and make the progression visually obvious.`,
-    `Show the contrast, consequence, or turning point that makes this story worth watching.`,
-    `Build to a clear payoff that feels native to ${intent.categoryLabel || "this category"}.`,
-    `Finish on a memorable image or line that completes the idea and earns the viewer's attention.`
-  ] : null;
-  const beats = categoryBeats || [
-    `Most people misunderstand ${topic}, and it quietly costs them results.`,
-    `Here is the first thing to notice: the obvious behavior is usually not the real problem.`,
-    `Second, look for the hidden tradeoff and show one concrete example the viewer recognizes immediately.`,
-    `Third, replace the bad pattern with one practical action the viewer can try today.`,
-    `The payoff is simple: make the better behavior easier than the default behavior.`,
-    `Save this and share it with someone who needs the reminder.`
+function sentencePool(topic: string, intent?: ReelCreationIntent) {
+  const generic = [
+    `Here is what deserves a closer look about ${topic}.`,
+    "The obvious reaction is only the surface of the idea.",
+    "Look underneath it and notice the pattern that keeps returning.",
+    "Separate what you assume from what you can actually observe.",
+    "Then ask what the default choice gives you right now.",
+    "Next, ask what that same choice quietly costs over time.",
+    "That tradeoff is usually more useful than the first impression.",
+    "Now compare the default with one deliberate alternative.",
+    "Make that alternative specific enough to try today.",
+    "Keep the action small enough that repetition feels realistic.",
+    "Watch what changes instead of guessing whether it worked.",
+    "If it helps, keep the signal and remove extra friction.",
+    "If it does not, change one variable and test again.",
+    "That turns a vague opinion into feedback you can use.",
+    "The next decision becomes clearer because the evidence is visible.",
+    "Over time, the better response starts feeling more automatic.",
+    "The real payoff is understanding what changed and why.",
+    "That makes the lesson easier to remember and explain.",
+    "Try it once, then pay attention to the actual result.",
+    "Save this idea if you want to revisit the pattern later."
   ];
-  const wordsTarget = Math.max(28, Math.round(targetSec * 2.15));
-  const words: string[] = [];
-  let i = 0;
-  while (words.length < wordsTarget) {
-    words.push(...beats[i % beats.length].split(/\s+/));
-    i++;
+  const concept = intent?.conceptId ? [
+    intent.conceptSpeechSample || intent.conceptHook || `Open on the strongest moment of ${topic}.`,
+    intent.conceptHook && intent.conceptHook !== intent.conceptSpeechSample ? intent.conceptHook : "",
+    `Establish the stakes of ${topic} without wasting the opening seconds.`,
+    `Move into the defining detail and make the progression visually obvious.`,
+    "Show the contrast or consequence that makes the idea worth watching.",
+    `Build toward a payoff that feels native to ${intent.categoryLabel || "this category"}.`,
+    "Use one concrete change to move the story forward.",
+    "Let the next beat prove why that change matters.",
+    "Keep each step connected to the same central idea.",
+    "Raise the consequence before giving the viewer the resolution.",
+    "Make the payoff specific enough to feel earned.",
+    "Finish on a memorable image or line that completes the idea.",
+    ...generic.slice(12)
+  ] : generic;
+  const seen = new Set<string>();
+  return concept
+    .map(normalizeSpaces)
+    .filter(Boolean)
+    .filter(sentence => {
+      const key = sentence.toLocaleLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function buildScript(topic: string, targetSec: number, intent?: ReelCreationIntent) {
+  const targetWords = Math.max(18, Math.round(targetSec * 2.0));
+  const candidates = sentencePool(topic, intent);
+  let best: string[] = [];
+  let bestDelta = Number.POSITIVE_INFINITY;
+  let running: string[] = [];
+  let runningWords = 0;
+
+  for (const sentence of candidates) {
+    running = [...running, sentence];
+    runningWords += countWords(sentence);
+    const delta = Math.abs(targetWords - runningWords);
+    if (delta < bestDelta) {
+      best = running;
+      bestDelta = delta;
+    }
+    if (runningWords >= targetWords && delta > bestDelta) break;
   }
-  return words.slice(0, wordsTarget).join(" ");
+
+  if (!best.length) best = candidates.slice(0, 1);
+  return normalizeSpaces(best.join(" "));
+}
+
+function sentenceUnits(script: string) {
+  return (script.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [script])
+    .map(normalizeSpaces)
+    .filter(Boolean);
+}
+
+function splitLongUnit(unit: string, maxWords: number): string[] {
+  if (countWords(unit) <= maxWords) return [unit];
+  const words = unit.split(/\s+/);
+  const out: string[] = [];
+  let start = 0;
+  const semanticBreak = /^(?:and|but|so|then|because|while|when|before|after|instead|which|that)$/i;
+
+  while (words.length - start > maxWords) {
+    const hardEnd = Math.min(words.length, start + maxWords);
+    const softStart = Math.min(hardEnd - 1, start + Math.max(6, maxWords - 5));
+    let splitAt = -1;
+    for (let i = hardEnd - 1; i >= softStart; i--) {
+      if (/[,:;—-]$/.test(words[i])) { splitAt = i + 1; break; }
+      if (semanticBreak.test(words[i]) && i > start + 5) { splitAt = i; break; }
+    }
+    if (splitAt <= start) splitAt = hardEnd;
+    out.push(words.slice(start, splitAt).join(" "));
+    start = splitAt;
+  }
+  if (start < words.length) out.push(words.slice(start).join(" "));
+  return out.filter(Boolean);
 }
 
 function splitIntoEditorialBeats(script: string, targetSec: number): string[] {
+  const normalized = normalizeSpaces(script);
+  if (!normalized) return [];
+  const totalWords = countWords(normalized);
   const desiredShotCount = Math.max(2, Math.ceil(targetSec / 6));
-  const words = script.trim().split(/\s+/).filter(Boolean);
-  const chunks = Array.from({ length: desiredShotCount }, () => "");
-  if (!words.length) return chunks;
-  const wordsPerChunk = Math.max(1, Math.ceil(words.length / desiredShotCount));
-  for (let i = 0; i < desiredShotCount; i++) chunks[i] = words.slice(i * wordsPerChunk, (i + 1) * wordsPerChunk).join(" ");
-  return chunks;
+  const targetWordsPerShot = Math.max(7, Math.min(13, Math.round(totalWords / desiredShotCount)));
+  const maxWordsPerShot = 16;
+  const units = sentenceUnits(normalized).flatMap(unit => splitLongUnit(unit, maxWordsPerShot));
+  const beats: string[] = [];
+  let current = "";
+
+  for (const unit of units) {
+    const proposed = current ? `${current} ${unit}` : unit;
+    if (current && (countWords(proposed) > maxWordsPerShot || countWords(current) >= targetWordsPerShot)) {
+      beats.push(current);
+      current = unit;
+    } else {
+      current = proposed;
+    }
+  }
+  if (current) beats.push(current);
+
+  if (beats.length === 1 && desiredShotCount > 1 && countWords(beats[0]) > 8) {
+    return splitLongUnit(beats[0], Math.ceil(countWords(beats[0]) / 2));
+  }
+  return beats;
 }
 
 function transitionFor(index: number, total: number): { type: TransitionType; durationSec: number } {
