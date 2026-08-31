@@ -8,22 +8,63 @@ import {
   parseScopedArtifactId,
   scopedArtifactId,
 } from "../../lib/artifact/identity.ts";
+import { suppressUncertifiedStudio1Outputs } from "../../lib/studio1/fullReelCertification.ts";
 
 function manifest(id, title, clipUrl = "/clip.mp4") {
   return {
     id,
     version: 2,
+    createdAt: new Date(0).toISOString(),
+    status: "ROUGH_CUT_READY",
+    platform: "Instagram Reels",
+    aspectRatio: "9:16",
+    requestedDurationSec: 8,
+    plannedDurationSec: 8,
     topic: title,
+    tone: "Confident & conversational",
     masterScript: "A durable master script.",
+    creativeBible: {
+      visualStyle: "test",
+      characterLock: "test",
+      wardrobeLock: "test",
+      environmentLock: "test",
+      cameraLanguage: "test",
+      colorLanguage: "test",
+    },
     audio: {
+      masterClock: "narration",
       narrationUrl: "/narration.wav",
       musicUrl: "/music.wav",
+      actualDurationSec: 8,
+      timingSource: "actual-alignment",
+      alignmentValidation: { expectedWords: 1, actualWords: 1, wer: 0, coverage: 1, passed: true },
       wordTimings: [{ id: "word_0001", word: "A", startSec: 0, endSec: 0.2 }],
     },
     captions: { timingSource: "actual-alignment", safeZoneProfile: "instagram-reels", cues: [] },
-    shots: [{ id: "shot_01", asset: { videoUrl: clipUrl }, continuityIn: { referenceFrameUrl: "/ref.png" } }],
-    outputs: { narratedRoughCut: { videoUrl: "/reel.mp4" }, master: { videoUrl: "/master.mp4" } },
-    qa: { passed: true },
+    shots: [{
+      id: "shot_01",
+      order: 1,
+      editorialStartSec: 0,
+      editorialDurationSec: 8,
+      generationDurationSec: 8,
+      trimInSec: 0,
+      trimOutSec: 8,
+      scriptText: "A durable master script.",
+      visualIntent: "test",
+      generationPrompt: "test",
+      continuityIn: { referenceFrameUrl: "/ref.png" },
+      continuityOut: {},
+      transitionOut: { type: "hard-cut", durationSec: 0 },
+      dependsOnShotIds: [],
+      status: "GENERATED",
+      asset: { videoUrl: clipUrl, actualDurationSec: 8 },
+      qa: { warnings: [], failures: [] },
+    }],
+    outputs: {
+      narratedRoughCut: { videoUrl: "/reel.mp4", actualDurationSec: 8, kind: "narrated-rough-cut", renderedAt: new Date(0).toISOString() },
+      master: { videoUrl: "/master.mp4", actualDurationSec: 8, kind: "master", renderedAt: new Date(0).toISOString() },
+    },
+    qa: { minimumReadyScore: 90, passed: true, warnings: [], failures: [] },
     continuity: { characters: [], environments: [], performanceTracks: [], boundaries: [], objectStateGraph: {} },
   };
 }
@@ -63,6 +104,19 @@ const attached = attachReelArtifactIndex(manifest("studio1_cccccccc-cccc-cccc-cc
 assert.equal(attached.artifact.id, attached.id, "manifest enrichment must backfill project identity");
 assert.ok(attached.artifacts.some(item => item.kind === "document"), "manifest enrichment must backfill document identities");
 assert.ok(attached.artifacts.some(item => item.kind === "clip"), "manifest enrichment must backfill clip identities");
+
+const legacyManifest = attachReelArtifactIndex(manifest("studio1_dddddddd-dddd-dddd-dddd-dddddddddddd", "Legacy"));
+assert.ok(legacyManifest.artifacts.some(item => item.kind === "reel"), "fixture must begin with Reel artifacts present");
+const suppressed = suppressUncertifiedStudio1Outputs({
+  id: legacyManifest.id,
+  revision: 1,
+  manifest: legacyManifest,
+  createdAt: new Date(0).toISOString(),
+  updatedAt: new Date(0).toISOString(),
+});
+assert.equal(suppressed.manifest.outputs?.narratedRoughCut, undefined, "uncertified Full Reel output must be suppressed");
+assert.equal(suppressed.manifest.outputs?.master, undefined, "uncertified master output must be suppressed");
+assert.ok(!suppressed.manifest.artifacts.some(item => item.kind === "reel"), "suppressed legacy Reel must not leak through canonical artifact descriptors");
 
 const manifestSource = fs.readFileSync("lib/reel/manifestV2.ts", "utf8");
 const apiSource = fs.readFileSync("app/api/artifacts/[id]/route.ts", "utf8");
