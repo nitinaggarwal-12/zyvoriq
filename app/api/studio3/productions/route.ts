@@ -6,6 +6,11 @@ import { planStudio3 } from "@/lib/studio3/planner";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+type StudioPlatform = "Instagram Reels" | "YouTube Shorts" | "TikTok";
+function platformValue(value: unknown): StudioPlatform {
+  return value === "YouTube Shorts" || value === "TikTok" ? value : "Instagram Reels";
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -14,7 +19,7 @@ export async function POST(req: NextRequest) {
     const manifest = planStudio3({
       topic,
       tone: String(body.tone || "Confident & conversational"),
-      platform: String(body.platform || "Instagram Reels"),
+      platform: platformValue(body.platform),
       requestedDurationSec: Number(body.requestedDurationSec || 30),
     });
     const production = await reelProductionStore.create(manifest);
