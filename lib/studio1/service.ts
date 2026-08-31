@@ -7,6 +7,7 @@ function meta(manifest: ReelProductionManifest): Studio1Metadata {
   const value = (manifest as any).studio1 as Studio1Metadata | undefined;
   if (!value) throw new Error("Studio1 metadata missing");
   if (typeof value.environmentContinuity !== "boolean") value.environmentContinuity = true;
+  if (!value.projectTitle) value.projectTitle = manifest.topic;
   return value;
 }
 
@@ -54,6 +55,31 @@ export const studio1Service = {
   async list(limit = 50) {
     const all = await reelProductionStore.list(100);
     return all.filter(item => isStudio1Manifest(item.manifest)).slice(0, Math.max(1, Math.min(100, limit)));
+  },
+
+  async renameProject(id: string, projectTitle: string, expectedRevision?: number) {
+    const stored = assertStudio1(await reelProductionStore.get(id));
+    const title = projectTitle.trim();
+    if (!title) throw new Error("Project title is required");
+    const manifest = structuredClone(stored.manifest);
+    meta(manifest).projectTitle = title.slice(0, 160);
+    return reelProductionStore.replace(id, manifest, expectedRevision ?? stored.revision);
+  },
+
+  async duplicateProject(id: string) {
+    const stored = assertStudio1(await reelProductionStore.get(id));
+    const manifest = structuredClone(stored.manifest);
+    const now = new Date().toISOString();
+    manifest.id = `studio1_${crypto.randomUUID()}`;
+    manifest.createdAt = now;
+    const m = meta(manifest);
+    m.projectTitle = `${m.projectTitle || manifest.topic} copy`.slice(0, 160);
+    return reelProductionStore.create(manifest);
+  },
+
+  async deleteProject(id: string, expectedRevision?: number) {
+    const stored = assertStudio1(await reelProductionStore.get(id));
+    await reelProductionStore.delete(id, expectedRevision ?? stored.revision);
   },
 
   async prepareShotRegeneration(id: string, shotId: string, expectedRevision?: number) {
