@@ -66,6 +66,28 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       return NextResponse.json({ success: true, production, duplicated: true, productionControl: control ? { generationToken: control.generationToken } : null }, { status: 201 });
     }
 
+    if (action === "editShot") {
+      const production = await studio1Service.editShot(id, String(body.shotId || ""), String(body.visualIntent || ""), String(body.scriptText || ""), current.revision);
+      return NextResponse.json({ success: true, production });
+    }
+
+    if (action === "addShotAfter") {
+      const production = await studio1Service.addShotAfter(id, String(body.shotId || ""), current.revision);
+      return NextResponse.json({ success: true, production });
+    }
+
+    if (action === "deleteShot") {
+      const production = await studio1Service.deleteShot(id, String(body.shotId || ""), current.revision);
+      return NextResponse.json({ success: true, production });
+    }
+
+    if (action === "moveShot") {
+      const direction = Number(body.direction) === -1 ? -1 : Number(body.direction) === 1 ? 1 : 0;
+      if (!direction) return NextResponse.json({ success: false, error: "direction must be -1 or 1" }, { status: 400 });
+      const production = await studio1Service.moveShot(id, String(body.shotId || ""), direction, current.revision);
+      return NextResponse.json({ success: true, production });
+    }
+
     if (action === "setPresenterContinuity") {
       const production = await studio1Service.setPresenterContinuity(id, Boolean(body.enabled), current.revision);
       return NextResponse.json({ success: true, production });
