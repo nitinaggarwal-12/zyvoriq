@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, AudioLines, Captions, ChevronDown, CircleAlert, Copy, Download, Film, FlaskConical, Loader2, RefreshCw, Sparkles, UserRoundCheck, Video } from "lucide-react";
+import { ArrowLeft, Captions, ChevronDown, CircleAlert, Copy, Download, Film, FlaskConical, Loader2, PlayCircle, RefreshCw, Sparkles, UserRoundCheck, Video } from "lucide-react";
 import type { ReelProductionManifest } from "@/lib/reel/types";
 
 type StoredProduction = { id: string; revision: number; manifest: ReelProductionManifest; createdAt: string; updatedAt: string };
@@ -11,6 +11,7 @@ type Studio2Operation = "plan" | "narration" | "shot" | "all" | "fresh" | "rough
 type SubjectMode = "PRESENTER" | "NO_PERSON";
 type Studio2Meta = {
   presenterContinuity: boolean;
+  environmentContinuity: boolean;
   generationRound: number;
   subjectModes: Record<string, SubjectMode>;
   clipOptions: Record<string, Array<{ id: string; label: string; asset: { videoUrl: string; actualDurationSec: number; model?: string }; createdAt: string }>>;
@@ -43,8 +44,10 @@ export function Studio2() {
   const roughCut = manifest?.outputs?.narratedRoughCut;
   const selectedShot = selectedShotId ? manifest?.shots.find(shot => shot.id === selectedShotId) : null;
   const previewUrl = selectedShot?.asset?.videoUrl || roughCut?.videoUrl || generatedShots[0]?.asset?.videoUrl || null;
+  const previewLabel = selectedShot ? `Clip ${Math.max(1, (manifest?.shots.findIndex(shot => shot.id === selectedShot.id) ?? 0) + 1)}` : roughCut ? "Full Reel" : generatedShots.length ? "First generated clip" : "Preview";
   const script = useMemo(() => manifest ? (manifest.masterScript.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [manifest.masterScript]).map(line => line.trim()).filter(Boolean) : [], [manifest]);
   const busy = operation !== null;
+  const fullReelStale = Boolean(manifest && !roughCut && generatedShotCount === totalShotCount && totalShotCount > 0 && manifest.status === "ROUGH_CUT_READY");
 
   const refresh = async (id: string) => {
     const response = await fetch(`/api/studio2/productions/${encodeURIComponent(id)}`, { cache: "no-store" });
@@ -116,8 +119,24 @@ export function Studio2() {
       current = await refresh(current.id);
       if (current.manifest.status === "ROUGH_CUT_READY" && !current.manifest.outputs?.narratedRoughCut) current = await dispatch(current, "renderNarratedRoughCut");
       setProduction(current);
+      setSelectedShotId(null);
     } catch (err: any) { setError(err?.message || "Studio2 generation failed"); await refresh(production.id).catch(() => undefined); }
     finally { setOperation(null); }
+  };
+
+  const rebuildFullReel = async () => {
+    if (!production) return;
+    setOperation("rough"); setError("");
+    try {
+      const current = await dispatch(production, "renderNarratedRoughCut");
+      setProduction(current);
+      setSelectedShotId(null);
+    } catch (err: any) {
+      setError(err?.message || "Failed to rebuild full reel");
+      await refresh(production.id).catch(() => undefined);
+    } finally {
+      setOperation(null);
+    }
   };
 
   const regenerateShot = async (shotId: string) => {
@@ -133,6 +152,13 @@ export function Studio2() {
     setError("");
     try { setProduction(await dispatch(production, "setPresenterContinuity", { enabled })); }
     catch (err: any) { setError(err?.message || "Failed to update continuity mode"); }
+  };
+
+  const setEnvironmentContinuity = async (enabled: boolean) => {
+    if (!production) return;
+    setError("");
+    try { setProduction(await dispatch(production, "setEnvironmentContinuity", { enabled })); }
+    catch (err: any) { setError(err?.message || "Failed to update environment continuity"); }
   };
 
   const setSubjectMode = async (shotId: string, mode: SubjectMode) => {
@@ -178,14 +204,22 @@ export function Studio2() {
           <Field label="Platform" value={platform} onChange={setPlatform} options={["Instagram Reels", "YouTube Shorts", "TikTok"]} />
         </div>
 
-        {manifest && <label className="mt-5 flex items-center justify-between rounded-2xl border border-teal-300/15 bg-teal-300/[0.05] p-4">
-          <div><div className="flex items-center gap-2 text-sm font-black text-white"><UserRoundCheck className="h-4 w-4 text-teal-300" /> Presenter continuity</div><div className="mt-1 text-[11px] leading-5 text-slate-500">ON forces the same canonical presenter reference into every PRESENTER clip.</div></div>
-          <input type="checkbox" checked={Boolean(meta?.presenterContinuity)} onChange={event => setContinuity(event.target.checked)} className="h-5 w-5 accent-teal-300" />
-        </label>}
+        {manifest && <div className="mt-5 space-y-3">
+          <label className="flex items-center justify-between rounded-2xl border border-teal-300/15 bg-teal-300/[0.05] p-4">
+            <div><div className="flex items-center gap-2 text-sm font-black text-white"><UserRoundCheck className="h-4 w-4 text-teal-300" /> Presenter continuity</div><div className="mt-1 text-[11px] leading-5 text-slate-500">Same canonical presenter in every PRESENTER clip.</div></div>
+            <input type="checkbox" checked={Boolean(meta?.presenterContinuity)} onChange={event => setContinuity(event.target.checked)} className="h-5 w-5 accent-teal-300" />
+          </label>
+          <label className="flex items-center justify-between rounded-2xl border border-teal-300/15 bg-teal-300/[0.05] p-4">
+            <div><div className="text-sm font-black text-white">Environment continuity</div><div className="mt-1 text-[11px] leading-5 text-slate-500">Locks the location, background, lighting and major props for the next generation.</div></div>
+            <input type="checkbox" checked={meta?.environmentContinuity !== false} onChange={event => setEnvironmentContinuity(event.target.checked)} className="h-5 w-5 accent-teal-300" />
+          </label>
+        </div>}
 
         <ActionButton onClick={buildPlan} disabled={busy || !topic.trim()} active={operation === "plan"} icon={Sparkles} idle={production ? "Create new Studio2 plan" : "Build Studio2 plan"} busyLabel="Building…" primary />
         {production && <ActionButton onClick={() => generateThroughRoughCut(false)} disabled={busy} active={operation === "all"} icon={Film} idle={generatedShotCount ? `Generate remaining + MP4 (${generatedShotCount}/${totalShotCount})` : "Generate all clips + MP4"} busyLabel="Generating…" primary />}
         {production && generatedShotCount > 0 && <ActionButton onClick={() => generateThroughRoughCut(true)} disabled={busy} active={operation === "fresh"} icon={RefreshCw} idle="Generate ALL clips fresh" busyLabel="Fresh generation…" />}
+        {fullReelStale && <ActionButton onClick={rebuildFullReel} disabled={busy} active={operation === "rough"} icon={Film} idle="Rebuild Full Reel" busyLabel="Rebuilding full reel…" primary />}
+        {roughCut?.videoUrl && <button onClick={() => setSelectedShotId(null)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-teal-300/30 bg-teal-300/[0.09] py-3.5 text-sm font-black text-teal-50"><PlayCircle className="h-4 w-4" />Play Full Reel · {roughCut.actualDurationSec.toFixed(1)}s</button>}
         {roughCut?.videoUrl && <a href={roughCut.videoUrl} download className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-300/25 bg-emerald-300/[0.07] py-3.5 text-sm font-black text-emerald-100"><Download className="h-4 w-4" />Download selected-options MP4</a>}
         {error && <div className="mt-4 flex gap-2 rounded-xl border border-red-400/20 bg-red-400/5 p-3 text-xs leading-5 text-red-200"><CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />{error}</div>}
         <p className="mt-4 text-[11px] leading-5 text-slate-600">Studio2 uses its own route/API namespace and studio2_-prefixed productions. It reuses the durable worker only for paid media generation.</p>
@@ -197,6 +231,8 @@ export function Studio2() {
           {activeTab === "Scenes" && <div>
             <div className="text-xs font-black uppercase tracking-[0.16em] text-teal-300">CONTINUITY TEST CLIPS</div>
             <h2 className="mt-2 text-3xl font-black tracking-[-0.035em] text-white">{manifest ? `${generatedShotCount}/${totalShotCount} clips generated · round ${meta?.generationRound || 1}` : "Build a Studio2 plan"}</h2>
+            {roughCut && <button onClick={() => setSelectedShotId(null)} className="mt-5 inline-flex items-center gap-2 rounded-xl border border-teal-300/25 bg-teal-300/[0.07] px-4 py-2.5 text-sm font-black text-teal-100"><PlayCircle className="h-4 w-4" />Play full {roughCut.actualDurationSec.toFixed(1)}s reel</button>}
+            {fullReelStale && <div className="mt-5 rounded-xl border border-amber-300/20 bg-amber-300/[0.05] p-3 text-xs leading-5 text-amber-100/80">Clip selection changed after the previous combined render. Rebuild the Full Reel to review the currently selected clip options as one continuous video.</div>}
             {!manifest ? <div className="mt-8 rounded-2xl border border-dashed border-white/10 p-6 text-sm text-slate-600">Studio2 starts as a copy of the Creative Brief workflow, then adds isolated continuity and clip-variant controls.</div> : <div className="mt-8 space-y-4">{manifest.shots.map((shot, index) => {
               const options = meta?.clipOptions?.[shot.id] || [];
               const mode = meta?.subjectModes?.[shot.id] || "PRESENTER";
@@ -205,11 +241,12 @@ export function Studio2() {
                 <div className="flex items-start gap-4"><div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-xs font-black text-slate-500">{index + 1}</div><div className="min-w-0 flex-1">
                   <div className="text-sm leading-6 text-slate-300">{shot.visualIntent}</div>
                   <div className="mt-1 text-xs text-slate-600">{shot.asset?.videoUrl ? `Current · ${shot.asset.actualDurationSec?.toFixed(2) || "?"}s · ${shot.asset.model || "provider"}` : `Pending · needs ${shot.generationDurationSec}s source`}</div>
+                  <div className="mt-1 text-[11px] text-slate-700">Environment chain: {shot.dependsOnShotIds.length ? `continues from ${shot.dependsOnShotIds.join(", ")}` : "root shot"}</div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <select value={mode} onChange={event => setSubjectMode(shot.id, event.target.value as SubjectMode)} disabled={busy} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs font-bold text-slate-300">
                       <option value="PRESENTER">PRESENTER · canonical identity</option><option value="NO_PERSON">NO PERSON · strict B-roll</option>
                     </select>
-                    {shot.asset?.videoUrl && <button onClick={() => setSelectedShotId(shot.id)} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-slate-300 hover:text-white"><Video className="mr-1 inline h-3.5 w-3.5" />Review</button>}
+                    {shot.asset?.videoUrl && <button onClick={() => setSelectedShotId(shot.id)} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-slate-300 hover:text-white"><Video className="mr-1 inline h-3.5 w-3.5" />Review clip</button>}
                     {manifest.audio?.narrationUrl && <button onClick={() => regenerateShot(shot.id)} disabled={busy} className="rounded-xl border border-pink-300/20 bg-pink-300/[0.05] px-3 py-2 text-xs font-black text-pink-100 disabled:opacity-50">{regenerating ? <Loader2 className="mr-1 inline h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="mr-1 inline h-3.5 w-3.5" />}Regenerate clip</button>}
                   </div>
                   {options.length > 0 && <div className="mt-3 rounded-xl border border-white/5 bg-black/15 p-3"><div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-600">Previous immutable options</div><div className="mt-2 flex flex-wrap gap-2">{options.map(option => <button key={option.id} onClick={() => selectOption(shot.id, option.id)} disabled={busy} className="rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] font-bold text-slate-400 hover:text-white">{option.label} · {option.asset.actualDurationSec?.toFixed(2) || "?"}s</button>)}</div></div>}
@@ -225,11 +262,16 @@ export function Studio2() {
 
       <aside className="h-fit lg:sticky lg:top-24">
         <div className="rounded-[30px] border border-white/10 bg-[#0a0d12] p-3">
+          {(roughCut || generatedShots.length > 0) && <div className="mb-3 flex flex-wrap gap-2 px-1">
+            {roughCut && <button onClick={() => setSelectedShotId(null)} className={`rounded-lg border px-2.5 py-1.5 text-[10px] font-black ${!selectedShotId ? "border-teal-300/40 bg-teal-300/[0.08] text-teal-100" : "border-white/10 text-slate-500"}`}>FULL REEL</button>}
+            {manifest?.shots.map((shot, index) => shot.asset?.videoUrl ? <button key={shot.id} onClick={() => setSelectedShotId(shot.id)} className={`rounded-lg border px-2.5 py-1.5 text-[10px] font-black ${selectedShotId === shot.id ? "border-pink-300/40 bg-pink-300/[0.08] text-pink-100" : "border-white/10 text-slate-500"}`}>CLIP {index + 1}</button> : null)}
+          </div>}
+          <div className="mb-2 px-1 text-[10px] font-black uppercase tracking-[0.15em] text-slate-600">{previewLabel}</div>
           {previewUrl ? <video key={previewUrl} src={previewUrl} controls playsInline preload="metadata" className="aspect-[9/16] w-full rounded-[24px] bg-black object-cover" /> : <div className="flex aspect-[9/16] items-center justify-center rounded-[24px] bg-black/25 p-6 text-center text-sm text-slate-600">Generated Studio2 clip or combined MP4 appears here.</div>}
         </div>
         <div className="mt-4 rounded-[24px] border border-white/10 bg-white/[0.025] p-5">
           <div className="text-xs font-black uppercase tracking-[0.15em] text-slate-600">Studio2 truth</div>
-          <div className="mt-4 space-y-3 text-sm"><Truth label="Production" value={production?.id || "Not created"} /><Truth label="Revision" value={production ? `r${production.revision}` : "—"} /><Truth label="State" value={manifest?.status || "DRAFT"} /><Truth label="Continuity" value={meta?.presenterContinuity ? "Canonical anchor ON" : "Anchor OFF"} /><Truth label="Generation round" value={String(meta?.generationRound || 0)} /><Truth label="Clips" value={manifest ? `${generatedShotCount}/${totalShotCount}` : "0"} /><Truth label="Combined MP4" value={roughCut ? "Ready" : "Pending"} /></div>
+          <div className="mt-4 space-y-3 text-sm"><Truth label="Production" value={production?.id || "Not created"} /><Truth label="Revision" value={production ? `r${production.revision}` : "—"} /><Truth label="State" value={manifest?.status || "DRAFT"} /><Truth label="Presenter" value={meta?.presenterContinuity ? "Canonical anchor ON" : "Anchor OFF"} /><Truth label="Environment" value={meta?.environmentContinuity !== false ? "Continuity ON" : "Continuity OFF"} /><Truth label="Generation round" value={String(meta?.generationRound || 0)} /><Truth label="Clips" value={manifest ? `${generatedShotCount}/${totalShotCount}` : "0"} /><Truth label="Combined MP4" value={roughCut ? `${roughCut.actualDurationSec.toFixed(1)}s ready` : fullReelStale ? "Needs rebuild" : "Pending"} /></div>
           <div className="mt-5 rounded-xl border border-teal-300/15 bg-teal-300/[0.04] p-3 text-[11px] leading-5 text-teal-100/70">Regeneration never intentionally deletes the prior video. The old asset is archived as a selectable clip option before a new paid generation is queued.</div>
         </div>
       </aside>
