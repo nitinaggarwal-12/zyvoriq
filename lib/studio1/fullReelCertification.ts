@@ -1,4 +1,3 @@
-import { attachReelArtifactIndex } from "../artifact/identity.ts";
 import type { ReelProductionManifest } from "../reel/types";
 
 export type Studio1TimelineQa = {
@@ -79,9 +78,11 @@ export function suppressUncertifiedStudio1Outputs<T extends { manifest: ReelProd
   }
   const complete = clone.manifest.shots.length > 0 && clone.manifest.shots.every(shot => Boolean(shot.asset?.videoUrl) && ["GENERATED", "PASSED"].includes(shot.status));
   if (complete && clone.manifest.audio?.narrationUrl && clone.manifest.audio?.alignmentValidation?.passed) clone.manifest.status = "ROUGH_CUT_READY";
-  // Artifact descriptors are presentation data too. Rebuild them from the
-  // suppressed manifest so a legacy Full Reel URL cannot leak through the
-  // canonical artifact index after its output field has been removed.
-  attachReelArtifactIndex(clone.manifest);
+  // Artifact descriptors are presentation data derived from the manifest. Any
+  // precomputed descriptors may still contain the now-suppressed Full Reel URL,
+  // so invalidate them. The canonical artifact resolver rebuilds a fresh index
+  // from this already-sanitized manifest.
+  delete (clone.manifest as any).artifact;
+  delete (clone.manifest as any).artifacts;
   return clone;
 }
