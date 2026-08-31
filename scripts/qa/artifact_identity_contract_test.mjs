@@ -118,10 +118,10 @@ assert.equal(suppressed.manifest.outputs?.narratedRoughCut, undefined, "uncertif
 assert.equal(suppressed.manifest.outputs?.master, undefined, "uncertified master output must be suppressed");
 assert.ok(!suppressed.manifest.artifacts.some(item => item.kind === "reel"), "suppressed legacy Reel must not leak through canonical artifact descriptors");
 
-const manifestSource = fs.readFileSync("lib/reel/manifestV2.ts", "utf8");
+const storeSource = fs.readFileSync("lib/reel/productionStore.ts", "utf8");
 const apiSource = fs.readFileSync("app/api/artifacts/[id]/route.ts", "utf8");
 const pageSource = fs.readFileSync("app/artifact/[id]/page.tsx", "utf8");
-assert.ok(manifestSource.includes("attachReelArtifactIndex"), "all Reel reads/writes must pass through artifact identity enrichment");
+assert.ok(storeSource.includes("attachReelArtifactIndex") && storeSource.includes("normalizeManifest"), "all persisted Reel create/read/replace paths must pass through artifact identity enrichment");
 assert.ok(apiSource.includes("resolveArtifact"), "canonical artifact API must resolve IDs directly");
 assert.ok(pageSource.includes("Canonical Zyvoriq artifact"), "canonical artifact URL must have a human-readable viewer");
 
