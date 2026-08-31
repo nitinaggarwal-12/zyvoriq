@@ -1,4 +1,4 @@
-import type { ReelProductionManifest, WordTiming } from "@/lib/reel/types";
+import type { ReelProductionManifest, WordTiming } from "../reel/types";
 
 const clock = (value: number) => Number(value.toFixed(6));
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
