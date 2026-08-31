@@ -28,11 +28,11 @@ export function applyStudio2ShotPrompt(manifest: ReelProductionManifest, shotId:
   if (!shot) return;
   const base = meta.basePrompts[shot.id] || shot.generationPrompt;
   const mode = meta.subjectModes[shot.id] || "PRESENTER";
+  shot.dependsOnShotIds = [];
 
   if (mode === "NO_PERSON") {
     delete shot.continuityIn.characterId;
     delete shot.continuityOut.characterId;
-    shot.dependsOnShotIds = [];
     shot.generationPrompt = [
       base,
       "STUDIO2 SUBJECT RULE: This shot is explicit B-roll with NO visible people, faces, presenters, human silhouettes, reflections, portraits, photographs of people, or person-like figures. Preserve the established environment and visual language without introducing a new human identity."
@@ -40,9 +40,13 @@ export function applyStudio2ShotPrompt(manifest: ReelProductionManifest, shotId:
     return;
   }
 
-  shot.continuityIn.characterId = "character_presenter";
-  shot.continuityOut.characterId = "character_presenter";
-  shot.dependsOnShotIds = [];
+  if (meta.presenterContinuity) {
+    shot.continuityIn.characterId = "character_presenter";
+    shot.continuityOut.characterId = "character_presenter";
+  } else {
+    delete shot.continuityIn.characterId;
+    delete shot.continuityOut.characterId;
+  }
   shot.generationPrompt = [
     base,
     meta.presenterContinuity
