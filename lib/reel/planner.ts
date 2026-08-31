@@ -140,7 +140,11 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
       continuityIn,
       continuityOut,
       transitionOut: transitionFor(i, beats.length),
-      dependsOnShotIds: i > 0 && presenterShot ? [`shot_${String(i).padStart(2, "0")}`] : [],
+      dependsOnShotIds: (() => {
+        if (i === 0 || !presenterShot) return [];
+        for (let j = i - 1; j >= 0; j--) { if (j % 3 !== 1) return [`shot_${String(j + 1).padStart(2, "0")}`]; }
+        return [];
+      })(),
       status: "PLANNED",
       qa: { warnings: [], failures: [] }
     };
