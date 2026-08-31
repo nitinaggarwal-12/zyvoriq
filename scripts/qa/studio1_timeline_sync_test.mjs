@@ -88,7 +88,8 @@ function manifest(shots, wordTimings, durationSec) {
   const value = manifest(shots, wordTimings, 7.0);
   synchronizeStudio1ManifestTimeline(value, { mode: "plan" });
   assert.equal(value.studio1.timelineSync.version, 2);
-  assert.equal(value.shots[0].generationDurationSec, 6);
+  assert.equal(value.studio1.timelineSync.boundariesSec[1], 3.1);
+  assert.equal(value.shots[0].generationDurationSec, 4);
   assert.equal(value.shots[1].generationDurationSec, 4);
   assert.equal(value.shots[0].trimOutSec, value.shots[0].editorialDurationSec);
 }
