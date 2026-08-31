@@ -1,4 +1,4 @@
-import type { ReelProductionManifest } from "@/lib/reel/types";
+import type { ReelProductionManifest } from "../reel/types";
 
 export type Studio1TimelineQa = {
   version?: number;
