@@ -59,6 +59,11 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       return NextResponse.json({ success: true, production });
     }
 
+    if (action === "setEnvironmentContinuity") {
+      const production = await studio2Service.setEnvironmentContinuity(id, Boolean(body.enabled), current.revision);
+      return NextResponse.json({ success: true, production });
+    }
+
     if (action === "setSubjectMode") {
       const mode = String(body.mode) as Studio2SubjectMode;
       if (!["PRESENTER", "NO_PERSON"].includes(mode)) return NextResponse.json({ success: false, error: "mode must be PRESENTER or NO_PERSON" }, { status: 400 });
@@ -94,8 +99,13 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
     if (action === "generateNextShot") {
       if (!["SHOTS_PLANNED", "VIDEO_GENERATING", "REPAIRING"].includes(current.manifest.status)) return NextResponse.json({ success: false, error: `Shot generation is not allowed while production is ${current.manifest.status}` }, { status: 409 });
-      const shot = current.manifest.shots.find(item => ["PLANNED", "FAILED"].includes(item.status) && !item.asset?.videoUrl);
-      if (!shot) return NextResponse.json({ success: true, production: current, queued: false, message: "No ungenerated Studio2 shots remain." });
+      const completedIds = new Set(current.manifest.shots.filter(item => item.asset?.videoUrl && ["GENERATED", "PASSED"].includes(item.status)).map(item => item.id));
+      const shot = current.manifest.shots.find(item => ["PLANNED", "FAILED"].includes(item.status) && !item.asset?.videoUrl && item.dependsOnShotIds.every(dep => completedIds.has(dep)));
+      if (!shot) {
+        const remaining = current.manifest.shots.filter(item => ["PLANNED", "FAILED"].includes(item.status) && !item.asset?.videoUrl);
+        if (!remaining.length) return NextResponse.json({ success: true, production: current, queued: false, message: "No ungenerated Studio2 shots remain." });
+        return NextResponse.json({ success: false, error: "No Studio2 shot is eligible yet; environment continuity dependency is unresolved." }, { status: 409 });
+      }
       const modelTier = body.modelTier === "quality" || body.modelTier === "lite" ? body.modelTier : "fast";
       const operation = await enqueueShot(current, shot.id, modelTier);
       return NextResponse.json({ success: true, queued: true, operation, production: current, shotId: shot.id }, { status: 202 });
@@ -114,7 +124,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   } catch (error: any) {
     const message = error?.message || "Failed to update Studio2 production";
     const unavailable = message.includes("worker unavailable") || message.includes("requires Postgres");
-    const conflict = message.includes("concurrently") || message.includes("requires") || message.includes("not allowed") || message.includes("not found");
+    const conflict = message.includes("concurrently") || message.includes("requires") || message.includes("not allowed") || message.includes("not found") || message.includes("dependency");
     return NextResponse.json({ success: false, error: message }, { status: unavailable ? 503 : conflict ? 409 : 400 });
   }
 }

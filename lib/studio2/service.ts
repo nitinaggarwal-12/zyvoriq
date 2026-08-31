@@ -6,6 +6,7 @@ import { applyStudio2ShotPrompt, isStudio2Manifest, type Studio2Metadata, type S
 function meta(manifest: ReelProductionManifest): Studio2Metadata {
   const value = (manifest as any).studio2 as Studio2Metadata | undefined;
   if (!value) throw new Error("Studio2 metadata missing");
+  if (typeof value.environmentContinuity !== "boolean") value.environmentContinuity = true;
   return value;
 }
 
@@ -65,6 +66,8 @@ export const studio2Service = {
     delete shot.asset;
     shot.status = "PLANNED";
     shot.qa = { warnings: [], failures: [] };
+    if (shot.continuityIn) delete shot.continuityIn.referenceFrameUrl;
+    applyStudio2ShotPrompt(manifest, shotId);
     invalidateCombinedOutputs(manifest);
     manifest.status = manifest.shots.some(item => Boolean(item.asset?.videoUrl)) ? "VIDEO_GENERATING" : "SHOTS_PLANNED";
     return reelProductionStore.replace(id, manifest, expectedRevision ?? stored.revision);
@@ -93,6 +96,14 @@ export const studio2Service = {
     const stored = assertStudio2(await reelProductionStore.get(id));
     const manifest = structuredClone(stored.manifest);
     meta(manifest).presenterContinuity = enabled;
+    for (const shot of manifest.shots) applyStudio2ShotPrompt(manifest, shot.id);
+    return reelProductionStore.replace(id, manifest, expectedRevision ?? stored.revision);
+  },
+
+  async setEnvironmentContinuity(id: string, enabled: boolean, expectedRevision?: number) {
+    const stored = assertStudio2(await reelProductionStore.get(id));
+    const manifest = structuredClone(stored.manifest);
+    meta(manifest).environmentContinuity = enabled;
     for (const shot of manifest.shots) applyStudio2ShotPrompt(manifest, shot.id);
     return reelProductionStore.replace(id, manifest, expectedRevision ?? stored.revision);
   },
