@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { operationKey, reelOperationQueue, type ReelOperation } from "@/lib/reel/operationQueue";
 import { reelProductionControl } from "@/lib/reel/productionControl";
 import { studio1Service } from "@/lib/studio1/service";
+import { syncStudio1ProductionTimeline } from "@/lib/studio1/timelineSyncService";
 import type { Studio1SubjectMode } from "@/lib/studio1/planner";
 
 export const dynamic = "force-dynamic";
@@ -146,12 +147,22 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     }
 
     if (action === "renderNarratedRoughCut") {
-      if (current.manifest.status !== "ROUGH_CUT_READY") return NextResponse.json({ success: false, error: `Narrated rough-cut render requires ROUGH_CUT_READY; production is ${current.manifest.status}` }, { status: 409 });
+      const complete = current.manifest.shots.length > 0 && current.manifest.shots.every(shot => Boolean(shot.asset?.videoUrl) && ["GENERATED", "PASSED"].includes(shot.status));
+      if (!complete) return NextResponse.json({ success: false, error: "Narrated rough-cut render requires every Studio1 scene to have a generated clip" }, { status: 409 });
+      if (!current.manifest.audio?.narrationUrl || !current.manifest.audio?.alignmentValidation?.passed) return NextResponse.json({ success: false, error: "Narrated rough-cut render requires validated narration alignment" }, { status: 409 });
+
+      current = await syncStudio1ProductionTimeline(id, current.revision);
       const control = await paidContext(id);
-      const fp = fingerprint({ audio: current.manifest.audio.narrationUrl, shots: current.manifest.shots.map(shot => [shot.id, shot.asset?.videoUrl, shot.trimInSec, shot.trimOutSec]), studio1: true });
+      const fp = fingerprint({
+        audio: current.manifest.audio.narrationUrl,
+        audioDuration: current.manifest.audio.actualDurationSec,
+        timelineSync: (current.manifest as any).studio1?.timelineSync,
+        shots: current.manifest.shots.map(shot => [shot.id, shot.asset?.videoUrl, shot.editorialStartSec, shot.editorialDurationSec, shot.trimInSec, shot.trimOutSec]),
+        studio1: true,
+      });
       const idempotencyKey = operationKey({ productionId: id, generationToken: control.generationToken, kind: "ROUGH_CUT", manifestRevision: current.revision, fingerprint: fp });
-      const operation = await reelOperationQueue.enqueue({ productionId: id, kind: "ROUGH_CUT", idempotencyKey, payload: { manifestRevision: current.revision, generationToken: control.generationToken, semanticFingerprint: fp, studio1: true } });
-      return NextResponse.json({ success: true, queued: true, operation, production: current }, { status: 202 });
+      const operation = await reelOperationQueue.enqueue({ productionId: id, kind: "ROUGH_CUT", idempotencyKey, payload: { manifestRevision: current.revision, generationToken: control.generationToken, semanticFingerprint: fp, studio1: true, narrationSyncedTimeline: true } });
+      return NextResponse.json({ success: true, queued: true, operation, production: current, timelineSync: (current.manifest as any).studio1?.timelineSync }, { status: 202 });
     }
 
     return NextResponse.json({ success: false, error: `Unsupported Studio1 action: ${action}` }, { status: 400 });
