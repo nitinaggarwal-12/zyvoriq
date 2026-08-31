@@ -53,6 +53,27 @@ export type QualityGateId =
   | "QG-SEM-01"
   | "QG-WHOLE-01";
 
+export interface ReelCreationIntent {
+  mode: "quick-brief" | "category";
+  clusterId?: string;
+  clusterName?: string;
+  categoryId?: string;
+  categoryLabel?: string;
+  conceptId?: string;
+  conceptTitle?: string;
+  conceptHook?: string;
+  conceptPrompt?: string;
+  conceptSpeechSample?: string;
+  characterId?: string;
+  characterName?: string;
+  characterDescription?: string;
+  visualStyleId?: string;
+  visualStyleLabel?: string;
+  visualStyleDescription?: string;
+  musicPreset?: string;
+  narrationLanguage?: string;
+}
+
 export interface WordTiming {
   id?: string;
   word: string;
@@ -310,6 +331,7 @@ export interface ReelProductionManifest {
   plannedDurationSec: number;
   topic: string;
   tone: string;
+  creationIntent?: ReelCreationIntent;
   masterScript: string;
   creativeBible: {
     visualStyle: string;
