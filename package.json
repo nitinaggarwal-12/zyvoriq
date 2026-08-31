@@ -7,7 +7,7 @@
     "guard:legacy": "node scripts/governance/legacy_tech_guard.js",
     "docs:validate": "node scripts/governance/validate_docs_traceability.mjs",
     "worker:check": "node --check scripts/reel_worker_v2.mjs",
-    "reel:qa": "rm -rf .tmp-reel-v2 && tsc --target ES2022 --module commonjs --moduleResolution node --esModuleInterop true --skipLibCheck --outDir .tmp-reel-v2 lib/reel/types.ts lib/reel/planner.ts lib/reel/audit.ts lib/reel/manifestV2.ts lib/reel/providerContracts.ts && node scripts/qa/reel_v2_contract_test.cjs && rm -rf .tmp-reel-v2",
+    "reel:qa": "rm -rf .tmp-reel-v2 .tmp-studio1-sync && tsc --target ES2022 --module commonjs --moduleResolution node --esModuleInterop true --skipLibCheck --outDir .tmp-reel-v2 lib/reel/types.ts lib/reel/planner.ts lib/reel/audit.ts lib/reel/manifestV2.ts lib/reel/providerContracts.ts && node scripts/qa/reel_v2_contract_test.cjs && tsc --target ES2022 --module commonjs --moduleResolution node --esModuleInterop true --skipLibCheck --rootDir lib --outDir .tmp-studio1-sync lib/reel/types.ts lib/studio1/timelineSync.ts && node scripts/qa/studio1_timeline_sync_test.cjs && rm -rf .tmp-reel-v2 .tmp-studio1-sync",
     "check": "npm run guard:legacy && npm run docs:validate && npm run worker:check && npm run reel:qa && next build",
     "build": "npm run guard:legacy && npm run worker:check && npm run reel:qa && next build",
     "worker:reels": "node scripts/reel_worker_v2.mjs",

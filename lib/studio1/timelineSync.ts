@@ -1,10 +1,17 @@
-import type { ReelProductionManifest } from "@/lib/reel/types";
+import type { ReelProductionManifest, WordTiming } from "../reel/types";
 
 const clock = (value: number) => Number(value.toFixed(6));
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
-function countWords(value: string) {
-  return String(value || "").trim().split(/\s+/).filter(Boolean).length;
+function normalizeWords(value: string) {
+  return String(value || "")
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[’‘]/g, "'")
+    .replace(/[^\p{L}\p{N}']+/gu, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
 }
 
 function sourceCapacitySec(shot: ReelProductionManifest["shots"][number]) {
@@ -13,76 +20,136 @@ function sourceCapacitySec(shot: ReelProductionManifest["shots"][number]) {
   return Math.max(0.25, actual || planned || Number(shot.editorialDurationSec || 0));
 }
 
-function rawNarrationSlots(manifest: ReelProductionManifest) {
+type ActualToken = { token: string; timingIndex: number };
+
+function actualTokensFromTimings(timings: WordTiming[]): ActualToken[] {
+  const tokens: ActualToken[] = [];
+  timings.forEach((timing, timingIndex) => {
+    normalizeWords(timing.word).forEach(token => tokens.push({ token, timingIndex }));
+  });
+  return tokens;
+}
+
+function alignExpectedToActual(expected: string[], actual: ActualToken[]) {
+  const rows = expected.length + 1;
+  const cols = actual.length + 1;
+  const dp = Array.from({ length: rows }, () => Array<number>(cols).fill(0));
+  for (let i = 0; i < rows; i++) dp[i][0] = i;
+  for (let j = 0; j < cols; j++) dp[0][j] = j;
+
+  for (let i = 1; i < rows; i++) {
+    for (let j = 1; j < cols; j++) {
+      const substitution = dp[i - 1][j - 1] + (expected[i - 1] === actual[j - 1].token ? 0 : 1);
+      dp[i][j] = Math.min(substitution, dp[i - 1][j] + 1, dp[i][j - 1] + 1);
+    }
+  }
+
+  const mapping: Array<number | null> = Array(expected.length).fill(null);
+  let exactMatches = 0;
+  let i = expected.length;
+  let j = actual.length;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0) {
+      const cost = expected[i - 1] === actual[j - 1].token ? 0 : 1;
+      if (dp[i][j] === dp[i - 1][j - 1] + cost) {
+        mapping[i - 1] = j - 1;
+        if (cost === 0) exactMatches += 1;
+        i -= 1;
+        j -= 1;
+        continue;
+      }
+    }
+    if (i > 0 && dp[i][j] === dp[i - 1][j] + 1) {
+      i -= 1;
+      continue;
+    }
+    if (j > 0) {
+      j -= 1;
+      continue;
+    }
+    break;
+  }
+
+  return {
+    mapping,
+    exactMatchCoverage: expected.length ? exactMatches / expected.length : 0,
+  };
+}
+
+function mappedActualIndex(mapping: Array<number | null>, expectedIndex: number, direction: -1 | 1) {
+  for (let index = expectedIndex; index >= 0 && index < mapping.length; index += direction) {
+    const mapped = mapping[index];
+    if (mapped !== null) return mapped;
+  }
+  return null;
+}
+
+function narrationSlots(manifest: ReelProductionManifest) {
   const durationSec = Number(manifest.audio.actualDurationSec || 0);
   const timings = manifest.audio.wordTimings || manifest.audio.speechMap?.words || [];
   if (!(durationSec > 0)) throw new Error("Studio1 sync requires actual narration duration");
   if (!timings.length) throw new Error("Studio1 sync requires actual narration word timings");
   if (!manifest.audio.alignmentValidation?.passed) throw new Error("Studio1 sync requires validated narration alignment");
 
-  const counts = manifest.shots.map(shot => countWords(shot.scriptText));
-  const totalScriptWords = counts.reduce((sum, value) => sum + value, 0);
-  const boundaries = [0];
-  let cumulativeWords = 0;
+  const sceneTokens = manifest.shots.map(shot => normalizeWords(shot.scriptText));
+  const expected = sceneTokens.flat();
+  if (!expected.length) throw new Error("Studio1 sync requires spoken scene text");
 
-  for (let index = 0; index < manifest.shots.length - 1; index++) {
-    cumulativeWords += counts[index];
-    const fraction = totalScriptWords > 0 ? cumulativeWords / totalScriptWords : (index + 1) / manifest.shots.length;
-    const timingIndex = clamp(Math.round(fraction * timings.length), 1, Math.max(1, timings.length - 1));
-    const before = timings[timingIndex - 1];
-    const after = timings[timingIndex];
-    const fallback = durationSec * fraction;
-    const candidate = before && after
-      ? (Number(before.endSec) + Number(after.startSec)) / 2
-      : before
-        ? Number(before.endSec)
-        : fallback;
+  const actual = actualTokensFromTimings(timings);
+  if (!actual.length) throw new Error("Studio1 sync could not normalize narration word timings");
+
+  const alignment = alignExpectedToActual(expected, actual);
+  if (alignment.exactMatchCoverage < 0.85) {
+    throw new Error(`Studio1 scene-to-narration alignment coverage ${(alignment.exactMatchCoverage * 100).toFixed(1)}% is below 85%`);
+  }
+
+  const boundaries = [0];
+  let cumulativeExpected = 0;
+  for (let sceneIndex = 0; sceneIndex < manifest.shots.length - 1; sceneIndex++) {
+    cumulativeExpected += sceneTokens[sceneIndex].length;
+    const previousActual = mappedActualIndex(alignment.mapping, cumulativeExpected - 1, -1);
+    const nextActual = mappedActualIndex(alignment.mapping, cumulativeExpected, 1);
+    const fallback = durationSec * (cumulativeExpected / expected.length);
+
+    let candidate = fallback;
+    if (previousActual !== null && nextActual !== null) {
+      const previousTiming = timings[actual[previousActual].timingIndex];
+      const nextTiming = timings[actual[nextActual].timingIndex];
+      if (previousTiming && nextTiming) {
+        candidate = actual[previousActual].timingIndex === actual[nextActual].timingIndex
+          ? Number(previousTiming.endSec)
+          : (Number(previousTiming.endSec) + Number(nextTiming.startSec)) / 2;
+      }
+    } else if (previousActual !== null) {
+      candidate = Number(timings[actual[previousActual].timingIndex]?.endSec ?? fallback);
+    } else if (nextActual !== null) {
+      candidate = Number(timings[actual[nextActual].timingIndex]?.startSec ?? fallback);
+    }
+
     const minBoundary = boundaries[boundaries.length - 1] + 0.2;
-    const remainingShots = manifest.shots.length - index - 1;
+    const remainingShots = manifest.shots.length - sceneIndex - 1;
     const maxBoundary = durationSec - remainingShots * 0.2;
     boundaries.push(clock(clamp(Number.isFinite(candidate) ? candidate : fallback, minBoundary, Math.max(minBoundary, maxBoundary))));
   }
   boundaries.push(clock(durationSec));
-  return boundaries.slice(1).map((end, index) => Math.max(0.2, clock(end - boundaries[index])));
+
+  return {
+    slots: boundaries.slice(1).map((end, index) => Math.max(0.2, clock(end - boundaries[index]))),
+    boundaries,
+    alignmentCoverage: clock(alignment.exactMatchCoverage),
+  };
 }
 
-function fitSlotsToClipCapacity(raw: number[], capacities: number[], durationSec: number) {
-  if (capacities.reduce((sum, value) => sum + value, 0) + 0.03 < durationSec) {
-    throw new Error(`Generated clips provide ${capacities.reduce((sum, value) => sum + value, 0).toFixed(2)}s but narration requires ${durationSec.toFixed(2)}s`);
-  }
+function assertSceneCapacity(slots: number[], capacities: number[]) {
+  const failures = slots
+    .map((required, index) => ({ index, required, capacity: capacities[index], deficit: required - capacities[index] }))
+    .filter(item => item.deficit > 0.01);
+  if (!failures.length) return;
 
-  const allocated = raw.map((value, index) => Math.min(value, capacities[index]));
-  let remaining = durationSec - allocated.reduce((sum, value) => sum + value, 0);
-
-  for (let pass = 0; pass < 8 && remaining > 0.0005; pass++) {
-    const eligible = allocated.map((value, index) => ({ index, slack: capacities[index] - value, weight: Math.max(raw[index], 0.2) })).filter(item => item.slack > 0.0005);
-    if (!eligible.length) break;
-    const weightTotal = eligible.reduce((sum, item) => sum + item.weight, 0);
-    let distributed = 0;
-    for (const item of eligible) {
-      const share = remaining * (item.weight / weightTotal);
-      const add = Math.min(item.slack, share);
-      allocated[item.index] += add;
-      distributed += add;
-    }
-    if (distributed <= 0.0005) break;
-    remaining -= distributed;
-  }
-
-  if (remaining > 0.02) throw new Error(`Unable to fit ${remaining.toFixed(2)}s of narration into generated clip capacity`);
-
-  const rounded = allocated.map(clock);
-  const delta = clock(durationSec - rounded.reduce((sum, value) => sum + value, 0));
-  if (Math.abs(delta) > 0.000001) {
-    for (let index = rounded.length - 1; index >= 0; index--) {
-      const next = rounded[index] + delta;
-      if (next >= 0.2 && next <= capacities[index] + 0.000001) {
-        rounded[index] = clock(next);
-        break;
-      }
-    }
-  }
-  return rounded;
+  const summary = failures
+    .map(item => `scene ${item.index + 1} requires ${item.required.toFixed(2)}s but clip provides ${item.capacity.toFixed(2)}s`)
+    .join("; ");
+  throw new Error(`Studio1 will not shift narration time into other scenes: ${summary}. Regenerate only the short scene(s).`);
 }
 
 export function syncStudio1TimelineToNarration(manifest: ReelProductionManifest) {
@@ -90,9 +157,9 @@ export function syncStudio1TimelineToNarration(manifest: ReelProductionManifest)
   if (manifest.shots.some(shot => !shot.asset?.videoUrl)) throw new Error("Studio1 sync requires every scene to have a generated clip");
 
   const durationSec = Number(manifest.audio.actualDurationSec || 0);
-  const raw = rawNarrationSlots(manifest);
+  const { slots, boundaries, alignmentCoverage } = narrationSlots(manifest);
   const capacities = manifest.shots.map(sourceCapacitySec);
-  const slots = fitSlotsToClipCapacity(raw, capacities, durationSec);
+  assertSceneCapacity(slots, capacities);
 
   let cursor = 0;
   manifest.shots.forEach((shot, index) => {
@@ -131,13 +198,17 @@ export function syncStudio1TimelineToNarration(manifest: ReelProductionManifest)
   (manifest as any).studio1 = {
     ...((manifest as any).studio1 || {}),
     timelineSync: {
-      version: 1,
-      source: "actual-narration-word-timings",
+      version: 2,
+      source: "scene-script-aligned-to-actual-word-timings",
+      capacityPolicy: "no-cross-scene-redistribution",
       narrationDurationSec: clock(durationSec),
       sceneDurationsSec: slots,
+      boundaryTimesSec: boundaries,
+      sourceCapacitiesSec: capacities.map(clock),
+      alignmentCoverage,
       syncedAt: new Date().toISOString(),
     },
   };
 
-  return { durationSec: clock(durationSec), sceneDurationsSec: slots };
+  return { durationSec: clock(durationSec), sceneDurationsSec: slots, boundaryTimesSec: boundaries, alignmentCoverage };
 }
