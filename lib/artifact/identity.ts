@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import type { ReelProductionManifest } from "@/lib/reel/types";
+import type { ReelProductionManifest } from "../reel/types";
 
 export type ArtifactKind = "project" | "document" | "diagram" | "reel" | "clip" | "audio" | "image" | "evidence";
 
