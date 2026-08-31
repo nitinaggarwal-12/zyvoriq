@@ -27,8 +27,8 @@
     "pg": "^8.23.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "tailwind-merge": "^3.4.17",
-    "three": "^0.185.4"
+    "tailwind-merge": "^3.0.1",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@types/jszip": "^3.4.0",
