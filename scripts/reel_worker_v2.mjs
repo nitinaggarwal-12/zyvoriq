@@ -487,8 +487,25 @@ async function generateShot(op, manifest, shot) {
     const dispatchMarker = prior === "veo-dispatch-started" ? "veo-recovery-dispatch-started" : "veo-dispatch-started";
     await updateOperation(op.id, { providerOperationName: dispatchMarker });
 
+
     const instance = { prompt: shot.generationPrompt };
-    if (ref) instance.image = { mimeType: "image/png", bytesBase64Encoded: ref.buffer.toString("base64") };
+
+    let anchorFrame = null;
+    try {
+      anchorFrame = await firstFrameForShot(manifest, shot, op.production_id, writeAsset, readAsset);
+    } catch (e) {
+      console.warn(`[reel-worker] anchor frame failed: ${e?.message || e}`);
+    }
+    if (anchorFrame) {
+      instance.image = { mimeType: "image/png", bytesBase64Encoded: anchorFrame.toString("base64") };
+    } else if (ref) {
+      instance.image = { mimeType: "image/png", bytesBase64Encoded: ref.buffer.toString("base64") };
+    }
+    const seed = seedForShot(op.production_id, shot.id);
+
+
+
+    
 
     let d;
     try {
