@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { reelProductionStore, type StoredReelProduction } from "@/lib/reel/productionStore";
-import type { ReelProductionManifest, ReelRenderedOutput } from "@/lib/reel/types";
+import type { ReelProductionManifest } from "@/lib/reel/types";
 import { applyStudio2ShotPrompt, isStudio2Manifest, type Studio2Metadata, type Studio2SubjectMode } from "./planner";
 
 function meta(manifest: ReelProductionManifest): Studio2Metadata {
@@ -9,7 +9,8 @@ function meta(manifest: ReelProductionManifest): Studio2Metadata {
   return value;
 }
 
-function assertStudio2(stored: StoredReelProduction) {
+function assertStudio2(stored: StoredReelProduction | null): StoredReelProduction {
+  if (!stored) throw new Error("Studio2 production not found");
   if (!isStudio2Manifest(stored.manifest)) throw new Error("This production does not belong to Studio2");
   return stored;
 }
@@ -50,13 +51,12 @@ export const studio2Service = {
   },
 
   async list(limit = 50) {
-    const all = await reelProductionStore.list(Math.max(limit, 100));
-    return all.filter(item => isStudio2Manifest(item.manifest)).slice(0, limit);
+    const all = await reelProductionStore.list(100);
+    return all.filter(item => isStudio2Manifest(item.manifest)).slice(0, Math.max(1, Math.min(100, limit)));
   },
 
   async prepareShotRegeneration(id: string, shotId: string, expectedRevision?: number) {
-    const stored = assertStudio2((await reelProductionStore.get(id))!);
-    if (!stored) throw new Error(`Studio2 production ${id} not found`);
+    const stored = assertStudio2(await reelProductionStore.get(id));
     const manifest = structuredClone(stored.manifest);
     const shot = manifest.shots.find(item => item.id === shotId);
     if (!shot) throw new Error(`Shot ${shotId} not found`);
@@ -71,8 +71,7 @@ export const studio2Service = {
   },
 
   async prepareFreshAll(id: string, expectedRevision?: number) {
-    const stored = assertStudio2((await reelProductionStore.get(id))!);
-    if (!stored) throw new Error(`Studio2 production ${id} not found`);
+    const stored = assertStudio2(await reelProductionStore.get(id));
     const manifest = structuredClone(stored.manifest);
     if (!manifest.audio?.narrationUrl) throw new Error("Generate narration before generating all clips fresh");
     const m = meta(manifest);
@@ -91,8 +90,7 @@ export const studio2Service = {
   },
 
   async setPresenterContinuity(id: string, enabled: boolean, expectedRevision?: number) {
-    const stored = assertStudio2((await reelProductionStore.get(id))!);
-    if (!stored) throw new Error(`Studio2 production ${id} not found`);
+    const stored = assertStudio2(await reelProductionStore.get(id));
     const manifest = structuredClone(stored.manifest);
     meta(manifest).presenterContinuity = enabled;
     for (const shot of manifest.shots) applyStudio2ShotPrompt(manifest, shot.id);
@@ -100,8 +98,7 @@ export const studio2Service = {
   },
 
   async setSubjectMode(id: string, shotId: string, mode: Studio2SubjectMode, expectedRevision?: number) {
-    const stored = assertStudio2((await reelProductionStore.get(id))!);
-    if (!stored) throw new Error(`Studio2 production ${id} not found`);
+    const stored = assertStudio2(await reelProductionStore.get(id));
     const manifest = structuredClone(stored.manifest);
     if (!manifest.shots.some(item => item.id === shotId)) throw new Error(`Shot ${shotId} not found`);
     meta(manifest).subjectModes[shotId] = mode;
@@ -110,8 +107,7 @@ export const studio2Service = {
   },
 
   async selectOption(id: string, shotId: string, optionId: string, expectedRevision?: number) {
-    const stored = assertStudio2((await reelProductionStore.get(id))!);
-    if (!stored) throw new Error(`Studio2 production ${id} not found`);
+    const stored = assertStudio2(await reelProductionStore.get(id));
     const manifest = structuredClone(stored.manifest);
     const shot = manifest.shots.find(item => item.id === shotId);
     if (!shot) throw new Error(`Shot ${shotId} not found`);
@@ -122,14 +118,6 @@ export const studio2Service = {
     shot.status = "GENERATED";
     invalidateCombinedOutputs(manifest);
     recomputeStatus(manifest);
-    return reelProductionStore.replace(id, manifest, expectedRevision ?? stored.revision);
-  },
-
-  async attachRoughCut(id: string, output: ReelRenderedOutput, expectedRevision?: number) {
-    const stored = assertStudio2((await reelProductionStore.get(id))!);
-    const manifest = structuredClone(stored.manifest);
-    manifest.outputs = { ...(manifest.outputs || {}), narratedRoughCut: output };
-    manifest.status = "MIXING";
     return reelProductionStore.replace(id, manifest, expectedRevision ?? stored.revision);
   },
 };
