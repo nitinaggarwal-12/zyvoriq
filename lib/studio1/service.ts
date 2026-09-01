@@ -5,9 +5,20 @@ import { applyStudio1ShotPrompt, isStudio1Manifest, type Studio1Metadata, type S
 
 const clock = (value: number) => Number(value.toFixed(6));
 
+// Pick the SMALLEST Veo bucket that can cover the narration slot within the
+// same local-adaptation limits the renderer enforces (<=0.75s and <=1.20x).
+// Rounding up wastes source: a 4.30s slot generated at 6s throws away 1.70s,
+// and the front-trim cuts the clip mid-action.
+const GENERATION_BUCKETS: Array<4 | 6 | 8> = [4, 6, 8];
+const MAX_LOCAL_EXTENSION_SEC = 0.75;
+const MAX_LOCAL_EXTENSION_RATIO = 1.20;
+
 function chooseGenerationDuration(editorialDurationSec: number): 4 | 6 | 8 {
-  if (editorialDurationSec <= 3.5) return 4;
-  if (editorialDurationSec <= 5.5) return 6;
+  for (const bucket of GENERATION_BUCKETS) {
+    if (editorialDurationSec <= bucket) return bucket;
+    const deficitSec = editorialDurationSec - bucket;
+    if (deficitSec <= MAX_LOCAL_EXTENSION_SEC && editorialDurationSec / bucket <= MAX_LOCAL_EXTENSION_RATIO) return bucket;
+  }
   return 8;
 }
 
