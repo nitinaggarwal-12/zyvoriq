@@ -598,18 +598,30 @@ function assertStudio1RenderAdaptation(plan) {
 async function renderRough(op, m) {
   await assertApplicable(op, { beforeDispatch: true });
   if (!assetRoot() || !m.audio?.narrationUrl || !m.audio?.actualDurationSec || !m.audio?.alignmentValidation?.passed) throw new Error("Validated narration and durable storage required");
-  const d = Number(m.audio.actualDurationSec), tmp = path.join(os.tmpdir(), `zyvoriq-rough-${crypto.randomUUID()}.mp4`), args = ["-y"];
-  for (const s of m.shots) { if (!s.asset?.videoUrl) throw new Error(`${s.id} has no source`); args.push("-i", assetPath(s.asset.videoUrl).target); }
-  args.push("-i", assetPath(m.audio.narrationUrl).target);
+
   const studio1 = op.payload_json?.studio1 === true;
-  let timelineQa = null;
-  let renderPlan = null;
   if (studio1) {
     if (!op.payload_json?.narrationSyncedTimeline) throw new Error("Studio1 exact render requires narrationSyncedTimeline operation evidence");
     if (Number(m.studio1?.timelineSync?.version || 0) < 2) throw new Error("Studio1 exact render requires timelineSync version 2");
+    const c = await getProduction(op.production_id);
+    const sync = synchronizeStudio1ManifestTimeline(c.manifest, { mode: "render" });
+    await saveManifest(op.production_id, c.revision, c.manifest);
+    m = c.manifest;
+    console.log(`[reel-worker] studio1 render resync ${op.production_id} ${JSON.stringify(sync.adaptations)}`);
+  } else {
+    console.warn(`[reel-worker] rough cut ${op.production_id} rendering on legacy unsynced path`);
+  }
+
+  const d = Number(m.audio.actualDurationSec), tmp = path.join(os.tmpdir(), `zyvoriq-rough-${crypto.randomUUID()}.mp4`), args = ["-y"];
+  for (const s of m.shots) { if (!s.asset?.videoUrl) throw new Error(`${s.id} has no source`); args.push("-i", assetPath(s.asset.videoUrl).target); }
+  args.push("-i", assetPath(m.audio.narrationUrl).target);
+  let timelineQa = null;
+  let renderPlan = null;
+  if (studio1) {
     renderPlan = buildStudio1RenderPlan(m);
     assertStudio1RenderAdaptation(renderPlan);
   }
+
   const f = [];
   if (studio1) {
     renderPlan.scenes.forEach(scene => f.push(buildStudio1VisualFilter(m.shots[scene.inputIndex], scene)));
