@@ -576,7 +576,13 @@ async function generateShot(op, manifest, shot) {
   if (!dl.ok) throw new Error(`Veo download failed (${dl.status})`);
   const buffer = Buffer.from(await dl.arrayBuffer());
   const probe = await probeVideo(buffer);
-  if (probe.durationSec + .05 < shot.trimOutSec) throw new Error(`${shot.id} source ${probe.durationSec}s shorter than trim ${shot.trimOutSec}s`);
+  const MAX_LOCAL_EXTENSION_SEC = 0.75;
+  const MAX_LOCAL_EXTENSION_RATIO = 1.20;
+  const targetSec = Number(shot.editorialDurationSec || shot.trimOutSec || 0);
+  const deficitSec = targetSec - probe.durationSec;
+  if (deficitSec > MAX_LOCAL_EXTENSION_SEC || (probe.durationSec > 0 && targetSec / probe.durationSec > MAX_LOCAL_EXTENSION_RATIO)) {
+    throw new Error(`${shot.id} source ${probe.durationSec}s cannot cover trim ${targetSec}s within local adaptation limits`);
+}
   await assertApplicable(op);
   const digest = crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 16);
   const asset = await writeAsset(`reels/${op.production_id}/shots/${shot.id}-${digest}.mp4`, buffer);
