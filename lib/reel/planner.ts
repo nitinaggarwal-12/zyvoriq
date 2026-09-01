@@ -20,8 +20,8 @@ const normalizeSpaces = (value: string) => value.trim().replace(/\s+/g, " ");
 // Rounding up wastes source: a 4.30s slot generated at 6s throws away 1.70s,
 // and the front-trim cuts the clip mid-action.
 const GENERATION_BUCKETS: Array<4 | 6 | 8> = [4, 6, 8];
-const MAX_LOCAL_EXTENSION_SEC = 0.75;
-const MAX_LOCAL_EXTENSION_RATIO = 1.20;
+const MAX_LOCAL_EXTENSION_RATIO = 1.06;
+const MAX_LOCAL_EXTENSION_SEC = 0.25;
 
 function chooseGenerationDuration(editorialDurationSec: number): 4 | 6 | 8 {
   for (const bucket of GENERATION_BUCKETS) {
