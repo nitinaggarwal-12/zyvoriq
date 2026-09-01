@@ -43,8 +43,8 @@ for (const route of [listRoute, detailRoute, inspectionRoute]) {
   assert.ok(route.includes('startsWith("studio1_")'), "Studio1 suppression must stay scoped to Studio1 productions");
 }
 
-assert.ok(detailRoute.includes("NextResponse.redirect(target, 307)"), "Generic production PATCH must route Studio1 mutations to the canonical Studio1 API without changing method/body");
-assert.ok(detailRoute.includes("/api/studio1/productions/"), "Studio1 mutation compatibility path must target the Studio1 API");
+assert.ok(detailRoute.includes("studio1Patch(req, context)"), "Generic production PATCH must route Studio1 mutations to the canonical Studio1 API without changing method/body");
+assert.ok(detailRoute.includes('from "@/app/api/studio1/productions/[id]/route"'), "Studio1 mutation compatibility path must target the Studio1 API");
 assert.ok(detailRoute.indexOf('id.startsWith("studio1_")') < detailRoute.indexOf("const body = await req.json()"), "Studio1 mutation guard must run before generic action dispatch");
 
 console.log("Reel Inspector creator UX and stale-output safety QA passed");
