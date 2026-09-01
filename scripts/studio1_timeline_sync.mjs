@@ -3,8 +3,10 @@ const MIN_SCENE_SEC = 0.12;
 const FPS = 30;
 const MAX_BOUNDARY_DRIFT_MS = 50;
 const MAX_LOCAL_EXTENSION_RATIO = 1.06;
-const MAX_LOCAL_EXTENSION_SEC = 0.25;
-const MAX_RETIME_FACTOR = 1.10;
+const MAX_LOCAL_EXTENSION_RATIO = 1.20;
+const MAX_LOCAL_EXTENSION_SEC = 0.75;
+const MAX_GENERATION_EXTENSION_RATIO = 1.06;
+const MAX_GENERATION_EXTENSION_SEC = 0.25;
 
 const NUMBER_WORDS = new Map(Object.entries({
   zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
@@ -130,7 +132,7 @@ function chooseGenerationDuration(targetSec, shotId) {
   for (const bucket of [4, 6, 8]) {
     if (targetSec <= bucket) return bucket;
     const deficitSec = targetSec - bucket;
-    if (deficitSec <= MAX_LOCAL_EXTENSION_SEC && targetSec / bucket <= MAX_LOCAL_EXTENSION_RATIO) return bucket;
+    if (deficitSec <= MAX_GENERATION_EXTENSION_SEC && targetSec / bucket <= MAX_GENERATION_EXTENSION_RATIO) return bucket;
   }
   throw new Error(`Studio1 scene ${shotId} requires ${targetSec.toFixed(2)}s of narration; split the scene because Veo source clips are limited to 8s`);
 }
