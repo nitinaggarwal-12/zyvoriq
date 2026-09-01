@@ -91,6 +91,13 @@ export const reelOperationQueue = {
     idempotencyKey: string;
     payload?: Record<string, unknown>;
   }): Promise<ReelOperation> {
+    // One paid media engine only. Any future API or UI regression that tries to
+    // enqueue narration, Veo shots, or a rough cut without the Studio1 contract
+    // fails before a provider call can be persisted or dispatched.
+    if (!input.productionId.startsWith("studio1_") || input.payload?.studio1 !== true) {
+      throw new Error("LEGACY_REEL_PIPELINE_DISABLED: paid Reel operations require a studio1_ production and studio1=true operation evidence");
+    }
+
     const pool = await ensureTable();
     const id = `rop_${crypto.randomUUID()}`;
     const result = await pool.query(
