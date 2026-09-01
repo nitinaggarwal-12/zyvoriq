@@ -15,9 +15,20 @@ const clampDuration = (n: number) => Math.max(8, Math.min(90, clock(n)));
 const countWords = (value: string) => value.trim().split(/\s+/).filter(Boolean).length;
 const normalizeSpaces = (value: string) => value.trim().replace(/\s+/g, " ");
 
+// Pick the SMALLEST Veo bucket that can cover the narration slot within the
+// same local-adaptation limits the renderer enforces (<=0.75s and <=1.20x).
+// Rounding up wastes source: a 4.30s slot generated at 6s throws away 1.70s,
+// and the front-trim cuts the clip mid-action.
+const GENERATION_BUCKETS: Array<4 | 6 | 8> = [4, 6, 8];
+const MAX_LOCAL_EXTENSION_SEC = 0.75;
+const MAX_LOCAL_EXTENSION_RATIO = 1.20;
+
 function chooseGenerationDuration(editorialDurationSec: number): 4 | 6 | 8 {
-  if (editorialDurationSec <= 3.5) return 4;
-  if (editorialDurationSec <= 5.5) return 6;
+  for (const bucket of GENERATION_BUCKETS) {
+    if (editorialDurationSec <= bucket) return bucket;
+    const deficitSec = editorialDurationSec - bucket;
+    if (deficitSec <= MAX_LOCAL_EXTENSION_SEC && editorialDurationSec / bucket <= MAX_LOCAL_EXTENSION_RATIO) return bucket;
+  }
   return 8;
 }
 
@@ -225,7 +236,7 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
     // subjectForward changes what dominates frame, never who is in it.
     // TODO: drive this from a per-beat shotType returned by the beat planner.
     const subjectForward = i !== 0 && i !== beats.length - 1 && i % 3 === 1;
-    const actionOut = i === beats.length - 1 ? "Finish with a confident readable hold." : `End on a clean gesture or motion vector that can motivate shot ${i + 2}.`;
+    const actionOut = i === beats.length - 1 ? "Finish with a confident readable hold." : `Arrive at a settled, readable pose by the end of the clip; complete the gesture rather than ending mid-motion. Shot ${i + 2} continues from this final frame.`;
     const visualIntent = i === 0
       ? creationIntent?.conceptId
         ? "High-retention opening inside the selected concept world; establish subject, genre and stakes immediately."
