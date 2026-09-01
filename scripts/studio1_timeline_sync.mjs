@@ -124,9 +124,14 @@ function alignTokens(script, transcript) {
 }
 
 function chooseGenerationDuration(targetSec, shotId) {
-  if (targetSec <= 4.05) return 4;
-  if (targetSec <= 6.05) return 6;
-  if (targetSec <= 8.05) return 8;
+  // Smallest bucket that covers the slot within the same local-adaptation
+  // limits enforced below, so we stop over-generating and front-trimming
+  // clips mid-action.
+  for (const bucket of [4, 6, 8]) {
+    if (targetSec <= bucket) return bucket;
+    const deficitSec = targetSec - bucket;
+    if (deficitSec <= MAX_LOCAL_EXTENSION_SEC && targetSec / bucket <= MAX_LOCAL_EXTENSION_RATIO) return bucket;
+  }
   throw new Error(`Studio1 scene ${shotId} requires ${targetSec.toFixed(2)}s of narration; split the scene because Veo source clips are limited to 8s`);
 }
 
