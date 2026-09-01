@@ -221,6 +221,10 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
     const editorialDurationSec = clock(i === beats.length - 1 ? remaining : perShot);
     const generationDurationSec = chooseGenerationDuration(editorialDurationSec);
     const previousAction = i === 0 ? "Presenter is composed and ready to begin." : `Continue naturally from shot ${i}.`;
+    // Framing only. The presenter is present and identity-locked in every shot;
+    // subjectForward changes what dominates frame, never who is in it.
+    // TODO: drive this from a per-beat shotType returned by the beat planner.
+    const subjectForward = i !== 0 && i !== beats.length - 1 && i % 3 === 1;
     const actionOut = i === beats.length - 1 ? "Finish with a confident readable hold." : `End on a clean gesture or motion vector that can motivate shot ${i + 2}.`;
     const visualIntent = i === 0
       ? creationIntent?.conceptId
@@ -228,24 +232,23 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
         : "High-retention opening: tight presenter or visually surprising action; immediate subject clarity."
       : i === beats.length - 1
       ? "Payoff and CTA with clean negative space for editor-rendered captions."
-      : i % 3 === 1
+      : subjectForward
       ? creationIntent?.conceptId
-        ? "Category-native visual storytelling or b-roll that directly advances the selected concept; avoid generic stock-like imagery."
-        : "Relevant b-roll that literally supports the spoken beat; no decorative stock-like imagery."
+        ? "Subject-forward framing: the concept subject dominates the frame while the same presenter stays visibly present at the edge of frame or gesturing toward it; never substitute a different person and avoid generic stock-like imagery."
+        : "Subject-forward framing: the thing being described dominates the frame while the same presenter stays visibly present at the edge of frame or gesturing toward it; never substitute a different person."
       : "Presenter-driven explanation with a purposeful change in framing or camera motion.";
-    const presenterShot = i % 3 !== 1;
-    const emotion = { emotion: i === beats.length - 1 ? "confident" : i === 0 ? "curious" : "engaged", intensity: i === 0 ? 0.65 : 0.55, gestureEnergy: presenterShot ? 0.45 : 0.2 };
+    const emotion = { emotion: i === beats.length - 1 ? "confident" : i === 0 ? "curious" : "engaged", intensity: i === 0 ? 0.65 : 0.55, gestureEnergy: subjectForward ? 0.3 : 0.45 };
 
     const continuityIn = {
       character: bible.characterLock,
-      characterId: presenterShot ? "character_presenter" : undefined,
+      characterId: "character_presenter",
       wardrobe: bible.wardrobeLock,
       environment: bible.environmentLock,
       environmentId: "environment_primary",
       lighting: bible.colorLanguage,
       action: previousAction,
       camera: bible.cameraLanguage,
-      eyeline: presenterShot ? "camera" : undefined,
+      eyeline: subjectForward ? "toward subject, presenter remains in frame" : "camera",
       emotion
     };
     const continuityOut = { ...continuityIn, action: actionOut };
@@ -265,11 +268,7 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
       continuityIn,
       continuityOut,
       transitionOut: transitionFor(i, beats.length),
-      dependsOnShotIds: (() => {
-        if (i === 0 || !presenterShot) return [];
-        for (let j = i - 1; j >= 0; j--) { if (j % 3 !== 1) return [`shot_${String(j + 1).padStart(2, "0")}`]; }
-        return [];
-      })(),
+      dependsOnShotIds: i === 0 ? [] : [`shot_${String(i).padStart(2, "0")}`],
       status: "PLANNED",
       qa: { warnings: [], failures: [] }
     };
