@@ -5,6 +5,7 @@ import { reelProductionControl } from "@/lib/reel/productionControl";
 import type { ReelOperation } from "@/lib/reel/operationQueue";
 import type { ReelProductionStatus } from "@/lib/reel/types";
 import { suppressUncertifiedStudio1Outputs } from "@/lib/studio1/fullReelCertification";
+import { PATCH as studio1Patch } from "@/app/api/studio1/productions/[id]/route";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -27,12 +28,8 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   try {
     const { id } = await context.params;
 
-    // Compatibility bridge for existing clients such as /studio. New public
-    // productions are Studio1 manifests, so preserve PATCH + body with a 307
-    // and let the canonical Studio1 API own all generation semantics.
     if (id.startsWith("studio1_")) {
-      const target = new URL(`/api/studio1/productions/${encodeURIComponent(id)}`, req.url);
-      return NextResponse.redirect(target, 307);
+      return studio1Patch(req, context);
     }
 
     const body = await req.json();
