@@ -6,6 +6,11 @@ const MAX_LOCAL_EXTENSION_RATIO = 1.20;
 const MAX_LOCAL_EXTENSION_SEC = 0.75;
 const MAX_GENERATION_EXTENSION_RATIO = 1.06;
 const MAX_GENERATION_EXTENSION_SEC = 0.25;
+const MAX_LOCAL_EXTENSION_RATIO = 1.20;
+const MAX_LOCAL_EXTENSION_SEC = 0.75;
+const MAX_GENERATION_EXTENSION_RATIO = 1.06;
+const MAX_GENERATION_EXTENSION_SEC = 0.25;
+const MAX_RETIME_FACTOR = 1.10;
 
 const NUMBER_WORDS = new Map(Object.entries({
   zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
