@@ -19,7 +19,8 @@ assert.ok(planRoute.includes('import { planStudio1 }'), "public planning must us
 assert.ok(planRoute.includes("const manifest = planStudio1"), "public planning must not emit a legacy generic manifest");
 assert.ok(planRoute.includes('canonicalEngine: "studio1"'), "public planning response must identify the canonical engine");
 
-assert.ok(mutationRoute.includes("NextResponse.redirect(target, 307)"), "existing clients must preserve PATCH bodies when routed to Studio1");
+assert.ok(mutationRoute.includes("studio1Patch(req, context)"), "existing clients must preserve PATCH bodies when routed to Studio1");
+assert.ok(!mutationRoute.includes("NextResponse.redirect"), "Studio1 routing must not depend on a redirect origin");
 assert.ok(mutationRoute.includes("LEGACY_REEL_PIPELINE_DISABLED"), "legacy reel_* paid generation must fail closed");
 assert.ok(!mutationRoute.includes("kind: \"ROUGH_CUT\""), "generic mutation route must not enqueue legacy rough-cut generation");
 assert.ok(!mutationRoute.includes("kind: \"SHOT\""), "generic mutation route must not enqueue legacy shot generation");
