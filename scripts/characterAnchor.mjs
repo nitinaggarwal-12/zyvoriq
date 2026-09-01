@@ -134,9 +134,13 @@ async function dependencyLastFrame(manifest, shot, readAsset) {
   const video = await readAsset(dependency.asset.videoUrl);
   const tmpVideo = path.join(os.tmpdir(), `zyvoriq-env-${crypto.randomUUID()}.mp4`);
   const tmpFrame = path.join(os.tmpdir(), `zyvoriq-env-${crypto.randomUUID()}.png`);
-  const trimOut = Number(dependency.trimOutSec || dependency.asset.actualDurationSec || 0);
+
+  const depSec = Number(dependency.asset.actualDurationSec || 0);
+  const trimOutRaw = Number(dependency.trimOutSec || 0);
+  const trimOut = depSec > 0 ? Math.min(trimOutRaw || depSec, depSec) : trimOutRaw;
   const trimIn = Number(dependency.trimInSec || 0);
-  const t = Math.max(trimIn, trimOut > 0 ? trimOut - 1 / 30 : 0);
+  const t = Math.max(0, Math.max(trimIn, trimOut > 0 ? trimOut - 0.15 : 0));
+  
   try {
     await fs.writeFile(tmpVideo, video);
     await execFileAsync("ffmpeg", [
