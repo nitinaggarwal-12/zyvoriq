@@ -144,6 +144,12 @@ export function ReelStudio() {
     setBRollItems(prev => prev.map(b => b.id === id ? { ...b, brollUrl: presetUrl, searchQuery: presetTitle, keyword } : b));
   };
 
+  const handleCustomBRollUpload = (itemId: string, file: File) => {
+    const localUrl = URL.createObjectURL(file);
+    const fileName = file.name.replace(/\.[^/.]+$/, "");
+    selectBRollPreset(itemId, localUrl, `Custom: ${fileName}`, "custom");
+  };
+
   useEffect(() => {
     const urls = [
       ...shots.map(s => s.asset?.videoUrl),
@@ -1040,6 +1046,18 @@ export function ReelStudio() {
                               {preset.title}
                             </button>
                           ))}
+                          <label className="cursor-pointer rounded-lg border border-pink-400/30 bg-pink-400/10 px-2 py-1 text-[10px] font-bold text-pink-300 transition hover:bg-pink-400/20 hover:text-pink-200">
+                            + Upload Clip
+                            <input
+                              type="file"
+                              accept="video/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleCustomBRollUpload(item.id, file);
+                              }}
+                            />
+                          </label>
                         </div>
                       </div>
                     ))}

@@ -99,6 +99,21 @@ export function DynamicZoomVideoPlayer({
     }
   };
 
+  // Frame-accurate synchronization between primary A-Roll and active B-Roll overlay
+  useEffect(() => {
+    if (brollVideoRef.current && activeBRoll) {
+      const targetOffset = Math.max(0, currentTime - activeBRoll.startSec);
+      if (Math.abs(brollVideoRef.current.currentTime - targetOffset) > 0.3) {
+        brollVideoRef.current.currentTime = targetOffset;
+      }
+      if (isPlaying && brollVideoRef.current.paused) {
+        brollVideoRef.current.play().catch(() => {});
+      } else if (!isPlaying && !brollVideoRef.current.paused) {
+        brollVideoRef.current.pause();
+      }
+    }
+  }, [activeBRoll, currentTime, isPlaying]);
+
   const togglePlay = () => {
     if (!videoRef.current) return;
     if (videoRef.current.paused) {
@@ -195,6 +210,7 @@ export function DynamicZoomVideoPlayer({
           {activeBRoll.type === "full_cutaway" && (
             <div className="absolute inset-0 z-10 overflow-hidden bg-black transition-opacity duration-300 animate-in fade-in">
               <video
+                ref={brollVideoRef}
                 src={activeBRoll.brollUrl}
                 autoPlay
                 loop
@@ -212,6 +228,7 @@ export function DynamicZoomVideoPlayer({
           {activeBRoll.type === "pip_top_right" && (
             <div className="absolute top-12 right-3 z-20 w-36 aspect-[9/16] overflow-hidden rounded-2xl border-2 border-pink-500 bg-black/90 shadow-2xl transition-all duration-300 animate-in zoom-in-90">
               <video
+                ref={brollVideoRef}
                 src={activeBRoll.brollUrl}
                 autoPlay
                 loop
@@ -229,6 +246,7 @@ export function DynamicZoomVideoPlayer({
           {activeBRoll.type === "split_screen" && (
             <div className="absolute inset-x-0 top-0 h-1/2 z-15 overflow-hidden border-b-2 border-teal-400/50 bg-black transition-all duration-300 animate-in slide-in-from-top">
               <video
+                ref={brollVideoRef}
                 src={activeBRoll.brollUrl}
                 autoPlay
                 loop
