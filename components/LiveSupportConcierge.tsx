@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   MessageSquare,
   X,
@@ -30,9 +31,15 @@ import {
   Eye,
   Lock,
   ArrowRight,
-  UserCheck
+  UserCheck,
+  Sliders
 } from "lucide-react";
 import { diagnoseCreatorRoadblock } from "@/lib/copilot/screenShareCopilotEngine";
+import { 
+  loadSavedAvatarPreference, 
+  AvatarProfilePreference, 
+  DEFAULT_AVATAR_PREFERENCE 
+} from "@/lib/profile/avatarPreferencesEngine";
 
 interface Message {
   id: string;
@@ -107,6 +114,9 @@ export function LiveSupportConcierge() {
   const [isMaximized, setIsMaximized] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
 
+  // User Preferred Avatar Profile State
+  const [avatarPref, setAvatarPref] = useState<AvatarProfilePreference>(DEFAULT_AVATAR_PREFERENCE);
+
   const [messages, setMessages] = useState<Message[]>([DEFAULT_INITIAL_MESSAGE]);
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -136,9 +146,18 @@ export function LiveSupportConcierge() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Restore persistent chat history on mount
+  // Restore persistent chat history & avatar preference on mount
   useEffect(() => {
     setHasMounted(true);
+    setAvatarPref(loadSavedAvatarPreference());
+
+    const handlePrefUpdated = (e: any) => {
+      if (e.detail) {
+        setAvatarPref(e.detail);
+      }
+    };
+    window.addEventListener("zyvoriq_avatar_preference_updated", handlePrefUpdated);
+
     try {
       const savedHistory = localStorage.getItem("zyvoriq_concierge_history");
       if (savedHistory) {
@@ -148,6 +167,10 @@ export function LiveSupportConcierge() {
         }
       }
     } catch {}
+
+    return () => {
+      window.removeEventListener("zyvoriq_avatar_preference_updated", handlePrefUpdated);
+    };
   }, []);
 
   // Save history whenever messages change
@@ -169,7 +192,7 @@ export function LiveSupportConcierge() {
     const freshMessage: Message = {
       id: `msg_init_${Date.now()}`,
       sender: "ai",
-      text: "✨ **Chat history reset.** How can I assist your creative workflow now?",
+      text: `✨ **Chat history reset.** I'm ${avatarPref.avatarName}, communicating in a ${avatarPref.toneLabel} style. How can I assist your creative workflow now?`,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     };
     setMessages([freshMessage]);
@@ -191,7 +214,7 @@ export function LiveSupportConcierge() {
     const aiMsg: Message = {
       id: `msg_ai_${Date.now()}`,
       sender: "ai",
-      text: `🖥️ **Live Screen Vision & Voice Copilot Connected!**\n\n• **Acoustic Echo Cancellation:** Active\n• **PII Privacy Mask:** Active (Passwords & Tokens Redacted)\n• **Diagnosis:** ${diag.issue}\n\n*Spoken Voice Guidance:* "${diag.spokenAdvice}"`,
+      text: `🖥️ **Live Screen Vision & Voice Copilot Connected (${avatarPref.avatarName})!**\n\n• **Attire:** ${avatarPref.attireLabel}\n• **Tone & Mode:** ${avatarPref.toneLabel} (${avatarPref.copilotScreenModeLabel})\n• **Acoustic Echo Filter:** Active (48kHz AEC)\n• **PII Privacy Mask:** Active (Zero-leakage)\n\n*Spoken Advice:* "${diag.spokenAdvice}"`,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     };
     setMessages(prev => [...prev, aiMsg]);
@@ -218,6 +241,19 @@ export function LiveSupportConcierge() {
 
       if (lower.includes("screen") || lower.includes("share") || lower.includes("unblock") || lower.includes("look at my screen")) {
         handleStartScreenShareCopilot();
+        setIsTyping(false);
+        return;
+      } else if (lower.includes("avatar") || lower.includes("customize") || lower.includes("attire") || lower.includes("voice")) {
+        const aiMsg: Message = {
+          id: `msg_ai_${Date.now()}`,
+          sender: "ai",
+          text: `🎨 **Customize Your Virtual Chat & Support Avatar:**\n\nYou are currently chatting with **${avatarPref.avatarName}** (${avatarPref.attireLabel}, ${avatarPref.toneLabel}).\n\nYou can change avatar identity, wardrobe attire, neural voice, and screen-sharing tone in the Avatar Studio:`,
+          quickActions: [
+            { label: "Customize Avatar Profile", action: "link:/studio/avatars" }
+          ],
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        };
+        setMessages(prev => [...prev, aiMsg]);
         setIsTyping(false);
         return;
       } else if (lower.includes("verify") || lower.includes("id") || lower.includes("age") || lower.includes("passport") || lower.includes("kyc")) {
@@ -268,10 +304,10 @@ export function LiveSupportConcierge() {
       }
 
       const response = matchedKey ? KNOWLEDGE_BASE[matchedKey] : {
-        answer: `✨ **Thanks for asking!**\n\nI can help you with:\n• **Live Screen Copilot:** Live visual unblocking\n• **Studio Cinema:** Building cinematic AI video reels (` + "`/studio`" + `)\n• **Trend Radar:** 7-Day Advance Viral Mining (` + "`/studio/trend-radar`" + `)\n• **Book Studio:** EPUB 3 & Audible World-Building (` + "`/studio/books`" + `)\n• **ID & Age Verification:** Regulatory Vault (` + "`/governance/verify`" + `)`,
+        answer: `✨ **Thanks for asking!**\n\nI can help you with:\n• **Live Screen Copilot:** Visual live unblocking\n• **Avatar Profile:** Customize my attire, voice & tone\n• **Studio Cinema:** Building cinematic AI reels (` + "`/studio`" + `)\n• **Trend Radar:** 7-Day Advance Viral Mining (` + "`/studio/trend-radar`" + `)\n• **ID & Age Verification:** Regulatory Vault (` + "`/governance/verify`" + `)`,
         quickActions: [
           { label: "Start Screen Copilot", action: "screen_share" },
-          { label: "Verify Age & ID", action: "link:/governance/verify" },
+          { label: "Customize Avatar", action: "link:/studio/avatars" },
           { label: "Rate Support (1-5 ⭐)", action: "rate" }
         ]
       };
@@ -359,21 +395,48 @@ export function LiveSupportConcierge() {
               className="flex items-center gap-3 cursor-pointer"
               onClick={() => isMinimized && setIsMinimized(false)}
             >
-              <div className="relative flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 font-bold text-obsidian-950">
-                <Bot className="w-4 h-4" />
+              <div className="relative flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 font-bold text-obsidian-950 overflow-hidden">
+                {avatarPref.avatarImage ? (
+                  <Image
+                    src={avatarPref.avatarImage}
+                    alt={avatarPref.avatarName}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <Bot className="w-4 h-4" />
+                )}
                 <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-400 border-2 border-obsidian-950 animate-pulse" />
               </div>
               <div>
                 <div className="font-bold text-xs text-white flex items-center gap-1.5">
-                  <span>Zyvoriq Concierge</span>
+                  <span>{avatarPref.avatarName}</span>
                   <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-300">Live</span>
                 </div>
-                {!isMinimized && <div className="text-[10px] text-slate-400">Multimodal Screen &amp; Voice Copilot</div>}
+                {!isMinimized && (
+                  <div className="text-[10px] text-slate-400 flex items-center gap-1">
+                    <span>{avatarPref.attireLabel.split("&")[0]}</span>
+                    <span>•</span>
+                    <span className="text-teal-300">{avatarPref.toneLabel.split("&")[0]}</span>
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="flex items-center gap-1">
               
+              {/* Customize Avatar Button */}
+              {!isMinimized && (
+                <Link
+                  href="/studio/avatars"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-teal-300 hover:bg-slate-800 transition-all"
+                  title="Customize Avatar, Attire & Voice Profile"
+                  aria-label="Customize avatar settings"
+                >
+                  <Sliders className="w-3.5 h-3.5" />
+                </Link>
+              )}
+
               {/* Screen Share Copilot Trigger Button */}
               {!isMinimized && (
                 <button
@@ -479,8 +542,17 @@ export function LiveSupportConcierge() {
 
                     {/* Animated Avatar Talking HUD */}
                     <div className="rounded-xl border border-teal-500/30 bg-slate-950 p-3 flex items-center gap-3">
-                      <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-indigo-500 text-obsidian-950 font-bold">
-                        <Bot className="w-6 h-6" />
+                      <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-indigo-500 text-obsidian-950 font-bold overflow-hidden border border-teal-400/40">
+                        {avatarPref.avatarImage ? (
+                          <Image
+                            src={avatarPref.avatarImage}
+                            alt={avatarPref.avatarName}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <Bot className="w-6 h-6" />
+                        )}
                         <span className="absolute -bottom-1 -right-1 flex h-3 w-3">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
@@ -488,11 +560,11 @@ export function LiveSupportConcierge() {
                       </div>
                       <div className="flex-1 text-[11px]">
                         <div className="font-bold text-white flex items-center gap-2">
-                          <span>Elena (Technical Director Copilot)</span>
-                          <span className="text-[9px] font-mono text-emerald-400">Audio Sync On</span>
+                          <span>{avatarPref.avatarName}</span>
+                          <span className="text-[9px] font-mono text-emerald-400">{avatarPref.attireLabel.split("&")[0]}</span>
                         </div>
                         <p className="text-slate-400 text-[10px]">
-                          {isScreenSharingActive ? "Observing active workspace canvas..." : "Ready to share screen."}
+                          {isScreenSharingActive ? `Observing workspace (${avatarPref.copilotScreenModeLabel})...` : "Ready to share screen."}
                         </p>
                       </div>
                     </div>
@@ -505,7 +577,7 @@ export function LiveSupportConcierge() {
                       </div>
                       <div className="p-2 rounded bg-slate-900 border border-slate-800 text-slate-300 flex items-center gap-1.5">
                         <Volume2 className="w-3.5 h-3.5 text-teal-400" />
-                        <span>AEC Echo Filter: <strong>ON</strong></span>
+                        <span>AEC Filter: <strong>48kHz</strong></span>
                       </div>
                     </div>
 
@@ -679,8 +751,17 @@ export function LiveSupportConcierge() {
                     className={`flex gap-2.5 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
                   >
                     {msg.sender === "ai" && (
-                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-teal-500/10 border border-teal-500/30 text-teal-400">
-                        <Bot className="w-3.5 h-3.5" />
+                      <div className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-teal-500/10 border border-teal-500/30 text-teal-400 overflow-hidden">
+                        {avatarPref.avatarImage ? (
+                          <Image
+                            src={avatarPref.avatarImage}
+                            alt={avatarPref.avatarName}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <Bot className="w-3.5 h-3.5" />
+                        )}
                       </div>
                     )}
                     
@@ -738,7 +819,7 @@ export function LiveSupportConcierge() {
                 {isTyping && (
                   <div className="flex gap-2 items-center text-slate-400 text-[11px]">
                     <Bot className="w-3.5 h-3.5 text-teal-400 animate-spin" />
-                    <span>Zyvoriq Concierge is typing...</span>
+                    <span>{avatarPref.avatarName} is typing...</span>
                   </div>
                 )}
 
@@ -762,7 +843,7 @@ export function LiveSupportConcierge() {
               <div className="p-3 border-t border-slate-800 bg-slate-900 flex items-center gap-2">
                 <input
                   type="text"
-                  placeholder="Ask anything, share screen, or request help..."
+                  placeholder={`Ask ${avatarPref.avatarName}, share screen, or request help...`}
                   value={inputText}
                   onChange={e => setInputText(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && handleSend()}
@@ -793,8 +874,17 @@ export function LiveSupportConcierge() {
           className="flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-500 text-obsidian-950 font-bold text-xs shadow-2xl shadow-teal-500/30 hover:scale-105 active:scale-95 transition-all"
           aria-label="Toggle live AI support concierge"
         >
-          <div className="relative">
-            <MessageSquare className="w-4 h-4 fill-current" />
+          <div className="relative flex h-5 w-5 rounded-full overflow-hidden shrink-0">
+            {avatarPref.avatarImage ? (
+              <Image
+                src={avatarPref.avatarImage}
+                alt={avatarPref.avatarName}
+                fill
+                className="object-cover"
+              />
+            ) : (
+              <MessageSquare className="w-4 h-4 fill-current" />
+            )}
             <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-white animate-ping" />
           </div>
           <span>AI Concierge &amp; Help</span>
