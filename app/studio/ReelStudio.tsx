@@ -7,12 +7,17 @@ import {
   Image as ImageIcon, Copy, Check, Instagram, Youtube, ChevronDown, Loader2,
   CircleAlert, Database, Film, AudioLines, Video, Download, Trash2, Plus,
   Pencil, Save, X, Globe, Music, Volume2, Sliders, CheckSquare, Square,
-  Layers, Wand2, RefreshCw, Eye, Zap, Share2, Send
+  Layers, Wand2, RefreshCw, Eye, Zap, Share2, Send, Radio, BookOpen
 } from "lucide-react";
 import type { ReelProductionManifest, ReelShot } from "@/lib/reel/types";
 import { PersonaClone, PRESET_PERSONAS } from "@/lib/reel/personas";
 import { PersonaVaultModal } from "@/components/PersonaVaultModal";
 import { SocialPublishModal } from "@/components/SocialPublishModal";
+import { ResolutionDownloadDropdown } from "@/components/ResolutionDownloadDropdown";
+import { PodcastStudioView } from "@/components/multimodal/PodcastStudioView";
+import { CarouselStudioView } from "@/components/multimodal/CarouselStudioView";
+import { SongStudioView } from "@/components/multimodal/SongStudioView";
+import { StoryStudioView } from "@/components/multimodal/StoryStudioView";
 import { AUTO_ZOOM_PRESETS, calculateZoomKeyframes, AutoZoomPresetId } from "@/lib/reel/autoZoom";
 import { DynamicZoomVideoPlayer } from "@/components/DynamicZoomVideoPlayer";
 import { preloadReelMedia } from "@/lib/cache/mediaCache";
@@ -98,6 +103,7 @@ function scriptLines(manifest: ReelProductionManifest | null, topic: string) {
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export function ReelStudio() {
+  const [creationMode, setCreationMode] = useState<"video_reel" | "podcast" | "carousel" | "song" | "story">("video_reel");
   const [topic, setTopic] = useState("3 habits quietly killing your focus");
   const [tone, setTone] = useState("Confident & conversational");
   const [duration, setDuration] = useState("30");
@@ -617,7 +623,39 @@ export function ReelStudio() {
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-[1600px] gap-5 px-5 py-6 md:px-8 lg:grid-cols-[380px_1fr_360px]">
+      {/* Omni-Modal Creation Switcher */}
+      <div className="border-b border-white/10 bg-black/40 px-5 py-2.5 backdrop-blur-md">
+        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 overflow-x-auto">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mr-2">CREATION STUDIO:</span>
+            {[
+              { id: "video_reel", label: "🎬 AI Video Reel" },
+              { id: "podcast", label: "🎙️ 2-Host Podcast" },
+              { id: "carousel", label: "📊 Social Carousel & Deck" },
+              { id: "song", label: "🎵 Song & Music" },
+              { id: "story", label: "✍️ Story & Novel" },
+            ].map(m => (
+              <button
+                key={m.id}
+                onClick={() => setCreationMode(m.id as any)}
+                className={`flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs font-black transition ${creationMode === m.id ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md shadow-pink-500/20" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
+              >
+                <span>{m.label}</span>
+              </button>
+            ))}
+          </div>
+          <div className="hidden text-[11px] font-bold text-slate-500 md:block">
+            {creationMode === "video_reel" && "Veo 3.1 Multi-Shot & Continuous Option C Studio"}
+            {creationMode === "podcast" && "2-Speaker Conversational Neural Podcast Studio"}
+            {creationMode === "carousel" && "Multi-Card Vector PDF & SVG Slide Deck Studio"}
+            {creationMode === "song" && "Verse-Chorus Lyric & Beat Visualizer Engine"}
+            {creationMode === "story" && "Episodic Chapters & Dramatis Personae Lore Studio"}
+          </div>
+        </div>
+      </div>
+
+      {creationMode === "video_reel" && (
+        <main className="mx-auto grid max-w-[1600px] gap-5 px-5 py-6 md:px-8 lg:grid-cols-[380px_1fr_360px]">
         {/* LEFT COLUMN: Brief, Settings & Primary Generators */}
         <aside className="h-fit rounded-[26px] border border-white/10 bg-white/[0.025] p-5 lg:sticky lg:top-24">
           <div className="flex items-center justify-between">
@@ -730,13 +768,10 @@ export function ReelStudio() {
               />
             )}
             {roughCut?.videoUrl && (
-              <a
-                href={roughCut.videoUrl}
-                download
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-300/25 bg-emerald-300/[0.08] py-3.5 text-sm font-black text-emerald-100 transition hover:bg-emerald-300/[0.14]"
-              >
-                <Download className="h-4 w-4" /> Download Combined MP4
-              </a>
+              <ResolutionDownloadDropdown
+                videoUrl={roughCut.videoUrl}
+                durationSec={roughCut.actualDurationSec}
+              />
             )}
 
             <button
@@ -1554,6 +1589,31 @@ export function ReelStudio() {
           </div>
         </aside>
       </main>
+      )}
+
+      {creationMode === "podcast" && (
+        <main className="mx-auto max-w-[1600px] px-5 py-6 md:px-8">
+          <PodcastStudioView initialTopic={topic} />
+        </main>
+      )}
+
+      {creationMode === "carousel" && (
+        <main className="mx-auto max-w-[1600px] px-5 py-6 md:px-8">
+          <CarouselStudioView initialTopic={topic} />
+        </main>
+      )}
+
+      {creationMode === "song" && (
+        <main className="mx-auto max-w-[1600px] px-5 py-6 md:px-8">
+          <SongStudioView initialTopic={topic} />
+        </main>
+      )}
+
+      {creationMode === "story" && (
+        <main className="mx-auto max-w-[1600px] px-5 py-6 md:px-8">
+          <StoryStudioView initialTopic={topic} />
+        </main>
+      )}
 
       <PersonaVaultModal
         isOpen={isPersonaModalOpen}
