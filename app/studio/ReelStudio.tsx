@@ -2,15 +2,70 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Sparkles, Clapperboard, Captions, Mic2, Image as ImageIcon, Copy, Check, Instagram, Youtube, ChevronDown, Loader2, CircleAlert, Database, Film, AudioLines, Video, Download } from "lucide-react";
-import type { ReelProductionManifest } from "@/lib/reel/types";
+import {
+  ArrowLeft, ArrowUp, ArrowDown, Sparkles, Clapperboard, Captions, Mic2,
+  Image as ImageIcon, Copy, Check, Instagram, Youtube, ChevronDown, Loader2,
+  CircleAlert, Database, Film, AudioLines, Video, Download, Trash2, Plus,
+  Pencil, Save, X, Globe, Music, Volume2, Sliders, CheckSquare, Square,
+  Layers, Wand2, RefreshCw, Eye
+} from "lucide-react";
+import type { ReelProductionManifest, ReelShot } from "@/lib/reel/types";
 
 type StoredProduction = { id: string; revision: number; manifest: ReelProductionManifest; createdAt: string; updatedAt: string };
 type DurableOperation = { id: string; status: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED"; lastError?: string };
 type StudioOperation = "plan" | "narration" | "shot" | "rough" | "all" | "native" | null;
 
-function durationNumber(value: string) {
-  const parsed = Number.parseInt(value, 10);
+const LANGUAGES = [
+  { code: "en-US", name: "English (US)" },
+  { code: "en-GB", name: "English (UK)" },
+  { code: "es-ES", name: "Spanish (Castilian)" },
+  { code: "es-MX", name: "Spanish (Latin America)" },
+  { code: "fr-FR", name: "French" },
+  { code: "de-DE", name: "German" },
+  { code: "ja-JP", name: "Japanese" },
+  { code: "hi-IN", name: "Hindi" },
+  { code: "pt-BR", name: "Portuguese (Brazil)" },
+  { code: "zh-CN", name: "Mandarin Chinese" },
+  { code: "it-IT", name: "Italian" },
+  { code: "ko-KR", name: "Korean" },
+];
+
+const SUBTITLE_STYLES = [
+  { id: "karaoke-gold", name: "Dynamic Gold Karaoke", desc: "Real-time word highlights" },
+  { id: "pop-yellow", name: "Bold Pop Yellow", desc: "High-contrast viral social style" },
+  { id: "minimal-white", name: "Minimalist Crisp White", desc: "Clean documentary look" },
+  { id: "cyber-boxed", name: "Cyber Neon Boxed", desc: "Dark badge high visibility" },
+  { id: "none", name: "None (Raw Video)", desc: "No on-screen captions" },
+];
+
+const MUSIC_TRACKS = [
+  { id: "lofi-chill", name: "Lo-Fi Study Beats" },
+  { id: "cyber-synth", name: "Cyber Synthwave" },
+  { id: "upbeat-tech", name: "Upbeat Modern Tech" },
+  { id: "ambient-cinema", name: "Ambient Cinematic" },
+  { id: "dramatic-pulse", name: "Dramatic Bass Pulse" },
+  { id: "none", name: "None (Speech Only)" },
+];
+
+const DURATION_OPTIONS = [
+  { label: "15 sec (2 beats)", value: 15, hops: 2 },
+  { label: "30 sec (4 beats · Sweet Spot)", value: 30, hops: 4 },
+  { label: "45 sec (6 beats)", value: 45, hops: 6 },
+  { label: "60 sec (8 beats)", value: 60, hops: 8 },
+  { label: "90 sec (12 beats)", value: 90, hops: 12 },
+  { label: "120 sec (17 beats)", value: 120, hops: 17 },
+  { label: "148 sec (21 beats · Max Engine Ceiling)", value: 148, hops: 21 },
+];
+
+const ASPECT_RATIOS = [
+  { id: "9:16", name: "9:16 Vertical (Reels / TikTok / Shorts)" },
+  { id: "16:9", name: "16:9 Widescreen (YouTube / Hero Video)" },
+  { id: "1:1", name: "1:1 Square (Instagram / LinkedIn Feed)" },
+  { id: "4:5", name: "4:5 Portrait (Instagram Classic)" },
+];
+
+function durationNumber(value: string | number) {
+  const parsed = typeof value === "number" ? value : Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : 30;
 }
 
@@ -24,32 +79,40 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 export function ReelStudio() {
   const [topic, setTopic] = useState("3 habits quietly killing your focus");
   const [tone, setTone] = useState("Confident & conversational");
-  const [duration, setDuration] = useState("30 sec");
+  const [duration, setDuration] = useState("30");
   const [platform, setPlatform] = useState("Instagram Reels");
-  const [activeTab, setActiveTab] = useState("Script");
+  const [aspectRatio, setAspectRatio] = useState("9:16");
+  const [language, setLanguage] = useState("en-US");
+  const [subtitleStyle, setSubtitleStyle] = useState("karaoke-gold");
+  const [subtitlePlacement, setSubtitlePlacement] = useState("lower-third");
+  const [musicTrack, setMusicTrack] = useState("lofi-chill");
+  const [musicVolume, setMusicVolume] = useState(25);
+  const [activeTab, setActiveTab] = useState<"Scenes" | "Script" | "Audio & Subtitles" | "Format" | "Cover">("Scenes");
   const [copied, setCopied] = useState(false);
   const [production, setProduction] = useState<StoredProduction | null>(null);
   const [operation, setOperation] = useState<StudioOperation>(null);
   const [error, setError] = useState("");
   const [selectedShotId, setSelectedShotId] = useState<string | null>(null);
 
+  // Scene inline editing & bulk operations state
+  const [selectedShotIds, setSelectedShotIds] = useState<Set<string>>(new Set());
+  const [editingShotId, setEditingShotId] = useState<string | null>(null);
+  const [editScriptText, setEditScriptText] = useState("");
+  const [editVisualIntent, setEditVisualIntent] = useState("");
+
   const manifest = production?.manifest || null;
-  const generatedShotCount = manifest?.shots.filter(s => Boolean(s.asset?.videoUrl)).length || 0;
-  const totalShotCount = manifest?.shots.length || 0;
+  const shots = manifest?.shots || [];
+  const generatedShotCount = shots.filter(s => Boolean(s.asset?.videoUrl)).length;
+  const totalShotCount = shots.length;
   const roughCut = manifest?.outputs?.narratedRoughCut;
-  const generatedShots = manifest?.shots.filter(s => Boolean(s.asset?.videoUrl)) || [];
-  const selectedShot = (selectedShotId ? manifest?.shots.find(s => s.id === selectedShotId && s.asset?.videoUrl) : undefined) || (!roughCut ? generatedShots[0] : undefined);
+  const generatedShots = shots.filter(s => Boolean(s.asset?.videoUrl));
+  const selectedShot = (selectedShotId ? shots.find(s => s.id === selectedShotId && s.asset?.videoUrl) : undefined) || (!roughCut ? generatedShots[0] : undefined);
   const previewVideoUrl = selectedShot?.asset?.videoUrl || roughCut?.videoUrl || null;
   const canGenerateShot = Boolean(manifest && ["SHOTS_PLANNED", "VIDEO_GENERATING", "REPAIRING"].includes(manifest.status) && generatedShotCount < totalShotCount);
   const canGenerateNative = Boolean(manifest && !roughCut && ["SHOTS_PLANNED", "VIDEO_GENERATING", "REPAIRING"].includes(manifest.status));
   const canGenerateAll = Boolean(manifest && !roughCut && ["SCRIPT_READY", "SHOTS_PLANNED", "VIDEO_GENERATING", "REPAIRING", "ROUGH_CUT_READY"].includes(manifest.status));
   const script = useMemo(() => scriptLines(manifest, topic), [manifest, topic]);
-  const scenes = useMemo(() => manifest?.shots.map((shot) => {
-    const end = shot.editorialStartSec + shot.editorialDurationSec;
-    const evidence = shot.asset?.actualDurationSec ? `generated ${shot.asset.actualDurationSec.toFixed(2)}s · ${shot.asset.model || "provider"}` : `needs ${shot.generationDurationSec}s source`;
-    return `${shot.editorialStartSec.toFixed(1)}–${end.toFixed(1)}s · ${shot.visualIntent} · ${evidence}`;
-  }) || [], [manifest]);
-  const captions = useMemo(() => manifest?.shots.filter(s => s.scriptText.trim()).map(s => s.scriptText.trim().toUpperCase()) || [], [manifest]);
+  const captions = useMemo(() => shots.filter(s => s.scriptText.trim()).map(s => s.scriptText.trim().toUpperCase()), [shots]);
 
   const refreshProduction = async (id: string) => {
     const response = await fetch(`/api/reels/productions/${encodeURIComponent(id)}`, { cache: "no-store" });
@@ -95,7 +158,7 @@ export function ReelStudio() {
     setOperation(op);
     setError("");
     try {
-      if (action === "generateNarration" || action === "generateNextShot") setActiveTab("Scenes");
+      if (action === "generateNarration" || action === "generateNextShot" || action === "generateNativeReel") setActiveTab("Scenes");
       await dispatchAction(production, action, extra);
     } catch (err: any) {
       setError(err?.message || `${action} failed`);
@@ -115,9 +178,6 @@ export function ReelStudio() {
     try {
       let current = await refreshProduction(productionId);
 
-      // A single Studio action orchestrates the existing durable operations. Each paid
-      // generation remains independently persisted/idempotent, and shots stay sequential
-      // so predecessor-frame continuity is never bypassed.
       if (current.manifest.status === "SCRIPT_READY") {
         current = await dispatchAction(current, "generateNarration");
       }
@@ -153,16 +213,24 @@ export function ReelStudio() {
   const buildProduction = async () => {
     setOperation("plan");
     setError("");
+    setSelectedShotIds(new Set());
     try {
       const response = await fetch("/api/reels/productions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, tone, platform, requestedDurationSec: durationNumber(duration) }),
+        body: JSON.stringify({
+          topic,
+          tone,
+          platform,
+          requestedDurationSec: durationNumber(duration),
+          language,
+          aspectRatio,
+        }),
       });
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || "Failed to create production");
       setProduction(data.production);
-      setActiveTab("Script");
+      setActiveTab("Scenes");
     } catch (err: any) {
       setError(err?.message || "Failed to create production");
     } finally {
@@ -170,10 +238,173 @@ export function ReelStudio() {
     }
   };
 
+  // --- Scene / Beat Mutation Handlers ---
+  const handleEditShot = (shot: ReelShot) => {
+    setEditingShotId(shot.id);
+    setEditScriptText(shot.scriptText);
+    setEditVisualIntent(shot.visualIntent);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!production || !editingShotId) return;
+    try {
+      const updatedShots = production.manifest.shots.map(s => {
+        if (s.id === editingShotId) {
+          return { ...s, scriptText: editScriptText, visualIntent: editVisualIntent };
+        }
+        return s;
+      });
+      const updatedManifest = { ...production.manifest, shots: updatedShots, masterScript: updatedShots.map(s => s.scriptText).join(" ") };
+      setProduction({ ...production, manifest: updatedManifest });
+      setEditingShotId(null);
+    } catch (err: any) {
+      setError(err?.message || "Failed to save shot edit");
+    }
+  };
+
+  const handleAddShotAfter = (targetShotId: string) => {
+    if (!production) return;
+    const currentShots = [...production.manifest.shots];
+    const index = currentShots.findIndex(s => s.id === targetShotId);
+    const newId = `shot_${crypto.randomUUID().slice(0, 8)}`;
+    const newShot: ReelShot = {
+      id: newId,
+      order: index + 2,
+      visualIntent: "Presenter delivers supporting explanation directly to camera.",
+      scriptText: "And here is why this matters more than ever.",
+      continuityIn: currentShots[0]?.continuityIn || { character: "Same presenter", wardrobe: "Navy t-shirt", environment: "Studio", lighting: "Frontal key" },
+      continuityOut: currentShots[0]?.continuityOut || {},
+      transitionOut: { type: "hard-cut", durationSec: 0 },
+      editorialStartSec: (currentShots[index]?.editorialStartSec || 0) + 7,
+      editorialDurationSec: 7,
+      trimInSec: 0,
+      trimOutSec: 7,
+      generationDurationSec: 8,
+      generationPrompt: `${currentShots[0]?.generationPrompt || "A presenter speaking"} She says: "And here is why this matters more than ever."`,
+      dependsOnShotIds: index >= 0 ? [currentShots[index].id] : [],
+      status: "PLANNED",
+    };
+    currentShots.splice(index + 1, 0, newShot);
+    const reindexed = currentShots.map((s, i) => ({ ...s, order: i + 1 }));
+    setProduction({ ...production, manifest: { ...production.manifest, shots: reindexed } });
+  };
+
+  const handleCloneShot = (shot: ReelShot) => {
+    if (!production) return;
+    const currentShots = [...production.manifest.shots];
+    const index = currentShots.findIndex(s => s.id === shot.id);
+    const clonedId = `shot_${crypto.randomUUID().slice(0, 8)}`;
+    const clonedShot: ReelShot = {
+      ...structuredClone(shot),
+      id: clonedId,
+      status: "PLANNED",
+      asset: undefined,
+      order: index + 2,
+    };
+    currentShots.splice(index + 1, 0, clonedShot);
+    const reindexed = currentShots.map((s, i) => ({ ...s, order: i + 1 }));
+    setProduction({ ...production, manifest: { ...production.manifest, shots: reindexed } });
+  };
+
+  const handleDeleteShot = (shotId: string) => {
+    if (!production) return;
+    const filtered = production.manifest.shots.filter(s => s.id !== shotId);
+    const reindexed = filtered.map((s, i) => ({ ...s, order: i + 1 }));
+    setProduction({ ...production, manifest: { ...production.manifest, shots: reindexed } });
+    selectedShotIds.delete(shotId);
+    setSelectedShotIds(new Set(selectedShotIds));
+  };
+
+  const handleMoveShot = (shotId: string, direction: -1 | 1) => {
+    if (!production) return;
+    const currentShots = [...production.manifest.shots];
+    const index = currentShots.findIndex(s => s.id === shotId);
+    if (index < 0) return;
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= currentShots.length) return;
+    const [moved] = currentShots.splice(index, 1);
+    currentShots.splice(targetIndex, 0, moved);
+    const reindexed = currentShots.map((s, i) => ({ ...s, order: i + 1 }));
+    setProduction({ ...production, manifest: { ...production.manifest, shots: reindexed } });
+  };
+
+  // --- Bulk Actions ---
+  const toggleSelectShot = (shotId: string) => {
+    const next = new Set(selectedShotIds);
+    if (next.has(shotId)) next.delete(shotId);
+    else next.add(shotId);
+    setSelectedShotIds(next);
+  };
+
+  const selectAllShots = () => {
+    if (selectedShotIds.size === shots.length) {
+      setSelectedShotIds(new Set());
+    } else {
+      setSelectedShotIds(new Set(shots.map(s => s.id)));
+    }
+  };
+
+  const handleBulkDelete = () => {
+    if (!production || selectedShotIds.size === 0) return;
+    const filtered = production.manifest.shots.filter(s => !selectedShotIds.has(s.id));
+    const reindexed = filtered.map((s, i) => ({ ...s, order: i + 1 }));
+    setProduction({ ...production, manifest: { ...production.manifest, shots: reindexed } });
+    setSelectedShotIds(new Set());
+  };
+
+  const handleBulkClone = () => {
+    if (!production || selectedShotIds.size === 0) return;
+    const currentShots = [...production.manifest.shots];
+    const toAdd: ReelShot[] = [];
+    currentShots.forEach(s => {
+      if (selectedShotIds.has(s.id)) {
+        toAdd.push({
+          ...structuredClone(s),
+          id: `shot_${crypto.randomUUID().slice(0, 8)}`,
+          status: "PLANNED",
+          asset: undefined,
+        });
+      }
+    });
+    const combined = [...currentShots, ...toAdd].map((s, i) => ({ ...s, order: i + 1 }));
+    setProduction({ ...production, manifest: { ...production.manifest, shots: combined } });
+    setSelectedShotIds(new Set());
+  };
+
+  const handleClearAllShots = () => {
+    if (!production) return;
+    setProduction({ ...production, manifest: { ...production.manifest, shots: [] } });
+    setSelectedShotIds(new Set());
+  };
+
   const copyText = async () => {
     try { await navigator.clipboard.writeText(script.join("\n")); } catch {}
     setCopied(true);
     setTimeout(() => setCopied(false), 1200);
+  };
+
+  const downloadSrt = () => {
+    if (!shots.length) return;
+    let srtContent = "";
+    shots.forEach((shot, i) => {
+      const start = shot.editorialStartSec;
+      const end = start + shot.editorialDurationSec;
+      const fmt = (sec: number) => {
+        const hrs = Math.floor(sec / 3600).toString().padStart(2, "0");
+        const mins = Math.floor((sec % 3600) / 60).toString().padStart(2, "0");
+        const secs = Math.floor(sec % 60).toString().padStart(2, "0");
+        const ms = Math.floor((sec % 1) * 1000).toString().padStart(3, "0");
+        return `${hrs}:${mins}:${secs},${ms}`;
+      };
+      srtContent += `${i + 1}\n${fmt(start)} --> ${fmt(end)}\n${shot.scriptText.trim()}\n\n`;
+    });
+    const blob = new Blob([srtContent], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "subtitles.srt";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const busy = operation !== null;
@@ -189,86 +420,540 @@ export function ReelStudio() {
         <div className="mx-auto flex max-w-[1600px] items-center justify-between px-5 py-4 md:px-8">
           <div className="flex items-center gap-4">
             <Link href="/" className="rounded-xl p-2 text-slate-500 transition hover:bg-white/5 hover:text-white" aria-label="Back home"><ArrowLeft className="h-5 w-5" /></Link>
-            <div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-300 via-orange-200 to-teal-300 font-black text-slate-950">Z</div><div><div className="font-black tracking-[-0.02em] text-white">Reel Studio</div><div className="text-[11px] text-slate-600">Production-manifest workspace</div></div></div>
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-300 via-orange-200 to-teal-300 font-black text-slate-950">Z</div>
+              <div>
+                <div className="font-black tracking-[-0.02em] text-white">Reel Studio Pro</div>
+                <div className="text-[11px] text-slate-500">Option C Native Veo 3.1 & Multi-Shot Studio Suite</div>
+              </div>
+            </div>
           </div>
-          <div className="hidden items-center gap-2 text-xs font-medium text-slate-500 sm:flex"><span className={`h-2 w-2 rounded-full ${production ? "bg-emerald-400" : "bg-slate-700"}`} />{production ? `Persisted · rev ${production.revision}` : "Not yet persisted"}</div>
+          <div className="hidden items-center gap-3 text-xs font-medium text-slate-400 sm:flex">
+            <span className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-slate-300">
+              <Globe className="h-3.5 w-3.5 text-pink-300" /> {LANGUAGES.find(l => l.code === language)?.name}
+            </span>
+            <span className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-slate-300">
+              <Sliders className="h-3.5 w-3.5 text-teal-300" /> {aspectRatio}
+            </span>
+            <span className={`h-2 w-2 rounded-full ${production ? "bg-emerald-400" : "bg-slate-700"}`} />
+            {production ? `Persisted · r${production.revision}` : "Draft Mode"}
+          </div>
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-[1600px] gap-5 px-5 py-6 md:px-8 lg:grid-cols-[360px_1fr_360px]">
+      <main className="mx-auto grid max-w-[1600px] gap-5 px-5 py-6 md:px-8 lg:grid-cols-[380px_1fr_360px]">
+        {/* LEFT COLUMN: Brief, Settings & Primary Generators */}
         <aside className="h-fit rounded-[26px] border border-white/10 bg-white/[0.025] p-5 lg:sticky lg:top-24">
-          <div className="text-xs font-bold uppercase tracking-[0.16em] text-pink-300">Creative brief</div>
-          <h1 className="mt-2 text-2xl font-black tracking-[-0.03em] text-white">What do you want to post?</h1>
-          <label className="mt-6 block text-xs font-bold text-slate-500">IDEA OR TOPIC</label>
-          <textarea value={topic} onChange={(e) => setTopic(e.target.value)} rows={5} className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-black/20 p-4 text-sm leading-6 text-white outline-none focus:border-pink-300/35" />
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-            <Field label="Tone" value={tone} onChange={setTone} options={["Confident & conversational", "Warm & relatable", "Fast & energetic", "Expert & credible", "Playful & witty"]} />
-            <Field label="Length" value={duration} onChange={setDuration} options={["15 sec", "30 sec", "45 sec", "60 sec"]} />
-            <Field label="Platform" value={platform} onChange={setPlatform} options={["Instagram Reels", "YouTube Shorts", "TikTok"]} />
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-bold uppercase tracking-[0.16em] text-pink-300">Creative Controls</div>
+            <span className="rounded-md border border-pink-300/30 bg-pink-300/10 px-2 py-0.5 text-[10px] font-black text-pink-200">Veo 3.1 Ready</span>
           </div>
 
-          <ActionButton onClick={buildProduction} disabled={busy || !topic.trim()} active={operation === "plan"} icon={Sparkles} idle={production ? "Create new plan" : "Build reel plan"} busyLabel="Building…" primary />
-          {canGenerateNative && <ActionButton onClick={() => runAction("generateNativeReel", "native")} disabled={busy} active={operation === "native"} icon={Sparkles} idle="Generate Native Reel (Option C · Veo 3.1)" busyLabel="Generating continuous reel…" primary />}
-          {canGenerateAll && <ActionButton onClick={generateAllMp4} disabled={busy} active={operation === "all"} icon={Film} idle={generatedShotCount ? `Generate remaining + MP4 (${generatedShotCount}/${totalShotCount})` : "Generate all clips + MP4 (Multi-Shot TTS)"} busyLabel={generateAllBusyLabel} />}
-          {roughCut?.videoUrl && <a href={roughCut.videoUrl} download className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-300/25 bg-emerald-300/[0.07] py-3.5 text-sm font-black text-emerald-100 transition hover:bg-emerald-300/[0.12]"><Download className="h-4 w-4" />Download combined MP4</a>}
-          {manifest?.status === "SCRIPT_READY" && <ActionButton onClick={() => runAction("generateNarration", "narration")} disabled={busy} active={operation === "narration"} icon={AudioLines} idle="Generate real narration" busyLabel="Generating + aligning…" />}
-          {canGenerateShot && <ActionButton onClick={() => runAction("generateNextShot", "shot", { modelTier: "fast" })} disabled={busy} active={operation === "shot"} icon={Video} idle={`Generate next shot (${generatedShotCount}/${totalShotCount})`} busyLabel="Generating + probing…" />}
-          {manifest?.status === "ROUGH_CUT_READY" && <ActionButton onClick={() => runAction("renderNarratedRoughCut", "rough")} disabled={busy} active={operation === "rough"} icon={Film} idle="Render narrated rough cut" busyLabel="Rendering + probing…" />}
+          <label className="mt-5 block text-xs font-bold text-slate-400">IDEA OR TOPIC</label>
+          <textarea
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            rows={4}
+            className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-black/25 p-3.5 text-sm leading-6 text-white outline-none focus:border-pink-300/40"
+            placeholder="What is your video about?"
+          />
 
-          {canGenerateAll && <p className="mt-3 text-center text-[11px] leading-5 text-slate-500">Generate all runs clips sequentially for continuity, reuses completed clips, then renders one narrated MP4.</p>}
-          <p className="mt-3 text-center text-[11px] leading-5 text-slate-600">States advance only when persisted artifacts and measurable media evidence exist.</p>
+          <div className="mt-4 space-y-3">
+            <Field label="Tone & Persona" value={tone} onChange={setTone} options={["Confident & conversational", "Warm & relatable", "Fast & energetic", "Expert & credible", "Playful & witty", "Dramatic & cinematic"]} />
+            <Field label="Duration Target" value={duration} onChange={setDuration} options={DURATION_OPTIONS.map(d => `${d.value}`)} displayLabels={DURATION_OPTIONS.map(d => d.label)} />
+            <Field label="Audio Language" value={language} onChange={setLanguage} options={LANGUAGES.map(l => l.code)} displayLabels={LANGUAGES.map(l => l.name)} />
+            <Field label="Aspect Ratio" value={aspectRatio} onChange={setAspectRatio} options={ASPECT_RATIOS.map(a => a.id)} displayLabels={ASPECT_RATIOS.map(a => a.name)} />
+          </div>
+
+          <div className="mt-6 border-t border-white/5 pt-4">
+            <ActionButton onClick={buildProduction} disabled={busy || !topic.trim()} active={operation === "plan"} icon={Sparkles} idle={production ? "Re-Plan Sequence" : "Build Production Plan"} busyLabel="Building Plan…" primary />
+            {canGenerateNative && (
+              <ActionButton
+                onClick={() => runAction("generateNativeReel", "native")}
+                disabled={busy}
+                active={operation === "native"}
+                icon={Sparkles}
+                idle="Generate Native Reel (Option C · Veo 3.1)"
+                busyLabel="Generating continuous reel…"
+                primary
+              />
+            )}
+            {canGenerateAll && (
+              <ActionButton
+                onClick={generateAllMp4}
+                disabled={busy}
+                active={operation === "all"}
+                icon={Film}
+                idle={generatedShotCount ? `Generate remaining + MP4 (${generatedShotCount}/${totalShotCount})` : "Generate Multi-Shot + Aligned TTS"}
+                busyLabel={generateAllBusyLabel}
+              />
+            )}
+            {roughCut?.videoUrl && (
+              <a
+                href={roughCut.videoUrl}
+                download
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-300/25 bg-emerald-300/[0.08] py-3.5 text-sm font-black text-emerald-100 transition hover:bg-emerald-300/[0.14]"
+              >
+                <Download className="h-4 w-4" /> Download Combined MP4
+              </a>
+            )}
+          </div>
+
           {error && <div className="mt-4 flex gap-2 rounded-xl border border-red-400/20 bg-red-400/5 p-3 text-xs leading-5 text-red-200"><CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />{error}</div>}
         </aside>
 
+        {/* CENTER COLUMN: Scene & Settings Tabs */}
         <section className="min-w-0 rounded-[26px] border border-white/10 bg-[#0a0d12]">
-          <div className="flex flex-wrap items-center gap-1 border-b border-white/5 p-3">{["Script", "Scenes", "Captions", "Cover"].map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`rounded-xl px-4 py-2 text-sm font-bold transition ${activeTab === tab ? "bg-white text-slate-950" : "text-slate-500 hover:bg-white/5 hover:text-white"}`}>{tab}</button>)}</div>
-          <div className="p-5 sm:p-8">
-            {activeTab === "Script" && <ScriptPanel script={script} copied={copied} onCopy={copyText} />}
-            {activeTab === "Scenes" && <ScenesPanel manifest={manifest} title={manifest ? `${generatedShotCount}/${totalShotCount} real source clips generated` : "Build a plan to create shots"} selectedShotId={selectedShot?.id || null} onReview={id => setSelectedShotId(id)} fallbackItems={scenes.length ? scenes : ["No persisted shot plan yet."]} />}
-            {activeTab === "Captions" && <ListPanel icon={Captions} eyebrow={manifest?.audio.timingSource === "actual-alignment" ? "ALIGNED NARRATION SOURCE" : "DRAFT CAPTION SOURCE"} title={manifest?.audio.timingSource === "actual-alignment" ? `${manifest.audio.wordTimings?.length || 0} words aligned to the waveform` : "Final timing waits for real narration"} items={captions.length ? captions : ["Captions are not marked synchronized until real audio alignment exists."]} />}
+          <div className="flex flex-wrap items-center justify-between border-b border-white/5 p-3">
+            <div className="flex flex-wrap items-center gap-1">
+              {(["Scenes", "Script", "Audio & Subtitles", "Format", "Cover"] as const).map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`rounded-xl px-3.5 py-2 text-xs font-bold transition ${activeTab === tab ? "bg-white text-slate-950" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+            {shots.length > 0 && activeTab === "Scenes" && (
+              <button
+                onClick={() => handleAddShotAfter(shots[shots.length - 1].id)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-pink-300/25 bg-pink-300/[0.08] px-3 py-1.5 text-xs font-bold text-pink-200 hover:bg-pink-300/[0.15]"
+              >
+                <Plus className="h-3.5 w-3.5" /> Add Scene
+              </button>
+            )}
+          </div>
+
+          <div className="p-5 sm:p-7">
+            {/* TAB 1: SCENES & TIMELINE */}
+            {activeTab === "Scenes" && (
+              <div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-bold uppercase tracking-[0.16em] text-pink-300">SCENE SEQUENCE & BEAT EDITOR</div>
+                    <h2 className="mt-1 text-2xl font-black tracking-[-0.03em] text-white">
+                      {manifest ? `${shots.length} Scenes (${generatedShotCount}/${totalShotCount} Generated)` : "Build a plan to create shots"}
+                    </h2>
+                  </div>
+                  {shots.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={selectAllShots}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-xs font-bold text-slate-400 hover:text-white"
+                      >
+                        {selectedShotIds.size === shots.length ? <CheckSquare className="h-3.5 w-3.5 text-pink-300" /> : <Square className="h-3.5 w-3.5" />}
+                        {selectedShotIds.size === shots.length ? "Deselect All" : "Select All"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Floating Bulk Action Bar */}
+                {selectedShotIds.size > 0 && (
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-pink-300/30 bg-pink-950/30 p-3 backdrop-blur-lg">
+                    <span className="text-xs font-bold text-pink-200">
+                      {selectedShotIds.size} scene{selectedShotIds.size > 1 ? "s" : ""} selected
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleBulkClone}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/20"
+                      >
+                        <Copy className="h-3.5 w-3.5" /> Clone Selected
+                      </button>
+                      <button
+                        onClick={handleBulkDelete}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-red-400/30 bg-red-500/20 px-3 py-1.5 text-xs font-bold text-red-200 hover:bg-red-500/30"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> Delete Selected
+                      </button>
+                      <button
+                        onClick={() => setSelectedShotIds(new Set())}
+                        className="p-1.5 text-slate-400 hover:text-white"
+                        aria-label="Clear selection"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {!manifest ? (
+                  <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.025] p-6 text-center text-sm text-slate-400">
+                    No production plan generated yet. Fill the brief on the left and click <strong>Build Production Plan</strong>.
+                  </div>
+                ) : (
+                  <div className="mt-6 space-y-4">
+                    {shots.map((shot, i) => {
+                      const generated = Boolean(shot.asset?.videoUrl);
+                      const isSelected = selectedShotId === shot.id;
+                      const isChecked = selectedShotIds.has(shot.id);
+                      const isEditing = editingShotId === shot.id;
+
+                      return (
+                        <div
+                          key={shot.id}
+                          className={`rounded-2xl border p-4 transition ${
+                            isSelected
+                              ? "border-pink-300/50 bg-pink-300/[0.06]"
+                              : isChecked
+                              ? "border-pink-400/30 bg-white/[0.04]"
+                              : "border-white/10 bg-white/[0.02]"
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => toggleSelectShot(shot.id)}
+                              className="mt-1 h-4 w-4 rounded border-white/20 bg-black/40 text-pink-400 focus:ring-0"
+                            />
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/[0.06] text-xs font-black text-pink-300">
+                              {i + 1}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              {isEditing ? (
+                                <div className="space-y-3">
+                                  <div>
+                                    <label className="text-[10px] font-bold uppercase text-slate-400">Spoken Dialogue / Beat</label>
+                                    <textarea
+                                      value={editScriptText}
+                                      onChange={(e) => setEditScriptText(e.target.value)}
+                                      rows={2}
+                                      className="mt-1 w-full rounded-xl border border-white/20 bg-black/40 p-2.5 text-sm text-white outline-none focus:border-pink-300"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[10px] font-bold uppercase text-slate-400">Visual Intent</label>
+                                    <textarea
+                                      value={editVisualIntent}
+                                      onChange={(e) => setEditVisualIntent(e.target.value)}
+                                      rows={2}
+                                      className="mt-1 w-full rounded-xl border border-white/20 bg-black/40 p-2.5 text-sm text-white outline-none focus:border-pink-300"
+                                    />
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={handleSaveEdit}
+                                      className="inline-flex items-center gap-1 rounded-lg bg-pink-400 px-3 py-1.5 text-xs font-bold text-slate-950 hover:bg-pink-300"
+                                    >
+                                      <Save className="h-3.5 w-3.5" /> Save Changes
+                                    </button>
+                                    <button
+                                      onClick={() => setEditingShotId(null)}
+                                      className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-bold text-slate-400 hover:text-white"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div>
+                                  <div className="text-sm font-semibold leading-6 text-white">"{shot.scriptText}"</div>
+                                  <div className="mt-1 text-xs text-slate-400">{shot.visualIntent}</div>
+                                  <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+                                    <span className="rounded-md bg-white/[0.04] px-2 py-0.5 text-slate-400">
+                                      {shot.editorialStartSec.toFixed(1)}s – {(shot.editorialStartSec + shot.editorialDurationSec).toFixed(1)}s
+                                    </span>
+                                    <span className={`rounded-md px-2 py-0.5 font-bold ${generated ? "bg-emerald-400/10 text-emerald-300" : "bg-amber-400/10 text-amber-300"}`}>
+                                      {generated ? `Generated (${shot.asset?.actualDurationSec?.toFixed(2)}s)` : "Planned"}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Scene Action Buttons */}
+                              {!isEditing && (
+                                <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-white/5 pt-2.5">
+                                  {generated && (
+                                    <button
+                                      onClick={() => setSelectedShotId(shot.id)}
+                                      className="inline-flex items-center gap-1 rounded-lg border border-pink-300/30 bg-pink-300/10 px-2.5 py-1 text-[11px] font-bold text-pink-200 hover:bg-pink-300/20"
+                                    >
+                                      <Eye className="h-3 w-3" /> Preview Clip
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => handleEditShot(shot)}
+                                    className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1 text-[11px] font-bold text-slate-300 hover:text-white"
+                                  >
+                                    <Pencil className="h-3 w-3" /> Edit
+                                  </button>
+                                  <button
+                                    onClick={() => handleCloneShot(shot)}
+                                    className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1 text-[11px] font-bold text-slate-300 hover:text-white"
+                                  >
+                                    <Copy className="h-3 w-3" /> Clone
+                                  </button>
+                                  <button
+                                    onClick={() => handleAddShotAfter(shot.id)}
+                                    className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1 text-[11px] font-bold text-slate-300 hover:text-white"
+                                  >
+                                    <Plus className="h-3 w-3" /> Insert After
+                                  </button>
+                                  <button
+                                    onClick={() => handleMoveShot(shot.id, -1)}
+                                    disabled={i === 0}
+                                    className="rounded-lg border border-white/10 p-1 text-slate-400 hover:text-white disabled:opacity-30"
+                                    title="Move Up"
+                                  >
+                                    <ArrowUp className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleMoveShot(shot.id, 1)}
+                                    disabled={i === shots.length - 1}
+                                    className="rounded-lg border border-white/10 p-1 text-slate-400 hover:text-white disabled:opacity-30"
+                                    title="Move Down"
+                                  >
+                                    <ArrowDown className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteShot(shot.id)}
+                                    className="rounded-lg border border-red-400/20 p-1 text-red-300 hover:bg-red-400/10"
+                                    title="Delete Scene"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 2: MASTER SCRIPT */}
+            {activeTab === "Script" && (
+              <div>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-xs font-bold uppercase tracking-[0.16em] text-pink-300">MASTER SCRIPT</div>
+                    <h2 className="mt-1 text-2xl font-black tracking-[-0.03em] text-white">Spoken Production Narrative</h2>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={downloadSrt}
+                      className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs font-bold text-slate-300 hover:text-white"
+                    >
+                      <Download className="h-3.5 w-3.5 text-pink-300" /> Export .SRT
+                    </button>
+                    <button
+                      onClick={copyText}
+                      className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs font-bold text-slate-400 hover:text-white"
+                    >
+                      {copied ? <Check className="h-4 w-4 text-emerald-300" /> : <Copy className="h-4 w-4" />}
+                      {copied ? "Copied" : "Copy Script"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-6 space-y-3">
+                  {script.map((line, i) => (
+                    <div key={`${i}-${line.slice(0, 20)}`} className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 text-sm leading-7 text-slate-300">
+                      <span className="mr-3 inline-flex h-6 w-6 items-center justify-center rounded-lg bg-white/[0.05] text-[10px] font-black text-pink-300">
+                        {i + 1}
+                      </span>
+                      {line}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: AUDIO, MUSIC & SUBTITLE OPTIONS */}
+            {activeTab === "Audio & Subtitles" && (
+              <div className="space-y-6">
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-[0.16em] text-pink-300">VOICE & AUDIO SETTINGS</div>
+                  <h2 className="mt-1 text-2xl font-black tracking-[-0.03em] text-white">Languages, Subtitles & Background Score</h2>
+                </div>
+
+                <div className="grid gap-5 md:grid-cols-2">
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                    <div className="flex items-center gap-2 text-sm font-bold text-white">
+                      <Globe className="h-4 w-4 text-pink-300" /> Spoken Dialogue Language
+                    </div>
+                    <select
+                      value={language}
+                      onChange={(e) => setLanguage(e.target.value)}
+                      className="mt-3 w-full rounded-xl border border-white/10 bg-black/40 p-3 text-sm text-white outline-none focus:border-pink-300"
+                    >
+                      {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.name}</option>)}
+                    </select>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                    <div className="flex items-center gap-2 text-sm font-bold text-white">
+                      <Music className="h-4 w-4 text-teal-300" /> Background Music & Ambient Score
+                    </div>
+                    <select
+                      value={musicTrack}
+                      onChange={(e) => setMusicTrack(e.target.value)}
+                      className="mt-3 w-full rounded-xl border border-white/10 bg-black/40 p-3 text-sm text-white outline-none focus:border-teal-300"
+                    >
+                      {MUSIC_TRACKS.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                    </select>
+                    {musicTrack !== "none" && (
+                      <div className="mt-3">
+                        <div className="flex justify-between text-xs text-slate-400">
+                          <span>Music Volume & Auto-Ducking</span>
+                          <span>{musicVolume}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          value={musicVolume}
+                          onChange={(e) => setMusicVolume(Number(e.target.value))}
+                          className="mt-2 w-full accent-pink-400"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+                  <div className="flex items-center gap-2 text-sm font-bold text-white">
+                    <Captions className="h-4 w-4 text-pink-300" /> Subtitle Styling & Animation Presets
+                  </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {SUBTITLE_STYLES.map(style => (
+                      <div
+                        key={style.id}
+                        onClick={() => setSubtitleStyle(style.id)}
+                        className={`cursor-pointer rounded-xl border p-3.5 transition ${
+                          subtitleStyle === style.id
+                            ? "border-pink-300 bg-pink-400/10 text-white"
+                            : "border-white/10 bg-black/20 text-slate-300 hover:border-white/20"
+                        }`}
+                      >
+                        <div className="text-sm font-bold">{style.name}</div>
+                        <div className="mt-1 text-xs text-slate-400">{style.desc}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap gap-4 border-t border-white/5 pt-4">
+                    <div className="flex-1">
+                      <label className="text-xs font-bold text-slate-400">Subtitle Placement</label>
+                      <select
+                        value={subtitlePlacement}
+                        onChange={(e) => setSubtitlePlacement(e.target.value)}
+                        className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-white"
+                      >
+                        <option value="lower-third">Lower Third (Standard Social)</option>
+                        <option value="center">Center Focus (Hook Focus)</option>
+                        <option value="top">Top Header (Headline Placement)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 4: FORMAT & CANVAS DIMENSIONS */}
+            {activeTab === "Format" && (
+              <div className="space-y-6">
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-[0.16em] text-pink-300">ASPECT RATIO & PLATFORMS</div>
+                  <h2 className="mt-1 text-2xl font-black tracking-[-0.03em] text-white">Target Framing & Staging</h2>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {ASPECT_RATIOS.map(ratio => (
+                    <div
+                      key={ratio.id}
+                      onClick={() => setAspectRatio(ratio.id)}
+                      className={`cursor-pointer rounded-2xl border p-5 transition ${
+                        aspectRatio === ratio.id
+                          ? "border-pink-300 bg-pink-400/10 text-white"
+                          : "border-white/10 bg-black/20 text-slate-300 hover:border-white/20"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-lg font-black">{ratio.id}</span>
+                        {aspectRatio === ratio.id && <Check className="h-5 w-5 text-pink-300" />}
+                      </div>
+                      <div className="mt-2 text-xs text-slate-400">{ratio.name}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 5: COVER DIRECTIONS */}
             {activeTab === "Cover" && <CoverPanel topic={topic} />}
           </div>
         </section>
 
+        {/* RIGHT COLUMN: Video Monitor & Production Truth */}
         <aside className="h-fit lg:sticky lg:top-24">
           <div className="rounded-[30px] border border-white/10 bg-[#0a0d12] p-3">
             {previewVideoUrl ? (
               <div>
                 <div className="mb-3 flex items-center justify-between px-1">
-                  <div><div className="text-[10px] font-bold uppercase tracking-[0.16em] text-pink-300">{selectedShot ? `Shot ${Math.max(1, (manifest?.shots.findIndex(s => s.id === selectedShot.id) ?? 0) + 1)} review` : "Narrated rough cut"}</div><div className="mt-1 text-xs text-slate-500">{selectedShot ? `${selectedShot.editorialStartSec.toFixed(1)}–${(selectedShot.editorialStartSec + selectedShot.editorialDurationSec).toFixed(1)}s · ${selectedShot.asset?.model || "generated source"}` : "Full production preview"}</div></div>
-                  {selectedShot && roughCut?.videoUrl && <button onClick={() => setSelectedShotId(null)} className="rounded-lg border border-white/10 px-2.5 py-1.5 text-[10px] font-bold text-slate-400 hover:text-white">ROUGH CUT</button>}
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-pink-300">
+                      {selectedShot ? `Clip ${Math.max(1, (shots.findIndex(s => s.id === selectedShot.id) ?? 0) + 1)} Review` : "Full Reel Master"}
+                    </div>
+                    <div className="mt-0.5 text-xs text-slate-500">
+                      {selectedShot ? `${selectedShot.editorialDurationSec.toFixed(1)}s · Veo Source` : "Continuous Native Audio"}
+                    </div>
+                  </div>
+                  {selectedShot && roughCut?.videoUrl && (
+                    <button onClick={() => setSelectedShotId(null)} className="rounded-lg border border-white/10 px-2.5 py-1 text-[10px] font-bold text-slate-400 hover:text-white">
+                      FULL REEL
+                    </button>
+                  )}
                 </div>
-                <video key={previewVideoUrl} className="aspect-[9/16] w-full rounded-[24px] bg-black object-cover" src={previewVideoUrl} controls playsInline preload="metadata" />
+                <video
+                  key={previewVideoUrl}
+                  className="aspect-[9/16] w-full rounded-[24px] bg-black object-cover"
+                  src={previewVideoUrl}
+                  controls
+                  playsInline
+                  preload="metadata"
+                />
               </div>
             ) : (
               <div className="relative aspect-[9/16] overflow-hidden rounded-[24px] bg-[radial-gradient(circle_at_70%_20%,rgba(244,114,182,0.32),transparent_28%),radial-gradient(circle_at_30%_75%,rgba(45,212,191,0.22),transparent_28%),linear-gradient(160deg,#19111d,#0b1016_58%,#0a1515)]">
-                <div className="absolute inset-x-5 top-5 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-white/50"><span>Plan preview</span><span>{manifest ? `${manifest.plannedDurationSec}s` : duration}</span></div>
-                <div className="absolute inset-x-5 top-[26%] text-center"><div className="text-3xl font-black leading-none tracking-[-0.05em] text-white">{topic || "Your Reel hook"}</div><div className="mx-auto mt-4 h-1.5 w-16 rounded-full bg-pink-300" /></div>
-                <div className="absolute inset-x-5 bottom-20 rounded-2xl bg-black/35 p-4 backdrop-blur-md"><div className="text-sm font-bold text-white">{manifest ? manifest.shots[0]?.scriptText || "Visual hook" : "Build the production plan first."}</div><div className="mt-2 text-[10px] text-white/50">Planning preview only</div></div>
-                <div className="absolute inset-x-5 bottom-5 flex items-center justify-between text-[10px] text-white/40"><span>{manifest?.status || "DRAFT"}</span><span>9:16</span></div>
+                <div className="absolute inset-x-5 top-5 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-white/50">
+                  <span>Plan Preview</span>
+                  <span>{manifest ? `${manifest.plannedDurationSec}s` : `${duration}s`}</span>
+                </div>
+                <div className="absolute inset-x-5 top-[26%] text-center">
+                  <div className="text-3xl font-black leading-none tracking-[-0.05em] text-white">{topic || "Your Reel Hook"}</div>
+                  <div className="mx-auto mt-4 h-1.5 w-16 rounded-full bg-pink-300" />
+                </div>
+                <div className="absolute inset-x-5 bottom-20 rounded-2xl bg-black/35 p-4 backdrop-blur-md">
+                  <div className="text-sm font-bold text-white">{manifest ? shots[0]?.scriptText || "Visual hook" : "Build the production plan first."}</div>
+                  <div className="mt-2 text-[10px] text-white/50">Planning preview only</div>
+                </div>
+                <div className="absolute inset-x-5 bottom-5 flex items-center justify-between text-[10px] text-white/40">
+                  <span>{manifest?.status || "DRAFT"}</span>
+                  <span>{aspectRatio}</span>
+                </div>
               </div>
             )}
           </div>
 
           <div className="mt-4 rounded-[24px] border border-white/10 bg-white/[0.025] p-5">
-            <div className="text-xs font-bold uppercase tracking-[0.15em] text-slate-600">Production truth</div>
+            <div className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">Production Truth</div>
             <div className="mt-4 space-y-3 text-sm">
               <Status icon={Database} label="Manifest" value={production ? `Persisted r${production.revision}` : "Not created"} />
               <Status icon={Film} label="State" value={manifest?.status || "DRAFT"} />
-              <Status icon={Mic2} label="Narration" value={manifest?.audio.narrationUrl ? `${manifest.audio.actualDurationSec?.toFixed(2)}s` : "Pending"} />
-              <Status icon={Captions} label="Timing" value={manifest?.audio.timingSource === "actual-alignment" ? `${manifest.audio.wordTimings?.length || 0} words aligned` : "Pending"} />
-              <Status icon={Video} label="Video sources" value={manifest ? `${generatedShotCount}/${totalShotCount}` : "Pending"} />
+              <Status icon={Globe} label="Language" value={LANGUAGES.find(l => l.code === language)?.name || language} />
+              <Status icon={Captions} label="Subtitles" value={SUBTITLE_STYLES.find(s => s.id === subtitleStyle)?.name || subtitleStyle} />
+              <Status icon={Video} label="Scene Clips" value={manifest ? `${generatedShotCount}/${totalShotCount}` : "Pending"} />
               <Status icon={Film} label="Combined MP4" value={roughCut ? `${roughCut.actualDurationSec.toFixed(2)}s` : "Pending"} />
-              <Status icon={Instagram} label="Primary" value={manifest?.platform || platform} />
-              <Status icon={Youtube} label="Final variant" value="Not generated" />
             </div>
-            {manifest?.status === "SCRIPT_READY" && <TruthNote tone="amber">Next: create real narration and word-level alignment.</TruthNote>}
-            {manifest?.status === "AUDIO_GENERATING" && <TruthNote tone="amber">Narration is running in the durable production worker. This page may disconnect without cancelling the job.</TruthNote>}
-            {manifest?.status === "SHOTS_PLANNED" && <TruthNote tone="green">Narration is aligned. Generate the first dependency-eligible Veo source clip.</TruthNote>}
-            {manifest?.status === "VIDEO_GENERATING" && <TruthNote tone="green">{generatedShotCount}/{totalShotCount} source clips are persisted and probed.</TruthNote>}
-            {manifest?.status === "ROUGH_CUT_READY" && <TruthNote tone="green">All source clips exist. Render the exact-duration combined MP4.</TruthNote>}
-            {manifest?.status === "MIXING" && <TruthNote tone="amber">Combined narrated MP4 exists. Captions, music/SFX mix, master render and QA are still pending.</TruthNote>}
-            {manifest?.status === "FAILED" && <TruthNote tone="red">The last production step failed. No downstream stage has been marked complete.</TruthNote>}
           </div>
         </aside>
       </main>
@@ -277,59 +962,71 @@ export function ReelStudio() {
 }
 
 function ActionButton({ onClick, disabled, active, icon: Icon, idle, busyLabel, primary = false }: { onClick: () => void; disabled: boolean; active: boolean; icon: React.ComponentType<{ className?: string }>; idle: string; busyLabel: string; primary?: boolean }) {
-  const style = primary ? "bg-white text-slate-950" : "border border-pink-300/20 bg-white/[0.04] text-white";
-  return <button onClick={onClick} disabled={disabled} className={`mt-3 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-50 ${style}`}>{active ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}{active ? busyLabel : idle}</button>;
+  const style = primary ? "bg-white text-slate-950 font-black" : "border border-pink-300/20 bg-white/[0.04] text-white";
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`mt-3 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-50 ${style}`}
+    >
+      {active ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
+      {active ? busyLabel : idle}
+    </button>
+  );
 }
 
-function TruthNote({ tone, children }: { tone: "amber" | "green" | "red"; children: React.ReactNode }) {
-  const cls = tone === "green" ? "border-emerald-300/15 bg-emerald-300/5 text-emerald-100/70" : tone === "red" ? "border-red-300/15 bg-red-300/5 text-red-100/70" : "border-amber-300/15 bg-amber-300/5 text-amber-100/70";
-  return <div className={`mt-5 rounded-xl border p-3 text-[11px] leading-5 ${cls}`}>{children}</div>;
-}
-
-function Field({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: string[] }) {
-  return <label className="block"><span className="text-xs font-bold text-slate-500">{label.toUpperCase()}</span><div className="relative mt-2"><select value={value} onChange={e => onChange(e.target.value)} className="w-full appearance-none rounded-xl border border-white/10 bg-black/20 px-3 py-3 pr-9 text-sm text-slate-200 outline-none">{options.map(o => <option key={o}>{o}</option>)}</select><ChevronDown className="pointer-events-none absolute right-3 top-3.5 h-4 w-4 text-slate-600" /></div></label>;
-}
-
-function ScriptPanel({ script, copied, onCopy }: { script: string[]; copied: boolean; onCopy: () => void }) {
-  return <div><div className="flex items-start justify-between gap-4"><div><div className="text-xs font-bold uppercase tracking-[0.16em] text-pink-300">MASTER SCRIPT</div><h2 className="mt-2 text-3xl font-black tracking-[-0.035em] text-white">The script is part of the production manifest.</h2></div><button onClick={onCopy} className="flex shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs font-bold text-slate-400 hover:text-white">{copied ? <Check className="h-4 w-4 text-emerald-300" /> : <Copy className="h-4 w-4" />}{copied ? "Copied" : "Copy"}</button></div><div className="mt-8 space-y-3">{script.map((line, i) => <div key={`${i}-${line.slice(0, 20)}`} className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 text-sm leading-7 text-slate-300"><span className="mr-3 inline-flex h-6 w-6 items-center justify-center rounded-lg bg-white/[0.05] text-[10px] font-black text-slate-500">{i + 1}</span>{line}</div>)}</div></div>;
-}
-
-function ListPanel({ icon: Icon, eyebrow, title, items }: { icon: React.ComponentType<{ className?: string }>; eyebrow: string; title: string; items: string[] }) {
-  return <div><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05] text-pink-200"><Icon className="h-5 w-5" /></div><div className="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-pink-300">{eyebrow}</div><h2 className="mt-2 text-3xl font-black tracking-[-0.035em] text-white">{title}</h2><div className="mt-8 space-y-3">{items.map((item, i) => <div key={`${i}-${item.slice(0, 24)}`} className="flex gap-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4"><div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-xs font-black text-slate-500">{i + 1}</div><div className="text-sm leading-7 text-slate-300">{item}</div></div>)}</div></div>;
-}
-
-function ScenesPanel({ manifest, title, selectedShotId, onReview, fallbackItems }: { manifest: ReelProductionManifest | null; title: string; selectedShotId: string | null; onReview: (id: string) => void; fallbackItems: string[] }) {
-  return <div>
-    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05] text-pink-200"><Clapperboard className="h-5 w-5" /></div>
-    <div className="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-pink-300">CANONICAL SHOT PLAN</div>
-    <h2 className="mt-2 text-3xl font-black tracking-[-0.035em] text-white">{title}</h2>
-    {!manifest ? <div className="mt-8"><div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 text-sm text-slate-300">{fallbackItems[0]}</div></div> : (
-      <div className="mt-8 space-y-3">{manifest.shots.map((shot, i) => {
-        const end = shot.editorialStartSec + shot.editorialDurationSec;
-        const generated = Boolean(shot.asset?.videoUrl);
-        const selected = selectedShotId === shot.id;
-        return <div key={shot.id} className={`rounded-2xl border p-4 transition ${selected ? "border-pink-300/40 bg-pink-300/[0.06]" : "border-white/10 bg-white/[0.025]"}`}>
-          <div className="flex gap-4">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-xs font-black text-slate-500">{i + 1}</div>
-            <div className="min-w-0 flex-1">
-              <div className="text-sm leading-7 text-slate-300">{shot.editorialStartSec.toFixed(1)}–{end.toFixed(1)}s · {shot.visualIntent}</div>
-              <div className={`mt-1 text-xs font-semibold ${generated ? "text-emerald-300/80" : "text-slate-600"}`}>{generated ? `Generated ${shot.asset?.actualDurationSec?.toFixed(2) || "?"}s · ${shot.asset?.model || "provider"}` : `Needs ${shot.generationDurationSec}s source`}</div>
-              {generated && <button onClick={() => onReview(shot.id)} className="mt-3 inline-flex items-center gap-2 rounded-xl border border-pink-300/25 bg-pink-300/[0.06] px-3 py-2 text-xs font-black text-pink-100 transition hover:border-pink-300/50 hover:bg-pink-300/[0.1]" aria-label={`Review shot ${i + 1}`}><Video className="h-4 w-4" />{selected ? "Reviewing shot" : `Review shot ${i + 1}`}</button>}
-            </div>
-          </div>
-        </div>;
-      })}</div>
-    )}
-    {manifest && manifest.shots.some(s => s.asset?.videoUrl) && <div className="mt-4 text-xs leading-5 text-slate-600">Select <span className="font-bold text-slate-400">Review shot</span> to play the real generated source in the preview panel. Browser video controls support play, pause, seek, volume and full-screen review.</div>}
-  </div>;
+function Field({ label, value, onChange, options, displayLabels }: { label: string; value: string; onChange: (v: string) => void; options: string[]; displayLabels?: string[] }) {
+  return (
+    <label className="block">
+      <span className="text-xs font-bold text-slate-400">{label.toUpperCase()}</span>
+      <div className="relative mt-1.5">
+        <select
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          className="w-full appearance-none rounded-xl border border-white/10 bg-black/30 px-3.5 py-2.5 pr-9 text-xs font-semibold text-slate-200 outline-none focus:border-pink-300/40"
+        >
+          {options.map((o, idx) => (
+            <option key={o} value={o}>
+              {displayLabels?.[idx] || o}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-3 top-3 h-4 w-4 text-slate-500" />
+      </div>
+    </label>
+  );
 }
 
 function CoverPanel({ topic }: { topic: string }) {
   const base = topic.trim() || "YOUR NEXT REEL";
   const options = [base.toUpperCase(), `WHY ${base.toUpperCase()}`, "STOP IGNORING THIS"];
-  return <div><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05] text-pink-200"><ImageIcon className="h-5 w-5" /></div><div className="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-pink-300">COVER DIRECTIONS</div><h2 className="mt-2 text-3xl font-black tracking-[-0.035em] text-white">Creative options, not generated assets yet.</h2><div className="mt-8 grid gap-4 md:grid-cols-3">{options.map((title, i) => <div key={`${i}-${title}`} className="aspect-[4/5] rounded-[22px] border border-white/10 bg-[radial-gradient(circle_at_70%_20%,rgba(244,114,182,0.24),transparent_25%),linear-gradient(150deg,#17111b,#0b1015)] p-5"><div className="text-xs font-bold text-slate-500">OPTION {i + 1}</div><div className="mt-20 text-xl font-black leading-tight tracking-[-0.035em] text-white">{title}</div></div>)}</div></div>;
+  return (
+    <div>
+      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05] text-pink-200">
+        <ImageIcon className="h-5 w-5" />
+      </div>
+      <div className="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-pink-300">COVER DIRECTIONS</div>
+      <h2 className="mt-1 text-2xl font-black tracking-[-0.03em] text-white">Thumbnail & Hook Directions</h2>
+      <div className="mt-6 grid gap-4 md:grid-cols-3">
+        {options.map((title, i) => (
+          <div key={`${i}-${title}`} className="aspect-[4/5] rounded-[22px] border border-white/10 bg-[radial-gradient(circle_at_70%_20%,rgba(244,114,182,0.24),transparent_25%),linear-gradient(150deg,#17111b,#0b1015)] p-5">
+            <div className="text-xs font-bold text-slate-500">OPTION {i + 1}</div>
+            <div className="mt-20 text-xl font-black leading-tight tracking-[-0.035em] text-white">{title}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function Status({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string }) {
-  return <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2 text-slate-400"><Icon className="h-4 w-4" /><span>{label}</span></div><span className="max-w-[155px] truncate text-xs font-semibold text-slate-500">{value}</span></div>;
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2 text-slate-400">
+        <Icon className="h-4 w-4" />
+        <span>{label}</span>
+      </div>
+      <span className="max-w-[155px] truncate text-xs font-semibold text-slate-300">{value}</span>
+    </div>
+  );
 }
