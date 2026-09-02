@@ -19,7 +19,8 @@ import {
   CheckCircle2,
   ChevronDown,
   Minimize2,
-  Maximize2
+  Maximize2,
+  Minus
 } from "lucide-react";
 
 interface Message {
@@ -75,6 +76,9 @@ const SUGGESTED_CHIPS = [
 
 export function LiveSupportConcierge() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "msg_init",
@@ -94,10 +98,10 @@ export function LiveSupportConcierge() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !isMinimized) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, isOpen]);
+  }, [messages, isOpen, isMinimized]);
 
   const handleSend = (textToSend?: string) => {
     const text = textToSend || inputText;
@@ -190,214 +194,260 @@ export function LiveSupportConcierge() {
       {isOpen && (
         <section
           aria-label="Live Chat Concierge Window"
-          className="mb-3 w-[360px] sm:w-[420px] h-[560px] max-h-[80vh] rounded-3xl border border-slate-700/80 bg-obsidian-950/95 backdrop-blur-2xl shadow-2xl shadow-black/90 flex flex-col overflow-hidden border-t-2 border-t-teal-400"
+          className={`mb-3 rounded-3xl border border-slate-700/80 bg-obsidian-950/95 backdrop-blur-2xl shadow-2xl shadow-black/90 flex flex-col overflow-hidden border-t-2 border-t-teal-400 transition-all duration-300 ${
+            isMinimized
+              ? "h-[60px] w-[320px]"
+              : isMaximized
+              ? "w-[92vw] max-w-[720px] h-[720px] max-h-[88vh]"
+              : "w-[360px] sm:w-[420px] h-[560px] max-h-[80vh]"
+          }`}
         >
           
           {/* Header */}
-          <div className="p-4 border-b border-slate-800 bg-slate-900/80 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 font-bold text-obsidian-950">
-                <Bot className="w-5 h-5" />
-                <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 border-2 border-obsidian-950 animate-pulse" />
+          <div className="p-3.5 border-b border-slate-800 bg-slate-900/80 flex items-center justify-between shrink-0">
+            <div
+              className="flex items-center gap-3 cursor-pointer"
+              onClick={() => isMinimized && setIsMinimized(false)}
+            >
+              <div className="relative flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 font-bold text-obsidian-950">
+                <Bot className="w-4 h-4" />
+                <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-400 border-2 border-obsidian-950 animate-pulse" />
               </div>
               <div>
-                <div className="font-bold text-sm text-white flex items-center gap-1.5">
+                <div className="font-bold text-xs text-white flex items-center gap-1.5">
                   <span>Zyvoriq Concierge</span>
-                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-300">AI Live</span>
+                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-300">Live</span>
                 </div>
-                <div className="text-[11px] text-slate-400">Creator Onboarding & 24/7 Support</div>
+                {!isMinimized && <div className="text-[10px] text-slate-400">Creator Onboarding & Support</div>}
               </div>
             </div>
 
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setShowContactForm(!showContactForm)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all text-xs font-mono"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all text-xs"
                 title="Direct Support Ticket"
               >
-                <Mail className="w-4 h-4" />
+                <Mail className="w-3.5 h-3.5" />
               </button>
+              
+              {/* Maximize / Restore Toggle */}
+              {!isMinimized && (
+                <button
+                  onClick={() => setIsMaximized(!isMaximized)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
+                  title={isMaximized ? "Restore size" : "Maximize view"}
+                  aria-label={isMaximized ? "Restore view" : "Maximize view"}
+                >
+                  {isMaximized ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                </button>
+              )}
+
+              {/* Minimize Toggle */}
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={() => setIsMinimized(!isMinimized)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
+                title={isMinimized ? "Expand chat" : "Minimize to bar"}
+                aria-label={isMinimized ? "Expand chat" : "Minimize to bar"}
+              >
+                {isMinimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
+              </button>
+
+              {/* Close Button */}
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  setIsMinimized(false);
+                  setIsMaximized(false);
+                }}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
                 aria-label="Close Chat"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
-          {/* Chat Body */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
-            
-            {/* Direct Contact Form Drawer */}
-            {showContactForm && (
-              <div className="p-4 rounded-2xl bg-teal-950/30 border border-teal-500/30 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-teal-300 flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5" /> Submit Direct Support Ticket
-                  </span>
-                  <button onClick={() => setShowContactForm(false)} className="text-slate-400 hover:text-white">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                {contactSent ? (
-                  <div className="py-4 text-center text-emerald-400 font-bold space-y-1">
-                    <CheckCircle2 className="w-6 h-6 mx-auto animate-bounce" />
-                    <div>Ticket Dispatched to Support Team!</div>
-                  </div>
-                ) : (
-                  <form onSubmit={handleContactSubmit} className="space-y-2">
-                    <input
-                      type="text"
-                      required
-                      placeholder="Your Name"
-                      value={contactName}
-                      onChange={e => setContactName(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-400"
-                    />
-                    <input
-                      type="email"
-                      required
-                      placeholder="Your Email"
-                      value={contactEmail}
-                      onChange={e => setContactEmail(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-400"
-                    />
-                    <textarea
-                      required
-                      rows={2}
-                      placeholder="How can we help?"
-                      value={contactMessage}
-                      onChange={e => setContactMessage(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-400 resize-none"
-                    />
-                    <button
-                      type="submit"
-                      className="w-full py-1.5 rounded-lg bg-teal-500 text-obsidian-950 font-bold text-xs hover:bg-teal-400 transition-all"
-                    >
-                      Send Ticket to Engineering
-                    </button>
-                  </form>
-                )}
-              </div>
-            )}
-
-            {/* Messages */}
-            {messages.map((m) => (
-              <div
-                key={m.id}
-                className={`flex gap-2.5 ${m.sender === "user" ? "justify-end" : "justify-start"}`}
-              >
-                {m.sender === "ai" && (
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-teal-500/20 text-teal-300 mt-0.5">
-                    <Bot className="w-4 h-4" />
-                  </div>
-                )}
+          {/* Chat Body (Hidden when minimized) */}
+          {!isMinimized && (
+            <>
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
                 
-                <div
-                  className={`max-w-[82%] p-3.5 rounded-2xl leading-relaxed space-y-2.5 ${
-                    m.sender === "user"
-                      ? "bg-teal-500 text-obsidian-950 font-medium rounded-br-none"
-                      : "bg-slate-900/90 border border-slate-800 text-slate-200 rounded-bl-none shadow-md whitespace-pre-line"
-                  }`}
-                >
-                  <p>{m.text}</p>
-                  
-                  {m.quickActions && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {m.quickActions.map((qa, i) => (
-                        qa.action.startsWith("link:") ? (
-                          <Link
-                            key={i}
-                            href={qa.action.replace("link:", "")}
-                            onClick={() => setIsOpen(false)}
-                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] font-bold text-teal-300 transition-all flex items-center gap-1"
-                          >
-                            <Zap className="w-3 h-3 text-teal-400" />
-                            {qa.label}
-                          </Link>
-                        ) : (
-                          <button
-                            key={i}
-                            onClick={() => setShowContactForm(true)}
-                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] font-bold text-amber-300 transition-all flex items-center gap-1"
-                          >
-                            <Mail className="w-3 h-3 text-amber-400" />
-                            {qa.label}
-                          </button>
-                        )
-                      ))}
+                {/* Direct Contact Form Drawer */}
+                {showContactForm && (
+                  <div className="p-4 rounded-2xl bg-teal-950/30 border border-teal-500/30 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-teal-300 flex items-center gap-1.5">
+                        <Mail className="w-3.5 h-3.5" /> Submit Direct Support Ticket
+                      </span>
+                      <button onClick={() => setShowContactForm(false)} className="text-slate-400 hover:text-white">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                  )}
-
-                  <div className={`text-[9px] font-mono text-right ${m.sender === "user" ? "text-obsidian-900" : "text-slate-500"}`}>
-                    {m.timestamp}
+                    {contactSent ? (
+                      <div className="py-4 text-center text-emerald-400 font-bold space-y-1">
+                        <CheckCircle2 className="w-6 h-6 mx-auto animate-bounce" />
+                        <div>Ticket Dispatched to Support Team!</div>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleContactSubmit} className="space-y-2">
+                        <input
+                          type="text"
+                          required
+                          placeholder="Your Name"
+                          value={contactName}
+                          onChange={e => setContactName(e.target.value)}
+                          className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-400"
+                        />
+                        <input
+                          type="email"
+                          required
+                          placeholder="Your Email"
+                          value={contactEmail}
+                          onChange={e => setContactEmail(e.target.value)}
+                          className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-400"
+                        />
+                        <textarea
+                          required
+                          rows={2}
+                          placeholder="How can we help?"
+                          value={contactMessage}
+                          onChange={e => setContactMessage(e.target.value)}
+                          className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-400 resize-none"
+                        />
+                        <button
+                          type="submit"
+                          className="w-full py-1.5 rounded-lg bg-teal-500 text-obsidian-950 font-bold text-xs hover:bg-teal-400 transition-all"
+                        >
+                          Send Ticket to Engineering
+                        </button>
+                      </form>
+                    )}
                   </div>
-                </div>
+                )}
+
+                {/* Messages */}
+                {messages.map((m) => (
+                  <div
+                    key={m.id}
+                    className={`flex gap-2.5 ${m.sender === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    {m.sender === "ai" && (
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-teal-500/20 text-teal-300 mt-0.5">
+                        <Bot className="w-4 h-4" />
+                      </div>
+                    )}
+                    
+                    <div
+                      className={`max-w-[82%] p-3.5 rounded-2xl leading-relaxed space-y-2.5 ${
+                        m.sender === "user"
+                          ? "bg-teal-500 text-obsidian-950 font-medium rounded-br-none"
+                          : "bg-slate-900/90 border border-slate-800 text-slate-200 rounded-bl-none shadow-md whitespace-pre-line"
+                      }`}
+                    >
+                      <p>{m.text}</p>
+                      
+                      {m.quickActions && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {m.quickActions.map((qa, i) => (
+                            qa.action.startsWith("link:") ? (
+                              <Link
+                                key={i}
+                                href={qa.action.replace("link:", "")}
+                                onClick={() => setIsOpen(false)}
+                                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] font-bold text-teal-300 transition-all flex items-center gap-1"
+                              >
+                                <Zap className="w-3 h-3 text-teal-400" />
+                                {qa.label}
+                              </Link>
+                            ) : (
+                              <button
+                                key={i}
+                                onClick={() => setShowContactForm(true)}
+                                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] font-bold text-amber-300 transition-all flex items-center gap-1"
+                              >
+                                <Mail className="w-3 h-3 text-amber-400" />
+                                {qa.label}
+                              </button>
+                            )
+                          ))}
+                        </div>
+                      )}
+
+                      <div className={`text-[9px] font-mono text-right ${m.sender === "user" ? "text-obsidian-900" : "text-slate-500"}`}>
+                        {m.timestamp}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {isTyping && (
+                  <div className="flex items-center gap-2 text-slate-400 text-xs italic">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-teal-500/20 text-teal-300">
+                      <Sparkles className="w-3.5 h-3.5 animate-spin" />
+                    </div>
+                    <span>Concierge is drafting guidance...</span>
+                  </div>
+                )}
+
+                <div ref={messagesEndRef} />
               </div>
-            ))}
 
-            {isTyping && (
-              <div className="flex items-center gap-2 text-slate-400 text-xs italic">
-                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-teal-500/20 text-teal-300">
-                  <Sparkles className="w-3.5 h-3.5 animate-spin" />
-                </div>
-                <span>Concierge is drafting guidance...</span>
+              {/* Quick Suggestions Chips */}
+              <div className="p-2 border-t border-slate-800/80 bg-slate-950/80 flex gap-1.5 overflow-x-auto no-scrollbar">
+                {SUGGESTED_CHIPS.map((chip, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleSend(chip.label)}
+                    className="shrink-0 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-[10px] font-medium text-slate-300 hover:border-teal-500/50 hover:text-teal-300 transition-all"
+                  >
+                    {chip.label}
+                  </button>
+                ))}
               </div>
-            )}
 
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Quick Suggestions Chips */}
-          <div className="p-2 border-t border-slate-800/80 bg-slate-950/80 flex gap-1.5 overflow-x-auto no-scrollbar">
-            {SUGGESTED_CHIPS.map((chip, idx) => (
-              <button
-                key={idx}
-                onClick={() => handleSend(chip.label)}
-                className="shrink-0 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-[10px] font-medium text-slate-300 hover:border-teal-500/50 hover:text-teal-300 transition-all"
-              >
-                {chip.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Input Bar */}
-          <div className="p-3 border-t border-slate-800 bg-slate-900 flex items-center gap-2">
-            <input
-              type="text"
-              placeholder="Ask anything or request creator help..."
-              value={inputText}
-              onChange={e => setInputText(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handleSend()}
-              className="flex-1 px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-400"
-            />
-            <button
-              onClick={() => handleSend()}
-              disabled={!inputText.trim()}
-              className="p-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-obsidian-950 transition-all disabled:opacity-40"
-              aria-label="Send message"
-            >
-              <Send className="w-4 h-4" />
-            </button>
-          </div>
+              {/* Input Bar */}
+              <div className="p-3 border-t border-slate-800 bg-slate-900 flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Ask anything or request creator help..."
+                  value={inputText}
+                  onChange={e => setInputText(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleSend()}
+                  className="flex-1 px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-400"
+                />
+                <button
+                  onClick={() => handleSend()}
+                  disabled={!inputText.trim()}
+                  className="p-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-obsidian-950 transition-all disabled:opacity-40"
+                  aria-label="Send message"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
+            </>
+          )}
 
         </section>
       )}
 
-      {/* Floating Launcher Trigger Pill */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-500 text-obsidian-950 font-bold text-xs shadow-2xl shadow-teal-500/30 hover:scale-105 active:scale-95 transition-all"
-        aria-label="Toggle live AI support concierge"
-      >
-        <div className="relative">
-          <MessageSquare className="w-4 h-4 fill-current" />
-          <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-white animate-ping" />
-        </div>
-        <span>AI Concierge & Help</span>
-      </button>
+      {/* Floating Launcher Trigger Pill (When closed) */}
+      {!isOpen && (
+        <button
+          onClick={() => {
+            setIsOpen(true);
+            setIsMinimized(false);
+          }}
+          className="flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-500 text-obsidian-950 font-bold text-xs shadow-2xl shadow-teal-500/30 hover:scale-105 active:scale-95 transition-all"
+          aria-label="Toggle live AI support concierge"
+        >
+          <div className="relative">
+            <MessageSquare className="w-4 h-4 fill-current" />
+            <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-white animate-ping" />
+          </div>
+          <span>AI Concierge & Help</span>
+        </button>
+      )}
     </aside>
   );
 }
