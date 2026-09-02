@@ -23,34 +23,43 @@ async function run() {
   await page.goto('http://localhost:3001/studio', { waitUntil: 'domcontentloaded', timeout: 15000 });
   await new Promise(r => setTimeout(r, 1200));
 
-  // Click on the Concierge trigger button to open it
+  // Dismiss cookie banner first
+  await page.evaluate(() => {
+    const acceptBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Accept All'));
+    if (acceptBtn) acceptBtn.click();
+  });
+  await new Promise(r => setTimeout(r, 600));
+
+  // Open concierge
   console.log('Opening Concierge...');
   await page.evaluate(() => {
-    const btn = document.querySelector('button[aria-label="Toggle Live AI Support Concierge"]');
+    const btn = document.querySelector('button[aria-label="Toggle live AI support concierge"]') ||
+                document.querySelector('aside button');
     if (btn) btn.click();
   });
   await new Promise(r => setTimeout(r, 800));
 
-  // Click on the Rate / Feedback button in the header or quick action
-  console.log('Opening Feedback / Rating Modal...');
+  // Click on the Rate Support button in the header
+  console.log('Opening 1-5 Star Rating Drawer...');
   await page.evaluate(() => {
-    const rateBtn = document.querySelector('button[title="Rate Chat Support (1-5 ⭐)"]') || 
-                    Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Rate Support'));
-    if (rateBtn) {
-      rateBtn.click();
-    }
+    const rateBtn = document.querySelector('button[aria-label="Rate chat support"]');
+    if (rateBtn) rateBtn.click();
   });
   await new Promise(r => setTimeout(r, 800));
 
-  // Hover or click 5-star rating button
+  // Set 5 stars and add feedback text
   console.log('Selecting 5 stars...');
   await page.evaluate(() => {
-    const star5 = document.querySelector('button[aria-label="Rate 5 stars"]');
-    if (star5) star5.click();
-    const noteInput = document.querySelector('input[placeholder*="What did you love or how can we improve?"]');
-    if (noteInput) {
-      noteInput.value = 'Exceptional support! Instantly guided me through EPUB 3 export.';
-      noteInput.dispatchEvent(new Event('input', { bubbles: true }));
+    const stars = document.querySelectorAll('button[type="button"]');
+    // find the 5th star button inside the feedback modal
+    const starBtns = Array.from(document.querySelectorAll('div.flex.items-center.justify-center.gap-2 button'));
+    if (starBtns.length >= 5) {
+      starBtns[4].click();
+    }
+    const noteArea = document.querySelector('textarea[placeholder*="Optional feedback"]');
+    if (noteArea) {
+      noteArea.value = 'Incredible 24/7 AI concierge! Guided me through EPUB 3 export, Trend Radar predictions, and viral hooks instantly.';
+      noteArea.dispatchEvent(new Event('input', { bubbles: true }));
     }
   });
   await new Promise(r => setTimeout(r, 800));
@@ -59,10 +68,10 @@ async function run() {
   await page.screenshot({ path: screenshotPath, fullPage: false });
   console.log(`Saved screenshot: ${screenshotPath}`);
 
-  // Also submit the rating
+  // Submit feedback
   console.log('Submitting rating...');
   await page.evaluate(() => {
-    const submitBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Submit Feedback'));
+    const submitBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Submit 5/5 Rating') || b.textContent?.includes('Submit'));
     if (submitBtn) submitBtn.click();
   });
   await new Promise(r => setTimeout(r, 1500));
