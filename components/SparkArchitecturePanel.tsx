@@ -107,7 +107,7 @@ export function SparkArchitecturePanel() {
                     <span>Long-running agent</span>
                   </span>
                   <span className="text-[10px] text-teal-400 bg-teal-950/80 px-2 py-0.5 rounded border border-teal-500/40">
-                    Veo 3.1 &amp; Gemini Core
+                    Zyvoriq Neural Core
                   </span>
                 </div>
 

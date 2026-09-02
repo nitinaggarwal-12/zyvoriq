@@ -286,7 +286,7 @@ function CreatePageContent() {
                   <Sparkles className="w-3.5 h-3.5" /> Studio Series Creator
                 </span>
                 <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-[10px]">
-                  Veo 3.1 + DeepMind TTS
+                  Neural Cinema + Synthetic Voice
                 </span>
               </div>
               <h1 className="text-xl font-bold text-white font-serif tracking-tight">
@@ -998,11 +998,11 @@ function CreatePageContent() {
                   </div>
                 </div>
 
-                {/* DeepMind Lyria Neural Music & Ambience */}
+                {/* Zyvoriq Acoustic Core Neural Music & Ambience */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
-                      <Music className="w-3.5 h-3.5 text-amber-400" /> DeepMind Lyria Background Music & Score
+                      <Music className="w-3.5 h-3.5 text-amber-400" /> Zyvoriq Acoustic Core Background Music & Score
                     </label>
                     <span className="text-[10px] font-mono text-amber-400">Google Lyria 2.0</span>
                   </div>
@@ -1102,7 +1102,7 @@ function CreatePageContent() {
                     className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-bold text-sm font-mono shadow-xl shadow-amber-500/20 transition-all flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-50"
                   >
                     <Zap className="w-4 h-4 fill-current" />
-                    <span>Kickoff Veo 3.1 &amp; DeepMind Dub Pipeline</span>
+                    <span>Kickoff Neural Cinema &amp; Audio Pipeline</span>
                   </button>
                 )}
               </div>
@@ -1256,7 +1256,7 @@ function CreatePageContent() {
                   <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                     <h3 className="text-sm font-bold text-white font-serif flex items-center gap-2">
                       <Globe className="w-4 h-4 text-indigo-400" />
-                      <span>DeepMind Multilingual Dub Stems</span>
+                      <span>Zyvoriq Multilingual Dub Stems</span>
                     </h3>
                     <span className="text-[10px] font-mono text-indigo-400">6 Stems Active</span>
                   </div>
@@ -1310,7 +1310,7 @@ function CreatePageContent() {
                       ⚡ 4-Shot Visual Storyboard Pre-Vis (Imagen 3)
                     </h3>
                     <p className="text-xs text-slate-400 font-mono">
-                      DeepMind Imagen 3 Neural Pre-Visualization · 1.2s Diffusion Preview
+                      Zyvoriq Visual Diffusion Core Neural Pre-Visualization · 1.2s Diffusion Preview
                     </p>
                   </div>
                 </div>

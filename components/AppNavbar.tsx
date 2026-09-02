@@ -19,6 +19,7 @@ import {
   Key,
   TrendingUp,
   BookOpen,
+  Trophy,
 } from "lucide-react";
 import { ApiKeyModal } from "@/components/ApiKeyModal";
 
@@ -31,6 +32,7 @@ export function AppNavbar() {
 
   const navItems = [
     { name: "Studio Cinema", href: "/studio", icon: Layers },
+    { name: "Creator Growth", href: "/creator/analytics", icon: Trophy },
     { name: "Trend Radar", href: "/studio/trend-radar", icon: TrendingUp },
     { name: "Book Studio", href: "/studio/books", icon: BookOpen },
     { name: "Avatars & Cast", href: "/studio/avatars", icon: Users },
@@ -39,7 +41,7 @@ export function AppNavbar() {
     { name: "History", href: "/studio/history", icon: History },
     { name: "Veritas QA", href: "/veritas", icon: ShieldCheck },
     { name: "Governance", href: "/governance", icon: Lock },
-    { name: "Analytics", href: "/dashboard", icon: BarChart3 },
+    { name: "Admin Data", href: "/dashboard", icon: BarChart3 },
   ];
 
   const isItemActive = (href: string) => {
@@ -119,7 +121,7 @@ export function AppNavbar() {
             type="button"
             onClick={() => setApiKeyModalOpen(true)}
             className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-950/40 px-3.5 py-2 text-xs font-bold text-amber-300 shadow-sm transition-all hover:scale-105 hover:bg-amber-900/50 active:scale-95"
-            title="Google Gemini & Veo Multi-Key Pool Manager"
+            title="Zyvoriq Neural Intelligence Multi-Key Manager"
           >
             <Key className="h-3.5 w-3.5 text-amber-400" />
             <span className="hidden font-mono text-xs sm:inline">API Keys</span>

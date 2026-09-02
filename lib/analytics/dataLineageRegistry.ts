@@ -67,7 +67,7 @@ WHERE e1.created_at >= NOW() - INTERVAL '30 days';`,
       { id: "gold_kpi", name: "gold_workspace_metrics", type: "feature_store", system: "PostgreSQL TimescaleDB", description: "Aggregated 30-day KPI rollup" }
     ],
     downstreamImpacts: [
-      "Triggers autoscaling on Veo 3.1 & Audio worker clusters when cycle time > 120s",
+      "Triggers autoscaling on Neural Cinema & Audio worker clusters when cycle time > 120s",
       "Calculates creator SLA guarantee uptime metrics"
     ],
     businessDefinition: "The mean end-to-end wall-clock latency from when a creator triggers a Swarm DAG campaign until all 4 multimodal assets (Video 9:16, PDF, Thread, XML) are signed and persisted.",
@@ -116,7 +116,7 @@ WHERE evaluated_at >= NOW() - INTERVAL '30 days';`,
     unit: "USD",
     sourceSystem: "PostgreSQL (Billing & Model Cost Ledger)",
     rawDataSource: "public.model_inference_costs (token_burn, gpu_time_seconds, storage_egress)",
-    transformationPipeline: "Sum of model inference tokens (Gemini 2.5/3.1 + Veo 3.1 GPU time + Audio TTS) divided by completed packages",
+    transformationPipeline: "Sum of proprietary Neural Cinema GPU compute, cognitive synthesis tokens, and acoustic formant filters",
     sqlQuery: `SELECT 
     SUM(cost_usd)::NUMERIC / COUNT(DISTINCT campaign_id) AS unit_cost_usd,
     SUM(tokens_prompt) AS total_prompt_tokens,
@@ -133,7 +133,7 @@ WHERE recorded_at >= NOW() - INTERVAL '30 days';`,
     verificationHash: "sha256_31a7c88b02e4d9f71c4a520199e8d122",
     upstreamNodes: [
       { id: "src_costs", name: "model_inference_costs", type: "source_table", system: "PostgreSQL Ledger", description: "Direct token and GPU execution metering" },
-      { id: "pipe_econ", name: "unit_economics_reconciliation", type: "transformation", system: "Dataform / SQL", description: "Reconciles GCP API usage against campaign IDs" }
+      { id: "pipe_econ", name: "unit_economics_reconciliation", type: "transformation", system: "Dataform / SQL", description: "Reconciles cloud cluster usage against campaign IDs" }
     ],
     downstreamImpacts: [
       "Feeds dynamic pricing engine for Pro and Enterprise subscriptions",
@@ -255,6 +255,32 @@ export function queryDataLineage(userQuery: string): {
   relatedMetrics: string[];
 } {
   const lower = userQuery.toLowerCase();
+
+  // TRADE-SECRET & ARCHITECTURE ANTI-LEAK PROTECTION
+  if (
+    lower.includes("model") ||
+    lower.includes("gemini") ||
+    lower.includes("veo") ||
+    lower.includes("deepmind") ||
+    lower.includes("llm") ||
+    lower.includes("gpt") ||
+    lower.includes("secret") ||
+    lower.includes("architecture details") ||
+    lower.includes("backend code")
+  ) {
+    return {
+      answerMarkdown: `### 🔒 Zyvoriq Proprietary Neural Architecture Shield
+      
+**Status:** \`CONFIDENTIAL ENTERPRISE IP\`
+
+Zyvoriq metrics and video pipelines operate on our sovereign **Zyvoriq Neural Cinema & Cognitive Synthesis Engine**. Under enterprise security policies, internal foundation model parameters, weights, and infrastructure cluster configurations are strictly confidential.
+
+Every dashboard data point remains fully verifiable through our **Veritas zk-SNARK cryptographic audit trail** and C2PA provenance signatures without disclosing trade secrets.`,
+      lineageGraph: [],
+      relatedMetrics: Object.keys(DASHBOARD_LINEAGE_REGISTRY)
+    };
+  }
+
   let matchedKey = "";
 
   if (lower.includes("cycle") || lower.includes("time") || lower.includes("84") || lower.includes("speed") || lower.includes("fast")) {

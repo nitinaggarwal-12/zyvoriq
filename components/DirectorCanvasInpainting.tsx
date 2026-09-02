@@ -54,7 +54,7 @@ export function DirectorCanvasInpainting() {
       id: "take-b",
       name: "Take 2: Cyan Energy Katana (Inpainted)",
       badge: "Inpainted",
-      desc: "Veo 3.1 latent inpainting: Replaced wooden weapon with glowing cyan plasma katana emitting ionization arcs.",
+      desc: "Zyvoriq latent inpainting: Replaced wooden weapon with glowing cyan plasma katana emitting ionization arcs.",
       videoSrc: "/assets/video/ren_and_aoi_conversation_synced.mp4",
       veritasScore: 99.4,
       duration: "8.0s",
@@ -118,7 +118,7 @@ export function DirectorCanvasInpainting() {
                 Director Canvas Inpainting & Multi-Take Editor
               </h2>
               <span className="px-2.5 py-0.5 rounded-full bg-indigo-950/80 border border-indigo-500/40 text-indigo-300 font-mono text-[10px] uppercase tracking-wider font-bold">
-                Veo 3.1 Latent Inpaint
+                Neural Cinema Inpaint
               </span>
             </div>
             <p className="text-xs text-slate-400">
@@ -182,7 +182,7 @@ export function DirectorCanvasInpainting() {
               <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center space-y-3 z-30 animate-fadeIn">
                 <div className="w-10 h-10 border-3 border-cyan-400 border-t-transparent rounded-full animate-spin" />
                 <div className="text-sm font-mono font-bold text-cyan-300">
-                  Synthesizing Latent Inpainting Mask (Veo 3.1)...
+                  Synthesizing Latent Inpainting Mask...
                 </div>
                 <p className="text-xs text-slate-400 max-w-sm font-mono">
                   Injecting cyan energy emission shaders and dynamic electric particle arcs at 4K UHD.
@@ -236,7 +236,7 @@ export function DirectorCanvasInpainting() {
               <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Inpainting Target Prompt
               </label>
-              <span className="text-[10px] font-mono text-slate-500">Veo 3.1 Grounded</span>
+              <span className="text-[10px] font-mono text-slate-500">Neural Grounded</span>
             </div>
 
             <textarea
@@ -296,7 +296,7 @@ export function DirectorCanvasInpainting() {
               {isInpainting ? (
                 <>
                   <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                  <span>Synthesizing Inpaint (Veo 3.1)...</span>
+                  <span>Synthesizing Inpaint...</span>
                 </>
               ) : inpaintSuccess ? (
                 <>

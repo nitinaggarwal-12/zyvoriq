@@ -112,7 +112,7 @@ export function VoiceCloneVault() {
     setIsPlayingClone(true);
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
-      const text = `This is a high-fidelity demonstration of ${voiceName}, cloned with DeepMind neural vocal tract modeling. Zero cloud egress. Encrypted and signed with C2PA Ed25519.`;
+      const text = `This is a high-fidelity demonstration of ${voiceName}, cloned with Zyvoriq neural vocal tract modeling. Zero cloud egress. Encrypted and signed with C2PA Ed25519.`;
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 0.98;
       utterance.pitch = 1.0;
@@ -138,7 +138,7 @@ export function VoiceCloneVault() {
                 30-Second Neural Voice Clone Vault
               </h2>
               <span className="px-2.5 py-0.5 rounded-full bg-teal-950/80 border border-teal-500/40 text-teal-300 font-mono text-[10px] uppercase tracking-wider font-bold">
-                DeepMind Vocal Engine
+                Zyvoriq Vocal Engine
               </span>
             </div>
             <p className="text-xs text-slate-400">

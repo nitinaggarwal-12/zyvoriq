@@ -211,7 +211,7 @@ export function PersonaVaultModal({
     setPlayingId(persona.id);
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
-      const text = `Hi, I am ${persona.name}. Ready to broadcast your next viral reel with Veo 3.1.`;
+      const text = `Hi, I am ${persona.name}. Ready to broadcast your next viral reel with Zyvoriq Neural Cinema.`;
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = persona.voiceTimbre?.speed || 1.0;
       utterance.pitch = persona.voiceTimbre?.pitch || 1.0;
@@ -482,7 +482,7 @@ export function PersonaVaultModal({
                     <Camera className="h-4 w-4" /> 1. FACE IDENTITY ANCHOR
                   </div>
                   <p className="mt-1 text-xs text-slate-400">
-                    Upload a clean selfie or headshot to lock your face geometry in Veo.
+                    Upload a clean selfie or headshot to lock your face geometry in Neural Cinema.
                   </p>
 
                   <div className="mt-4 flex items-center gap-4">

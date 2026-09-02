@@ -97,7 +97,7 @@ function AvatarsPageContent() {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(
-        `Greetings. I am ${char.name}, ${char.role} based in ${char.location}. With Google Veo 3.1 and DeepMind neural audio, our broadcasts are mathematically guaranteed.`
+        `Greetings. I am ${char.name}, ${char.role} based in ${char.location}. With Zyvoriq Neural Cinema and proprietary synthetic audio, our broadcasts are mathematically guaranteed.`
       );
       utterance.rate = 1.0;
       utterance.pitch = char.gender === "female" ? 1.05 : 0.95;
@@ -147,7 +147,7 @@ function AvatarsPageContent() {
           <div className="flex items-center gap-2">
             <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[11px] font-mono font-semibold text-emerald-400 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>DeepMind Viseme Lip-Sync Ready</span>
+              <span>Zyvoriq Viseme Lip-Sync Ready</span>
             </span>
           </div>
         </div>
@@ -165,7 +165,7 @@ function AvatarsPageContent() {
               Virtual Chat Avatars, Wardrobe Attire &amp; Voice Vault
             </h1>
             <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-              Personalize your preferred virtual chat concierge and screen-sharing copilot. Choose wardrobe attire, DeepMind neural vocal pitch, conversational tone, and real-time screen-sharing guidance behavior.
+              Personalize your preferred virtual chat concierge and screen-sharing copilot. Choose wardrobe attire, Zyvoriq neural vocal pitch, conversational tone, and real-time screen-sharing guidance behavior.
             </p>
           </div>
         </div>

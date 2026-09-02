@@ -254,7 +254,7 @@ export function AnimeCinemaStage() {
         navigator.mediaSession.metadata = new MediaMetadata({
           title: activeTrack.title,
           artist: activeTrack.character || "Zyvoriq Autonomous Cinema",
-          album: activeTrack.subtitle || "Google Veo 3.1 & DeepMind Stems",
+          album: activeTrack.subtitle || "Zyvoriq Cinema & Audio Stems",
           artwork: [
             { src: "/favicon.ico", sizes: "96x96", type: "image/png" }
           ]
@@ -1039,11 +1039,11 @@ export function AnimeCinemaStage() {
               ref={containerRef}
               className="relative aspect-video bg-black rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl group select-none"
             >
-              {/* DeepMind SynthID Cryptographic Verified Badge */}
+              {/* Zyvoriq SynthID Cryptographic Verified Badge */}
               <Link
                 href="/veritas"
                 className="absolute top-4 right-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950/85 hover:bg-slate-900 border border-emerald-500/40 text-emerald-300 backdrop-blur-md shadow-lg shadow-emerald-500/10 transition-all hover:scale-105 group/synthid cursor-pointer"
-                title="DeepMind SynthID v2.4 Latent Frequency Watermark Verified"
+                title="Zyvoriq SynthID v2.4 Latent Frequency Watermark Verified"
               >
                 <span className="flex h-2 w-2 relative">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
@@ -1370,7 +1370,7 @@ export function AnimeCinemaStage() {
                             </div>
                             <p className="text-[11px] text-zinc-400 leading-relaxed">
                               {activeTrack.category === "nature"
-                                ? "Playing authoritative English nature documentary narration synthesized with Google DeepMind Neural TTS."
+                                ? "Playing authoritative English nature documentary narration synthesized with Google Zyvoriq Neural TTS."
                                 : "Playing native 24-bit studio vocal audio synchronized with 4K broadcast video."}
                             </p>
                           </div>
@@ -1813,7 +1813,7 @@ export function AnimeCinemaStage() {
 
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-mono text-amber-300 bg-amber-950/60 border border-amber-500/40 px-2.5 py-1 rounded-lg">
-                    Voice: Charon (DeepMind Neural)
+                    Voice: Charon (Zyvoriq Neural)
                   </span>
                 </div>
               </div>

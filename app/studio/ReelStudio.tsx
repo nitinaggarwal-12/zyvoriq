@@ -920,7 +920,7 @@ export function ReelStudio() {
               <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-300 via-orange-200 to-teal-300 font-black text-slate-950">Z</div>
               <div>
                 <div className="font-black tracking-[-0.02em] text-white">Reel Studio Pro</div>
-                <div className="text-[11px] text-slate-500">Option C Native Veo 3.1 & Multi-Shot Studio Suite</div>
+                <div className="text-[11px] text-slate-500">Zyvoriq Neural Cinema & Multi-Shot Studio Suite</div>
               </div>
             </div>
           </div>
@@ -1008,7 +1008,7 @@ export function ReelStudio() {
             ))}
           </div>
           <div className="hidden text-[11px] font-bold text-slate-500 md:block">
-            {creationMode === "video_reel" && "Veo 3.1 Multi-Shot & Continuous Option C Studio"}
+            {creationMode === "video_reel" && "Neural Cinema Multi-Shot & Continuous Studio"}
             {creationMode === "podcast" && "2-Speaker Conversational Neural Podcast Studio"}
             {creationMode === "carousel" && "Multi-Card Vector PDF & SVG Slide Deck Studio"}
             {creationMode === "song" && "Verse-Chorus Lyric & Beat Visualizer Engine"}
@@ -1023,7 +1023,7 @@ export function ReelStudio() {
         <aside className="h-fit rounded-[26px] border border-white/10 bg-white/[0.025] p-5 lg:sticky lg:top-24">
           <div className="flex items-center justify-between">
             <div className="text-xs font-bold uppercase tracking-[0.16em] text-pink-300">Creative Controls</div>
-            <span className="rounded-md border border-pink-300/30 bg-pink-300/10 px-2 py-0.5 text-[10px] font-black text-pink-200">Veo 3.1 Ready</span>
+            <span className="rounded-md border border-pink-300/30 bg-pink-300/10 px-2 py-0.5 text-[10px] font-black text-pink-200">Cinema Engine Ready</span>
           </div>
 
           <label className="mt-5 block text-xs font-bold text-slate-400">IDEA OR TOPIC</label>
@@ -1115,7 +1115,7 @@ export function ReelStudio() {
                 disabled={busy}
                 active={operation === "native"}
                 icon={Sparkles}
-                idle="🔄 Continuous Native Reel (Option C · Veo 3.1)"
+                idle="🔄 Continuous Neural Reel (Option C · Cinema Engine)"
                 busyLabel="Generating continuous reel…"
               />
             )}
@@ -1992,7 +1992,7 @@ export function ReelStudio() {
                     <span>{selectedShot ? `Clip ${Math.max(1, (shots.findIndex(s => s.id === selectedShot.id) ?? 0) + 1)} Review` : roughCut?.videoUrl ? "Full Reel Master" : "Interactive Studio Monitor"}</span>
                   </div>
                   <div className="mt-0.5 text-xs text-slate-500">
-                    {selectedShot ? `${selectedShot.editorialDurationSec.toFixed(1)}s · Veo Source` : `Veo 3.1 & Audio Engine · ${AUTO_ZOOM_PRESETS.find(p => p.id === zoomPreset)?.name}`}
+                    {selectedShot ? `${selectedShot.editorialDurationSec.toFixed(1)}s · Cinema Source` : `Neural Cinema & Audio Engine · ${AUTO_ZOOM_PRESETS.find(p => p.id === zoomPreset)?.name}`}
                   </div>
                 </div>
                 {selectedShot && roughCut?.videoUrl && (

@@ -155,7 +155,7 @@ export default function ContactPage() {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Custom Veo 3.1 Model Integration or Transmedia Publishing inquiry"
+                      placeholder="e.g. Custom Neural Cinema Integration or Transmedia Publishing inquiry"
                       value={formData.subject}
                       onChange={e => setFormData({ ...formData, subject: e.target.value })}
                       className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-400 text-xs"

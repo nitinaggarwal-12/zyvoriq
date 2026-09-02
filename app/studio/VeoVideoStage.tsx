@@ -71,15 +71,15 @@ export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h3 className="font-bold text-base text-slate-100 tracking-wide">
-                GOOGLE VEO 3.1 AI VIDEO GENERATION STUDIO
+                ZYVORIQ NEURAL CINEMA GENERATION STUDIO
               </h3>
               <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono text-[10px] border border-emerald-500/40 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                VEO 3.1 ACTIVE DIFFUSION • 100% REAL VIDEO
+                NEURAL CINEMA DIFFUSION • 100% ULTRA-HD
               </span>
             </div>
             <p className="text-xs text-slate-400">
-              Synthesized directly on Google Cloud GPUs using <code className="text-purple-300">models/veo-3.1-fast-generate-preview</code>
+              Synthesized directly on sovereign GPU clusters using <code className="text-purple-300">zyvoriq-neural-cinema-v3.1-core</code>
             </p>
           </div>
         </div>
@@ -87,14 +87,14 @@ export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
         <div className="flex items-center gap-2">
           <div className="px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-xl border border-slate-700 text-slate-300 font-mono text-[11px] flex items-center gap-2">
             <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-            <span>GCP Job: 05tf44lmc39p</span>
+            <span>Compute Job: 05tf44lmc39p</span>
           </div>
         </div>
       </div>
 
       {/* Main Real Video Player Viewport */}
       <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-purple-500/40 shadow-2xl group flex items-center justify-center">
-        {/* Real Veo 3.1 MP4 Video - Muted so master audio produces the speech */}
+        {/* Neural Cinema MP4 Video - Muted so master audio produces the speech */}
         <video
           ref={videoRef}
           src="/assets/video/veo_priya_master.mp4"
@@ -108,7 +108,7 @@ export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
         <div className="absolute top-3 left-3 flex items-center gap-2 z-20 pointer-events-none">
           <div className="px-3 py-1 bg-black/70 backdrop-blur-md rounded-full border border-purple-500/40 text-purple-300 font-mono text-xs flex items-center gap-2 pointer-events-auto">
             <Film className="w-3.5 h-3.5 text-purple-400" />
-            <span>Veo 3.1 Keynote Broadcast</span>
+            <span>Neural Cinema Keynote Broadcast</span>
           </div>
           <div className="px-2.5 py-1 bg-black/60 backdrop-blur-md rounded-full border border-slate-700 text-slate-300 font-mono text-[11px] pointer-events-auto">
             24mm Cinema Master
@@ -118,7 +118,7 @@ export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
         <div className="absolute top-3 right-3 z-20 pointer-events-none">
           <div className="px-3 py-1 bg-black/70 backdrop-blur-md rounded-full border border-emerald-500/40 text-emerald-400 font-mono text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-950/40 pointer-events-auto">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            Veo 3.1 C2PA Verified
+            C2PA Provenance Verified
           </div>
         </div>
 

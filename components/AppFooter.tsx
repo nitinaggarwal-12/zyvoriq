@@ -37,7 +37,7 @@ export function AppFooter() {
               </span>
             </div>
             <p className="text-slate-400 leading-relaxed text-[11px]">
-              Next-generation autonomous omni-modal creation suite. Native Veo 3.1 video, DeepMind neural voiceover, 7-Day Trend Radar & Original Book Authoring.
+              Next-generation autonomous omni-modal creation suite. Proprietary Neural Cinema video, Synthetic Voice Matrix, 7-Day Trend Radar & Original Book Authoring.
             </p>
             <div className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500/30 bg-teal-500/10 px-2.5 py-1 text-[10px] font-mono font-bold text-teal-300">
               <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
@@ -54,6 +54,11 @@ export function AppFooter() {
               <li>
                 <Link href="/studio" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
                   <Layers className="w-3.5 h-3.5" /> Studio Cinema Stage
+                </Link>
+              </li>
+              <li>
+                <Link href="/creator/analytics" className="hover:text-teal-300 transition-colors flex items-center gap-1.5 text-teal-300 font-semibold">
+                  <Award className="w-3.5 h-3.5 text-amber-400" /> Creator Growth & Rankings
                 </Link>
               </li>
               <li>

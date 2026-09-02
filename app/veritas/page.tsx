@@ -190,7 +190,7 @@ export default function VeritasPage() {
               </h1>
             </div>
             <p className="mt-2 text-sm md:text-base text-slate-400 max-w-3xl">
-              Deterministic quality governance engine: Dual-model LLM consensus, DeepMind SynthID latent watermarking, ground-truth claim verification, and cryptographic C2PA Ed25519 provenance certification.
+              Deterministic quality governance engine: Dual-model LLM consensus, Zyvoriq SynthID latent watermarking, ground-truth claim verification, and cryptographic C2PA Ed25519 provenance certification.
             </p>
           </div>
 
@@ -212,7 +212,7 @@ export default function VeritasPage() {
           </div>
         </div>
 
-        {/* SECTION 1: DeepMind SynthID Latent Frequency Spectrum Heatmap */}
+        {/* SECTION 1: Zyvoriq SynthID Latent Frequency Spectrum Heatmap */}
         <SynthIDLatentHeatmap />
 
         {/* SECTION 2: 2-Column Grid: 5-Axis Breakdown (Left) + Citations & Signed VQC (Right) */}

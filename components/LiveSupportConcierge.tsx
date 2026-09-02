@@ -62,20 +62,20 @@ const DEFAULT_INITIAL_MESSAGE: Message = {
 
 const KNOWLEDGE_BASE: Record<string, { answer: string; quickActions?: { label: string; action: string }[] }> = {
   onboarding: {
-    answer: "🚀 **Welcome to Zyvoriq! Here is how to create your first reel in 3 steps:**\n\n1. **Enter a Topic:** Head to **Studio Cinema** (`/studio`) or **Create** (`/studio/create`) and type a topic or select one from the **7-Day Trend Radar**.\n2. **Choose Character & Voice:** Select from our 14 Cast Avatars (e.g. Priya, Marcus, Ren).\n3. **Click 'Build Production Plan':** Zyvoriq generates hooks, 4 Veo scenes, and neural audio. You can then trim clips and export with 1 click!",
+    answer: "🚀 **Welcome to Zyvoriq! Here is how to create your first reel in 3 steps:**\n\n1. **Enter a Topic:** Head to **Studio Cinema** (`/studio`) or **Create** (`/studio/create`) and type a topic or select one from the **7-Day Trend Radar**.\n2. **Choose Character & Voice:** Select from our 14 Cast Avatars (e.g. Priya, Marcus, Ren).\n3. **Click 'Build Production Plan':** Zyvoriq generates hooks, 4 cinematic neural scenes, and synthetic audio. You can then trim clips and export with 1 click!",
     quickActions: [
       { label: "Go to Studio Cinema", action: "link:/studio" },
       { label: "Explore Trend Radar", action: "link:/studio/trend-radar" }
     ]
   },
   trend_radar: {
-    answer: "🔮 **7-Day Predictive Trend Radar** scours upstream data sources 7 days before topics peak on social algorithms:\n\n• **Sources:** ArXiv cs.AI papers, Stanford HAI, GitHub Stars (>500/24h), LinkedIn Pulse, and TikTok Search Vacuums.\n• **VOI Score (0-100):** Ranks virality probability based on search acceleration and low competitor saturation.\n• **1-Click Transpiler:** Transpiles raw research into 60s Reel scripts, 8-slide LinkedIn Carousels, and 2-Host Podcasts!",
+    answer: "🔮 **7-Day Predictive Trend Radar** scours upstream data sources 7 days before topics peak on social algorithms:\n\n• **Sources:** Global research papers, AI breakthroughs, GitHub Stars (>500/24h), LinkedIn Pulse, and TikTok Search Vacuums.\n• **VOI Score (0-100):** Ranks virality probability based on search acceleration and low competitor saturation.\n• **1-Click Transpiler:** Transpiles raw research into 60s Reel scripts, 8-slide LinkedIn Carousels, and 2-Host Podcasts!",
     quickActions: [
       { label: "Open Trend Radar", action: "link:/studio/trend-radar" }
     ]
   },
   book_studio: {
-    answer: "📚 **Original Book & Transmedia Studio** enables authors to build 100k+ word lore bibles and publish across formats:\n\n• **Stylometric Engines:** Write in the prose cadence of Tolkien, George R.R. Martin, or Frank Herbert.\n• **Omni-Modal Publishing:** Export valid Kindle EPUB 3 packages, 6\"x9\" paperback print layouts, and full-cast Audible audiobooks with -18dB score ducking.\n• **#BookTok Campaign:** Auto-generates 15 promotional AI Veo video prompts to market your book!",
+    answer: "📚 **Original Book & Transmedia Studio** enables authors to build 100k+ word lore bibles and publish across formats:\n\n• **Stylometric Engines:** Write in the prose cadence of Tolkien, George R.R. Martin, or Frank Herbert.\n• **Omni-Modal Publishing:** Export valid Kindle EPUB 3 packages, 6\"x9\" paperback print layouts, and full-cast Audible audiobooks with -18dB score ducking.\n• **#BookTok Campaign:** Auto-generates 15 promotional cinematic video prompts to market your book!",
     quickActions: [
       { label: "Open Book Studio", action: "link:/studio/books" }
     ]
@@ -121,7 +121,7 @@ const AVATAR_PRESETS_QUICK = [
     attire: "tech_hoodie" as const,
     attireLabel: "Tech Minimalist Dark Hoodie",
     audioVoiceId: "neural_crisp_tech_female",
-    audioVoiceName: "DeepMind Neural Crystal (144 WPM)",
+    audioVoiceName: "Zyvoriq Neural Crystal (144 WPM)",
     audioPitch: 1.0,
     audioRate: 1.05,
     tone: "pedagogical" as const,
@@ -139,7 +139,7 @@ const AVATAR_PRESETS_QUICK = [
     attire: "executive_blazer" as const,
     attireLabel: "Navy Executive Blazer & Lapel Pin",
     audioVoiceId: "neural_authoritative_female",
-    audioVoiceName: "DeepMind Executive Global English",
+    audioVoiceName: "Zyvoriq Executive Global English",
     audioPitch: 1.05,
     audioRate: 1.1,
     tone: "authoritative_executive" as const,
@@ -256,7 +256,7 @@ export function LiveSupportConcierge() {
     const diag = targetAvatarId === "elena"
       ? {
           issue: "Empty Beat Timeline Manifest",
-          resolution: "Click 'Build Production Plan' to generate 4 synchronized Veo scenes.",
+          resolution: "Click 'Build Production Plan' to generate 4 synchronized cinematic scenes.",
           spokenAdvice: "I see your canvas is currently awaiting a production plan. Click 'Build Production Plan' on the bottom left to generate your 4-shot timeline."
         }
       : {
@@ -289,7 +289,7 @@ export function LiveSupportConcierge() {
         }
       : {
           issue: "Empty Beat Timeline Manifest",
-          resolution: "Click 'Build Production Plan' to generate 4 synchronized Veo scenes.",
+          resolution: "Click 'Build Production Plan' to generate 4 synchronized cinematic scenes.",
           spokenAdvice: "I see your canvas is currently awaiting a production plan. Click 'Build Production Plan' on the bottom left to generate your 4-shot timeline."
         };
 
@@ -322,6 +322,39 @@ export function LiveSupportConcierge() {
     setTimeout(() => {
       const lower = text.toLowerCase();
       let matchedKey = "";
+
+      // TRADE-SECRET & ARCHITECTURE ANTI-LEAK PROTECTION
+      if (
+        lower.includes("model") ||
+        lower.includes("gemini") ||
+        lower.includes("veo") ||
+        lower.includes("deepmind") ||
+        lower.includes("gpt") ||
+        lower.includes("llm") ||
+        lower.includes("prompt") ||
+        lower.includes("tech stack") ||
+        lower.includes("how it works") ||
+        lower.includes("under the hood") ||
+        lower.includes("trade secret") ||
+        lower.includes("backend") ||
+        lower.includes("database") ||
+        lower.includes("sqlite") ||
+        lower.includes("postgres")
+      ) {
+        const aiMsg: Message = {
+          id: `msg_ai_${Date.now()}`,
+          sender: "ai",
+          text: "🔒 **Zyvoriq Proprietary Neural Architecture**\n\nZyvoriq operates exclusively on our sovereign **Zyvoriq Neural Cinema & Cognitive Synthesis Engine**. Under enterprise security and trade-secret protection protocols, platform model weights, internal topologies, and underlying infrastructure details are strictly confidential enterprise IP.\n\nI am ready to help you accelerate your creator rankings, explore 7-day trend forecasts, or master video production!",
+          quickActions: [
+            { label: "Open Creator Growth", action: "link:/creator/analytics" },
+            { label: "Explore Studio", action: "link:/studio" }
+          ],
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        };
+        setMessages(prev => [...prev, aiMsg]);
+        setIsTyping(false);
+        return;
+      }
 
       if (lower.includes("screen") || lower.includes("share") || lower.includes("unblock") || lower.includes("look at my screen")) {
         handleStartScreenShareCopilot();

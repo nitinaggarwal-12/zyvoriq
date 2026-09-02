@@ -61,7 +61,7 @@ export function ApiKeyModal({ isOpen, onClose }: ApiKeyModalProps) {
               status: "alive",
               latencyMs: 35,
               lastChecked: new Date().toLocaleTimeString(),
-              tier: data.tier || "Veo 3.1 & Gemini 2.5 TTS"
+              tier: data.tier || "Zyvoriq Neural Cinema & Audio Core"
             };
             setKeys([defaultEntry]);
             setSelectedPrimaryKeyId(defaultEntry.id);
@@ -259,7 +259,7 @@ export function ApiKeyModal({ isOpen, onClose }: ApiKeyModalProps) {
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                Add multiple Google Gemini & Veo API keys with continuous alive/dead probing and zero-downtime rotation.
+                Add multiple Enterprise Neural API keys with continuous alive/dead probing and zero-downtime rotation.
               </p>
             </div>
           </div>
@@ -356,7 +356,7 @@ export function ApiKeyModal({ isOpen, onClose }: ApiKeyModalProps) {
 
         {/* Add Single Key Input Bar */}
         <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
-          <div className="text-xs font-bold text-slate-300 uppercase">Add New Gemini API Key:</div>
+          <div className="text-xs font-bold text-slate-300 uppercase">Add New Enterprise Neural API Key:</div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <input
               type="text"

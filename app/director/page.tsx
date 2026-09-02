@@ -69,8 +69,8 @@ export default function DirectorPage() {
     {
       id: "agent-4",
       name: "Cinematic Video Agent",
-      role: "Google Veo 3.1 Storyboard Synthesis",
-      engine: "Google Veo 3.1 / Imagen 3",
+      role: "Neural Cinema Storyboard Synthesis",
+      engine: "Zyvoriq Neural Cinema Engine",
       status: "completed",
       progress: 100,
       latency: "3.2s",
@@ -79,8 +79,8 @@ export default function DirectorPage() {
     {
       id: "agent-5",
       name: "Speech & Neural Audio Agent",
-      role: "DeepMind 5-Band Formant Dubbing",
-      engine: "DeepMind Neural TTS",
+      role: "Zyvoriq 5-Band Formant Dubbing",
+      engine: "Zyvoriq Synthetic Voice Matrix",
       status: "completed",
       progress: 100,
       latency: "620ms",
@@ -89,8 +89,8 @@ export default function DirectorPage() {
     {
       id: "agent-6",
       name: "Code & Architecture Compiler",
-      role: "Babel AST & Draw.io XML Graph",
-      engine: "Claude 3.5 Sonnet",
+      role: "Babel AST & Architecture Canvas Graph",
+      engine: "Zyvoriq Dynamic Graph Compiler",
       status: "completed",
       progress: 100,
       latency: "940ms",
@@ -100,7 +100,7 @@ export default function DirectorPage() {
       id: "agent-7",
       name: "Veritas 5-Axis Consensus Auditor",
       role: "Deterministic Quality Gate & Hard Safety",
-      engine: "Gemini 3.7 Flash Sovereign Core",
+      engine: "Zyvoriq Sovereign Consensus Core",
       status: "completed",
       progress: 100,
       latency: "1.1s",
@@ -384,7 +384,7 @@ export default function DirectorPage() {
                     <ChevronRight className="h-4 w-4 text-slate-500 group-hover:text-indigo-300 transition-all" />
                   </div>
                   <div className="mt-3 text-sm font-bold text-white">4-Pane Studio</div>
-                  <div className="text-xs text-slate-400 mt-1">Script, Veo 3.1 video, audio &amp; Draw.io canvas.</div>
+                  <div className="text-xs text-slate-400 mt-1">Script, Neural Cinema video, audio &amp; Architecture canvas.</div>
                 </div>
                 <div className="mt-4 text-xs font-mono font-bold text-indigo-300">4 Stems Synchronized</div>
               </Link>

@@ -347,14 +347,14 @@ export function MultiSensoryStudioSuite({
 
       {/* 5-Sense Multi-Modal Matrix Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* 1. 👀 EYES: Google Veo 2 / 3.1 Latent Video & SynthID Watermark */}
+        {/* 1. 👀 EYES: Neural Cinema Ultra-HD Video & Provenance Watermark */}
         {(activeSenseTab === "all" || activeSenseTab === "eyes") && (
           <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800/90 hover:border-amber-500/40 transition-all space-y-3 flex flex-col justify-between">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-1.5 text-amber-400 font-bold uppercase">
                   <Eye className="w-4 h-4" />
-                  <span>Eyes · Google Veo 3.1</span>
+                  <span>Eyes · Neural Cinema Core</span>
                 </div>
                 <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold">
                   4K 60FPS
@@ -363,7 +363,7 @@ export function MultiSensoryStudioSuite({
 
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-800/80 space-y-1.5">
                 <div className="text-[11px] text-slate-300 font-semibold truncate">
-                  {videoUrl ? videoUrl.split("/").pop() : "veo_mongol_steppe_warfare_master.mp4"}
+                  {videoUrl ? videoUrl.split("/").pop() : "zyvoriq_cinema_steppewarfare_master.mp4"}
                 </div>
                 <div className="flex items-center justify-between text-[10px] text-slate-400">
                   <span>Latency: 0ms Buffer Lock</span>

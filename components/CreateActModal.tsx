@@ -128,16 +128,16 @@ export function CreateActModal({ isOpen, onClose, onActCreated, currentTrackTitl
     setGeneratedResult(null);
     setIsPublished(false);
     setGenProgress(15);
-    setGenStage("🧠 Decomposing Scene Narrative & Persona Dialogue (Gemini 2.5 Flash)...");
+    setGenStage("🧠 Decomposing Scene Narrative & Persona Dialogue...");
 
     setTimeout(() => {
       setGenProgress(40);
-      setGenStage("🎬 Synthesizing Veo 3.1 Character-Locked Keyframes & 24fps Motion...");
+      setGenStage("🎬 Synthesizing Neural Cinema Character-Locked Keyframes & 24fps Motion...");
     }, 700);
 
     setTimeout(() => {
       setGenProgress(70);
-      setGenStage("🎙️ Synthesizing DeepMind 6-Language Neural Voice Stems (Charon & Aoede)...");
+      setGenStage("🎙️ Synthesizing Multi-Language Synthetic Voice Stems...");
     }, 1400);
 
     setTimeout(() => {
@@ -201,7 +201,7 @@ export function CreateActModal({ isOpen, onClose, onActCreated, currentTrackTitl
             <h2 className="text-xl font-bold text-white tracking-tight font-serif flex items-center gap-2">
               <span>Studio Act & Episode Generator</span>
               <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-300 font-mono text-[10px] uppercase">
-                Veo 3.1 + DeepMind TTS
+                Neural Cinema + Voice Matrix
               </span>
             </h2>
             <p className="text-xs text-slate-400">
@@ -663,7 +663,7 @@ export function CreateActModal({ isOpen, onClose, onActCreated, currentTrackTitl
                 ) : (
                   <>
                     <Zap className="w-4 h-4 fill-current" />
-                    <span>Kickoff Veo 3.1 &amp; DeepMind Dub Pipeline</span>
+                    <span>Kickoff Neural Cinema &amp; Audio Pipeline</span>
                   </>
                 )}
               </button>

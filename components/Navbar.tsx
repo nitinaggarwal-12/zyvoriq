@@ -9,9 +9,9 @@ export function Navbar() {
 
   const nav = [
     ["Reel Studio", "/studio"],
+    ["Creator Growth", "/creator/analytics"],
     ["Library", "/studio/library"],
     ["How it works", "#multimodal"],
-    ["Use cases", "#use-cases"],
     ["Trust", "/veritas"],
     ["For teams", "/governance"],
   ];

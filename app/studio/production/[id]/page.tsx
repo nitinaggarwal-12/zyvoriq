@@ -419,7 +419,7 @@ function ProductionJobPageContent() {
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-white font-serif tracking-tight">Production Pipeline Monitor</span>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                    Veo 3.1 + DeepMind
+                    Neural Cinema + Audio
                   </span>
                 </div>
                 <span className="text-[10px] font-mono text-slate-400 hidden sm:inline-block">
@@ -1357,7 +1357,7 @@ function ProductionJobPageContent() {
                         <div className="flex items-center gap-2">
                           <Globe className="w-4 h-4 text-cyan-400" />
                           <h3 className="text-sm font-bold text-white font-serif uppercase tracking-wider">
-                            {currentAct?.actName ? `${currentAct.actName} · Dialogue & Dub Track` : "DeepMind Multilingual Dub Track & Storyboard"}
+                            {currentAct?.actName ? `${currentAct.actName} · Dialogue & Dub Track` : "Zyvoriq Multilingual Dub Track & Storyboard"}
                           </h3>
                         </div>
 
@@ -1413,7 +1413,7 @@ function ProductionJobPageContent() {
                             <Volume2 className="w-3.5 h-3.5" />
                             <span>Active Speech Dialogue ({activeLang.toUpperCase()})</span>
                           </span>
-                          <span className="text-[10px] font-mono text-slate-400">DeepMind 48kHz Neural Stems</span>
+                          <span className="text-[10px] font-mono text-slate-400">Zyvoriq 48kHz Neural Stems</span>
                         </div>
                         <p className="text-sm font-medium text-amber-100 font-serif leading-relaxed italic">
                           {activeLang === "en" && (textObj.en || textObj.dialogueEn || textObj.ja || textObj.dialogueJa)}

@@ -338,7 +338,7 @@ export function DynamicZoomVideoPlayer({
         <div className="pointer-events-none absolute inset-x-4 bottom-24 z-20 text-center">
           <div className="inline-block rounded-xl border border-yellow-400/30 bg-black/85 px-4 py-2 shadow-2xl backdrop-blur-md">
             <span className="text-xs font-black tracking-wide text-yellow-300 drop-shadow-md">
-              {subtitleText || "🔥 OPTION C CONTINUOUS VEO 3.1 WITH NATIVE LIP-SYNC"}
+              {subtitleText || "🔥 ZYVORIQ ULTRA-HD CONTINUOUS CINEMA WITH NATIVE LIP-SYNC"}
             </span>
           </div>
         </div>
