@@ -44,6 +44,9 @@ import RedditStoryModal from "@/components/RedditStoryModal";
 import AutoMemeModal from "@/components/AutoMemeModal";
 import GlobalDubberModal from "@/components/GlobalDubberModal";
 import DemonetizationArmorModal from "@/components/DemonetizationArmorModal";
+import { TrendRadarModal } from "@/components/TrendRadarModal";
+import { BookStudioModal } from "@/components/BookStudioModal";
+import { PredictedTrend } from "@/lib/reel/trendRadarEngine";
 import { DopamineConfig, DEFAULT_DOPAMINE_CONFIG } from "@/lib/reel/dopamineSplitScreen";
 import { UgcAdCampaign } from "@/lib/reel/ugcAdEngine";
 import { AutoFixRecommendation } from "@/lib/reel/retentionPredictor";
@@ -144,6 +147,8 @@ export function ReelStudio() {
   const [isMemeModalOpen, setIsMemeModalOpen] = useState(false);
   const [isDubberModalOpen, setIsDubberModalOpen] = useState(false);
   const [isArmorModalOpen, setIsArmorModalOpen] = useState(false);
+  const [isTrendRadarOpen, setIsTrendRadarOpen] = useState(false);
+  const [isBookStudioOpen, setIsBookStudioOpen] = useState(false);
   const [detectedMemes, setDetectedMemes] = useState<MemeCutawayItem[]>([]);
   const [dopamineConfig, setDopamineConfig] = useState<DopamineConfig>(DEFAULT_DOPAMINE_CONFIG);
   const [zoomPreset, setZoomPreset] = useState<AutoZoomPresetId>("dynamic-viral");
@@ -839,6 +844,59 @@ export function ReelStudio() {
     }
   };
 
+  const handleLaunchTrendInStudio = (trend: PredictedTrend) => {
+    setTopic(trend.title);
+    setDuration("60");
+    if (trend.transpiledRecipes.reel60s.visualStyle === "ali_abdaal_sky") {
+      setSubtitleStyle("ali-abdaal-sky");
+    } else if (trend.transpiledRecipes.reel60s.visualStyle === "mrbeast_neon") {
+      setSubtitleStyle("mrbeast-red");
+    } else {
+      setSubtitleStyle("hormozi-bold");
+    }
+    if (production) {
+      const newShots: ReelShot[] = trend.transpiledRecipes.reel60s.scriptBeats.map((beat, idx) => ({
+        id: `shot_trend_${idx + 1}`,
+        order: idx + 1,
+        editorialStartSec: idx * 4,
+        editorialDurationSec: 4,
+        generationDurationSec: 4,
+        trimInSec: 0,
+        trimOutSec: 0,
+        scriptText: beat,
+        visualIntent: `Presenter explains: ${beat}. High kinetic interest.`,
+        generationPrompt: `Cinematic high quality presentation video. Lighting: Studio Key. Subject: Presenter discussing ${trend.title}`,
+        continuityIn: {
+          character: selectedPersona.name,
+          wardrobe: "Casual Creator Wear",
+          environment: "Modern Creator Studio / Desk",
+          lighting: "Crisp Ring Light Key"
+        },
+        continuityOut: {
+          character: selectedPersona.name,
+          wardrobe: "Casual Creator Wear",
+          environment: "Modern Creator Studio / Desk",
+          lighting: "Crisp Ring Light Key"
+        },
+        transitionOut: { type: "hard-cut", durationSec: 0 },
+        dependsOnShotIds: [],
+        status: "PLANNED"
+      }));
+
+      setProduction({
+        ...production,
+        manifest: {
+          ...production.manifest,
+          topic: trend.title,
+          masterScript: `${trend.transpiledRecipes.reel60s.hook} ${trend.transpiledRecipes.reel60s.scriptBeats.join(" ")}`,
+          shots: newShots
+        }
+      });
+    }
+    setIsTrendRadarOpen(false);
+    setActiveTab("Scenes");
+  };
+
 
 
 
@@ -873,6 +931,18 @@ export function ReelStudio() {
             </span>
             <span className={`h-2 w-2 rounded-full ${production ? "bg-emerald-400" : "bg-slate-700"}`} />
             {production ? `Persisted · r${production.revision}` : "Draft Mode"}
+            <button
+              onClick={() => setIsTrendRadarOpen(true)}
+              className="flex items-center gap-1.5 rounded-xl border border-indigo-500/40 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 px-3 py-1.5 text-xs font-bold text-indigo-200 shadow-sm transition hover:border-indigo-500/60 hover:from-indigo-500/30 hover:to-purple-500/30"
+            >
+              <span>🔮 7-Day Trend Radar</span>
+            </button>
+            <button
+              onClick={() => setIsBookStudioOpen(true)}
+              className="flex items-center gap-1.5 rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-500/20 to-orange-500/20 px-3 py-1.5 text-xs font-bold text-amber-200 shadow-sm transition hover:border-amber-500/60 hover:from-amber-500/30 hover:to-orange-500/30"
+            >
+              <span>📚 Book Studio</span>
+            </button>
             <button
               onClick={() => setIsRemixModalOpen(true)}
               className="flex items-center gap-1.5 rounded-xl border border-purple-500/30 bg-purple-500/10 px-3 py-1.5 text-xs font-bold text-purple-200 shadow-sm transition hover:border-purple-500/50 hover:bg-purple-500/20"
@@ -2041,6 +2111,17 @@ export function ReelStudio() {
         onClose={() => setIsArmorModalOpen(false)}
         scriptText={production?.manifest.masterScript || topic}
         onApplyCensoredScript={handleApplyCensoredScript}
+      />
+
+      <TrendRadarModal
+        isOpen={isTrendRadarOpen}
+        onClose={() => setIsTrendRadarOpen(false)}
+        onLaunchInStudio={handleLaunchTrendInStudio}
+      />
+
+      <BookStudioModal
+        isOpen={isBookStudioOpen}
+        onClose={() => setIsBookStudioOpen(false)}
       />
     </div>
   );
