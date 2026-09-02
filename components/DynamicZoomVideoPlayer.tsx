@@ -22,12 +22,16 @@ import {
 
 import { getCachedMediaBlobUrl } from "@/lib/cache/mediaCache";
 import { BRollItem, getActiveBRollAtTime } from "@/lib/reel/broll";
+import { KineticEmojiItem, getActiveEmojiAtTime, playProceduralSFX } from "@/lib/reel/kineticEmoji";
 
 interface DynamicZoomVideoPlayerProps {
   videoUrl: string;
   keyframes: ZoomKeyframe[];
   brollItems?: BRollItem[];
   showBRoll?: boolean;
+  kineticEmojis?: KineticEmojiItem[];
+  showEmojis?: boolean;
+  showSFX?: boolean;
   subtitleText?: string;
   subtitleStyle?: string;
   onSeekToScene?: (sceneIndex: number) => void;
@@ -38,6 +42,9 @@ export function DynamicZoomVideoPlayer({
   keyframes,
   brollItems = [],
   showBRoll = true,
+  kineticEmojis = [],
+  showEmojis = true,
+  showSFX = true,
   subtitleText,
   subtitleStyle = "karaoke-gold",
   onSeekToScene
@@ -45,12 +52,16 @@ export function DynamicZoomVideoPlayer({
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const brollVideoRef = useRef<HTMLVideoElement>(null);
+  const lastPlayedSFXRef = useRef<string | null>(null);
   const [resolvedVideoUrl, setResolvedVideoUrl] = useState<string>(videoUrl);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentZoom, setCurrentZoom] = useState<number>(1.0);
   const [currentLabel, setCurrentLabel] = useState<string>("1.0x Wide");
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [activeBRoll, setActiveBRoll] = useState<BRollItem | null>(null);
+  const [activeEmoji, setActiveEmoji] = useState<KineticEmojiItem | null>(null);
+  const [enableEmojis, setEnableEmojis] = useState(showEmojis);
+  const [enableSFXAudio, setEnableSFXAudio] = useState(showSFX);
 
   useEffect(() => {
     let active = true;
@@ -80,6 +91,19 @@ export function DynamicZoomVideoPlayer({
       setActiveBRoll(broll);
     } else {
       setActiveBRoll(null);
+    }
+
+    // Synchronize 3D Kinetic Emojis & Auto-SFX (Phase 4)
+    if (enableEmojis && kineticEmojis.length > 0) {
+      const emoji = getActiveEmojiAtTime(kineticEmojis, t);
+      setActiveEmoji(emoji);
+
+      if (emoji && isPlaying && enableSFXAudio && lastPlayedSFXRef.current !== emoji.id) {
+        lastPlayedSFXRef.current = emoji.id;
+        playProceduralSFX(emoji.sfx, emoji.sfxVolume);
+      }
+    } else {
+      setActiveEmoji(null);
     }
 
     if (manualZoomOverride === null) {
@@ -287,6 +311,28 @@ export function DynamicZoomVideoPlayer({
         </div>
       )}
 
+      {/* 3D KINETIC EMOJIS OVERLAY LAYER (Phase 4) */}
+      {enableEmojis && activeEmoji && (
+        <div
+          className={`pointer-events-none absolute z-25 flex flex-col items-center justify-center transition-all duration-300 ${
+            activeEmoji.position === "center"
+              ? "inset-0"
+              : activeEmoji.position === "top_center"
+              ? "inset-x-0 top-16"
+              : "inset-x-0 bottom-36"
+          }`}
+        >
+          <div className="flex flex-col items-center animate-in zoom-in-50 duration-300">
+            <span className="text-6xl sm:text-7xl filter drop-shadow-[0_10px_25px_rgba(0,0,0,0.85)] transition-transform duration-200 hover:scale-125">
+              {activeEmoji.emoji}
+            </span>
+            <div className="mt-1.5 rounded-full border border-pink-400/50 bg-black/90 px-3.5 py-0.5 text-[9px] font-black uppercase tracking-widest text-pink-200 shadow-2xl backdrop-blur-md">
+              {activeEmoji.label}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Dynamic Subtitle Preview Overlay */}
       {showSubtitles && (
         <div className="pointer-events-none absolute inset-x-4 bottom-24 z-20 text-center">
@@ -402,6 +448,30 @@ export function DynamicZoomVideoPlayer({
             >
               <Layers className="h-3.5 w-3.5" />
               <span>B-Roll</span>
+            </button>
+
+            {/* Emojis Toggle (Phase 4) */}
+            <button
+              onClick={() => setEnableEmojis(!enableEmojis)}
+              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-black transition ${
+                enableEmojis ? "bg-pink-500/20 text-pink-300 border border-pink-500/30" : "text-slate-500 hover:bg-white/10"
+              }`}
+              title="Toggle 3D Kinetic Emojis"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>Emojis</span>
+            </button>
+
+            {/* Procedural SFX Toggle (Phase 4) */}
+            <button
+              onClick={() => setEnableSFXAudio(!enableSFXAudio)}
+              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-black transition ${
+                enableSFXAudio ? "bg-yellow-400/20 text-yellow-300 border border-yellow-400/30" : "text-slate-500 hover:bg-white/10"
+              }`}
+              title="Toggle Procedural Whoosh/Ding SFX"
+            >
+              <Volume2 className="h-3.5 w-3.5" />
+              <span>SFX</span>
             </button>
 
             {/* Audio Mute */}

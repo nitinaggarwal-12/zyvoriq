@@ -16,6 +16,14 @@ import { AUTO_ZOOM_PRESETS, calculateZoomKeyframes, AutoZoomPresetId } from "@/l
 import { DynamicZoomVideoPlayer } from "@/components/DynamicZoomVideoPlayer";
 import { preloadReelMedia } from "@/lib/cache/mediaCache";
 import { autoGenerateBRollCutaways, BROLL_PRESET_LIBRARY, BRollItem, CutawayType } from "@/lib/reel/broll";
+import {
+  autoGenerateKineticEmojis,
+  EMOJI_KEYWORD_DICTIONARY,
+  KineticEmojiItem,
+  SFXType,
+  EmojiAnimation,
+  playProceduralSFX
+} from "@/lib/reel/kineticEmoji";
 
 type StoredProduction = { id: string; revision: number; manifest: ReelProductionManifest; createdAt: string; updatedAt: string };
 type DurableOperation = { id: string; status: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED"; lastError?: string };
@@ -96,7 +104,7 @@ export function ReelStudio() {
   const [selectedPersona, setSelectedPersona] = useState<PersonaClone>(PRESET_PERSONAS[0]);
   const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false);
   const [zoomPreset, setZoomPreset] = useState<AutoZoomPresetId>("dynamic-viral");
-  const [activeTab, setActiveTab] = useState<"Scenes" | "Script" | "B-Roll" | "Audio & Subtitles" | "Format" | "Cover">("Scenes");
+  const [activeTab, setActiveTab] = useState<"Scenes" | "Script" | "B-Roll" | "SFX & Emojis" | "Audio & Subtitles" | "Format" | "Cover">("Scenes");
   const [copied, setCopied] = useState(false);
   const [production, setProduction] = useState<StoredProduction | null>(null);
   const [operation, setOperation] = useState<StudioOperation>(null);
@@ -148,6 +156,30 @@ export function ReelStudio() {
     const localUrl = URL.createObjectURL(file);
     const fileName = file.name.replace(/\.[^/.]+$/, "");
     selectBRollPreset(itemId, localUrl, `Custom: ${fileName}`, "custom");
+  };
+
+  // Phase 4 Auto-SFX & Kinetic Emojis Layer
+  const defaultEmojis = useMemo(() => autoGenerateKineticEmojis(shots), [shots]);
+  const [kineticEmojis, setKineticEmojis] = useState<KineticEmojiItem[]>([]);
+
+  useEffect(() => {
+    setKineticEmojis(defaultEmojis);
+  }, [defaultEmojis]);
+
+  const toggleEmojiItem = (id: string) => {
+    setKineticEmojis(prev => prev.map(e => e.id === id ? { ...e, enabled: !e.enabled } : e));
+  };
+
+  const updateEmojiAnimation = (id: string, animation: EmojiAnimation) => {
+    setKineticEmojis(prev => prev.map(e => e.id === id ? { ...e, animation } : e));
+  };
+
+  const updateEmojiSFX = (id: string, sfx: SFXType) => {
+    setKineticEmojis(prev => prev.map(e => e.id === id ? { ...e, sfx } : e));
+  };
+
+  const selectEmojiPreset = (id: string, emoji: string, label: string, sfx: SFXType) => {
+    setKineticEmojis(prev => prev.map(e => e.id === id ? { ...e, emoji, label, sfx } : e));
   };
 
   useEffect(() => {
@@ -664,7 +696,7 @@ export function ReelStudio() {
         <section className="min-w-0 rounded-[26px] border border-white/10 bg-[#0a0d12]">
           <div className="flex flex-wrap items-center justify-between border-b border-white/5 p-3">
             <div className="flex flex-wrap items-center gap-1">
-              {(["Scenes", "Script", "B-Roll", "Audio & Subtitles", "Format", "Cover"] as const).map(tab => (
+              {(["Scenes", "Script", "B-Roll", "SFX & Emojis", "Audio & Subtitles", "Format", "Cover"] as const).map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -1066,7 +1098,148 @@ export function ReelStudio() {
               </div>
             )}
 
-            {/* TAB 4: AUDIO, MUSIC & SUBTITLE OPTIONS */}
+            {/* TAB 4: 3D KINETIC EMOJIS & AUTO-SFX ENGINE (PHASE 4) */}
+            {activeTab === "SFX & Emojis" && (
+              <div className="space-y-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-pink-300">
+                      <Sparkles className="h-3.5 w-3.5" /> 3D KINETIC EMOJIS & AUTO-SFX
+                    </div>
+                    <h2 className="mt-1 text-2xl font-black tracking-[-0.03em] text-white">
+                      Animated Keyword Popups & Audio Stems
+                    </h2>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full border border-pink-400/30 bg-pink-400/10 px-3 py-1 text-xs font-black text-pink-300">
+                      {kineticEmojis.filter(e => e.enabled).length} Active Popups
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-xs leading-relaxed text-slate-400">
+                  Automatically detects high-impact viral words and pairs them with animated 3D emojis and procedural sound effects (Whoosh, Ding, Cash Chime, Bass Drop) to command viewer attention.
+                </p>
+
+                {kineticEmojis.length === 0 ? (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-8 text-center text-sm text-slate-400">
+                    Build a production plan first to generate kinetic emoji triggers.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {kineticEmojis.map(item => (
+                      <div
+                        key={item.id}
+                        className={`rounded-2xl border p-4 transition ${
+                          item.enabled
+                            ? "border-pink-400/40 bg-pink-400/[0.03]"
+                            : "border-white/10 bg-black/20 opacity-60"
+                        }`}
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => toggleEmojiItem(item.id)}
+                              className={`flex h-6 w-6 items-center justify-center rounded-lg border text-xs font-black transition ${
+                                item.enabled
+                                  ? "border-pink-400 bg-pink-400 text-slate-950"
+                                  : "border-white/20 bg-white/5 text-slate-500"
+                              }`}
+                            >
+                              {item.enabled ? "✓" : ""}
+                            </button>
+                            <div className="flex items-center gap-2.5">
+                              <span className="text-2xl filter drop-shadow-md">{item.emoji}</span>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-black text-white">
+                                    Beat {item.sceneIndex + 1}: {item.label}
+                                  </span>
+                                  <span className="rounded-md border border-pink-400/30 bg-pink-400/10 px-2 py-0.5 text-[10px] font-black uppercase text-pink-300">
+                                    {item.keyword}
+                                  </span>
+                                </div>
+                                <div className="mt-0.5 text-[11px] text-slate-400">
+                                  Trigger: {item.startSec.toFixed(1)}s ({item.durationSec.toFixed(1)}s duration) · SFX: {item.sfx}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Sound Test Button */}
+                          <button
+                            onClick={() => playProceduralSFX(item.sfx, 0.9)}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-yellow-400/30 bg-yellow-400/10 px-3 py-1.5 text-xs font-bold text-yellow-300 transition hover:bg-yellow-400/20"
+                          >
+                            <Volume2 className="h-3.5 w-3.5" /> Test SFX ({item.sfx})
+                          </button>
+                        </div>
+
+                        {/* Preset Emoji Picker */}
+                        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/5 pt-3">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Emoji:</span>
+                          {EMOJI_KEYWORD_DICTIONARY.map(dict => (
+                            <button
+                              key={dict.emoji}
+                              onClick={() => selectEmojiPreset(item.id, dict.emoji, dict.label, dict.sfx)}
+                              className={`rounded-lg border px-2 py-1 text-xs transition ${
+                                item.emoji === dict.emoji
+                                  ? "border-pink-400 bg-pink-400/20 text-white"
+                                  : "border-white/10 bg-white/[0.02] text-slate-400 hover:border-white/20 hover:text-white"
+                              }`}
+                            >
+                              {dict.emoji} {dict.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Animation & SFX Selection Row */}
+                        <div className="mt-2.5 flex flex-wrap items-center gap-4">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Animation:</span>
+                            {(["pop_bounce", "spin_in", "slide_from_bottom", "floating_pulse", "impact_slam"] as const).map(anim => (
+                              <button
+                                key={anim}
+                                onClick={() => updateEmojiAnimation(item.id, anim)}
+                                className={`rounded-lg px-2 py-0.5 text-[9px] font-bold transition ${
+                                  item.animation === anim
+                                    ? "bg-pink-500 text-white"
+                                    : "border border-white/10 text-slate-400 hover:text-white"
+                                }`}
+                              >
+                                {anim.replace("_", " ")}
+                              </button>
+                            ))}
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">SFX:</span>
+                            {(["whoosh", "ding", "cash_chime", "bass_drop", "pop", "glitch"] as const).map(sfx => (
+                              <button
+                                key={sfx}
+                                onClick={() => {
+                                  updateEmojiSFX(item.id, sfx);
+                                  playProceduralSFX(sfx, 0.9);
+                                }}
+                                className={`rounded-lg px-2 py-0.5 text-[9px] font-bold transition ${
+                                  item.sfx === sfx
+                                    ? "bg-yellow-400 text-slate-950 font-black"
+                                    : "border border-white/10 text-slate-400 hover:text-white"
+                                }`}
+                              >
+                                {sfx.replace("_", " ")}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 5: AUDIO, MUSIC & SUBTITLE OPTIONS */}
             {activeTab === "Audio & Subtitles" && (
               <div className="space-y-6">
                 <div>
@@ -1252,6 +1425,7 @@ export function ReelStudio() {
                 videoUrl={previewVideoUrl || "/assets/video/veo_continuous_master.mp4"}
                 keyframes={zoomKeyframes}
                 brollItems={brollItems}
+                kineticEmojis={kineticEmojis}
                 subtitleText={shots[0]?.scriptText || topic}
                 subtitleStyle={subtitleStyle}
               />
