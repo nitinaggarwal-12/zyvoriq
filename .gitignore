@@ -14,6 +14,8 @@ scratch/
 *.db-shm
 temp/
 .venv/
-*_4k_*.mp4
-public/assets/video/generated/
+*.mp4
+*.checkpoint.json
+*.patch
+scripts/qa/*keyframes/
 

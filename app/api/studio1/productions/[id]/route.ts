@@ -175,6 +175,20 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       return NextResponse.json({ success: true, queued: true, operation, production: presentProduction(current), timelineSync: (current.manifest as any).studio1?.timelineSync }, { status: 202 });
     }
 
+    if (action === "generateNativeReel") {
+      // Option C: one continuous Veo generation with native audio. No TTS, no
+      // per-shot clips, no timeline sync — the model speaks the beats itself.
+      const beats = current.manifest.shots.map(shot => String((shot as any).scriptText || "").trim()).filter(Boolean);
+      if (beats.length !== current.manifest.shots.length || beats.length === 0) {
+        return NextResponse.json({ success: false, error: "Native reel requires scriptText on every planned scene" }, { status: 409 });
+      }
+      const control = await paidContext(id);
+      const fp = fingerprint({ beats, character: (current.manifest.shots[0] as any)?.continuityIn, tone: current.manifest.tone, native: true });
+      const idempotencyKey = operationKey({ productionId: id, generationToken: control.generationToken, kind: "NATIVE_REEL", manifestRevision: current.revision, fingerprint: fp });
+      const operation = await reelOperationQueue.enqueue({ productionId: id, kind: "NATIVE_REEL", idempotencyKey, payload: { manifestRevision: current.revision, generationToken: control.generationToken, semanticFingerprint: fp, studio1: true, nativeAudio: true } });
+      return NextResponse.json({ success: true, queued: true, operation, production: presentProduction(current) }, { status: 202 });
+    }
+
     return NextResponse.json({ success: false, error: `Unsupported Studio1 action: ${action}` }, { status: 400 });
   } catch (error: any) {
     const message = error?.message || "Failed to update Studio1 production";

@@ -7,7 +7,7 @@ import type { ReelProductionManifest } from "@/lib/reel/types";
 
 type StoredProduction = { id: string; revision: number; manifest: ReelProductionManifest; createdAt: string; updatedAt: string };
 type DurableOperation = { id: string; status: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED"; lastError?: string };
-type StudioOperation = "plan" | "narration" | "shot" | "rough" | "all" | null;
+type StudioOperation = "plan" | "narration" | "shot" | "rough" | "all" | "native" | null;
 
 function durationNumber(value: string) {
   const parsed = Number.parseInt(value, 10);
@@ -41,6 +41,7 @@ export function ReelStudio() {
   const selectedShot = (selectedShotId ? manifest?.shots.find(s => s.id === selectedShotId && s.asset?.videoUrl) : undefined) || (!roughCut ? generatedShots[0] : undefined);
   const previewVideoUrl = selectedShot?.asset?.videoUrl || roughCut?.videoUrl || null;
   const canGenerateShot = Boolean(manifest && ["SHOTS_PLANNED", "VIDEO_GENERATING", "REPAIRING"].includes(manifest.status) && generatedShotCount < totalShotCount);
+  const canGenerateNative = Boolean(manifest && !roughCut && ["SHOTS_PLANNED", "VIDEO_GENERATING", "REPAIRING"].includes(manifest.status));
   const canGenerateAll = Boolean(manifest && !roughCut && ["SCRIPT_READY", "SHOTS_PLANNED", "VIDEO_GENERATING", "REPAIRING", "ROUGH_CUT_READY"].includes(manifest.status));
   const script = useMemo(() => scriptLines(manifest, topic), [manifest, topic]);
   const scenes = useMemo(() => manifest?.shots.map((shot) => {
@@ -207,7 +208,8 @@ export function ReelStudio() {
           </div>
 
           <ActionButton onClick={buildProduction} disabled={busy || !topic.trim()} active={operation === "plan"} icon={Sparkles} idle={production ? "Create new plan" : "Build reel plan"} busyLabel="Building…" primary />
-          {canGenerateAll && <ActionButton onClick={generateAllMp4} disabled={busy} active={operation === "all"} icon={Film} idle={generatedShotCount ? `Generate remaining + MP4 (${generatedShotCount}/${totalShotCount})` : "Generate all clips + MP4"} busyLabel={generateAllBusyLabel} primary />}
+          {canGenerateNative && <ActionButton onClick={() => runAction("generateNativeReel", "native")} disabled={busy} active={operation === "native"} icon={Sparkles} idle="Generate Native Reel (Option C · Veo 3.1)" busyLabel="Generating continuous reel…" primary />}
+          {canGenerateAll && <ActionButton onClick={generateAllMp4} disabled={busy} active={operation === "all"} icon={Film} idle={generatedShotCount ? `Generate remaining + MP4 (${generatedShotCount}/${totalShotCount})` : "Generate all clips + MP4 (Multi-Shot TTS)"} busyLabel={generateAllBusyLabel} />}
           {roughCut?.videoUrl && <a href={roughCut.videoUrl} download className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-300/25 bg-emerald-300/[0.07] py-3.5 text-sm font-black text-emerald-100 transition hover:bg-emerald-300/[0.12]"><Download className="h-4 w-4" />Download combined MP4</a>}
           {manifest?.status === "SCRIPT_READY" && <ActionButton onClick={() => runAction("generateNarration", "narration")} disabled={busy} active={operation === "narration"} icon={AudioLines} idle="Generate real narration" busyLabel="Generating + aligning…" />}
           {canGenerateShot && <ActionButton onClick={() => runAction("generateNextShot", "shot", { modelTier: "fast" })} disabled={busy} active={operation === "shot"} icon={Video} idle={`Generate next shot (${generatedShotCount}/${totalShotCount})`} busyLabel="Generating + probing…" />}

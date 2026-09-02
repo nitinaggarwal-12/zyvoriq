@@ -9,6 +9,7 @@ import { promisify } from "node:util";
 import pg from "pg"; 
 import { ensureCharacterSheet, firstFrameForShot, seedForShot } from "./characterAnchor.mjs";
 import { buildStudio1RenderPlan, buildStudio1VisualFilter, synchronizeStudio1ManifestTimeline } from "./studio1_timeline_sync.mjs";
+import { generateContinuousReel, maxBeatsForDuration } from "./studio1_native.mjs";
 
 const { Pool } = pg;
 const execFileAsync = promisify(execFile);
@@ -359,10 +360,10 @@ async function updateOperation(id, patch) { const fields = [], values = [id]; le
 async function operationHeartbeat(id) { await pool.query(`UPDATE reel_operations SET lease_expires_at=NOW()+INTERVAL '10 minutes',updated_at=NOW() WHERE id=$1 AND lease_owner=$2`, [id, workerId]); }
 async function claim() { const r = await pool.query(`WITH c AS(SELECT id FROM reel_operations WHERE status='QUEUED' OR(status='RUNNING' AND lease_expires_at<NOW()) ORDER BY created_at ASC FOR UPDATE SKIP LOCKED LIMIT 1) UPDATE reel_operations o SET status='RUNNING',attempt=o.attempt+1,lease_owner=$1,lease_expires_at=NOW()+INTERVAL '10 minutes',updated_at=NOW() FROM c WHERE o.id=c.id RETURNING o.*`, [workerId]); return r.rows[0] || null; }
 async function controlFor(op) { const r = await pool.query(`SELECT * FROM reel_production_controls WHERE production_id=$1`, [op.production_id]); if (!r.rows[0]) throw new Error("OPERATION_CANCELLED: missing production control"); const c = r.rows[0]; if (c.cancelled_at) throw new Error("OPERATION_CANCELLED: production cancelled or superseded"); if (String(c.generation_token) !== String(op.payload_json?.generationToken || "")) throw new Error("OPERATION_CANCELLED: generation token no longer applies"); return c; }
-async function assertApplicable(op, { beforeDispatch = false } = {}) { await controlFor(op); const current = await getProduction(op.production_id); if (op.kind === "NARRATION" && !["SCRIPT_READY", "AUDIO_GENERATING"].includes(current.manifest.status)) throw new Error(`OPERATION_CANCELLED: narration no longer applies to ${current.manifest.status}`); if (op.kind === "SHOT") { const s = current.manifest.shots.find(x => x.id === op.target_id); if (!s) throw new Error("OPERATION_CANCELLED: shot removed"); if (s.asset?.videoUrl) throw new Error("OPERATION_CANCELLED: shot already has media"); if (!["PLANNED", "FAILED", "GENERATING"].includes(s.status)) throw new Error(`OPERATION_CANCELLED: shot no longer applies to ${s.status}`); } if (op.kind === "ROUGH_CUT" && current.manifest.status !== "ROUGH_CUT_READY") throw new Error(`OPERATION_CANCELLED: rough cut no longer applies to ${current.manifest.status}`); if (beforeDispatch && op.status === "CANCELLED") throw new Error("OPERATION_CANCELLED: operation cancelled"); return current; }
+async function assertApplicable(op, { beforeDispatch = false } = {}) { await controlFor(op); const current = await getProduction(op.production_id); if (op.kind === "NARRATION" && !["SCRIPT_READY", "AUDIO_GENERATING"].includes(current.manifest.status)) throw new Error(`OPERATION_CANCELLED: narration no longer applies to ${current.manifest.status}`); if (op.kind === "SHOT") { const s = current.manifest.shots.find(x => x.id === op.target_id); if (!s) throw new Error("OPERATION_CANCELLED: shot removed"); if (s.asset?.videoUrl) throw new Error("OPERATION_CANCELLED: shot already has media"); if (!["PLANNED", "FAILED", "GENERATING"].includes(s.status)) throw new Error(`OPERATION_CANCELLED: shot no longer applies to ${s.status}`); } if (op.kind === "ROUGH_CUT" && current.manifest.status !== "ROUGH_CUT_READY") throw new Error(`OPERATION_CANCELLED: rough cut no longer applies to ${current.manifest.status}`); if (op.kind === "NATIVE_REEL" && !["SHOTS_PLANNED", "VIDEO_GENERATING", "REPAIRING"].includes(current.manifest.status)) throw new Error(`OPERATION_CANCELLED: native reel no longer applies to ${current.manifest.status}`); if (beforeDispatch && op.status === "CANCELLED") throw new Error("OPERATION_CANCELLED: operation cancelled"); return current; }
 
-async function markRunning(op) { const c = await assertApplicable(op); const m = c.manifest; if (op.kind === "NARRATION" && m.status === "SCRIPT_READY") m.status = "AUDIO_GENERATING"; if (op.kind === "SHOT") { const s = m.shots.find(x => x.id === op.target_id); if (["PLANNED", "FAILED"].includes(s.status)) s.status = "GENERATING"; if (["SHOTS_PLANNED", "REPAIRING"].includes(m.status)) m.status = "VIDEO_GENERATING"; } await saveManifest(op.production_id, c.revision, m); }
-async function markTerminalFailure(op, message) { try { const c = await getProduction(op.production_id), m = c.manifest; m.qa = m.qa || { minimumReadyScore: 90, passed: false, warnings: [], failures: [] }; m.qa.passed = false; m.qa.failures = [...(m.qa.failures || []), message]; if (op.kind === "SHOT") { const s = m.shots.find(x => x.id === op.target_id); if (s) { s.status = "FAILED"; s.qa = s.qa || { warnings: [], failures: [] }; s.qa.failures = [...(s.qa.failures || []), message]; } m.status = "REPAIRING"; } else if (op.kind === "ROUGH_CUT") m.status = "REPAIRING"; else m.status = "FAILED"; await saveManifest(op.production_id, c.revision, m); } catch (e) { console.error(`[reel-worker] failure-state update failed: ${e?.message || e}`); } }
+async function markRunning(op) { const c = await assertApplicable(op); const m = c.manifest; if (op.kind === "NARRATION" && m.status === "SCRIPT_READY") m.status = "AUDIO_GENERATING"; if (op.kind === "SHOT") { const s = m.shots.find(x => x.id === op.target_id); if (["PLANNED", "FAILED"].includes(s.status)) s.status = "GENERATING"; if (["SHOTS_PLANNED", "REPAIRING"].includes(m.status)) m.status = "VIDEO_GENERATING"; } if (op.kind === "NATIVE_REEL" && ["SHOTS_PLANNED", "REPAIRING"].includes(m.status)) m.status = "VIDEO_GENERATING"; await saveManifest(op.production_id, c.revision, m); }
+async function markTerminalFailure(op, message) { try { const c = await getProduction(op.production_id), m = c.manifest; m.qa = m.qa || { minimumReadyScore: 90, passed: false, warnings: [], failures: [] }; m.qa.passed = false; m.qa.failures = [...(m.qa.failures || []), message]; if (op.kind === "SHOT") { const s = m.shots.find(x => x.id === op.target_id); if (s) { s.status = "FAILED"; s.qa = s.qa || { warnings: [], failures: [] }; s.qa.failures = [...(s.qa.failures || []), message]; } m.status = "REPAIRING"; } else if (op.kind === "ROUGH_CUT" || op.kind === "NATIVE_REEL") m.status = "REPAIRING"; else m.status = "FAILED"; await saveManifest(op.production_id, c.revision, m); } catch (e) { console.error(`[reel-worker] failure-state update failed: ${e?.message || e}`); } }
 
 async function transcribeAndValidateNarration(op, manifest, checkpoint, wav) {
   const start = await fetch(`${API_BASE}/upload/v1beta/files`, {
@@ -671,6 +672,83 @@ async function applyRough(op, result) {
   await saveManifest(op.production_id, c.revision, m);
 }
 
+// ---- Option C: one continuous Veo generation, native audio, no TTS ----
+
+function nativeBeatsFrom(manifest) {
+  const shots = [...(manifest.shots || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
+  const beats = shots.map(s => String(s.scriptText || s.dialogue || s.voiceover || "").trim()).filter(Boolean);
+  if (!beats.length) throw new Error("No scriptText on any shot; cannot build a native reel");
+  const limit = maxBeatsForDuration();
+  if (beats.length > limit) throw new Error(`${beats.length} beats exceeds the ${limit}-hop ceiling`);
+  return beats;
+}
+
+function nativeCharacterFrom(manifest) {
+  const c = manifest.shots?.[0]?.continuityIn || {};
+  const parts = [c.character, c.wardrobe, c.environment, c.lighting].filter(Boolean);
+  if (!parts.length) {
+    if (typeof c === "string" && c.trim()) return c.trim();
+    if (manifest.characterAnchor?.prompt) return manifest.characterAnchor.prompt;
+    throw new Error("No character/environment lock on shot_01");
+  }
+  return parts.join(" ");
+}
+
+async function generateNativeReel(op, manifest, checkpoint) {
+  await assertApplicable(op, { beforeDispatch: true });
+  if (!assetRoot()) throw new Error("Durable asset storage is not configured");
+
+  const beats = nativeBeatsFrom(manifest);
+  const character = nativeCharacterFrom(manifest);
+
+  const result = await generateContinuousReel({
+    beats,
+    character,
+    tone: manifest.tone,
+    checkpoint: checkpoint?.completedBeats ? { uri: checkpoint.uri, completedBeats: checkpoint.completedBeats } : undefined,
+    onProgress: ({ index, total, phase }) => console.log(`[reel-worker] [native] ${op.production_id} hop ${index + 1}/${total} ${phase}`),
+    onHop: async ({ completedBeats, uri }) => {
+      // Persisted BEFORE the next hop so a crash resumes rather than restarting.
+      await updateOperation(op.id, { result: { stage: "IN_PROGRESS", completedBeats, uri, totalBeats: beats.length } });
+      await operationHeartbeat(op.id);
+    },
+  });
+
+  await assertApplicable(op);
+
+  const probe = await probeVideo(result.buffer);
+  const digest = crypto.createHash("sha256").update(result.buffer).digest("hex").slice(0, 16);
+  const asset = await writeAsset(`reels/${op.production_id}/renders/native-reel-${digest}.mp4`, result.buffer);
+
+  return {
+    videoUrl: asset.url,
+    actualDurationSec: probe.durationSec,
+    kind: "native-audio-reel",
+    codec: probe.codec,
+    width: probe.width,
+    height: probe.height,
+    frameRate: probe.frameRate,
+    hops: result.hops,
+    operationNames: result.operationNames,
+    renderedAt: new Date().toISOString(),
+  };
+}
+
+async function applyNativeReel(op, result) {
+  await assertApplicable(op);
+  const c = await getProduction(op.production_id);
+  const m = c.manifest;
+
+  // The native reel IS the narrated rough cut — ready for audio mixing
+  m.outputs = {
+    ...(m.outputs || {}),
+    narratedRoughCut: result,
+    nativeReel: result,
+  };
+  m.status = "MIXING";
+  await saveManifest(op.production_id, c.revision, m);
+}
+
 async function processOperation(op) {
   await assertApplicable(op);
   await markRunning(op);
@@ -690,6 +768,12 @@ async function processOperation(op) {
   } else if (op.kind === "ROUGH_CUT") {
     if (!result) { result = await renderRough(op, current.manifest); await updateOperation(op.id, { result }); }
     await applyRough(op, result);
+  } else if (op.kind === "NATIVE_REEL") {
+    if (!result || result.stage !== "COMPLETE") {
+      result = await generateNativeReel(op, current.manifest, result);
+      await updateOperation(op.id, { result: { ...result, stage: "COMPLETE" } });
+    }
+    await applyNativeReel(op, result);
   } else throw new Error(`Unsupported operation ${op.kind}`);
   await updateOperation(op.id, { status: "SUCCEEDED", lastError: null, leaseExpiresAt: null, leaseOwner: null });
 }
