@@ -41,12 +41,19 @@ import UgcAdGeneratorModal from "@/components/UgcAdGeneratorModal";
 import RetentionHeatmapPanel from "@/components/RetentionHeatmapPanel";
 import RemixShareModal from "@/components/RemixShareModal";
 import RedditStoryModal from "@/components/RedditStoryModal";
+import AutoMemeModal from "@/components/AutoMemeModal";
+import GlobalDubberModal from "@/components/GlobalDubberModal";
+import DemonetizationArmorModal from "@/components/DemonetizationArmorModal";
 import { DopamineConfig, DEFAULT_DOPAMINE_CONFIG } from "@/lib/reel/dopamineSplitScreen";
 import { UgcAdCampaign } from "@/lib/reel/ugcAdEngine";
 import { AutoFixRecommendation } from "@/lib/reel/retentionPredictor";
 import { ReelRemixRecipe } from "@/lib/reel/remixEngine";
 import { RedditStoryConfig } from "@/lib/reel/redditStoryEngine";
 import { VIRAL_SUBTITLE_PRESETS } from "@/lib/reel/viralSubtitles";
+import { autoDetectMemeCutaways, MemeCutawayItem, MemePreset } from "@/lib/reel/autoMemeEngine";
+import { DubbedTrackResult } from "@/lib/reel/globalDubber";
+import { TRENDING_AUDIO_TRACKS, beatAlignShots } from "@/lib/reel/beatSyncEngine";
+
 
 
 
@@ -134,9 +141,14 @@ export function ReelStudio() {
   const [isUgcModalOpen, setIsUgcModalOpen] = useState(false);
   const [isRemixModalOpen, setIsRemixModalOpen] = useState(false);
   const [isRedditModalOpen, setIsRedditModalOpen] = useState(false);
+  const [isMemeModalOpen, setIsMemeModalOpen] = useState(false);
+  const [isDubberModalOpen, setIsDubberModalOpen] = useState(false);
+  const [isArmorModalOpen, setIsArmorModalOpen] = useState(false);
+  const [detectedMemes, setDetectedMemes] = useState<MemeCutawayItem[]>([]);
   const [dopamineConfig, setDopamineConfig] = useState<DopamineConfig>(DEFAULT_DOPAMINE_CONFIG);
   const [zoomPreset, setZoomPreset] = useState<AutoZoomPresetId>("dynamic-viral");
   const [activeTab, setActiveTab] = useState<"Scenes" | "Script" | "B-Roll" | "SFX & Emojis" | "Retention Heatmap" | "Audio & Subtitles" | "Format" | "Cover">("Scenes");
+
 
 
   const [copied, setCopied] = useState(false);
@@ -216,7 +228,35 @@ export function ReelStudio() {
     setKineticEmojis(prev => prev.map(e => e.id === id ? { ...e, emoji, label, sfx } : e));
   };
 
+  // Tier 3: Auto-Meme & Reaction Cutaways Engine
+  const defaultMemes = useMemo(() => autoDetectMemeCutaways(shots), [shots]);
+  useEffect(() => {
+    setDetectedMemes(defaultMemes);
+  }, [defaultMemes]);
+
+  const handleToggleMeme = (id: string) => {
+    setDetectedMemes(prev => prev.map(m => m.id === id ? { ...m, enabled: !m.enabled } : m));
+  };
+
+  const handleAddCustomMeme = (preset: MemePreset) => {
+    const newMeme: MemeCutawayItem = {
+      id: `meme_custom_${Date.now()}`,
+      shotId: shots[0]?.id || "shot_1",
+      sceneIndex: 0,
+      timestampSec: 2.0,
+      memeId: preset.id,
+      title: preset.title,
+      memeUrl: preset.memeUrl,
+      sfx: preset.sfx,
+      layout: "pip_center",
+      durationSec: preset.durationSec,
+      enabled: true
+    };
+    setDetectedMemes(prev => [...prev, newMeme]);
+  };
+
   // Phase 5 1-Click A/B Hook Variations Engine
+
   const [hookSuite, setHookSuite] = useState<HookSuite>(() => generateHookSuite(topic));
 
   useEffect(() => {
@@ -755,6 +795,51 @@ export function ReelStudio() {
     setActiveTab("Scenes");
   };
 
+  const handleApplyDubbedAudio = (result: DubbedTrackResult) => {
+    setLanguage(result.languageCode);
+    if (production && production.manifest.outputs?.narratedRoughCut) {
+      setProduction({
+        ...production,
+        manifest: {
+          ...production.manifest,
+          outputs: {
+            ...production.manifest.outputs,
+            narratedRoughCut: {
+              ...production.manifest.outputs.narratedRoughCut,
+              videoUrl: result.dubbedAudioUrl
+            }
+          }
+        }
+      });
+    }
+  };
+
+  const handleApplyCensoredScript = (censoredText: string) => {
+    if (production) {
+      setProduction({
+        ...production,
+        manifest: {
+          ...production.manifest,
+          masterScript: censoredText
+        }
+      });
+    }
+  };
+
+  const handleBeatAlign = () => {
+    if (production && production.manifest.shots.length > 0) {
+      const aligned = beatAlignShots(production.manifest.shots, TRENDING_AUDIO_TRACKS[0]);
+      setProduction({
+        ...production,
+        manifest: {
+          ...production.manifest,
+          shots: aligned
+        }
+      });
+    }
+  };
+
+
 
 
 
@@ -990,7 +1075,32 @@ export function ReelStudio() {
               >
                 <span>🎮 Dopamine {dopamineConfig.enabled ? "ON" : "Split"}</span>
               </button>
+              <button
+                onClick={() => setIsMemeModalOpen(true)}
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 py-2.5 text-xs font-bold text-rose-200 transition hover:bg-rose-500/20"
+              >
+                <span>🎭 Auto-Meme</span>
+              </button>
+              <button
+                onClick={() => setIsDubberModalOpen(true)}
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-blue-500/30 bg-blue-500/10 py-2.5 text-xs font-bold text-blue-200 transition hover:bg-blue-500/20"
+              >
+                <span>🌍 Global Dub</span>
+              </button>
+              <button
+                onClick={() => setIsArmorModalOpen(true)}
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 py-2.5 text-xs font-bold text-emerald-200 transition hover:bg-emerald-500/20"
+              >
+                <span>🛡️ Safe Armor</span>
+              </button>
+              <button
+                onClick={handleBeatAlign}
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-teal-500/30 bg-teal-500/10 py-2.5 text-xs font-bold text-teal-200 transition hover:bg-teal-500/20"
+              >
+                <span>🎵 Beat-Sync</span>
+              </button>
             </div>
+
 
             {roughCut?.videoUrl && (
               <ResolutionDownloadDropdown
@@ -1909,9 +2019,33 @@ export function ReelStudio() {
         onClose={() => setIsRedditModalOpen(false)}
         onApplyStory={handleApplyRedditStory}
       />
+
+      <AutoMemeModal
+        isOpen={isMemeModalOpen}
+        onClose={() => setIsMemeModalOpen(false)}
+        detectedMemes={detectedMemes}
+        onToggleMeme={handleToggleMeme}
+        onAddCustomMeme={handleAddCustomMeme}
+      />
+
+      <GlobalDubberModal
+        isOpen={isDubberModalOpen}
+        onClose={() => setIsDubberModalOpen(false)}
+        sourceScript={production?.manifest.masterScript || topic}
+        speakerName={selectedPersona.name}
+        onApplyDubbedAudio={handleApplyDubbedAudio}
+      />
+
+      <DemonetizationArmorModal
+        isOpen={isArmorModalOpen}
+        onClose={() => setIsArmorModalOpen(false)}
+        scriptText={production?.manifest.masterScript || topic}
+        onApplyCensoredScript={handleApplyCensoredScript}
+      />
     </div>
   );
 }
+
 
 
 
