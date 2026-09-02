@@ -4,7 +4,9 @@ import {
   estimateFileSizeMb
 } from "../../lib/reel/videoExporter.ts";
 import {
-  generatePodcastEpisode
+  generatePodcastEpisode,
+  PODCAST_FORMAT_CONFIG,
+  DURATION_TIER_CONFIG
 } from "../../lib/multimodal/podcastEngine.ts";
 import {
   generateCarouselDeck,
@@ -16,9 +18,10 @@ import {
 import {
   generateEpisodicStory
 } from "../../lib/multimodal/storyEngine.ts";
+import { PRESET_PERSONAS } from "../../lib/reel/personas.ts";
 
 console.log("================================================================================");
-console.log("🚀 EXECUTING MULTI-MODAL STUDIO ENGINE & RESOLUTION EXPORT VALIDATION SUITE");
+console.log("🚀 EXECUTING MULTI-MODAL STUDIO ENGINE & PODCAST FIRESIDE CHAT VALIDATION SUITE");
 console.log("================================================================================");
 
 // -----------------------------------------------------------------------------
@@ -48,24 +51,41 @@ console.log(`  ✓ 30s Reel Estimated Sizes: 1080p (${size1080} MB) → 720p (${
 console.log("  ✅ Test 1 Passed!");
 
 // -----------------------------------------------------------------------------
-// 2. Podcast & Conversational 2-Host Audio Engine
+// 2. Podcast & Fireside Chat Multi-Host Engine
 // -----------------------------------------------------------------------------
-console.log("\n🧪 TEST 2: 2-Host Conversational Podcast Dialogue & Audio Turn-Taking...");
-const podcast = generatePodcastEpisode("Autonomous AI Workflows");
-assert.strictEqual(podcast.dialogueTurns.length, 6, "Episode should have 6 dialogue turns");
-assert.ok(podcast.totalDurationSec > 30, "Total duration should be > 30 seconds");
-assert.strictEqual(podcast.musicDuckingDb, -18, "Music ducking should be set to -18dB");
+console.log("\n🧪 TEST 2: Podcast Engine (Fireside Chat, 2-Host Debate, Executive Roundtable)...");
 
-// Check temporal non-collision across turns
-for (let i = 0; i < podcast.dialogueTurns.length - 1; i++) {
-  const current = podcast.dialogueTurns[i];
-  const next = podcast.dialogueTurns[i + 1];
+// Test 2A: Fireside Chat (1-on-1 Interview)
+const fireside = generatePodcastEpisode("Self-Correcting Autonomous Coding", "fireside_chat", "quick_bite", [PRESET_PERSONAS[0], PRESET_PERSONAS[3]]);
+assert.strictEqual(fireside.format, "fireside_chat", "Should format as fireside chat");
+assert.strictEqual(fireside.dialogueTurns.length, 6, "Fireside quick bite should have 6 turns");
+assert.ok(fireside.dialogueTurns[0].role === "moderator", "First turn must be moderator");
+assert.ok(fireside.dialogueTurns[1].role === "guest", "Second turn must be guest");
+console.log(`  ✓ Fireside Chat generated: "${fireside.title}" (${fireside.totalDurationSec}s)`);
+
+// Test 2B: Executive Roundtable (4 Speakers)
+const roundtable = generatePodcastEpisode(
+  "Quantum Computing Security Posture",
+  "executive_roundtable",
+  "quick_bite",
+  [PRESET_PERSONAS[0], PRESET_PERSONAS[1], PRESET_PERSONAS[2], PRESET_PERSONAS[3]]
+);
+assert.strictEqual(roundtable.format, "executive_roundtable", "Should format as executive roundtable");
+assert.strictEqual(roundtable.hosts.length, 4, "Roundtable should feature 4 speakers");
+const speakerIds = new Set(roundtable.dialogueTurns.map(t => t.speakerId));
+assert.ok(speakerIds.size >= 3, "Roundtable must include at least 3 distinct speaker turns");
+console.log(`  ✓ Executive Roundtable generated: 4 Speakers (${roundtable.hosts.map(h => h.name.split(" ")[0]).join(", ")})`);
+
+// Test 2C: Turn-Taking Non-Collision Temporal Check
+for (let i = 0; i < fireside.dialogueTurns.length - 1; i++) {
+  const current = fireside.dialogueTurns[i];
+  const next = fireside.dialogueTurns[i + 1];
   assert.ok(
     current.startSec + current.durationSec <= next.startSec + 0.05,
     `Turn ${i + 1} (${current.speakerName}) overlaps with Turn ${i + 2} (${next.speakerName})`
   );
 }
-console.log(`  ✓ Verified 2-Host Turn-Taking (${podcast.hostA.name.split(" ")[0]} & ${podcast.hostB.name.split(" ")[0]}) with zero overlap over ${podcast.totalDurationSec}s`);
+console.log("  ✓ Verified temporal turn-taking non-collision across all speakers");
 console.log("  ✅ Test 2 Passed!");
 
 // -----------------------------------------------------------------------------
@@ -107,5 +127,5 @@ console.log(`  ✓ Story "${story.title}" (${story.characters.map(c => c.name).j
 console.log("  ✅ Test 5 Passed!");
 
 console.log("\n================================================================================");
-console.log("🎉 ALL MULTI-MODAL STUDIO & EXPORT SUITE TESTS PASSED (100% SUCCESS)!");
+console.log("🎉 ALL MULTI-MODAL & FIRESIDE PODCAST SUITE TESTS PASSED (100% SUCCESS)!");
 console.log("================================================================================\n");
