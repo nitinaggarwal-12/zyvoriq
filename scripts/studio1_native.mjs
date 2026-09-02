@@ -22,10 +22,24 @@ const MAX_TOTAL_SEC = 148;          // hard API ceiling
 const POLL_INTERVAL_MS = 10000;
 const POLL_TIMEOUT_MS = 15 * 60 * 1000;
 
+import fs from "node:fs";
+import path from "node:path";
+
 const apiKey = () => {
-  const k = process.env.GEMINI_API_KEY;
-  if (!k) throw new Error("GEMINI_API_KEY is required");
-  return k;
+  if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY;
+  if (process.env.GOOGLE_API_KEY) return process.env.GOOGLE_API_KEY;
+  try {
+    const envPath = path.resolve(process.cwd(), ".env.local");
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, "utf-8");
+      const match = content.match(/GEMINI_API_KEY=([^\r\n]+)/) || content.match(/GOOGLE_API_KEY=([^\r\n]+)/);
+      if (match && match[1]) {
+        process.env.GEMINI_API_KEY = match[1].trim();
+        return process.env.GEMINI_API_KEY;
+      }
+    }
+  } catch {}
+  throw new Error("GEMINI_API_KEY is required");
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
