@@ -12,6 +12,8 @@ import {
 import type { ReelProductionManifest, ReelShot } from "@/lib/reel/types";
 import { PersonaClone, PRESET_PERSONAS } from "@/lib/reel/personas";
 import { PersonaVaultModal } from "@/components/PersonaVaultModal";
+import { AUTO_ZOOM_PRESETS, calculateZoomKeyframes, AutoZoomPresetId } from "@/lib/reel/autoZoom";
+import { DynamicZoomVideoPlayer } from "@/components/DynamicZoomVideoPlayer";
 
 type StoredProduction = { id: string; revision: number; manifest: ReelProductionManifest; createdAt: string; updatedAt: string };
 type DurableOperation = { id: string; status: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED"; lastError?: string };
@@ -91,6 +93,7 @@ export function ReelStudio() {
   const [musicVolume, setMusicVolume] = useState(25);
   const [selectedPersona, setSelectedPersona] = useState<PersonaClone>(PRESET_PERSONAS[0]);
   const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false);
+  const [zoomPreset, setZoomPreset] = useState<AutoZoomPresetId>("dynamic-viral");
   const [activeTab, setActiveTab] = useState<"Scenes" | "Script" | "Audio & Subtitles" | "Format" | "Cover">("Scenes");
   const [copied, setCopied] = useState(false);
   const [production, setProduction] = useState<StoredProduction | null>(null);
@@ -117,6 +120,7 @@ export function ReelStudio() {
   const canGenerateAll = Boolean(manifest && !roughCut && ["SCRIPT_READY", "SHOTS_PLANNED", "VIDEO_GENERATING", "REPAIRING", "ROUGH_CUT_READY"].includes(manifest.status));
   const script = useMemo(() => scriptLines(manifest, topic), [manifest, topic]);
   const captions = useMemo(() => shots.filter(s => s.scriptText.trim()).map(s => s.scriptText.trim().toUpperCase()), [shots]);
+  const zoomKeyframes = useMemo(() => calculateZoomKeyframes(shots, zoomPreset), [shots, zoomPreset]);
 
   const refreshProduction = async (id: string) => {
     const response = await fetch(`/api/reels/productions/${encodeURIComponent(id)}`, { cache: "no-store" });
@@ -777,6 +781,11 @@ export function ReelStudio() {
                                     <span className={`rounded-md px-2 py-0.5 font-bold ${generated ? "bg-emerald-400/10 text-emerald-300" : "bg-amber-400/10 text-amber-300"}`}>
                                       {generated ? `Generated (${shot.asset?.actualDurationSec?.toFixed(2)}s)` : "Planned"}
                                     </span>
+                                    {zoomKeyframes[i] && zoomKeyframes[i].scale > 1.0 && (
+                                      <span className="rounded-md border border-pink-500/30 bg-pink-500/15 px-2 py-0.5 font-black text-pink-300">
+                                        🔍 {zoomKeyframes[i].label}
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                               )}
@@ -1001,6 +1010,42 @@ export function ReelStudio() {
                     </div>
                   ))}
                 </div>
+
+                {/* AI Auto-Zoom & Dynamic Punch-Ins Preset Engine */}
+                <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-pink-300" />
+                      <h3 className="text-sm font-bold text-white">AI Auto-Zoom & Framing Shift Engine</h3>
+                    </div>
+                    <span className="rounded-md border border-pink-500/30 bg-pink-500/10 px-2 py-0.5 text-[10px] font-black text-pink-300">
+                      Submagic / Hormozi Retention
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Automatically applies dynamic camera punch-ins (1.12x / 1.22x) on spoken beats to eliminate visual fatigue and maximize viral watch-through rate.
+                  </p>
+
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {AUTO_ZOOM_PRESETS.map(preset => (
+                      <div
+                        key={preset.id}
+                        onClick={() => setZoomPreset(preset.id)}
+                        className={`cursor-pointer rounded-xl border p-4 transition ${
+                          zoomPreset === preset.id
+                            ? "border-pink-300 bg-pink-400/10 text-white shadow-lg shadow-pink-500/5"
+                            : "border-white/10 bg-black/20 text-slate-300 hover:border-white/20"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-white">{preset.name}</span>
+                          <span className="text-[10px] font-bold text-pink-300">{preset.badge}</span>
+                        </div>
+                        <p className="mt-1.5 text-xs text-slate-400">{preset.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -1020,7 +1065,7 @@ export function ReelStudio() {
                       {selectedShot ? `Clip ${Math.max(1, (shots.findIndex(s => s.id === selectedShot.id) ?? 0) + 1)} Review` : "Full Reel Master"}
                     </div>
                     <div className="mt-0.5 text-xs text-slate-500">
-                      {selectedShot ? `${selectedShot.editorialDurationSec.toFixed(1)}s · Veo Source` : "Continuous Native Audio"}
+                      {selectedShot ? `${selectedShot.editorialDurationSec.toFixed(1)}s · Veo Source` : `Continuous Native Audio · ${AUTO_ZOOM_PRESETS.find(p => p.id === zoomPreset)?.name}`}
                     </div>
                   </div>
                   {selectedShot && roughCut?.videoUrl && (
@@ -1029,13 +1074,10 @@ export function ReelStudio() {
                     </button>
                   )}
                 </div>
-                <video
-                  key={previewVideoUrl}
-                  className="aspect-[9/16] w-full rounded-[24px] bg-black object-cover"
-                  src={previewVideoUrl}
-                  controls
-                  playsInline
-                  preload="metadata"
+                <DynamicZoomVideoPlayer
+                  videoUrl={previewVideoUrl}
+                  keyframes={zoomKeyframes}
+                  subtitleStyle={subtitleStyle}
                 />
               </div>
             ) : (
