@@ -39,9 +39,15 @@ import {
 import DopamineSplitModal from "@/components/DopamineSplitModal";
 import UgcAdGeneratorModal from "@/components/UgcAdGeneratorModal";
 import RetentionHeatmapPanel from "@/components/RetentionHeatmapPanel";
+import RemixShareModal from "@/components/RemixShareModal";
+import RedditStoryModal from "@/components/RedditStoryModal";
 import { DopamineConfig, DEFAULT_DOPAMINE_CONFIG } from "@/lib/reel/dopamineSplitScreen";
 import { UgcAdCampaign } from "@/lib/reel/ugcAdEngine";
 import { AutoFixRecommendation } from "@/lib/reel/retentionPredictor";
+import { ReelRemixRecipe } from "@/lib/reel/remixEngine";
+import { RedditStoryConfig } from "@/lib/reel/redditStoryEngine";
+import { VIRAL_SUBTITLE_PRESETS } from "@/lib/reel/viralSubtitles";
+
 
 
 type StoredProduction = { id: string; revision: number; manifest: ReelProductionManifest; createdAt: string; updatedAt: string };
@@ -126,9 +132,12 @@ export function ReelStudio() {
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
   const [isDopamineModalOpen, setIsDopamineModalOpen] = useState(false);
   const [isUgcModalOpen, setIsUgcModalOpen] = useState(false);
+  const [isRemixModalOpen, setIsRemixModalOpen] = useState(false);
+  const [isRedditModalOpen, setIsRedditModalOpen] = useState(false);
   const [dopamineConfig, setDopamineConfig] = useState<DopamineConfig>(DEFAULT_DOPAMINE_CONFIG);
   const [zoomPreset, setZoomPreset] = useState<AutoZoomPresetId>("dynamic-viral");
   const [activeTab, setActiveTab] = useState<"Scenes" | "Script" | "B-Roll" | "SFX & Emojis" | "Retention Heatmap" | "Audio & Subtitles" | "Format" | "Cover">("Scenes");
+
 
   const [copied, setCopied] = useState(false);
   const [production, setProduction] = useState<StoredProduction | null>(null);
@@ -678,6 +687,75 @@ export function ReelStudio() {
     }
   };
 
+  const currentRemixRecipe: ReelRemixRecipe = useMemo(() => ({
+    version: "1.0",
+    title: topic || "Zyvoriq Viral Reel",
+    topic: topic || "3 habits quietly killing your focus",
+    personaId: selectedPersona.id,
+    aspectRatio,
+    durationSec: durationNumber(duration),
+    subtitleStyle,
+    hookStyle: hookSuite.activeVariantId || "Curiosity Gap",
+    dopamineConfig,
+    brollPresetIds: brollItems.filter(b => b.enabled).map(b => b.keyword),
+    emojiKeywords: kineticEmojis.filter(e => e.enabled).map(e => e.keyword)
+  }), [topic, selectedPersona, aspectRatio, duration, subtitleStyle, hookSuite, dopamineConfig, brollItems, kineticEmojis]);
+
+  const handleApplyRemixTemplate = (recipe: ReelRemixRecipe) => {
+    setTopic(recipe.topic);
+    setDuration(recipe.durationSec.toString());
+    setSubtitleStyle(recipe.subtitleStyle);
+    setDopamineConfig(recipe.dopamineConfig);
+    const targetPersona = PRESET_PERSONAS.find(p => p.id === recipe.personaId) || PRESET_PERSONAS[0];
+    setSelectedPersona(targetPersona);
+    setActiveTab("Scenes");
+  };
+
+  const handleApplyRedditStory = (story: RedditStoryConfig) => {
+    setTopic(`${story.subreddit}: ${story.title}`);
+    setDuration(story.totalDurationSec.toString());
+    if (production) {
+      const redditShots: ReelShot[] = story.messages.map((msg, idx) => ({
+        id: `shot_reddit_${msg.id}`,
+        order: idx + 1,
+        editorialStartSec: msg.timestampSec,
+        editorialDurationSec: 4.0,
+        generationDurationSec: 4,
+        trimInSec: 0,
+        trimOutSec: 0,
+        scriptText: `${msg.senderName}: "${msg.text}"`,
+        visualIntent: `Animated iMessage chat bubble from ${msg.senderName} popping up over dark ambient background with typing dots.`,
+        generationPrompt: `Dark cinematic ambient screen with iOS style iMessage chat bubble from ${msg.senderName}`,
+        continuityIn: {
+          character: msg.senderName,
+          wardrobe: "Dark Cinematic",
+          environment: "Ambient Chat Screen",
+          lighting: "Neon Glow"
+        },
+        continuityOut: {
+          character: msg.senderName,
+          wardrobe: "Dark Cinematic",
+          environment: "Ambient Chat Screen",
+          lighting: "Neon Glow"
+        },
+        transitionOut: { type: "hard-cut", durationSec: 0 },
+        dependsOnShotIds: [],
+        status: "PLANNED"
+      }));
+
+      const updatedManifest: ReelProductionManifest = {
+        ...production.manifest,
+        topic: `${story.subreddit}: ${story.title}`,
+        masterScript: story.messages.map(m => `${m.senderName}: "${m.text}"`).join(" "),
+        shots: redditShots
+      };
+
+      setProduction({ ...production, manifest: updatedManifest });
+    }
+    setActiveTab("Scenes");
+  };
+
+
 
 
   const busy = operation !== null;
@@ -711,10 +789,22 @@ export function ReelStudio() {
             <span className={`h-2 w-2 rounded-full ${production ? "bg-emerald-400" : "bg-slate-700"}`} />
             {production ? `Persisted · r${production.revision}` : "Draft Mode"}
             <button
+              onClick={() => setIsRemixModalOpen(true)}
+              className="flex items-center gap-1.5 rounded-xl border border-purple-500/30 bg-purple-500/10 px-3 py-1.5 text-xs font-bold text-purple-200 shadow-sm transition hover:border-purple-500/50 hover:bg-purple-500/20"
+            >
+              <span>🔁 Remix Reel</span>
+            </button>
+            <button
+              onClick={() => setIsRedditModalOpen(true)}
+              className="flex items-center gap-1.5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-xs font-bold text-cyan-200 shadow-sm transition hover:border-cyan-500/50 hover:bg-cyan-500/20"
+            >
+              <span>💬 Reddit Story</span>
+            </button>
+            <button
               onClick={() => setIsUgcModalOpen(true)}
               className="flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-200 shadow-sm transition hover:border-amber-500/50 hover:bg-amber-500/20"
             >
-              <span>🛍️ TikTok UGC</span>
+              <span>🛍️ UGC Ad</span>
             </button>
             <button
               onClick={() => setIsDopamineModalOpen(true)}
@@ -733,6 +823,7 @@ export function ReelStudio() {
               <Share2 className="h-3.5 w-3.5 text-pink-400" />
               <span>1-Click Publish</span>
             </button>
+
 
           </div>
         </div>
@@ -1587,25 +1678,37 @@ export function ReelStudio() {
                 </div>
 
                 <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-                  <div className="flex items-center gap-2 text-sm font-bold text-white">
-                    <Captions className="h-4 w-4 text-pink-300" /> Subtitle Styling & Animation Presets
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm font-bold text-white">
+                      <Captions className="h-4 w-4 text-pink-300" /> Ultra-Kinetic Creator Subtitle Presets (Tier 2)
+                    </div>
+                    <span className="text-[10px] font-mono text-pink-300 bg-pink-500/10 px-2 py-0.5 rounded border border-pink-500/20">
+                      Word-by-Word Bouncing
+                    </span>
                   </div>
                   <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {SUBTITLE_STYLES.map(style => (
+                    {VIRAL_SUBTITLE_PRESETS.map(style => (
                       <div
                         key={style.id}
                         onClick={() => setSubtitleStyle(style.id)}
                         className={`cursor-pointer rounded-xl border p-3.5 transition ${
                           subtitleStyle === style.id
-                            ? "border-pink-300 bg-pink-400/10 text-white"
+                            ? "border-pink-300 bg-pink-400/15 text-white shadow-lg shadow-pink-500/10"
                             : "border-white/10 bg-black/20 text-slate-300 hover:border-white/20"
                         }`}
                       >
-                        <div className="text-sm font-bold">{style.name}</div>
-                        <div className="mt-1 text-xs text-slate-400">{style.desc}</div>
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs font-bold text-white">{style.name}</div>
+                          <span className="text-[9px] font-mono text-zinc-400">{style.creatorTag}</span>
+                        </div>
+                        <div className="mt-1 inline-block rounded bg-white/5 px-1.5 py-0.5 text-[9px] font-bold text-pink-300">
+                          {style.badge}
+                        </div>
+                        <div className="mt-2 text-[11px] text-slate-400 leading-snug">{style.description}</div>
                       </div>
                     ))}
                   </div>
+
 
                   <div className="mt-5 flex flex-wrap gap-4 border-t border-white/5 pt-4">
                     <div className="flex-1">
@@ -1793,9 +1896,23 @@ export function ReelStudio() {
         onClose={() => setIsUgcModalOpen(false)}
         onApplyCampaign={handleApplyUgcCampaign}
       />
+
+      <RemixShareModal
+        isOpen={isRemixModalOpen}
+        onClose={() => setIsRemixModalOpen(false)}
+        currentRecipe={currentRemixRecipe}
+        onApplyTemplate={handleApplyRemixTemplate}
+      />
+
+      <RedditStoryModal
+        isOpen={isRedditModalOpen}
+        onClose={() => setIsRedditModalOpen(false)}
+        onApplyStory={handleApplyRedditStory}
+      />
     </div>
   );
 }
+
 
 
 function ActionButton({ onClick, disabled, active, icon: Icon, idle, busyLabel, primary = false }: { onClick: () => void; disabled: boolean; active: boolean; icon: React.ComponentType<{ className?: string }>; idle: string; busyLabel: string; primary?: boolean }) {
