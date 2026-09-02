@@ -234,25 +234,27 @@ export function DynamicZoomVideoPlayer({
             {/* Rewind 5s */}
             <button
               onClick={() => stepTime(-5)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-300 hover:bg-white/10 hover:text-pink-300"
+              className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs font-bold text-slate-200 transition hover:border-pink-500/50 hover:bg-pink-500/20 hover:text-pink-200"
               title="Rewind 5 Seconds (-5s)"
             >
-              <RotateCcw className="h-4 w-4" />
+              <RotateCcw className="h-3.5 w-3.5 text-pink-400" />
+              <span className="text-[10px] font-black">-5s</span>
             </button>
 
             {/* Forward 5s */}
             <button
               onClick={() => stepTime(5)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-300 hover:bg-white/10 hover:text-pink-300"
+              className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs font-bold text-slate-200 transition hover:border-pink-500/50 hover:bg-pink-500/20 hover:text-pink-200"
               title="Fast Forward 5 Seconds (+5s)"
             >
-              <RotateCw className="h-4 w-4" />
+              <RotateCw className="h-3.5 w-3.5 text-pink-400" />
+              <span className="text-[10px] font-black">+5s</span>
             </button>
 
             {/* Step 1 Frame Back */}
             <button
               onClick={() => stepFrame(-1)}
-              className="px-1.5 py-1 text-[10px] font-black text-slate-400 hover:bg-white/10 hover:text-white"
+              className="rounded-lg border border-white/10 bg-white/5 px-1.5 py-1 text-[10px] font-black text-slate-300 transition hover:border-teal-400/40 hover:bg-teal-400/20 hover:text-teal-200"
               title="Step -1 Frame Back"
             >
               -1F
@@ -261,7 +263,7 @@ export function DynamicZoomVideoPlayer({
             {/* Step 1 Frame Forward */}
             <button
               onClick={() => stepFrame(1)}
-              className="px-1.5 py-1 text-[10px] font-black text-slate-400 hover:bg-white/10 hover:text-white"
+              className="rounded-lg border border-white/10 bg-white/5 px-1.5 py-1 text-[10px] font-black text-slate-300 transition hover:border-teal-400/40 hover:bg-teal-400/20 hover:text-teal-200"
               title="Step +1 Frame Forward"
             >
               +1F

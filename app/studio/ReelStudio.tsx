@@ -1075,7 +1075,7 @@ export function ReelStudio() {
                 )}
               </div>
               <DynamicZoomVideoPlayer
-                videoUrl={previewVideoUrl || "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"}
+                videoUrl={previewVideoUrl || "/assets/video/veo_continuous_master.mp4"}
                 keyframes={zoomKeyframes}
                 subtitleText={shots[0]?.scriptText || topic}
                 subtitleStyle={subtitleStyle}
