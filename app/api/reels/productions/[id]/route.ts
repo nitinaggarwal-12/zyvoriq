@@ -47,31 +47,13 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       return NextResponse.json({ success: true, production });
     }
 
-    if (action === "generateNativeReel") {
-      const current = await reelProductionService.get(id);
-      if (!current) return NextResponse.json({ success: false, error: "Production not found" }, { status: 404 });
-      if (expectedRevision !== undefined && expectedRevision !== current.revision) {
-        return NextResponse.json({ success: false, error: `Production changed concurrently (expected revision ${expectedRevision}, found ${current.revision})` }, { status: 409 });
-      }
-      const { control } = await paidOperationContext(id);
-      const beats = current.manifest.shots.map(shot => String((shot as any).scriptText || (shot as any).dialogue || (shot as any).voiceover || "").trim()).filter(Boolean);
-      if (beats.length !== current.manifest.shots.length || beats.length === 0) {
-        return NextResponse.json({ success: false, error: "Native reel requires script text on every planned shot" }, { status: 409 });
-      }
-      const fp = fingerprint({ beats, continuity: current.manifest.shots[0]?.continuityIn, tone: current.manifest.tone, native: true });
-      const idempotencyKey = operationKey({ productionId: id, generationToken: control.generationToken, kind: "NATIVE_REEL", manifestRevision: current.revision, fingerprint: fp });
-      const operation = await reelOperationQueue.enqueue({ productionId: id, kind: "NATIVE_REEL", idempotencyKey, payload: { manifestRevision: current.revision, generationToken: control.generationToken, semanticFingerprint: fp, nativeAudio: true } });
-      return NextResponse.json({ success: true, queued: true, operation, production: current }, { status: 202 });
-    }
-
-    if (["generateNarration", "generateNextShot", "renderNarratedRoughCut"].includes(action)) {
+    if (["generateNarration", "generateNextShot", "renderNarratedRoughCut", "generateNativeReel"].includes(action)) {
       return NextResponse.json({
         success: false,
         code: "LEGACY_REEL_PIPELINE_DISABLED",
         error: "This legacy reel_* production cannot run paid generation. Create a new Reel so it uses the canonical Studio1 narration-master-clock, continuity, and certification pipeline.",
         canonicalEngine: "studio1",
       }, { status: 410, headers: { "Cache-Control": "no-store" } });
-    }
     }
 
     if (action === "attachNarration" || action === "attachShotAsset") {
