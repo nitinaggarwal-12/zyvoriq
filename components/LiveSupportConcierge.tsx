@@ -22,7 +22,8 @@ import {
   Maximize2,
   Minus,
   RotateCcw,
-  Trash2
+  Trash2,
+  Star
 } from "lucide-react";
 
 interface Message {
@@ -83,6 +84,14 @@ const SUGGESTED_CHIPS = [
   { label: "🛡️ How does copyright armor protect me?", key: "copyright" }
 ];
 
+const RATING_LABELS = [
+  "1 - Needs Improvement",
+  "2 - Fair",
+  "3 - Good Support",
+  "4 - Very Helpful",
+  "5 - Exceptional (5/5)"
+];
+
 export function LiveSupportConcierge() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -97,6 +106,13 @@ export function LiveSupportConcierge() {
   const [contactName, setContactName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [contactMessage, setContactMessage] = useState("");
+
+  // Feedback CSAT Rating State (1 to 5)
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [selectedRating, setSelectedRating] = useState<number>(5);
+  const [hoverRating, setHoverRating] = useState<number | null>(null);
+  const [feedbackNote, setFeedbackNote] = useState("");
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -138,6 +154,7 @@ export function LiveSupportConcierge() {
     };
     setMessages([freshMessage]);
     setShowContactForm(false);
+    setShowFeedbackModal(false);
     try {
       localStorage.setItem("zyvoriq_concierge_history", JSON.stringify([freshMessage]));
     } catch {}
@@ -172,6 +189,17 @@ export function LiveSupportConcierge() {
         matchedKey = "monetization";
       } else if (lower.includes("copyright") || lower.includes("legal") || lower.includes("veritas") || lower.includes("c2pa")) {
         matchedKey = "copyright";
+      } else if (lower.includes("rate") || lower.includes("feedback") || lower.includes("end chat") || lower.includes("score")) {
+        setShowFeedbackModal(true);
+        const aiMsg: Message = {
+          id: `msg_ai_${Date.now()}`,
+          sender: "ai",
+          text: "⭐ **We'd love to hear your feedback!** Please rate your chat support experience on a scale of 1 to 5 (5 being highest) using the rating card below.",
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        };
+        setMessages(prev => [...prev, aiMsg]);
+        setIsTyping(false);
+        return;
       } else if (lower.includes("contact") || lower.includes("support") || lower.includes("human") || lower.includes("ticket")) {
         setShowContactForm(true);
         const aiMsg: Message = {
@@ -186,10 +214,10 @@ export function LiveSupportConcierge() {
       }
 
       const response = matchedKey ? KNOWLEDGE_BASE[matchedKey] : {
-        answer: `✨ **Thanks for asking!**\n\nI can help you with:\n• **Studio Cinema:** Building cinematic AI video reels (` + "`/studio`" + `)\n• **Trend Radar:** 7-Day Advance Viral Mining (` + "`/studio/trend-radar`" + `)\n• **Book Studio:** EPUB 3 & Audible World-Building (` + "`/studio/books`" + `)\n• **Contact:** Submit a direct support ticket.\n\nClick a suggestion below or tell me what you'd like to build!`,
+        answer: `✨ **Thanks for asking!**\n\nI can help you with:\n• **Studio Cinema:** Building cinematic AI video reels (` + "`/studio`" + `)\n• **Trend Radar:** 7-Day Advance Viral Mining (` + "`/studio/trend-radar`" + `)\n• **Book Studio:** EPUB 3 & Audible World-Building (` + "`/studio/books`" + `)\n• **Contact & Feedback:** Submit a ticket or rate support.\n\nClick a suggestion below or tell me what you'd like to build!`,
         quickActions: [
           { label: "Explore Trend Radar", action: "link:/studio/trend-radar" },
-          { label: "Submit Support Ticket", action: "contact" }
+          { label: "Rate Support (1-5 ⭐)", action: "rate" }
         ]
       };
 
@@ -225,6 +253,33 @@ export function LiveSupportConcierge() {
     }, 1200);
   };
 
+  const handleFeedbackSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFeedbackSubmitted(true);
+    try {
+      localStorage.setItem("zyvoriq_concierge_csat", JSON.stringify({
+        rating: selectedRating,
+        note: feedbackNote,
+        timestamp: new Date().toISOString()
+      }));
+    } catch {}
+
+    setTimeout(() => {
+      setShowFeedbackModal(false);
+      setFeedbackSubmitted(false);
+      const thankMsg: Message = {
+        id: `msg_ai_${Date.now()}`,
+        sender: "ai",
+        text: `🌟 **Thank you for your ${selectedRating}/5 star rating!** Your feedback directly helps us improve the Zyvoriq creator experience. Let us know if you need anything else!`,
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      };
+      setMessages(prev => [...prev, thankMsg]);
+      setFeedbackNote("");
+    }, 1000);
+  };
+
+  const activeRatingDisplay = hoverRating || selectedRating;
+
   return (
     <aside
       aria-label="Live AI Support Concierge and Help"
@@ -256,7 +311,7 @@ export function LiveSupportConcierge() {
               <div>
                 <div className="font-bold text-xs text-white flex items-center gap-1.5">
                   <span>Zyvoriq Concierge</span>
-                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-300">Saved Session</span>
+                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-300">Live</span>
                 </div>
                 {!isMinimized && <div className="text-[10px] text-slate-400">Creator Onboarding & Support</div>}
               </div>
@@ -264,6 +319,18 @@ export function LiveSupportConcierge() {
 
             <div className="flex items-center gap-1">
               
+              {/* Rate Support (1-5 Stars) Button */}
+              {!isMinimized && (
+                <button
+                  onClick={() => setShowFeedbackModal(!showFeedbackModal)}
+                  className="p-1.5 rounded-lg text-amber-400 hover:text-amber-300 hover:bg-slate-800 transition-all"
+                  title="Rate Support (1 to 5 Stars)"
+                  aria-label="Rate chat support"
+                >
+                  <Star className="w-3.5 h-3.5 fill-current" />
+                </button>
+              )}
+
               {/* Reset History Button */}
               {!isMinimized && (
                 <button
@@ -327,6 +394,74 @@ export function LiveSupportConcierge() {
             <>
               <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
                 
+                {/* 1 to 5 Star CSAT Feedback Drawer */}
+                {showFeedbackModal && (
+                  <div className="p-4 rounded-2xl bg-amber-950/30 border border-amber-500/40 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-amber-300 flex items-center gap-1.5">
+                        <Star className="w-4 h-4 text-amber-400 fill-current" /> Rate Chat Support (1 - 5)
+                      </span>
+                      <button onClick={() => setShowFeedbackModal(false)} className="text-slate-400 hover:text-white">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {feedbackSubmitted ? (
+                      <div className="py-3 text-center text-emerald-400 font-bold space-y-1">
+                        <CheckCircle2 className="w-6 h-6 mx-auto animate-bounce" />
+                        <div>Rating & Feedback Saved! Thank you!</div>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleFeedbackSubmit} className="space-y-3">
+                        <div className="text-center space-y-1.5">
+                          <p className="text-[11px] text-slate-300">How would you rate your support experience?</p>
+                          
+                          {/* 5-Star Interactive Rating Selector */}
+                          <div className="flex items-center justify-center gap-2 py-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                type="button"
+                                onClick={() => setSelectedRating(star)}
+                                onMouseEnter={() => setHoverRating(star)}
+                                onMouseLeave={() => setHoverRating(null)}
+                                className="p-1 transition-transform hover:scale-125 focus:outline-none"
+                              >
+                                <Star
+                                  className={`w-6 h-6 transition-colors ${
+                                    star <= activeRatingDisplay
+                                      ? "text-amber-400 fill-amber-400 drop-shadow-md"
+                                      : "text-slate-600 hover:text-slate-400"
+                                  }`}
+                                />
+                              </button>
+                            ))}
+                          </div>
+                          
+                          <div className="text-[10px] font-mono font-bold text-amber-300">
+                            {RATING_LABELS[activeRatingDisplay - 1]}
+                          </div>
+                        </div>
+
+                        <textarea
+                          rows={2}
+                          placeholder="Optional feedback: What did you like or what can we improve?"
+                          value={feedbackNote}
+                          onChange={e => setFeedbackNote(e.target.value)}
+                          className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400 resize-none"
+                        />
+
+                        <button
+                          type="submit"
+                          className="w-full py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-obsidian-950 font-bold text-xs hover:from-amber-400 hover:to-orange-400 transition-all shadow-md"
+                        >
+                          Submit {selectedRating}/5 Rating
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                )}
+
                 {/* Direct Contact Form Drawer */}
                 {showContactForm && (
                   <div className="p-4 rounded-2xl bg-teal-950/30 border border-teal-500/30 space-y-3">
@@ -414,6 +549,15 @@ export function LiveSupportConcierge() {
                                 <Zap className="w-3 h-3 text-teal-400" />
                                 {qa.label}
                               </Link>
+                            ) : qa.action === "rate" ? (
+                              <button
+                                key={i}
+                                onClick={() => setShowFeedbackModal(true)}
+                                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] font-bold text-amber-300 transition-all flex items-center gap-1"
+                              >
+                                <Star className="w-3 h-3 text-amber-400 fill-current" />
+                                {qa.label}
+                              </button>
                             ) : (
                               <button
                                 key={i}
