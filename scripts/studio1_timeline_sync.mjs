@@ -7,6 +7,9 @@ const MAX_LOCAL_EXTENSION_SEC = 0.75;
 const MAX_GENERATION_EXTENSION_RATIO = 1.06;
 const MAX_GENERATION_EXTENSION_SEC = 0.25;
 const MAX_RETIME_FACTOR = 1.10;
+// Compression floor. When a clip is LONGER than its narration slot we speed it
+// up slightly instead of cutting the action short. 0.92 = at most 8% faster.
+const MIN_RETIME_FACTOR = 0.92;
 const NUMBER_WORDS = new Map(Object.entries({
   zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
   ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19,
@@ -315,15 +318,22 @@ export function synchronizeStudio1ManifestTimeline(manifest, { mode = "render", 
       if (!shot.asset?.videoUrl) throw new Error(`Studio1 exact render requires generated clip ${shot.id}`);
       const sourceSec = sourceCapacitySec(shot);
       if (!(sourceSec > 0)) throw new Error(`Studio1 clip ${shot.id} has no trustworthy source duration`);
-      const usableSec = Math.min(sourceSec, targetSec);
+      // Take as much of the source as we can fit by compressing up to MIN_RETIME_FACTOR,
+      // so a long clip is sped up slightly rather than cut off mid-action.
+      const maxUsableSec = targetSec / MIN_RETIME_FACTOR;
+      const usableSec = Math.min(sourceSec, maxUsableSec);
       const deficitSec = Math.max(0, targetSec - usableSec);
       const extensionRatio = targetSec / usableSec;
       if (deficitSec > 0.03 && (deficitSec > MAX_LOCAL_EXTENSION_SEC || extensionRatio > MAX_LOCAL_EXTENSION_RATIO)) {
         throw new Error(`Studio1 scene ${shot.id} needs selective regeneration: narration slot ${targetSec.toFixed(2)}s exceeds source ${sourceSec.toFixed(2)}s by ${deficitSec.toFixed(2)}s`);
       }
-      const retimeFactor = deficitSec > 0.003 ? Math.min(MAX_RETIME_FACTOR, extensionRatio) : 1;
+      const rawFactor = targetSec / usableSec;
+      const retimeFactor = Math.abs(rawFactor - 1) <= 0.003
+        ? 1
+        : Math.min(MAX_RETIME_FACTOR, Math.max(MIN_RETIME_FACTOR, rawFactor));
       const retimedSec = usableSec * retimeFactor;
       const padSec = Math.max(0, targetSec - retimedSec);
+      const surplusSec = Math.max(0, sourceSec - usableSec);
       shot.trimOutSec = clock(usableSec);
       adaptations.push({
         shotId: shot.id,
@@ -331,7 +341,12 @@ export function synchronizeStudio1ManifestTimeline(manifest, { mode = "render", 
         sourceSec: clock(sourceSec),
         usableSec: clock(usableSec),
         deficitSec: clock(deficitSec),
-        mode: deficitSec <= 0.003 ? "trim" : padSec <= 0.003 ? "local-retime" : "local-retime-plus-freeze",
+        surplusSec: clock(surplusSec),
+        mode: retimeFactor === 1
+          ? "trim"
+          : retimeFactor < 1
+            ? "local-compress"
+            : padSec <= 0.003 ? "local-retime" : "local-retime-plus-freeze",
         retimeFactor: clock(retimeFactor),
         padSec: clock(padSec),
       });
