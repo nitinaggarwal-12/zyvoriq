@@ -123,6 +123,8 @@ function scriptLines(manifest: ReelProductionManifest | null, topic: string) {
   return (manifest.masterScript.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [manifest.masterScript]).map(s => s.trim()).filter(Boolean);
 }
 
+const EMPTY_SHOTS: ReelShot[] = [];
+
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export function ReelStudio() {
@@ -169,7 +171,7 @@ export function ReelStudio() {
   const [editVisualIntent, setEditVisualIntent] = useState("");
 
   const manifest = production?.manifest || null;
-  const shots = manifest?.shots || [];
+  const shots = useMemo(() => manifest?.shots || EMPTY_SHOTS, [manifest?.shots]);
   const generatedShotCount = shots.filter(s => Boolean(s.asset?.videoUrl)).length;
   const totalShotCount = shots.length;
   const roughCut = manifest?.outputs?.narratedRoughCut;
