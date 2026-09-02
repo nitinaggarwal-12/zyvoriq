@@ -71,9 +71,10 @@ export function PersonaVaultModal({
 
   const filteredPersonas = allPersonas.filter(p => {
     if (activeDemographicFilter === "all") return true;
-    if (activeDemographicFilter === "women") return p.gender === "female";
-    if (activeDemographicFilter === "men") return p.gender === "male";
-    if (activeDemographicFilter === "non_binary") return p.gender === "non_binary";
+    if (activeDemographicFilter === "lgbtq") return p.gender === "non_binary" || p.gender === "transgender_female" || p.gender === "transgender_male" || p.identityTag?.includes("LGBTQIA+") || p.identityTag?.includes("Non-Binary") || p.identityTag?.includes("Queer");
+    if (activeDemographicFilter === "indigenous") return p.region === "indigenous_global" || p.region === "oceania" || p.identityTag?.includes("Indigenous") || p.identityTag?.includes("Māori") || p.identityTag?.includes("First Nations");
+    if (activeDemographicFilter === "women") return p.gender === "female" || p.gender === "transgender_female";
+    if (activeDemographicFilter === "men") return p.gender === "male" || p.gender === "transgender_male";
     if (activeDemographicFilter === "seniors") return p.ageTier === "senior";
     if (activeDemographicFilter === "kids_animated") return p.ageTier === "child_animated" || p.ageTier === "toddler_animated";
     if (activeDemographicFilter === "global") return p.region !== "north_america";
@@ -249,9 +250,10 @@ export function PersonaVaultModal({
               <div className="flex flex-wrap items-center gap-1.5 pb-4">
                 {[
                   { id: "all", label: "🌟 All Personas", count: allPersonas.length },
-                  { id: "women", label: "👩 Women", count: allPersonas.filter(p => p.gender === "female").length },
-                  { id: "men", label: "👨 Men", count: allPersonas.filter(p => p.gender === "male").length },
-                  { id: "non_binary", label: "🧑 Non-Binary", count: allPersonas.filter(p => p.gender === "non_binary").length },
+                  { id: "lgbtq", label: "🏳️‍🌈 LGBTQIA+ & Non-Binary", count: allPersonas.filter(p => p.gender === "non_binary" || p.gender === "transgender_female" || p.gender === "transgender_male" || p.identityTag?.includes("LGBTQIA+") || p.identityTag?.includes("Non-Binary")).length },
+                  { id: "indigenous", label: "🪶 Indigenous & Pacific", count: allPersonas.filter(p => p.region === "indigenous_global" || p.region === "oceania" || p.identityTag?.includes("Indigenous") || p.identityTag?.includes("Pacific")).length },
+                  { id: "women", label: "👩 Women in Leadership", count: allPersonas.filter(p => p.gender === "female" || p.gender === "transgender_female").length },
+                  { id: "men", label: "👨 Men", count: allPersonas.filter(p => p.gender === "male" || p.gender === "transgender_male").length },
                   { id: "seniors", label: "👴 Seniors (60+)", count: allPersonas.filter(p => p.ageTier === "senior").length },
                   { id: "kids_animated", label: "🧒 Kids & Toddlers (3D)", count: allPersonas.filter(p => p.ageTier === "child_animated" || p.ageTier === "toddler_animated").length },
                   { id: "global", label: "🌍 Global Cultures & Accents", count: allPersonas.filter(p => p.region !== "north_america").length },
@@ -297,8 +299,13 @@ export function PersonaVaultModal({
                               )}
                             </div>
                             <div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex flex-wrap items-center gap-1.5">
                                 <h4 className="text-sm font-bold text-white">{persona.name}</h4>
+                                {persona.pronouns && (
+                                  <span className="rounded bg-white/10 px-1.5 py-0.2 text-[9px] font-mono text-pink-200">
+                                    {persona.pronouns}
+                                  </span>
+                                )}
                                 {persona.isCustomClone && (
                                   <span className="rounded-md border border-pink-500/30 bg-pink-500/20 px-1.5 py-0.5 text-[9px] font-black uppercase text-pink-300">
                                     Custom Clone
@@ -317,6 +324,11 @@ export function PersonaVaultModal({
 
                         {/* Demographic & Cultural Badges */}
                         <div className="mt-3 flex flex-wrap gap-1.5">
+                          {persona.identityTag && (
+                            <span className="rounded-md bg-purple-500/20 border border-purple-500/30 px-2 py-0.5 text-[10px] text-purple-200 font-bold">
+                              {persona.identityTag}
+                            </span>
+                          )}
                           {persona.ethnicity && (
                             <span className="rounded-md bg-white/5 border border-white/10 px-2 py-0.5 text-[10px] text-slate-300">
                               🏛️ {persona.ethnicity}
