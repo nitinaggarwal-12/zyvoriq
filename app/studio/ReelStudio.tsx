@@ -36,6 +36,13 @@ import {
   HookVariation,
   HookSuite
 } from "@/lib/reel/hookVariations";
+import DopamineSplitModal from "@/components/DopamineSplitModal";
+import UgcAdGeneratorModal from "@/components/UgcAdGeneratorModal";
+import RetentionHeatmapPanel from "@/components/RetentionHeatmapPanel";
+import { DopamineConfig, DEFAULT_DOPAMINE_CONFIG } from "@/lib/reel/dopamineSplitScreen";
+import { UgcAdCampaign } from "@/lib/reel/ugcAdEngine";
+import { AutoFixRecommendation } from "@/lib/reel/retentionPredictor";
+
 
 type StoredProduction = { id: string; revision: number; manifest: ReelProductionManifest; createdAt: string; updatedAt: string };
 type DurableOperation = { id: string; status: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED"; lastError?: string };
@@ -117,8 +124,12 @@ export function ReelStudio() {
   const [selectedPersona, setSelectedPersona] = useState<PersonaClone>(PRESET_PERSONAS[0]);
   const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false);
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [isDopamineModalOpen, setIsDopamineModalOpen] = useState(false);
+  const [isUgcModalOpen, setIsUgcModalOpen] = useState(false);
+  const [dopamineConfig, setDopamineConfig] = useState<DopamineConfig>(DEFAULT_DOPAMINE_CONFIG);
   const [zoomPreset, setZoomPreset] = useState<AutoZoomPresetId>("dynamic-viral");
-  const [activeTab, setActiveTab] = useState<"Scenes" | "Script" | "B-Roll" | "SFX & Emojis" | "Audio & Subtitles" | "Format" | "Cover">("Scenes");
+  const [activeTab, setActiveTab] = useState<"Scenes" | "Script" | "B-Roll" | "SFX & Emojis" | "Retention Heatmap" | "Audio & Subtitles" | "Format" | "Cover">("Scenes");
+
   const [copied, setCopied] = useState(false);
   const [production, setProduction] = useState<StoredProduction | null>(null);
   const [operation, setOperation] = useState<StudioOperation>(null);
@@ -582,6 +593,93 @@ export function ReelStudio() {
     URL.revokeObjectURL(url);
   };
 
+  const handleApplyUgcCampaign = (campaign: UgcAdCampaign) => {
+    setTopic(campaign.suggestedTitle);
+    const targetPersona = PRESET_PERSONAS.find(p => p.id === campaign.avatarPersonaId) || PRESET_PERSONAS[0];
+    setSelectedPersona(targetPersona);
+
+    if (production) {
+      const ugcShots: ReelShot[] = campaign.scenes.map((scene, idx) => ({
+        id: `shot_ugc_${scene.sceneIndex}`,
+        order: scene.sceneIndex,
+        editorialStartSec: idx * 4,
+        editorialDurationSec: scene.durationSec,
+        generationDurationSec: 4,
+        trimInSec: 0,
+        trimOutSec: 0,
+        scriptText: scene.dialogue,
+        visualIntent: `Presenter holds and reviews ${campaign.productName}. Camera: ${scene.cameraMovement}. Overlay: ${scene.overlayBadge}`,
+        generationPrompt: `High resolution photorealistic video of presenter holding and reviewing ${campaign.productName}`,
+        continuityIn: {
+          character: targetPersona.name,
+          wardrobe: "Casual Creator Wear",
+          environment: "Modern Creator Studio / Desk",
+          lighting: "Crisp Ring Light Key"
+        },
+        continuityOut: {
+          character: targetPersona.name,
+          wardrobe: "Casual Creator Wear",
+          environment: "Modern Creator Studio / Desk",
+          lighting: "Crisp Ring Light Key"
+        },
+        transitionOut: { type: "hard-cut", durationSec: 0 },
+        dependsOnShotIds: [],
+        status: "PLANNED"
+      }));
+
+      const updatedManifest: ReelProductionManifest = {
+        ...production.manifest,
+        topic: campaign.suggestedTitle,
+        masterScript: campaign.scenes.map(s => s.dialogue).join(" "),
+        shots: ugcShots
+      };
+
+      setProduction({ ...production, manifest: updatedManifest });
+    }
+    setActiveTab("Scenes");
+  };
+
+  const handleApplyAutoFix = (rec: AutoFixRecommendation) => {
+    if (rec.actionType === "boost_hook") {
+      setDopamineConfig(prev => ({ ...prev, enabled: true }));
+    } else if (rec.actionType === "add_emoji_sfx") {
+      const newEmoji: KineticEmojiItem = {
+        id: `emoji_fix_${Date.now()}`,
+        shotId: shots[0]?.id || "shot_1",
+        sceneIndex: 0,
+        emoji: "⚡",
+        keyword: "boost",
+        startSec: rec.timestampSec,
+        durationSec: 1.5,
+        animation: "pop_bounce",
+        position: "center",
+        sfx: "whoosh",
+        sfxVolume: 0.8,
+        label: "⚡ High Voltage Alert",
+        enabled: true
+      };
+      setKineticEmojis(prev => [...prev, newEmoji]);
+    } else if (rec.actionType === "insert_broll") {
+      const newBroll: BRollItem = {
+        id: `broll_fix_${Date.now()}`,
+        shotId: shots[0]?.id || "shot_1",
+        sceneIndex: 0,
+        keyword: "action",
+        searchQuery: "Dynamic Action B-Roll",
+        brollUrl: BROLL_PRESET_LIBRARY[0].videoUrl,
+        type: "pip_top_right",
+        transition: "fade",
+        opacity: 1.0,
+        startSec: rec.timestampSec,
+        durationSec: 2.5,
+        enabled: true
+      };
+      setBRollItems(prev => [...prev, newBroll]);
+    }
+  };
+
+
+
   const busy = operation !== null;
   const generateAllBusyLabel = manifest?.status === "SCRIPT_READY"
     ? "Generating narration…"
@@ -613,12 +711,29 @@ export function ReelStudio() {
             <span className={`h-2 w-2 rounded-full ${production ? "bg-emerald-400" : "bg-slate-700"}`} />
             {production ? `Persisted · r${production.revision}` : "Draft Mode"}
             <button
+              onClick={() => setIsUgcModalOpen(true)}
+              className="flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-200 shadow-sm transition hover:border-amber-500/50 hover:bg-amber-500/20"
+            >
+              <span>🛍️ TikTok UGC</span>
+            </button>
+            <button
+              onClick={() => setIsDopamineModalOpen(true)}
+              className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold shadow-sm transition ${
+                dopamineConfig.enabled
+                  ? "border-pink-500 bg-pink-500/20 text-pink-200 font-black shadow-pink-500/20"
+                  : "border-zinc-700 bg-zinc-800/80 text-zinc-300 hover:border-pink-500/40"
+              }`}
+            >
+              <span>🎮 Dopamine {dopamineConfig.enabled ? "ON" : "Split"}</span>
+            </button>
+            <button
               onClick={() => setIsPublishModalOpen(true)}
               className="flex items-center gap-1.5 rounded-xl border border-pink-500/30 bg-gradient-to-r from-pink-500/20 to-purple-500/20 px-3 py-1.5 text-xs font-bold text-pink-200 shadow-sm transition hover:border-pink-500/50 hover:from-pink-500/30 hover:to-purple-500/30"
             >
               <Share2 className="h-3.5 w-3.5 text-pink-400" />
               <span>1-Click Publish</span>
             </button>
+
           </div>
         </div>
       </header>
@@ -767,6 +882,25 @@ export function ReelStudio() {
                 busyLabel={generateAllBusyLabel}
               />
             )}
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <button
+                onClick={() => setIsUgcModalOpen(true)}
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 py-2.5 text-xs font-bold text-amber-200 transition hover:bg-amber-500/20"
+              >
+                <span>🛍️ UGC Ad</span>
+              </button>
+              <button
+                onClick={() => setIsDopamineModalOpen(true)}
+                className={`flex items-center justify-center gap-1.5 rounded-xl border py-2.5 text-xs font-bold transition ${
+                  dopamineConfig.enabled
+                    ? "border-pink-500 bg-pink-500/20 text-pink-200 font-black shadow-md shadow-pink-500/20"
+                    : "border-zinc-700 bg-zinc-800/60 text-zinc-300 hover:border-pink-500/40"
+                }`}
+              >
+                <span>🎮 Dopamine {dopamineConfig.enabled ? "ON" : "Split"}</span>
+              </button>
+            </div>
+
             {roughCut?.videoUrl && (
               <ResolutionDownloadDropdown
                 videoUrl={roughCut.videoUrl}
@@ -789,7 +923,7 @@ export function ReelStudio() {
         <section className="min-w-0 rounded-[26px] border border-white/10 bg-[#0a0d12]">
           <div className="flex flex-wrap items-center justify-between border-b border-white/5 p-3">
             <div className="flex flex-wrap items-center gap-1">
-              {(["Scenes", "Script", "B-Roll", "SFX & Emojis", "Audio & Subtitles", "Format", "Cover"] as const).map(tab => (
+              {(["Scenes", "Script", "B-Roll", "SFX & Emojis", "Retention Heatmap", "Audio & Subtitles", "Format", "Cover"] as const).map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -799,6 +933,7 @@ export function ReelStudio() {
                 </button>
               ))}
             </div>
+
             {shots.length > 0 && activeTab === "Scenes" && (
               <button
                 onClick={() => handleAddShotAfter(shots[shots.length - 1].id)}
@@ -1383,8 +1518,24 @@ export function ReelStudio() {
               </div>
             )}
 
+            {/* TAB: AI VIRAL RETENTION HEATMAP & ALGORITHM SIMULATOR */}
+            {activeTab === "Retention Heatmap" && (
+              <div className="space-y-6">
+                <RetentionHeatmapPanel
+                  hookText={shots[0]?.scriptText || topic}
+                  totalDurationSec={durationNumber(duration)}
+                  scenesCount={shots.length || 4}
+                  kineticEmojiTimings={kineticEmojis.filter(e => e.enabled).map(e => e.startSec)}
+                  brollTimings={brollItems.filter(b => b.enabled).map(b => b.startSec)}
+                  dopamineSplitEnabled={dopamineConfig.enabled}
+                  onApplyAutoFix={handleApplyAutoFix}
+                />
+              </div>
+            )}
+
             {/* TAB 5: AUDIO, MUSIC & SUBTITLE OPTIONS */}
             {activeTab === "Audio & Subtitles" && (
+
               <div className="space-y-6">
                 <div>
                   <div className="text-xs font-bold uppercase tracking-[0.16em] text-pink-300">VOICE & AUDIO SETTINGS</div>
@@ -1629,9 +1780,23 @@ export function ReelStudio() {
         productionId={production?.id || "prod_active_demo"}
         videoUrl={roughCut?.videoUrl}
       />
+
+      <DopamineSplitModal
+        isOpen={isDopamineModalOpen}
+        onClose={() => setIsDopamineModalOpen(false)}
+        config={dopamineConfig}
+        onUpdateConfig={(newConfig) => setDopamineConfig(newConfig)}
+      />
+
+      <UgcAdGeneratorModal
+        isOpen={isUgcModalOpen}
+        onClose={() => setIsUgcModalOpen(false)}
+        onApplyCampaign={handleApplyUgcCampaign}
+      />
     </div>
   );
 }
+
 
 function ActionButton({ onClick, disabled, active, icon: Icon, idle, busyLabel, primary = false }: { onClick: () => void; disabled: boolean; active: boolean; icon: React.ComponentType<{ className?: string }>; idle: string; busyLabel: string; primary?: boolean }) {
   const style = primary ? "bg-white text-slate-950 font-black" : "border border-pink-300/20 bg-white/[0.04] text-white";
