@@ -7,11 +7,12 @@ import {
   Image as ImageIcon, Copy, Check, Instagram, Youtube, ChevronDown, Loader2,
   CircleAlert, Database, Film, AudioLines, Video, Download, Trash2, Plus,
   Pencil, Save, X, Globe, Music, Volume2, Sliders, CheckSquare, Square,
-  Layers, Wand2, RefreshCw, Eye, Zap
+  Layers, Wand2, RefreshCw, Eye, Zap, Share2, Send
 } from "lucide-react";
 import type { ReelProductionManifest, ReelShot } from "@/lib/reel/types";
 import { PersonaClone, PRESET_PERSONAS } from "@/lib/reel/personas";
 import { PersonaVaultModal } from "@/components/PersonaVaultModal";
+import { SocialPublishModal } from "@/components/SocialPublishModal";
 import { AUTO_ZOOM_PRESETS, calculateZoomKeyframes, AutoZoomPresetId } from "@/lib/reel/autoZoom";
 import { DynamicZoomVideoPlayer } from "@/components/DynamicZoomVideoPlayer";
 import { preloadReelMedia } from "@/lib/cache/mediaCache";
@@ -109,6 +110,7 @@ export function ReelStudio() {
   const [musicVolume, setMusicVolume] = useState(25);
   const [selectedPersona, setSelectedPersona] = useState<PersonaClone>(PRESET_PERSONAS[0]);
   const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false);
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
   const [zoomPreset, setZoomPreset] = useState<AutoZoomPresetId>("dynamic-viral");
   const [activeTab, setActiveTab] = useState<"Scenes" | "Script" | "B-Roll" | "SFX & Emojis" | "Audio & Subtitles" | "Format" | "Cover">("Scenes");
   const [copied, setCopied] = useState(false);
@@ -604,6 +606,13 @@ export function ReelStudio() {
             </span>
             <span className={`h-2 w-2 rounded-full ${production ? "bg-emerald-400" : "bg-slate-700"}`} />
             {production ? `Persisted · r${production.revision}` : "Draft Mode"}
+            <button
+              onClick={() => setIsPublishModalOpen(true)}
+              className="flex items-center gap-1.5 rounded-xl border border-pink-500/30 bg-gradient-to-r from-pink-500/20 to-purple-500/20 px-3 py-1.5 text-xs font-bold text-pink-200 shadow-sm transition hover:border-pink-500/50 hover:from-pink-500/30 hover:to-purple-500/30"
+            >
+              <Share2 className="h-3.5 w-3.5 text-pink-400" />
+              <span>1-Click Publish</span>
+            </button>
           </div>
         </div>
       </header>
@@ -729,6 +738,13 @@ export function ReelStudio() {
                 <Download className="h-4 w-4" /> Download Combined MP4
               </a>
             )}
+
+            <button
+              onClick={() => setIsPublishModalOpen(true)}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-pink-500/30 bg-gradient-to-r from-pink-500/20 to-purple-500/20 py-3.5 text-sm font-black text-pink-100 shadow-lg shadow-pink-500/10 transition hover:from-pink-500/30 hover:to-purple-500/30"
+            >
+              <Share2 className="h-4 w-4 text-pink-400" /> 🚀 1-Click Publish & Schedule
+            </button>
           </div>
 
           {error && <div className="mt-4 flex gap-2 rounded-xl border border-red-400/20 bg-red-400/5 p-3 text-xs leading-5 text-red-200"><CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />{error}</div>}
@@ -1544,6 +1560,14 @@ export function ReelStudio() {
         onClose={() => setIsPersonaModalOpen(false)}
         selectedPersonaId={selectedPersona.id}
         onSelectPersona={(p) => setSelectedPersona(p)}
+      />
+
+      <SocialPublishModal
+        isOpen={isPublishModalOpen}
+        onClose={() => setIsPublishModalOpen(false)}
+        topic={topic}
+        productionId={production?.id || "prod_active_demo"}
+        videoUrl={roughCut?.videoUrl}
       />
     </div>
   );
