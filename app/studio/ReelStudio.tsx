@@ -10,6 +10,8 @@ import {
   Layers, Wand2, RefreshCw, Eye
 } from "lucide-react";
 import type { ReelProductionManifest, ReelShot } from "@/lib/reel/types";
+import { PersonaClone, PRESET_PERSONAS } from "@/lib/reel/personas";
+import { PersonaVaultModal } from "@/components/PersonaVaultModal";
 
 type StoredProduction = { id: string; revision: number; manifest: ReelProductionManifest; createdAt: string; updatedAt: string };
 type DurableOperation = { id: string; status: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED"; lastError?: string };
@@ -87,6 +89,8 @@ export function ReelStudio() {
   const [subtitlePlacement, setSubtitlePlacement] = useState("lower-third");
   const [musicTrack, setMusicTrack] = useState("lofi-chill");
   const [musicVolume, setMusicVolume] = useState(25);
+  const [selectedPersona, setSelectedPersona] = useState<PersonaClone>(PRESET_PERSONAS[0]);
+  const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"Scenes" | "Script" | "Audio & Subtitles" | "Format" | "Cover">("Scenes");
   const [copied, setCopied] = useState(false);
   const [production, setProduction] = useState<StoredProduction | null>(null);
@@ -225,6 +229,9 @@ export function ReelStudio() {
           requestedDurationSec: durationNumber(duration),
           language,
           aspectRatio,
+          characterDescription: selectedPersona.promptDescription,
+          characterName: selectedPersona.name,
+          characterId: selectedPersona.id,
         }),
       });
       const data = await response.json();
@@ -458,8 +465,50 @@ export function ReelStudio() {
             placeholder="What is your video about?"
           />
 
+          {/* Virtual Persona & Cloned Twin Selector */}
+          <div className="mt-4 rounded-2xl border border-white/10 bg-black/25 p-3.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-400">PRESENTER / VIRTUAL TWIN</span>
+              <button
+                type="button"
+                onClick={() => setIsPersonaModalOpen(true)}
+                className="text-[11px] font-black text-pink-300 transition hover:text-pink-200 hover:underline"
+              >
+                Change / Clone Face & Voice →
+              </button>
+            </div>
+            <div
+              onClick={() => setIsPersonaModalOpen(true)}
+              className="mt-2.5 flex cursor-pointer items-center justify-between rounded-xl border border-white/5 bg-white/[0.03] p-2.5 transition hover:border-pink-500/40 hover:bg-white/[0.06]"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white/5 text-lg">
+                  {selectedPersona.faceImageUrl ? (
+                    <img src={selectedPersona.faceImageUrl} alt={selectedPersona.name} className="h-full w-full object-cover" />
+                  ) : (
+                    selectedPersona.avatarEmoji || "👤"
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="text-xs font-bold text-white">{selectedPersona.name}</div>
+                    {selectedPersona.isCustomClone && (
+                      <span className="rounded border border-pink-500/30 bg-pink-500/20 px-1 py-0.2 text-[8px] font-black uppercase text-pink-300">
+                        Clone
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[10px] text-slate-400">{selectedPersona.role}</div>
+                </div>
+              </div>
+              <span className="rounded-lg border border-pink-500/20 bg-pink-500/10 px-2 py-1 text-[10px] font-bold text-pink-300">
+                Vault
+              </span>
+            </div>
+          </div>
+
           <div className="mt-4 space-y-3">
-            <Field label="Tone & Persona" value={tone} onChange={setTone} options={["Confident & conversational", "Warm & relatable", "Fast & energetic", "Expert & credible", "Playful & witty", "Dramatic & cinematic"]} />
+            <Field label="Tone & Delivery" value={tone} onChange={setTone} options={["Confident & conversational", "Warm & relatable", "Fast & energetic", "Expert & credible", "Playful & witty", "Dramatic & cinematic"]} />
             <Field label="Duration Target" value={duration} onChange={setDuration} options={DURATION_OPTIONS.map(d => `${d.value}`)} displayLabels={DURATION_OPTIONS.map(d => d.label)} />
             <Field label="Audio Language" value={language} onChange={setLanguage} options={LANGUAGES.map(l => l.code)} displayLabels={LANGUAGES.map(l => l.name)} />
             <Field label="Aspect Ratio" value={aspectRatio} onChange={setAspectRatio} options={ASPECT_RATIOS.map(a => a.id)} displayLabels={ASPECT_RATIOS.map(a => a.name)} />
@@ -957,6 +1006,13 @@ export function ReelStudio() {
           </div>
         </aside>
       </main>
+
+      <PersonaVaultModal
+        isOpen={isPersonaModalOpen}
+        onClose={() => setIsPersonaModalOpen(false)}
+        selectedPersonaId={selectedPersona.id}
+        onSelectPersona={(p) => setSelectedPersona(p)}
+      />
     </div>
   );
 }
