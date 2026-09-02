@@ -15,6 +15,7 @@ import { PersonaVaultModal } from "@/components/PersonaVaultModal";
 import { AUTO_ZOOM_PRESETS, calculateZoomKeyframes, AutoZoomPresetId } from "@/lib/reel/autoZoom";
 import { DynamicZoomVideoPlayer } from "@/components/DynamicZoomVideoPlayer";
 import { preloadReelMedia } from "@/lib/cache/mediaCache";
+import { autoGenerateBRollCutaways, BROLL_PRESET_LIBRARY, BRollItem, CutawayType } from "@/lib/reel/broll";
 
 type StoredProduction = { id: string; revision: number; manifest: ReelProductionManifest; createdAt: string; updatedAt: string };
 type DurableOperation = { id: string; status: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED"; lastError?: string };
@@ -95,7 +96,7 @@ export function ReelStudio() {
   const [selectedPersona, setSelectedPersona] = useState<PersonaClone>(PRESET_PERSONAS[0]);
   const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false);
   const [zoomPreset, setZoomPreset] = useState<AutoZoomPresetId>("dynamic-viral");
-  const [activeTab, setActiveTab] = useState<"Scenes" | "Script" | "Audio & Subtitles" | "Format" | "Cover">("Scenes");
+  const [activeTab, setActiveTab] = useState<"Scenes" | "Script" | "B-Roll" | "Audio & Subtitles" | "Format" | "Cover">("Scenes");
   const [copied, setCopied] = useState(false);
   const [production, setProduction] = useState<StoredProduction | null>(null);
   const [operation, setOperation] = useState<StudioOperation>(null);
@@ -122,6 +123,26 @@ export function ReelStudio() {
   const script = useMemo(() => scriptLines(manifest, topic), [manifest, topic]);
   const captions = useMemo(() => shots.filter(s => s.scriptText.trim()).map(s => s.scriptText.trim().toUpperCase()), [shots]);
   const zoomKeyframes = useMemo(() => calculateZoomKeyframes(shots, zoomPreset), [shots, zoomPreset]);
+
+  // Phase 3 Smart B-Roll & Visual Cutaway Engine
+  const defaultBRoll = useMemo(() => autoGenerateBRollCutaways(shots), [shots]);
+  const [brollItems, setBRollItems] = useState<BRollItem[]>([]);
+
+  useEffect(() => {
+    setBRollItems(defaultBRoll);
+  }, [defaultBRoll]);
+
+  const toggleBRollItem = (id: string) => {
+    setBRollItems(prev => prev.map(b => b.id === id ? { ...b, enabled: !b.enabled } : b));
+  };
+
+  const updateBRollType = (id: string, type: CutawayType) => {
+    setBRollItems(prev => prev.map(b => b.id === id ? { ...b, type } : b));
+  };
+
+  const selectBRollPreset = (id: string, presetUrl: string, presetTitle: string, keyword: string) => {
+    setBRollItems(prev => prev.map(b => b.id === id ? { ...b, brollUrl: presetUrl, searchQuery: presetTitle, keyword } : b));
+  };
 
   useEffect(() => {
     const urls = [
@@ -637,7 +658,7 @@ export function ReelStudio() {
         <section className="min-w-0 rounded-[26px] border border-white/10 bg-[#0a0d12]">
           <div className="flex flex-wrap items-center justify-between border-b border-white/5 p-3">
             <div className="flex flex-wrap items-center gap-1">
-              {(["Scenes", "Script", "Audio & Subtitles", "Format", "Cover"] as const).map(tab => (
+              {(["Scenes", "Script", "B-Roll", "Audio & Subtitles", "Format", "Cover"] as const).map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -903,7 +924,131 @@ export function ReelStudio() {
               </div>
             )}
 
-            {/* TAB 3: AUDIO, MUSIC & SUBTITLE OPTIONS */}
+            {/* TAB 3: SMART B-ROLL & VISUAL CUTAWAY ENGINE (PHASE 3) */}
+            {activeTab === "B-Roll" && (
+              <div className="space-y-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-teal-300">
+                      <Sparkles className="h-3.5 w-3.5" /> SMART B-ROLL & VISUAL CUTAWAYS
+                    </div>
+                    <h2 className="mt-1 text-2xl font-black tracking-[-0.03em] text-white">
+                      Script-Driven Visual Inserts & PIP Overlays
+                    </h2>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full border border-teal-400/30 bg-teal-400/10 px-3 py-1 text-xs font-black text-teal-300">
+                      {brollItems.filter(b => b.enabled).length} Active Cutaways
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-xs leading-relaxed text-slate-400">
+                  Automatically extracts visual keywords from spoken narrative beats and inserts contextual 1080p B-roll cutaways and Picture-in-Picture (PIP) split screens to keep viewer dopamine high.
+                </p>
+
+                {brollItems.length === 0 ? (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-8 text-center text-sm text-slate-400">
+                    Build a production plan first to generate contextual B-roll cutaways.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {brollItems.map((item, idx) => (
+                      <div
+                        key={item.id}
+                        className={`rounded-2xl border p-4 transition ${
+                          item.enabled
+                            ? "border-teal-400/40 bg-teal-400/[0.03]"
+                            : "border-white/10 bg-black/20 opacity-60"
+                        }`}
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => toggleBRollItem(item.id)}
+                              className={`flex h-6 w-6 items-center justify-center rounded-lg border text-xs font-black transition ${
+                                item.enabled
+                                  ? "border-teal-400 bg-teal-400 text-slate-950"
+                                  : "border-white/20 bg-white/5 text-slate-500"
+                              }`}
+                            >
+                              {item.enabled ? "✓" : ""}
+                            </button>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-black text-white">
+                                  Beat {item.sceneIndex + 1} Cutaway
+                                </span>
+                                <span className="rounded-md border border-teal-400/30 bg-teal-400/10 px-2 py-0.5 text-[10px] font-black uppercase text-teal-300">
+                                  {item.keyword}
+                                </span>
+                              </div>
+                              <div className="mt-0.5 text-[11px] text-slate-400">
+                                Timeline: {item.startSec.toFixed(1)}s – {(item.startSec + item.durationSec).toFixed(1)}s ({item.durationSec.toFixed(1)}s duration)
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Framing Selector */}
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => updateBRollType(item.id, "full_cutaway")}
+                              className={`rounded-lg px-2.5 py-1 text-[10px] font-bold transition ${
+                                item.type === "full_cutaway"
+                                  ? "bg-teal-400 text-slate-950"
+                                  : "border border-white/10 text-slate-400 hover:text-white"
+                              }`}
+                            >
+                              Full Cutaway
+                            </button>
+                            <button
+                              onClick={() => updateBRollType(item.id, "pip_top_right")}
+                              className={`rounded-lg px-2.5 py-1 text-[10px] font-bold transition ${
+                                item.type === "pip_top_right"
+                                  ? "bg-pink-500 text-white"
+                                  : "border border-white/10 text-slate-400 hover:text-white"
+                              }`}
+                            >
+                              PIP Top-Right
+                            </button>
+                            <button
+                              onClick={() => updateBRollType(item.id, "split_screen")}
+                              className={`rounded-lg px-2.5 py-1 text-[10px] font-bold transition ${
+                                item.type === "split_screen"
+                                  ? "bg-amber-400 text-slate-950"
+                                  : "border border-white/10 text-slate-400 hover:text-white"
+                              }`}
+                            >
+                              Split Screen
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Preset Selector Row */}
+                        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/5 pt-3">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Stock B-Roll:</span>
+                          {BROLL_PRESET_LIBRARY.map(preset => (
+                            <button
+                              key={preset.id}
+                              onClick={() => selectBRollPreset(item.id, preset.videoUrl, preset.title, preset.keywords[0])}
+                              className={`rounded-lg border px-2 py-1 text-[10px] font-bold transition ${
+                                item.brollUrl === preset.videoUrl
+                                  ? "border-teal-400 bg-teal-400/20 text-teal-200"
+                                  : "border-white/10 bg-white/[0.02] text-slate-400 hover:border-white/20 hover:text-white"
+                              }`}
+                            >
+                              {preset.title}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 4: AUDIO, MUSIC & SUBTITLE OPTIONS */}
             {activeTab === "Audio & Subtitles" && (
               <div className="space-y-6">
                 <div>
@@ -1088,6 +1233,7 @@ export function ReelStudio() {
               <DynamicZoomVideoPlayer
                 videoUrl={previewVideoUrl || "/assets/video/veo_continuous_master.mp4"}
                 keyframes={zoomKeyframes}
+                brollItems={brollItems}
                 subtitleText={shots[0]?.scriptText || topic}
                 subtitleStyle={subtitleStyle}
               />

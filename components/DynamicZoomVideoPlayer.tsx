@@ -21,10 +21,13 @@ import {
 } from "lucide-react";
 
 import { getCachedMediaBlobUrl } from "@/lib/cache/mediaCache";
+import { BRollItem, getActiveBRollAtTime } from "@/lib/reel/broll";
 
 interface DynamicZoomVideoPlayerProps {
   videoUrl: string;
   keyframes: ZoomKeyframe[];
+  brollItems?: BRollItem[];
+  showBRoll?: boolean;
   subtitleText?: string;
   subtitleStyle?: string;
   onSeekToScene?: (sceneIndex: number) => void;
@@ -33,17 +36,21 @@ interface DynamicZoomVideoPlayerProps {
 export function DynamicZoomVideoPlayer({
   videoUrl,
   keyframes,
+  brollItems = [],
+  showBRoll = true,
   subtitleText,
   subtitleStyle = "karaoke-gold",
   onSeekToScene
 }: DynamicZoomVideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const brollVideoRef = useRef<HTMLVideoElement>(null);
   const [resolvedVideoUrl, setResolvedVideoUrl] = useState<string>(videoUrl);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentZoom, setCurrentZoom] = useState<number>(1.0);
   const [currentLabel, setCurrentLabel] = useState<string>("1.0x Wide");
   const [currentTime, setCurrentTime] = useState<number>(0);
+  const [activeBRoll, setActiveBRoll] = useState<BRollItem | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -57,6 +64,7 @@ export function DynamicZoomVideoPlayer({
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1.0);
   const [showSubtitles, setShowSubtitles] = useState(true);
+  const [enableBRollOverlay, setEnableBRollOverlay] = useState(showBRoll);
   const [manualZoomOverride, setManualZoomOverride] = useState<number | null>(null);
 
   const effectiveZoom = manualZoomOverride !== null ? manualZoomOverride : currentZoom;
@@ -65,6 +73,14 @@ export function DynamicZoomVideoPlayer({
     if (!videoRef.current) return;
     const t = videoRef.current.currentTime;
     setCurrentTime(t);
+
+    // Synchronize B-Roll cutaways
+    if (enableBRollOverlay && brollItems.length > 0) {
+      const broll = getActiveBRollAtTime(brollItems, t);
+      setActiveBRoll(broll);
+    } else {
+      setActiveBRoll(null);
+    }
 
     if (manualZoomOverride === null) {
       if (!keyframes || keyframes.length === 0) {
@@ -109,7 +125,6 @@ export function DynamicZoomVideoPlayer({
   };
 
   const stepFrame = (deltaFrames: number) => {
-    // 24fps -> ~0.0416s per frame
     stepTime(deltaFrames * (1 / 24));
   };
 
@@ -151,7 +166,7 @@ export function DynamicZoomVideoPlayer({
       ref={containerRef}
       className="group relative aspect-[9/16] w-full overflow-hidden rounded-[24px] border border-white/10 bg-black shadow-2xl"
     >
-      {/* Zoomable Video Surface */}
+      {/* Primary A-Roll Video Surface */}
       <div
         className="h-full w-full overflow-hidden transition-transform duration-300 ease-out"
         style={{
@@ -172,6 +187,62 @@ export function DynamicZoomVideoPlayer({
           className="h-full w-full cursor-pointer object-cover"
         />
       </div>
+
+      {/* B-ROLL CUTAWAY OVERLAY LAYER (Phase 3) */}
+      {enableBRollOverlay && activeBRoll && (
+        <>
+          {/* Full Cutaway */}
+          {activeBRoll.type === "full_cutaway" && (
+            <div className="absolute inset-0 z-10 overflow-hidden bg-black transition-opacity duration-300 animate-in fade-in">
+              <video
+                src={activeBRoll.brollUrl}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="h-full w-full object-cover"
+              />
+              <div className="absolute top-12 left-3 rounded-full border border-teal-400/40 bg-black/85 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-teal-300 backdrop-blur-md shadow-xl">
+                ⚡ B-ROLL: {activeBRoll.keyword.toUpperCase()}
+              </div>
+            </div>
+          )}
+
+          {/* Picture-in-Picture (PIP) Floating Card */}
+          {activeBRoll.type === "pip_top_right" && (
+            <div className="absolute top-12 right-3 z-20 w-36 aspect-[9/16] overflow-hidden rounded-2xl border-2 border-pink-500 bg-black/90 shadow-2xl transition-all duration-300 animate-in zoom-in-90">
+              <video
+                src={activeBRoll.brollUrl}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="h-full w-full object-cover"
+              />
+              <div className="absolute bottom-1 inset-x-1 rounded-md bg-black/80 py-0.5 text-center text-[8px] font-black uppercase text-pink-300">
+                PIP · {activeBRoll.keyword}
+              </div>
+            </div>
+          )}
+
+          {/* Split Screen Top/Bottom */}
+          {activeBRoll.type === "split_screen" && (
+            <div className="absolute inset-x-0 top-0 h-1/2 z-15 overflow-hidden border-b-2 border-teal-400/50 bg-black transition-all duration-300 animate-in slide-in-from-top">
+              <video
+                src={activeBRoll.brollUrl}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="h-full w-full object-cover"
+              />
+              <div className="absolute bottom-2 left-2 rounded-md bg-black/80 px-2 py-0.5 text-[8px] font-black uppercase text-teal-300">
+                SPLIT · {activeBRoll.keyword}
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Top HUD Overlay: Zoom Status + Subtitles Toggle + Timecode */}
       <div className="pointer-events-auto absolute inset-x-3 top-3 z-30 flex items-center justify-between gap-2">
@@ -301,6 +372,18 @@ export function DynamicZoomVideoPlayer({
               title="Toggle Subtitles Overlay"
             >
               <Captions className="h-4 w-4" />
+            </button>
+
+            {/* B-Roll Toggle (Phase 3) */}
+            <button
+              onClick={() => setEnableBRollOverlay(!enableBRollOverlay)}
+              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-black transition ${
+                enableBRollOverlay ? "bg-teal-400/20 text-teal-300 border border-teal-400/30" : "text-slate-500 hover:bg-white/10"
+              }`}
+              title="Toggle Smart B-Roll & PIP Cutaways"
+            >
+              <Layers className="h-3.5 w-3.5" />
+              <span>B-Roll</span>
             </button>
 
             {/* Audio Mute */}
