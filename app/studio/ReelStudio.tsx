@@ -1057,49 +1057,30 @@ export function ReelStudio() {
         {/* RIGHT COLUMN: Video Monitor & Production Truth */}
         <aside className="h-fit lg:sticky lg:top-24">
           <div className="rounded-[30px] border border-white/10 bg-[#0a0d12] p-3">
-            {previewVideoUrl ? (
-              <div>
-                <div className="mb-3 flex items-center justify-between px-1">
-                  <div>
-                    <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-pink-300">
-                      {selectedShot ? `Clip ${Math.max(1, (shots.findIndex(s => s.id === selectedShot.id) ?? 0) + 1)} Review` : "Full Reel Master"}
-                    </div>
-                    <div className="mt-0.5 text-xs text-slate-500">
-                      {selectedShot ? `${selectedShot.editorialDurationSec.toFixed(1)}s · Veo Source` : `Continuous Native Audio · ${AUTO_ZOOM_PRESETS.find(p => p.id === zoomPreset)?.name}`}
-                    </div>
+            <div>
+              <div className="mb-3 flex items-center justify-between px-1">
+                <div>
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-pink-300">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>{selectedShot ? `Clip ${Math.max(1, (shots.findIndex(s => s.id === selectedShot.id) ?? 0) + 1)} Review` : roughCut?.videoUrl ? "Full Reel Master" : "Interactive Studio Monitor"}</span>
                   </div>
-                  {selectedShot && roughCut?.videoUrl && (
-                    <button onClick={() => setSelectedShotId(null)} className="rounded-lg border border-white/10 px-2.5 py-1 text-[10px] font-bold text-slate-400 hover:text-white">
-                      FULL REEL
-                    </button>
-                  )}
+                  <div className="mt-0.5 text-xs text-slate-500">
+                    {selectedShot ? `${selectedShot.editorialDurationSec.toFixed(1)}s · Veo Source` : `Veo 3.1 & Audio Engine · ${AUTO_ZOOM_PRESETS.find(p => p.id === zoomPreset)?.name}`}
+                  </div>
                 </div>
-                <DynamicZoomVideoPlayer
-                  videoUrl={previewVideoUrl}
-                  keyframes={zoomKeyframes}
-                  subtitleStyle={subtitleStyle}
-                />
+                {selectedShot && roughCut?.videoUrl && (
+                  <button onClick={() => setSelectedShotId(null)} className="rounded-lg border border-white/10 px-2.5 py-1 text-[10px] font-bold text-slate-400 hover:text-white">
+                    FULL REEL
+                  </button>
+                )}
               </div>
-            ) : (
-              <div className="relative aspect-[9/16] overflow-hidden rounded-[24px] bg-[radial-gradient(circle_at_70%_20%,rgba(244,114,182,0.32),transparent_28%),radial-gradient(circle_at_30%_75%,rgba(45,212,191,0.22),transparent_28%),linear-gradient(160deg,#19111d,#0b1016_58%,#0a1515)]">
-                <div className="absolute inset-x-5 top-5 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-white/50">
-                  <span>Plan Preview</span>
-                  <span>{manifest ? `${manifest.plannedDurationSec}s` : `${duration}s`}</span>
-                </div>
-                <div className="absolute inset-x-5 top-[26%] text-center">
-                  <div className="text-3xl font-black leading-none tracking-[-0.05em] text-white">{topic || "Your Reel Hook"}</div>
-                  <div className="mx-auto mt-4 h-1.5 w-16 rounded-full bg-pink-300" />
-                </div>
-                <div className="absolute inset-x-5 bottom-20 rounded-2xl bg-black/35 p-4 backdrop-blur-md">
-                  <div className="text-sm font-bold text-white">{manifest ? shots[0]?.scriptText || "Visual hook" : "Build the production plan first."}</div>
-                  <div className="mt-2 text-[10px] text-white/50">Planning preview only</div>
-                </div>
-                <div className="absolute inset-x-5 bottom-5 flex items-center justify-between text-[10px] text-white/40">
-                  <span>{manifest?.status || "DRAFT"}</span>
-                  <span>{aspectRatio}</span>
-                </div>
-              </div>
-            )}
+              <DynamicZoomVideoPlayer
+                videoUrl={previewVideoUrl || "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"}
+                keyframes={zoomKeyframes}
+                subtitleText={shots[0]?.scriptText || topic}
+                subtitleStyle={subtitleStyle}
+              />
+            </div>
           </div>
 
           <div className="mt-4 rounded-[24px] border border-white/10 bg-white/[0.025] p-5">
