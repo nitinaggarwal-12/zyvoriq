@@ -156,6 +156,26 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       return NextResponse.json({ success: true, queued: true, operation, production: presentProduction(current), shotId: shot.id }, { status: 202 });
     }
 
+    if (action === "generateAllShotsParallel") {
+      const hasAnyClip = current.manifest.shots.some(item => Boolean(item.asset?.videoUrl));
+      const exactVersion = Number((current.manifest as any).studio1?.timelineSync?.version || 0);
+      if (!hasAnyClip && current.manifest.audio?.alignmentValidation?.passed && exactVersion < 2) {
+        const planned = await planStudio1ProductionTimeline(id, current.revision);
+        if (planned) current = planned;
+      }
+      if (!["SHOTS_PLANNED", "VIDEO_GENERATING", "REPAIRING"].includes(current.manifest.status)) {
+        return NextResponse.json({ success: false, error: `Shot generation is not allowed while production is ${current.manifest.status}` }, { status: 409 });
+      }
+      const ungenerated = current.manifest.shots.filter(item => !item.asset?.videoUrl);
+      if (!ungenerated.length) {
+        return NextResponse.json({ success: true, production: presentProduction(current), queued: false, message: "All Studio1 shots already generated." });
+      }
+      const modelTier = body.modelTier === "quality" || body.modelTier === "lite" ? body.modelTier : "fast";
+      const validProduction = current!;
+      const enqueuedOps = await Promise.all(ungenerated.map(shot => enqueueShot(validProduction, shot.id, modelTier)));
+      return NextResponse.json({ success: true, queued: true, count: enqueuedOps.length, operations: enqueuedOps, production: presentProduction(validProduction) }, { status: 202 });
+    }
+
     if (action === "renderNarratedRoughCut") {
       const complete = current.manifest.shots.length > 0 && current.manifest.shots.every(shot => Boolean(shot.asset?.videoUrl) && ["GENERATED", "PASSED"].includes(shot.status));
       if (!complete) return NextResponse.json({ success: false, error: "Narrated rough-cut render requires every Studio1 scene to have a generated clip" }, { status: 409 });

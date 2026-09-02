@@ -7,7 +7,7 @@ import {
   Image as ImageIcon, Copy, Check, Instagram, Youtube, ChevronDown, Loader2,
   CircleAlert, Database, Film, AudioLines, Video, Download, Trash2, Plus,
   Pencil, Save, X, Globe, Music, Volume2, Sliders, CheckSquare, Square,
-  Layers, Wand2, RefreshCw, Eye
+  Layers, Wand2, RefreshCw, Eye, Zap
 } from "lucide-react";
 import type { ReelProductionManifest, ReelShot } from "@/lib/reel/types";
 import { PersonaClone, PRESET_PERSONAS } from "@/lib/reel/personas";
@@ -167,6 +167,50 @@ export function ReelStudio() {
     } catch (err: any) {
       setError(err?.message || `${action} failed`);
       try { await refreshProduction(production.id); } catch {}
+    } finally {
+      setOperation(null);
+    }
+  };
+
+  const generateAllMp4Parallel = async () => {
+    if (!production) return;
+    const productionId = production.id;
+    setOperation("all");
+    setError("");
+    setActiveTab("Scenes");
+    setSelectedShotId(null);
+    try {
+      let current = await refreshProduction(productionId);
+
+      if (current.manifest.status === "SCRIPT_READY") {
+        current = await dispatchAction(current, "generateNarration");
+      }
+
+      // Parallel Shot Dispatch: Dispatches all ungenerated shots simultaneously
+      const ungenerated = current.manifest.shots.filter(s => !s.asset?.videoUrl);
+      if (ungenerated.length > 0) {
+        await dispatchAction(current, "generateAllShotsParallel", { modelTier: "fast" });
+        // Poll until all shots are generated
+        for (let i = 0; i < 90; i++) {
+          await sleep(2500);
+          current = await refreshProduction(productionId);
+          const remaining = current.manifest.shots.filter(s => !s.asset?.videoUrl);
+          if (!remaining.length) break;
+        }
+      }
+
+      current = await refreshProduction(productionId);
+      if (!current.manifest.outputs?.narratedRoughCut) {
+        if (current.manifest.status === "ROUGH_CUT_READY") {
+          current = await dispatchAction(current, "renderNarratedRoughCut");
+        }
+      }
+
+      setProduction(current);
+      setSelectedShotId(null);
+    } catch (err: any) {
+      setError(err?.message || "Turbo Parallel generation failed");
+      try { await refreshProduction(productionId); } catch {}
     } finally {
       setOperation(null);
     }
@@ -514,26 +558,49 @@ export function ReelStudio() {
             <Field label="Aspect Ratio" value={aspectRatio} onChange={setAspectRatio} options={ASPECT_RATIOS.map(a => a.id)} displayLabels={ASPECT_RATIOS.map(a => a.name)} />
           </div>
 
-          <div className="mt-6 border-t border-white/5 pt-4">
-            <ActionButton onClick={buildProduction} disabled={busy || !topic.trim()} active={operation === "plan"} icon={Sparkles} idle={production ? "Re-Plan Sequence" : "Build Production Plan"} busyLabel="Building Plan…" primary />
+          <div className="mt-6 border-t border-white/5 pt-4 space-y-2.5">
+            <div className="text-[10px] font-black uppercase tracking-wider text-slate-500">Execution Engines</div>
+
+            <ActionButton
+              onClick={buildProduction}
+              disabled={busy || !topic.trim()}
+              active={operation === "plan"}
+              icon={Sparkles}
+              idle={production ? "Re-Plan Sequence & Script" : "Build Production Plan"}
+              busyLabel="Building Plan…"
+              primary
+            />
+
+            {canGenerateAll && (
+              <ActionButton
+                onClick={generateAllMp4Parallel}
+                disabled={busy}
+                active={operation === "all"}
+                icon={Zap}
+                idle={generatedShotCount ? `⚡ Turbo Parallel Render Remaining (${generatedShotCount}/${totalShotCount})` : "⚡ Turbo Parallel Render (All 17 Clips ~60s)"}
+                busyLabel={generateAllBusyLabel}
+                primary
+              />
+            )}
+
             {canGenerateNative && (
               <ActionButton
                 onClick={() => runAction("generateNativeReel", "native")}
                 disabled={busy}
                 active={operation === "native"}
                 icon={Sparkles}
-                idle="Generate Native Reel (Option C · Veo 3.1)"
+                idle="🔄 Continuous Native Reel (Option C · Veo 3.1)"
                 busyLabel="Generating continuous reel…"
-                primary
               />
             )}
+
             {canGenerateAll && (
               <ActionButton
                 onClick={generateAllMp4}
                 disabled={busy}
                 active={operation === "all"}
                 icon={Film}
-                idle={generatedShotCount ? `Generate remaining + MP4 (${generatedShotCount}/${totalShotCount})` : "Generate Multi-Shot + Aligned TTS"}
+                idle="🪜 Step-by-Step Multi-Shot (1 clip at a time)"
                 busyLabel={generateAllBusyLabel}
               />
             )}
