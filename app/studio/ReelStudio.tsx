@@ -933,18 +933,18 @@ export function ReelStudio() {
             </span>
             <span className={`h-2 w-2 rounded-full ${production ? "bg-emerald-400" : "bg-slate-700"}`} />
             {production ? `Persisted · r${production.revision}` : "Draft Mode"}
-            <button
-              onClick={() => setIsTrendRadarOpen(true)}
+            <Link
+              href="/studio/trend-radar"
               className="flex items-center gap-1.5 rounded-xl border border-indigo-500/40 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 px-3 py-1.5 text-xs font-bold text-indigo-200 shadow-sm transition hover:border-indigo-500/60 hover:from-indigo-500/30 hover:to-purple-500/30"
             >
               <span>🔮 7-Day Trend Radar</span>
-            </button>
-            <button
-              onClick={() => setIsBookStudioOpen(true)}
+            </Link>
+            <Link
+              href="/studio/books"
               className="flex items-center gap-1.5 rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-500/20 to-orange-500/20 px-3 py-1.5 text-xs font-bold text-amber-200 shadow-sm transition hover:border-amber-500/60 hover:from-amber-500/30 hover:to-orange-500/30"
             >
               <span>📚 Book Studio</span>
-            </button>
+            </Link>
             <button
               onClick={() => setIsRemixModalOpen(true)}
               className="flex items-center gap-1.5 rounded-xl border border-purple-500/30 bg-purple-500/10 px-3 py-1.5 text-xs font-bold text-purple-200 shadow-sm transition hover:border-purple-500/50 hover:bg-purple-500/20"

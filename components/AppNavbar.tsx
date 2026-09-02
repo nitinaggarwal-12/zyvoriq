@@ -17,6 +17,8 @@ import {
   Film,
   History,
   Key,
+  TrendingUp,
+  BookOpen,
 } from "lucide-react";
 import { ApiKeyModal } from "@/components/ApiKeyModal";
 
@@ -29,6 +31,8 @@ export function AppNavbar() {
 
   const navItems = [
     { name: "Studio Cinema", href: "/studio", icon: Layers },
+    { name: "Trend Radar", href: "/studio/trend-radar", icon: TrendingUp },
+    { name: "Book Studio", href: "/studio/books", icon: BookOpen },
     { name: "Avatars & Cast", href: "/studio/avatars", icon: Users },
     { name: "Create Video", href: "/studio/create", icon: Sparkles },
     { name: "Library", href: "/studio/library", icon: Film },
