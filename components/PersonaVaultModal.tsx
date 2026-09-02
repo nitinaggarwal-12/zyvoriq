@@ -51,6 +51,7 @@ export function PersonaVaultModal({
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [activeDemographicFilter, setActiveDemographicFilter] = useState<string>("all");
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -67,6 +68,17 @@ export function PersonaVaultModal({
   if (!isOpen) return null;
 
   const allPersonas = [...customPersonas, ...PRESET_PERSONAS];
+
+  const filteredPersonas = allPersonas.filter(p => {
+    if (activeDemographicFilter === "all") return true;
+    if (activeDemographicFilter === "women") return p.gender === "female";
+    if (activeDemographicFilter === "men") return p.gender === "male";
+    if (activeDemographicFilter === "non_binary") return p.gender === "non_binary";
+    if (activeDemographicFilter === "seniors") return p.ageTier === "senior";
+    if (activeDemographicFilter === "kids_animated") return p.ageTier === "child_animated" || p.ageTier === "toddler_animated";
+    if (activeDemographicFilter === "global") return p.region !== "north_america";
+    return true;
+  });
 
   const handleStartRecording = async () => {
     try {
@@ -221,9 +233,9 @@ export function PersonaVaultModal({
         <div className="flex-1 overflow-y-auto p-6">
           {!isCreating ? (
             <div>
-              <div className="flex items-center justify-between pb-4">
+              <div className="flex items-center justify-between pb-3">
                 <span className="text-xs font-bold uppercase tracking-wider text-pink-300">
-                  Available Personas & Virtual Twins ({allPersonas.length})
+                  DEI & Global Representation Vault ({filteredPersonas.length} / {allPersonas.length})
                 </span>
                 <button
                   onClick={() => setIsCreating(true)}
@@ -233,8 +245,29 @@ export function PersonaVaultModal({
                 </button>
               </div>
 
+              {/* Demographic & DEI Filters */}
+              <div className="flex flex-wrap items-center gap-1.5 pb-4">
+                {[
+                  { id: "all", label: "🌟 All Personas", count: allPersonas.length },
+                  { id: "women", label: "👩 Women", count: allPersonas.filter(p => p.gender === "female").length },
+                  { id: "men", label: "👨 Men", count: allPersonas.filter(p => p.gender === "male").length },
+                  { id: "non_binary", label: "🧑 Non-Binary", count: allPersonas.filter(p => p.gender === "non_binary").length },
+                  { id: "seniors", label: "👴 Seniors (60+)", count: allPersonas.filter(p => p.ageTier === "senior").length },
+                  { id: "kids_animated", label: "🧒 Kids & Toddlers (3D)", count: allPersonas.filter(p => p.ageTier === "child_animated" || p.ageTier === "toddler_animated").length },
+                  { id: "global", label: "🌍 Global Cultures & Accents", count: allPersonas.filter(p => p.region !== "north_america").length },
+                ].map(f => (
+                  <button
+                    key={f.id}
+                    onClick={() => setActiveDemographicFilter(f.id)}
+                    className={`rounded-xl px-3 py-1.5 text-xs font-bold transition ${activeDemographicFilter === f.id ? "bg-pink-500 text-white shadow-md shadow-pink-500/20" : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"}`}
+                  >
+                    {f.label} <span className="opacity-60 text-[10px]">({f.count})</span>
+                  </button>
+                ))}
+              </div>
+
               <div className="grid gap-4 md:grid-cols-2">
-                {allPersonas.map((persona) => {
+                {filteredPersonas.map((persona) => {
                   const isSelected = selectedPersonaId === persona.id;
                   return (
                     <div
@@ -282,7 +315,21 @@ export function PersonaVaultModal({
                           )}
                         </div>
 
-                        <p className="mt-3 line-clamp-2 text-xs leading-relaxed text-slate-300">
+                        {/* Demographic & Cultural Badges */}
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {persona.ethnicity && (
+                            <span className="rounded-md bg-white/5 border border-white/10 px-2 py-0.5 text-[10px] text-slate-300">
+                              🏛️ {persona.ethnicity}
+                            </span>
+                          )}
+                          {persona.accent && (
+                            <span className="rounded-md bg-pink-500/10 border border-pink-500/20 px-2 py-0.5 text-[10px] text-pink-300 font-medium">
+                              🗣️ {persona.accent}
+                            </span>
+                          )}
+                        </div>
+
+                        <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-slate-300">
                           {persona.promptDescription}
                         </p>
                       </div>
