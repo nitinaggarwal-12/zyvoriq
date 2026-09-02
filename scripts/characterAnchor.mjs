@@ -139,7 +139,7 @@ async function dependencyLastFrame(manifest, shot, readAsset) {
   const trimOutRaw = Number(dependency.trimOutSec || 0);
   const trimOut = depSec > 0 ? Math.min(trimOutRaw || depSec, depSec) : trimOutRaw;
   const trimIn = Number(dependency.trimInSec || 0);
-  const t = Math.max(0, Math.max(trimIn, trimOut > 0 ? trimOut - 0.15 : 0));
+  const t = Math.max(0, Math.max(trimIn, trimOut > 0 ? trimOut - (depSec > 0 && trimOut < depSec - 0.05 ? 1 / 30 : 0.15) : 0));
   
   try {
     await fs.writeFile(tmpVideo, video);
