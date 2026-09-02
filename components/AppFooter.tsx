@@ -125,6 +125,11 @@ export function AppFooter() {
                 </Link>
               </li>
               <li>
+                <Link href="/contact" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-teal-400" /> Contact Support & SLA Operations
+                </Link>
+              </li>
+              <li>
                 <Link href="/veritas" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
                   <Globe className="w-3.5 h-3.5" /> EU AI Act & Watermarking Disclosure
                 </Link>

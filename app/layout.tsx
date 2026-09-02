@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { AppFooter } from "@/components/AppFooter";
+import { LiveSupportConcierge } from "@/components/LiveSupportConcierge";
 
 export const metadata: Metadata = {
   title: "Zyvoriq — AI Reel Studio for Social Content",
@@ -25,6 +26,7 @@ export default function RootLayout({
         </div>
         <AppFooter />
         <CookieConsentBanner />
+        <LiveSupportConcierge />
       </body>
     </html>
   );
