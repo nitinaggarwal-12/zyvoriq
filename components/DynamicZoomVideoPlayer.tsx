@@ -20,6 +20,8 @@ import {
   ChevronRight
 } from "lucide-react";
 
+import { getCachedMediaBlobUrl } from "@/lib/cache/mediaCache";
+
 interface DynamicZoomVideoPlayerProps {
   videoUrl: string;
   keyframes: ZoomKeyframe[];
@@ -37,10 +39,19 @@ export function DynamicZoomVideoPlayer({
 }: DynamicZoomVideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [resolvedVideoUrl, setResolvedVideoUrl] = useState<string>(videoUrl);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentZoom, setCurrentZoom] = useState<number>(1.0);
   const [currentLabel, setCurrentLabel] = useState<string>("1.0x Wide");
   const [currentTime, setCurrentTime] = useState<number>(0);
+
+  useEffect(() => {
+    let active = true;
+    getCachedMediaBlobUrl(videoUrl).then((cached) => {
+      if (active) setResolvedVideoUrl(cached);
+    });
+    return () => { active = false; };
+  }, [videoUrl]);
   const [duration, setDuration] = useState<number>(0);
   const [playbackRate, setPlaybackRate] = useState<number>(1.0);
   const [isMuted, setIsMuted] = useState(false);
@@ -151,7 +162,7 @@ export function DynamicZoomVideoPlayer({
       >
         <video
           ref={videoRef}
-          src={videoUrl}
+          src={resolvedVideoUrl}
           playsInline
           loop
           onTimeUpdate={handleTimeUpdate}

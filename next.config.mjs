@@ -41,6 +41,32 @@ const nextConfig = {
             value: "public, max-age=3600, must-revalidate"
           }
         ]
+      },
+      {
+        source: "/assets/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable"
+          },
+          {
+            key: "Accept-Ranges",
+            value: "bytes"
+          }
+        ]
+      },
+      {
+        source: "/api/reels/video/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400, stale-while-revalidate=604800"
+          },
+          {
+            key: "Accept-Ranges",
+            value: "bytes"
+          }
+        ]
       }
     ];
   }

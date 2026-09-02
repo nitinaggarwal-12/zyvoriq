@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, ArrowUp, ArrowDown, Sparkles, Clapperboard, Captions, Mic2,
@@ -14,6 +14,7 @@ import { PersonaClone, PRESET_PERSONAS } from "@/lib/reel/personas";
 import { PersonaVaultModal } from "@/components/PersonaVaultModal";
 import { AUTO_ZOOM_PRESETS, calculateZoomKeyframes, AutoZoomPresetId } from "@/lib/reel/autoZoom";
 import { DynamicZoomVideoPlayer } from "@/components/DynamicZoomVideoPlayer";
+import { preloadReelMedia } from "@/lib/cache/mediaCache";
 
 type StoredProduction = { id: string; revision: number; manifest: ReelProductionManifest; createdAt: string; updatedAt: string };
 type DurableOperation = { id: string; status: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED"; lastError?: string };
@@ -121,6 +122,16 @@ export function ReelStudio() {
   const script = useMemo(() => scriptLines(manifest, topic), [manifest, topic]);
   const captions = useMemo(() => shots.filter(s => s.scriptText.trim()).map(s => s.scriptText.trim().toUpperCase()), [shots]);
   const zoomKeyframes = useMemo(() => calculateZoomKeyframes(shots, zoomPreset), [shots, zoomPreset]);
+
+  useEffect(() => {
+    const urls = [
+      ...shots.map(s => s.asset?.videoUrl),
+      roughCut?.videoUrl
+    ].filter(Boolean) as string[];
+    if (urls.length > 0) {
+      preloadReelMedia(urls);
+    }
+  }, [shots, roughCut]);
 
   const refreshProduction = async (id: string) => {
     const response = await fetch(`/api/reels/productions/${encodeURIComponent(id)}`, { cache: "no-store" });
@@ -1054,8 +1065,8 @@ export function ReelStudio() {
           </div>
         </section>
 
-        {/* RIGHT COLUMN: Video Monitor & Production Truth */}
-        <aside className="h-fit lg:sticky lg:top-24">
+        {/* RIGHT COLUMN: Video Monitor & Production Truth (Top on mobile/tablet, Sticky Right on Desktop) */}
+        <aside className="order-first lg:order-last h-fit lg:sticky lg:top-24">
           <div className="rounded-[30px] border border-white/10 bg-[#0a0d12] p-3">
             <div>
               <div className="mb-3 flex items-center justify-between px-1">
