@@ -20,7 +20,9 @@ import {
   ChevronDown,
   Minimize2,
   Maximize2,
-  Minus
+  Minus,
+  RotateCcw,
+  Trash2
 } from "lucide-react";
 
 interface Message {
@@ -30,6 +32,13 @@ interface Message {
   quickActions?: { label: string; action: string }[];
   timestamp: string;
 }
+
+const DEFAULT_INITIAL_MESSAGE: Message = {
+  id: "msg_init",
+  sender: "ai",
+  text: "👋 **Hi creator! I'm your Zyvoriq AI Concierge.**\n\nHow can I help you today? I can guide you through creating your first viral reel, exploring 7-Day Trend Radar, authoring books, or monetizing your content!",
+  timestamp: "Just now"
+};
 
 const KNOWLEDGE_BASE: Record<string, { answer: string; quickActions?: { label: string; action: string }[] }> = {
   onboarding: {
@@ -78,15 +87,9 @@ export function LiveSupportConcierge() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
 
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "msg_init",
-      sender: "ai",
-      text: "👋 **Hi creator! I'm your Zyvoriq AI Concierge.**\n\nHow can I help you today? I can guide you through creating your first viral reel, exploring 7-Day Trend Radar, authoring books, or monetizing your content!",
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([DEFAULT_INITIAL_MESSAGE]);
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [showContactForm, setShowContactForm] = useState(false);
@@ -97,11 +100,48 @@ export function LiveSupportConcierge() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Restore persistent chat history on mount
+  useEffect(() => {
+    setHasMounted(true);
+    try {
+      const savedHistory = localStorage.getItem("zyvoriq_concierge_history");
+      if (savedHistory) {
+        const parsed = JSON.parse(savedHistory);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed);
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Save history whenever messages change
+  useEffect(() => {
+    if (hasMounted && messages.length > 0) {
+      try {
+        localStorage.setItem("zyvoriq_concierge_history", JSON.stringify(messages));
+      } catch {}
+    }
+  }, [messages, hasMounted]);
+
   useEffect(() => {
     if (isOpen && !isMinimized) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isOpen, isMinimized]);
+
+  const handleClearHistory = () => {
+    const freshMessage: Message = {
+      id: `msg_init_${Date.now()}`,
+      sender: "ai",
+      text: "✨ **Chat history reset.** How can I assist your creative workflow now?",
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    };
+    setMessages([freshMessage]);
+    setShowContactForm(false);
+    try {
+      localStorage.setItem("zyvoriq_concierge_history", JSON.stringify([freshMessage]));
+    } catch {}
+  };
 
   const handleSend = (textToSend?: string) => {
     const text = textToSend || inputText;
@@ -216,13 +256,27 @@ export function LiveSupportConcierge() {
               <div>
                 <div className="font-bold text-xs text-white flex items-center gap-1.5">
                   <span>Zyvoriq Concierge</span>
-                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-300">Live</span>
+                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-300">Saved Session</span>
                 </div>
                 {!isMinimized && <div className="text-[10px] text-slate-400">Creator Onboarding & Support</div>}
               </div>
             </div>
 
             <div className="flex items-center gap-1">
+              
+              {/* Reset History Button */}
+              {!isMinimized && (
+                <button
+                  onClick={handleClearHistory}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-300 hover:bg-slate-800 transition-all"
+                  title="Clear Chat & Start Fresh Session"
+                  aria-label="Clear chat history"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+              )}
+
+              {/* Direct Support Ticket Button */}
               <button
                 onClick={() => setShowContactForm(!showContactForm)}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all text-xs"
