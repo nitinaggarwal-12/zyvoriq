@@ -24,6 +24,12 @@ import {
   EmojiAnimation,
   playProceduralSFX
 } from "@/lib/reel/kineticEmoji";
+import {
+  generateHookSuite,
+  swapHookInShots,
+  HookVariation,
+  HookSuite
+} from "@/lib/reel/hookVariations";
 
 type StoredProduction = { id: string; revision: number; manifest: ReelProductionManifest; createdAt: string; updatedAt: string };
 type DurableOperation = { id: string; status: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED"; lastError?: string };
@@ -180,6 +186,42 @@ export function ReelStudio() {
 
   const selectEmojiPreset = (id: string, emoji: string, label: string, sfx: SFXType) => {
     setKineticEmojis(prev => prev.map(e => e.id === id ? { ...e, emoji, label, sfx } : e));
+  };
+
+  // Phase 5 1-Click A/B Hook Variations Engine
+  const [hookSuite, setHookSuite] = useState<HookSuite>(() => generateHookSuite(topic));
+
+  useEffect(() => {
+    setHookSuite(generateHookSuite(topic));
+  }, [topic]);
+
+  const handleApplyHook = async (variant: HookVariation) => {
+    setHookSuite(prev => ({ ...prev, activeVariantId: variant.id }));
+    if (!production || shots.length === 0) return;
+
+    const updatedShots = swapHookInShots(shots, variant);
+    const updatedManifest: ReelProductionManifest = {
+      ...manifest!,
+      shots: updatedShots
+    };
+
+    setProduction({
+      ...production,
+      revision: production.revision + 1,
+      manifest: updatedManifest
+    });
+
+    try {
+      await fetch(`/api/reels/productions/${encodeURIComponent(production.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "updateManifest",
+          expectedRevision: production.revision,
+          manifest: updatedManifest
+        })
+      });
+    } catch {}
   };
 
   useEffect(() => {
@@ -740,7 +782,58 @@ export function ReelStudio() {
                   )}
                 </div>
 
-                {/* Floating Bulk Action Bar */}
+                {/* Phase 5: 1-Click Viral A/B Hook Switcher */}
+                <div className="mt-4 rounded-2xl border border-pink-500/20 bg-pink-500/[0.03] p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-pink-400" />
+                      <span className="text-xs font-black uppercase tracking-wider text-white">
+                        1-Click Viral A/B Hook Switcher (Phase 5)
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setHookSuite(generateHookSuite(topic))}
+                      className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-white"
+                    >
+                      <RefreshCw className="h-3 w-3" /> Regenerate 3 Angles
+                    </button>
+                  </div>
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    Swap the opening 3-second hook to test conversion while preserving all downstream scenes and stitched timeline.
+                  </p>
+
+                  <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                    {hookSuite.variants.map(variant => {
+                      const isActive = hookSuite.activeVariantId === variant.id;
+                      return (
+                        <div
+                          key={variant.id}
+                          onClick={() => handleApplyHook(variant)}
+                          className={`cursor-pointer rounded-xl border p-3 transition ${
+                            isActive
+                              ? "border-pink-400 bg-pink-400/15 shadow-lg shadow-pink-500/10"
+                              : "border-white/10 bg-black/30 hover:border-white/20"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-black text-white">{variant.label}</span>
+                            {isActive && <Check className="h-3.5 w-3.5 text-pink-300" />}
+                          </div>
+                          <div className="mt-1 inline-block rounded-md bg-white/5 px-1.5 py-0.5 text-[9px] font-black text-pink-300">
+                            {variant.badge}
+                          </div>
+                          <p className="mt-2 text-[11px] leading-snug text-slate-300 line-clamp-3">
+                            "{variant.scriptText}"
+                          </p>
+                          <div className="mt-3 flex items-center justify-between border-t border-white/5 pt-2 text-[10px] text-slate-500">
+                            <span>{variant.cameraMotion}</span>
+                            <span className="font-bold text-pink-300">{isActive ? "ACTIVE HOOK" : "1-Click Swap"}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
                 {selectedShotIds.size > 0 && (
                   <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-pink-300/30 bg-pink-950/30 p-3 backdrop-blur-lg">
                     <span className="text-xs font-bold text-pink-200">
