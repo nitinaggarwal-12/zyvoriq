@@ -25,7 +25,8 @@ import {
   PRESET_PERSONAS,
   getStoredCustomPersonas,
   saveCustomPersona,
-  deleteCustomPersona
+  deleteCustomPersona,
+  synthesizePromptToPersona
 } from "@/lib/reel/personas";
 
 interface PersonaVaultModalProps {
@@ -43,6 +44,8 @@ export function PersonaVaultModal({
 }: PersonaVaultModalProps) {
   const [customPersonas, setCustomPersonas] = useState<PersonaClone[]>([]);
   const [isCreating, setIsCreating] = useState(false);
+  const [createMethod, setCreateMethod] = useState<"prompt" | "clone">("prompt");
+  const [promptToAvatarText, setPromptToAvatarText] = useState("A visionary French architect in a beige linen jacket with wire-rimmed glasses");
   const [newName, setNewName] = useState("");
   const [newRole, setNewRole] = useState("Creator & Presenter");
   const [newPrompt, setNewPrompt] = useState("");
@@ -165,6 +168,18 @@ export function PersonaVaultModal({
     onSelectPersona(newPersona);
     setIsCreating(false);
     resetForm();
+  };
+
+  const handleSynthesizeFromPrompt = () => {
+    if (!promptToAvatarText.trim()) {
+      alert("Please describe the avatar you wish to create.");
+      return;
+    }
+    const synthesized = synthesizePromptToPersona(promptToAvatarText);
+    const updated = saveCustomPersona(synthesized);
+    setCustomPersonas(updated);
+    onSelectPersona(synthesized);
+    setIsCreating(false);
   };
 
   const resetForm = () => {
@@ -379,16 +394,88 @@ export function PersonaVaultModal({
             /* Creation Form */
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-base font-black text-white">🧬 Create Your AI Clone (Face & Voice)</h3>
+                <div>
+                  <h3 className="text-base font-black text-white">Create Custom Virtual Twin / Avatar</h3>
+                  <p className="text-xs text-slate-400">Design a new persona via AI prompt or clone your own face & voice</p>
+                </div>
                 <button
                   onClick={() => setIsCreating(false)}
-                  className="text-xs font-bold text-slate-400 hover:text-white"
+                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-slate-400 hover:text-white"
                 >
-                  Cancel
+                  Back to Vault
                 </button>
               </div>
 
-              <div className="grid gap-6 md:grid-cols-2">
+              {/* Creation Method Switcher */}
+              <div className="flex gap-2 border-b border-white/10 pb-4">
+                <button
+                  onClick={() => setCreateMethod("prompt")}
+                  className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-black transition ${createMethod === "prompt" ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md shadow-pink-500/20" : "bg-white/5 text-slate-400 hover:text-white"}`}
+                >
+                  <Sparkles className="h-4 w-4" /> 1. Text Prompt-to-Avatar (Instant AI)
+                </button>
+                <button
+                  onClick={() => setCreateMethod("clone")}
+                  className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-black transition ${createMethod === "clone" ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md shadow-pink-500/20" : "bg-white/5 text-slate-400 hover:text-white"}`}
+                >
+                  <Mic className="h-4 w-4" /> 2. Biometric Mic & Photo Clone
+                </button>
+              </div>
+
+              {createMethod === "prompt" ? (
+                /* Prompt to Avatar Interface */
+                <div className="rounded-2xl border border-pink-500/30 bg-pink-500/[0.04] p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-pink-300">
+                      Describe Any Persona, Attire, Culture or Accent
+                    </span>
+                    <span className="rounded-md border border-pink-500/30 bg-pink-500/20 px-2 py-0.5 text-[9px] font-black text-pink-300 uppercase">
+                      Procedural Voice & Face
+                    </span>
+                  </div>
+
+                  <textarea
+                    value={promptToAvatarText}
+                    onChange={(e) => setPromptToAvatarText(e.target.value)}
+                    rows={4}
+                    className="w-full rounded-xl border border-white/10 bg-black/40 p-4 text-sm text-white placeholder-slate-500 outline-none focus:border-pink-400"
+                    placeholder="e.g. A charismatic French architect in a beige linen blazer with wire-rimmed glasses and warm studio lighting..."
+                  />
+
+                  {/* Inspiration quick tags */}
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Inspiration Presets</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        "🇫🇷 French Architect in Beige Linen (Parisian Accent)",
+                        "🇧🇷 Brazilian Oceanic Biologist (Warm Portuguese Cadence)",
+                        "🇯🇵 Tokyo Cybernetics Engineer in Charcoal Turtleneck",
+                        "🇳🇬 Lagos FinTech Founder in Ankara Jacket",
+                        "🪶 Navajo Solar Energy Engineer with Turquoise Jewelry",
+                        "🏳️‍🌈 Transgender AI Policy Advocate in Cobalt Blazer"
+                      ].map((tag) => (
+                        <button
+                          key={tag}
+                          onClick={() => setPromptToAvatarText(tag)}
+                          className="rounded-lg border border-white/5 bg-white/5 px-2.5 py-1 text-[11px] text-slate-300 hover:border-pink-500/30 hover:bg-pink-500/10 hover:text-white transition"
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleSynthesizeFromPrompt}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-3.5 text-sm font-black text-slate-950 transition hover:bg-slate-100 shadow-lg shadow-white/10"
+                  >
+                    <Sparkles className="h-4 w-4 text-pink-600" /> Synthesize Avatar & Vocal Formants
+                  </button>
+                </div>
+              ) : (
+                /* Biometric Clone Interface */
+                <div className="space-y-6">
+                  <div className="grid gap-6 md:grid-cols-2">
                 {/* Step 1: Face Anchor */}
                 <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
                   <div className="flex items-center gap-2 text-xs font-bold text-pink-300">
@@ -545,7 +632,9 @@ export function PersonaVaultModal({
             </div>
           )}
         </div>
-      </div>
+      )}
     </div>
+  </div>
+</div>
   );
 }

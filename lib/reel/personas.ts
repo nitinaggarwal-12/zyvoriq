@@ -279,3 +279,126 @@ export function deleteCustomPersona(id: string): PersonaClone[] {
   localStorage.setItem("zyvoriq_custom_personas", JSON.stringify(updated));
   return updated;
 }
+
+/**
+ * 🪄 AI Prompt-to-Avatar Synthesizer
+ * Procedurally compiles a full PersonaClone with vocal formants from a text description.
+ */
+export function synthesizePromptToPersona(prompt: string): PersonaClone {
+  const clean = prompt.trim() || "A visionary creative designer in a modern studio";
+  const lower = clean.toLowerCase();
+
+  // Detect gender & pronouns
+  let gender: DemographicGender = "female";
+  let pronouns = "she/her";
+  let defaultEmoji = "👩‍💼";
+  let pitch = 1.04;
+  let formantF1 = 520;
+  let formantF2 = 1480;
+
+  if (lower.includes("man") || lower.includes("male") || lower.includes("guy") || lower.includes("he") || lower.includes("professor") || lower.includes("father") || lower.includes("boy")) {
+    gender = "male";
+    pronouns = "he/him";
+    defaultEmoji = "👨‍💼";
+    pitch = 0.95;
+    formantF1 = 480;
+    formantF2 = 1350;
+  } else if (lower.includes("non-binary") || lower.includes("they") || lower.includes("androgynous") || lower.includes("queer") || lower.includes("genderfluid")) {
+    gender = "non_binary";
+    pronouns = "they/them";
+    defaultEmoji = "🧑‍🎨";
+    pitch = 1.00;
+    formantF1 = 505;
+    formantF2 = 1420;
+  } else if (lower.includes("transgender woman") || lower.includes("trans woman")) {
+    gender = "transgender_female";
+    pronouns = "she/her";
+    defaultEmoji = "👩‍💻";
+    pitch = 1.05;
+    formantF1 = 530;
+    formantF2 = 1500;
+  }
+
+  // Detect Age
+  let ageTier: DemographicAgeTier = "young_adult";
+  if (lower.includes("senior") || lower.includes("elder") || lower.includes("retired") || lower.includes("60") || lower.includes("70") || lower.includes("grandfather") || lower.includes("grandmother")) {
+    ageTier = "senior";
+    pitch *= 0.9;
+  } else if (lower.includes("child") || lower.includes("kid") || lower.includes("8-year") || lower.includes("10-year") || lower.includes("school")) {
+    ageTier = "child_animated";
+    pitch = 1.25;
+    defaultEmoji = "🧒";
+  } else if (lower.includes("toddler") || lower.includes("baby") || lower.includes("infant") || lower.includes("nursery")) {
+    ageTier = "toddler_animated";
+    pitch = 1.35;
+    defaultEmoji = "🐧";
+  } else if (lower.includes("mature") || lower.includes("40") || lower.includes("50") || lower.includes("director") || lower.includes("principal")) {
+    ageTier = "mature_adult";
+  }
+
+  // Detect Region & Ethnicity
+  let region: DemographicRegion = "north_america";
+  let ethnicity = "Global Contemporary";
+  let accent = "Clear Studio Neutral";
+
+  if (lower.includes("french") || lower.includes("paris")) {
+    region = "europe";
+    ethnicity = "French / European";
+    accent = "French English Accent";
+  } else if (lower.includes("japanese") || lower.includes("tokyo")) {
+    region = "east_asia";
+    ethnicity = "East Asian / Japanese";
+    accent = "Japanese English Accent";
+  } else if (lower.includes("african") || lower.includes("nigerian") || lower.includes("kenyan")) {
+    region = "africa";
+    ethnicity = "African / Nigerian";
+    accent = "West African English Accent";
+  } else if (lower.includes("indian") || lower.includes("south asian") || lower.includes("mumbai")) {
+    region = "south_asia";
+    ethnicity = "South Asian / Indian";
+    accent = "Indian English Accent";
+  } else if (lower.includes("latino") || lower.includes("hispanic") || lower.includes("brazilian") || lower.includes("mexican")) {
+    region = "latin_america";
+    ethnicity = "Hispanic / Latino";
+    accent = "Latin American English Accent";
+  } else if (lower.includes("middle eastern") || lower.includes("arab") || lower.includes("dubai")) {
+    region = "middle_east";
+    ethnicity = "Middle Eastern";
+    accent = "Gulf Arabic English Accent";
+  } else if (lower.includes("indigenous") || lower.includes("māori") || lower.includes("navajo") || lower.includes("native")) {
+    region = "indigenous_global";
+    ethnicity = "Indigenous / First Nations";
+    accent = "Indigenous Cultural Accent";
+  }
+
+  // Derive Name
+  const words = clean.split(" ").filter(w => w.length > 3);
+  const keyword = words[0] ? words[0].charAt(0).toUpperCase() + words[0].slice(1) : "Alex";
+  const name = `${keyword} AI Virtual Twin`;
+  const role = words.slice(1, 4).join(" ") || "Domain Specialist & Presenter";
+
+  return {
+    id: `synth_${crypto.randomUUID().slice(0, 8)}`,
+    name,
+    role: role.charAt(0).toUpperCase() + role.slice(1),
+    pronouns,
+    gender,
+    ageTier,
+    region,
+    ethnicity,
+    accent,
+    culturalStyle: clean,
+    identityTag: "✨ Prompt-to-Avatar AI",
+    avatarEmoji: defaultEmoji,
+    promptDescription: `A high-fidelity virtual twin of ${name}: ${clean}, speaking directly to camera with cinematic studio lighting.`,
+    voiceTimbre: {
+      pitch: Number(pitch.toFixed(2)),
+      speed: 1.0,
+      formantF1,
+      formantF2,
+      warmth: 85
+    },
+    isCustomClone: true,
+    createdAt: new Date().toISOString()
+  };
+}
