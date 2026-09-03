@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
 import { createReadStream } from "node:fs";
+import fsSync from "node:fs";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
@@ -31,7 +32,14 @@ function dbUrl() {
   return "";
 }
 function apiKey() { return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || ""; }
-function assetRoot() { return process.env.ZYVORIQ_ASSET_ROOT || process.env.RAILWAY_VOLUME_MOUNT_PATH || ""; }
+function assetRoot() {
+  const env = process.env.ZYVORIQ_ASSET_ROOT || process.env.RAILWAY_VOLUME_MOUNT_PATH;
+  if (env) return env;
+  try {
+    if (fsSync.existsSync("/data")) return "/data";
+  } catch {}
+  return "";
+}
 
 const databaseUrl = dbUrl();
 if (!databaseUrl) { console.error("[reel-worker] Postgres is required"); process.exit(1); }
@@ -210,6 +218,48 @@ async function recoverLegacyVeoInlineDataFailures() {
   }
 }
 await recoverLegacyVeoInlineDataFailures();
+
+async function recoverLegacyContinuityDependencyFailures() {
+  const failed = await pool.query(`
+    SELECT id, production_id, target_id
+    FROM reel_operations
+    WHERE kind='SHOT'
+      AND status='FAILED'
+      AND (last_error LIKE '%Continuity dependency%has no media%' OR last_error LIKE '%dependency%is not generated%')
+    ORDER BY created_at ASC
+  `);
+  for (const row of failed.rows) {
+    const reset = await pool.query(`
+      UPDATE reel_operations
+      SET status='QUEUED', attempt=0, provider_operation_name=NULL, result_json=NULL,
+          last_error=NULL, lease_owner=NULL, lease_expires_at=NULL, updated_at=NOW()
+      WHERE id=$1 AND status='FAILED'
+      RETURNING id
+    `, [row.id]);
+    if (!reset.rows[0]) continue;
+    const p = await pool.query(`SELECT revision, manifest_json FROM reel_productions WHERE id=$1`, [row.production_id]);
+    if (!p.rows[0]) continue;
+    const m = p.rows[0].manifest_json || {};
+    if (["FAILED", "REPAIRING"].includes(m.status)) m.status = "SHOTS_PLANNED";
+    if (m.qa?.failures && Array.isArray(m.qa.failures)) {
+      m.qa.failures = m.qa.failures.filter(x => !String(x).includes("Continuity dependency") && !String(x).includes("is not generated"));
+    }
+    const shot = Array.isArray(m.shots) ? m.shots.find(x => x.id === row.target_id) : null;
+    if (shot && !shot.asset?.videoUrl) {
+      shot.status = "PLANNED";
+      if (shot.qa?.failures && Array.isArray(shot.qa.failures)) {
+        shot.qa.failures = shot.qa.failures.filter(x => !String(x).includes("Continuity dependency") && !String(x).includes("is not generated"));
+      }
+    }
+    await pool.query(`
+      UPDATE reel_productions
+      SET revision=revision+1, manifest_json=$3::jsonb, updated_at=NOW()
+      WHERE id=$1 AND revision=$2
+    `, [row.production_id, Number(p.rows[0].revision), JSON.stringify(m)]);
+    console.log(`[reel-worker] recovered premature continuity failure operation ${row.id}`);
+  }
+}
+await recoverLegacyContinuityDependencyFailures();
 
 async function publishHeartbeat() {
   await pool.query(`INSERT INTO reel_worker_heartbeats(worker_id,worker_role,metadata_json) VALUES($1,'reel-production',$2::jsonb)
@@ -763,6 +813,24 @@ async function processOperation(op) {
   } else if (op.kind === "SHOT") {
     const shot = current.manifest.shots.find(s => s.id === op.target_id);
     if (!shot) throw new Error("Shot not found");
+
+    // In-flight dependency guard: Ensure upstream dependencies have media before executing
+    if (shot.dependsOnShotIds?.length) {
+      const unmetDeps = shot.dependsOnShotIds.filter(depId => {
+        const dep = current.manifest.shots.find(s => s.id === depId);
+        return !dep?.asset?.videoUrl || !["GENERATED", "PASSED"].includes(dep.status);
+      });
+      if (unmetDeps.length > 0) {
+        console.log(`[reel-worker] shot ${shot.id} waiting on upstream dependencies (${unmetDeps.join(", ")}). Releasing to queue.`);
+        await pool.query(
+          `UPDATE reel_operations SET status='QUEUED', attempt=GREATEST(0, attempt-1), lease_owner=NULL, lease_expires_at=NULL, updated_at=NOW() WHERE id=$1`,
+          [op.id]
+        );
+        await sleep(1500);
+        return;
+      }
+    }
+
     if (!result) { result = await generateShot(op, current.manifest, shot); await updateOperation(op.id, { result }); }
     await applyShot(op, result);
   } else if (op.kind === "ROUGH_CUT") {

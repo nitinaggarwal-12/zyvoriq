@@ -1,10 +1,17 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import fsSync from "node:fs";
+
 const ASSET_URL_PREFIX = "/api/reels/assets/";
 
 function configuredRoot() {
-  return process.env.ZYVORIQ_ASSET_ROOT || process.env.RAILWAY_VOLUME_MOUNT_PATH || "";
+  const env = process.env.ZYVORIQ_ASSET_ROOT || process.env.RAILWAY_VOLUME_MOUNT_PATH;
+  if (env) return env;
+  try {
+    if (fsSync.existsSync("/data")) return "/data";
+  } catch {}
+  return "";
 }
 
 function safeKey(key: string) {
