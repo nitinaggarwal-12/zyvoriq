@@ -283,6 +283,7 @@ function ProductionJobPageContent() {
     if (!jobId) return;
 
     let isMounted = true;
+    let retryCount = 0;
 
     async function fetchJob() {
       try {
@@ -320,11 +321,22 @@ function ProductionJobPageContent() {
             } catch (e) {}
           }
         } else {
-          setError(data.error || "Failed to locate production job");
+          // Allow up to 4 retries for asynchronous DB initialization
+          if (retryCount < 4) {
+            retryCount++;
+            setTimeout(fetchJob, 1000);
+            return;
+          }
+          setError(data.error || "Production job not found");
           setLoading(false);
         }
       } catch (err: any) {
         if (isMounted) {
+          if (retryCount < 4) {
+            retryCount++;
+            setTimeout(fetchJob, 1000);
+            return;
+          }
           setError(err.message || "Network error fetching job");
           setLoading(false);
         }

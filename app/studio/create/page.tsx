@@ -242,28 +242,36 @@ function CreatePageContent() {
     const newJobId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const effectiveParentTrackId = destinationMode === "append_current" ? (selectedParentTrackId || targetTrackId) : undefined;
     
-    // Asynchronously kickoff generation in background pipeline
-    fetch("/api/tier6/create-act", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: newJobId,
-        parentTrackId: effectiveParentTrackId,
-        mode: destinationMode,
-        title,
-        prompt,
-        duration,
-        aspectRatio,
-        globalTransmute,
-        characterLock,
-        visualStyle,
-        musicPreset,
-        languages,
-        autoVeritas
-      })
-    }).catch(console.error);
+    try {
+      // Synchronously initialize job in persistent database
+      const res = await fetch("/api/tier6/create-act", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: newJobId,
+          parentTrackId: effectiveParentTrackId,
+          mode: destinationMode,
+          title,
+          prompt,
+          duration,
+          aspectRatio,
+          globalTransmute,
+          characterLock,
+          visualStyle,
+          musicPreset,
+          languages,
+          autoVeritas
+        })
+      });
 
-    // Navigate immediately to dedicated, permanent, deep-linkable Production Monitor
+      if (!res.ok) {
+        console.warn("create-act returned status:", res.status);
+      }
+    } catch (err) {
+      console.error("Failed to initialize production job:", err);
+    }
+
+    // Navigate to dedicated, permanent, deep-linkable Production Monitor
     router.push(`/studio/production/${newJobId}`);
   };
 

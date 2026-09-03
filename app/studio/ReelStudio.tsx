@@ -181,7 +181,12 @@ export function ReelStudio() {
   const [subtitlePlacement, setSubtitlePlacement] = useState("lower-third");
   const [musicTrack, setMusicTrack] = useState("lofi-chill");
   const [musicVolume, setMusicVolume] = useState(25);
+  const [castType, setCastType] = useState<"solo" | "dual" | "ensemble">("solo");
   const [selectedPersona, setSelectedPersona] = useState<PersonaClone>(PRESET_PERSONAS[0]);
+  const [secondaryPersona, setSecondaryPersona] = useState<PersonaClone>(
+    PRESET_PERSONAS.find(p => p.id === "rajesh_sharma") || PRESET_PERSONAS[1] || PRESET_PERSONAS[0]
+  );
+  const [editingPersonaSlot, setEditingPersonaSlot] = useState<1 | 2>(1);
   const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false);
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
   const [isDopamineModalOpen, setIsDopamineModalOpen] = useState(false);
@@ -1196,21 +1201,35 @@ export function ReelStudio() {
             </select>
           </div>
 
-          {/* Virtual Persona & Cloned Twin Selector */}
-          <div className="rounded-2xl border border-white/10 bg-black/30 p-3.5">
+          {/* Virtual Cast & Multi-Character Persona Selector */}
+          <div className="rounded-2xl border border-white/10 bg-black/30 p-3.5 space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-400 uppercase font-mono">Presenter / Virtual Twin</span>
-              <button
-                type="button"
-                onClick={() => setIsPersonaModalOpen(true)}
-                className="text-[11px] font-bold text-teal-400 transition hover:text-teal-300 hover:underline"
-              >
-                Change / Clone Face & Voice →
-              </button>
+              <span className="text-xs font-bold text-slate-400 uppercase font-mono">Cast & Presenters</span>
+              <div className="flex items-center gap-1 bg-white/5 p-0.5 rounded-lg border border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setCastType("solo")}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold transition ${castType === "solo" ? "bg-teal-500 text-obsidian-950 font-black shadow-sm" : "text-slate-400 hover:text-white"}`}
+                >
+                  Solo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCastType("dual")}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold transition ${castType === "dual" ? "bg-teal-500 text-obsidian-950 font-black shadow-sm" : "text-slate-400 hover:text-white"}`}
+                >
+                  Dual Cast (Couple)
+                </button>
+              </div>
             </div>
+
+            {/* Speaker 1 Card */}
             <div
-              onClick={() => setIsPersonaModalOpen(true)}
-              className="mt-2.5 flex cursor-pointer items-center justify-between rounded-xl border border-white/5 bg-white/[0.03] p-2.5 transition hover:border-teal-500/40 hover:bg-white/[0.06]"
+              onClick={() => {
+                setEditingPersonaSlot(1);
+                setIsPersonaModalOpen(true);
+              }}
+              className="flex cursor-pointer items-center justify-between rounded-xl border border-white/5 bg-white/[0.03] p-2.5 transition hover:border-teal-500/40 hover:bg-white/[0.06]"
             >
               <div className="flex items-center gap-2.5">
                 <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white/5 text-lg">
@@ -1223,19 +1242,50 @@ export function ReelStudio() {
                 <div>
                   <div className="flex items-center gap-1.5">
                     <div className="text-xs font-bold text-white">{selectedPersona.name}</div>
-                    {selectedPersona.isCustomClone && (
-                      <span className="rounded border border-teal-500/30 bg-teal-500/20 px-1 py-0.2 text-[8px] font-black uppercase text-teal-300">
-                        Clone
-                      </span>
-                    )}
+                    <span className="rounded bg-teal-500/20 text-teal-300 px-1 py-0.2 text-[8px] font-black uppercase">
+                      {castType === "dual" ? "Speaker 1 / Wife" : "Lead"}
+                    </span>
                   </div>
                   <div className="text-[10px] text-slate-400">{selectedPersona.role}</div>
                 </div>
               </div>
-              <span className="rounded-lg border border-teal-500/20 bg-teal-500/10 px-2 py-1 text-[10px] font-bold text-teal-300 font-mono">
-                ACTIVE
+              <span className="text-[10px] font-bold text-teal-400 hover:underline">
+                Change →
               </span>
             </div>
+
+            {/* Speaker 2 Card (When Dual Cast Active) */}
+            {castType === "dual" && (
+              <div
+                onClick={() => {
+                  setEditingPersonaSlot(2);
+                  setIsPersonaModalOpen(true);
+                }}
+                className="flex cursor-pointer items-center justify-between rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-2.5 transition hover:border-indigo-400/50 hover:bg-indigo-500/10"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-lg">
+                    {secondaryPersona.faceImageUrl ? (
+                      <img src={secondaryPersona.faceImageUrl} alt={secondaryPersona.name} className="h-full w-full object-cover" />
+                    ) : (
+                      secondaryPersona.avatarEmoji || "👨"
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="text-xs font-bold text-white">{secondaryPersona.name}</div>
+                      <span className="rounded bg-indigo-500/20 text-indigo-300 px-1 py-0.2 text-[8px] font-black uppercase">
+                        Speaker 2 / Husband
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-slate-400">{secondaryPersona.role}</div>
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold text-indigo-400 hover:underline">
+                  Change →
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Engine Settings (Language, Voice, Aspect Ratio, Subtitles) */}
@@ -1328,24 +1378,46 @@ export function ReelStudio() {
             {/* TAB 1: SCENES & TIMELINE */}
             {activeTab === "Scenes" && (
               <div className="space-y-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <div className="text-xs font-bold uppercase tracking-[0.16em] text-teal-400 font-mono">SCENE SEQUENCE & BEAT EDITOR</div>
                     <h2 className="mt-1 text-2xl font-black tracking-[-0.03em] text-white">
                       {manifest ? `${shots.length} Scenes (${generatedShotCount}/${totalShotCount} Generated)` : "Build a plan to create shots"}
                     </h2>
                   </div>
-                  {shots.length > 0 && (
-                    <div className="flex items-center gap-2">
+
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    {manifest && shots.length > 0 && (
                       <button
+                        type="button"
+                        onClick={generateAllMp4Parallel}
+                        disabled={busy}
+                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 px-5 py-2.5 text-xs font-black text-obsidian-950 shadow-lg shadow-teal-500/25 hover:from-teal-300 hover:to-cyan-300 active:scale-[0.98] transition disabled:opacity-50 cursor-pointer"
+                      >
+                        {busy && operation === "all" ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin text-obsidian-950" />
+                            <span>Rendering Scenes ({generatedShotCount}/{totalShotCount})...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="w-4 h-4 fill-current" />
+                            <span>🚀 Kickoff Video & Audio Render ({generatedShotCount}/{totalShotCount})</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                    {shots.length > 0 && (
+                      <button
+                        type="button"
                         onClick={selectAllShots}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-xs font-bold text-slate-400 hover:text-white"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-xs font-bold text-slate-300 hover:text-white hover:bg-white/10 transition"
                       >
                         {selectedShotIds.size === shots.length ? <CheckSquare className="h-3.5 w-3.5 text-teal-300" /> : <Square className="h-3.5 w-3.5 text-slate-400" />}
                         {selectedShotIds.size === shots.length ? "Deselect All" : "Select All"}
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
 
                 {!manifest ? (
@@ -1635,8 +1707,19 @@ export function ReelStudio() {
                                 {/* Scene Action Buttons */}
                                 {!isEditing && (
                                   <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-white/5 pt-2.5">
+                                    {!generated && (
+                                      <button
+                                        type="button"
+                                        onClick={() => runAction("generateNextShot", "shot")}
+                                        disabled={busy}
+                                        className="inline-flex items-center gap-1 rounded-lg border border-teal-400/40 bg-teal-400/15 px-2.5 py-1 text-[11px] font-bold text-teal-300 hover:bg-teal-400/25 transition shadow-sm"
+                                      >
+                                        <PlayCircle className="h-3 w-3 fill-current" /> Render Clip
+                                      </button>
+                                    )}
                                     {generated && (
                                       <button
+                                        type="button"
                                         onClick={() => setSelectedShotId(shot.id)}
                                         className="inline-flex items-center gap-1 rounded-lg border border-teal-300/30 bg-teal-300/10 px-2.5 py-1 text-[11px] font-bold text-teal-200 hover:bg-teal-300/20"
                                       >
@@ -2299,8 +2382,14 @@ export function ReelStudio() {
       <PersonaVaultModal
         isOpen={isPersonaModalOpen}
         onClose={() => setIsPersonaModalOpen(false)}
-        selectedPersonaId={selectedPersona.id}
-        onSelectPersona={(p) => setSelectedPersona(p)}
+        selectedPersonaId={editingPersonaSlot === 1 ? selectedPersona.id : secondaryPersona.id}
+        onSelectPersona={(p) => {
+          if (editingPersonaSlot === 1) {
+            setSelectedPersona(p);
+          } else {
+            setSecondaryPersona(p);
+          }
+        }}
       />
 
       <SocialPublishModal
