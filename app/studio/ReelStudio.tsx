@@ -199,6 +199,7 @@ export function ReelStudio() {
   const [isTrendRadarOpen, setIsTrendRadarOpen] = useState(false);
   const [isBookStudioOpen, setIsBookStudioOpen] = useState(false);
   const [isPromptBuilderOpen, setIsPromptBuilderOpen] = useState(false);
+  const [autoCritiqueLoopEnabled, setAutoCritiqueLoopEnabled] = useState(false);
   const [detectedMemes, setDetectedMemes] = useState<MemeCutawayItem[]>([]);
   const [dopamineConfig, setDopamineConfig] = useState<DopamineConfig>(DEFAULT_DOPAMINE_CONFIG);
   const [zoomPreset, setZoomPreset] = useState<AutoZoomPresetId>("dynamic-viral");
@@ -1387,6 +1388,21 @@ export function ReelStudio() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2.5">
+                    {/* DeepMind QC Auto-Heal Loop Toggle */}
+                    <button
+                      type="button"
+                      onClick={() => setAutoCritiqueLoopEnabled(!autoCritiqueLoopEnabled)}
+                      title="When enabled, DeepMind Gemini Multimodal Video Critic analyzes each generated clip and automatically heals prompt defects before finalizing."
+                      className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs font-bold transition cursor-pointer ${
+                        autoCritiqueLoopEnabled
+                          ? "border-cyan-400/50 bg-cyan-500/15 text-cyan-200 shadow-md shadow-cyan-500/20"
+                          : "border-white/10 bg-white/[0.03] text-slate-400 hover:text-white hover:bg-white/10"
+                      }`}
+                    >
+                      <Sparkles className={`w-3.5 h-3.5 ${autoCritiqueLoopEnabled ? "text-cyan-400 animate-pulse" : "text-slate-400"}`} />
+                      <span>DeepMind QC Loop: {autoCritiqueLoopEnabled ? "ON (Auto-Heal)" : "OFF"}</span>
+                    </button>
+
                     {manifest && shots.length > 0 && (
                       <button
                         type="button"
