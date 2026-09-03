@@ -13,11 +13,15 @@ import {
   RotateCcw,
   MousePointer,
   Users,
-  Mic
+  Mic,
+  Play,
+  Pause,
+  ArrowLeft
 } from "lucide-react";
 
 export default function ZoomScreenSharePage() {
   const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [activeSpeaker, setActiveSpeaker] = useState<"user" | "elena">("user");
   const [hasAppliedFix, setHasAppliedFix] = useState(false);
@@ -31,10 +35,20 @@ export default function ZoomScreenSharePage() {
   const audioUser3 = useRef<HTMLAudioElement | null>(null);
   const audioElena3 = useRef<HTMLAudioElement | null>(null);
   const userCamRef = useRef<HTMLVideoElement | null>(null);
+  const userStreamRef = useRef<MediaStream | null>(null);
 
-  // Play dialogue sequentially
+  const stopAllAudio = () => {
+    [audioUser1, audioElena1, audioUser2, audioElena2, audioUser3, audioElena3].forEach(a => {
+      if (a.current) {
+        a.current.pause();
+        a.current.currentTime = 0;
+      }
+    });
+  };
+
+  // Play dialogue sequentially and sync with timer
   useEffect(() => {
-    let start = Date.now();
+    let start = Date.now() - (currentTime * 1000);
     const interval = setInterval(() => {
       if (!isPlaying) return;
       const elapsed = (Date.now() - start) / 1000;
@@ -45,14 +59,12 @@ export default function ZoomScreenSharePage() {
         setLaserPos({ x: 340 + Math.sin(elapsed * 2) * 30, y: 220 + Math.cos(elapsed * 2) * 20 });
       } else if (elapsed < 15) {
         setActiveSpeaker("elena");
-        // Laser highlights Shot 1 Audio Stem
         setLaserPos({ x: 260 + Math.sin(elapsed * 4) * 20, y: 310 + Math.cos(elapsed * 4) * 10 });
       } else if (elapsed < 18) {
         setActiveSpeaker("user");
         setLaserPos({ x: 260, y: 310 });
       } else if (elapsed < 26) {
         setActiveSpeaker("elena");
-        // Elena clicks Autonomous Fix
         setLaserPos({ x: 640 + Math.sin(elapsed * 3) * 15, y: 480 });
         setHasAppliedFix(true);
       } else if (elapsed < 28) {
@@ -68,33 +80,76 @@ export default function ZoomScreenSharePage() {
       }
     }, 100);
 
-    // Audio Playback Triggers
-    const t1 = setTimeout(() => audioUser1.current?.play().catch(() => {}), 200);
-    const t2 = setTimeout(() => audioElena1.current?.play().catch(() => {}), 6000);
-    const t3 = setTimeout(() => audioUser2.current?.play().catch(() => {}), 15000);
-    const t4 = setTimeout(() => audioElena2.current?.play().catch(() => {}), 18000);
-    const t5 = setTimeout(() => audioUser3.current?.play().catch(() => {}), 26000);
-    const t6 = setTimeout(() => audioElena3.current?.play().catch(() => {}), 28000);
-
-    // Init User Webcam
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-        .then(stream => {
-          if (userCamRef.current) userCamRef.current.srcObject = stream;
-        })
-        .catch(() => {});
+    // Audio Playback Triggers synced to playback
+    const timeouts: NodeJS.Timeout[] = [];
+    if (isPlaying) {
+      if (currentTime < 0.5) {
+        timeouts.push(setTimeout(() => audioUser1.current?.play().catch(() => {}), 200));
+      }
+      if (currentTime < 6.0) {
+        timeouts.push(setTimeout(() => audioElena1.current?.play().catch(() => {}), Math.max(0, (6.0 - currentTime) * 1000)));
+      }
+      if (currentTime < 15.0) {
+        timeouts.push(setTimeout(() => audioUser2.current?.play().catch(() => {}), Math.max(0, (15.0 - currentTime) * 1000)));
+      }
+      if (currentTime < 18.0) {
+        timeouts.push(setTimeout(() => audioElena2.current?.play().catch(() => {}), Math.max(0, (18.0 - currentTime) * 1000)));
+      }
+      if (currentTime < 26.0) {
+        timeouts.push(setTimeout(() => audioUser3.current?.play().catch(() => {}), Math.max(0, (26.0 - currentTime) * 1000)));
+      }
+      if (currentTime < 28.0) {
+        timeouts.push(setTimeout(() => audioElena3.current?.play().catch(() => {}), Math.max(0, (28.0 - currentTime) * 1000)));
+      }
+    } else {
+      stopAllAudio();
     }
 
     return () => {
       clearInterval(interval);
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-      clearTimeout(t4);
-      clearTimeout(t5);
-      clearTimeout(t6);
+      timeouts.forEach(clearTimeout);
     };
-  }, [isPlaying]);
+  }, [isPlaying, currentTime]);
+
+  // Handle User Webcam with Proper Cleanup
+  useEffect(() => {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia && isUserCamActive) {
+      navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+        .then(stream => {
+          userStreamRef.current = stream;
+          if (userCamRef.current) userCamRef.current.srcObject = stream;
+        })
+        .catch(() => {
+          console.log("Using avatar silhouette fallback");
+        });
+    }
+
+    return () => {
+      if (userStreamRef.current) {
+        userStreamRef.current.getTracks().forEach(t => t.stop());
+        userStreamRef.current = null;
+      }
+    };
+  }, [isUserCamActive]);
+
+  const handleRestart = () => {
+    stopAllAudio();
+    setCurrentTime(0);
+    setHasAppliedFix(false);
+    setIsPlaying(true);
+  };
+
+  const handleToggleUserCamera = () => {
+    if (isUserCamActive) {
+      if (userStreamRef.current) {
+        userStreamRef.current.getTracks().forEach(t => t.stop());
+        userStreamRef.current = null;
+      }
+      setIsUserCamActive(false);
+    } else {
+      setIsUserCamActive(true);
+    }
+  };
 
   const currentDialogue = [
     { start: 0, end: 6, speaker: "Nitin Aggarwal (Creator)", text: "“Hey Elena, my 4-shot reel in Studio Cinema won't sync audio on Shot 1, and my predicted retention is stuck at 42%. Can you look at my screen and help me fix this?”" },
@@ -111,17 +166,25 @@ export default function ZoomScreenSharePage() {
   return (
     <main className="min-h-screen bg-[#07090e] text-white flex flex-col justify-between font-sans selection:bg-teal-500 selection:text-black">
       
-      {/* Hidden Audio Elements for 2-Way Spoken Conversation */}
-      <audio ref={audioUser1} src="/assets/audio/user_1.wav" preload="auto" />
-      <audio ref={audioElena1} src="/assets/audio/elena_1.wav" preload="auto" />
-      <audio ref={audioUser2} src="/assets/audio/user_2.wav" preload="auto" />
-      <audio ref={audioElena2} src="/assets/audio/elena_2.wav" preload="auto" />
-      <audio ref={audioUser3} src="/assets/audio/user_3.wav" preload="auto" />
-      <audio ref={audioElena3} src="/assets/audio/elena_3.wav" preload="auto" />
+      {/* Audio Elements for 2-Way Spoken Conversation */}
+      <audio ref={audioUser1} src="/assets/audio/user_1.wav" preload="auto" muted={isMuted} />
+      <audio ref={audioElena1} src="/assets/audio/elena_1.wav" preload="auto" muted={isMuted} />
+      <audio ref={audioUser2} src="/assets/audio/user_2.wav" preload="auto" muted={isMuted} />
+      <audio ref={audioElena2} src="/assets/audio/elena_2.wav" preload="auto" muted={isMuted} />
+      <audio ref={audioUser3} src="/assets/audio/user_3.wav" preload="auto" muted={isMuted} />
+      <audio ref={audioElena3} src="/assets/audio/elena_3.wav" preload="auto" muted={isMuted} />
 
       {/* 1. ZOOM / MEET HEADER BAR */}
       <header className="h-14 border-b border-slate-800/90 bg-[#0b0f17]/95 px-6 flex items-center justify-between z-30">
         <div className="flex items-center gap-4">
+          <Link
+            href="/studio"
+            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Studio</span>
+          </Link>
+          <div className="h-4 w-px bg-slate-800" />
           <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
             <span>2-WAY ZOOM SESSION ACTIVE</span>
@@ -136,7 +199,7 @@ export default function ZoomScreenSharePage() {
             <Users className="w-3.5 h-3.5" />
             <span>2 Participants (Nitin + Elena)</span>
           </div>
-          <div className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-emerald-400">
+          <div className="hidden sm:block px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-emerald-400">
             <span>1080p 60fps • 48kHz AEC</span>
           </div>
           <Link
@@ -148,10 +211,10 @@ export default function ZoomScreenSharePage() {
         </div>
       </header>
 
-      {/* 2. MAIN STAGE: 2-WAY CAM TILES (TOP) + SHARED SCREEN (CENTER) */}
+      {/* 2. MAIN STAGE: SHARED SCREEN (LEFT 3 COLS) + 2-WAY CAM TILES (RIGHT COL) */}
       <div className="flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-4 gap-4 max-w-[1600px] w-full mx-auto">
         
-        {/* SHARED SCREEN WORKSPACE (Left 3 Columns) */}
+        {/* SHARED SCREEN WORKSPACE */}
         <div className="lg:col-span-3 rounded-2xl border border-slate-800 bg-[#0d121d] p-5 flex flex-col justify-between relative overflow-hidden shadow-2xl">
           
           {/* Screen Share Watermark & Top Controls */}
@@ -347,10 +410,11 @@ export default function ZoomScreenSharePage() {
                 NITIN AGGARWAL
               </span>
               <button
-                onClick={() => setIsUserCamActive(!isUserCamActive)}
+                onClick={handleToggleUserCamera}
                 className="text-[10px] text-slate-400 hover:text-white"
+                title={isUserCamActive ? "Mute User Camera" : "Enable User Camera"}
               >
-                {isUserCamActive ? <Camera className="w-3.5 h-3.5 text-cyan-400" /> : <CameraOff className="w-3.5 h-3.5" />}
+                {isUserCamActive ? <Camera className="w-3.5 h-3.5 text-cyan-400" /> : <CameraOff className="w-3.5 h-3.5 text-rose-400" />}
               </button>
             </div>
 
@@ -396,7 +460,7 @@ export default function ZoomScreenSharePage() {
               className={`w-full py-2 px-3 rounded-xl font-bold font-mono text-xs transition-all flex items-center justify-center gap-1.5 ${
                 hasAppliedFix
                   ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                  : "bg-gradient-to-r from-teal-400 to-emerald-400 text-slate-950 hover:brightness-110 shadow-lg shadow-teal-500/20"
+                  : "bg-gradient-to-r from-teal-400 to-emerald-400 text-slate-950 hover:brightness-110 shadow-lg shadow-teal-500/20 cursor-pointer"
               }`}
             >
               {hasAppliedFix ? (
@@ -437,22 +501,33 @@ export default function ZoomScreenSharePage() {
           {/* Zoom Meeting Action Controls */}
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setIsMuted(!isMuted)}
+              className={`p-2 rounded-xl border transition-all ${
+                isMuted
+                  ? "bg-rose-950/40 border-rose-500/40 text-rose-300"
+                  : "bg-slate-900 border-slate-800 text-slate-300 hover:text-white"
+              }`}
+              title={isMuted ? "Unmute Audio" : "Mute Audio"}
+            >
+              {isMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-teal-400" />}
+            </button>
+
+            <button
               onClick={() => setIsPlaying(!isPlaying)}
               className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 transition-all"
               title={isPlaying ? "Pause Session" : "Play Session"}
             >
-              {isPlaying ? <Volume2 className="w-4 h-4 text-teal-400" /> : <VolumeX className="w-4 h-4 text-rose-400" />}
+              {isPlaying ? <Pause className="w-4 h-4 text-amber-400" /> : <Play className="w-4 h-4 text-emerald-400" />}
             </button>
+
             <button
-              onClick={() => {
-                setCurrentTime(0);
-                setHasAppliedFix(false);
-              }}
+              onClick={handleRestart}
               className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 transition-all"
               title="Restart 30s Debug Demo"
             >
               <RotateCcw className="w-4 h-4 text-slate-300" />
             </button>
+
             <Link
               href="/studio"
               className="px-4 py-2 rounded-xl bg-gradient-to-r from-teal-400 to-emerald-400 text-slate-950 font-bold font-mono text-xs hover:brightness-110 shadow-lg transition-all"

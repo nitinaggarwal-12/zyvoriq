@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import {
   MessageSquare,
   X,
@@ -610,7 +611,9 @@ export function LiveSupportConcierge() {
   const activeRatingDisplay = hoverRating || selectedRating;
   const activeAvatarVideo = avatarPref.avatarId === "priya" ? "/assets/video/veo_priya_master.mp4" : "/assets/video/veo_aria_master.mp4";
 
+  const pathname = usePathname();
   if (!hasMounted) return null;
+  if (pathname === "/studio/zoom-screenshare") return null;
 
   return (
     <>
