@@ -538,6 +538,54 @@ export function ReelStudio() {
     }
   };
 
+  const handleMagicPromptSubmit = async (promptOverride?: string) => {
+    const finalPrompt = (promptOverride || topic).trim();
+    if (!finalPrompt || busy) return;
+    setTopic(finalPrompt);
+
+    // Auto-detect Hindi or other languages if mentioned
+    let detectedLang = language;
+    if (/hindi|bollywood|desi|chai|pati|patni|bhai/i.test(finalPrompt)) {
+      detectedLang = "Hindi";
+      setLanguage("Hindi");
+    }
+
+    // Auto-detect dual cast if couple / 2 people mentioned
+    if (/husband|wife|couple|two friend|2 friend|conversation between 2|dialogue between 2/i.test(finalPrompt)) {
+      setCastType("dual");
+    }
+
+    setOperation("plan");
+    setError("");
+    setSelectedShotIds(new Set());
+
+    try {
+      const response = await fetch("/api/reels/productions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic: finalPrompt,
+          tone: tone || "Humorous & Punchy",
+          platform: "Instagram Reels",
+          requestedDurationSec: durationNumber(duration),
+          language: detectedLang,
+          aspectRatio,
+          characterDescription: selectedPersona.promptDescription,
+          characterName: selectedPersona.name,
+          characterId: selectedPersona.id,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || "Failed to create production plan");
+      setProduction(data.production);
+      setActiveTab("Scenes");
+    } catch (err: any) {
+      setError(err?.message || "Failed to auto-create reel");
+    } finally {
+      setOperation(null);
+    }
+  };
+
   // --- Scene / Beat Mutation Handlers ---
   const handleEditShot = (shot: ReelShot) => {
     setEditingShotId(shot.id);
@@ -1118,6 +1166,115 @@ export function ReelStudio() {
           </div>
         </div>
       </div>
+
+      {/* 🚀 HERO MAGIC COPILOT PROMPT BAR (1-CLICK PROMPT TO REEL) */}
+      {creationMode === "video_reel" && (
+        <div className="mx-auto max-w-[1720px] px-5 pt-5 pb-1 md:px-8">
+          <div className="relative overflow-hidden rounded-3xl border border-teal-500/30 bg-gradient-to-r from-slate-900/95 via-obsidian-950/95 to-slate-900/95 p-4 sm:p-5 shadow-2xl backdrop-blur-2xl ring-1 ring-white/10">
+            {/* Ambient glowing background accents */}
+            <div className="pointer-events-none absolute -left-20 -top-20 h-48 w-48 rounded-full bg-teal-500/15 blur-3xl" />
+            <div className="pointer-events-none absolute -right-20 -bottom-20 h-48 w-48 rounded-full bg-cyan-500/15 blur-3xl" />
+
+            <div className="relative z-10 flex flex-col gap-3">
+              {/* Header pill & title */}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-gradient-to-tr from-teal-400 to-cyan-400 text-obsidian-950 shadow-md shadow-teal-500/30">
+                    <Sparkles className="h-4 w-4" />
+                  </div>
+                  <span className="text-xs font-black uppercase tracking-[0.16em] text-teal-300 font-mono">
+                    1-Click Prompt-to-Reel Copilot
+                  </span>
+                  <span className="rounded-full border border-teal-500/20 bg-teal-500/10 px-2.5 py-0.5 text-[10px] font-bold text-teal-400">
+                    Zero Setup Required
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                  <span>Describe anything in natural language</span>
+                  <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-mono text-slate-300">Enter ↵</span>
+                </div>
+              </div>
+
+              {/* Chat Input Bar */}
+              <div className="relative flex items-center">
+                <input
+                  type="text"
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleMagicPromptSubmit();
+                    }
+                  }}
+                  placeholder="Describe what you want to create (e.g., 'A funny 30s Hindi comedy between husband and wife about morning chai')..."
+                  className="w-full rounded-2xl border border-teal-500/30 bg-black/60 py-4 pl-4 pr-44 text-sm font-medium text-white placeholder-slate-400 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 shadow-inner"
+                />
+
+                <div className="absolute right-2 flex items-center gap-2">
+                  {topic.trim() && (
+                    <button
+                      type="button"
+                      onClick={() => setTopic("")}
+                      className="text-xs text-slate-400 hover:text-white px-2 py-1"
+                    >
+                      Clear
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleMagicPromptSubmit()}
+                    disabled={busy || !topic.trim()}
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 px-5 py-2.5 text-xs font-black text-obsidian-950 shadow-lg shadow-teal-500/25 hover:from-teal-300 hover:to-cyan-300 active:scale-[0.98] transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {busy && operation === "plan" ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin text-obsidian-950" />
+                        <span>Planning...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="h-4 w-4 fill-current" />
+                        <span>✨ Generate Reel</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick Prompt Inspiration Pills */}
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <span className="text-[11px] font-bold text-slate-400">Try Instant Ideas:</span>
+                {[
+                  { label: "☕ Hindi Husband-Wife Chai Comedy", prompt: "A hilarious 30s Hindi comedy dialogue between husband and wife where the husband is begging for morning chai and the wife gives witty sarcastic replies" },
+                  { label: "🍕 Wife Catches Husband Midnight Snacking", prompt: "A funny Hindi comedy reel where wife catches her husband secretly opening the fridge at 2 AM with hilarious excuses" },
+                  { label: "🚀 3 High-Growth Startup Secrets", prompt: "3 counter-intuitive marketing growth hacks that scaled our SaaS to 100k users in 90 days" },
+                  { label: "🍿 Crime Thriller 30s Cliffhanger", prompt: "A dark cinematic crime thriller where a detective opens a locked briefcase and discovers a photograph of himself" },
+                ].map((item, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setTopic(item.prompt);
+                      handleMagicPromptSubmit(item.prompt);
+                    }}
+                    className="rounded-lg border border-white/5 bg-white/[0.04] px-2.5 py-1 text-[11px] font-semibold text-slate-300 hover:border-teal-500/40 hover:bg-teal-500/10 hover:text-teal-300 transition"
+                  >
+                    {item.label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleSurpriseIdea}
+                  className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-bold text-amber-300 hover:bg-amber-500/20 transition flex items-center gap-1"
+                >
+                  <Lightbulb className="w-3 h-3" /> Surprise Me
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {creationMode === "video_reel" && (
         <main className="mx-auto grid max-w-[1720px] gap-6 px-5 py-6 md:px-8 lg:grid-cols-[400px_1fr_370px]">
