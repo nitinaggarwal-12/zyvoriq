@@ -50,6 +50,7 @@ import {
   AvatarProfilePreference, 
   DEFAULT_AVATAR_PREFERENCE 
 } from "@/lib/profile/avatarPreferencesEngine";
+import { LiveScreenShareCopilotSession } from "@/components/LiveScreenShareCopilotSession";
 
 interface Message {
   id: string;
@@ -132,7 +133,7 @@ const AVATAR_PRESETS_QUICK = [
     avatarName: "Elena Rostova",
     avatarRole: "Senior Technical Director Copilot",
     avatarImage: "/assets/avatars/avatar_elena_founder.jpg",
-    avatarVideo: "/assets/video/ren_and_aoi_conversation_synced.mp4",
+    avatarVideo: "/assets/video/veo_aria_master.mp4",
     attire: "tech_hoodie" as const,
     attireLabel: "Tech Minimalist Dark Hoodie",
     audioVoiceId: "neural_crisp_tech_female",
@@ -607,30 +608,19 @@ export function LiveSupportConcierge() {
   };
 
   const activeRatingDisplay = hoverRating || selectedRating;
-  const activeAvatarVideo = avatarPref.avatarId === "priya" ? "/assets/video/veo_priya_master.mp4" : "/assets/video/ren_and_aoi_conversation_synced.mp4";
+  const activeAvatarVideo = avatarPref.avatarId === "priya" ? "/assets/video/veo_priya_master.mp4" : "/assets/video/veo_aria_master.mp4";
 
   if (!hasMounted) return null;
 
   return (
     <>
-      {/* Laser Spotlight Visual Overlay when Screen-Sharing Copilot is Active */}
-      {spotlightActive && isScreenSharingActive && (
-        <div className="fixed top-24 left-1/4 z-[9999] pointer-events-none animate-pulse">
-          <div className="rounded-2xl border-2 border-teal-400 bg-teal-500/10 p-4 backdrop-blur-sm shadow-2xl shadow-teal-500/30">
-            <div className="flex items-center gap-2 text-xs font-mono font-black text-teal-300">
-              <span className="h-2.5 w-2.5 rounded-full bg-teal-400 animate-ping" />
-              <span>LIVE AI SPOTLIGHT: {copilotDiagnosis?.issue || "Issue Detected"}</span>
-            </div>
-            <p className="mt-1 text-xs text-white">
-              🎯 <strong>Target Action:</strong> {copilotDiagnosis?.resolution || "Click 'Build Production Plan'"}
-            </p>
-            <div className="mt-2 flex items-center justify-between text-[10px] font-mono text-emerald-400 border-t border-slate-800 pt-1.5">
-              <span>Latency: 320ms</span>
-              <span>Helpfulness: 99.6%</span>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Full-Screen Multimodal Screen Share Copilot Session (Video Clone on Cam + Voice + Laser Spotlight) */}
+      <LiveScreenShareCopilotSession
+        isOpen={isScreenSharingActive}
+        onClose={() => setIsScreenSharingActive(false)}
+        avatarId={avatarPref.avatarId === "priya" ? "priya" : "elena"}
+        onAvatarChange={(newAv) => handleSwitchQuickAvatar(newAv)}
+      />
 
       <aside
         aria-label="Live AI Support Concierge and Help"
