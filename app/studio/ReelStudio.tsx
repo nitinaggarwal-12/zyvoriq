@@ -7,7 +7,8 @@ import {
   Image as ImageIcon, Copy, Check, Instagram, Youtube, ChevronDown, Loader2,
   CircleAlert, Database, Film, AudioLines, Video, Download, Trash2, Plus,
   Pencil, Save, X, Globe, Music, Volume2, Sliders, CheckSquare, Square,
-  Layers, Wand2, RefreshCw, Eye, Zap, Share2, Send, Radio, BookOpen, Sun, Moon
+  Layers, Wand2, RefreshCw, Eye, Zap, Share2, Send, Radio, BookOpen, Sun, Moon,
+  Layers3, FolderOpen, ScanSearch, Lightbulb, Compass, PlayCircle, ChevronRight, Flame
 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import type { ReelProductionManifest, ReelShot } from "@/lib/reel/types";
@@ -114,6 +115,44 @@ const ASPECT_RATIOS = [
   { id: "4:5", name: "4:5 Portrait (Instagram Classic)" },
 ];
 
+const QUICK_GENRE_PRESETS = [
+  { id: "custom", label: "⚡ Pick a Curated Viral Concept...", prompt: "" },
+  {
+    id: "focus_habits",
+    label: "⚡ Biohacking: 3 Habits Killing Focus",
+    prompt: "3 habits quietly killing your focus and dopamine receptors every morning, and how to fix them."
+  },
+  {
+    id: "kaizen_dojo",
+    label: "⚔️ Kaizen Dojo: Mind Without Mind (Duo)",
+    prompt: "Sensei Ren teaches apprentice Aoi the secret of Mushin (Mind without Mind) during a thunderstorm duel on the wooden dojo balcony."
+  },
+  {
+    id: "comedy_lost_keys",
+    label: "😂 Hindi Comedy: The Lost Keys (Couple Banter)",
+    prompt: "Husband Aarav cannot find his car keys for the third time this week, while wife Meera sarcastically calculates how much time they have lost."
+  },
+  {
+    id: "ai_governance",
+    label: "🚀 DeepTech: zk-SNARK Autonomous AI 2026",
+    prompt: "Priya Sharma explains why zk-SNARK cryptographic consensus is replacing centralized cloud authentication by 2026."
+  },
+  {
+    id: "supersonic_airflow",
+    label: "🔥 Cinematic: Supersonic Combustion Transition",
+    prompt: "Supersonic airflow and turbulent fuel injection dynamics within a scramjet combustion chamber."
+  }
+];
+
+const QUICK_SURPRISE_IDEAS = [
+  "3 habits quietly killing your focus and dopamine receptors every morning, and how to fix them.",
+  "Sensei Ren teaches apprentice Aoi the secret of Mushin (Mind without Mind) during a thunderstorm duel.",
+  "Husband Aarav cannot find his car keys for the third time this week, while wife Meera sarcastically calculates how much time they have lost.",
+  "Priya Sharma explains why zk-SNARK cryptographic consensus is replacing centralized cloud authentication by 2026.",
+  "High-speed supersonic airflow and turbulent fuel injection dynamics within a scramjet combustion chamber.",
+  "Why 93% of top creators never post between 12 PM and 4 PM: the hidden social algorithm curve."
+];
+
 function durationNumber(value: string | number) {
   const parsed = typeof value === "number" ? value : Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : 30;
@@ -158,7 +197,16 @@ export function ReelStudio() {
   const [zoomPreset, setZoomPreset] = useState<AutoZoomPresetId>("dynamic-viral");
   const [activeTab, setActiveTab] = useState<"Scenes" | "Script" | "B-Roll" | "SFX & Emojis" | "Retention Heatmap" | "Audio & Subtitles" | "Format" | "Cover">("Scenes");
 
+  const handleSurpriseIdea = () => {
+    const nextIdea = QUICK_SURPRISE_IDEAS[Math.floor(Math.random() * QUICK_SURPRISE_IDEAS.length)];
+    setTopic(nextIdea);
+  };
 
+  const handleSelectGenrePreset = (presetPrompt: string) => {
+    if (presetPrompt) {
+      setTopic(presetPrompt);
+    }
+  };
 
   const [copied, setCopied] = useState(false);
   const [production, setProduction] = useState<StoredProduction | null>(null);
@@ -914,72 +962,112 @@ export function ReelStudio() {
 
   return (
     <div className="min-h-screen bg-[#07090d] text-slate-100">
-      <header className="sticky top-0 z-40 border-b border-white/5 bg-[#07090d]/90 backdrop-blur-2xl">
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between px-5 py-4 md:px-8">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#07090d]/95 backdrop-blur-2xl">
+        <div className="mx-auto flex max-w-[1720px] flex-wrap items-center justify-between gap-4 px-5 py-3.5 md:px-8">
+          {/* Brand & Stage Title */}
           <div className="flex items-center gap-4">
-            <Link href="/" className="rounded-xl p-2 text-slate-500 transition hover:bg-white/5 hover:text-white" aria-label="Back home"><ArrowLeft className="h-5 w-5" /></Link>
+            <Link href="/" className="rounded-xl p-2 text-slate-400 transition hover:bg-white/5 hover:text-white" aria-label="Back home">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-300 via-orange-200 to-teal-300 font-black text-slate-950">Z</div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-400 via-emerald-400 to-cyan-500 p-[1px] shadow-lg shadow-teal-500/20">
+                <div className="flex h-full w-full items-center justify-center rounded-[15px] bg-[#07090d] text-base font-black text-teal-400">
+                  Z
+                </div>
+              </div>
               <div>
-                <div className="font-black tracking-[-0.02em] text-white">Reel Studio Pro</div>
-                <div className="text-[11px] text-slate-500">Zyvoriq Neural Cinema & Multi-Shot Studio Suite</div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-base font-black tracking-tight text-white font-mono">Reel Studio Pro</h1>
+                  <span className="rounded-full bg-teal-500/10 border border-teal-500/30 px-2 py-0.2 text-[10px] font-bold text-teal-400 font-mono">
+                    NEURAL CINEMA
+                  </span>
+                </div>
+                <div className="text-[11px] text-slate-400 font-sans">Multi-Shot Continuous Studio Suite</div>
               </div>
             </div>
           </div>
-          <div className="hidden items-center gap-3 text-xs font-medium text-slate-400 sm:flex">
-            <span className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-slate-300">
-              <Globe className="h-3.5 w-3.5 text-pink-300" /> {LANGUAGES.find(l => l.code === language)?.name}
-            </span>
-            <span className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-slate-300">
-              <Sliders className="h-3.5 w-3.5 text-teal-300" /> {aspectRatio}
-            </span>
-            <span className={`h-2 w-2 rounded-full ${production ? "bg-emerald-400" : "bg-slate-700"}`} />
-            {production ? `Persisted · r${production.revision}` : "Draft Mode"}
+
+          {/* Quick Hub Navigation & Creation Tools */}
+          <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
+            {/* Status indicators */}
+            <div className="hidden lg:flex items-center gap-2 pr-2 border-r border-white/10">
+              <span className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-1 text-slate-300">
+                <Globe className="h-3.5 w-3.5 text-teal-400" /> {LANGUAGES.find(l => l.code === language)?.name}
+              </span>
+              <span className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-1 text-slate-300">
+                <Sliders className="h-3.5 w-3.5 text-cyan-400" /> {aspectRatio}
+              </span>
+              <span className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-1 text-slate-300 font-mono text-[11px]">
+                <span className={`h-2 w-2 rounded-full ${production ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
+                {production ? `r${production.revision}` : "Draft"}
+              </span>
+            </div>
+
+            {/* Studio Navigation Links */}
+            <Link
+              href="/studio/create"
+              className="flex items-center gap-1.5 rounded-xl border border-pink-500/30 bg-pink-500/10 px-3 py-1.5 text-xs font-bold text-pink-200 transition hover:bg-pink-500/20 hover:border-pink-500/50 shadow-sm"
+            >
+              <Layers3 className="h-3.5 w-3.5 text-pink-400" />
+              <span>24 Concept Hub</span>
+            </Link>
+
             <Link
               href="/studio/trend-radar"
-              className="flex items-center gap-1.5 rounded-xl border border-indigo-500/40 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 px-3 py-1.5 text-xs font-bold text-indigo-200 shadow-sm transition hover:border-indigo-500/60 hover:from-indigo-500/30 hover:to-purple-500/30"
+              className="flex items-center gap-1.5 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-3 py-1.5 text-xs font-bold text-indigo-200 transition hover:bg-indigo-500/20 hover:border-indigo-500/50 shadow-sm"
             >
               <span>🔮 7-Day Trend Radar</span>
             </Link>
+
             <Link
               href="/studio/books"
-              className="flex items-center gap-1.5 rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-500/20 to-orange-500/20 px-3 py-1.5 text-xs font-bold text-amber-200 shadow-sm transition hover:border-amber-500/60 hover:from-amber-500/30 hover:to-orange-500/30"
+              className="flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-200 transition hover:bg-amber-500/20 hover:border-amber-500/50 shadow-sm"
             >
               <span>📚 Book Studio</span>
             </Link>
+
+            <Link
+              href="/studio/library"
+              className="flex items-center gap-1.5 rounded-xl border border-teal-500/30 bg-teal-500/10 px-3 py-1.5 text-xs font-bold text-teal-200 transition hover:bg-teal-500/20 hover:border-teal-500/50 shadow-sm"
+            >
+              <FolderOpen className="h-3.5 w-3.5 text-teal-400" />
+              <span>Library</span>
+            </Link>
+
+            {/* Modal Quick Actions */}
             <button
               onClick={() => setIsRemixModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl border border-purple-500/30 bg-purple-500/10 px-3 py-1.5 text-xs font-bold text-purple-200 shadow-sm transition hover:border-purple-500/50 hover:bg-purple-500/20"
+              className="flex items-center gap-1 rounded-xl border border-purple-500/30 bg-purple-500/10 px-2.5 py-1.5 text-xs font-bold text-purple-200 transition hover:bg-purple-500/20 shadow-sm"
+              title="Remix Reel"
             >
-              <span>🔁 Remix Reel</span>
+              <span>🔁 Remix</span>
             </button>
+
             <button
               onClick={() => setIsRedditModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-xs font-bold text-cyan-200 shadow-sm transition hover:border-cyan-500/50 hover:bg-cyan-500/20"
+              className="flex items-center gap-1 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1.5 text-xs font-bold text-cyan-200 transition hover:bg-cyan-500/20 shadow-sm"
+              title="Reddit Story"
             >
-              <span>💬 Reddit Story</span>
+              <span>💬 Reddit</span>
             </button>
-            <button
-              onClick={() => setIsUgcModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-200 shadow-sm transition hover:border-amber-500/50 hover:bg-amber-500/20"
-            >
-              <span>🛍️ UGC Ad</span>
-            </button>
+
             <button
               onClick={() => setIsDopamineModalOpen(true)}
-              className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold shadow-sm transition ${
+              className={`flex items-center gap-1 rounded-xl border px-2.5 py-1.5 text-xs font-bold shadow-sm transition ${
                 dopamineConfig.enabled
                   ? "border-pink-500 bg-pink-500/20 text-pink-200 font-black shadow-pink-500/20"
-                  : "border-zinc-700 bg-zinc-800/80 text-zinc-300 hover:border-pink-500/40"
+                  : "border-white/10 bg-white/[0.04] text-slate-300 hover:border-pink-500/40"
               }`}
+              title="Dopamine Split Screen"
             >
-              <span>🎮 Dopamine {dopamineConfig.enabled ? "ON" : "Split"}</span>
+              <span>🎮 Dopamine</span>
             </button>
+
             <button
               type="button"
               onClick={toggleTheme}
-              className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-amber-400 dark:text-teal-300 hover:scale-105 active:scale-95 transition-all shadow-sm"
-              title={resolvedTheme === "dark" ? "Switch to Light Mode (Daylight Studio)" : "Switch to Dark Mode (Obsidian Cinema)"}
+              className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-amber-400 dark:text-teal-300 hover:scale-105 active:scale-95 transition-all shadow-sm ml-1"
+              title={resolvedTheme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
               aria-label="Toggle Theme"
             >
               {resolvedTheme === "dark" ? (
@@ -994,7 +1082,7 @@ export function ReelStudio() {
 
       {/* Omni-Modal Creation Switcher */}
       <div className="border-b border-white/10 bg-black/40 px-5 py-2.5 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 overflow-x-auto">
+        <div className="mx-auto flex max-w-[1720px] items-center justify-between gap-4 overflow-x-auto">
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mr-2">CREATION STUDIO:</span>
             {[
@@ -1007,13 +1095,13 @@ export function ReelStudio() {
               <button
                 key={m.id}
                 onClick={() => setCreationMode(m.id as any)}
-                className={`flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs font-black transition ${creationMode === m.id ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md shadow-pink-500/20" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
+                className={`flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs font-black transition ${creationMode === m.id ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-obsidian-950 font-extrabold shadow-md shadow-teal-500/20" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
               >
                 <span>{m.label}</span>
               </button>
             ))}
           </div>
-          <div className="hidden text-[11px] font-bold text-slate-500 md:block">
+          <div className="hidden text-[11px] font-bold text-slate-400 md:block font-mono">
             {creationMode === "video_reel" && "Neural Cinema Multi-Shot & Continuous Studio"}
             {creationMode === "podcast" && "2-Speaker Conversational Neural Podcast Studio"}
             {creationMode === "carousel" && "Multi-Card Vector PDF & SVG Slide Deck Studio"}
@@ -1024,38 +1112,94 @@ export function ReelStudio() {
       </div>
 
       {creationMode === "video_reel" && (
-        <main className="mx-auto grid max-w-[1600px] gap-5 px-5 py-6 md:px-8 lg:grid-cols-[380px_1fr_360px]">
+        <main className="mx-auto grid max-w-[1720px] gap-6 px-5 py-6 md:px-8 lg:grid-cols-[400px_1fr_370px]">
         {/* LEFT COLUMN: Brief, Settings & Primary Generators */}
-        <aside className="h-fit rounded-[26px] border border-white/10 bg-white/[0.025] p-5 lg:sticky lg:top-24">
-          <div className="flex items-center justify-between">
-            <div className="text-xs font-bold uppercase tracking-[0.16em] text-pink-300">Creative Controls</div>
-            <span className="rounded-md border border-pink-300/30 bg-pink-300/10 px-2 py-0.5 text-[10px] font-black text-pink-200">Cinema Engine Ready</span>
+        <aside className="h-fit rounded-[24px] border border-white/10 bg-slate-900/60 p-5 backdrop-blur-xl shadow-2xl space-y-4 lg:sticky lg:top-20">
+          <div className="flex items-center justify-between pb-3 border-b border-white/5">
+            <div className="text-xs font-black uppercase tracking-[0.16em] text-teal-400 font-mono flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-teal-400" />
+              Creative Controls
+            </div>
+            <span className="rounded-full border border-teal-500/30 bg-teal-500/10 px-2.5 py-0.5 text-[10px] font-black text-teal-300 font-mono">
+              CINEMA ENGINE READY
+            </span>
           </div>
 
-          <label className="mt-5 block text-xs font-bold text-slate-400">IDEA OR TOPIC</label>
-          <textarea
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            rows={4}
-            className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-black/25 p-3.5 text-sm leading-6 text-white outline-none focus:border-pink-300/40"
-            placeholder="What is your video about?"
-          />
+          {/* IDEA OR TOPIC BRIEF */}
+          <div>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-black text-slate-300 uppercase tracking-wider font-mono">Idea or Topic Brief</label>
+              <button
+                type="button"
+                onClick={handleSurpriseIdea}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-400 hover:text-teal-300 transition"
+              >
+                <Lightbulb className="w-3 h-3" /> Surprise Idea
+              </button>
+            </div>
+            <textarea
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              rows={3}
+              className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-black/40 p-3.5 text-sm leading-6 text-white outline-none focus:border-teal-400 transition"
+              placeholder="What is your video about? (e.g., 3 habits quietly killing your focus)"
+            />
+          </div>
+
+          {/* 🔥 PRIMARY CALL TO ACTION BUTTON (ABOVE THE FOLD) */}
+          <button
+            onClick={buildProduction}
+            disabled={busy || !topic.trim()}
+            className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 py-3.5 text-sm font-black text-obsidian-950 shadow-lg shadow-teal-500/20 hover:from-teal-300 hover:to-cyan-300 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {busy && operation === "plan" ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-obsidian-950" />
+                <span>Building Production Plan...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 fill-current" />
+                <span>{production ? "Re-Plan Sequence & Script" : "✨ Build Production Plan"}</span>
+              </>
+            )}
+          </button>
+
+          {/* Quick Concept Preset Dropdown */}
+          <div className="rounded-2xl border border-white/10 bg-black/30 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-400 uppercase font-mono">Curated Story Presets</span>
+              <Link href="/studio/create" className="text-[10px] font-bold text-pink-400 hover:text-pink-300 transition flex items-center gap-0.5">
+                Explore 24 Concepts <ChevronRight className="w-3 h-3" />
+              </Link>
+            </div>
+            <select
+              onChange={(e) => handleSelectGenrePreset(e.target.value)}
+              className="w-full rounded-xl border border-white/10 bg-slate-900/90 p-2.5 text-xs text-slate-200 outline-none focus:border-teal-400"
+            >
+              {QUICK_GENRE_PRESETS.map((p) => (
+                <option key={p.id} value={p.prompt}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {/* Virtual Persona & Cloned Twin Selector */}
-          <div className="mt-4 rounded-2xl border border-white/10 bg-black/25 p-3.5">
+          <div className="rounded-2xl border border-white/10 bg-black/30 p-3.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-400">PRESENTER / VIRTUAL TWIN</span>
+              <span className="text-xs font-bold text-slate-400 uppercase font-mono">Presenter / Virtual Twin</span>
               <button
                 type="button"
                 onClick={() => setIsPersonaModalOpen(true)}
-                className="text-[11px] font-black text-pink-300 transition hover:text-pink-200 hover:underline"
+                className="text-[11px] font-bold text-teal-400 transition hover:text-teal-300 hover:underline"
               >
                 Change / Clone Face & Voice →
               </button>
             </div>
             <div
               onClick={() => setIsPersonaModalOpen(true)}
-              className="mt-2.5 flex cursor-pointer items-center justify-between rounded-xl border border-white/5 bg-white/[0.03] p-2.5 transition hover:border-pink-500/40 hover:bg-white/[0.06]"
+              className="mt-2.5 flex cursor-pointer items-center justify-between rounded-xl border border-white/5 bg-white/[0.03] p-2.5 transition hover:border-teal-500/40 hover:bg-white/[0.06]"
             >
               <div className="flex items-center gap-2.5">
                 <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white/5 text-lg">
@@ -1069,7 +1213,7 @@ export function ReelStudio() {
                   <div className="flex items-center gap-1.5">
                     <div className="text-xs font-bold text-white">{selectedPersona.name}</div>
                     {selectedPersona.isCustomClone && (
-                      <span className="rounded border border-pink-500/30 bg-pink-500/20 px-1 py-0.2 text-[8px] font-black uppercase text-pink-300">
+                      <span className="rounded border border-teal-500/30 bg-teal-500/20 px-1 py-0.2 text-[8px] font-black uppercase text-teal-300">
                         Clone
                       </span>
                     )}
@@ -1077,136 +1221,82 @@ export function ReelStudio() {
                   <div className="text-[10px] text-slate-400">{selectedPersona.role}</div>
                 </div>
               </div>
-              <span className="rounded-lg border border-pink-500/20 bg-pink-500/10 px-2 py-1 text-[10px] font-bold text-pink-300">
-                Vault
+              <span className="rounded-lg border border-teal-500/20 bg-teal-500/10 px-2 py-1 text-[10px] font-bold text-teal-300 font-mono">
+                ACTIVE
               </span>
             </div>
           </div>
 
-          <div className="mt-4 space-y-3">
-            <Field label="Tone & Delivery" value={tone} onChange={setTone} options={["Confident & conversational", "Warm & relatable", "Fast & energetic", "Expert & credible", "Playful & witty", "Dramatic & cinematic"]} />
-            <Field label="Duration Target" value={duration} onChange={setDuration} options={DURATION_OPTIONS.map(d => `${d.value}`)} displayLabels={DURATION_OPTIONS.map(d => d.label)} />
-            <Field label="Audio Language" value={language} onChange={setLanguage} options={LANGUAGES.map(l => l.code)} displayLabels={LANGUAGES.map(l => l.name)} />
-            <Field label="Aspect Ratio" value={aspectRatio} onChange={setAspectRatio} options={ASPECT_RATIOS.map(a => a.id)} displayLabels={ASPECT_RATIOS.map(a => a.name)} />
-          </div>
-
-          <div className="mt-6 border-t border-white/5 pt-4 space-y-2.5">
-            <div className="text-[10px] font-black uppercase tracking-wider text-slate-500">Execution Engines</div>
-
-            <ActionButton
-              onClick={buildProduction}
-              disabled={busy || !topic.trim()}
-              active={operation === "plan"}
-              icon={Sparkles}
-              idle={production ? "Re-Plan Sequence & Script" : "Build Production Plan"}
-              busyLabel="Building Plan…"
-              primary
-            />
-
-            {canGenerateAll && (
-              <ActionButton
-                onClick={generateAllMp4Parallel}
-                disabled={busy}
-                active={operation === "all"}
-                icon={Zap}
-                idle={generatedShotCount ? `⚡ Turbo Parallel Render Remaining (${generatedShotCount}/${totalShotCount})` : "⚡ Turbo Parallel Render (All 17 Clips ~60s)"}
-                busyLabel={generateAllBusyLabel}
-                primary
-              />
-            )}
-
-            {canGenerateNative && (
-              <ActionButton
-                onClick={() => runAction("generateNativeReel", "native")}
-                disabled={busy}
-                active={operation === "native"}
-                icon={Sparkles}
-                idle="🔄 Continuous Neural Reel (Option C · Cinema Engine)"
-                busyLabel="Generating continuous reel…"
-              />
-            )}
-
-            {canGenerateAll && (
-              <ActionButton
-                onClick={generateAllMp4}
-                disabled={busy}
-                active={operation === "all"}
-                icon={Film}
-                idle="🪜 Step-by-Step Multi-Shot (1 clip at a time)"
-                busyLabel={generateAllBusyLabel}
-              />
-            )}
-            <div className="grid grid-cols-2 gap-2 pt-2">
-              <button
-                onClick={() => setIsUgcModalOpen(true)}
-                className="flex items-center justify-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 py-2.5 text-xs font-bold text-amber-200 transition hover:bg-amber-500/20"
+          {/* Engine Settings (Language, Voice, Aspect Ratio, Subtitles) */}
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 font-mono">Language</label>
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-2.5 py-2 text-xs font-semibold text-white focus:border-teal-500/50 focus:outline-none"
               >
-                <span>🛍️ UGC Ad</span>
-              </button>
-              <button
-                onClick={() => setIsDopamineModalOpen(true)}
-                className={`flex items-center justify-center gap-1.5 rounded-xl border py-2.5 text-xs font-bold transition ${
-                  dopamineConfig.enabled
-                    ? "border-pink-500 bg-pink-500/20 text-pink-200 font-black shadow-md shadow-pink-500/20"
-                    : "border-zinc-700 bg-zinc-800/60 text-zinc-300 hover:border-pink-500/40"
-                }`}
-              >
-                <span>🎮 Dopamine {dopamineConfig.enabled ? "ON" : "Split"}</span>
-              </button>
-              <button
-                onClick={() => setIsMemeModalOpen(true)}
-                className="flex items-center justify-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 py-2.5 text-xs font-bold text-rose-200 transition hover:bg-rose-500/20"
-              >
-                <span>🎭 Auto-Meme</span>
-              </button>
-              <button
-                onClick={() => setIsDubberModalOpen(true)}
-                className="flex items-center justify-center gap-1.5 rounded-xl border border-blue-500/30 bg-blue-500/10 py-2.5 text-xs font-bold text-blue-200 transition hover:bg-blue-500/20"
-              >
-                <span>🌍 Global Dub</span>
-              </button>
-              <button
-                onClick={() => setIsArmorModalOpen(true)}
-                className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 py-2.5 text-xs font-bold text-emerald-200 transition hover:bg-emerald-500/20"
-              >
-                <span>🛡️ Safe Armor</span>
-              </button>
-              <button
-                onClick={handleBeatAlign}
-                className="flex items-center justify-center gap-1.5 rounded-xl border border-teal-500/30 bg-teal-500/10 py-2.5 text-xs font-bold text-teal-200 transition hover:bg-teal-500/20"
-              >
-                <span>🎵 Beat-Sync</span>
-              </button>
+                {LANGUAGES.map((l) => (
+                  <option key={l.code} value={l.code}>
+                    {l.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 font-mono">Target Duration</label>
+              <select
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-2.5 py-2 text-xs font-semibold text-white focus:border-teal-500/50 focus:outline-none"
+              >
+                <option value="15">15s (Ultra High Retention)</option>
+                <option value="30">30s (Standard Viral)</option>
+                <option value="60">60s (Deep Narrative)</option>
+                <option value="90">90s (Masterclass)</option>
+              </select>
+            </div>
 
-            {roughCut?.videoUrl && (
-              <ResolutionDownloadDropdown
-                videoUrl={roughCut.videoUrl}
-                durationSec={roughCut.actualDurationSec}
-              />
-            )}
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 font-mono">Aspect Ratio</label>
+              <select
+                value={aspectRatio}
+                onChange={(e) => setAspectRatio(e.target.value)}
+                className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-2.5 py-2 text-xs font-semibold text-white focus:border-teal-500/50 focus:outline-none"
+              >
+                <option value="9:16">9:16 (TikTok/Reels/Shorts)</option>
+                <option value="16:9">16:9 (YouTube Widescreen)</option>
+                <option value="1:1">1:1 (Square Feed)</option>
+              </select>
+            </div>
 
-            <button
-              onClick={() => setIsPublishModalOpen(true)}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-pink-500/30 bg-gradient-to-r from-pink-500/20 to-purple-500/20 py-3.5 text-sm font-black text-pink-100 shadow-lg shadow-pink-500/10 transition hover:from-pink-500/30 hover:to-purple-500/30"
-            >
-              <Share2 className="h-4 w-4 text-pink-400" /> 🚀 1-Click Publish & Schedule
-            </button>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 font-mono">Subtitle Font</label>
+              <select
+                value={subtitleStyle}
+                onChange={(e) => setSubtitleStyle(e.target.value)}
+                className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-2.5 py-2 text-xs font-semibold text-white focus:border-teal-500/50 focus:outline-none"
+              >
+                {SUBTITLE_STYLES.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-
-          {error && <div className="mt-4 flex gap-2 rounded-xl border border-red-400/20 bg-red-400/5 p-3 text-xs leading-5 text-red-200"><CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />{error}</div>}
         </aside>
 
         {/* CENTER COLUMN: Scene & Settings Tabs */}
-        <section className="min-w-0 rounded-[26px] border border-white/10 bg-[#0a0d12]">
-          <div className="flex flex-wrap items-center justify-between border-b border-white/5 p-3">
-            <div className="flex flex-wrap items-center gap-1">
+        <section className="min-w-0 rounded-[26px] border border-white/10 bg-[#0a0d12]/90 backdrop-blur-xl shadow-2xl">
+          <div className="flex flex-wrap items-center justify-between border-b border-white/10 p-3">
+            <div className="flex flex-wrap items-center gap-1.5">
               {(["Scenes", "Script", "B-Roll", "SFX & Emojis", "Retention Heatmap", "Audio & Subtitles", "Format", "Cover"] as const).map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`rounded-xl px-3.5 py-2 text-xs font-bold transition ${activeTab === tab ? "bg-white text-slate-950" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
+                  className={`rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${activeTab === tab ? "bg-gradient-to-r from-teal-400 to-emerald-400 text-obsidian-950 font-extrabold shadow-md shadow-teal-500/20" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
                 >
                   {tab}
                 </button>
@@ -1216,7 +1306,7 @@ export function ReelStudio() {
             {shots.length > 0 && activeTab === "Scenes" && (
               <button
                 onClick={() => handleAddShotAfter(shots[shots.length - 1].id)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-pink-300/25 bg-pink-300/[0.08] px-3 py-1.5 text-xs font-bold text-pink-200 hover:bg-pink-300/[0.15]"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-teal-500/30 bg-teal-500/10 px-3.5 py-1.5 text-xs font-bold text-teal-300 hover:bg-teal-500/20 shadow-sm"
               >
                 <Plus className="h-3.5 w-3.5" /> Add Scene
               </button>
@@ -1226,10 +1316,10 @@ export function ReelStudio() {
           <div className="p-5 sm:p-7">
             {/* TAB 1: SCENES & TIMELINE */}
             {activeTab === "Scenes" && (
-              <div>
+              <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-xs font-bold uppercase tracking-[0.16em] text-pink-300">SCENE SEQUENCE & BEAT EDITOR</div>
+                    <div className="text-xs font-bold uppercase tracking-[0.16em] text-teal-400 font-mono">SCENE SEQUENCE & BEAT EDITOR</div>
                     <h2 className="mt-1 text-2xl font-black tracking-[-0.03em] text-white">
                       {manifest ? `${shots.length} Scenes (${generatedShotCount}/${totalShotCount} Generated)` : "Build a plan to create shots"}
                     </h2>
@@ -1240,243 +1330,357 @@ export function ReelStudio() {
                         onClick={selectAllShots}
                         className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-xs font-bold text-slate-400 hover:text-white"
                       >
-                        {selectedShotIds.size === shots.length ? <CheckSquare className="h-3.5 w-3.5 text-pink-300" /> : <Square className="h-3.5 w-3.5" />}
+                        {selectedShotIds.size === shots.length ? <CheckSquare className="h-3.5 w-3.5 text-teal-300" /> : <Square className="h-3.5 w-3.5 text-slate-400" />}
                         {selectedShotIds.size === shots.length ? "Deselect All" : "Select All"}
                       </button>
                     </div>
                   )}
                 </div>
 
-                {/* Phase 5: 1-Click Viral A/B Hook Switcher */}
-                <div className="mt-4 rounded-2xl border border-pink-500/20 bg-pink-500/[0.03] p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-pink-400" />
-                      <span className="text-xs font-black uppercase tracking-wider text-white">
-                        1-Click Viral A/B Hook Switcher (Phase 5)
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => setHookSuite(generateHookSuite(topic))}
-                      className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-white"
-                    >
-                      <RefreshCw className="h-3 w-3" /> Regenerate 3 Angles
-                    </button>
-                  </div>
-                  <p className="mt-1 text-[11px] text-slate-400">
-                    Swap the opening 3-second hook to test conversion while preserving all downstream scenes and stitched timeline.
-                  </p>
-
-                  <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                    {hookSuite.variants.map(variant => {
-                      const isActive = hookSuite.activeVariantId === variant.id;
-                      return (
-                        <div
-                          key={variant.id}
-                          onClick={() => handleApplyHook(variant)}
-                          className={`cursor-pointer rounded-xl border p-3 transition ${
-                            isActive
-                              ? "border-pink-400 bg-pink-400/15 shadow-lg shadow-pink-500/10"
-                              : "border-white/10 bg-black/30 hover:border-white/20"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-black text-white">{variant.label}</span>
-                            {isActive && <Check className="h-3.5 w-3.5 text-pink-300" />}
-                          </div>
-                          <div className="mt-1 inline-block rounded-md bg-white/5 px-1.5 py-0.5 text-[9px] font-black text-pink-300">
-                            {variant.badge}
-                          </div>
-                          <p className="mt-2 text-[11px] leading-snug text-slate-300 line-clamp-3">
-                            "{variant.scriptText}"
-                          </p>
-                          <div className="mt-3 flex items-center justify-between border-t border-white/5 pt-2 text-[10px] text-slate-500">
-                            <span>{variant.cameraMotion}</span>
-                            <span className="font-bold text-pink-300">{isActive ? "ACTIVE HOOK" : "1-Click Swap"}</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-                {selectedShotIds.size > 0 && (
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-pink-300/30 bg-pink-950/30 p-3 backdrop-blur-lg">
-                    <span className="text-xs font-bold text-pink-200">
-                      {selectedShotIds.size} scene{selectedShotIds.size > 1 ? "s" : ""} selected
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={handleBulkClone}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/20"
-                      >
-                        <Copy className="h-3.5 w-3.5" /> Clone Selected
-                      </button>
-                      <button
-                        onClick={handleBulkDelete}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-red-400/30 bg-red-500/20 px-3 py-1.5 text-xs font-bold text-red-200 hover:bg-red-500/30"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" /> Delete Selected
-                      </button>
-                      <button
-                        onClick={() => setSelectedShotIds(new Set())}
-                        className="p-1.5 text-slate-400 hover:text-white"
-                        aria-label="Clear selection"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-
                 {!manifest ? (
-                  <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.025] p-6 text-center text-sm text-slate-400">
-                    No production plan generated yet. Fill the brief on the left and click <strong>Build Production Plan</strong>.
+                  <div className="space-y-6">
+                    {/* Welcome Banner */}
+                    <div className="rounded-2xl border border-teal-500/20 bg-gradient-to-br from-teal-500/10 via-slate-900/60 to-slate-900/80 p-6 backdrop-blur-xl shadow-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-500/20 border border-teal-500/40 text-teal-400">
+                          <Sparkles className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h3 className="text-base font-extrabold text-white font-mono">
+                            Ready to Produce Your Viral Multi-Shot Reel
+                          </h3>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            Pick a high-retention blueprint below or enter your topic on the left, then click <strong>Build Production Plan</strong>.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* 3-Step Pipeline Infographic */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-white/5">
+                        <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1">
+                          <div className="text-[10px] font-mono text-teal-400 font-bold uppercase">Step 01</div>
+                          <div className="text-xs font-bold text-slate-200">AI Story & Script Beats</div>
+                          <div className="text-[11px] text-slate-400">Gemini 2.5 Flash compiles viral 4-beat sequence</div>
+                        </div>
+                        <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1">
+                          <div className="text-[10px] font-mono text-cyan-400 font-bold uppercase">Step 02</div>
+                          <div className="text-xs font-bold text-slate-200">Neural Voice & Dynamic Zoom</div>
+                          <div className="text-[11px] text-slate-400">DeepMind TTS with Hormozi-style camera punch-ins</div>
+                        </div>
+                        <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1">
+                          <div className="text-[10px] font-mono text-pink-400 font-bold uppercase">Step 03</div>
+                          <div className="text-xs font-bold text-slate-200">4K Parallel Video Render</div>
+                          <div className="text-[11px] text-slate-400">Google Veo 2 renders all cinematic shot cutaways</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Quick Starter Blueprints */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
+                          ⚡ Trending High-Retention Blueprints (Click to Load)
+                        </span>
+                        <Link href="/studio/create" className="text-xs font-bold text-pink-400 hover:text-pink-300 transition flex items-center gap-1">
+                          Browse 24 Visual Concepts <ChevronRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTopic("3 habits quietly killing your focus and dopamine receptors every morning, and how to fix them.");
+                          }}
+                          className="text-left p-4 rounded-2xl border border-white/10 bg-slate-900/40 hover:border-teal-500/50 hover:bg-slate-900/80 transition-all group shadow-md"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-mono font-bold text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/20">
+                              BIOHACKING
+                            </span>
+                            <span className="text-[10px] font-mono font-bold text-amber-400">94% Retention</span>
+                          </div>
+                          <div className="font-bold text-xs text-white group-hover:text-teal-300 transition">
+                            3 Habits Killing Your Focus
+                          </div>
+                          <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">
+                            Morning dopamine mistakes, phone scrolling traps, and 2-minute neuroplasticity resets.
+                          </p>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTopic("Sensei Ren teaches apprentice Aoi the secret of Mushin (Mind without Mind) during a thunderstorm duel on the wooden dojo balcony.");
+                          }}
+                          className="text-left p-4 rounded-2xl border border-white/10 bg-slate-900/40 hover:border-cyan-500/50 hover:bg-slate-900/80 transition-all group shadow-md"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-mono font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                              KAIZEN DOJO
+                            </span>
+                            <span className="text-[10px] font-mono font-bold text-amber-400">91% Retention</span>
+                          </div>
+                          <div className="font-bold text-xs text-white group-hover:text-cyan-300 transition">
+                            The Thunderstorm of Mushin
+                          </div>
+                          <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">
+                            Master-apprentice philosophical dialogue with cinematic samurai choreography.
+                          </p>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTopic("Husband Aarav cannot find his car keys for the third time this week, while wife Meera sarcastically calculates how much time they have lost.");
+                          }}
+                          className="text-left p-4 rounded-2xl border border-white/10 bg-slate-900/40 hover:border-rose-500/50 hover:bg-slate-900/80 transition-all group shadow-md"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-mono font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
+                              DOMESTIC COMEDY
+                            </span>
+                            <span className="text-[10px] font-mono font-bold text-amber-400">96% Retention</span>
+                          </div>
+                          <div className="font-bold text-xs text-white group-hover:text-rose-300 transition">
+                            The Lost Keys (Hindi Banter)
+                          </div>
+                          <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">
+                            Witty couple banter, hilarious household drama, and relatable punchlines.
+                          </p>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 ) : (
-                  <div className="mt-6 space-y-4">
-                    {shots.map((shot, i) => {
-                      const generated = Boolean(shot.asset?.videoUrl);
-                      const isSelected = selectedShotId === shot.id;
-                      const isChecked = selectedShotIds.has(shot.id);
-                      const isEditing = editingShotId === shot.id;
-
-                      return (
-                        <div
-                          key={shot.id}
-                          className={`rounded-2xl border p-4 transition ${
-                            isSelected
-                              ? "border-pink-300/50 bg-pink-300/[0.06]"
-                              : isChecked
-                              ? "border-pink-400/30 bg-white/[0.04]"
-                              : "border-white/10 bg-white/[0.02]"
-                          }`}
+                  <div className="space-y-6">
+                    {/* Phase 5: 1-Click Viral A/B Hook Switcher */}
+                    <div className="rounded-2xl border border-teal-500/20 bg-teal-500/[0.03] p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Zap className="h-4 w-4 text-teal-400" />
+                          <span className="text-xs font-black uppercase tracking-wider text-white font-mono">
+                            1-Click Viral A/B Hook Switcher (Phase 5)
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => setHookSuite(generateHookSuite(topic))}
+                          className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-white"
                         >
-                          <div className="flex items-start gap-3">
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => toggleSelectShot(shot.id)}
-                              className="mt-1 h-4 w-4 rounded border-white/20 bg-black/40 text-pink-400 focus:ring-0"
-                            />
-                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/[0.06] text-xs font-black text-pink-300">
-                              {i + 1}
+                          <RefreshCw className="h-3 w-3" /> Regenerate 3 Angles
+                        </button>
+                      </div>
+                      <p className="mt-1 text-[11px] text-slate-400">
+                        Swap the opening 3-second hook to test conversion while preserving all downstream scenes and stitched timeline.
+                      </p>
+
+                      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                        {hookSuite.variants.map(variant => {
+                          const isActive = hookSuite.activeVariantId === variant.id;
+                          return (
+                            <div
+                              key={variant.id}
+                              onClick={() => handleApplyHook(variant)}
+                              className={`cursor-pointer rounded-xl border p-3 transition ${
+                                isActive
+                                  ? "border-teal-400 bg-teal-400/15 shadow-lg shadow-teal-500/10"
+                                  : "border-white/10 bg-black/30 hover:border-white/20"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-black text-white">{variant.label}</span>
+                                {isActive && <Check className="h-3.5 w-3.5 text-teal-300" />}
+                              </div>
+                              <div className="mt-1 inline-block rounded-md bg-white/5 px-1.5 py-0.5 text-[9px] font-black text-teal-300">
+                                {variant.badge}
+                              </div>
+                              <p className="mt-2 text-[11px] leading-snug text-slate-300 line-clamp-3">
+                                "{variant.scriptText}"
+                              </p>
+                              <div className="mt-3 flex items-center justify-between border-t border-white/5 pt-2 text-[10px] text-slate-500">
+                                <span>{variant.cameraMotion}</span>
+                                <span className="font-bold text-teal-300">{isActive ? "ACTIVE HOOK" : "1-Click Swap"}</span>
+                              </div>
                             </div>
+                          );
+                        })}
+                      </div>
+                    </div>
 
-                            <div className="min-w-0 flex-1">
-                              {isEditing ? (
-                                <div className="space-y-3">
+                    {selectedShotIds.size > 0 && (
+                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-teal-300/30 bg-teal-950/30 p-3 backdrop-blur-lg">
+                        <span className="text-xs font-bold text-teal-200">
+                          {selectedShotIds.size} scene{selectedShotIds.size > 1 ? "s" : ""} selected
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={handleBulkClone}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/20"
+                          >
+                            <Copy className="h-3.5 w-3.5" /> Clone Selected
+                          </button>
+                          <button
+                            onClick={handleBulkDelete}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-red-400/30 bg-red-500/20 px-3 py-1.5 text-xs font-bold text-red-200 hover:bg-red-500/30"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" /> Delete Selected
+                          </button>
+                          <button
+                            onClick={() => setSelectedShotIds(new Set())}
+                            className="p-1.5 text-slate-400 hover:text-white"
+                            aria-label="Clear selection"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-4">
+                      {shots.map((shot, i) => {
+                        const generated = Boolean(shot.asset?.videoUrl);
+                        const isSelected = selectedShotId === shot.id;
+                        const isChecked = selectedShotIds.has(shot.id);
+                        const isEditing = editingShotId === shot.id;
+
+                        return (
+                          <div
+                            key={shot.id}
+                            className={`rounded-2xl border p-4 transition ${
+                              isSelected
+                                ? "border-teal-400/50 bg-teal-400/[0.06]"
+                                : isChecked
+                                ? "border-teal-400/30 bg-white/[0.04]"
+                                : "border-white/10 bg-white/[0.02]"
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => toggleSelectShot(shot.id)}
+                                className="mt-1 h-4 w-4 rounded border-white/20 bg-black/40 text-teal-400 focus:ring-0"
+                              />
+                              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/[0.06] text-xs font-black text-teal-300">
+                                {i + 1}
+                              </div>
+
+                              <div className="min-w-0 flex-1">
+                                {isEditing ? (
+                                  <div className="space-y-3">
+                                    <div>
+                                      <label className="text-[10px] font-bold uppercase text-slate-400">Spoken Dialogue / Beat</label>
+                                      <textarea
+                                        value={editScriptText}
+                                        onChange={(e) => setEditScriptText(e.target.value)}
+                                        rows={2}
+                                        className="mt-1 w-full rounded-xl border border-white/20 bg-black/40 p-2.5 text-sm text-white outline-none focus:border-teal-300"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-[10px] font-bold uppercase text-slate-400">Visual Intent</label>
+                                      <textarea
+                                        value={editVisualIntent}
+                                        onChange={(e) => setEditVisualIntent(e.target.value)}
+                                        rows={2}
+                                        className="mt-1 w-full rounded-xl border border-white/20 bg-black/40 p-2.5 text-sm text-white outline-none focus:border-teal-300"
+                                      />
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <button
+                                        onClick={handleSaveEdit}
+                                        className="inline-flex items-center gap-1 rounded-lg bg-teal-400 px-3 py-1.5 text-xs font-bold text-slate-950 hover:bg-teal-300"
+                                      >
+                                        <Save className="h-3.5 w-3.5" /> Save Changes
+                                      </button>
+                                      <button
+                                        onClick={() => setEditingShotId(null)}
+                                        className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-bold text-slate-400 hover:text-white"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
                                   <div>
-                                    <label className="text-[10px] font-bold uppercase text-slate-400">Spoken Dialogue / Beat</label>
-                                    <textarea
-                                      value={editScriptText}
-                                      onChange={(e) => setEditScriptText(e.target.value)}
-                                      rows={2}
-                                      className="mt-1 w-full rounded-xl border border-white/20 bg-black/40 p-2.5 text-sm text-white outline-none focus:border-pink-300"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="text-[10px] font-bold uppercase text-slate-400">Visual Intent</label>
-                                    <textarea
-                                      value={editVisualIntent}
-                                      onChange={(e) => setEditVisualIntent(e.target.value)}
-                                      rows={2}
-                                      className="mt-1 w-full rounded-xl border border-white/20 bg-black/40 p-2.5 text-sm text-white outline-none focus:border-pink-300"
-                                    />
-                                  </div>
-                                  <div className="flex gap-2">
-                                    <button
-                                      onClick={handleSaveEdit}
-                                      className="inline-flex items-center gap-1 rounded-lg bg-pink-400 px-3 py-1.5 text-xs font-bold text-slate-950 hover:bg-pink-300"
-                                    >
-                                      <Save className="h-3.5 w-3.5" /> Save Changes
-                                    </button>
-                                    <button
-                                      onClick={() => setEditingShotId(null)}
-                                      className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-bold text-slate-400 hover:text-white"
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div>
-                                  <div className="text-sm font-semibold leading-6 text-white">"{shot.scriptText}"</div>
-                                  <div className="mt-1 text-xs text-slate-400">{shot.visualIntent}</div>
-                                  <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
-                                    <span className="rounded-md bg-white/[0.04] px-2 py-0.5 text-slate-400">
-                                      {shot.editorialStartSec.toFixed(1)}s – {(shot.editorialStartSec + shot.editorialDurationSec).toFixed(1)}s
-                                    </span>
-                                    <span className={`rounded-md px-2 py-0.5 font-bold ${generated ? "bg-emerald-400/10 text-emerald-300" : "bg-amber-400/10 text-amber-300"}`}>
-                                      {generated ? `Generated (${shot.asset?.actualDurationSec?.toFixed(2)}s)` : "Planned"}
-                                    </span>
-                                    {zoomKeyframes[i] && zoomKeyframes[i].scale > 1.0 && (
-                                      <span className="rounded-md border border-pink-500/30 bg-pink-500/15 px-2 py-0.5 font-black text-pink-300">
-                                        🔍 {zoomKeyframes[i].label}
+                                    <div className="text-sm font-semibold leading-6 text-white">"{shot.scriptText}"</div>
+                                    <div className="mt-1 text-xs text-slate-400">{shot.visualIntent}</div>
+                                    <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+                                      <span className="rounded-md bg-white/[0.04] px-2 py-0.5 text-slate-400">
+                                        {shot.editorialStartSec.toFixed(1)}s – {(shot.editorialStartSec + shot.editorialDurationSec).toFixed(1)}s
                                       </span>
-                                    )}
+                                      <span className={`rounded-md px-2 py-0.5 font-bold ${generated ? "bg-emerald-400/10 text-emerald-300" : "bg-amber-400/10 text-amber-300"}`}>
+                                        {generated ? `Generated (${shot.asset?.actualDurationSec?.toFixed(2)}s)` : "Planned"}
+                                      </span>
+                                      {zoomKeyframes[i] && zoomKeyframes[i].scale > 1.0 && (
+                                        <span className="rounded-md border border-teal-500/30 bg-teal-500/15 px-2 py-0.5 font-black text-teal-300">
+                                          🔍 {zoomKeyframes[i].label}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
-                              )}
+                                )}
 
-                              {/* Scene Action Buttons */}
-                              {!isEditing && (
-                                <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-white/5 pt-2.5">
-                                  {generated && (
+                                {/* Scene Action Buttons */}
+                                {!isEditing && (
+                                  <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-white/5 pt-2.5">
+                                    {generated && (
+                                      <button
+                                        onClick={() => setSelectedShotId(shot.id)}
+                                        className="inline-flex items-center gap-1 rounded-lg border border-teal-300/30 bg-teal-300/10 px-2.5 py-1 text-[11px] font-bold text-teal-200 hover:bg-teal-300/20"
+                                      >
+                                        <Eye className="h-3 w-3" /> Preview Clip
+                                      </button>
+                                    )}
                                     <button
-                                      onClick={() => setSelectedShotId(shot.id)}
-                                      className="inline-flex items-center gap-1 rounded-lg border border-pink-300/30 bg-pink-300/10 px-2.5 py-1 text-[11px] font-bold text-pink-200 hover:bg-pink-300/20"
+                                      onClick={() => handleEditShot(shot)}
+                                      className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1 text-[11px] font-bold text-slate-300 hover:text-white"
                                     >
-                                      <Eye className="h-3 w-3" /> Preview Clip
+                                      <Pencil className="h-3 w-3" /> Edit
                                     </button>
-                                  )}
-                                  <button
-                                    onClick={() => handleEditShot(shot)}
-                                    className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1 text-[11px] font-bold text-slate-300 hover:text-white"
-                                  >
-                                    <Pencil className="h-3 w-3" /> Edit
-                                  </button>
-                                  <button
-                                    onClick={() => handleCloneShot(shot)}
-                                    className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1 text-[11px] font-bold text-slate-300 hover:text-white"
-                                  >
-                                    <Copy className="h-3 w-3" /> Clone
-                                  </button>
-                                  <button
-                                    onClick={() => handleAddShotAfter(shot.id)}
-                                    className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1 text-[11px] font-bold text-slate-300 hover:text-white"
-                                  >
-                                    <Plus className="h-3 w-3" /> Insert After
-                                  </button>
-                                  <button
-                                    onClick={() => handleMoveShot(shot.id, -1)}
-                                    disabled={i === 0}
-                                    className="rounded-lg border border-white/10 p-1 text-slate-400 hover:text-white disabled:opacity-30"
-                                    title="Move Up"
-                                  >
-                                    <ArrowUp className="h-3 w-3" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleMoveShot(shot.id, 1)}
-                                    disabled={i === shots.length - 1}
-                                    className="rounded-lg border border-white/10 p-1 text-slate-400 hover:text-white disabled:opacity-30"
-                                    title="Move Down"
-                                  >
-                                    <ArrowDown className="h-3 w-3" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteShot(shot.id)}
-                                    className="rounded-lg border border-red-400/20 p-1 text-red-300 hover:bg-red-400/10"
-                                    title="Delete Scene"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </button>
-                                </div>
-                              )}
+                                    <button
+                                      onClick={() => handleCloneShot(shot)}
+                                      className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1 text-[11px] font-bold text-slate-300 hover:text-white"
+                                    >
+                                      <Copy className="h-3 w-3" /> Clone
+                                    </button>
+                                    <button
+                                      onClick={() => handleAddShotAfter(shot.id)}
+                                      className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1 text-[11px] font-bold text-slate-300 hover:text-white"
+                                    >
+                                      <Plus className="h-3 w-3" /> Insert After
+                                    </button>
+                                    <button
+                                      onClick={() => handleMoveShot(shot.id, -1)}
+                                      disabled={i === 0}
+                                      className="rounded-lg border border-white/10 p-1 text-slate-400 hover:text-white disabled:opacity-30"
+                                      title="Move Up"
+                                    >
+                                      <ArrowUp className="h-3 w-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleMoveShot(shot.id, 1)}
+                                      disabled={i === shots.length - 1}
+                                      className="rounded-lg border border-white/10 p-1 text-slate-400 hover:text-white disabled:opacity-30"
+                                      title="Move Down"
+                                    >
+                                      <ArrowDown className="h-3 w-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteShot(shot.id)}
+                                      className="rounded-lg border border-red-400/20 p-1 text-red-300 hover:bg-red-400/10"
+                                      title="Delete Scene"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1987,46 +2191,70 @@ export function ReelStudio() {
           </div>
         </section>
 
-        {/* RIGHT COLUMN: Video Monitor & Production Truth (Top on mobile/tablet, Sticky Right on Desktop) */}
-        <aside className="order-first lg:order-last h-fit lg:sticky lg:top-24">
-          <div className="rounded-[30px] border border-white/10 bg-[#0a0d12] p-3">
-            <div>
-              <div className="mb-3 flex items-center justify-between px-1">
-                <div>
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-pink-300">
-                    <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>{selectedShot ? `Clip ${Math.max(1, (shots.findIndex(s => s.id === selectedShot.id) ?? 0) + 1)} Review` : roughCut?.videoUrl ? "Full Reel Master" : "Interactive Studio Monitor"}</span>
-                  </div>
-                  <div className="mt-0.5 text-xs text-slate-500">
-                    {selectedShot ? `${selectedShot.editorialDurationSec.toFixed(1)}s · Cinema Source` : `Neural Cinema & Audio Engine · ${AUTO_ZOOM_PRESETS.find(p => p.id === zoomPreset)?.name}`}
-                  </div>
+        {/* RIGHT COLUMN: Video Monitor & Production Truth */}
+        <aside className="order-first lg:order-last h-fit lg:sticky lg:top-20 space-y-4">
+          <div className="rounded-[24px] border border-white/10 bg-slate-900/60 p-3.5 backdrop-blur-xl shadow-2xl">
+            <div className="mb-3 flex items-center justify-between px-1">
+              <div>
+                <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-teal-400 font-mono">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>{selectedShot ? `Clip ${Math.max(1, (shots.findIndex(s => s.id === selectedShot.id) ?? 0) + 1)} Review` : roughCut?.videoUrl ? "Full Reel Master" : "Interactive Studio Monitor"}</span>
                 </div>
-                {selectedShot && roughCut?.videoUrl && (
-                  <button onClick={() => setSelectedShotId(null)} className="rounded-lg border border-white/10 px-2.5 py-1 text-[10px] font-bold text-slate-400 hover:text-white">
-                    FULL REEL
-                  </button>
-                )}
+                <div className="mt-0.5 text-xs text-slate-400">
+                  {selectedShot ? `${selectedShot.editorialDurationSec.toFixed(1)}s · Cinema Source` : `Neural Cinema & Audio Engine · ${AUTO_ZOOM_PRESETS.find(p => p.id === zoomPreset)?.name}`}
+                </div>
               </div>
-              <DynamicZoomVideoPlayer
-                videoUrl={previewVideoUrl || "/assets/video/veo_continuous_master.mp4"}
-                keyframes={zoomKeyframes}
-                brollItems={brollItems}
-                kineticEmojis={kineticEmojis}
-                subtitleText={shots[0]?.scriptText || topic}
-                subtitleStyle={subtitleStyle}
-              />
+              {selectedShot && roughCut?.videoUrl && (
+                <button onClick={() => setSelectedShotId(null)} className="rounded-xl border border-teal-500/30 bg-teal-500/10 px-2.5 py-1 text-[10px] font-bold text-teal-300 hover:bg-teal-500/20 transition">
+                  FULL REEL
+                </button>
+              )}
             </div>
+            <DynamicZoomVideoPlayer
+              videoUrl={previewVideoUrl || "/assets/video/veo_continuous_master.mp4"}
+              keyframes={zoomKeyframes}
+              brollItems={brollItems}
+              kineticEmojis={kineticEmojis}
+              subtitleText={shots[0]?.scriptText || topic}
+              subtitleStyle={subtitleStyle}
+            />
           </div>
 
-          <div className="mt-4 rounded-[24px] border border-white/10 bg-white/[0.025] p-5">
-            <div className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">Production Truth</div>
-            <div className="mt-4 space-y-3 text-sm">
+          <div className="rounded-[24px] border border-white/10 bg-slate-900/60 p-5 backdrop-blur-xl shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-white/5">
+              <div className="text-xs font-bold uppercase tracking-[0.15em] text-teal-400 font-mono flex items-center gap-2">
+                <Database className="w-3.5 h-3.5 text-teal-400" />
+                Production Truth
+              </div>
+              <span className="text-[10px] font-mono text-slate-400">
+                {production ? "VERIFIED" : "UNBOUND"}
+              </span>
+            </div>
+            <div className="space-y-2.5 text-xs">
               <Status icon={Database} label="Manifest" value={production ? `Persisted r${production.revision}` : "Not created"} />
               <Status icon={Film} label="State" value={manifest?.status || "DRAFT"} />
               <Status icon={Globe} label="Language" value={LANGUAGES.find(l => l.code === language)?.name || language} />
               <Status icon={Captions} label="Subtitles" value={SUBTITLE_STYLES.find(s => s.id === subtitleStyle)?.name || subtitleStyle} />
               <Status icon={Video} label="Scene Clips" value={manifest ? `${generatedShotCount}/${totalShotCount}` : "Pending"} />
               <Status icon={Film} label="Combined MP4" value={roughCut ? `${roughCut.actualDurationSec.toFixed(2)}s` : "Pending"} />
+            </div>
+
+            {/* Docked Fast Tools */}
+            <div className="pt-3 border-t border-white/5 grid grid-cols-2 gap-2">
+              <Link
+                href="/studio/inspector"
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-black/40 py-2.5 text-[11px] font-bold text-slate-300 hover:text-white hover:border-teal-500/40 hover:bg-slate-800/60 transition shadow-sm"
+              >
+                <ScanSearch className="w-3.5 h-3.5 text-teal-400" />
+                <span>Inspector</span>
+              </Link>
+              <Link
+                href="/studio/library"
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-black/40 py-2.5 text-[11px] font-bold text-slate-300 hover:text-white hover:border-teal-500/40 hover:bg-slate-800/60 transition shadow-sm"
+              >
+                <FolderOpen className="w-3.5 h-3.5 text-teal-400" />
+                <span>Library</span>
+              </Link>
             </div>
           </div>
         </aside>
