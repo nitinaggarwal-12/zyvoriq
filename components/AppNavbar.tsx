@@ -38,9 +38,8 @@ export function AppNavbar() {
     { name: "Avatars & Cast", href: "/studio/avatars", icon: Users },
     { name: "Create Video", href: "/studio/create", icon: Sparkles },
     { name: "Library", href: "/studio/library", icon: Film },
-    { name: "History", href: "/studio/history", icon: History },
-    { name: "Veritas QA", href: "/veritas", icon: ShieldCheck },
-    { name: "Governance", href: "/governance", icon: Lock },
+    { name: "Pre-Demo NDA", href: "/nda/sign", icon: Lock },
+    { name: "Governance", href: "/governance", icon: ShieldCheck },
     { name: "Admin Data", href: "/dashboard", icon: BarChart3 },
   ];
 
