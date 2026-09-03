@@ -32,20 +32,26 @@ export function AppNavbar() {
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
+  const [moreToolsOpen, setMoreToolsOpen] = useState(false);
   const [activeWorkspace, setActiveWorkspace] = useState("Enterprise Core (US-East)");
 
-  const navItems = [
+  const primaryNavItems = [
     { name: "Studio Cinema", href: "/studio", icon: Layers },
-    { name: "Creator Growth", href: "/creator/analytics", icon: Trophy },
-    { name: "Trend Radar", href: "/studio/trend-radar", icon: TrendingUp },
-    { name: "Book Studio", href: "/studio/books", icon: BookOpen },
-    { name: "Avatars & Cast", href: "/studio/avatars", icon: Users },
     { name: "Create Video", href: "/studio/create", icon: Sparkles },
-    { name: "Library", href: "/studio/library", icon: Film },
+    { name: "Trend Radar", href: "/studio/trend-radar", icon: TrendingUp },
+    { name: "Avatars & Cast", href: "/studio/avatars", icon: Users },
+    { name: "Media Library", href: "/studio/library", icon: Film },
+    { name: "Growth", href: "/creator/analytics", icon: Trophy },
+  ];
+
+  const secondaryNavItems = [
+    { name: "Book Studio", href: "/studio/books", icon: BookOpen },
     { name: "Pre-Demo NDA", href: "/nda/sign", icon: Lock },
     { name: "Moderation", href: "/admin/moderation", icon: ShieldCheck },
     { name: "Admin Data", href: "/dashboard", icon: BarChart3 },
   ];
+
+  const allNavItems = [...primaryNavItems, ...secondaryNavItems];
 
   const isItemActive = (href: string) => {
     if (href === "/studio") {
@@ -55,26 +61,26 @@ export function AppNavbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-800/70 bg-obsidian-950/85 backdrop-blur-2xl transition-all duration-200">
-      <div className="mx-auto flex h-20 w-full max-w-[1720px] items-center justify-between px-6 sm:px-8 lg:px-12">
-        <div className="flex items-center gap-5 sm:gap-8">
-          <Link href="/" className="group flex items-center gap-3.5" aria-label="Zyvoriq Home">
-            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 via-emerald-500 to-cyan-600 p-[1px] shadow-lg shadow-teal-500/20 transition-transform group-hover:scale-105">
+    <header className="sticky top-0 z-50 w-full max-w-full overflow-x-hidden border-b border-slate-800/70 bg-obsidian-950/85 backdrop-blur-2xl transition-all duration-200">
+      <div className="mx-auto flex h-20 w-full max-w-7xl xl:max-w-[1560px] items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-4 xl:gap-6">
+          <Link href="/" className="group flex items-center gap-3" aria-label="Zyvoriq Home">
+            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 via-emerald-500 to-cyan-600 p-[1px] shadow-lg shadow-teal-500/20 transition-transform group-hover:scale-105">
               <div className="flex h-full w-full items-center justify-center rounded-[11px] bg-obsidian-950 font-mono text-lg font-black text-teal-300">Z</div>
             </div>
             <div className="flex flex-col">
-              <span className="flex items-center gap-1.5 font-mono text-xl font-extrabold tracking-tight text-white">
+              <span className="flex items-center gap-1.5 font-mono text-lg font-extrabold tracking-tight text-white">
                 ZYVORIQ<span className="text-teal-400">.</span>
-                <span className="rounded border border-teal-800/50 bg-teal-950/80 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-teal-300">Engine</span>
+                <span className="rounded border border-teal-800/50 bg-teal-950/80 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-teal-300">Engine</span>
               </span>
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Autonomous Intelligence</span>
+              <span className="text-[9px] font-semibold uppercase tracking-widest text-slate-400">Autonomous Intelligence</span>
             </div>
           </Link>
 
-          <div className="relative hidden md:block">
+          <div className="relative hidden 2xl:block">
             <button
               onClick={() => setWorkspaceMenuOpen(!workspaceMenuOpen)}
-              className="flex items-center gap-2 rounded-xl border border-slate-800/90 bg-slate-900/70 px-3.5 py-2 text-xs font-medium text-slate-300 transition-colors hover:border-slate-700 hover:text-white"
+              className="flex items-center gap-2 rounded-xl border border-slate-800/90 bg-slate-900/70 px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:border-slate-700 hover:text-white"
             >
               <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
               <span className="font-mono text-xs">{activeWorkspace}</span>
@@ -102,24 +108,54 @@ export function AppNavbar() {
           </div>
         </div>
 
-        <nav className="hidden items-center gap-2 rounded-2xl border border-slate-800/80 bg-slate-900/50 p-1.5 backdrop-blur-xl lg:flex">
-          {navItems.map((item) => {
+        <nav className="hidden items-center gap-1 rounded-2xl border border-slate-800/80 bg-slate-900/50 p-1 backdrop-blur-xl lg:flex">
+          {primaryNavItems.map((item) => {
             const Icon = item.icon;
             const active = isItemActive(item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-150 ${active ? "border border-teal-500/40 bg-gradient-to-r from-teal-500/20 to-emerald-500/10 font-bold text-teal-300 shadow-sm" : "text-slate-300 hover:bg-slate-800/50 hover:text-white"}`}
+                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all duration-150 xl:px-3.5 xl:py-2 xl:text-xs ${active ? "border border-teal-500/40 bg-gradient-to-r from-teal-500/20 to-emerald-500/10 font-bold text-teal-300 shadow-sm" : "text-slate-300 hover:bg-slate-800/50 hover:text-white"}`}
               >
-                <Icon className={`h-4 w-4 ${active ? "text-teal-400" : "text-slate-400"}`} />
+                <Icon className={`h-3.5 w-3.5 ${active ? "text-teal-400" : "text-slate-400"}`} />
                 <span>{item.name}</span>
               </Link>
             );
           })}
+
+          <div className="relative">
+            <button
+              onClick={() => setMoreToolsOpen(!moreToolsOpen)}
+              className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-300 transition-all hover:bg-slate-800/50 hover:text-white xl:px-3.5 xl:py-2"
+            >
+              <span>More</span>
+              <ChevronDown className="h-3 w-3 text-slate-400" />
+            </button>
+
+            {moreToolsOpen && (
+              <div className="absolute right-0 top-full z-50 mt-2 w-52 rounded-2xl border border-slate-800 bg-obsidian-900/95 p-2 shadow-2xl backdrop-blur-2xl">
+                {secondaryNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = isItemActive(item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMoreToolsOpen(false)}
+                      className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs transition-colors ${active ? "bg-teal-500/15 font-bold text-teal-300" : "text-slate-300 hover:bg-slate-800/70 hover:text-white"}`}
+                    >
+                      <Icon className="h-3.5 w-3.5 text-slate-400" />
+                      <span>{item.name}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </nav>
 
-        <div className="flex items-center gap-2.5 sm:gap-3.5">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Theme Switcher Toggle */}
           <button
             type="button"
@@ -187,7 +223,7 @@ export function AppNavbar() {
       {mobileMenuOpen && (
         <div className="border-b border-slate-800 bg-obsidian-950/98 px-6 py-6 backdrop-blur-2xl lg:hidden">
           <div className="flex flex-col gap-2.5">
-            {navItems.map((item) => {
+            {allNavItems.map((item) => {
               const Icon = item.icon;
               const active = isItemActive(item.href);
               return (

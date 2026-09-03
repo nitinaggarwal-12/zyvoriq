@@ -10,31 +10,31 @@ export function Hero() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[620px] bg-[radial-gradient(circle_at_50%_0%,rgba(236,72,153,0.16),transparent_38%),radial-gradient(circle_at_75%_15%,rgba(45,212,191,0.14),transparent_28%)]" />
       <div className="relative mx-auto grid max-w-[1500px] gap-12 px-6 pb-20 pt-16 md:px-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:pb-28 lg:pt-24">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-sm font-semibold text-slate-300">
-            <Sparkles className="h-4 w-4 text-pink-300" />
-            AI reel studio for creators, brands & teams
+          <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-3.5 py-2 text-sm font-semibold text-teal-300">
+            <Sparkles className="h-4 w-4 text-teal-300" />
+            Autonomous Video Intelligence & 14-Persona Creation Suite
           </div>
 
-          <h1 className="mt-7 max-w-3xl text-5xl font-black leading-[0.98] tracking-[-0.055em] text-white sm:text-6xl lg:text-7xl xl:text-[82px]">
-            Turn an idea into a
-            <span className="block bg-gradient-to-r from-pink-300 via-orange-200 to-teal-200 bg-clip-text text-transparent">scroll-stopping Reel.</span>
+          <h1 className="mt-7 max-w-3xl text-5xl font-black leading-[0.98] tracking-[-0.055em] text-white sm:text-6xl lg:text-7xl xl:text-[80px] [text-wrap:balance]">
+            Turn an idea into a{" "}
+            <span className="inline-block bg-gradient-to-r from-teal-300 via-emerald-200 to-cyan-300 bg-clip-text text-transparent">world-class Reel & Story.</span>
           </h1>
 
           <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
-            Zyvoriq helps you create the hook, script, scenes, voice, captions, music direction, thumbnail and platform-ready variants from one brief—without making every post feel AI-generated.
+            From Pixar 3D CGI and Shōnen anime combat to high-converting TikTok UGC ads and cinematic films—Zyvoriq synthesizes scripts, scenes, voiceovers, kinetic captions, and platform-ready variants from one prompt.
           </p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-            <Link href="/studio" className="group flex items-center justify-center gap-2 rounded-2xl bg-white px-6 py-4 text-sm font-black text-slate-950 transition hover:scale-[1.02] active:scale-[0.98]">
-              Create a Reel <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+            <Link href="/studio/create" className="group flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 px-7 py-4 text-sm font-black text-obsidian-950 transition hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-teal-500/20">
+              Open 14-Persona Studio <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
             </Link>
             <a href="#reel-demo" className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-4 text-sm font-bold text-white transition hover:bg-white/[0.08]">
-              <Play className="h-4 w-4 fill-current" /> See how it works
+              <Play className="h-4 w-4 fill-current text-teal-300" /> See how it works
             </a>
           </div>
 
           <div className="mt-10 flex flex-wrap gap-2 text-xs font-semibold text-slate-400">
-            {["Instagram Reels", "YouTube Shorts", "TikTok-ready", "Multilingual", "Brand-aware"].map((item) => (
+            {["Pixar 3D & Anime", "TikTok & Shorts", "UGC Video Ads", "A24 Cinema", "C2PA Provenance", "Multilingual TTS"].map((item) => (
               <span key={item} className="rounded-full border border-white/8 bg-white/[0.035] px-3 py-1.5">{item}</span>
             ))}
           </div>

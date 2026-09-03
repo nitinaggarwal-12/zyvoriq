@@ -44,9 +44,9 @@ export function CookieConsentBanner() {
   return (
     <aside
       aria-label="Cookie and AI Transparency Consent"
-      className="fixed bottom-0 inset-x-0 z-50 p-4 sm:p-6 transition-all duration-300 pointer-events-none"
+      className="fixed bottom-16 sm:bottom-0 inset-x-0 z-[80] p-3 sm:p-6 transition-all duration-300 pointer-events-none"
     >
-      <div className="mx-auto max-w-5xl rounded-2xl border border-slate-700/80 bg-obsidian-950/95 p-5 sm:p-6 backdrop-blur-2xl shadow-2xl shadow-black/80 pointer-events-auto border-t-2 border-t-teal-500/80 space-y-4">
+      <div className="mx-auto max-w-5xl rounded-2xl border border-slate-700/80 bg-obsidian-950/98 p-4 sm:p-6 backdrop-blur-2xl shadow-2xl shadow-black pointer-events-auto border-t-2 border-t-teal-500/80 space-y-3 sm:space-y-4">
         
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div className="flex items-start gap-3.5">

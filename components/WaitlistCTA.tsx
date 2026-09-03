@@ -26,11 +26,11 @@ export function WaitlistCTA() {
             </div>
 
             <div className="flex flex-col gap-3 sm:min-w-[250px]">
-              <Link href="/studio" className="group flex items-center justify-center gap-2 rounded-2xl bg-white px-6 py-4 text-sm font-black text-slate-950 transition hover:scale-[1.02] active:scale-[0.98]">
-                Create a Reel <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+              <Link href="/studio/create" className="group flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 px-6 py-4 text-sm font-black text-obsidian-950 transition hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-teal-500/20">
+                Open 14-Persona Studio <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
               </Link>
               <a href="#multimodal" className="flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.035] px-6 py-4 text-sm font-bold text-white transition hover:bg-white/[0.07]">Explore the workflow</a>
-              <p className="text-center text-xs leading-5 text-slate-600">No fake signup confirmation. Start with the product experience.</p>
+              <p className="text-center text-xs leading-5 text-slate-500">Instant studio synthesis • 100% C2PA Authenticated • No credit card required</p>
             </div>
           </div>
         </div>

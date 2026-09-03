@@ -2,50 +2,47 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Sparkles, Menu, X, PlayCircle, Library } from "lucide-react";
+import { Sparkles, Menu, X, PlayCircle, Layers, ArrowRight } from "lucide-react";
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const nav = [
-    ["Reel Studio", "/studio"],
+    ["14-Persona Studio", "/studio/create"],
+    ["Studio Cinema", "/studio"],
     ["Creator Growth", "/creator/analytics"],
     ["Library", "/studio/library"],
     ["How it works", "#multimodal"],
-    ["Trust", "/veritas"],
-    ["For teams", "/governance"],
+    ["Trust & C2PA", "/veritas"],
   ];
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-obsidian-950/80 backdrop-blur-2xl">
       <div className="mx-auto flex max-w-[1500px] items-center justify-between px-6 py-4 md:px-10">
         <Link href="/" className="flex items-center gap-3" aria-label="Zyvoriq home">
-          <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-pink-300 via-orange-200 to-teal-300 shadow-lg shadow-pink-500/10">
+          <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-pink-400 via-orange-300 to-teal-300 shadow-lg shadow-pink-500/10">
             <span className="text-lg font-black text-slate-950">Z</span>
           </div>
           <div>
             <div className="text-lg font-black tracking-[-0.03em] text-white">Zyvoriq</div>
-            <div className="text-[11px] font-medium tracking-wide text-slate-500">AI Reel Studio</div>
+            <div className="text-[10px] font-bold tracking-wider uppercase text-teal-400 font-mono">Autonomous Intelligence</div>
           </div>
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary navigation">
           {nav.map(([label, href]) => (
-            <Link key={label} href={href} className="rounded-xl px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/5 hover:text-white">
+            <Link key={label} href={href} className="rounded-xl px-3.5 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/5 hover:text-white">
               {label}
             </Link>
           ))}
         </nav>
 
         <div className="hidden items-center gap-3 sm:flex">
-          <Link href="/studio/library" className="hidden items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-300 transition hover:bg-white/5 hover:text-white md:flex">
-            <Library className="h-4 w-4" /> Library
-          </Link>
-          <a href="#reel-demo" className="hidden items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-300 transition hover:text-white xl:flex">
-            <PlayCircle className="h-4 w-4" /> See demo
+          <a href="#reel-demo" className="hidden items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold text-slate-300 transition hover:text-white xl:flex">
+            <PlayCircle className="h-4 w-4 text-teal-300" /> Watch Demo
           </a>
-          <Link href="/studio" className="flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-black text-slate-950 transition hover:scale-[1.02] active:scale-[0.98]">
-            <Sparkles className="h-4 w-4" /> Create a Reel
+          <Link href="/studio/create" className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 px-5 py-2.5 text-sm font-black text-obsidian-950 transition hover:scale-[1.02] active:scale-[0.98] shadow-md shadow-teal-500/20">
+            <Sparkles className="h-4 w-4 fill-current" /> Open Studio Hub
           </Link>
         </div>
 
@@ -62,8 +59,11 @@ export function Navbar() {
                 {label}
               </Link>
             ))}
-            <Link href="/studio" onClick={() => setMobileMenuOpen(false)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-sm font-black text-slate-950">
-              <Sparkles className="h-4 w-4" /> Create a Reel
+            <a href="#reel-demo" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 rounded-xl px-3 py-3 text-base font-semibold text-teal-300 hover:bg-white/5">
+              <PlayCircle className="h-5 w-5" /> Watch Demo
+            </a>
+            <Link href="/studio/create" onClick={() => setMobileMenuOpen(false)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 py-3.5 text-sm font-black text-obsidian-950 shadow-md shadow-teal-500/20">
+              <Sparkles className="h-4 w-4 fill-current" /> Open Studio Hub
             </Link>
           </div>
         </div>

@@ -1,1454 +1,683 @@
 "use client";
 
-import React, { useState, useEffect, useRef, Suspense } from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
-  Sparkles,
   Film,
-  Clock,
-  User,
-  Palette,
-  Globe,
-  ShieldCheck,
-  Check,
-  RotateCcw,
-  Play,
-  Share2,
-  Tv,
-  ArrowLeft,
-  Volume2,
-  FileCheck,
-  Send,
+  Sparkles,
   Zap,
+  Mic,
   Layers,
-  Search,
-  Shuffle,
-  Compass,
-  Radio,
-  Tag,
-  Sliders,
-  ChevronRight,
-  Video,
   Music,
-  Key,
-  Wand2
+  BookOpen,
+  ArrowRight,
+  Tv,
+  Flame,
+  Lightbulb,
+  Radio,
+  Feather,
+  Wand2,
+  ShoppingBag,
+  Split,
+  BarChart3,
+  HelpCircle,
+  Smile,
+  ShieldAlert,
+  Compass,
+  Palette,
+  Eye,
+  CheckCircle2,
+  Users,
+  Grid3X3,
+  Table,
+  Briefcase,
+  Dumbbell,
+  Building2,
+  TrendingUp,
+  Plane,
+  GraduationCap,
+  Stethoscope,
+  Moon
 } from "lucide-react";
-import { GENRE_CLUSTERS, GENRE_CATEGORIES, GENRE_CONCEPTS, GenreConcept } from "@/lib/tier6/genre_concepts";
-import { GLOBAL_CHARACTERS, VISUAL_AESTHETICS } from "@/lib/tier6/characters";
-import { LYRIA_MUSIC_PRESETS } from "@/lib/ai/lyriaService";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { AppNavbar } from "@/components/AppNavbar";
-import { ApiKeyModal } from "@/components/ApiKeyModal";
-import { PromptDirectorBuilderModal } from "@/components/PromptDirectorBuilderModal";
+import { StudioSidebar } from "@/components/StudioSidebar";
 
-function CreatePageContent() {
+type PersonaId =
+  | "all"
+  | "kids"
+  | "youth"
+  | "influencer"
+  | "ugc"
+  | "mature"
+  | "heritage"
+  | "b2b"
+  | "fitness"
+  | "realestate"
+  | "finance"
+  | "travel"
+  | "edtech"
+  | "medical"
+  | "spiritual";
+
+interface PersonaConfig {
+  id: PersonaId;
+  index: number;
+  title: string;
+  subtitle: string;
+  audience: string;
+  icon: any;
+  badge: string;
+  badgeColor: string;
+  styleDNA: string;
+  coreDeliverables: string[];
+  samplePrompts: string[];
+  primaryRoute: string;
+}
+
+const PERSONAS_14: PersonaConfig[] = [
+  {
+    id: "kids",
+    index: 1,
+    title: "Kids, Parents & Family",
+    subtitle: "Disney, Pixar & Ghibli Universe",
+    audience: "Children (Ages 3-12), Parents, Kindergarten & Primary Educators",
+    icon: Smile,
+    badge: "Persona #1: Pixar & Disney",
+    badgeColor: "bg-pink-500/20 text-pink-300 border-pink-500/30",
+    styleDNA: "Tactile 3D CGI, Soft Rim Lighting, Pastoral Watercolors, 100% Kid-Safe Guardrails",
+    coreDeliverables: [
+      "Pixar-Grade 3D CGI Animated Stories",
+      "Hand-Painted Watercolor Fairytale Books",
+      "Nursery Rhymes & Lyria Sing-Along Tracks",
+      "Educational Moral Lesson Dialogues"
+    ],
+    samplePrompts: [
+      "Pixar 3D bedtime story about a curious little robot who wanted to plant a flower on the moon",
+      "Gentle Ghibli-style watercolor tale of a lost puppy finding a cozy bakery in rainy Kyoto",
+      "Fun catchy nursery rhyme song with dancing animal characters teaching the ABCs"
+    ],
+    primaryRoute: "/studio/create/animation"
+  },
+  {
+    id: "youth",
+    index: 2,
+    title: "Teens, Anime & Manga",
+    subtitle: "Marvel, Shōnen & Ufotable",
+    audience: "Gen-Z, Anime Fans, Manga Artists, Gaming Streamers",
+    icon: Zap,
+    badge: "Persona #2: Shōnen Action",
+    badgeColor: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+    styleDNA: "24fps Kinetic Combat, Lightning Particle Sparks, High-Contrast Comic Splash Art",
+    coreDeliverables: [
+      "High-Octane Shōnen Battle Sequences",
+      "4-Panel Manga & Webtoon Vertical Strips",
+      "Marvel/DC Superhero Splash Double Pages",
+      "S-to-F Gaming Character Tier Lists"
+    ],
+    samplePrompts: [
+      "Epic Ufotable-style lightning katana duel on a rainy neon rooftop",
+      "4-panel comedic manga strip about a demon king working part-time at a convenience store"
+    ],
+    primaryRoute: "/studio/create/comics"
+  },
+  {
+    id: "influencer",
+    index: 3,
+    title: "Viral Influencers & Shorts",
+    subtitle: "Faceless & Retention Reels",
+    audience: "TikTokers, YouTube Shorts Creators, Cash-Cow Channel Automators",
+    icon: Flame,
+    badge: "Persona #3: Viral Retention",
+    badgeColor: "bg-red-500/20 text-red-300 border-red-500/30",
+    styleDNA: "Dual Split-Screen, Satisfying ASMR/Parkour Inset, Bouncing Gold Subtitles",
+    coreDeliverables: [
+      "Split-Screen Brainrot/ASMR Confession Reels",
+      "Viral Reddit Stories with Kinetic Subtitles",
+      "Interactive 5s Ticking Timer Quizzes",
+      "Would You Rather Community Poll Reels"
+    ],
+    samplePrompts: [
+      "Scary true crime Reddit confession with satisfying kinetic sand cutting on bottom",
+      "5-question Marvel vs DC trivia countdown quiz with ticking timer and buzzer sounds"
+    ],
+    primaryRoute: "/studio/create/reel?mode=faceless"
+  },
+  {
+    id: "ugc",
+    index: 4,
+    title: "E-Commerce & DTC Brands",
+    subtitle: "High-Converting UGC Ads",
+    audience: "Shopify Merchants, Dropshippers, Amazon Sellers, DTC Marketers",
+    icon: ShoppingBag,
+    badge: "Persona #4: TikTok & Meta Ads",
+    badgeColor: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+    styleDNA: "Problem-Solution Framework, AI Creator Holding Product, Star Ratings, CTA Overlays",
+    coreDeliverables: [
+      "AI UGC Talking-Head Product Video Ads",
+      "3-Hook Video Ad Variations (A/B Testing)",
+      "Before vs After Transformation Wipes",
+      "TikTok Shop Link-in-Bio Callouts"
+    ],
+    samplePrompts: [
+      "Viral UGC ad for smart self-heating coffee mug with problem hook and 50% discount badge",
+      "Before/After skincare transformation review with AI dermatologist host"
+    ],
+    primaryRoute: "/studio/create/ugc"
+  },
+  {
+    id: "mature",
+    index: 5,
+    title: "Filmmakers & Mature Drama",
+    subtitle: "A24 Arthouse & Neo-Noir",
+    audience: "Screenwriters, Independent Filmmakers, Investigative Journalists, Novelists",
+    icon: Eye,
+    badge: "Persona #5: A24 & HBO",
+    badgeColor: "bg-sky-500/20 text-sky-300 border-sky-500/30",
+    styleDNA: "35mm Film Grain, Atmospheric Low-Key Chiaroscuro, Psychological Tension",
+    coreDeliverables: [
+      "Cinematic Neo-Noir Short Film Scenes",
+      "2-Host Investigative Journalism Podcasts",
+      "Multi-Chapter Psychological Novels & Lore",
+      "Atmospheric Neo-Classical Cello Scores"
+    ],
+    samplePrompts: [
+      "A24-style moody neo-noir scene of an investigator questioning an elusive suspect in foggy London",
+      "2-host deep investigative podcast debating the geopolitical ethics of AI energy consumption"
+    ],
+    primaryRoute: "/studio/create/podcast"
+  },
+  {
+    id: "heritage",
+    index: 6,
+    title: "Golden Age, Seniors & Heritage",
+    subtitle: "Amar Chitra Katha & Folklore",
+    audience: "Seniors, Grandparents, Classical Literature Lovers, Cultural Historians",
+    icon: Compass,
+    badge: "Persona #6: BBC & Heritage",
+    badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+    styleDNA: "Classical Indian Ink Art, Norman Rockwell Warmth, Soothing Fireside Cadence",
+    coreDeliverables: [
+      "Indian Mythology Epics (Mahabharata / Ramayana)",
+      "BBC 4K Nature Documentaries with Attenborough Cadence",
+      "Dadi/Nani Bedtime Fireside Audio Stories",
+      "60-Second Guided Breathwork & Serene Visualizers"
+    ],
+    samplePrompts: [
+      "Amar Chitra Katha illustrated scene of Lord Krishna delivering the Gita on the battlefield of Kurukshetra",
+      "Soothing grandmother bedtime story about the wise elephant in the ancient forest of Panchatantra"
+    ],
+    primaryRoute: "/studio/create/story"
+  },
+  {
+    id: "b2b",
+    index: 7,
+    title: "B2B Founders & Solopreneurs",
+    subtitle: "SaaS Launch & Thought Leadership",
+    audience: "Tech Founders, Solopreneurs, VCs, Growth Agencies, Product Managers",
+    icon: Briefcase,
+    badge: "Persona #7: SaaS & Enterprise",
+    badgeColor: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+    styleDNA: "Dark-Mode Glassmorphic UI, Glowing Cursor Spotlights, Kinetic Typographic Frameworks",
+    coreDeliverables: [
+      "SaaS Feature Launch Video Teasers",
+      "Product Hunt & Pitch Deck 60s Videos",
+      "LinkedIn Thought Leadership Carousels",
+      "Interactive Product Demo Walkthroughs"
+    ],
+    samplePrompts: [
+      "High-converting Product Hunt launch video for an AI database query assistant with UI zooms",
+      "10-slide LinkedIn PDF carousel breaking down 7 pricing models for early-stage SaaS"
+    ],
+    primaryRoute: "/studio/create/carousel"
+  },
+  {
+    id: "fitness",
+    index: 8,
+    title: "Fitness Coaches & Nutrition",
+    subtitle: "High-Energy Workout & Diet",
+    audience: "Personal Trainers, Gym Creators, Dietitians, Yoga Instructors",
+    icon: Dumbbell,
+    badge: "Persona #8: Fitness & Macros",
+    badgeColor: "bg-lime-500/20 text-lime-300 border-lime-500/30",
+    styleDNA: "High-Contrast Workout Lighting, Dynamic Stopwatch Overlays, Calorie Badges, Phonk Pump Beats",
+    coreDeliverables: [
+      "Timed Workout Split Demonstration Reels",
+      "Macro & Meal Prep Split-Screen Guides",
+      "30-Day Body Transformation Sliders",
+      "Motivational Voiceover Pump Shorts"
+    ],
+    samplePrompts: [
+      "High-energy 45-second HIIT workout reel with 30s countdown timer and form tips",
+      "High-protein 500-calorie meal prep split screen with protein macro overlay badges"
+    ],
+    primaryRoute: "/studio/create/reel"
+  },
+  {
+    id: "realestate",
+    index: 9,
+    title: "Real Estate & Architecture",
+    subtitle: "Luxury Living & Spaces",
+    audience: "Luxury Realtors, Airbnb Superhosts, Interior Architects, Property Developers",
+    icon: Building2,
+    badge: "Persona #9: Luxury Walkthrough",
+    badgeColor: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+    styleDNA: "4K Cinematic Drone Pans, Golden-Hour Lighting, Smooth Fly-Throughs, Property Badges",
+    coreDeliverables: [
+      "Cinematic Luxury Property Tours",
+      "Before vs After Home Renovation Wipes",
+      "Airbnb Listing Showcase Reels",
+      "Neighborhood Lifestyle & Amenity Guides"
+    ],
+    samplePrompts: [
+      "Cinematic walkthrough of a $4.5M modern Beverly Hills glass mansion with price and sq ft badges",
+      "Before and after luxury kitchen renovation swipe with modern marble island staging"
+    ],
+    primaryRoute: "/studio/create/reel"
+  },
+  {
+    id: "finance",
+    index: 10,
+    title: "Finance, Traders & Crypto",
+    subtitle: "Market Pulse & Economic Breakdowns",
+    audience: "Stock Market Analysts, Crypto Traders, Personal Finance Creators, Newsletter Editors",
+    icon: TrendingUp,
+    badge: "Persona #10: Wall Street & Crypto",
+    badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+    styleDNA: "Live Candlestick Chart Animations, Bloomberg-Style Lower-Thirds, Authoritative Anchor Voice",
+    coreDeliverables: [
+      "30-Second Market Pulse News Flashes",
+      "How It Happened Economic Crash Infographics",
+      "Personal Finance & Compound Interest Decks",
+      "Crypto Tokenomics & On-Chain Breakdowns"
+    ],
+    samplePrompts: [
+      "Breaking market pulse reel explaining the Fed interest rate decision with green/red candlestick charts",
+      "Vox-style animated infographic explaining how NVIDIA became the world's most valuable chipmaker"
+    ],
+    primaryRoute: "/studio/create/reel?mode=explainer"
+  },
+  {
+    id: "travel",
+    index: 11,
+    title: "Travel Creators & Foodies",
+    subtitle: "Globe Itineraries & ASMR Food",
+    audience: "Digital Nomads, Travel Vloggers, Food Reviewers, Hospitality Brands",
+    icon: Plane,
+    badge: "Persona #11: 3D Flight & ASMR",
+    badgeColor: "bg-teal-500/20 text-teal-300 border-teal-500/30",
+    styleDNA: "3D Globe Flight Paths, Saturated Sunsets, ASMR Food Sizzles, Chill Lofi Beats",
+    coreDeliverables: [
+      "3D Animated Flight Itinerary Maps",
+      "Top 5 Hidden Gems in [City] Montages",
+      "ASMR Food & Dish Preparation Zooms",
+      "Budget Breakdown Destination Decks"
+    ],
+    samplePrompts: [
+      "3D globe flight animation traveling from New York to Tokyo with hotel stopover pins",
+      "Top 5 secret ramen spots in Tokyo with mouthwatering close-up sizzles and price tags"
+    ],
+    primaryRoute: "/studio/create/reel"
+  },
+  {
+    id: "edtech",
+    index: 12,
+    title: "EdTech, STEM & Coding",
+    subtitle: "Interactive Learning & Code",
+    audience: "Coding Educators, STEM Professors, Bootcamps, Test-Prep Instructors",
+    icon: GraduationCap,
+    badge: "Persona #12: STEM & IDE",
+    badgeColor: "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
+    styleDNA: "Syntax-Highlighted IDE Typing, 3D Physics/Math Graph Simulators, Bite-Sized Flashcards",
+    coreDeliverables: [
+      "Split-Screen Live Code IDE Walkthroughs",
+      "3D Animated Math & Science Concept Proofs",
+      "Daily Language & Vocabulary Flashcards",
+      "Interactive Step-by-Step Problem Solving"
+    ],
+    samplePrompts: [
+      "Split-screen coding reel explaining React useEffect dependency array with live browser output",
+      "3D visual explanation of how transformer attention mechanisms process text in LLMs"
+    ],
+    primaryRoute: "/studio/create/reel?mode=explainer"
+  },
+  {
+    id: "medical",
+    index: 13,
+    title: "Doctors & Healthcare",
+    subtitle: "Clinical Trust & 3D Anatomy",
+    audience: "Physicians, Dentists, Dermatologists, Therapists, Health Educators",
+    icon: Stethoscope,
+    badge: "Persona #13: Medical Authority",
+    badgeColor: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
+    styleDNA: "Doctor Reacts Split-Screen, 3D Body Anatomy Fly-Throughs, Empathetic Tone, Medical Disclaimers",
+    coreDeliverables: [
+      "Doctor Reacts / Myth-Busting Reels",
+      "3D Anatomical Body Simulation Guides",
+      "Empathetic Mental Health Consultation Shorts",
+      "Skincare Routine Ingredient Breakdowns"
+    ],
+    samplePrompts: [
+      "Dermatologist reacts split-screen debunking viral DIY lemon juice acne hacks with scientific explanation",
+      "3D anatomical fly-through showing how chronic poor posture causes cervical spine compression"
+    ],
+    primaryRoute: "/studio/create/reel"
+  },
+  {
+    id: "spiritual",
+    index: 14,
+    title: "Devotional & Astrology",
+    subtitle: "Daily Zodiac & Sacred Mantras",
+    audience: "Astrologers, Spiritual Seekers, Temple Communities, Mindfulness Practitioners",
+    icon: Moon,
+    badge: "Persona #14: Zodiac & Mantras",
+    badgeColor: "bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30",
+    styleDNA: "Cosmic Nebula Shimmers, Sacred Golden Devanagari Script, Temple Bells, Binaural 432Hz Audio",
+    coreDeliverables: [
+      "Daily 12-Zodiac Astrological Predictions",
+      "Sanskrit/Hindi Devotional Mantras & Aarti",
+      "3D Tarot Card Pull & Life Readings",
+      "Binaural Morning Meditation Soundscapes"
+    ],
+    samplePrompts: [
+      "Daily Aries, Taurus, Gemini astrological prediction card with cosmic nebula background",
+      "Maha Mrityunjaya Mantra chanting reel with rolling golden Sanskrit lyrics and sacred temple visuals"
+    ],
+    primaryRoute: "/studio/create/music"
+  }
+];
+
+export default function CreateHubPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const targetTrackId = searchParams.get("trackId") || "";
-  const modeParam = searchParams.get("mode") || "";
-  const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
-  const [isPromptBuilderOpen, setIsPromptBuilderOpen] = useState(false);
+  const [selectedPersona, setSelectedPersona] = useState<PersonaId>("kids");
+  const [viewMode, setViewMode] = useState<"cards" | "matrix">("cards");
+  const [quickPrompt, setQuickPrompt] = useState("");
 
-  const [selectedCluster, setSelectedCluster] = useState<string>("all");
-  const [selectedGenre, setSelectedGenre] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [isSpeakingPitch, setIsSpeakingPitch] = useState<string | null>(null);
+  const activePersonaConfig = useMemo(() => {
+    return PERSONAS_14.find((p) => p.id === selectedPersona) || PERSONAS_14[0];
+  }, [selectedPersona]);
 
-  const [title, setTitle] = useState(
-    targetTrackId ? "⚡ Act 2: Combustion Transition" : "⚡ The Thunderstorm of Mushin"
-  );
-  const [prompt, setPrompt] = useState(
-    targetTrackId
-      ? "Act 2 continuity scene: Transitioning to supersonic airflow and turbulent fuel injection dynamics within the combustion chamber."
-      : "Sensei Ren teaches Apprentice Aoi the concept of Mushin (Mind without Mind) during a night thunderstorm duel on the wooden dojo balcony."
-  );
-  const [duration, setDuration] = useState<number>(8);
-  const [aspectRatio, setAspectRatio] = useState<"16:9" | "9:16" | "1:1">("16:9");
-  const [globalTransmute, setGlobalTransmute] = useState<boolean>(false);
-  const [previsLoading, setPrevisLoading] = useState<boolean>(false);
-  const [previsStoryboard, setPrevisStoryboard] = useState<any[] | null>(null);
-  const [showPrevisModal, setShowPrevisModal] = useState<boolean>(false);
+  const handleQuickSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickPrompt.trim()) return;
 
-  const [destinationMode, setDestinationMode] = useState<"new_series" | "append_current">(
-    modeParam === "append_current" || targetTrackId ? "append_current" : "new_series"
-  );
-  const [characterLock, setCharacterLock] = useState(targetTrackId ? "david" : "ren_aoi");
-  const [visualStyle, setVisualStyle] = useState(targetTrackId ? "cinematic_4k" : "ufotable_anime");
-  const [musicPreset, setMusicPreset] = useState("adaptive_cinematic");
-  const [languages, setLanguages] = useState<string[]>(["ja", "en", "es", "fr", "de", "hi"]);
-  const [autoVeritas, setAutoVeritas] = useState(true);
-
-  const [availableTracks, setAvailableTracks] = useState<any[]>([]);
-  const [selectedParentTrackId, setSelectedParentTrackId] = useState<string>(targetTrackId || "");
-  const [targetTrackTitle, setTargetTrackTitle] = useState<string>("");
-
-  useEffect(() => {
-    fetch("/api/studio/tracks")
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && Array.isArray(data.tracks)) {
-          setAvailableTracks(data.tracks);
-          if (targetTrackId) {
-            const found = data.tracks.find((t: any) => t.id === targetTrackId);
-            if (found) {
-              setSelectedParentTrackId(found.id);
-              setTargetTrackTitle(found.title);
-            }
-          } else if (data.tracks.length > 0) {
-            setSelectedParentTrackId(data.tracks[0].id);
-            setTargetTrackTitle(data.tracks[0].title);
-          }
-        }
-      })
-      .catch(() => {});
-  }, [targetTrackId]);
-
-  useEffect(() => {
-    const conceptParam = searchParams.get("concept") || searchParams.get("pillar") || "";
-    if (conceptParam) {
-      const found = GENRE_CONCEPTS.find(c => c.id === conceptParam || c.genre === conceptParam);
-      if (found) {
-        handleSelectConcept(found);
-        setSelectedCluster(found.cluster);
-        setSelectedGenre(found.genre);
-      }
-    }
-  }, [searchParams]);
-
-  const [apiHealth, setApiHealth] = useState<{ ok: boolean; configured: boolean; message?: string; model?: string } | null>(null);
-
-  useEffect(() => {
-    fetch("/api/health/api-key")
-      .then(res => res.json())
-      .then(data => setApiHealth(data))
-      .catch(() => setApiHealth({ ok: false, configured: false, message: "Server connection error" }));
-  }, []);
-
-  const activeTargetTrack = availableTracks.find((t: any) => t.id === selectedParentTrackId) || null;
-
-  // Suggested Act Continuations for Active Target Track
-  const continuitySuggestions = [
-    {
-      title: `⚡ Act ${(activeTargetTrack?.acts?.length || 1) + 1}: Combustion & Plasma Ignition`,
-      prompt: `Act ${(activeTargetTrack?.acts?.length || 1) + 1} continuity scene: Internal cross-section view showing supersonic air intake entering the scramjet combustor with glowing shock diamond plasma flames and thermal flow lines.`,
-      visualStyle: "ue5_raytraced"
-    },
-    {
-      title: `🔬 Act ${(activeTargetTrack?.acts?.length || 1) + 1}: Nanite CAD Stress Telemetry`,
-      prompt: `Act ${(activeTargetTrack?.acts?.length || 1) + 1} continuity scene: High-speed holographic sensor scan inspecting structural titanium lattice under extreme thermal and aerodynamic load at Mach 5.`,
-      visualStyle: "photorealistic_keynote"
-    },
-    {
-      title: `🚀 Act ${(activeTargetTrack?.acts?.length || 1) + 1}: Hypersonic Flight Deck Ascent`,
-      prompt: `Act ${(activeTargetTrack?.acts?.length || 1) + 1} continuity scene: Wide cinematic exterior view of the scramjet-powered craft penetrating the upper stratosphere leaving an incandescent ionization wake.`,
-      visualStyle: "cyberpunk_noir"
-    }
-  ];
-
-  // Generation Pipeline State
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [genStage, setGenStage] = useState("");
-  const [genProgress, setGenProgress] = useState(0);
-  const [generatedResult, setGeneratedResult] = useState<any | null>(null);
-  const [isPublished, setIsPublished] = useState(false);
-  const [savedTrackId, setSavedTrackId] = useState<string | null>(null);
-
-  const filteredConcepts = GENRE_CONCEPTS.filter((c) => {
-    const matchesGenre = selectedGenre === "all" || c.genre === selectedGenre;
-    const q = searchQuery.toLowerCase().trim();
-    const matchesSearch =
-      !q ||
-      c.title.toLowerCase().includes(q) ||
-      c.hook.toLowerCase().includes(q) ||
-      c.prompt.toLowerCase().includes(q) ||
-      c.genre.toLowerCase().includes(q);
-    return matchesGenre && matchesSearch;
-  });
-
-  const handleSelectConcept = (concept: GenreConcept) => {
-    setTitle(concept.title);
-    setPrompt(concept.prompt);
-    setCharacterLock(concept.characterLock);
-    setVisualStyle(concept.visualStyle);
-    setDuration(concept.recommendedDuration);
-  };
-
-  const handleRandomize = () => {
-    const randomIndex = Math.floor(Math.random() * GENRE_CONCEPTS.length);
-    handleSelectConcept(GENRE_CONCEPTS[randomIndex]);
-  };
-
-  const handleListenSpeech = (concept: GenreConcept) => {
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(concept.speechSample);
-      utterance.rate = 0.95;
-      utterance.pitch = 1.0;
-      utterance.onstart = () => setIsSpeakingPitch(concept.id);
-      utterance.onend = () => setIsSpeakingPitch(null);
-      utterance.onerror = () => setIsSpeakingPitch(null);
-      window.speechSynthesis.speak(utterance);
-    }
-  };
-
-  const handleToggleLang = (code: string) => {
-    if (languages.includes(code)) {
-      if (languages.length > 1) setLanguages(languages.filter((l) => l !== code));
+    const lower = quickPrompt.toLowerCase();
+    if (lower.includes("ugc") || lower.includes("product") || lower.includes("amazon") || lower.includes("review")) {
+      router.push(`/studio/create/reel?mode=ugc&q=${encodeURIComponent(quickPrompt)}`);
+    } else if (lower.includes("split") || lower.includes("brainrot") || lower.includes("asmr") || lower.includes("reddit")) {
+      router.push(`/studio/create/reel?mode=faceless&q=${encodeURIComponent(quickPrompt)}`);
+    } else if (lower.includes("infographic") || lower.includes("vox") || lower.includes("chart") || lower.includes("economy")) {
+      router.push(`/studio/create/reel?mode=explainer&q=${encodeURIComponent(quickPrompt)}`);
+    } else if (lower.includes("quiz") || lower.includes("tier list") || lower.includes("trivia") || lower.includes("would you rather")) {
+      router.push(`/studio/create/reel?mode=interactive&q=${encodeURIComponent(quickPrompt)}`);
+    } else if (lower.includes("podcast") || lower.includes("debate") || lower.includes("interview")) {
+      router.push(`/studio/create/podcast?q=${encodeURIComponent(quickPrompt)}`);
+    } else if (lower.includes("anime") || lower.includes("animation") || lower.includes("shonen") || lower.includes("ghibli") || lower.includes("pixar")) {
+      router.push(`/studio/create/animation?q=${encodeURIComponent(quickPrompt)}`);
+    } else if (lower.includes("comic") || lower.includes("manga") || lower.includes("strip") || lower.includes("marvel")) {
+      router.push(`/studio/create/comics?q=${encodeURIComponent(quickPrompt)}`);
+    } else if (lower.includes("carousel") || lower.includes("slide") || lower.includes("deck") || lower.includes("pdf")) {
+      router.push(`/studio/create/carousel?q=${encodeURIComponent(quickPrompt)}`);
+    } else if (lower.includes("song") || lower.includes("music") || lower.includes("beat") || lower.includes("lyric") || lower.includes("mantra")) {
+      router.push(`/studio/create/music?q=${encodeURIComponent(quickPrompt)}`);
+    } else if (lower.includes("novel") || lower.includes("chapter") || lower.includes("book") || lower.includes("lore") || lower.includes("story")) {
+      router.push(`/studio/create/story?q=${encodeURIComponent(quickPrompt)}`);
     } else {
-      setLanguages([...languages, code]);
+      router.push(`${activePersonaConfig.primaryRoute}?q=${encodeURIComponent(quickPrompt)}`);
     }
-  };
-
-  const handleGeneratePrevis = async () => {
-    try {
-      setPrevisLoading(true);
-      setShowPrevisModal(true);
-      const res = await fetch("/api/storyboard/previs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt,
-          visualStyle,
-          characterLock,
-          aspectRatio
-        })
-      });
-      const data = await res.json();
-      if (data.success && (data.storyboard || data.previs?.storyboardGrid)) {
-        const rawFrames = data.storyboard || data.previs?.storyboardGrid;
-        const mapped = rawFrames.map((f: any, idx: number) => ({
-          shotNumber: f.frameNumber || f.shotNumber || idx + 1,
-          shotType: f.shotType?.includes(".") ? f.shotType : `${f.frameNumber || idx + 1}. ${f.shotType}`,
-          timecode: f.timecode || `0:0${idx * 2} - 0:0${(idx + 1) * 2}`,
-          desc: f.visualDescription || f.desc || f.lightingPrompt
-        }));
-        setPrevisStoryboard(mapped);
-      }
-    } catch (err) {
-      console.error("Previs error:", err);
-    } finally {
-      setPrevisLoading(false);
-    }
-  };
-
-  const isSubmittingRef = useRef<boolean>(false);
-
-  const handleKickoffGeneration = async () => {
-    if (isSubmittingRef.current || isGenerating) return;
-    isSubmittingRef.current = true;
-    setIsGenerating(true);
-
-    const newJobId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const effectiveParentTrackId = destinationMode === "append_current" ? (selectedParentTrackId || targetTrackId) : undefined;
-    
-    try {
-      // Synchronously initialize job in persistent database
-      const res = await fetch("/api/tier6/create-act", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: newJobId,
-          parentTrackId: effectiveParentTrackId,
-          mode: destinationMode,
-          title,
-          prompt,
-          duration,
-          aspectRatio,
-          globalTransmute,
-          characterLock,
-          visualStyle,
-          musicPreset,
-          languages,
-          autoVeritas
-        })
-      });
-
-      if (!res.ok) {
-        console.warn("create-act returned status:", res.status);
-      }
-    } catch (err) {
-      console.error("Failed to initialize production job:", err);
-    }
-
-    // Navigate to dedicated, permanent, deep-linkable Production Monitor
-    router.push(`/studio/production/${newJobId}`);
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
-      <AppNavbar />
-
-      {/* Sub-Header Breadcrumb Bar */}
-      <div className="w-full bg-slate-950/80 backdrop-blur-xl border-b border-slate-800">
-        <div className="max-w-[1720px] mx-auto px-6 md:px-12 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/studio"
-              className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition-all flex items-center gap-2 text-xs font-mono font-medium shadow-sm"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Stage</span>
-            </Link>
-            <div className="h-4 w-px bg-slate-800" />
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-amber-400 font-mono text-xs font-bold uppercase tracking-widest flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" /> Studio Series Creator
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-[10px]">
-                  Neural Cinema + Synthetic Voice
-                </span>
-              </div>
-              <h1 className="text-xl font-bold text-white font-serif tracking-tight">
-                New Production & Story Hub
-              </h1>
-            </div>
+    <StudioSidebar>
+      <main className="flex-1 max-w-8xl w-full mx-auto px-5 py-8 md:px-10 space-y-8">
+        {/* Header Title */}
+        <div className="text-center max-w-4xl mx-auto space-y-3 pt-2">
+          <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1 text-xs font-bold text-teal-300 font-mono">
+            <Users className="w-3.5 h-3.5" /> 14-PERSONA CREATIVE PRODUCTION SUITE
           </div>
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white">
+            Universal AI Studio Ecosystem
+          </h1>
+          <p className="text-sm sm:text-base text-slate-400 max-w-3xl mx-auto">
+            Demarcated by industry persona. Zero cognitive overload. Select your persona to trigger dedicated visual pipelines, narrative engines, and production deliverables.
+          </p>
+        </div>
 
-          <div className="flex items-center gap-3">
+        {/* Universal Magic Prompt Bar */}
+        <form onSubmit={handleQuickSubmit} className="max-w-4xl mx-auto">
+          <div className="relative flex items-center rounded-3xl border border-teal-500/40 bg-gradient-to-r from-slate-900/90 via-obsidian-950/95 to-slate-900/90 p-2 shadow-2xl backdrop-blur-2xl ring-1 ring-white/10">
+            <input
+              type="text"
+              value={quickPrompt}
+              onChange={(e) => setQuickPrompt(e.target.value)}
+              placeholder={`Describe your idea for ${activePersonaConfig.title} (e.g. '${activePersonaConfig.samplePrompts[0].slice(0, 48)}...')...`}
+              className="w-full bg-transparent py-3.5 pl-4 pr-36 text-sm sm:text-base text-white placeholder-slate-500 outline-none"
+            />
             <button
-              type="button"
-              onClick={() => setApiKeyModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 border border-amber-500/40 text-amber-300 text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-sm"
+              type="submit"
+              disabled={!quickPrompt.trim()}
+              className="absolute right-2 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 px-5 py-3 text-xs sm:text-sm font-black text-obsidian-950 shadow-lg shadow-teal-500/25 hover:from-teal-300 hover:to-cyan-300 active:scale-[0.98] transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
-              <Key className="w-3.5 h-3.5 text-amber-400" />
-              <span>API Keys Pool</span>
+              <Zap className="w-4 h-4 fill-current" />
+              <span>Launch Studio</span>
             </button>
+          </div>
+        </form>
 
-            <Link
-              href="/studio/library"
-              className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition-all flex items-center gap-2 text-xs font-mono font-bold shadow-sm"
-            >
-              <Layers className="w-3.5 h-3.5 text-amber-400" />
-              <span>📚 Media Vault</span>
-            </Link>
+        {/* Persona Selectors Bar (14 Personas Grid) */}
+        <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-400 font-mono">
+                Step 1: Select Your Industry Persona (14 Specialized Profiles)
+              </span>
+            </div>
 
-            <Link
-              href="/studio"
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs font-mono transition-all flex items-center gap-1.5 shadow-lg shadow-amber-500/20"
-            >
-              <Tv className="w-3.5 h-3.5" />
-              <span>Cinema Player</span>
-            </Link>
+            {/* View Mode Toggle */}
+            <div className="inline-flex rounded-xl bg-slate-900/80 p-1 border border-white/10 text-xs">
+              <button
+                onClick={() => setViewMode("cards")}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold transition cursor-pointer ${
+                  viewMode === "cards" ? "bg-teal-500 text-obsidian-950 shadow" : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <Grid3X3 className="w-3.5 h-3.5" />
+                <span>Persona Focus View</span>
+              </button>
+              <button
+                onClick={() => setViewMode("matrix")}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold transition cursor-pointer ${
+                  viewMode === "matrix" ? "bg-teal-500 text-obsidian-950 shadow" : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <Table className="w-3.5 h-3.5" />
+                <span>14-Persona Master Matrix</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 14 Persona Horizontal Scrollable / Grid Buttons */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2">
+            {PERSONAS_14.map((p) => {
+              const Icon = p.icon;
+              const isSelected = selectedPersona === p.id;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setSelectedPersona(p.id)}
+                  className={`flex flex-col text-left p-3 rounded-2xl border transition-all cursor-pointer ${
+                    isSelected
+                      ? "bg-gradient-to-b from-teal-500/25 to-slate-900 border-teal-400 ring-2 ring-teal-400/30 shadow-lg scale-[1.02]"
+                      : "bg-slate-900/50 border-white/10 hover:border-white/20 hover:bg-slate-800/60 text-slate-300"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className={`p-1.5 rounded-lg bg-white/5 border border-white/10 ${isSelected ? "text-teal-300" : "text-slate-400"}`}>
+                      <Icon className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-[9px] font-mono font-bold text-slate-400">
+                      #{p.index}
+                    </span>
+                  </div>
+                  <h3 className="text-xs font-black text-white line-clamp-1">{p.title}</h3>
+                  <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">{p.subtitle}</p>
+                </button>
+              );
+            })}
           </div>
         </div>
-      </div>
 
-      {/* Main Full-Width Multi-Column Canvas */}
-      <main className="flex-1 max-w-[1720px] w-full mx-auto px-6 md:px-12 py-8 space-y-6">
-        {/* Unified Studio Top-Level Breadcrumb */}
-        <div className="flex items-center gap-2 text-xs font-mono text-slate-400 overflow-x-auto pb-1">
-          <Link href="/" className="hover:text-amber-300 transition-colors flex items-center gap-1">
-            Home
-          </Link>
-          <ChevronRight className="w-3 h-3 text-slate-600 shrink-0" />
-          <Link href="/studio" className="hover:text-amber-300 transition-colors flex items-center gap-1">
-            Studio Cinema
-          </Link>
-          <ChevronRight className="w-3 h-3 text-slate-600 shrink-0" />
-          {targetTrackId ? (
-            <>
+        {/* ACTIVE PERSONA SPOTLIGHT & STUDIO LAUNCH CARD */}
+        {viewMode === "cards" && (
+          <div className="rounded-3xl border border-teal-500/40 bg-gradient-to-br from-slate-900/90 via-obsidian-950 to-slate-900/90 p-6 md:p-8 backdrop-blur-2xl shadow-2xl space-y-6">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-white/10">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className={`rounded-full border px-3 py-1 text-xs font-black uppercase font-mono ${activePersonaConfig.badgeColor}`}>
+                    {activePersonaConfig.badge}
+                  </span>
+                  <span className="text-xs text-slate-400">Target Audience: {activePersonaConfig.audience}</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-3">
+                  {activePersonaConfig.title}
+                  <span className="text-lg text-slate-400 font-normal">({activePersonaConfig.subtitle})</span>
+                </h2>
+                <p className="text-sm text-slate-300 max-w-3xl">
+                  <strong className="text-teal-300 font-mono">Aesthetic & Render DNA:</strong> {activePersonaConfig.styleDNA}
+                </p>
+              </div>
+
               <Link
-                href={`/studio?track=${targetTrackId}`}
-                className="text-slate-300 hover:text-amber-300 transition-colors max-w-[200px] truncate"
+                href={activePersonaConfig.primaryRoute}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 px-6 py-4 text-sm font-black text-obsidian-950 shadow-xl shadow-teal-500/25 hover:from-teal-300 hover:to-cyan-300 active:scale-[0.98] transition cursor-pointer whitespace-nowrap"
               >
-                {activeTargetTrack?.title || "Active Series"}
+                <span>Enter Dedicated Studio</span>
+                <ArrowRight className="w-4 h-4" />
               </Link>
-              <ChevronRight className="w-3 h-3 text-slate-600 shrink-0" />
-              <span className="text-amber-400 font-bold flex items-center gap-1 shrink-0">
-                <Sparkles className="w-3 h-3 fill-current" /> Append Act {(activeTargetTrack?.acts?.length || 1) + 1}
-              </span>
-            </>
-          ) : (
-            <span className="text-amber-400 font-bold flex items-center gap-1 shrink-0">
-              <Sparkles className="w-3 h-3 fill-current" /> Series Creator
-            </span>
-          )}
-        </div>
-
-        {/* 🎯 Target Series Visual Routing Banner */}
-        <div>
-          {destinationMode === "append_current" ? (
-            <div className="p-5 md:p-6 rounded-3xl bg-gradient-to-r from-amber-950/80 via-slate-900 to-slate-950 border-2 border-amber-500/60 shadow-2xl shadow-amber-500/10 flex flex-col lg:flex-row lg:items-center justify-between gap-5 backdrop-blur-xl">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 shadow-lg shadow-amber-500/20">
-                  <Film className="w-7 h-7" />
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="px-3 py-1 rounded-full bg-amber-500 text-slate-950 font-mono text-xs font-bold uppercase tracking-wider shadow-sm flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 fill-current" />
-                      Appending Act {(activeTargetTrack?.acts?.length || 1) + 1}
-                    </span>
-                    <span className="text-xs font-mono text-slate-400">
-                      Target Series: <span className="text-amber-300 font-bold">{activeTargetTrack?.title || targetTrackTitle || "Active Series"}</span>
-                    </span>
-                  </div>
-                  <h2 className="text-lg md:text-2xl font-bold text-white font-serif tracking-tight">
-                    {activeTargetTrack?.title || targetTrackTitle || "Building a Hypersonic Scramjet Engine"}
-                  </h2>
-                  <p className="text-xs font-mono text-slate-400">
-                    Current Runtime: {activeTargetTrack?.duration || 8}s ({activeTargetTrack?.acts?.length || 1} Acts) ➔ Expanding to {(activeTargetTrack?.duration || 8) + duration}s Total
-                  </p>
-                </div>
-              </div>
-
-              {/* Quick Switch Dropdown & Action */}
-              <div className="flex items-center gap-3 shrink-0 flex-wrap">
-                {availableTracks.length > 1 && (
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-mono text-slate-400 uppercase block">Switch Series to Append</span>
-                    <select
-                      value={selectedParentTrackId}
-                      onChange={(e) => {
-                        setSelectedParentTrackId(e.target.value);
-                        const sel = availableTracks.find((t: any) => t.id === e.target.value);
-                        if (sel) {
-                          setTargetTrackTitle(sel.title);
-                          setTitle(`Act ${(sel.acts?.length || 1) + 1}: Continuity Scene`);
-                        }
-                      }}
-                      className="bg-slate-950 border border-amber-500/50 rounded-xl px-3 py-2 text-xs font-mono text-amber-200 focus:outline-none focus:border-amber-400 shadow-inner"
-                    >
-                      {availableTracks.map((t: any) => (
-                        <option key={t.id} value={t.id}>
-                          {t.title} ({t.acts?.length || 1} Acts)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => setDestinationMode("new_series")}
-                  className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 text-xs font-mono text-slate-300 hover:text-white transition-all shadow-sm flex items-center gap-2 mt-4 lg:mt-0"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Start New Series Instead</span>
-                </button>
-              </div>
-
-              {/* 🎬 Previous Act Context Inspector for Seamless Creative Continuity */}
-              {activeTargetTrack && activeTargetTrack.acts && activeTargetTrack.acts.length > 0 && (
-                <div className="w-full mt-4 p-4 rounded-2xl bg-black/60 border border-amber-500/30 text-xs font-mono space-y-2">
-                  <div className="flex items-center justify-between text-[11px] text-amber-400 font-bold uppercase tracking-wider">
-                    <span className="flex items-center gap-1.5">
-                      <Film className="w-3.5 h-3.5" />
-                      <span>Previous Act {(activeTargetTrack.acts.length)} Context Reference</span>
-                    </span>
-                    <span className="text-slate-400 font-normal">
-                      Character: <span className="text-white font-bold">{activeTargetTrack.character || "Default"}</span>
-                    </span>
-                  </div>
-
-                  <div className="text-slate-300 leading-relaxed bg-slate-950/80 p-3 rounded-xl border border-slate-800">
-                    <span className="text-slate-500 block text-[10px] uppercase font-bold mb-0.5">Scene Continuity &amp; Dialogue:</span>
-                    &ldquo;{activeTargetTrack.acts[activeTargetTrack.acts.length - 1]?.dialogue ||
-                      activeTargetTrack.acts[activeTargetTrack.acts.length - 1]?.prompt ||
-                      activeTargetTrack.subtitle ||
-                      "Continuity storyline ongoing."}&rdquo;
-                  </div>
-                </div>
-              )}
             </div>
-          ) : (
-            <div className="p-5 md:p-6 rounded-3xl bg-gradient-to-r from-indigo-950/60 via-slate-900 to-slate-950 border border-indigo-500/40 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 backdrop-blur-xl">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shrink-0">
-                  <Sparkles className="w-6 h-6" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 font-mono text-[10px] uppercase font-bold tracking-wider">
-                      New Independent Series
-                    </span>
-                  </div>
-                  <h2 className="text-lg md:text-xl font-bold text-white font-serif mt-0.5">
-                    Creating Brand New Master Series (Act 1)
-                  </h2>
-                  <p className="text-xs font-mono text-slate-400">
-                    This will create an independent track with its own dedicated deep-linkable cinema player.
-                  </p>
-                </div>
-              </div>
 
-              {availableTracks.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDestinationMode("append_current");
-                    if (!selectedParentTrackId && availableTracks[0]) {
-                      setSelectedParentTrackId(availableTracks[0].id);
-                    }
-                  }}
-                  className="px-4 py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-mono font-bold transition-all flex items-center gap-2 shadow-sm shrink-0"
-                >
-                  <Film className="w-4 h-4" />
-                  <span>🔗 Append to an Existing Series Track</span>
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
-        {!generatedResult ? (
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-            {/* LEFT COLUMN: Netflix / Prime Video Genre & Concept Hub (7 cols) */}
-            <section className="xl:col-span-7 space-y-6">
-              <div className="bg-gradient-to-br from-slate-900/90 via-slate-950 to-slate-900 border border-amber-500/30 rounded-3xl p-6 md:p-8 space-y-5 shadow-2xl backdrop-blur-xl">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="px-3 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 font-mono text-[11px] uppercase font-bold tracking-wider flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5" /> Netflix & Prime Concept Discovery
+            {/* Deliverables & Sample Prompts Grid */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Deliverables */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-black uppercase tracking-wider text-teal-400 font-mono flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Guaranteed Production Deliverables
+                </h3>
+                <div className="space-y-2">
+                  {activePersonaConfig.coreDeliverables.map((deliv, idx) => (
+                    <div key={idx} className="flex items-start gap-2.5 rounded-xl bg-white/5 border border-white/5 p-3 text-xs text-slate-200">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-teal-500/20 text-teal-300 font-mono text-[10px] font-bold">
+                        {idx + 1}
                       </span>
-                      <span className="text-xs font-mono text-slate-400">
-                        {filteredConcepts.length} Blockbuster Concepts
-                      </span>
+                      <span>{deliv}</span>
                     </div>
-                    <h2 className="text-2xl font-bold text-white font-serif mt-1.5">
-                      Story & Speech Concept Discovery <span className="text-amber-400 font-normal italic">+ Live Speech Pitches</span>
-                    </h2>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleRandomize}
-                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-amber-400/60 text-amber-300 text-xs font-mono font-bold transition-all flex items-center gap-2 shrink-0 shadow-sm active:scale-95"
-                  >
-                    <Shuffle className="w-4 h-4" />
-                    <span>🎲 Surprise Idea</span>
-                  </button>
+                  ))}
                 </div>
+              </div>
 
-                {/* Search Bar */}
-                <div className="relative">
-                  <Search className="w-4 h-4 text-slate-500 absolute left-4 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search genres, story tropes, or keywords (e.g. medical, space, nature, samurai, leadership)..."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-11 pr-16 py-3.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500/80 transition-colors shadow-inner"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery("")}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-mono bg-slate-800 px-2 py-0.5 rounded-md"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-
-                {/* 4 Category Clusters Tabs */}
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 border-b border-slate-800/80 pb-3">
-                  {GENRE_CLUSTERS.map((cl) => {
-                    const isClSelected = selectedCluster === cl.id;
+              {/* 1-Click Prompt Inspirations */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-black uppercase tracking-wider text-amber-400 font-mono flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" /> 1-Click Prompt Templates
+                </h3>
+                <div className="space-y-2">
+                  {activePersonaConfig.samplePrompts.map((prompt, idx) => {
+                    const isSelected = quickPrompt === prompt;
                     return (
                       <button
-                        key={cl.id}
+                        key={idx}
                         type="button"
                         onClick={() => {
-                          setSelectedCluster(cl.id as any);
-                          if (cl.id !== "all" && !cl.categoryIds.includes(selectedGenre)) {
-                            setSelectedGenre(cl.categoryIds[0]);
-                          } else if (cl.id === "all") {
-                            setSelectedGenre("all");
-                          }
+                          setQuickPrompt(prompt);
+                          window.scrollTo({ top: 120, behavior: "smooth" });
                         }}
-                        className={`px-3 py-2 rounded-xl text-xs font-mono font-semibold transition-all border text-left flex flex-col gap-0.5 ${
-                          isClSelected
-                            ? "bg-gradient-to-r from-amber-500/20 to-amber-600/10 border-amber-500/80 text-amber-200 shadow-md shadow-amber-500/10 font-bold"
-                            : "bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800/50"
-                        }`}
-                      >
-                        <span className="truncate">{cl.name}</span>
-                        <span className="text-[10px] text-slate-500 font-normal">{cl.badge}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Genre Category Pills (Netflix Style) */}
-                <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
-                  {GENRE_CATEGORIES.filter((g) => selectedCluster === "all" || g.cluster === selectedCluster || g.id === "all").map((g) => {
-                    const isSelected = selectedGenre === g.id;
-                    return (
-                      <button
-                        key={g.id}
-                        type="button"
-                        onClick={() => setSelectedGenre(g.id)}
-                        className={`px-3.5 py-2 rounded-xl text-xs font-medium transition-all shrink-0 border ${
+                        className={`w-full text-left flex items-start justify-between gap-2 rounded-xl p-3 text-xs transition cursor-pointer group border ${
                           isSelected
-                            ? "bg-amber-500/20 border-amber-500 text-amber-200 shadow-md shadow-amber-500/10 font-bold"
-                            : "bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800/60"
+                            ? "bg-teal-500/15 border-teal-400/80 text-white shadow-md shadow-teal-500/10 ring-1 ring-teal-400/30"
+                            : "bg-slate-900/80 border-white/10 hover:border-teal-500/40 hover:bg-slate-800 text-slate-300"
                         }`}
                       >
-                        {g.label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Netflix-Style Concept Cards Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[620px] overflow-y-auto pr-1">
-                  {filteredConcepts.map((concept) => {
-                    const isPlaying = isSpeakingPitch === concept.id;
-                    const isCurrent = title === concept.title;
-                    return (
-                      <div
-                        key={concept.id}
-                        className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 relative group ${
-                          isCurrent
-                            ? "bg-gradient-to-r from-amber-950/40 via-slate-900 to-slate-950 border-amber-500/70 shadow-lg shadow-amber-500/10 ring-1 ring-amber-500/40"
-                            : "bg-slate-950/80 hover:bg-slate-900/80 border-slate-800/80 hover:border-slate-700"
-                        }`}
-                      >
-                        <div>
-                          <div className="flex items-center justify-between gap-2 mb-1.5">
-                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400 px-2.5 py-0.5 rounded-md bg-amber-400/10 border border-amber-400/20 flex items-center gap-1">
-                              {concept.genreEmoji} {concept.genre.replace("_", " ")}
-                            </span>
-                            <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1">
-                              <Clock className="w-3 h-3 text-slate-500" /> {concept.recommendedDuration}s
-                            </span>
-                          </div>
-                          <h3 className="text-sm font-bold text-white font-serif group-hover:text-amber-200 transition-colors">
-                            {concept.title}
-                          </h3>
-                          <p className="text-xs text-slate-400 mt-1.5 line-clamp-3 leading-relaxed">
-                            {concept.hook}
-                          </p>
+                        <div className="flex items-start gap-2">
+                          <Wand2 className={`w-3.5 h-3.5 shrink-0 mt-0.5 transition-transform ${isSelected ? "text-teal-300" : "text-teal-400 group-hover:scale-110"}`} />
+                          <span className={isSelected ? "font-bold text-teal-100" : "group-hover:text-white transition-colors"}>"{prompt}"</span>
                         </div>
-
-                        <div className="flex items-center justify-between pt-3 border-t border-slate-800/80 gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleListenSpeech(concept)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-mono font-semibold transition-all flex items-center gap-1.5 ${
-                              isPlaying
-                                ? "bg-teal-500 text-slate-950 font-bold animate-pulse"
-                                : "bg-slate-900 hover:bg-slate-800 text-teal-400 border border-teal-500/30"
-                            }`}
-                            title="Listen to Speech Pitch Preview"
-                          >
-                            <Volume2 className={`w-3.5 h-3.5 ${isPlaying ? "animate-spin" : ""}`} />
-                            <span>{isPlaying ? "Speaking..." : "🔊 Pitch Voice"}</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleSelectConcept(concept)}
-                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                              isCurrent
-                                ? "bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 font-mono"
-                                : "bg-slate-900 hover:bg-amber-500 hover:text-slate-950 border border-slate-700 text-slate-300"
-                            }`}
-                          >
-                            {isCurrent ? <Check className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5 text-amber-400" />}
-                            <span>{isCurrent ? "Active Concept" : "⚡ Use Concept"}</span>
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </section>
-
-            {/* RIGHT COLUMN: Production Controls & Generation Pipeline (5 cols) */}
-            <section className="xl:col-span-5 space-y-6">
-              <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl backdrop-blur-xl">
-                {/* Section Header */}
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <h3 className="text-base font-bold text-white font-serif flex items-center gap-2">
-                    <Sliders className="w-4 h-4 text-amber-400" />
-                    <span>Production Pipeline Parameters</span>
-                  </h3>
-                  {apiHealth ? (
-                    <button
-                      type="button"
-                      onClick={() => setApiKeyModalOpen(true)}
-                      className={`text-[11px] font-mono flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-all hover:scale-105 ${
-                        apiHealth.ok
-                          ? "bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25"
-                          : "bg-rose-500/15 border border-rose-500/40 text-rose-300 hover:bg-rose-500/25 animate-pulse"
-                      }`}
-                      title="Click to Open API Key Load Balancer"
-                    >
-                      <span className={`w-2 h-2 rounded-full ${apiHealth.ok ? "bg-emerald-400" : "bg-rose-400"}`} />
-                      <span>{apiHealth.ok ? "🟢 Keys Active (Veo 3.1)" : "🔑 Add API Key (Required)"}</span>
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setApiKeyModalOpen(true)}
-                      className="text-[11px] font-mono text-emerald-400 hover:underline flex items-center gap-1"
-                    >
-                      <Zap className="w-3 h-3" /> Ready to Synthesize
-                    </button>
-                  )}
-                </div>
-
-                {/* 1-Click Continuity Prompts when Appending */}
-                {destinationMode === "append_current" && (
-                  <div className="space-y-2 bg-slate-950/80 p-3.5 rounded-2xl border border-amber-500/30">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400 font-bold flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" /> 1-Click Suggested Continuations
-                      </span>
-                      <span className="text-[9px] font-mono text-slate-500">Auto-Prompting</span>
-                    </div>
-                    <div className="grid grid-cols-1 gap-1.5">
-                      {continuitySuggestions.map((s, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => {
-                            setTitle(s.title);
-                            setPrompt(s.prompt);
-                            if (s.visualStyle) setVisualStyle(s.visualStyle);
-                          }}
-                          className="p-2 rounded-xl bg-slate-900 hover:bg-amber-500/10 border border-slate-800 hover:border-amber-500/50 text-left transition-all group shadow-sm"
-                        >
-                          <div className="text-[11px] font-bold text-amber-300 group-hover:text-amber-200">
-                            {s.title}
-                          </div>
-                          <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
-                            {s.prompt}
-                          </p>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Selected Story Title & Prompt */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
-                      <Film className="w-3.5 h-3.5 text-amber-400" /> Story Title & Scene Description
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setIsPromptBuilderOpen(true)}
-                        className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-300 hover:text-amber-200 transition bg-amber-400/10 border border-amber-400/30 px-2.5 py-1 rounded-lg shadow-sm"
-                      >
-                        <Wand2 className="w-3 h-3 text-amber-300" /> ✨ Prompt Director
-                      </button>
-                      <span className="text-[11px] font-mono text-slate-500">Gemini 2.5 Flash Grounded</span>
-                    </div>
-                  </div>
-
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g. Act 8: The Way of Mushin"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white font-medium focus:outline-none focus:border-amber-500/80 shadow-inner"
-                  />
-
-                  <textarea
-                    value={prompt}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setPrompt(val);
-                      const low = val.toLowerCase();
-                      if (low.includes("elena") && characterLock !== "elena") {
-                        setCharacterLock("elena");
-                      } else if (low.includes("priya") && characterLock !== "priya") {
-                        setCharacterLock("priya");
-                      } else if (low.includes("david") && characterLock !== "david") {
-                        setCharacterLock("david");
-                      }
-                    }}
-                    rows={4}
-                    placeholder="Describe what happens in this scene, the philosophical dilemma, lighting, and action..."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs text-slate-200 focus:outline-none focus:border-amber-500/80 leading-relaxed resize-none shadow-inner"
-                  />
-                </div>
-
-                {/* Destination Mode Selector: New Track vs Append */}
-                <div className="space-y-2.5">
-                  <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
-                    <Layers className="w-3.5 h-3.5 text-indigo-400" /> Production Destination
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setDestinationMode("new_series")}
-                      className={`p-3.5 rounded-2xl border text-left transition-all flex items-start gap-3 ${
-                        destinationMode === "new_series"
-                          ? "bg-gradient-to-r from-indigo-950/60 to-slate-900 border-indigo-500 text-white shadow-lg shadow-indigo-500/15 ring-1 ring-indigo-500/50"
-                          : "bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800/50"
-                      }`}
-                    >
-                      <div className={`p-2 rounded-xl shrink-0 ${destinationMode === "new_series" ? "bg-indigo-500 text-white" : "bg-slate-800 text-slate-400"}`}>
-                        <Sparkles className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-white flex items-center gap-1">
-                          <span>Start New Series</span>
-                          {destinationMode === "new_series" && <Check className="w-3 h-3 text-indigo-400" />}
-                        </div>
-                        <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
-                          Creates an independent track in your library
-                        </p>
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setDestinationMode("append_current")}
-                      className={`p-3.5 rounded-2xl border text-left transition-all flex items-start gap-3 ${
-                        destinationMode === "append_current"
-                          ? "bg-gradient-to-r from-amber-950/60 to-slate-900 border-amber-500 text-white shadow-lg shadow-amber-500/15 ring-1 ring-amber-500/50"
-                          : "bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800/50"
-                      }`}
-                    >
-                      <div className={`p-2 rounded-xl shrink-0 ${destinationMode === "append_current" ? "bg-amber-500 text-slate-950" : "bg-slate-800 text-slate-400"}`}>
-                        <Film className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-white flex items-center gap-1">
-                          <span>Append to Active</span>
-                          {destinationMode === "append_current" && <Check className="w-3 h-3 text-amber-400" />}
-                        </div>
-                        <p className="text-[11px] text-amber-300/90 font-medium mt-0.5 leading-snug">
-                          {targetTrackTitle
-                            ? `🔗 Chaining onto "${targetTrackTitle}"`
-                            : targetTrackId
-                            ? `🔗 Chaining to ${targetTrackId.slice(0, 18)}...`
-                            : "Chains onto your active series track"}
-                        </p>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Aspect Ratio Selector */}
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
-                      <Tv className="w-3.5 h-3.5 text-cyan-400" /> Multi-Platform Aspect Ratio
-                    </label>
-                    <span className="text-[10px] font-mono text-cyan-400 font-bold">
-                      {aspectRatio === "9:16" ? "TikTok & Reels (9:16)" : aspectRatio === "1:1" ? "Square Feed (1:1)" : "Cinematic 4K (16:9)"}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2.5">
-                    {[
-                      { ratio: "9:16", label: "📱 9:16 Vertical", desc: "TikTok / Reels" },
-                      { ratio: "16:9", label: "🖥️ 16:9 Cinema", desc: "YouTube / TV" },
-                      { ratio: "1:1", label: "🔲 1:1 Square", desc: "LinkedIn Feed" }
-                    ].map((r) => (
-                      <button
-                        key={r.ratio}
-                        type="button"
-                        onClick={() => setAspectRatio(r.ratio as any)}
-                        className={`p-3 rounded-2xl border text-center transition-all ${
-                          aspectRatio === r.ratio
-                            ? "bg-cyan-500/20 border-cyan-500 text-cyan-200 shadow-md shadow-cyan-500/10 font-bold"
-                            : "bg-slate-950 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800/50"
-                        }`}
-                      >
-                        <div className="text-xs font-bold font-mono">{r.label}</div>
-                        <div className="text-[10px] text-slate-500 mt-0.5">{r.desc}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 1-Click Global Cultural Transmutation */}
-                <div className={`p-4 rounded-2xl border transition-all ${
-                  globalTransmute
-                    ? "bg-gradient-to-r from-teal-950/60 via-slate-900 to-slate-950 border-teal-500 shadow-lg shadow-teal-500/10 ring-1 ring-teal-500/40"
-                    : "bg-slate-950/60 border-slate-800"
-                }`}>
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${globalTransmute ? "bg-teal-500 text-slate-950" : "bg-slate-800 text-slate-400"}`}>
-                        <Globe className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-white">1-Click Global Cultural Transmutation</span>
-                          <span className="px-2 py-0.5 rounded-full bg-teal-500/20 border border-teal-500/40 text-teal-300 font-mono text-[9px] font-bold uppercase">
-                            6 Regional Masters
+                        {isSelected && (
+                          <span className="shrink-0 inline-flex items-center gap-1 rounded-md bg-teal-500/20 text-teal-300 border border-teal-500/40 px-2 py-0.5 text-[10px] font-black font-mono">
+                            ✓ ACTIVE
                           </span>
-                        </div>
-                        <p className="text-[11px] text-slate-400 mt-0.5">
-                          Simultaneously synthesizes 6 localized campaigns with regional environments, idioms & instruments
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setGlobalTransmute(!globalTransmute)}
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                        globalTransmute ? "bg-teal-500" : "bg-slate-800"
-                      }`}
-                    >
-                      <span
-                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                          globalTransmute ? "translate-x-5" : "translate-x-0"
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {globalTransmute && (
-                    <div className="mt-3 pt-3 border-t border-teal-500/20 flex flex-wrap gap-2">
-                      {[
-                        { flag: "🇯🇵", name: "Japan / Anime (Ren & Aoi)" },
-                        { flag: "🇮🇳", name: "India / Vedic (Priya)" },
-                        { flag: "🇲🇽", name: "Latin America (Mateo)" },
-                        { flag: "🇺🇸", name: "North America (David)" },
-                        { flag: "🇦🇪", name: "MENA / Gulf (Tariq)" },
-                        { flag: "🇳🇴", name: "Nordic / EU (Astrid)" }
-                      ].map((reg, idx) => (
-                        <span
-                          key={idx}
-                          className="px-2.5 py-1 rounded-lg bg-teal-950/80 border border-teal-500/30 text-teal-200 text-xs font-mono flex items-center gap-1.5"
-                        >
-                          <span>{reg.flag}</span>
-                          <span>{reg.name}</span>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Instant 4-Shot Imagen 3 Pre-Vis Trigger */}
-                <button
-                  type="button"
-                  onClick={handleGeneratePrevis}
-                  disabled={previsLoading}
-                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-950 hover:from-indigo-900 hover:to-indigo-900 border border-indigo-500/50 hover:border-indigo-400 text-indigo-300 font-bold text-xs font-mono flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/10 transition-all cursor-pointer disabled:opacity-50"
-                >
-                  {previsLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
-                      <span>Generating 4-Shot Storyboard Pre-Vis (Imagen 3)...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 text-indigo-400" />
-                      <span>⚡ Instant 4-Shot Storyboard Pre-Vis (1.2s Preview)</span>
-                    </>
-                  )}
-                </button>
-
-                {/* Duration & Act Structure */}
-                <div className="space-y-2.5">
-                  <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-amber-400" /> Duration & Act Structure
-                  </label>
-                  <div className="grid grid-cols-4 gap-2.5">
-                    {[
-                      { s: 8, label: "Single Act", desc: "8s" },
-                      { s: 24, label: "3-Act Short", desc: "24s" },
-                      { s: 56, label: "7-Act Film", desc: "56s" },
-                      { s: 120, label: "2-Min Film", desc: "120s" }
-                    ].map((d) => (
-                      <button
-                        key={d.s}
-                        type="button"
-                        onClick={() => setDuration(d.s)}
-                        className={`p-3 rounded-2xl border text-center transition-all ${
-                          duration === d.s
-                            ? "bg-amber-500/20 border-amber-500 text-amber-200 shadow-md shadow-amber-500/10 font-bold"
-                            : "bg-slate-950 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800/50"
-                        }`}
-                      >
-                        <div className="text-xs font-bold font-mono">{d.desc}</div>
-                        <div className="text-[10px] text-slate-400 font-sans mt-0.5">{d.label}</div>
+                        )}
                       </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Character & Visual Style Grids */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Character Continuity Lock */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
-                        <User className="w-3.5 h-3.5 text-cyan-400" /> Character & Speaker Lock
-                      </label>
-                      <span className="text-[10px] font-mono text-cyan-400">14 Global Personas</span>
-                    </div>
-                    <select
-                      value={characterLock}
-                      onChange={(e) => setCharacterLock(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
-                    >
-                      {GLOBAL_CHARACTERS.map((char) => (
-                        <option key={char.id} value={char.id}>
-                          {char.avatarEmoji} {char.name} ({char.role} · {char.location})
-                        </option>
-                      ))}
-                      <option value="custom">✨ Custom Dynamic Ensemble (From Prompt)</option>
-                    </select>
-                  </div>
-
-                  {/* Visual Aesthetic & Stagecraft */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
-                        <Palette className="w-3.5 h-3.5 text-pink-400" /> Visual Aesthetic
-                      </label>
-                      <span className="text-[10px] font-mono text-pink-400">13 Global Palettes</span>
-                    </div>
-                    <select
-                      value={visualStyle}
-                      onChange={(e) => setVisualStyle(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-pink-500"
-                    >
-                      {VISUAL_AESTHETICS.map((style) => (
-                        <option key={style.id} value={style.id}>
-                          {style.label} — [{style.badge}]
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Zyvoriq Acoustic Core Neural Music & Ambience */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
-                      <Music className="w-3.5 h-3.5 text-amber-400" /> Zyvoriq Acoustic Core Background Music & Score
-                    </label>
-                    <span className="text-[10px] font-mono text-amber-400">Google Lyria 2.0</span>
-                  </div>
-                  <select
-                    value={musicPreset}
-                    onChange={(e) => setMusicPreset(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
-                  >
-                    {LYRIA_MUSIC_PRESETS.map((preset) => (
-                      <option key={preset.id} value={preset.id}>
-                        {preset.name} — [{preset.badge} · {preset.bpm > 0 ? `${preset.bpm} BPM` : "Acapella"}]
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Multilingual Dubs (DeepMind) */}
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
-                      <Globe className="w-3.5 h-3.5 text-indigo-400" /> Multilingual Dubs (DeepMind)
-                    </label>
-                    <span className="text-[10px] font-mono text-indigo-400">250ms Zero-Drift</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { code: "ja", label: "JA (Original)" },
-                      { code: "en", label: "EN (Dub)" },
-                      { code: "es", label: "ES (Doblaje)" },
-                      { code: "fr", label: "FR (Doublage)" },
-                      { code: "de", label: "DE (Synchron)" },
-                      { code: "hi", label: "HI (डबिंग)" }
-                    ].map((lang) => {
-                      const active = languages.includes(lang.code);
-                      return (
-                        <button
-                          key={lang.code}
-                          type="button"
-                          onClick={() => handleToggleLang(lang.code)}
-                          className={`p-2 rounded-xl text-xs font-mono transition-all flex items-center justify-center gap-1.5 border ${
-                            active
-                              ? "bg-indigo-950/60 border-indigo-500 text-indigo-200 font-bold"
-                              : "bg-slate-950 border-slate-800 text-slate-500 hover:text-slate-300"
-                          }`}
-                        >
-                          {active && <Check className="w-3 h-3 text-indigo-400" />}
-                          <span>{lang.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Veritas zk-SNARK & C2PA Provenance Gate */}
-                <div className="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 flex items-start gap-3">
-                  <input
-                    type="checkbox"
-                    id="pageAutoVeritas"
-                    checked={autoVeritas}
-                    onChange={(e) => setAutoVeritas(e.target.checked)}
-                    className="mt-1 rounded border-slate-700 bg-slate-900 text-emerald-500 focus:ring-emerald-500/30"
-                  />
-                  <label htmlFor="pageAutoVeritas" className="text-xs leading-relaxed cursor-pointer select-none">
-                    <span className="font-bold text-emerald-300 font-mono flex items-center gap-1.5">
-                      <ShieldCheck className="w-4 h-4" /> Veritas zk-SNARK & C2PA Provenance Gate
-                    </span>
-                    <span className="text-slate-400 block mt-0.5">
-                      Automatically certifies claim grounding, 0ms lip-sync drift, and signs with Ed25519.
-                    </span>
-                  </label>
-                </div>
-
-                {/* Generation Trigger & Progress */}
-                {isGenerating ? (
-                  <div className="space-y-4 p-6 rounded-2xl bg-slate-950 border border-amber-500/30 animate-pulse">
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <span className="text-amber-300 font-bold flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 animate-spin" /> Synthesizing Production Master...
-                      </span>
-                      <span className="text-slate-400">{genProgress}%</span>
-                    </div>
-
-                    <div className="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-800">
-                      <div
-                        className="bg-gradient-to-r from-amber-500 to-amber-300 h-2.5 rounded-full transition-all duration-300"
-                        style={{ width: `${genProgress}%` }}
-                      />
-                    </div>
-
-                    <p className="text-xs text-slate-300 font-mono tracking-tight">{genStage}</p>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleKickoffGeneration}
-                    disabled={isGenerating || previsLoading}
-                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-bold text-sm font-mono shadow-xl shadow-amber-500/20 transition-all flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-50"
-                  >
-                    <Zap className="w-4 h-4 fill-current" />
-                    <span>Kickoff Neural Cinema &amp; Audio Pipeline</span>
-                  </button>
-                )}
-              </div>
-            </section>
-          </div>
-        ) : (
-          /* ========================================================================= */
-          /* FULL-WIDTH 1600PX PRODUCTION MASTER PREVIEW & DISTRIBUTION SCREEN         */
-          /* ========================================================================= */
-          <div className="space-y-6">
-            {/* Top Status Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-slate-900/90 border border-emerald-500/40 rounded-3xl backdrop-blur-xl shadow-2xl">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-2xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shrink-0">
-                  <FileCheck className="w-7 h-7" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-bold uppercase tracking-wider">
-                      Veritas Certified Active
-                    </span>
-                    <span className="text-xs font-mono text-slate-400">0ms Lip Drift · Ed25519 Cryptographically Sealed</span>
-                  </div>
-                  <h2 className="text-2xl font-bold text-white font-serif mt-1">
-                    {generatedResult.act?.title || title}
-                  </h2>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setGeneratedResult(null)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-mono font-medium transition-all flex items-center gap-2 border border-slate-700 shadow-sm"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>+ Create Another Story</span>
-                </button>
-                <Link
-                  href={savedTrackId ? `/studio?track=${savedTrackId}` : "/studio"}
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs font-mono shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2"
-                >
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>Play in Studio Stage</span>
-                </Link>
-              </div>
-            </div>
-
-            {/* 2-Column Edge-to-Edge Desktop Viewport */}
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-              {/* Left Column (7 cols): 4K Video Master Player */}
-              <div className="xl:col-span-7 space-y-4">
-                <div className="relative rounded-3xl overflow-hidden aspect-video bg-black border border-slate-800 shadow-2xl group ring-1 ring-emerald-500/30">
-                  {generatedResult.act?.videoSrc || generatedResult.videoUrl ? (
-                    <video
-                      src={generatedResult.act?.videoSrc || generatedResult.videoUrl}
-                      controls
-                      autoPlay
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-zinc-950">
-                      <Sparkles className="w-10 h-10 text-amber-400 mb-3 animate-pulse" />
-                      <h4 className="text-base font-bold text-white mb-1">Act Storyboard & Dialogue Compiled</h4>
-                      <p className="text-xs text-zinc-400 max-w-sm">Video diffusion queued. Open in Cinema Stage to render on demand.</p>
-                    </div>
-                  )}
-                  <div className="absolute top-4 left-4 pointer-events-none px-3 py-1 rounded-full bg-slate-950/80 border border-slate-700/80 backdrop-blur-md text-[11px] font-mono text-amber-300 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                    <span>4K Cinema Master · 24fps Motion Locked</span>
-                  </div>
-                </div>
-
-                {/* Omnichannel Distribution Action Bar */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                  <Link
-                    href={savedTrackId ? `/studio?track=${savedTrackId}` : "/studio"}
-                    className="py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-bold text-xs font-mono shadow-xl shadow-amber-500/20 transition-all flex items-center justify-center gap-2"
-                  >
-                    <Play className="w-4 h-4 fill-current" />
-                    <span>Watch in Cinema</span>
-                  </Link>
-
-                  <Link
-                    href="/studio/library"
-                    className="py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 font-bold text-xs font-mono transition-all flex items-center justify-center gap-2"
-                  >
-                    <Layers className="w-4 h-4 text-amber-400" />
-                    <span>View in Media Vault</span>
-                  </Link>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsPublished(true)}
-                    className={`py-4 px-4 rounded-2xl font-mono text-xs font-bold transition-all flex items-center justify-center gap-2 border ${
-                      isPublished
-                        ? "bg-emerald-500/20 border-emerald-500 text-emerald-300 shadow-lg shadow-emerald-500/20"
-                        : "bg-slate-900 hover:bg-slate-800 border-slate-800 text-white hover:border-slate-700"
-                    }`}
-                  >
-                    {isPublished ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
-                    <span>{isPublished ? "Published" : "Publish OTT"}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Right Column (5 cols): Veritas Attestation & Multilingual Inspector */}
-              <div className="xl:col-span-5 space-y-5">
-                {/* Veritas zk-SNARK Cryptographic Proof */}
-                <div className="p-6 rounded-3xl bg-slate-900/90 border border-emerald-500/40 space-y-4 shadow-xl backdrop-blur-xl">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                    <h3 className="text-sm font-bold text-white font-serif flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                      <span>Veritas Cryptographic Attestation</span>
-                    </h3>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">
-                      VERIFIED
-                    </span>
-                  </div>
-
-                  <div className="space-y-3 font-mono text-xs">
-                    <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-                      <span className="text-slate-500 block text-[10px] uppercase">zk-SNARK Proof Hash</span>
-                      <span className="text-emerald-400 font-bold break-all">
-                        {generatedResult.act?.veritas?.snarkProofHash || "0x8f2d61bca79e4310d289aa84bb234f9011"}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
-                        <span className="text-slate-500 block text-[10px] uppercase">Lip-Sync Drift</span>
-                        <span className="text-cyan-300 font-bold text-sm">0.00 ms (Locked)</span>
-                      </div>
-                      <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
-                        <span className="text-slate-500 block text-[10px] uppercase">Claim Grounding</span>
-                        <span className="text-amber-300 font-bold text-sm">99.94% Grounded</span>
-                      </div>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
-                      <span className="text-slate-500 block text-[10px] uppercase">C2PA Manifest Digest</span>
-                      <span className="text-slate-300 break-all text-[11px]">
-                        urn:c2pa:zyvoriq:master_{Date.now()}:ed25519_signed
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Multilingual Dub Stems */}
-                <div className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl backdrop-blur-xl">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                    <h3 className="text-sm font-bold text-white font-serif flex items-center gap-2">
-                      <Globe className="w-4 h-4 text-indigo-400" />
-                      <span>Zyvoriq Multilingual Dub Stems</span>
-                    </h3>
-                    <span className="text-[10px] font-mono text-indigo-400">6 Stems Active</span>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { code: "ja", label: "🇯🇵 Japanese" },
-                      { code: "en", label: "🇺🇸 English" },
-                      { code: "es", label: "🇪🇸 Spanish" },
-                      { code: "fr", label: "🇫🇷 French" },
-                      { code: "de", label: "🇩🇪 German" },
-                      { code: "hi", label: "🇮🇳 Hindi" }
-                    ].map((l) => (
-                      <div
-                        key={l.code}
-                        className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-center font-mono text-xs text-slate-300 flex items-center justify-center gap-1.5"
-                      >
-                        <Check className="w-3 h-3 text-indigo-400" />
-                        <span>{l.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Story Script & Parameters Summary */}
-                <div className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 space-y-3 shadow-xl backdrop-blur-xl">
-                  <h3 className="text-sm font-bold text-white font-serif flex items-center gap-2">
-                    <Film className="w-4 h-4 text-amber-400" />
-                    <span>Story Prompt & Scene Context</span>
-                  </h3>
-                  <p className="text-xs text-slate-300 leading-relaxed bg-slate-950 p-4 rounded-xl border border-slate-800">
-                    {prompt}
-                  </p>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* 4-Shot Imagen 3 Storyboard Pre-Vis Modal */}
-        {showPrevisModal && (
-          <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 md:p-8 animate-fadeIn">
-            <div className="bg-slate-900 border border-indigo-500/40 rounded-3xl p-6 md:p-8 max-w-5xl w-full shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
-                    <Sparkles className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-white font-serif">
-                      ⚡ 4-Shot Visual Storyboard Pre-Vis (Imagen 3)
-                    </h3>
-                    <p className="text-xs text-slate-400 font-mono">
-                      Zyvoriq Visual Diffusion Core Neural Pre-Visualization · 1.2s Diffusion Preview
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowPrevisModal(false)}
-                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-mono"
-                >
-                  ✕ Close Pre-Vis
-                </button>
+        {/* VIEW MODE 2: MASTER 14-PERSONA MATRIX TABLE */}
+        {viewMode === "matrix" && (
+          <div className="rounded-3xl border border-white/10 bg-slate-900/60 overflow-hidden shadow-2xl">
+            <div className="p-5 border-b border-white/10 bg-slate-900/80 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-black text-white">Full 14-Persona Master Capabilities Matrix</h2>
+                <p className="text-xs text-slate-400">Complete breakdown of all 14 creative personas, target audiences, render styles, and direct routes.</p>
               </div>
+              <span className="rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30 px-3 py-1 text-xs font-mono font-bold">
+                14 Production Profiles
+              </span>
+            </div>
 
-              {previsLoading ? (
-                <div className="py-16 flex flex-col items-center justify-center text-center space-y-4">
-                  <div className="w-12 h-12 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                  <div className="text-sm font-mono text-indigo-300 font-semibold">
-                    Synthesizing 4-Shot Pre-Vis Sequence with Imagen 3...
-                  </div>
-                  <p className="text-xs text-slate-500 max-w-md">
-                    Composing Wide Establishing, Character Focus, Macro Action, and Dramatic Close-Up compositions.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {/* 4-Shot Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {(previsStoryboard || [
-                      { shotNumber: 1, shotType: "1. Wide Establishing Shot", timecode: "0:00 - 0:02", desc: "Panoramic wide camera establishing atmospheric dojo balcony in rain." },
-                      { shotNumber: 2, shotType: "2. Medium Character Hero", timecode: "0:02 - 0:04", desc: "Medium profile of Sensei Ren holding wooden bokken in serene focus." },
-                      { shotNumber: 3, shotType: "3. Macro Action Motion", timecode: "0:04 - 0:06", desc: "Macro close-up on wooden bokken striking with water droplet splash physics." },
-                      { shotNumber: 4, shotType: "4. Dramatic Emotional Close-Up", timecode: "0:06 - 0:08", desc: "Extreme close-up on Apprentice Aoi's eyes entering Mushin clarity." }
-                    ]).map((shot: any, idx: number) => (
-                      <div
-                        key={idx}
-                        className="p-3.5 rounded-2xl bg-slate-950 border border-indigo-500/30 space-y-2.5 flex flex-col justify-between"
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-white/10 bg-white/5 font-mono uppercase text-[11px] text-slate-300">
+                    <th className="p-4">#</th>
+                    <th className="p-4">Persona Profile</th>
+                    <th className="p-4">Target Audience</th>
+                    <th className="p-4">Aesthetic & Render DNA</th>
+                    <th className="p-4">Core Production Deliverables</th>
+                    <th className="p-4">Studio Route</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {PERSONAS_14.map((p) => {
+                    const isSelected = selectedPersona === p.id;
+                    return (
+                      <tr
+                        key={p.id}
+                        onClick={() => {
+                          setSelectedPersona(p.id);
+                          setViewMode("cards");
+                        }}
+                        className={`hover:bg-white/5 transition cursor-pointer ${isSelected ? "bg-teal-500/10" : ""}`}
                       >
-                        <div className="aspect-video bg-slate-900 rounded-xl overflow-hidden border border-slate-800 relative flex items-center justify-center text-indigo-400 group">
-                          {shot.imageUrl ? (
-                            <img src={shot.imageUrl} alt={shot.shotType} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="flex flex-col items-center gap-1.5 p-3 text-center">
-                              <Film className="w-6 h-6 opacity-60 text-indigo-400" />
-                              <span className="text-[10px] font-mono text-slate-400">Pre-Vis Frame {idx + 1}</span>
-                            </div>
-                          )}
-                          <span className="absolute top-2 right-2 px-2 py-0.5 rounded bg-black/80 font-mono text-[9px] text-indigo-300">
-                            {shot.timecode || `0:0${idx * 2}`}
-                          </span>
-                        </div>
-
-                        <div>
-                          <div className="text-xs font-bold text-white font-mono">{shot.shotType}</div>
-                          <p className="text-[11px] text-slate-400 mt-1 leading-snug line-clamp-3">
-                            {shot.desc}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Pre-Vis Approval Action Bar */}
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-800">
-                    <div className="flex items-center gap-2 text-xs font-mono text-emerald-400">
-                      <Check className="w-4 h-4" />
-                      <span>4-Shot Composition Approved for 4K Veo 3.1 Diffusion</span>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowPrevisModal(false);
-                        handleKickoffGeneration();
-                      }}
-                      className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs font-mono flex items-center gap-2 shadow-lg shadow-amber-500/20"
-                    >
-                      <Zap className="w-4 h-4 fill-current" />
-                      <span>Approve & Launch Full 4K Diffusion</span>
-                    </button>
-                  </div>
-                </div>
-              )}
+                        <td className="p-4 font-mono font-bold text-teal-400">#{p.index}</td>
+                        <td className="p-4 font-bold text-white whitespace-nowrap">{p.title}</td>
+                        <td className="p-4 text-slate-400 max-w-xs">{p.audience}</td>
+                        <td className="p-4 text-slate-300 max-w-sm">{p.styleDNA}</td>
+                        <td className="p-4 text-slate-300 max-w-sm">
+                          <ul className="list-disc list-inside space-y-0.5">
+                            {p.coreDeliverables.slice(0, 2).map((d, i) => (
+                              <li key={i}>{d}</li>
+                            ))}
+                          </ul>
+                        </td>
+                        <td className="p-4">
+                          <Link href={p.primaryRoute} className="text-teal-400 font-bold hover:underline whitespace-nowrap">
+                            Launch →
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
       </main>
-
-      {/* AI Prompt Director & Frame Builder Modal */}
-      <PromptDirectorBuilderModal
-        isOpen={isPromptBuilderOpen}
-        onClose={() => setIsPromptBuilderOpen(false)}
-        onApplyPrompt={(res) => {
-          setTitle(`⚡ ${res.topicBrief.slice(0, 40)}`);
-          setPrompt(res.cinematicDirection);
-          if (res.aspectRatio === "16:9" || res.aspectRatio === "9:16" || res.aspectRatio === "1:1") {
-            setAspectRatio(res.aspectRatio);
-          }
-          if (res.duration) {
-            setDuration(parseInt(res.duration, 10) || 8);
-          }
-        }}
-      />
-
-      {/* Google Gemini & Veo Multi-Key Load Balancer Modal */}
-      <ApiKeyModal
-        isOpen={apiKeyModalOpen}
-        onClose={() => setApiKeyModalOpen(false)}
-      />
-    </div>
+    </StudioSidebar>
   );
 }
 
-export default function StudioCreatePage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-slate-950 flex items-center justify-center text-amber-400 font-mono text-sm">Loading Studio Creator...</div>}>
-      <ErrorBoundary fallbackTitle="Studio Creator Isolated">
-        <CreatePageContent />
-      </ErrorBoundary>
-    </Suspense>
-  );
-}
+

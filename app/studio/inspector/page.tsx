@@ -17,7 +17,10 @@ import {
   Mic2,
   Music2,
   ScanSearch,
+  Sparkles,
+  Play
 } from "lucide-react";
+import { StudioSidebar } from "@/components/StudioSidebar";
 
 type Production = { id: string; manifest: any; updatedAt: string };
 type Inspection = any;
@@ -140,34 +143,60 @@ function ReelInspectorContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inspection, frame, combinedVideoUrl, selectedShot?.id]);
 
-  return <div className="min-h-screen bg-[#07090d] text-slate-100">
-    <header className="border-b border-white/10 px-6 py-4">
-      <div className="mx-auto flex max-w-[1600px] flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/studio/library" className="rounded-xl p-2 hover:bg-white/5" aria-label="Back to Library"><ArrowLeft className="h-5 w-5" /></Link>
-          <ScanSearch className="h-5 w-5 text-pink-300"/>
-          <div>
-            <div className="font-black">Reel Inspector</div>
-            <div className="text-xs text-slate-500">Review the combined Reel, scene timing, narration, captions and available quality evidence.</div>
+  return (
+    <StudioSidebar currentPath="/studio/inspector">
+      <div className="min-h-screen bg-[#07090d] text-slate-100 pb-24 md:pb-12">
+        <header className="border-b border-white/10 px-6 py-4">
+          <div className="mx-auto flex max-w-[1600px] flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-3">
+              <ScanSearch className="h-5 w-5 text-pink-300"/>
+              <div>
+                <div className="font-black">Reel Inspector</div>
+                <div className="text-xs text-slate-500">Review combined Reel, scene timing, narration, captions and quality evidence.</div>
+              </div>
+            </div>
+            <button onClick={() => setSwitchOpen(value => !value)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-xs font-bold hover:bg-white/5">
+              Switch Reel <ChevronDown className={`h-4 w-4 transition-transform ${switchOpen ? "rotate-180" : ""}`}/>
+            </button>
           </div>
-        </div>
-        <button onClick={() => setSwitchOpen(value => !value)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-xs font-bold hover:bg-white/5">
-          Switch Reel <ChevronDown className={`h-4 w-4 transition-transform ${switchOpen ? "rotate-180" : ""}`}/>
-        </button>
-      </div>
-    </header>
+        </header>
 
-    <main className="mx-auto max-w-[1600px] p-6">
-      {switchOpen && <div className="mb-5 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-        <div className="mb-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Switch Reel</div>
-        <select value={productionId} onChange={e => { setProductionId(e.target.value); setSwitchOpen(false); }} className="w-full rounded-xl border border-white/10 bg-[#0d1117] px-3 py-2 text-sm md:max-w-xl">
-          {productions.map(p => <option key={p.id} value={p.id}>{p.manifest?.studio1?.projectTitle || p.manifest?.topic || p.id} · {p.manifest?.status}</option>)}
-        </select>
-      </div>}
+        <main className="mx-auto max-w-[1600px] p-6">
+          {switchOpen && <div className="mb-5 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+            <div className="mb-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Switch Reel</div>
+            <select value={productionId} onChange={e => { setProductionId(e.target.value); setSwitchOpen(false); }} className="w-full rounded-xl border border-white/10 bg-[#0d1117] px-3 py-2 text-sm md:max-w-xl">
+              {productions.map(p => <option key={p.id} value={p.id}>{p.manifest?.studio1?.projectTitle || p.manifest?.topic || p.id} · {p.manifest?.status}</option>)}
+            </select>
+          </div>}
 
-      {error && <div className="mb-4 rounded-xl border border-red-400/20 bg-red-400/5 p-3 text-sm text-red-200">{error}</div>}
+          {error && <div className="mb-4 rounded-xl border border-red-400/20 bg-red-400/5 p-3 text-sm text-red-200">{error}</div>}
 
-      {!inspection ? <div className="rounded-2xl border border-white/10 p-8 text-slate-500">Loading Reel inspection…</div> : <>
+          {!inspection ? (
+            <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-10 text-center max-w-2xl mx-auto mt-12">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-500/30 text-pink-300 mb-4">
+                <ScanSearch className="h-7 w-7" />
+              </div>
+              <h2 className="text-xl font-black text-white">No Reel Inspected Yet</h2>
+              <p className="mt-2 text-sm text-slate-400 leading-relaxed">
+                Generate or select a multi-shot AI video reel in the Studio to inspect frame-by-frame timestamps, QA telemetry, audio waveforms, and subtitle timings.
+              </p>
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                <Link
+                  href="/studio"
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 px-5 py-2.5 text-xs font-black text-slate-950 shadow-lg shadow-teal-500/20 transition hover:opacity-90"
+                >
+                  <Sparkles className="h-4 w-4 fill-slate-950" />
+                  <span>Open Reel Studio Timeline</span>
+                </Link>
+                <Link
+                  href="/studio/create"
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-5 py-2.5 text-xs font-bold text-slate-200 transition hover:bg-white/10"
+                >
+                  <span>14 Personas Hub</span>
+                </Link>
+              </div>
+            </div>
+          ) : <>
         <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <div className="truncate text-lg font-black text-white">{currentProduction?.manifest?.studio1?.projectTitle || currentProduction?.manifest?.topic || inspection.productionId}</div>
@@ -297,7 +326,9 @@ function ReelInspectorContent() {
         </div>
       </>}
     </main>
-  </div>;
+  </div>
+  </StudioSidebar>
+  );
 }
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {

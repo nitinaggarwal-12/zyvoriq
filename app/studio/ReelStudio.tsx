@@ -10,6 +10,7 @@ import {
   Layers, Wand2, RefreshCw, Eye, Zap, Share2, Send, Radio, BookOpen, Sun, Moon,
   Layers3, FolderOpen, ScanSearch, Lightbulb, Compass, PlayCircle, ChevronRight, Flame
 } from "lucide-react";
+import { StudioSidebar } from "@/components/StudioSidebar";
 import { useTheme } from "@/components/ThemeProvider";
 import type { ReelProductionManifest, ReelShot } from "@/lib/reel/types";
 import { PersonaClone, PRESET_PERSONAS } from "@/lib/reel/personas";
@@ -1017,124 +1018,105 @@ export function ReelStudio() {
       : "Combining one MP4…";
 
   return (
-    <div className="min-h-screen bg-[#07090d] text-slate-100">
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#07090d]/95 backdrop-blur-2xl">
-        <div className="mx-auto flex max-w-[1720px] flex-wrap items-center justify-between gap-4 px-5 py-3.5 md:px-8">
-          {/* Brand & Stage Title */}
-          <div className="flex items-center gap-4">
-            <Link href="/" className="rounded-xl p-2 text-slate-400 transition hover:bg-white/5 hover:text-white" aria-label="Back home">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
+    <StudioSidebar currentPath="/studio">
+      <div className="min-h-screen bg-[#07090d] text-slate-100 pb-24 md:pb-12">
+        <header className="sticky top-0 z-30 border-b border-white/10 bg-[#07090d]/90 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-[1720px] flex-wrap items-center justify-between gap-4 px-4 py-3 md:px-8">
+            {/* Stage Title & Status */}
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-400 via-emerald-400 to-cyan-500 p-[1px] shadow-lg shadow-teal-500/20">
-                <div className="flex h-full w-full items-center justify-center rounded-[15px] bg-[#07090d] text-base font-black text-teal-400">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 via-emerald-400 to-cyan-500 p-[1px] shadow-lg shadow-teal-500/20">
+                <div className="flex h-full w-full items-center justify-center rounded-[11px] bg-[#07090d] text-sm font-black text-teal-400">
                   Z
                 </div>
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-base font-black tracking-tight text-white font-mono">Reel Studio Pro</h1>
-                  <span className="rounded-full bg-teal-500/10 border border-teal-500/30 px-2 py-0.2 text-[10px] font-bold text-teal-400 font-mono">
+                  <h1 className="text-sm md:text-base font-black tracking-tight text-white font-mono">Reel Studio Pro</h1>
+                  <span className="rounded-full bg-teal-500/10 border border-teal-500/30 px-2 py-0.5 text-[9px] font-bold text-teal-400 font-mono">
                     NEURAL CINEMA
                   </span>
                 </div>
-                <div className="text-[11px] text-slate-400 font-sans">Multi-Shot Continuous Studio Suite</div>
+                <div className="text-[10px] md:text-[11px] text-slate-400 font-sans">Multi-Shot Timeline & Prompt-to-Reel Copilot</div>
               </div>
             </div>
-          </div>
 
-          {/* Quick Hub Navigation & Creation Tools */}
-          <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
-            {/* Status indicators */}
-            <div className="hidden lg:flex items-center gap-2 pr-2 border-r border-white/10">
-              <span className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-1 text-slate-300">
-                <Globe className="h-3.5 w-3.5 text-teal-400" /> {LANGUAGES.find(l => l.code === language)?.name}
-              </span>
-              <span className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-1 text-slate-300">
-                <Sliders className="h-3.5 w-3.5 text-cyan-400" /> {aspectRatio}
-              </span>
-              <span className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-1 text-slate-300 font-mono text-[11px]">
-                <span className={`h-2 w-2 rounded-full ${production ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
-                {production ? `r${production.revision}` : "Draft"}
-              </span>
+            {/* Quick Controls & First-Class Links */}
+            <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
+              {/* Status indicators */}
+              <div className="flex items-center gap-2 pr-2 border-r border-white/10">
+                <span className="hidden sm:flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-1 text-slate-300 text-[11px]">
+                  <Globe className="h-3 w-3 text-teal-400" /> {LANGUAGES.find(l => l.code === language)?.name}
+                </span>
+                <span className="hidden sm:flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-1 text-slate-300 text-[11px]">
+                  <Sliders className="h-3 w-3 text-cyan-400" /> {aspectRatio}
+                </span>
+                <span className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-1 text-slate-300 font-mono text-[10px]">
+                  <span className={`h-2 w-2 rounded-full ${production ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
+                  {production ? `r${production.revision}` : "Draft"}
+                </span>
+              </div>
+
+              {/* Dedicated Page Route Shortcuts */}
+              <Link
+                href="/studio/create"
+                className="hidden md:flex items-center gap-1.5 rounded-xl border border-pink-500/30 bg-pink-500/10 px-2.5 py-1 text-[11px] font-bold text-pink-200 transition hover:bg-pink-500/20 shadow-sm"
+              >
+                <Layers3 className="h-3.5 w-3.5 text-pink-400" />
+                <span>14 Personas Hub</span>
+              </Link>
+
+              <Link
+                href="/studio/inspector"
+                className="hidden md:flex items-center gap-1.5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-[11px] font-bold text-cyan-200 transition hover:bg-cyan-500/20 shadow-sm"
+              >
+                <ScanSearch className="h-3.5 w-3.5 text-cyan-400" />
+                <span>Frame Inspector</span>
+              </Link>
+
+              <Link
+                href="/studio/books"
+                className="hidden lg:flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-bold text-amber-200 transition hover:bg-amber-500/20 shadow-sm"
+              >
+                <span>📚 Books</span>
+              </Link>
+
+              {/* Modal Quick Actions */}
+              <button
+                onClick={() => setIsRemixModalOpen(true)}
+                className="flex items-center gap-1 rounded-xl border border-purple-500/30 bg-purple-500/10 px-2 py-1 text-[11px] font-bold text-purple-200 transition hover:bg-purple-500/20 shadow-sm"
+                title="Remix Reel"
+              >
+                <span>🔁 Remix</span>
+              </button>
+
+              <button
+                onClick={() => setIsDopamineModalOpen(true)}
+                className={`flex items-center gap-1 rounded-xl border px-2 py-1 text-[11px] font-bold shadow-sm transition ${
+                  dopamineConfig.enabled
+                    ? "border-pink-500 bg-pink-500/20 text-pink-200 font-black shadow-pink-500/20"
+                    : "border-white/10 bg-white/[0.04] text-slate-300 hover:border-pink-500/40"
+                }`}
+                title="Dopamine Split Screen"
+              >
+                <span>🎮 Dopamine</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="flex h-7 w-7 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-amber-400 dark:text-teal-300 hover:scale-105 active:scale-95 transition-all shadow-sm"
+                title={resolvedTheme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                aria-label="Toggle Theme"
+              >
+                {resolvedTheme === "dark" ? (
+                  <Sun className="h-3 w-3 text-amber-400" />
+                ) : (
+                  <Moon className="h-3 w-3 text-indigo-400 dark:text-teal-300" />
+                )}
+              </button>
             </div>
-
-            {/* Studio Navigation Links */}
-            <Link
-              href="/studio/create"
-              className="flex items-center gap-1.5 rounded-xl border border-pink-500/30 bg-pink-500/10 px-3 py-1.5 text-xs font-bold text-pink-200 transition hover:bg-pink-500/20 hover:border-pink-500/50 shadow-sm"
-            >
-              <Layers3 className="h-3.5 w-3.5 text-pink-400" />
-              <span>24 Concept Hub</span>
-            </Link>
-
-            <Link
-              href="/studio/trend-radar"
-              className="flex items-center gap-1.5 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-3 py-1.5 text-xs font-bold text-indigo-200 transition hover:bg-indigo-500/20 hover:border-indigo-500/50 shadow-sm"
-            >
-              <span>🔮 7-Day Trend Radar</span>
-            </Link>
-
-            <Link
-              href="/studio/books"
-              className="flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-200 transition hover:bg-amber-500/20 hover:border-amber-500/50 shadow-sm"
-            >
-              <span>📚 Book Studio</span>
-            </Link>
-
-            <Link
-              href="/studio/library"
-              className="flex items-center gap-1.5 rounded-xl border border-teal-500/30 bg-teal-500/10 px-3 py-1.5 text-xs font-bold text-teal-200 transition hover:bg-teal-500/20 hover:border-teal-500/50 shadow-sm"
-            >
-              <FolderOpen className="h-3.5 w-3.5 text-teal-400" />
-              <span>Library</span>
-            </Link>
-
-            {/* Modal Quick Actions */}
-            <button
-              onClick={() => setIsRemixModalOpen(true)}
-              className="flex items-center gap-1 rounded-xl border border-purple-500/30 bg-purple-500/10 px-2.5 py-1.5 text-xs font-bold text-purple-200 transition hover:bg-purple-500/20 shadow-sm"
-              title="Remix Reel"
-            >
-              <span>🔁 Remix</span>
-            </button>
-
-            <button
-              onClick={() => setIsRedditModalOpen(true)}
-              className="flex items-center gap-1 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1.5 text-xs font-bold text-cyan-200 transition hover:bg-cyan-500/20 shadow-sm"
-              title="Reddit Story"
-            >
-              <span>💬 Reddit</span>
-            </button>
-
-            <button
-              onClick={() => setIsDopamineModalOpen(true)}
-              className={`flex items-center gap-1 rounded-xl border px-2.5 py-1.5 text-xs font-bold shadow-sm transition ${
-                dopamineConfig.enabled
-                  ? "border-pink-500 bg-pink-500/20 text-pink-200 font-black shadow-pink-500/20"
-                  : "border-white/10 bg-white/[0.04] text-slate-300 hover:border-pink-500/40"
-              }`}
-              title="Dopamine Split Screen"
-            >
-              <span>🎮 Dopamine</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-amber-400 dark:text-teal-300 hover:scale-105 active:scale-95 transition-all shadow-sm ml-1"
-              title={resolvedTheme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-              aria-label="Toggle Theme"
-            >
-              {resolvedTheme === "dark" ? (
-                <Sun className="h-3.5 w-3.5 text-amber-400" />
-              ) : (
-                <Moon className="h-3.5 w-3.5 text-indigo-400 dark:text-teal-300" />
-              )}
-            </button>
           </div>
-        </div>
-      </header>
+        </header>
 
       {/* Omni-Modal Creation Switcher */}
       <div className="border-b border-white/10 bg-black/40 px-5 py-2.5 backdrop-blur-md">
@@ -1196,50 +1178,51 @@ export function ReelStudio() {
               </div>
 
               {/* Chat Input Bar */}
-              <div className="relative flex items-center">
-                <input
-                  type="text"
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleMagicPromptSubmit();
-                    }
-                  }}
-                  placeholder="Describe what you want to create (e.g., 'A funny 30s Hindi comedy between husband and wife about morning chai')..."
-                  className="w-full rounded-2xl border border-teal-500/30 bg-black/60 py-4 pl-4 pr-44 text-sm font-medium text-white placeholder-slate-400 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 shadow-inner"
-                />
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleMagicPromptSubmit();
+                      }
+                    }}
+                    placeholder="Describe what you want to create (e.g., 'A funny 30s Hindi comedy between husband and wife about morning chai')..."
+                    className="w-full rounded-2xl border border-teal-500/30 bg-black/60 py-3.5 sm:py-4 pl-4 pr-16 text-sm font-medium text-white placeholder-slate-400 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 shadow-inner"
+                  />
 
-                <div className="absolute right-2 flex items-center gap-2">
                   {topic.trim() && (
                     <button
                       type="button"
                       onClick={() => setTopic("")}
-                      className="text-xs text-slate-400 hover:text-white px-2 py-1"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-white px-2 py-1"
                     >
                       Clear
                     </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => handleMagicPromptSubmit()}
-                    disabled={busy || !topic.trim()}
-                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 px-5 py-2.5 text-xs font-black text-obsidian-950 shadow-lg shadow-teal-500/25 hover:from-teal-300 hover:to-cyan-300 active:scale-[0.98] transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    {busy && operation === "plan" ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin text-obsidian-950" />
-                        <span>Planning...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Zap className="h-4 w-4 fill-current" />
-                        <span>✨ Generate Reel</span>
-                      </>
-                    )}
-                  </button>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleMagicPromptSubmit()}
+                  disabled={busy || !topic.trim()}
+                  className="shrink-0 inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 px-6 py-3.5 sm:py-4 text-xs font-black text-obsidian-950 shadow-lg shadow-teal-500/25 hover:from-teal-300 hover:to-cyan-300 active:scale-[0.98] transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  {busy && operation === "plan" ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin text-obsidian-950" />
+                      <span>Planning...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="h-4 w-4 fill-current" />
+                      <span>✨ Generate Reel</span>
+                    </>
+                  )}
+                </button>
               </div>
 
               {/* Quick Prompt Inspiration Pills */}
@@ -2644,6 +2627,7 @@ export function ReelStudio() {
         }}
       />
     </div>
+    </StudioSidebar>
   );
 }
 

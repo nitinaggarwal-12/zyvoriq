@@ -34,7 +34,7 @@ import {
   compileAudiobookMaster,
   generateBookTokPromoReels
 } from "@/lib/book/bookStudioEngine";
-import { AppNavbar } from "@/components/AppNavbar";
+import { StudioSidebar } from "@/components/StudioSidebar";
 
 export default function BookStudioPage() {
   return (
@@ -73,6 +73,20 @@ function BookStudioContent() {
     router.push(`/studio?topic=${encodeURIComponent(brief)}`);
   };
 
+  const handleDownloadFile = (content: string, filename: string, mimeType = "application/json") => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    setCopiedAction(filename);
+    setTimeout(() => setCopiedAction(null), 2500);
+  };
+
   const handleCopy = (text: string, actionName: string) => {
     navigator.clipboard.writeText(text);
     setCopiedAction(actionName);
@@ -80,8 +94,8 @@ function BookStudioContent() {
   };
 
   return (
-    <div className="min-h-screen bg-obsidian-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-200">
-      <AppNavbar />
+    <StudioSidebar currentPath="/studio/books">
+      <div className="min-h-screen bg-obsidian-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-200 pb-24 md:pb-12">
 
       {/* Top Breadcrumbs & Stage Header */}
       <div className="border-b border-slate-800/80 bg-slate-950/60 backdrop-blur-md">
@@ -424,12 +438,21 @@ function BookStudioContent() {
                     <span className="text-[10px] font-mono text-emerald-400">Ready</span>
                   </div>
                   <p className="text-[11px] text-slate-400">Valid OPF XML + Nav XHTML with dynamic metadata.</p>
-                  <button
-                    onClick={() => handleCopy(epubData.opfManifestXml, "epub")}
-                    className="w-full text-center py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 transition-all"
-                  >
-                    {copiedAction === "epub" ? "✓ OPF XML Copied!" : "Export EPUB 3 Metadata"}
-                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => handleDownloadFile(epubData.opfManifestXml, `${selectedBook.id}_epub_package.opf`, "application/oebps-package+xml")}
+                      className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-obsidian-950 hover:opacity-95 text-xs font-bold transition-all shadow-sm cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      {copiedAction === `${selectedBook.id}_epub_package.opf` ? "Downloaded!" : "Download .opf"}
+                    </button>
+                    <button
+                      onClick={() => handleCopy(epubData.opfManifestXml, "epub")}
+                      className="text-center py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 transition-all cursor-pointer"
+                    >
+                      {copiedAction === "epub" ? "✓ Copied XML" : "Copy XML"}
+                    </button>
+                  </div>
                 </div>
 
                 {/* 2. Audible Multi-Cast M4B Master */}
@@ -442,12 +465,21 @@ function BookStudioContent() {
                     <span className="text-[10px] font-mono text-cyan-400">-18dB Ducking</span>
                   </div>
                   <p className="text-[11px] text-slate-400">{audiobookData.trackList.length} multi-cast character tracks synced to orchestral score.</p>
-                  <button
-                    onClick={() => handleCopy(JSON.stringify(audiobookData, null, 2), "audible")}
-                    className="w-full text-center py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 transition-all"
-                  >
-                    {copiedAction === "audible" ? "✓ Tracklist Copied!" : "Export Audio Tracklist"}
-                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => handleDownloadFile(JSON.stringify(audiobookData, null, 2), `${selectedBook.id}_audible_cue.json`, "application/json")}
+                      className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 text-obsidian-950 hover:opacity-95 text-xs font-bold transition-all shadow-sm cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      {copiedAction === `${selectedBook.id}_audible_cue.json` ? "Downloaded!" : "Download .json"}
+                    </button>
+                    <button
+                      onClick={() => handleCopy(JSON.stringify(audiobookData, null, 2), "audible")}
+                      className="text-center py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 transition-all cursor-pointer"
+                    >
+                      {copiedAction === "audible" ? "✓ Copied" : "Copy Tracklist"}
+                    </button>
+                  </div>
                 </div>
 
                 {/* 3. #BookTok 15-Video Launch Kit */}
@@ -460,12 +492,21 @@ function BookStudioContent() {
                     <span className="text-[10px] font-mono text-rose-400">15 Prompts</span>
                   </div>
                   <p className="text-[11px] text-slate-400">AI Veo storyboard prompts & high-hook viral scripts.</p>
-                  <button
-                    onClick={() => handleCopy(JSON.stringify(bookTokPromos, null, 2), "booktok")}
-                    className="w-full text-center py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 transition-all"
-                  >
-                    {copiedAction === "booktok" ? "✓ BookTok Kit Copied!" : "Export BookTok Kit"}
-                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => handleDownloadFile(JSON.stringify(bookTokPromos, null, 2), `${selectedBook.id}_booktok_kit.json`, "application/json")}
+                      className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-gradient-to-r from-rose-500 to-pink-500 text-obsidian-950 hover:opacity-95 text-xs font-bold transition-all shadow-sm cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      {copiedAction === `${selectedBook.id}_booktok_kit.json` ? "Downloaded!" : "Download .json"}
+                    </button>
+                    <button
+                      onClick={() => handleCopy(JSON.stringify(bookTokPromos, null, 2), "booktok")}
+                      className="text-center py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 transition-all cursor-pointer"
+                    >
+                      {copiedAction === "booktok" ? "✓ Copied" : "Copy Prompts"}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -491,5 +532,6 @@ function BookStudioContent() {
         </div>
       </main>
     </div>
+    </StudioSidebar>
   );
 }

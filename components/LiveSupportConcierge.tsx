@@ -627,7 +627,7 @@ export function LiveSupportConcierge() {
 
       <aside
         aria-label="Live AI Support Concierge and Help"
-        className="fixed bottom-6 right-6 z-50 flex flex-col items-end"
+        className="fixed bottom-20 md:bottom-6 right-3 sm:right-6 z-30 flex flex-col items-end max-w-[calc(100vw-1.5rem)]"
       >
         {/* Floating Chat Modal */}
         {isOpen && (
@@ -1307,10 +1307,10 @@ export function LiveSupportConcierge() {
               setIsOpen(true);
               setIsMinimized(false);
             }}
-            className="group flex items-center gap-3 rounded-full border border-teal-500/40 bg-gradient-to-r from-obsidian-900 via-slate-900 to-teal-950 px-4 py-2.5 shadow-2xl shadow-teal-500/20 backdrop-blur-xl transition-all duration-300 hover:scale-105 hover:border-teal-400 hover:shadow-teal-500/40"
+            className="group flex items-center gap-2.5 rounded-full border border-teal-500/40 bg-gradient-to-r from-obsidian-900 via-slate-900 to-teal-950 p-2 sm:px-4 sm:py-2.5 shadow-2xl shadow-teal-500/20 backdrop-blur-xl transition-all duration-300 hover:scale-105 hover:border-teal-400 hover:shadow-teal-500/40"
             aria-label="Open AI Concierge and Live Support"
           >
-            <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-teal-400 to-emerald-500 text-obsidian-950 font-bold overflow-hidden shadow-md">
+            <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-teal-400 to-emerald-500 text-obsidian-950 font-bold overflow-hidden shadow-md shrink-0">
               {avatarPref.avatarImage ? (
                 <Image
                   src={avatarPref.avatarImage}
@@ -1324,7 +1324,7 @@ export function LiveSupportConcierge() {
               <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 border-2 border-obsidian-950 animate-pulse" />
             </div>
             
-            <div className="flex flex-col text-left">
+            <div className="hidden sm:flex flex-col text-left">
               <span className="font-bold text-xs text-white group-hover:text-teal-300 transition-colors flex items-center gap-1.5">
                 <span>{avatarPref.avatarName}</span>
                 <span className="text-[9px] font-mono px-1 rounded bg-teal-500/20 text-teal-300">Live Video</span>
@@ -1332,7 +1332,7 @@ export function LiveSupportConcierge() {
               <span className="text-[10px] text-slate-400">Video Copilot &amp; Screen Troubleshooting</span>
             </div>
 
-            <div className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+            <div className="hidden sm:block h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
           </button>
         )}
       </aside>

@@ -6,9 +6,9 @@ import { LiveSupportConcierge } from "@/components/LiveSupportConcierge";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
-  title: "Zyvoriq — AI Reel Studio for Social Content",
+  title: "Zyvoriq — Autonomous Video Intelligence & 14-Persona Creation Suite",
   description:
-    "Create Instagram Reels and short-form social content from one idea: hooks, scripts, scenes, voice direction, captions, covers, localization and platform-ready variants.",
+    "Universal AI Creation Ecosystem demarcated across 14 industry personas: Pixar 3D CGI animation, Shōnen anime & manga, high-converting TikTok UGC ads, A24 cinema, and automated multimodal video generation.",
 };
 
 export default function RootLayout({
