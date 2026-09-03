@@ -27,9 +27,12 @@ import { AppNavbar } from "@/components/AppNavbar";
 type Production = { id: string; revision: number; manifest: any; createdAt?: string; updatedAt?: string };
 type LegacyTrack = { id: string; title?: string; subtitle?: string; category?: string; character?: string; videoSrc?: string; duration?: number; createdAt?: string; acts?: any[] };
 type AssetKind = "Final" | "Video" | "Audio" | "Image" | "Text" | "Evidence" | "Legacy";
+type ArtifactDescriptor = { id: string; kind?: string; role?: string; canonicalPath?: string; sourceKey?: string };
 type LibraryAsset = {
   id: string;
   productionId?: string;
+  artifactId?: string;
+  canonicalPath?: string;
   title: string;
   subtitle?: string;
   kind: AssetKind;
@@ -40,33 +43,42 @@ type LibraryAsset = {
   payload?: unknown;
 };
 
-type DirectClip = { id: string; url: string; duration?: number; model?: string };
+type DirectClip = { id: string; url: string; duration?: number; model?: string; artifactId?: string; canonicalPath?: string };
 
 const tabs: Array<"All" | AssetKind> = ["All", "Final", "Video", "Audio", "Image", "Text", "Evidence", "Legacy"];
+
+function artifactFor(manifest: any, role: string, sourceKey?: string): ArtifactDescriptor | undefined {
+  const artifacts: ArtifactDescriptor[] = Array.isArray(manifest?.artifacts) ? manifest.artifacts : [];
+  return artifacts.find(item => item?.role === role && (sourceKey === undefined || item?.sourceKey === sourceKey));
+}
 
 function collectProductionAssets(p: Production): LibraryAsset[] {
   const m = p.manifest || {};
   const out: LibraryAsset[] = [];
   const createdAt = p.updatedAt || p.createdAt || m.createdAt;
   const push = (asset: Omit<LibraryAsset, "productionId" | "createdAt">) => out.push({ ...asset, productionId: p.id, createdAt });
+  const withArtifact = (role: string, sourceKey?: string) => {
+    const artifact = artifactFor(m, role, sourceKey);
+    return artifact ? { artifactId: artifact.id, canonicalPath: artifact.canonicalPath } : {};
+  };
 
-  if (m.outputs?.master?.videoUrl) push({ id: `${p.id}:master`, title: m.topic || "Final master", subtitle: "Final master MP4", kind: "Final", url: m.outputs.master.videoUrl, duration: m.outputs.master.actualDurationSec });
-  if (m.outputs?.narratedRoughCut?.videoUrl) push({ id: `${p.id}:rough`, title: m.topic || "Narrated Reel", subtitle: "Combined narrated MP4", kind: "Final", url: m.outputs.narratedRoughCut.videoUrl, duration: m.outputs.narratedRoughCut.actualDurationSec });
+  if (m.outputs?.master?.videoUrl) push({ id: `${p.id}:master`, title: m.topic || "Final master", subtitle: "Final master MP4", kind: "Final", url: m.outputs.master.videoUrl, duration: m.outputs.master.actualDurationSec, ...withArtifact("master") });
+  if (m.outputs?.narratedRoughCut?.videoUrl) push({ id: `${p.id}:rough`, title: m.topic || "Narrated Reel", subtitle: "Combined narrated MP4", kind: "Final", url: m.outputs.narratedRoughCut.videoUrl, duration: m.outputs.narratedRoughCut.actualDurationSec, ...withArtifact("narrated-rough-cut") });
 
   for (const [i, s] of (m.shots || []).entries()) {
-    if (s.asset?.videoUrl) push({ id: `${p.id}:shot:${s.id}`, title: `Shot ${i + 1}`, subtitle: s.visualIntent || s.scriptText, kind: "Video", url: s.asset.videoUrl, duration: s.asset.actualDurationSec || s.editorialDurationSec, model: s.asset.model });
-    if (s.continuityIn?.referenceFrameUrl) push({ id: `${p.id}:ref:${s.id}`, title: `Shot ${i + 1} continuity frame`, subtitle: "Persisted predecessor reference frame", kind: "Image", url: s.continuityIn.referenceFrameUrl });
+    if (s.asset?.videoUrl) push({ id: `${p.id}:shot:${s.id}`, title: `Shot ${i + 1}`, subtitle: s.visualIntent || s.scriptText, kind: "Video", url: s.asset.videoUrl, duration: s.asset.actualDurationSec || s.editorialDurationSec, model: s.asset.model, ...withArtifact("clip", String(s.id)) });
+    if (s.continuityIn?.referenceFrameUrl) push({ id: `${p.id}:ref:${s.id}`, title: `Shot ${i + 1} continuity frame`, subtitle: "Persisted predecessor reference frame", kind: "Image", url: s.continuityIn.referenceFrameUrl, ...withArtifact("continuity-frame", `continuity:${s.id}`) });
   }
 
-  if (m.audio?.narrationUrl) push({ id: `${p.id}:narration`, title: "Narration", subtitle: `${m.audio.voice || "Voice"} · ${m.audio.model || "provider"}`, kind: "Audio", url: m.audio.narrationUrl, duration: m.audio.actualDurationSec, model: m.audio.model });
-  if (m.audio?.musicUrl) push({ id: `${p.id}:music`, title: "Music", subtitle: "Production music stem", kind: "Audio", url: m.audio.musicUrl, duration: m.musicPlan?.durationSec });
+  if (m.audio?.narrationUrl) push({ id: `${p.id}:narration`, title: "Narration", subtitle: `${m.audio.voice || "Voice"} · ${m.audio.model || "provider"}`, kind: "Audio", url: m.audio.narrationUrl, duration: m.audio.actualDurationSec, model: m.audio.model, ...withArtifact("narration") });
+  if (m.audio?.musicUrl) push({ id: `${p.id}:music`, title: "Music", subtitle: "Production music stem", kind: "Audio", url: m.audio.musicUrl, duration: m.musicPlan?.durationSec, ...withArtifact("music") });
 
-  if (m.masterScript) push({ id: `${p.id}:script`, title: "Master script", subtitle: `${String(m.masterScript).length} characters`, kind: "Text", payload: m.masterScript });
-  if (m.captions?.cues?.length) push({ id: `${p.id}:captions`, title: "Captions", subtitle: `${m.captions.cues.length} timed cues`, kind: "Text", payload: m.captions });
-  if (m.audio?.wordTimings?.length) push({ id: `${p.id}:words`, title: "Word alignment", subtitle: `${m.audio.wordTimings.length} timed words`, kind: "Evidence", payload: m.audio.wordTimings });
-  if (m.continuity) push({ id: `${p.id}:continuity`, title: "Continuity package", subtitle: "Characters, environments, performance, boundaries and object state", kind: "Evidence", payload: m.continuity });
-  if (m.qa) push({ id: `${p.id}:qa`, title: "QA evidence", subtitle: m.qa.passed ? "Passed" : "Inspection / repair evidence", kind: "Evidence", payload: m.qa });
-  push({ id: `${p.id}:manifest`, title: "Production manifest", subtitle: `Revision ${p.revision} · ${m.status || "UNKNOWN"}`, kind: "Evidence", payload: m });
+  if (m.masterScript) push({ id: `${p.id}:script`, title: "Master script", subtitle: `${String(m.masterScript).length} characters`, kind: "Text", payload: m.masterScript, ...withArtifact("master-script") });
+  if (m.captions?.cues?.length) push({ id: `${p.id}:captions`, title: "Captions", subtitle: `${m.captions.cues.length} timed cues`, kind: "Text", payload: m.captions, ...withArtifact("captions") });
+  if (m.audio?.wordTimings?.length) push({ id: `${p.id}:words`, title: "Word alignment", subtitle: `${m.audio.wordTimings.length} timed words`, kind: "Evidence", payload: m.audio.wordTimings, ...withArtifact("word-alignment") });
+  if (m.continuity) push({ id: `${p.id}:continuity`, title: "Continuity package", subtitle: "Characters, environments, performance, boundaries and object state", kind: "Evidence", payload: m.continuity, ...withArtifact("continuity") });
+  if (m.qa) push({ id: `${p.id}:qa`, title: "QA evidence", subtitle: m.qa.passed ? "Passed" : "Inspection / repair evidence", kind: "Evidence", payload: m.qa, ...withArtifact("qa") });
+  push({ id: `${p.id}:manifest`, title: "Production manifest", subtitle: `Revision ${p.revision} · ${m.status || "UNKNOWN"}`, kind: "Evidence", payload: m, ...withArtifact("manifest") });
   return out;
 }
 
@@ -94,11 +106,19 @@ async function copyMediaUrl(url: string) {
   try {
     await navigator.clipboard.writeText(absolute);
   } catch {
-    window.prompt("Copy media link", absolute);
+    window.prompt("Copy link", absolute);
   }
 }
 
-function DirectMediaActions({ url, label, compact = false }: { url: string; label: string; compact?: boolean }) {
+async function copyArtifactId(id: string) {
+  try {
+    await navigator.clipboard.writeText(id);
+  } catch {
+    window.prompt("Copy artifact ID", id);
+  }
+}
+
+function DirectMediaActions({ url, label, compact = false, canonicalPath, artifactId }: { url: string; label: string; compact?: boolean; canonicalPath?: string; artifactId?: string }) {
   const classes = compact
     ? "inline-flex items-center gap-1 rounded-lg border border-white/10 px-2 py-1.5 text-[10px] font-bold hover:bg-white/5"
     : "inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-2 text-[11px] font-bold text-slate-200 hover:bg-white/5";
@@ -106,6 +126,9 @@ function DirectMediaActions({ url, label, compact = false }: { url: string; labe
     <a href={url} target="_blank" rel="noreferrer" className={classes}><Play className="h-3 w-3"/>Play {label}</a>
     <button type="button" onClick={() => copyMediaUrl(url)} className={classes}><Copy className="h-3 w-3"/>Copy {label} Link</button>
     <a href={url} download className={classes}><Download className="h-3 w-3"/>Download</a>
+    {canonicalPath && <Link href={canonicalPath} className={`${classes} border-teal-300/20 text-teal-100`}><FileJson className="h-3 w-3"/>Canonical</Link>}
+    {canonicalPath && <button type="button" onClick={() => copyMediaUrl(canonicalPath)} className={`${classes} border-teal-300/20 text-teal-100`}><Copy className="h-3 w-3"/>Copy canonical</button>}
+    {artifactId && <button type="button" onClick={() => copyArtifactId(artifactId)} className={classes}><Copy className="h-3 w-3"/>Copy ID</button>}
   </div>;
 }
 
@@ -212,7 +235,7 @@ export default function StudioLibraryPage() {
   const assets = useMemo(() => [...productionAssets, ...legacyAssets], [productionAssets, legacyAssets]);
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return assets.filter(a => (tab === "All" || a.kind === tab) && (!q || `${a.title} ${a.subtitle || ""} ${a.kind} ${a.model || ""}`.toLowerCase().includes(q)));
+    return assets.filter(a => (tab === "All" || a.kind === tab) && (!q || `${a.title} ${a.subtitle || ""} ${a.kind} ${a.model || ""} ${a.artifactId || ""}`.toLowerCase().includes(q)));
   }, [assets, tab, query]);
 
   const counts = useMemo(() => Object.fromEntries(tabs.map(t => [t, t === "All" ? assets.length : assets.filter(a => a.kind === t).length])), [assets]);
@@ -224,7 +247,7 @@ export default function StudioLibraryPage() {
         <div>
           <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-teal-300"><FolderOpen className="h-4 w-4"/> Content Library</div>
           <h1 className="mt-2 text-3xl font-black tracking-[-0.04em] text-white md:text-4xl">Projects you can reopen, plus every persisted asset.</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">Studio1 projects are editable workspaces. Final Reels, clips, narration, continuity frames, scripts, captions and evidence remain browsable as assets underneath.</p>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">Every persisted project and generated artifact has an immutable Zyvoriq ID and canonical URL. Raw media links remain available separately for playback and download.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={load} disabled={loading} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-xs font-bold hover:bg-white/[0.06] disabled:opacity-50"><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}/>Refresh</button>
@@ -239,20 +262,29 @@ export default function StudioLibraryPage() {
 
       <section className="mt-7 rounded-3xl border border-violet-300/15 bg-violet-300/[0.025] p-5 md:p-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div><div className="text-xs font-black uppercase tracking-[0.16em] text-violet-300">Studio1 projects</div><h2 className="mt-1 text-2xl font-black text-white">Editable workspaces · {studio1Projects.length}</h2><p className="mt-1 text-xs text-slate-500">Open/Edit restores the exact production revision. Certified Full Reel and generated clip media remain directly accessible here.</p></div>
+          <div><div className="text-xs font-black uppercase tracking-[0.16em] text-violet-300">Studio1 projects</div><h2 className="mt-1 text-2xl font-black text-white">Editable workspaces · {studio1Projects.length}</h2><p className="mt-1 text-xs text-slate-500">Open/Edit restores the exact production revision. Canonical opens the permanent project identity page; Copy canonical gives you the stable URL to share.</p></div>
           <Link href="/studio1" className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-black text-slate-950"><Plus className="h-4 w-4"/>Create project</Link>
         </div>
         {loading ? <div className="mt-5 flex items-center gap-2 text-sm text-slate-500"><Loader2 className="h-4 w-4 animate-spin"/>Loading Studio1 projects…</div> : studio1Projects.length === 0 ? <div className="mt-5 rounded-2xl border border-dashed border-white/10 p-8 text-center text-sm text-slate-500">No Studio1 projects yet. Create one and it will remain editable here.</div> : <div className="mt-5 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">{studio1Projects.map(project => {
           const m = project.manifest || {};
           const busy = managing === project.id;
           const generated = (m.shots || []).filter((shot: any) => shot.asset?.videoUrl).length;
+          const projectCanonicalPath = m.artifact?.canonicalPath || `/artifact/${encodeURIComponent(project.id)}`;
           const fullReelUrl = m.outputs?.master?.videoUrl || m.outputs?.narratedRoughCut?.videoUrl || null;
           const fullReelDuration = m.outputs?.master?.videoUrl ? m.outputs?.master?.actualDurationSec : m.outputs?.narratedRoughCut?.actualDurationSec;
-          const directClips: DirectClip[] = (m.shots || []).flatMap((shot: any) => shot.asset?.videoUrl ? [{ id: String(shot.id), url: String(shot.asset.videoUrl), duration: shot.asset.actualDurationSec, model: shot.asset.model }] : []);
+          const fullReelArtifact = m.outputs?.master?.videoUrl ? artifactFor(m, "master") : artifactFor(m, "narrated-rough-cut");
+          const directClips: DirectClip[] = (m.shots || []).flatMap((shot: any) => {
+            if (!shot.asset?.videoUrl) return [];
+            const artifact = artifactFor(m, "clip", String(shot.id));
+            return [{ id: String(shot.id), url: String(shot.asset.videoUrl), duration: shot.asset.actualDurationSec, model: shot.asset.model, artifactId: artifact?.id, canonicalPath: artifact?.canonicalPath }];
+          });
           return <article key={project.id} className="rounded-2xl border border-white/10 bg-[#0b0e13] p-4">
-            <div className="flex items-start justify-between gap-4"><div className="min-w-0"><h3 className="truncate text-base font-black text-white">{projectTitle(project)}</h3><div className="mt-1 text-xs text-slate-500">{m.status || "DRAFT"} · {generated}/{m.shots?.length || 0} clips · revision {project.revision}</div><div className="mt-2 truncate font-mono text-[10px] text-slate-700">{project.id}</div></div>{busy && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-violet-300"/>}</div>
+            <div className="flex items-start justify-between gap-4"><div className="min-w-0"><h3 className="truncate text-base font-black text-white">{projectTitle(project)}</h3><div className="mt-1 text-xs text-slate-500">{m.status || "DRAFT"} · {generated}/{m.shots?.length || 0} clips · revision {project.revision}</div><div className="mt-2 break-all font-mono text-[10px] text-slate-600">ID · {project.id}</div></div>{busy && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-violet-300"/>}</div>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link href={`/studio1?productionId=${encodeURIComponent(project.id)}`} className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-[11px] font-black text-slate-950"><Pencil className="h-3.5 w-3.5"/>Open / Edit</Link>
+              <Link href={projectCanonicalPath} className="inline-flex items-center gap-1.5 rounded-lg border border-teal-300/25 bg-teal-300/[0.04] px-3 py-2 text-[11px] font-black text-teal-100"><FileJson className="h-3.5 w-3.5"/>Canonical</Link>
+              <button type="button" onClick={() => copyMediaUrl(projectCanonicalPath)} className="inline-flex items-center gap-1.5 rounded-lg border border-teal-300/25 px-3 py-2 text-[11px] font-bold text-teal-100 hover:bg-teal-300/[0.05]"><Copy className="h-3.5 w-3.5"/>Copy canonical</button>
+              <button type="button" onClick={() => copyArtifactId(project.id)} className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-[11px] font-bold text-slate-300 hover:bg-white/5"><Copy className="h-3.5 w-3.5"/>Copy ID</button>
               <button onClick={() => renameProject(project)} disabled={Boolean(managing)} className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-[11px] font-bold text-slate-300 hover:bg-white/5 disabled:opacity-40"><Pencil className="h-3.5 w-3.5"/>Rename</button>
               <button onClick={() => duplicateProject(project)} disabled={Boolean(managing)} className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-[11px] font-bold text-slate-300 hover:bg-white/5 disabled:opacity-40"><Copy className="h-3.5 w-3.5"/>Duplicate</button>
               <button onClick={() => deleteProject(project)} disabled={Boolean(managing)} className="inline-flex items-center gap-1.5 rounded-lg border border-red-400/20 px-3 py-2 text-[11px] font-bold text-red-200 hover:bg-red-400/5 disabled:opacity-40"><Trash2 className="h-3.5 w-3.5"/>Delete</button>
@@ -262,13 +294,15 @@ export default function StudioLibraryPage() {
               <div className="text-[10px] font-black uppercase tracking-[0.14em] text-teal-300">Direct media</div>
               {fullReelUrl && <div className="mt-2 rounded-xl border border-teal-300/15 bg-teal-300/[0.035] p-3">
                 <div className="mb-2 flex items-center justify-between gap-3"><div className="text-xs font-black text-white">Full Reel</div>{Number(fullReelDuration) > 0 && <div className="text-[10px] text-slate-500">{Number(fullReelDuration).toFixed(2)}s</div>}</div>
-                <DirectMediaActions url={fullReelUrl} label="Reel" />
+                {fullReelArtifact?.id && <div className="mb-2 break-all font-mono text-[9px] text-slate-600">ID · {fullReelArtifact.id}</div>}
+                <DirectMediaActions url={fullReelUrl} label="Reel" canonicalPath={fullReelArtifact?.canonicalPath} artifactId={fullReelArtifact?.id} />
               </div>}
               {directClips.length > 0 && <details className="mt-2 rounded-xl border border-white/10 bg-black/15 p-3">
                 <summary className="cursor-pointer text-xs font-black text-slate-300">Generated clips · {directClips.length}</summary>
                 <div className="mt-3 space-y-2">{directClips.map((clip, index) => <div key={clip.id} className="rounded-lg border border-white/5 bg-white/[0.02] p-2.5">
                   <div className="mb-2 flex items-center justify-between gap-3"><div className="text-[11px] font-bold text-slate-300">Clip {index + 1}</div><div className="text-[10px] text-slate-600">{clip.duration ? `${Number(clip.duration).toFixed(2)}s` : ""}{clip.model ? ` · ${clip.model}` : ""}</div></div>
-                  <DirectMediaActions url={clip.url} label={`Clip ${index + 1}`} compact />
+                  {clip.artifactId && <div className="mb-2 break-all font-mono text-[9px] text-slate-600">ID · {clip.artifactId}</div>}
+                  <DirectMediaActions url={clip.url} label={`Clip ${index + 1}`} compact canonicalPath={clip.canonicalPath} artifactId={clip.artifactId} />
                 </div>)}</div>
               </details>}
             </div>}
@@ -279,7 +313,7 @@ export default function StudioLibraryPage() {
       <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.02] p-4 md:p-5">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-wrap gap-2">{tabs.map(t => <button key={t} onClick={() => setTab(t)} className={`rounded-xl px-3.5 py-2 text-xs font-bold ${tab === t ? "bg-white text-slate-950" : "border border-white/10 text-slate-400 hover:text-white"}`}>{t} <span className="ml-1 opacity-60">{counts[t] || 0}</span></button>)}</div>
-          <label className="relative block min-w-[260px]"><Search className="absolute left-3 top-3 h-4 w-4 text-slate-600"/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search content, model, type…" className="w-full rounded-xl border border-white/10 bg-black/20 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-teal-300/30"/></label>
+          <label className="relative block min-w-[260px]"><Search className="absolute left-3 top-3 h-4 w-4 text-slate-600"/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search content, model, type, artifact ID…" className="w-full rounded-xl border border-white/10 bg-black/20 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-teal-300/30"/></label>
         </div>
       </section>
 
@@ -315,9 +349,13 @@ function AssetCard({ asset, compact = false }: { asset: LibraryAsset; compact?: 
     <div className={compact ? "" : "p-4"}>
       <div className="flex items-start justify-between gap-3"><div className="min-w-0"><div className="text-[10px] font-black uppercase tracking-[0.14em] text-teal-300">{asset.kind}</div><h3 className="mt-1 truncate text-sm font-black text-white">{asset.title}</h3>{asset.subtitle && <div className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{asset.subtitle}</div>}</div><Icon className="h-4 w-4 shrink-0 text-slate-500"/></div>
       <div className="mt-3 flex flex-wrap gap-2 text-[10px] text-slate-600">{asset.duration ? <span>{asset.duration.toFixed(2)}s</span> : null}{asset.model ? <span>{asset.model}</span> : null}{asset.productionId ? <span className="truncate">{asset.productionId.slice(0, 14)}…</span> : null}</div>
+      {asset.artifactId && <div className="mt-2 break-all font-mono text-[9px] leading-4 text-slate-600">ID · {asset.artifactId}</div>}
       <div className="mt-3 flex flex-wrap gap-2">
-        {asset.url && <a href={asset.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-[10px] font-bold hover:bg-white/5"><Play className="h-3 w-3"/>Open</a>}
-        {asset.url && <button type="button" onClick={() => copyMediaUrl(asset.url!)} className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-[10px] font-bold hover:bg-white/5"><Copy className="h-3 w-3"/>Copy link</button>}
+        {asset.canonicalPath && <Link href={asset.canonicalPath} className="inline-flex items-center gap-1 rounded-lg border border-teal-300/20 px-2.5 py-1.5 text-[10px] font-bold text-teal-100"><FileJson className="h-3 w-3"/>Canonical</Link>}
+        {asset.canonicalPath && <button type="button" onClick={() => copyMediaUrl(asset.canonicalPath!)} className="inline-flex items-center gap-1 rounded-lg border border-teal-300/20 px-2.5 py-1.5 text-[10px] font-bold text-teal-100"><Copy className="h-3 w-3"/>Copy canonical</button>}
+        {asset.artifactId && <button type="button" onClick={() => copyArtifactId(asset.artifactId!)} className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-[10px] font-bold hover:bg-white/5"><Copy className="h-3 w-3"/>Copy ID</button>}
+        {asset.url && <a href={asset.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-[10px] font-bold hover:bg-white/5"><Play className="h-3 w-3"/>Open media</a>}
+        {asset.url && <button type="button" onClick={() => copyMediaUrl(asset.url!)} className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-[10px] font-bold hover:bg-white/5"><Copy className="h-3 w-3"/>Copy media</button>}
         {asset.url && <a href={asset.url} download className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-[10px] font-bold hover:bg-white/5"><Download className="h-3 w-3"/>Download</a>}
         {asset.payload !== undefined && <button onClick={() => downloadPayload(asset)} className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-[10px] font-bold hover:bg-white/5"><Download className="h-3 w-3"/>Export</button>}
         {asset.productionId && <Link href={`/studio/inspector?productionId=${encodeURIComponent(asset.productionId)}`} className="inline-flex items-center gap-1 rounded-lg border border-pink-300/20 px-2.5 py-1.5 text-[10px] font-bold text-pink-100"><ScanSearch className="h-3 w-3"/>Inspect</Link>}
