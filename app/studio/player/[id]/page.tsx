@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, Suspense } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { AppNavbar } from "@/components/AppNavbar";
@@ -10,6 +10,14 @@ type Graph = any;
 type ToggleProps = { label: string; enabled: boolean; onChange: (next: boolean) => void };
 
 export default function ComposableMediaPlayerPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-obsidian-950 flex items-center justify-center text-teal-400 font-mono text-sm">Loading Media Player...</div>}>
+      <ComposableMediaPlayerContent />
+    </Suspense>
+  );
+}
+
+function ComposableMediaPlayerContent() {
   const params = useParams<{ id: string }>();
   const search = useSearchParams();
   const productionId = decodeURIComponent(String(params.id || ""));

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -40,6 +40,14 @@ const CATEGORIES: { id: TrendCategory | "all"; label: string; icon: string }[] =
 ];
 
 export default function TrendRadarPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-obsidian-950 flex items-center justify-center text-teal-400 font-mono text-sm">Loading 7-Day Trend Radar...</div>}>
+      <TrendRadarContent />
+    </Suspense>
+  );
+}
+
+function TrendRadarContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTopicId = searchParams?.get("topicId") || PREDICTED_TRENDS_RADAR[0].id;

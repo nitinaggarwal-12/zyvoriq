@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -37,6 +37,14 @@ import {
 import { AppNavbar } from "@/components/AppNavbar";
 
 export default function BookStudioPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-obsidian-950 flex items-center justify-center text-amber-400 font-mono text-sm">Loading Book Studio...</div>}>
+      <BookStudioContent />
+    </Suspense>
+  );
+}
+
+function BookStudioContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialBookId = searchParams?.get("bookId") || BOOK_OPPORTUNITY_CATALOG[0].id;
