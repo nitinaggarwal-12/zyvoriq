@@ -118,9 +118,9 @@ async function run() {
     ]);
 
     const recorder = new MediaRecorder(combined, {
-      mimeType: 'video/webm;codecs=vp8,opus',
-      audioBitsPerSecond: 128000,
-      videoBitsPerSecond: 4000000
+      mimeType: 'video/mp4;codecs=avc1,mp4a.40.2',
+      audioBitsPerSecond: 192000,
+      videoBitsPerSecond: 6000000
     });
 
     const chunks = [];
@@ -375,7 +375,7 @@ async function run() {
       draw();
 
       recorder.onstop = () => {
-        const fullBlob = new Blob(chunks, { type: 'video/webm' });
+        const fullBlob = new Blob(chunks, { type: 'video/mp4' });
         const reader = new FileReader();
         reader.onloadend = () => {
           resolve(reader.result);
