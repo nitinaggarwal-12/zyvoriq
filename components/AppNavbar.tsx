@@ -135,6 +135,16 @@ export function AppNavbar() {
             <span className="font-mono text-xs font-semibold">9 Swarms Active</span>
           </div>
 
+          {/* SSO Identity Pill */}
+          <Link
+            href="/auth/login"
+            className="hidden items-center gap-2 rounded-full border border-teal-500/40 bg-teal-950/40 px-3.5 py-1.5 text-xs text-teal-300 hover:bg-teal-900/50 hover:border-teal-400 transition-all sm:flex shadow-sm"
+            title="SSO Identity Vault & Auto-Verified Claims"
+          >
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="font-mono text-xs font-semibold">SSO: Nitin (21+ Verified)</span>
+          </Link>
+
           <Link
             href="/director"
             className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 via-emerald-400 to-teal-500 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-slate-950 shadow-lg shadow-teal-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
