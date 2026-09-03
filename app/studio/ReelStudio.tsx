@@ -48,6 +48,7 @@ import GlobalDubberModal from "@/components/GlobalDubberModal";
 import DemonetizationArmorModal from "@/components/DemonetizationArmorModal";
 import { TrendRadarModal } from "@/components/TrendRadarModal";
 import { BookStudioModal } from "@/components/BookStudioModal";
+import { PromptDirectorBuilderModal, GeneratedPromptResult } from "@/components/PromptDirectorBuilderModal";
 import { PredictedTrend } from "@/lib/reel/trendRadarEngine";
 import { DopamineConfig, DEFAULT_DOPAMINE_CONFIG } from "@/lib/reel/dopamineSplitScreen";
 import { UgcAdCampaign } from "@/lib/reel/ugcAdEngine";
@@ -192,6 +193,7 @@ export function ReelStudio() {
   const [isArmorModalOpen, setIsArmorModalOpen] = useState(false);
   const [isTrendRadarOpen, setIsTrendRadarOpen] = useState(false);
   const [isBookStudioOpen, setIsBookStudioOpen] = useState(false);
+  const [isPromptBuilderOpen, setIsPromptBuilderOpen] = useState(false);
   const [detectedMemes, setDetectedMemes] = useState<MemeCutawayItem[]>([]);
   const [dopamineConfig, setDopamineConfig] = useState<DopamineConfig>(DEFAULT_DOPAMINE_CONFIG);
   const [zoomPreset, setZoomPreset] = useState<AutoZoomPresetId>("dynamic-viral");
@@ -1129,13 +1131,22 @@ export function ReelStudio() {
           <div>
             <div className="flex items-center justify-between">
               <label className="text-xs font-black text-slate-300 uppercase tracking-wider font-mono">Idea or Topic Brief</label>
-              <button
-                type="button"
-                onClick={handleSurpriseIdea}
-                className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-400 hover:text-teal-300 transition"
-              >
-                <Lightbulb className="w-3 h-3" /> Surprise Idea
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsPromptBuilderOpen(true)}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-300 hover:text-amber-200 transition bg-amber-400/10 border border-amber-400/30 px-2 py-0.5 rounded-lg shadow-sm"
+                >
+                  <Wand2 className="w-3 h-3 text-amber-300" /> Prompt Director
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSurpriseIdea}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-400 hover:text-teal-300 transition"
+                >
+                  <Lightbulb className="w-3 h-3" /> Surprise Idea
+                </button>
+              </div>
             </div>
             <textarea
               value={topic}
@@ -2358,6 +2369,17 @@ export function ReelStudio() {
       <BookStudioModal
         isOpen={isBookStudioOpen}
         onClose={() => setIsBookStudioOpen(false)}
+      />
+
+      <PromptDirectorBuilderModal
+        isOpen={isPromptBuilderOpen}
+        onClose={() => setIsPromptBuilderOpen(false)}
+        onApplyPrompt={(res) => {
+          setTopic(res.topicBrief);
+          if (res.language) setLanguage(res.language);
+          if (res.aspectRatio) setAspectRatio(res.aspectRatio);
+          if (res.duration) setDuration(res.duration);
+        }}
       />
     </div>
   );

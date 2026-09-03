@@ -53,13 +53,21 @@ async function run() {
     await page.screenshot({ path: studioShotPath, fullPage: false });
     console.log('Saved studio screenshot to:', studioShotPath);
 
-    console.log('Navigating to http://localhost:3000/studio/create ...');
-    await page.goto('http://localhost:3000/studio/create', { waitUntil: 'networkidle2' });
-    await wait(1500);
+    // Open Prompt Director Modal
+    console.log('Clicking Prompt Director button...');
+    const promptButtons = await page.$$('button');
+    for (const btn of promptButtons) {
+      const text = await page.evaluate(el => el.textContent, btn);
+      if (text && text.includes('Prompt Director')) {
+        await btn.click();
+        break;
+      }
+    }
+    await wait(1000);
 
-    const createShotPath = path.join(SCREENSHOT_DIR, '02_studio_create.png');
-    await page.screenshot({ path: createShotPath, fullPage: false });
-    console.log('Saved create screenshot to:', createShotPath);
+    const promptModalShotPath = path.join(SCREENSHOT_DIR, '03_prompt_director_modal.png');
+    await page.screenshot({ path: promptModalShotPath, fullPage: false });
+    console.log('Saved Prompt Director modal screenshot to:', promptModalShotPath);
 
     await browser.close();
     console.log('Verification completed successfully!');

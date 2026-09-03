@@ -31,7 +31,8 @@ import {
   ChevronRight,
   Video,
   Music,
-  Key
+  Key,
+  Wand2
 } from "lucide-react";
 import { GENRE_CLUSTERS, GENRE_CATEGORIES, GENRE_CONCEPTS, GenreConcept } from "@/lib/tier6/genre_concepts";
 import { GLOBAL_CHARACTERS, VISUAL_AESTHETICS } from "@/lib/tier6/characters";
@@ -39,6 +40,7 @@ import { LYRIA_MUSIC_PRESETS } from "@/lib/ai/lyriaService";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppNavbar } from "@/components/AppNavbar";
 import { ApiKeyModal } from "@/components/ApiKeyModal";
+import { PromptDirectorBuilderModal } from "@/components/PromptDirectorBuilderModal";
 
 function CreatePageContent() {
   const router = useRouter();
@@ -46,6 +48,7 @@ function CreatePageContent() {
   const targetTrackId = searchParams.get("trackId") || "";
   const modeParam = searchParams.get("mode") || "";
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
+  const [isPromptBuilderOpen, setIsPromptBuilderOpen] = useState(false);
 
   const [selectedCluster, setSelectedCluster] = useState<string>("all");
   const [selectedGenre, setSelectedGenre] = useState<string>("all");
@@ -721,7 +724,16 @@ function CreatePageContent() {
                     <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
                       <Film className="w-3.5 h-3.5 text-amber-400" /> Story Title & Scene Description
                     </label>
-                    <span className="text-[11px] font-mono text-slate-500">Gemini 2.5 Flash Grounded</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsPromptBuilderOpen(true)}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-300 hover:text-amber-200 transition bg-amber-400/10 border border-amber-400/30 px-2.5 py-1 rounded-lg shadow-sm"
+                      >
+                        <Wand2 className="w-3 h-3 text-amber-300" /> ✨ Prompt Director
+                      </button>
+                      <span className="text-[11px] font-mono text-slate-500">Gemini 2.5 Flash Grounded</span>
+                    </div>
                   </div>
 
                   <input
@@ -1397,6 +1409,22 @@ function CreatePageContent() {
           </div>
         )}
       </main>
+
+      {/* AI Prompt Director & Frame Builder Modal */}
+      <PromptDirectorBuilderModal
+        isOpen={isPromptBuilderOpen}
+        onClose={() => setIsPromptBuilderOpen(false)}
+        onApplyPrompt={(res) => {
+          setTitle(`⚡ ${res.topicBrief.slice(0, 40)}`);
+          setPrompt(res.cinematicDirection);
+          if (res.aspectRatio === "16:9" || res.aspectRatio === "9:16" || res.aspectRatio === "1:1") {
+            setAspectRatio(res.aspectRatio);
+          }
+          if (res.duration) {
+            setDuration(parseInt(res.duration, 10) || 8);
+          }
+        }}
+      />
 
       {/* Google Gemini & Veo Multi-Key Load Balancer Modal */}
       <ApiKeyModal
