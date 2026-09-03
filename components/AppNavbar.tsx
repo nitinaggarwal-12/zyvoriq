@@ -20,11 +20,15 @@ import {
   TrendingUp,
   BookOpen,
   Trophy,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { ApiKeyModal } from "@/components/ApiKeyModal";
+import { useTheme } from "@/components/ThemeProvider";
 
 export function AppNavbar() {
   const pathname = usePathname();
+  const { resolvedTheme, toggleTheme } = useTheme();
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
@@ -115,7 +119,22 @@ export function AppNavbar() {
           })}
         </nav>
 
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-2.5 sm:gap-3.5">
+          {/* Theme Switcher Toggle */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-700/80 bg-slate-800/80 dark:border-slate-800 dark:bg-slate-900/80 text-amber-400 dark:text-teal-300 hover:scale-105 active:scale-95 transition-all shadow-sm"
+            title={resolvedTheme === "dark" ? "Switch to Light Mode (Daylight Studio)" : "Switch to Dark Mode (Obsidian Cinema)"}
+            aria-label="Toggle Theme"
+          >
+            {resolvedTheme === "dark" ? (
+              <Sun className="h-4 w-4 text-amber-400 transition-transform hover:rotate-45" />
+            ) : (
+              <Moon className="h-4 w-4 text-indigo-600 dark:text-teal-300 transition-transform hover:-rotate-12" />
+            )}
+          </button>
+
           <button
             type="button"
             onClick={() => setApiKeyModalOpen(true)}

@@ -24,14 +24,18 @@ import {
   Check,
   Copy,
   Globe,
-  Award
+  Award,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { DigitalSignaturePad } from "@/components/DigitalSignaturePad";
 import { MULTILINGUAL_NDA_CLAUSES, NdaLanguage } from "@/lib/compliance/ndaSigningEngine";
+import { useTheme } from "@/components/ThemeProvider";
 
 function NdaSignContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { resolvedTheme, toggleTheme } = useTheme();
 
   // Pre-fill parameters from link
   const token = searchParams.get("token") || "demo_session_unbound";
@@ -217,6 +221,20 @@ function NdaSignContent() {
                 </button>
               ))}
             </div>
+
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-800 bg-slate-900 text-amber-400 hover:scale-105 active:scale-95 transition-all shadow-sm"
+              title={resolvedTheme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              aria-label="Toggle Theme"
+            >
+              {resolvedTheme === "dark" ? (
+                <Sun className="h-3.5 w-3.5 text-amber-400" />
+              ) : (
+                <Moon className="h-3.5 w-3.5 text-indigo-400" />
+              )}
+            </button>
 
             <Link
               href="/admin/agreements"

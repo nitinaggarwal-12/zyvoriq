@@ -7,8 +7,9 @@ import {
   Image as ImageIcon, Copy, Check, Instagram, Youtube, ChevronDown, Loader2,
   CircleAlert, Database, Film, AudioLines, Video, Download, Trash2, Plus,
   Pencil, Save, X, Globe, Music, Volume2, Sliders, CheckSquare, Square,
-  Layers, Wand2, RefreshCw, Eye, Zap, Share2, Send, Radio, BookOpen
+  Layers, Wand2, RefreshCw, Eye, Zap, Share2, Send, Radio, BookOpen, Sun, Moon
 } from "lucide-react";
+import { useTheme } from "@/components/ThemeProvider";
 import type { ReelProductionManifest, ReelShot } from "@/lib/reel/types";
 import { PersonaClone, PRESET_PERSONAS } from "@/lib/reel/personas";
 import { PersonaVaultModal } from "@/components/PersonaVaultModal";
@@ -128,6 +129,7 @@ const EMPTY_SHOTS: ReelShot[] = [];
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export function ReelStudio() {
+  const { resolvedTheme, toggleTheme } = useTheme();
   const [creationMode, setCreationMode] = useState<"video_reel" | "podcast" | "carousel" | "song" | "story">("video_reel");
   const [topic, setTopic] = useState("3 habits quietly killing your focus");
   const [tone, setTone] = useState("Confident & conversational");
@@ -974,14 +976,18 @@ export function ReelStudio() {
               <span>🎮 Dopamine {dopamineConfig.enabled ? "ON" : "Split"}</span>
             </button>
             <button
-              onClick={() => setIsPublishModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl border border-pink-500/30 bg-gradient-to-r from-pink-500/20 to-purple-500/20 px-3 py-1.5 text-xs font-bold text-pink-200 shadow-sm transition hover:border-pink-500/50 hover:from-pink-500/30 hover:to-purple-500/30"
+              type="button"
+              onClick={toggleTheme}
+              className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-amber-400 dark:text-teal-300 hover:scale-105 active:scale-95 transition-all shadow-sm"
+              title={resolvedTheme === "dark" ? "Switch to Light Mode (Daylight Studio)" : "Switch to Dark Mode (Obsidian Cinema)"}
+              aria-label="Toggle Theme"
             >
-              <Share2 className="h-3.5 w-3.5 text-pink-400" />
-              <span>1-Click Publish</span>
+              {resolvedTheme === "dark" ? (
+                <Sun className="h-3.5 w-3.5 text-amber-400" />
+              ) : (
+                <Moon className="h-3.5 w-3.5 text-indigo-400 dark:text-teal-300" />
+              )}
             </button>
-
-
           </div>
         </div>
       </header>

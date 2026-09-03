@@ -26,11 +26,15 @@ import {
   FileText,
   AlertCircle,
   Sparkles,
-  HelpCircle
+  HelpCircle,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { ModerationReport, AdminDecisionStatus, ComplianceRiskLevel, ContentModality, getAllModerationReports } from "@/lib/compliance/contentModeratorAgent";
+import { useTheme } from "@/components/ThemeProvider";
 
 export default function AdminContentModerationPage() {
+  const { resolvedTheme, toggleTheme } = useTheme();
   const [reports, setReports] = useState<ModerationReport[]>(() => {
     try {
       return getAllModerationReports();
@@ -161,6 +165,20 @@ export default function AdminContentModerationPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-800 bg-slate-900 text-amber-400 dark:text-teal-300 hover:scale-105 active:scale-95 transition-all shadow-sm"
+              title={resolvedTheme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              aria-label="Toggle Theme"
+            >
+              {resolvedTheme === "dark" ? (
+                <Sun className="h-3.5 w-3.5 text-amber-400" />
+              ) : (
+                <Moon className="h-3.5 w-3.5 text-indigo-400 dark:text-teal-300" />
+              )}
+            </button>
+
             <Link
               href="/admin/agreements"
               className="px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-slate-300 hover:text-white transition-all flex items-center gap-1.5"
