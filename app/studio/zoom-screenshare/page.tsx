@@ -16,7 +16,8 @@ import {
   Mic,
   Play,
   Pause,
-  ArrowLeft
+  ArrowLeft,
+  Sparkles
 } from "lucide-react";
 
 export default function ZoomScreenSharePage() {
@@ -35,6 +36,7 @@ export default function ZoomScreenSharePage() {
   const audioUser3 = useRef<HTMLAudioElement | null>(null);
   const audioElena3 = useRef<HTMLAudioElement | null>(null);
   const userCamRef = useRef<HTMLVideoElement | null>(null);
+  const agentVideoRef = useRef<HTMLVideoElement | null>(null);
   const userStreamRef = useRef<MediaStream | null>(null);
 
   const stopAllAudio = () => {
@@ -46,28 +48,37 @@ export default function ZoomScreenSharePage() {
     });
   };
 
-  // Play dialogue sequentially and sync with timer
+  // Strictly Calibrated Non-Overlapping Dialogue Timetable
+  // 0.20s - 6.17s: Nitin (User)
+  // 6.62s - 14.07s: Elena (Support)
+  // 14.52s - 16.98s: Nitin (User)
+  // 17.43s - 25.24s: Elena (Support)
+  // 25.69s - 27.40s: Nitin (User)
+  // 27.85s - 30.13s: Elena (Support)
+
   useEffect(() => {
     let start = Date.now() - (currentTime * 1000);
     const interval = setInterval(() => {
       if (!isPlaying) return;
       const elapsed = (Date.now() - start) / 1000;
-      setCurrentTime(Math.min(elapsed, 30));
+      setCurrentTime(Math.min(elapsed, 30.2));
 
-      if (elapsed < 6) {
+      if (elapsed < 6.4) {
         setActiveSpeaker("user");
         setLaserPos({ x: 340 + Math.sin(elapsed * 2) * 30, y: 220 + Math.cos(elapsed * 2) * 20 });
-      } else if (elapsed < 15) {
+      } else if (elapsed < 14.3) {
         setActiveSpeaker("elena");
+        // Laser highlights Shot 1 Audio Stem
         setLaserPos({ x: 260 + Math.sin(elapsed * 4) * 20, y: 310 + Math.cos(elapsed * 4) * 10 });
-      } else if (elapsed < 18) {
+      } else if (elapsed < 17.2) {
         setActiveSpeaker("user");
         setLaserPos({ x: 260, y: 310 });
-      } else if (elapsed < 26) {
+      } else if (elapsed < 25.5) {
         setActiveSpeaker("elena");
+        // Elena clicks Autonomous Fix
         setLaserPos({ x: 640 + Math.sin(elapsed * 3) * 15, y: 480 });
         setHasAppliedFix(true);
-      } else if (elapsed < 28) {
+      } else if (elapsed < 27.6) {
         setActiveSpeaker("user");
         setLaserPos({ x: 800, y: 220 });
       } else {
@@ -75,31 +86,31 @@ export default function ZoomScreenSharePage() {
         setLaserPos({ x: 840 + Math.sin(elapsed * 2) * 20, y: 160 });
       }
 
-      if (elapsed >= 30) {
+      if (elapsed >= 30.2) {
         clearInterval(interval);
       }
     }, 100);
 
-    // Audio Playback Triggers synced to playback
+    // Audio Playback Triggers - Sequential with clean non-overlapping pauses
     const timeouts: NodeJS.Timeout[] = [];
     if (isPlaying) {
-      if (currentTime < 0.5) {
+      if (currentTime < 0.2) {
         timeouts.push(setTimeout(() => audioUser1.current?.play().catch(() => {}), 200));
       }
-      if (currentTime < 6.0) {
-        timeouts.push(setTimeout(() => audioElena1.current?.play().catch(() => {}), Math.max(0, (6.0 - currentTime) * 1000)));
+      if (currentTime < 6.62) {
+        timeouts.push(setTimeout(() => audioElena1.current?.play().catch(() => {}), Math.max(0, (6.62 - currentTime) * 1000)));
       }
-      if (currentTime < 15.0) {
-        timeouts.push(setTimeout(() => audioUser2.current?.play().catch(() => {}), Math.max(0, (15.0 - currentTime) * 1000)));
+      if (currentTime < 14.52) {
+        timeouts.push(setTimeout(() => audioUser2.current?.play().catch(() => {}), Math.max(0, (14.52 - currentTime) * 1000)));
       }
-      if (currentTime < 18.0) {
-        timeouts.push(setTimeout(() => audioElena2.current?.play().catch(() => {}), Math.max(0, (18.0 - currentTime) * 1000)));
+      if (currentTime < 17.43) {
+        timeouts.push(setTimeout(() => audioElena2.current?.play().catch(() => {}), Math.max(0, (17.43 - currentTime) * 1000)));
       }
-      if (currentTime < 26.0) {
-        timeouts.push(setTimeout(() => audioUser3.current?.play().catch(() => {}), Math.max(0, (26.0 - currentTime) * 1000)));
+      if (currentTime < 25.69) {
+        timeouts.push(setTimeout(() => audioUser3.current?.play().catch(() => {}), Math.max(0, (25.69 - currentTime) * 1000)));
       }
-      if (currentTime < 28.0) {
-        timeouts.push(setTimeout(() => audioElena3.current?.play().catch(() => {}), Math.max(0, (28.0 - currentTime) * 1000)));
+      if (currentTime < 27.85) {
+        timeouts.push(setTimeout(() => audioElena3.current?.play().catch(() => {}), Math.max(0, (27.85 - currentTime) * 1000)));
       }
     } else {
       stopAllAudio();
@@ -152,15 +163,15 @@ export default function ZoomScreenSharePage() {
   };
 
   const currentDialogue = [
-    { start: 0, end: 6, speaker: "Nitin Aggarwal (Creator)", text: "“Hey Elena, my 4-shot reel in Studio Cinema won't sync audio on Shot 1, and my predicted retention is stuck at 42%. Can you look at my screen and help me fix this?”" },
-    { start: 6, end: 15, speaker: "Elena Rostova (AI Support Engineer)", text: "“Hi Nitin! I am connected to your screen right now. I see the issue immediately—your Shot 1 audio stem is unlinked from the 3-second curiosity hook. See my laser spotlight on your timeline right here.”" },
-    { start: 15, end: 18, speaker: "Nitin Aggarwal (Creator)", text: "“Got it! Should I rebuild the beat plan or can you auto-sync it for me?”" },
-    { start: 18, end: 26, speaker: "Elena Rostova (AI Support Engineer)", text: "“I will trigger the 1-Click Autonomous Sync directly on your canvas. Watch your waveform auto-align... There, your retention score just jumped to 94.8% and your 4-shot sequence is ready for 4K export!”" },
-    { start: 26, end: 28, speaker: "Nitin Aggarwal (Creator)", text: "“Awesome, that completely fixed it. Thanks Elena!”" },
-    { start: 28, end: 30, speaker: "Elena Rostova (AI Support Engineer)", text: "“You're very welcome Nitin! Reach out anytime if you need another review.”" }
+    { start: 0, end: 6.4, speaker: "Nitin Aggarwal (Creator)", text: "“Hey Elena, my 4-shot reel timeline won't sync audio on Shot 1. Can you help me fix this?”" },
+    { start: 6.4, end: 14.3, speaker: "Elena Rostova (AI Support Engineer)", text: "“Hi Nitin! I see your screen right now. Your Shot 1 audio stem is unlinked from the hook. Look at my laser spotlight on your timeline.”" },
+    { start: 14.3, end: 17.2, speaker: "Nitin Aggarwal (Creator)", text: "“Got it! Can you auto sync it for me?”" },
+    { start: 17.2, end: 25.5, speaker: "Elena Rostova (AI Support Engineer)", text: "“I am triggering One Click Autonomous Sync now. There, your retention jumped to 94.8% and your reel is ready for 4K export!”" },
+    { start: 25.5, end: 27.6, speaker: "Nitin Aggarwal (Creator)", text: "“Awesome, thank you Elena!”" },
+    { start: 27.6, end: 30.5, speaker: "Elena Rostova (AI Support Engineer)", text: "“You are welcome Nitin! Happy creating!”" }
   ].find(d => currentTime >= d.start && currentTime < d.end) || {
     speaker: "Elena Rostova (AI Support Engineer)",
-    text: "“You're very welcome Nitin! Reach out anytime if you need another review.”"
+    text: "“You are welcome Nitin! Happy creating!”"
   };
 
   return (
@@ -362,7 +373,7 @@ export default function ZoomScreenSharePage() {
         {/* 2-WAY PARTICIPANT VIDEO TILES (Right Column) */}
         <div className="space-y-4 flex flex-col justify-between">
           
-          {/* 1. SUPPORT AGENT TILE (Elena Rostova) */}
+          {/* 1. SUPPORT AGENT TILE (Live High-Motion Presenter Video) */}
           <div className={`p-3 rounded-2xl border transition-all ${
             activeSpeaker === "elena"
               ? "border-teal-400 bg-slate-900/90 shadow-xl shadow-teal-500/20"
@@ -371,15 +382,16 @@ export default function ZoomScreenSharePage() {
             <div className="flex items-center justify-between text-[11px] font-mono mb-2">
               <span className="text-teal-300 font-bold flex items-center gap-1.5">
                 <span className={`h-2 w-2 rounded-full ${activeSpeaker === "elena" ? "bg-emerald-400 animate-ping" : "bg-slate-600"}`} />
-                ELENA ROSTOVA
+                ELENA ROSTOVA (AI SUPPORT)
               </span>
-              <span className="text-slate-400 text-[10px]">Support Specialist</span>
+              <span className="text-slate-400 text-[10px]">Live Video On</span>
             </div>
 
-            {/* Video Box */}
+            {/* High-Motion Presenter Video */}
             <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-slate-800 shadow-inner">
               <video
-                src="/assets/video/veo_aria_master.mp4"
+                ref={agentVideoRef}
+                src="/assets/video/veo_priya_24s_master.mp4"
                 autoPlay
                 loop
                 muted
@@ -407,7 +419,7 @@ export default function ZoomScreenSharePage() {
             <div className="flex items-center justify-between text-[11px] font-mono mb-2">
               <span className="text-cyan-300 font-bold flex items-center gap-1.5">
                 <span className={`h-2 w-2 rounded-full ${activeSpeaker === "user" ? "bg-cyan-400 animate-ping" : "bg-slate-600"}`} />
-                NITIN AGGARWAL
+                NITIN AGGARWAL (CREATOR)
               </span>
               <button
                 onClick={handleToggleUserCamera}

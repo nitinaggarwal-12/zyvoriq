@@ -14,7 +14,7 @@ async function run() {
   if (!fs.existsSync(VIDEO_DIR)) fs.mkdirSync(VIDEO_DIR, { recursive: true });
   if (!fs.existsSync(SCREENSHOT_DIR)) fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
 
-  console.log('🚀 Launching Google Chrome to record Authentic 2-Way Zoom Screen Sharing Video with Real Speech Dialogue...');
+  console.log('🚀 Launching Google Chrome to record Authentic 2-Way Zoom Video (Zero Overlap + Live High-Motion Presenter)...');
 
   const browser = await puppeteer.launch({
     executablePath: CHROME_PATH,
@@ -50,37 +50,37 @@ async function run() {
     fullPage: false
   });
 
-  // 3. Wait for Elena's turn (Step 2: Elena explains with laser pointer)
+  // 3. Wait for Elena's turn (Step 2: Elena responds with live video & laser pointer)
   await sleep(7000);
-  console.log('📸 Capturing Step 2: Elena responds on camera and spotlights Shot 1...');
+  console.log('📸 Capturing Step 2: Elena responds with live video presenter and spotlights Shot 1...');
   await page.screenshot({
     path: path.join(SCREENSHOT_DIR, '40_live_zoom_screenshare_step2_elena_spotlight.png'),
     fullPage: false
   });
 
   // 4. Wait for Step 3: 1-Click Autonomous Fix
-  await sleep(10000);
+  await sleep(11000);
   console.log('📸 Capturing Step 3: Elena applies 1-Click Autonomous Sync, waveform locks...');
   await page.screenshot({
     path: path.join(SCREENSHOT_DIR, '41_live_zoom_screenshare_step3_autonomous_fix.png'),
     fullPage: false
   });
 
-  // 5. Record Master 30s Video with 2-Way Audio Stems directly
-  console.log('🎥 Recording 30s Master Video with synchronized 2-way dialogue audio...');
+  // 5. Record Master 30s Video with Strictly Calibrated Non-Overlapping Audio
+  console.log('🎥 Recording 30s Master Video with synchronized, non-overlapping 2-way dialogue & live video clone...');
 
   const videoBase64 = await page.evaluate(async () => {
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const dest = audioCtx.createMediaStreamDestination();
 
-    // Fetch and schedule all 6 audio dialogue clips
+    // Strictly Non-Overlapping Dialogue Timetable
     const audioClips = [
-      { url: '/assets/audio/user_1.wav', time: 0.2 },
-      { url: '/assets/audio/elena_1.wav', time: 6.0 },
-      { url: '/assets/audio/user_2.wav', time: 15.0 },
-      { url: '/assets/audio/elena_2.wav', time: 18.0 },
-      { url: '/assets/audio/user_3.wav', time: 26.0 },
-      { url: '/assets/audio/elena_3.wav', time: 28.0 }
+      { url: '/assets/audio/user_1.wav', time: 0.20 },
+      { url: '/assets/audio/elena_1.wav', time: 6.62 },
+      { url: '/assets/audio/user_2.wav', time: 14.52 },
+      { url: '/assets/audio/elena_2.wav', time: 17.43 },
+      { url: '/assets/audio/user_3.wav', time: 25.69 },
+      { url: '/assets/audio/elena_3.wav', time: 27.85 }
     ];
 
     for (const clip of audioClips) {
@@ -103,12 +103,13 @@ async function run() {
     canvas.height = 900;
     const ctx = canvas.getContext('2d');
 
-    // Load Elena's video
+    // Load High-Motion Presenter Video for Elena
     const elenaVid = document.createElement('video');
-    elenaVid.src = '/assets/video/veo_aria_master.mp4';
+    elenaVid.src = '/assets/video/veo_priya_24s_master.mp4';
     elenaVid.crossOrigin = 'anonymous';
     elenaVid.loop = true;
     elenaVid.muted = true;
+    elenaVid.playsInline = true;
     await elenaVid.play().catch(() => {});
 
     const canvasStream = canvas.captureStream(30);
@@ -131,7 +132,7 @@ async function run() {
     recorder.start(500);
 
     const startTime = Date.now();
-    const duration = 30000;
+    const duration = 30200; // 30.2 seconds
 
     return new Promise(resolve => {
       function draw() {
@@ -172,7 +173,7 @@ async function run() {
 
         // Beats Timeline
         const beats = [
-          { name: 'Shot 1: 3-Second Curiosity Hook', range: '0:00 - 0:03', status: elapsed > 18000 ? '✅ 94.8% RETENTION (SYNCHRONIZED)' : '⚠️ UNLINKED STEM (-14% DROP)', color: elapsed > 18000 ? '#10b981' : '#f59e0b' },
+          { name: 'Shot 1: 3-Second Curiosity Hook', range: '0:00 - 0:03', status: elapsed > 17430 ? '✅ 94.8% RETENTION (SYNCHRONIZED)' : '⚠️ UNLINKED STEM (-14% DROP)', color: elapsed > 17430 ? '#10b981' : '#f59e0b' },
           { name: 'Shot 2: Problem & Tension Escalation', range: '0:03 - 0:11', status: '✅ SYNCHRONIZED', color: '#10b981' },
           { name: 'Shot 3: Technical Breakthrough Showcase', range: '0:11 - 0:22', status: '✅ SYNCHRONIZED', color: '#10b981' },
           { name: 'Shot 4: High-Converting CTA & Outro', range: '0:22 - 0:30', status: '✅ READY FOR 4K EXPORT', color: '#14b8a6' }
@@ -180,10 +181,10 @@ async function run() {
 
         beats.forEach((b, i) => {
           const y = 135 + i * 95;
-          const isTarget = i === 0 && elapsed < 18000;
+          const isTarget = i === 0 && elapsed < 17430;
           ctx.fillStyle = isTarget ? '#1e1b4b' : '#111827';
           ctx.fillRect(44, y, 960, 80);
-          ctx.strokeStyle = isTarget ? '#818cf8' : (i === 0 && elapsed >= 18000 ? '#10b981' : '#374151');
+          ctx.strokeStyle = isTarget ? '#818cf8' : (i === 0 && elapsed >= 17430 ? '#10b981' : '#374151');
           ctx.lineWidth = isTarget ? 2 : 1;
           ctx.strokeRect(44, y, 960, 80);
 
@@ -212,17 +213,17 @@ async function run() {
 
         // Draw animated waveform
         for (let k = 0; k < 40; k++) {
-          const h = elapsed > 18000 ? (15 + 25 * Math.sin(k * 0.4)) : (k < 10 ? 8 : 20 + 10 * Math.sin(k * 0.5));
-          ctx.fillStyle = elapsed > 18000 ? '#14b8a6' : (k < 10 ? '#f59e0b' : '#475569');
+          const h = elapsed > 17430 ? (15 + 25 * Math.sin(k * 0.4 + elapsed / 300)) : (k < 10 ? 8 : 20 + 10 * Math.sin(k * 0.5));
+          ctx.fillStyle = elapsed > 17430 ? '#14b8a6' : (k < 10 ? '#f59e0b' : '#475569');
           ctx.fillRect(64 + k * 23, 640 - h / 2, 12, h);
         }
 
         // Draw retention curve
-        ctx.strokeStyle = elapsed > 18000 ? '#10b981' : '#f59e0b';
+        ctx.strokeStyle = elapsed > 17430 ? '#10b981' : '#f59e0b';
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.moveTo(64, 700);
-        if (elapsed > 18000) {
+        if (elapsed > 17430) {
           ctx.bezierCurveTo(250, 610, 500, 620, 980, 630);
         } else {
           ctx.bezierCurveTo(250, 680, 500, 710, 980, 715);
@@ -230,8 +231,11 @@ async function run() {
         ctx.stroke();
 
         // 3. Right Column: 2-Way Video Tiles (Elena + Nitin)
-        // Tile 1: Elena Rostova (Support Agent)
-        const isElenaSpeaking = (elapsed >= 6000 && elapsed < 15000) || (elapsed >= 18000 && elapsed < 26000) || (elapsed >= 28000);
+        // Strictly non-overlapping speaker detection
+        const isElenaSpeaking = (elapsed >= 6620 && elapsed < 14070) || (elapsed >= 17430 && elapsed < 25240) || (elapsed >= 27850);
+        const isUserSpeaking = (elapsed >= 200 && elapsed < 6170) || (elapsed >= 14520 && elapsed < 16980) || (elapsed >= 25690 && elapsed < 27400);
+
+        // Tile 1: Elena Rostova (Support Agent - High Motion Live Video)
         ctx.fillStyle = isElenaSpeaking ? '#042f2e' : '#0b0f17';
         ctx.fillRect(1044, 76, 372, 290);
         ctx.strokeStyle = isElenaSpeaking ? '#14b8a6' : '#1e293b';
@@ -242,16 +246,18 @@ async function run() {
         ctx.font = 'bold 12px monospace';
         ctx.fillText(isElenaSpeaking ? '● ELENA ROSTOVA (SPEAKING)' : 'ELENA ROSTOVA (AI SUPPORT)', 1060, 100);
 
-        ctx.drawImage(elenaVid, 1060, 112, 340, 200);
+        // Render Live Presenter Video continuously
+        try {
+          ctx.drawImage(elenaVid, 1060, 112, 340, 200);
+        } catch (err) {}
 
         ctx.fillStyle = '#020617';
         ctx.fillRect(1060, 320, 340, 36);
-        ctx.fillStyle = '#2dd4bf';
+        ctx.fillStyle = isElenaSpeaking ? '#2dd4bf' : '#64748b';
         ctx.font = 'bold 11px monospace';
-        ctx.fillText(isElenaSpeaking ? '🎙️ Spoken Audio: 144 WPM (Active)' : '🎙️ Microphone: Standby', 1075, 342);
+        ctx.fillText(isElenaSpeaking ? '🎙️ Spoken Audio: 144 WPM (Active)' : '🎙️ Microphone: Standby (Listening)', 1075, 342);
 
         // Tile 2: Nitin Aggarwal (User Webcam)
-        const isUserSpeaking = (elapsed < 6000) || (elapsed >= 15000 && elapsed < 18000) || (elapsed >= 26000 && elapsed < 28000);
         ctx.fillStyle = isUserSpeaking ? '#082f49' : '#0b0f17';
         ctx.fillRect(1044, 380, 372, 270);
         ctx.strokeStyle = isUserSpeaking ? '#38bdf8' : '#1e293b';
@@ -262,47 +268,47 @@ async function run() {
         ctx.font = 'bold 12px monospace';
         ctx.fillText(isUserSpeaking ? '● NITIN AGGARWAL (SPEAKING)' : 'NITIN AGGARWAL (CREATOR)', 1060, 404);
 
-        // User Webcam Avatar Frame
-        ctx.fillStyle = '#1e293b';
+        // User Webcam Avatar Frame with active dynamic speaking pulse
+        ctx.fillStyle = isUserSpeaking ? '#0c4a6e' : '#1e293b';
         ctx.fillRect(1060, 416, 340, 180);
         ctx.beginPath();
-        ctx.arc(1230, 485, 36, 0, Math.PI * 2);
-        ctx.fillStyle = '#64748b';
+        ctx.arc(1230, 485, isUserSpeaking ? 38 + 2 * Math.sin(elapsed / 100) : 36, 0, Math.PI * 2);
+        ctx.fillStyle = isUserSpeaking ? '#38bdf8' : '#64748b';
         ctx.fill();
         ctx.beginPath();
         ctx.arc(1230, 580, 60, Math.PI, 0);
-        ctx.fillStyle = '#475569';
+        ctx.fillStyle = isUserSpeaking ? '#0284c7' : '#475569';
         ctx.fill();
 
         ctx.fillStyle = '#020617';
         ctx.fillRect(1060, 604, 340, 36);
-        ctx.fillStyle = '#38bdf8';
+        ctx.fillStyle = isUserSpeaking ? '#38bdf8' : '#64748b';
         ctx.font = 'bold 11px monospace';
-        ctx.fillText(isUserSpeaking ? '🎙️ Nitin Speaking (48kHz AEC)' : '🎙️ Nitin Listening', 1075, 626);
+        ctx.fillText(isUserSpeaking ? '🎙️ Nitin Speaking (48kHz AEC Active)' : '🎙️ Nitin Listening (Duplex AEC)', 1075, 626);
 
         // Diagnostic action badge
-        ctx.fillStyle = elapsed > 18000 ? '#064e3b' : '#78350f';
+        ctx.fillStyle = elapsed > 17430 ? '#064e3b' : '#78350f';
         ctx.fillRect(1044, 665, 372, 90);
-        ctx.strokeStyle = elapsed > 18000 ? '#10b981' : '#f59e0b';
+        ctx.strokeStyle = elapsed > 17430 ? '#10b981' : '#f59e0b';
         ctx.strokeRect(1044, 665, 372, 90);
 
         ctx.fillStyle = '#f9fafb';
         ctx.font = 'bold 13px sans-serif';
-        ctx.fillText(elapsed > 18000 ? '✅ 1-Click Autonomous Fix Applied' : '⚠️ Action: Unlinked Hook Audio', 1064, 695);
-        ctx.fillStyle = elapsed > 18000 ? '#a7f3d0' : '#fde68a';
+        ctx.fillText(elapsed > 17430 ? '✅ 1-Click Autonomous Fix Applied' : '⚠️ Action: Unlinked Hook Audio', 1064, 695);
+        ctx.fillStyle = elapsed > 17430 ? '#a7f3d0' : '#fde68a';
         ctx.font = '11px monospace';
-        ctx.fillText(elapsed > 18000 ? 'Timeline Locked • Ready for 4K Export' : 'Elena spotlighting Shot 1 inspector', 1064, 725);
+        ctx.fillText(elapsed > 17430 ? 'Timeline Locked • Ready for 4K Export' : 'Elena spotlighting Shot 1 inspector', 1064, 725);
 
         // 4. Laser Pointer from Elena Over Nitin's Screen
         let lx = 350;
         let ly = 180;
-        if (elapsed < 6000) {
+        if (elapsed < 6620) {
           lx = 350 + Math.sin(elapsed / 500) * 40;
           ly = 180 + Math.cos(elapsed / 500) * 20;
-        } else if (elapsed <= 15000) {
+        } else if (elapsed <= 17430) {
           lx = 600 + Math.sin(elapsed / 300) * 30;
           ly = 180 + Math.cos(elapsed / 300) * 15;
-        } else if (elapsed <= 26000) {
+        } else if (elapsed <= 25690) {
           lx = 750 + Math.sin(elapsed / 400) * 20;
           ly = 180;
         } else {
@@ -325,35 +331,35 @@ async function run() {
         ctx.font = 'bold 11px monospace';
         ctx.fillText("Elena's Laser Spotlight", lx + 22, ly + 1);
 
-        // 5. Bottom Captions (Live Synchronized Dialogue)
+        // 5. Bottom Captions (Live Synchronized Dialogue - Zero Overlap)
         ctx.fillStyle = '#0b0f17';
         ctx.fillRect(0, 770, 1440, 130);
         ctx.strokeStyle = '#1e293b';
         ctx.strokeRect(0, 770, 1440, 130);
 
         let speaker = 'Nitin Aggarwal (Creator)';
-        let line = '“Hey Elena, my 4-shot reel in Studio Cinema won\'t sync audio on Shot 1, and my predicted retention is stuck at 42%. Can you look at my screen and help me fix this?”';
+        let line = '“Hey Elena, my 4-shot reel timeline won\'t sync audio on Shot 1. Can you help me fix this?”';
         let speakerColor = '#38bdf8';
 
-        if (elapsed >= 6000 && elapsed < 15000) {
+        if (elapsed >= 6620 && elapsed < 14070) {
           speaker = 'Elena Rostova (AI Support Engineer)';
-          line = '“Hi Nitin! I am connected to your screen right now. I see the issue immediately—your Shot 1 audio stem is unlinked from the 3-second curiosity hook. See my laser spotlight on your timeline right here.”';
+          line = '“Hi Nitin! I see your screen right now. Your Shot 1 audio stem is unlinked from the hook. Look at my laser spotlight on your timeline.”';
           speakerColor = '#14b8a6';
-        } else if (elapsed >= 15000 && elapsed < 18000) {
+        } else if (elapsed >= 14070 && elapsed < 17430) {
           speaker = 'Nitin Aggarwal (Creator)';
-          line = '“Got it! Should I rebuild the beat plan or can you auto-sync it for me?”';
+          line = '“Got it! Can you auto sync it for me?”';
           speakerColor = '#38bdf8';
-        } else if (elapsed >= 18000 && elapsed < 26000) {
+        } else if (elapsed >= 17430 && elapsed < 25690) {
           speaker = 'Elena Rostova (AI Support Engineer)';
-          line = '“I will trigger the 1-Click Autonomous Sync directly on your canvas. Watch your waveform auto-align... There, your retention score just jumped to 94.8% and your 4-shot sequence is ready for 4K export!”';
+          line = '“I am triggering One Click Autonomous Sync now. There, your retention jumped to 94.8% and your reel is ready for 4K export!”';
           speakerColor = '#14b8a6';
-        } else if (elapsed >= 26000 && elapsed < 28000) {
+        } else if (elapsed >= 25690 && elapsed < 27850) {
           speaker = 'Nitin Aggarwal (Creator)';
-          line = '“Awesome, that completely fixed it. Thanks Elena!”';
+          line = '“Awesome, thank you Elena!”';
           speakerColor = '#38bdf8';
-        } else if (elapsed >= 28000) {
+        } else if (elapsed >= 27850) {
           speaker = 'Elena Rostova (AI Support Engineer)';
-          line = '“You\'re very welcome Nitin! Reach out anytime if you need another review.”';
+          line = '“You are welcome Nitin! Happy creating!”';
           speakerColor = '#14b8a6';
         }
 
@@ -386,11 +392,9 @@ async function run() {
   });
 
   const base64Data = videoBase64.replace(/^data:video\/\w+;base64,/, '');
-  const webmPath = path.join(VIDEO_DIR, 'virtual_copilot_screenshare_30s.webm');
   const mp4Path = path.join(VIDEO_DIR, 'virtual_copilot_screenshare_30s.mp4');
 
-  fs.writeFileSync(webmPath, Buffer.from(base64Data, 'base64'));
-  fs.copyFileSync(webmPath, mp4Path);
+  fs.writeFileSync(mp4Path, Buffer.from(base64Data, 'base64'));
 
   const stats = fs.statSync(mp4Path);
   console.log(`🎉 Master Video Generated Successfully! Size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
