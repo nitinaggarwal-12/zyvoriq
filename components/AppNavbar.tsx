@@ -39,7 +39,7 @@ export function AppNavbar() {
     { name: "Create Video", href: "/studio/create", icon: Sparkles },
     { name: "Library", href: "/studio/library", icon: Film },
     { name: "Pre-Demo NDA", href: "/nda/sign", icon: Lock },
-    { name: "Governance", href: "/governance", icon: ShieldCheck },
+    { name: "Moderation", href: "/admin/moderation", icon: ShieldCheck },
     { name: "Admin Data", href: "/dashboard", icon: BarChart3 },
   ];
 
