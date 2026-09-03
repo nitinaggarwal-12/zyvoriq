@@ -22,10 +22,12 @@ import {
   Hash,
   Eye,
   Check,
-  Copy
+  Copy,
+  Globe,
+  Award
 } from "lucide-react";
 import { DigitalSignaturePad } from "@/components/DigitalSignaturePad";
-import { STANDARD_NDA_LEGAL_CLAUSES } from "@/lib/compliance/ndaSigningEngine";
+import { MULTILINGUAL_NDA_CLAUSES, NdaLanguage } from "@/lib/compliance/ndaSigningEngine";
 
 function NdaSignContent() {
   const searchParams = useSearchParams();
@@ -36,8 +38,10 @@ function NdaSignContent() {
   const initialName = searchParams.get("name") || "";
   const initialCompany = searchParams.get("company") || "";
   const initialDemo = searchParams.get("demo") || "Zyvoriq 4K Autonomous AI Studio & Multi-Shot Director Demo";
+  const initialLang = (searchParams.get("lang") as NdaLanguage) || "en";
 
-  // Form State
+  // Form & Language State
+  const [selectedLanguage, setSelectedLanguage] = useState<NdaLanguage>(initialLang);
   const [signerName, setSignerName] = useState(initialName);
   const [signerCompany, setSignerCompany] = useState(initialCompany);
   const [signerTitle, setSignerTitle] = useState("Technology Leader / Director");
@@ -59,6 +63,8 @@ function NdaSignContent() {
   const [emailStatus, setEmailStatus] = useState<string | null>(null);
   const [copiedHash, setCopiedHash] = useState(false);
 
+  const activeClauses = MULTILINGUAL_NDA_CLAUSES[selectedLanguage]?.clauses || MULTILINGUAL_NDA_CLAUSES.en.clauses;
+
   // Check if token was already signed
   useEffect(() => {
     if (token && token !== "demo_session_unbound") {
@@ -73,6 +79,7 @@ function NdaSignContent() {
             setSignerEmail(data.agreement.recipientEmail);
             setAuditHash(data.agreement.sha256AuditHash || "sha256_verified_token");
             setSignedAtTimestamp(data.agreement.signedAt || new Date().toISOString());
+            if (data.agreement.language) setSelectedLanguage(data.agreement.language);
             if (data.agreement.signatureDataUrl) {
               setSignatureDataUrl(data.agreement.signatureDataUrl);
             }
@@ -117,7 +124,8 @@ function NdaSignContent() {
           recipientTitle: signerTitle,
           demoType,
           signatureDataUrl,
-          signatureType
+          signatureType,
+          language: selectedLanguage
         })
       });
 
@@ -131,7 +139,6 @@ function NdaSignContent() {
       }
     } catch (err: any) {
       console.error(err);
-      // Fallback local sign if offline
       setIsSigned(true);
       const now = new Date().toISOString();
       setSignedAtTimestamp(now);
@@ -175,7 +182,7 @@ function NdaSignContent() {
   return (
     <main className="min-h-screen bg-[#07090e] text-slate-100 font-sans selection:bg-teal-500 selection:text-black">
       
-      {/* 1. STICKY TOP HEADER */}
+      {/* 1. STICKY TOP HEADER WITH MULTILINGUAL SWITCHER */}
       <header className="sticky top-0 z-40 border-b border-slate-800/90 bg-[#0b0f17]/95 backdrop-blur-md px-6 md:px-12 py-3.5 print:hidden">
         <div className="max-w-[1600px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -190,9 +197,25 @@ function NdaSignContent() {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs font-mono text-slate-400">
-              <Lock className="w-3.5 h-3.5 text-teal-400" />
-              <span>TLS 1.3 256-Bit Encrypted Portal</span>
+            
+            {/* MULTILINGUAL LANGUAGE SWITCHER */}
+            <div className="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+              {(Object.keys(MULTILINGUAL_NDA_CLAUSES) as NdaLanguage[]).map((lang) => (
+                <button
+                  key={lang}
+                  type="button"
+                  onClick={() => setSelectedLanguage(lang)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1 ${
+                    selectedLanguage === lang
+                      ? "bg-teal-500/20 text-teal-300 border border-teal-500/40 shadow-sm"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                  title={MULTILINGUAL_NDA_CLAUSES[lang].languageName}
+                >
+                  <span>{MULTILINGUAL_NDA_CLAUSES[lang].flag}</span>
+                  <span className="uppercase">{lang}</span>
+                </button>
+              ))}
             </div>
 
             <Link
@@ -225,14 +248,14 @@ function NdaSignContent() {
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono text-xs font-bold border border-emerald-500/30">
-                        MUTUAL NDA EXECUTED &amp; VERIFIED
+                        DUAL-SIDED MUTUAL NDA EXECUTED &amp; SEALED
                       </span>
                       <span className="text-xs font-mono text-slate-400">
                         Token: {token}
                       </span>
                     </div>
                     <h1 className="text-2xl md:text-3xl font-black text-white">
-                      Pre-Demonstration Confidentiality Agreement
+                      Pre-Demonstration Confidentiality Certificate
                     </h1>
                   </div>
                 </div>
@@ -281,23 +304,20 @@ function NdaSignContent() {
                       {copiedHash ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
                   </div>
-                  <span className="text-[10px] text-emerald-400 font-mono">● C2PA Provenance Locked</span>
+                  <span className="text-[10px] text-emerald-400 font-mono">● Dual Counter-Signature Affixed</span>
                 </div>
               </div>
 
               {/* POST-SIGNING ACTION TOOLBAR (Download, Print, Email) */}
               <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-slate-800/80 print:hidden">
-                
-                {/* 1. Download PDF */}
                 <button
                   onClick={handlePrint}
                   className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-mono text-xs font-bold flex items-center gap-2 border border-slate-700 transition-all shadow-md"
                 >
                   <Download className="w-4 h-4 text-teal-400" />
-                  <span>Download Signed PDF</span>
+                  <span>Download Dual-Signed PDF</span>
                 </button>
 
-                {/* 2. Print Document */}
                 <button
                   onClick={handlePrint}
                   className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-mono text-xs font-bold flex items-center gap-2 border border-slate-700 transition-all shadow-md"
@@ -306,7 +326,6 @@ function NdaSignContent() {
                   <span>Print Document</span>
                 </button>
 
-                {/* 3. Send Email Copy */}
                 <button
                   onClick={handleSendEmailCopy}
                   className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-mono text-xs font-bold flex items-center gap-2 border border-slate-700 transition-all shadow-md"
@@ -321,7 +340,6 @@ function NdaSignContent() {
                   </span>
                 </button>
 
-                {/* 4. Direct Link to Admin Dashboard */}
                 <Link
                   href="/admin/agreements"
                   className="px-4 py-2.5 rounded-xl bg-slate-900 text-slate-300 hover:text-white font-mono text-xs font-bold flex items-center gap-2 border border-slate-800 transition-all ml-auto"
@@ -329,16 +347,15 @@ function NdaSignContent() {
                   <span>View All Agreements</span>
                   <ExternalLink className="w-3.5 h-3.5" />
                 </Link>
-
               </div>
 
             </div>
 
-            {/* FULL PRINTABLE DOCUMENT VIEW */}
+            {/* FULL PRINTABLE DOCUMENT VIEW WITH DUAL SIGNATURES & SEAL */}
             <div className="rounded-3xl border border-slate-800 bg-[#0d121d] p-8 md:p-12 shadow-2xl space-y-6 text-slate-300">
               <div className="text-center border-b border-slate-800 pb-6">
                 <span className="text-xs font-mono text-teal-400 font-bold uppercase tracking-widest">
-                  CONFIDENTIAL LEGAL INSTRUMENT
+                  CONFIDENTIAL LEGAL INSTRUMENT • {MULTILINGUAL_NDA_CLAUSES[selectedLanguage].languageName.toUpperCase()}
                 </span>
                 <h2 className="text-xl md:text-2xl font-black text-white mt-1">
                   NON-DISCLOSURE &amp; PROPRIETARY TECHNOLOGY EVALUATION AGREEMENT
@@ -349,7 +366,7 @@ function NdaSignContent() {
               </div>
 
               <div className="space-y-4 text-xs md:text-sm leading-relaxed text-slate-300">
-                {STANDARD_NDA_LEGAL_CLAUSES.map((clause) => (
+                {activeClauses.map((clause) => (
                   <div key={clause.clauseNumber} className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80">
                     <h3 className="font-bold text-slate-100 mb-1">
                       {clause.clauseNumber} {clause.title}
@@ -361,29 +378,46 @@ function NdaSignContent() {
                 ))}
               </div>
 
-              {/* Digital Signature Block */}
+              {/* DUAL COUNTER-SIGNATURE & OFFICIAL CORPORATE SEAL BLOCK */}
               <div className="border-t border-slate-800 pt-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                {/* 1. DISCLOSING PARTY: ZYVORIQ, INC. (Counter-Signature & Seal) */}
                 <div>
-                  <span className="text-xs font-mono text-slate-400 block mb-2">DISCLOSING PARTY: ZYVORIQ, INC.</span>
-                  <div className="h-20 border border-slate-800 rounded-xl bg-slate-950 p-3 flex flex-col justify-between">
-                    <span className="italic font-serif text-teal-400 text-lg">Elena Rostova</span>
-                    <span className="text-[10px] font-mono text-slate-500">Authorized Officer • Zyvoriq Autonomous Systems</span>
-                  </div>
-                </div>
-
-                <div>
-                  <span className="text-xs font-mono text-slate-400 block mb-2">RECEIVING PARTY: {signerCompany.toUpperCase()}</span>
-                  <div className="h-20 border border-emerald-500/40 rounded-xl bg-slate-950 p-3 flex flex-col justify-between overflow-hidden">
-                    {signatureDataUrl ? (
-                      <img src={signatureDataUrl} alt="Signer Signature" className="h-10 object-contain self-start" />
-                    ) : (
-                      <span className="italic font-serif text-teal-300 text-lg">{signerName}</span>
-                    )}
-                    <span className="text-[10px] font-mono text-emerald-400">
-                      Digitally Executed • {signedAtTimestamp ? new Date(signedAtTimestamp).toLocaleString() : "Verified"}
+                  <span className="text-xs font-mono text-slate-400 block mb-2">DISCLOSING PARTY: ZYVORIQ, INC. (AUTHORIZED SEAL)</span>
+                  <div className="border border-teal-500/40 rounded-xl bg-slate-950 p-4 flex flex-col justify-between space-y-2 relative overflow-hidden">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="italic font-serif text-teal-400 text-xl font-bold block">Elena Rostova</span>
+                        <span className="text-[10px] font-mono text-slate-400">Authorized Officer • Zyvoriq Autonomous Systems</span>
+                      </div>
+                      <div className="h-10 w-10 rounded-full border border-teal-500/40 bg-teal-500/10 flex items-center justify-center text-teal-300">
+                        <Award className="w-5 h-5" />
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-mono text-teal-400">
+                      ✓ Corporate Counter-Signature Executed • {signedAtTimestamp ? new Date(signedAtTimestamp).toLocaleString() : "Official Seal Locked"}
                     </span>
                   </div>
                 </div>
+
+                {/* 2. RECEIVING PARTY: CLIENT */}
+                <div>
+                  <span className="text-xs font-mono text-slate-400 block mb-2">RECEIVING PARTY: {signerCompany.toUpperCase()}</span>
+                  <div className="border border-emerald-500/40 rounded-xl bg-slate-950 p-4 flex flex-col justify-between space-y-2 overflow-hidden">
+                    <div>
+                      {signatureDataUrl ? (
+                        <img src={signatureDataUrl} alt="Signer Signature" className="h-10 object-contain self-start" />
+                      ) : (
+                        <span className="italic font-serif text-teal-300 text-xl block">{signerName}</span>
+                      )}
+                      <span className="text-[10px] font-mono text-slate-400">{signerName} • {signerTitle}</span>
+                    </div>
+                    <span className="text-[10px] font-mono text-emerald-400">
+                      ✓ Digitally Executed • {signedAtTimestamp ? new Date(signedAtTimestamp).toLocaleString() : "Verified"}
+                    </span>
+                  </div>
+                </div>
+
               </div>
 
             </div>
@@ -403,7 +437,10 @@ function NdaSignContent() {
                     <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
                     <span>PRE-DEMONSTRATION COMPLIANCE</span>
                   </div>
-                  <span className="text-xs font-mono text-slate-400">Standard 3-Year Protection</span>
+                  <span className="text-xs font-mono text-emerald-400 flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>72-Hour Validity Lock</span>
+                  </span>
                 </div>
 
                 <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
@@ -415,8 +452,8 @@ function NdaSignContent() {
                 </p>
 
                 <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between text-xs font-mono text-slate-400">
-                  <span>Demo Scope:</span>
-                  <strong className="text-teal-300">{demoType}</strong>
+                  <span>Language / 言語:</span>
+                  <strong className="text-teal-300">{MULTILINGUAL_NDA_CLAUSES[selectedLanguage].flag} {MULTILINGUAL_NDA_CLAUSES[selectedLanguage].languageName}</strong>
                 </div>
               </div>
 
@@ -425,13 +462,13 @@ function NdaSignContent() {
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
                     <FileText className="w-4 h-4 text-teal-400" />
-                    <span>Summary of Legal Obligations</span>
+                    <span>Summary of Legal Obligations ({MULTILINGUAL_NDA_CLAUSES[selectedLanguage].languageName})</span>
                   </h3>
-                  <span className="text-xs font-mono text-slate-400">6 Clauses</span>
+                  <span className="text-xs font-mono text-slate-400">{activeClauses.length} Clauses</span>
                 </div>
 
                 <div className="space-y-3 max-h-[480px] overflow-y-auto pr-2 custom-scrollbar">
-                  {STANDARD_NDA_LEGAL_CLAUSES.map((clause) => (
+                  {activeClauses.map((clause) => (
                     <div
                       key={clause.clauseNumber}
                       className="p-4 rounded-2xl bg-[#090d16] border border-slate-800/80 hover:border-slate-700 transition-all space-y-1.5"
@@ -473,16 +510,14 @@ function NdaSignContent() {
                     <label className="block text-xs font-mono text-slate-300 mb-1">
                       Full Legal Name *
                     </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        required
-                        value={signerName}
-                        onChange={(e) => setSignerName(e.target.value)}
-                        placeholder="e.g. Nitin Aggarwal"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#070a12] border border-slate-700 text-slate-100 text-sm focus:outline-none focus:border-teal-400 font-medium"
-                      />
-                    </div>
+                    <input
+                      type="text"
+                      required
+                      value={signerName}
+                      onChange={(e) => setSignerName(e.target.value)}
+                      placeholder="e.g. Nitin Aggarwal"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#070a12] border border-slate-700 text-slate-100 text-sm focus:outline-none focus:border-teal-400 font-medium"
+                    />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -551,7 +586,7 @@ function NdaSignContent() {
                       className="mt-0.5 rounded border-slate-700 bg-slate-900 text-teal-500 focus:ring-teal-400 h-4 w-4"
                     />
                     <span>
-                      I have read, understood, and agree to the <strong>Pre-Demonstration Confidentiality Terms</strong>.
+                      I have read, understood, and agree to the <strong>Pre-Demonstration Confidentiality Terms</strong> ({selectedLanguage.toUpperCase()}).
                     </span>
                   </label>
 
@@ -575,7 +610,7 @@ function NdaSignContent() {
                       className="mt-0.5 rounded border-slate-700 bg-slate-900 text-teal-500 focus:ring-teal-400 h-4 w-4"
                     />
                     <span>
-                      I consent to cryptographic SHA-256 audit hashing and C2PA provenance attestation.
+                      I consent to cryptographic SHA-256 audit hashing and dual-sided counter-signing attestation.
                     </span>
                   </label>
                 </div>
