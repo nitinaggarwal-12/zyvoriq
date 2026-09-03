@@ -17,10 +17,17 @@ import {
   Play,
   Pause,
   ArrowLeft,
-  Sparkles
+  Sparkles,
+  Box,
+  Video,
+  Check,
+  Settings2
 } from "lucide-react";
+import { RealTime3DAvatarCanvas } from "@/components/RealTime3DAvatarCanvas";
 
 export default function ZoomScreenSharePage() {
+  // Pre-Session Mode Selection: Option A (Photorealistic Video) vs Option B (3D VRM Mesh)
+  const [avatarEngineMode, setAvatarEngineMode] = useState<"photorealistic" | "3d_vrm">("photorealistic");
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -185,37 +192,63 @@ export default function ZoomScreenSharePage() {
       <audio ref={audioUser3} src="/assets/audio/user_3.wav" preload="auto" muted={isMuted} />
       <audio ref={audioElena3} src="/assets/audio/elena_3.wav" preload="auto" muted={isMuted} />
 
-      {/* 1. ZOOM / MEET HEADER BAR */}
-      <header className="h-14 border-b border-slate-800/90 bg-[#0b0f17]/95 px-6 flex items-center justify-between z-30">
+      {/* 1. ZOOM / MEET HEADER BAR WITH PRE-SESSION MODE SELECTOR */}
+      <header className="h-16 border-b border-slate-800/90 bg-[#0b0f17]/95 px-6 flex items-center justify-between z-30">
         <div className="flex items-center gap-4">
           <Link
             href="/studio"
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
+            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors font-medium"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Studio</span>
           </Link>
           <div className="h-4 w-px bg-slate-800" />
+          
           <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
             <span>2-WAY ZOOM SESSION ACTIVE</span>
           </div>
-          <span className="text-xs font-mono text-slate-400 hidden sm:inline">
-            Room: #4829-9182 • Zyvoriq Live Screen Share &amp; Video Co-Presence
+
+          <span className="text-xs font-mono text-slate-400 hidden lg:inline">
+            Room: #4829-9182 • 48kHz Duplex Voice
           </span>
         </div>
 
-        <div className="flex items-center gap-3 text-xs font-mono">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-teal-300">
-            <Users className="w-3.5 h-3.5" />
-            <span>2 Participants (Nitin + Elena)</span>
+        {/* AVATAR ENGINE MODE SELECTOR: Option A vs Option B */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-800 shadow-inner">
+            <button
+              onClick={() => setAvatarEngineMode("photorealistic")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
+                avatarEngineMode === "photorealistic"
+                  ? "bg-gradient-to-r from-teal-400 to-emerald-400 text-slate-950 shadow-md"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+              title="Option A: Photorealistic Desk/Office Video Stream"
+            >
+              <Video className="w-3.5 h-3.5" />
+              <span>Option A: Desk Video</span>
+              {avatarEngineMode === "photorealistic" && <Check className="w-3 h-3 stroke-[3]" />}
+            </button>
+
+            <button
+              onClick={() => setAvatarEngineMode("3d_vrm")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
+                avatarEngineMode === "3d_vrm"
+                  ? "bg-gradient-to-r from-teal-400 to-emerald-400 text-slate-950 shadow-md"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+              title="Option B: Real-Time 3D Conversational Avatar (Three.js + VRM)"
+            >
+              <Box className="w-3.5 h-3.5" />
+              <span>Option B: 3D VRM Mesh</span>
+              {avatarEngineMode === "3d_vrm" && <Check className="w-3 h-3 stroke-[3]" />}
+            </button>
           </div>
-          <div className="hidden sm:block px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-emerald-400">
-            <span>1080p 60fps • 48kHz AEC</span>
-          </div>
+
           <Link
             href="/studio"
-            className="px-3 py-1 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500 hover:text-white transition-all font-bold"
+            className="px-3.5 py-1.5 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500 hover:text-white transition-all font-bold text-xs font-mono"
           >
             End Call
           </Link>
@@ -336,17 +369,22 @@ export default function ZoomScreenSharePage() {
               
               {/* Waveform graphic */}
               <div className="h-10 flex items-center gap-1 overflow-hidden px-2 bg-slate-900/90 rounded-lg">
-                {Array.from({ length: 48 }).map((_, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex-1 rounded-full transition-all duration-300 ${
-                      hasAppliedFix ? "bg-teal-400" : (idx < 12 ? "bg-amber-400 animate-pulse" : "bg-slate-700")
-                    }`}
-                    style={{
-                      height: `${hasAppliedFix ? 20 + 20 * Math.sin(idx * 0.4) : (idx < 12 ? 10 : 25 + 15 * Math.cos(idx * 0.5))}%`
-                    }}
-                  />
-                ))}
+                {Array.from({ length: 48 }).map((_, idx) => {
+                  const heightPercent = hasAppliedFix 
+                    ? Math.round(20 + 20 * Math.sin(idx * 0.4)) 
+                    : (idx < 12 ? 10 : Math.round(25 + 15 * Math.cos(idx * 0.5)));
+                  return (
+                    <div
+                      key={idx}
+                      className={`flex-1 rounded-full transition-all duration-300 ${
+                        hasAppliedFix ? "bg-teal-400" : (idx < 12 ? "bg-amber-400 animate-pulse" : "bg-slate-700")
+                      }`}
+                      style={{
+                        height: `${heightPercent}%`
+                      }}
+                    />
+                  );
+                })}
               </div>
             </div>
 
@@ -373,7 +411,7 @@ export default function ZoomScreenSharePage() {
         {/* 2-WAY PARTICIPANT VIDEO TILES (Right Column) */}
         <div className="space-y-4 flex flex-col justify-between">
           
-          {/* 1. SUPPORT AGENT TILE (Live High-Motion Presenter Video) */}
+          {/* 1. SUPPORT AGENT TILE: Dynamic Mode (Option A Video vs Option B 3D VRM Mesh) */}
           <div className={`p-3 rounded-2xl border transition-all ${
             activeSpeaker === "elena"
               ? "border-teal-400 bg-slate-900/90 shadow-xl shadow-teal-500/20"
@@ -384,20 +422,30 @@ export default function ZoomScreenSharePage() {
                 <span className={`h-2 w-2 rounded-full ${activeSpeaker === "elena" ? "bg-emerald-400 animate-ping" : "bg-slate-600"}`} />
                 ELENA ROSTOVA (AI SUPPORT)
               </span>
-              <span className="text-slate-400 text-[10px]">Live Video On</span>
+              <span className="text-slate-400 text-[10px]">
+                {avatarEngineMode === "photorealistic" ? "Option A: Video" : "Option B: 3D Mesh"}
+              </span>
             </div>
 
-            {/* High-Motion Presenter Video */}
+            {/* DYNAMIC RENDERING: Option A Video vs Option B 3D VRM Canvas */}
             <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-slate-800 shadow-inner">
-              <video
-                ref={agentVideoRef}
-                src="/assets/video/veo_priya_24s_master.mp4"
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="h-full w-full object-cover"
-              />
+              {avatarEngineMode === "photorealistic" ? (
+                <video
+                  ref={agentVideoRef}
+                  src="/assets/video/veo_priya_24s_master.mp4"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <RealTime3DAvatarCanvas
+                  isSpeaking={activeSpeaker === "elena"}
+                  avatarName="Elena Rostova"
+                  avatarId="elena"
+                />
+              )}
               <div className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded bg-black/80 backdrop-blur-md text-[9px] font-bold text-white flex items-center gap-1">
                 <Mic className={`w-3 h-3 ${activeSpeaker === "elena" ? "text-emerald-400 animate-bounce" : "text-slate-400"}`} />
                 <span>Elena Rostova</span>
@@ -405,8 +453,8 @@ export default function ZoomScreenSharePage() {
             </div>
 
             <div className="mt-2 flex items-center justify-between text-[10px] font-mono text-slate-400">
-              <span className="text-teal-300">Natural Voice: 144 WPM</span>
-              <span className="text-emerald-400">1080p 60fps</span>
+              <span className="text-teal-300">Natural Voice: 190 WPM</span>
+              <span className="text-emerald-400">{avatarEngineMode === "3d_vrm" ? "60fps WebGL" : "1080p 60fps"}</span>
             </div>
           </div>
 
