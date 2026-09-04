@@ -1,5 +1,5 @@
-import { Studio3 } from "./Studio3";
+import { redirect } from "next/navigation";
 
 export default function Studio3Page() {
-  return <Studio3 />;
+  redirect("/studio");
 }

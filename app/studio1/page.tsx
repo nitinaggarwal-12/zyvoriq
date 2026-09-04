@@ -1,6 +1,5 @@
-import { Studio1 } from "./Studio1";
-import { Studio1ResyncControl } from "./Studio1ResyncControl";
+import { redirect } from "next/navigation";
 
 export default function Studio1Page() {
-  return <><Studio1 /><Studio1ResyncControl /></>;
+  redirect("/studio");
 }
