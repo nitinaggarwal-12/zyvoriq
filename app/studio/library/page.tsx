@@ -22,7 +22,7 @@ import {
   Trash2,
   Video,
 } from "lucide-react";
-import { AppNavbar } from "@/components/AppNavbar";
+import { StudioSidebar } from "@/components/StudioSidebar";
 
 type Production = { id: string; revision: number; manifest: any; createdAt?: string; updatedAt?: string };
 type LegacyTrack = { id: string; title?: string; subtitle?: string; category?: string; character?: string; videoSrc?: string; duration?: number; createdAt?: string; acts?: any[] };
@@ -217,9 +217,9 @@ export default function StudioLibraryPage() {
 
   const counts = useMemo(() => Object.fromEntries(tabs.map(t => [t, t === "All" ? assets.length : assets.filter(a => a.kind === t).length])), [assets]);
 
-  return <div className="min-h-screen bg-[#07090d] text-slate-100">
-    <AppNavbar />
-    <main className="mx-auto max-w-[1720px] px-5 py-8 md:px-10">
+  return (
+    <StudioSidebar>
+      <main className="mx-auto max-w-8xl px-5 py-8 md:px-10">
       <div className="flex flex-col gap-5 border-b border-white/10 pb-7 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-teal-300"><FolderOpen className="h-4 w-4"/> Content Library</div>
@@ -295,8 +295,9 @@ export default function StudioLibraryPage() {
           {expanded && <div className="grid gap-3 border-t border-white/10 p-4 md:grid-cols-2 xl:grid-cols-4">{pa.map(a => <AssetCard key={a.id} asset={a} compact/>)}</div>}
         </div>; })}</div>
       </section>
-    </main>
-  </div>;
+      </main>
+    </StudioSidebar>
+  );
 }
 
 function Metric({ label, value }: { label: string; value: number }) { return <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4"><div className="text-[10px] font-bold uppercase tracking-wider text-slate-600">{label}</div><div className="mt-2 text-2xl font-black text-white">{value}</div></div>; }

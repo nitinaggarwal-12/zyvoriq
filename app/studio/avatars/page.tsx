@@ -30,7 +30,7 @@ import { VoiceCloneVault } from "@/components/VoiceCloneVault";
 import { MultilingualDubbingMatrix } from "@/components/MultilingualDubbingMatrix";
 import { AvatarProfileCustomizer } from "@/components/AvatarProfileCustomizer";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { AppNavbar } from "@/components/AppNavbar";
+import { StudioSidebar } from "@/components/StudioSidebar";
 
 const AVATAR_CATEGORIES = [
   { id: "all", label: "🌟 All 14 Global Cast & Avatars", count: 14 },
@@ -122,12 +122,10 @@ function AvatarsPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-teal-500/30 selection:text-teal-200">
-      <AppNavbar />
-
+    <StudioSidebar>
       {/* Sub-Header Breadcrumb Bar */}
       <div className="border-b border-slate-800/80 bg-slate-950/60 backdrop-blur-md">
-        <div className="max-w-[1720px] mx-auto px-6 sm:px-8 lg:px-12 h-14 flex items-center justify-between">
+        <div className="max-w-8xl mx-auto px-6 sm:px-8 lg:px-12 h-14 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
               href="/studio"
@@ -154,7 +152,7 @@ function AvatarsPageContent() {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-[1720px] mx-auto px-6 sm:px-8 lg:px-12 py-10 space-y-8">
+      <main className="max-w-8xl mx-auto px-6 sm:px-8 lg:px-12 py-10 space-y-8">
         {/* Hero Header */}
         <div className="relative rounded-3xl overflow-hidden border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-8 sm:p-12">
           <div className="relative z-10 max-w-3xl space-y-4">
@@ -316,7 +314,7 @@ function AvatarsPageContent() {
           </div>
         )}
       </main>
-    </div>
+    </StudioSidebar>
   );
 }
 

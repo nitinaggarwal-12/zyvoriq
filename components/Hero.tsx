@@ -1,82 +1,270 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Sparkles, Play, Captions, WandSparkles, Languages, Music2, Clapperboard } from "lucide-react";
+import {
+  ArrowRight,
+  Sparkles,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  ShieldCheck,
+  Zap,
+  Smile,
+  Flame,
+  ShoppingBag,
+  Film,
+  Compass,
+  WandSparkles,
+  Clapperboard,
+  Captions,
+  Music2,
+  Languages
+} from "lucide-react";
+
+const ONBOARDING_REELS = [
+  {
+    id: "kids_pixar",
+    title: "Kids & Family",
+    sub: "Pixar 3D CGI",
+    icon: Smile,
+    videoSrc: "/assets/video/persona1_pixar_kids_reel.mp4",
+    badge: "1080p60 · PIXAR 3D ENGINE",
+    hook: "A curious robot named Pip plants a glowing flower on the moon",
+    caption: "“Every tiny spark begins a grand adventure.”",
+    color: "from-pink-500 to-rose-500",
+    border: "border-pink-500/40 text-pink-300"
+  },
+  {
+    id: "anime_shonen",
+    title: "Anime & Manga",
+    sub: "Shōnen Action",
+    icon: Zap,
+    videoSrc: "/assets/video/persona2_anime_shonen_reel.mp4",
+    badge: "4K 60FPS · UFOTABLE SAKUGA",
+    hook: "Sensei Ren & Apprentice Aoi unleash the secret Mushin technique",
+    caption: "“Focus your mind until thunder turns to silence.”",
+    color: "from-purple-500 to-indigo-500",
+    border: "border-purple-500/40 text-purple-300"
+  },
+  {
+    id: "viral_influencer",
+    title: "Viral Influencer",
+    sub: "Split ASMR Reel",
+    icon: Flame,
+    videoSrc: "/assets/video/persona3_viral_influencer_reel.mp4",
+    badge: "9:16 VERTICAL · 84% RETENTION",
+    hook: "3 daily micro-habits quietly destroying your focus",
+    caption: "“The third one feels productive—but is pure friction.”",
+    color: "from-red-500 to-orange-500",
+    border: "border-red-500/40 text-red-300"
+  },
+  {
+    id: "ugc_ecommerce",
+    title: "E-Com UGC Ads",
+    sub: "DTC Conversion",
+    icon: ShoppingBag,
+    videoSrc: "/assets/video/persona4_ugc_ecommerce_reel.mp4",
+    badge: "ROAS 4.8X · TIKTOK & REELS",
+    hook: "Watch the instant brightening serum test in real sunlight",
+    caption: "“Zero filters. Just pure 72-hour deep hydration.”",
+    color: "from-amber-500 to-yellow-500",
+    border: "border-amber-500/40 text-amber-300"
+  },
+  {
+    id: "cinema_noir",
+    title: "A24 Cinema",
+    sub: "35mm Neo-Noir",
+    icon: Film,
+    videoSrc: "/assets/video/persona5_arthouse_cinema_reel.mp4",
+    badge: "2.39:1 ANAMORPHIC · KODAK 5219",
+    hook: "Midnight rain in the neon labyrinth of District 9",
+    caption: "“Some truths only reveal themselves after dark.”",
+    color: "from-indigo-500 to-cyan-500",
+    border: "border-indigo-500/40 text-indigo-300"
+  },
+  {
+    id: "heritage_lore",
+    title: "Heritage Lore",
+    sub: "Indian Epics & BBC",
+    icon: Compass,
+    videoSrc: "/assets/video/persona6_heritage_mythology_reel.mp4",
+    badge: "BBC DOCUMENTARY · 4K MASTER",
+    hook: "Ancient celestial architectural marvels lost in time",
+    caption: "“Carved into granite stone over a thousand years ago.”",
+    color: "from-emerald-500 to-teal-500",
+    border: "border-emerald-500/40 text-emerald-300"
+  }
+];
 
 export function Hero() {
+  const [activeReelIndex, setActiveReelIndex] = useState(0);
+  const [isMuted, setIsMuted] = useState(true);
+
+  const activeReel = ONBOARDING_REELS[activeReelIndex];
+
   return (
     <section className="relative overflow-hidden border-b border-white/5">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[620px] bg-[radial-gradient(circle_at_50%_0%,rgba(236,72,153,0.16),transparent_38%),radial-gradient(circle_at_75%_15%,rgba(45,212,191,0.14),transparent_28%)]" />
-      <div className="relative mx-auto grid max-w-[1500px] gap-12 px-6 pb-20 pt-16 md:px-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:pb-28 lg:pt-24">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[680px] bg-[radial-gradient(circle_at_50%_0%,rgba(236,72,153,0.16),transparent_38%),radial-gradient(circle_at_75%_15%,rgba(45,212,191,0.14),transparent_28%)]" />
+      <div className="relative mx-auto grid max-w-[1580px] gap-12 px-6 pb-20 pt-16 md:px-12 lg:grid-cols-[0.88fr_1.12fr] lg:items-center lg:pb-28 lg:pt-24">
+        {/* Left Column: Value Proposition */}
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-3.5 py-2 text-sm font-semibold text-teal-300">
+          <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-2 text-xs sm:text-sm font-semibold text-teal-300 font-mono">
             <Sparkles className="h-4 w-4 text-teal-300" />
-            Autonomous Video Intelligence & 14-Persona Creation Suite
+            <span>Autonomous Video Intelligence & 14-Persona Creation Suite</span>
           </div>
 
-          <h1 className="mt-7 max-w-3xl text-5xl font-black leading-[0.98] tracking-[-0.055em] text-white sm:text-6xl lg:text-7xl xl:text-[80px] [text-wrap:balance]">
+          <h1 className="mt-7 max-w-3xl text-4xl sm:text-6xl lg:text-7xl xl:text-[76px] font-black leading-[0.98] tracking-[-0.055em] text-white [text-wrap:balance]">
             Turn an idea into a{" "}
-            <span className="inline-block bg-gradient-to-r from-teal-300 via-emerald-200 to-cyan-300 bg-clip-text text-transparent">world-class Reel & Story.</span>
+            <span className="inline-block bg-gradient-to-r from-teal-300 via-emerald-200 to-cyan-300 bg-clip-text text-transparent">
+              world-class 30s Reel.
+            </span>
           </h1>
 
-          <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
+          <p className="mt-6 max-w-2xl text-base sm:text-lg leading-relaxed text-slate-300">
             From Pixar 3D CGI and Shōnen anime combat to high-converting TikTok UGC ads and cinematic films—Zyvoriq synthesizes scripts, scenes, voiceovers, kinetic captions, and platform-ready variants from one prompt.
           </p>
 
-          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-            <Link href="/studio/create" className="group flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 px-7 py-4 text-sm font-black text-obsidian-950 transition hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-teal-500/20">
-              Open 14-Persona Studio <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+          <div className="mt-8 flex flex-col gap-3.5 sm:flex-row">
+            <Link
+              href="/studio/create"
+              className="group flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 px-8 py-4 text-sm font-black text-obsidian-950 transition hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-teal-500/20"
+            >
+              <span>Open 14-Persona Studio</span>
+              <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
             </Link>
-            <a href="#reel-demo" className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-4 text-sm font-bold text-white transition hover:bg-white/[0.08]">
-              <Play className="h-4 w-4 fill-current text-teal-300" /> See how it works
+            <a
+              href="#reel-demo"
+              className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-4 text-sm font-bold text-white transition hover:bg-white/[0.08]"
+            >
+              <Play className="h-4 w-4 fill-current text-teal-300" />
+              <span>Watch Live 30s Reels</span>
             </a>
           </div>
 
-          <div className="mt-10 flex flex-wrap gap-2 text-xs font-semibold text-slate-400">
+          <div className="mt-9 flex flex-wrap gap-2 text-xs font-semibold text-slate-400">
             {["Pixar 3D & Anime", "TikTok & Shorts", "UGC Video Ads", "A24 Cinema", "C2PA Provenance", "Multilingual TTS"].map((item) => (
-              <span key={item} className="rounded-full border border-white/8 bg-white/[0.035] px-3 py-1.5">{item}</span>
+              <span key={item} className="rounded-full border border-white/8 bg-white/[0.035] px-3 py-1.5 font-mono text-[11px]">
+                {item}
+              </span>
             ))}
           </div>
         </div>
 
-        <div id="reel-demo" className="relative mx-auto w-full max-w-3xl">
-          <div className="absolute -inset-10 rounded-[48px] bg-gradient-to-br from-pink-500/10 via-cyan-500/5 to-teal-500/10 blur-3xl" />
-          <div className="relative grid gap-5 md:grid-cols-[0.78fr_1.22fr]">
-            <div className="rounded-[34px] border border-white/10 bg-[#0c1016] p-3 shadow-2xl shadow-black/40">
-              <div className="relative aspect-[9/16] overflow-hidden rounded-[27px] bg-[radial-gradient(circle_at_65%_20%,rgba(244,114,182,0.35),transparent_26%),radial-gradient(circle_at_35%_75%,rgba(45,212,191,0.25),transparent_30%),linear-gradient(160deg,#1b1320,#0a1118_60%,#0b1717)]">
-                <div className="absolute inset-x-5 top-5 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-white/70">
-                  <span>Preview</span><span>0:24</span>
+        {/* Right Column: Interactive Live 30s Reel Stage */}
+        <div id="reel-demo" className="relative mx-auto w-full max-w-4xl space-y-4">
+          {/* Persona Switcher Tabs */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {ONBOARDING_REELS.map((reel, idx) => {
+              const Icon = reel.icon;
+              const active = activeReelIndex === idx;
+              return (
+                <button
+                  key={reel.id}
+                  type="button"
+                  onClick={() => setActiveReelIndex(idx)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
+                    active
+                      ? "bg-white text-slate-950 shadow-lg"
+                      : "bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08] border border-white/5"
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{reel.title}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Interactive Player Box */}
+          <div className="relative rounded-[32px] border border-white/10 bg-[#0c1016]/95 p-4 sm:p-6 shadow-2xl shadow-black/60 backdrop-blur-2xl grid gap-6 md:grid-cols-[0.82fr_1.18fr] items-center">
+            {/* 9:16 / 16:9 Vertical Reel Frame */}
+            <div className="relative aspect-[9/16] overflow-hidden rounded-2xl border border-white/15 bg-black shadow-inner">
+              <video
+                key={activeReel.videoSrc}
+                src={activeReel.videoSrc}
+                autoPlay
+                playsInline
+                loop
+                muted={isMuted}
+                className="w-full h-full object-cover"
+              />
+
+              {/* Top Video Telemetry Badge */}
+              <div className="absolute top-3 inset-x-3 flex items-center justify-between pointer-events-none">
+                <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-md bg-black/70 border ${activeReel.border} backdrop-blur-md`}>
+                  {activeReel.badge}
+                </span>
+                <span className="text-[10px] font-mono font-bold text-white/90 bg-black/60 px-2 py-0.5 rounded backdrop-blur-md">
+                  0:30
+                </span>
+              </div>
+
+              {/* Bottom Real-Time Kinetic Caption */}
+              <div className="absolute inset-x-3 bottom-12 rounded-xl bg-black/60 p-3 backdrop-blur-md border border-white/10">
+                <div className="text-xs font-bold text-white leading-snug">
+                  {activeReel.caption}
                 </div>
-                <div className="absolute inset-x-5 top-[27%] text-center">
-                  <div className="text-3xl font-black leading-none tracking-[-0.04em] text-white">3 habits quietly killing your focus</div>
-                  <div className="mx-auto mt-4 h-1.5 w-20 rounded-full bg-pink-300" />
-                </div>
-                <div className="absolute inset-x-5 bottom-24 rounded-2xl bg-black/35 p-4 backdrop-blur-md">
-                  <div className="text-sm font-bold text-white">“The third one feels productive—but isn’t.”</div>
-                  <div className="mt-2 text-[11px] leading-4 text-white/60">Dynamic caption timing • emphasis detected</div>
-                </div>
-                <div className="absolute inset-x-5 bottom-5 flex items-center justify-between text-[10px] text-white/60">
-                  <span>@yourbrand</span><span>♫ original audio</span>
+                <div className="mt-1 flex items-center justify-between text-[9px] font-mono text-emerald-400">
+                  <span>⚡ AI TIMED SUBTITLES</span>
+                  <span>C2PA CERTIFIED</span>
                 </div>
               </div>
+
+              {/* Audio Mute Controller Button */}
+              <button
+                type="button"
+                onClick={() => setIsMuted(!isMuted)}
+                className="absolute bottom-3 right-3 p-2 rounded-full bg-black/80 text-white hover:bg-black border border-white/20 transition active:scale-95"
+                title={isMuted ? "Unmute Audio" : "Mute Audio"}
+              >
+                {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-teal-400" />}
+              </button>
             </div>
 
-            <div className="space-y-3 md:pt-8">
-              {[
-                [WandSparkles, "Hook & script", "3 strong openings, paced for retention"],
-                [Clapperboard, "Scene plan", "Shot-by-shot visuals, b-roll and transitions"],
-                [Captions, "Captions", "Readable, timed, emphasis-aware subtitles"],
-                [Music2, "Voice & sound", "Narration tone, beat and SFX direction"],
-                [Languages, "Repurpose", "Variants for Reels, Shorts and other languages"],
-              ].map(([Icon, title, body]: any) => (
-                <div key={title} className="rounded-2xl border border-white/8 bg-white/[0.035] p-4 transition hover:-translate-y-0.5 hover:border-pink-300/25">
-                  <div className="flex gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-pink-200"><Icon className="h-4 w-4" /></div>
-                    <div><div className="text-sm font-bold text-white">{title}</div><div className="mt-1 text-xs leading-5 text-slate-500">{body}</div></div>
-                  </div>
+            {/* Right: Synthesis Steps & Features */}
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-teal-400">
+                  {activeReel.title} · Active Prompt
                 </div>
-              ))}
+                <h3 className="text-base font-bold text-white">
+                  {activeReel.hook}
+                </h3>
+              </div>
+
+              <div className="space-y-2.5 pt-2">
+                {[
+                  [WandSparkles, "3-Second Viral Hook", "Paced for maximum watch-time retention."],
+                  [Clapperboard, "4-Act Scene Continuity", "Consistent character faces and lighting."],
+                  [Captions, "Dynamic Kinetic Captions", "Word-by-word timed emphasis."],
+                  [ShieldCheck, "C2PA Provenance Seal", "EU AI Act & CCPA cryptographic trust."]
+                ].map(([Icon, title, desc]: any) => (
+                  <div
+                    key={title}
+                    className="flex items-start gap-3 p-2.5 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] transition"
+                  >
+                    <div className="p-2 rounded-lg bg-teal-500/10 text-teal-300 shrink-0 border border-teal-500/20">
+                      <Icon className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-white">{title}</div>
+                      <div className="text-[11px] text-slate-400">{desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-2">
+                <Link
+                  href={`/studio/create?persona=${activeReel.id}`}
+                  className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 text-xs font-black text-obsidian-950 shadow-lg shadow-teal-500/15 hover:from-teal-400 hover:to-emerald-400 active:scale-95 transition"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Customize in Studio</span>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
