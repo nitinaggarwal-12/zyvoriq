@@ -32,7 +32,8 @@ import {
   ChevronRight,
   ShieldCheck,
   CheckCircle2,
-  Terminal
+  Terminal,
+  Clapperboard
 } from "lucide-react";
 import { ApiKeyModal } from "@/components/ApiKeyModal";
 import { useTheme } from "@/components/ThemeProvider";
@@ -72,6 +73,7 @@ export function StudioSidebar({ children, currentPath }: StudioSidebarProps) {
   };
 
   const CORE_STUDIO_LINKS = [
+    { name: "Cinema Originals", href: "/studio/cinema", icon: Clapperboard, badge: "Originals" },
     { name: "Studio Cinema & Timeline", href: "/studio", icon: Layers, badge: "Editor" },
     { name: "Content Inspector & QA", href: "/studio/inspector", icon: Film, badge: "Scrubber" },
     { name: "Creation Hub", href: "/studio/create", icon: Sparkles, badge: "14 Modes" },
