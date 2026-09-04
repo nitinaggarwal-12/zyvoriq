@@ -19,8 +19,8 @@ export function MultimodalStudio() {
   const Icon = active.icon;
 
   return (
-    <section id="multimodal" className="mx-auto max-w-[1500px] px-6 py-20 md:px-10 lg:py-28">
-      <div className="max-w-3xl">
+    <section id="multimodal" className="mx-auto w-full max-w-[1800px] px-6 py-20 sm:px-10 lg:px-14 xl:px-16 lg:py-28">
+      <div className="max-w-4xl">
         <div className="text-sm font-bold text-pink-300">FROM BRIEF TO PUBLISHABLE REEL</div>
         <h2 className="mt-4 text-4xl font-black tracking-[-0.04em] text-white sm:text-5xl">Everything a strong short-form post needs.</h2>
         <p className="mt-5 text-lg leading-8 text-slate-400">Zyvoriq is not a one-click video wrapper. It helps shape the creative decisions that determine whether a Reel feels native, relevant and worth watching.</p>

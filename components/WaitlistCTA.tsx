@@ -8,7 +8,7 @@ export function WaitlistCTA() {
   return (
     <section id="waitlist" className="relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(236,72,153,0.12),transparent_34%),radial-gradient(circle_at_72%_35%,rgba(45,212,191,0.10),transparent_26%)]" />
-      <div className="relative mx-auto max-w-[1500px] px-6 py-20 md:px-10 lg:py-28">
+      <div className="relative mx-auto w-full max-w-[1800px] px-6 py-20 sm:px-10 lg:px-14 xl:px-16 lg:py-28">
         <div className="overflow-hidden rounded-[36px] border border-white/10 bg-gradient-to-br from-white/[0.07] to-white/[0.025] p-8 sm:p-12 lg:p-16">
           <div className="grid gap-10 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>

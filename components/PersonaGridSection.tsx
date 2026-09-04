@@ -41,9 +41,9 @@ const PERSONAS = [
 export function PersonaGridSection() {
   return (
     <section className="relative border-b border-white/5 bg-black/40 py-20 lg:py-28">
-      <div className="mx-auto max-w-[1500px] px-6 md:px-10">
+      <div className="mx-auto w-full max-w-[1800px] px-6 sm:px-10 lg:px-14 xl:px-16">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="max-w-3xl">
+          <div className="max-w-4xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-3 py-1 text-xs font-black text-teal-300 font-mono">
               <Sparkles className="h-3.5 w-3.5" /> 14-PERSONA CREATIVE PRODUCTION SUITE
             </div>

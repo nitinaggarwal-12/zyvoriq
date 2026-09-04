@@ -107,22 +107,22 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden border-b border-white/5">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[680px] bg-[radial-gradient(circle_at_50%_0%,rgba(236,72,153,0.16),transparent_38%),radial-gradient(circle_at_75%_15%,rgba(45,212,191,0.14),transparent_28%)]" />
-      <div className="relative mx-auto grid max-w-[1580px] gap-12 px-6 pb-20 pt-16 md:px-12 lg:grid-cols-[0.88fr_1.12fr] lg:items-center lg:pb-28 lg:pt-24">
+      <div className="relative mx-auto grid w-full max-w-[1800px] gap-10 lg:gap-14 px-6 pb-20 pt-14 sm:px-10 lg:px-14 xl:px-16 lg:grid-cols-12 lg:items-center lg:pb-28 lg:pt-20">
         {/* Left Column: Value Proposition */}
-        <div>
+        <div className="lg:col-span-5 space-y-2">
           <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-2 text-xs sm:text-sm font-semibold text-teal-300 font-mono">
             <Sparkles className="h-4 w-4 text-teal-300" />
             <span>Autonomous Video Intelligence & 14-Persona Creation Suite</span>
           </div>
 
-          <h1 className="mt-7 max-w-3xl text-4xl sm:text-6xl lg:text-7xl xl:text-[76px] font-black leading-[0.98] tracking-[-0.055em] text-white [text-wrap:balance]">
+          <h1 className="mt-6 text-4xl sm:text-6xl lg:text-6xl xl:text-[74px] font-black leading-[0.98] tracking-[-0.055em] text-white [text-wrap:balance]">
             Turn an idea into a{" "}
             <span className="inline-block bg-gradient-to-r from-teal-300 via-emerald-200 to-cyan-300 bg-clip-text text-transparent">
               world-class 30s Reel.
             </span>
           </h1>
 
-          <p className="mt-6 max-w-2xl text-base sm:text-lg leading-relaxed text-slate-300">
+          <p className="mt-5 text-base sm:text-lg lg:text-xl leading-relaxed text-slate-300">
             From Pixar 3D CGI and Shōnen anime combat to high-converting TikTok UGC ads and cinematic films—Zyvoriq synthesizes scripts, scenes, voiceovers, kinetic captions, and platform-ready variants from one prompt.
           </p>
 
@@ -143,7 +143,7 @@ export function Hero() {
             </a>
           </div>
 
-          <div className="mt-9 flex flex-wrap gap-2 text-xs font-semibold text-slate-400">
+          <div className="mt-8 flex flex-wrap gap-2 text-xs font-semibold text-slate-400">
             {["Pixar 3D & Anime", "TikTok & Shorts", "UGC Video Ads", "A24 Cinema", "C2PA Provenance", "Multilingual TTS"].map((item) => (
               <span key={item} className="rounded-full border border-white/8 bg-white/[0.035] px-3 py-1.5 font-mono text-[11px]">
                 {item}
@@ -153,9 +153,9 @@ export function Hero() {
         </div>
 
         {/* Right Column: Interactive Live 30s Reel Stage */}
-        <div id="reel-demo" className="relative mx-auto w-full max-w-4xl space-y-4">
+        <div id="reel-demo" className="relative w-full lg:col-span-7 space-y-4">
           {/* Persona Switcher Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none w-full flex-wrap sm:flex-nowrap">
             {ONBOARDING_REELS.map((reel, idx) => {
               const Icon = reel.icon;
               const active = activeReelIndex === idx;
@@ -178,9 +178,9 @@ export function Hero() {
           </div>
 
           {/* Interactive Player Box */}
-          <div className="relative rounded-[32px] border border-white/10 bg-[#0c1016]/95 p-4 sm:p-6 shadow-2xl shadow-black/60 backdrop-blur-2xl grid gap-6 md:grid-cols-[0.82fr_1.18fr] items-center">
+          <div className="relative rounded-[32px] border border-white/10 bg-[#0c1016]/95 p-5 sm:p-7 shadow-2xl shadow-black/60 backdrop-blur-2xl grid gap-6 md:grid-cols-12 items-center">
             {/* 9:16 / 16:9 Vertical Reel Frame */}
-            <div className="relative aspect-[9/16] overflow-hidden rounded-2xl border border-white/15 bg-black shadow-inner">
+            <div className="md:col-span-5 relative aspect-[9/16] overflow-hidden rounded-2xl border border-white/15 bg-black shadow-inner">
               <video
                 key={activeReel.videoSrc}
                 src={activeReel.videoSrc}
@@ -224,12 +224,12 @@ export function Hero() {
             </div>
 
             {/* Right: Synthesis Steps & Features */}
-            <div className="space-y-3">
+            <div className="md:col-span-7 space-y-4">
               <div className="space-y-1">
                 <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-teal-400">
                   {activeReel.title} · Active Prompt
                 </div>
-                <h3 className="text-base font-bold text-white">
+                <h3 className="text-base sm:text-lg font-bold text-white">
                   {activeReel.hook}
                 </h3>
               </div>

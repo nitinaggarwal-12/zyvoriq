@@ -13,14 +13,14 @@ const USE_CASES = [
 export function UseCasesSection() {
   return (
     <section id="use-cases" className="border-y border-white/5 bg-white/[0.015]">
-      <div className="mx-auto max-w-[1500px] px-6 py-20 md:px-10 lg:py-28">
-        <div className="max-w-3xl">
+      <div className="mx-auto w-full max-w-[1800px] px-6 py-20 sm:px-10 lg:px-14 xl:px-16 lg:py-28">
+        <div className="max-w-4xl">
           <div className="text-sm font-bold text-teal-300">BUILT FOR THE FEED</div>
           <h2 className="mt-4 text-4xl font-black tracking-[-0.04em] text-white sm:text-5xl">Different creators. One short-form workflow.</h2>
           <p className="mt-5 text-lg leading-8 text-slate-400">The output changes with the audience, channel and brand—not just the prompt.</p>
         </div>
 
-        <div className="mt-12 grid gap-4 md:grid-cols-2">
+        <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
           {USE_CASES.map(({ icon: Icon, label, title, body, examples }) => (
             <div key={label} className="group rounded-[28px] border border-white/8 bg-[#0b0f15] p-6 sm:p-8 transition hover:border-white/15 hover:bg-[#0d1219]">
               <div className="flex items-center justify-between">
