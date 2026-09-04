@@ -73,3 +73,41 @@ Every media asset synthesized by Zyvoriq must carry an immutable audit trail:
 
 - **SVG & Canvas Export Sanitization**: Any user-provided SVG assets or canvas overlays must be sanitized against script injection (`<script>`, `onload=`, `javascript:`) prior to rendering.
 - **Prompt Sanitization**: User prompt payloads undergo input length clamping and automated prompt injection moderation via [`app/api/admin/moderation/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/admin/moderation/route.ts) before execution.
+
+---
+
+## 6. Concurrency & GPU Denial-of-Service (DoS) Mitigation
+
+To protect foundation model quotas and avoid unexpected cloud cost surges, generation concurrency is strictly locked by plan tier:
+- **Free / Community**: Maximum 1 concurrent render job.
+- **Creator Studio**: Maximum 1 concurrent render job.
+- **Pro Studio**: Maximum 2 concurrent render jobs.
+- **Enterprise Agency**: Maximum 5 concurrent render jobs (priority queue allocation).
+
+Requests exceeding tier concurrency limits are placed in an atomic queue table (`status: 'queued'`) rather than dispatched upstream in parallel.
+
+---
+
+## 7. Biometric & Synthetic Voice Privacy (GDPR / Illinois BIPA Compliance)
+
+Custom voice cloning and persona models are governed by strict biometric privacy policies:
+- **Zero Secret Exfiltration**: Raw vocal audio samples are isolated in private object storage with time-limited signed URLs.
+- **Downgrade & Churn Retention**: Upon tier downgrade or account cancellation, custom voice vector representations enter a compliance freeze for 90 days.
+- **Right to Erasure (1-Click Purge)**: Users can initiate an immediate, permanent cryptographic purge of all voice embeddings and training audio with 1-click under GDPR Article 17 and Illinois BIPA Section 15.
+
+---
+
+## 8. Anti-Fraud & Chargeback Velocity Governors
+
+To prevent "render & chargeback" fraud (where bad actors consume GPU quotas and initiate credit card disputes):
+- **3D Secure (SCA) Enforcement**: All Pro Studio and Enterprise checkouts require Strong Customer Authentication (SCA / 3DS).
+- **Graduated Day-1 Provisioning**: Newly created accounts receive an initial velocity cap of 10 renders on Day 1, unlocking full monthly quota allocations upon verified payment settlement.
+- **Dispute Auto-Revocation**: Any active chargeback freezes the offending organization's workspace and revokes pending generation jobs.
+
+---
+
+## 9. Irrevocable Provenance & Commercial Licensing Continuity
+
+- **Perpetual Commercial Rights**: Any asset synthesized and certified with a Veritas C2PA certificate during an active paid subscription retains **irrevocable, perpetual commercial rights**, even if the user subsequently downgrades to Free.
+- **Grandfathering Invariant**: Completed projects, master MP4 containers, and timeline edits created on higher tiers are never retroactively deleted or cropped upon downgrade.
+
