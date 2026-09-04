@@ -198,6 +198,24 @@ export default function StudioLibraryPage() {
     finally { setManaging(null); }
   };
 
+  const clearAllLibrary = async () => {
+    if (!window.confirm("Are you sure you want to delete all existing projects and wipe the library clean? This cannot be undone.")) return;
+    setLoading(true); setError("");
+    try {
+      const res = await fetch("/api/studio/library/clear", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Failed to clear library");
+      try { localStorage.removeItem("zyvoriq_custom_production_tracks"); } catch {}
+      setProductions([]);
+      setStudio1Projects([]);
+      setLegacy([]);
+    } catch (err: any) {
+      setError(err?.message || "Failed to clear library");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const productionAssets = useMemo(() => productions.flatMap(collectProductionAssets), [productions]);
   const legacyAssets = useMemo<LibraryAsset[]>(() => legacy.map(t => ({
     id: `legacy:${t.id}`,
@@ -226,8 +244,9 @@ export default function StudioLibraryPage() {
           <h1 className="mt-2 text-3xl font-black tracking-[-0.04em] text-white md:text-4xl">Projects you can reopen, plus every persisted asset.</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">Studio1 projects are editable workspaces. Final Reels, clips, narration, continuity frames, scripts, captions and evidence remain browsable as assets underneath.</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button onClick={load} disabled={loading} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-xs font-bold hover:bg-white/[0.06] disabled:opacity-50"><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}/>Refresh</button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={load} disabled={loading} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-xs font-bold hover:bg-white/[0.06] disabled:opacity-50 cursor-pointer"><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}/>Refresh</button>
+          <button onClick={clearAllLibrary} disabled={loading} className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-xs font-bold text-red-300 hover:bg-red-500/20 transition disabled:opacity-50 cursor-pointer"><Trash2 className="h-4 w-4 text-red-400"/>Clear Entire Library</button>
           <Link href="/studio1" className="inline-flex items-center gap-2 rounded-xl bg-violet-200 px-4 py-2.5 text-xs font-black text-slate-950"><Plus className="h-4 w-4"/>New Studio1 project</Link>
           <Link href="/studio" className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-xs font-black text-white"><Sparkles className="h-4 w-4"/>Studio Cinema</Link>
         </div>
