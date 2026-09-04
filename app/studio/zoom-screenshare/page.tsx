@@ -432,7 +432,7 @@ export default function ZoomScreenSharePage() {
               {avatarEngineMode === "photorealistic" ? (
                 <video
                   ref={agentVideoRef}
-                  src="/assets/video/veo_priya_24s_master.mp4"
+                  src="/assets/video/persona3_viral_influencer_reel.mp4"
                   autoPlay
                   loop
                   muted

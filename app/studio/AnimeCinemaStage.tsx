@@ -1793,7 +1793,7 @@ export function AnimeCinemaStage() {
 
               {/* Background Zen Dojo Video Loop */}
               <video
-                src="/assets/video/ren_and_aoi_conversation_synced.mp4"
+                src="/assets/video/persona2_anime_shonen_reel.mp4"
                 className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-luminosity"
                 autoPlay
                 loop

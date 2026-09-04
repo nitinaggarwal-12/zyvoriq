@@ -97,7 +97,7 @@ export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
         {/* Neural Cinema MP4 Video - Muted so master audio produces the speech */}
         <video
           ref={videoRef}
-          src="/assets/video/veo_priya_master.mp4"
+          src="/assets/video/persona3_viral_influencer_reel.mp4"
           playsInline
           loop
           muted={true}

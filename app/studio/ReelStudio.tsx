@@ -2577,7 +2577,7 @@ export function ReelStudio() {
               )}
             </div>
             <DynamicZoomVideoPlayer
-              videoUrl={previewVideoUrl || "/assets/video/veo_continuous_master.mp4"}
+              videoUrl={previewVideoUrl || "/assets/video/persona3_viral_influencer_reel.mp4"}
               keyframes={zoomKeyframes}
               brollItems={brollItems}
               kineticEmojis={kineticEmojis}

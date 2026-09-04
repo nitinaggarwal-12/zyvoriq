@@ -134,7 +134,7 @@ const AVATAR_PRESETS_QUICK = [
     avatarName: "Elena Rostova",
     avatarRole: "Senior Technical Director Copilot",
     avatarImage: "/assets/avatars/avatar_elena_founder.jpg",
-    avatarVideo: "/assets/video/veo_aria_master.mp4",
+    avatarVideo: "/assets/video/persona4_ugc_ecommerce_reel.mp4",
     attire: "tech_hoodie" as const,
     attireLabel: "Tech Minimalist Dark Hoodie",
     audioVoiceId: "neural_crisp_tech_female",
@@ -153,7 +153,7 @@ const AVATAR_PRESETS_QUICK = [
     avatarName: "Priya Sharma",
     avatarRole: "Chief AI Officer & Global CTO",
     avatarImage: "/assets/avatars/avatar_priya_cto.jpg",
-    avatarVideo: "/assets/video/veo_priya_master.mp4",
+    avatarVideo: "/assets/video/persona3_viral_influencer_reel.mp4",
     attire: "executive_blazer" as const,
     attireLabel: "Navy Executive Blazer & Lapel Pin",
     audioVoiceId: "neural_authoritative_female",
@@ -609,7 +609,7 @@ export function LiveSupportConcierge() {
   };
 
   const activeRatingDisplay = hoverRating || selectedRating;
-  const activeAvatarVideo = avatarPref.avatarId === "priya" ? "/assets/video/veo_priya_master.mp4" : "/assets/video/veo_aria_master.mp4";
+  const activeAvatarVideo = avatarPref.avatarId === "priya" ? "/assets/video/persona3_viral_influencer_reel.mp4" : "/assets/video/persona4_ugc_ecommerce_reel.mp4";
 
   const pathname = usePathname();
   if (!hasMounted) return null;
