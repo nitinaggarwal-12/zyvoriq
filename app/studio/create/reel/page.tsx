@@ -52,6 +52,7 @@ function ReelCreateContent() {
   const [generationProgress, setGenerationProgress] = useState(100);
   const [activeStep, setActiveStep] = useState<number>(4);
   const [error, setError] = useState("");
+  const [hasVideoError, setHasVideoError] = useState(false);
 
   const triggerLiveGeneration = (promptText: string) => {
     setIsGenerating(true);
@@ -203,20 +204,48 @@ function ReelCreateContent() {
         {/* Master Video Preview */}
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 rounded-3xl border border-red-500/30 bg-black/90 p-4 shadow-2xl flex items-center justify-center">
-            <div className="relative aspect-[9/16] max-h-[500px] w-auto rounded-2xl overflow-hidden shadow-2xl border border-white/10">
-              <video
-                src="/assets/video/persona3_viral_influencer_reel.mp4"
-                controls
-                playsInline
-                autoPlay
-                muted
-                loop
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute top-3 left-3 rounded-full border border-red-500/40 bg-black/70 px-2.5 py-0.5 text-[9px] font-mono font-bold text-red-300 backdrop-blur-md">
+            <div className="relative aspect-[9/16] max-h-[500px] w-auto rounded-2xl overflow-hidden shadow-2xl border border-white/10 flex items-center justify-center">
+              {!hasVideoError ? (
+                <video
+                  key={isGenerating ? "generating" : "ready"}
+                  controls
+                  playsInline
+                  autoPlay
+                  muted
+                  loop
+                  onError={() => setHasVideoError(true)}
+                  onLoadedData={() => setHasVideoError(false)}
+                  className="w-full h-full object-cover"
+                >
+                  <source src="/assets/video/persona3_viral_influencer_reel.mp4" type="video/mp4" />
+                  <source src="/assets/video/persona3_viral_influencer_reel.webm" type="video/webm" />
+                </video>
+              ) : (
+                <div className="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center p-6 text-center z-10">
+                  <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 mb-3">
+                    <Smartphone className="w-6 h-6" />
+                  </div>
+                  <span className="px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-300 font-mono text-[10px] font-bold mb-2">
+                    CLEAN SLATE · READY FOR SYNTHESIS
+                  </span>
+                  <h3 className="text-white font-bold text-xs max-w-[200px] line-clamp-2">
+                    {topic || "Configure prompt and synthesize vertical reel"}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => triggerLiveGeneration(topic)}
+                    disabled={isGenerating}
+                    className="mt-4 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-400 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-red-500/30 transition-all"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>{isGenerating ? "Synthesizing..." : "Synthesize Reel"}</span>
+                  </button>
+                </div>
+              )}
+              <div className="absolute top-3 left-3 rounded-full border border-red-500/40 bg-black/70 px-2.5 py-0.5 text-[9px] font-mono font-bold text-red-300 backdrop-blur-md z-20">
                 9:16 VERTICAL · 3S HOOK ENGINE · VERIFIED
               </div>
-              <div className="absolute bottom-3 right-3 rounded-full border border-white/20 bg-black/70 px-2.5 py-0.5 text-[9px] font-mono text-slate-300 backdrop-blur-md">
+              <div className="absolute bottom-3 right-3 rounded-full border border-white/20 bg-black/70 px-2.5 py-0.5 text-[9px] font-mono text-slate-300 backdrop-blur-md z-20">
                 ⏱️ 30s MASTER TIMELINE
               </div>
             </div>

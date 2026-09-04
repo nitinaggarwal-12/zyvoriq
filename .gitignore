@@ -13,8 +13,8 @@ scratch/
 *.db-wal
 *.db-shm
 temp/
-.venv/
 *.mp4
+!public/assets/video/*.mp4
 *.checkpoint.json
 *.patch
 scripts/qa/*keyframes/

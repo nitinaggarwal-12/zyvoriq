@@ -44,6 +44,7 @@ function AnimationCreateContent() {
   const [activeStep, setActiveStep] = useState<number>(4); // 1 to 4
   const [activeTab, setActiveTab] = useState<"video" | "storyboard" | "acoustics">("video");
   const [isPlaying, setIsPlaying] = useState(true);
+  const [hasVideoError, setHasVideoError] = useState(false);
 
   useEffect(() => {
     const q = searchParams.get("q");
@@ -228,24 +229,64 @@ function AnimationCreateContent() {
             {activeTab === "video" && (
               <div className="space-y-4">
                 <div className="relative aspect-video w-full rounded-3xl border border-pink-500/30 bg-black/90 overflow-hidden shadow-2xl flex items-center justify-center group">
-                  <video
-                    key={animeStyle}
-                    src={
-                      animeStyle === "ufotable_cinematic" || animeStyle === "cyberpunk_anime"
-                        ? "/assets/video/persona2_anime_shonen_reel.mp4"
-                        : "/assets/video/persona1_pixar_kids_reel.mp4"
-                    }
-                    controls
-                    playsInline
-                    autoPlay
-                    muted
-                    loop
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute top-4 left-4 rounded-full border border-pink-500/40 bg-black/70 px-3 py-1 text-[10px] font-mono font-bold text-pink-300 backdrop-blur-md">
+                  {!hasVideoError ? (
+                    <video
+                      key={`${animeStyle}-${isGenerating}`}
+                      controls
+                      playsInline
+                      autoPlay
+                      muted
+                      loop
+                      onError={() => setHasVideoError(true)}
+                      onLoadedData={() => setHasVideoError(false)}
+                      className="w-full h-full object-cover"
+                    >
+                      <source
+                        src={
+                          animeStyle === "ufotable_cinematic" || animeStyle === "cyberpunk_anime"
+                            ? "/assets/video/persona2_anime_shonen_reel.mp4"
+                            : "/assets/video/persona1_pixar_kids_reel.mp4"
+                        }
+                        type="video/mp4"
+                      />
+                      <source
+                        src={
+                          animeStyle === "ufotable_cinematic" || animeStyle === "cyberpunk_anime"
+                            ? "/assets/video/persona2_anime_shonen_reel.webm"
+                            : "/assets/video/persona1_pixar_kids_reel.webm"
+                        }
+                        type="video/webm"
+                      />
+                    </video>
+                  ) : (
+                    <div className="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center p-6 text-center z-10">
+                      <div className="w-12 h-12 rounded-2xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-pink-400 mb-3">
+                        <Tv className="w-6 h-6" />
+                      </div>
+                      <span className="px-3 py-1 rounded-full bg-pink-500/10 border border-pink-500/30 text-pink-300 font-mono text-xs font-bold mb-2">
+                        CLEAN SLATE · READY FOR SYNTHESIS
+                      </span>
+                      <h3 className="text-white font-bold text-sm md:text-base max-w-md line-clamp-2">
+                        {topic || "Configure prompt and synthesize reel"}
+                      </h3>
+                      <p className="text-slate-400 text-xs mt-1 max-w-sm">
+                        Click Synthesize below to compile this 4-act 3D sequence with AI acoustics and 1080p60 mastering.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleGenerate}
+                        disabled={isGenerating}
+                        className="mt-4 px-5 py-2 rounded-xl bg-pink-500 hover:bg-pink-400 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-pink-500/30 transition-all"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        <span>{isGenerating ? "Synthesizing..." : "Synthesize 30s Animation"}</span>
+                      </button>
+                    </div>
+                  )}
+                  <div className="absolute top-4 left-4 rounded-full border border-pink-500/40 bg-black/70 px-3 py-1 text-[10px] font-mono font-bold text-pink-300 backdrop-blur-md z-20">
                     1080p60 · {animeStyle.toUpperCase()} · VERIFIED
                   </div>
-                  <div className="absolute bottom-4 right-4 rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-mono text-slate-300 backdrop-blur-md">
+                  <div className="absolute bottom-4 right-4 rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-mono text-slate-300 backdrop-blur-md z-20">
                     30s MASTER TIMELINE
                   </div>
                 </div>
