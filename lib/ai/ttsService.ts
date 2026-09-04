@@ -46,42 +46,62 @@ export async function synthesizeVoiceSpeech(
     const cleanText = text.replace(/[*#_~`]/g, " ").replace(/\s+/g, " ").trim();
     const char = (options.characterLock || "").toLowerCase();
     const voiceName =
-      char === "david" || char.includes("david")
+      char === "david" || char.includes("david") || char === "puck"
         ? "Puck"
-        : char.includes("ren")
+        : char.includes("ren") || char === "charon"
         ? "Charon"
-        : char === "elena" || char.includes("elena")
+        : char === "elena" || char.includes("elena") || char === "aoede"
         ? "Aoede"
         : char === "priya" || char.includes("priya")
         ? "Aoede"
         : char === "aoi" || char.includes("aoi")
         ? "Aoede"
+        : char.includes("fenrir") || char.includes("deep") || char.includes("baritone")
+        ? "Fenrir"
+        : char.includes("kore") || char.includes("calm") || char.includes("clarity")
+        ? "Kore"
         : char.includes("woman") || char.includes("female") || char.includes("lady")
         ? "Aoede"
         : char.includes("man") || char.includes("male")
         ? "Puck"
         : "Aoede";
 
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`,
+    const primaryModel = process.env.ZYVORIQ_TTS_MODEL || "gemini-3.1-flash-tts-preview";
+    const payload = {
+      contents: [{ parts: [{ text: cleanText }] }],
+      generationConfig: {
+        responseModalities: ["AUDIO"],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: {
+              voiceName
+            }
+          }
+        }
+      }
+    };
+
+    let res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${primaryModel}:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: cleanText }] }],
-          generationConfig: {
-            responseModalities: ["AUDIO"],
-            speechConfig: {
-              voiceConfig: {
-                prebuiltVoiceConfig: {
-                  voiceName
-                }
-              }
-            }
-          }
-        })
+        body: JSON.stringify(payload)
       }
     );
+
+    // Resilient fallback to gemini-2.5-flash-preview-tts if 3.1 is not enabled on specific key
+    if (!res.ok && primaryModel !== "gemini-2.5-flash-preview-tts") {
+      console.warn(`Primary TTS ${primaryModel} failed (${res.status}), attempting fallback to gemini-2.5-flash-preview-tts...`);
+      res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        }
+      );
+    }
 
     if (!res.ok) {
       console.warn("TTS generation warning:", await res.text());

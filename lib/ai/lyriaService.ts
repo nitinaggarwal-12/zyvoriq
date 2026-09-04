@@ -2,6 +2,15 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 
+export type LyriaTier = "standard" | "pro";
+
+export interface LyriaSection {
+  name: "intro" | "verse" | "chorus" | "bridge" | "outro";
+  startSec: number;
+  endSec: number;
+  energy: number; // 0.0 to 1.0
+}
+
 export interface LyriaMusicPreset {
   id: string;
   name: string;
@@ -19,7 +28,7 @@ export const LYRIA_MUSIC_PRESETS: LyriaMusicPreset[] = [
   {
     id: "adaptive_cinematic",
     name: "🎼 Adaptive Cinematic Score (AI Auto-Match)",
-    badge: "DeepMind Lyria 2.0",
+    badge: "DeepMind Lyria 3.0",
     description: "Dynamically morphs musical dynamics, orchestration, and key to match the exact visual pacing and emotion of the Veo 3.1 scene.",
     genre: "Cinematic Orchestral",
     bpm: 90,
@@ -31,7 +40,7 @@ export const LYRIA_MUSIC_PRESETS: LyriaMusicPreset[] = [
   {
     id: "zen_shakuhachi",
     name: "🌸 Zen Dojo Shakuhachi & Koto Strings",
-    badge: "Traditional Japanese",
+    badge: "DeepMind Lyria 3.0",
     description: "Traditional bamboo flute, resonant koto strings, taiko heartbeat pulses, and soothing rain textures for contemplative and anime scenes.",
     genre: "Traditional Neo-Zen",
     bpm: 72,
@@ -189,6 +198,7 @@ export const LYRIA_VOCAL_STYLES: LyriaVocalStyle[] = [
 export interface LyriaMusicResult {
   audioUrl: string;
   duration: number;
+  tier: LyriaTier;
   presetId: string;
   presetName: string;
   vocalMode: LyriaVocalMode;
@@ -199,13 +209,17 @@ export interface LyriaMusicResult {
   synthIdWatermark: boolean;
   c2paHash: string;
   singingPromptDirective: string;
+  sections?: LyriaSection[];
 }
 
 /**
- * Synthesizes music background track conditioned on video aesthetics & narrative prompt using Google DeepMind Lyria models.
+ * Synthesizes music background track conditioned on video aesthetics & narrative prompt using Google DeepMind Lyria 3 models.
+ * Supports Lyria 3 Standard (30s single cue) and Lyria 3 Pro (up to 180s / 3 minutes multi-section arrangements).
  */
 export async function generateLyriaBackgroundMusic(options: {
   prompt: string;
+  tier?: LyriaTier;
+  sections?: LyriaSection[];
   visualStyle?: string;
   musicPreset?: string;
   vocalMode?: LyriaVocalMode;
@@ -215,11 +229,13 @@ export async function generateLyriaBackgroundMusic(options: {
 }): Promise<LyriaMusicResult | null> {
   const {
     prompt,
+    tier = "standard",
+    sections,
     visualStyle = "photorealistic_keynote",
     musicPreset = "adaptive_cinematic",
     vocalMode = "instrumental",
     vocalStyle = "anime_jpop_lead",
-    duration = 24,
+    duration = tier === "pro" ? 180 : 30,
     jobId = `lyria_${Date.now()}`
   } = options;
 
@@ -234,7 +250,7 @@ export async function generateLyriaBackgroundMusic(options: {
 
   const selectedVocal = LYRIA_VOCAL_STYLES.find(v => v.id === vocalStyle) || LYRIA_VOCAL_STYLES[0];
 
-  const c2paHash = "0x" + crypto.createHash("sha256").update(`${jobId}_${prompt}_${selectedPreset.id}_${vocalMode}_lyria_v2`).digest("hex");
+  const c2paHash = "0x" + crypto.createHash("sha256").update(`${jobId}_${prompt}_${selectedPreset.id}_${vocalMode}_lyria_v3_${tier}`).digest("hex");
 
   // Format singing performance direction for Veo 3.1 video diffusion
   let singingPromptDirective = "";
@@ -246,9 +262,24 @@ export async function generateLyriaBackgroundMusic(options: {
     singingPromptDirective = `Background ensemble and choir are singing ambient vocal chants in reverbed harmony with subtle facial motion.`;
   }
 
+  // Enforce tier runtime limits: Lyria 3 Standard = max 30s; Lyria 3 Pro = max 180s (3 minutes)
+  const maxRuntime = tier === "pro" ? 180 : 30;
+  const effectiveDuration = Math.min(maxRuntime, Math.max(8, duration));
+
+  // Default multi-section progression if Lyria 3 Pro is requested without explicit custom sections
+  const defaultSections: LyriaSection[] = sections || (tier === "pro" ? [
+    { name: "intro", startSec: 0, endSec: Math.round(effectiveDuration * 0.15), energy: 0.35 },
+    { name: "verse", startSec: Math.round(effectiveDuration * 0.15), endSec: Math.round(effectiveDuration * 0.5), energy: 0.6 },
+    { name: "chorus", startSec: Math.round(effectiveDuration * 0.5), endSec: Math.round(effectiveDuration * 0.8), energy: 0.9 },
+    { name: "outro", startSec: Math.round(effectiveDuration * 0.8), endSec: effectiveDuration, energy: 0.4 }
+  ] : [
+    { name: "verse", startSec: 0, endSec: effectiveDuration, energy: 0.5 }
+  ]);
+
   return {
     audioUrl: "",
-    duration: Math.max(8, duration),
+    duration: effectiveDuration,
+    tier,
     presetId: selectedPreset.id,
     presetName: selectedPreset.name,
     vocalMode,
@@ -258,6 +289,7 @@ export async function generateLyriaBackgroundMusic(options: {
     keySignature: selectedPreset.keySignature,
     synthIdWatermark: true,
     c2paHash,
-    singingPromptDirective
+    singingPromptDirective,
+    sections: defaultSections
   };
 }

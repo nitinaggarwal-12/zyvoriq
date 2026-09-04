@@ -368,7 +368,10 @@ export function SpatialAudioMixer({
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Music className="w-4 h-4 text-indigo-400" />
-              <span className="text-xs font-bold text-slate-200">Lyria Score</span>
+              <span className="text-xs font-bold text-slate-200">Lyria 3 Score</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-mono font-semibold">
+                Pro · Multi-Section
+              </span>
             </div>
             <div className="flex items-center gap-1">
               <button

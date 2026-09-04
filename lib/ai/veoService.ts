@@ -14,6 +14,10 @@ export interface VeoOptions {
   durationSeconds?: number;
   aspectRatio?: "16:9" | "9:16" | "1:1";
   modelTier?: "fast" | "quality" | "lite";
+  chainCycles?: number; // 1 to 20 cycles (up to 168s continuous)
+  inputVideoUri?: string;
+  lastFrameConditioning?: string; // base64 frame for temporal continuity
+  promptBeats?: string[];
   onProgress?: (progress: VeoGenerationProgress) => void;
 }
 
@@ -23,6 +27,8 @@ export interface VeoVideoBytes {
   fileSize: number;
   operationName: string;
   modelName: string;
+  cycleIndex?: number;
+  totalCycles?: number;
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -62,13 +68,20 @@ export async function generateVeoVideoBytes(
     elapsedSeconds: getElapsed()
   });
 
+  const instance: Record<string, any> = { prompt };
+  if (options.lastFrameConditioning) {
+    instance.image = { bytesBase64Encoded: options.lastFrameConditioning };
+  } else if (options.inputVideoUri) {
+    instance.video = { uri: options.inputVideoUri };
+  }
+
   const dispatchRes = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predictLongRunning?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        instances: [{ prompt }],
+        instances: [instance],
         parameters: { aspectRatio, durationSeconds }
       })
     }
@@ -170,5 +183,61 @@ export async function generateVeoVideo(
     duration: result.requestedGenerationDurationSec,
     fileSize: result.fileSize,
     operationName: result.operationName
+  };
+}
+
+export interface VeoChainedResult {
+  videoUrls: string[];
+  totalCycles: number;
+  totalDurationSec: number;
+  fileSizes: number[];
+  operationNames: string[];
+}
+
+/**
+ * Generates continuous cinematic video footage by recursively chaining Veo 3.1 diffusion cycles.
+ * Supports up to 20 cycles (160–168 seconds) with temporal continuity.
+ */
+export async function generateVeoRecursiveChainedVideo(
+  masterPrompt: string,
+  options: VeoOptions = {}
+): Promise<VeoChainedResult> {
+  const totalCycles = Math.min(20, Math.max(1, options.chainCycles || 1));
+  const beats = options.promptBeats || [];
+  const videoUrls: string[] = [];
+  const fileSizes: number[] = [];
+  const operationNames: string[] = [];
+  let totalDurationSec = 0;
+
+  for (let cycle = 1; cycle <= totalCycles; cycle++) {
+    const cyclePrompt = beats[cycle - 1]
+      ? `${masterPrompt}. Beat ${cycle}/${totalCycles}: ${beats[cycle - 1]}`
+      : `${masterPrompt} (Continuous Sequence Cycle ${cycle}/${totalCycles})`;
+
+    options.onProgress?.({
+      stage: "diffusing",
+      message: `Executing Veo 3.1 Chaining Cycle [${cycle}/${totalCycles}]...`,
+      percent: Math.round(((cycle - 1) / totalCycles) * 100),
+      elapsedSeconds: 0
+    });
+
+    const singleResult = await generateVeoVideo(cyclePrompt, {
+      ...options,
+      durationSeconds: 8,
+      chainCycles: 1
+    });
+
+    videoUrls.push(singleResult.videoUrl);
+    fileSizes.push(singleResult.fileSize);
+    operationNames.push(singleResult.operationName);
+    totalDurationSec += singleResult.duration;
+  }
+
+  return {
+    videoUrls,
+    totalCycles,
+    totalDurationSec,
+    fileSizes,
+    operationNames
   };
 }
