@@ -74,6 +74,7 @@ export function StudioSidebar({ children, currentPath }: StudioSidebarProps) {
 
   const CORE_STUDIO_LINKS = [
     { name: "Cinema Originals", href: "/studio/cinema", icon: Clapperboard, badge: "Originals" },
+    { name: "Director's Quality Audit", href: "/studio/cinema/audit", icon: ShieldCheck, badge: "Triage" },
     { name: "Studio Cinema & Timeline", href: "/studio", icon: Layers, badge: "Editor" },
     { name: "Content Inspector & QA", href: "/studio/inspector", icon: Film, badge: "Scrubber" },
     { name: "Creation Hub", href: "/studio/create", icon: Sparkles, badge: "14 Modes" },
@@ -99,10 +100,15 @@ export function StudioSidebar({ children, currentPath }: StudioSidebarProps) {
     if (href === "/studio") {
       return pathname === "/studio" || pathname.startsWith("/studio/production");
     }
+    if (href === "/studio/cinema") {
+      return pathname === "/studio/cinema";
+    }
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
   const currentSectionTitle = () => {
+    if (pathname.includes("/studio/cinema/audit")) return "Director's Quality Audit";
+    if (pathname.includes("/studio/cinema")) return "Cinema Originals";
     if (pathname.includes("/director")) return "Director Swarm";
     if (pathname.includes("/trend-radar")) return "7-Day Trend Radar";
     if (pathname.includes("/creator/analytics")) return "Creator Growth";

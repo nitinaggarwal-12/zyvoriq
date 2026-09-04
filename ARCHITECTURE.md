@@ -65,7 +65,21 @@ All major creation flows use **first-class page routes** with deep-linkable quer
 | [`/director`](file:///Users/nitinagga/Documents/zyvoriq/app/director/page.tsx) | Autonomous Executive Director | Multi-agent scene orchestration, script compilation |
 | [`/governance`](file:///Users/nitinagga/Documents/zyvoriq/app/governance/page.tsx) | Enterprise Governance & Audit Logs | Veritas certification verification, kill-switch policy sliders |
 | [`/creator/analytics`](file:///Users/nitinagga/Documents/zyvoriq/app/creator/analytics/page.tsx) | Creator Intelligence & Telemetry | Multi-channel attribution, viral lift, engagement forecasting |
-| [`/admin/moderation`](file:///Users/nitinagga/Documents/zyvoriq/app/admin/moderation/page.tsx) | Safety & Moderation Console | Prompt violation auditing, content quarantine |
+
+### 2.3 Cinema Originals & Autonomous Long-Form Feature Studio
+
+| Route | Purpose | Key Components |
+| :--- | :--- | :--- |
+| [`/studio/cinema`](file:///Users/nitinagga/Documents/zyvoriq/app/studio/cinema/page.tsx) | 15-Minute Feature Film Master Cinema Player | Multi-Act video switching, 12-scene dialogue engine, 50% acoustic ducking, Ken Burns camera motion |
+| [`/studio/cinema/audit`](file:///Users/nitinagga/Documents/zyvoriq/app/studio/cinema/audit/page.tsx) | Autonomous Film Audit & Quality Engine | 118-shot EDL generator, 15-parameter superhit film scoring, audio ducking assertions |
+
+Key Architectural Principles for Cinema Originals:
+1. **Logical Timeline Decoupling**: Dialogue, EDL scene changes, and subtitles synchronize with a dedicated 900-second logical master clock (`timeline15mSec`), never the loop duration of backing video stems.
+2. **Strict Ban on Synthetic `<video loop>`**: The `<video>` element MUST NOT have the `loop` attribute. Synthetic looping is an anti-pattern that masks asset shortages by repeating short clips.
+3. **118-Shot Visual Continuity Engine**: Every single shot in the 118-shot Edit Decision List (#001 to #118) provides a unique visual composition, optical camera motion, lens simulation, and character blocking. The player transitions cleanly across shot cuts without looping.
+4. **5-Act Progressive Video Switching Engine**: Player dynamically switches active video stems across narrative arcs (Act 1: Heritage Mythology, Act 2: Noir Sorrows, Act 3: Vishwaroopa Cosmic Nebulae, Act 4: Awakening Charge, Act 5: Golden Sunrise & Master Credits).
+5. **Balanced 50% Acoustic Ducking**: Speech synthesis ducks background orchestral beds to 50% (`0.50`), maintaining Vedic hymns and bass impact while ensuring full dialogue clarity.
+6. **Agentic Framework Compliance**: Built and validated according to the [Universal Agentic Coding Framework](file:///Users/nitinagga/Documents/zyvoriq/docs/UNIVERSAL_AGENTIC_FRAMEWORK.md) and [Cinema Feature Film QA Skill](file:///Users/nitinagga/Documents/zyvoriq/skills/cinema-feature-film-qa/SKILL.md).
 
 ---
 

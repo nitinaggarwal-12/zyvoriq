@@ -61,6 +61,21 @@ const browser = await puppeteer.launch({
 | `npm run guard:legacy` | Banned legacy tech scanner (SadTalker, mp4v, etc.) | `0` |
 | `npm run docs:validate` | Traceability validation across docs | `0` |
 | `npm run build` | Next.js 15 production build | `0` |
+| `node scripts/qa/verify_15min_feature_film.mjs` | 15-Minute Cinema Originals Headless QA Suite (11 assertions) | `0` |
+
+### 3.1 Cinema Originals Verification Suite (`verify_15min_feature_film.mjs`)
+Verifies the 15-minute feature film player using signed macOS Google Chrome:
+- **Test 1**: Dev server health check (`/api/health`).
+- **Test 2**: Desktop Cinema viewport navigation (`/studio/cinema`).
+- **Test 3**: Video element attributes & autoplay readiness.
+- **Test 4**: 15-minute EDL structure (5 Acts, 118 Shots, 900s timeline).
+- **Test 5**: 12-scene dialogue engine & timeline synchronization.
+- **Test 6**: Dialogue seek interaction & active state transitions.
+- **Test 7**: Ken Burns optical camera motion CSS animation styles.
+- **Test 8**: 50% acoustic ducking verification (`0.50` volume during dialogue).
+- **Test 9**: Audit page analysis (`/studio/cinema/audit`).
+- **Test 10**: Mobile responsive layout (iPhone 14 @ 390x844).
+- **Test 11**: Progressive multi-act video source switching across Act boundaries.
 
 ---
 
