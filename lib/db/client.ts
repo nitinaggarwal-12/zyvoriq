@@ -105,7 +105,20 @@ export function getDatabase(): DatabaseSync {
   return dbInstance;
 }
 
-// Synchronous SQLite Retry Wrapper for Busy Lock Resilience
+let pgMigrationPromise: Promise<any> | null = null;
+
+export async function ensurePostgresSchema(): Promise<void> {
+  const pool = getPostgresPool();
+  if (!pool) return;
+  if (!pgMigrationPromise) {
+    pgMigrationPromise = pool.query(POSTGRES_SCHEMA).catch((err) => {
+      console.warn("PostgreSQL initial schema migration warning:", err.message);
+    });
+  }
+  await pgMigrationPromise;
+}
+
+// Synchronous SQLite Retry Wrapper for Busy Lock Resilience without CPU spinning
 export function withRetry<T>(operation: () => T, maxRetries = 5, baseDelayMs = 50): T {
   let attempt = 0;
   while (true) {
@@ -119,10 +132,12 @@ export function withRetry<T>(operation: () => T, maxRetries = 5, baseDelayMs = 5
           err?.message?.includes("database is locked")) &&
         attempt <= maxRetries
       ) {
-        const delay = baseDelayMs * Math.pow(2, attempt - 1);
-        const start = Date.now();
-        while (Date.now() - start < delay) {
-          // Synchronous wait for lock release
+        const delay = Math.min(baseDelayMs * Math.pow(2, attempt - 1), 100);
+        try {
+          // Kernel-level sleep without burning 100% CPU cycles on the event loop
+          Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, delay);
+        } catch {
+          // Fallback if SharedArrayBuffer is restricted
         }
         continue;
       }

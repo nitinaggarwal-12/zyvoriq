@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Film,
   Sparkles,
@@ -386,11 +386,57 @@ const PERSONAS_14: PersonaConfig[] = [
   }
 ];
 
-export default function CreateHubPage() {
+function normalizePersonaParam(param: string | null): PersonaId {
+  if (!param) return "kids";
+  const p = param.toLowerCase().trim();
+  if (p === "all") return "all";
+  if (p.startsWith("kid")) return "kids";
+  if (p.startsWith("youth") || p.includes("anime") || p.includes("manga")) return "youth";
+  if (p.startsWith("influencer") || p.includes("faceless")) return "influencer";
+  if (p.startsWith("ugc") || p.includes("ecommerce") || p.includes("dtc")) return "ugc";
+  if (p.startsWith("mature") || p.includes("documentary")) return "mature";
+  if (p.startsWith("heritage") || p.includes("lore") || p.includes("history")) return "heritage";
+  if (p.startsWith("b2b") || p.includes("corporate") || p.includes("saas")) return "b2b";
+  if (p.startsWith("fitness") || p.includes("gym")) return "fitness";
+  if (p.startsWith("realestate") || p.includes("luxury")) return "realestate";
+  if (p.startsWith("finance") || p.includes("wealth") || p.includes("crypto")) return "finance";
+  if (p.startsWith("travel") || p.includes("hospitality")) return "travel";
+  if (p.startsWith("edtech") || p.includes("academy") || p.includes("course")) return "edtech";
+  if (p.startsWith("medical") || p.includes("health") || p.includes("doctor")) return "medical";
+  if (p.startsWith("spiritual") || p.includes("astrology") || p.includes("mantra")) return "spiritual";
+  return "kids";
+}
+
+function CreateHubContent() {
   const router = useRouter();
-  const [selectedPersona, setSelectedPersona] = useState<PersonaId>("kids");
+  const searchParams = useSearchParams();
+  const personaParam = searchParams.get("persona");
+  const queryParam = searchParams.get("q") || searchParams.get("topic") || searchParams.get("prompt");
+
+  const [selectedPersona, setSelectedPersona] = useState<PersonaId>(() => normalizePersonaParam(personaParam));
   const [viewMode, setViewMode] = useState<"cards" | "matrix">("cards");
-  const [quickPrompt, setQuickPrompt] = useState("");
+  const [quickPrompt, setQuickPrompt] = useState(() => queryParam || "");
+
+  useEffect(() => {
+    if (personaParam) {
+      setSelectedPersona(normalizePersonaParam(personaParam));
+    }
+  }, [personaParam]);
+
+  useEffect(() => {
+    if (queryParam && !quickPrompt) {
+      setQuickPrompt(queryParam);
+    }
+  }, [queryParam]);
+
+  const handleSelectPersona = (id: PersonaId) => {
+    setSelectedPersona(id);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("persona", id);
+      window.history.replaceState({}, "", url.toString());
+    }
+  };
 
   const activePersonaConfig = useMemo(() => {
     return PERSONAS_14.find((p) => p.id === selectedPersona) || PERSONAS_14[0];
@@ -503,7 +549,7 @@ export default function CreateHubPage() {
               return (
                 <button
                   key={p.id}
-                  onClick={() => setSelectedPersona(p.id)}
+                  onClick={() => handleSelectPersona(p.id)}
                   className={`flex flex-col text-left p-3 rounded-2xl border transition-all cursor-pointer ${
                     isSelected
                       ? "bg-gradient-to-b from-teal-500/25 to-slate-900 border-teal-400 ring-2 ring-teal-400/30 shadow-lg scale-[1.02]"
@@ -646,7 +692,7 @@ export default function CreateHubPage() {
                       <tr
                         key={p.id}
                         onClick={() => {
-                          setSelectedPersona(p.id);
+                          handleSelectPersona(p.id);
                           setViewMode("cards");
                         }}
                         className={`hover:bg-white/5 transition cursor-pointer ${isSelected ? "bg-teal-500/10" : ""}`}
@@ -677,6 +723,22 @@ export default function CreateHubPage() {
         )}
       </main>
     </StudioSidebar>
+  );
+}
+
+export default function CreateHubPage() {
+  return (
+    <Suspense
+      fallback={
+        <StudioSidebar>
+          <main className="flex-1 max-w-8xl w-full mx-auto px-5 py-8 md:px-10 space-y-8 flex items-center justify-center min-h-[60vh]">
+            <div className="text-teal-400 font-mono text-sm animate-pulse">Loading Creative Studio Hub...</div>
+          </main>
+        </StudioSidebar>
+      }
+    >
+      <CreateHubContent />
+    </Suspense>
   );
 }
 

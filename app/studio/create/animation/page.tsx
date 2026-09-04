@@ -117,12 +117,17 @@ function AnimationCreateContent() {
       <main className="flex-1 max-w-8xl w-full max-w-full overflow-x-hidden mx-auto px-6 py-8 md:px-12 space-y-6">
         {/* Navigation & Status Header */}
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <Link
-            href="/studio/create"
-            className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-pink-300 transition"
-          >
-            <ArrowLeft className="w-4 h-4" /> Back to Creation Hub
-          </Link>
+          <nav className="flex items-center gap-2 text-xs font-mono">
+            <Link href="/studio" className="text-slate-400 hover:text-white transition">
+              Studio
+            </Link>
+            <span className="text-slate-600">/</span>
+            <Link href="/studio/create" className="text-slate-400 hover:text-white transition">
+              Create Hub
+            </Link>
+            <span className="text-slate-600">/</span>
+            <span className="text-pink-400 font-bold">Animation & 3D Studio</span>
+          </nav>
           <div className="flex items-center gap-2.5">
             <span className="inline-flex items-center gap-1 rounded-full border border-pink-500/30 bg-pink-500/10 px-3 py-1 text-[11px] font-black text-pink-300 font-mono">
               🧸 ANIMATION & 3D STUDIO

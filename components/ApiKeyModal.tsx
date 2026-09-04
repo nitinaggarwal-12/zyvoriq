@@ -230,7 +230,7 @@ export function ApiKeyModal({ isOpen, onClose }: ApiKeyModalProps) {
     setSelectedPrimaryKeyId(id);
     const target = keys.find((k) => k.id === id);
     if (target && target.key !== "SERVER_ENV_KEY") {
-      document.cookie = `zyvoriq_gemini_api_key=${target.key}; path=/; max-age=31536000; SameSite=Strict`;
+      document.cookie = `zyvoriq_key_configured=true; path=/; max-age=31536000; SameSite=Strict`;
     }
   };
 

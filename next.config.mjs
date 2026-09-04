@@ -69,6 +69,15 @@ const nextConfig = {
         ]
       }
     ];
+  },
+  async redirects() {
+    return [
+      {
+        source: "/studio/director",
+        destination: "/director",
+        permanent: true
+      }
+    ];
   }
 };
 

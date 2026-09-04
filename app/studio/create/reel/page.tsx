@@ -120,14 +120,19 @@ function ReelCreateContent() {
   return (
     <StudioSidebar>
       <main className="flex-1 max-w-7xl w-full mx-auto px-5 py-8 md:px-8 space-y-6">
-        {/* Header Breadcrumb & Badges */}
+        {/* Header Breadcrumbs & Badges */}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link
-            href="/studio/create"
-            className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-red-300 transition"
-          >
-            <ArrowLeft className="w-4 h-4" /> Back to Creation Hub
-          </Link>
+          <nav className="flex items-center gap-2 text-xs font-mono">
+            <Link href="/studio" className="text-slate-400 hover:text-white transition">
+              Studio
+            </Link>
+            <span className="text-slate-600">/</span>
+            <Link href="/studio/create" className="text-slate-400 hover:text-white transition">
+              Create Hub
+            </Link>
+            <span className="text-slate-600">/</span>
+            <span className="text-red-400 font-bold">Viral Retention Reels</span>
+          </nav>
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-black text-emerald-300 font-mono">
               <ShieldCheck className="w-3 h-3" /> 100% ORIGINAL ASSETS & ROYALTY-FREE STEMS
@@ -468,6 +473,7 @@ function ReelCreateContent() {
                   ].map((item) => (
                     <button
                       key={item.id}
+                      id={`btn-aspect-${item.id.replace(":", "-")}`}
                       type="button"
                       onClick={() => setAspectRatio(item.id as any)}
                       className={`flex flex-col items-center justify-center rounded-xl border p-2 text-center transition cursor-pointer ${
@@ -512,20 +518,35 @@ function ReelCreateContent() {
             </div>
           </div>
 
-          {/* Right Column: Live 9:16 Vertical Phone Simulator (4 Cols) */}
+          {/* Right Column: Live Viewport Simulator (4 Cols) */}
           <div className="lg:col-span-4 space-y-4 sticky top-6">
             <div className="rounded-3xl border border-white/15 bg-slate-900/90 p-5 backdrop-blur-xl shadow-2xl">
               <div className="flex items-center justify-between mb-3">
                 <div className="text-xs font-black uppercase tracking-wider text-slate-300 font-mono flex items-center gap-2">
-                  <Smartphone className="w-4 h-4 text-red-400" /> 9:16 Live Preview
+                  {aspectRatio === "9:16" ? (
+                    <Smartphone className="w-4 h-4 text-red-400" />
+                  ) : aspectRatio === "16:9" ? (
+                    <Tv className="w-4 h-4 text-red-400" />
+                  ) : (
+                    <Square className="w-4 h-4 text-red-400" />
+                  )}
+                  <span>{aspectRatio} Live Preview</span>
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">
                   LIVE SIMULATOR
                 </span>
               </div>
 
-              {/* Phone Mockup Frame */}
-              <div className="relative aspect-[9/16] w-full max-w-[280px] mx-auto rounded-[32px] border-4 border-slate-700 bg-black overflow-hidden shadow-2xl flex flex-col justify-between p-3">
+              {/* Dynamic Viewport Mockup Frame */}
+              <div
+                className={`relative w-full mx-auto rounded-[24px] border-4 border-slate-700 bg-black overflow-hidden shadow-2xl flex flex-col justify-between p-3 transition-all duration-300 ${
+                  aspectRatio === "9:16"
+                    ? "aspect-[9/16] max-w-[280px]"
+                    : aspectRatio === "16:9"
+                    ? "aspect-[16/9] max-w-[420px]"
+                    : "aspect-square max-w-[320px]"
+                }`}
+              >
                 {/* Top Notch / Status */}
                 <div className="flex items-center justify-between text-[9px] font-mono text-slate-400 px-1 pt-1 z-10">
                   <span>9:41</span>

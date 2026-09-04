@@ -203,16 +203,17 @@ function UgcCreateContent() {
       <main className="w-full max-w-[1500px] mx-auto px-5 py-6 md:px-8 space-y-6">
         {/* Header Breadcrumb & Badges */}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Link
-              href="/studio/create"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-amber-300 transition"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" /> Creation Hub
+          <nav className="flex items-center gap-2 text-xs font-mono">
+            <Link href="/studio" className="text-slate-400 hover:text-white transition">
+              Studio
             </Link>
             <span className="text-slate-600">/</span>
-            <span className="text-xs font-mono font-bold text-amber-300">Persona #4: UGC Video Ads</span>
-          </div>
+            <Link href="/studio/create" className="text-slate-400 hover:text-white transition">
+              Create Hub
+            </Link>
+            <span className="text-slate-600">/</span>
+            <span className="text-amber-300 font-bold">UGC Video Ads</span>
+          </nav>
 
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-black text-amber-300 font-mono">

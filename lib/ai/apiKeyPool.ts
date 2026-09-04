@@ -29,12 +29,12 @@ export function saveStoredKeyPool(pool: KeyEntry[]) {
   if (typeof window === "undefined") return;
   safeLocalStorageSetItem(STORAGE_KEY, JSON.stringify(pool));
   
-  // Set the primary alive key into cookie
+  // Store safe status flag in cookie rather than raw secret
   const activeKey = pool.find(k => k.status === "alive") || pool[0];
   if (activeKey) {
-    document.cookie = `zyvoriq_gemini_api_key=${activeKey.key}; path=/; max-age=31536000; SameSite=Strict`;
+    document.cookie = `zyvoriq_key_configured=true; path=/; max-age=31536000; SameSite=Strict`;
   } else {
-    document.cookie = "zyvoriq_gemini_api_key=; path=/; max-age=0";
+    document.cookie = "zyvoriq_key_configured=; path=/; max-age=0";
   }
 }
 
@@ -47,7 +47,7 @@ export function rotateToNextAliveKey(failedKey: string): KeyEntry | null {
 
   const nextAlive = updated.find((k) => k.status === "alive" && k.key !== failedKey);
   if (nextAlive) {
-    document.cookie = `zyvoriq_gemini_api_key=${nextAlive.key}; path=/; max-age=31536000; SameSite=Strict`;
+    document.cookie = `zyvoriq_key_configured=true; path=/; max-age=31536000; SameSite=Strict`;
     return nextAlive;
   }
   return null;

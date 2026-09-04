@@ -83,16 +83,17 @@ export function SpatialAudioMixer({
 
   // 1-Click 4-Stem Lossless .ZIP DAW Exporter
   const handleExportStemsZip = async () => {
+    if (!voiceAudioUrl && !musicAudioUrl) return;
     try {
       setIsExportingZip(true);
       const zip = new JSZip();
 
-      // Create synthetic 48kHz WAV audio buffers
+      // 48kHz WAV audio buffers with clean digital silence (no synthetic test beeps)
       const sampleRate = 48000;
       const durationSeconds = 8;
       const numSamples = sampleRate * durationSeconds;
 
-      const createSyntheticWavBlob = (freq: number) => {
+      const createSilenceWavBlob = () => {
         const buffer = new ArrayBuffer(44 + numSamples * 2);
         const view = new DataView(buffer);
 
@@ -116,17 +117,16 @@ export function SpatialAudioMixer({
         writeString(36, "data");
         view.setUint32(40, numSamples * 2, true);
 
+        // Zero amplitude = Clean digital silence
         for (let i = 0; i < numSamples; i++) {
-          const t = i / sampleRate;
-          const sample = Math.sin(2 * Math.PI * freq * t) * 0.3 * 32767;
-          view.setInt16(44 + i * 2, sample, true);
+          view.setInt16(44 + i * 2, 0, true);
         }
 
         return new Blob([buffer], { type: "audio/wav" });
       };
 
-      let voiceBlob = createSyntheticWavBlob(440);
-      let musicBlob = createSyntheticWavBlob(220);
+      let voiceBlob: Blob | null = null;
+      let musicBlob: Blob | null = null;
 
       // Fetch live audio stems if URLs are provided
       if (voiceAudioUrl) {
@@ -147,14 +147,13 @@ export function SpatialAudioMixer({
         } catch (_) {}
       }
 
-      const foleyBlob = createSyntheticWavBlob(110);
-      const ambienceBlob = createSyntheticWavBlob(55);
+      const silenceBlob = createSilenceWavBlob();
 
       // Add 4 Stems to Zip
-      zip.file("01_dialogue_lead_vocal_stem_48khz.wav", voiceBlob);
-      zip.file("02_lyria_music_accompaniment_stem_48khz.wav", musicBlob);
-      zip.file("03_v2a_foley_sfx_stem_48khz.wav", foleyBlob);
-      zip.file("04_spatial_ambience_stem_48khz.wav", ambienceBlob);
+      zip.file("01_dialogue_lead_vocal_stem_48khz.wav", voiceBlob || silenceBlob);
+      zip.file("02_lyria_music_accompaniment_stem_48khz.wav", musicBlob || silenceBlob);
+      zip.file("03_v2a_foley_sfx_stem_48khz.wav", silenceBlob);
+      zip.file("04_spatial_ambience_stem_48khz.wav", silenceBlob);
 
       // Add C2PA Cryptographic Provenance Manifest
       const manifest = {
@@ -228,8 +227,9 @@ export function SpatialAudioMixer({
 
           <button
             onClick={handleExportStemsZip}
-            disabled={isExportingZip}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 transition-all cursor-pointer disabled:opacity-50"
+            disabled={isExportingZip || (!voiceAudioUrl && !musicAudioUrl)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            title={!voiceAudioUrl && !musicAudioUrl ? "Render narration or score first to export master stems" : "Export 4-Stem Bundle (.ZIP)"}
           >
             {isExportingZip ? (
               <>
@@ -240,6 +240,11 @@ export function SpatialAudioMixer({
               <>
                 <CheckCircle className="w-3.5 h-3.5 text-slate-950" />
                 <span>Bundle Downloaded!</span>
+              </>
+            ) : (!voiceAudioUrl && !musicAudioUrl) ? (
+              <>
+                <Download className="w-3.5 h-3.5" />
+                <span>Stems Pending Render</span>
               </>
             ) : (
               <>

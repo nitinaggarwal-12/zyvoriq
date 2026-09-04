@@ -40,26 +40,13 @@ import {
   HookVariation,
   HookSuite
 } from "@/lib/reel/hookVariations";
-import DopamineSplitModal from "@/components/DopamineSplitModal";
-import UgcAdGeneratorModal from "@/components/UgcAdGeneratorModal";
 import RetentionHeatmapPanel from "@/components/RetentionHeatmapPanel";
 import RemixShareModal from "@/components/RemixShareModal";
-import RedditStoryModal from "@/components/RedditStoryModal";
-import AutoMemeModal from "@/components/AutoMemeModal";
-import GlobalDubberModal from "@/components/GlobalDubberModal";
-import DemonetizationArmorModal from "@/components/DemonetizationArmorModal";
-import { TrendRadarModal } from "@/components/TrendRadarModal";
-import { BookStudioModal } from "@/components/BookStudioModal";
 import { PromptDirectorBuilderModal, GeneratedPromptResult } from "@/components/PromptDirectorBuilderModal";
-import { PredictedTrend } from "@/lib/reel/trendRadarEngine";
 import { DopamineConfig, DEFAULT_DOPAMINE_CONFIG } from "@/lib/reel/dopamineSplitScreen";
-import { UgcAdCampaign } from "@/lib/reel/ugcAdEngine";
 import { AutoFixRecommendation } from "@/lib/reel/retentionPredictor";
 import { ReelRemixRecipe } from "@/lib/reel/remixEngine";
-import { RedditStoryConfig } from "@/lib/reel/redditStoryEngine";
 import { VIRAL_SUBTITLE_PRESETS } from "@/lib/reel/viralSubtitles";
-import { autoDetectMemeCutaways, MemeCutawayItem, MemePreset } from "@/lib/reel/autoMemeEngine";
-import { DubbedTrackResult } from "@/lib/reel/globalDubber";
 import { TRENDING_AUDIO_TRACKS, beatAlignShots } from "@/lib/reel/beatSyncEngine";
 
 
@@ -192,18 +179,9 @@ export function ReelStudio() {
   const [editingPersonaSlot, setEditingPersonaSlot] = useState<1 | 2>(1);
   const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false);
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
-  const [isDopamineModalOpen, setIsDopamineModalOpen] = useState(false);
-  const [isUgcModalOpen, setIsUgcModalOpen] = useState(false);
   const [isRemixModalOpen, setIsRemixModalOpen] = useState(false);
-  const [isRedditModalOpen, setIsRedditModalOpen] = useState(false);
-  const [isMemeModalOpen, setIsMemeModalOpen] = useState(false);
-  const [isDubberModalOpen, setIsDubberModalOpen] = useState(false);
-  const [isArmorModalOpen, setIsArmorModalOpen] = useState(false);
-  const [isTrendRadarOpen, setIsTrendRadarOpen] = useState(false);
-  const [isBookStudioOpen, setIsBookStudioOpen] = useState(false);
   const [isPromptBuilderOpen, setIsPromptBuilderOpen] = useState(false);
   const [autoCritiqueLoopEnabled, setAutoCritiqueLoopEnabled] = useState(false);
-  const [detectedMemes, setDetectedMemes] = useState<MemeCutawayItem[]>([]);
   const [dopamineConfig, setDopamineConfig] = useState<DopamineConfig>(DEFAULT_DOPAMINE_CONFIG);
   const [zoomPreset, setZoomPreset] = useState<AutoZoomPresetId>("dynamic-viral");
   const [activeTab, setActiveTab] = useState<"Scenes" | "Script" | "B-Roll" | "SFX & Emojis" | "Retention Heatmap" | "Audio & Subtitles" | "Format" | "Cover">("Scenes");
@@ -313,33 +291,6 @@ export function ReelStudio() {
 
   const selectEmojiPreset = (id: string, emoji: string, label: string, sfx: SFXType) => {
     setKineticEmojis(prev => prev.map(e => e.id === id ? { ...e, emoji, label, sfx } : e));
-  };
-
-  // Tier 3: Auto-Meme & Reaction Cutaways Engine
-  const defaultMemes = useMemo(() => autoDetectMemeCutaways(shots), [shots]);
-  useEffect(() => {
-    setDetectedMemes(defaultMemes);
-  }, [defaultMemes]);
-
-  const handleToggleMeme = (id: string) => {
-    setDetectedMemes(prev => prev.map(m => m.id === id ? { ...m, enabled: !m.enabled } : m));
-  };
-
-  const handleAddCustomMeme = (preset: MemePreset) => {
-    const newMeme: MemeCutawayItem = {
-      id: `meme_custom_${Date.now()}`,
-      shotId: shots[0]?.id || "shot_1",
-      sceneIndex: 0,
-      timestampSec: 2.0,
-      memeId: preset.id,
-      title: preset.title,
-      memeUrl: preset.memeUrl,
-      sfx: preset.sfx,
-      layout: "pip_center",
-      durationSec: preset.durationSec,
-      enabled: true
-    };
-    setDetectedMemes(prev => [...prev, newMeme]);
   };
 
   // Phase 5 1-Click A/B Hook Variations Engine
@@ -838,52 +789,6 @@ export function ReelStudio() {
     URL.revokeObjectURL(url);
   };
 
-  const handleApplyUgcCampaign = (campaign: UgcAdCampaign) => {
-    setTopic(campaign.suggestedTitle);
-    const targetPersona = PRESET_PERSONAS.find(p => p.id === campaign.avatarPersonaId) || PRESET_PERSONAS[0];
-    setSelectedPersona(targetPersona);
-
-    if (production) {
-      const ugcShots: ReelShot[] = campaign.scenes.map((scene, idx) => ({
-        id: `shot_ugc_${scene.sceneIndex}`,
-        order: scene.sceneIndex,
-        editorialStartSec: idx * 4,
-        editorialDurationSec: scene.durationSec,
-        generationDurationSec: 4,
-        trimInSec: 0,
-        trimOutSec: 0,
-        scriptText: scene.dialogue,
-        visualIntent: `Presenter holds and reviews ${campaign.productName}. Camera: ${scene.cameraMovement}. Overlay: ${scene.overlayBadge}`,
-        generationPrompt: `High resolution photorealistic video of presenter holding and reviewing ${campaign.productName}`,
-        continuityIn: {
-          character: targetPersona.name,
-          wardrobe: "Casual Creator Wear",
-          environment: "Modern Creator Studio / Desk",
-          lighting: "Crisp Ring Light Key"
-        },
-        continuityOut: {
-          character: targetPersona.name,
-          wardrobe: "Casual Creator Wear",
-          environment: "Modern Creator Studio / Desk",
-          lighting: "Crisp Ring Light Key"
-        },
-        transitionOut: { type: "hard-cut", durationSec: 0 },
-        dependsOnShotIds: [],
-        status: "PLANNED"
-      }));
-
-      const updatedManifest: ReelProductionManifest = {
-        ...production.manifest,
-        topic: campaign.suggestedTitle,
-        masterScript: campaign.scenes.map(s => s.dialogue).join(" "),
-        shots: ugcShots
-      };
-
-      setProduction({ ...production, manifest: updatedManifest });
-    }
-    setActiveTab("Scenes");
-  };
-
   const handleApplyAutoFix = (rec: AutoFixRecommendation) => {
     if (rec.actionType === "boost_hook") {
       setDopamineConfig(prev => ({ ...prev, enabled: true }));
@@ -944,147 +849,6 @@ export function ReelStudio() {
     setDopamineConfig(recipe.dopamineConfig);
     const targetPersona = PRESET_PERSONAS.find(p => p.id === recipe.personaId) || PRESET_PERSONAS[0];
     setSelectedPersona(targetPersona);
-    setActiveTab("Scenes");
-  };
-
-  const handleApplyRedditStory = (story: RedditStoryConfig) => {
-    setTopic(`${story.subreddit}: ${story.title}`);
-    setDuration(story.totalDurationSec.toString());
-    if (production) {
-      const redditShots: ReelShot[] = story.messages.map((msg, idx) => ({
-        id: `shot_reddit_${msg.id}`,
-        order: idx + 1,
-        editorialStartSec: msg.timestampSec,
-        editorialDurationSec: 4.0,
-        generationDurationSec: 4,
-        trimInSec: 0,
-        trimOutSec: 0,
-        scriptText: `${msg.senderName}: "${msg.text}"`,
-        visualIntent: `Animated iMessage chat bubble from ${msg.senderName} popping up over dark ambient background with typing dots.`,
-        generationPrompt: `Dark cinematic ambient screen with iOS style iMessage chat bubble from ${msg.senderName}`,
-        continuityIn: {
-          character: msg.senderName,
-          wardrobe: "Dark Cinematic",
-          environment: "Ambient Chat Screen",
-          lighting: "Neon Glow"
-        },
-        continuityOut: {
-          character: msg.senderName,
-          wardrobe: "Dark Cinematic",
-          environment: "Ambient Chat Screen",
-          lighting: "Neon Glow"
-        },
-        transitionOut: { type: "hard-cut", durationSec: 0 },
-        dependsOnShotIds: [],
-        status: "PLANNED"
-      }));
-
-      const updatedManifest: ReelProductionManifest = {
-        ...production.manifest,
-        topic: `${story.subreddit}: ${story.title}`,
-        masterScript: story.messages.map(m => `${m.senderName}: "${m.text}"`).join(" "),
-        shots: redditShots
-      };
-
-      setProduction({ ...production, manifest: updatedManifest });
-    }
-    setActiveTab("Scenes");
-  };
-
-  const handleApplyDubbedAudio = (result: DubbedTrackResult) => {
-    setLanguage(result.languageCode);
-    if (production && production.manifest.outputs?.narratedRoughCut) {
-      setProduction({
-        ...production,
-        manifest: {
-          ...production.manifest,
-          outputs: {
-            ...production.manifest.outputs,
-            narratedRoughCut: {
-              ...production.manifest.outputs.narratedRoughCut,
-              videoUrl: result.dubbedAudioUrl
-            }
-          }
-        }
-      });
-    }
-  };
-
-  const handleApplyCensoredScript = (censoredText: string) => {
-    if (production) {
-      setProduction({
-        ...production,
-        manifest: {
-          ...production.manifest,
-          masterScript: censoredText
-        }
-      });
-    }
-  };
-
-  const handleBeatAlign = () => {
-    if (production && production.manifest.shots.length > 0) {
-      const aligned = beatAlignShots(production.manifest.shots, TRENDING_AUDIO_TRACKS[0]);
-      setProduction({
-        ...production,
-        manifest: {
-          ...production.manifest,
-          shots: aligned
-        }
-      });
-    }
-  };
-
-  const handleLaunchTrendInStudio = (trend: PredictedTrend) => {
-    setTopic(trend.title);
-    setDuration("60");
-    if (trend.transpiledRecipes.reel60s.visualStyle === "ali_abdaal_sky") {
-      setSubtitleStyle("ali-abdaal-sky");
-    } else if (trend.transpiledRecipes.reel60s.visualStyle === "mrbeast_neon") {
-      setSubtitleStyle("mrbeast-red");
-    } else {
-      setSubtitleStyle("hormozi-bold");
-    }
-    if (production) {
-      const newShots: ReelShot[] = trend.transpiledRecipes.reel60s.scriptBeats.map((beat, idx) => ({
-        id: `shot_trend_${idx + 1}`,
-        order: idx + 1,
-        editorialStartSec: idx * 4,
-        editorialDurationSec: 4,
-        generationDurationSec: 4,
-        trimInSec: 0,
-        trimOutSec: 0,
-        scriptText: beat,
-        visualIntent: `Presenter explains: ${beat}. High kinetic interest.`,
-        generationPrompt: `Cinematic high quality presentation video. Lighting: Studio Key. Subject: Presenter discussing ${trend.title}`,
-        continuityIn: {
-          character: selectedPersona.name,
-          wardrobe: "Casual Creator Wear",
-          environment: "Modern Creator Studio / Desk",
-          lighting: "Crisp Ring Light Key"
-        },
-        continuityOut: {
-          character: selectedPersona.name,
-          wardrobe: "Casual Creator Wear",
-          environment: "Modern Creator Studio / Desk",
-          lighting: "Crisp Ring Light Key"
-        },
-        transitionOut: { type: "hard-cut", durationSec: 0 },
-        dependsOnShotIds: [],
-        status: "PLANNED"
-      }));
-
-      setProduction({
-        ...production,
-        manifest: {
-          ...production.manifest,
-          topic: trend.title,
-          masterScript: `${trend.transpiledRecipes.reel60s.hook} ${trend.transpiledRecipes.reel60s.scriptBeats.join(" ")}`,
-          shots: newShots
-        }
-      });
-    }
-    setIsTrendRadarOpen(false);
     setActiveTab("Scenes");
   };
 
@@ -1203,18 +967,6 @@ export function ReelStudio() {
                 title="Remix Reel"
               >
                 <span>🔁 Remix</span>
-              </button>
-
-              <button
-                onClick={() => setIsDopamineModalOpen(true)}
-                className={`flex items-center gap-1 rounded-xl border px-2 py-1 text-[11px] font-bold shadow-sm transition ${
-                  dopamineConfig.enabled
-                    ? "border-pink-500 bg-pink-500/20 text-pink-200 font-black shadow-pink-500/20"
-                    : "border-white/10 bg-white/[0.04] text-slate-300 hover:border-pink-500/40"
-                }`}
-                title="Dopamine Split Screen"
-              >
-                <span>🎮 Dopamine</span>
               </button>
 
               <button
@@ -2584,6 +2336,11 @@ export function ReelStudio() {
               subtitleText={shots[0]?.scriptText || topic}
               subtitleStyle={subtitleStyle}
             />
+            <ResolutionDownloadDropdown
+              videoUrl={previewVideoUrl || "/assets/video/persona3_viral_influencer_reel.mp4"}
+              durationSec={durationNumber(duration)}
+              filenameBase={topic ? topic.toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 24) : "zyvoriq_reel"}
+            />
           </div>
 
           <div className="rounded-[24px] border border-white/10 bg-slate-900/60 p-5 backdrop-blur-xl shadow-2xl space-y-4">
@@ -2672,64 +2429,11 @@ export function ReelStudio() {
         videoUrl={roughCut?.videoUrl}
       />
 
-      <DopamineSplitModal
-        isOpen={isDopamineModalOpen}
-        onClose={() => setIsDopamineModalOpen(false)}
-        config={dopamineConfig}
-        onUpdateConfig={(newConfig) => setDopamineConfig(newConfig)}
-      />
-
-      <UgcAdGeneratorModal
-        isOpen={isUgcModalOpen}
-        onClose={() => setIsUgcModalOpen(false)}
-        onApplyCampaign={handleApplyUgcCampaign}
-      />
-
       <RemixShareModal
         isOpen={isRemixModalOpen}
         onClose={() => setIsRemixModalOpen(false)}
         currentRecipe={currentRemixRecipe}
         onApplyTemplate={handleApplyRemixTemplate}
-      />
-
-      <RedditStoryModal
-        isOpen={isRedditModalOpen}
-        onClose={() => setIsRedditModalOpen(false)}
-        onApplyStory={handleApplyRedditStory}
-      />
-
-      <AutoMemeModal
-        isOpen={isMemeModalOpen}
-        onClose={() => setIsMemeModalOpen(false)}
-        detectedMemes={detectedMemes}
-        onToggleMeme={handleToggleMeme}
-        onAddCustomMeme={handleAddCustomMeme}
-      />
-
-      <GlobalDubberModal
-        isOpen={isDubberModalOpen}
-        onClose={() => setIsDubberModalOpen(false)}
-        sourceScript={production?.manifest.masterScript || topic}
-        speakerName={selectedPersona.name}
-        onApplyDubbedAudio={handleApplyDubbedAudio}
-      />
-
-      <DemonetizationArmorModal
-        isOpen={isArmorModalOpen}
-        onClose={() => setIsArmorModalOpen(false)}
-        scriptText={production?.manifest.masterScript || topic}
-        onApplyCensoredScript={handleApplyCensoredScript}
-      />
-
-      <TrendRadarModal
-        isOpen={isTrendRadarOpen}
-        onClose={() => setIsTrendRadarOpen(false)}
-        onLaunchInStudio={handleLaunchTrendInStudio}
-      />
-
-      <BookStudioModal
-        isOpen={isBookStudioOpen}
-        onClose={() => setIsBookStudioOpen(false)}
       />
 
       <PromptDirectorBuilderModal

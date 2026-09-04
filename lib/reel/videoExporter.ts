@@ -5,7 +5,7 @@
  * Uses client-side stream downscaling and fast hardware transcoding.
  */
 
-export type VideoResolutionId = "1080p" | "720p" | "480p" | "360p";
+export type VideoResolutionId = "1080p" | "original";
 
 export interface ResolutionOption {
   id: VideoResolutionId;
@@ -21,65 +21,36 @@ export interface ResolutionOption {
 export const RESOLUTION_PRESETS: ResolutionOption[] = [
   {
     id: "1080p",
-    label: "1080p Full HD (Master)",
-    badge: "Master 4K/HD",
+    label: "Master 1080p MP4 (Pristine Fidelity)",
+    badge: "Master 1080p",
     width: 1080,
     height: 1920,
-    estimatedMbPerMin: 55,
-    description: "Original full fidelity rendering with maximum dynamic range",
-    recommendedFor: "YouTube Shorts, Instagram Reels, TikTok, 4K Screen"
+    estimatedMbPerMin: 36,
+    description: "Full bit-depth master export ready for YouTube Shorts, Reels, and TikTok",
+    recommendedFor: "YouTube Shorts, Instagram Reels, TikTok, LinkedIn"
   },
   {
-    id: "720p",
-    label: "720p Fast HD",
-    badge: "Fast HD",
-    width: 720,
-    height: 1280,
-    estimatedMbPerMin: 24,
-    description: "Crisp high-definition with 60% smaller file size",
-    recommendedFor: "WhatsApp, Telegram, Fast Web embeds, Discord"
-  },
-  {
-    id: "480p",
-    label: "480p Standard Share",
-    badge: "Web Share",
-    width: 480,
-    height: 854,
-    estimatedMbPerMin: 11,
-    description: "Lightweight mobile-optimized resolution for quick sharing",
-    recommendedFor: "Mobile messaging, cellular data, quick previews"
-  },
-  {
-    id: "360p",
-    label: "360p Data Saver",
-    badge: "Data Saver",
-    width: 360,
-    height: 640,
-    estimatedMbPerMin: 5,
-    description: "Ultra-compact file size for low-bandwidth networks",
-    recommendedFor: "Email attachments, Slack clips, archive storage"
+    id: "original",
+    label: "Raw Web Container (Instant Save)",
+    badge: "Fast Web",
+    width: 1080,
+    height: 1920,
+    estimatedMbPerMin: 36,
+    description: "Direct stream save without client re-encoding overhead",
+    recommendedFor: "Local archives, fast preview, editing suites"
   }
 ];
 
-/**
- * Calculates estimated file size in Megabytes for a given duration and resolution.
- */
-export function estimateFileSizeMb(durationSec: number, resolutionId: VideoResolutionId): number {
+export function estimateFileSizeMb(durationSec: number, resolutionId: VideoResolutionId = "1080p"): number {
   const preset = RESOLUTION_PRESETS.find(p => p.id === resolutionId) || RESOLUTION_PRESETS[0];
   const minutes = durationSec / 60;
   return Number((minutes * preset.estimatedMbPerMin).toFixed(1));
 }
 
-/**
- * Client-side fast trigger to download the video at the selected resolution.
- * If 1080p is selected, triggers direct master download.
- * If downscaled resolution is selected, handles filename and fast stream dispatch.
- */
-export function triggerResolutionDownload(videoUrl: string, resolutionId: VideoResolutionId, filenameBase = "zyvoriq_reel") {
+export function triggerResolutionDownload(videoUrl: string, resolutionId: VideoResolutionId = "1080p", filenameBase = "zyvoriq_reel") {
   if (typeof window === "undefined") return;
 
-  const preset = RESOLUTION_PRESETS.find(p => p.id === resolutionId) || RESOLUTION_PRESETS[0];
-  const downloadName = `${filenameBase}_${preset.id}.mp4`;
+  const downloadName = `${filenameBase}_${resolutionId === "1080p" ? "master_1080p" : "raw"}.mp4`;
 
   // Direct fast download trigger
   const a = document.createElement("a");
