@@ -24,6 +24,7 @@ import {
   Sparkle
 } from "lucide-react";
 import { StudioSidebar } from "@/components/StudioSidebar";
+import { LyriaSongArranger } from "@/components/studio/premium/LyriaSongArranger";
 
 interface MusicAct {
   act: number;
@@ -90,7 +91,7 @@ function MusicStudioContent() {
   const [activeActIndex, setActiveActIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activeTab, setActiveTab] = useState<"visualizer" | "lyrics" | "acts">("visualizer");
+  const [activeTab, setActiveTab] = useState<"arranger" | "visualizer" | "lyrics" | "acts">("arranger");
 
   useEffect(() => {
     const q = searchParams.get("q");
@@ -173,6 +174,17 @@ function MusicStudioContent() {
         <div className="flex items-center gap-2 border-b border-white/10 pb-3 overflow-x-auto">
           <button
             type="button"
+            onClick={() => setActiveTab("arranger")}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+              activeTab === "arranger"
+                ? "bg-purple-500 text-obsidian-950 shadow-lg shadow-purple-500/20"
+                : "text-slate-400 hover:text-white bg-white/5"
+            }`}
+          >
+            <Disc className="w-3.5 h-3.5" /> 🎼 Lyria 3.0 Pro Arranger
+          </button>
+          <button
+            type="button"
             onClick={() => setActiveTab("visualizer")}
             className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
               activeTab === "visualizer"
@@ -210,6 +222,15 @@ function MusicStudioContent() {
         <div className="grid gap-8 lg:grid-cols-12">
           {/* Left Column: Visualizer / Stage (7 Cols) */}
           <div className="lg:col-span-7 space-y-6">
+            {activeTab === "arranger" && (
+              <LyriaSongArranger
+                currentTier="pro"
+                initialPresetId={selectedGenre === "bollywood_sangeet" ? "bollywood_fusion" : "adaptive_cinematic"}
+                onSongChange={(config) => {
+                  console.log("Lyria Song Configuration updated:", config);
+                }}
+              />
+            )}
             {activeTab === "visualizer" && (
               <div className="space-y-4">
                 <div className="relative aspect-video w-full rounded-3xl border border-amber-500/30 bg-black/90 overflow-hidden shadow-2xl flex items-center justify-center group">

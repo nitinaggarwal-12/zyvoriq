@@ -18,6 +18,7 @@ import { PersonaClone, PRESET_PERSONAS } from "@/lib/reel/personas";
 import { PersonaVaultModal } from "@/components/PersonaVaultModal";
 import { SocialPublishModal } from "@/components/SocialPublishModal";
 import { ResolutionDownloadDropdown } from "@/components/ResolutionDownloadDropdown";
+import { VeoChainedTimeline } from "@/components/studio/premium/VeoChainedTimeline";
 import { PodcastStudioView } from "@/components/multimodal/PodcastStudioView";
 import { CarouselStudioView } from "@/components/multimodal/CarouselStudioView";
 import { SongStudioView } from "@/components/multimodal/SongStudioView";
@@ -184,7 +185,7 @@ export function ReelStudio() {
   const [autoCritiqueLoopEnabled, setAutoCritiqueLoopEnabled] = useState(false);
   const [dopamineConfig, setDopamineConfig] = useState<DopamineConfig>(DEFAULT_DOPAMINE_CONFIG);
   const [zoomPreset, setZoomPreset] = useState<AutoZoomPresetId>("dynamic-viral");
-  const [activeTab, setActiveTab] = useState<"Scenes" | "Script" | "B-Roll" | "SFX & Emojis" | "Retention Heatmap" | "Audio & Subtitles" | "Format" | "Cover">("Scenes");
+  const [activeTab, setActiveTab] = useState<"Scenes" | "Veo Timeline" | "Script" | "B-Roll" | "SFX & Emojis" | "Retention Heatmap" | "Audio & Subtitles" | "Format" | "Cover">("Scenes");
 
   const [synthesisProgress, setSynthesisProgress] = useState<number>(100);
   const [activeStepIndex, setActiveStepIndex] = useState<number>(4);
@@ -1362,7 +1363,7 @@ export function ReelStudio() {
         <section className="min-w-0 rounded-[26px] border border-white/10 bg-[#0a0d12]/90 backdrop-blur-xl shadow-2xl">
           <div className="flex flex-wrap items-center justify-between border-b border-white/10 p-3">
             <div className="flex flex-wrap items-center gap-1.5">
-              {(["Scenes", "Script", "B-Roll", "SFX & Emojis", "Retention Heatmap", "Audio & Subtitles", "Format", "Cover"] as const).map(tab => (
+              {(["Scenes", "Veo Timeline", "Script", "B-Roll", "SFX & Emojis", "Retention Heatmap", "Audio & Subtitles", "Format", "Cover"] as const).map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -1384,6 +1385,17 @@ export function ReelStudio() {
           </div>
 
           <div className="p-5 sm:p-7">
+            {/* TAB: VEO 3.1 RECURSIVE CHAINED TIMELINE (PREMIUM) */}
+            {activeTab === "Veo Timeline" && (
+              <VeoChainedTimeline
+                currentTier="pro"
+                isBYOK={true}
+                initialCyclesCount={8}
+                currentTime={0}
+                isPlaying={false}
+              />
+            )}
+
             {/* TAB 1: SCENES & TIMELINE */}
             {activeTab === "Scenes" && (
               <div className="space-y-6">
