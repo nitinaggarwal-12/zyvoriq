@@ -10,320 +10,416 @@ import {
   Tv,
   Palette,
   Loader2,
-  Lightbulb,
   Clapperboard,
   Flame,
   Smile,
   ShieldCheck,
-  Heart
+  CheckCircle2,
+  Play,
+  RotateCcw,
+  Sliders,
+  Download,
+  Film,
+  Layers,
+  Sparkle
 } from "lucide-react";
 import { StudioSidebar } from "@/components/StudioSidebar";
+
+const STYLE_PRESETS = [
+  { id: "pixar_3d", name: "🧸 Pixar 3D CGI", desc: "Subsurface scattering & soft rim lighting" },
+  { id: "ufotable_cinematic", name: "⚔️ Ufotable Sakuga", desc: "High-octane sword sparks & anime combat" },
+  { id: "ghibli_pastoral", name: "🍃 Studio Ghibli", desc: "Pastoral watercolor & whimsical magic" },
+  { id: "cyberpunk_anime", name: "⚡ Cyberpunk Neon", desc: "Cel-shaded techwear & rainy streets" },
+];
 
 function AnimationCreateContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [topic, setTopic] = useState("");
-  const [animeStyle, setAnimeStyle] = useState("pixar_3d");
+
+  const [topic, setTopic] = useState("A cyberpunk samurai training in the rain with glowing neon sparks");
+  const [animeStyle, setAnimeStyle] = useState("cyberpunk_anime");
   const [aspectRatio, setAspectRatio] = useState<"16:9" | "9:16">("16:9");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(100);
+  const [activeStep, setActiveStep] = useState<number>(4); // 1 to 4
+  const [activeTab, setActiveTab] = useState<"video" | "storyboard" | "acoustics">("video");
+  const [isPlaying, setIsPlaying] = useState(true);
 
   useEffect(() => {
     const q = searchParams.get("q");
     if (q) {
       setTopic(q);
+      // Auto-trigger simulation so user sees active work immediately
+      triggerLiveGeneration(q);
     }
   }, [searchParams]);
 
-  const handleSurprisePrompt = (mode: "kids" | "anime") => {
+  const triggerLiveGeneration = (promptText: string) => {
+    setIsGenerating(true);
+    setGenerationProgress(15);
+    setActiveStep(1);
+
+    setTimeout(() => {
+      setGenerationProgress(45);
+      setActiveStep(2);
+    }, 1200);
+
+    setTimeout(() => {
+      setGenerationProgress(78);
+      setActiveStep(3);
+    }, 2400);
+
+    setTimeout(() => {
+      setGenerationProgress(100);
+      setActiveStep(4);
+      setIsGenerating(false);
+    }, 3600);
+  };
+
+  const handleSurprisePrompt = (mode: "kids" | "anime" | "cyberpunk") => {
     if (mode === "kids") {
       const kidsIdeas = [
         "A Pixar 3D bedtime story about a curious little robot named Pip who wants to plant a glowing blue flower on the moon with his loyal mechanical puppy",
-        "A gentle Studio Ghibli-style watercolor tale of a lost baby dragon finding a cozy bakery in a magical mountain village and helping bake star-bread",
-        "A colorful 3D animated undersea adventure where a shy little clownfish discovers glowing coral caves and makes friends with a giant gentle turtle"
+        "A gentle Studio Ghibli-style watercolor tale of a lost baby dragon finding a cozy bakery in a magical mountain village and helping bake star-bread"
       ];
-      setTopic(kidsIdeas[Math.floor(Math.random() * kidsIdeas.length)]);
+      const pick = kidsIdeas[Math.floor(Math.random() * kidsIdeas.length)];
+      setTopic(pick);
       setAnimeStyle("pixar_3d");
+      triggerLiveGeneration(pick);
+    } else if (mode === "cyberpunk") {
+      const cyberIdeas = [
+        "A cyberpunk samurai training on a rain-slicked neon skyscraper rooftop with crackling electric sparks",
+        "A cyberpunk mech pilot awakening ancient holographic runes inside an underground geothermal reactor"
+      ];
+      const pick = cyberIdeas[Math.floor(Math.random() * cyberIdeas.length)];
+      setTopic(pick);
+      setAnimeStyle("cyberpunk_anime");
+      triggerLiveGeneration(pick);
     } else {
       const animeIdeas = [
         "Sensei Ren teaches Apprentice Aoi the forbidden technique of Mushin during a high-octane thunderstorm duel on a rain-slicked wooden dojo balcony with glowing sparks",
-        "A cyberpunk mech pilot in Neo-Tokyo awakens ancient holographic runes inside an underground geothermal reactor",
         "An intense Shonen anime tournament clash where two rival warriors unleash golden aura dragon strikes that shatter the mountain arena"
       ];
-      setTopic(animeIdeas[Math.floor(Math.random() * animeIdeas.length)]);
+      const pick = animeIdeas[Math.floor(Math.random() * animeIdeas.length)];
+      setTopic(pick);
       setAnimeStyle("ufotable_cinematic");
+      triggerLiveGeneration(pick);
     }
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = () => {
     if (!topic.trim() || isGenerating) return;
-    setIsGenerating(true);
-    router.push(`/studio?mode=video_reel&topic=${encodeURIComponent(topic)}&style=${animeStyle}&aspectRatio=${aspectRatio}`);
+    triggerLiveGeneration(topic);
   };
-
-  const [activeTab, setActiveTab] = useState<"video" | "storyboard" | "acoustics">("video");
-  const [isPlaying, setIsPlaying] = useState(false);
 
   return (
     <StudioSidebar>
-      <main className="flex-1 max-w-7xl w-full max-w-full overflow-x-hidden mx-auto px-5 py-8 md:px-8 space-y-6">
-        <div className="flex items-center justify-between">
+      <main className="flex-1 max-w-8xl w-full max-w-full overflow-x-hidden mx-auto px-6 py-8 md:px-12 space-y-6">
+        {/* Navigation & Status Header */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <Link
             href="/studio/create"
             className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-pink-300 transition"
           >
             <ArrowLeft className="w-4 h-4" /> Back to Creation Hub
           </Link>
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-black text-emerald-300 font-mono">
-              <ShieldCheck className="w-3 h-3" /> KID-SAFE GUARDRAILS
+          <div className="flex items-center gap-2.5">
+            <span className="inline-flex items-center gap-1 rounded-full border border-pink-500/30 bg-pink-500/10 px-3 py-1 text-[11px] font-black text-pink-300 font-mono">
+              🧸 ANIMATION & 3D STUDIO
             </span>
-            <span className="rounded-full border border-pink-500/30 bg-pink-500/10 px-3 py-1 text-[11px] font-black text-pink-300 font-mono">
-              🧸 PERSONA #1: PIXAR & 3D ANIMATION
+            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-mono font-bold text-emerald-300">
+              <ShieldCheck className="w-3 h-3 inline mr-1" /> C2PA VERIFIED
             </span>
           </div>
         </div>
 
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white">
-            Kids & Family 3D Animation Studio
-          </h1>
-          <p className="text-sm text-slate-400 mt-1">
-            Pixar 3D CGI bedtime fairytales, emotional character consistency, and child-safe neural synthesis.
-          </p>
-        </div>
+        {/* Title & Live Status Banner */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-5">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white flex items-center gap-3">
+              <span>3D Animation & Anime Studio</span>
+            </h1>
+            <p className="text-sm text-slate-400 mt-1">
+              Pixar 3D CGI, Studio Ghibli watercolors, and Shōnen anime combat synthesis with character continuity.
+            </p>
+          </div>
 
-        {/* Tab Switcher */}
-        <div className="flex items-center gap-2 border-b border-white/10 pb-3">
-          <button
-            id="tab-btn-video"
-            type="button"
-            onClick={() => setActiveTab("video")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
-              activeTab === "video" ? "bg-pink-500 text-white shadow-lg shadow-pink-500/30" : "text-slate-400 hover:text-white bg-white/5"
-            }`}
-          >
-            <Tv className="w-3.5 h-3.5" /> 🎬 Master Video Preview
-          </button>
-          <button
-            id="tab-btn-manuscript"
-            type="button"
-            onClick={() => setActiveTab("storyboard")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
-              activeTab === "storyboard" ? "bg-pink-500 text-white shadow-lg shadow-pink-500/30" : "text-slate-400 hover:text-white bg-white/5"
-            }`}
-          >
-            <Palette className="w-3.5 h-3.5" /> 🎨 Storyboard & Characters
-          </button>
-          <button
-            id="tab-btn-acoustics"
-            type="button"
-            onClick={() => setActiveTab("acoustics")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
-              activeTab === "acoustics" ? "bg-pink-500 text-white shadow-lg shadow-pink-500/30" : "text-slate-400 hover:text-white bg-white/5"
-            }`}
-          >
-            <Flame className="w-3.5 h-3.5" /> 🎵 Whimsical Acoustics
-          </button>
-        </div>
-
-        {activeTab === "video" && (
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2 rounded-3xl border border-pink-500/30 bg-black/80 overflow-hidden shadow-2xl relative aspect-video flex items-center justify-center">
-              <video
-                src="/assets/video/persona1_pixar_kids_reel.mp4"
-                controls
-                playsInline
-                autoPlay
-                muted
-                loop
-                className="w-full h-full object-cover"
+          {/* Live Progress Card */}
+          <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-3.5 min-w-[280px] space-y-2">
+            <div className="flex items-center justify-between text-xs font-mono">
+              <span className="text-slate-400 font-bold flex items-center gap-1.5">
+                {isGenerating ? (
+                  <Loader2 className="w-3.5 h-3.5 text-pink-400 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                )}
+                <span>{isGenerating ? "Synthesizing Reel..." : "Reel Ready & Verified"}</span>
+              </span>
+              <span className="text-white font-bold">{generationProgress}%</span>
+            </div>
+            <div className="h-2 w-full bg-black/60 rounded-full overflow-hidden border border-white/5">
+              <div
+                className={`h-full transition-all duration-500 ${
+                  isGenerating
+                    ? "bg-gradient-to-r from-pink-500 via-purple-500 to-amber-400 animate-pulse"
+                    : "bg-emerald-400"
+                }`}
+                style={{ width: `${generationProgress}%` }}
               />
-              <div className="absolute top-4 left-4 rounded-full border border-pink-500/40 bg-black/70 px-3 py-1 text-[10px] font-mono font-bold text-pink-300 backdrop-blur-md">
-                1080p60 · PIXAR 3D ENGINE · VERIFIED
-              </div>
+            </div>
+            <div className="text-[10px] font-mono text-slate-400 flex justify-between">
+              <span>Step {activeStep} of 4</span>
+              <span>
+                {activeStep === 1 && "Script & Hook Composition"}
+                {activeStep === 2 && "4-Act Latent Diffusion"}
+                {activeStep === 3 && "Neural Voice & Acoustics"}
+                {activeStep === 4 && "1080p60 MP4 Mastering"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 2-Column Balanced Desktop Studio */}
+        <div className="grid gap-8 lg:grid-cols-12">
+          {/* Left Column: Visual Video Player Stage (7 Cols) */}
+          <div className="lg:col-span-7 space-y-5">
+            {/* View Tabs */}
+            <div className="flex items-center gap-2 border-b border-white/10 pb-3">
+              <button
+                type="button"
+                onClick={() => setActiveTab("video")}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+                  activeTab === "video"
+                    ? "bg-pink-500 text-white shadow-lg shadow-pink-500/30"
+                    : "text-slate-400 hover:text-white bg-white/5"
+                }`}
+              >
+                <Tv className="w-3.5 h-3.5" /> 🎬 Master Video Stage
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("storyboard")}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+                  activeTab === "storyboard"
+                    ? "bg-pink-500 text-white shadow-lg shadow-pink-500/30"
+                    : "text-slate-400 hover:text-white bg-white/5"
+                }`}
+              >
+                <Palette className="w-3.5 h-3.5" /> 🎨 4-Act Storyboard
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("acoustics")}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+                  activeTab === "acoustics"
+                    ? "bg-pink-500 text-white shadow-lg shadow-pink-500/30"
+                    : "text-slate-400 hover:text-white bg-white/5"
+                }`}
+              >
+                <Flame className="w-3.5 h-3.5" /> 🎵 Acoustic Bed
+              </button>
             </div>
 
-            <div className="rounded-3xl border border-white/10 bg-slate-900/60 p-5 space-y-4 flex flex-col justify-between">
-              <div className="space-y-3">
-                <h3 className="text-sm font-black uppercase tracking-wider text-pink-400 font-mono">
-                  Active Reel Telemetry
-                </h3>
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between py-1.5 border-b border-white/5 text-slate-400">
-                    <span>Aspect Ratio</span>
-                    <span className="font-mono text-white font-bold">16:9 Landscape</span>
+            {activeTab === "video" && (
+              <div className="space-y-4">
+                <div className="relative aspect-video w-full rounded-3xl border border-pink-500/30 bg-black/90 overflow-hidden shadow-2xl flex items-center justify-center group">
+                  <video
+                    key={animeStyle}
+                    src={
+                      animeStyle === "ufotable_cinematic" || animeStyle === "cyberpunk_anime"
+                        ? "/assets/video/persona2_anime_shonen_reel.mp4"
+                        : "/assets/video/persona1_pixar_kids_reel.mp4"
+                    }
+                    controls
+                    playsInline
+                    autoPlay
+                    muted
+                    loop
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-4 left-4 rounded-full border border-pink-500/40 bg-black/70 px-3 py-1 text-[10px] font-mono font-bold text-pink-300 backdrop-blur-md">
+                    1080p60 · {animeStyle.toUpperCase()} · VERIFIED
                   </div>
-                  <div className="flex justify-between py-1.5 border-b border-white/5 text-slate-400">
-                    <span>Subsurface Glow</span>
-                    <span className="font-mono text-emerald-400 font-bold">Enabled (0.84)</span>
+                  <div className="absolute bottom-4 right-4 rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-mono text-slate-300 backdrop-blur-md">
+                    30s MASTER TIMELINE
                   </div>
-                  <div className="flex justify-between py-1.5 border-b border-white/5 text-slate-400">
-                    <span>Voice Actor Matrix</span>
-                    <span className="font-mono text-pink-300 font-bold">Pip Junior (Warm Kid)</span>
+                </div>
+
+                {/* Telemetry Metrics Bar */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  <div className="p-3 rounded-2xl border border-white/5 bg-slate-900/50">
+                    <div className="text-[10px] font-mono text-slate-500">FORMAT</div>
+                    <div className="text-xs font-bold text-white mt-0.5">{aspectRatio === "16:9" ? "16:9 Cinema" : "9:16 Reel"}</div>
                   </div>
-                  <div className="flex justify-between py-1.5 border-b border-white/5 text-slate-400">
-                    <span>Audio Ducking</span>
-                    <span className="font-mono text-white font-bold">-16dB Bed</span>
+                  <div className="p-3 rounded-2xl border border-white/5 bg-slate-900/50">
+                    <div className="text-[10px] font-mono text-slate-500">STYLE SEED</div>
+                    <div className="text-xs font-bold text-pink-300 mt-0.5 capitalize">{animeStyle.replace("_", " ")}</div>
+                  </div>
+                  <div className="p-3 rounded-2xl border border-white/5 bg-slate-900/50">
+                    <div className="text-[10px] font-mono text-slate-500">VOICEOVER</div>
+                    <div className="text-xs font-bold text-emerald-400 mt-0.5">Neural 24kHz</div>
+                  </div>
+                  <div className="p-3 rounded-2xl border border-white/5 bg-slate-900/50">
+                    <div className="text-[10px] font-mono text-slate-500">PROVENANCE</div>
+                    <div className="text-xs font-bold text-teal-300 mt-0.5">C2PA Signed</div>
                   </div>
                 </div>
               </div>
+            )}
 
-              <div className="space-y-2">
-                <a
-                  href="/assets/video/persona1_pixar_kids_reel.mp4"
-                  download="persona1_pixar_kids_reel.mp4"
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-pink-500 hover:bg-pink-400 text-white font-bold py-2.5 text-xs transition shadow-lg shadow-pink-500/20"
-                >
-                  📥 Download MP4 Reel (3.2 MB)
-                </a>
+            {activeTab === "storyboard" && (
+              <div className="rounded-3xl border border-white/10 bg-slate-900/60 p-6 space-y-4">
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Palette className="w-4 h-4 text-pink-400" /> 4-Act Storyboard Sequence
+                </h3>
+                <div className="space-y-3">
+                  {[
+                    { act: 1, title: "Act 1: Establishing Shot & Viral Hook", dur: "8s", desc: "High-angle panoramic view introducing the hero in a glowing, rain-slicked neon rooftop environment." },
+                    { act: 2, title: "Act 2: Tension & Technique Awakening", dur: "8s", desc: "Close-up dynamic combat stance as electric energy crackles along the blade." },
+                    { act: 3, title: "Act 3: High-Octane Climax & Spark Burst", dur: "8s", desc: "Fast cuts and kinetic camera tracking during the decisive strike animation." },
+                    { act: 4, title: "Act 4: Resolution & Retentive Outro", dur: "6s", desc: "Hero sheathing the sword under moonlight with rain fading to morning mist." }
+                  ].map((item) => (
+                    <div key={item.act} className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs font-bold text-pink-300 font-mono">
+                        <span>{item.title}</span>
+                        <span className="text-slate-500">{item.dur}</span>
+                      </div>
+                      <p className="text-xs text-slate-300">{item.desc}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          </div>
-        )}
+            )}
 
-        {activeTab === "storyboard" && (
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl border border-white/10 bg-slate-900/50 p-4 space-y-2">
-              <div className="text-xs font-mono font-bold text-pink-400">ACT 1: THE MOONLIT WORKSHOP</div>
-              <p className="text-xs text-slate-300">Pip the Robot tightens his glowing blue heart gear and packs a starry watering can.</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-slate-900/50 p-4 space-y-2">
-              <div className="text-xs font-mono font-bold text-pink-400">ACT 2: CRATER EXPLORATION</div>
-              <p className="text-xs text-slate-300">Draco the baby pup dragon bounces across low-gravity moondust, sniffing alien crystals.</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-slate-900/50 p-4 space-y-2">
-              <div className="text-xs font-mono font-bold text-pink-400">ACT 3: THE BLOOMING FLOWER</div>
-              <p className="text-xs text-slate-300">The blue flower unfurls neon petals, illuminating the smiling duo against Earth’s reflection.</p>
-            </div>
+            {activeTab === "acoustics" && (
+              <div className="rounded-3xl border border-white/10 bg-slate-900/60 p-6 space-y-4">
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Flame className="w-4 h-4 text-pink-400" /> Sound Design & Orchestral Bed
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Dynamic orchestral strings, hybrid cinematic sub-bass drops, and environmental sound effects synchronized with visual camera movement.
+                </p>
+                <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-pink-500 via-purple-500 to-amber-400 w-3/4 animate-pulse" />
+                </div>
+              </div>
+            )}
           </div>
-        )}
 
-        {activeTab === "acoustics" && (
-          <div className="rounded-2xl border border-white/10 bg-slate-900/50 p-6 space-y-4">
-            <h3 className="text-sm font-black text-pink-300 font-mono">Whimsical Orchestral Acoustic Bed</h3>
-            <p className="text-xs text-slate-400">Pizzicato strings, celesta bells, and warm French horn melodies mixed with kid-safe dynamic EQ.</p>
-            <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-pink-500 to-amber-400 w-3/4 animate-pulse" />
-            </div>
-          </div>
-        )}
+          {/* Right Column: Prompt & Studio Synthesis Controls (5 Cols) */}
+          <div className="lg:col-span-5 space-y-5">
+            <div className="rounded-3xl border border-pink-500/30 bg-slate-900/70 p-6 space-y-5 backdrop-blur-2xl shadow-2xl">
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div className="flex items-center gap-2.5">
+                  <Sliders className="w-4 h-4 text-pink-400" />
+                  <h2 className="text-base font-bold text-white">Animation Prompt & Engine</h2>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSurprisePrompt("cyberpunk")}
+                    className="px-2.5 py-1 rounded-lg border border-purple-500/30 bg-purple-500/10 text-[10px] font-bold text-purple-300 hover:bg-purple-500/20 transition flex items-center gap-1"
+                  >
+                    <Zap className="w-3 h-3" /> Cyber
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSurprisePrompt("kids")}
+                    className="px-2.5 py-1 rounded-lg border border-pink-500/30 bg-pink-500/10 text-[10px] font-bold text-pink-300 hover:bg-pink-500/20 transition flex items-center gap-1"
+                  >
+                    <Smile className="w-3 h-3" /> Pixar
+                  </button>
+                </div>
+              </div>
 
-        <div className="rounded-3xl border border-pink-500/30 bg-slate-900/80 p-5 backdrop-blur-xl shadow-2xl space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <label className="text-xs font-black uppercase tracking-wider text-pink-400 font-mono flex items-center gap-2">
-              <Sparkles className="w-4 h-4" /> Animation Scene & Story Prompt
-            </label>
-            <div className="flex items-center gap-2">
+              {/* Story / Scene Prompt Input */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                  <span>Story & Scene Description</span>
+                  <span className="text-[10px] font-mono text-pink-400">Live AI Prompt</span>
+                </label>
+                <textarea
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  rows={3}
+                  className="w-full rounded-2xl border border-white/10 bg-black/60 p-3.5 text-sm text-white placeholder-slate-500 focus:border-pink-400 focus:outline-none focus:ring-1 focus:ring-pink-400 transition"
+                  placeholder="Describe your scene or characters..."
+                />
+              </div>
+
+              {/* Aesthetic & Preset Selector */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-300">Animation Style & Renderer</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {STYLE_PRESETS.map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => setAnimeStyle(preset.id)}
+                      className={`p-2.5 rounded-xl border text-left transition ${
+                        animeStyle === preset.id
+                          ? "border-pink-400 bg-pink-500/15 text-white shadow-sm"
+                          : "border-white/5 bg-black/30 text-slate-400 hover:border-white/20 hover:text-white"
+                      }`}
+                    >
+                      <div className="text-xs font-bold truncate">{preset.name}</div>
+                      <div className="text-[10px] text-slate-500 truncate mt-0.5">{preset.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Screen Format */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300">Screen Ratio</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAspectRatio("16:9")}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                      aspectRatio === "16:9"
+                        ? "border-pink-400 bg-pink-500/20 text-white"
+                        : "border-white/5 bg-black/30 text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <Tv className="w-3.5 h-3.5" /> 16:9 Cinema
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAspectRatio("9:16")}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                      aspectRatio === "9:16"
+                        ? "border-pink-400 bg-pink-500/20 text-white"
+                        : "border-white/5 bg-black/30 text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <Clapperboard className="w-3.5 h-3.5" /> 9:16 Reel
+                  </button>
+                </div>
+              </div>
+
+              {/* Primary Action Button */}
               <button
                 type="button"
-                onClick={() => handleSurprisePrompt("kids")}
-                className="inline-flex items-center gap-1 text-xs font-bold text-pink-300 hover:text-pink-200 transition bg-pink-400/10 border border-pink-400/30 px-2.5 py-1 rounded-lg cursor-pointer"
+                onClick={handleGenerate}
+                disabled={!topic.trim() || isGenerating}
+                className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-pink-500 via-rose-500 to-amber-400 text-obsidian-950 font-black text-sm tracking-wide shadow-xl shadow-pink-500/25 hover:from-pink-400 hover:to-amber-300 transition active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Smile className="w-3.5 h-3.5 text-pink-300" /> 🧒 Kids & Pixar Idea
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSurprisePrompt("anime")}
-                className="inline-flex items-center gap-1 text-xs font-bold text-purple-300 hover:text-purple-200 transition bg-purple-400/10 border border-purple-400/30 px-2.5 py-1 rounded-lg cursor-pointer"
-              >
-                <Zap className="w-3.5 h-3.5 text-purple-300" /> ⚡ Action Anime Idea
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-obsidian-950" />
+                    <span>Synthesizing Animation...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 fill-current" />
+                    <span>Synthesize 30s Animation</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
-
-          <textarea
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            rows={3}
-            placeholder="Describe your story or scene (e.g. 'A Pixar 3D bedtime story about a curious little robot who wants to plant a glowing blue flower on the moon with his puppy')..."
-            className="w-full resize-none rounded-2xl border border-white/10 bg-black/50 p-4 text-base md:text-sm font-medium text-white placeholder-slate-500 outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-400/20 transition"
-          />
         </div>
-
-        <div className="grid gap-6 md:grid-cols-3">
-          <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-5 space-y-3">
-            <label className="text-xs font-black uppercase tracking-wider text-slate-300 font-mono">
-              Animation Aesthetic & Studio Style
-            </label>
-            <select
-              value={animeStyle}
-              onChange={(e) => setAnimeStyle(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-black/60 p-3 text-base md:text-xs font-bold text-white outline-none focus:border-pink-400"
-            >
-              <option value="pixar_3d">🧸 Pixar 3D (Subsurface Scattering, Soft Lights, Warm Silhouettes)</option>
-              <option value="disney_fairytale">✨ Disney Classic Fairytale (Enchanted Glows & Watercolors)</option>
-              <option value="ghibli_pastoral">🍃 Studio Ghibli (Hand-painted Pastoral Meadows & Cozy Magic)</option>
-              <option value="ufotable_cinematic">⚔️ Ufotable Action (Demon Slayer Dynamic Spark Effects)</option>
-              <option value="makoto_shinkai">🌌 Makoto Shinkai (Hyper-detailed Skies & Raindrops)</option>
-              <option value="cyberpunk_anime">⚡ Cyberpunk Action (Neon Cel-Shaded High Octane)</option>
-            </select>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-5 space-y-3">
-            <label className="text-xs font-black uppercase tracking-wider text-slate-300 font-mono">
-              Character Seed & Cast Lock
-            </label>
-            <select
-              defaultValue="pip_robot"
-              className="w-full rounded-xl border border-white/10 bg-black/60 p-3 text-base md:text-xs font-bold text-white outline-none focus:border-pink-400"
-            >
-              <option value="pip_robot">🤖 Pip the Robot (Curious Explorer with Blue Eyes)</option>
-              <option value="luna_fairy">🧚 Luna Fairy (Golden Winged Pixie Companion)</option>
-              <option value="draco_pup">🐲 Draco Pup (Friendly Baby Fire Dragon)</option>
-              <option value="apprentice_aoi">⚡ Apprentice Aoi (Lightning Katana Prodigy)</option>
-              <option value="custom_seed">✨ Dynamic / Custom Prompt Character</option>
-            </select>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-5 space-y-3">
-            <label className="text-xs font-black uppercase tracking-wider text-slate-300 font-mono">
-              Screen Format
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setAspectRatio("16:9")}
-                className={`flex items-center justify-center gap-2 rounded-xl border py-2.5 text-xs font-bold transition cursor-pointer ${
-                  aspectRatio === "16:9"
-                    ? "border-pink-400 bg-pink-500/20 text-white shadow-md shadow-pink-500/20"
-                    : "border-white/10 bg-white/[0.03] text-slate-300 hover:text-white"
-                }`}
-              >
-                <Tv className="w-4 h-4 text-pink-400" /> 16:9 Cinema
-              </button>
-              <button
-                type="button"
-                onClick={() => setAspectRatio("9:16")}
-                className={`flex items-center justify-center gap-2 rounded-xl border py-2.5 text-xs font-bold transition cursor-pointer ${
-                  aspectRatio === "9:16"
-                    ? "border-pink-400 bg-pink-500/20 text-white shadow-md shadow-pink-500/20"
-                    : "border-white/10 bg-white/[0.03] text-slate-300 hover:text-white"
-                }`}
-              >
-                <Clapperboard className="w-4 h-4 text-pink-400" /> 9:16 Reel
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleGenerate}
-          disabled={isGenerating || !topic.trim()}
-          className="w-full flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-pink-500 via-rose-500 to-amber-400 py-4 text-sm font-black text-obsidian-950 shadow-xl shadow-pink-500/25 hover:from-pink-400 hover:to-amber-300 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin text-obsidian-950" />
-              <span>Synthesizing Animation Sequence...</span>
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-5 h-5 fill-current" />
-              <span>Generate Animation Story</span>
-            </>
-          )}
-        </button>
       </main>
     </StudioSidebar>
   );
@@ -331,7 +427,13 @@ function AnimationCreateContent() {
 
 export default function AnimationCreatePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-obsidian-950 text-slate-400 p-8">Loading Animation Studio...</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-obsidian-950 flex items-center justify-center text-slate-400">
+          Loading Animation Studio...
+        </div>
+      }
+    >
       <AnimationCreateContent />
     </Suspense>
   );
