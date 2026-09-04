@@ -31,7 +31,8 @@ import {
   X,
   ChevronRight,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  Terminal
 } from "lucide-react";
 import { ApiKeyModal } from "@/components/ApiKeyModal";
 import { useTheme } from "@/components/ThemeProvider";
@@ -74,6 +75,7 @@ export function StudioSidebar({ children, currentPath }: StudioSidebarProps) {
     { name: "Studio Cinema & Timeline", href: "/studio", icon: Layers, badge: "Editor" },
     { name: "Content Inspector & QA", href: "/studio/inspector", icon: Film, badge: "Scrubber" },
     { name: "Creation Hub", href: "/studio/create", icon: Sparkles, badge: "14 Modes" },
+    { name: "Director Swarm", href: "/director", icon: Terminal, badge: "DAG" },
     { name: "Avatars & 3D Cast", href: "/studio/avatars", icon: Users },
     { name: "Original Book Studio", href: "/studio/books", icon: BookOpen },
     { name: "7-Day Trend Radar", href: "/studio/trend-radar", icon: TrendingUp },
@@ -99,6 +101,10 @@ export function StudioSidebar({ children, currentPath }: StudioSidebarProps) {
   };
 
   const currentSectionTitle = () => {
+    if (pathname.includes("/director")) return "Director Swarm";
+    if (pathname.includes("/trend-radar")) return "7-Day Trend Radar";
+    if (pathname.includes("/creator/analytics")) return "Creator Growth";
+    if (pathname.includes("/create/carousel")) return "B2B Carousels";
     if (pathname.includes("/create/ugc")) return "E-Com UGC Ads";
     if (pathname.includes("/create/animation")) return "Kids & Animation";
     if (pathname.includes("/create/comics")) return "Anime & Manga";

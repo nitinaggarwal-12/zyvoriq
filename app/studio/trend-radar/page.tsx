@@ -28,7 +28,7 @@ import {
   PredictedTrend,
   TrendCategory
 } from "@/lib/reel/trendRadarEngine";
-import { AppNavbar } from "@/components/AppNavbar";
+import { StudioSidebar } from "@/components/StudioSidebar";
 
 const CATEGORIES: { id: TrendCategory | "all"; label: string; icon: string }[] = [
   { id: "all", label: "All Frontiers", icon: "🌐" },
@@ -68,7 +68,7 @@ function TrendRadarContent() {
 
   const handleLaunchInStudio = () => {
     const topic = `${selectedTrend.title}: ${selectedTrend.hookRecommendation.contrarianAngle}`;
-    router.push(`/studio?topic=${encodeURIComponent(topic)}`);
+    router.push(`/studio?mode=video_reel&topic=${encodeURIComponent(topic)}`);
   };
 
   const handleCopy = (text: string, actionName: string) => {
@@ -78,10 +78,9 @@ function TrendRadarContent() {
   };
 
   return (
-    <div className="min-h-screen bg-obsidian-950 text-slate-100 flex flex-col font-sans selection:bg-teal-500/30 selection:text-teal-200">
-      <AppNavbar />
-
-      {/* Top Breadcrumbs & Stage Header */}
+    <StudioSidebar>
+      <div className="flex-1 min-w-0 flex flex-col font-sans selection:bg-teal-500/30 selection:text-teal-200">
+        {/* Top Breadcrumbs & Stage Header */}
       <div className="border-b border-slate-800/80 bg-slate-950/60 backdrop-blur-md">
         <div className="mx-auto w-full max-w-[1720px] px-6 sm:px-8 lg:px-12 py-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
@@ -368,6 +367,7 @@ function TrendRadarContent() {
 
         </div>
       </main>
-    </div>
+      </div>
+    </StudioSidebar>
   );
 }

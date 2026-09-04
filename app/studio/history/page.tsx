@@ -31,7 +31,7 @@ import {
   Video
 } from "lucide-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { AppNavbar } from "@/components/AppNavbar";
+import { StudioSidebar } from "@/components/StudioSidebar";
 
 interface ProductionJob {
   id: string;
@@ -188,10 +188,9 @@ function StudioHistoryPageContent() {
   const totalSeconds = jobs.reduce((acc, j) => acc + (j.duration || 8), 0);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-amber-500/30 selection:text-amber-200">
-      <AppNavbar />
-
-      {/* Sub-Header Breadcrumb Bar */}
+    <StudioSidebar>
+      <div className="flex-1 min-w-0 flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
+        {/* Sub-Header Breadcrumb Bar */}
       <div className="border-b border-slate-800/80 bg-slate-950/60 backdrop-blur-md">
         <div className="max-w-[1720px] mx-auto px-6 sm:px-8 lg:px-12 h-14 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -513,7 +512,8 @@ function StudioHistoryPageContent() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </StudioSidebar>
   );
 }
 

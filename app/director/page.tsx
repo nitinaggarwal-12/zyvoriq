@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { AppNavbar } from "@/components/AppNavbar";
+import { StudioSidebar } from "@/components/StudioSidebar";
 import { SparkArchitecturePanel } from "@/components/SparkArchitecturePanel";
 import { DirectorCanvasInpainting } from "@/components/DirectorCanvasInpainting";
 import { 
@@ -204,10 +204,8 @@ export default function DirectorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-obsidian-950 text-slate-100 selection:bg-teal-500/30 selection:text-teal-200">
-      <AppNavbar />
-
-      <main className="mx-auto max-w-[1720px] px-6 py-8 md:px-12 md:py-10 lg:px-16">
+    <StudioSidebar>
+      <main className="flex-1 min-w-0 mx-auto max-w-[1720px] px-6 py-8 md:px-12 md:py-10 lg:px-16">
         
         {/* Top Header Banner */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-8 border-b border-slate-800/80">
@@ -493,6 +491,6 @@ export default function DirectorPage() {
         </div>
 
       </main>
-    </div>
+    </StudioSidebar>
   );
 }

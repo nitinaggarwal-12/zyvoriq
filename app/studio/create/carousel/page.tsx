@@ -14,7 +14,7 @@ import {
   Lightbulb,
   Share2
 } from "lucide-react";
-import { AppNavbar } from "@/components/AppNavbar";
+import { StudioSidebar } from "@/components/StudioSidebar";
 
 export default function CarouselCreatePage() {
   const router = useRouter();
@@ -41,10 +41,8 @@ export default function CarouselCreatePage() {
   };
 
   return (
-    <div className="min-h-screen bg-obsidian-950 text-slate-100 flex flex-col selection:bg-teal-500/30">
-      <AppNavbar />
-
-      <main className="flex-1 max-w-5xl w-full mx-auto px-5 py-8 md:px-8 space-y-6">
+    <StudioSidebar>
+      <main className="flex-1 min-w-0 max-w-5xl w-full mx-auto px-5 py-8 md:px-8 space-y-6">
         <div className="flex items-center justify-between">
           <Link
             href="/studio/create"
@@ -157,6 +155,6 @@ export default function CarouselCreatePage() {
           )}
         </button>
       </main>
-    </div>
+    </StudioSidebar>
   );
 }

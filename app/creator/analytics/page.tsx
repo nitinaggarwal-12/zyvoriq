@@ -3,8 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AppNavbar } from "@/components/AppNavbar";
-import { AppFooter } from "@/components/AppFooter";
+import { StudioSidebar } from "@/components/StudioSidebar";
 import {
   Trophy,
   TrendingUp,
@@ -60,10 +59,8 @@ export default function CreatorAnalyticsPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-obsidian-950 text-slate-100 selection:bg-teal-500/30 selection:text-teal-200">
-      <AppNavbar />
-
-      <main className="flex-1 pb-20 pt-8">
+    <StudioSidebar>
+      <main className="flex-1 min-w-0 pb-20 pt-8">
         <div className="mx-auto w-full max-w-[1600px] px-6 sm:px-8 md:px-12">
           
           {/* Top Hero Banner & Creator Overview */}
@@ -355,8 +352,6 @@ export default function CreatorAnalyticsPage() {
 
         </div>
       </main>
-
-      <AppFooter />
-    </div>
+    </StudioSidebar>
   );
 }
