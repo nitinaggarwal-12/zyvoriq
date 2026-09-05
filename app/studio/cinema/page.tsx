@@ -1061,7 +1061,7 @@ export default function CinemaStudioPage() {
     setTelemetryLogs([
       `[00:00.90] Soundstage Engine: J-Cut/L-Cut dialogue overlap active (+800ms lead-in) · Foley IR reverb primed.`,
       `[00:00.45] Biometric Talent Vault: Locked ${prodLeadCast.join(" & ")} (ArcFace 512-dim embedding threshold: ${arcfaceThreshold}).`,
-      `[00:00.12] Screenplay Parsed: 3 Acts, 122 atomic shots allocated with 3D stage eyeline vectors.`,
+      `[00:00.12] Screenplay Parsed: 3 Acts, 122 atomic shots allocated with Google DeepMind Veo 3.1 cinematic conditioning.`,
       `[00:00.04] Initiating Autonomous Studio OS Engine...`
     ]);
 
