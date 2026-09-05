@@ -71,6 +71,27 @@ export default function Frozen3MasterTrailerPage() {
     bassOsc?: OscillatorNode;
   }>({});
 
+  const actImagesRef = useRef<Record<number, HTMLImageElement>>({});
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sources: Record<number, string> = {
+      1: "/cinema/frozen3/act1_golden_twilight.jpg",
+      2: "/cinema/frozen3/act2_glacier_chasm.jpg",
+      3: "/cinema/frozen3/act3_solar_titan.jpg",
+      4: "/cinema/frozen3/act4_sisters_aurora.jpg",
+      5: "/cinema/frozen3/act5_snowman_stinger.jpg"
+    };
+
+    Object.entries(sources).forEach(([actNum, src]) => {
+      const img = new Image();
+      img.src = src;
+      img.onload = () => {
+        actImagesRef.current[Number(actNum)] = img;
+      };
+    });
+  }, []);
+
   // Current Act computation
   const currentAct = useMemo<Frozen3Act>(() => {
     const act = FROZEN_3_ACTS.find(
@@ -278,99 +299,52 @@ export default function Frozen3MasterTrailerPage() {
           // Clear frame
           ctx.clearRect(0, 0, w, h);
 
-          // 1. Dynamic Act Atmospheric Sky Gradient
-          const skyGradient = ctx.createLinearGradient(0, 0, 0, h);
-          if (currentAct.actNumber === 1) {
-            skyGradient.addColorStop(0, "#1a0b2e");
-            skyGradient.addColorStop(0.4, "#4a1236");
-            skyGradient.addColorStop(0.75, "#c2410c");
-            skyGradient.addColorStop(1, "#fb923c");
-          } else if (currentAct.actNumber === 2) {
-            skyGradient.addColorStop(0, "#082f49");
-            skyGradient.addColorStop(0.5, "#0369a1");
-            skyGradient.addColorStop(0.85, "#d97706");
-            skyGradient.addColorStop(1, "#fde68a");
-          } else if (currentAct.actNumber === 3) {
-            skyGradient.addColorStop(0, "#020617");
-            skyGradient.addColorStop(0.45, "#0f172a");
-            skyGradient.addColorStop(0.75, "#7f1d1d");
-            skyGradient.addColorStop(1, "#ef4444");
-          } else if (currentAct.actNumber === 4) {
-            skyGradient.addColorStop(0, "#022c22");
-            skyGradient.addColorStop(0.3, "#064e3b");
-            skyGradient.addColorStop(0.65, "#047857");
-            skyGradient.addColorStop(1, "#0284c7");
-          } else {
-            skyGradient.addColorStop(0, "#030712");
-            skyGradient.addColorStop(0.5, "#111827");
-            skyGradient.addColorStop(1, "#1f2937");
-          }
-          ctx.fillStyle = skyGradient;
-          ctx.fillRect(0, 0, w, h);
+          // 1. Draw Master 4K Photorealistic Cinematic Scene with Ken Burns Motion
+          const activeImg = actImagesRef.current[currentAct.actNumber];
+          if (activeImg && activeImg.complete && activeImg.naturalWidth > 0) {
+            ctx.save();
+            const actProgress = (t - currentAct.timecodeStartSec) / Math.max(1, currentAct.durationSec);
+            const scale = 1.0 + actProgress * 0.08; // 8% slow dramatic push-in
+            const panX = Math.sin(actProgress * Math.PI) * 24;
+            const panY = Math.cos(actProgress * Math.PI) * 12;
 
-          // 2. Multi-layer Volumetric Aurora Waves (Raymarch Simulation)
-          if (currentAct.actNumber >= 2) {
-            for (let i = 0; i < 4; i++) {
+            const drawW = w * scale;
+            const drawH = h * scale;
+            const drawX = (w - drawW) / 2 + panX;
+            const drawY = (h - drawH) / 2 + panY;
+
+            ctx.drawImage(activeImg, drawX, drawY, drawW, drawH);
+            ctx.restore();
+          } else {
+            // Elegant cinematic fallback while texture decodes
+            const fallbackGrad = ctx.createLinearGradient(0, 0, 0, h);
+            fallbackGrad.addColorStop(0, "#082f49");
+            fallbackGrad.addColorStop(1, "#020617");
+            ctx.fillStyle = fallbackGrad;
+            ctx.fillRect(0, 0, w, h);
+          }
+
+          // 2. Cinematic Volumetric Lighting & Atmospheric Shimmer
+          if (currentAct.actNumber === 4) {
+            for (let i = 0; i < 2; i++) {
               ctx.save();
               ctx.beginPath();
-              ctx.moveTo(0, h * 0.2);
-              for (let x = 0; x <= w; x += 20) {
-                const waveY =
-                  h * 0.25 +
-                  Math.sin(x * 0.004 + t * 1.5 + i) * 60 +
-                  Math.cos(x * 0.008 - t * 0.8) * 35;
+              ctx.moveTo(0, h * 0.1);
+              for (let x = 0; x <= w; x += 30) {
+                const waveY = h * 0.15 + Math.sin(x * 0.005 + t * 1.2 + i) * 35;
                 ctx.lineTo(x, waveY);
               }
               ctx.lineTo(w, 0);
               ctx.lineTo(0, 0);
               ctx.closePath();
-
-              const auroraGrad = ctx.createLinearGradient(0, 0, 0, h * 0.5);
-              if (i % 2 === 0) {
-                auroraGrad.addColorStop(0, "rgba(52, 211, 153, 0.35)");
-                auroraGrad.addColorStop(0.6, "rgba(16, 185, 129, 0.15)");
-                auroraGrad.addColorStop(1, "rgba(5, 150, 105, 0)");
-              } else {
-                auroraGrad.addColorStop(0, "rgba(168, 85, 247, 0.3)");
-                auroraGrad.addColorStop(0.5, "rgba(99, 102, 241, 0.15)");
-                auroraGrad.addColorStop(1, "rgba(59, 130, 246, 0)");
-              }
+              const auroraGrad = ctx.createLinearGradient(0, 0, 0, h * 0.35);
+              auroraGrad.addColorStop(0, "rgba(52, 211, 153, 0.2)");
+              auroraGrad.addColorStop(1, "rgba(5, 150, 105, 0)");
               ctx.fillStyle = auroraGrad;
               ctx.fill();
               ctx.restore();
             }
           }
-
-          // 3. Procedural Ice Spires / Glaciers (Subsurface Scattering caustics)
-          ctx.save();
-          ctx.beginPath();
-          ctx.moveTo(0, h);
-          ctx.lineTo(w * 0.15, h * 0.55);
-          ctx.lineTo(w * 0.28, h * 0.72);
-          ctx.lineTo(w * 0.5, h * 0.45);
-          ctx.lineTo(w * 0.72, h * 0.68);
-          ctx.lineTo(w * 0.88, h * 0.5);
-          ctx.lineTo(w, h);
-          ctx.closePath();
-
-          const iceGrad = ctx.createLinearGradient(0, h * 0.45, 0, h);
-          if (currentAct.actNumber === 3) {
-            iceGrad.addColorStop(0, "rgba(56, 189, 248, 0.85)");
-            iceGrad.addColorStop(0.6, "rgba(30, 41, 59, 0.95)");
-            iceGrad.addColorStop(1, "rgba(153, 27, 27, 0.9)");
-          } else {
-            iceGrad.addColorStop(0, "rgba(224, 242, 254, 0.95)");
-            iceGrad.addColorStop(0.3, "rgba(125, 211, 252, 0.85)");
-            iceGrad.addColorStop(0.8, "rgba(14, 116, 144, 0.9)");
-            iceGrad.addColorStop(1, "rgba(8, 51, 68, 0.98)");
-          }
-          ctx.fillStyle = iceGrad;
-          ctx.fill();
-
-          ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
-          ctx.lineWidth = 2.5;
-          ctx.stroke();
-          ctx.restore();
 
           // 4. Floating Micro-Snow & Solar Embers
           const particleCount = 45;
@@ -1082,6 +1056,25 @@ export default function Frozen3MasterTrailerPage() {
                               <Sparkles className="w-5 h-5 text-amber-400" />
                             )}
                           </span>
+                        </div>
+
+                        {/* 3D Cinematic Character Keyframe Still */}
+                        <div className="relative aspect-[16/9] rounded-xl overflow-hidden border border-neutral-800 shadow-md mb-2">
+                          <img
+                            src={
+                              member.character.includes("Elsa")
+                                ? "/cinema/frozen3/act1_golden_twilight.jpg"
+                                : member.character.includes("Anna")
+                                ? "/cinema/frozen3/act4_sisters_aurora.jpg"
+                                : member.character.includes("Kristoff")
+                                ? "/cinema/frozen3/act2_glacier_chasm.jpg"
+                                : member.character.includes("Olaf")
+                                ? "/cinema/frozen3/act5_snowman_stinger.jpg"
+                                : "/cinema/frozen3/act3_solar_titan.jpg"
+                            }
+                            alt={member.character}
+                            className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
+                          />
                         </div>
 
                         <div className="space-y-2 text-xs">
