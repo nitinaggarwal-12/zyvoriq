@@ -40,25 +40,24 @@ function AnimationCreateContent() {
   const [animeStyle, setAnimeStyle] = useState("cyberpunk_anime");
   const [aspectRatio, setAspectRatio] = useState<"16:9" | "9:16">("16:9");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generationProgress, setGenerationProgress] = useState(100);
-  const [activeStep, setActiveStep] = useState<number>(4); // 1 to 4
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [activeStep, setActiveStep] = useState<number>(1); // 1 to 4
   const [activeTab, setActiveTab] = useState<"video" | "storyboard" | "acoustics">("video");
   const [isPlaying, setIsPlaying] = useState(true);
-  const [hasVideoError, setHasVideoError] = useState(false);
+  const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const q = searchParams.get("q");
     if (q) {
       setTopic(q);
-      // Auto-trigger simulation so user sees active work immediately
-      triggerLiveGeneration(q);
     }
   }, [searchParams]);
 
-  const triggerLiveGeneration = (promptText: string) => {
+  const triggerLiveGeneration = async (promptText: string) => {
     setIsGenerating(true);
     setGenerationProgress(15);
     setActiveStep(1);
+    setGeneratedVideoUrl(null);
 
     setTimeout(() => {
       setGenerationProgress(45);
@@ -156,10 +155,18 @@ function AnimationCreateContent() {
               <span className="text-slate-400 font-bold flex items-center gap-1.5">
                 {isGenerating ? (
                   <Loader2 className="w-3.5 h-3.5 text-pink-400 animate-spin" />
-                ) : (
+                ) : generatedVideoUrl ? (
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                ) : (
+                  <Sparkles className="w-3.5 h-3.5 text-pink-400" />
                 )}
-                <span>{isGenerating ? "Synthesizing Reel..." : "Reel Ready & Verified"}</span>
+                <span>
+                  {isGenerating
+                    ? "Synthesizing Reel..."
+                    : generatedVideoUrl
+                    ? "Reel Ready & Verified"
+                    : "Clean Slate · Ready to Synthesize"}
+                </span>
               </span>
               <span className="text-white font-bold">{generationProgress}%</span>
             </div>
@@ -168,7 +175,9 @@ function AnimationCreateContent() {
                 className={`h-full transition-all duration-500 ${
                   isGenerating
                     ? "bg-gradient-to-r from-pink-500 via-purple-500 to-amber-400 animate-pulse"
-                    : "bg-emerald-400"
+                    : generatedVideoUrl
+                    ? "bg-emerald-400"
+                    : "bg-white/10"
                 }`}
                 style={{ width: `${generationProgress}%` }}
               />
@@ -229,62 +238,44 @@ function AnimationCreateContent() {
             {activeTab === "video" && (
               <div className="space-y-4">
                 <div className="relative aspect-video w-full rounded-3xl border border-pink-500/30 bg-black/90 overflow-hidden shadow-2xl flex items-center justify-center group">
-                  {!hasVideoError ? (
+                  {generatedVideoUrl ? (
                     <video
-                      key={`${animeStyle}-${isGenerating}`}
+                      key={generatedVideoUrl}
+                      src={generatedVideoUrl}
                       controls
                       playsInline
                       autoPlay
-                      muted
-                      loop
-                      onError={() => setHasVideoError(true)}
-                      onLoadedData={() => setHasVideoError(false)}
                       className="w-full h-full object-cover"
-                    >
-                      <source
-                        src={
-                          animeStyle === "ufotable_cinematic" || animeStyle === "cyberpunk_anime"
-                            ? "/assets/video/persona2_anime_shonen_reel.mp4"
-                            : "/assets/video/persona1_pixar_kids_reel.mp4"
-                        }
-                        type="video/mp4"
-                      />
-                      <source
-                        src={
-                          animeStyle === "ufotable_cinematic" || animeStyle === "cyberpunk_anime"
-                            ? "/assets/video/persona2_anime_shonen_reel.webm"
-                            : "/assets/video/persona1_pixar_kids_reel.webm"
-                        }
-                        type="video/webm"
-                      />
-                    </video>
+                    />
                   ) : (
                     <div className="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center p-6 text-center z-10">
-                      <div className="w-12 h-12 rounded-2xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-pink-400 mb-3">
-                        <Tv className="w-6 h-6" />
+                      <div className="w-14 h-14 rounded-2xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-pink-400 mb-3 shadow-lg shadow-pink-500/10">
+                        <Tv className="w-7 h-7" />
                       </div>
                       <span className="px-3 py-1 rounded-full bg-pink-500/10 border border-pink-500/30 text-pink-300 font-mono text-xs font-bold mb-2">
-                        CLEAN SLATE · READY FOR SYNTHESIS
+                        3D DIFFUSION STAGE · AWAITING SYNTHESIS
                       </span>
-                      <h3 className="text-white font-bold text-sm md:text-base max-w-md line-clamp-2">
+                      <h3 className="text-white font-bold text-base max-w-lg">
                         {topic || "Configure prompt and synthesize reel"}
                       </h3>
-                      <p className="text-slate-400 text-xs mt-1 max-w-sm">
-                        Click Synthesize below to compile this 4-act 3D sequence with AI acoustics and 1080p60 mastering.
+                      <p className="text-slate-400 text-xs mt-1.5 max-w-md">
+                        {isGenerating
+                          ? "Executing 4-act diffusion, neural acoustics, and 1080p60 mastering..."
+                          : "No mock playback. Enter your scene prompt and click 'Synthesize 30s Animation' to begin genuine synthesis."}
                       </p>
                       <button
                         type="button"
                         onClick={handleGenerate}
                         disabled={isGenerating}
-                        className="mt-4 px-5 py-2 rounded-xl bg-pink-500 hover:bg-pink-400 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-pink-500/30 transition-all"
+                        className="mt-5 px-6 py-2.5 rounded-xl bg-pink-500 hover:bg-pink-400 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-pink-500/30 transition-all cursor-pointer disabled:opacity-50"
                       >
-                        <Sparkles className="w-4 h-4" />
-                        <span>{isGenerating ? "Synthesizing..." : "Synthesize 30s Animation"}</span>
+                        {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                        <span>{isGenerating ? "Synthesizing 3D Animation..." : "Synthesize 30s Animation"}</span>
                       </button>
                     </div>
                   )}
                   <div className="absolute top-4 left-4 rounded-full border border-pink-500/40 bg-black/70 px-3 py-1 text-[10px] font-mono font-bold text-pink-300 backdrop-blur-md z-20">
-                    1080p60 · {animeStyle.toUpperCase()} · VERIFIED
+                    1080p60 · {animeStyle.toUpperCase()} · CLEAN STAGE
                   </div>
                   <div className="absolute bottom-4 right-4 rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-mono text-slate-300 backdrop-blur-md z-20">
                     30s MASTER TIMELINE

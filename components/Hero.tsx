@@ -101,8 +101,14 @@ const ONBOARDING_REELS = [
 export function Hero() {
   const [activeReelIndex, setActiveReelIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
+  const [hasVideoError, setHasVideoError] = useState(false);
 
   const activeReel = ONBOARDING_REELS[activeReelIndex];
+
+  const handleSelectReel = (idx: number) => {
+    setActiveReelIndex(idx);
+    setHasVideoError(false);
+  };
 
   return (
     <section className="relative overflow-hidden border-b border-white/5">
@@ -163,7 +169,7 @@ export function Hero() {
                 <button
                   key={reel.id}
                   type="button"
-                  onClick={() => setActiveReelIndex(idx)}
+                  onClick={() => handleSelectReel(idx)}
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
                     active
                       ? "bg-white text-slate-950 shadow-lg"
@@ -180,19 +186,44 @@ export function Hero() {
           {/* Interactive Player Box */}
           <div className="relative rounded-[32px] border border-white/10 bg-[#0c1016]/95 p-5 sm:p-7 shadow-2xl shadow-black/60 backdrop-blur-2xl grid gap-6 md:grid-cols-12 items-center">
             {/* 9:16 / 16:9 Vertical Reel Frame */}
-            <div className="md:col-span-5 relative aspect-[9/16] overflow-hidden rounded-2xl border border-white/15 bg-black shadow-inner">
-              <video
-                key={activeReel.videoSrc}
-                src={activeReel.videoSrc}
-                autoPlay
-                playsInline
-                loop
-                muted={isMuted}
-                className="w-full h-full object-cover"
-              />
+            <div className="md:col-span-5 relative aspect-[9/16] overflow-hidden rounded-2xl border border-white/15 bg-black shadow-inner flex items-center justify-center">
+              {!hasVideoError && activeReel.videoSrc ? (
+                <video
+                  key={activeReel.videoSrc}
+                  src={activeReel.videoSrc}
+                  autoPlay
+                  playsInline
+                  loop
+                  muted={isMuted}
+                  onError={() => setHasVideoError(true)}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-900 to-black flex flex-col items-center justify-center p-6 text-center">
+                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${activeReel.color} flex items-center justify-center text-white mb-4 shadow-xl`}>
+                    <activeReel.icon className="w-7 h-7" />
+                  </div>
+                  <span className="text-[10px] font-mono font-bold text-slate-400 tracking-wider uppercase mb-1">
+                    {activeReel.sub}
+                  </span>
+                  <h4 className="text-white font-black text-sm max-w-[200px] leading-snug">
+                    {activeReel.title}
+                  </h4>
+                  <p className="text-slate-400 text-[11px] mt-2 max-w-[210px] leading-relaxed">
+                    {activeReel.hook}
+                  </p>
+                  <Link
+                    href="/studio/create"
+                    className="mt-5 px-4 py-2 rounded-xl bg-white text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-lg hover:bg-slate-200 transition active:scale-95"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-pink-500" />
+                    <span>Launch Studio</span>
+                  </Link>
+                </div>
+              )}
 
               {/* Top Video Telemetry Badge */}
-              <div className="absolute top-3 inset-x-3 flex items-center justify-between pointer-events-none">
+              <div className="absolute top-3 inset-x-3 flex items-center justify-between pointer-events-none z-10">
                 <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-md bg-black/70 border ${activeReel.border} backdrop-blur-md`}>
                   {activeReel.badge}
                 </span>

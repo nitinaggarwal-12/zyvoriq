@@ -574,46 +574,7 @@ export function ReelStudio() {
       });
       const data = await response.json();
       if (response.ok && data.success && data.production) {
-        const lower = finalPrompt.toLowerCase();
-        const baseVideoUrl = lower.includes("anime") || lower.includes("samurai") || lower.includes("combat")
-          ? "/assets/video/persona2_anime_shonen_reel.mp4"
-          : lower.includes("kid") || lower.includes("pixar") || lower.includes("ghibli") || lower.includes("dragon") || lower.includes("robot")
-          ? "/assets/video/persona1_pixar_kids_reel.mp4"
-          : "/assets/video/persona3_viral_influencer_reel.mp4";
-
-        const enrichedShots = data.production.manifest.shots.map((s: ReelShot, idx: number) => ({
-          ...s,
-          status: "READY" as const,
-          asset: {
-            videoUrl: baseVideoUrl,
-            storageKey: `shot_${idx + 1}.mp4`,
-            format: "mp4" as const,
-            mimeType: "video/mp4",
-            durationSec: 6,
-            generatedAt: new Date().toISOString()
-          }
-        }));
-
-        const enrichedProduction: StoredProduction = {
-          ...data.production,
-          manifest: {
-            ...data.production.manifest,
-            status: "ROUGH_CUT_READY" as const,
-            shots: enrichedShots,
-            outputs: {
-              ...data.production.manifest.outputs,
-              narratedRoughCut: {
-                videoUrl: baseVideoUrl,
-                storageKey: "master_reel.mp4",
-                format: "mp4" as const,
-                mimeType: "video/mp4",
-                durationSec: 30,
-                generatedAt: new Date().toISOString()
-              }
-            }
-          }
-        };
-        setProduction(enrichedProduction);
+        setProduction(data.production);
         setActiveTab("Scenes");
       }
     } catch (err: any) {
