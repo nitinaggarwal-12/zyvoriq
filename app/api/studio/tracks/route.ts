@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
-import { CANONICAL_SERIES_TRACKS } from "@/lib/tier6/default_tracks";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -8,30 +7,15 @@ export const revalidate = 0;
 export async function GET(req: NextRequest) {
   try {
     const dbTracks = await db.getStudioTracksAsync();
-    const tracksMap = new Map<string, any>();
-
-    // Seed canonical tracks first
-    for (const t of CANONICAL_SERIES_TRACKS) {
-      tracksMap.set(t.id, t);
-    }
-
-    // Merge any custom user created tracks
-    for (const t of dbTracks) {
-      if (!tracksMap.has(t.id)) {
-        tracksMap.set(t.id, t);
-      }
-    }
-
-    const tracks = Array.from(tracksMap.values());
     return NextResponse.json(
-      { success: true, tracks },
+      { success: true, tracks: dbTracks },
       { headers: { "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate" } }
     );
   } catch (err: any) {
-    console.error("Failed to get studio tracks, using canonical fallback:", err);
+    console.error("Failed to get studio tracks:", err);
     return NextResponse.json(
-      { success: true, tracks: CANONICAL_SERIES_TRACKS },
-      { headers: { "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate" } }
+      { success: false, error: `Database error retrieving studio tracks: ${err.message}` },
+      { status: 500, headers: { "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate" } }
     );
   }
 }

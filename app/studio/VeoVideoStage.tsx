@@ -8,6 +8,7 @@ interface VeoVideoStageProps {
   isMuted?: boolean;
   selectedPersonaName: string;
   audioUrl: string;
+  videoUrl?: string;
   restartTrigger?: number;
   onTimeUpdate?: (currentTime: number) => void;
   onTogglePlay?: () => void;
@@ -18,6 +19,7 @@ export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
   isMuted = false,
   selectedPersonaName,
   audioUrl,
+  videoUrl,
   restartTrigger = 0,
   onTimeUpdate,
   onTogglePlay,
@@ -94,15 +96,28 @@ export const VeoVideoStage: React.FC<VeoVideoStageProps> = ({
 
       {/* Main Real Video Player Viewport */}
       <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-purple-500/40 shadow-2xl group flex items-center justify-center">
-        {/* Neural Cinema MP4 Video - Muted so master audio produces the speech */}
-        <video
-          ref={videoRef}
-          src="/assets/video/persona3_viral_influencer_reel.mp4"
-          playsInline
-          loop
-          muted={true}
-          className="w-full h-full object-cover"
-        />
+        {videoUrl ? (
+          <video
+            ref={videoRef}
+            src={videoUrl}
+            playsInline
+            loop
+            muted={true}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center p-6 text-center space-y-3 bg-gradient-to-b from-purple-950/20 via-black to-black">
+            <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
+              <Film className="w-6 h-6 animate-pulse" />
+            </div>
+            <span className="text-xs font-mono font-bold text-purple-300 bg-purple-950/80 border border-purple-500/40 px-3 py-1 rounded-full">
+              NEURAL CINEMA STAGE · READY
+            </span>
+            <p className="text-[11px] text-slate-400 font-mono max-w-sm">
+              Zero fallback objects. Awaiting keynote prompt synthesis or live stream broadcast.
+            </p>
+          </div>
+        )}
 
         {/* Viewport Top HUD */}
         <div className="absolute top-3 left-3 flex items-center gap-2 z-20 pointer-events-none">

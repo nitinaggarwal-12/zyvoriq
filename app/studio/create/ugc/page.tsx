@@ -58,6 +58,7 @@ function UgcCreateContent() {
   const [creatorPersona, setCreatorPersona] = useState<CreatorPersona>("emma_skincare");
   const [discountBadge, setDiscountBadge] = useState<DiscountBadge>("50_off");
   const [ctaButton, setCtaButton] = useState<CtaButtonType>("claim_offer");
+  const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
   const [starRating, setStarRating] = useState<number>(5);
   const [showTrustBadges, setShowTrustBadges] = useState(true);
   const [showStarOverlay, setShowStarOverlay] = useState(true);
@@ -551,15 +552,29 @@ function UgcCreateContent() {
 
             {/* 9:16 Phone Mockup Container */}
             <div className="relative mx-auto w-full max-w-[340px] aspect-[9/16] rounded-3xl border-4 border-white/15 bg-gradient-to-b from-slate-900 via-obsidian-950 to-black overflow-hidden shadow-2xl shadow-amber-500/10 flex flex-col justify-between p-4 select-none">
-              <video
-                src="/assets/video/persona4_ugc_ecommerce_reel.mp4"
-                controls
-                playsInline
-                autoPlay
-                muted
-                loop
-                className="absolute inset-0 w-full h-full object-cover opacity-50 z-0"
-              />
+              {generatedVideoUrl ? (
+                <video
+                  src={generatedVideoUrl}
+                  controls
+                  playsInline
+                  autoPlay
+                  muted
+                  loop
+                  className="absolute inset-0 w-full h-full object-cover opacity-50 z-0"
+                />
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-0 bg-radial from-amber-500/5 to-transparent">
+                  <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-3">
+                    <Smartphone className="w-6 h-6 animate-pulse" />
+                  </div>
+                  <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-950/60 border border-amber-500/30 px-2.5 py-0.5 rounded-full mb-2">
+                    UGC STAGE · READY
+                  </span>
+                  <p className="text-[11px] text-slate-400 font-mono">
+                    Awaiting Hook & Persona Synthesis
+                  </p>
+                </div>
+              )}
               {/* Top Creator Header Overlay */}
               <div className="space-y-2 z-10">
                 <div className="flex items-center justify-between bg-black/60 backdrop-blur-md rounded-xl p-2 border border-white/10">

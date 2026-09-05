@@ -137,16 +137,15 @@ Provide an honest, frame-accurate cinematography critique and return ONLY the JS
 
     if (!res.ok) {
       const errText = await res.text();
-      console.warn(`[DeepMind Video Critic] Video multimodal request failed (${res.status}): ${errText}`);
-      // Fallback critique heuristic if video payload is too large or model rate-limited
-      return fallbackCritique(prompt, criteria, threshold);
+      console.error(`[DeepMind Video Critic] Video multimodal request failed (${res.status}): ${errText}`);
+      throw new Error(`Video Critic Engine Evaluation Failed (${res.status}): ${errText}`);
     }
 
     const data = await res.json();
     const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!candidateText) {
-      return fallbackCritique(prompt, criteria, threshold);
+      throw new Error("Video Critic Engine received empty evaluation candidate from Gemini model.");
     }
 
     const parsed = JSON.parse(candidateText);
@@ -170,7 +169,7 @@ Provide an honest, frame-accurate cinematography critique and return ONLY the JS
     };
   } catch (error: any) {
     console.error("[DeepMind Video Critic] Exception during analysis:", error?.message);
-    return fallbackCritique(prompt, criteria, threshold);
+    throw new Error(`Video Critic Evaluation Exception: ${error?.message || error}`);
   }
 }
 
@@ -245,23 +244,3 @@ export async function runAutonomousVideoLoop(
   };
 }
 
-function fallbackCritique(
-  prompt: string,
-  criteria: VideoCritiqueCriteria,
-  threshold: number
-): VideoCritiqueReport {
-  return {
-    overallScore: 8.5,
-    intentMatchScore: 8.8,
-    framingScore: 8.6,
-    motionPhysicsScore: 8.4,
-    emotionalToneScore: 8.5,
-    passedQualityGate: 8.5 >= threshold,
-    verdict: "APPROVED",
-    issuesDetected: [],
-    strengths: ["High-fidelity photorealistic rendering", "Accurate framing and perspective"],
-    refinedPromptRecommendations: "Keep current prompt parameters.",
-    evaluatedAt: new Date().toISOString(),
-    modelUsed: "heuristic-director-evaluator"
-  };
-}

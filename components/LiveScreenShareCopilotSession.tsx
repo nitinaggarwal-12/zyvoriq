@@ -59,8 +59,8 @@ export function LiveScreenShareCopilotSession({
       role: "Senior AI Video & Workflow Specialist",
       attire: "Tech Minimalist Dark Hoodie",
       tone: "Supportive & Pedagogical",
-      videoSrc: "/assets/video/persona4_ugc_ecommerce_reel.mp4",
-      audioSrc: "/assets/audio/elena_screenshare_speech.wav",
+      videoSrc: "",
+      audioSrc: "",
       headshot: "/assets/avatars/avatar_elena_founder.jpg",
       problemTitle: "Shot 1 Audio Stem Unlinked from Curiosity Hook",
       spokenLines: [
@@ -75,8 +75,8 @@ export function LiveScreenShareCopilotSession({
       role: "Chief AI Officer & Global Creative Director",
       attire: "Navy Executive Blazer & Lapel Pin",
       tone: "Authoritative Executive",
-      videoSrc: "/assets/video/persona3_viral_influencer_reel.mp4",
-      audioSrc: "/assets/audio/priya_screenshare_speech.wav",
+      videoSrc: "",
+      audioSrc: "",
       headshot: "/assets/avatars/avatar_priya_cto.jpg",
       problemTitle: "14% Viewer Retention Drop on Hook B",
       spokenLines: [
@@ -191,13 +191,15 @@ export function LiveScreenShareCopilotSession({
     <div className="fixed inset-0 z-[100] pointer-events-none flex flex-col justify-between p-4 sm:p-6 select-none font-sans">
       
       {/* Audio Element for Real Spoken Human Speech */}
-      <audio
-        ref={audioRef}
-        src={active.audioSrc}
-        preload="auto"
-        muted={isMuted}
-        onEnded={() => setIsPlayingAudio(false)}
-      />
+      {active.audioSrc && (
+        <audio
+          ref={audioRef}
+          src={active.audioSrc}
+          preload="auto"
+          muted={isMuted}
+          onEnded={() => setIsPlayingAudio(false)}
+        />
+      )}
 
       {/* 1. TOP STATUS BAR: Live Screen Sharing Banner */}
       <header className="pointer-events-auto w-full max-w-7xl mx-auto rounded-2xl border border-teal-500/40 bg-slate-950/90 backdrop-blur-xl p-3 shadow-2xl shadow-teal-500/10 flex items-center justify-between text-xs text-white">
@@ -418,17 +420,25 @@ export function LiveScreenShareCopilotSession({
             <span className="text-[9px] font-mono text-slate-400">1080p 60fps</span>
           </div>
 
-          {/* Real Video Clone Stream */}
-          <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-teal-500/30 shadow-inner">
-            <video
-              src={active.videoSrc}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="h-full w-full object-cover"
-            />
-            <div className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded bg-black/80 backdrop-blur-md text-[9px] font-bold text-teal-200 border border-teal-500/30">
+          {/* Avatar Stream or Headshot */}
+          <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-teal-500/30 shadow-inner flex items-center justify-center">
+            {active.videoSrc ? (
+              <video
+                src={active.videoSrc}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <img
+                src={active.headshot}
+                alt={active.name}
+                className="h-full w-full object-cover"
+              />
+            )}
+            <div className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded bg-black/80 backdrop-blur-md text-[9px] font-bold text-teal-200 border border-teal-500/30 z-10">
               {active.name}
             </div>
           </div>

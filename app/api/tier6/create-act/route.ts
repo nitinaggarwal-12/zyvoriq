@@ -174,8 +174,9 @@ Return JSON strictly matching:
           db.updateProductionJob(jobId, { progress: 20, logs, stageText: `Storyboard AST Compiled (${actsStoryboard.length} Acts)` });
         }
       } catch (err: any) {
-        logs.push(`${getTs()} ⚠️ Gemini Storyboard warning: ${err.message}`);
-        console.warn("Gemini script generator fallback:", err);
+        logs.push(`${getTs()} ❌ Gemini Storyboard generation failed: ${err.message}`);
+        console.error("Gemini script generator error:", err);
+        throw new Error(`Gemini AI Storyboard generation failed: ${err.message}`);
       }
     }
 

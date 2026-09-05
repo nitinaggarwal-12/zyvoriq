@@ -63,10 +63,19 @@ export function DynamicZoomVideoPlayer({
   const [enableEmojis, setEnableEmojis] = useState(showEmojis);
   const [enableSFXAudio, setEnableSFXAudio] = useState(showSFX);
 
+  const [videoError, setVideoError] = useState(false);
+
   useEffect(() => {
     let active = true;
+    setVideoError(false);
+    if (!videoUrl) {
+      setResolvedVideoUrl("");
+      return;
+    }
     getCachedMediaBlobUrl(videoUrl).then((cached) => {
       if (active) setResolvedVideoUrl(cached);
+    }).catch(() => {
+      if (active) setVideoError(true);
     });
     return () => { active = false; };
   }, [videoUrl]);
@@ -206,29 +215,49 @@ export function DynamicZoomVideoPlayer({
       className="group relative aspect-[9/16] w-full overflow-hidden rounded-[24px] border border-white/10 bg-black shadow-2xl"
     >
       {/* Primary A-Roll Video Surface */}
-      <div
-        className="h-full w-full overflow-hidden transition-transform duration-300 ease-out"
-        style={{
-          transform: `scale(${effectiveZoom})`,
-          transformOrigin: "center 38%"
-        }}
-        onClick={togglePlay}
-      >
-        <video
-          ref={videoRef}
-          src={resolvedVideoUrl}
-          playsInline
-          loop
-          onTimeUpdate={handleTimeUpdate}
-          onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
-          onPlay={() => setIsPlaying(true)}
-          onPause={() => setIsPlaying(false)}
-          className="h-full w-full cursor-pointer object-cover"
-        />
-      </div>
+      {!resolvedVideoUrl || videoError ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-gradient-to-b from-slate-950 via-slate-900 to-black z-10">
+          <div className="w-16 h-16 rounded-2xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 mb-4 shadow-xl">
+            <Sparkles className="w-8 h-8 animate-pulse" />
+          </div>
+          <span className="text-[10px] font-mono font-bold tracking-widest text-teal-400 uppercase mb-2">
+            REEL DIFFUSION STAGE
+          </span>
+          <h3 className="text-white font-black text-sm max-w-[240px]">
+            {videoError ? "Synthesis Stream Error" : "Awaiting Synthesis"}
+          </h3>
+          <p className="text-slate-400 text-xs mt-2 max-w-[260px] leading-relaxed">
+            {videoError 
+              ? "The requested video could not be loaded. Please regenerate the reel." 
+              : "Generate shots and narration to render the continuous 9:16 master reel."}
+          </p>
+        </div>
+      ) : (
+        <div
+          className="h-full w-full overflow-hidden transition-transform duration-300 ease-out"
+          style={{
+            transform: `scale(${effectiveZoom})`,
+            transformOrigin: "center 38%"
+          }}
+          onClick={togglePlay}
+        >
+          <video
+            ref={videoRef}
+            src={resolvedVideoUrl}
+            playsInline
+            loop
+            onError={() => setVideoError(true)}
+            onTimeUpdate={handleTimeUpdate}
+            onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+            className="h-full w-full cursor-pointer object-cover"
+          />
+        </div>
+      )}
 
       {/* B-ROLL CUTAWAY OVERLAY LAYER (Phase 3) */}
-      {enableBRollOverlay && activeBRoll && (
+      {enableBRollOverlay && activeBRoll && activeBRoll.brollUrl && (
         <>
           {/* Full Cutaway */}
           {activeBRoll.type === "full_cutaway" && (

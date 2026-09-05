@@ -287,13 +287,23 @@ function ReelCreateContent() {
             </div>
 
             <div className="space-y-2">
-              <a
-                href="/assets/video/persona3_viral_influencer_reel.mp4"
-                download="persona3_viral_influencer_reel.mp4"
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-500 hover:bg-red-400 text-white font-bold py-2.5 text-xs transition shadow-lg shadow-red-500/20"
-              >
-                📥 Download Master 9:16 Reel (1.5 MB)
-              </a>
+              {generatedVideoUrl ? (
+                <a
+                  href={generatedVideoUrl}
+                  download="zyvoriq_viral_reel_master.mp4"
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-500 hover:bg-red-400 text-white font-bold py-2.5 text-xs transition shadow-lg shadow-red-500/20"
+                >
+                  📥 Download Master 9:16 Reel
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => alert("No synthesized reel available yet. Please click 'Synthesize 9:16 Viral Reel' above to begin.")}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 font-bold py-2.5 text-xs transition cursor-pointer"
+                >
+                  📥 Awaiting Synthesis
+                </button>
+              )}
             </div>
           </div>
         </div>

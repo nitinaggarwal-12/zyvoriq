@@ -23,13 +23,23 @@ import {
   Languages
 } from "lucide-react";
 
-const ONBOARDING_REELS = [
+const ONBOARDING_REELS: Array<{
+  id: string;
+  title: string;
+  sub: string;
+  icon: any;
+  videoSrc?: string;
+  badge: string;
+  hook: string;
+  caption: string;
+  color: string;
+  border: string;
+}> = [
   {
     id: "kids_pixar",
     title: "Kids & Family",
     sub: "Pixar 3D CGI",
     icon: Smile,
-    videoSrc: "/assets/video/persona1_pixar_kids_reel.mp4",
     badge: "1080p60 · PIXAR 3D ENGINE",
     hook: "A curious robot named Pip plants a glowing flower on the moon",
     caption: "“Every tiny spark begins a grand adventure.”",
@@ -41,7 +51,6 @@ const ONBOARDING_REELS = [
     title: "Anime & Manga",
     sub: "Shōnen Action",
     icon: Zap,
-    videoSrc: "/assets/video/persona2_anime_shonen_reel.mp4",
     badge: "4K 60FPS · UFOTABLE SAKUGA",
     hook: "Sensei Ren & Apprentice Aoi unleash the secret Mushin technique",
     caption: "“Focus your mind until thunder turns to silence.”",
@@ -53,7 +62,6 @@ const ONBOARDING_REELS = [
     title: "Viral Influencer",
     sub: "Split ASMR Reel",
     icon: Flame,
-    videoSrc: "/assets/video/persona3_viral_influencer_reel.mp4",
     badge: "9:16 VERTICAL · 84% RETENTION",
     hook: "3 daily micro-habits quietly destroying your focus",
     caption: "“The third one feels productive—but is pure friction.”",
@@ -65,7 +73,6 @@ const ONBOARDING_REELS = [
     title: "E-Com UGC Ads",
     sub: "DTC Conversion",
     icon: ShoppingBag,
-    videoSrc: "/assets/video/persona4_ugc_ecommerce_reel.mp4",
     badge: "ROAS 4.8X · TIKTOK & REELS",
     hook: "Watch the instant brightening serum test in real sunlight",
     caption: "“Zero filters. Just pure 72-hour deep hydration.”",
@@ -77,7 +84,6 @@ const ONBOARDING_REELS = [
     title: "A24 Cinema",
     sub: "35mm Neo-Noir",
     icon: Film,
-    videoSrc: "/assets/video/persona5_arthouse_cinema_reel.mp4",
     badge: "2.39:1 ANAMORPHIC · KODAK 5219",
     hook: "Midnight rain in the neon labyrinth of District 9",
     caption: "“Some truths only reveal themselves after dark.”",
@@ -89,7 +95,6 @@ const ONBOARDING_REELS = [
     title: "Heritage Lore",
     sub: "Indian Epics & BBC",
     icon: Compass,
-    videoSrc: "/assets/video/persona6_heritage_mythology_reel.mp4",
     badge: "BBC DOCUMENTARY · 4K MASTER",
     hook: "Ancient celestial architectural marvels lost in time",
     caption: "“Carved into granite stone over a thousand years ago.”",

@@ -1241,9 +1241,9 @@ export function AnimeCinemaStage() {
                 const isPerAct = Boolean(activeCue?.audioUrl);
                 const effectiveAudioSrc = isPerAct
                   ? activeCue?.audioUrl
-                  : ((activeTrack as any).audioSrc || (isAnimeTrack ? `/assets/audio/anime_dubs/dub_${audioLang}.mp3` : undefined));
+                  : (activeTrack as any).audioSrc;
 
-                if (!effectiveAudioSrc && !isAnimeTrack) return null;
+                if (!effectiveAudioSrc) return null;
 
                 return (
                   <audio
@@ -1791,15 +1791,19 @@ export function AnimeCinemaStage() {
             <div className="relative aspect-video bg-gradient-to-b from-stone-950 via-zinc-900 to-black rounded-2xl overflow-hidden border border-teal-500/30 shadow-2xl p-6 flex flex-col justify-between">
               <div className="absolute inset-0 bg-radial-glow opacity-25 pointer-events-none" />
 
-              {/* Background Zen Dojo Video Loop */}
-              <video
-                src="/assets/video/persona2_anime_shonen_reel.mp4"
-                className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-luminosity"
-                autoPlay
-                loop
-                muted
-                playsInline
-              />
+              {/* Background Zen Dojo Dynamic Stage */}
+              {activeTrack.videoSrc ? (
+                <video
+                  src={activeTrack.videoSrc}
+                  className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-luminosity"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                />
+              ) : (
+                <div className="absolute inset-0 bg-radial from-teal-500/10 via-transparent to-black pointer-events-none" />
+              )}
 
               {/* Top HUD: Living Simulation Status */}
               <div className="relative z-10 flex items-center justify-between">

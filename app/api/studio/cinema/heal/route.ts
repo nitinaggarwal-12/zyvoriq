@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
         mode: "manual_override",
         patchSummary: `Surgical Hard Cut: Completely excised and purged the conflicting defect (${issueId}) from the timeline without reconstruction. Erroneous frames and audio stems eradicated from master deliverable.`,
         remedyApplied: {
-          videoSrc: "/assets/video/persona6_heritage_mythology_reel.mp4",
+          videoSrc: body.videoSrc || "",
           title: "Dharmakshetra (Surgical Excision Master)",
           genre: "Sacred Indian Epic / Mythological Heritage",
           actionDescription: "Corrupted audio/video timeline segment trimmed completely (-12.0s duration compression). Zero residual hallucination."
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
         mode: "manual_override",
         patchSummary: "Director manually ratified intentional artistic dissonance. Logged in C2PA metadata manifest as certified auteur choice without modifying content.",
         remedyApplied: {
-          videoSrc: "/assets/video/persona6_heritage_mythology_reel.mp4",
+          videoSrc: body.videoSrc || "",
           title: "Noor-e-Ishq (Auteur's Surrealist Edition)",
           genre: "Surrealist Arthouse Romance",
           actionDescription: "Bypassed standard CBFC/MPA literal congruence rules under 'STYLE_SURREALIST' auteur exemption."
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
     // ACTION: APPROVE (Apply Planned Tried & Tested Remediation)
     // -------------------------------------------------------------
     let remedyApplied = {
-      videoSrc: "/assets/video/persona5_arthouse_cinema_reel.mp4",
+      videoSrc: body.targetVideoSrc || body.videoSrc || "",
       title: "Noor-e-Ishq: Chapter I (The Arthouse Reprise)",
       genre: "Romantic Melodrama / Arthouse Cinema",
       actionDescription: "Re-routed secular romance audio to modern Swiss/European cinematic video asset. Completely eliminated sacred Kurukshetra dissonance."

@@ -45,7 +45,7 @@ export function DirectorCanvasInpainting() {
       name: "Take 1: Traditional Bokken (Original)",
       badge: "Master Take",
       desc: "Original grounded delivery with wooden bokken under torrential rain and authentic water splash physics.",
-      videoSrc: "/assets/video/persona2_anime_shonen_reel.mp4",
+      videoSrc: "",
       veritasScore: 99.8,
       duration: "8.0s",
       isCommitted: false,
@@ -55,7 +55,7 @@ export function DirectorCanvasInpainting() {
       name: "Take 2: Cyan Energy Katana (Inpainted)",
       badge: "Inpainted",
       desc: "Zyvoriq latent inpainting: Replaced wooden weapon with glowing cyan plasma katana emitting ionization arcs.",
-      videoSrc: "/assets/video/persona2_anime_shonen_reel.mp4",
+      videoSrc: "",
       veritasScore: 99.4,
       duration: "8.0s",
       isCommitted: true,
@@ -65,7 +65,7 @@ export function DirectorCanvasInpainting() {
       name: "Take 3: Crimson Flame Blade",
       badge: "High Drama",
       desc: "Intense embers and red thermal heat distortion trailing bokken strikes with volumetric smoke.",
-      videoSrc: "/assets/video/persona2_anime_shonen_reel.mp4",
+      videoSrc: "",
       veritasScore: 98.9,
       duration: "8.0s",
       isCommitted: false,
@@ -75,7 +75,7 @@ export function DirectorCanvasInpainting() {
       name: "Take 4: Damascus Steel Edge",
       badge: "Cinematic",
       desc: "Ultra-sharp folded steel blade with realistic anamorphic lens flare glinting on lightning strikes.",
-      videoSrc: "/assets/video/persona2_anime_shonen_reel.mp4",
+      videoSrc: "",
       veritasScore: 99.5,
       duration: "8.0s",
       isCommitted: false,
@@ -141,14 +141,28 @@ export function DirectorCanvasInpainting() {
         <div className="lg:col-span-7 space-y-4">
           <div className="relative aspect-video bg-black rounded-2xl overflow-hidden border border-slate-800 shadow-2xl group select-none">
             {/* Main Video Stream */}
-            <video
-              src={activeTake.videoSrc}
-              className="w-full h-full object-cover"
-              autoPlay
-              loop
-              muted
-              playsInline
-            />
+            {activeTake.videoSrc ? (
+              <video
+                src={activeTake.videoSrc}
+                className="w-full h-full object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+              />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-3 bg-gradient-to-b from-slate-900 to-black">
+                <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                  <Paintbrush className="w-6 h-6" />
+                </div>
+                <span className="text-xs font-mono font-bold text-cyan-300 bg-cyan-950/80 border border-cyan-500/40 px-3 py-1 rounded-full">
+                  INPAINTING STAGE · READY
+                </span>
+                <p className="text-[11px] text-slate-400 font-mono max-w-sm">
+                  Zero fallback objects. Awaiting master take footage for latent prop repainting and shader injection.
+                </p>
+              </div>
+            )}
 
             {/* Interactive Inpainting Bounding Box Mask */}
             {maskActive && (

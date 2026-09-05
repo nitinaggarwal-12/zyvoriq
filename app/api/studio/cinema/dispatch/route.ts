@@ -132,8 +132,7 @@ export async function POST(req: NextRequest) {
         totalShots
       },
       filmPackage: {
-        videoSrc: "/assets/video/persona5_arthouse_cinema_reel.mp4",
-        fallbackVideoSrc: "/assets/video/veo_mongol_steppe_warfare_master.mp4",
+        videoSrc: null,
         c2paManifestHash: `c2pa_sha256_${Date.now()}_zyvoriq_cinema_master`,
         lutApplied: "Kodak 2383 Golden Hour 3D LUT",
         audioMaster: {

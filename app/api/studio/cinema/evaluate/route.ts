@@ -73,13 +73,13 @@ export async function POST(req: NextRequest) {
       filmId = "film_dharmakshetra",
       title = "Dharmakshetra: The Song of the Divine",
       genre = "Sacred Indian Epic / Mythological Heritage",
-      videoSrc = "/assets/video/persona6_heritage_mythology_reel.mp4",
+      videoSrc = "",
       dialogues = []
     } = body || {};
 
     const evalId = `eval_mm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const isPersona6 = videoSrc.includes("persona6_heritage_mythology_reel.mp4");
-    const isPersona5 = videoSrc.includes("persona5_arthouse_cinema_reel.mp4");
+    const isPersona6 = videoSrc.includes("heritage") || videoSrc.includes("dharmakshetra") || genre.toLowerCase().includes("sacred");
+    const isPersona5 = videoSrc.includes("arthouse") || genre.toLowerCase().includes("arthouse");
     const isSacredScript = genre.toLowerCase().includes("sacred") || 
                            genre.toLowerCase().includes("mytholog") || 
                            title.toLowerCase().includes("dharmakshetra") ||
@@ -164,7 +164,7 @@ export async function POST(req: NextRequest) {
         reverenceStatus = "SACRILEGE_ALERT";
         reverenceReasoning = "CRITICAL MULTIMODAL FAILURE: Video depicts Bhagwan Shri Krishna and Arjuna on the Kurukshetra battlefield ('गीता'), but the script/dialogue is a modern romantic melodrama. This violates cross-modal cultural reverence guidelines.";
         overallStatus = "REJECTED_MULTIMODAL_MISMATCH";
-        remedyAction = "Re-route video asset to /assets/video/persona5_arthouse_cinema_reel.mp4 or switch script to 'Dharmakshetra: The Song of the Divine'.";
+        remedyAction = "Re-route video asset to Arthouse Romance Master or switch script to 'Dharmakshetra: The Song of the Divine'.";
         
         detectedIssues = [
           {
@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
             autoHealAvailable: true,
             status: "PENDING_REVIEW",
             directorManualOptions: [
-              "Auto-Reroute to Arthouse Romance (persona5_arthouse_cinema_reel.mp4)",
+              "Auto-Reroute to Arthouse Romance Master",
               "Swap Script to Authentic Bhagavad Gita Shlokas (Dharmakshetra)",
               "Override as Metaphorical Dream Sequence (Director's Escrow)"
             ],
@@ -190,7 +190,7 @@ export async function POST(req: NextRequest) {
               trialsBenchmark: "Tested across 12,000 synthetic frames (Zero Latent Drift)",
               steps: [
                 "1. Decouple secular romantic dialogue stem from sacred Kurukshetra video bitstream.",
-                "2. Re-anchor dialogue timeline to /assets/video/persona5_arthouse_cinema_reel.mp4 with 100% era/costume parity.",
+                "2. Re-anchor dialogue timeline to Arthouse Romance video stream with 100% era/costume parity.",
                 "3. Re-verify with 6-Sensor Perception Mesh to seal IMF master."
               ],
               expectedOutcome: "Restores era congruence to 96.5%, clears India CBFC Section 5B block, elevates Veritas score to 98/100.",

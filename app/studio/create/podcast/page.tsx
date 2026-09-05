@@ -136,10 +136,16 @@ function PodcastCreateContent() {
     router.push(`/studio?mode=podcast&topic=${encodeURIComponent(topic)}&h1=${host1.id}&h2=${host2.id}`);
   };
 
+  const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
+
   const handleDownloadCinemaMaster = () => {
+    if (!generatedVideoUrl) {
+      alert("No cinema master synthesized yet. Please generate the podcast first.");
+      return;
+    }
     const a = document.createElement("a");
-    a.href = "/assets/video/persona5_arthouse_cinema_reel.mp4";
-    a.download = "persona5_arthouse_cinema_reel.mp4";
+    a.href = generatedVideoUrl;
+    a.download = "zyvoriq_podcast_cinema_master.mp4";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -341,25 +347,42 @@ function PodcastCreateContent() {
                 </div>
 
                 {/* 9:16 Video Player Wrapper */}
-                <div className="relative aspect-[9/16] w-full max-w-[380px] mx-auto rounded-2xl overflow-hidden border border-white/10 bg-black shadow-2xl group">
-                  <video
-                    src="/assets/video/persona5_arthouse_cinema_reel.mp4"
-                    controls
-                    playsInline
-                    autoPlay
-                    loop
-                    muted
-                    preload="auto"
-                    className="w-full h-full object-cover"
-                  />
+                <div className="relative aspect-[9/16] w-full max-w-[380px] mx-auto rounded-2xl overflow-hidden border border-white/10 bg-black shadow-2xl group flex flex-col items-center justify-center p-6 text-center">
+                  {generatedVideoUrl ? (
+                    <video
+                      src={generatedVideoUrl}
+                      controls
+                      playsInline
+                      autoPlay
+                      loop
+                      muted
+                      preload="auto"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center space-y-4">
+                      <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                        <Mic className="w-7 h-7 animate-pulse" />
+                      </div>
+                      <div className="inline-flex items-center gap-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1 text-xs font-mono font-bold text-indigo-300">
+                        PODCAST STAGE · READY
+                      </div>
+                      <h4 className="text-sm font-bold text-white max-w-xs font-serif">
+                        Arthouse Dialogue & Video Monitor
+                      </h4>
+                      <p className="text-[11px] text-slate-400 max-w-xs font-mono">
+                        Zero fallback objects. Launch in studio to generate live conversational audio stems and 35mm visuals.
+                      </p>
+                    </div>
+                  )}
                   
                   {/* Floating Overlay Badge */}
                   <div className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none">
                     <span className="px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md border border-indigo-500/40 text-[10px] font-mono font-bold text-indigo-300">
-                      🎬 35mm Chiaroscuro Active
+                      🎬 35mm Chiaroscuro Ready
                     </span>
                     <span className="px-2 py-1 rounded-full bg-black/70 backdrop-blur-md border border-white/10 text-[10px] font-mono text-slate-300">
-                      C2PA Verified
+                      C2PA Certified
                     </span>
                   </div>
                 </div>

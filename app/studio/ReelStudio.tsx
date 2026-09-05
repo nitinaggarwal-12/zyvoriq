@@ -2302,7 +2302,7 @@ export function ReelStudio() {
               )}
             </div>
             <DynamicZoomVideoPlayer
-              videoUrl={previewVideoUrl || "/assets/video/persona3_viral_influencer_reel.mp4"}
+              videoUrl={previewVideoUrl || ""}
               keyframes={zoomKeyframes}
               brollItems={brollItems}
               kineticEmojis={kineticEmojis}
@@ -2310,7 +2310,7 @@ export function ReelStudio() {
               subtitleStyle={subtitleStyle}
             />
             <ResolutionDownloadDropdown
-              videoUrl={previewVideoUrl || "/assets/video/persona3_viral_influencer_reel.mp4"}
+              videoUrl={previewVideoUrl || ""}
               durationSec={durationNumber(duration)}
               filenameBase={topic ? topic.toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 24) : "zyvoriq_reel"}
             />

@@ -7,7 +7,7 @@ export interface CinematicAct {
   durationSec: number;
   shotRange: string;
   musicalTheme: string;
-  audioAsset: string;
+  audioAsset?: string;
   visualAtmosphere: string;
   dramaticStakes: string;
 }
@@ -56,7 +56,6 @@ export const DHARMAKSHETRA_ACTS: CinematicAct[] = [
     durationSec: 165,
     shotRange: "Shots #001 to #024",
     musicalTheme: "Vedic Shankh, War Drums & Distant Brass (Pt. Hariprasad Chaurasia & Pt. Jasraj)",
-    audioAsset: "/assets/audio/catalog/audio_vedanta_act1.wav",
     visualAtmosphere: "Golden morning mist, billowing saffron and white battle standards, fiery sunrise rim-lighting four white celestial stallions.",
     dramaticStakes: "The fate of the ancient world hangs in the balance as two mighty armies stand poised for annihilation."
   },
@@ -69,7 +68,6 @@ export const DHARMAKSHETRA_ACTS: CinematicAct[] = [
     durationSec: 180,
     shotRange: "Shots #025 to #050",
     musicalTheme: "Lamentation of the Archer (Somber Sarangi & Bansuri in Raga Darbari Kanhra)",
-    audioAsset: "/assets/audio/catalog/audio_vedanta_act2.wav",
     visualAtmosphere: "Desaturated amber dusk tones, deep psychological shadows, tear-stained close-ups, Gandiva slipping into the chariot dust.",
     dramaticStakes: "Existential moral collapse. Arjuna refuses to fight, questioning the very morality of victory purchased with familial blood."
   },
@@ -82,7 +80,6 @@ export const DHARMAKSHETRA_ACTS: CinematicAct[] = [
     durationSec: 225,
     shotRange: "Shots #051 to #078",
     musicalTheme: "Symphonic Cosmic Choral & Vedic Chant (Shankar Mahadevan & Hariharan Choir)",
-    audioAsset: "/assets/audio/catalog/audio_vedanta_act3.wav",
     visualAtmosphere: "Transcendent solar flare, time freezes across the battlefield, celestial aura (Sudarshana halo), infinite cosmic horizons.",
     dramaticStakes: "The mystery of existence revealed: the soul is eternal, death is an illusion, and destiny is already written."
   },
@@ -95,7 +92,6 @@ export const DHARMAKSHETRA_ACTS: CinematicAct[] = [
     durationSec: 195,
     shotRange: "Shots #079 to #102",
     musicalTheme: "Thunderous Pakhawaj War Drums & Sacred Conch Fanfare",
-    audioAsset: "/assets/audio/catalog/audio_vedanta_act4.wav",
     visualAtmosphere: "Brilliant radiant morning light, blazing determined eyes, golden armor catching the sun, dust storm churned by charging stallions.",
     dramaticStakes: "Total psychological clarity. Selfless duty without attachment to fruit. The righteous battle begins."
   },
@@ -108,7 +104,6 @@ export const DHARMAKSHETRA_ACTS: CinematicAct[] = [
     durationSec: 135,
     shotRange: "Shots #103 to #118",
     musicalTheme: "Grand Thematic Symphony & Raga Bhairavi Epilogue",
-    audioAsset: "/assets/audio/catalog/audio_vedanta_act1.wav",
     visualAtmosphere: "Monumental anamorphic wide-angle landscape, golden rays over the sacred plains, full production credits rolling against starlit cosmos.",
     dramaticStakes: "Eternal moral victory: Where there is Krishna the Lord of Yoga and Partha the archer, there victory and Dharma shall reign forever."
   }

@@ -49,8 +49,8 @@ export const BROLL_PRESET_LIBRARY: BRollStockPreset[] = [
     category: "tech_ai",
     title: "AI Neural Network Hologram",
     keywords: ["ai", "algorithm", "data", "future", "tech", "machine learning", "code", "intelligence"],
-    videoUrl: "/assets/video/veo_gaming_nexus_master.mp4",
-    thumbnailUrl: "/assets/video/generated/serengeti_cheetah.mp4",
+    videoUrl: "",
+    thumbnailUrl: "",
     durationSec: 8.0
   },
   {
@@ -58,8 +58,8 @@ export const BROLL_PRESET_LIBRARY: BRollStockPreset[] = [
     category: "finance_growth",
     title: "Financial Growth & Bullish Candlesticks",
     keywords: ["growth", "money", "invest", "habits", "success", "scale", "revenue", "profit", "killing", "focus"],
-    videoUrl: "/assets/video/veo_finance_macro_master.mp4",
-    thumbnailUrl: "/assets/video/veo_finance_macro_genuine.mp4",
+    videoUrl: "",
+    thumbnailUrl: "",
     durationSec: 8.0
   },
   {
@@ -67,8 +67,8 @@ export const BROLL_PRESET_LIBRARY: BRollStockPreset[] = [
     category: "lifestyle_mindset",
     title: "Deep Work Concentration & Clock Ticking",
     keywords: ["focus", "habits", "mindset", "distraction", "discipline", "time", "routine", "silent"],
-    videoUrl: "/assets/video/veo_cinema_noir_master.mp4",
-    thumbnailUrl: "/assets/video/veo_cinema_noir_genuine.mp4",
+    videoUrl: "",
+    thumbnailUrl: "",
     durationSec: 8.0
   },
   {
@@ -76,8 +76,8 @@ export const BROLL_PRESET_LIBRARY: BRollStockPreset[] = [
     category: "nature_cinematic",
     title: "Cheetah Sprinting (Velocity & Speed)",
     keywords: ["speed", "fast", "velocity", "exponential", "sprint", "power", "momentum", "instinct"],
-    videoUrl: "/assets/video/serengeti_act_4_cheetah_sprint.mp4",
-    thumbnailUrl: "/assets/video/generated/serengeti_cheetah.mp4",
+    videoUrl: "",
+    thumbnailUrl: "",
     durationSec: 8.0
   },
   {
@@ -85,8 +85,8 @@ export const BROLL_PRESET_LIBRARY: BRollStockPreset[] = [
     category: "lifestyle_mindset",
     title: "High-Craft Precision Execution",
     keywords: ["quality", "precision", "craft", "perfection", "detail", "mastery", "elite"],
-    videoUrl: "/assets/video/veo_culinary_wagyu_master.mp4",
-    thumbnailUrl: "/assets/video/veo_culinary_wagyu_genuine.mp4",
+    videoUrl: "",
+    thumbnailUrl: "",
     durationSec: 8.0
   }
 ];

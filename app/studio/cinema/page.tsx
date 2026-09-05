@@ -167,7 +167,7 @@ const PRELOADED_ORIGINALS: CinemaFilm[] = [
     directorAesthetic: "B.R. Chopra & Peter Brook Grand Epic Canvas",
     leadActors: ["Bhagwan Shri Krishna (syn_krishna_01)", "Dhanurdhara Arjuna (syn_arjuna_02)"],
     musicalScore: "Vedic Shankh, Classical Raga & Symphonic Dhrupad (Pt. Hariprasad Chaurasia & Pt. Jasraj)",
-    videoSrc: "/assets/video/persona6_heritage_mythology_reel.mp4",
+    videoSrc: "",
     veritasScore: 99.2,
     c2paCertId: "c2pa_ed25519_zyvoriq_dharmakshetra_4k_master",
     imfStatus: "IMF_SMPTE_2067_CERTIFIED",
@@ -464,7 +464,7 @@ const PRELOADED_ORIGINALS: CinemaFilm[] = [
     directorAesthetic: "Yash Chopra Golden Hour & Chiffon (Kodak 2383 LUT)",
     leadActors: ["Kabir Verma (syn_kabir_01)", "Meera Sen (syn_meera_02)"],
     musicalScore: "Lyria 3.0 Sitar, Sarangi & 60-Piece Orchestral Strings",
-    videoSrc: "/assets/video/persona5_arthouse_cinema_reel.mp4",
+    videoSrc: "",
     veritasScore: 97.4,
     c2paCertId: "c2pa_ed25519_zyvoriq_noor_e_ishq_4k_master",
     imfStatus: "IMF_SMPTE_2067_CERTIFIED",
@@ -658,7 +658,7 @@ const PRELOADED_ORIGINALS: CinemaFilm[] = [
     directorAesthetic: "Roger Deakins 50mm Anamorphic Naturalist",
     leadActors: ["Subutai Ba'atur (syn_subutai_05)", "Genghis Khan (syn_temujin_06)"],
     musicalScore: "Norse & Steppe Wardruna War Drums + Primordial Throat Chants",
-    videoSrc: "/assets/video/veo_mongol_steppe_warfare_master.mp4",
+    videoSrc: "",
     veritasScore: 98.2,
     c2paCertId: "c2pa_ed25519_mongol_steppe_4k_master",
     imfStatus: "IMF_SMPTE_2067_CERTIFIED",
@@ -711,7 +711,7 @@ const PRELOADED_ORIGINALS: CinemaFilm[] = [
     directorAesthetic: "David Fincher Low-Key Amber & Tungsten Precision",
     leadActors: ["Tara Thorne (syn_tara_04)", "Aryan Khan-Raza (syn_aryan_03)"],
     musicalScore: "Analog Modular Synthwave + Deep Sub-Bass Drones",
-    videoSrc: "/assets/video/persona2_anime_shonen_reel.mp4",
+    videoSrc: "",
     veritasScore: 96.1,
     c2paCertId: "c2pa_ed25519_quantum_horizon_4k_master",
     imfStatus: "IMF_SMPTE_2067_CERTIFIED",
@@ -859,23 +859,10 @@ export default function CinemaStudioPage() {
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}.${ms.toString().padStart(2, "0")}`;
   };
 
-  // Dynamic video footage matching the 5 Acts of the feature film
+  // Dynamic video footage matching the synthesized video of the film
   const activeVideoSrc = useMemo(() => {
-    switch (currentAct.actNumber) {
-      case 1:
-        return "/assets/video/persona6_heritage_mythology_reel.mp4";
-      case 2:
-        return "/assets/video/persona5_arthouse_cinema_reel.mp4";
-      case 3:
-        return "/assets/video/dharmakshetra_act3_vishwaroopa.mp4";
-      case 4:
-        return "/assets/video/dharmakshetra_act4_awakening.mp4";
-      case 5:
-        return "/assets/video/persona6_heritage_mythology_reel.mp4";
-      default:
-        return selectedFilm.videoSrc;
-    }
-  }, [currentAct.actNumber, selectedFilm.videoSrc]);
+    return selectedFilm.videoSrc || "";
+  }, [selectedFilm.videoSrc]);
 
   const prevSrcRef = useRef<string>(activeVideoSrc);
   useEffect(() => {
@@ -1155,7 +1142,7 @@ export default function CinemaStudioPage() {
           directorAesthetic: "Yash Chopra Golden Hour & Chiffon",
           leadActors: prodLeadCast,
           musicalScore: "Lyria 3.0 Orchestral Sitar & Strings",
-          videoSrc: "/assets/video/persona6_heritage_mythology_reel.mp4",
+          videoSrc: "",
           veritasScore: 98.1,
           c2paCertId: `c2pa_ed25519_${Date.now()}_master`,
           imfStatus: "IMF_SMPTE_2067_CERTIFIED",
@@ -2369,7 +2356,7 @@ export default function CinemaStudioPage() {
                       handleAuditMultimodal({
                         title: "Noor-e-Ishq: Chapter I",
                         genre: "romantic_epic",
-                        videoSrc: "/assets/video/persona6_heritage_mythology_reel.mp4"
+                        videoSrc: selectedFilm.videoSrc || ""
                       });
                     }}
                     disabled={isAuditingMultimodal || isHealing}

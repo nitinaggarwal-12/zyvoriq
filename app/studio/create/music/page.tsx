@@ -91,6 +91,7 @@ function MusicStudioContent() {
   const [activeActIndex, setActiveActIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"arranger" | "visualizer" | "lyrics" | "acts">("arranger");
 
   useEffect(() => {
@@ -233,17 +234,34 @@ function MusicStudioContent() {
             )}
             {activeTab === "visualizer" && (
               <div className="space-y-4">
-                <div className="relative aspect-video w-full rounded-3xl border border-amber-500/30 bg-black/90 overflow-hidden shadow-2xl flex items-center justify-center group">
-                  <video
-                    src="/assets/video/persona6_heritage_mythology_reel.mp4"
-                    controls
-                    playsInline
-                    muted
-                    loop
-                    className="w-full h-full object-cover"
-                  />
+                <div className="relative aspect-video w-full rounded-3xl border border-amber-500/30 bg-black/90 overflow-hidden shadow-2xl flex flex-col items-center justify-center group p-8 text-center">
+                  {generatedVideoUrl ? (
+                    <video
+                      src={generatedVideoUrl}
+                      controls
+                      playsInline
+                      muted
+                      loop
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center space-y-4">
+                      <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-lg shadow-amber-500/10">
+                        <Music className="w-8 h-8 animate-pulse" />
+                      </div>
+                      <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3.5 py-1 text-xs font-mono font-bold text-amber-300">
+                        MUSIC DIFFUSION STAGE · AWAITING SYNTHESIS
+                      </div>
+                      <h4 className="text-base font-bold text-white max-w-sm">
+                        Lyria Orchestral & Vocal Visualizer
+                      </h4>
+                      <p className="text-xs text-slate-400 max-w-sm font-mono">
+                        No mock playback. Click 'Synthesize 32s Music Video' below to render authentic 4K multi-act visualizer stems.
+                      </p>
+                    </div>
+                  )}
                   <div className="absolute top-4 left-4 rounded-full border border-amber-500/40 bg-black/70 px-3 py-1 text-[10px] font-mono font-bold text-amber-300 backdrop-blur-md">
-                    4K UHD · MULTI-ACT CONTINUOUS REEL
+                    4K UHD · LYRIA AUDIO & VIDEO DIFFUSION
                   </div>
                   <div className="absolute bottom-4 right-4 rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-mono text-slate-300 backdrop-blur-md">
                     32s MASTER TIMELINE

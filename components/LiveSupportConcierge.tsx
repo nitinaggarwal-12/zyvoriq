@@ -134,7 +134,7 @@ const AVATAR_PRESETS_QUICK = [
     avatarName: "Elena Rostova",
     avatarRole: "Senior Technical Director Copilot",
     avatarImage: "/assets/avatars/avatar_elena_founder.jpg",
-    avatarVideo: "/assets/video/persona4_ugc_ecommerce_reel.mp4",
+    avatarVideo: "",
     attire: "tech_hoodie" as const,
     attireLabel: "Tech Minimalist Dark Hoodie",
     audioVoiceId: "neural_crisp_tech_female",
@@ -153,7 +153,7 @@ const AVATAR_PRESETS_QUICK = [
     avatarName: "Priya Sharma",
     avatarRole: "Chief AI Officer & Global CTO",
     avatarImage: "/assets/avatars/avatar_priya_cto.jpg",
-    avatarVideo: "/assets/video/persona3_viral_influencer_reel.mp4",
+    avatarVideo: "",
     attire: "executive_blazer" as const,
     attireLabel: "Navy Executive Blazer & Lapel Pin",
     audioVoiceId: "neural_authoritative_female",
@@ -609,7 +609,7 @@ export function LiveSupportConcierge() {
   };
 
   const activeRatingDisplay = hoverRating || selectedRating;
-  const activeAvatarVideo = avatarPref.avatarId === "priya" ? "/assets/video/persona3_viral_influencer_reel.mp4" : "/assets/video/persona4_ugc_ecommerce_reel.mp4";
+  const activeAvatarVideo = "";
 
   const pathname = usePathname();
   if (!hasMounted) return null;
@@ -649,7 +649,7 @@ export function LiveSupportConcierge() {
                 onClick={() => isMinimized && setIsMinimized(false)}
               >
                 <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 font-bold text-obsidian-950 overflow-hidden border border-teal-400/40 shadow-md">
-                  {isAgentOnCamera ? (
+                  {isAgentOnCamera && activeAvatarVideo ? (
                     <video
                       src={activeAvatarVideo}
                       autoPlay
@@ -844,16 +844,29 @@ export function LiveSupportConcierge() {
                             <span className="text-[9px] font-mono text-slate-400">1080p 60fps</span>
                           </div>
 
-                          <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-black border border-slate-800">
-                            <video
-                              src={activeAvatarVideo}
-                              autoPlay
-                              loop
-                              muted
-                              playsInline
-                              className="h-full w-full object-cover"
-                            />
-                            <div className="absolute bottom-1 left-1.5 px-2 py-0.5 rounded bg-black/70 backdrop-blur-md text-[9px] font-bold text-white">
+                          <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-black border border-slate-800 flex items-center justify-center">
+                            {activeAvatarVideo ? (
+                              <video
+                                src={activeAvatarVideo}
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                                className="h-full w-full object-cover"
+                              />
+                            ) : avatarPref.avatarImage ? (
+                              <Image
+                                src={avatarPref.avatarImage}
+                                alt={avatarPref.avatarName}
+                                fill
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="text-teal-400 font-bold font-mono text-xs">
+                                {avatarPref.avatarName}
+                              </div>
+                            )}
+                            <div className="absolute bottom-1 left-1.5 px-2 py-0.5 rounded bg-black/70 backdrop-blur-md text-[9px] font-bold text-white z-10">
                               {avatarPref.avatarName}
                             </div>
                           </div>
@@ -1109,7 +1122,7 @@ export function LiveSupportConcierge() {
                     >
                       {msg.sender === "ai" && (
                         <div className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-400 overflow-hidden">
-                          {isAgentOnCamera ? (
+                          {isAgentOnCamera && activeAvatarVideo ? (
                             <video
                               src={activeAvatarVideo}
                               autoPlay

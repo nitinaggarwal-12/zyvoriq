@@ -54,7 +54,7 @@ const CINEMA_CATALOG: CinemaProject[] = [
     title: "Noor-e-Ishq: Chapter I (Unresolved Prototype)",
     tagline: "Romantic melodrama dialogue accidentally mapped to sacred Kurukshetra chariot battle",
     genre: "Romantic Melodrama / Vedic Chariot Contradiction",
-    videoSrc: "/assets/video/persona6_heritage_mythology_reel.mp4",
+    videoSrc: "",
     isMismatchedSample: true,
     leadActors: ["Kabir Verma", "Meera Sen"],
     veritasScore: 48.2,
@@ -65,7 +65,7 @@ const CINEMA_CATALOG: CinemaProject[] = [
     title: "Dharmakshetra: The Song of the Divine",
     tagline: "The celestial dialogue on the battlefield of Kurukshetra before the Great War",
     genre: "Sacred Indian Epic / Mythological Heritage",
-    videoSrc: "/assets/video/persona6_heritage_mythology_reel.mp4",
+    videoSrc: "",
     isMismatchedSample: false,
     leadActors: ["Bhagwan Shri Krishna", "Dhanurdhara Arjuna"],
     veritasScore: 98.4,
@@ -76,7 +76,7 @@ const CINEMA_CATALOG: CinemaProject[] = [
     title: "Noor-e-Ishq: Arthouse European Cut",
     tagline: "A poetic exploration of lost memories across misty cobblestones and velvet nights",
     genre: "Arthouse Cinema / Romantic Noir",
-    videoSrc: "/assets/video/persona5_arthouse_cinema_reel.mp4",
+    videoSrc: "",
     isMismatchedSample: false,
     leadActors: ["Kabir Verma", "Meera Sen"],
     veritasScore: 96.8,
@@ -807,17 +807,28 @@ function CinemaAuditContent() {
               </div>
 
               {/* Video Element */}
-              <div className="relative aspect-video rounded-2xl overflow-hidden bg-black border border-slate-800">
-                <video
-                  ref={videoRef}
-                  src={activeMediaSrc}
-                  playsInline
-                  muted={isMuted}
-                  loop
-                  preload="auto"
-                  onTimeUpdate={handleTimeUpdate}
-                  className="w-full h-full object-cover"
-                />
+              <div className="relative aspect-video rounded-2xl overflow-hidden bg-black border border-slate-800 flex items-center justify-center">
+                {activeMediaSrc ? (
+                  <video
+                    ref={videoRef}
+                    src={activeMediaSrc}
+                    playsInline
+                    muted={isMuted}
+                    loop
+                    preload="auto"
+                    onTimeUpdate={handleTimeUpdate}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center p-6 text-center space-y-2">
+                    <span className="text-xs font-mono font-bold text-amber-400 bg-amber-950/60 border border-amber-500/30 px-3 py-1 rounded-full">
+                      AUDIT MONITOR · AWAITING SYNTHESIS
+                    </span>
+                    <p className="text-[11px] text-slate-400 font-mono max-w-xs">
+                      Zero fallback video playback. Select or synthesize an authentic media asset to run frame-level multimodal audit.
+                    </p>
+                  </div>
+                )}
 
                 {/* Scrubber Controls Overlay */}
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-3 flex items-center justify-between gap-3">

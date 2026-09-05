@@ -133,18 +133,21 @@ function ComicsCreateContent() {
 
         {activeTab === "video" && (
           <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2 rounded-3xl border border-amber-500/30 bg-black/80 overflow-hidden shadow-2xl relative aspect-video flex items-center justify-center">
-              <video
-                src="/assets/video/persona2_anime_shonen_reel.mp4"
-                controls
-                playsInline
-                autoPlay
-                muted
-                loop
-                className="w-full h-full object-cover"
-              />
+            <div className="lg:col-span-2 rounded-3xl border border-amber-500/30 bg-black/80 overflow-hidden shadow-2xl relative aspect-video flex flex-col items-center justify-center p-8 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-4 shadow-lg shadow-amber-500/10">
+                <Zap className="w-8 h-8 animate-pulse" />
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3.5 py-1 text-xs font-mono font-bold text-amber-300 backdrop-blur-md mb-3">
+                ANIME DIFFUSION STAGE · AWAITING SYNTHESIS
+              </div>
+              <h3 className="text-base font-bold text-white max-w-md mb-2">
+                Ufotable Cel-Shaded Action Engine
+              </h3>
+              <p className="text-xs text-slate-400 max-w-sm font-mono">
+                No mock playback. Select a prompt preset below or enter a scene description to synthesize authentic 24fps anime animation.
+              </p>
               <div className="absolute top-4 left-4 rounded-full border border-amber-500/40 bg-black/70 px-3 py-1 text-[10px] font-mono font-bold text-amber-300 backdrop-blur-md">
-                1080p60 · UFOTABLE DYNAMIC CEL · VERIFIED
+                1080p60 · UFOTABLE DYNAMIC CEL · READY
               </div>
             </div>
 
@@ -174,13 +177,13 @@ function ComicsCreateContent() {
               </div>
 
               <div className="space-y-2">
-                <a
-                  href="/assets/video/persona2_anime_shonen_reel.mp4"
-                  download="persona2_anime_shonen_reel.mp4"
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2.5 text-xs transition shadow-lg shadow-amber-500/20"
+                <button
+                  type="button"
+                  onClick={handleGenerate}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2.5 text-xs transition shadow-lg shadow-amber-500/20 cursor-pointer"
                 >
-                  📥 Download Master Anime Reel (4.3 MB)
-                </a>
+                  ⚡ Synthesize Shōnen Reel
+                </button>
               </div>
             </div>
           </div>

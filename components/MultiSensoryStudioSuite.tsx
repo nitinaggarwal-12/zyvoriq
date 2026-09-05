@@ -363,7 +363,7 @@ export function MultiSensoryStudioSuite({
 
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-800/80 space-y-1.5">
                 <div className="text-[11px] text-slate-300 font-semibold truncate">
-                  {videoUrl ? videoUrl.split("/").pop() : "zyvoriq_cinema_steppewarfare_master.mp4"}
+                  {videoUrl ? videoUrl.split("/").pop() : "Awaiting Neural Synthesis (.mp4)"}
                 </div>
                 <div className="flex items-center justify-between text-[10px] text-slate-400">
                   <span>Latency: 0ms Buffer Lock</span>

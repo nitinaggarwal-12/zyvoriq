@@ -36,24 +36,8 @@ export default function ZoomScreenSharePage() {
   const [isUserCamActive, setIsUserCamActive] = useState(true);
   const [laserPos, setLaserPos] = useState({ x: 380, y: 240 });
 
-  const audioUser1 = useRef<HTMLAudioElement | null>(null);
-  const audioElena1 = useRef<HTMLAudioElement | null>(null);
-  const audioUser2 = useRef<HTMLAudioElement | null>(null);
-  const audioElena2 = useRef<HTMLAudioElement | null>(null);
-  const audioUser3 = useRef<HTMLAudioElement | null>(null);
-  const audioElena3 = useRef<HTMLAudioElement | null>(null);
   const userCamRef = useRef<HTMLVideoElement | null>(null);
-  const agentVideoRef = useRef<HTMLVideoElement | null>(null);
   const userStreamRef = useRef<MediaStream | null>(null);
-
-  const stopAllAudio = () => {
-    [audioUser1, audioElena1, audioUser2, audioElena2, audioUser3, audioElena3].forEach(a => {
-      if (a.current) {
-        a.current.pause();
-        a.current.currentTime = 0;
-      }
-    });
-  };
 
   // Strictly Calibrated Non-Overlapping Dialogue Timetable
   // 0.20s - 6.17s: Nitin (User)
@@ -98,36 +82,52 @@ export default function ZoomScreenSharePage() {
       }
     }, 100);
 
-    // Audio Playback Triggers - Sequential with clean non-overlapping pauses
+    // Audio Playback Triggers - Spoken via Web Speech API with zero static file dependencies
+    const speakText = (text: string, isElena: boolean) => {
+      if (isMuted || typeof window === "undefined" || !("speechSynthesis" in window)) return;
+      try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = isElena ? 1.05 : 1.0;
+        utterance.pitch = isElena ? 1.2 : 0.95;
+        window.speechSynthesis.speak(utterance);
+      } catch (_) {}
+    };
+
     const timeouts: NodeJS.Timeout[] = [];
     if (isPlaying) {
       if (currentTime < 0.2) {
-        timeouts.push(setTimeout(() => audioUser1.current?.play().catch(() => {}), 200));
+        timeouts.push(setTimeout(() => speakText("Hey Elena, I’m seeing a cadence drift in Shot 1 after extending the hook to 5 seconds. Can you help me re-align the lip-sync?", false), 200));
       }
       if (currentTime < 6.62) {
-        timeouts.push(setTimeout(() => audioElena1.current?.play().catch(() => {}), Math.max(0, (6.62 - currentTime) * 1000)));
+        timeouts.push(setTimeout(() => speakText("Hi Nitin! I see your screen. That’s because the audio stem cadence is still locked to the 3-second template. Let me highlight it for you right now.", true), Math.max(0, (6.62 - currentTime) * 1000)));
       }
       if (currentTime < 14.52) {
-        timeouts.push(setTimeout(() => audioUser2.current?.play().catch(() => {}), Math.max(0, (14.52 - currentTime) * 1000)));
+        timeouts.push(setTimeout(() => speakText("Got it, I see your laser pointer on the cadence bar. Should I re-render the whole shot?", false), Math.max(0, (14.52 - currentTime) * 1000)));
       }
       if (currentTime < 17.43) {
-        timeouts.push(setTimeout(() => audioElena2.current?.play().catch(() => {}), Math.max(0, (17.43 - currentTime) * 1000)));
+        timeouts.push(setTimeout(() => speakText("No need to re-render! I’ve just engaged Zyvoriq’s neural audio time-stretch. It will dynamically re-time the voiceover to match the 5-second cut while maintaining pitch perfection.", true), Math.max(0, (17.43 - currentTime) * 1000)));
       }
       if (currentTime < 25.69) {
-        timeouts.push(setTimeout(() => audioUser3.current?.play().catch(() => {}), Math.max(0, (25.69 - currentTime) * 1000)));
+        timeouts.push(setTimeout(() => speakText("Awesome, that fixed it instantly. Thanks Elena!", false), Math.max(0, (25.69 - currentTime) * 1000)));
       }
       if (currentTime < 27.85) {
-        timeouts.push(setTimeout(() => audioElena3.current?.play().catch(() => {}), Math.max(0, (27.85 - currentTime) * 1000)));
+        timeouts.push(setTimeout(() => speakText("You are welcome Nitin! Happy creating!", true), Math.max(0, (27.85 - currentTime) * 1000)));
       }
     } else {
-      stopAllAudio();
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
     }
 
     return () => {
       clearInterval(interval);
       timeouts.forEach(clearTimeout);
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
     };
-  }, [isPlaying, currentTime]);
+  }, [isPlaying, currentTime, isMuted]);
 
   // Handle User Webcam with Proper Cleanup
   useEffect(() => {
@@ -151,7 +151,9 @@ export default function ZoomScreenSharePage() {
   }, [isUserCamActive]);
 
   const handleRestart = () => {
-    stopAllAudio();
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
     setCurrentTime(0);
     setHasAppliedFix(false);
     setIsPlaying(true);
@@ -184,14 +186,6 @@ export default function ZoomScreenSharePage() {
   return (
     <main className="min-h-screen bg-[#07090e] text-white flex flex-col justify-between font-sans selection:bg-teal-500 selection:text-black">
       
-      {/* Audio Elements for 2-Way Spoken Conversation */}
-      <audio ref={audioUser1} src="/assets/audio/user_1.wav" preload="auto" muted={isMuted} />
-      <audio ref={audioElena1} src="/assets/audio/elena_1.wav" preload="auto" muted={isMuted} />
-      <audio ref={audioUser2} src="/assets/audio/user_2.wav" preload="auto" muted={isMuted} />
-      <audio ref={audioElena2} src="/assets/audio/elena_2.wav" preload="auto" muted={isMuted} />
-      <audio ref={audioUser3} src="/assets/audio/user_3.wav" preload="auto" muted={isMuted} />
-      <audio ref={audioElena3} src="/assets/audio/elena_3.wav" preload="auto" muted={isMuted} />
-
       {/* 1. ZOOM / MEET HEADER BAR WITH PRE-SESSION MODE SELECTOR */}
       <header className="h-16 border-b border-slate-800/90 bg-[#0b0f17]/95 px-6 flex items-center justify-between z-30">
         <div className="flex items-center gap-4">
@@ -430,15 +424,21 @@ export default function ZoomScreenSharePage() {
             {/* DYNAMIC RENDERING: Option A Video vs Option B 3D VRM Canvas */}
             <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-slate-800 shadow-inner">
               {avatarEngineMode === "photorealistic" ? (
-                <video
-                  ref={agentVideoRef}
-                  src="/assets/video/persona3_viral_influencer_reel.mp4"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="h-full w-full object-cover"
-                />
+                <div className="h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-teal-950/30 to-black p-4 text-center">
+                  <div className="relative mb-2">
+                    <div className="w-16 h-16 rounded-full border-2 border-teal-400/50 bg-teal-500/20 flex items-center justify-center text-teal-300 font-bold text-lg shadow-lg">
+                      ER
+                    </div>
+                    {activeSpeaker === "elena" && (
+                      <span className="absolute bottom-0 right-0 h-4 w-4 rounded-full bg-emerald-400 border-2 border-slate-900 animate-ping" />
+                    )}
+                  </div>
+                  <div className="text-xs font-bold text-white">Elena Rostova</div>
+                  <div className="text-[10px] font-mono text-teal-400/80">AI Support Engineer · Live Copilot</div>
+                  <div className="mt-2 text-[9px] text-slate-400 bg-white/5 border border-white/10 rounded-full px-2.5 py-0.5">
+                    {activeSpeaker === "elena" ? "Speaking..." : "Listening"}
+                  </div>
+                </div>
               ) : (
                 <RealTime3DAvatarCanvas
                   isSpeaking={activeSpeaker === "elena"}
