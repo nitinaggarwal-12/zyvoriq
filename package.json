@@ -4,6 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "guard:scope": "node scripts/guards/guard_codebase_scope.mjs",
+    "guard:mocks": "node scripts/guards/guard_no_synthetic_mocks.mjs",
+    "guard:audio": "node scripts/guards/gate_audio_semantic_ground_truth.mjs --self-test",
+    "guard:video": "node scripts/guards/gate_video_optical_flow.mjs --self-test",
+    "guard:capabilities": "node scripts/guards/gate_platform_capabilities.mjs --self-test",
+    "guard:deterministic": "npm run guard:scope && npm run guard:mocks && npm run guard:audio && npm run guard:video && npm run guard:capabilities",
     "guard:legacy": "node scripts/governance/legacy_tech_guard.js",
     "docs:validate": "node scripts/governance/validate_docs_traceability.mjs",
     "worker:check": "node --check scripts/canonical_reel_operation_guard.mjs && node --check scripts/transcription_word_timing_guard.mjs && node --check scripts/characterAnchor.mjs && node --check scripts/reel_worker_v2.mjs",

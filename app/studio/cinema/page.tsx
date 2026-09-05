@@ -50,7 +50,6 @@ import {
   CinematicAct,
   CinematicShot
 } from "@/lib/cinema/dharmakshetra15m";
-import { FROZEN_3_TRAILER_FILM } from "@/lib/cinema/frozen3Trailer120s";
 
 export interface DialogueLine {
   id: string;
@@ -159,7 +158,6 @@ export interface CinemaFilm {
 }
 
 const PRELOADED_ORIGINALS: CinemaFilm[] = [
-  FROZEN_3_TRAILER_FILM,
   {
     id: "film_dharmakshetra",
     title: "Dharmakshetra: The Song of the Divine (कुरुक्षेत्र: श्रीमद्भगवद्गीता)",
@@ -1460,32 +1458,8 @@ export default function CinemaStudioPage() {
                       />
                     ) : null}
 
-                    {/* Frozen 3 Dedicated Interactive Player Banner or Clean Slate Canvas */}
-                    {selectedFilm.id === "film_frozen_3_trailer" ? (
-                      <div className="absolute inset-0 bg-gradient-to-br from-cyan-950/90 via-slate-950 to-sky-950/80 flex flex-col items-center justify-center p-8 text-center z-10">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 mb-3 shadow-xl">
-                          <Film className="h-8 w-8" />
-                        </div>
-                        <span className="px-3 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 font-mono text-[11px] font-bold mb-2">
-                          OFFICIAL 2-MINUTE MASTER THEATRICAL CUT
-                        </span>
-                        <h3 className="text-xl md:text-2xl font-black text-white tracking-wide max-w-xl">
-                          Disney's Frozen III: Echoes of Ahtohallan
-                        </h3>
-                        <p className="text-xs text-slate-300 max-w-lg mt-1">
-                          24 Master Shots · 60fps Procedural SSS Engine · 3-Track Dolby Atmos Stem Mixer
-                        </p>
-                        <div className="mt-5 flex items-center gap-3">
-                          <Link
-                            href="/studio/cinema/frozen3"
-                            className="px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-cyan-600/30 transition-all pointer-events-auto"
-                          >
-                            <span>Open 2-Min Master Trailer Studio</span>
-                            <ArrowRight className="h-4 w-4" />
-                          </Link>
-                        </div>
-                      </div>
-                    ) : (hasVideoLoadError || !activeVideoSrc) ? (
+                    {/* Fresh Slate Cinematic Canvas (Renders when local video assets are cleared) */}
+                    {(hasVideoLoadError || !activeVideoSrc) ? (
                       <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/40 flex flex-col items-center justify-center p-8 text-center">
                         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 mb-3 shadow-xl">
                           <Film className="h-8 w-8" />
@@ -1915,21 +1889,10 @@ export default function CinemaStudioPage() {
                       <span className="text-teal-400 font-semibold font-mono">
                         VQS: {film.veritasScore}/100
                       </span>
-                      {film.id === "film_frozen_3_trailer" ? (
-                        <Link
-                          href="/studio/cinema/frozen3"
-                          onClick={(e) => e.stopPropagation()}
-                          className="px-2.5 py-1 rounded-md bg-cyan-600 hover:bg-cyan-500 text-white font-bold flex items-center gap-1 transition-colors shadow-sm"
-                        >
-                          <span>Launch 2-Min Master</span>
-                          <ArrowRight className="h-3 w-3" />
-                        </Link>
-                      ) : (
-                        <span className="text-amber-400 flex items-center gap-1 font-bold">
-                          <span>Select Master</span>
-                          <ChevronRight className="h-3 w-3" />
-                        </span>
-                      )}
+                      <span className="text-amber-400 flex items-center gap-1 font-bold">
+                        <span>Select Master</span>
+                        <ChevronRight className="h-3 w-3" />
+                      </span>
                     </div>
                   </div>
                 ))}

@@ -15,7 +15,6 @@ scratch/
 temp/
 *.mp4
 !public/assets/video/*.mp4
-!public/cinema/frozen3/*.mp4
 *.checkpoint.json
 *.patch
 scripts/qa/*keyframes/
