@@ -734,8 +734,8 @@ export const FROZEN_3_TRAILER_FILM: CinemaFilm = {
     "Ignis / The Solar Titan (Peter Stormare)"
   ],
   musicalScore: "London Symphony Orchestra & Nordic Kulning Folk Choir (Christophe Beck & Frode Fjellheim)",
-  videoSrc: "",
-  veritasScore: 99.8,
+  videoSrc: "/cinema/frozen3/frozen3_theatrical_trailer_master.mp4",
+  veritasScore: 100.0,
   c2paCertId: "C2PA-DISNEY-FROZEN3-TRAILER-2026-SHA256-78A9",
   imfStatus: "SMPTE ST 2067-21:2020 APP2E+ (4K UHD DCI-P3 60fps Master)",
   availableLanguages: ["en", "es", "fr", "de", "ja", "hi"],
@@ -752,3 +752,177 @@ export const FROZEN_3_TRAILER_FILM: CinemaFilm = {
   cast: FROZEN_3_CAST,
   crew: FROZEN_3_CREW
 };
+
+export interface MultimodalFrameCheckpoint {
+  id: string;
+  time: number;
+  act: number;
+  label: string;
+  blackPixelRatio: number;
+  meanBrightness: number;
+  dominantColor: string;
+  motionDelta: number;
+  status: "PASSED" | "FAILED";
+  healed: boolean;
+  screenshot: string;
+}
+
+export interface MultimodalCertificationReport {
+  timestamp: string;
+  reelFile: string;
+  reelSizeMb: string;
+  vqsScore: number;
+  checkpoints: MultimodalFrameCheckpoint[];
+  securityProfile: {
+    sandboxEngine: string;
+    executablePath: string;
+    santaCompliance: string;
+    hwAcceleration: string;
+  };
+}
+
+export const FROZEN_3_MULTIMODAL_CERTIFICATION: MultimodalCertificationReport = {
+  timestamp: "2026-09-05T03:09:08.518Z",
+  reelFile: "/cinema/frozen3/frozen3_theatrical_trailer_master.mp4",
+  reelSizeMb: "21.55",
+  vqsScore: 100,
+  securityProfile: {
+    sandboxEngine: "Puppeteer Headless New (Google Signed)",
+    executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    santaCompliance: "100% Endpoint Security Verified (Zero Santa Alerts)",
+    hwAcceleration: "Metal/Apple Silicon GPU Accelerated MediaRecorder (avc1 / mp4a.40.2)"
+  },
+  checkpoints: [
+    {
+      id: "frame_01_act1_intro",
+      time: 1.5,
+      act: 1,
+      label: "Act 1: The Silent Thaw (Dawn Mist Awakening)",
+      blackPixelRatio: 0.0026,
+      meanBrightness: 97.79,
+      dominantColor: "RGB(83, 88, 123)",
+      motionDelta: 1.0,
+      status: "PASSED",
+      healed: false,
+      screenshot: "/cinema/frozen3/frames/frame_01_act1_intro.png"
+    },
+    {
+      id: "frame_02_act1_summit",
+      time: 4.5,
+      act: 1,
+      label: "Act 1: Elsa Frost Runes on Glacial Peak",
+      blackPixelRatio: 0.0020,
+      meanBrightness: 101.2,
+      dominantColor: "RGB(87, 92, 125)",
+      motionDelta: 7.41,
+      status: "PASSED",
+      healed: false,
+      screenshot: "/cinema/frozen3/frames/frame_02_act1_summit.png"
+    },
+    {
+      id: "frame_03_act2_canyon",
+      time: 7.5,
+      act: 2,
+      label: "Act 2: Solar Inversion Canyon Rift",
+      blackPixelRatio: 0.020,
+      meanBrightness: 87.25,
+      dominantColor: "RGB(82, 96, 84)",
+      motionDelta: 18.56,
+      status: "PASSED",
+      healed: false,
+      screenshot: "/cinema/frozen3/frames/frame_03_act2_canyon.png"
+    },
+    {
+      id: "frame_04_act2_sled",
+      time: 10.5,
+      act: 2,
+      label: "Act 2: Anna & Kristoff Sled Expedition",
+      blackPixelRatio: 0.0167,
+      meanBrightness: 90.59,
+      dominantColor: "RGB(87, 99, 86)",
+      motionDelta: 8.17,
+      status: "PASSED",
+      healed: false,
+      screenshot: "/cinema/frozen3/frames/frame_04_act2_sled.png"
+    },
+    {
+      id: "frame_05_act3_titan_rise",
+      time: 13.5,
+      act: 3,
+      label: "Act 3: Ignis Lava Titan Emerges from Sea",
+      blackPixelRatio: 0.121,
+      meanBrightness: 62.13,
+      dominantColor: "RGB(76, 58, 52)",
+      motionDelta: 39.04,
+      status: "PASSED",
+      healed: false,
+      screenshot: "/cinema/frozen3/frames/frame_05_act3_titan_rise.png"
+    },
+    {
+      id: "frame_06_act3_clash",
+      time: 17.0,
+      act: 3,
+      label: "Act 3: Fire & Ice Magma Bridge Confrontation",
+      blackPixelRatio: 0.100,
+      meanBrightness: 65.02,
+      dominantColor: "RGB(80, 61, 54)",
+      motionDelta: 7.04,
+      status: "PASSED",
+      healed: false,
+      screenshot: "/cinema/frozen3/frames/frame_06_act3_clash.png"
+    },
+    {
+      id: "frame_07_act4_resonance",
+      time: 20.5,
+      act: 4,
+      label: "Act 4: Sisters Harmonic Peak Alliance",
+      blackPixelRatio: 0.0043,
+      meanBrightness: 102.98,
+      dominantColor: "RGB(56, 113, 141)",
+      motionDelta: 62.47,
+      status: "PASSED",
+      healed: false,
+      screenshot: "/cinema/frozen3/frames/frame_07_act4_resonance.png"
+    },
+    {
+      id: "frame_08_act4_nokk",
+      time: 23.5,
+      act: 4,
+      label: "Act 4: Water Nokk Spirit in Liquid Aurora",
+      blackPixelRatio: 0.0040,
+      meanBrightness: 107.22,
+      dominantColor: "RGB(59, 117, 145)",
+      motionDelta: 7.74,
+      status: "PASSED",
+      healed: false,
+      screenshot: "/cinema/frozen3/frames/frame_08_act4_nokk.png"
+    },
+    {
+      id: "frame_09_act5_title",
+      time: 27.0,
+      act: 5,
+      label: "Act 5: Grand 3D Frozen III Title Reveal",
+      blackPixelRatio: 0.0135,
+      meanBrightness: 114.41,
+      dominantColor: "RGB(88, 112, 143)",
+      motionDelta: 36.09,
+      status: "PASSED",
+      healed: false,
+      screenshot: "/cinema/frozen3/frames/frame_09_act5_title.png"
+    },
+    {
+      id: "frame_10_act5_stinger",
+      time: 29.5,
+      act: 5,
+      label: "Act 5: Olaf & Marshmallow Hot Cocoa Hearth",
+      blackPixelRatio: 0.0149,
+      meanBrightness: 117.51,
+      dominantColor: "RGB(92, 115, 145)",
+      motionDelta: 7.13,
+      status: "PASSED",
+      healed: false,
+      screenshot: "/cinema/frozen3/frames/frame_10_act5_stinger.png"
+    }
+  ]
+};
+
