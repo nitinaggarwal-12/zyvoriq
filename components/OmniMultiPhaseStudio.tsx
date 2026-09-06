@@ -21,7 +21,12 @@ import {
   Settings,
   ChevronRight,
   ArrowRight,
-  Edit3
+  Edit3,
+  Plus,
+  Flame,
+  Send,
+  Loader2,
+  Wand2
 } from "lucide-react";
 
 export interface ScriptLine {
@@ -32,58 +37,330 @@ export interface ScriptLine {
   text: string;
 }
 
-interface ScenePreset {
+export interface ScenePreset {
   id: string;
+  label: string;
   title: string;
+  genre?: string;
   setting: string;
   dynamic: string;
+  prompt: string;
+  duration: number;
   still: string;
   video: string;
   lines: ScriptLine[];
 }
 
-const DEFAULT_SCENE: ScenePreset = {
-  id: "mumbai_penthouse",
-  title: "Luxury Mumbai Penthouse",
-  setting: "Bandra Penthouse, Mumbai",
-  dynamic: "Sibling Household",
-  still: "/assets/stills/mumbai_penthouse.jpg",
-  video: "/assets/video/napoleon_180s_master.mp4",
-  lines: [
-    {
-      id: "l1",
-      speaker: "RAJ",
-      emotion: "smiling",
-      timestamp: "01:21",
-      text: "Bas karo, Shweta! Paneer khatam ho jayega!"
-    },
-    {
-      id: "l2",
-      speaker: "SHWETA",
-      emotion: "laughing",
-      timestamp: "01:25",
-      text: "Rahul is eating it all!"
-    },
-    {
-      id: "l3",
-      speaker: "RAHUL",
-      timestamp: "01:27",
-      text: "No way!"
-    }
-  ]
-};
+export const SCENE_PRESETS: ScenePreset[] = [
+  {
+    id: "mumbai_penthouse",
+    label: "Luxury Penthouse (180s)",
+    title: "Luxury Mumbai Penthouse",
+    setting: "Bandra Penthouse, Mumbai",
+    dynamic: "Sibling Household, Warm Dinner Banter",
+    prompt: "A modern Indian family dinner in a high-rise Bandra penthouse overlooking Mumbai night skyline and Sea Link. Sibling banter, warm golden interior lighting, authentic Hinglish dialogue, 24fps cinematic realism.",
+    duration: 180,
+    still: "/assets/stills/mumbai_penthouse.jpg",
+    video: "/assets/video/napoleon_180s_master.mp4",
+    lines: [
+      {
+        id: "l1",
+        speaker: "RAJ",
+        emotion: "smiling",
+        timestamp: "01:21",
+        text: "Bas karo, Shweta! Paneer khatam ho jayega!"
+      },
+      {
+        id: "l2",
+        speaker: "SHWETA",
+        emotion: "laughing",
+        timestamp: "01:25",
+        text: "Rahul is eating it all!"
+      },
+      {
+        id: "l3",
+        speaker: "RAHUL",
+        timestamp: "01:27",
+        text: "No way!"
+      }
+    ]
+  },
+  {
+    id: "marseille",
+    label: "Marseille Port (30s)",
+    title: "1795 Marseille Waterfront",
+    setting: "Marseille Port, France (1795)",
+    dynamic: "Historic Drama, Military Dispatch",
+    prompt: "Napoleon Bonaparte arriving at the bustling 1795 Marseille waterfront. Cobblestone docks, towering masted frigates, Mediterranean evening sun, authentic French period dialogue.",
+    duration: 30,
+    still: "/assets/stills/napoleon_hero.png",
+    video: "/assets/video/napoleon_180s_master.mp4",
+    lines: [
+      {
+        id: "m1",
+        speaker: "NAPOLEON",
+        emotion: "determined",
+        timestamp: "00:04",
+        text: "Nous devons sécuriser les approvisionnements pour l'armée immédiatement."
+      },
+      {
+        id: "m2",
+        speaker: "DESIREE",
+        emotion: "somber",
+        timestamp: "00:08",
+        text: "Prenez garde, Napoléon. La mer est traîtresse ce soir."
+      }
+    ]
+  },
+  {
+    id: "notre_dame",
+    label: "Notre-Dame (30s)",
+    title: "1804 Notre-Dame Coronation",
+    setting: "Cathedral of Notre-Dame, Paris",
+    dynamic: "Imperial Coronation, Sacred Choral",
+    prompt: "Grand imperial coronation inside Notre-Dame Cathedral. Candlelight gleaming off gold-embroidered velvet cloaks, Gregorian choral resonance, solemn dramatic atmosphere.",
+    duration: 30,
+    still: "/assets/stills/coronation_hero.png",
+    video: "/assets/video/napoleon_180s_master.mp4",
+    lines: [
+      {
+        id: "n1",
+        speaker: "NAPOLEON",
+        emotion: "reverent",
+        timestamp: "00:06",
+        text: "Dieu me l'a donnée, gare à qui la touche."
+      },
+      {
+        id: "n2",
+        speaker: "JOSEPHINE",
+        emotion: "whispering",
+        timestamp: "00:10",
+        text: "Pour toujours, mon empereur."
+      }
+    ]
+  },
+  {
+    id: "titanic",
+    label: "Titanic (30s)",
+    title: "1912 Titanic Marconi Cabin",
+    setting: "Marconi Room, RMS Titanic",
+    dynamic: "High Tension Emergency SOS",
+    prompt: "April 14, 1912, midnight in the Marconi wireless cabin. Jack Phillips transmitting CQD and SOS distress signals under flickering tungsten bulbs as ocean water rises.",
+    duration: 30,
+    still: "/assets/stills/titanic_hero.jpg",
+    video: "/assets/video/napoleon_180s_master.mp4",
+    lines: [
+      {
+        id: "t1",
+        speaker: "PHILLIPS",
+        emotion: "urgent",
+        timestamp: "00:05",
+        text: "CQD CQD SOS from MGY. Struck iceberg, sinking rapidly."
+      },
+      {
+        id: "t2",
+        speaker: "BRIDE",
+        emotion: "focused",
+        timestamp: "00:09",
+        text: "Carpathia acknowledges. Steaming full speed."
+      }
+    ]
+  },
+  {
+    id: "neotokyo",
+    label: "Neo-Tokyo (30s)",
+    title: "Neo-Tokyo Downpour (2088)",
+    setting: "Shinjuku Sublevel 4, Neo-Tokyo",
+    dynamic: "Cyberpunk Infiltration",
+    prompt: "Cyberpunk neon alleyway in Shinjuku drenched in acid rain. Hover-cabs casting cyan reflections on chrome asphalt, atmospheric synthwave bassline.",
+    duration: 30,
+    still: "/assets/stills/neotokyo_hero.jpg",
+    video: "/assets/video/neotokyo_180s_master.mp4",
+    lines: [
+      {
+        id: "k1",
+        speaker: "KENJI",
+        emotion: "whispering",
+        timestamp: "00:04",
+        text: "The power grid went dark thirty seconds ago. Move."
+      },
+      {
+        id: "k2",
+        speaker: "AI OPERATOR",
+        timestamp: "00:07",
+        text: "Thermal trace confirmed on the roof."
+      }
+    ]
+  }
+];
+
+function extractPromptTitle(prompt: string, fallback: string): string {
+  const clean = prompt.replace(/[^\w\s]/gi, " ").trim();
+  const words = clean.split(/\s+/).filter(Boolean);
+  if (words.length === 0) return fallback;
+  if (words.length <= 5) {
+    return words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+  }
+  return words.slice(0, 5).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+}
+
+function compileOmniPromptClient(rawPrompt: string): ScenePreset {
+  const prompt = rawPrompt.trim();
+  const lower = prompt.toLowerCase();
+
+  let title = "Omni Cinema Master";
+  let genre = "Cinematic Narrative Masterpiece";
+  let setting = "Acoustically Calibrated Soundstage & Location Studio";
+  let dynamic = "High-Stakes Dramatic Arc & Biometric Resonance";
+  let still = "/assets/stills/mumbai_penthouse.jpg";
+  let video = "/assets/video/napoleon_180s_master.mp4";
+  let lines: ScriptLine[] = [];
+
+  if (lower.includes("cyberpunk") || lower.includes("neotokyo") || lower.includes("neon") || lower.includes("blade runner") || lower.includes("android") || lower.includes("hacker") || lower.includes("shinjuku") || lower.includes("cyber")) {
+    title = extractPromptTitle(prompt, "Neon Tokyo Infiltration");
+    genre = "Cyberpunk / Sci-Fi";
+    setting = "Shinjuku Sublevel 4, Neo-Tokyo (2088)";
+    dynamic = "High-Stakes Grid Infiltration & Drone Evasion";
+    still = "/assets/stills/neotokyo_hero.jpg";
+    video = "/assets/video/neotokyo_180s_master.mp4";
+    lines = [
+      { id: "cb1", speaker: "KENJI", emotion: "whispering", timestamp: "00:04", text: "The perimeter power grid went dark. We have twelve seconds before the drone sweep." },
+      { id: "cb2", speaker: "AI OPERATOR", emotion: "calm", timestamp: "00:09", text: "Thermal trace confirmed on the roof. Neural jammer active." },
+      { id: "cb3", speaker: "KENJI", emotion: "determined", timestamp: "00:15", text: "Initiate terminal uplink. No one leaves this alley empty-handed." }
+    ];
+  } else if (lower.includes("titanic") || lower.includes("iceberg") || lower.includes("marconi") || (lower.includes("ship") && lower.includes("sink"))) {
+    title = extractPromptTitle(prompt, "1912 Titanic Distress Transmission");
+    genre = "Historical Disaster / Drama";
+    setting = "Marconi Wireless Cabin, RMS Titanic (North Atlantic, 1912)";
+    dynamic = "Desperate Emergency SOS Under Rising Sea";
+    still = "/assets/stills/titanic_hero.jpg";
+    video = "/assets/video/titanic_180s_master.mp4";
+    lines = [
+      { id: "tt1", speaker: "PHILLIPS", emotion: "urgent", timestamp: "00:04", text: "CQD CQD SOS from MGY. Struck iceberg, sinking rapidly by the head." },
+      { id: "tt2", speaker: "BRIDE", emotion: "focused", timestamp: "00:09", text: "Carpathia acknowledges! Captain Rostron says they're steaming full speed." },
+      { id: "tt3", speaker: "PHILLIPS", emotion: "solemn", timestamp: "00:15", text: "Keep pounding the brass key, Harold. Power won't last another ten minutes." }
+    ];
+  } else if (lower.includes("napoleon") || lower.includes("coronation") || lower.includes("notre dame") || lower.includes("emperor") || lower.includes("crown")) {
+    title = extractPromptTitle(prompt, "1804 Notre-Dame Imperial Coronation");
+    genre = "Imperial Epic / Historical";
+    setting = "Cathedral of Notre-Dame, Paris (1804)";
+    dynamic = "Sacred Sovereignty & Imperial Destiny";
+    still = "/assets/stills/coronation_hero.png";
+    video = "/assets/video/coronation_180s_master.mp4";
+    lines = [
+      { id: "np1", speaker: "NAPOLEON", emotion: "commanding", timestamp: "00:05", text: "Dieu me l'a donnée, gare à qui la touche." },
+      { id: "np2", speaker: "JOSEPHINE", emotion: "reverent", timestamp: "00:10", text: "The crown of France rests upon your brow, mon empereur." },
+      { id: "np3", speaker: "NAPOLEON", emotion: "solemn", timestamp: "00:16", text: "Not just France, Josephine. History itself begins today." }
+    ];
+  } else if (lower.includes("marseille") || lower.includes("waterfront") || lower.includes("frigate") || lower.includes("harbor") || lower.includes("docks")) {
+    title = extractPromptTitle(prompt, "1795 Marseille Waterfront Expedition");
+    genre = "Period Maritime Drama";
+    setting = "Old Port of Marseille, France (1795)";
+    dynamic = "Military Mobilization & Mediterranean Intrigue";
+    still = "/assets/stills/napoleon_hero.png";
+    video = "/assets/video/napoleon_180s_master.mp4";
+    lines = [
+      { id: "ms1", speaker: "NAPOLEON", emotion: "determined", timestamp: "00:04", text: "We must requisition the grain shipments for the Army of Italy by midnight." },
+      { id: "ms2", speaker: "DÉSIRÉE", emotion: "melancholy", timestamp: "00:09", text: "The tide is treacherous tonight, Napoléon. Even heroes drown in these waters." },
+      { id: "ms3", speaker: "NAPOLEON", emotion: "fierce", timestamp: "00:15", text: "Destiny does not drown in Marseille harbor. Ready the frigate." }
+    ];
+  } else if (lower.includes("mumbai") || lower.includes("penthouse") || lower.includes("dinner") || lower.includes("family") || lower.includes("hinglish") || lower.includes("bandra") || lower.includes("paneer")) {
+    title = extractPromptTitle(prompt, "Luxury Mumbai Penthouse Dinner");
+    genre = "Contemporary Luxury Drama";
+    setting = "High-Rise Penthouse, Bandra West, Mumbai";
+    dynamic = "Warm Sibling Banter & Family Revelations";
+    still = "/assets/stills/mumbai_penthouse.jpg";
+    video = "/assets/video/napoleon_180s_master.mp4";
+    lines = [
+      { id: "mb1", speaker: "RAJ", emotion: "smiling", timestamp: "00:04", text: "Bas karo, Shweta! Paneer khatam ho jayega!" },
+      { id: "mb2", speaker: "SHWETA", emotion: "laughing", timestamp: "00:08", text: "Rahul is eating it all while looking at Mumbai Sea Link!" },
+      { id: "mb3", speaker: "RAHUL", emotion: "feigning innocence", timestamp: "00:14", text: "Family dinner rule number one: first come, first served!" }
+    ];
+  } else if (lower.includes("space") || lower.includes("black hole") || lower.includes("galaxy") || lower.includes("astronaut") || lower.includes("orbit")) {
+    title = extractPromptTitle(prompt, "Event Horizon Orbital Transit");
+    genre = "Deep Space Odyssey";
+    setting = "Deep Space Research Vessel 'Aethelgard', Outer Orbital Ring";
+    dynamic = "Cosmic Isolation & Singularity Transit";
+    still = "/assets/stills/neotokyo_hero.jpg";
+    video = "/assets/video/neotokyo_180s_master.mp4";
+    lines = [
+      { id: "sp1", speaker: "COMMANDER VANCE", emotion: "focused", timestamp: "00:05", text: "Gravitational lensing passing 1.4 arcseconds. All inertial dampeners at maximum." },
+      { id: "sp2", speaker: "DR. ARIS", emotion: "awe", timestamp: "00:10", text: "Look at the event horizon... the photons are curving back upon themselves." },
+      { id: "sp3", speaker: "COMMANDER VANCE", emotion: "steady", timestamp: "00:16", text: "Seal the secondary blast shields. We're crossing the accretion threshold." }
+    ];
+  } else if (lower.includes("sea") || lower.includes("ocean") || lower.includes("submarine") || lower.includes("trench") || lower.includes("underwater") || lower.includes("mariana")) {
+    title = extractPromptTitle(prompt, "Mariana Trench Abyssal Discovery");
+    genre = "Abyssal Exploration Documentary";
+    setting = "Bathyscaphe Challenger IV, Depth 10,928m (Mariana Trench)";
+    dynamic = "Extreme Pressure Abyss & Bioluminescent Contact";
+    still = "/assets/stills/neotokyo_hero.jpg";
+    video = "/assets/video/titanic_180s_master.mp4";
+    lines = [
+      { id: "oc1", speaker: "CHIEF PILOT", emotion: "whispering", timestamp: "00:04", text: "External pressure: one thousand atmospheres. Hull acoustic sensors stable." },
+      { id: "oc2", speaker: "OCEANOGRAPHER", emotion: "astonished", timestamp: "00:10", text: "Activate the high-frequency spotlight. Look at the sediment formations..." },
+      { id: "oc3", speaker: "CHIEF PILOT", emotion: "reverent", timestamp: "00:16", text: "Bioluminescent pulse detected. Something down here is answering our sonar." }
+    ];
+  } else if (lower.includes("dragon") || lower.includes("fantasy") || lower.includes("magic") || lower.includes("castle") || lower.includes("sword") || lower.includes("knight")) {
+    title = extractPromptTitle(prompt, "Siege of the Obsidian Peak");
+    genre = "Epic High Fantasy";
+    setting = "Glacial Spire Citadel, Realm of Frost";
+    dynamic = "Clash of Ancient Magic & Imperial Siege";
+    still = "/assets/stills/coronation_hero.png";
+    video = "/assets/video/coronation_180s_master.mp4";
+    lines = [
+      { id: "fn1", speaker: "VALERIUS", emotion: "bracing", timestamp: "00:04", text: "The frost drakes have crested the cloudline! Raise the aegis wards!" },
+      { id: "fn2", speaker: "HIGH MAGE", emotion: "chanting", timestamp: "00:09", text: "The wardstones are resonating with ancient dragonfire. Hold the line!" },
+      { id: "fn3", speaker: "VALERIUS", emotion: "roaring", timestamp: "00:15", text: "For the realm and the frostborn! Do not yield an inch of stone!" }
+    ];
+  } else {
+    title = extractPromptTitle(prompt, "Omni Cinema Masterpiece");
+    genre = "Cinematic Narrative Masterpiece";
+    setting = "Acoustically Calibrated Soundstage & Location Studio";
+    dynamic = "High-Stakes Dramatic Arc & Biometric Resonance";
+    still = "/assets/stills/mumbai_penthouse.jpg";
+    video = "/assets/video/napoleon_180s_master.mp4";
+    lines = [
+      { id: "un1", speaker: "PROTAGONIST", emotion: "intense", timestamp: "00:04", text: `Every choice we made has brought us directly to this threshold.` },
+      { id: "un2", speaker: "COUNTERPART", emotion: "composed", timestamp: "00:10", text: `Then let us see it through to the end, whatever the cost.` },
+      { id: "un3", speaker: "PROTAGONIST", emotion: "resolute", timestamp: "00:16", text: `Omni has locked the trajectory. Roll camera.` }
+    ];
+  }
+
+  return {
+    id: "custom_" + Date.now(),
+    label: "Custom Master",
+    title,
+    genre,
+    setting,
+    dynamic,
+    prompt,
+    duration: 180,
+    still,
+    video,
+    lines
+  };
+}
 
 export function OmniMultiPhaseStudio() {
+  // Current active scene preset
+  const [currentScene, setCurrentScene] = useState<ScenePreset>(SCENE_PRESETS[0]);
+  const [promptInput, setPromptInput] = useState(SCENE_PRESETS[0].prompt);
+  const [activePresetId, setActivePresetId] = useState("mumbai_penthouse");
+  const [chatInput, setChatInput] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationStatus, setGenerationStatus] = useState<string | null>(null);
+  const promptInputRef = useRef<HTMLInputElement>(null);
+
   // Stepper Phase tracking (1 to 8, default 3 matching Figma mockup exactly)
   const [activePhase, setActivePhase] = useState<number>(3);
   const [completedPhases, setCompletedPhases] = useState<number[]>([1, 2]);
 
   // Phase 1 state
-  const [settingText, setSettingText] = useState(DEFAULT_SCENE.setting);
-  const [dynamicText, setDynamicText] = useState(DEFAULT_SCENE.dynamic);
+  const [settingText, setSettingText] = useState(SCENE_PRESETS[0].setting);
+  const [dynamicText, setDynamicText] = useState(SCENE_PRESETS[0].dynamic);
 
   // Phase 3 editable script lines
-  const [scriptLines, setScriptLines] = useState<ScriptLine[]>(DEFAULT_SCENE.lines);
+  const [scriptLines, setScriptLines] = useState<ScriptLine[]>(SCENE_PRESETS[0].lines);
   const [activeTag, setActiveTag] = useState<"Speakers" | "Tags" | "Hinglish">("Hinglish");
 
   // Player state
@@ -187,6 +464,98 @@ export function OmniMultiPhaseStudio() {
     }, 120);
   };
 
+  const handleCreateNewContent = async (promptOverride?: string) => {
+    const text = (promptOverride || promptInput).trim();
+    if (!text) return;
+
+    setIsGenerating(true);
+    setGenerationStatus("Omni Cognition: Ingesting scene vision & lore...");
+    setActivePhase(1);
+    setCompletedPhases([]);
+    setCurrentTime(0);
+    setIsPlaying(false);
+
+    // Check if it matches an existing preset
+    const matched = SCENE_PRESETS.find(
+      (p) => p.prompt.toLowerCase() === text.toLowerCase() || p.id === text.toLowerCase()
+    );
+
+    if (matched) {
+      setCurrentScene(matched);
+      setScriptLines(matched.lines);
+      setSettingText(matched.setting);
+      setDynamicText(matched.dynamic);
+      setTotalDuration(matched.duration);
+      setActivePresetId(matched.id);
+      setPromptInput(matched.prompt);
+    } else {
+      let resolvedScene: ScenePreset | null = null;
+      try {
+        const res = await fetch("/api/studio/omni-generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: AbortSignal.timeout(5000),
+          body: JSON.stringify({ prompt: text })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.scene) {
+            resolvedScene = {
+              id: data.scene.id,
+              label: "Generated Master",
+              title: data.scene.title,
+              genre: data.scene.genre,
+              setting: data.scene.setting,
+              dynamic: data.scene.dynamic,
+              prompt: text,
+              duration: data.scene.duration || 180,
+              still: data.scene.still,
+              video: data.scene.video,
+              lines: data.scene.lines
+            };
+          }
+        }
+      } catch (err) {
+        console.warn("Using offline Omni compiler:", err);
+      }
+
+      if (!resolvedScene) {
+        resolvedScene = compileOmniPromptClient(text);
+      }
+
+      setCurrentScene(resolvedScene);
+      setScriptLines(resolvedScene.lines);
+      setSettingText(resolvedScene.setting);
+      setDynamicText(resolvedScene.dynamic);
+      setTotalDuration(resolvedScene.duration);
+      setActivePresetId("");
+      setPromptInput(text);
+    }
+
+    // Reset pipeline to Phase 1 (Cognition)
+    setActivePhase(1);
+    setCompletedPhases([]);
+    setCurrentTime(0);
+    setIsPlaying(false);
+
+    setTimeout(() => {
+      setIsGenerating(false);
+      setGenerationStatus(null);
+      const activeCard = document.getElementById("dossier-phase-1");
+      if (activeCard && dossierContainerRef.current) {
+        activeCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    }, 450);
+  };
+
+  const handleSelectPreset = (presetId: string) => {
+    const preset = SCENE_PRESETS.find((p) => p.id === presetId);
+    if (!preset) return;
+    setPromptInput(preset.prompt);
+    setActivePresetId(preset.id);
+    handleCreateNewContent(preset.prompt);
+  };
+
   const handleUpdateScriptLine = (id: string, newText: string) => {
     setScriptLines((prev) =>
       prev.map((line) => (line.id === id ? { ...line, text: newText } : line))
@@ -223,6 +592,17 @@ export function OmniMultiPhaseStudio() {
                 className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3.5 py-1 text-xs font-mono font-bold text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.25)] cursor-pointer"
               >
                 Omni Director [Active]
+              </button>
+              <button
+                id="omni-new-creation-pill"
+                type="button"
+                onClick={() => {
+                  promptInputRef.current?.focus();
+                  promptInputRef.current?.select();
+                }}
+                className="rounded-full border border-teal-500/40 bg-teal-500/10 hover:bg-teal-500/20 px-3 py-1 text-xs font-mono font-bold text-teal-300 transition cursor-pointer flex items-center gap-1"
+              >
+                <Plus className="h-3 w-3" /> Create New
               </button>
               <a
                 href="#master-showcase"
@@ -267,7 +647,86 @@ export function OmniMultiPhaseStudio() {
         </div>
 
         {/* ============================================================ */}
-        {/* 2. MAIN 70 / 30 WORKSTATION GRID                             */}
+        {/* 2. CINEMA PROMPT COMMAND BAR (Create New Content)            */}
+        {/* ============================================================ */}
+        <div className="mb-4 rounded-xl border border-zinc-800/90 bg-zinc-900/60 p-3 sm:p-3.5 backdrop-blur-md shadow-lg">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+            <div className="relative flex-1">
+              <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-emerald-400">
+                <Sparkles className="h-4 w-4 fill-current" />
+              </div>
+              <input
+                id="omni-prompt-input"
+                ref={promptInputRef}
+                type="text"
+                value={promptInput}
+                onChange={(e) => setPromptInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleCreateNewContent();
+                  }
+                }}
+                placeholder="Enter scene prompt to create new cinema content (e.g. 180s Indian family dinner in Bandra penthouse...)"
+                className="w-full rounded-xl bg-black/70 border border-zinc-700/80 py-2.5 sm:py-3 pl-9 sm:pl-10 pr-3 text-xs sm:text-sm text-white placeholder-zinc-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400 font-sans transition"
+              />
+            </div>
+
+            {/* THE PROMINENT CREATE BUTTON */}
+            <button
+              id="omni-create-button"
+              type="button"
+              disabled={isGenerating}
+              onClick={() => handleCreateNewContent()}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500 px-5 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-black text-slate-950 uppercase tracking-wider hover:scale-[1.02] active:scale-[0.98] disabled:opacity-75 shadow-lg shadow-emerald-500/30 transition cursor-pointer shrink-0"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-slate-950" />
+                  <span>Directing Master...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 fill-current" />
+                  <span>Create Cinema Master</span>
+                  <ArrowRight className="h-4 w-4 stroke-[2.5]" />
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Active Generation Telemetry Status */}
+          {isGenerating && generationStatus && (
+            <div className="flex items-center gap-2 mt-2 px-1 text-xs font-mono text-emerald-400 animate-pulse">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-400" />
+              <span>{generationStatus}</span>
+            </div>
+          )}
+
+          {/* Quick Starter Presets */}
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-2.5 pt-2 border-t border-zinc-800/60 text-[11px] font-mono">
+            <span className="text-zinc-400 font-bold flex items-center gap-1">
+              <Flame className="h-3 w-3 text-amber-400 fill-current" /> Presets:
+            </span>
+            {SCENE_PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => handleSelectPreset(preset.id)}
+                className={`rounded-md px-2.5 py-0.5 transition cursor-pointer border ${
+                  activePresetId === preset.id
+                    ? "border-emerald-500/60 bg-emerald-950/50 text-emerald-300 font-bold shadow-[0_0_8px_rgba(16,185,129,0.2)]"
+                    : "border-zinc-800 bg-zinc-800/40 text-zinc-400 hover:text-white hover:border-zinc-700"
+                }`}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ============================================================ */}
+        {/* 3. MAIN 70 / 30 WORKSTATION GRID                             */}
         {/* ============================================================ */}
         <div className="grid grid-cols-1 lg:grid-cols-10 gap-5 items-stretch">
           
@@ -284,7 +743,7 @@ export function OmniMultiPhaseStudio() {
               {/* Overlaid Scene Title (Top-Left) */}
               <div className="absolute top-4 left-4 z-20 pointer-events-none">
                 <h2 className="text-base sm:text-lg lg:text-xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] tracking-wide">
-                  {DEFAULT_SCENE.title}
+                  {currentScene.title}
                 </h2>
               </div>
 
@@ -292,8 +751,8 @@ export function OmniMultiPhaseStudio() {
               <div className="relative h-full w-full bg-black">
                 <video
                   ref={videoRef}
-                  src={DEFAULT_SCENE.video}
-                  poster={DEFAULT_SCENE.still}
+                  src={currentScene.video}
+                  poster={currentScene.still}
                   playsInline
                   muted={isMuted}
                   onTimeUpdate={handleTimeUpdate}
@@ -638,19 +1097,107 @@ export function OmniMultiPhaseStudio() {
                 }`}
               >
                 <div className="flex items-center justify-between text-xs font-mono text-zinc-400 mb-0.5">
-                  <span className="font-bold text-zinc-200">Phase 1</span>
-                  <MoreVertical className="h-3.5 w-3.5 text-zinc-500" />
+                  <span className="font-bold text-zinc-200">Phase 1: Cognition</span>
+                  <div className="flex items-center gap-1.5">
+                    {activePhase === 1 && (
+                      <span className="rounded bg-emerald-400/20 border border-emerald-400/40 px-1.5 py-0.2 text-[10px] font-bold text-emerald-300">
+                        [Active]
+                      </span>
+                    )}
+                    <MoreVertical className="h-3.5 w-3.5 text-zinc-500" />
+                  </div>
                 </div>
+
                 <div className="text-xs font-mono font-bold text-white mb-0.5">
                   Cognition: inputs
                 </div>
-                <div className="text-[11px] text-zinc-400 mb-2">
-                  Context defined
-                </div>
 
-                <div className="w-full py-1 text-center rounded-lg bg-emerald-950/50 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold">
-                  Approved ✓
-                </div>
+                {activePhase === 1 ? (
+                  <div className="mt-2 space-y-2 text-xs font-sans" onClick={(e) => e.stopPropagation()}>
+                    <div>
+                      <label className="block text-[10px] font-mono text-zinc-400 mb-0.5">
+                        Creative Vision Prompt:
+                      </label>
+                      <textarea
+                        id="dossier-prompt-input"
+                        rows={3}
+                        value={promptInput}
+                        onChange={(e) => setPromptInput(e.target.value)}
+                        placeholder="Enter scene prompt to generate anything..."
+                        className="w-full resize-none rounded-lg bg-black/60 border border-zinc-700/80 p-2 text-xs text-white placeholder-zinc-500 focus:border-emerald-400 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-mono text-zinc-400 mb-0.5">
+                        Setting &amp; Era:
+                      </label>
+                      <input
+                        id="dossier-setting-input"
+                        type="text"
+                        value={settingText}
+                        onChange={(e) => setSettingText(e.target.value)}
+                        className="w-full rounded-md bg-black/60 border border-zinc-700/80 px-2 py-1 text-xs text-zinc-200 focus:border-emerald-400 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-mono text-zinc-400 mb-0.5">
+                        Dynamic Tension:
+                      </label>
+                      <input
+                        id="dossier-dynamic-input"
+                        type="text"
+                        value={dynamicText}
+                        onChange={(e) => setDynamicText(e.target.value)}
+                        className="w-full rounded-md bg-black/60 border border-zinc-700/80 px-2 py-1 text-xs text-zinc-200 focus:border-emerald-400 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        id="dossier-generate-btn"
+                        type="button"
+                        disabled={isGenerating}
+                        onClick={() => handleCreateNewContent(promptInput)}
+                        className="flex-1 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/50 hover:bg-emerald-500/30 text-emerald-300 font-mono text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        <span>Generate</span>
+                      </button>
+
+                      <button
+                        id="dossier-advance-btn"
+                        type="button"
+                        onClick={() => handleSaveAndAdvance(1)}
+                        className="flex-1 py-2 rounded-lg bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-black text-xs uppercase tracking-wider transition flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/30 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                      >
+                        <span>Advance Phase 2</span>
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-[11px] text-zinc-400 mb-2 truncate">
+                      {settingText}
+                    </div>
+
+                    <div className="w-full py-1 text-center rounded-lg bg-emerald-950/50 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold flex items-center justify-center gap-1">
+                      <span>Approved ✓</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActivePhase(1);
+                        }}
+                        className="ml-2 text-[10px] text-zinc-400 hover:text-emerald-300 underline"
+                      >
+                        [ Edit Prompt ]
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* PHASE 2 CARD: Logic */}
@@ -665,15 +1212,46 @@ export function OmniMultiPhaseStudio() {
               >
                 <div className="flex items-center justify-between text-xs font-mono text-zinc-400 mb-0.5">
                   <span className="font-bold text-zinc-200">Phase 2: Logic</span>
-                  <MoreVertical className="h-3.5 w-3.5 text-zinc-500" />
+                  <div className="flex items-center gap-1.5">
+                    {activePhase === 2 && (
+                      <span className="rounded bg-emerald-400/20 border border-emerald-400/40 px-1.5 py-0.2 text-[10px] font-bold text-emerald-300">
+                        [Active]
+                      </span>
+                    )}
+                    <MoreVertical className="h-3.5 w-3.5 text-zinc-500" />
+                  </div>
                 </div>
-                <div className="text-xs font-mono text-zinc-300 mb-2">
+
+                <div className="text-xs font-mono text-zinc-300 mb-1.5">
                   Scene Consistency Check <span className="text-emerald-400 font-bold">[PASS]</span>
                 </div>
 
-                <div className="w-full py-1 text-center rounded-lg bg-emerald-950/50 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold">
-                  Logic Approved ✓
-                </div>
+                {activePhase === 2 ? (
+                  <div className="space-y-1.5 text-[11px] font-mono mb-2" onClick={(e) => e.stopPropagation()}>
+                    <div className="rounded bg-black/40 p-1.5 text-zinc-300 flex items-center justify-between">
+                      <span>Biometric Anchor:</span>
+                      <span className="text-emerald-400 font-bold">ArcFace Locked</span>
+                    </div>
+                    <div className="rounded bg-black/40 p-1.5 text-zinc-300 flex items-center justify-between">
+                      <span>Physics &amp; Lighting:</span>
+                      <span className="text-emerald-400 font-bold">24fps Verified</span>
+                    </div>
+
+                    <button
+                      id="dossier-advance-phase2-btn"
+                      type="button"
+                      onClick={() => handleSaveAndAdvance(2)}
+                      className="mt-2 w-full py-2 rounded-lg bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-black text-xs uppercase tracking-wider transition flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/30 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                    >
+                      <span>Save &amp; Advance Phase 3</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-full py-1 text-center rounded-lg bg-emerald-950/50 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold">
+                    Logic Approved ✓
+                  </div>
+                )}
               </div>
 
               {/* PHASE 3 CARD: Script (Active in Figma Mockup) */}
@@ -941,8 +1519,8 @@ export function OmniMultiPhaseStudio() {
                     4K DCI Cinema Master ready for export
                   </div>
                   <a
-                    href={DEFAULT_SCENE.video}
-                    download="zyvoriq_mumbai_penthouse_master.mp4"
+                    href={currentScene.video}
+                    download={`zyvoriq_${currentScene.id}_master.mp4`}
                     className="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md shadow-emerald-500/30 hover:scale-[1.01] active:scale-[0.99] transition"
                   >
                     <Download className="h-4 w-4" /> Export Master 4K Film
@@ -950,6 +1528,42 @@ export function OmniMultiPhaseStudio() {
                 </div>
               )}
 
+            </div>
+
+            {/* Persistent Directorial Chat at Bottom of Dossier */}
+            <div className="mt-3 pt-3 border-t border-zinc-800/80">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (chatInput.trim()) {
+                    handleCreateNewContent(chatInput);
+                    setChatInput("");
+                  }
+                }}
+                className="flex items-center gap-2"
+              >
+                <input
+                  id="dossier-chat-input"
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Direct Omni: Type prompt to generate anything..."
+                  className="flex-1 rounded-xl bg-black/70 border border-zinc-700/80 px-3 py-2 text-xs text-white placeholder-zinc-500 focus:border-emerald-400 focus:outline-none font-sans"
+                />
+                <button
+                  id="dossier-send-btn"
+                  type="submit"
+                  disabled={isGenerating}
+                  className="rounded-xl bg-emerald-400 hover:bg-emerald-300 disabled:opacity-50 text-slate-950 p-2 transition cursor-pointer shrink-0"
+                  title="Direct Omni"
+                >
+                  {isGenerating ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Send className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              </form>
             </div>
 
           </div>

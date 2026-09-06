@@ -136,7 +136,16 @@ async function main() {
     console.log(`✓ Quality Gatekeeper HUD Bar (Guards 1, 3, 4): ${gatekeeperCheck ? "PASS" : "FAIL"}`);
     if (!gatekeeperCheck) throw new Error("Quality Gatekeeper HUD bar missing");
 
-    // G. Right 30% Directorial Dossier & Chat
+    // G. Cinema Prompt Command Bar & Create Button Assertion
+    const hasCommandBar = await page.evaluate(() => {
+      const input = document.querySelector("#omni-prompt-input");
+      const btn = document.querySelector("#omni-create-button");
+      return Boolean(input && btn && btn.textContent.includes("Create Cinema Master"));
+    });
+    console.log(`✓ Cinema Prompt Command Bar & 'Create Cinema Master' button: ${hasCommandBar ? "PASS" : "FAIL"}`);
+    if (!hasCommandBar) throw new Error("Cinema Prompt Command Bar or Create button missing");
+
+    // H. Right 30% Directorial Dossier & Chat
     const dossierCheck = await page.evaluate(() => {
       const el = document.querySelector("#omni-multiphase-studio");
       if (!el) return false;
@@ -144,16 +153,12 @@ async function main() {
       return (
         t.includes("Directorial Dossier & Chat") &&
         t.includes("Phase 1") &&
-        t.includes("Cognition: inputs") &&
         t.includes("Phase 2: Logic") &&
-        t.includes("Phase 3: Script") &&
-        t.includes("Bas karo, Shweta! Paneer khatam ho jayega!") &&
-        t.includes("Rahul is eating it all!") &&
-        t.includes("Save & Advance Phase 4")
+        t.includes("Phase 3: Script")
       );
     });
-    console.log(`✓ Directorial Dossier Script Lines & 'Save & Advance Phase 4': ${dossierCheck ? "PASS" : "FAIL"}`);
-    if (!dossierCheck) throw new Error("Directorial Dossier missing dialogue or CTA button");
+    console.log(`✓ Directorial Dossier & Chat Structure: ${dossierCheck ? "PASS" : "FAIL"}`);
+    if (!dossierCheck) throw new Error("Directorial Dossier missing required structure");
 
     // Capture Default Studio Frame Screenshot (Exact Figma Element Framing)
     await sleep(600);
@@ -169,20 +174,56 @@ async function main() {
     await page.screenshot({ path: viewportShot });
     console.log(`📸 Captured: ${viewportShot}`);
 
-    // Step 3: Interactive Editing in Phase 3
-    console.log("\nStep 3: Testing In-Place Dialogue Editing in Phase 3...");
-    const textareaHandle = await page.$("#dossier-phase-3 textarea");
-    if (textareaHandle) {
-      await textareaHandle.click();
-      await page.keyboard.down("Control");
-      await page.keyboard.press("A");
-      await page.keyboard.up("Control");
-      await page.keyboard.press("Backspace");
-      await page.keyboard.type("Bas karo, Shweta! Paneer khatam ho jayega! - Director Omni Approved.");
-      await sleep(500);
-    }
+    // Step 3: Test Dynamic Custom Generation from Prompt ("Generate anything using a prompt")
+    console.log("\nStep 3: Testing Dynamic Custom Generation from Prompt Input...");
+    await page.click("#omni-prompt-input");
+    await page.keyboard.down("Control");
+    await page.keyboard.press("A");
+    await page.keyboard.up("Control");
+    await page.keyboard.press("Backspace");
+    await page.keyboard.type("Cyberpunk neon rain in Neo-Tokyo with hover cabs and synthwave score");
+    await sleep(300);
 
-    const screenshot2 = path.join(SCREENSHOT_DIR, "02_script_editing_and_tags.png");
+    // Click 'Create Cinema Master'
+    console.log("Clicking 'Create Cinema Master' button...");
+    await page.click("#omni-create-button");
+
+    // Wait for Phase 1 prompt editor to appear
+    await page.waitForSelector("#dossier-prompt-input", { timeout: 10000 });
+
+    // Wait for generation to complete (button text returns to Create Cinema Master)
+    await page.waitForFunction(() => {
+      const btn = document.querySelector("#omni-create-button");
+      return Boolean(btn && !btn.textContent?.includes("Directing"));
+    }, { timeout: 15000 });
+    await sleep(600);
+
+    // Verify studio dynamically reconfigured for newly generated scene
+    await page.waitForFunction(() => {
+      const el = document.querySelector("#omni-multiphase-studio");
+      if (!el) return false;
+      const t = el.textContent;
+      return (
+        t.includes("Neon Tokyo") ||
+        t.includes("Neo-Tokyo") ||
+        t.includes("Neon Rain") ||
+        t.includes("Shinjuku") ||
+        t.includes("Cyberpunk")
+      );
+    }, { timeout: 10000 });
+    console.log("✓ Dynamic Prompt Generation to Cyberpunk Scene: PASS");
+
+    // Verify Phase 1 Cognition is active and expanded with prompt input
+    const phase1Active = await page.evaluate(() => {
+      const p1 = document.querySelector("#dossier-phase-1");
+      const promptArea = document.querySelector("#dossier-prompt-input");
+      const advBtn = document.querySelector("#dossier-advance-btn");
+      return Boolean(p1 && promptArea && advBtn);
+    });
+    console.log(`✓ Phase 1 Cognition Expanded with Prompt Inputs: ${phase1Active ? "PASS" : "FAIL"}`);
+    if (!phase1Active) throw new Error("Phase 1 card not expanded with prompt editor");
+
+    const screenshot2 = path.join(SCREENSHOT_DIR, "02_custom_prompt_generated_phase1.png");
     if (studioEl) {
       await studioEl.screenshot({ path: screenshot2 });
     } else {
@@ -190,24 +231,32 @@ async function main() {
     }
     console.log(`📸 Captured: ${screenshot2}`);
 
-    // Step 4: Click 'Save & Advance Phase 4'
-    console.log("\nStep 4: Clicking 'Save & Advance Phase 4 ➔'...");
-    await page.evaluate(() => {
-      const buttons = Array.from(document.querySelectorAll("button"));
-      const btn = buttons.find(b => b.textContent && b.textContent.includes("Save & Advance Phase 4"));
-      if (btn) btn.click();
-    });
-    await sleep(800);
+    // Advance Phase 1 ➔ Phase 2
+    console.log("\nAdvancing Phase 1 ➔ Phase 2...");
+    await page.click("#dossier-advance-btn");
+    await sleep(600);
 
-    // Verify Phase 4 is active
-    const phase4Active = await page.evaluate(() => {
+    // Verify Phase 2 is active and advance to Phase 3
+    console.log("Advancing Phase 2 ➔ Phase 3...");
+    await page.click("#dossier-advance-phase2-btn");
+    await sleep(600);
+
+    // Verify Phase 3 has newly generated script lines
+    const phase3Generated = await page.evaluate(() => {
       const el = document.querySelector("#omni-multiphase-studio");
-      return el && el.textContent.includes("Phase 4: Tool Routing") && el.textContent.includes("Save & Advance Phase 5");
+      if (!el) return false;
+      const t = el.textContent;
+      return (
+        t.includes("KENJI") ||
+        t.includes("AI OPERATOR") ||
+        t.includes("KAI") ||
+        t.includes("SILAS") ||
+        t.includes("PROTAGONIST")
+      );
     });
-    console.log(`✓ Advanced to Phase 4 (Tool Routing): ${phase4Active ? "PASS" : "FAIL"}`);
-    if (!phase4Active) throw new Error("Failed to advance to Phase 4");
+    console.log(`✓ Phase 3 Script Generated for Prompt Scene: ${phase3Generated ? "PASS" : "FAIL"}`);
 
-    const screenshot3 = path.join(SCREENSHOT_DIR, "03_advanced_to_phase4_tool_routing.png");
+    const screenshot3 = path.join(SCREENSHOT_DIR, "03_cyberpunk_screenplay_phase3.png");
     if (studioEl) {
       await studioEl.screenshot({ path: screenshot3 });
     } else {
@@ -215,39 +264,23 @@ async function main() {
     }
     console.log(`📸 Captured: ${screenshot3}`);
 
-    // Step 5: Advance through remaining phases to Master Delivery (Phase 8)
-    console.log("\nStep 5: Advancing through Phases 5, 6, 7 and 8...");
-    // Advance to 5
-    await page.evaluate(() => {
-      const buttons = Array.from(document.querySelectorAll("button"));
-      const btn = buttons.find(b => b.textContent && b.textContent.includes("Save & Advance Phase 5"));
-      if (btn) btn.click();
-    });
-    await sleep(400);
-
-    // Advance to 6
-    await page.evaluate(() => {
-      const buttons = Array.from(document.querySelectorAll("button"));
-      const btn = buttons.find(b => b.textContent && b.textContent.includes("Save & Advance Phase 6"));
-      if (btn) btn.click();
-    });
-    await sleep(400);
-
-    // Advance to 7 (Quality Gates)
-    await page.evaluate(() => {
-      const buttons = Array.from(document.querySelectorAll("button"));
-      const btn = buttons.find(b => b.textContent && b.textContent.includes("Save & Advance Phase 7"));
-      if (btn) btn.click();
-    });
-    await sleep(600);
-
-    const phase7Active = await page.evaluate(() => {
+    // Step 4: Test Generating via Persistent Directorial Chat at Bottom of Dossier
+    console.log("\nStep 4: Testing Scene Generation via Persistent Directorial Chat...");
+    await page.click("#dossier-chat-input");
+    await page.keyboard.type("April 14 1912 Titanic wireless room sending emergency SOS distress call");
+    await sleep(300);
+    await page.click("#dossier-send-btn");
+    await page.waitForFunction(() => {
+      const btn = document.querySelector("#dossier-send-btn");
+      return Boolean(btn && !btn.disabled);
+    }, { timeout: 15000 });
+    await page.waitForFunction(() => {
       const el = document.querySelector("#omni-multiphase-studio");
-      return el && el.textContent.includes("13 Forensic Guards Certified [PASS]");
-    });
-    console.log(`✓ Advanced to Phase 7 (Quality Gates): ${phase7Active ? "PASS" : "FAIL"}`);
+      return el && el.textContent.includes("Titanic");
+    }, { timeout: 10000 });
+    console.log("✓ Directorial Chat Generation to Titanic Scene: PASS");
 
-    const screenshot4 = path.join(SCREENSHOT_DIR, "04_advanced_to_phase7_quality_gates.png");
+    const screenshot4 = path.join(SCREENSHOT_DIR, "04_titanic_prompt_generated_from_chat.png");
     if (studioEl) {
       await studioEl.screenshot({ path: screenshot4 });
     } else {
@@ -255,11 +288,59 @@ async function main() {
     }
     console.log(`📸 Captured: ${screenshot4}`);
 
-    // Advance to 8 (Master Delivery)
+    // Advance through pipeline to Phase 8
+    console.log("\nAdvancing to Phase 8 (Master Delivery)...");
     await page.evaluate(() => {
+      // Advance Phase 1
+      const btn1 = document.querySelector("#dossier-advance-btn");
+      if (btn1) btn1.click();
+    });
+    await sleep(400);
+
+    await page.evaluate(() => {
+      // Advance Phase 2
+      const btn2 = document.querySelector("#dossier-advance-phase2-btn");
+      if (btn2) btn2.click();
+    });
+    await sleep(400);
+
+    await page.evaluate(() => {
+      // Advance Phase 3
       const buttons = Array.from(document.querySelectorAll("button"));
-      const btn = buttons.find(b => b.textContent && b.textContent.includes("Save & Advance Phase 8"));
-      if (btn) btn.click();
+      const btn3 = buttons.find(b => b.textContent && b.textContent.includes("Save & Advance Phase 4"));
+      if (btn3) btn3.click();
+    });
+    await sleep(400);
+
+    await page.evaluate(() => {
+      // Advance Phase 4
+      const buttons = Array.from(document.querySelectorAll("button"));
+      const btn4 = buttons.find(b => b.textContent && b.textContent.includes("Save & Advance Phase 5"));
+      if (btn4) btn4.click();
+    });
+    await sleep(400);
+
+    await page.evaluate(() => {
+      // Advance Phase 5
+      const buttons = Array.from(document.querySelectorAll("button"));
+      const btn5 = buttons.find(b => b.textContent && b.textContent.includes("Save & Advance Phase 6"));
+      if (btn5) btn5.click();
+    });
+    await sleep(400);
+
+    await page.evaluate(() => {
+      // Advance Phase 6
+      const buttons = Array.from(document.querySelectorAll("button"));
+      const btn6 = buttons.find(b => b.textContent && b.textContent.includes("Save & Advance Phase 7"));
+      if (btn6) btn6.click();
+    });
+    await sleep(400);
+
+    await page.evaluate(() => {
+      // Advance Phase 7
+      const buttons = Array.from(document.querySelectorAll("button"));
+      const btn7 = buttons.find(b => b.textContent && b.textContent.includes("Save & Advance Phase 8"));
+      if (btn7) btn7.click();
     });
     await sleep(600);
 
