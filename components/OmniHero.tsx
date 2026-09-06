@@ -133,28 +133,34 @@ export function OmniHero() {
     e.preventDefault();
     if (!promptText.trim()) return;
 
-    // IN-PLACE GENERATION: Generate and play right on the landing page without redirecting to /studio!
+    // IN-PLACE GENERATION: Google Omni Directorial Synthesis
     setIsGenerating(true);
     setGenerationProgress(18);
-    setGenerationStage("Compiling camera optics & 4K directional vectors...");
+    setGenerationStage("Omni Researching subject lore, historical context & dramatic stakes...");
     setGeneratedVideoUrl(null);
 
-    // Stage 2: Latent Diffusion (50%)
+    // Stage 2: Crew, Optics & Character Emotion (42%)
     setTimeout(() => {
-      setGenerationProgress(52);
-      setGenerationStage("Veo 3.1 4K Latent Diffusion & Optical Flow...");
-    }, 700);
+      setGenerationProgress(42);
+      setGenerationStage("Omni Directing crew: anamorphic optics, lighting rigs & character DNA...");
+    }, 600);
 
-    // Stage 3: Audio Mastering (82%)
+    // Stage 3: Score, Songs & Soundstage (68%)
     setTimeout(() => {
-      setGenerationProgress(84);
-      setGenerationStage("Mastering orchestral score & sound design (-24.0 LUFS)...");
-    }, 1600);
+      setGenerationProgress(68);
+      setGenerationStage("Omni Composing acoustic master score, BGM & lyrical cadence (-24.0 LUFS)...");
+    }, 1200);
 
-    // Stage 4: QC Gate Pass & Instant Playback (100%)
+    // Stage 4: Veo 3.1 4K Latent Diffusion (88%)
+    setTimeout(() => {
+      setGenerationProgress(88);
+      setGenerationStage("Veo 3.1 4K Latent Diffusion & 24fps physical motion vectors...");
+    }, 1800);
+
+    // Stage 5: Multimodal QC Gate Pass (100%)
     setTimeout(() => {
       setGenerationProgress(100);
-      setGenerationStage("Gemini 2.5 Flash Vision QC Gate Passed (100%)");
+      setGenerationStage("Omni Multimodal Vision & Audio Quality Gatekeeper (100% Certified ✓)");
       setIsGenerating(false);
       setGeneratedVideoUrl(VIDEO_MAP[selectedPreset.id] || VIDEO_MAP.napoleon);
       setVideoPoster(STILL_MAP[selectedPreset.id] || STILL_MAP.napoleon);

@@ -7,15 +7,15 @@ import Link from "next/link";
 const PILLARS = [
   {
     number: "01",
-    badge: "95% UPFRONT FLAW ELIMINATION",
-    title: "Pre-Flight Prompt Compiler",
-    subtitle: "Eliminating diffusion physics traps before spending compute.",
-    description: "Instead of naive text prompts that produce melted eyelids, rubber limbs, and frozen plates, Omni acts as the Master Showrunner. It compiles diffusion-safe cinematography directives with velocity anchors, character facial DNA tokens, and natural motion physics.",
+    badge: "CREATIVE VISION & LORE RESEARCH",
+    title: "Master Director & Story Architecture",
+    subtitle: "Researching historical lore, emotional subtext, plot & character arcs.",
+    description: "Omni thinks like an executive film director. Before generating a single frame, it grounds the narrative in authentic historical or world-building context, architects multi-act tension curves, scripts naturalistic dialogues, and plans character emotional arcs.",
     features: [
-      "Zero Macro-Fluid Traps (Dry dignified grief)",
-      "Strict Character Facial DNA Anchoring",
-      "Dynamic 24fps Continuous Motion Vectors",
-      "Automatic Celebrity Name Filter Bypass"
+      "Deep Historical Lore & Subject Grounding",
+      "Multi-Act Plot Structure & Dramatic Tension",
+      "Subtextual Dialogue & Speech Cadence",
+      "Authentic Human Emotions (Zero Caricature)"
     ],
     accent: "from-teal-500/20 to-emerald-500/5",
     border: "border-teal-500/30",
@@ -23,15 +23,15 @@ const PILLARS = [
   },
   {
     number: "02",
-    badge: "5% END-STAGE REAL-TIME QC",
-    title: "Autonomous Vision Gatekeeper",
-    subtitle: "Gemini 2.5 Flash inspecting live frames directly on Cloudtop.",
-    description: "Even with optimal prompts, diffusion noise is stochastic. Omni inspects three sequential keyframes per plate in 3 seconds. If a 1-in-20 glitch occurs, it rejects the seed and autonomously re-rolls the shot before the clip ever touches the master reel.",
+    badge: "CREW, OPTICS & CAST CONTINUITY",
+    title: "Cinematography & Character DNA",
+    subtitle: "Curating lenses, lighting rigs, dance choreography, and face DNA.",
+    description: "Omni selects the virtual camera crew: Cooke Anamorphic 2.39:1 lenses, Zeiss primes, chiaroscuro lighting, and ACES 1.3 color conformance. It locks facial continuity DNA, choreographs rhythmic motion vectors, and synchronizes dance blocking.",
     features: [
-      "Sub-Frame Eyelid & Anatomy Inspection",
-      "Direct Pixel Entropy & Motion Continuity Check",
-      "13 Automated Cloudtop Forensic Quality Gates",
-      "Real-Time Quality Scoring (Zero Mock Logs)"
+      "Cooke Anamorphic & Leica Optics Selection",
+      "Strict Character Facial DNA Anchoring",
+      "Rhythmic Dance & Scene Blocking Vectors",
+      "ACES 1.3 Color Science & Volumetric Lighting"
     ],
     accent: "from-cyan-500/20 to-blue-500/5",
     border: "border-cyan-500/30",
@@ -39,19 +39,35 @@ const PILLARS = [
   },
   {
     number: "03",
-    badge: "BROADCAST STANDARDS (EBU R128)",
-    title: "Pure Acoustic Soundstage",
-    subtitle: "Real classical master recordings with zero rogue dialogue bleed.",
-    description: "Every master film is scored with authentic 48kHz orchestral classical recordings (Beethoven, Mahler, Chopin) and layered with atmospheric room foley. Calibrated precisely to -24.0 LUFS with zero electronic buzzers, zero dead air, and zero cross-talk.",
+    badge: "SOUNDSTAGE & LYRICAL COMPOSITION",
+    title: "Music, Songs & Acoustic Bed",
+    subtitle: "Original symphonic scores, lyrics, BGM, and EBU R128 loudness.",
+    description: "Every scene is orchestrated with authentic acoustic instrumentation (Beethoven, Mahler, analog modular synths), poetic lyrical verse, and atmospheric room foley. Calibrated strictly to EBU R128 (-24.0 LUFS) with zero dead air and zero dialogue bleed.",
     features: [
-      "Authentic Classical Orchestral Masters",
-      "Calibrated to EBU R128 (-24.0 LUFS Target)",
-      "Continuous Room Foley & Zero Dead Air (<0.7s)",
-      "100% Rogue Dialogue Bleed Elimination"
+      "Authentic Orchestral & Synthesizer BGM",
+      "Poetic Songwriting & Lyrical Composition",
+      "Calibrated to EBU R128 (-24.0 LUFS Standard)",
+      "100% Dialogue Bleed & Cross-Talk Elimination"
     ],
     accent: "from-amber-500/20 to-orange-500/5",
     border: "border-amber-500/30",
     textAccent: "text-amber-300"
+  },
+  {
+    number: "04",
+    badge: "SOVEREIGN QUALITY GATEKEEPER",
+    title: "Multimodal Vision & Audio QC",
+    subtitle: "Inspecting physical frames, spectral purity, and motion coherence.",
+    description: "Omni is also the relentless Quality Gatekeeper. Using Gemini 2.5 Flash multimodal inspection, RAFT optical flow, and spectral analysis, it audits every visual frame for melting eyelids, checks audio spectral flatness, and rejects defects before the cut.",
+    features: [
+      "Physical Frame-Level VLM Defect Inspection",
+      "Spectral Flatness (Zero Pure-Tone Sirens)",
+      "RAFT Optical Flow Motion Coherence (>=0.92)",
+      "13 Automated Cloudtop Forensic Quality Gates"
+    ],
+    accent: "from-purple-500/20 to-indigo-500/5",
+    border: "border-purple-500/30",
+    textAccent: "text-purple-300"
   }
 ];
 
@@ -73,8 +89,8 @@ export function OmniPillars() {
           </p>
         </div>
 
-        {/* 3 Core Pillars Grid */}
-        <div className="mt-14 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* 4 Core Directorial & QC Pillars Grid */}
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {PILLARS.map((pillar) => (
             <div
               key={pillar.number}
