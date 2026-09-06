@@ -8,11 +8,11 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const nav = [
-    ["14-Persona Studio", "/studio/create"],
-    ["Studio Cinema", "/studio"],
-    ["Creator Growth", "/creator/analytics"],
+    ["Omni Director", "/studio/create"],
+    ["180s Master Film", "#master-showcase"],
+    ["Architecture", "#architecture"],
+    ["Genres", "#genres"],
     ["Library", "/studio/library"],
-    ["How it works", "#multimodal"],
     ["Trust & C2PA", "/veritas"],
   ];
 
