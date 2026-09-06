@@ -24,11 +24,21 @@ const PROHIBITED_PATTERNS = [
     name: "CANVAS_MEDIARECORDER_COMPILER_HACK",
     regex: /canvas\.captureStream\([\s\S]{0,100}new\s+MediaRecorder\(/g,
     description: "Canvas captureStream + MediaRecorder cannot be used to fake a cinema motion picture compiler."
+  },
+  {
+    name: "PROHIBIT_2D_AFFINE_ZOOMPAN_STILL_SPOOFING",
+    regex: /zoompan\s*=\s*z=[\s\S]{0,120}(-loop\s+1|\.jpe?g|\.png)/gi,
+    description: "FFmpeg zoompan over static images is prohibited from masquerading as authentic video motion."
+  },
+  {
+    name: "PROHIBIT_RAW_SINE_AUDIO_SYNTHESIS",
+    regex: /math\.sin\(\s*2\s*\*\s*math\.pi\s*\*\s*[0-9.]+\s*\*\s*t\s*\)/gi,
+    description: "Raw mathematical sine wave oscillators are strictly prohibited from generating speech or scores (siren hazard)."
   }
 ];
 
 export function scanCodebaseForSyntheticMocks(options = {}) {
-  const { isSelfTest = false, targetDirs = ["app", "lib"] } = options;
+  const { isSelfTest = false, targetDirs = ["app", "lib", "scratch/productions/napoleon/scripts"] } = options;
 
   console.log("🛡️ [Guard 2: Anti-Synthetic Mocks] Scanning codebase for synthetic audio/video proxies...");
 
