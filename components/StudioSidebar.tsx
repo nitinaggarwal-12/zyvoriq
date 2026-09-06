@@ -41,9 +41,10 @@ import { useTheme } from "@/components/ThemeProvider";
 interface StudioSidebarProps {
   children?: React.ReactNode;
   currentPath?: string;
+  hideHeader?: boolean;
 }
 
-export function StudioSidebar({ children, currentPath }: StudioSidebarProps) {
+export function StudioSidebar({ children, currentPath, hideHeader = false }: StudioSidebarProps) {
   const routerPath = usePathname();
   const pathname = currentPath || routerPath;
   const { resolvedTheme, toggleTheme } = useTheme();
@@ -196,7 +197,7 @@ export function StudioSidebar({ children, currentPath }: StudioSidebarProps) {
         </div>
 
         {/* Bottom Status & Settings Dock */}
-        <div className="border-t border-slate-800/70 p-2 space-y-1 bg-black/40">
+        <div className="border-t border-slate-800/70 p-2.5 pb-12 space-y-1.5 bg-black/40">
           <button
             type="button"
             onClick={() => setApiKeyModalOpen(true)}
@@ -239,52 +240,54 @@ export function StudioSidebar({ children, currentPath }: StudioSidebarProps) {
         }`}
       >
         {/* CLEAN MINIMAL STUDIO APP HEADER */}
-        <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-800/80 bg-obsidian-950/90 px-4 sm:px-6 lg:px-8 backdrop-blur-2xl transition-all">
-          {/* Left: Section Title & Cluster Status */}
-          <div className="flex items-center gap-3 min-w-0">
-            <Link href="/" className="flex md:hidden items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 font-mono text-xs font-black text-obsidian-950 shadow-md">
-                Z
-              </div>
-            </Link>
-            <div className="flex items-center gap-2.5 min-w-0">
-              <span className="text-sm font-extrabold text-white font-mono uppercase tracking-tight truncate">
-                {currentSectionTitle()}
-              </span>
-              <div className="hidden sm:flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-mono font-bold text-emerald-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Enterprise Core · 9 Swarms</span>
+        {!hideHeader && (
+          <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-800/80 bg-obsidian-950/90 px-4 sm:px-6 lg:px-8 backdrop-blur-2xl transition-all">
+            {/* Left: Section Title & Cluster Status */}
+            <div className="flex items-center gap-3 min-w-0">
+              <Link href="/" className="flex md:hidden items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 font-mono text-xs font-black text-obsidian-950 shadow-md">
+                  Z
+                </div>
+              </Link>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="text-sm font-extrabold text-white font-mono uppercase tracking-tight truncate">
+                  {currentSectionTitle()}
+                </span>
+                <div className="hidden sm:flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-mono font-bold text-emerald-300">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Enterprise Core · 9 Swarms</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Right: Clean Minimal Controls */}
-          <div className="flex items-center gap-2.5">
-            <button
-              type="button"
-              onClick={() => setApiKeyModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-xs font-mono font-bold text-amber-300 hover:bg-amber-500/20 transition"
-              title="API Keys Vault"
-            >
-              <Key className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">API Keys</span>
-            </button>
+            {/* Right: Clean Minimal Controls */}
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setApiKeyModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-xs font-mono font-bold text-amber-300 hover:bg-amber-500/20 transition"
+                title="API Keys Vault"
+              >
+                <Key className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">API Keys</span>
+              </button>
 
-            <div className="hidden md:flex items-center gap-1.5 rounded-xl border border-teal-500/30 bg-teal-500/10 px-3 py-1.5 text-xs font-mono font-bold text-teal-300">
-              <span className="h-2 w-2 rounded-full bg-teal-400" />
-              <span>SSO: Nitin (21+ Verified)</span>
+              <div className="hidden md:flex items-center gap-1.5 rounded-xl border border-teal-500/30 bg-teal-500/10 px-3 py-1.5 text-xs font-mono font-bold text-teal-300">
+                <span className="h-2 w-2 rounded-full bg-teal-400" />
+                <span>SSO: Nitin (21+ Verified)</span>
+              </div>
+
+              <Link
+                href="/director"
+                className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-teal-400 to-emerald-500 px-3.5 py-1.5 text-xs font-black text-slate-950 shadow-md shadow-teal-500/20 hover:from-teal-300 hover:to-emerald-400 active:scale-95 transition"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">LAUNCH SWARM</span>
+                <span className="sm:hidden">Swarm</span>
+              </Link>
             </div>
-
-            <Link
-              href="/director"
-              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-teal-400 to-emerald-500 px-3.5 py-1.5 text-xs font-black text-slate-950 shadow-md shadow-teal-500/20 hover:from-teal-300 hover:to-emerald-400 active:scale-95 transition"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">LAUNCH SWARM</span>
-              <span className="sm:hidden">Swarm</span>
-            </Link>
-          </div>
-        </header>
+          </header>
+        )}
 
         {/* Page Content */}
         <div className="flex-1 w-full max-w-full">{children}</div>

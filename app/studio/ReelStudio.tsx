@@ -826,162 +826,144 @@ export function ReelStudio() {
       : "Combining one MP4…";
 
   return (
-    <StudioSidebar currentPath="/studio">
+    <StudioSidebar currentPath="/studio" hideHeader={true}>
       <div className="min-h-screen bg-[#07090d] text-slate-100 pb-24 md:pb-12">
-        <header className="sticky top-0 z-30 border-b border-white/10 bg-[#07090d]/90 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-[1720px] flex-wrap items-center justify-between gap-4 px-4 py-3 md:px-8">
-            {/* Stage Title & Status */}
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 via-emerald-400 to-cyan-500 p-[1px] shadow-lg shadow-teal-500/20">
-                <div className="flex h-full w-full items-center justify-center rounded-[11px] bg-[#07090d] text-sm font-black text-teal-400">
+        {/* SINGLE CONSOLIDATED STUDIO HEADER */}
+        <header className="sticky top-0 z-30 border-b border-slate-800/80 bg-obsidian-950/95 backdrop-blur-2xl">
+          <div className="mx-auto flex max-w-[1720px] items-center justify-between gap-4 px-4 py-2.5 sm:px-6 lg:px-8">
+            {/* Left: Brand / Breadcrumb / Status Badge */}
+            <div className="flex items-center gap-3 min-w-0">
+              <Link href="/" className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 font-mono text-xs font-black text-obsidian-950 shadow-md shadow-teal-500/20">
                   Z
                 </div>
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-sm md:text-base font-black tracking-tight text-white font-mono">Reel Studio Pro</h1>
-                  <span className="rounded-full bg-teal-500/10 border border-teal-500/30 px-2 py-0.5 text-[9px] font-bold text-teal-400 font-mono">
-                    NEURAL CINEMA
-                  </span>
+                <div className="hidden sm:flex flex-col min-w-0">
+                  <div className="flex items-center gap-1.5 font-mono text-xs font-black tracking-tight text-white">
+                    <span>ZYVORIQ</span>
+                    <span className="text-slate-500">/</span>
+                    <span className="text-teal-400">STUDIO</span>
+                  </div>
+                  <span className="text-[9px] font-mono text-slate-400">Multi-Shot Timeline & Copilot</span>
                 </div>
-                <div className="text-[10px] md:text-[11px] text-slate-400 font-sans">Multi-Shot Timeline & Prompt-to-Reel Copilot</div>
+              </Link>
+
+              {/* Reactive Engine Status Pill */}
+              <div className="flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-3 py-1 text-[11px] font-mono font-bold text-teal-300">
+                {busy && operation === "plan" ? (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin text-teal-400" />
+                    <span>PLANNING SEQUENCE...</span>
+                  </>
+                ) : isSynthesizing || (busy && operation === "all") ? (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin text-teal-400" />
+                    <span>SYNTHESIZING REEL ({synthesisProgress}%)</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="hidden sm:inline">CINEMA TIMELINE · READY</span>
+                    <span className="sm:hidden">READY</span>
+                  </>
+                )}
               </div>
             </div>
 
-            {/* Live Progress Card in Studio Header */}
-            <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-2.5 px-4 min-w-[260px] space-y-1.5 shadow-lg">
-              <div className="flex items-center justify-between text-xs font-mono">
-                <span className="text-slate-400 font-bold flex items-center gap-1.5">
-                  {isSynthesizing || (busy && operation === "all") ? (
-                    <Loader2 className="w-3.5 h-3.5 text-teal-400 animate-spin" />
-                  ) : (
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block animate-pulse" />
-                  )}
-                  <span>{isSynthesizing || (busy && operation === "all") ? "Synthesizing Reel..." : "Reel Ready & Verified"}</span>
-                </span>
-                <span className="text-white font-bold">{synthesisProgress}%</span>
-              </div>
-              <div className="h-1.5 w-full bg-black/60 rounded-full overflow-hidden border border-white/5">
-                <div
-                  className={`h-full transition-all duration-500 ${
-                    isSynthesizing || (busy && operation === "all")
-                      ? "bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 animate-pulse"
-                      : "bg-emerald-400"
-                  }`}
-                  style={{ width: `${synthesisProgress}%` }}
-                />
-              </div>
-              <div className="text-[10px] font-mono text-slate-400 flex justify-between">
-                <span>Step {activeStepIndex} of 4</span>
-                <span>
-                  {activeStepIndex === 1 && "Script & Hook Composition"}
-                  {activeStepIndex === 2 && "5-Scene Latent Diffusion"}
-                  {activeStepIndex === 3 && "Neural Voice & SFX Stems"}
-                  {activeStepIndex === 4 && "1080p60 MP4 Mastering"}
-                </span>
-              </div>
+            {/* Center: Creation Studio Switcher Tabs */}
+            <div className="hidden xl:flex items-center gap-1 rounded-2xl border border-white/10 bg-black/50 p-1 backdrop-blur-md">
+              {[
+                { id: "video_reel", label: "AI Video Reel", icon: Clapperboard },
+                { id: "podcast", label: "2-Host Podcast", icon: Mic2 },
+                { id: "carousel", label: "Social Deck", icon: Layers },
+                { id: "song", label: "Song & Music", icon: Music },
+                { id: "story", label: "Story & Lore", icon: BookOpen },
+              ].map(m => {
+                const Icon = m.icon;
+                const active = creationMode === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => setCreationMode(m.id as any)}
+                    className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                      active
+                        ? "bg-gradient-to-r from-teal-400 to-emerald-400 text-obsidian-950 font-black shadow-md shadow-teal-500/20"
+                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{m.label}</span>
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Quick Controls & First-Class Links */}
-            <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
-              {/* Status indicators */}
-              <div className="flex items-center gap-2 pr-2 border-r border-white/10">
-                <span className="hidden sm:flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-1 text-slate-300 text-[11px]">
-                  <Globe className="h-3 w-3 text-teal-400" /> {LANGUAGES.find(l => l.code === language)?.name}
-                </span>
-                <span className="hidden sm:flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-1 text-slate-300 text-[11px]">
-                  <Sliders className="h-3 w-3 text-cyan-400" /> {aspectRatio}
-                </span>
-                <span className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-1 text-slate-300 font-mono text-[10px]">
-                  <span className={`h-2 w-2 rounded-full ${production ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
-                  {production ? `r${production.revision}` : "Draft"}
-                </span>
+            {/* Right: Studio Controls */}
+            <div className="flex items-center gap-2">
+              <div className="hidden lg:flex items-center gap-1.5 rounded-xl border border-teal-500/20 bg-teal-500/5 px-2.5 py-1 text-[11px] font-mono text-teal-300">
+                <Sparkles className="w-3 h-3 text-teal-400" />
+                <span>4K MASTER · 60 FPS</span>
               </div>
 
-              {/* Dedicated Page Route Shortcuts */}
-              <Link
-                href="/studio/create"
-                className="hidden md:flex items-center gap-1.5 rounded-xl border border-pink-500/30 bg-pink-500/10 px-2.5 py-1 text-[11px] font-bold text-pink-200 transition hover:bg-pink-500/20 shadow-sm"
-              >
-                <Layers3 className="h-3.5 w-3.5 text-pink-400" />
-                <span>14 Personas Hub</span>
-              </Link>
-
-              <Link
-                href="/studio/inspector"
-                className="hidden md:flex items-center gap-1.5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-[11px] font-bold text-cyan-200 transition hover:bg-cyan-500/20 shadow-sm"
-              >
-                <ScanSearch className="h-3.5 w-3.5 text-cyan-400" />
-                <span>Frame Inspector</span>
-              </Link>
-
-              <Link
-                href="/studio/books"
-                className="hidden lg:flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-bold text-amber-200 transition hover:bg-amber-500/20 shadow-sm"
-              >
-                <span>📚 Books</span>
-              </Link>
-
-              {/* Modal Quick Actions */}
               <button
+                type="button"
                 onClick={() => setIsRemixModalOpen(true)}
-                className="flex items-center gap-1 rounded-xl border border-purple-500/30 bg-purple-500/10 px-2 py-1 text-[11px] font-bold text-purple-200 transition hover:bg-purple-500/20 shadow-sm"
+                className="flex items-center gap-1 rounded-xl border border-purple-500/30 bg-purple-500/10 px-2.5 py-1.5 text-xs font-bold text-purple-200 hover:bg-purple-500/20 transition shadow-sm"
                 title="Remix Reel"
               >
                 <span>🔁 Remix</span>
               </button>
 
+              <div className="hidden sm:flex items-center gap-1.5 rounded-xl border border-teal-500/30 bg-teal-500/10 px-3 py-1.5 text-xs font-mono font-bold text-teal-300">
+                <span className="h-2 w-2 rounded-full bg-teal-400" />
+                <span>SSO: Nitin (21+ Verified)</span>
+              </div>
+
               <button
                 type="button"
                 onClick={toggleTheme}
-                className="flex h-7 w-7 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-amber-400 dark:text-teal-300 hover:scale-105 active:scale-95 transition-all shadow-sm"
-                title={resolvedTheme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-                aria-label="Toggle Theme"
+                className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-amber-400 hover:text-white transition shadow-sm"
+                title="Toggle Theme"
               >
-                {resolvedTheme === "dark" ? (
-                  <Sun className="h-3 w-3 text-amber-400" />
-                ) : (
-                  <Moon className="h-3 w-3 text-indigo-400 dark:text-teal-300" />
-                )}
+                {resolvedTheme === "dark" ? <Sun className="h-3.5 w-3.5 text-amber-400" /> : <Moon className="h-3.5 w-3.5 text-indigo-400" />}
               </button>
+
+              <Link
+                href="/director"
+                className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-teal-400 to-emerald-500 px-3.5 py-1.5 text-xs font-black text-slate-950 shadow-md shadow-teal-500/20 hover:from-teal-300 hover:to-emerald-400 active:scale-95 transition"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">SWARM</span>
+              </Link>
             </div>
           </div>
-        </header>
 
-      {/* Omni-Modal Creation Switcher */}
-      <div className="border-b border-white/10 bg-black/40 px-5 py-2.5 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1720px] items-center justify-between gap-4 overflow-x-auto">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mr-2">CREATION STUDIO:</span>
+          {/* Creation Mode Subbar on viewports under xl */}
+          <div className="xl:hidden flex items-center gap-1 overflow-x-auto px-4 py-2 border-t border-white/5 bg-black/40">
             {[
-              { id: "video_reel", label: "🎬 AI Video Reel" },
-              { id: "podcast", label: "🎙️ 2-Host Podcast" },
-              { id: "carousel", label: "📊 Social Carousel & Deck" },
-              { id: "song", label: "🎵 Song & Music" },
-              { id: "story", label: "✍️ Story & Novel" },
+              { id: "video_reel", label: "🎬 AI Reel" },
+              { id: "podcast", label: "🎙️ Podcast" },
+              { id: "carousel", label: "📊 Deck" },
+              { id: "song", label: "🎵 Music" },
+              { id: "story", label: "✍️ Story" },
             ].map(m => (
               <button
                 key={m.id}
                 onClick={() => setCreationMode(m.id as any)}
-                className={`flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs font-black transition ${creationMode === m.id ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-obsidian-950 font-extrabold shadow-md shadow-teal-500/20" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
+                className={`whitespace-nowrap px-3 py-1 rounded-lg text-xs font-bold transition ${
+                  creationMode === m.id
+                    ? "bg-teal-400 text-obsidian-950 font-black"
+                    : "text-slate-400 hover:text-white"
+                }`}
               >
-                <span>{m.label}</span>
+                {m.label}
               </button>
             ))}
           </div>
-          <div className="hidden text-[11px] font-bold text-slate-400 md:block font-mono">
-            {creationMode === "video_reel" && "Neural Cinema Multi-Shot & Continuous Studio"}
-            {creationMode === "podcast" && "2-Speaker Conversational Neural Podcast Studio"}
-            {creationMode === "carousel" && "Multi-Card Vector PDF & SVG Slide Deck Studio"}
-            {creationMode === "song" && "Verse-Chorus Lyric & Beat Visualizer Engine"}
-            {creationMode === "story" && "Episodic Chapters & Dramatis Personae Lore Studio"}
-          </div>
-        </div>
-      </div>
+        </header>
 
       {/* 🚀 HERO MAGIC COPILOT PROMPT BAR (1-CLICK PROMPT TO REEL) */}
       {creationMode === "video_reel" && (
-        <div className="mx-auto max-w-[1720px] px-5 pt-5 pb-1 md:px-8">
+        <div className="mx-auto max-w-[1720px] px-4 pt-5 pb-1 sm:px-6 lg:px-8">
           <div className="relative overflow-hidden rounded-3xl border border-teal-500/30 bg-gradient-to-r from-slate-900/95 via-obsidian-950/95 to-slate-900/95 p-4 sm:p-5 shadow-2xl backdrop-blur-2xl ring-1 ring-white/10">
             {/* Ambient glowing background accents */}
             <div className="pointer-events-none absolute -left-20 -top-20 h-48 w-48 rounded-full bg-teal-500/15 blur-3xl" />
@@ -1002,13 +984,20 @@ export function ReelStudio() {
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                  <span>Describe anything in natural language</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsPromptBuilderOpen(true)}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-300 hover:text-amber-200 transition bg-amber-400/10 border border-amber-400/30 px-2.5 py-1 rounded-xl shadow-sm"
+                  >
+                    <Wand2 className="w-3 h-3 text-amber-300" /> Prompt Director
+                  </button>
+                  <span className="hidden sm:inline">Describe anything in natural language</span>
                   <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-mono text-slate-300">Enter ↵</span>
                 </div>
               </div>
 
-              {/* Chat Input Bar */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+              {/* Chat Input Bar with INLINE DURATION PILLS and GENERATE BUTTON */}
+              <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2.5">
                 <div className="relative flex-1">
                   <input
                     type="text"
@@ -1020,7 +1009,7 @@ export function ReelStudio() {
                         handleMagicPromptSubmit();
                       }
                     }}
-                    placeholder="Describe what you want to create (e.g., 'A funny 30s Hindi comedy between husband and wife about morning chai')..."
+                    placeholder="Describe what you want to create (e.g., 'Sri Sri Ravi Shankar and how he founded the Art of Living')..."
                     className="w-full rounded-2xl border border-teal-500/30 bg-black/60 py-3.5 sm:py-4 pl-4 pr-16 text-sm font-medium text-white placeholder-slate-400 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 shadow-inner"
                   />
 
@@ -1035,16 +1024,42 @@ export function ReelStudio() {
                   )}
                 </div>
 
+                {/* Inline Target Duration Pills */}
+                <div className="flex items-center gap-1.5 rounded-2xl border border-white/10 bg-black/40 p-1.5 shrink-0 justify-center">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 px-2">Length:</span>
+                  {[
+                    { val: "15", label: "15s", desc: "2 beats" },
+                    { val: "30", label: "30s", desc: "4 beats" },
+                    { val: "60", label: "60s", desc: "8 beats" },
+                    { val: "90", label: "90s", desc: "12 beats" },
+                  ].map(d => (
+                    <button
+                      key={d.val}
+                      type="button"
+                      onClick={() => setDuration(d.val)}
+                      title={`${d.label} (${d.desc})`}
+                      className={`px-3 py-2 rounded-xl text-xs font-mono font-black transition-all ${
+                        duration === d.val
+                          ? "bg-teal-400 text-obsidian-950 shadow-md shadow-teal-500/30 scale-105"
+                          : "text-slate-400 hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Primary Generate Reel CTA */}
                 <button
                   type="button"
                   onClick={() => handleMagicPromptSubmit()}
                   disabled={busy || !topic.trim()}
-                  className="shrink-0 inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 px-6 py-3.5 sm:py-4 text-xs font-black text-obsidian-950 shadow-lg shadow-teal-500/25 hover:from-teal-300 hover:to-cyan-300 active:scale-[0.98] transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  className="shrink-0 inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 px-7 py-3.5 sm:py-4 text-xs font-black text-obsidian-950 shadow-lg shadow-teal-500/25 hover:from-teal-300 hover:to-cyan-300 active:scale-[0.98] transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {busy && operation === "plan" ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin text-obsidian-950" />
-                      <span>Planning...</span>
+                      <span>Planning Sequence...</span>
                     </>
                   ) : (
                     <>
@@ -1059,9 +1074,10 @@ export function ReelStudio() {
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 <span className="text-[11px] font-bold text-slate-400">Try Instant Ideas:</span>
                 {[
-                  { label: "☕ Hindi Husband-Wife Chai Comedy", prompt: "A hilarious 30s Hindi comedy dialogue between husband and wife where the husband is begging for morning chai and the wife gives witty sarcastic replies" },
-                  { label: "🍕 Wife Catches Husband Midnight Snacking", prompt: "A funny Hindi comedy reel where wife catches her husband secretly opening the fridge at 2 AM with hilarious excuses" },
-                  { label: "🚀 3 High-Growth Startup Secrets", prompt: "3 counter-intuitive marketing growth hacks that scaled our SaaS to 100k users in 90 days" },
+                  { label: "🧘 Sri Sri & Art of Living", prompt: "Sri Sri Ravi Shankar and how he founded the Art of Living, spreading breathwork and peace to millions globally" },
+                  { label: "☕ Hindi Husband-Wife Chai Banter", prompt: "A hilarious 30s Hindi comedy dialogue between husband and wife where the husband is begging for morning chai and the wife gives witty sarcastic replies" },
+                  { label: "🍕 Midnight Fridge Snacking", prompt: "A funny Hindi comedy reel where wife catches her husband secretly opening the fridge at 2 AM with hilarious excuses" },
+                  { label: "🚀 3 Startup Growth Secrets", prompt: "3 counter-intuitive marketing growth hacks that scaled our SaaS to 100k users in 90 days" },
                   { label: "🍿 Crime Thriller 30s Cliffhanger", prompt: "A dark cinematic crime thriller where a detective opens a locked briefcase and discovers a photograph of himself" },
                 ].map((item, idx) => (
                   <button
@@ -1090,92 +1106,79 @@ export function ReelStudio() {
       )}
 
       {creationMode === "video_reel" && (
-        <main className="mx-auto grid max-w-[1720px] gap-6 px-5 py-6 md:px-8 lg:grid-cols-[400px_1fr_370px]">
-        {/* LEFT COLUMN: Brief, Settings & Primary Generators */}
-        <aside className="h-fit rounded-[24px] border border-white/10 bg-slate-900/60 p-5 backdrop-blur-xl shadow-2xl space-y-4 lg:sticky lg:top-20">
+        <main className="mx-auto grid max-w-[1720px] gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:grid-cols-[340px_1fr_360px] xl:grid-cols-[360px_1fr_380px] 2xl:grid-cols-[380px_1fr_400px]">
+        {/* LEFT COLUMN: Production Settings & Presets (Pure Configuration, Zero Duplication) */}
+        <aside className="h-fit rounded-[24px] border border-white/10 bg-slate-900/60 p-4 sm:p-5 backdrop-blur-xl shadow-2xl space-y-4 lg:sticky lg:top-20">
           <div className="flex items-center justify-between pb-3 border-b border-white/5">
             <div className="text-xs font-black uppercase tracking-[0.16em] text-teal-400 font-mono flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-teal-400" />
-              Creative Controls
+              <Sliders className="w-3.5 h-3.5 text-teal-400" />
+              Studio Controls
             </div>
             <span className="rounded-full border border-teal-500/30 bg-teal-500/10 px-2.5 py-0.5 text-[10px] font-black text-teal-300 font-mono">
-              CINEMA ENGINE READY
+              CINEMA ENGINE
             </span>
           </div>
 
-          {/* IDEA OR TOPIC BRIEF */}
-          <div>
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-black text-slate-300 uppercase tracking-wider font-mono">Idea or Topic Brief</label>
-              <div className="flex items-center gap-2">
+          {/* 1. TARGET DURATION SELECTOR */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">Target Duration</label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { val: "15", label: "15s Reel", sub: "2 beats · Viral Hook" },
+                { val: "30", label: "30s Reel", sub: "4 beats · Sweet Spot" },
+                { val: "60", label: "60s Reel", sub: "8 beats · Deep Dive" },
+                { val: "90", label: "90s Master", sub: "12 beats · Story" },
+              ].map(opt => (
                 <button
+                  key={opt.val}
                   type="button"
-                  onClick={() => setIsPromptBuilderOpen(true)}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-300 hover:text-amber-200 transition bg-amber-400/10 border border-amber-400/30 px-2 py-0.5 rounded-lg shadow-sm"
+                  onClick={() => setDuration(opt.val)}
+                  className={`p-2.5 rounded-xl border text-left transition-all ${
+                    duration === opt.val
+                      ? "border-teal-400/80 bg-teal-500/15 text-white shadow-sm"
+                      : "border-white/10 bg-black/30 text-slate-300 hover:border-white/20 hover:bg-white/5"
+                  }`}
                 >
-                  <Wand2 className="w-3 h-3 text-amber-300" /> Prompt Director
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono font-black">{opt.label}</span>
+                    {duration === opt.val && <Check className="w-3.5 h-3.5 text-teal-400" />}
+                  </div>
+                  <span className="text-[10px] text-slate-400 block mt-0.5 truncate">{opt.sub}</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={handleSurpriseIdea}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-400 hover:text-teal-300 transition"
-                >
-                  <Lightbulb className="w-3 h-3" /> Surprise Idea
-                </button>
-              </div>
-            </div>
-            <textarea
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              rows={3}
-              className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-black/40 p-3.5 text-sm leading-6 text-white outline-none focus:border-teal-400 transition"
-              placeholder="What is your video about? (e.g., 3 habits quietly killing your focus)"
-            />
-          </div>
-
-          {/* 🔥 PRIMARY CALL TO ACTION BUTTON (ABOVE THE FOLD) */}
-          <button
-            onClick={buildProduction}
-            disabled={busy || !topic.trim()}
-            className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 py-3.5 text-sm font-black text-obsidian-950 shadow-lg shadow-teal-500/20 hover:from-teal-300 hover:to-cyan-300 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {busy && operation === "plan" ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin text-obsidian-950" />
-                <span>Building Production Plan...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 fill-current" />
-                <span>{production ? "Re-Plan Sequence & Script" : "✨ Build Production Plan"}</span>
-              </>
-            )}
-          </button>
-
-          {/* Quick Concept Preset Dropdown */}
-          <div className="rounded-2xl border border-white/10 bg-black/30 p-3 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-slate-400 uppercase font-mono">Curated Story Presets</span>
-              <Link href="/studio/create" className="text-[10px] font-bold text-pink-400 hover:text-pink-300 transition flex items-center gap-0.5">
-                Explore 24 Concepts <ChevronRight className="w-3 h-3" />
-              </Link>
-            </div>
-            <select
-              onChange={(e) => handleSelectGenrePreset(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-slate-900/90 p-2.5 text-xs text-slate-200 outline-none focus:border-teal-400"
-            >
-              {QUICK_GENRE_PRESETS.map((p) => (
-                <option key={p.id} value={p.prompt}>
-                  {p.label}
-                </option>
               ))}
-            </select>
+            </div>
           </div>
 
-          {/* Virtual Cast & Multi-Character Persona Selector */}
-          <div className="rounded-2xl border border-white/10 bg-black/30 p-3.5 space-y-2.5">
+          {/* 2. ASPECT RATIO SELECTOR */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">Framing & Aspect Ratio</label>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { id: "9:16", label: "9:16", sub: "Reels / TikTok" },
+                { id: "16:9", label: "16:9", sub: "YouTube Wide" },
+                { id: "1:1", label: "1:1", sub: "Square Feed" },
+              ].map(r => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => setAspectRatio(r.id)}
+                  className={`p-2 rounded-xl border text-center transition-all ${
+                    aspectRatio === r.id
+                      ? "border-teal-400/80 bg-teal-500/15 text-white shadow-sm"
+                      : "border-white/10 bg-black/30 text-slate-300 hover:border-white/20 hover:bg-white/5"
+                  }`}
+                >
+                  <div className="text-xs font-mono font-black">{r.label}</div>
+                  <div className="text-[9px] text-slate-400 truncate mt-0.5">{r.sub}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 3. CAST & MULTI-CHARACTER PERSONA SELECTOR */}
+          <div className="rounded-2xl border border-white/10 bg-black/30 p-3 space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-400 uppercase font-mono">Cast & Presenters</span>
+              <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">Cast & Presenters</span>
               <div className="flex items-center gap-1 bg-white/5 p-0.5 rounded-lg border border-white/10">
                 <button
                   type="button"
@@ -1189,7 +1192,7 @@ export function ReelStudio() {
                   onClick={() => setCastType("dual")}
                   className={`px-2 py-0.5 rounded text-[10px] font-bold transition ${castType === "dual" ? "bg-teal-500 text-obsidian-950 font-black shadow-sm" : "text-slate-400 hover:text-white"}`}
                 >
-                  Dual Cast (Couple)
+                  Dual (Couple)
                 </button>
               </div>
             </div>
@@ -1202,25 +1205,25 @@ export function ReelStudio() {
               }}
               className="flex cursor-pointer items-center justify-between rounded-xl border border-white/5 bg-white/[0.03] p-2.5 transition hover:border-teal-500/40 hover:bg-white/[0.06]"
             >
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white/5 text-lg">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white/5 text-lg">
                   {selectedPersona.faceImageUrl ? (
                     <img src={selectedPersona.faceImageUrl} alt={selectedPersona.name} className="h-full w-full object-cover" />
                   ) : (
                     selectedPersona.avatarEmoji || "👤"
                   )}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <div className="text-xs font-bold text-white">{selectedPersona.name}</div>
-                    <span className="rounded bg-teal-500/20 text-teal-300 px-1 py-0.2 text-[8px] font-black uppercase">
-                      {castType === "dual" ? "Speaker 1 / Wife" : "Lead"}
+                    <div className="text-xs font-bold text-white truncate">{selectedPersona.name}</div>
+                    <span className="rounded bg-teal-500/20 text-teal-300 px-1 py-0.2 text-[8px] font-black uppercase whitespace-nowrap">
+                      {castType === "dual" ? "Lead / Wife" : "Lead"}
                     </span>
                   </div>
-                  <div className="text-[10px] text-slate-400">{selectedPersona.role}</div>
+                  <div className="text-[10px] text-slate-400 truncate">{selectedPersona.role}</div>
                 </div>
               </div>
-              <span className="text-[10px] font-bold text-teal-400 hover:underline">
+              <span className="text-[10px] font-bold text-teal-400 hover:underline shrink-0 ml-2">
                 Change →
               </span>
             </div>
@@ -1234,39 +1237,39 @@ export function ReelStudio() {
                 }}
                 className="flex cursor-pointer items-center justify-between rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-2.5 transition hover:border-indigo-400/50 hover:bg-indigo-500/10"
               >
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-lg">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-lg">
                     {secondaryPersona.faceImageUrl ? (
                       <img src={secondaryPersona.faceImageUrl} alt={secondaryPersona.name} className="h-full w-full object-cover" />
                     ) : (
                       secondaryPersona.avatarEmoji || "👨"
                     )}
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <div className="text-xs font-bold text-white">{secondaryPersona.name}</div>
-                      <span className="rounded bg-indigo-500/20 text-indigo-300 px-1 py-0.2 text-[8px] font-black uppercase">
-                        Speaker 2 / Husband
+                      <div className="text-xs font-bold text-white truncate">{secondaryPersona.name}</div>
+                      <span className="rounded bg-indigo-500/20 text-indigo-300 px-1 py-0.2 text-[8px] font-black uppercase whitespace-nowrap">
+                        Partner
                       </span>
                     </div>
-                    <div className="text-[10px] text-slate-400">{secondaryPersona.role}</div>
+                    <div className="text-[10px] text-slate-400 truncate">{secondaryPersona.role}</div>
                   </div>
                 </div>
-                <span className="text-[10px] font-bold text-indigo-400 hover:underline">
+                <span className="text-[10px] font-bold text-indigo-400 hover:underline shrink-0 ml-2">
                   Change →
                 </span>
               </div>
             )}
           </div>
 
-          {/* Engine Settings (Language, Voice, Aspect Ratio, Subtitles) */}
-          <div className="grid grid-cols-2 gap-3 pt-2">
+          {/* 4. LANGUAGE & SUBTITLES */}
+          <div className="grid grid-cols-2 gap-2.5">
             <div>
               <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 font-mono">Language</label>
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-2.5 py-2 text-xs font-semibold text-white focus:border-teal-500/50 focus:outline-none"
+                className="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-2.5 py-2 text-xs font-semibold text-white focus:border-teal-500/50 focus:outline-none"
               >
                 {LANGUAGES.map((l) => (
                   <option key={l.code} value={l.code}>
@@ -1277,38 +1280,11 @@ export function ReelStudio() {
             </div>
 
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 font-mono">Target Duration</label>
-              <select
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-                className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-2.5 py-2 text-xs font-semibold text-white focus:border-teal-500/50 focus:outline-none"
-              >
-                <option value="15">15s (Ultra High Retention)</option>
-                <option value="30">30s (Standard Viral)</option>
-                <option value="60">60s (Deep Narrative)</option>
-                <option value="90">90s (Masterclass)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 font-mono">Aspect Ratio</label>
-              <select
-                value={aspectRatio}
-                onChange={(e) => setAspectRatio(e.target.value)}
-                className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-2.5 py-2 text-xs font-semibold text-white focus:border-teal-500/50 focus:outline-none"
-              >
-                <option value="9:16">9:16 (TikTok/Reels/Shorts)</option>
-                <option value="16:9">16:9 (YouTube Widescreen)</option>
-                <option value="1:1">1:1 (Square Feed)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 font-mono">Subtitle Font</label>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 font-mono">Subtitles</label>
               <select
                 value={subtitleStyle}
                 onChange={(e) => setSubtitleStyle(e.target.value)}
-                className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-2.5 py-2 text-xs font-semibold text-white focus:border-teal-500/50 focus:outline-none"
+                className="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-2.5 py-2 text-xs font-semibold text-white focus:border-teal-500/50 focus:outline-none"
               >
                 {SUBTITLE_STYLES.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -1318,6 +1294,38 @@ export function ReelStudio() {
               </select>
             </div>
           </div>
+
+          {/* 5. CURATED STORY PRESETS */}
+          <div className="rounded-2xl border border-white/10 bg-black/30 p-3 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">Curated Presets</span>
+              <Link href="/studio/create" className="text-[10px] font-bold text-pink-400 hover:text-pink-300 transition flex items-center gap-0.5">
+                Explore 24 <ChevronRight className="w-3 h-3" />
+              </Link>
+            </div>
+            <select
+              onChange={(e) => handleSelectGenrePreset(e.target.value)}
+              className="w-full rounded-xl border border-white/10 bg-slate-900/90 p-2 text-xs text-slate-200 outline-none focus:border-teal-400"
+            >
+              {QUICK_GENRE_PRESETS.map((p) => (
+                <option key={p.id} value={p.prompt}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* If manifest exists, show Re-Plan quick button */}
+          {production && (
+            <button
+              onClick={buildProduction}
+              disabled={busy || !topic.trim()}
+              className="w-full flex items-center justify-center gap-2 rounded-xl border border-teal-500/30 bg-teal-500/10 py-2.5 text-xs font-bold text-teal-300 hover:bg-teal-500/20 transition disabled:opacity-40"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${busy && operation === "plan" ? "animate-spin" : ""}`} />
+              <span>Re-Plan Sequence ({duration}s)</span>
+            </button>
+          )}
         </aside>
 
         {/* CENTER COLUMN: Scene & Settings Tabs */}
@@ -1417,12 +1425,74 @@ export function ReelStudio() {
                   </div>
                 </div>
 
-                {!manifest ? (
+                {busy && operation === "plan" ? (
+                  <div className="space-y-5 rounded-2xl border border-teal-500/30 bg-slate-900/40 p-6 backdrop-blur-xl animate-pulse">
+                    <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-white/10">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Loader2 className="w-6 h-6 text-teal-400 animate-spin shrink-0" />
+                        <div className="min-w-0">
+                          <h3 className="text-base font-black text-white font-mono truncate">
+                            Synthesizing {duration}s Storyboard Sequence...
+                          </h3>
+                          <p className="text-xs text-slate-400 mt-0.5 truncate max-w-[550px]">
+                            Brief: &quot;{topic || "Cinematic Masterclass Sequence"}&quot;
+                          </p>
+                        </div>
+                      </div>
+                      <div className="rounded-full bg-teal-500/10 border border-teal-500/30 px-3 py-1 text-xs font-mono font-bold text-teal-300 shrink-0">
+                        {duration === "90" ? "12 BEATS · MASTER" : duration === "60" ? "8 BEATS · NARRATIVE" : duration === "15" ? "2 BEATS · VIRAL" : "4 BEATS · SWEET SPOT"}
+                      </div>
+                    </div>
+
+                    {/* Step Pipeline Progress */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs font-mono">
+                      <div className="p-3 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-300">
+                        <div className="text-[10px] font-bold uppercase text-teal-400">Step 1</div>
+                        <div className="font-bold mt-1">Hook Psychology</div>
+                        <div className="text-[10px] text-teal-400/80 mt-0.5">Dopamine trigger mapped</div>
+                      </div>
+                      <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300">
+                        <div className="text-[10px] font-bold uppercase text-cyan-400">Step 2</div>
+                        <div className="font-bold mt-1">Beat Architecture</div>
+                        <div className="text-[10px] text-cyan-400/80 mt-0.5">Veo prompt generation</div>
+                      </div>
+                      <div className="p-3 rounded-xl bg-black/40 border border-white/10 text-slate-300">
+                        <div className="text-[10px] font-bold uppercase text-slate-400">Step 3</div>
+                        <div className="font-bold mt-1">Vocal Stems & SFX</div>
+                        <div className="text-[10px] text-slate-400 mt-0.5">DeepMind Neural TTS</div>
+                      </div>
+                      <div className="p-3 rounded-xl bg-black/40 border border-white/10 text-slate-300">
+                        <div className="text-[10px] font-bold uppercase text-slate-400">Step 4</div>
+                        <div className="font-bold mt-1">Manifest Assembly</div>
+                        <div className="text-[10px] text-slate-400 mt-0.5">Continuity locked</div>
+                      </div>
+                    </div>
+
+                    {/* 4 Skeleton Scene Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                      {[
+                        { title: "Beat 01: High-Retention Visual Hook", dur: "3.2s" },
+                        { title: "Beat 02: Curiosity Spike & Setup", dur: "4.5s" },
+                        { title: "Beat 03: Core Core Value Delivery", dur: "5.1s" },
+                        { title: "Beat 04: Climax & Call-to-Action", dur: "3.8s" },
+                      ].map((item, idx) => (
+                        <div key={idx} className="p-4 rounded-xl border border-white/5 bg-black/30 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-300 font-mono">{item.title}</span>
+                            <span className="text-[10px] font-mono font-bold text-teal-400">{item.dur}</span>
+                          </div>
+                          <div className="h-3 w-full bg-white/5 rounded" />
+                          <div className="h-3 w-4/5 bg-white/5 rounded" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : !manifest ? (
                   <div className="space-y-6">
                     {/* Welcome Banner */}
                     <div className="rounded-2xl border border-teal-500/20 bg-gradient-to-br from-teal-500/10 via-slate-900/60 to-slate-900/80 p-6 backdrop-blur-xl shadow-xl">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-500/20 border border-teal-500/40 text-teal-400">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-500/20 border border-teal-500/40 text-teal-400">
                           <Sparkles className="w-5 h-5" />
                         </div>
                         <div>
@@ -1430,7 +1500,7 @@ export function ReelStudio() {
                             Ready to Produce Your Viral Multi-Shot Reel
                           </h3>
                           <p className="text-xs text-slate-400 mt-0.5">
-                            Pick a high-retention blueprint below or enter your topic on the left, then click <strong>Build Production Plan</strong>.
+                            Pick a high-retention blueprint below or enter your topic in the Prompt Copilot above, then click <strong>✨ Generate Reel</strong>.
                           </p>
                         </div>
                       </div>
@@ -1440,7 +1510,7 @@ export function ReelStudio() {
                         <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1">
                           <div className="text-[10px] font-mono text-teal-400 font-bold uppercase">Step 01</div>
                           <div className="text-xs font-bold text-slate-200">AI Story & Script Beats</div>
-                          <div className="text-[11px] text-slate-400">Gemini 2.5 Flash compiles viral 4-beat sequence</div>
+                          <div className="text-[11px] text-slate-400">Gemini 2.5 Flash compiles viral multi-beat sequence</div>
                         </div>
                         <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1">
                           <div className="text-[10px] font-mono text-cyan-400 font-bold uppercase">Step 02</div>
@@ -1466,21 +1536,23 @@ export function ReelStudio() {
                         </Link>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                         <button
                           type="button"
                           onClick={() => {
-                            setTopic("3 habits quietly killing your focus and dopamine receptors every morning, and how to fix them.");
+                            const p = "3 habits quietly killing your focus and dopamine receptors every morning, and how to fix them.";
+                            setTopic(p);
+                            handleMagicPromptSubmit(p);
                           }}
                           className="text-left p-4 rounded-2xl border border-white/10 bg-slate-900/40 hover:border-teal-500/50 hover:bg-slate-900/80 transition-all group shadow-md"
                         >
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-[10px] font-mono font-bold text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/20">
+                          <div className="flex items-center justify-between gap-2 mb-2 min-w-0">
+                            <span className="text-[10px] font-mono font-bold text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/20 whitespace-nowrap shrink-0">
                               BIOHACKING
                             </span>
-                            <span className="text-[10px] font-mono font-bold text-amber-400">94% Retention</span>
+                            <span className="text-[10px] font-mono font-bold text-amber-400 whitespace-nowrap shrink-0">94% Retention</span>
                           </div>
-                          <div className="font-bold text-xs text-white group-hover:text-teal-300 transition">
+                          <div className="font-bold text-xs text-white group-hover:text-teal-300 transition truncate">
                             3 Habits Killing Your Focus
                           </div>
                           <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">
@@ -1491,17 +1563,19 @@ export function ReelStudio() {
                         <button
                           type="button"
                           onClick={() => {
-                            setTopic("Sensei Ren teaches apprentice Aoi the secret of Mushin (Mind without Mind) during a thunderstorm duel on the wooden dojo balcony.");
+                            const p = "Sensei Ren teaches apprentice Aoi the secret of Mushin (Mind without Mind) during a thunderstorm duel on the wooden dojo balcony.";
+                            setTopic(p);
+                            handleMagicPromptSubmit(p);
                           }}
                           className="text-left p-4 rounded-2xl border border-white/10 bg-slate-900/40 hover:border-cyan-500/50 hover:bg-slate-900/80 transition-all group shadow-md"
                         >
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-[10px] font-mono font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                          <div className="flex items-center justify-between gap-2 mb-2 min-w-0">
+                            <span className="text-[10px] font-mono font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 whitespace-nowrap shrink-0">
                               KAIZEN DOJO
                             </span>
-                            <span className="text-[10px] font-mono font-bold text-amber-400">91% Retention</span>
+                            <span className="text-[10px] font-mono font-bold text-amber-400 whitespace-nowrap shrink-0">91% Retention</span>
                           </div>
-                          <div className="font-bold text-xs text-white group-hover:text-cyan-300 transition">
+                          <div className="font-bold text-xs text-white group-hover:text-cyan-300 transition truncate">
                             The Thunderstorm of Mushin
                           </div>
                           <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">
@@ -1512,17 +1586,19 @@ export function ReelStudio() {
                         <button
                           type="button"
                           onClick={() => {
-                            setTopic("Husband Aarav cannot find his car keys for the third time this week, while wife Meera sarcastically calculates how much time they have lost.");
+                            const p = "Husband Aarav cannot find his car keys for the third time this week, while wife Meera sarcastically calculates how much time they have lost.";
+                            setTopic(p);
+                            handleMagicPromptSubmit(p);
                           }}
                           className="text-left p-4 rounded-2xl border border-white/10 bg-slate-900/40 hover:border-rose-500/50 hover:bg-slate-900/80 transition-all group shadow-md"
                         >
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-[10px] font-mono font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
+                          <div className="flex items-center justify-between gap-2 mb-2 min-w-0">
+                            <span className="text-[10px] font-mono font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 whitespace-nowrap shrink-0">
                               DOMESTIC COMEDY
                             </span>
-                            <span className="text-[10px] font-mono font-bold text-amber-400">96% Retention</span>
+                            <span className="text-[10px] font-mono font-bold text-amber-400 whitespace-nowrap shrink-0">96% Retention</span>
                           </div>
-                          <div className="font-bold text-xs text-white group-hover:text-rose-300 transition">
+                          <div className="font-bold text-xs text-white group-hover:text-rose-300 transition truncate">
                             The Lost Keys (Hindi Banter)
                           </div>
                           <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">

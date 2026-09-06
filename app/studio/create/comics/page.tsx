@@ -65,7 +65,7 @@ function ComicsCreateContent() {
 
   return (
     <StudioSidebar>
-      <main className="flex-1 max-w-7xl w-full max-w-full overflow-x-hidden mx-auto px-5 py-8 md:px-8 space-y-6">
+      <main className="flex-1 max-w-[1600px] w-full overflow-x-hidden mx-auto px-5 py-8 md:px-8 pb-24 md:pb-32 space-y-6">
         <div className="flex items-center justify-between">
           <nav className="flex items-center gap-2 text-xs font-mono">
             <Link href="/studio" className="text-slate-400 hover:text-white transition">
@@ -254,7 +254,7 @@ function ComicsCreateContent() {
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             rows={4}
-            placeholder="Describe your manga or comic plot (e.g. 'An intense 4-panel Shonen manga battle where Apprentice Aoi unleashes a forbidden lightning strike against the Shadow Master on a stormy temple rooftop')..."
+            placeholder="Describe your manga or comic plot, characters, and action beats..."
             className="w-full resize-none rounded-2xl border border-white/10 bg-black/50 p-4 text-base md:text-sm font-medium text-white placeholder-slate-500 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition"
           />
         </div>

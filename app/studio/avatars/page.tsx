@@ -235,7 +235,7 @@ function AvatarsPageContent() {
                 placeholder="Search character name, role, region, or specialty..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full md:w-72 px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-400"
+                className="w-full md:w-72 px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-base md:text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-400"
               />
             </div>
 

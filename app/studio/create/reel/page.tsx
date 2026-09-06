@@ -356,7 +356,7 @@ function ReelCreateContent() {
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             rows={3}
-            placeholder="Describe your hook and story (e.g. '3 psychological tricks that secretly influence 90% of human decisions without anyone noticing')..."
+            placeholder="Describe your hook, narration beats, and visual story idea..."
             className="w-full resize-none rounded-2xl border border-white/10 bg-black/50 p-4 text-base md:text-sm font-medium text-white placeholder-slate-500 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/20 transition"
           />
         </div>

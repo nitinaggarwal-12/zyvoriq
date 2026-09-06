@@ -613,7 +613,11 @@ export function LiveSupportConcierge() {
 
   const pathname = usePathname();
   if (!hasMounted) return null;
-  if (pathname === "/" || pathname === "/studio/create" || pathname === "/studio/zoom-screenshare") return null;
+  if (
+    pathname === "/" || 
+    pathname === "/studio" ||
+    pathname?.startsWith("/studio/")
+  ) return null;
 
   return (
     <>

@@ -298,7 +298,7 @@ export default function StudioLibraryPage() {
       <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.02] p-4 md:p-5">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-wrap gap-2">{tabs.map(t => <button key={t} onClick={() => setTab(t)} className={`rounded-xl px-3.5 py-2 text-xs font-bold ${tab === t ? "bg-white text-slate-950" : "border border-white/10 text-slate-400 hover:text-white"}`}>{t} <span className="ml-1 opacity-60">{counts[t] || 0}</span></button>)}</div>
-          <label className="relative block min-w-[260px]"><Search className="absolute left-3 top-3 h-4 w-4 text-slate-600"/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search content, model, type…" className="w-full rounded-xl border border-white/10 bg-black/20 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-teal-300/30"/></label>
+          <label className="relative block min-w-[260px]"><Search className="absolute left-3 top-3 h-4 w-4 text-slate-600"/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search content, model, type…" className="w-full rounded-xl border border-white/10 bg-black/20 py-2.5 pl-9 pr-3 text-base md:text-sm outline-none focus:border-teal-300/30"/></label>
         </div>
       </section>
 

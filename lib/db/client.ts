@@ -1,6 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 import path from "node:path";
-import { Pool } from "pg";
+import type { Pool } from "pg";
 import { SQLITE_SCHEMA, POSTGRES_SCHEMA } from "./schema";
 import { CANONICAL_SERIES_TRACKS } from "@/lib/tier6/default_tracks";
 import type { 
@@ -37,7 +37,8 @@ export function getPostgresPool(): Pool | null {
 
   if (!pgPool) {
     try {
-      pgPool = new Pool({
+      const { Pool: PgPool } = require("pg");
+      pgPool = new PgPool({
         connectionString: dbUrl,
         ssl: dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1")
           ? false
@@ -47,7 +48,7 @@ export function getPostgresPool(): Pool | null {
         connectionTimeoutMillis: 5000,
       });
 
-      if (!pgSchemaMigrated) {
+      if (!pgSchemaMigrated && pgPool) {
         pgSchemaMigrated = true;
         pgPool.query(POSTGRES_SCHEMA).catch((err) => {
           console.warn("PostgreSQL initial schema migration warning:", err.message);

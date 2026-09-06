@@ -490,18 +490,18 @@ function CreateHubContent() {
 
         {/* Universal Magic Prompt Bar */}
         <form onSubmit={handleQuickSubmit} className="max-w-4xl mx-auto">
-          <div className="relative flex items-center rounded-3xl border border-teal-500/40 bg-gradient-to-r from-slate-900/90 via-obsidian-950/95 to-slate-900/90 p-2 shadow-2xl backdrop-blur-2xl ring-1 ring-white/10">
+          <div className="flex items-center rounded-3xl border border-teal-500/40 bg-gradient-to-r from-slate-900/90 via-obsidian-950/95 to-slate-900/90 p-1.5 sm:p-2 shadow-2xl backdrop-blur-2xl ring-1 ring-white/10 gap-2">
             <input
               type="text"
               value={quickPrompt}
               onChange={(e) => setQuickPrompt(e.target.value)}
-              placeholder={`Describe your idea for ${activePersonaConfig.title} (e.g. '${activePersonaConfig.samplePrompts[0].slice(0, 48)}...')...`}
-              className="w-full bg-transparent py-3.5 pl-4 pr-36 text-sm sm:text-base text-white placeholder-slate-500 outline-none"
+              placeholder={`Describe your vision for ${activePersonaConfig.title}...`}
+              className="flex-1 min-w-0 bg-transparent py-3 pl-4 pr-2 text-sm sm:text-base text-white placeholder-slate-500 outline-none"
             />
             <button
               type="submit"
               disabled={!quickPrompt.trim()}
-              className="absolute right-2 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 px-5 py-3 text-xs sm:text-sm font-black text-obsidian-950 shadow-lg shadow-teal-500/25 hover:from-teal-300 hover:to-cyan-300 active:scale-[0.98] transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              className="shrink-0 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 px-4 sm:px-6 py-3 text-xs sm:text-sm font-black text-obsidian-950 shadow-lg shadow-teal-500/25 hover:from-teal-300 hover:to-cyan-300 active:scale-[0.98] transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
               <Zap className="w-4 h-4 fill-current" />
               <span>Launch Studio</span>

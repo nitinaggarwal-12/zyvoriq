@@ -310,7 +310,7 @@ function StudioHistoryPageContent() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by title, prompt, persona or category..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-base md:text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-amber-500"
               />
             </div>
           </div>

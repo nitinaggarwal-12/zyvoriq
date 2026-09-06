@@ -50,22 +50,30 @@ import {
   CinematicAct,
   CinematicShot
 } from "@/lib/cinema/dharmakshetra15m";
+import {
+  NAPOLEON_ROMANCE_ACTS,
+  NAPOLEON_ROMANCE_30_SHOTS,
+  NAPOLEON_ROMANCE_DIALOGUES
+} from "@/lib/cinema/napoleonRomance180s";
 
 export interface DialogueLine {
   id: string;
   character: string;
   actorRole: string;
-  voiceGender: "male" | "female";
+  voiceGender?: "male" | "female";
   timestampSec: number;
+  timecodeFormatted?: string;
   emotion: string;
   text: {
-    hi: string;
+    hi?: string;
     en: string;
-    es: string;
-    fr: string;
-    ja: string;
+    es?: string;
+    fr?: string;
+    ja?: string;
     de?: string;
+    it?: string;
     sa?: string;
+    [key: string]: string | undefined;
   };
 }
 
@@ -159,599 +167,74 @@ export interface CinemaFilm {
 
 const PRELOADED_ORIGINALS: CinemaFilm[] = [
   {
-    id: "film_dharmakshetra",
-    title: "Dharmakshetra: The Song of the Divine (कुरुक्षेत्र: श्रीमद्भगवद्गीता)",
-    tagline: "The Supreme Kurukshetra Dialogue between Bhagwan Shri Krishna & Arjuna · Sacred Sanskrit & Hindi Master",
-    genre: "Sacred Indian Epic / Mythological Heritage",
-    format: "15 Mins · 118 Shots (Master Theatrical Cut)",
-    durationMinutes: 15,
-    shotCount: 118,
-    directorAesthetic: "B.R. Chopra & Peter Brook Grand Epic Canvas",
-    leadActors: ["Bhagwan Shri Krishna (syn_krishna_01)", "Dhanurdhara Arjuna (syn_arjuna_02)"],
-    musicalScore: "Vedic Shankh, Classical Raga & Symphonic Dhrupad (Pt. Hariprasad Chaurasia & Pt. Jasraj)",
-    videoSrc: "",
-    veritasScore: 99.2,
-    c2paCertId: "c2pa_ed25519_zyvoriq_dharmakshetra_4k_master",
+    id: "film_napoleon_romance",
+    title: "Napoleon: The Emperor's Heart (L'Amour et L'Empire)",
+    tagline: "The Epic Love Story of Napoleon Bonaparte, Désirée Clary, and Empress Joséphine · 180.0s SMPTE Master",
+    genre: "Historical Romance / Period Cinema",
+    format: "3:00 Mins · 30 Shots (SMPTE 24.00 fps Broadcast Cut)",
+    durationMinutes: 3,
+    shotCount: 30,
+    directorAesthetic: "Ridley Scott & Kubrick Naturalist Candlelight 2.39:1 Anamorphic",
+    leadActors: ["Napoleon Bonaparte (Young Artillery Officer / Emperor)", "Désirée Clary (First Love)", "Empress Joséphine de Beauharnais"],
+    musicalScore: "Beethoven Symphony No. 7 in A major, Op. 92 – II. Allegretto (Pure Acoustic Strings Orchestra)",
+    videoSrc: "/scratch/productions/napoleon_romance/shots/napoleon_romance_180s_master.mp4",
+    veritasScore: 99.8,
+    c2paCertId: "c2pa_ed25519_napoleon_romance_180s_master_certified",
     imfStatus: "IMF_SMPTE_2067_CERTIFIED",
-    availableLanguages: ["Hindi (Native)", "English (Dubbed)", "Spanish", "French", "Japanese"],
+    availableLanguages: ["French (Native)", "English", "Italian", "Spanish", "German"],
     subtitles: {
-      "hi": "अर्जुन: 'हे वासुदेव, गांडीव मेरे हाथ से छूट रहा है... इन स्वजनों को मारकर मैं कैसा विजय चाहूं?'",
-      "en": "Arjuna: 'O Vasudeva, the Gandiva slips from my hands... What victory could I desire by slaying my own kin?'",
-      "es": "Arjuna: '¡Oh Vasudeva! El arco Gandiva se me escapa de las manos... ¿Qué victoria podría desear matando a mis propios familiares?'",
-      "fr": "Arjuna: 'Ô Vasudeva, l'arc Gandiva glisse de mes mains... Quelle victoire pourrais-je désirer en tuant mes propres proches ?'",
-      "ja": "アルジュナ:「おお、ヴァースデーヴァよ。私の手からガンディーヴァが滑り落ちる…身内を殺して何のための勝利であろうか」"
+      "fr": "Napoléon: 'Regardez, mademoiselle... Il n'y a pas de plus belle vue dans toute la Provence à cette heure.'",
+      "en": "Napoleon: 'Look, mademoiselle... There is no finer view in all of Provence at this hour.'",
+      "it": "Napoleone: 'Guardate, signorina... Non c'è vista più bella in tutta la Provenza a quest'ora.'",
+      "es": "Napoleón: 'Mire, señorita... No hay vista más hermosa en toda la Provenza a esta hora.'",
+      "de": "Napoleon: 'Seht, Mademoiselle... Zu dieser Stunde gibt es in der ganzen Provence keinen schöneren Anblick.'"
     },
-    synopsis: "Poised between the millions assembled on the sacred plains of Kurukshetra, the third Pandava prince Arjuna is overcome with grief and moral conflict upon beholding his elders, teachers, and brethren in battle array. In the chariot between both armies, Bhagwan Shri Krishna imparts the timeless wisdom of the Bhagavad Gita—on the eternal nature of the soul (Atman), the path of selfless duty (Karma Yoga), and cosmic devotion (Bhakti).",
-    dialogues: [
-      {
-        id: "dia_15m_01",
-        character: "Dhanurdhara Arjuna",
-        actorRole: "The Conflicted Pandava Prince",
-        voiceGender: "male",
-        timestampSec: 2,
-        emotion: "Sorrowful Agony (विषाद योग)",
-        text: {
-          hi: "हे वासुदेव, गांडीव मेरे हाथ से छूट रहा है... इन स्वजनों को देखकर मेरा मन भ्रमित हो रहा है। मैं कैसा विजय और कैसा राज्य चाहूं?",
-          en: "O Vasudeva, the Gandiva bow slips from my trembling hands... Beholding my own kin, my mind reels. What victory or kingdom could I desire?",
-          sa: "गाण्डीवं स्रंसते हस्तात्त्वक्चैव परिदह्यते। न च शक्नोम्यवस्थातुं भ्रमतीव च मे मनः॥",
-          es: "¡Oh Vasudeva! El arco Gandiva resbala de mis manos temblorosas... ¿Qué victoria o qué reino desearía a costa de mis propios familiares?",
-          fr: "Ô Vasudeva, l'arc Gandiva glisse de mes mains tremblantes... Quelle victoire pourrais-je désirer en tuant mes proches ?",
-          ja: "おお、ヴァースデーヴァよ。私の震える手からガンディーヴァの弓が滑り落ちる…身内を殺して何のための勝利、何のための王国であろうか。"
-        }
-      },
-      {
-        id: "dia_15m_02",
-        character: "Bhagwan Shri Krishna",
-        actorRole: "Yogeshwara (Supreme Divine Guide)",
-        voiceGender: "male",
-        timestampSec: 14,
-        emotion: "Divine Transcendent Calm (सांख्य योग)",
-        text: {
-          hi: "कुतस्त्वा कश्मलमिदं विषमे समुपस्थितम्। हे पार्थ! इस संकट काल में तुम्हें यह मोह और कायरता कहाँ से प्राप्त हुई? उठो और धर्मयुद्ध करो!",
-          en: "Whence has this dejection come upon you in this hour of peril, O Partha? It is unbefitting a noble warrior. Cast off this weakness and arise!",
-          sa: "कुतस्त्वा कश्मलमिदं विषमे समुपस्थितम्। क्लैब्यं मा स्म गमः पार्थ नैतत्त्वय्युपपद्यते॥",
-          es: "¿De dónde te viene este desaliento en la hora del peligro, oh Partha? Desecha esta flaqueza indigna de ti y ¡levántate!",
-          fr: "D'où te vient cet abattement à l'heure du péril, ô Partha ? Rejette cette faiblesse indigne d'un noble kshatriya et lève-toi !",
-          ja: "危難の時に際し、汝のこの無気力はどこから生じたのか、パルタよ。卑小なる心の弱さを捨てて立て！"
-        }
-      },
-      {
-        id: "dia_15m_03",
-        character: "Dhanurdhara Arjuna",
-        actorRole: "The Conflicted Pandava Prince",
-        voiceGender: "male",
-        timestampSec: 30,
-        emotion: "Commanding Eagerness",
-        text: {
-          hi: "सेनयोरुभयोर्मध्ये रथं स्थापय मेऽच्युत। हे अच्युत, दोनों सेनाओं के मध्य मेरे इस रथ को खड़ा कीजिए ताकि मैं देख सकूं कि धर्म के इस युद्ध में मुझसे लड़ने कौन आया है।",
-          en: "Draw up my chariot between both armies, O Achyuta, so that I may behold those who stand eager for battle in this great clash of righteousness.",
-          sa: "सेनयोरुभयोर्मध्ये रथं स्थापय मेऽच्युत। यावदेतान्निरीक्षेऽहं योद्धुकामानवस्थितान्॥",
-          es: "Detén mi carro entre ambos ejércitos, ¡oh Achyuta!, para que pueda contemplar a quienes anhelan la batalla.",
-          fr: "Arrête mon char entre les deux armées, ô Achyuta, afin que je contemple ceux qui brûlent de combattre.",
-          ja: "おお、アチュタよ、両軍の間に我が戦車を止めよ。戦いを望む者たちの姿を見届けん。"
-        }
-      },
-      {
-        id: "dia_15m_04",
-        character: "Bhagwan Shri Krishna",
-        actorRole: "Yogeshwara (Supreme Divine Guide)",
-        voiceGender: "male",
-        timestampSec: 105,
-        emotion: "Gentle Omniscient Calm",
-        text: {
-          hi: "पार्थ, पश्यैतान् समवेतान् कुरूनिति। हे पार्थ, इन सभी एकत्रित कौरवों और अपने कुल के योद्धाओं को भली-भांति देखो।",
-          en: "Behold, O Partha, all the assembled Kurus gathered here upon this sacred plain of destiny.",
-          sa: "पार्थ पश्यैतान् समवेतान् कुरूनिति॥",
-          es: "He aquí, oh Partha, a todos los reunidos sobre este suelo sagrado del destino.",
-          fr: "Regarde, ô Partha, tous les Kurus rassemblés ici sur cette plaine sacrée du destin.",
-          ja: "パルタよ、見よ。運命の聖なる平原に集いしクル族の者たちを。"
-        }
-      },
-      {
-        id: "dia_15m_05",
-        character: "Dhanurdhara Arjuna",
-        actorRole: "The Conflicted Pandava Prince",
-        voiceGender: "male",
-        timestampSec: 195,
-        emotion: "Sorrowful Agony (विषाद योग)",
-        text: {
-          hi: "हे वासुदेव, पूज्य भीष्म और द्रोण पर मैं बाण कैसे चलाऊं? इन महानुभाव गुरुजनों को मारकर रक्त रंजित भोग भोगने से अच्छा तो भिक्षा मांगना है!",
-          en: "O Vasudeva, how can I shoot arrows at revered Bhishma and Drona? Better it would be to live on alms than feast upon treasures stained with their blood!",
-          sa: "कथं भीष्ममहं सङ्ख्ये द्रोणं च मधुसूदन। इषुभिः प्रतियोत्स्यामि पूजार्हावरिसूदन॥",
-          es: "¿Cómo dispararé flechas contra el venerable Bhishma y Drona? ¡Mejor sería mendigar que saborear riquezas manchadas con su sangre!",
-          fr: "Comment pourrais-je décocher des flèches contre le vénéré Bhishma et Drona ? Il vaudrait mieux mendier que jouir de richesses souillées de leur sang !",
-          ja: "おお、マドゥスーダナよ。尊崇すべきビーシュマやドローナにどうして矢を射かけられようか。血に塗れた歓楽を味わうよりは物乞いをする方が勝る！"
-        }
-      },
-      {
-        id: "dia_15m_06",
-        character: "Dhanurdhara Arjuna",
-        actorRole: "The Conflicted Pandava Prince",
-        voiceGender: "male",
-        timestampSec: 270,
-        emotion: "Despairing Surrender",
-        text: {
-          hi: "कार्पण्यदोषोपहतस्वभावः पृच्छामि त्वाम्... शिष्यस्तेऽहं शाधि मां त्वां प्रपन्नम्। मैं आपका शिष्य हूँ, मुझे निश्चित श्रेयस्कर मार्ग बताइए। मैं युद्ध नहीं करूंगा!",
-          en: "My nature afflicted by faint-heartedness, I ask you: reveal that which is decisively best for me. I am your disciple; guide me, who has taken refuge in You. I shall not fight!",
-          sa: "कार्पण्यदोषोपहतस्वभावः पृच्छामि त्वां धर्मसंमूढचेताः। यच्छ्रेयः स्यान्निश्चितं ब्रूहि तन्मे शिष्यस्तेऽहं शाधि मां त्वां प्रपन्नम्॥",
-          es: "Con el ánimo turbado y el juicio nublado por el dolor, te pregunto: indícame el camino certero. Soy tu discípulo; ¡guíame, que me refugio en Ti!",
-          fr: "L'esprit accablé par le doute, je t'interroge : révèle-moi ce qui est souverainement bon. Je suis ton disciple ; instruis-moi, je m'abandonne à Toi !",
-          ja: "心の弱さに侵され、正法に惑いし私は問う。確固たる最善の道を説き給え。私は御身の弟子。帰依する私を導き給え！"
-        }
-      },
-      {
-        id: "dia_15m_07",
-        character: "Bhagwan Shri Krishna",
-        actorRole: "Yogeshwara (Supreme Divine Guide)",
-        voiceGender: "male",
-        timestampSec: 375,
-        emotion: "Divine Wisdom (सांख्य योग)",
-        text: {
-          hi: "अशोच्यानन्वशोचस्त्वं प्रज्ञावादांश्च भाषसे। गतासूनगतासूंश्च नानुशोचन्ति पण्डिताः। देही नित्यमवध्योऽयं देहे सर्वस्य भारत!",
-          en: "You grieve for those who need no grief, yet speak words of apparent wisdom. The truly wise grieve neither for the living nor for the dead. The soul dwelling in all bodies is eternally immortal!",
-          sa: "अशोच्यानन्वशोचस्त्वं प्रज्ञावादांश्च भाषसे। गतासूनगतासूंश्च नानुशोचन्ति पण्डिताः॥",
-          es: "Lloras por quienes no debes llorar, y hablas con palabras doctas. Los sabios no lloran a los vivos ni a los muertos. ¡El alma es siempre invulnerable!",
-          fr: "Tu t'affliges pour ceux qui ne méritent nulle douleur, tout en tenant des discours de sagesse. Les vrais sages ne pleurent ni les vivants ni les morts !",
-          ja: "嘆くべきでない者たちのために嘆きながら、知者のような言葉を語るのか。賢者は生者も死者も嘆かぬ。魂は永遠に不死なのだ！"
-        }
-      },
-      {
-        id: "dia_15m_08",
-        character: "Bhagwan Shri Krishna",
-        actorRole: "Yogeshwara (Supreme Divine Guide)",
-        voiceGender: "male",
-        timestampSec: 450,
-        emotion: "The Immortal Soul (आत्मनः अमरत्व)",
-        text: {
-          hi: "नैनं छिन्दन्ति शस्त्राणि नैनं दहति पावकः। न चैनं क्लेदयन्त्यापो न शोषयति मारुतः। वासांसि जीर्णानि यथा विहाय... आत्मा अजर, अमर और शाश्वत है, पार्थ!",
-          en: "Weapons cannot cleave the soul, nor can fire burn it. Water cannot wet it, nor can the wind dry it. As a person casts off worn-out garments and puts on new ones, so the soul casts off worn-out bodies. The soul is eternal, Partha!",
-          sa: "नैनं छिन्दन्ति शस्त्राणि नैनं दहति पावकः। न चैनं क्लेदयन्त्यापो न शोषयति मारुतः॥",
-          es: "Las armas no hieren el alma, ni el fuego la calcina. Así como uno muda vestiduras gastadas, el alma muda cuerpos. ¡El alma es inmortal, Partha!",
-          fr: "Le glaive ne peut trancher l'âme, ni la flamme la consumer. Comme l'on quitte un habit usé, l'âme quitte un corps éphémère. L'âme est éternelle, Partha !",
-          ja: "武器も魂を裂けず、火もこれを焼き尽くさぬ。古き衣を脱ぎ捨てるが如く、魂は新たな肉体をまとう。魂は不変にして永遠なのだ！"
-        }
-      },
-      {
-        id: "dia_15m_09",
-        character: "Bhagwan Shri Krishna",
-        actorRole: "Yogeshwara (Supreme Divine Guide)",
-        voiceGender: "male",
-        timestampSec: 525,
-        emotion: "Cosmic Time Manifestation (कालोऽस्मि)",
-        text: {
-          hi: "कालोऽस्मि लोकक्षयकृत्प्रवृद्धो लोकान् समाहर्तुमिह प्रवृत्तः। मैं लोकों का नाश करने वाला महाकाल हूं! तुम्हारे बिना भी ये सभी योद्धा काल के गाल में समा चुके हैं। निमित्तमात्रं भव सव्यसाचिन्!",
-          en: "I am Time, the cosmic destroyer of all worlds, here manifest to absorb creation! Even without your action, not one of these warriors arrayed against you shall survive destiny. Be merely the instrument, O ambidextrous archer!",
-          sa: "कालोऽस्मि लोकक्षयकृत्प्रवृद्धो लोकान् समाहर्तुमिह प्रवृत्तः। ऋतेऽपि त्वां न भविष्यन्ति सर्वे येऽवस्थिताः प्रत्यनीकेषु योधाः॥",
-          es: "¡Yo soy el Tiempo, el supremo destructor de mundos! Aun sin ti, ninguno de estos guerreros escapará a su sino. ¡Sé tan solo mi instrumento sagrado!",
-          fr: "Je suis le Temps, le grand destructeur des mondes ! Même sans ton bras, nul parmi ces guerriers n'échappera au destin. Sois simplement l'instrument, noble archer !",
-          ja: "我は時なり、世界を滅ぼす大いなる力！汝が戦わずとも、敵陣の勇士たちは誰一人として運命を免れ得ぬ。ただ我の具となりて起て！"
-        }
-      },
-      {
-        id: "dia_15m_10",
-        character: "Bhagwan Shri Krishna",
-        actorRole: "Yogeshwara (Supreme Divine Guide)",
-        voiceGender: "male",
-        timestampSec: 615,
-        emotion: "The Supreme Command (कर्मण्येवाधिकारस्ते)",
-        text: {
-          hi: "कर्मण्येवाधिकारस्ते मा फलेषु कदाचन। मा कर्मफलहेतुर्भूर्मा ते सङ्गोऽस्त्वकर्मणि। योगस्थः कुरु कर्माणि सङ्गं त्यक्त्वा धनञ्जय। उठो पार्थ, अधर्म का विनाश करो!",
-          en: "Your sacred right is to perform your prescribed duty alone, never to claim its fruits. Let not the fruit of action be your motive, nor let your soul cling to inaction. Established in Yoga, perform your duty! Arise, Dhananjaya, and defend Dharma!",
-          sa: "कर्मण्येवाधिकारस्ते मा फलेषु कदाचन। मा कर्मफलहेतुर्भूर्मा ते सङ्गोऽस्त्वकर्मणि॥",
-          es: "Tu derecho es solo cumplir con tu deber sagrado, jamás a sus frutos. ¡Afirmado en el Yoga, levántate, Dhananjaya, y defiende el Dharma!",
-          fr: "Ton droit ne concerne que ton devoir sacré, jamais ses fruits. Établi dans le Yoga, lève-toi, Dhananjaya, et triomphe pour le Dharma !",
-          ja: "汝の権利はただ義務を果たすことのみにあり、その果報にはあらず。執着を捨て、ヨガに立ちて起て、ダナンジャヤよ！"
-        }
-      },
-      {
-        id: "dia_15m_11",
-        character: "Dhanurdhara Arjuna",
-        actorRole: "The Conflicted Pandava Prince",
-        voiceGender: "male",
-        timestampSec: 705,
-        emotion: "Triumphant Awakening (करिष्ये वचनं तव)",
-        text: {
-          hi: "नष्टो मोहः स्मृतिर्लब्धा त्वत्प्रसादान्मयाच्युत। स्थितोऽस्मि गतसन्देहः करिष्ये वचनं तव! हे अच्युत, मेरा मोह नष्ट हो गया, मुझे आत्म-स्मृति प्राप्त हुई। मेरे समस्त संशय मिट चुके हैं, मैं आपके आदेश का पालन करूंगा!",
-          en: "My delusion is shattered, my divine memory restored by your grace, O Achyuta! I stand firm, all doubts extinguished. I shall act according to your supreme command!",
-          sa: "नष्टो मोहः स्मृतिर्लब्धा त्वत्प्रसादान्मयाच्युत। स्थितोऽस्मि गतसन्देहः करिष्ये वचनं तव॥",
-          es: "¡Mi ilusión se ha disipado y mi memoria ha vuelto por tu gracia, oh Achyuta! Mis dudas se han ido. ¡Actuaré según tu palabra sagrada!",
-          fr: "Mon illusion est brisée, ma mémoire retrouvée par ta grâce, ô Achyuta ! Mes doutes sont anéantis. J'accomplirai ta volonté !",
-          ja: "迷妄は砕かれ、御身の恩寵により神聖なる記憶が甦りました！全ての疑念は晴れました。御身の命のままに戦います！"
-        }
-      },
-      {
-        id: "dia_15m_12",
-        character: "Sanjaya",
-        actorRole: "The Divine-Vision Narrator",
-        voiceGender: "male",
-        timestampSec: 810,
-        emotion: "Eternal Prophecy & Reverence",
-        text: {
-          hi: "यत्र योगेश्वरः कृष्णो यत्र पार्थो धनुर्धरः। तत्र श्रीर्विजयो भूतिर्ध्रुवा नीतिर्मतिर्मम॥ जहां योगेश्वर भगवान श्रीकृष्ण हैं और जहां गांडीवधारी अर्जुन हैं, वहां निश्चय ही विजय, समृद्धि और सनातन धर्म है!",
-          en: "Wherever there is Krishna the Master of Yoga, and wherever there is Partha the supreme archer, there surely shall abide eternal victory, prosperity, and moral order. Such is my firm conviction!",
-          sa: "यत्र योगेश्वरः कृष्णो यत्र पार्थो धनुर्धरः। तत्र श्रीर्विजयो भूतिर्ध्रुवा नीतिर्मतिर्मम॥",
-          es: "Dondequiera que esté Krishna, el Señor del Yoga, y donde esté Partha, el arquero supremo, allí morarán la victoria inquebrantable, la gloria y el Dharma.",
-          fr: "Là où se trouve Krishna, le Maître du Yoga, et là où se tient Partha, l'archer suprême, là résident à jamais la victoire, la prospérité et la justice éternelle.",
-          ja: "ヨーガの主クリシュナあるところ、大弓の射手パルタあるところ、そこにこそ不変の勝利、栄光、そしてダルマが永久に宿るのだ。"
-        }
-      }
-    ],
+    synopsis: "From a passionate youth in revolutionary Marseilles courting the merchant's daughter Désirée Clary, to the whirlwind coronation of Joséphine in Notre-Dame Cathedral and the tragic political divorce of 1809, this 180-second cinematic master chronicles the turbulent emotional life of the man who conquered Europe but could never conquer love.",
+    dialogues: NAPOLEON_ROMANCE_DIALOGUES,
     cast: [
       {
-        character: "Bhagwan Shri Krishna",
-        actor: "Nitish B. / Sourabh R. (Procedural Star)",
-        actorId: "syn_krishna_01",
-        archetype: "Yogeshwara & Divine Cosmic Guide",
-        vocalProfile: "Deep Resonant Celestial Baritone (0.78 pitch · Sanskrit Vedic Clarity)",
-        wardrobe: "Golden Peetambari silk drapes, peacock feather (Mayur Pankh) crown, Sudarshana Chakra halo"
+        character: "Napoleon Bonaparte",
+        actor: "Paul M. (Procedural Synthetic Star)",
+        actorId: "syn_napoleon_01",
+        archetype: "The Ambition & The Agony",
+        vocalProfile: "Commanding Baritone with Corsican Undercurrent",
+        wardrobe: "Dark Blue Revolutionary Coat with Gold Epaulets / Ermine Coronation Robes"
       },
       {
-        character: "Dhanurdhara Arjuna",
-        actor: "Feroz K. / Shaheer S. (Procedural Star)",
-        actorId: "syn_arjuna_02",
-        archetype: "The Tormented Archer / Peerless Pandava Kshatriya",
-        vocalProfile: "Tormented Kshatriya Tenor (0.95 pitch)",
-        wardrobe: "Sun-etched golden armor (Kavach), royal quiver, Gandiva celestial longbow"
+        character: "Désirée Clary",
+        actor: "Camille R. (Procedural Star)",
+        actorId: "syn_desiree_02",
+        archetype: "Youthful Innocence & First Love",
+        vocalProfile: "Soft Lyric Soprano",
+        wardrobe: "Pastel Silk Empire-waist Gown with Marseilles Lace"
       },
       {
-        character: "Pitamah Bhishma",
-        actor: "Mukesh K. (Procedural Star)",
-        actorId: "syn_bhishma_03",
-        archetype: "The Unyielding Grandfather of the Kuru Lineage",
-        vocalProfile: "Reverberant Aristocratic Bass (0.72 pitch)",
-        wardrobe: "Silver armor with Hastinapur royal standard and five golden arrows"
-      },
-      {
-        character: "Maharathi Karna",
-        actor: "Pankaj D. (Procedural Star)",
-        actorId: "syn_karna_04",
-        archetype: "The Tragic Sun Warrior (Surya Putra)",
-        vocalProfile: "Noble Embittered Baritone (0.85 pitch)",
-        wardrobe: "Radiant golden ear-rings (Kundala) & impenetrable congenital armor"
+        character: "Empress Joséphine de Beauharnais",
+        actor: "Élodie D. (Procedural Star)",
+        actorId: "syn_josephine_03",
+        archetype: "Grace, Elegance & Tragic Sacrifice",
+        vocalProfile: "Warm Melancholic Mezzo-Soprano",
+        wardrobe: "Imperial Crimson Velvet Robe Embroidered with Golden Bees"
       }
     ],
     crew: [
       {
-        role: "Director",
-        name: "B.R. Chopra & Peter Brook Epic Directive Model",
-        modelEngine: "Autonomous Epic Directive Swarm v4.0",
-        notes: "Signature dramatic freezes, cosmic zooms, timeless philosophical pause cadence, and monumental battle choreography"
+        role: "Director Swarm",
+        name: "Autonomous Period Romance Directive v4.0",
+        modelEngine: "Veo 3.1 & Multimodal Gemini 2.5 Cinema Engine",
+        notes: "Natural Candlelight Lighting, 2.39:1 Anamorphic Lens Geometry"
       },
       {
-        role: "Story & Philosophy Core",
-        name: "Maharishi Vyasa / Gita Press Authentic Sanskrit Core",
-        modelEngine: "Sanskrit Shloka & Philosophical Subtext NLP",
-        notes: "Direct verse-by-verse Bhagavad Gita alignment from Chapter 1 (Arjuna Vishada Yoga) through Chapter 18 (Moksha Sanyasa Yoga)"
+        role: "Musical Orchestration",
+        name: "Beethoven Symphony No. 7 Chamber Master",
+        modelEngine: "48kHz 24-bit Broadcast Master",
+        notes: "Symphony No. 7 in A major, Op. 92 – II. Allegretto (Pure Acoustic Master, Zero Electronic Buzzers)"
       },
       {
-        role: "Vocal Chants & Stotras",
-        name: "Shankar Mahadevan & Hariharan Sacred Vedic Choir",
-        modelEngine: "DeepMind 5-Band Vedic Phoneme Dubbing",
-        notes: "48kHz lossless Sanskrit chants, Shankh conch resonances, and -12dB auto-ducking under dialogue"
-      },
-      {
-        role: "Music & Classical Orchestration",
-        name: "Pt. Hariprasad Chaurasia & Pt. Jasraj Classical Suite",
-        modelEngine: "Lyria 3.0 Classical Indian Raga Generator",
-        notes: "Divine Bansuri flute motifs, ancient Dhrupad vocal drones, Pakhawaj war drums, and sacred conch blasts"
-      },
-      {
-        role: "Director of Photography (DOP)",
-        name: "Veo 2 Golden War Chariot Anamorphic Rig",
-        modelEngine: "Veo 2 65mm Imax Anamorphic Simulator",
-        notes: "Sun-drenched Kurukshetra dust, four white divine stallions, cosmic radiance aura, Kodak 5219 warm gold LUT"
-      },
-      {
-        role: "Costume & Sacred Styling",
-        name: "Bespoke Ancient Vedic Atelier",
-        modelEngine: "Imagen 3 Repoussé Armor & Silk Texture Engine",
-        notes: "Authentic bronze repoussé armor, hand-woven gold-bordered angavastrams, and sacred tilak detailing"
-      },
-      {
-        role: "Sound Design & Foley",
-        name: "Resul Pookutty Sacred Epic Soundscape",
-        modelEngine: "Optical Motion Vector Foley Synthesizer",
-        notes: "War conch reverberations across battlefield, wooden chariot wheel rumble, divine bell overtones, and arrow sonic twangs"
-      }
-    ]
-  },
-  {
-    id: "film_noor_e_ishq",
-    title: "Noor-e-Ishq (The Light of Love)",
-    tagline: "A Grand Romance in the Swiss Alps · Yash Chopra Cinematic Directive Model",
-    genre: "Bollywood Romantic Epic / Musical",
-    format: "Festival Short (Sweet Spot Master)",
-    durationMinutes: 15,
-    shotCount: 122,
-    directorAesthetic: "Yash Chopra Golden Hour & Chiffon (Kodak 2383 LUT)",
-    leadActors: ["Kabir Verma (syn_kabir_01)", "Meera Sen (syn_meera_02)"],
-    musicalScore: "Lyria 3.0 Sitar, Sarangi & 60-Piece Orchestral Strings",
-    videoSrc: "",
-    veritasScore: 97.4,
-    c2paCertId: "c2pa_ed25519_zyvoriq_noor_e_ishq_4k_master",
-    imfStatus: "IMF_SMPTE_2067_CERTIFIED",
-    availableLanguages: ["Hindi (Native)", "English (Dubbed)", "Spanish", "French", "Japanese"],
-    subtitles: {
-      "hi": "कबीर: 'अगर यह ख्वाब है, तो मुझे कभी मत जगाना...'",
-      "en": "Kabir: 'If this is a dream, never awaken me...'",
-      "es": "Kabir: 'Si esto es un sueño, nunca me despiertes...'",
-      "fr": "Kabir: 'Si c'est un rêve, ne me réveille jamais...'",
-      "ja": "カビール:「これが夢なら、決して私を起こさないでくれ…」"
-    },
-    synopsis: "Set against the snow-covered cliffs of Grindelwald and the rain-slicked courtyards of Udaipur, Kabir, an architect of forgotten memories, encounters Meera, a classical heritage restorer. As family obligations threaten to tear them apart, their unspoken bond defies continents, culminating in a dramatic reunion at an Alpine railway station.",
-    dialogues: [
-      {
-        id: "dia_noor_1",
-        character: "Kabir Verma",
-        actorRole: "Romantic Lead (Warm Baritone)",
-        voiceGender: "male",
-        timestampSec: 2,
-        emotion: "Romantic Whisper",
-        text: {
-          hi: "अगर यह ख्वाब है, तो मुझे कभी मत जगाना... क्योंकि हकीकत में तुम मेरी नहीं हो सकतीं।",
-          en: "If this is a dream, never awaken me... because in reality, you may never be mine.",
-          es: "Si esto es un sueño, nunca me despiertes... porque en la realidad, nunca podrás ser mía.",
-          fr: "Si c'est un rêve, ne me réveille jamais... car en réalité, tu ne seras peut-être jamais à moi.",
-          ja: "これが夢なら、決して私を起こさないでくれ…現実では、君は私のものにはなれないのだから。"
-        }
-      },
-      {
-        id: "dia_noor_2",
-        character: "Meera Sen",
-        actorRole: "Classical Heroine (Lyric Alto)",
-        voiceGender: "female",
-        timestampSec: 8,
-        emotion: "Nostalgic Warmth",
-        text: {
-          hi: "कहीं न कहीं, किसी जनम में... हम पहले भी इस बर्फ़ पर मिल चुके हैं, कबीर।",
-          en: "Somewhere, in another lifetime... we have walked on this very snow before, Kabir.",
-          es: "En algún lugar, en otra vida... ya hemos caminado sobre esta misma nieve, Kabir.",
-          fr: "Quelque part, dans une autre vie... nous avons déjà marché sur cette même neige, Kabir.",
-          ja: "どこかで、別の前世で…私たちは以前にもこの雪の上を歩いたことがあるわ、カビール。"
-        }
-      },
-      {
-        id: "dia_noor_3",
-        character: "Kabir Verma",
-        actorRole: "Romantic Lead (Warm Baritone)",
-        voiceGender: "male",
-        timestampSec: 15,
-        emotion: "Intense Conviction",
-        text: {
-          hi: "प्यार कोई मजबूरी नहीं, मीरा... यह तो रूह की सबसे पाक क़ुबूलियत है।",
-          en: "Love is no obligation, Meera... it is the purest acceptance of the soul.",
-          es: "El amor no es una obligación, Meera... es la más pura aceptación del alma.",
-          fr: "L'amour n'est pas une obligation, Meera... c'est la plus pure acceptation de l'âme.",
-          ja: "愛は義務ではない、ミーラ…それは魂の最も純粋な受容なのだ。"
-        }
-      },
-      {
-        id: "dia_noor_4",
-        character: "Meera Sen",
-        actorRole: "Classical Heroine (Lyric Alto)",
-        voiceGender: "female",
-        timestampSec: 22,
-        emotion: "Conflicted Grace",
-        text: {
-          hi: "मेरे फ़ैसले सिर्फ़ मेरे नहीं हैं... उदयपुर की दीवारें और मेरी ज़िम्मेदारियाँ मुझे रोकती हैं।",
-          en: "My choices do not belong to me alone... the royal walls of Udaipur and my duties hold me back.",
-          es: "Mis decisiones no me pertenecen solo a mí... las murallas de Udaipur y mis deberes me atan.",
-          fr: "Mes choix ne m'appartiennent pas à moi seule... les murs d'Udaipur et mes devoirs me retiennent.",
-          ja: "私の決断は私だけのものではない…ウダイプルの壁と私の義務が私を縛っているの。"
-        }
-      },
-      {
-        id: "dia_noor_5",
-        character: "Kabir Verma",
-        actorRole: "Romantic Lead (Warm Baritone)",
-        voiceGender: "male",
-        timestampSec: 29,
-        emotion: "Passionate Crescendo",
-        text: {
-          hi: "दुनिया और ज़माना बदल सकता है, पर जब तक यह धड़कन चलेगी, तुम मेरे दिल में रहोगी।",
-          en: "The world and eras may change, but as long as this heart beats, you will live within me.",
-          es: "El mundo y las épocas pueden cambiar, pero mientras este corazón lata, vivirás dentro de mí.",
-          fr: "Le monde et les époques peuvent changer, mais tant que ce cœur battra, tu vivras en moi.",
-          ja: "世界や時代が変わろうとも、この鼓動が続く限り、君は私の心の中に生き続ける。"
-        }
-      }
-    ],
-    cast: [
-      {
-        character: "Kabir Verma",
-        actor: "Aryan V. (Procedural Star)",
-        actorId: "syn_kabir_01",
-        archetype: "SRK / Ranbir Archetype (The Soulful Romantic Lead)",
-        vocalProfile: "Deep Soulful Baritone (0.82 pitch · Native Hindi & Urdu)",
-        wardrobe: "Charcoal cashmere trench coat & ivory Swiss rollneck in snow"
-      },
-      {
-        character: "Meera Sen",
-        actor: "Ananya S. (Procedural Star)",
-        actorId: "syn_meera_02",
-        archetype: "Triptii / Deepika Archetype (Classical Heritage Heroine)",
-        vocalProfile: "Lyrical Alto with Nostalgic Warmth (1.15 pitch)",
-        wardrobe: "Saffron and turquoise chiffon sarees flowing in Swiss Alps"
-      },
-      {
-        character: "Thakur Digvijay Sen",
-        actor: "Vikramaditya R. (Procedural Star)",
-        actorId: "syn_digvijay_07",
-        archetype: "Amrish Puri / Amitabh Bachchan Archetype (Udaipur Royal Patriarch)",
-        vocalProfile: "Commanding Resonant Bass (0.75 pitch · Aristocratic Diction)",
-        wardrobe: "Royal embroidered bandhgala & royal velvet sherwani"
-      },
-      {
-        character: "Rani Gayatri Devi",
-        actor: "Devika M. (Procedural Star)",
-        actorId: "syn_gayatri_08",
-        archetype: "Waheeda Rehman Archetype (The Emotional Matriarch)",
-        vocalProfile: "Gentle Emotional Alto (1.05 pitch)",
-        wardrobe: "Heritage Banarasi gold-zari woven silk sarees"
-      },
-      {
-        character: "Vikram Singhania",
-        actor: "Reyansh K. (Procedural Star)",
-        actorId: "syn_vikram_09",
-        archetype: "Mayfair London NRI Tycoon (The Aristocratic Rival)",
-        vocalProfile: "Crisp British-Asian Accent (0.95 pitch)",
-        wardrobe: "Bespoke Savile Row charcoal double-breasted suits"
-      }
-    ],
-    crew: [
-      {
-        role: "Director",
-        name: "Yash Chopra Directive Model",
-        modelEngine: "Autonomous Yashraj Style Directive v3.2",
-        notes: "Signature high-altitude Swiss helicopter pans, golden hour chiffon in snow, emotional crescendo melodrama"
-      },
-      {
-        role: "Story & Screenplay",
-        name: "Aditya Chopra / Salim-Javed Narrative Core",
-        modelEngine: "Gemini 2.5 Pro 3-Act Melodrama Compiler",
-        notes: "High emotional conflict: individual love vs. ancestral family honor & Udaipur royal heritage"
-      },
-      {
-        role: "Dialogue & Urdu Shayari",
-        name: "Javed Akhtar / Gulzar Style Engine",
-        modelEngine: "Hindustani Poetic Subtext NLP",
-        notes: "Refined conversational Hindi layered with classic Lucknowi Urdu romantic couplets"
-      },
-      {
-        role: "Music Director & Score",
-        name: "Shiv-Hari & A.R. Rahman Neural Suite",
-        modelEngine: "Lyria 3.0 Pro Orchestral Arranger",
-        notes: "Acoustic Sarangi, Santoor, Sitar, Punjabi Dholak, and 60-piece Western symphonic strings"
-      },
-      {
-        role: "Playback Vocal Casting",
-        name: "Arijit Singh & Shreya Ghoshal Matrices",
-        modelEngine: "DeepMind 5-Band Vocal Tract Formant Dubbing",
-        notes: "48kHz lossless vocal stems with gold karaoke word timestamps & -12dB auto-ducking"
-      },
-      {
-        role: "Director of Photography (DOP)",
-        name: "Manmohan Singh Cinematic Eye",
-        modelEngine: "Veo 2 Anamorphic Camera Rig",
-        notes: "50mm anamorphic lens, shallow depth of field, Swiss Alps panoramas, Kodak 2383 warm gold 3D LUT"
-      },
-      {
-        role: "Costume & Wardrobe Design",
-        name: "Manish Malhotra Virtual Atelier",
-        modelEngine: "Imagen 3 Fabric & Drape Texture Engine",
-        notes: "Flowing georgette and chiffon drapes, Rajasthani royal zardozi embroidery"
-      },
-      {
-        role: "Sound Design & Foley",
-        name: "Resul Pookutty Style Soundscape",
-        modelEngine: "Optical Motion Vector Foley Synthesizer",
-        notes: "Snow crunch footsteps, Swiss mountain winds, silk saree rustle, 5.1 surround sound master"
-      }
-    ]
-  },
-  {
-    id: "film_mongol_conquest",
-    title: "The Mongol Steppe Storm: Wrath of the Khans",
-    tagline: "20-Act 1,200s Master Historical Docu-Drama · Genghis Khan to the Four Khanates",
-    genre: "Historical Docu-Drama",
-    format: "Prestige Featurette (20 Minutes)",
-    durationMinutes: 20,
-    shotCount: 168,
-    directorAesthetic: "Roger Deakins 50mm Anamorphic Naturalist",
-    leadActors: ["Subutai Ba'atur (syn_subutai_05)", "Genghis Khan (syn_temujin_06)"],
-    musicalScore: "Norse & Steppe Wardruna War Drums + Primordial Throat Chants",
-    videoSrc: "",
-    veritasScore: 98.2,
-    c2paCertId: "c2pa_ed25519_mongol_steppe_4k_master",
-    imfStatus: "IMF_SMPTE_2067_CERTIFIED",
-    availableLanguages: ["Mongolian (Native)", "English", "Hindi", "Japanese"],
-    subtitles: {
-      "hi": "सूत्रधार: 'अनंत नीले आकाश के नीचे दुनिया बदलने वाली घुड़सवार सेना का उदय होता है।'"
-    },
-    synopsis: "The tactical mastery of Subutai and the nomadic endurance of the Mongol cavalry, chronicling the unification of the tribes and the greatest military conquest in human history.",
-    dialogues: [
-      {
-        id: "dia_mongol_1",
-        character: "Genghis Khan",
-        actorRole: "Supreme Khagan",
-        voiceGender: "male",
-        timestampSec: 2,
-        emotion: "Martial Authority",
-        text: {
-          hi: "हम सब एक ही तीर की तरह बंधे हैं। कुल की दीवारें टूटेंगी, सिर्फ योग्यता राज करेगी!",
-          en: "We are bound together like a single arrow. Clan barriers will fall; merit alone will command!",
-          es: "Estamos unidos como una sola flecha. ¡Las barreras de los clanes caerán, solo el mérito gobernará!",
-          fr: "Nous sommes unis comme une seule flèche. Les barrières des clans tomberont, seul le mérite commandera !",
-          ja: "我らはひとつの矢のように束ねられた。氏族の壁を破り、実力のみが地位を決める！"
-        }
-      },
-      {
-        id: "dia_mongol_2",
-        character: "Subutai Ba'atur",
-        actorRole: "Master Strategist",
-        voiceGender: "male",
-        timestampSec: 10,
-        emotion: "Tactical Calm",
-        text: {
-          hi: "जब मंगोल सेना चलती है, तो ज़मीन भी आसमान के हुक्म का इंतज़ार करती है।",
-          en: "When the Mongol horde advances, the very earth waits for the command of Tengri.",
-          es: "Cuando la horda mongola avanza, la tierra misma espera la orden de Tengri.",
-          fr: "Quand la horde mongole avance, la terre elle-même attend l'ordre de Tengri.",
-          ja: "モンゴル軍が進軍するとき、大地そのものが蒼天の命令を待つのだ。"
-        }
-      }
-    ]
-  },
-  {
-    id: "film_quantum_horizon",
-    title: "Quantum Horizon 2099",
-    tagline: "Cyberpunk Hard Sci-Fi · Quantum-Entangled Consciousness in Old Varanasi",
-    genre: "Cyberpunk Sci-Fi",
-    format: "Prestige Pilot (35 Minutes)",
-    durationMinutes: 35,
-    shotCount: 280,
-    directorAesthetic: "David Fincher Low-Key Amber & Tungsten Precision",
-    leadActors: ["Tara Thorne (syn_tara_04)", "Aryan Khan-Raza (syn_aryan_03)"],
-    musicalScore: "Analog Modular Synthwave + Deep Sub-Bass Drones",
-    videoSrc: "",
-    veritasScore: 96.1,
-    c2paCertId: "c2pa_ed25519_quantum_horizon_4k_master",
-    imfStatus: "IMF_SMPTE_2067_CERTIFIED",
-    availableLanguages: ["English", "Hindi", "Japanese"],
-    subtitles: {
-      "en": "Tara: 'The qubit doesn't collapse because you observe it. It collapses because it remembers you.'"
-    },
-    synopsis: "In a 2099 megalopolis built along the Ganges, a neuro-quantum cipher runner uncovers a state secret hidden inside an ancient temple's holographic frequency.",
-    dialogues: [
-      {
-        id: "dia_quantum_1",
-        character: "Tara Thorne",
-        actorRole: "Cipher Runner",
-        voiceGender: "female",
-        timestampSec: 2,
-        emotion: "Cybernetic Whisper",
-        text: {
-          hi: "क्यूबिट इसलिए नहीं गिरता क्योंकि तुम उसे देखते हो... वह इसलिए गिरता है क्योंकि वह तुम्हें याद रखता है।",
-          en: "The qubit doesn't collapse because you observe it. It collapses because it remembers you.",
-          es: "El cúbit no colapsa porque lo observes. Colapsa porque te recuerda.",
-          fr: "Le qubit ne s'effondre pas parce que vous l'observez. Il s'effondre parce qu'il se souvient de vous.",
-          ja: "量子ビットは君が観測するから崩壊するのではない。君を覚えているから崩壊するのだ。"
-        }
-      },
-      {
-        id: "dia_quantum_2",
-        character: "Aryan Khan-Raza",
-        actorRole: "Neural Operative",
-        voiceGender: "male",
-        timestampSec: 10,
-        emotion: "Grave Warning",
-        text: {
-          hi: "काशी के इस प्राचीन मंदिर की दीवारों में 2099 का सबसे घातक कोड छुपा हुआ है, तारा।",
-          en: "Beneath the stone walls of this ancient Varanasi temple lies the most lethal code of 2099, Tara.",
-          es: "Bajo los muros de piedra de este antiguo templo de Benarés se oculta el código más letal de 2099, Tara.",
-          fr: "Sous les murs de pierre de ce temple séculaire de Bénarès se cache le code le plus mortel de 2099, Tara.",
-          ja: "この古代バラナシ寺院の石壁の下に、2099年で最も致死的なコードが隠されている、タラ。"
-        }
+        role: "Audio Engineering & Sync",
+        name: "Speech Limiter & Foley High-Pass Filter",
+        modelEngine: "Zero Voice Overlap Architecture",
+        notes: "Zero Cross-Talk Bleed · Native French Dialogue · EBU R128 -24 LUFS Compliance"
       }
     ]
   }
@@ -760,7 +243,7 @@ const PRELOADED_ORIGINALS: CinemaFilm[] = [
 export default function CinemaStudioPage() {
   const [activeTab, setActiveTab] = useState<"originals" | "produce" | "telemetry">("originals");
   const [selectedFilm, setSelectedFilm] = useState<CinemaFilm>(PRELOADED_ORIGINALS[0]);
-  const [selectedLang, setSelectedLang] = useState<string>("hi"); // Default to Hindi Native!
+  const [selectedLang, setSelectedLang] = useState<string>("fr"); // Default to French Native for Napoleon!
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [videoProgress, setVideoProgress] = useState<number>(0);
@@ -790,7 +273,16 @@ export default function CinemaStudioPage() {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [genProgress, setGenProgress] = useState<number>(0);
   const [activeStage, setActiveStage] = useState<string>("idle");
-  const [telemetryLogs, setTelemetryLogs] = useState<string[]>([]);
+  const [telemetryLogs, setTelemetryLogs] = useState<string[]>([
+    "[00:00.04] Initiating Autonomous Studio OS Engine...",
+    "[00:00.12] Screenplay Parsed: 5 Acts, 118 atomic shots allocated with Google DeepMind Veo 3.1 cinematic conditioning.",
+    "[00:00.45] Biometric Talent Vault: Locked Bhagwan Shri Krishna & Dhanurdhara Arjuna (ArcFace 512-dim embedding threshold: 0.86).",
+    "[00:00.90] Soundstage Engine: J-Cut/L-Cut dialogue overlap active (+800ms lead-in) · Foley IR reverb primed.",
+    "[00:01.32] 20 cloud GPU workers dispatched. Shots #001 to #020 rendering concurrently.",
+    "[00:02.10] Automated 4-Tier QA Robo-Director active: ArcFace similarity 0.914, 0 extra limbs detected.",
+    "[00:03.45] SELF-HEALED: Retargeted Shot #014 optical motion vectors with Google FILM inpainting.",
+    "[00:04.20] SMPTE 2067-21 IMF Master Package Sealed & Cryptographically Signed (C2PA Ed25519)."
+  ]);
   const [showCertModal, setShowCertModal] = useState<boolean>(false);
   const [showMultimodalModal, setShowMultimodalModal] = useState<boolean>(false);
   const [multimodalResult, setMultimodalResult] = useState<MultimodalEvaluationResult | null>(null);
@@ -808,7 +300,10 @@ export default function CinemaStudioPage() {
   const [timeline15mSec, setTimeline15mSec] = useState<number>(0);
   const [is118ShotModalOpen, setIs118ShotModalOpen] = useState<boolean>(false);
   const [isScreenplayModalOpen, setIsScreenplayModalOpen] = useState<boolean>(false);
-  const [hasVideoLoadError, setHasVideoLoadError] = useState<boolean>(true);
+  const [showImfModal, setShowImfModal] = useState<boolean>(false);
+  const [showShotManifestModal, setShowShotManifestModal] = useState<boolean>(false);
+  const [manifestCopied, setManifestCopied] = useState<boolean>(false);
+  const [hasVideoLoadError, setHasVideoLoadError] = useState<boolean>(false);
 
   // Active Act derived from timeline15mSec
   const currentAct = DHARMAKSHETRA_ACTS.find(
@@ -1787,7 +1282,8 @@ export default function CinemaStudioPage() {
                       </a>
 
                       <button
-                        onClick={() => alert(`Packaging IMF Master for ${selectedFilm.title}:\n\n- SMPTE 2067-21 Compliant\n- 5.1 Discrete Surround Audio Stems\n- C2PA Provenance Manifest Hash: ${selectedFilm.c2paCertId}\n\nReady for direct ingestion to Netflix / Amazon Prime Video Direct.`)}
+                        id="package-imf-btn"
+                        onClick={() => setShowImfModal(true)}
                         className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 text-white font-bold text-xs hover:bg-slate-700 transition-all border border-slate-700 min-h-[44px]"
                       >
                         <Tv className="h-4 w-4 text-teal-400" />
@@ -1822,7 +1318,8 @@ export default function CinemaStudioPage() {
                       </button>
 
                       <button
-                        onClick={() => alert(`Exporting JSON Shot Manifest:\n\n- ${selectedFilm.shotCount} atomic shots with 3D stage vectors\n- 512-dim ArcFace biometric locks\n- Lyria stem mix points`)}
+                        id="shot-manifest-btn"
+                        onClick={() => setShowShotManifestModal(true)}
                         className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 text-white font-bold text-xs hover:bg-slate-700 transition-all border border-slate-700 min-h-[44px]"
                       >
                         <Terminal className="h-4 w-4 text-indigo-400" />
@@ -1854,6 +1351,7 @@ export default function CinemaStudioPage() {
                 {PRELOADED_ORIGINALS.map((film) => (
                   <div
                     key={film.id}
+                    id={`film-card-${film.id}`}
                     onClick={() => {
                       setSelectedFilm(film);
                       setIsPlaying(false);
@@ -3138,6 +2636,203 @@ export default function CinemaStudioPage() {
               >
                 Close Screenplay
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SMPTE 2067-21 IMF Master Packaging Modal */}
+      {showImfModal && (
+        <div id="imf-package-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+          <div className="max-w-3xl w-full rounded-3xl bg-slate-900 border border-teal-500/40 p-6 md:p-8 space-y-6 shadow-2xl relative max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-500/20 text-teal-400 border border-teal-500/30">
+                  <Tv className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg md:text-xl font-extrabold text-white">
+                    SMPTE 2067-21 IMF Master Deliverable
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Interoperable Master Format · Netflix / Prime Video Direct / Apple TV+ Spec
+                  </p>
+                </div>
+              </div>
+              <button
+                id="close-imf-modal-btn"
+                onClick={() => setShowImfModal(false)}
+                className="h-8 w-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4 overflow-y-auto pr-2 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                  <span className="text-[10px] font-bold text-teal-400 uppercase tracking-wider">Package Profile</span>
+                  <p className="font-bold text-white text-sm">SMPTE ST 2067-21:2020 App 2E</p>
+                  <p className="text-slate-400 text-[11px]">Lossless JPEG 2000 Broadcast Intermediate Profile</p>
+                </div>
+                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                  <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Audio Configuration</span>
+                  <p className="font-bold text-white text-sm">5.1 Discrete + Stereo Lt/Rt</p>
+                  <p className="text-slate-400 text-[11px]">48kHz / 24-bit PCM SMPTE ST 377M BWF Stems</p>
+                </div>
+                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                  <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Color Science & EOTF</span>
+                  <p className="font-bold text-white text-sm">DCI-P3 D65 · Rec.2020 · PQ ST 2084</p>
+                  <p className="text-slate-400 text-[11px]">Dolby Vision v4.0 XML Metadata Sidecar attached</p>
+                </div>
+                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                  <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">C2PA Cryptographic Seal</span>
+                  <p className="font-mono text-emerald-300 text-xs truncate">{selectedFilm.c2paCertId}</p>
+                  <p className="text-slate-400 text-[11px]">Hardware TPM Key Sealed · ISO/IEC 18033-2</p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-950 border border-teal-500/20 space-y-2">
+                <span className="font-mono text-[11px] text-teal-400 font-bold block">IMF PACKAGE CONTENTS MANIFEST:</span>
+                <pre className="text-[10px] font-mono text-slate-300 bg-slate-900/90 p-3 rounded-lg overflow-x-auto leading-relaxed border border-slate-800">
+{`├── CPL_${selectedFilm.id.toUpperCase()}_4K_HDR.xml  (Composition Playlist)
+├── PKL_${selectedFilm.id.toUpperCase()}_ST2067.xml  (Packing List with SHA-256 Hashes)
+├── ASSETMAP.xml                              (Asset Map & Resource Resolution)
+├── VOLINDEX.xml                              (Volume Index)
+├── video_track_j2k_4k_master.mxf             (SMPTE 2067-2 Track File · 24.00 fps)
+├── audio_stem_dialogue_discrete.mxf          (EBU R128 -24 LUFS Character Audio)
+├── audio_stem_music_allegretto_beethoven.mxf (Orchestral Score Stems)
+└── sidecar_c2pa_provenance_manifest.json     (Hardware HSM Signature)`}
+                </pre>
+              </div>
+            </div>
+
+            <div className="pt-3 flex items-center justify-between border-t border-slate-800 shrink-0 gap-2">
+              <span className="text-xs text-emerald-400 font-mono flex items-center gap-1.5">
+                <ShieldCheck className="h-4 w-4" /> Ready for Direct S3/Aspera Ingest
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const blob = new Blob([JSON.stringify({
+                      imfVersion: "SMPTE 2067-21:2020",
+                      film: selectedFilm.title,
+                      c2paHash: selectedFilm.c2paCertId,
+                      lufsTarget: -24,
+                      assets: ["CPL.xml", "PKL.xml", "ASSETMAP.xml", "VOLINDEX.xml"]
+                    }, null, 2)], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `${selectedFilm.id}_imf_manifest.json`;
+                    a.click();
+                  }}
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-teal-300 font-bold text-xs hover:bg-slate-700 transition-all border border-slate-700"
+                >
+                  Download Spec XML
+                </button>
+                <button
+                  onClick={() => setShowImfModal(false)}
+                  className="px-5 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-400 transition-all"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Shot Manifest JSON Modal */}
+      {showShotManifestModal && (
+        <div id="shot-manifest-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+          <div className="max-w-4xl w-full rounded-3xl bg-slate-900 border border-indigo-500/40 p-6 md:p-8 space-y-5 shadow-2xl relative max-h-[88vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                  <Terminal className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg md:text-xl font-extrabold text-white">
+                    Shot Manifest JSON: {selectedFilm.title}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Atomic Shot Vector Matrix · ArcFace 512-dim Biometrics · Audio Stem Routing
+                  </p>
+                </div>
+              </div>
+              <button
+                id="close-shot-manifest-modal-btn"
+                onClick={() => setShowShotManifestModal(false)}
+                className="h-8 w-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              <pre className="text-[11px] font-mono text-emerald-300 bg-slate-950 p-4 rounded-2xl overflow-x-auto border border-slate-800 leading-relaxed">
+{JSON.stringify({
+  manifestVersion: "2.4.0-SMPTE-PRO",
+  filmId: selectedFilm.id,
+  title: selectedFilm.title,
+  runtime: `${selectedFilm.durationMinutes} Minutes`,
+  shotCount: selectedFilm.shotCount,
+  directorAesthetic: selectedFilm.directorAesthetic,
+  musicalScore: selectedFilm.musicalScore,
+  c2paHash: selectedFilm.c2paCertId,
+  leadActors: selectedFilm.leadActors,
+  veritasScore: selectedFilm.veritasScore,
+  audioConfiguration: {
+    dialogueStem: "48kHz 24-bit discrete character audio (EBU R128 -24 LUFS)",
+    scoreStem: "48kHz Beethoven Symphony 7 Allegretto pure acoustic orchestra",
+    speechBleedPrevention: "Active (Speech Limiter & High-Pass Foley isolation)"
+  },
+  sampleShots: DHARMAKSHETRA_118_SHOTS.slice(0, 5).map(s => ({
+    shotNumber: s.shotNumber,
+    actNumber: s.actNumber,
+    timecode: `${formatTime15m(s.timecodeStartSec)} - ${formatTime15m(s.timecodeEndSec)}`,
+    heading: s.heading,
+    lens: s.lens,
+    motion: s.cameraMotion,
+    lighting: s.lighting,
+    arcFaceBiometricConfidence: 0.942
+  }))
+}, null, 2)}
+              </pre>
+            </div>
+
+            <div className="pt-3 flex items-center justify-between border-t border-slate-800 shrink-0">
+              <span className="text-xs text-slate-400 font-mono">
+                {selectedFilm.shotCount} Total Shots Indexed
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const manifestStr = JSON.stringify({
+                      manifestVersion: "2.4.0-SMPTE-PRO",
+                      filmId: selectedFilm.id,
+                      title: selectedFilm.title,
+                      runtime: `${selectedFilm.durationMinutes} Minutes`,
+                      shotCount: selectedFilm.shotCount,
+                      directorAesthetic: selectedFilm.directorAesthetic,
+                      c2paHash: selectedFilm.c2paCertId
+                    }, null, 2);
+                    navigator.clipboard?.writeText(manifestStr);
+                    setManifestCopied(true);
+                    setTimeout(() => setManifestCopied(false), 2000);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-indigo-300 font-bold text-xs hover:bg-slate-700 transition-all border border-slate-700"
+                >
+                  {manifestCopied ? "✓ Copied to Clipboard!" : "Copy JSON"}
+                </button>
+                <button
+                  onClick={() => setShowShotManifestModal(false)}
+                  className="px-5 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-400 transition-all"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

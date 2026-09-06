@@ -80,7 +80,7 @@ export function ReelCreationControls({ value, onChange, onApplyConcept }: Props)
           <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-600">Concepts & templates</span>
           <span className="text-[10px] font-bold text-slate-700">{concepts.length} shown</span>
         </div>
-        <div className="mt-2 max-h-56 space-y-2 overflow-y-auto pr-1">
+        <div className="mt-2 max-h-60 space-y-2 overflow-y-auto pr-1.5 scrollbar-thin">
           {concepts.map(concept => {
             const active = value.conceptId === concept.id;
             return <button key={concept.id} type="button" onClick={() => chooseConcept(concept)} className={`w-full rounded-xl border p-3 text-left transition ${active ? "border-pink-300/35 bg-pink-300/[0.08]" : "border-white/8 bg-white/[0.025] hover:border-white/15 hover:bg-white/[0.04]"}`}>

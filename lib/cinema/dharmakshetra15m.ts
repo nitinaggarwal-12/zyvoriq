@@ -43,6 +43,9 @@ export interface FeatureFilmDialogue {
     es?: string;
     fr?: string;
     ja?: string;
+    it?: string;
+    de?: string;
+    [key: string]: string | undefined;
   };
 }
 

@@ -147,17 +147,19 @@ export default function CategoryReelCreatorPage() {
     </header>
 
     <main className="mx-auto grid max-w-[1500px] gap-5 px-5 py-6 md:px-8 lg:grid-cols-[430px_1fr]">
-      <section className="h-fit rounded-[26px] border border-white/10 bg-white/[0.025] p-5 lg:sticky lg:top-24">
+      <section className="h-fit rounded-[26px] border border-white/10 bg-white/[0.025] p-5 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto scrollbar-thin">
         <div className="text-xs font-black uppercase tracking-[0.16em] text-pink-300">Browse & direct</div>
         <h1 className="mt-2 text-2xl font-black tracking-[-0.035em] text-white">Choose the category, then keep full creative control.</h1>
         <ReelCreationControls value={draft} onChange={setDraft} onApplyConcept={applyConcept} />
 
         <label className="mt-5 block text-xs font-bold text-slate-500">IDEA / TITLE</label>
-        <textarea value={topic} onChange={event => setTopic(event.target.value)} rows={4} className="mt-2 w-full rounded-2xl border border-white/10 bg-black/20 p-4 text-sm leading-6 text-white outline-none focus:border-pink-300/35" />
+        <textarea value={topic} onChange={event => setTopic(event.target.value)} rows={4} className="mt-2 w-full rounded-2xl border border-white/10 bg-black/20 p-4 text-base md:text-sm leading-6 text-white outline-none focus:border-pink-300/35" />
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <Control label="Tone" value={tone} onChange={setTone} options={["Confident & conversational", "Warm & relatable", "Fast & energetic", "Expert & credible", "Playful & witty"]} />
           <Control label="Length" value={duration} onChange={setDuration} options={Array.from(new Set([duration, "15 sec", "30 sec", "45 sec", "60 sec"]))} />
-          <Control label="Platform" value={platform} onChange={setPlatform} options={["Instagram Reels", "YouTube Shorts", "TikTok"]} />
+          <div className="sm:col-span-2">
+            <Control label="Platform" value={platform} onChange={setPlatform} options={["Instagram Reels", "YouTube Shorts", "TikTok"]} />
+          </div>
         </div>
 
         <button onClick={buildPlan} disabled={busy !== null || !topic.trim()} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-3.5 text-sm font-black text-slate-950 disabled:opacity-50">
