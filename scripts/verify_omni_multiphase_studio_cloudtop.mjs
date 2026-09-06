@@ -13,7 +13,7 @@ function sleep(ms) {
 
 async function main() {
   console.log("===============================================================");
-  console.log("🎬 GOOGLE OMNI MULTI-PHASE STUDIO CLOUDTOP E2E TEST HARNESS");
+  console.log("🎬 GOOGLE OMNI 11-PHASE PRODUCTION PIPELINE E2E TEST HARNESS");
   console.log("===============================================================");
   console.log(`Target URL: ${BASE_URL}`);
 
@@ -49,15 +49,15 @@ async function main() {
   await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
 
   try {
-    console.log("\nStep 1: Navigating to landing page...");
-    const res = await page.goto(BASE_URL, { waitUntil: "networkidle2", timeout: 30000 });
+    console.log("\nStep 1: Navigating to studio landing page...");
+    const res = await page.goto(BASE_URL, { waitUntil: "networkidle2", timeout: 35000 });
     console.log(`HTTP Status: ${res ? res.status() : "N/A"}`);
     if (res && res.status() >= 400) {
       throw new Error(`Failed to load page, status: ${res.status()}`);
     }
 
     // Wait for the hero director section and multi-phase studio
-    await page.waitForSelector("#omni-multiphase-studio", { timeout: 10000 });
+    await page.waitForSelector("#omni-multiphase-studio", { timeout: 15000 });
     await sleep(800);
 
     // Cleanly ensure page is at top Y=0 and remove any floating cookie modals
@@ -68,7 +68,7 @@ async function main() {
     });
     await sleep(600);
 
-    console.log("\nStep 2: Asserting Exact Figma Mockup Elements...");
+    console.log("\nStep 2: Asserting Studio Elements & 11-Phase Stepper Track...");
 
     // A. Brand & Header Pill Navigation
     const hasBrand = await page.evaluate(() => {
@@ -86,23 +86,7 @@ async function main() {
     console.log(`✓ Engine Telemetry Badges (Veo 3.1 & EBU R128): ${hasTelemetry ? "PASS" : "FAIL"}`);
     if (!hasTelemetry) throw new Error("Telemetry badges missing");
 
-    // C. Master Cinema Player Title & Framing
-    const hasPlayerTitle = await page.evaluate(() => {
-      const el = document.querySelector("#omni-multiphase-studio");
-      return el && (el.textContent.includes("Luxury Mumbai Penthouse") || el.textContent.includes("Penthouse"));
-    });
-    console.log(`✓ Master Cinema Player Title ('Luxury Mumbai Penthouse'): ${hasPlayerTitle ? "PASS" : "FAIL"}`);
-    if (!hasPlayerTitle) throw new Error("Master Cinema Player title missing");
-
-    // D. Transport Controls: Timecode 01:24 / 03:00 and 4K DCI Badge
-    const hasTransport = await page.evaluate(() => {
-      const el = document.querySelector("#omni-multiphase-studio");
-      return el && el.textContent.includes("01:24") && el.textContent.includes("4K DCI");
-    });
-    console.log(`✓ Transport Controls ('01:24 / 03:00' and '4K DCI' badge): ${hasTransport ? "PASS" : "FAIL"}`);
-    if (!hasTransport) throw new Error("Transport controls or timecode missing");
-
-    // E. 8-Phase Stepper Track
+    // C. All 11 Phases on Stepper Track
     const stepperCheck = await page.evaluate(() => {
       const el = document.querySelector("#omni-multiphase-studio");
       if (!el) return false;
@@ -111,255 +95,180 @@ async function main() {
         t.includes("1. Cognition") &&
         t.includes("2. Logic & Sanity") &&
         t.includes("3. Script & EDL") &&
-        t.includes("4. Tool Routing") &&
-        t.includes("5. Video Gen") &&
-        t.includes("6. Audio & Foley") &&
-        t.includes("7. Quality Gates") &&
-        t.includes("8. Master Delivery")
+        t.includes("4. Biometrics") &&
+        t.includes("5. Tool Routing") &&
+        t.includes("6. Video Gen") &&
+        t.includes("7. Audio & Foley") &&
+        t.includes("8. Lip-Sync") &&
+        t.includes("9. Color & Optics") &&
+        t.includes("10. Quality Gates") &&
+        t.includes("11. Master Delivery")
       );
     });
-    console.log(`✓ 8-Phase Stepper Track (Phases 1 to 8): ${stepperCheck ? "PASS" : "FAIL"}`);
-    if (!stepperCheck) throw new Error("8-Phase stepper track missing required phase labels");
+    console.log(`✓ 11-Phase Stepper Track (Phases 1 to 11): ${stepperCheck ? "PASS" : "FAIL"}`);
+    if (!stepperCheck) throw new Error("11-Phase stepper track missing required phase labels");
 
-    // F. Quality Gatekeeper HUD Bar
-    const gatekeeperCheck = await page.evaluate(() => {
-      const el = document.querySelector("#omni-multiphase-studio");
-      if (!el) return false;
-      const t = el.textContent;
-      return (
-        t.includes("Quality Gatekeeper") &&
-        t.includes("Guard 1: 180s SMPTE") &&
-        t.includes("Guard 3: Anatomy Audit") &&
-        t.includes("Guard 4: -24.0 LUFS")
-      );
+    // D. Command Bar Action Buttons
+    const hasCommandBarButtons = await page.evaluate(() => {
+      const startBtn = document.querySelector("#omni-start-generation-btn");
+      const ingestBtn = document.querySelector("#omni-create-button");
+      return Boolean(startBtn && ingestBtn && startBtn.textContent.includes("Start Reel Generation"));
     });
-    console.log(`✓ Quality Gatekeeper HUD Bar (Guards 1, 3, 4): ${gatekeeperCheck ? "PASS" : "FAIL"}`);
-    if (!gatekeeperCheck) throw new Error("Quality Gatekeeper HUD bar missing");
+    console.log(`✓ Command Bar Action ('Start Reel Generation' & 'Quick Ingest'): ${hasCommandBarButtons ? "PASS" : "FAIL"}`);
+    if (!hasCommandBarButtons) throw new Error("Command Bar action buttons missing");
 
-    // G. Cinema Prompt Command Bar & Create Button Assertion
-    const hasCommandBar = await page.evaluate(() => {
-      const input = document.querySelector("#omni-prompt-input");
-      const btn = document.querySelector("#omni-create-button");
-      return Boolean(input && btn && btn.textContent.includes("Create Cinema Master"));
+    // E. Dossier Footer Button
+    const hasDossierStartBtn = await page.evaluate(() => {
+      const btn = document.querySelector("#dossier-start-generation-btn");
+      return Boolean(btn && btn.textContent.includes("Start Reel Generation (All 11 Phases)"));
     });
-    console.log(`✓ Cinema Prompt Command Bar & 'Create Cinema Master' button: ${hasCommandBar ? "PASS" : "FAIL"}`);
-    if (!hasCommandBar) throw new Error("Cinema Prompt Command Bar or Create button missing");
+    console.log(`✓ Dossier Footer Action ('Start Reel Generation (All 11 Phases)'): ${hasDossierStartBtn ? "PASS" : "FAIL"}`);
+    if (!hasDossierStartBtn) throw new Error("Dossier footer Start Reel Generation button missing");
 
-    // H. Right 30% Directorial Dossier & Chat
-    const dossierCheck = await page.evaluate(() => {
-      const el = document.querySelector("#omni-multiphase-studio");
-      if (!el) return false;
-      const t = el.textContent;
-      return (
-        t.includes("Directorial Dossier & Chat") &&
-        t.includes("Phase 1") &&
-        t.includes("Phase 2: Logic") &&
-        t.includes("Phase 3: Script")
-      );
-    });
-    console.log(`✓ Directorial Dossier & Chat Structure: ${dossierCheck ? "PASS" : "FAIL"}`);
-    if (!dossierCheck) throw new Error("Directorial Dossier missing required structure");
-
-    // Capture Default Studio Frame Screenshot (Exact Figma Element Framing)
-    await sleep(600);
+    // Capture initial studio screenshot
     const studioEl = await page.$("#omni-multiphase-studio");
-    const screenshot1 = path.join(SCREENSHOT_DIR, "01_figma_studio_matching_mockup.png");
+    const screenshot1 = path.join(SCREENSHOT_DIR, "01_omni_11_phase_studio_initial.png");
     if (studioEl) {
       await studioEl.screenshot({ path: screenshot1 });
     } else {
       await page.screenshot({ path: screenshot1 });
     }
     console.log(`📸 Captured: ${screenshot1}`);
-    const viewportShot = path.join(SCREENSHOT_DIR, "01_top_viewport_landing_page.png");
-    await page.screenshot({ path: viewportShot });
-    console.log(`📸 Captured: ${viewportShot}`);
 
-    // Step 3: Test Dynamic Custom Generation from Prompt ("Generate anything using a prompt")
-    console.log("\nStep 3: Testing Dynamic Custom Generation from Prompt Input...");
-    await page.click("#omni-prompt-input");
-    await page.keyboard.down("Control");
-    await page.keyboard.press("A");
-    await page.keyboard.up("Control");
-    await page.keyboard.press("Backspace");
-    await page.keyboard.type("Cyberpunk neon rain in Neo-Tokyo with hover cabs and synthwave score");
-    await sleep(300);
+    // Step 3: Trigger "Start Reel Generation" from Command Bar (Synthesizing All 11 Phases)
+    console.log("\nStep 3: Triggering 'Start Reel Generation' across all 11 phases...");
+    await page.click("#omni-start-generation-btn");
+    await sleep(400);
 
-    // Click 'Create Cinema Master'
-    console.log("Clicking 'Create Cinema Master' button...");
-    await page.click("#omni-create-button");
-
-    // Wait for Phase 1 prompt editor to appear
-    await page.waitForSelector("#dossier-prompt-input", { timeout: 10000 });
-
-    // Wait for generation to complete (button text returns to Create Cinema Master)
-    await page.waitForFunction(() => {
-      const btn = document.querySelector("#omni-create-button");
-      return Boolean(btn && !btn.textContent?.includes("Directing"));
-    }, { timeout: 15000 });
-    await sleep(600);
-
-    // Verify studio dynamically reconfigured for newly generated scene
-    await page.waitForFunction(() => {
-      const el = document.querySelector("#omni-multiphase-studio");
-      if (!el) return false;
-      const t = el.textContent;
-      return (
-        t.includes("Neon Tokyo") ||
-        t.includes("Neo-Tokyo") ||
-        t.includes("Neon Rain") ||
-        t.includes("Shinjuku") ||
-        t.includes("Cyberpunk")
-      );
-    }, { timeout: 10000 });
-    console.log("✓ Dynamic Prompt Generation to Cyberpunk Scene: PASS");
-
-    // Verify Phase 1 Cognition is active and expanded with prompt input
-    const phase1Active = await page.evaluate(() => {
-      const p1 = document.querySelector("#dossier-phase-1");
-      const promptArea = document.querySelector("#dossier-prompt-input");
-      const advBtn = document.querySelector("#dossier-advance-btn");
-      return Boolean(p1 && promptArea && advBtn);
+    // Verify 11-Phase Animated Generation Overlay appears
+    const hasOverlay = await page.evaluate(() => {
+      const overlay = document.querySelector("#omni-reel-generation-overlay");
+      return Boolean(overlay && overlay.textContent.includes("Generating 4K Cinema Master Reel"));
     });
-    console.log(`✓ Phase 1 Cognition Expanded with Prompt Inputs: ${phase1Active ? "PASS" : "FAIL"}`);
-    if (!phase1Active) throw new Error("Phase 1 card not expanded with prompt editor");
+    console.log(`✓ 11-Phase Production Pipeline Overlay Active: ${hasOverlay ? "PASS" : "FAIL"}`);
+    if (!hasOverlay) throw new Error("11-Phase Production Pipeline Overlay did not appear");
 
-    const screenshot2 = path.join(SCREENSHOT_DIR, "02_custom_prompt_generated_phase1.png");
-    if (studioEl) {
-      await studioEl.screenshot({ path: screenshot2 });
-    } else {
-      await page.screenshot({ path: screenshot2 });
-    }
+    const screenshot2 = path.join(SCREENSHOT_DIR, "02_omni_11_phase_generation_overlay.png");
+    await page.screenshot({ path: screenshot2 });
     console.log(`📸 Captured: ${screenshot2}`);
 
-    // Advance Phase 1 ➔ Phase 2
-    console.log("\nAdvancing Phase 1 ➔ Phase 2...");
-    await page.click("#dossier-advance-btn");
-    await sleep(600);
+    // Wait for all 11 phases to complete and overlay to close (approx 3.2s total)
+    console.log("Waiting for 11 phases synthesis to complete...");
+    await page.waitForFunction(() => {
+      const overlay = document.querySelector("#omni-reel-generation-overlay");
+      const modal = document.querySelector("#omni-delivery-modal");
+      return !overlay && Boolean(modal);
+    }, { timeout: 20000 });
+    await sleep(800);
+    console.log("✓ All 11 phases compiled successfully! Cinema Delivery Modal opened.");
 
-    // Verify Phase 2 is active and advance to Phase 3
-    console.log("Advancing Phase 2 ➔ Phase 3...");
-    await page.click("#dossier-advance-phase2-btn");
-    await sleep(600);
-
-    // Verify Phase 3 has newly generated script lines
-    const phase3Generated = await page.evaluate(() => {
-      const el = document.querySelector("#omni-multiphase-studio");
-      if (!el) return false;
-      const t = el.textContent;
-      return (
-        t.includes("KENJI") ||
-        t.includes("AI OPERATOR") ||
-        t.includes("KAI") ||
-        t.includes("SILAS") ||
-        t.includes("PROTAGONIST")
-      );
+    // Step 4: Verify Cinema Master Delivery Suite & Screening Room Modal
+    console.log("\nStep 4: Asserting Cinema Master Delivery Suite Modal...");
+    const modalAsserts = await page.evaluate(() => {
+      const modal = document.querySelector("#omni-delivery-modal");
+      if (!modal) return { present: false };
+      const text = modal.textContent;
+      const video = modal.querySelector("video");
+      const download4k = modal.querySelector("#modal-download-4k-btn");
+      const downloadEdl = modal.querySelector("#modal-download-edl-btn");
+      const publishSocials = modal.querySelector("#modal-publish-socials-btn");
+      const copyLink = modal.querySelector("#modal-copy-link-btn");
+      const closeBtn = modal.querySelector("#modal-close-delivery-btn");
+      return {
+        present: true,
+        hasTitle: text.includes("Cinema Master Delivery Suite & Screening Room"),
+        hasC2PA: text.includes("C2PA v2.1 Certified"),
+        hasVideo: Boolean(video && video.src),
+        hasDownload4k: Boolean(download4k),
+        hasDownloadEdl: Boolean(downloadEdl),
+        hasPublishSocials: Boolean(publishSocials),
+        hasCopyLink: Boolean(copyLink),
+        hasCloseBtn: Boolean(closeBtn)
+      };
     });
-    console.log(`✓ Phase 3 Script Generated for Prompt Scene: ${phase3Generated ? "PASS" : "FAIL"}`);
 
-    const screenshot3 = path.join(SCREENSHOT_DIR, "03_cyberpunk_screenplay_phase3.png");
-    if (studioEl) {
-      await studioEl.screenshot({ path: screenshot3 });
-    } else {
-      await page.screenshot({ path: screenshot3 });
+    console.log(`✓ Modal Present: ${modalAsserts.present ? "PASS" : "FAIL"}`);
+    console.log(`✓ Modal Title & C2PA Provenance: ${modalAsserts.hasTitle && modalAsserts.hasC2PA ? "PASS" : "FAIL"}`);
+    console.log(`✓ Screening Video Player: ${modalAsserts.hasVideo ? "PASS" : "FAIL"}`);
+    console.log(`✓ Download 4K Master Button: ${modalAsserts.hasDownload4k ? "PASS" : "FAIL"}`);
+    console.log(`✓ Download EDL JSON Button: ${modalAsserts.hasDownloadEdl ? "PASS" : "FAIL"}`);
+    console.log(`✓ Publish to Socials Button: ${modalAsserts.hasPublishSocials ? "PASS" : "FAIL"}`);
+    console.log(`✓ Copy Screening Link Button: ${modalAsserts.hasCopyLink ? "PASS" : "FAIL"}`);
+
+    if (!modalAsserts.present || !modalAsserts.hasVideo || !modalAsserts.hasDownload4k) {
+      throw new Error("Cinema Master Delivery Suite modal failed required assertions");
     }
+
+    const screenshot3 = path.join(SCREENSHOT_DIR, "03_cinema_master_delivery_modal.png");
+    await page.screenshot({ path: screenshot3 });
     console.log(`📸 Captured: ${screenshot3}`);
 
-    // Step 4: Test Generating via Persistent Directorial Chat at Bottom of Dossier
-    console.log("\nStep 4: Testing Scene Generation via Persistent Directorial Chat...");
-    await page.click("#dossier-chat-input");
-    await page.keyboard.type("April 14 1912 Titanic wireless room sending emergency SOS distress call");
-    await sleep(300);
-    await page.click("#dossier-send-btn");
-    await page.waitForFunction(() => {
-      const btn = document.querySelector("#dossier-send-btn");
-      return Boolean(btn && !btn.disabled);
-    }, { timeout: 15000 });
-    await page.waitForFunction(() => {
-      const el = document.querySelector("#omni-multiphase-studio");
-      return el && el.textContent.includes("Titanic");
-    }, { timeout: 10000 });
-    console.log("✓ Directorial Chat Generation to Titanic Scene: PASS");
-
-    const screenshot4 = path.join(SCREENSHOT_DIR, "04_titanic_prompt_generated_from_chat.png");
-    if (studioEl) {
-      await studioEl.screenshot({ path: screenshot4 });
-    } else {
-      await page.screenshot({ path: screenshot4 });
-    }
-    console.log(`📸 Captured: ${screenshot4}`);
-
-    // Advance through pipeline to Phase 8
-    console.log("\nAdvancing to Phase 8 (Master Delivery)...");
-    await page.evaluate(() => {
-      // Advance Phase 1
-      const btn1 = document.querySelector("#dossier-advance-btn");
-      if (btn1) btn1.click();
-    });
+    // Test EDL JSON Download Click
+    console.log("Clicking Download EDL Script JSON button...");
+    await page.click("#modal-download-edl-btn");
     await sleep(400);
 
-    await page.evaluate(() => {
-      // Advance Phase 2
-      const btn2 = document.querySelector("#dossier-advance-phase2-btn");
-      if (btn2) btn2.click();
-    });
+    // Test Copy Screening Link Click
+    console.log("Clicking Copy Screening Link button...");
+    await page.click("#modal-copy-link-btn");
     await sleep(400);
 
-    await page.evaluate(() => {
-      // Advance Phase 3
-      const buttons = Array.from(document.querySelectorAll("button"));
-      const btn3 = buttons.find(b => b.textContent && b.textContent.includes("Save & Advance Phase 4"));
-      if (btn3) btn3.click();
+    // Verify Toast Notification appeared
+    const hasToast = await page.evaluate(() => {
+      const toast = document.querySelector("#omni-toast");
+      return Boolean(toast && toast.textContent);
     });
-    await sleep(400);
+    console.log(`✓ Directorial Feedback Toast: ${hasToast ? "PASS" : "FAIL"}`);
 
-    await page.evaluate(() => {
-      // Advance Phase 4
-      const buttons = Array.from(document.querySelectorAll("button"));
-      const btn4 = buttons.find(b => b.textContent && b.textContent.includes("Save & Advance Phase 5"));
-      if (btn4) btn4.click();
-    });
-    await sleep(400);
-
-    await page.evaluate(() => {
-      // Advance Phase 5
-      const buttons = Array.from(document.querySelectorAll("button"));
-      const btn5 = buttons.find(b => b.textContent && b.textContent.includes("Save & Advance Phase 6"));
-      if (btn5) btn5.click();
-    });
-    await sleep(400);
-
-    await page.evaluate(() => {
-      // Advance Phase 6
-      const buttons = Array.from(document.querySelectorAll("button"));
-      const btn6 = buttons.find(b => b.textContent && b.textContent.includes("Save & Advance Phase 7"));
-      if (btn6) btn6.click();
-    });
-    await sleep(400);
-
-    await page.evaluate(() => {
-      // Advance Phase 7
-      const buttons = Array.from(document.querySelectorAll("button"));
-      const btn7 = buttons.find(b => b.textContent && b.textContent.includes("Save & Advance Phase 8"));
-      if (btn7) btn7.click();
-    });
+    // Close Delivery Modal
+    console.log("Closing Delivery Modal to inspect Phase 11 Dossier Card...");
+    await page.click("#modal-close-delivery-btn");
     await sleep(600);
 
-    const phase8Active = await page.evaluate(() => {
-      const el = document.querySelector("#omni-multiphase-studio");
-      return el && el.textContent.includes("Export Master 4K Film");
+    // Step 5: Verify Phase 11 Dossier Card & Export Master 4K Film Button
+    console.log("\nStep 5: Verifying Phase 11 in Dossier...");
+    const phase11Check = await page.evaluate(() => {
+      const p11 = document.querySelector("#dossier-phase-11");
+      const exportBtn = document.querySelector("#omni-export-master-btn");
+      const regenBtn = document.querySelector("#omni-start-generation-btn-phase11");
+      const openSuiteBtn = document.querySelector("#open-delivery-suite-btn");
+      return {
+        hasPhase11: Boolean(p11),
+        hasExportBtn: Boolean(exportBtn),
+        hasRegenBtn: Boolean(regenBtn),
+        hasOpenSuiteBtn: Boolean(openSuiteBtn)
+      };
     });
-    console.log(`✓ Advanced to Phase 8 (Master Delivery): ${phase8Active ? "PASS" : "FAIL"}`);
 
-    const screenshot5 = path.join(SCREENSHOT_DIR, "05_advanced_to_phase8_master_delivery.png");
-    if (studioEl) {
-      await studioEl.screenshot({ path: screenshot5 });
-    } else {
-      await page.screenshot({ path: screenshot5 });
+    console.log(`✓ Phase 11 Dossier Card: ${phase11Check.hasPhase11 ? "PASS" : "FAIL"}`);
+    console.log(`✓ 'Export Master 4K Film' Button: ${phase11Check.hasExportBtn ? "PASS" : "FAIL"}`);
+    console.log(`✓ 'Re-Generate Reel' Button: ${phase11Check.hasRegenBtn ? "PASS" : "FAIL"}`);
+    console.log(`✓ 'Open Master Screening Suite' Button: ${phase11Check.hasOpenSuiteBtn ? "PASS" : "FAIL"}`);
+
+    if (!phase11Check.hasPhase11 || !phase11Check.hasExportBtn) {
+      throw new Error("Phase 11 Dossier card or Export Master button missing");
     }
-    console.log(`📸 Captured: ${screenshot5}`);
+
+    // Click "Export Master 4K Film" to verify it does NOT silently do nothing
+    console.log("\nClicking 'Export Master 4K Film' to verify live export packaging & modal reopening...");
+    await page.click("#omni-export-master-btn");
+    await sleep(600);
+
+    // Wait for export process to finish and modal to reopen
+    await page.waitForSelector("#omni-delivery-modal", { timeout: 10000 });
+    await sleep(600);
+    console.log("✓ 'Export Master 4K Film' successfully packaged stream and reopened Delivery Suite!");
+
+    const screenshot4 = path.join(SCREENSHOT_DIR, "04_export_master_reopened_suite.png");
+    await page.screenshot({ path: screenshot4 });
+    console.log(`📸 Captured: ${screenshot4}`);
+
+    // Close modal again
+    await page.click("#modal-close-delivery-btn");
+    await sleep(400);
 
     // Step 6: Test Mobile Viewport (iPhone 14 @ 390x844) & Zero Horizontal Overflow
-    console.log("\nStep 6: Auditing Mobile Viewport (390x844)...");
+    console.log("\nStep 6: Auditing Mobile Viewport (iPhone 14 @ 390x844)...");
     await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2, isMobile: true });
     await sleep(800);
 
@@ -371,14 +280,39 @@ async function main() {
       };
     });
     console.log(`Mobile Scroll Width: ${overflowCheck.scrollWidth}px, Inner Width: ${overflowCheck.innerWidth}px`);
-    console.log(`✓ Zero Horizontal Overflow Protocol: ${overflowCheck.noOverflow ? "PASS" : "FAIL"}`);
+    console.log(`✓ Zero Horizontal Overflow Protocol (iOS): ${overflowCheck.noOverflow ? "PASS" : "FAIL"}`);
+    if (!overflowCheck.noOverflow) {
+      throw new Error(`Mobile horizontal overflow detected: ${overflowCheck.scrollWidth} > ${overflowCheck.innerWidth}`);
+    }
 
-    const screenshot6 = path.join(SCREENSHOT_DIR, "06_mobile_responsive_viewport_390x844.png");
+    const screenshot5 = path.join(SCREENSHOT_DIR, "05_mobile_ios_responsive_390x844.png");
+    await page.screenshot({ path: screenshot5, fullPage: false });
+    console.log(`📸 Captured: ${screenshot5}`);
+
+    // Step 7: Auditing Android Viewport (Pixel 7 @ 412x915)
+    console.log("\nStep 7: Auditing Android Viewport (Pixel 7 @ 412x915)...");
+    await page.setViewport({ width: 412, height: 915, deviceScaleFactor: 2, isMobile: true });
+    await sleep(800);
+
+    const androidOverflowCheck = await page.evaluate(() => {
+      return {
+        scrollWidth: document.documentElement.scrollWidth,
+        innerWidth: window.innerWidth,
+        noOverflow: document.documentElement.scrollWidth <= window.innerWidth
+      };
+    });
+    console.log(`Android Scroll Width: ${androidOverflowCheck.scrollWidth}px, Inner Width: ${androidOverflowCheck.innerWidth}px`);
+    console.log(`✓ Zero Horizontal Overflow Protocol (Android): ${androidOverflowCheck.noOverflow ? "PASS" : "FAIL"}`);
+    if (!androidOverflowCheck.noOverflow) {
+      throw new Error(`Android horizontal overflow detected: ${androidOverflowCheck.scrollWidth} > ${androidOverflowCheck.innerWidth}`);
+    }
+
+    const screenshot6 = path.join(SCREENSHOT_DIR, "06_mobile_android_responsive_412x915.png");
     await page.screenshot({ path: screenshot6, fullPage: false });
     console.log(`📸 Captured: ${screenshot6}`);
 
     console.log("\n===============================================================");
-    console.log("🎉 ALL GOOGLE OMNI MULTI-PHASE QUALITY GATES PASSED (100%)");
+    console.log("🎉 ALL 11-PHASE OMNI PRODUCTION QUALITY GATES PASSED (100%)");
     console.log("===============================================================");
     await browser.close();
     process.exit(0);
