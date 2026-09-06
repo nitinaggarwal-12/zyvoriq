@@ -86,10 +86,17 @@ const PRESETS: PresetPrompt[] = [
 ];
 
 const STILL_MAP: Record<string, string> = {
-  napoleon: "/scratch/productions/napoleon_romance/stills/ACT_01_4k_keyframe.png",
-  coronation: "/scratch/productions/napoleon_romance/stills/ACT_02_4k_keyframe.png",
-  titanic: "/scratch/productions/napoleon_romance/stills/ACT_03_4k_keyframe.png",
-  cyberpunk: "/scratch/productions/napoleon_romance/stills/ACT_04_4k_keyframe.png",
+  napoleon: "/assets/stills/napoleon_hero.png",
+  coronation: "/assets/stills/coronation_hero.png",
+  titanic: "/assets/stills/titanic_hero.jpg",
+  cyberpunk: "/assets/stills/neotokyo_hero.jpg",
+};
+
+const VIDEO_MAP: Record<string, string> = {
+  napoleon: "/assets/video/napoleon_preview.mp4",
+  coronation: "/assets/video/coronation_preview.mp4",
+  titanic: "/assets/video/titanic_preview.mp4",
+  cyberpunk: "/assets/video/neotokyo_preview.mp4",
 };
 
 export function OmniHero() {
@@ -109,11 +116,16 @@ export function OmniHero() {
   const handleSelectPreset = (preset: PresetPrompt) => {
     setSelectedPreset(preset);
     setPromptText(preset.userPrompt);
-    // If a video is already playing, jump to the new preset's timestamp
-    if (generatedVideoUrl && videoPlayerRef.current) {
-      videoPlayerRef.current.currentTime = preset.actTime;
-      videoPlayerRef.current.play().catch(() => {});
+    // If a video is already playing, switch to the new preset's video and poster
+    if (generatedVideoUrl) {
+      setGeneratedVideoUrl(VIDEO_MAP[preset.id] || VIDEO_MAP.napoleon);
       setVideoPoster(STILL_MAP[preset.id] || STILL_MAP.napoleon);
+      setTimeout(() => {
+        if (videoPlayerRef.current) {
+          videoPlayerRef.current.currentTime = 0;
+          videoPlayerRef.current.play().catch(() => {});
+        }
+      }, 100);
     }
   };
 
@@ -144,13 +156,13 @@ export function OmniHero() {
       setGenerationProgress(100);
       setGenerationStage("Gemini 2.5 Flash Vision QC Gate Passed (100%)");
       setIsGenerating(false);
-      setGeneratedVideoUrl("/scratch/productions/napoleon_romance/shots/napoleon_romance_180s_master.mp4");
+      setGeneratedVideoUrl(VIDEO_MAP[selectedPreset.id] || VIDEO_MAP.napoleon);
       setVideoPoster(STILL_MAP[selectedPreset.id] || STILL_MAP.napoleon);
 
-      // Autoplay the generated video at the chosen preset timestamp
+      // Autoplay the generated video
       setTimeout(() => {
         if (videoPlayerRef.current) {
-          videoPlayerRef.current.currentTime = selectedPreset.actTime;
+          videoPlayerRef.current.currentTime = 0;
           videoPlayerRef.current.play().catch(() => {});
         }
       }, 300);
