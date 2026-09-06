@@ -613,7 +613,7 @@ export function LiveSupportConcierge() {
 
   const pathname = usePathname();
   if (!hasMounted) return null;
-  if (pathname === "/studio/zoom-screenshare") return null;
+  if (pathname === "/" || pathname === "/studio/zoom-screenshare") return null;
 
   return (
     <>

@@ -38,11 +38,11 @@ export function Navbar() {
         </nav>
 
         <div className="hidden items-center gap-3 sm:flex">
-          <a href="#reel-demo" className="hidden items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold text-slate-300 transition hover:text-white xl:flex">
-            <PlayCircle className="h-4 w-4 text-teal-300" /> Watch Demo
+          <a href="#master-showcase" className="hidden items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold text-slate-300 transition hover:text-white xl:flex">
+            <PlayCircle className="h-4 w-4 text-teal-300" /> Watch 180s Master
           </a>
           <Link href="/studio/create" className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 px-5 py-2.5 text-sm font-black text-obsidian-950 transition hover:scale-[1.02] active:scale-[0.98] shadow-md shadow-teal-500/20">
-            <Sparkles className="h-4 w-4 fill-current" /> Open Studio Hub
+            <Sparkles className="h-4 w-4 fill-current" /> Launch Omni Studio
           </Link>
         </div>
 
@@ -59,11 +59,11 @@ export function Navbar() {
                 {label}
               </Link>
             ))}
-            <a href="#reel-demo" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 rounded-xl px-3 py-3 text-base font-semibold text-teal-300 hover:bg-white/5">
-              <PlayCircle className="h-5 w-5" /> Watch Demo
+            <a href="#master-showcase" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 rounded-xl px-3 py-3 text-base font-semibold text-teal-300 hover:bg-white/5">
+              <PlayCircle className="h-5 w-5" /> Watch 180s Master
             </a>
             <Link href="/studio/create" onClick={() => setMobileMenuOpen(false)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 py-3.5 text-sm font-black text-obsidian-950 shadow-md shadow-teal-500/20">
-              <Sparkles className="h-4 w-4 fill-current" /> Open Studio Hub
+              <Sparkles className="h-4 w-4 fill-current" /> Launch Omni Studio
             </Link>
           </div>
         </div>

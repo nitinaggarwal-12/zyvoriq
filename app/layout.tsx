@@ -6,9 +6,9 @@ import { LiveSupportConcierge } from "@/components/LiveSupportConcierge";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
-  title: "Zyvoriq — Autonomous Video Intelligence & 14-Persona Creation Suite",
+  title: "Zyvoriq — Directed by Google Omni | Autonomous 4K Cinema Intelligence",
   description:
-    "Universal AI Creation Ecosystem demarcated across 14 industry personas: Pixar 3D CGI animation, Shōnen anime & manga, high-converting TikTok UGC ads, A24 cinema, and automated multimodal video generation.",
+    "Next-generation text-to-video creation engine powered by Google Omni and Veo 3.1. Pre-flight prompt compilation, 4K camera diffusion, authentic acoustic scores, and real-time vision quality gates.",
 };
 
 export default function RootLayout({
