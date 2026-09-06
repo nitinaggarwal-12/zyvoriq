@@ -29,7 +29,8 @@ export async function GET() {
       connected: pgConnected || dbType === "sqlite",
       tracksCount
     },
-    version: "0.1.0",
+    version: "0.1.1-test-deploy",
+    buildId: "test-deploy-build-20260906-1840",
     timestamp: new Date().toISOString()
   });
 }
