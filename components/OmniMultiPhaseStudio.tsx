@@ -58,9 +58,17 @@ export interface ScenePreset {
   lines: ScriptLine[];
 }
 
+export const LEGACY_ID_MAP: Record<string, string> = {
+  mumbai_penthouse: "reel_mumbai_luxury_penthouse",
+  marseille: "reel_marseille_waterfront",
+  notre_dame: "reel_notre_dame_coronation",
+  titanic: "reel_titanic_marconi_cabin",
+  neotokyo: "reel_neotokyo_cyberpunk"
+};
+
 export const SCENE_PRESETS: ScenePreset[] = [
   {
-    id: "mumbai_penthouse",
+    id: "reel_mumbai_luxury_penthouse",
     label: "Luxury Penthouse (180s)",
     title: "Luxury Mumbai Penthouse",
     setting: "Bandra Penthouse, Mumbai",
@@ -68,7 +76,7 @@ export const SCENE_PRESETS: ScenePreset[] = [
     prompt: "A modern Indian family dinner in a high-rise Bandra penthouse overlooking Mumbai night skyline and Sea Link. Sibling banter, warm golden interior lighting, authentic Hinglish dialogue, 24fps cinematic realism.",
     duration: 180,
     still: "/assets/stills/mumbai_penthouse.jpg",
-    video: "/assets/video/napoleon_180s_master.mp4",
+    video: "/assets/video/mumbai_penthouse_180s_master.mp4",
     lines: [
       {
         id: "l1",
@@ -93,7 +101,7 @@ export const SCENE_PRESETS: ScenePreset[] = [
     ]
   },
   {
-    id: "marseille",
+    id: "reel_marseille_waterfront",
     label: "Marseille Port (30s)",
     title: "1795 Marseille Waterfront",
     setting: "Marseille Port, France (1795)",
@@ -120,7 +128,7 @@ export const SCENE_PRESETS: ScenePreset[] = [
     ]
   },
   {
-    id: "notre_dame",
+    id: "reel_notre_dame_coronation",
     label: "Notre-Dame (30s)",
     title: "1804 Notre-Dame Coronation",
     setting: "Cathedral of Notre-Dame, Paris",
@@ -147,8 +155,8 @@ export const SCENE_PRESETS: ScenePreset[] = [
     ]
   },
   {
-    id: "titanic",
-    label: "Titanic (30s)",
+    id: "reel_titanic_marconi_cabin",
+    label: "Titanic SOS (30s)",
     title: "1912 Titanic Marconi Cabin",
     setting: "Marconi Room, RMS Titanic",
     dynamic: "High Tension Emergency SOS",
@@ -174,7 +182,7 @@ export const SCENE_PRESETS: ScenePreset[] = [
     ]
   },
   {
-    id: "neotokyo",
+    id: "reel_neotokyo_cyberpunk",
     label: "Neo-Tokyo (30s)",
     title: "Neo-Tokyo Downpour (2088)",
     setting: "Shinjuku Sublevel 4, Neo-Tokyo",
@@ -220,7 +228,7 @@ function compileOmniPromptClient(rawPrompt: string): ScenePreset {
   let setting = "Acoustically Calibrated Soundstage & Location Studio";
   let dynamic = "High-Stakes Dramatic Arc & Biometric Resonance";
   let still = "/assets/stills/mumbai_penthouse.jpg";
-  let video = "/assets/video/napoleon_180s_master.mp4";
+  let video = "/assets/video/mumbai_penthouse_180s_master.mp4";
   let lines: ScriptLine[] = [];
 
   if (lower.includes("cyberpunk") || lower.includes("neotokyo") || lower.includes("neon") || lower.includes("blade runner") || lower.includes("android") || lower.includes("hacker") || lower.includes("shinjuku") || lower.includes("cyber")) {
@@ -277,7 +285,7 @@ function compileOmniPromptClient(rawPrompt: string): ScenePreset {
     setting = "High-Rise Penthouse, Bandra West, Mumbai";
     dynamic = "Warm Sibling Banter & Family Revelations";
     still = "/assets/stills/mumbai_penthouse.jpg";
-    video = "/assets/video/napoleon_180s_master.mp4";
+    video = "/assets/video/mumbai_penthouse_180s_master.mp4";
     lines = [
       { id: "mb1", speaker: "RAJ", emotion: "smiling", timestamp: "00:04", text: "Bas karo, Shweta! Paneer khatam ho jayega!" },
       { id: "mb2", speaker: "SHWETA", emotion: "laughing", timestamp: "00:08", text: "Rahul is eating it all while looking at Mumbai Sea Link!" },
@@ -325,7 +333,7 @@ function compileOmniPromptClient(rawPrompt: string): ScenePreset {
     setting = "Acoustically Calibrated Soundstage & Location Studio";
     dynamic = "High-Stakes Dramatic Arc & Biometric Resonance";
     still = "/assets/stills/mumbai_penthouse.jpg";
-    video = "/assets/video/napoleon_180s_master.mp4";
+    video = "/assets/video/mumbai_penthouse_180s_master.mp4";
     lines = [
       { id: "un1", speaker: "PROTAGONIST", emotion: "intense", timestamp: "00:04", text: `Every choice we made has brought us directly to this threshold.` },
       { id: "un2", speaker: "COUNTERPART", emotion: "composed", timestamp: "00:10", text: `Then let us see it through to the end, whatever the cost.` },
@@ -333,8 +341,11 @@ function compileOmniPromptClient(rawPrompt: string): ScenePreset {
     ];
   }
 
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 24) || "custom_master";
+  const uniqueReelId = `reel_${slug}_${Math.random().toString(36).substring(2, 7)}`;
+
   return {
-    id: "custom_" + Date.now(),
+    id: uniqueReelId,
     label: "Custom Master",
     title,
     genre,
@@ -352,13 +363,13 @@ export function OmniMultiPhaseStudio() {
   // Current active scene preset
   const [currentScene, setCurrentScene] = useState<ScenePreset>(SCENE_PRESETS[0]);
   const [promptInput, setPromptInput] = useState(SCENE_PRESETS[0].prompt);
-  const [activePresetId, setActivePresetId] = useState("mumbai_penthouse");
+  const [activePresetId, setActivePresetId] = useState("reel_mumbai_luxury_penthouse");
   const [chatInput, setChatInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStatus, setGenerationStatus] = useState<string | null>(null);
   const promptInputRef = useRef<HTMLInputElement>(null);
 
-  // Stepper Phase tracking (1 to 8, default 3 matching Figma mockup exactly)
+  // Stepper Phase tracking (1 to 11, default 3 matching Figma mockup)
   const [activePhase, setActivePhase] = useState<number>(3);
   const [completedPhases, setCompletedPhases] = useState<number[]>([1, 2]);
 
@@ -390,7 +401,63 @@ export function OmniMultiPhaseStudio() {
   const [showDeliveryModal, setShowDeliveryModal] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedReelId, setCopiedReelId] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [reelReadyBanner, setReelReadyBanner] = useState(false);
+
+  // 11-Phase Reel Generation States
+  const [isGeneratingReel, setIsGeneratingReel] = useState(false);
+  const [reelGenStep, setReelGenStep] = useState(0);
+  const [reelGenProgress, setReelGenProgress] = useState(0);
+  const [reelGenStatus, setReelGenStatus] = useState("");
+
+  // URL Deep-Link Synchronization helper
+  const updateUrlParams = (reelId: string, phaseNum: number) => {
+    if (typeof window === "undefined") return;
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set("reel", reelId);
+      url.searchParams.set("phase", phaseNum.toString());
+      window.history.replaceState({}, "", url.toString());
+    } catch {}
+  };
+
+  // Two-Way URL Query Synchronization on Mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const reelParam = params.get("reel") || params.get("id");
+    const phaseParam = params.get("phase");
+
+    if (reelParam) {
+      const canonicalId = LEGACY_ID_MAP[reelParam] || reelParam;
+      const matched = SCENE_PRESETS.find((p) => p.id === canonicalId);
+      if (matched) {
+        setCurrentScene(matched);
+        setPromptInput(matched.prompt);
+        setActivePresetId(matched.id);
+        setScriptLines(matched.lines);
+        setSettingText(matched.setting);
+        setDynamicText(matched.dynamic);
+        setTotalDuration(matched.duration);
+      }
+    }
+
+    if (phaseParam) {
+      const p = parseInt(phaseParam, 10);
+      if (!isNaN(p) && p >= 1 && p <= 11) {
+        setActivePhase(p);
+      }
+    }
+  }, []);
+
+  // Audio Overlap Safeguard: Pause studio background player when Delivery Modal is open
+  useEffect(() => {
+    if (showDeliveryModal && videoRef.current) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
+  }, [showDeliveryModal]);
 
   const handleExportMaster = async () => {
     setIsExporting(true);
@@ -413,7 +480,7 @@ export function OmniMultiPhaseStudio() {
     setIsExporting(false);
     setIsExported(true);
 
-    // Trigger physical browser download
+    // Trigger physical browser download for explicit export
     try {
       const link = document.createElement("a");
       link.href = currentScene.video;
@@ -426,17 +493,13 @@ export function OmniMultiPhaseStudio() {
       console.error("Direct download trigger error:", e);
     }
 
-    // Open Cinema Delivery Suite Modal
+    // Pause studio background player before opening modal to eliminate overlapping audio
+    if (videoRef.current) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
     setShowDeliveryModal(true);
 
-    // Play video in player
-    if (videoRef.current) {
-      videoRef.current.currentTime = 0;
-      videoRef.current.play().catch(() => {});
-      setIsPlaying(true);
-    }
-
-    // Show celebratory toast
     setToastMessage("🎉 4K Cinema Master exported & download initiated! Delivery Suite unlocked.");
     setTimeout(() => setToastMessage(null), 5000);
   };
@@ -471,76 +534,155 @@ export function OmniMultiPhaseStudio() {
 
   const handleCopyShareLink = async () => {
     try {
-      const url = typeof window !== "undefined" ? `${window.location.origin}/#hero-director` : "https://zyvoriq.up.railway.app/#hero-director";
+      const origin = typeof window !== "undefined" ? window.location.origin : "https://zyvoriq.up.railway.app";
+      const url = `${origin}/?reel=${currentScene.id}&phase=${activePhase}`;
       await navigator.clipboard.writeText(url);
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2500);
-      setToastMessage("📋 4K Screening link copied to clipboard!");
+      setToastMessage(`📋 4K Screening link copied: ${url}`);
       setTimeout(() => setToastMessage(null), 4000);
-    } catch {}
+    } catch {
+      setToastMessage("📋 Screening link copied to clipboard!");
+      setTimeout(() => setToastMessage(null), 3000);
+    }
   };
 
-  // 11-Phase Reel Generation States
-  const [isGeneratingReel, setIsGeneratingReel] = useState(false);
-  const [reelGenStep, setReelGenStep] = useState(0);
-  const [reelGenStatus, setReelGenStatus] = useState("");
+  const handleCopyReelId = async (idToCopy?: string) => {
+    const id = idToCopy || currentScene.id;
+    try {
+      await navigator.clipboard.writeText(id);
+      setCopiedReelId(true);
+      setTimeout(() => setCopiedReelId(false), 2500);
+      setToastMessage(`🔑 Reel ID copied: ${id}`);
+      setTimeout(() => setToastMessage(null), 4000);
+    } catch {
+      setToastMessage(`🔑 Reel ID copied: ${id}`);
+      setTimeout(() => setToastMessage(null), 3000);
+    }
+  };
 
   const handleStartReelGeneration = async () => {
+    let targetScene = currentScene;
+    const activePrompt = promptInput.trim();
+
     setIsGeneratingReel(true);
     setReelGenStep(1);
+    setReelGenProgress(5);
     setReelGenStatus("Phase 1/11: Ingesting Scene Cognition & Cultural Lore...");
+    setReelReadyBanner(false);
 
+    // Stop existing video playback to prevent any audio overlap
+    if (videoRef.current) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
+
+    // Dynamic 11-Phase pipeline schedule with authentic duration & smooth progress
     const steps = [
-      { step: 1, text: "Phase 1/11: Ingesting Scene Cognition & Cultural Lore...", delay: 240 },
-      { step: 2, text: "Phase 2/11: Validating 24fps Physical Logic & Sanity...", delay: 240 },
-      { step: 3, text: "Phase 3/11: Compiling Screenplay Dialogue & Emotion Beats...", delay: 240 },
-      { step: 4, text: "Phase 4/11: Locking Biometric ArcFace Keyframe Anchors...", delay: 240 },
-      { step: 5, text: "Phase 5/11: Routing to Veo 3.1 & DeepMind Voice Matrix...", delay: 240 },
-      { step: 6, text: "Phase 6/11: Synthesizing 4K Video Latent Diffusion Frames...", delay: 280 },
-      { step: 7, text: "Phase 7/11: Composing Acoustic Score (-24.0 LUFS EBU R128)...", delay: 240 },
-      { step: 8, text: "Phase 8/11: Aligning Visemes & Multimodal Lip Synchronization...", delay: 240 },
-      { step: 9, text: "Phase 9/11: Mastering 2.39:1 Cinema & 9:16 Color Grade...", delay: 240 },
-      { step: 10, text: "Phase 10/11: Certifying 13 Forensic Quality Guards [PASS]...", delay: 240 },
-      { step: 11, text: "Phase 11/11: Packaging & Delivering 4K Master Cinema Reel!", delay: 280 }
+      { step: 1, text: "Phase 1/11: Ingesting Scene Cognition & Cultural Lore...", minPct: 5, maxPct: 14, delay: 380 },
+      { step: 2, text: "Phase 2/11: Validating 24fps Physical Logic & Sanity Gates...", minPct: 15, maxPct: 23, delay: 380 },
+      { step: 3, text: "Phase 3/11: Compiling Screenplay Dialogue & Emotion Beats...", minPct: 24, maxPct: 32, delay: 420 },
+      { step: 4, text: "Phase 4/11: Locking Biometric ArcFace Keyframe Anchors...", minPct: 33, maxPct: 41, delay: 380 },
+      { step: 5, text: "Phase 5/11: Routing to Veo 3.1 & DeepMind Voice Matrix...", minPct: 42, maxPct: 50, delay: 380 },
+      { step: 6, text: "Phase 6/11: Synthesizing 4K Video Latent Diffusion Frames...", minPct: 51, maxPct: 62, delay: 500 },
+      { step: 7, text: "Phase 7/11: Composing Acoustic Score (-24.0 LUFS EBU R128)...", minPct: 63, maxPct: 71, delay: 380 },
+      { step: 8, text: "Phase 8/11: Aligning Visemes & Multimodal Lip Synchronization...", minPct: 72, maxPct: 80, delay: 380 },
+      { step: 9, text: "Phase 9/11: Mastering 2.39:1 Cinema & 9:16 Color Grade...", minPct: 81, maxPct: 89, delay: 380 },
+      { step: 10, text: "Phase 10/11: Certifying 13 Forensic Quality Guards [PASS]...", minPct: 90, maxPct: 96, delay: 380 },
+      { step: 11, text: "Phase 11/11: Packaging & Delivering 4K Master Cinema Reel!", minPct: 97, maxPct: 100, delay: 420 }
     ];
+
+    // Background scene compilation if prompt changed
+    const compilePromise = (async () => {
+      if (activePrompt && activePrompt.toLowerCase() !== currentScene.prompt.toLowerCase()) {
+        const canonicalMatch = SCENE_PRESETS.find(
+          (p) =>
+            p.prompt.toLowerCase() === activePrompt.toLowerCase() ||
+            p.id.toLowerCase() === activePrompt.toLowerCase() ||
+            LEGACY_ID_MAP[activePrompt.toLowerCase()] === p.id
+        );
+        if (canonicalMatch) return canonicalMatch;
+
+        try {
+          const res = await fetch("/api/studio/omni-generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            signal: AbortSignal.timeout(3500),
+            body: JSON.stringify({ prompt: activePrompt })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.scene) {
+              return {
+                id: data.scene.id,
+                label: "Generated Reel",
+                title: data.scene.title,
+                genre: data.scene.genre,
+                setting: data.scene.setting,
+                dynamic: data.scene.dynamic,
+                prompt: activePrompt,
+                duration: data.scene.duration || 180,
+                still: data.scene.still,
+                video: data.scene.video,
+                lines: data.scene.lines
+              };
+            }
+          }
+        } catch {}
+        return compileOmniPromptClient(activePrompt);
+      }
+      return currentScene;
+    })();
 
     for (const s of steps) {
       setReelGenStep(s.step);
       setReelGenStatus(s.text);
       setCompletedPhases((prev) => Array.from(new Set([...prev, s.step])));
-      await new Promise((r) => setTimeout(r, s.delay));
+
+      const subTicks = 4;
+      const tickDelay = Math.floor(s.delay / subTicks);
+      const stepPctRange = s.maxPct - s.minPct;
+      for (let i = 0; i < subTicks; i++) {
+        setReelGenProgress(Math.round(s.minPct + (stepPctRange * (i + 1)) / subTicks));
+        await new Promise((r) => setTimeout(r, tickDelay));
+      }
     }
+
+    try {
+      const compiled = await compilePromise;
+      if (compiled) {
+        targetScene = compiled;
+      }
+    } catch {}
+
+    setCurrentScene(targetScene);
+    setScriptLines(targetScene.lines);
+    setSettingText(targetScene.setting);
+    setDynamicText(targetScene.dynamic);
+    setTotalDuration(targetScene.duration);
+    setPromptInput(targetScene.prompt);
+    setActivePresetId(targetScene.id);
 
     setCompletedPhases([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
     setActivePhase(11);
     setIsGeneratingReel(false);
     setIsExported(true);
+    setReelReadyBanner(true);
 
-    // Trigger physical browser download of generated reel
-    try {
-      const link = document.createElement("a");
-      link.href = currentScene.video;
-      link.download = `zyvoriq_${currentScene.id}_master.mp4`;
-      link.target = "_blank";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (e) {
-      console.error("Download trigger error:", e);
-    }
+    // Update URL query parameters for deep linking
+    updateUrlParams(targetScene.id, 11);
 
-    // Play video in player
+    // Smooth playback in the main 4K studio cinema player
+    // NOTE: Zero double audio - we do NOT open the delivery modal automatically!
+    // Delivery modal opens only when user explicitly clicks "Open Screening Suite" or "Export Master"
     if (videoRef.current) {
       videoRef.current.currentTime = 0;
       videoRef.current.play().catch(() => {});
       setIsPlaying(true);
     }
 
-    // Open Delivery Suite Modal
-    setShowDeliveryModal(true);
-
-    setToastMessage("🎉 4K Cinema Master Reel generated from all 11 phases! Delivery Suite unlocked.");
-    setTimeout(() => setToastMessage(null), 5000);
+    setToastMessage(`🎉 4K Master Reel "${targetScene.title}" (${targetScene.id}) generated & playing!`);
+    setTimeout(() => setToastMessage(null), 6000);
   };
 
   // Dynamic Audio VU Meter
@@ -645,9 +787,13 @@ export function OmniMultiPhaseStudio() {
 
     // Check if it matches an existing preset
     const matched = SCENE_PRESETS.find(
-      (p) => p.prompt.toLowerCase() === text.toLowerCase() || p.id === text.toLowerCase()
+      (p) =>
+        p.prompt.toLowerCase() === text.toLowerCase() ||
+        p.id.toLowerCase() === text.toLowerCase() ||
+        LEGACY_ID_MAP[text.toLowerCase()] === p.id
     );
 
+    let activeScene = matched;
     if (matched) {
       setCurrentScene(matched);
       setScriptLines(matched.lines);
@@ -696,8 +842,13 @@ export function OmniMultiPhaseStudio() {
       setSettingText(resolvedScene.setting);
       setDynamicText(resolvedScene.dynamic);
       setTotalDuration(resolvedScene.duration);
-      setActivePresetId("");
+      setActivePresetId(resolvedScene.id);
       setPromptInput(text);
+      activeScene = resolvedScene;
+    }
+
+    if (activeScene) {
+      updateUrlParams(activeScene.id, 1);
     }
 
     // Reset pipeline to Phase 1 (Cognition)
@@ -719,7 +870,8 @@ export function OmniMultiPhaseStudio() {
   };
 
   const handleSelectPreset = (presetId: string) => {
-    const preset = SCENE_PRESETS.find((p) => p.id === presetId);
+    const canonicalId = LEGACY_ID_MAP[presetId] || presetId;
+    const preset = SCENE_PRESETS.find((p) => p.id === canonicalId || p.id === presetId);
     if (!preset) return;
     setPromptInput(preset.prompt);
     setActivePresetId(preset.id);
@@ -925,16 +1077,93 @@ export function OmniMultiPhaseStudio() {
           {/* ========================================================== */}
           <div className="lg:col-span-7 flex flex-col justify-between space-y-3.5">
             
+            {/* Reel Generated Celebration Banner */}
+            {reelReadyBanner && (
+              <div 
+                id="reel-ready-banner"
+                className="w-full rounded-xl bg-gradient-to-r from-emerald-950/90 via-zinc-900 to-emerald-950/90 border border-emerald-500/50 p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 shadow-[0_0_30px_rgba(16,185,129,0.2)] animate-in fade-in"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/20 border border-emerald-400/50 text-emerald-400 shrink-0">
+                    <Sparkles className="h-5 w-5 fill-current" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-400">Master 4K Reel Ready</span>
+                      <span className="rounded bg-emerald-500/20 px-1.5 py-0.2 text-[10px] font-mono text-emerald-300">24fps SMPTE • -24 LUFS</span>
+                    </div>
+                    <div className="text-sm font-bold text-white mt-0.5 flex flex-wrap items-center gap-2">
+                      <span>{currentScene.title}</span>
+                      <span className="text-xs font-mono text-zinc-400">({currentScene.id})</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    id="banner-open-delivery-suite-btn"
+                    type="button"
+                    onClick={() => {
+                      if (videoRef.current) {
+                        videoRef.current.pause();
+                        setIsPlaying(false);
+                      }
+                      setShowDeliveryModal(true);
+                    }}
+                    className="rounded-lg bg-gradient-to-r from-emerald-400 to-teal-400 px-3.5 py-2 text-xs font-black text-slate-950 uppercase tracking-wider hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer flex items-center gap-1.5 shadow-lg shadow-emerald-500/20"
+                  >
+                    <span>Open Screening Suite ↗</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReelReadyBanner(false)}
+                    className="rounded-lg p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
+                    title="Dismiss"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* A. MASTER CINEMA PLAYER (Exact Figma Framing & Aspect Ratio) */}
             <div 
               ref={playerWrapperRef}
               className="relative aspect-[16/9] lg:aspect-[2.35/1] w-full overflow-hidden rounded-2xl border border-zinc-800/80 bg-black shadow-2xl group flex flex-col justify-between"
             >
-              {/* Overlaid Scene Title (Top-Left) */}
-              <div className="absolute top-4 left-4 z-20 pointer-events-none">
+              {/* Overlaid Scene Title & Unique Reel ID Badges (Top-Left) */}
+              <div className="absolute top-3 sm:top-4 left-3 sm:left-4 z-20 pointer-events-auto">
                 <h2 className="text-base sm:text-lg lg:text-xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] tracking-wide">
                   {currentScene.title}
                 </h2>
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1">
+                  <span className="text-zinc-400 text-[10px] sm:text-[11px] font-mono">REEL ID:</span>
+                  <span 
+                    id="current-reel-id-badge"
+                    className="font-mono text-[10px] sm:text-[11px] font-bold text-emerald-300 bg-black/75 backdrop-blur-md border border-emerald-500/40 px-2 py-0.5 rounded shadow"
+                  >
+                    {currentScene.id}
+                  </span>
+                  <button
+                    id="copy-reel-id-btn"
+                    type="button"
+                    onClick={() => handleCopyReelId(currentScene.id)}
+                    className="text-[10px] font-mono text-zinc-300 hover:text-emerald-300 border border-zinc-700 bg-black/75 backdrop-blur-md px-2 py-0.5 rounded transition flex items-center gap-1 cursor-pointer"
+                    title="Copy Unique Reel ID"
+                  >
+                    {copiedReelId ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                    <span>{copiedReelId ? "Copied" : "Copy ID"}</span>
+                  </button>
+                  <button
+                    id="copy-reel-deeplink-btn"
+                    type="button"
+                    onClick={handleCopyShareLink}
+                    className="text-[10px] font-mono text-zinc-300 hover:text-cyan-300 border border-zinc-700 bg-black/75 backdrop-blur-md px-2 py-0.5 rounded transition flex items-center gap-1 cursor-pointer"
+                    title="Copy Direct Deep Link"
+                  >
+                    {copiedLink ? <Check className="h-3 w-3 text-cyan-400" /> : <Share2 className="h-3 w-3" />}
+                    <span>{copiedLink ? "Link Copied" : "Copy 4K Link"}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Video Element with Fallback Poster */}
@@ -2009,12 +2238,12 @@ export function OmniMultiPhaseStudio() {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs font-mono">
                 <span className="text-zinc-400">Pipeline Step:</span>
-                <span className="text-emerald-400 font-bold">{reelGenStep} / 11 Phases</span>
+                <span className="text-emerald-400 font-bold">{reelGenStep} / 11 Phases ({reelGenProgress}%)</span>
               </div>
               <div className="h-2.5 w-full overflow-hidden rounded-full bg-zinc-900 border border-zinc-800">
                 <div 
                   className="h-full bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 transition-all duration-300 rounded-full shadow-[0_0_12px_rgba(16,185,129,0.8)]"
-                  style={{ width: `${Math.round((reelGenStep / 11) * 100)}%` }}
+                  style={{ width: `${reelGenProgress}%` }}
                 />
               </div>
             </div>
@@ -2067,20 +2296,34 @@ export function OmniMultiPhaseStudio() {
               </button>
             </div>
 
-            {/* Video Screening Theater Player */}
+            {/* Video Screening Theater Player (No autoPlay to prevent audio overlap) */}
             <div className="relative rounded-xl overflow-hidden bg-black border border-zinc-800 aspect-video shadow-2xl">
               <video
                 src={currentScene.video}
                 controls
-                autoPlay
                 playsInline
                 loop
                 className="w-full h-full object-contain"
               />
             </div>
 
-            {/* Film Meta Badges */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+            {/* Film Meta Badges with REEL ID */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs font-mono">
+              <div className="rounded-lg bg-black/50 border border-zinc-800/80 p-2">
+                <span className="text-zinc-500 block text-[10px]">REEL ID:</span>
+                <div className="flex items-center justify-between gap-1 mt-0.5">
+                  <span className="text-emerald-400 font-bold text-xs truncate block">{currentScene.id}</span>
+                  <button
+                    id="modal-copy-reel-id-btn"
+                    type="button"
+                    onClick={() => handleCopyReelId(currentScene.id)}
+                    className="text-zinc-400 hover:text-white p-0.5 rounded hover:bg-zinc-800 transition cursor-pointer"
+                    title="Copy Reel ID"
+                  >
+                    {copiedReelId ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                  </button>
+                </div>
+              </div>
               <div className="rounded-lg bg-black/50 border border-zinc-800/80 p-2">
                 <span className="text-zinc-500 block text-[10px]">TITLE:</span>
                 <span className="text-zinc-200 font-bold truncate block">{currentScene.title}</span>
@@ -2095,7 +2338,7 @@ export function OmniMultiPhaseStudio() {
               </div>
               <div className="rounded-lg bg-black/50 border border-zinc-800/80 p-2">
                 <span className="text-zinc-500 block text-[10px]">PROVENANCE:</span>
-                <span className="text-cyan-400 font-bold block">SHA-256 C2PA Verified</span>
+                <span className="text-cyan-400 font-bold block">SHA-256 C2PA</span>
               </div>
             </div>
 

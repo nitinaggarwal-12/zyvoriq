@@ -46,7 +46,7 @@ function compileOmniPromptSemantic(rawPrompt: string): OmniGeneratedScene {
   let setting = "Acoustically Calibrated Soundstage & Location Studio";
   let dynamic = "High-Stakes Dramatic Arc & Biometric Resonance";
   let still = "/assets/stills/mumbai_penthouse.jpg";
-  let video = "/assets/video/napoleon_180s_master.mp4";
+  let video = "/assets/video/mumbai_penthouse_180s_master.mp4";
   let paletteTheme = "High-Contrast 8K HDR, Anamorphic Gold & Slate";
   let lines: OmniScriptLine[] = [];
 
@@ -108,7 +108,7 @@ function compileOmniPromptSemantic(rawPrompt: string): OmniGeneratedScene {
     setting = "High-Rise Penthouse, Bandra West, Mumbai";
     dynamic = "Warm Sibling Banter & Family Revelations";
     still = "/assets/stills/mumbai_penthouse.jpg";
-    video = "/assets/video/napoleon_180s_master.mp4";
+    video = "/assets/video/mumbai_penthouse_180s_master.mp4";
     paletteTheme = "Golden Interior Amber, Sea Link Cyan & Warm Ivory";
     lines = [
       { id: "mb1", speaker: "RAJ", emotion: "smiling", timestamp: "00:04", text: "Bas karo, Shweta! Paneer khatam ho jayega!" },
@@ -161,7 +161,7 @@ function compileOmniPromptSemantic(rawPrompt: string): OmniGeneratedScene {
     setting = "Acoustically Calibrated Soundstage & Location Studio";
     dynamic = "High-Stakes Dramatic Arc & Biometric Resonance";
     still = "/assets/stills/mumbai_penthouse.jpg";
-    video = "/assets/video/napoleon_180s_master.mp4";
+    video = "/assets/video/mumbai_penthouse_180s_master.mp4";
     paletteTheme = "High-Contrast 8K HDR, Anamorphic Gold & Slate";
     lines = [
       { id: "un1", speaker: "PROTAGONIST", emotion: "intense", timestamp: "00:04", text: `Every choice we made has brought us directly to this threshold.` },
@@ -170,8 +170,11 @@ function compileOmniPromptSemantic(rawPrompt: string): OmniGeneratedScene {
     ];
   }
 
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 24) || "custom_master";
+  const uniqueReelId = `reel_${slug}_${Math.random().toString(36).substring(2, 7)}`;
+
   return {
-    id: `scene_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    id: uniqueReelId,
     title,
     genre,
     setting,

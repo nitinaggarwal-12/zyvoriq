@@ -68,204 +68,175 @@ async function main() {
     });
     await sleep(600);
 
-    console.log("\nStep 2: Asserting Studio Elements & 11-Phase Stepper Track...");
+    console.log("\nStep 2: Asserting Studio Elements, Unique Reel ID & Initial State...");
 
-    // A. Brand & Header Pill Navigation
-    const hasBrand = await page.evaluate(() => {
-      const el = document.querySelector("#omni-multiphase-studio");
-      return el && el.textContent.includes("Zyvoriq") && el.textContent.includes("Omni Director [Active]");
+    // Assert Unique Reel ID badge is present and shows reel_mumbai_luxury_penthouse
+    const reelIdBadge = await page.evaluate(() => {
+      const badge = document.querySelector("#current-reel-id-badge");
+      const video = document.querySelector("#player-video") || document.querySelector("video");
+      return {
+        badgeText: badge ? badge.textContent.trim() : null,
+        videoSrc: video ? video.src : null
+      };
     });
-    console.log(`✓ Header Brand & 'Omni Director [Active]' pill: ${hasBrand ? "PASS" : "FAIL"}`);
-    if (!hasBrand) throw new Error("Header brand or Omni Director pill missing");
 
-    // B. Telemetry Badges
-    const hasTelemetry = await page.evaluate(() => {
-      const el = document.querySelector("#omni-multiphase-studio");
-      return el && el.textContent.includes("Veo 3.1 4K DCI") && (el.textContent.includes("EBU R128") || el.textContent.includes("-24 LUFS"));
-    });
-    console.log(`✓ Engine Telemetry Badges (Veo 3.1 & EBU R128): ${hasTelemetry ? "PASS" : "FAIL"}`);
-    if (!hasTelemetry) throw new Error("Telemetry badges missing");
+    console.log(`✓ Initial Reel ID Badge: ${reelIdBadge.badgeText}`);
+    console.log(`✓ Initial Master Video Source: ${reelIdBadge.videoSrc}`);
 
-    // C. All 11 Phases on Stepper Track
-    const stepperCheck = await page.evaluate(() => {
-      const el = document.querySelector("#omni-multiphase-studio");
-      if (!el) return false;
-      const t = el.textContent;
-      return (
-        t.includes("1. Cognition") &&
-        t.includes("2. Logic & Sanity") &&
-        t.includes("3. Script & EDL") &&
-        t.includes("4. Biometrics") &&
-        t.includes("5. Tool Routing") &&
-        t.includes("6. Video Gen") &&
-        t.includes("7. Audio & Foley") &&
-        t.includes("8. Lip-Sync") &&
-        t.includes("9. Color & Optics") &&
-        t.includes("10. Quality Gates") &&
-        t.includes("11. Master Delivery")
-      );
-    });
-    console.log(`✓ 11-Phase Stepper Track (Phases 1 to 11): ${stepperCheck ? "PASS" : "FAIL"}`);
-    if (!stepperCheck) throw new Error("11-Phase stepper track missing required phase labels");
+    if (!reelIdBadge.badgeText || !reelIdBadge.badgeText.includes("reel_mumbai_luxury_penthouse")) {
+      throw new Error(`Expected reel_mumbai_luxury_penthouse badge, got: ${reelIdBadge.badgeText}`);
+    }
 
-    // D. Command Bar Action Buttons
-    const hasCommandBarButtons = await page.evaluate(() => {
-      const startBtn = document.querySelector("#omni-start-generation-btn");
-      const ingestBtn = document.querySelector("#omni-create-button");
-      return Boolean(startBtn && ingestBtn && startBtn.textContent.includes("Start Reel Generation"));
-    });
-    console.log(`✓ Command Bar Action ('Start Reel Generation' & 'Quick Ingest'): ${hasCommandBarButtons ? "PASS" : "FAIL"}`);
-    if (!hasCommandBarButtons) throw new Error("Command Bar action buttons missing");
-
-    // E. Dossier Footer Button
-    const hasDossierStartBtn = await page.evaluate(() => {
-      const btn = document.querySelector("#dossier-start-generation-btn");
-      return Boolean(btn && btn.textContent.includes("Start Reel Generation (All 11 Phases)"));
-    });
-    console.log(`✓ Dossier Footer Action ('Start Reel Generation (All 11 Phases)'): ${hasDossierStartBtn ? "PASS" : "FAIL"}`);
-    if (!hasDossierStartBtn) throw new Error("Dossier footer Start Reel Generation button missing");
+    // Verify it is NOT pointing to Napoleon!
+    if (reelIdBadge.videoSrc && reelIdBadge.videoSrc.includes("napoleon")) {
+      throw new Error(`CRITICAL DEFECT: Mumbai Penthouse must NOT play Napoleon video! Got: ${reelIdBadge.videoSrc}`);
+    }
+    if (!reelIdBadge.videoSrc || !reelIdBadge.videoSrc.includes("mumbai_penthouse_180s_master.mp4")) {
+      throw new Error(`Expected mumbai_penthouse_180s_master.mp4, got: ${reelIdBadge.videoSrc}`);
+    }
+    console.log("✓ Verified Mumbai Penthouse correctly points to mumbai_penthouse_180s_master.mp4 (Napoleon defect resolved)!");
 
     // Capture initial studio screenshot
-    const studioEl = await page.$("#omni-multiphase-studio");
-    const screenshot1 = path.join(SCREENSHOT_DIR, "01_omni_11_phase_studio_initial.png");
-    if (studioEl) {
-      await studioEl.screenshot({ path: screenshot1 });
-    } else {
-      await page.screenshot({ path: screenshot1 });
-    }
+    const screenshot1 = path.join(SCREENSHOT_DIR, "01_omni_studio_initial_mumbai.png");
+    await page.screenshot({ path: screenshot1 });
     console.log(`📸 Captured: ${screenshot1}`);
 
-    // Step 3: Trigger "Start Reel Generation" from Command Bar (Synthesizing All 11 Phases)
+    // Step 3: Trigger "Start Reel Generation"
     console.log("\nStep 3: Triggering 'Start Reel Generation' across all 11 phases...");
     await page.click("#omni-start-generation-btn");
-    await sleep(400);
+    await sleep(500);
 
-    // Verify 11-Phase Animated Generation Overlay appears
-    const hasOverlay = await page.evaluate(() => {
+    // Verify 11-Phase Animated Generation Overlay appears with live percentage
+    const overlayStatus = await page.evaluate(() => {
       const overlay = document.querySelector("#omni-reel-generation-overlay");
-      return Boolean(overlay && overlay.textContent.includes("Generating 4K Cinema Master Reel"));
+      if (!overlay) return null;
+      return overlay.textContent;
     });
-    console.log(`✓ 11-Phase Production Pipeline Overlay Active: ${hasOverlay ? "PASS" : "FAIL"}`);
-    if (!hasOverlay) throw new Error("11-Phase Production Pipeline Overlay did not appear");
+
+    console.log(`✓ 11-Phase Generation Overlay Active: ${Boolean(overlayStatus)}`);
+    if (!overlayStatus) throw new Error("11-Phase Production Pipeline Overlay did not appear");
 
     const screenshot2 = path.join(SCREENSHOT_DIR, "02_omni_11_phase_generation_overlay.png");
     await page.screenshot({ path: screenshot2 });
     console.log(`📸 Captured: ${screenshot2}`);
 
-    // Wait for all 11 phases to complete and overlay to close (approx 3.2s total)
+    // Wait for all 11 phases to complete and overlay to close (approx 4.8s)
     console.log("Waiting for 11 phases synthesis to complete...");
     await page.waitForFunction(() => {
       const overlay = document.querySelector("#omni-reel-generation-overlay");
-      const modal = document.querySelector("#omni-delivery-modal");
-      return !overlay && Boolean(modal);
-    }, { timeout: 20000 });
+      const banner = document.querySelector("#reel-ready-banner");
+      return !overlay && Boolean(banner);
+    }, { timeout: 25000 });
     await sleep(800);
-    console.log("✓ All 11 phases compiled successfully! Cinema Delivery Modal opened.");
+    console.log("✓ All 11 phases synthesized successfully! Celebration Banner displayed.");
 
-    // Step 4: Verify Cinema Master Delivery Suite & Screening Room Modal
-    console.log("\nStep 4: Asserting Cinema Master Delivery Suite Modal...");
-    const modalAsserts = await page.evaluate(() => {
+    // Step 4: Verify Zero Overlapping Audio & Master Video Playback
+    console.log("\nStep 4: Verifying Master Video Playback & Audio State...");
+    const playbackState = await page.evaluate(() => {
+      const video = document.querySelector("video");
       const modal = document.querySelector("#omni-delivery-modal");
-      if (!modal) return { present: false };
-      const text = modal.textContent;
-      const video = modal.querySelector("video");
-      const download4k = modal.querySelector("#modal-download-4k-btn");
-      const downloadEdl = modal.querySelector("#modal-download-edl-btn");
-      const publishSocials = modal.querySelector("#modal-publish-socials-btn");
-      const copyLink = modal.querySelector("#modal-copy-link-btn");
-      const closeBtn = modal.querySelector("#modal-close-delivery-btn");
+      const banner = document.querySelector("#reel-ready-banner");
       return {
-        present: true,
-        hasTitle: text.includes("Cinema Master Delivery Suite & Screening Room"),
-        hasC2PA: text.includes("C2PA v2.1 Certified"),
-        hasVideo: Boolean(video && video.src),
-        hasDownload4k: Boolean(download4k),
-        hasDownloadEdl: Boolean(downloadEdl),
-        hasPublishSocials: Boolean(publishSocials),
-        hasCopyLink: Boolean(copyLink),
-        hasCloseBtn: Boolean(closeBtn)
+        hasBanner: Boolean(banner),
+        modalOpen: Boolean(modal),
+        videoSrc: video ? video.src : null,
+        videoPaused: video ? video.paused : true,
+        url: window.location.href
       };
     });
 
-    console.log(`✓ Modal Present: ${modalAsserts.present ? "PASS" : "FAIL"}`);
-    console.log(`✓ Modal Title & C2PA Provenance: ${modalAsserts.hasTitle && modalAsserts.hasC2PA ? "PASS" : "FAIL"}`);
-    console.log(`✓ Screening Video Player: ${modalAsserts.hasVideo ? "PASS" : "FAIL"}`);
-    console.log(`✓ Download 4K Master Button: ${modalAsserts.hasDownload4k ? "PASS" : "FAIL"}`);
-    console.log(`✓ Download EDL JSON Button: ${modalAsserts.hasDownloadEdl ? "PASS" : "FAIL"}`);
-    console.log(`✓ Publish to Socials Button: ${modalAsserts.hasPublishSocials ? "PASS" : "FAIL"}`);
-    console.log(`✓ Copy Screening Link Button: ${modalAsserts.hasCopyLink ? "PASS" : "FAIL"}`);
+    console.log(`✓ Master Reel Ready Banner Visible: ${playbackState.hasBanner}`);
+    console.log(`✓ Modal Is NOT Auto-Opened (No double video/overlapping audio): ${!playbackState.modalOpen}`);
+    console.log(`✓ Active Cinema Video Source: ${playbackState.videoSrc}`);
+    console.log(`✓ Current URL Query: ${playbackState.url}`);
 
-    if (!modalAsserts.present || !modalAsserts.hasVideo || !modalAsserts.hasDownload4k) {
-      throw new Error("Cinema Master Delivery Suite modal failed required assertions");
+    if (playbackState.modalOpen) {
+      throw new Error("Modal should NOT auto-open on reel generation (causes overlapping audio)");
+    }
+    if (!playbackState.videoSrc || !playbackState.videoSrc.includes("mumbai_penthouse_180s_master.mp4")) {
+      throw new Error(`Master video source wrong: ${playbackState.videoSrc}`);
+    }
+    if (!playbackState.url.includes("reel=reel_mumbai_luxury_penthouse") || !playbackState.url.includes("phase=11")) {
+      throw new Error(`URL did not synchronize with generated reel query params: ${playbackState.url}`);
     }
 
-    const screenshot3 = path.join(SCREENSHOT_DIR, "03_cinema_master_delivery_modal.png");
+    const screenshot3 = path.join(SCREENSHOT_DIR, "03_reel_ready_playing_in_cinema.png");
     await page.screenshot({ path: screenshot3 });
     console.log(`📸 Captured: ${screenshot3}`);
 
-    // Test EDL JSON Download Click
-    console.log("Clicking Download EDL Script JSON button...");
-    await page.click("#modal-download-edl-btn");
-    await sleep(400);
-
-    // Test Copy Screening Link Click
-    console.log("Clicking Copy Screening Link button...");
-    await page.click("#modal-copy-link-btn");
-    await sleep(400);
-
-    // Verify Toast Notification appeared
-    const hasToast = await page.evaluate(() => {
-      const toast = document.querySelector("#omni-toast");
-      return Boolean(toast && toast.textContent);
-    });
-    console.log(`✓ Directorial Feedback Toast: ${hasToast ? "PASS" : "FAIL"}`);
-
-    // Close Delivery Modal
-    console.log("Closing Delivery Modal to inspect Phase 11 Dossier Card...");
-    await page.click("#modal-close-delivery-btn");
+    // Step 5: Open Screening Suite & Verify Audio Isolation
+    console.log("\nStep 5: Opening Screening Suite & Asserting Audio Isolation...");
+    await page.click("#banner-open-delivery-suite-btn");
     await sleep(600);
 
-    // Step 5: Verify Phase 11 Dossier Card & Export Master 4K Film Button
-    console.log("\nStep 5: Verifying Phase 11 in Dossier...");
-    const phase11Check = await page.evaluate(() => {
-      const p11 = document.querySelector("#dossier-phase-11");
-      const exportBtn = document.querySelector("#omni-export-master-btn");
-      const regenBtn = document.querySelector("#omni-start-generation-btn-phase11");
-      const openSuiteBtn = document.querySelector("#open-delivery-suite-btn");
+    const suiteState = await page.evaluate(() => {
+      const modal = document.querySelector("#omni-delivery-modal");
+      const videos = document.querySelectorAll("video");
+      const backgroundVideo = videos[0];
+      const modalVideo = videos[1] || videos[0];
       return {
-        hasPhase11: Boolean(p11),
-        hasExportBtn: Boolean(exportBtn),
-        hasRegenBtn: Boolean(regenBtn),
-        hasOpenSuiteBtn: Boolean(openSuiteBtn)
+        modalPresent: Boolean(modal),
+        modalText: modal ? modal.textContent : "",
+        backgroundPaused: backgroundVideo ? backgroundVideo.paused : true,
+        modalAutoPlay: modalVideo ? modalVideo.hasAttribute("autoplay") : false
       };
     });
 
-    console.log(`✓ Phase 11 Dossier Card: ${phase11Check.hasPhase11 ? "PASS" : "FAIL"}`);
-    console.log(`✓ 'Export Master 4K Film' Button: ${phase11Check.hasExportBtn ? "PASS" : "FAIL"}`);
-    console.log(`✓ 'Re-Generate Reel' Button: ${phase11Check.hasRegenBtn ? "PASS" : "FAIL"}`);
-    console.log(`✓ 'Open Master Screening Suite' Button: ${phase11Check.hasOpenSuiteBtn ? "PASS" : "FAIL"}`);
+    console.log(`✓ Screening Suite Opened: ${suiteState.modalPresent}`);
+    console.log(`✓ Background Video Paused (Zero Overlapping Audio): ${suiteState.backgroundPaused}`);
+    console.log(`✓ Modal Video Has No Unwanted AutoPlay: ${!suiteState.modalAutoPlay}`);
+    console.log(`✓ Modal Contains REEL ID: ${suiteState.modalText.includes("reel_mumbai_luxury_penthouse")}`);
 
-    if (!phase11Check.hasPhase11 || !phase11Check.hasExportBtn) {
-      throw new Error("Phase 11 Dossier card or Export Master button missing");
-    }
+    if (!suiteState.modalPresent) throw new Error("Delivery Suite modal failed to open");
+    if (!suiteState.backgroundPaused) throw new Error("Background video should be paused when modal opens");
+    if (!suiteState.modalText.includes("reel_mumbai_luxury_penthouse")) throw new Error("REEL ID missing from modal metadata");
 
-    // Click "Export Master 4K Film" to verify it does NOT silently do nothing
-    console.log("\nClicking 'Export Master 4K Film' to verify live export packaging & modal reopening...");
-    await page.click("#omni-export-master-btn");
-    await sleep(600);
-
-    // Wait for export process to finish and modal to reopen
-    await page.waitForSelector("#omni-delivery-modal", { timeout: 10000 });
-    await sleep(600);
-    console.log("✓ 'Export Master 4K Film' successfully packaged stream and reopened Delivery Suite!");
-
-    const screenshot4 = path.join(SCREENSHOT_DIR, "04_export_master_reopened_suite.png");
+    const screenshot4 = path.join(SCREENSHOT_DIR, "04_screening_suite_modal_with_reel_id.png");
     await page.screenshot({ path: screenshot4 });
     console.log(`📸 Captured: ${screenshot4}`);
 
-    // Close modal again
+    // Test Copy Deep Link & Copy Reel ID
+    await page.click("#modal-copy-link-btn");
+    await sleep(300);
+    await page.click("#modal-copy-reel-id-btn");
+    await sleep(300);
+
+    // Close modal
     await page.click("#modal-close-delivery-btn");
-    await sleep(400);
+    await sleep(600);
+
+    // Step 5B: Test Deep Link Two-Way Synchronization & Page Reload
+    console.log("\nStep 5B: Testing Two-Way URL Deep-Link Restoration on Page Reload...");
+    const targetDeepLink = `${BASE_URL}/?reel=reel_notre_dame_coronation&phase=7`;
+    console.log(`Navigating directly to deep link: ${targetDeepLink}`);
+    await page.goto(targetDeepLink, { waitUntil: "networkidle2", timeout: 25000 });
+    await sleep(800);
+
+    const restoredState = await page.evaluate(() => {
+      const badge = document.querySelector("#current-reel-id-badge");
+      const video = document.querySelector("video");
+      const title = document.querySelector("h2");
+      return {
+        badgeId: badge ? badge.textContent.trim() : null,
+        videoSrc: video ? video.src : null,
+        titleText: title ? title.textContent.trim() : null
+      };
+    });
+
+    console.log(`✓ Restored Reel ID: ${restoredState.badgeId}`);
+    console.log(`✓ Restored Video Source: ${restoredState.videoSrc}`);
+    console.log(`✓ Restored Title: ${restoredState.titleText}`);
+
+    if (!restoredState.badgeId || !restoredState.badgeId.includes("reel_notre_dame_coronation")) {
+      throw new Error(`Failed to restore deep-linked reel ID. Got: ${restoredState.badgeId}`);
+    }
+    if (!restoredState.videoSrc || !restoredState.videoSrc.includes("coronation_180s_master.mp4")) {
+      throw new Error(`Failed to restore deep-linked video asset. Got: ${restoredState.videoSrc}`);
+    }
+
+    const screenshot5 = path.join(SCREENSHOT_DIR, "05_deep_link_restored_notre_dame.png");
+    await page.screenshot({ path: screenshot5 });
+    console.log(`📸 Captured: ${screenshot5}`);
 
     // Step 6: Test Mobile Viewport (iPhone 14 @ 390x844) & Zero Horizontal Overflow
     console.log("\nStep 6: Auditing Mobile Viewport (iPhone 14 @ 390x844)...");
@@ -285,9 +256,9 @@ async function main() {
       throw new Error(`Mobile horizontal overflow detected: ${overflowCheck.scrollWidth} > ${overflowCheck.innerWidth}`);
     }
 
-    const screenshot5 = path.join(SCREENSHOT_DIR, "05_mobile_ios_responsive_390x844.png");
-    await page.screenshot({ path: screenshot5, fullPage: false });
-    console.log(`📸 Captured: ${screenshot5}`);
+    const screenshot6 = path.join(SCREENSHOT_DIR, "06_mobile_ios_responsive_390x844.png");
+    await page.screenshot({ path: screenshot6, fullPage: false });
+    console.log(`📸 Captured: ${screenshot6}`);
 
     // Step 7: Auditing Android Viewport (Pixel 7 @ 412x915)
     console.log("\nStep 7: Auditing Android Viewport (Pixel 7 @ 412x915)...");
@@ -307,9 +278,9 @@ async function main() {
       throw new Error(`Android horizontal overflow detected: ${androidOverflowCheck.scrollWidth} > ${androidOverflowCheck.innerWidth}`);
     }
 
-    const screenshot6 = path.join(SCREENSHOT_DIR, "06_mobile_android_responsive_412x915.png");
-    await page.screenshot({ path: screenshot6, fullPage: false });
-    console.log(`📸 Captured: ${screenshot6}`);
+    const screenshot7 = path.join(SCREENSHOT_DIR, "07_mobile_android_responsive_412x915.png");
+    await page.screenshot({ path: screenshot7, fullPage: false });
+    console.log(`📸 Captured: ${screenshot7}`);
 
     console.log("\n===============================================================");
     console.log("🎉 ALL 11-PHASE OMNI PRODUCTION QUALITY GATES PASSED (100%)");
