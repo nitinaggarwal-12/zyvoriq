@@ -18,7 +18,7 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-obsidian-950/80 backdrop-blur-2xl">
-      <div className="mx-auto flex w-full max-w-[1800px] items-center justify-between px-6 py-4 sm:px-10 lg:px-14 xl:px-16">
+      <div className="mx-auto flex w-full max-w-[1760px] items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-10 py-3.5">
         <Link href="/" className="flex items-center gap-3" aria-label="Zyvoriq home">
           <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-pink-400 via-orange-300 to-teal-300 shadow-lg shadow-pink-500/10">
             <span className="text-lg font-black text-slate-950">Z</span>

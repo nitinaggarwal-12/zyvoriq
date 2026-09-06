@@ -83,42 +83,42 @@ export function OmniMasterShowcase() {
   };
 
   return (
-    <section id="master-showcase" className="relative border-b border-white/5 bg-gradient-to-b from-obsidian-950 via-obsidian-900 to-obsidian-950 py-20 lg:py-32 overflow-hidden">
+    <section id="master-showcase" className="relative border-b border-white/5 bg-gradient-to-b from-obsidian-950 via-obsidian-900 to-obsidian-950 py-10 lg:py-14 overflow-hidden">
       <div className="pointer-events-none absolute -left-40 top-1/4 h-96 w-96 rounded-full bg-teal-500/10 blur-[120px]" />
       <div className="pointer-events-none absolute -right-40 bottom-1/4 h-96 w-96 rounded-full bg-amber-500/10 blur-[120px]" />
 
-      <div className="mx-auto w-full max-w-[1600px] px-6 sm:px-10 lg:px-14 xl:px-16">
+      <div className="mx-auto w-full max-w-[1760px] px-4 sm:px-6 lg:px-8 xl:px-10">
         
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-white/5">
           <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-3.5 py-1.5 text-xs font-black text-teal-300 font-mono tracking-wider uppercase">
+            <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-3.5 py-1 text-xs font-black text-teal-300 font-mono tracking-wider uppercase">
               <Sparkles className="h-3.5 w-3.5" /> 180.0s SMPTE Broadcast Master
             </div>
-            <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
+            <h2 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
               Napoleon: The Emperor&apos;s Heart
             </h2>
-            <p className="mt-4 text-base sm:text-lg leading-relaxed text-slate-400 max-w-2xl">
+            <p className="mt-2 text-sm sm:text-base leading-relaxed text-slate-300 max-w-2xl">
               A 3-minute, 30-shot cinematic master compiled entirely through Google Omni and Veo 3.1. Zero text burn-ins, pure acoustic Beethoven Symphony No. 7 score, and 100% verified frame continuity.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 backdrop-blur-md">
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2 backdrop-blur-md">
               <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">Duration</div>
-              <div className="text-sm font-black text-white font-mono flex items-center gap-1.5">
+              <div className="text-xs font-black text-white font-mono flex items-center gap-1.5 mt-0.5">
                 <Clock className="h-3.5 w-3.5 text-teal-400" /> 180.1s (4,320 F)
               </div>
             </div>
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 backdrop-blur-md">
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2 backdrop-blur-md">
               <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">Audio Master</div>
-              <div className="text-sm font-black text-white font-mono flex items-center gap-1.5">
+              <div className="text-xs font-black text-amber-300 font-mono flex items-center gap-1.5 mt-0.5">
                 <Music2 className="h-3.5 w-3.5 text-amber-400" /> Beethoven Op. 92
               </div>
             </div>
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 backdrop-blur-md">
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2 backdrop-blur-md">
               <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">Vision Gate</div>
-              <div className="text-sm font-black text-teal-300 font-mono flex items-center gap-1.5">
+              <div className="text-xs font-black text-teal-300 font-mono flex items-center gap-1.5 mt-0.5">
                 <ShieldCheck className="h-3.5 w-3.5 text-teal-400" /> 13/13 Certified
               </div>
             </div>
@@ -126,9 +126,9 @@ export function OmniMasterShowcase() {
         </div>
 
         {/* Master Cinema Player Card */}
-        <div className="mt-12 rounded-[28px] border border-white/10 bg-obsidian-900/80 backdrop-blur-2xl p-4 sm:p-6 shadow-2xl shadow-black/80">
+        <div className="mt-6 rounded-2xl border border-white/10 bg-obsidian-900/80 backdrop-blur-2xl p-4 sm:p-5 shadow-2xl shadow-black/80">
           
-          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl bg-black shadow-inner">
+          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-black shadow-inner">
             <video
               ref={videoRef}
               key="napoleon-master-video"
@@ -147,7 +147,7 @@ export function OmniMasterShowcase() {
           </div>
 
           {/* 5-Act Interactive Scrubber Tabs */}
-          <div className="mt-6">
+          <div className="mt-5">
             <div className="text-xs font-mono font-bold uppercase text-slate-400 mb-2">
               Timeline Navigation (Click to Jump to Act):
             </div>
@@ -158,7 +158,7 @@ export function OmniMasterShowcase() {
                   <button
                     key={act.id}
                     onClick={() => handleSelectAct(index)}
-                    className={`group relative rounded-xl border p-4 text-left transition-all duration-200 cursor-pointer ${
+                    className={`group relative rounded-xl border p-3.5 text-left transition-all duration-200 cursor-pointer ${
                       isSelected
                         ? "border-teal-400 bg-teal-500/15 shadow-lg shadow-teal-500/20 ring-1 ring-teal-400"
                         : "border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06]"
@@ -172,10 +172,10 @@ export function OmniMasterShowcase() {
                         {act.timeRange}
                       </span>
                     </div>
-                    <div className="mt-1.5 text-xs sm:text-sm font-black text-white line-clamp-1">
+                    <div className="mt-1 text-xs sm:text-sm font-black text-white line-clamp-1">
                       {act.title}
                     </div>
-                    <div className="mt-1 text-[11px] text-slate-300 line-clamp-1">
+                    <div className="mt-0.5 text-[11px] text-slate-300 line-clamp-1">
                       {act.character}
                     </div>
                   </button>
@@ -185,9 +185,9 @@ export function OmniMasterShowcase() {
           </div>
 
           {/* Action Row */}
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-6">
-            <div className="flex items-center gap-3 text-xs text-slate-300 font-mono">
-              <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-4">
+            <div className="flex items-center gap-2 text-xs text-slate-300 font-mono">
+              <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
               <span>Full 180s timeline rendered on Cloudtop with zero rogue dialogue bleed</span>
             </div>
 
@@ -195,14 +195,14 @@ export function OmniMasterShowcase() {
               <a
                 href="/scratch/productions/napoleon_romance/shots/napoleon_romance_180s_master.mp4"
                 download="napoleon_romance_180s_master.mp4"
-                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-bold text-slate-200 transition hover:bg-white/10 hover:text-white"
+                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-slate-200 transition hover:bg-white/10 hover:text-white"
               >
                 <Film className="h-3.5 w-3.5 text-teal-300" /> Download Master MP4 (186 MB)
               </a>
 
               <Link
                 href="/studio/create"
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 via-emerald-400 to-teal-500 px-5 py-2.5 text-xs font-black text-slate-950 uppercase tracking-wider transition hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-teal-500/20"
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 via-emerald-400 to-teal-500 px-5 py-2 text-xs font-black text-slate-950 uppercase tracking-wider transition hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-teal-500/20"
               >
                 <Sparkles className="h-3.5 w-3.5 fill-current" /> Direct Your Film
               </Link>

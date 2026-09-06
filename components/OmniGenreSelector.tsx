@@ -53,8 +53,8 @@ const GENRES = [
 
 export function OmniGenreSelector() {
   return (
-    <section id="genres" className="relative border-b border-white/5 bg-obsidian-900/40 py-20 lg:py-32">
-      <div className="mx-auto w-full max-w-[1600px] px-6 sm:px-10 lg:px-14 xl:px-16">
+    <section id="genres" className="relative border-b border-white/5 bg-obsidian-900/40 py-10 lg:py-14">
+      <div className="mx-auto w-full max-w-[1760px] px-4 sm:px-6 lg:px-8 xl:px-10">
         
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
