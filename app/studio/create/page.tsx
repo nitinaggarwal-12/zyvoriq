@@ -477,14 +477,14 @@ function CreateHubContent() {
       <main className="flex-1 max-w-8xl w-full mx-auto px-5 py-8 md:px-10 space-y-8">
         {/* Header Title */}
         <div className="text-center max-w-4xl mx-auto space-y-3 pt-2">
-          <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1 text-xs font-bold text-teal-300 font-mono">
-            <Users className="w-3.5 h-3.5" /> 14-PERSONA CREATIVE PRODUCTION SUITE
+          <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1 text-xs font-bold text-teal-300 font-mono uppercase tracking-wider">
+            <Sparkles className="w-3.5 h-3.5 fill-current" /> Google Omni · 14 Production Suites
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white">
-            Universal AI Studio Ecosystem
+            Omni Creation Matrix
           </h1>
-          <p className="text-sm sm:text-base text-slate-400 max-w-3xl mx-auto">
-            Demarcated by industry persona. Zero cognitive overload. Select your persona to trigger dedicated visual pipelines, narrative engines, and production deliverables.
+          <p className="text-sm sm:text-base text-slate-300 max-w-3xl mx-auto">
+            Direct Veo 3.1 4K diffusion plates, character facial DNA, and acoustic soundstages across 14 specialized production pipelines.
           </p>
         </div>
 
@@ -593,7 +593,7 @@ function CreateHubContent() {
               </div>
 
               <Link
-                href={activePersonaConfig.primaryRoute}
+                href={`${activePersonaConfig.primaryRoute}${activePersonaConfig.primaryRoute.includes("?") ? "&" : "?"}q=${encodeURIComponent(quickPrompt || activePersonaConfig.samplePrompts[0])}`}
                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 px-6 py-4 text-sm font-black text-obsidian-950 shadow-xl shadow-teal-500/25 hover:from-teal-300 hover:to-cyan-300 active:scale-[0.98] transition cursor-pointer whitespace-nowrap"
               >
                 <span>Enter Dedicated Studio</span>

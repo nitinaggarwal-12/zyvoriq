@@ -74,26 +74,16 @@ export function StudioSidebar({ children, currentPath }: StudioSidebarProps) {
 
   const CORE_STUDIO_LINKS = [
     { name: "Cinema Originals", href: "/studio/cinema", icon: Clapperboard, badge: "Originals" },
-    { name: "Director's Quality Audit", href: "/studio/cinema/audit", icon: ShieldCheck, badge: "Triage" },
-    { name: "Studio Cinema & Timeline", href: "/studio", icon: Layers, badge: "Editor" },
-    { name: "Content Inspector & QA", href: "/studio/inspector", icon: Film, badge: "Scrubber" },
-    { name: "Creation Hub", href: "/studio/create", icon: Sparkles, badge: "14 Modes" },
+    { name: "Quality Audit", href: "/studio/cinema/audit", icon: ShieldCheck, badge: "Triage" },
+    { name: "Cinema Timeline", href: "/studio", icon: Layers, badge: "Editor" },
+    { name: "Content Inspector", href: "/studio/inspector", icon: Film, badge: "QA" },
+    { name: "Creation Hub", href: "/studio/create", icon: Sparkles, badge: "14 Suites" },
     { name: "Director Swarm", href: "/director", icon: Terminal, badge: "DAG" },
     { name: "Avatars & 3D Cast", href: "/studio/avatars", icon: Users },
-    { name: "Original Book Studio", href: "/studio/books", icon: BookOpen },
+    { name: "Original Books", href: "/studio/books", icon: BookOpen },
     { name: "7-Day Trend Radar", href: "/studio/trend-radar", icon: TrendingUp },
     { name: "Media Library", href: "/studio/library", icon: Film },
     { name: "Creator Analytics", href: "/creator/analytics", icon: Trophy }
-  ];
-
-  const PERSONA_MATRIX_LINKS = [
-    { id: "kids", name: "1. Kids & Family", sub: "Pixar 3D & Disney", href: "/studio/create/animation", icon: Smile, color: "text-pink-400 bg-pink-500/10 border-pink-500/30" },
-    { id: "anime", name: "2. Anime & Manga", sub: "Shōnen Action", href: "/studio/create/comics", icon: Zap, color: "text-purple-400 bg-purple-500/10 border-purple-500/30" },
-    { id: "influencer", name: "3. Viral Influencer", sub: "Split ASMR Reels", href: "/studio/create/reel", icon: Flame, color: "text-red-400 bg-red-500/10 border-red-500/30" },
-    { id: "ugc", name: "4. E-Com & DTC Ads", sub: "UGC Video Ads", href: "/studio/create/ugc", icon: ShoppingBag, color: "text-amber-400 bg-amber-500/10 border-amber-500/30" },
-    { id: "cinema", name: "5. Cinema & Noir", sub: "A24 & Podcasts", href: "/studio/create/podcast", icon: Film, color: "text-indigo-400 bg-indigo-500/10 border-indigo-500/30" },
-    { id: "heritage", name: "6. Heritage & Lore", sub: "Indian Epics & BBC", href: "/studio/create/story", icon: Compass, color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" },
-    { id: "b2b", name: "7. B2B SaaS Decks", sub: "LinkedIn Carousels", href: "/studio/create/carousel", icon: Briefcase, color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/30" }
   ];
 
   const isLinkActive = (href: string) => {
@@ -199,36 +189,6 @@ export function StudioSidebar({ children, currentPath }: StudioSidebarProps) {
                       )}
                     </div>
                   )}
-                </Link>
-              );
-            })}
-          </div>
-
-          <div className="space-y-1 pt-1">
-            {!isCollapsed && (
-              <div className="flex items-center justify-between px-2.5 py-1">
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 font-mono">
-                  14-Persona Matrix
-                </span>
-                <span className="text-[9px] font-mono text-teal-400/80">Active</span>
-              </div>
-            )}
-            {PERSONA_MATRIX_LINKS.map((p) => {
-              const Icon = p.icon;
-              const active = isLinkActive(p.href);
-              return (
-                <Link
-                  key={p.id}
-                  href={p.href}
-                  title={isCollapsed ? p.name : undefined}
-                  className={`flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-xs transition-all ${
-                    active
-                      ? "border border-amber-500/30 bg-amber-500/15 text-amber-300 font-bold"
-                      : "text-slate-400 hover:border-white/5 hover:bg-white/[0.03] hover:text-slate-200"
-                  } ${isCollapsed ? "justify-center px-0" : ""}`}
-                >
-                  <Icon className={`h-3.5 w-3.5 shrink-0 ${p.color.split(" ")[0]}`} />
-                  {!isCollapsed && <span className="truncate text-[11px]">{p.name}</span>}
                 </Link>
               );
             })}
@@ -427,27 +387,27 @@ export function StudioSidebar({ children, currentPath }: StudioSidebarProps) {
             {/* Scrollable Personas List Grid */}
             <div className="flex-1 overflow-y-auto py-3 space-y-2.5 custom-scrollbar">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {PERSONA_MATRIX_LINKS.map((p) => {
-                  const Icon = p.icon;
-                  const active = isLinkActive(p.href);
+                {CORE_STUDIO_LINKS.map((item) => {
+                  const Icon = item.icon;
+                  const active = isLinkActive(item.href);
                   return (
                     <Link
-                      key={p.id}
-                      href={p.href}
+                      key={item.href}
+                      href={item.href}
                       onClick={() => setMobileSheetOpen(false)}
                       className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${
                         active
-                          ? "border-amber-500 bg-amber-500/20 text-white shadow-md"
+                          ? "border-teal-500 bg-teal-500/20 text-white shadow-md"
                           : "border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]"
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`flex h-8 w-8 items-center justify-center rounded-xl border ${p.color}`}>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-teal-500/30 bg-teal-500/10 text-teal-300">
                           <Icon className="w-4 h-4" />
                         </div>
                         <div>
-                          <div className="text-xs font-bold text-white leading-none">{p.name}</div>
-                          <div className="text-[10px] text-slate-400 mt-1">{p.sub}</div>
+                          <div className="text-xs font-bold text-white leading-none">{item.name}</div>
+                          {item.badge && <div className="text-[10px] text-teal-400 mt-1 font-mono">{item.badge}</div>}
                         </div>
                       </div>
                       <ChevronRight className="w-4 h-4 text-slate-500" />
