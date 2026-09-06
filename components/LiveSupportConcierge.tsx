@@ -78,22 +78,22 @@ const DEFAULT_INITIAL_MESSAGE: Message = {
 
 const KNOWLEDGE_BASE: Record<string, { answer: string; quickActions?: { label: string; action: string }[] }> = {
   onboarding: {
-    answer: "🚀 **Welcome to Zyvoriq! Here is how to create your first reel in 3 steps:**\n\n1. **Enter a Topic:** Head to **Studio Cinema** (`/studio`) or **Create** (`/studio/create`) and type a topic or select one from the **7-Day Trend Radar**.\n2. **Choose Character & Voice:** Select from our 14 Cast Avatars (e.g. Priya, Marcus, Ren).\n3. **Click 'Build Production Plan':** Zyvoriq generates hooks, 4 cinematic neural scenes, and synthetic audio. You can then trim clips and export with 1 click!",
+    answer: "🚀 **Welcome to Zyvoriq! Here is how to direct your first cinema master in 3 steps:**\n\n1. **Enter a Prompt or Pick a Preset:** Select from Napoleon Historical, Joséphine Coronation, Titanic, or Neo-Tokyo.\n2. **Google Omni Pre-Flight Compilation:** Omni grounds the lore, locks character facial DNA, plans the lens optics, and composes -24 LUFS orchestral scores.\n3. **Click 'Generate 4K Video':** Synthesizes and autoplays your cinema cut directly in the console!",
     quickActions: [
-      { label: "Go to Studio Cinema", action: "link:/studio" },
-      { label: "Explore Trend Radar", action: "link:/studio/trend-radar" }
+      { label: "Launch Omni Director", action: "link:/#hero-director" },
+      { label: "Watch 180s Master", action: "link:/#master-showcase" }
     ]
   },
   trend_radar: {
-    answer: "🔮 **7-Day Predictive Trend Radar** scours upstream data sources 7 days before topics peak on social algorithms:\n\n• **Sources:** Global research papers, AI breakthroughs, GitHub Stars (>500/24h), LinkedIn Pulse, and TikTok Search Vacuums.\n• **VOI Score (0-100):** Ranks virality probability based on search acceleration and low competitor saturation.\n• **1-Click Transpiler:** Transpiles raw research into 60s Reel scripts, 8-slide LinkedIn Carousels, and 2-Host Podcasts!",
+    answer: "🔮 **Google Omni Curated Production Suites** encompass historical epics, A24 arthouse cinema, speculative sci-fi, and high-retention vertical formats:\n\n• **Lenses:** Cooke Anamorphic 2.39:1, Zeiss Master Prime, Panavision C-Series.\n• **Acoustics:** EBU R128 (-24.0 LUFS) Beethoven & orchestral arrangements.\n• **Quality Gate:** Gemini 2.5 Flash real-time multimodal visual QC.",
     quickActions: [
-      { label: "Open Trend Radar", action: "link:/studio/trend-radar" }
+      { label: "Explore Production Suites", action: "link:/#genres" }
     ]
   },
   book_studio: {
-    answer: "📚 **Original Book & Transmedia Studio** enables authors to build 100k+ word lore bibles and publish across formats:\n\n• **Stylometric Engines:** Write in the prose cadence of Tolkien, George R.R. Martin, or Frank Herbert.\n• **Omni-Modal Publishing:** Export valid Kindle EPUB 3 packages, 6\"x9\" paperback print layouts, and full-cast Audible audiobooks with -18dB score ducking.\n• **#BookTok Campaign:** Auto-generates 15 promotional cinematic video prompts to market your book!",
+    answer: "📚 **Omni Cinema & Narrative Architecture:**\n\n• **5-Act Screenplays:** 30 camera plates conforming to SMPTE standards.\n• **C2PA Cryptographic Provenance:** Tamper-proof metadata embedded into every master export.\n• **Zero Prompts Wasted:** 95% pre-flight preparation prevents hallucinations and character drift.",
     quickActions: [
-      { label: "Open Book Studio", action: "link:/studio/books" }
+      { label: "View Architecture", action: "link:/#architecture" }
     ]
   },
   monetization: {
@@ -412,7 +412,7 @@ export function LiveSupportConcierge() {
           text: `🔍 **Visual Screenshot Diagnostic Complete:**\n\nI analyzed your uploaded screenshot (**${currentAttachment.name}**):\n\n• **Identified Node:** ${visualDiag.identifiedElement}\n• **Root Cause:** ${visualDiag.rootCause}\n• **Actionable Recommendation:** ${visualDiag.recommendedAction}\n• **Confidence Score:** ${visualDiag.confidence}`,
           visualDiagnosis: visualDiag,
           quickActions: [
-            { label: "1-Click Auto-Fix in Studio", action: "link:/studio" },
+            { label: "1-Click Direct in Omni Console", action: "link:/#hero-director" },
             { label: "Start Live Video Screen Share", action: "screen_share" }
           ],
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -446,10 +446,10 @@ export function LiveSupportConcierge() {
         const aiMsg: Message = {
           id: `msg_ai_${Date.now()}`,
           sender: "ai",
-          text: "🔒 **Zyvoriq Proprietary Neural Architecture**\n\nZyvoriq operates exclusively on our sovereign **Zyvoriq Neural Cinema & Cognitive Synthesis Engine**. Under enterprise security and trade-secret protection protocols, platform model weights, internal topologies, and underlying infrastructure details are strictly confidential enterprise IP.\n\nI am ready to help you accelerate your creator rankings, explore 7-day trend forecasts, or master video production!",
+          text: "🔒 **Zyvoriq Proprietary Neural Architecture**\n\nZyvoriq operates exclusively on our sovereign **Zyvoriq Neural Cinema & Cognitive Synthesis Engine**. Under enterprise security and trade-secret protection protocols, platform model weights, internal topologies, and underlying infrastructure details are strictly confidential enterprise IP.\n\nI am ready to help you direct your next cinema master, explore production suites, or watch the 180s master film!",
           quickActions: [
-            { label: "Open Creator Growth", action: "link:/creator/analytics" },
-            { label: "Explore Studio", action: "link:/studio" }
+            { label: "Explore Production Suites", action: "link:/#genres" },
+            { label: "Launch Omni Director", action: "link:/#hero-director" }
           ],
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
         };
@@ -483,7 +483,7 @@ export function LiveSupportConcierge() {
           sender: "ai",
           text: `🎨 **Customize Your Virtual Chat & Support Avatar:**\n\nYou are currently chatting with **${avatarPref.avatarName}** (${avatarPref.attireLabel}, ${avatarPref.toneLabel}).\n\nYou can change avatar identity, wardrobe attire, neural voice, and screen-sharing tone in the Avatar Studio:`,
           quickActions: [
-            { label: "Customize Avatar Profile", action: "link:/studio/avatars" }
+            { label: "Launch Omni Director", action: "link:/#hero-director" }
           ],
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
         };
@@ -494,9 +494,9 @@ export function LiveSupportConcierge() {
         const aiMsg: Message = {
           id: `msg_ai_${Date.now()}`,
           sender: "ai",
-          text: "🛡️ **Live Government ID & Age Verification Vault**\n\nYou can verify your age (18+) using international passports, US driver's licenses, or EU eIDs with zero biometric storage.\n\nClick below to open the dedicated verification portal:",
+          text: "🛡️ **C2PA Provenance & Cryptographic Transparency**\n\nAll synthetic media generated via Zyvoriq embeds immutable cryptographic C2PA metadata and SynthID digital watermarks with zero biometric storage.\n\nClick below to review our Terms & Compliance policies:",
           quickActions: [
-            { label: "Open ID & Age Vault", action: "link:/governance/verify" }
+            { label: "View Terms & Compliance", action: "link:/terms" }
           ],
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
         };
@@ -538,10 +538,10 @@ export function LiveSupportConcierge() {
       }
 
       const response = matchedKey ? KNOWLEDGE_BASE[matchedKey] : {
-        answer: `✨ **Thanks for asking!**\n\nI can help you with:\n• **Live Video Avatar on Camera:** Real-time visual support\n• **Upload Screenshots:** 1-Click diagnostic analysis\n• **Screen Copilot:** Visual live unblocking\n• **Creator Growth Hub:** Boost views & ranking (` + "`/creator/analytics`" + `)\n• **Studio Cinema:** Building cinematic reels (` + "`/studio`" + `)`,
+        answer: "✨ **Thanks for asking!**\n\nI can help you with:\n• **Google Omni Director:** Text to 4K cinema video with Veo 3.1\n• **180s Master Film:** Direct 30-shot cinematic screenplays\n• **Live Video Avatar on Camera:** Real-time visual support\n• **Screen Copilot:** Visual live unblocking",
         quickActions: [
-          { label: "Start Screen Copilot", action: "screen_share" },
-          { label: "Toggle Live Cam", action: "user_cam" },
+          { label: "Launch Omni Director", action: "link:/#hero-director" },
+          { label: "Watch 180s Master", action: "link:/#master-showcase" },
           { label: "Rate Support (1-5 ⭐)", action: "rate" }
         ]
       };

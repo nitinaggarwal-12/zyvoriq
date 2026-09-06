@@ -8,12 +8,11 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const nav = [
-    ["Omni Director", "/studio/create"],
-    ["180s Master Film", "#master-showcase"],
-    ["Architecture", "#architecture"],
-    ["Genres", "#genres"],
-    ["Library", "/studio/library"],
-    ["Trust & C2PA", "/veritas"],
+    ["Omni Director", "/#hero-director"],
+    ["180s Master Film", "/#master-showcase"],
+    ["Architecture", "/#architecture"],
+    ["Genres", "/#genres"],
+    ["Provenance", "/#architecture"],
   ];
 
   return (
@@ -31,19 +30,19 @@ export function Navbar() {
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary navigation">
           {nav.map(([label, href]) => (
-            <Link key={label} href={href} className="rounded-xl px-3.5 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/5 hover:text-white">
+            <a key={label} href={href} className="rounded-xl px-3.5 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/5 hover:text-white">
               {label}
-            </Link>
+            </a>
           ))}
         </nav>
 
         <div className="hidden items-center gap-3 sm:flex">
-          <a href="#master-showcase" className="hidden items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold text-slate-300 transition hover:text-white xl:flex">
+          <a href="/#master-showcase" className="hidden items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold text-slate-300 transition hover:text-white xl:flex">
             <PlayCircle className="h-4 w-4 text-teal-300" /> Watch 180s Master
           </a>
-          <Link href="/studio/create" className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 px-5 py-2.5 text-sm font-black text-obsidian-950 transition hover:scale-[1.02] active:scale-[0.98] shadow-md shadow-teal-500/20">
-            <Sparkles className="h-4 w-4 fill-current" /> Launch Omni Studio
-          </Link>
+          <a href="/#hero-director" className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 px-5 py-2.5 text-sm font-black text-obsidian-950 transition hover:scale-[1.02] active:scale-[0.98] shadow-md shadow-teal-500/20">
+            <Sparkles className="h-4 w-4 fill-current" /> Direct Cinema Master
+          </a>
         </div>
 
         <button type="button" className="rounded-xl p-2.5 text-slate-300 hover:bg-white/5 lg:hidden" aria-label="Toggle navigation" aria-expanded={mobileMenuOpen} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
@@ -55,16 +54,16 @@ export function Navbar() {
         <div className="border-t border-white/5 bg-obsidian-950 px-6 py-5 lg:hidden">
           <div className="space-y-2">
             {nav.map(([label, href]) => (
-              <Link key={label} href={href} onClick={() => setMobileMenuOpen(false)} className="block rounded-xl px-3 py-3 text-base font-semibold text-slate-200 hover:bg-white/5">
+              <a key={label} href={href} onClick={() => setMobileMenuOpen(false)} className="block rounded-xl px-3 py-3 text-base font-semibold text-slate-200 hover:bg-white/5">
                 {label}
-              </Link>
+              </a>
             ))}
-            <a href="#master-showcase" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 rounded-xl px-3 py-3 text-base font-semibold text-teal-300 hover:bg-white/5">
+            <a href="/#master-showcase" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 rounded-xl px-3 py-3 text-base font-semibold text-teal-300 hover:bg-white/5">
               <PlayCircle className="h-5 w-5" /> Watch 180s Master
             </a>
-            <Link href="/studio/create" onClick={() => setMobileMenuOpen(false)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 py-3.5 text-sm font-black text-obsidian-950 shadow-md shadow-teal-500/20">
-              <Sparkles className="h-4 w-4 fill-current" /> Launch Omni Studio
-            </Link>
+            <a href="/#hero-director" onClick={() => setMobileMenuOpen(false)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 py-3.5 text-sm font-black text-obsidian-950 shadow-md shadow-teal-500/20">
+              <Sparkles className="h-4 w-4 fill-current" /> Direct Cinema Master
+            </a>
           </div>
         </div>
       )}

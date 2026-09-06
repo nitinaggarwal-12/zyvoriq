@@ -33,13 +33,13 @@ export function WaitlistCTA() {
             </div>
 
             <div className="flex flex-col gap-3 sm:min-w-[280px]">
-              <Link 
-                href="/studio/create" 
+              <a 
+                href="/#hero-director" 
                 className="group flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-emerald-400 to-teal-500 px-7 py-4 text-sm font-black text-slate-950 uppercase tracking-wider transition hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-teal-500/25"
               >
                 <Clapperboard className="h-4 w-4" />
-                Launch Omni Studio <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
-              </Link>
+                Direct Cinema Master <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+              </a>
               <a 
                 href="#master-showcase" 
                 className="flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-3.5 text-xs font-bold text-white transition hover:bg-white/[0.08]"

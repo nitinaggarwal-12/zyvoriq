@@ -48,33 +48,33 @@ export function AppFooter() {
           {/* Col 2: Studio Creation Engines */}
           <div className="space-y-3">
             <h4 className="font-mono font-bold text-xs uppercase tracking-wider text-slate-200">
-              Creation Studios
+              Omni Cinema Suite
             </h4>
             <ul className="space-y-2">
               <li>
-                <Link href="/studio" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5" /> Studio Cinema Stage
-                </Link>
+                <a href="/#hero-director" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-teal-400" /> Omni Cinema Director
+                </a>
               </li>
               <li>
-                <Link href="/creator/analytics" className="hover:text-teal-300 transition-colors flex items-center gap-1.5 text-teal-300 font-semibold">
-                  <Award className="w-3.5 h-3.5 text-amber-400" /> Creator Growth & Rankings
-                </Link>
+                <a href="/#master-showcase" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
+                  <Film className="w-3.5 h-3.5 text-amber-400" /> 180s Master Film Theater
+                </a>
               </li>
               <li>
-                <Link href="/studio/trend-radar" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
-                  <TrendingUp className="w-3.5 h-3.5" /> 7-Day Predictive Trend Radar
-                </Link>
+                <a href="/#architecture" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-emerald-400" /> Omni Pre-Flight Architecture
+                </a>
               </li>
               <li>
-                <Link href="/studio/books" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
-                  <BookOpen className="w-3.5 h-3.5" /> Original Book & Transmedia Studio
-                </Link>
+                <a href="/#genres" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
+                  <Award className="w-3.5 h-3.5 text-purple-400" /> Curated Production Suites
+                </a>
               </li>
               <li>
-                <Link href="/studio/avatars" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5" /> Avatars, 3D Cast & Dubbing
-                </Link>
+                <a href="/#waitlist" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
+                  <TrendingUp className="w-3.5 h-3.5 text-cyan-400" /> Direct Access Waitlist
+                </a>
               </li>
             </ul>
           </div>
@@ -86,24 +86,24 @@ export function AppFooter() {
             </h4>
             <ul className="space-y-2">
               <li>
-                <Link href="/governance/benchmarks" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
-                  <BarChart3 className="w-3.5 h-3.5" /> 40-Point App Benchmark Matrix
-                </Link>
+                <a href="/#architecture" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-teal-400" /> 95% Pre-Flight Verification Gate
+                </a>
               </li>
               <li>
-                <Link href="/veritas" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5" /> Veritas zk-SNARK QA Certificates
-                </Link>
+                <a href="/#architecture" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-emerald-400" /> C2PA Cryptographic Provenance
+                </a>
               </li>
               <li>
-                <Link href="/governance" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5" /> Enterprise Governance & Audits
-                </Link>
+                <a href="/#architecture" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
+                  <BarChart3 className="w-3.5 h-3.5 text-amber-400" /> EBU R128 (-24 LUFS) Audio Mastering
+                </a>
               </li>
               <li>
-                <Link href="/dashboard" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
-                  <Award className="w-3.5 h-3.5" /> Executive Telemetry & SLAs
-                </Link>
+                <a href="/#architecture" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-cyan-400" /> Zero 3rd-Party Cloud Egress
+                </a>
               </li>
             </ul>
           </div>
@@ -135,9 +135,9 @@ export function AppFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/veritas" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
+                <a href="/#architecture" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
                   <Globe className="w-3.5 h-3.5" /> EU AI Act & Watermarking Disclosure
-                </Link>
+                </a>
               </li>
             </ul>
           </div>

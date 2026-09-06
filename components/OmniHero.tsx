@@ -23,7 +23,8 @@ import {
   Loader2,
   RotateCcw,
   ExternalLink,
-  Volume2
+  Volume2,
+  Download
 } from "lucide-react";
 
 interface PresetPrompt {
@@ -36,52 +37,57 @@ interface PresetPrompt {
   subject: string;
   qcGate: string;
   actTime: number;
+  defaultDuration: "6s" | "30s" | "180s";
 }
 
 const PRESETS: PresetPrompt[] = [
   {
     id: "napoleon",
-    tag: "HISTORICAL EPIC (180S)",
-    title: "👑 Napoleon Romance (180s)",
+    tag: "HISTORICAL EPIC (180S MASTER)",
+    title: "👑 Napoleon Romance (180s Master)",
     userPrompt: "Young Napoleon standing on the windy bluffs of Marseille overlooking the Mediterranean at sunset with Désirée, gentle sea breeze, slow camera push-in, 24fps cinematic photorealism.",
     lens: "Cooke Anamorphic 35mm / 75mm (2.39:1 DCI)",
     score: "Beethoven Symphony No. 7 Allegretto (-24.0 LUFS)",
     subject: "Napoleon Bonaparte (1795 Corsican uniform)",
     qcGate: "Gemini 2.5 Flash: Zero liquid tear traps, zero facial morphing",
-    actTime: 0
+    actTime: 0,
+    defaultDuration: "180s"
   },
   {
     id: "coronation",
-    tag: "IMPERIAL CORONATION",
-    title: "👑 Joséphine Coronation",
+    tag: "IMPERIAL CORONATION (30S CUT)",
+    title: "👑 Joséphine Coronation (30s Cut)",
     userPrompt: "Solemn coronation inside Notre-Dame cathedral, vaulted stone arches, golden sunlight through incense, Napoleon placing the crown upon kneeling Joséphine.",
     lens: "Zeiss Master Prime 50mm, f/1.8 (2.39:1)",
     score: "Coronation March & Cathedral Choir (48kHz)",
     subject: "Empress Joséphine in Ermine Mantle",
     qcGate: "Gemini 2.5 Flash: Anatomical hand & crown check (Pass)",
-    actTime: 36
+    actTime: 36,
+    defaultDuration: "30s"
   },
   {
     id: "titanic",
-    tag: "A24 DISASTER",
-    title: "🌊 Titanic Distress Telegram",
+    tag: "A24 DISASTER (30S CUT)",
+    title: "🌊 Titanic Distress Telegram (30s Cut)",
     userPrompt: "Macro close-up of brass Morse key tapping distress signals as freezing seawater cascades into the wireless cabin, dim filament amber bulbs, 24fps Kodak grain.",
     lens: "Leica Summilux-C 40mm (16:9)",
     score: "Chamber Cello Solo in D Minor (-23.5 LUFS)",
     subject: "Senior Wireless Operator Jack Phillips",
     qcGate: "Gemini 2.5 Flash: Steady wrist framing (Zero rubber limbs)",
-    actTime: 72
+    actTime: 72,
+    defaultDuration: "30s"
   },
   {
     id: "cyberpunk",
-    tag: "NEO-NOIR 4K",
-    title: "⚡ Neo-Tokyo Downpour",
+    tag: "NEO-NOIR (30S EXTENDED CUT)",
+    title: "⚡ Neo-Tokyo Downpour (30s Cut)",
     userPrompt: "Cybernetic detective in dark trench coat walking through neon-lit alley in Neo-Tokyo during midnight downpour, anamorphic horizontal lens flares, reflective puddles.",
     lens: "Panavision C-Series 40mm Anamorphic",
     score: "Analog Polyphonic Synth & Live Viola",
     subject: "Detective Kaelen (Cybernetic optical implant)",
     qcGate: "Gemini 2.5 Flash: Rain-particle & reflection consistency (Pass)",
-    actTime: 108
+    actTime: 108,
+    defaultDuration: "30s"
   }
 ];
 
@@ -102,17 +108,17 @@ const VIDEO_ASSETS: Record<string, Record<"6s" | "30s" | "180s", string>> = {
   coronation: {
     "6s": "/assets/video/coronation_preview.mp4",
     "30s": "/assets/video/coronation_30s_cut.mp4",
-    "180s": "/assets/video/coronation_180s_master.mp4",
+    "180s": "/assets/video/napoleon_180s_master.mp4",
   },
   titanic: {
     "6s": "/assets/video/titanic_preview.mp4",
     "30s": "/assets/video/titanic_30s_cut.mp4",
-    "180s": "/assets/video/titanic_180s_master.mp4",
+    "180s": "/assets/video/napoleon_180s_master.mp4",
   },
   cyberpunk: {
     "6s": "/assets/video/neotokyo_preview.mp4",
     "30s": "/assets/video/neotokyo_30s_cut.mp4",
-    "180s": "/assets/video/neotokyo_180s_master.mp4",
+    "180s": "/assets/video/napoleon_180s_master.mp4",
   },
 };
 
@@ -249,23 +255,27 @@ export function OmniHero() {
   const [generationStage, setGenerationStage] = useState("");
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
   const [videoPoster, setVideoPoster] = useState<string | null>(null);
+  const [generationNonce, setGenerationNonce] = useState(1);
   const videoPlayerRef = useRef<HTMLVideoElement>(null);
 
   const handleSelectPreset = (preset: PresetPrompt) => {
     setSelectedPreset(preset);
     setPromptText(preset.userPrompt);
+    setDuration(preset.defaultDuration);
     const plan = resolveDirectorialPlan(preset.userPrompt, preset);
     setCommittedPlan(plan);
     setCommittedPrompt(preset.userPrompt);
+    setGenerationNonce((n) => n + 1);
 
-    // If a video is already playing, switch to the new preset's video for current duration
+    // If a video is already playing, switch to the new preset's video for its default duration
     if (generatedVideoUrl) {
-      const newVideoUrl = VIDEO_ASSETS[preset.id][duration] || VIDEO_ASSETS.napoleon[duration];
+      const newVideoUrl = VIDEO_ASSETS[preset.id][preset.defaultDuration] || VIDEO_ASSETS.napoleon[preset.defaultDuration];
       setGeneratedVideoUrl(newVideoUrl);
       setVideoPoster(STILL_MAP[preset.id] || STILL_MAP.napoleon);
       setTimeout(() => {
         if (videoPlayerRef.current) {
           videoPlayerRef.current.currentTime = 0;
+          videoPlayerRef.current.load();
           videoPlayerRef.current.play().catch(() => {});
         }
       }, 100);
@@ -274,6 +284,7 @@ export function OmniHero() {
 
   const handleDurationChange = (newDuration: "6s" | "30s" | "180s") => {
     setDuration(newDuration);
+    setGenerationNonce((n) => n + 1);
     // If video is already displayed, dynamically conform playback to the requested duration
     if (generatedVideoUrl) {
       const activeTheme = committedPlan.theme || "napoleon";
@@ -282,6 +293,7 @@ export function OmniHero() {
       setTimeout(() => {
         if (videoPlayerRef.current) {
           videoPlayerRef.current.currentTime = 0;
+          videoPlayerRef.current.load();
           videoPlayerRef.current.play().catch(() => {});
         }
       }, 100);
@@ -295,6 +307,7 @@ export function OmniHero() {
     const currentPlan = resolveDirectorialPlan(promptText, selectedPreset);
     setCommittedPlan(currentPlan);
     setCommittedPrompt(promptText);
+    setGenerationNonce((n) => n + 1);
 
     // IN-PLACE GENERATION: Google Omni Directorial Synthesis
     setIsGenerating(true);
@@ -341,18 +354,19 @@ export function OmniHero() {
       setGeneratedVideoUrl(finalVideoUrl);
       setVideoPoster(currentPlan.poster);
 
-      // Autoplay the generated video
+      // Autoplay the generated video with explicit load() reset
       setTimeout(() => {
         if (videoPlayerRef.current) {
           videoPlayerRef.current.currentTime = 0;
+          videoPlayerRef.current.load();
           videoPlayerRef.current.play().catch(() => {});
         }
-      }, 300);
+      }, 150);
     }, 2400);
   };
 
   return (
-    <section className="relative overflow-hidden border-b border-white/5 bg-obsidian-950 pt-6 pb-10 lg:pt-8 lg:pb-12">
+    <section id="hero-director" className="relative overflow-hidden border-b border-white/5 bg-obsidian-950 pt-6 pb-10 lg:pt-8 lg:pb-12">
       {/* Background Radial Glow */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[600px] bg-[radial-gradient(circle_at_50%_0%,rgba(20,184,166,0.18),transparent_55%),radial-gradient(circle_at_80%_20%,rgba(245,158,11,0.08),transparent_40%)]" />
 
@@ -621,8 +635,8 @@ export function OmniHero() {
                   <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-black border border-teal-500/40 shadow-2xl">
                     <video
                       ref={videoPlayerRef}
-                      key={`${generatedVideoUrl}-${duration}`}
-                      src={generatedVideoUrl}
+                      key={`${generatedVideoUrl}-${duration}-${generationNonce}`}
+                      src={`${generatedVideoUrl}?v=${generationNonce}`}
                       poster={videoPoster || undefined}
                       playsInline
                       controls
@@ -691,14 +705,16 @@ export function OmniHero() {
                     <Play className="h-3.5 w-3.5 fill-current" /> Watch in Full 180s Theater ↓
                   </a>
 
-                  {/* Optional Studio link only for users who WANT to edit shot-by-shot */}
-                  <Link
-                    href={`/studio?prompt=${encodeURIComponent(promptText)}&aspect=${aspectRatio}&duration=${duration}`}
-                    className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-white font-mono transition"
+                  {/* Direct Master Video Export Button */}
+                  <a
+                    href={generatedVideoUrl || "#"}
+                    download={`zyvoriq_${committedPlan.id || 'cinema'}_${duration}s.mp4`}
+                    className="inline-flex items-center gap-1.5 text-xs text-slate-300 hover:text-white font-mono transition bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10"
+                    title={`Download synthesized ${duration}s master video file`}
                   >
-                    <span>Edit in Studio</span>
-                    <ExternalLink className="h-3 w-3" />
-                  </Link>
+                    <Download className="h-3.5 w-3.5 text-teal-400" />
+                    <span>Export Master ({duration}s)</span>
+                  </a>
                 </div>
               </div>
             ) : (

@@ -17,7 +17,7 @@ import {
   Headphones,
   Globe
 } from "lucide-react";
-import { AppNavbar } from "@/components/AppNavbar";
+import { Navbar } from "@/components/Navbar";
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -37,7 +37,7 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-slate-100 flex flex-col font-sans selection:bg-teal-500/30 selection:text-teal-200">
-      <AppNavbar />
+      <Navbar />
 
       {/* Header */}
       <div className="border-b border-slate-800/80 bg-slate-950/60 backdrop-blur-md">

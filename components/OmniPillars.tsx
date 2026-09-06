@@ -126,12 +126,12 @@ export function OmniPillars() {
               </div>
 
               <div className="mt-8 pt-6 border-t border-white/5">
-                <Link
-                  href="/studio/create"
+                <a
+                  href="/#hero-director"
                   className={`inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider ${pillar.textAccent} hover:underline`}
                 >
-                  Experience in Studio <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
+                  Direct with Omni <ArrowRight className="h-3.5 w-3.5" />
+                </a>
               </div>
             </div>
           ))}

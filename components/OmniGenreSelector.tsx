@@ -12,7 +12,7 @@ const GENRES = [
     description: "Period dramas from 18th-century royal courts to ancient battlefields. Governed by authentic character likeness, costuming, and acoustic symphonies.",
     icon: Crown,
     badge: "HISTORICAL SAGA",
-    href: "/studio/create?genre=historical",
+    href: "/#hero-director",
     accent: "text-amber-300 bg-amber-500/10 border-amber-500/30",
     hoverBorder: "group-hover:border-amber-500/50"
   },
@@ -23,7 +23,7 @@ const GENRES = [
     description: "Intimate psychological narratives, subtle micro-expressions, slow zooms, atmospheric rain, and organic film grain without synthetic AI plastic look.",
     icon: Film,
     badge: "ARTHOUSE DRAMA",
-    href: "/studio/create?genre=cinema",
+    href: "/#hero-director",
     accent: "text-teal-300 bg-teal-500/10 border-teal-500/30",
     hoverBorder: "group-hover:border-teal-500/50"
   },
@@ -34,7 +34,7 @@ const GENRES = [
     description: "High-concept speculative worlds, futuristic orbital stations, and cyberpunk neon corridors rendered with coherent architectural depth and sound design.",
     icon: Rocket,
     badge: "SPECULATIVE SCI-FI",
-    href: "/studio/create?genre=scifi",
+    href: "/#hero-director",
     accent: "text-cyan-300 bg-cyan-500/10 border-cyan-500/30",
     hoverBorder: "group-hover:border-cyan-500/50"
   },
@@ -45,7 +45,7 @@ const GENRES = [
     description: "Short-form vertical video engineered for Instagram Reels and YouTube Shorts. Dynamic hook pacing, phrase-level subtitles, and zero cringe.",
     icon: Flame,
     badge: "VERTICAL CREATOR",
-    href: "/studio/create?genre=viral",
+    href: "/#hero-director",
     accent: "text-rose-300 bg-rose-500/10 border-rose-500/30",
     hoverBorder: "group-hover:border-rose-500/50"
   }
@@ -70,12 +70,12 @@ export function OmniGenreSelector() {
             </p>
           </div>
 
-          <Link
-            href="/studio/create"
+          <a
+            href="/#hero-director"
             className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-xs font-black text-slate-950 uppercase tracking-wider transition hover:scale-105 active:scale-95 shrink-0"
           >
-            Explore All Genres <ArrowUpRight className="h-4 w-4" />
-          </Link>
+            Direct Custom Master <ArrowUpRight className="h-4 w-4" />
+          </a>
         </div>
 
         {/* 4 Clean Quadrant Cards */}
