@@ -7,13 +7,13 @@ import Link from "next/link";
 const PILLARS = [
   {
     number: "01",
-    badge: "CREATIVE VISION & LORE RESEARCH",
+    badge: "95% UP-FRONT PRE-FLIGHT SYNTHESIS",
     title: "Master Director & Story Architecture",
-    subtitle: "Researching historical lore, emotional subtext, plot & character arcs.",
-    description: "Omni thinks like an executive film director. Before generating a single frame, it grounds the narrative in authentic historical or world-building context, architects multi-act tension curves, scripts naturalistic dialogues, and plans character emotional arcs.",
+    subtitle: "Eliminating blindspots, lore gaps, and drift before diffusion begins.",
+    description: "Omni completes 95% of the heavy lifting up-front: deep lore research, multi-act plot structures, character emotional subtext, naturalistic dialogues, and blocking. This eliminates diffusion drift, narrative blindspots, and continuity traps before spending GPU compute.",
     features: [
-      "Deep Historical Lore & Subject Grounding",
-      "Multi-Act Plot Structure & Dramatic Tension",
+      "95% Up-Front Lore & Subject Grounding",
+      "Multi-Act Dramatic Tension & Pacing Arc",
       "Subtextual Dialogue & Speech Cadence",
       "Authentic Human Emotions (Zero Caricature)"
     ],
@@ -55,15 +55,15 @@ const PILLARS = [
   },
   {
     number: "04",
-    badge: "SOVEREIGN QUALITY GATEKEEPER",
-    title: "Multimodal Vision & Audio QC",
-    subtitle: "Inspecting physical frames, spectral purity, and motion coherence.",
-    description: "Omni is also the relentless Quality Gatekeeper. Using Gemini 2.5 Flash multimodal inspection, RAFT optical flow, and spectral analysis, it audits every visual frame for melting eyelids, checks audio spectral flatness, and rejects defects before the cut.",
+    badge: "5% POST-DIFFUSION SURGICAL FIXING",
+    title: "Surgical Defect Auto-Repair Loop",
+    subtitle: "Pinpointing the final 5% gaps and healing them autonomously.",
+    description: "After the 95% baseline reel is compiled, Omni audits live frames with Gemini 2.5 Flash. It isolates remaining edge defects—an anatomical flicker or dialogue splice—and surgically re-rolls only that specific shot without discarding the master timeline.",
     features: [
-      "Physical Frame-Level VLM Defect Inspection",
-      "Spectral Flatness (Zero Pure-Tone Sirens)",
-      "RAFT Optical Flow Motion Coherence (>=0.92)",
-      "13 Automated Cloudtop Forensic Quality Gates"
+      "Gemini 2.5 Flash Frame-Level Gap Detection",
+      "Surgical Shot-Level Auto-Repair (Loop 1-3)",
+      "Zero-Master Discard Timeline Conformance",
+      "13 Forensic Quality Gates (100% Broadcast Pass)"
     ],
     accent: "from-purple-500/20 to-indigo-500/5",
     border: "border-purple-500/30",

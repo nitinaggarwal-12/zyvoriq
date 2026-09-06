@@ -194,7 +194,7 @@ export function OmniHero() {
             </h1>
 
             <p className="mt-2 text-sm sm:text-base leading-relaxed text-slate-300 max-w-3xl">
-              Type your narrative vision. Google Omni eliminates diffusion traps up-front, compiles 4K camera vectors, composes pure acoustic scores, and enforces live quality gates on-set.
+              Before generation kicks off, Google Omni completes 95% of the directorial heavy-lifting—grounding lore, engineering plot arcs, curating camera optics, locking character DNA, and composing acoustic scores to eliminate blindspots and drift. At each step, Omni closely monitors live output, dynamically revising the plan and self-healing issues before final cut.
             </p>
           </div>
 
