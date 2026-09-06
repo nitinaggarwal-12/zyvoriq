@@ -142,7 +142,7 @@ function StoryCreateContent() {
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
-    const qTopic = searchParams.get("topic");
+    const qTopic = searchParams.get("q") || searchParams.get("topic");
     const qPantheon = searchParams.get("pantheon") as PantheonType;
     if (qTopic) setTopic(qTopic);
     if (qPantheon) setPantheon(qPantheon);

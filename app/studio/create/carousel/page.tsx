@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Layers,
   Sparkles,
@@ -16,13 +16,21 @@ import {
 } from "lucide-react";
 import { StudioSidebar } from "@/components/StudioSidebar";
 
-export default function CarouselCreatePage() {
+function CarouselCreateContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [topic, setTopic] = useState("");
   const [slideCount, setSlideCount] = useState(5);
   const [theme, setTheme] = useState("dark_glassmorphic");
   const [targetPlatform, setTargetPlatform] = useState("linkedin");
   const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    const q = searchParams.get("q") || searchParams.get("topic");
+    if (q) {
+      setTopic(q);
+    }
+  }, [searchParams]);
 
   const handleSurprisePrompt = () => {
     const ideas = [
@@ -59,102 +67,130 @@ export default function CarouselCreatePage() {
           <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white">
             Create a Social Carousel & Deck
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
-            Generate high-retention swipeable slide cards for LinkedIn and Instagram with automated typography and vector export.
+          <p className="mt-1 text-sm text-slate-400">
+            Generate high-converting, viral carousel slide decks for LinkedIn and Instagram.
           </p>
         </div>
 
-        <div className="rounded-3xl border border-emerald-500/30 bg-slate-900/80 p-5 backdrop-blur-xl shadow-2xl space-y-4">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-black uppercase tracking-wider text-emerald-400 font-mono flex items-center gap-2">
-              <Sparkles className="w-4 h-4" /> Carousel Topic or Educational Framework
-            </label>
+        <div className="rounded-3xl border border-white/10 bg-slate-900/60 p-6 backdrop-blur-xl shadow-2xl space-y-6">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-black uppercase tracking-wider text-slate-300 font-mono">
+                Topic or Content Premise
+              </label>
+              <button
+                type="button"
+                onClick={handleSurprisePrompt}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 transition cursor-pointer"
+              >
+                <Lightbulb className="w-3.5 h-3.5" />
+                <span>Surprise Me</span>
+              </button>
+            </div>
+            <textarea
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              rows={3}
+              placeholder="e.g. 5 non-obvious ways AI agents will reshape consumer retail by 2027..."
+              className="w-full resize-none rounded-2xl border border-white/10 bg-black/50 p-4 text-sm text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
+            />
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-3">
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-wider text-slate-300 font-mono">
+                Number of Slides
+              </label>
+              <div className="flex gap-2">
+                {[5, 7, 10].map((count) => (
+                  <button
+                    key={count}
+                    type="button"
+                    onClick={() => setSlideCount(count)}
+                    className={`flex-1 rounded-xl border py-2.5 text-xs font-bold transition cursor-pointer ${
+                      slideCount === count
+                        ? "border-teal-400 bg-teal-500/20 text-white"
+                        : "border-white/10 bg-white/[0.03] text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    {count} Slides
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-wider text-slate-300 font-mono">
+                Design Aesthetic
+              </label>
+              <select
+                value={theme}
+                onChange={(e) => setTheme(e.target.value)}
+                className="w-full rounded-xl border border-white/10 bg-black/50 p-2.5 text-xs font-bold text-white focus:border-teal-400 focus:outline-none"
+              >
+                <option value="dark_glassmorphic">Dark Glassmorphism (Vercel Style)</option>
+                <option value="high_contrast_yellow">High Contrast Bold Yellow (Viral)</option>
+                <option value="clean_editorial_white">Clean Editorial Minimalist</option>
+                <option value="cyberpunk_neon">Cyberpunk Neon Blueprint</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-wider text-slate-300 font-mono">
+                Target Platform
+              </label>
+              <div className="flex gap-2">
+                {[
+                  { id: "linkedin", label: "LinkedIn (PDF)" },
+                  { id: "instagram", label: "IG (4:5)" }
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setTargetPlatform(item.id)}
+                    className={`flex-1 rounded-xl border py-2.5 text-xs font-bold transition cursor-pointer ${
+                      targetPlatform === item.id
+                        ? "border-teal-400 bg-teal-500/20 text-white"
+                        : "border-white/10 bg-white/[0.03] text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-4 border-t border-white/10">
             <button
               type="button"
-              onClick={handleSurprisePrompt}
-              className="inline-flex items-center gap-1 text-xs font-bold text-emerald-300 hover:text-emerald-200 transition bg-emerald-400/10 border border-emerald-400/30 px-2.5 py-1 rounded-lg"
+              onClick={handleGenerate}
+              disabled={!topic.trim() || isGenerating}
+              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 px-8 py-3.5 text-sm font-black text-obsidian-950 shadow-lg shadow-teal-500/25 hover:from-teal-300 hover:to-cyan-300 active:scale-[0.98] transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
-              <Lightbulb className="w-3.5 h-3.5" /> Surprise Idea
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Synthesizing Deck...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 fill-current" />
+                  <span>Generate Carousel Deck</span>
+                </>
+              )}
             </button>
           </div>
-
-          <textarea
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            rows={4}
-            placeholder="What should the carousel teach or break down? (e.g. '7 cognitive biases that secretly control your everyday buying decisions')..."
-            className="w-full resize-none rounded-2xl border border-white/10 bg-black/50 p-4 text-sm font-medium text-white placeholder-slate-500 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition"
-          />
         </div>
-
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-5 space-y-3">
-            <label className="text-xs font-black uppercase tracking-wider text-slate-300 font-mono">
-              Slide Count
-            </label>
-            <div className="grid grid-cols-4 gap-2">
-              {[5, 7, 10, 12].map((cnt) => (
-                <button
-                  key={cnt}
-                  type="button"
-                  onClick={() => setSlideCount(cnt)}
-                  className={`rounded-xl border py-2.5 text-xs font-bold transition cursor-pointer ${
-                    slideCount === cnt
-                      ? "border-emerald-400 bg-emerald-500/20 text-emerald-200"
-                      : "border-white/10 bg-white/[0.03] text-slate-300 hover:text-white"
-                  }`}
-                >
-                  {cnt} Slides
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-5 space-y-3">
-            <label className="text-xs font-black uppercase tracking-wider text-slate-300 font-mono">
-              Visual Style
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { id: "dark_glassmorphic", label: "Dark Glassmorphism" },
-                { id: "minimal_swiss", label: "Minimalist Swiss" },
-              ].map((st) => (
-                <button
-                  key={st.id}
-                  type="button"
-                  onClick={() => setTheme(st.id)}
-                  className={`rounded-xl border py-2.5 text-xs font-bold transition cursor-pointer ${
-                    theme === st.id
-                      ? "border-emerald-400 bg-emerald-500/20 text-emerald-200"
-                      : "border-white/10 bg-white/[0.03] text-slate-300 hover:text-white"
-                  }`}
-                >
-                  {st.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleGenerate}
-          disabled={isGenerating || !topic.trim()}
-          className="w-full flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 py-4 text-sm font-black text-obsidian-950 shadow-xl shadow-emerald-500/25 hover:from-emerald-300 hover:to-cyan-300 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin text-obsidian-950" />
-              <span>Generating Carousel Slides & Vector Layouts...</span>
-            </>
-          ) : (
-            <>
-              <Zap className="w-5 h-5 fill-current" />
-              <span>📊 Generate Carousel Deck</span>
-            </>
-          )}
-        </button>
       </main>
     </StudioSidebar>
+  );
+}
+
+export default function CarouselCreatePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-obsidian-950 p-8 text-teal-400 font-mono">Loading Deck Studio...</div>}>
+      <CarouselCreateContent />
+    </Suspense>
   );
 }
