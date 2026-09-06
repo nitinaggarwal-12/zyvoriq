@@ -194,6 +194,21 @@ export function ReelStudio() {
   useEffect(() => {
     const q = searchParams.get("topic") || searchParams.get("q") || searchParams.get("prompt");
     const mode = searchParams.get("mode");
+    const aspectParam = searchParams.get("aspect");
+    const durationParam = searchParams.get("duration");
+
+    if (aspectParam) {
+      const normalizedAspect = aspectParam === "2.39:1" ? "16:9" : aspectParam;
+      if (["9:16", "16:9", "1:1"].includes(normalizedAspect)) {
+        setAspectRatio(normalizedAspect);
+      }
+    }
+
+    if (durationParam) {
+      const cleanedDuration = durationParam.replace(/s$/i, "");
+      setDuration(cleanedDuration);
+    }
+
     if (q && q !== topic) {
       setTopic(q);
       handleMagicPromptSubmit(q);

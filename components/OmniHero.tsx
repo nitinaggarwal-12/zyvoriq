@@ -104,7 +104,7 @@ export function OmniHero() {
       aspect: aspectRatio,
       duration: duration
     }).toString();
-    router.push(`/studio/create?${query}`);
+    router.push(`/studio?${query}`);
   };
 
   return (
@@ -275,7 +275,7 @@ export function OmniHero() {
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-400 via-emerald-400 to-teal-500 px-6 py-2.5 text-xs font-black text-slate-950 uppercase tracking-wider transition hover:scale-[1.03] active:scale-[0.98] shadow-lg shadow-teal-500/25 cursor-pointer ml-auto"
                 >
                   <Sparkles className="h-4 w-4 fill-current" />
-                  {isCompiling ? "Compiling..." : "Generate Video"}
+                  {isCompiling ? "Directing in Studio..." : "Direct & Generate in Studio"}
                 </button>
 
               </div>
