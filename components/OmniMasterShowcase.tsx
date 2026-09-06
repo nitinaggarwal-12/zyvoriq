@@ -133,18 +133,11 @@ export function OmniMasterShowcase() {
               ref={videoRef}
               key="napoleon-master-video"
               className="h-full w-full object-cover"
-              src="/scratch/productions/napoleon_romance/shots/napoleon_romance_180s_master.mp4"
+              src="/assets/video/napoleon_180s_master.mp4"
               poster={activeAct.stillUrl || "/assets/stills/napoleon_hero.png"}
               playsInline
               controls
               preload="metadata"
-              onError={(e) => {
-                const target = e.currentTarget;
-                if (!target.src.includes("/assets/video/napoleon_preview.mp4")) {
-                  target.src = "/assets/video/napoleon_preview.mp4";
-                  target.load();
-                }
-              }}
             />
 
             <div className="pointer-events-none absolute top-4 right-4 z-20 flex items-center gap-2 rounded-lg bg-black/70 px-3 py-1.5 text-[11px] font-mono font-bold text-slate-200 backdrop-blur-md border border-white/10">

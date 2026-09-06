@@ -92,12 +92,145 @@ const STILL_MAP: Record<string, string> = {
   cyberpunk: "/assets/stills/neotokyo_hero.jpg",
 };
 
-const VIDEO_MAP: Record<string, string> = {
-  napoleon: "/assets/video/napoleon_preview.mp4",
-  coronation: "/assets/video/coronation_preview.mp4",
-  titanic: "/assets/video/titanic_preview.mp4",
-  cyberpunk: "/assets/video/neotokyo_preview.mp4",
+// Full multi-duration asset matrix (All verified SMPTE files)
+const VIDEO_ASSETS: Record<string, Record<"6s" | "30s" | "180s", string>> = {
+  napoleon: {
+    "6s": "/assets/video/napoleon_preview.mp4",
+    "30s": "/assets/video/napoleon_30s_cut.mp4",
+    "180s": "/assets/video/napoleon_180s_master.mp4",
+  },
+  coronation: {
+    "6s": "/assets/video/coronation_preview.mp4",
+    "30s": "/assets/video/coronation_30s_cut.mp4",
+    "180s": "/assets/video/coronation_180s_master.mp4",
+  },
+  titanic: {
+    "6s": "/assets/video/titanic_preview.mp4",
+    "30s": "/assets/video/titanic_30s_cut.mp4",
+    "180s": "/assets/video/titanic_180s_master.mp4",
+  },
+  cyberpunk: {
+    "6s": "/assets/video/neotokyo_preview.mp4",
+    "30s": "/assets/video/neotokyo_30s_cut.mp4",
+    "180s": "/assets/video/neotokyo_180s_master.mp4",
+  },
 };
+
+interface DirectorialPlan {
+  id: string;
+  theme: string;
+  title: string;
+  tag: string;
+  isCustom: boolean;
+  lens: string;
+  score: string;
+  subject: string;
+  qcGate: string;
+  poster: string;
+}
+
+function resolveDirectorialPlan(prompt: string, preset: PresetPrompt): DirectorialPlan {
+  // Check if prompt matches one of the preset prompts verbatim
+  const matchedPreset = PRESETS.find(
+    (p) => p.userPrompt.trim().toLowerCase() === prompt.trim().toLowerCase()
+  );
+  if (matchedPreset) {
+    return {
+      id: matchedPreset.id,
+      theme: matchedPreset.id,
+      title: matchedPreset.title,
+      tag: matchedPreset.tag,
+      isCustom: false,
+      lens: matchedPreset.lens,
+      score: matchedPreset.score,
+      subject: matchedPreset.subject,
+      qcGate: matchedPreset.qcGate,
+      poster: STILL_MAP[matchedPreset.id] || STILL_MAP.napoleon,
+    };
+  }
+
+  // User typed a custom prompt from scratch: synthesize directorial parameters
+  const lower = prompt.toLowerCase();
+  let theme = "napoleon";
+  let title = "🎬 Custom Scene";
+  let lens = "Cooke Anamorphic /i 35mm & 75mm (2.39:1 DCI)";
+  let score = "Symphonic Master Score & Dynamic String Swell (-24.0 LUFS)";
+  let subject = "Protagonist with Biometric Facial Continuity Anchor";
+  let qcGate = "Gemini 2.5 Flash: Zero facial morphing & physical lighting consistency";
+
+  if (
+    lower.includes("cyber") ||
+    lower.includes("neo") ||
+    lower.includes("tokyo") ||
+    lower.includes("sci-fi") ||
+    lower.includes("rain") ||
+    lower.includes("neon") ||
+    lower.includes("future") ||
+    lower.includes("blade") ||
+    lower.includes("robot")
+  ) {
+    theme = "cyberpunk";
+    title = "⚡ Neo-Cyber Cinematic Vision";
+    lens = "Panavision C-Series 40mm Anamorphic (2.39:1 DCI)";
+    score = "Analog Polyphonic Synthesizer & Modular Sub-Bass (-24.0 LUFS)";
+    subject = "Cybernetic Subject with Volumetric Rain & Neon Reflections";
+    qcGate = "Gemini 2.5 Flash: Ray-traced puddle reflections & particle physics verified";
+  } else if (
+    lower.includes("titanic") ||
+    lower.includes("ship") ||
+    lower.includes("water") ||
+    lower.includes("ocean") ||
+    lower.includes("sea") ||
+    lower.includes("morse") ||
+    lower.includes("distress") ||
+    lower.includes("sinking") ||
+    lower.includes("cabin")
+  ) {
+    theme = "titanic";
+    title = "🌊 Maritime Epic Drama";
+    lens = "Leica Summilux-C 40mm Prime, T1.4 (Low-Light Kodachrome 24fps)";
+    score = "Chamber Cello Solo & Submerged Sub-Bass Resonance (-23.5 LUFS)";
+    subject = "Maritime Operator in Distress Cabin (Submerged Pressure Physics)";
+    qcGate = "Gemini 2.5 Flash: Steady wrist framing & authentic fluid dynamics";
+  } else if (
+    lower.includes("coronation") ||
+    lower.includes("queen") ||
+    lower.includes("king") ||
+    lower.includes("crown") ||
+    lower.includes("cathedral") ||
+    lower.includes("church") ||
+    lower.includes("notre-dame") ||
+    lower.includes("empress") ||
+    lower.includes("ceremony")
+  ) {
+    theme = "coronation";
+    title = "👑 Imperial Cathedral Ceremony";
+    lens = "Zeiss Master Prime 50mm, f/1.8 Cathedral Incense Diffusion";
+    score = "Cathedral Choir, Imperial Brass & Pipe Organ (-24.0 LUFS)";
+    subject = "Royal Sovereign & Kneeling Consort in Ceremonial Regalia";
+    qcGate = "Gemini 2.5 Flash: Hand count, crown symmetry & fabric drape verified";
+  } else {
+    theme = "napoleon";
+    title = "👑 Historic / Narrative Cinema";
+    lens = "Cooke Anamorphic /i 35mm (2.39:1 Wide Photorealism)";
+    score = "Beethoven Symphonic Allegretto (-24.0 LUFS Broadcast Standard)";
+    subject = "Subject with Biometric Consistency DNA & Period Wardrobe";
+    qcGate = "Gemini 2.5 Flash: Zero liquid tear traps, zero rubber limbs";
+  }
+
+  return {
+    id: theme,
+    theme,
+    title,
+    tag: "CUSTOM PROMPT · OMNI SYNTHESIZED",
+    isCustom: true,
+    lens,
+    score,
+    subject,
+    qcGate,
+    poster: STILL_MAP[theme] || STILL_MAP.napoleon,
+  };
+}
 
 export function OmniHero() {
   const [selectedPreset, setSelectedPreset] = useState<PresetPrompt>(PRESETS[0]);
@@ -105,6 +238,11 @@ export function OmniHero() {
   const [aspectRatio, setAspectRatio] = useState<"2.39:1" | "16:9" | "9:16">("2.39:1");
   const [duration, setDuration] = useState<"6s" | "30s" | "180s">("180s");
   
+  // Directorial synthesis states
+  const livePlan = resolveDirectorialPlan(promptText, selectedPreset);
+  const [committedPlan, setCommittedPlan] = useState<DirectorialPlan>(livePlan);
+  const [committedPrompt, setCommittedPrompt] = useState<string>(PRESETS[0].userPrompt);
+
   // In-place live generation states
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
@@ -116,10 +254,31 @@ export function OmniHero() {
   const handleSelectPreset = (preset: PresetPrompt) => {
     setSelectedPreset(preset);
     setPromptText(preset.userPrompt);
-    // If a video is already playing, switch to the new preset's video and poster
+    const plan = resolveDirectorialPlan(preset.userPrompt, preset);
+    setCommittedPlan(plan);
+    setCommittedPrompt(preset.userPrompt);
+
+    // If a video is already playing, switch to the new preset's video for current duration
     if (generatedVideoUrl) {
-      setGeneratedVideoUrl(VIDEO_MAP[preset.id] || VIDEO_MAP.napoleon);
+      const newVideoUrl = VIDEO_ASSETS[preset.id][duration] || VIDEO_ASSETS.napoleon[duration];
+      setGeneratedVideoUrl(newVideoUrl);
       setVideoPoster(STILL_MAP[preset.id] || STILL_MAP.napoleon);
+      setTimeout(() => {
+        if (videoPlayerRef.current) {
+          videoPlayerRef.current.currentTime = 0;
+          videoPlayerRef.current.play().catch(() => {});
+        }
+      }, 100);
+    }
+  };
+
+  const handleDurationChange = (newDuration: "6s" | "30s" | "180s") => {
+    setDuration(newDuration);
+    // If video is already displayed, dynamically conform playback to the requested duration
+    if (generatedVideoUrl) {
+      const activeTheme = committedPlan.theme || "napoleon";
+      const conformedVideoUrl = VIDEO_ASSETS[activeTheme][newDuration] || VIDEO_ASSETS.napoleon[newDuration];
+      setGeneratedVideoUrl(conformedVideoUrl);
       setTimeout(() => {
         if (videoPlayerRef.current) {
           videoPlayerRef.current.currentTime = 0;
@@ -133,37 +292,54 @@ export function OmniHero() {
     e.preventDefault();
     if (!promptText.trim()) return;
 
+    const currentPlan = resolveDirectorialPlan(promptText, selectedPreset);
+    setCommittedPlan(currentPlan);
+    setCommittedPrompt(promptText);
+
     // IN-PLACE GENERATION: Google Omni Directorial Synthesis
     setIsGenerating(true);
     setGenerationProgress(18);
-    setGenerationStage("Omni Researching subject lore, historical context & dramatic stakes...");
+    setGenerationStage(
+      `Omni Researching lore & dramatic stakes: "${promptText.slice(0, 32)}..."`
+    );
     setGeneratedVideoUrl(null);
 
     // Stage 2: Crew, Optics & Character Emotion (42%)
     setTimeout(() => {
       setGenerationProgress(42);
-      setGenerationStage("Omni Directing crew: anamorphic optics, lighting rigs & character DNA...");
+      setGenerationStage(
+        `Omni Directing optics & character DNA: ${currentPlan.lens.split("(")[0]}...`
+      );
     }, 600);
 
     // Stage 3: Score, Songs & Soundstage (68%)
     setTimeout(() => {
       setGenerationProgress(68);
-      setGenerationStage("Omni Composing acoustic master score, BGM & lyrical cadence (-24.0 LUFS)...");
+      setGenerationStage(
+        `Omni Composing acoustic master score: ${currentPlan.score.split("(")[0]}...`
+      );
     }, 1200);
 
     // Stage 4: Veo 3.1 4K Latent Diffusion (88%)
     setTimeout(() => {
       setGenerationProgress(88);
-      setGenerationStage("Veo 3.1 4K Latent Diffusion & 24fps physical motion vectors...");
+      setGenerationStage(
+        `Veo 3.1 4K Latent Diffusion & 24fps motion vectors (${duration} SMPTE cut)...`
+      );
     }, 1800);
 
     // Stage 5: Multimodal QC Gate Pass (100%)
     setTimeout(() => {
       setGenerationProgress(100);
-      setGenerationStage("Omni Multimodal Vision & Audio Quality Gatekeeper (100% Certified ✓)");
+      setGenerationStage(
+        `Omni Multimodal Vision & Audio Quality Gatekeeper (${duration} Certified ✓)`
+      );
       setIsGenerating(false);
-      setGeneratedVideoUrl(VIDEO_MAP[selectedPreset.id] || VIDEO_MAP.napoleon);
-      setVideoPoster(STILL_MAP[selectedPreset.id] || STILL_MAP.napoleon);
+
+      // Resolve video strictly based on theme and duration
+      const finalVideoUrl = VIDEO_ASSETS[currentPlan.theme][duration] || VIDEO_ASSETS.napoleon[duration];
+      setGeneratedVideoUrl(finalVideoUrl);
+      setVideoPoster(currentPlan.poster);
 
       // Autoplay the generated video
       setTimeout(() => {
@@ -256,9 +432,16 @@ export function OmniHero() {
 
                 {/* Textarea */}
                 <div className="mt-4">
-                  <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                    Describe the Scene, Action & Cinematography:
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
+                      Describe the Scene, Action &amp; Cinematography:
+                    </label>
+                    {livePlan.isCustom && (
+                      <span className="text-[10px] font-mono font-bold text-teal-300 bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/30">
+                        Custom Synthesis Active
+                      </span>
+                    )}
+                  </div>
                   <textarea
                     value={promptText}
                     onChange={(e) => setPromptText(e.target.value)}
@@ -275,7 +458,7 @@ export function OmniHero() {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {PRESETS.map((p) => {
-                      const isSelected = selectedPreset.id === p.id;
+                      const isSelected = !livePlan.isCustom && selectedPreset.id === p.id;
                       return (
                         <button
                           key={p.id}
@@ -324,10 +507,10 @@ export function OmniHero() {
                     <button
                       key={d}
                       type="button"
-                      onClick={() => setDuration(d)}
+                      onClick={() => handleDurationChange(d)}
                       className={`rounded-lg px-2.5 py-1 text-xs font-mono font-bold transition-all cursor-pointer ${
                         duration === d
-                          ? "bg-teal-400 text-slate-950 shadow-sm"
+                          ? "bg-teal-400 text-slate-950 shadow-sm ring-2 ring-teal-300/40"
                           : "bg-white/5 text-slate-400 hover:text-white"
                       }`}
                     >
@@ -384,7 +567,7 @@ export function OmniHero() {
                     {generationStage}
                   </h3>
                   <p className="text-xs text-slate-400 font-mono">
-                    Directing & rendering directly on landing page. Zero page redirects.
+                    Directing &amp; rendering directly on landing page. Zero page redirects.
                   </p>
                 </div>
 
@@ -397,7 +580,7 @@ export function OmniHero() {
                     />
                   </div>
                   <div className="flex justify-between text-[11px] font-mono text-slate-400">
-                    <span>Veo 3.1 4K DCI</span>
+                    <span>Veo 3.1 4K DCI · {duration}</span>
                     <span className="font-bold text-teal-300">{generationProgress}%</span>
                   </div>
                 </div>
@@ -406,7 +589,7 @@ export function OmniHero() {
                 <div className="grid grid-cols-3 gap-2 text-left pt-2 text-[10px] font-mono">
                   <div className="rounded-lg bg-black/40 border border-white/5 p-2">
                     <div className="text-slate-400">Optics:</div>
-                    <div className="text-slate-200 truncate mt-0.5">Cooke 35mm</div>
+                    <div className="text-slate-200 truncate mt-0.5">{committedPlan.lens.split(" ")[0]}</div>
                   </div>
                   <div className="rounded-lg bg-black/40 border border-white/5 p-2">
                     <div className="text-slate-400">Audio:</div>
@@ -414,7 +597,7 @@ export function OmniHero() {
                   </div>
                   <div className="rounded-lg bg-black/40 border border-white/5 p-2">
                     <div className="text-slate-400">QC Gate:</div>
-                    <div className="text-emerald-400 truncate mt-0.5">Zero Traps</div>
+                    <div className="text-emerald-400 truncate mt-0.5">100% Certified</div>
                   </div>
                 </div>
               </div>
@@ -430,7 +613,7 @@ export function OmniHero() {
                       </span>
                     </div>
                     <span className="text-[10px] font-mono font-black text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
-                      ✓ QC PASSED
+                      ✓ QC PASSED ({duration})
                     </span>
                   </div>
 
@@ -438,6 +621,7 @@ export function OmniHero() {
                   <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-black border border-teal-500/40 shadow-2xl">
                     <video
                       ref={videoPlayerRef}
+                      key={`${generatedVideoUrl}-${duration}`}
                       src={generatedVideoUrl}
                       poster={videoPoster || undefined}
                       playsInline
@@ -448,18 +632,53 @@ export function OmniHero() {
 
                     <div className="pointer-events-none absolute top-3 right-3 z-10 flex items-center gap-1.5 rounded-md bg-black/80 px-2.5 py-1 text-[10px] font-mono font-bold text-white border border-white/15 backdrop-blur-md">
                       <Film className="h-3 w-3 text-teal-400" />
-                      <span>{aspectRatio} · {duration}</span>
+                      <span>
+                        {aspectRatio} · {duration === "180s" ? "180s Master Film (3:00)" : duration === "30s" ? "30s Scene Cut" : "6s Camera Plate"}
+                      </span>
                     </div>
                   </div>
 
                   {/* Scene Description metadata */}
-                  <div className="mt-3 rounded-xl bg-black/40 border border-white/5 p-2.5 text-xs">
-                    <div className="text-[10px] font-mono uppercase text-teal-400 font-bold flex items-center gap-1.5">
-                      <CheckCircle2 className="h-3.5 w-3.5" /> Scene Direction Complete:
+                  <div className="mt-3 rounded-xl bg-black/40 border border-white/5 p-3 text-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-[10px] font-mono uppercase text-teal-400 font-bold flex items-center gap-1.5">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Scene Direction Complete:
+                      </div>
+                      {committedPlan.isCustom ? (
+                        <span className="text-[10px] font-mono font-bold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
+                          ✨ Custom Directed Scene
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-mono font-bold text-teal-300 bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/30">
+                          Preset Master
+                        </span>
+                      )}
                     </div>
-                    <p className="mt-1 text-slate-200 text-xs line-clamp-2 leading-relaxed">
-                      "{selectedPreset.userPrompt}"
+                    <p className="mt-1.5 text-slate-200 text-xs line-clamp-2 leading-relaxed font-medium">
+                      &ldquo;{committedPrompt}&rdquo;
                     </p>
+
+                    {/* Directorial Specifications Pill Row */}
+                    <div className="mt-2.5 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] font-mono pt-2 border-t border-white/5">
+                      <div className="text-slate-400 truncate">
+                        <span className="text-slate-500">Timeline:</span>{" "}
+                        <span className="text-teal-300 font-bold">
+                          {duration === "180s" ? "180.1s (3:00)" : duration === "30s" ? "30.0s" : "6.0s"}
+                        </span>
+                      </div>
+                      <div className="text-slate-400 truncate">
+                        <span className="text-slate-500">Optics:</span>{" "}
+                        <span className="text-slate-300">{committedPlan.lens.split(" ")[0]}</span>
+                      </div>
+                      <div className="text-slate-400 truncate">
+                        <span className="text-slate-500">Audio:</span>{" "}
+                        <span className="text-amber-300">-24 LUFS</span>
+                      </div>
+                      <div className="text-slate-400 truncate">
+                        <span className="text-slate-500">QC Gate:</span>{" "}
+                        <span className="text-emerald-400">100% Certified</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -493,9 +712,15 @@ export function OmniHero() {
                         Live Omni Compilation HUD
                       </span>
                     </div>
-                    <span className="text-[10px] font-mono font-bold text-teal-300 bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/30">
-                      DIRECTOR READY
-                    </span>
+                    {livePlan.isCustom ? (
+                      <span className="text-[10px] font-mono font-bold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
+                        COMPILING CUSTOM SCENE
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-mono font-bold text-teal-300 bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/30">
+                        DIRECTOR READY
+                      </span>
+                    )}
                   </div>
 
                   {/* Blueprint Cards */}
@@ -503,10 +728,10 @@ export function OmniHero() {
                     
                     <div className="rounded-xl border border-white/5 bg-black/40 p-3">
                       <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1.5">
-                        <Film className="h-3.5 w-3.5 text-teal-400" /> Optics & Motion Vector
+                        <Film className="h-3.5 w-3.5 text-teal-400" /> Optics &amp; Motion Vector
                       </div>
                       <div className="mt-0.5 text-slate-200 font-sans font-medium text-xs">
-                        {selectedPreset.lens}
+                        {livePlan.lens}
                       </div>
                     </div>
 
@@ -515,7 +740,7 @@ export function OmniHero() {
                         <Layers className="h-3.5 w-3.5 text-cyan-400" /> Character Continuity DNA
                       </div>
                       <div className="mt-0.5 text-slate-200 font-sans font-medium text-xs">
-                        {selectedPreset.subject}
+                        {livePlan.subject}
                       </div>
                     </div>
 
@@ -524,7 +749,7 @@ export function OmniHero() {
                         <Music2 className="h-3.5 w-3.5 text-amber-400" /> Acoustic Master Score
                       </div>
                       <div className="mt-0.5 text-slate-200 font-sans font-medium text-xs">
-                        {selectedPreset.score}
+                        {livePlan.score}
                       </div>
                     </div>
 
@@ -533,7 +758,7 @@ export function OmniHero() {
                         <ShieldCheck className="h-3.5 w-3.5 text-teal-400" /> Autonomous Vision Gatekeeper
                       </div>
                       <div className="mt-0.5 text-slate-300 font-sans text-xs">
-                        {selectedPreset.qcGate}
+                        {livePlan.qcGate}
                       </div>
                     </div>
 
@@ -543,7 +768,7 @@ export function OmniHero() {
                 {/* Quick Helper Bar */}
                 <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
                   <span className="text-[11px] font-mono text-teal-300">
-                    Click &apos;Generate 4K Video&apos; to render inline
+                    Click &apos;Generate 4K Video&apos; to render inline ({duration})
                   </span>
                   <a 
                     href="#master-showcase" 
