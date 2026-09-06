@@ -41,4 +41,12 @@
 - **Post-Generation 5% Surgical Remediation**: Once generation achieves 95% completion, Omni conducts forensic multimodal vision/audio audits to pinpoint remaining 5% subtle gaps (dialogue bleed, liquid tear traps, rubber limbs, score cut boundaries) and performs surgical, lossless fixes before final cut delivery.
 - **Synchronous Full-Stack UI & Asset Coherence**: Omni ensures that all UI controls (aspect ratio, duration toggles, preset starters, custom textareas), deep links, preview posters, timeline scrubbers, and video players operate in 100% lockstep without mismatched durations or orphan states.
 
+# 🚂 Mandatory Cloudtop Railway CLI & Deployment Operations Protocol (100% Remote)
+- **Always Use Cloudtop for Railway CLI**: ALL Railway CLI commands (`railway status`, `railway logs`, `railway up`, `railway variables`, `railway link`, `railway deployment`) MUST execute directly on Cloudtop (`nitinagga.c.googlers.com`) inside the remote workspace (`~/zyvoriq_remote`). Never attempt local macOS execution for Railway CLI.
+- **Execution Pattern**: Always execute via SSH with the user's bin path exported:
+  `ssh nitinagga.c.googlers.com 'export PATH=$HOME/bin:$PATH; cd ~/zyvoriq_remote && railway <subcommand>'`
+- **Pre-Flight & Post-Deploy Health Checks**: Use `railway status` and `railway logs --service zyvoriq` on Cloudtop to inspect deployment lifecycle events, container startup, build logs, and runtime warnings before and after pushing code.
+- **Zero Unlinked Invocations**: Maintain active project and service linking to `zyvoriq` on Cloudtop (`production` environment, `zyvoriq` web service, `Postgres` database).
+
+
 
