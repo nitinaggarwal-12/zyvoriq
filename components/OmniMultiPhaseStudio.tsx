@@ -221,10 +221,10 @@ function extractPromptTitle(prompt: string, fallback: string): string {
 
 
 export function OmniMultiPhaseStudio() {
-  // Current active scene preset
+  // Current active scene preset (starts with clean empty prompt bar)
   const [currentScene, setCurrentScene] = useState<ScenePreset>(SCENE_PRESETS[0]);
-  const [promptInput, setPromptInput] = useState(SCENE_PRESETS[0].prompt);
-  const [activePresetId, setActivePresetId] = useState("reel_mumbai_luxury_penthouse");
+  const [promptInput, setPromptInput] = useState("");
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [chatInput, setChatInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStatus, setGenerationStatus] = useState<string | null>(null);
