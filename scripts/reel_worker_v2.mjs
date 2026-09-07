@@ -133,6 +133,38 @@ async function recoverLegacyTranscriptMismatchFailures() {
 }
 await recoverLegacyTranscriptMismatchFailures();
 
+async function recoverLegacyEditDistanceFailures() {
+  const failed = await pool.query(`
+    SELECT id, production_id
+    FROM reel_operations
+    WHERE kind='NARRATION'
+      AND status='FAILED'
+      AND last_error LIKE '%editDistance is not defined%'
+  `);
+  for (const row of failed.rows) {
+    await pool.query(`
+      UPDATE reel_operations
+      SET status='QUEUED', attempt=0,
+          last_error=NULL, lease_owner=NULL, lease_expires_at=NULL, updated_at=NOW()
+      WHERE id=$1
+    `, [row.id]);
+    const p = await pool.query(`SELECT revision, manifest_json FROM reel_productions WHERE id=$1`, [row.production_id]);
+    if (!p.rows[0]) continue;
+    const m = p.rows[0].manifest_json || {};
+    if (m.status === "FAILED") m.status = "AUDIO_GENERATING";
+    if (m.qa?.failures && Array.isArray(m.qa.failures)) {
+      m.qa.failures = m.qa.failures.filter(x => !String(x).includes("editDistance is not defined"));
+    }
+    await pool.query(`
+      UPDATE reel_productions
+      SET revision=revision+1, manifest_json=$3::jsonb, updated_at=NOW()
+      WHERE id=$1 AND revision=$2
+    `, [row.production_id, Number(p.rows[0].revision), JSON.stringify(m)]);
+    console.log(`[reel-worker] recovered editDistance failure operation ${row.id}`);
+  }
+}
+await recoverLegacyEditDistanceFailures();
+
 async function recoverLegacyAmbiguousVeoFailures() {
   const failed = await pool.query(`
     SELECT id, production_id, target_id
@@ -774,8 +806,8 @@ function normalizeWords(t) {
       out.push(w);
     }
   }
-  return out;
-}
+function editDistance(a, b) { const p = Array.from({ length: b.length + 1 }, (_, i) => i); for (let i = 1; i <= a.length; i++) { const c = [i]; for (let j = 1; j <= b.length; j++) c[j] = Math.min(c[j - 1] + 1, p[j] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); for (let j = 0; j <= b.length; j++) p[j] = c[j]; } return p[b.length]; }
+function lcsLength(a, b) { const d = Array(b.length + 1).fill(0); for (const x of a) { let diag = 0; for (let j = 1; j <= b.length; j++) { const prior = d[j]; d[j] = x === b[j - 1] ? diag + 1 : Math.max(d[j], d[j - 1]); diag = prior; } } return d[b.length]; }
 function stripSpeakerLabels(text) {
   return String(text || "").replace(/^[ \t]*[A-Z0-9_\-\. ]{1,30}:[ \t]*/gm, "").trim();
 }
