@@ -277,11 +277,14 @@ async function generateNarrationResult(op, manifest) {
 
   const vocabSet = new Set();
   const chars = Array.isArray(manifest.characters) && manifest.characters.length ? manifest.characters : (manifest.continuity?.characters || []);
-  for (const c of chars) { if (c.name) vocabSet.add(c.name.trim()); }
+  const STOPWORDS = new Set(["The", "This", "That", "When", "What", "Where", "With", "Then", "From", "Into", "Here", "Look", "Have", "There", "Their", "They", "Your", "About", "Some", "Every", "Just", "Only", "More", "Most", "Are", "Can", "How", "Why", "Now"]);
+  for (const c of chars) { if (c.name) c.name.split(/\s+/).forEach(p => { if (!STOPWORDS.has(p) && p.length > 1) vocabSet.add(p); }); }
   if (manifest.masterScript) {
-    const matches = manifest.masterScript.match(/\b[A-Z][a-zA-Z0-9']{2,}\b/g) || [];
-    for (const m of matches) {
-      if (!["The", "This", "That", "When", "What", "Where", "With", "Then", "From", "Into"].includes(m)) vocabSet.add(m);
+    const tokens = manifest.masterScript.split(/\s+/);
+    for (let i = 1; i < tokens.length; i++) {
+      const prev = tokens[i - 1];
+      const curr = tokens[i].replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
+      if (!/[.!?]$/.test(prev) && /^[A-Z][a-zA-Z0-9']{2,}$/.test(curr) && !STOPWORDS.has(curr)) vocabSet.add(curr);
     }
   }
   const vocabList = Array.from(vocabSet).filter(Boolean);

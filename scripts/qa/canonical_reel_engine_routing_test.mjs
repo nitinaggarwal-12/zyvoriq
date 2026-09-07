@@ -11,12 +11,12 @@ const workerGuard = fs.readFileSync("scripts/canonical_reel_operation_guard.mjs"
 const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
 
 assert.ok(createRoute.includes('import { planStudio1 }'), "public Reel creation must use the Studio1 planner");
-assert.ok(createRoute.includes("const manifest = planStudio1"), "public Reel creation must persist a Studio1 manifest");
+assert.ok(/const manifest = (?:await )?planStudio1/.test(createRoute), "public Reel creation must persist a Studio1 manifest");
 assert.ok(!createRoute.includes("reelProductionService.create({"), "public Reel creation must not persist a legacy reel_* manifest");
 assert.ok(createRoute.includes('canonicalEngine: "studio1"'), "public creation response must identify the canonical engine");
 
 assert.ok(planRoute.includes('import { planStudio1 }'), "public planning must use Studio1 semantics");
-assert.ok(planRoute.includes("const manifest = planStudio1"), "public planning must not emit a legacy generic manifest");
+assert.ok(/const manifest = (?:await )?planStudio1/.test(planRoute), "public planning must not emit a legacy generic manifest");
 assert.ok(planRoute.includes('canonicalEngine: "studio1"'), "public planning response must identify the canonical engine");
 
 assert.ok(mutationRoute.includes("studio1Patch(req, context)"), "existing clients must preserve PATCH bodies when routed to Studio1");

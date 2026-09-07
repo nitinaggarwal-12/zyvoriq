@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     // endpoint for existing clients, but persist a Studio1 manifest so narration,
     // semantic scene timing, continuity anchoring and final certification cannot
     // be bypassed by a second legacy `reel_*` production path.
-    const manifest = planStudio1({
+    const manifest = await planStudio1({
       topic,
       tone: body.tone,
       platform: body.platform,

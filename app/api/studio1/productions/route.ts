@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     const topic = String(body.topic || body.prompt || "").trim();
     if (!topic) return NextResponse.json({ success: false, error: "topic is required" }, { status: 400 });
 
-    const manifest = planStudio1({
+    const manifest = await planStudio1({
       topic,
       tone: body.tone,
       platform: body.platform || "reels",

@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { planReel, type PlanReelInput } from "@/lib/reel/planner";
+import { planReel, generateNarrationScriptWithGemini, type PlanReelInput } from "@/lib/reel/planner";
 import type { ReelProductionManifest } from "@/lib/reel/types";
 
 export type Studio1SubjectMode = "PRESENTER" | "NO_PERSON";
@@ -380,7 +380,7 @@ export function applyStudio1ShotPrompt(manifest: ReelProductionManifest, shotId:
   ].join(" ");
 }
 
-export function planStudio1(input: PlanReelInput): ReelProductionManifest {
+export function planStudio1Sync(input: PlanReelInput): ReelProductionManifest {
   const manifest = planReel(input);
   manifest.id = `studio1_${crypto.randomUUID()}`;
   manifest.status = "SCRIPT_READY";
@@ -415,6 +415,19 @@ export function planStudio1(input: PlanReelInput): ReelProductionManifest {
     }
   }
   return manifest;
+}
+
+export async function planStudio1(input: PlanReelInput): Promise<ReelProductionManifest> {
+  let scriptText = (input.scriptText || "").trim();
+  if (!scriptText) {
+    scriptText = await generateNarrationScriptWithGemini(
+      input.topic,
+      input.requestedDurationSec || 30,
+      input.tone,
+      input.creationIntent
+    );
+  }
+  return planStudio1Sync({ ...input, scriptText });
 }
 
 export function isStudio1Manifest(manifest: ReelProductionManifest) {

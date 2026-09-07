@@ -32,77 +32,103 @@ function chooseGenerationDuration(editorialDurationSec: number): 4 | 6 | 8 {
   return 8;
 }
 
-function sentencePool(topic: string, intent?: ReelCreationIntent) {
-  const generic = [
-    `Here is what deserves a closer look about ${topic}.`,
-    "The obvious reaction is only the surface of the idea.",
-    "Look underneath it and notice the pattern that keeps returning.",
-    "Separate what you assume from what you can actually observe.",
-    "Then ask what the default choice gives you right now.",
-    "Next, ask what that same choice quietly costs over time.",
-    "That tradeoff is usually more useful than the first impression.",
-    "Now compare the default with one deliberate alternative.",
-    "Make that alternative specific enough to try today.",
-    "Keep the action small enough that repetition feels realistic.",
-    "Watch what changes instead of guessing whether it worked.",
-    "If it helps, keep the signal and remove extra friction.",
-    "If it does not, change one variable and test again.",
-    "That turns a vague opinion into feedback you can use.",
-    "The next decision becomes clearer because the evidence is visible.",
-    "Over time, the better response starts feeling more automatic.",
-    "The real payoff is understanding what changed and why.",
-    "That makes the lesson easier to remember and explain.",
-    "Try it once, then pay attention to the actual result.",
-    "Save this idea if you want to revisit the pattern later."
-  ];
-  const concept = intent?.conceptId ? [
-    intent.conceptSpeechSample || intent.conceptHook || `Open on the strongest moment of ${topic}.`,
-    intent.conceptHook && intent.conceptHook !== intent.conceptSpeechSample ? intent.conceptHook : "",
-    `Establish the stakes of ${topic} without wasting the opening seconds.`,
-    `Move into the defining detail and make the progression visually obvious.`,
-    "Show the contrast or consequence that makes the idea worth watching.",
-    `Build toward a payoff that feels native to ${intent.categoryLabel || "this category"}.`,
-    "Use one concrete change to move the story forward.",
-    "Let the next beat prove why that change matters.",
-    "Keep each step connected to the same central idea.",
-    "Raise the consequence before giving the viewer the resolution.",
-    "Make the payoff specific enough to feel earned.",
-    "Finish on a memorable image or line that completes the idea.",
-    ...generic.slice(12)
-  ] : generic;
-  const seen = new Set<string>();
-  return concept
-    .map(normalizeSpaces)
-    .filter(Boolean)
-    .filter(sentence => {
-      const key = sentence.toLocaleLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
+export async function generateNarrationScriptWithGemini(
+  topic: string,
+  targetDurationSec: number = 30,
+  tone: string = "Confident & conversational",
+  intent?: ReelCreationIntent
+): Promise<string> {
+  const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  const targetShots = Math.max(2, Math.min(12, Math.round(targetDurationSec / 5.5)));
+
+  if (!key) {
+    return createConciseFallbackScript(topic, targetShots, intent);
+  }
+
+  const systemPrompt = `You are an elite short-form video director and social reel scriptwriter.
+Write an authentic, punchy voiceover script for a 9:16 vertical video reel.
+Topic: "${topic}"
+Tone: "${tone}"
+Target Duration: ${targetDurationSec} seconds.
+
+RULES & HARD BUDGET:
+1. Output exactly ${targetShots} short spoken lines, one per visual shot.
+2. STRICT BUDGET: Each line MUST be between 5 and 12 words maximum. Never exceed 12 words per line.
+3. Natural creator narration: write words a real creator would say aloud. Avoid robotic corporate filler, canned clichés, or generic platitudes (NEVER say "Here is what deserves a closer look", "The obvious reaction is only the surface", etc.).
+4. Focus directly and immersively on the subject: "${topic}".
+5. If character names or dialogue are implied, format with clean character markers or narrative speech.
+6. Output format: Return a raw JSON array of strings containing exactly ${targetShots} lines:
+["Line 1", "Line 2", ...]`;
+
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: systemPrompt }] }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.7,
+        }
+      })
     });
+
+    if (!res.ok) {
+      console.warn(`[planner] Gemini script generation returned status ${res.status}`);
+      return createConciseFallbackScript(topic, targetShots, intent);
+    }
+
+    const data = await res.json();
+    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) return createConciseFallbackScript(topic, targetShots, intent);
+
+    let lines: string[] = [];
+    try {
+      const parsed = JSON.parse(rawText);
+      if (Array.isArray(parsed)) {
+        lines = parsed.map(s => String(s).trim()).filter(Boolean);
+      } else if (parsed && Array.isArray(parsed.lines)) {
+        lines = parsed.lines.map((s: any) => String(s).trim()).filter(Boolean);
+      }
+    } catch {
+      lines = rawText.split(/\r?\n/).map((l: string) => l.replace(/^[-*0-9.]+\s*/, "").trim()).filter(Boolean);
+    }
+
+    if (!lines.length) return createConciseFallbackScript(topic, targetShots, intent);
+
+    // Ensure each line obeys word limits
+    const budgeted = lines.map(line => {
+      const cleaned = line.replace(/^["']|["']$/g, "").trim();
+      return splitLongUnit(cleaned, 12).join(" ");
+    });
+
+    return budgeted.join(" ");
+  } catch (err: any) {
+    console.warn(`[planner] Gemini script generation error: ${err?.message || err}`);
+    return createConciseFallbackScript(topic, targetShots, intent);
+  }
+}
+
+function createConciseFallbackScript(topic: string, targetShots: number, intent?: ReelCreationIntent): string {
+  const cleanTopic = topic.trim().replace(/[.]+$/, "");
+  if (intent?.conceptSpeechSample) return intent.conceptSpeechSample;
+  if (intent?.conceptHook) return `${intent.conceptHook} Watch how every moment unfolds.`;
+  const subjectLines = [
+    `Experience the true atmosphere of ${cleanTopic}.`,
+    "Every detail reveals another layer of the story.",
+    "Notice the energy moving naturally through the frame.",
+    "The perspective shifts as the moment deepens.",
+    "Pure immersion, captured from start to finish.",
+    "Take it all in before the next beat begins.",
+    "The rhythm carries the feeling forward.",
+    "That is where the real story lives."
+  ];
+  return subjectLines.slice(0, Math.max(2, targetShots)).join(" ");
 }
 
 function buildScript(topic: string, targetSec: number, intent?: ReelCreationIntent) {
-  const targetWords = Math.max(16, Math.round(targetSec * 1.55));
-  const candidates = sentencePool(topic, intent);
-  let best: string[] = [];
-  let bestDelta = Number.POSITIVE_INFINITY;
-  let running: string[] = [];
-  let runningWords = 0;
-
-  for (const sentence of candidates) {
-    running = [...running, sentence];
-    runningWords += countWords(sentence);
-    const delta = Math.abs(targetWords - runningWords);
-    if (delta < bestDelta) {
-      best = running;
-      bestDelta = delta;
-    }
-    if (runningWords >= targetWords && delta > bestDelta) break;
-  }
-
-  if (!best.length) best = candidates.slice(0, 1);
-  return normalizeSpaces(best.join(" "));
+  const targetShots = Math.max(2, Math.min(12, Math.round(targetSec / 5.5)));
+  return createConciseFallbackScript(topic, targetShots, intent);
 }
 
 function sentenceUnits(script: string) {
@@ -410,4 +436,17 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
     shots,
     qa: { minimumReadyScore: 90, passed: false, gates: initialGates(), warnings: ["Narration waveform alignment, generated media inspection, lip-sync verification, boundary QA and final master QA are pending."], failures: [] }
   };
+}
+
+export async function planReelAsync(input: PlanReelInput): Promise<ReelProductionManifest> {
+  let scriptText = (input.scriptText || "").trim();
+  if (!scriptText) {
+    scriptText = await generateNarrationScriptWithGemini(
+      input.topic,
+      input.requestedDurationSec || 30,
+      input.tone,
+      input.creationIntent
+    );
+  }
+  return planReel({ ...input, scriptText });
 }

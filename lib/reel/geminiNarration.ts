@@ -162,14 +162,53 @@ async function uploadForTranscription(wav: Buffer, displayName: string) {
   return { uri: String(uri), name: String(json?.file?.name || json?.name || "") };
 }
 
+const COMMON_ENGLISH_STOPWORDS = new Set([
+  "The", "This", "That", "When", "What", "Where", "With", "Then", "From", "Into",
+  "Here", "Look", "Have", "There", "Their", "They", "Your", "About", "Some",
+  "Every", "Just", "Only", "More", "Most", "Other", "Over", "Under", "After",
+  "Before", "While", "Could", "Would", "Should", "Shall", "Will", "Been", "Being",
+  "First", "Next", "Last", "Also", "Back", "Come", "Down", "Even", "Find", "Give",
+  "Good", "Great", "High", "Keep", "Know", "Life", "Make", "Much", "Need", "Never",
+  "Part", "Place", "Right", "Same", "Take", "Tell", "Think", "Time", "Very", "Want",
+  "Ways", "Well", "Work", "Year", "Start", "Stop", "Step", "Watch", "Notice", "Check",
+  "Today", "Tomorrow", "Morning", "Night", "Evening", "Always", "Because", "Since",
+  "Still", "Between", "Through", "Against", "During", "Without", "Within", "Along",
+  "Above", "Below", "Around", "Across", "Behind", "Beyond", "Inside", "Outside",
+  "Are", "Can", "How", "Why", "Now", "Fix", "See", "Say", "Get", "Let", "Pure"
+]);
+
 function extractBiasedVocabularyFromText(text: string, extraVocab: string[] = []): string[] {
   const vocab = new Set<string>(extraVocab.filter(Boolean));
-  const matches = text.match(/\b[A-Z][a-zA-Z0-9']{2,}\b/g) || [];
-  for (const m of matches) {
-    if (!["The", "This", "That", "When", "What", "Where", "With", "Then", "From", "Into"].includes(m)) {
-      vocab.add(m);
+  
+  // 1. Speaker markers in script (e.g. "MEERA:", "KABIR:")
+  const speakerMatches = text.matchAll(/([A-Z0-9_\-\s]{2,25}):/g);
+  for (const match of speakerMatches) {
+    const name = match[1].trim();
+    name.split(/\s+/).forEach(part => {
+      const clean = part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+      if (clean.length > 1 && !COMMON_ENGLISH_STOPWORDS.has(clean)) vocab.add(clean);
+    });
+  }
+
+  // 2. Non-ASCII words (Devanagari, accented, Japanese, etc.)
+  const nonAscii = text.match(/[\p{Script=Devanagari}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]+/gu) || [];
+  for (const word of nonAscii) {
+    if (word.length > 1) vocab.add(word);
+  }
+
+  // 3. Mid-sentence capitalized words (proper nouns)
+  const tokens = text.split(/\s+/);
+  for (let i = 1; i < tokens.length; i++) {
+    const prev = tokens[i - 1];
+    const curr = tokens[i].replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
+    const isSentenceStart = /[.!?]$/.test(prev);
+    if (!isSentenceStart && /^[A-Z][a-zA-Z0-9']{2,}$/.test(curr)) {
+      if (!COMMON_ENGLISH_STOPWORDS.has(curr)) {
+        vocab.add(curr);
+      }
     }
   }
+
   return Array.from(vocab).filter(Boolean);
 }
 

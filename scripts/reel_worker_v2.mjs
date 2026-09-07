@@ -836,7 +836,7 @@ watchdogTimer.unref();
 
 let lastHeartbeatLogMs = 0;
 async function publishHeartbeat() {
-  let queueStats = { queued: 0, running: 0, blocked: 0, lastCompletedAgeSec: null };
+  let queueStats = { queued: 0, running: 0, blocked: 0, maxRunningLeaseAgeSec: 0, maxQueuedAgeSec: 0 };
   try {
     const counts = await pool.query(`
       SELECT status, count(*)::int as cnt
@@ -849,13 +849,23 @@ async function publishHeartbeat() {
       if (r.status === 'RUNNING') queueStats.running = r.cnt;
       if (r.status === 'BLOCKED') queueStats.blocked = r.cnt;
     }
-    const lastDone = await pool.query(`
-      SELECT MAX(updated_at) as last_completed_at
-      FROM reel_operations
-      WHERE status = 'SUCCEEDED'
-    `);
-    if (lastDone.rows[0]?.last_completed_at) {
-      queueStats.lastCompletedAgeSec = Math.round((Date.now() - new Date(lastDone.rows[0].last_completed_at).getTime()) / 1000);
+    if (queueStats.running > 0) {
+      const runningAge = await pool.query(`
+        SELECT EXTRACT(EPOCH FROM (NOW() - updated_at))::int as max_age
+        FROM reel_operations
+        WHERE status = 'RUNNING'
+        ORDER BY updated_at ASC LIMIT 1
+      `);
+      queueStats.maxRunningLeaseAgeSec = runningAge.rows[0]?.max_age || 0;
+    }
+    if (queueStats.queued > 0) {
+      const queuedAge = await pool.query(`
+        SELECT EXTRACT(EPOCH FROM (NOW() - created_at))::int as max_age
+        FROM reel_operations
+        WHERE status = 'QUEUED'
+        ORDER BY created_at ASC LIMIT 1
+      `);
+      queueStats.maxQueuedAgeSec = queuedAge.rows[0]?.max_age || 0;
     }
   } catch (e) {
     // Non-fatal query error during shutdown or brief reconnect
@@ -878,15 +888,14 @@ async function publishHeartbeat() {
   const now = Date.now();
   if (now - lastHeartbeatLogMs >= 60000) {
     lastHeartbeatLogMs = now;
-    const compAgeStr = queueStats.lastCompletedAgeSec !== null ? `${queueStats.lastCompletedAgeSec}s ago` : "none";
-    console.log(`[reel-worker] [heartbeat] Active: ${queueStats.running} running, ${queueStats.queued} queued, ${queueStats.blocked} blocked (last completed: ${compAgeStr})`);
+    console.log(`[reel-worker] [heartbeat] Active: ${queueStats.running} running (oldest: ${queueStats.maxRunningLeaseAgeSec}s), ${queueStats.queued} queued (oldest: ${queueStats.maxQueuedAgeSec}s), ${queueStats.blocked} blocked`);
 
-    // Starvation Alerts
-    if (queueStats.queued > 0 && queueStats.lastCompletedAgeSec !== null && queueStats.lastCompletedAgeSec > 1800) {
-      console.error(`[reel-worker] [ALERT:STARVATION] ${queueStats.queued} queued operation(s) waiting, but no operation has completed in ${queueStats.lastCompletedAgeSec}s!`);
+    // Starvation Alerts: gated on physical operation wait/running duration
+    if (queueStats.queued > 0 && queueStats.maxQueuedAgeSec > 600) {
+      console.error(`[reel-worker] [ALERT:STARVATION] ${queueStats.queued} operation(s) queued for > ${queueStats.maxQueuedAgeSec}s without claim!`);
     }
-    if (queueStats.running > 0 && queueStats.lastCompletedAgeSec !== null && queueStats.lastCompletedAgeSec > 1800) {
-      console.error(`[reel-worker] [ALERT:STARVATION] ${queueStats.running} running operation(s) active, but no operation has completed in ${queueStats.lastCompletedAgeSec}s! Check for stalled leases.`);
+    if (queueStats.running > 0 && queueStats.maxRunningLeaseAgeSec > 600) {
+      console.error(`[reel-worker] [ALERT:STALLED_LEASE] Running operation held for ${queueStats.maxRunningLeaseAgeSec}s without progress!`);
     }
   }
 }
@@ -1198,28 +1207,68 @@ async function assertApplicable(op, { beforeDispatch = false } = {}) { await con
 async function markRunning(op) { const c = await assertApplicable(op); const m = c.manifest; if (op.kind === "NARRATION" && ["SCRIPT_READY", "FAILED"].includes(m.status)) m.status = "AUDIO_GENERATING"; if (op.kind === "SHOT") { const s = m.shots.find(x => x.id === op.target_id); if (["PLANNED", "FAILED"].includes(s.status)) s.status = "GENERATING"; if (["SHOTS_PLANNED", "REPAIRING"].includes(m.status)) m.status = "VIDEO_GENERATING"; } if (op.kind === "ROUGH_CUT" && ["ROUGH_CUT_READY", "REPAIRING", "READY"].includes(m.status)) m.status = "ROUGH_CUT_READY"; if (op.kind === "NATIVE_REEL" && ["SHOTS_PLANNED", "REPAIRING"].includes(m.status)) m.status = "VIDEO_GENERATING"; await saveManifest(op.production_id, c.revision, m); }
 async function markTerminalFailure(op, message) { try { const c = await getProduction(op.production_id), m = c.manifest; m.qa = m.qa || { minimumReadyScore: 90, passed: false, warnings: [], failures: [] }; m.qa.passed = false; m.qa.failures = [...(m.qa.failures || []), message]; if (op.kind === "SHOT") { const s = m.shots.find(x => x.id === op.target_id); if (s) { s.status = "FAILED"; s.qa = s.qa || { warnings: [], failures: [] }; s.qa.failures = [...(s.qa.failures || []), message]; } m.status = "REPAIRING"; } else if (op.kind === "ROUGH_CUT" || op.kind === "NATIVE_REEL") m.status = "REPAIRING"; else m.status = "FAILED"; await saveManifest(op.production_id, c.revision, m); } catch (e) { console.error(`[reel-worker] failure-state update failed: ${e?.message || e}`); } }
 
+const COMMON_ENGLISH_STOPWORDS = new Set([
+  "The", "This", "That", "When", "What", "Where", "With", "Then", "From", "Into",
+  "Here", "Look", "Have", "There", "Their", "They", "Your", "About", "Some",
+  "Every", "Just", "Only", "More", "Most", "Other", "Over", "Under", "After",
+  "Before", "While", "Could", "Would", "Should", "Shall", "Will", "Been", "Being",
+  "First", "Next", "Last", "Also", "Back", "Come", "Down", "Even", "Find", "Give",
+  "Good", "Great", "High", "Keep", "Know", "Life", "Make", "Much", "Need", "Never",
+  "Part", "Place", "Right", "Same", "Take", "Tell", "Think", "Time", "Very", "Want",
+  "Ways", "Well", "Work", "Year", "Start", "Stop", "Step", "Watch", "Notice", "Check",
+  "Today", "Tomorrow", "Morning", "Night", "Evening", "Always", "Because", "Since",
+  "Still", "Between", "Through", "Against", "During", "Without", "Within", "Along",
+  "Above", "Below", "Around", "Across", "Behind", "Beyond", "Inside", "Outside",
+  "Are", "Can", "How", "Why", "Now", "Fix", "See", "Say", "Get", "Let", "Pure"
+]);
+
 function extractBiasedVocabulary(manifest) {
   const vocab = new Set();
+  
+  // 1. Explicit Characters & Performer Names
   const characters = Array.isArray(manifest.characters) && manifest.characters.length
     ? manifest.characters
     : (manifest.continuity?.characters || []);
   for (const c of characters) {
-    if (c.name) vocab.add(c.name.trim());
-  }
-  if (manifest.topic) {
-    for (const w of manifest.topic.split(/\s+/)) {
-      const clean = w.replace(/[^\p{L}\p{N}]/gu, "").trim();
-      if (clean.length > 2) vocab.add(clean);
+    if (c.name) {
+      c.name.split(/\s+/).forEach(part => {
+        const clean = part.replace(/[^\p{L}\p{N}]/gu, "").trim();
+        if (clean.length > 1 && !COMMON_ENGLISH_STOPWORDS.has(clean)) vocab.add(clean);
+      });
     }
   }
+
+  // 2. Speaker markers in script (e.g. "MEERA:", "KABIR:", "KIARA:")
   if (manifest.masterScript) {
-    const matches = manifest.masterScript.match(/\b[A-Z][a-zA-Z0-9']{2,}\b/g) || [];
-    for (const m of matches) {
-      if (!["The", "This", "That", "When", "What", "Where", "With", "Then", "From", "Into"].includes(m)) {
-        vocab.add(m);
+    const speakerMatches = manifest.masterScript.matchAll(/([A-Z0-9_\-\s]{2,25}):/g);
+    for (const match of speakerMatches) {
+      const name = match[1].trim();
+      name.split(/\s+/).forEach(part => {
+        const clean = part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+        if (clean.length > 1 && !COMMON_ENGLISH_STOPWORDS.has(clean)) vocab.add(clean);
+      });
+    }
+
+    // 3. Non-ASCII words (Devanagari, accented, Japanese, etc.)
+    const nonAscii = manifest.masterScript.match(/[\p{Script=Devanagari}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]+/gu) || [];
+    for (const word of nonAscii) {
+      if (word.length > 1) vocab.add(word);
+    }
+
+    // 4. Mid-sentence capitalized words (proper nouns like Dubai, Shinjuku, Meera, Kabir, etc.)
+    const tokens = manifest.masterScript.split(/\s+/);
+    for (let i = 1; i < tokens.length; i++) {
+      const prev = tokens[i - 1];
+      const curr = tokens[i].replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
+      const isSentenceStart = /[.!?]$/.test(prev);
+      if (!isSentenceStart && /^[A-Z][a-zA-Z0-9']{2,}$/.test(curr)) {
+        if (!COMMON_ENGLISH_STOPWORDS.has(curr)) {
+          vocab.add(curr);
+        }
       }
     }
   }
+
   return Array.from(vocab).filter(Boolean);
 }
 
@@ -1685,12 +1734,16 @@ async function generateShot(op, manifest, shot) {
 
         if (isSafety) {
           // Auto-heal prompt in manifest to bypass safety/likeness blocks
+          let changed = false;
+          let prevPrompt = "";
+          let healedPrompt = "";
           try {
             const current = await getProduction(op.production_id);
             const m = current.manifest;
             const targetShot = m.shots.find(x => x.id === shot.id);
             if (targetShot) {
-              targetShot.generationPrompt = targetShot.generationPrompt
+              prevPrompt = targetShot.generationPrompt;
+              healedPrompt = targetShot.generationPrompt
                 .replace(/\b[A-Z][A-Za-z0-9_\s]{1,30}:/g, "")
                 .replace(/\b(?:Kiara|Akshay|Salman|Aishwarya|Shah\s*Rukh|SRK|Deepika|Ranveer|Alia|Ranbir|Hrithik|Katrina|Priyanka|Kareena|Saif|Amitabh)\b/gi, "lead performer")
                 .replace(/\blovers\b/gi, "characters")
@@ -1698,13 +1751,26 @@ async function generateShot(op, manifest, shot) {
                 .replace(/\bpassionate\b/gi, "dramatic")
                 .replace(/\bcolonial\b/gi, "vintage 1940s")
                 .replace(/"[^"]*"/g, ""); // strip quoted dialogue
-              await saveManifest(op.production_id, current.revision, m);
-              console.log(`[reel-worker] [rai-auto-heal] Healed shot ${shot.id} prompt in manifest for retry`);
+              changed = (prevPrompt !== healedPrompt);
+              if (changed) {
+                targetShot.generationPrompt = healedPrompt;
+                await saveManifest(op.production_id, current.revision, m);
+                console.log(`[reel-worker] [rai-auto-heal] Healed shot ${shot.id} prompt for retry:`);
+                console.log(`  BEFORE: "${prevPrompt.slice(0, 160)}..."`);
+                console.log(`  AFTER:  "${healedPrompt.slice(0, 160)}..."`);
+              } else {
+                console.log(`[reel-worker] [rai-auto-heal] Prompt for shot ${shot.id} was UNCHANGED by auto-heal rules. Prompt: "${prevPrompt.slice(0, 160)}..."`);
+              }
             }
           } catch (e) {
             console.warn(`[reel-worker] RAI auto-heal error: ${e?.message}`);
           }
           const diagInfo = raiReasons ? JSON.stringify(raiReasons) : JSON.stringify(pj).slice(0, 300);
+          if (!changed) {
+            // Unchanged safety block is deterministic; fail immediately rather than wasting attempts
+            await pool.query(`UPDATE reel_operations SET attempt=5 WHERE id=$1`, [op.id]);
+            throw new Error(`VEO_SAFETY_FILTER_FATAL: Veo safety/RAI filter triggered and prompt was unchanged by heal rules (${diagInfo})`);
+          }
           throw new Error(`VEO_SAFETY_FILTER_EMPTY: Veo completed without video URI due to safety/RAI filter (${diagInfo})`);
         }
 

@@ -5,7 +5,7 @@ import { planStudio1 } from "@/lib/studio1/planner";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const manifest = planStudio1({
+    const manifest = await planStudio1({
       topic: String(body.topic || ""),
       tone: body.tone,
       platform: body.platform,
