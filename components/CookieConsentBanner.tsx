@@ -67,7 +67,7 @@ export function CookieConsentBanner() {
                 </span>
               </h2>
               <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
-                Zyvoriq embeds <strong>C2PA cryptographic provenance</strong> in synthetic media. Compliant with GDPR, CCPA, and Illinois BIPA.
+                Zyvoriq labels media with <strong>C2PA &amp; SynthID</strong> so platforms won&apos;t penalize creator reach. Compliant with GDPR, CCPA, and Illinois BIPA.
               </p>
             </div>
           </div>
