@@ -13,7 +13,12 @@ const reels = [
   { id: "studio1_e2e00945", uuid: "studio1_e2e00945-e431-4228-bb7b-33cc68f0fa72", note: "8 shots" }
 ];
 
-const BASE_DIR = path.resolve(process.env.HOME || "", "zyvoriq_remote/scratch/reels_evaluation");
+const cliArgs = process.argv.slice(2);
+const activeReels = cliArgs.length > 0
+  ? cliArgs.map(u => ({ id: u.slice(0, 16), uuid: u, note: "dynamic production" }))
+  : reels;
+
+const BASE_DIR = path.resolve(process.cwd(), "scratch/reels_evaluation");
 fs.mkdirSync(path.join(BASE_DIR, "frames"), { recursive: true });
 
 async function getManifest(uuid) {
@@ -30,7 +35,7 @@ async function main() {
   console.log("=== STARTING REEL FORENSIC EVALUATION ===");
   const results = [];
 
-  for (const r of reels) {
+  for (const r of activeReels) {
     console.log(`\nEvaluating [${r.id}] (${r.note})...`);
     const mp4Path = path.join(BASE_DIR, `${r.id}.mp4`);
     if (!fs.existsSync(mp4Path) || fs.statSync(mp4Path).size < 1000000) {
