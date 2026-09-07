@@ -87,7 +87,7 @@ export function AppFooter() {
             <ul className="space-y-2">
               <li>
                 <a href="/#architecture" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-teal-400" /> 95% Pre-Flight Verification Gate
+                  <ShieldCheck className="w-3.5 h-3.5 text-teal-400" /> Automated Studio Quality Gatekeeper
                 </a>
               </li>
               <li>
@@ -97,12 +97,12 @@ export function AppFooter() {
               </li>
               <li>
                 <a href="/#architecture" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
-                  <BarChart3 className="w-3.5 h-3.5 text-amber-400" /> EBU R128 (-24 LUFS) Audio Mastering
+                  <BarChart3 className="w-3.5 h-3.5 text-amber-400" /> Audio Loudness &amp; Narration Timing
                 </a>
               </li>
               <li>
                 <a href="/#architecture" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
-                  <Globe className="w-3.5 h-3.5 text-cyan-400" /> Zero 3rd-Party Cloud Egress
+                  <Globe className="w-3.5 h-3.5 text-cyan-400" /> Enterprise Google Cloud Pipeline
                 </a>
               </li>
             </ul>

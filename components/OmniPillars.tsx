@@ -41,12 +41,12 @@ const PILLARS = [
     number: "03",
     badge: "SOUNDSTAGE & LYRICAL COMPOSITION",
     title: "Music, Songs & Acoustic Bed",
-    subtitle: "Original symphonic scores, lyrics, BGM, and EBU R128 loudness.",
-    description: "Every scene is orchestrated with authentic acoustic instrumentation (Beethoven, Mahler, analog modular synths), poetic lyrical verse, and atmospheric room foley. Calibrated strictly to EBU R128 (-24.0 LUFS) with zero dead air and zero dialogue bleed.",
+    subtitle: "Original symphonic scores, lyrics, BGM, and acoustic loudness calibration.",
+    description: "Every scene is orchestrated with authentic acoustic instrumentation (Beethoven, Mahler, analog modular synths), poetic lyrical verse, and atmospheric room foley. Calibrated strictly to broadcast loudness (-24.0 LUFS) with zero dead air and zero dialogue bleed.",
     features: [
       "Authentic Orchestral & Synthesizer BGM",
       "Poetic Songwriting & Lyrical Composition",
-      "Calibrated to EBU R128 (-24.0 LUFS Standard)",
+      "Calibrated to Broadcast Loudness (-24.0 LUFS)",
       "100% Dialogue Bleed & Cross-Talk Elimination"
     ],
     accent: "from-amber-500/20 to-orange-500/5",
@@ -58,9 +58,9 @@ const PILLARS = [
     badge: "5% POST-DIFFUSION SURGICAL FIXING",
     title: "Surgical Defect Auto-Repair Loop",
     subtitle: "Pinpointing the final 5% gaps and healing them autonomously.",
-    description: "After the 95% baseline reel is compiled, Omni audits live frames with Gemini 2.5 Flash. It isolates remaining edge defects—an anatomical flicker or dialogue splice—and surgically re-rolls only that specific shot without discarding the master timeline.",
+    description: "After the 95% baseline reel is compiled, Omni audits live frames with Gemini Directorial QC. It isolates remaining edge defects—an anatomical flicker or dialogue splice—and surgically re-rolls only that specific shot without discarding the master timeline.",
     features: [
-      "Gemini 2.5 Flash Frame-Level Gap Detection",
+      "Gemini Directorial QC Frame-Level Gap Detection",
       "Surgical Shot-Level Auto-Repair (Loop 1-3)",
       "Zero-Master Discard Timeline Conformance",
       "13 Forensic Quality Gates (100% Broadcast Pass)"

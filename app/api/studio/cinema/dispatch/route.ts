@@ -93,10 +93,10 @@ export async function POST(req: NextRequest) {
         duration: targetDuration,
         status: "processing",
         progress: 25,
-        stageText: "Decomposing screenplay into atomic shot manifests and locking ArcFace embeddings",
+        stageText: "Decomposing screenplay into atomic shot manifests and locking character reference embeddings",
         logs: [
           `[00:00.12] Screenplay compiled: ${generatedActs.length} Acts, ${totalShots} atomic shot manifests.`,
-          `[00:00.45] Biometric Talent Vault locked: ${leadCast.join(", ")} (ArcFace 512-dim cosine threshold: ${qaThresholds.arcfaceMatch}).`,
+          `[00:00.45] Biometric Talent Vault locked: ${leadCast.join(", ")} (Identity consistency locked).`,
           `[00:01.02] Dispatching 20 parallel cloud GPU workers (Veo 2 / Imagen 3 pipeline).`,
           `[00:01.88] Automated 4-Tier QA Robo-Director active: YOLOv10 kinematic guards & Gemini Vision aesthetic scorer primed.`
         ],

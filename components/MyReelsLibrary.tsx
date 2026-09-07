@@ -494,7 +494,7 @@ export function MyReelsLibrary() {
               genre: m.creationIntent?.categoryLabel || m.genre || "Social Cinema",
               tone: m.tone || "Cinematic realism",
               aspectRatio: m.aspectRatio || "9:16 Vertical",
-              audioClock: m.audio?.voice ? `Voice: ${m.audio.voice} • EBU R128 (-24 LUFS)` : "EBU R128 (-24 LUFS)",
+              audioClock: m.audio?.voice ? `Voice: ${m.audio.voice} • Normalized Audio` : "Normalized Audio",
               folder: meta.folder || (isReelArchived ? "Archive" : (p.id.includes("napoleon") ? "Favorites" : "All")),
               isSaved: meta.isSaved || false,
               isHidden: isReelHidden,
@@ -1349,11 +1349,11 @@ export function MyReelsLibrary() {
                           {/* Audio & Director Spec */}
                           <div className="flex flex-wrap items-center gap-3 text-[11px] font-mono text-zinc-500 pt-1">
                             <span className="text-emerald-400/90 font-medium">
-                              ✓ {reel.audioClock || "EBU R128 (-24 LUFS)"}
+                              ✓ {reel.audioClock || "Normalized Audio"}
                             </span>
                             <span>•</span>
                             <span className="text-zinc-400">
-                              24fps SMPTE Locked
+                              24fps Locked
                             </span>
                             <span>•</span>
                             <span className="text-amber-400/90 font-bold">
@@ -1517,7 +1517,7 @@ export function MyReelsLibrary() {
                           <span className="text-emerald-400 font-bold">EDL Sequence:</span>
                           <span>{reel.shots.length} Continuous Shots</span>
                           <span>•</span>
-                          <span>Biometric Facial Continuity: Locked (ArcFace &lt; 0.20)</span>
+                          <span>Biometric Facial Continuity: Locked (Verified Continuity)</span>
                         </div>
                         <div className="text-zinc-500">
                           Total Timeline: {reel.durationSec.toFixed(1)}s
@@ -1809,7 +1809,7 @@ export function MyReelsLibrary() {
             </div>
 
             <div className="flex items-center justify-between text-xs font-mono text-zinc-500 pt-2 border-t border-zinc-800">
-              <span>Google Omni 24fps SMPTE Master Audio/Visual Synchronized</span>
+              <span>Google Omni Master Audio/Visual Synchronized</span>
               <a
                 href={spotlightVideo.url}
                 download

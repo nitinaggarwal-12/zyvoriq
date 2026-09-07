@@ -252,7 +252,6 @@ export function OmniMultiPhaseStudio() {
   const [productionShots, setProductionShots] = useState<any[]>([]);
   const [selectedDuration, setSelectedDuration] = useState<number>(30);
   const [spotlightShotVideo, setSpotlightShotVideo] = useState<{ url: string; id: string; duration?: number; script?: string } | null>(null);
-  const [showDurationModal, setShowDurationModal] = useState(false);
 
   const isNewCreation = currentScene.id === "new_creation" && !isGenerating && liveOperations.length === 0;
   const isNapoleonPreset = currentScene.id === "reel_napoleon_180s_master" || currentScene.id === "napoleon";
@@ -528,11 +527,11 @@ export function OmniMultiPhaseStudio() {
   const handleExportMaster = async () => {
     setIsExporting(true);
     setExportProgress(15);
-    setExportStatusText("Encoding 4K DCI H.264 Stream...");
+    setExportStatusText("Encoding 4K H.264 Stream...");
 
     await new Promise((r) => setTimeout(r, 350));
     setExportProgress(50);
-    setExportStatusText("Mastering EBU R128 (-24.0 LUFS) Audio Track...");
+    setExportStatusText("Mastering Audio Track...");
 
     await new Promise((r) => setTimeout(r, 350));
     setExportProgress(85);
@@ -565,9 +564,9 @@ export function OmniMultiPhaseStudio() {
       setting: settingText,
       dynamicTension: dynamicText,
       director: "Google Omni (v3.1)",
-      masterResolution: "4K DCI (3840x2160)",
-      frameRate: "24.000 fps SMPTE Locked",
-      audioLoudness: "-24.0 LUFS (EBU R128)",
+      masterResolution: "4K (3840x2160)",
+      frameRate: "24.000 fps Locked",
+      audioLoudness: "Normalized Audio",
       c2paSignature: "sha256:c2pa_omni_" + Date.now().toString(16),
       screenplayLines: scriptLines
     };
@@ -967,11 +966,11 @@ export function OmniMultiPhaseStudio() {
           <div className="flex items-center gap-2 sm:gap-3 ml-auto">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3 py-1 text-xs font-mono font-bold text-emerald-400">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Veo 3.1 4K DCI
+              Veo 3.1 4K
             </div>
             <div className="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/30 bg-cyan-950/40 px-3 py-1 text-xs font-mono font-bold text-cyan-300">
               <Music2 className="h-3 w-3 text-cyan-400" />
-              EBU R128 -24 LUFS
+              Normalized Audio
             </div>
             <button
               type="button"
@@ -1073,18 +1072,6 @@ export function OmniMultiPhaseStudio() {
                 <span className="text-[10px] text-zinc-500 hidden sm:inline">({d.desc.split(" ")[0]})</span>
               </button>
             ))}
-
-            {/* Architectural guide for 30-min movies & platform limits */}
-            <button
-              type="button"
-              id="duration-info-modal-btn"
-              onClick={() => setShowDurationModal(true)}
-              className="ml-auto text-[11px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 underline decoration-dotted cursor-pointer py-1 px-2 rounded hover:bg-cyan-950/30 transition"
-              title="Can I generate a 30 min movie? Read architectural guidelines"
-            >
-              <Info className="h-3.5 w-3.5 text-cyan-400" />
-              <span>30-Min Movie &amp; Duration Guide</span>
-            </button>
           </div>
 
           {/* Creative Inspiration Starters */}
@@ -1148,7 +1135,7 @@ export function OmniMultiPhaseStudio() {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-400">Master 4K Reel Ready</span>
-                      <span className="rounded bg-emerald-500/20 px-1.5 py-0.2 text-[10px] font-mono text-emerald-300">24fps SMPTE • -24 LUFS</span>
+                      <span className="rounded bg-emerald-500/20 px-1.5 py-0.2 text-[10px] font-mono text-emerald-300">24fps • Stereo</span>
                     </div>
                     <div className="text-sm font-bold text-white mt-0.5 flex flex-wrap items-center gap-2">
                       <span>{currentScene.title}</span>
@@ -1486,7 +1473,7 @@ export function OmniMultiPhaseStudio() {
                 {/* Transport Controls Row */}
                 <div className="flex items-center justify-between gap-3 text-xs font-mono">
                   
-                  {/* Left Controls: Play, Timecode, 4K DCI */}
+                  {/* Left Controls: Play, Timecode, 4K */}
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
@@ -1522,7 +1509,7 @@ export function OmniMultiPhaseStudio() {
                     </span>
 
                     <span className="rounded bg-black/70 border border-zinc-700/80 px-2 py-0.5 text-[10px] font-bold text-zinc-300 uppercase tracking-wider">
-                      4K DCI
+                      4K Ultra HD
                     </span>
                   </div>
 
@@ -1576,33 +1563,32 @@ export function OmniMultiPhaseStudio() {
 
             </div>
 
-            {/* B. 11-PHASE STEPPER TRACK (Horizontal Pill Flow with Chevrons) */}
-            <div className="w-full rounded-xl border border-zinc-800/80 bg-zinc-900/60 p-2 sm:p-2.5 backdrop-blur-md flex items-center justify-between gap-1 sm:gap-1.5 overflow-x-auto select-none scrollbar-none">
+            {/* B. 4-STAGE PIPELINE STEPPER TRACK */}
+            <div className="w-full rounded-xl border border-zinc-800/80 bg-zinc-900/60 p-2 sm:p-2.5 backdrop-blur-md flex items-center justify-between gap-1 sm:gap-2 overflow-x-auto select-none scrollbar-none">
               {[
-                { id: 1, label: "1. Cognition" },
-                { id: 2, label: "2. Logic & Sanity" },
-                { id: 3, label: "3. Script & EDL" },
-                { id: 4, label: "4. Biometrics" },
-                { id: 5, label: "5. Tool Routing" },
-                { id: 6, label: "6. Video Gen" },
-                { id: 7, label: "7. Audio & Foley" },
-                { id: 8, label: "8. Lip-Sync" },
-                { id: 9, label: "9. Color & Optics" },
-                { id: 10, label: "10. Quality Gates" },
-                { id: 11, label: "11. Master Delivery" }
+                { id: 1, label: "1. Script & Planning", phaseNum: 3 },
+                { id: 2, label: "2. Narration & Audio", phaseNum: 7 },
+                { id: 3, label: "3. Shot Generation", phaseNum: 6 },
+                { id: 4, label: "4. Master Rough Cut", phaseNum: 11 }
               ].map((p, idx) => {
-                const isActive = activePhase === p.id;
-                const isDone = completedPhases.includes(p.id);
+                const isActive = (p.id === 1 && activePhase <= 3) ||
+                                 (p.id === 2 && (activePhase === 7 || (liveOperations.some(op => op.kind === "NARRATION")))) ||
+                                 (p.id === 3 && (activePhase === 6 || (liveOperations.some(op => op.kind === "SHOT")))) ||
+                                 (p.id === 4 && (activePhase === 11 || Boolean(currentScene.video)));
+                const isDone = (p.id === 1 && currentScene.lines?.length > 0) ||
+                               (p.id === 2 && currentScene.lines?.length > 0) ||
+                               (p.id === 3 && succeededShots === totalShots && totalShots > 0) ||
+                               (p.id === 4 && Boolean(currentScene.video));
                 return (
                   <React.Fragment key={p.id}>
                     {idx > 0 && <span className="text-zinc-600 text-xs shrink-0">➔</span>}
                     <button
-                      id={`stepper-phase-${p.id}`}
+                      id={`stepper-stage-${p.id}`}
                       type="button"
-                      onClick={() => setActivePhase(p.id)}
-                      className={`flex items-center gap-1 sm:gap-1.5 rounded-lg px-2 sm:px-2.5 py-1.5 text-[11px] sm:text-xs font-mono transition cursor-pointer whitespace-nowrap shrink-0 ${
+                      onClick={() => setActivePhase(p.phaseNum)}
+                      className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-mono transition cursor-pointer whitespace-nowrap shrink-0 ${
                         isActive
-                          ? p.id === 11
+                          ? p.id === 4
                             ? "bg-emerald-400 text-slate-950 font-black ring-2 ring-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.8)]"
                             : "bg-cyan-500 text-slate-950 font-bold ring-2 ring-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.7)]"
                           : isDone
@@ -1618,78 +1604,14 @@ export function OmniMultiPhaseStudio() {
                       ) : isDone ? (
                         <Check className="h-3 w-3 stroke-[3]" />
                       ) : (
-                        <span className="text-amber-400 text-[10px]">⏳</span>
+                        <span className="text-zinc-500 text-[10px]">⏳</span>
                       )}
                     </button>
                   </React.Fragment>
                 );
               })}
             </div>
-
-            {/* C. BOTTOM QUALITY GATEKEEPER BAR (Exact Figma Replica) */}
-            <div className="w-full rounded-xl border border-zinc-800/80 bg-zinc-900/80 p-3 sm:py-2.5 sm:px-4 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="font-bold tracking-wider text-white">
-                  Quality Gatekeeper
-                </span>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px]">
-                <div className="rounded-md bg-black/60 border border-zinc-800 px-2.5 py-1 text-zinc-300">
-                  Guard 1: {selectedDuration || currentScene.duration || 30}s SMPTE <span className="font-black text-emerald-400">[{isNewCreation ? "STANDBY" : "PASS"}]</span>
-                </div>
-                <div className="rounded-md bg-black/60 border border-zinc-800 px-2.5 py-1 text-zinc-300">
-                  Guard 3: Anatomy Audit <span className="font-black text-emerald-400">[{isNewCreation ? "STANDBY" : "PASS"}]</span>
-                </div>
-                <div className="rounded-md bg-black/60 border border-zinc-800 px-2.5 py-1 text-zinc-300">
-                  Guard 4: -24.0 LUFS <span className="font-black text-emerald-400">[{isNewCreation ? "STANDBY" : "PASS"}]</span>
-                </div>
-              </div>
-            </div>
-
-            {/* D. LIVE DIRECTORIAL PRODUCTION & TELEMETRY CONSOLE (Visible during generation or loaded reel) */}
-            {isNewCreation && !isGenerating && liveOperations.length === 0 ? (
-              <div 
-                id="omni-preflight-creation-card"
-                className="w-full rounded-xl border border-zinc-800/80 bg-zinc-950/80 p-3 sm:p-3.5 space-y-2.5 backdrop-blur-md"
-              >
-                <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                    <span className="text-xs font-mono font-bold uppercase text-zinc-200 tracking-wide">
-                      Directorial Pre-Flight Pipeline
-                    </span>
-                  </div>
-                  <span className="text-[10px] font-mono text-emerald-400/90 bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded">
-                    Zero-Hallucination Gatekeepers Ready
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
-                  <div className="bg-black/50 border border-zinc-800/80 rounded-lg p-2">
-                    <div className="text-[10px] text-zinc-500 uppercase">Stage 1-2</div>
-                    <div className="text-emerald-300 font-bold text-[11px] truncate">Prompt &amp; Lore Grounding</div>
-                    <div className="text-[10px] text-zinc-400">Gemini 2.5 Multi-Modal</div>
-                  </div>
-                  <div className="bg-black/50 border border-zinc-800/80 rounded-lg p-2">
-                    <div className="text-[10px] text-zinc-500 uppercase">Stage 3-4</div>
-                    <div className="text-cyan-300 font-bold text-[11px] truncate">Biometric ArcFace</div>
-                    <div className="text-[10px] text-zinc-400">Facial Lock &amp; Screenplay</div>
-                  </div>
-                  <div className="bg-black/50 border border-zinc-800/80 rounded-lg p-2">
-                    <div className="text-[10px] text-zinc-500 uppercase">Stage 5</div>
-                    <div className="text-amber-300 font-bold text-[11px] truncate">Veo 3.1 4K Diffusion</div>
-                    <div className="text-[10px] text-zinc-400">24fps Sequential Shots</div>
-                  </div>
-                  <div className="bg-black/50 border border-zinc-800/80 rounded-lg p-2">
-                    <div className="text-[10px] text-zinc-500 uppercase">Stage 6</div>
-                    <div className="text-purple-300 font-bold text-[11px] truncate">Audio &amp; SMPTE Master</div>
-                    <div className="text-[10px] text-zinc-400">-24 LUFS Foley &amp; Score</div>
-                  </div>
-                </div>
-              </div>
-            ) : (!currentScene.video || liveOperations.length > 0 || isDiffusionActive || failedOps.length > 0) && (
+            {(!currentScene.video || liveOperations.length > 0 || isDiffusionActive || failedOps.length > 0) && (
               <div 
                 id="live-diffusion-telemetry-card"
                 className="w-full rounded-xl border border-zinc-800/90 bg-zinc-950/95 p-3.5 space-y-3 shadow-2xl backdrop-blur-md"
@@ -1717,7 +1639,7 @@ export function OmniMultiPhaseStudio() {
                         : failedOps.length > 0
                           ? "Diffusion Needs Attention"
                           : roughCutOp?.status === "RUNNING" 
-                            ? "Assembling 24fps SMPTE Rough Cut..." 
+                            ? "Assembling Master Rough Cut..." 
                             : runningShot 
                               ? `Veo 3.1: ${(runningShot.target_id || "Shot").toUpperCase()} Diffusing...`
                               : isDiffusionActive
@@ -1860,8 +1782,8 @@ export function OmniMultiPhaseStudio() {
                               </span>
                               <span className="text-zinc-300 truncate font-mono text-[10px]">
                                 {kind === "NARRATION" ? "DeepMind Voice & Foley (-24 LUFS)" :
-                                 kind === "ROUGH_CUT" ? "SMPTE 24fps Rough Cut Assembly" :
-                                 `${target || "Shot"}: Veo 3.1 4K DCI Diffusion`}
+                                 kind === "ROUGH_CUT" ? "Rough Cut Assembly" :
+                                 `${target || "Shot"}: Veo 3.1 4K Diffusion`}
                               </span>
                               {op.last_error && (
                                 <span className="text-rose-400 truncate text-[9px] ml-auto">
@@ -1900,7 +1822,7 @@ export function OmniMultiPhaseStudio() {
                       </span>
                     </h3>
                     <p className="text-xs text-zinc-400">
-                      Individual 24fps SMPTE scene clips synthesized by Google Veo 3.1 &amp; Gemini Sovereign Director.
+                      Individual scene clips synthesized by Google Veo 3.1.
                     </p>
                   </div>
                 </div>
@@ -2300,7 +2222,7 @@ export function OmniMultiPhaseStudio() {
                         onClick={() => handleSaveAndAdvance(1)}
                         className="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-black text-xs uppercase tracking-wider transition flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/30 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
                       >
-                        <span>Advance to Phase 2: Style &amp; Safety</span>
+                        <span>Advance to Screenplay</span>
                         <ArrowRight className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -2328,61 +2250,7 @@ export function OmniMultiPhaseStudio() {
                 )}
               </div>
 
-              {/* PHASE 2 CARD: Logic */}
-              <div 
-                id="dossier-phase-2"
-                onClick={() => setActivePhase(2)}
-                className={`rounded-xl border p-2.5 sm:p-3 transition cursor-pointer ${
-                  activePhase === 2
-                    ? "border-2 border-emerald-400/80 bg-emerald-950/20 shadow-[0_0_20px_rgba(16,185,129,0.15)]"
-                    : "border-zinc-800/80 bg-zinc-900/60 hover:border-zinc-700/80"
-                }`}
-              >
-                <div className="flex items-center justify-between text-xs font-mono text-zinc-400 mb-0.5">
-                  <span className="font-bold text-zinc-200">Phase 2: Logic</span>
-                  <div className="flex items-center gap-1.5">
-                    {activePhase === 2 && (
-                      <span className="rounded bg-emerald-400/20 border border-emerald-400/40 px-1.5 py-0.2 text-[10px] font-bold text-emerald-300">
-                        [Active]
-                      </span>
-                    )}
-                    <MoreVertical className="h-3.5 w-3.5 text-zinc-500" />
-                  </div>
-                </div>
-
-                <div className="text-xs font-mono text-zinc-300 mb-1.5">
-                  Scene Consistency Check <span className="text-emerald-400 font-bold">[PASS]</span>
-                </div>
-
-                {activePhase === 2 ? (
-                  <div className="space-y-1.5 text-[11px] font-mono mb-2" onClick={(e) => e.stopPropagation()}>
-                    <div className="rounded bg-black/40 p-1.5 text-zinc-300 flex items-center justify-between">
-                      <span>Biometric Anchor:</span>
-                      <span className="text-emerald-400 font-bold">ArcFace Locked</span>
-                    </div>
-                    <div className="rounded bg-black/40 p-1.5 text-zinc-300 flex items-center justify-between">
-                      <span>Physics &amp; Lighting:</span>
-                      <span className="text-emerald-400 font-bold">24fps Verified</span>
-                    </div>
-
-                    <button
-                      id="dossier-advance-phase2-btn"
-                      type="button"
-                      onClick={() => handleSaveAndAdvance(2)}
-                      className="mt-2 w-full py-2 rounded-lg bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-black text-xs uppercase tracking-wider transition flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/30 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
-                    >
-                      <span>Save &amp; Advance Phase 3</span>
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="w-full py-1 text-center rounded-lg bg-emerald-950/50 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold">
-                    Logic Approved ✓
-                  </div>
-                )}
-              </div>
-
-              {/* PHASE 3 CARD: Script (Active in Figma Mockup) */}
+              {/* SCRIPT & SCREENPLAY CARD */}
               <div 
                 id="dossier-phase-3"
                 onClick={() => setActivePhase(3)}
@@ -2395,7 +2263,7 @@ export function OmniMultiPhaseStudio() {
                 {/* Header */}
                 <div className="flex items-center justify-between text-xs font-mono mb-2">
                   <span className="font-bold text-emerald-400">
-                    Phase 3: Script
+                    Screenplay &amp; Dialogue
                   </span>
                   <div className="flex items-center gap-1.5">
                     <span className="rounded bg-black/60 border border-zinc-800 px-2 py-0.5 text-[10px] text-zinc-300">
@@ -2447,514 +2315,24 @@ export function OmniMultiPhaseStudio() {
                   ))}
                 </div>
 
-                {/* Primary Button: Save & Advance Phase 4 (Exact Mockup Primary Button) */}
-                {activePhase === 3 ? (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSaveAndAdvance(3);
-                    }}
-                    className="mt-3 w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/30 hover:scale-[1.01] active:scale-[0.99] transition cursor-pointer"
-                  >
-                    <span>Save &amp; Advance Phase 4</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                ) : completedPhases.includes(3) ? (
-                  <div className="mt-2.5 w-full py-1 text-center rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold">
-                    Script Locked ✓
-                  </div>
-                ) : null}
-              </div>
-
-              {/* PHASE 4 CARD: Biometrics & Cast Anchoring */}
-              {activePhase >= 4 && (
-                <div 
-                  id="dossier-phase-4"
-                  onClick={() => setActivePhase(4)}
-                  className={`rounded-xl border p-3.5 sm:p-4 transition cursor-pointer ${
-                    activePhase === 4
-                      ? "border-2 border-emerald-400/90 bg-emerald-950/20 shadow-[0_0_22px_rgba(16,185,129,0.2)]"
-                      : "border-zinc-800/80 bg-zinc-900/60 hover:border-zinc-700/80"
-                  }`}
+                {/* Primary Action Button: Start Generation */}
+                <button
+                  id="dossier-generate-master-btn"
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleStartReelGeneration();
+                  }}
+                  disabled={isGeneratingReel || isGenerating}
+                  className="mt-3 w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/30 hover:scale-[1.01] active:scale-[0.99] transition cursor-pointer disabled:opacity-50"
                 >
-                  <div className="flex items-center justify-between text-xs font-mono text-zinc-400 mb-1.5">
-                    <span className="font-bold text-zinc-200">Phase 4: Biometrics &amp; Cast</span>
-                    <div className="flex items-center gap-1.5">
-                      {activePhase === 4 && (
-                        <span className="rounded bg-emerald-400/20 border border-emerald-400/40 px-1.5 py-0.2 text-[10px] font-bold text-emerald-300">
-                          [Active]
-                        </span>
-                      )}
-                      <MoreVertical className="h-3.5 w-3.5 text-zinc-500" />
-                    </div>
-                  </div>
-                  <div className="text-xs font-mono text-zinc-300 mb-2">
-                    ArcFace Biometric DNA &amp; Temporal Mesh:
-                  </div>
+                  <Sparkles className="h-4 w-4" />
+                  <span>Direct &amp; Generate Master Reel</span>
+                </button>
 
-                  <div className="space-y-1.5 text-[11px] font-mono mb-3">
-                    <div className="flex items-center justify-between rounded bg-black/40 p-1.5">
-                      <span className="text-zinc-400">Lead Hero Anchor:</span>
-                      <span className="text-emerald-400 font-bold">ArcFace (Cosine &lt; 0.20)</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded bg-black/40 p-1.5">
-                      <span className="text-zinc-400">Facial Morphometrics:</span>
-                      <span className="text-cyan-400 font-bold">100% Locked Geometry</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded bg-black/40 p-1.5">
-                      <span className="text-zinc-400">Cast Continuity:</span>
-                      <span className="text-amber-400 font-bold">Zero Identity Drift</span>
-                    </div>
-                  </div>
-
-                  {activePhase === 4 ? (
+                {!isNewCreation && currentScene.video && (
+                  <div className="mt-3 pt-2.5 space-y-2 border-t border-zinc-800/80">
                     <button
-                      id="dossier-advance-phase4-btn"
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSaveAndAdvance(4);
-                      }}
-                      className="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20 hover:scale-[1.01] active:scale-[0.99] transition cursor-pointer"
-                    >
-                      <span>Save &amp; Advance Phase 5</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                  ) : (
-                    <div className="w-full py-1 text-center rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold">
-                      Biometrics Locked ✓
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* PHASE 5 CARD: Tool Routing & Model Orchestration */}
-              {activePhase >= 5 && (
-                <div 
-                  id="dossier-phase-5"
-                  onClick={() => setActivePhase(5)}
-                  className={`rounded-xl border p-3.5 sm:p-4 transition cursor-pointer ${
-                    activePhase === 5
-                      ? "border-2 border-emerald-400/90 bg-emerald-950/20 shadow-[0_0_22px_rgba(16,185,129,0.2)]"
-                      : "border-zinc-800/80 bg-zinc-900/60 hover:border-zinc-700/80"
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-xs font-mono text-zinc-400 mb-1.5">
-                    <span className="font-bold text-zinc-200">Phase 5: Tool Routing</span>
-                    <div className="flex items-center gap-1.5">
-                      {activePhase === 5 && (
-                        <span className="rounded bg-emerald-400/20 border border-emerald-400/40 px-1.5 py-0.2 text-[10px] font-bold text-emerald-300">
-                          [Active]
-                        </span>
-                      )}
-                      <MoreVertical className="h-3.5 w-3.5 text-zinc-500" />
-                    </div>
-                  </div>
-                  <div className="text-xs font-mono text-zinc-300 mb-2">
-                    Unbiased Directorial Delegation:
-                  </div>
-
-                  <div className="space-y-1.5 text-[11px] font-mono mb-3">
-                    <div className="flex items-center justify-between rounded bg-black/40 p-1.5">
-                      <span className="text-zinc-400">Diffusion:</span>
-                      <span className="text-emerald-400 font-bold">Veo 3.1 4K DCI</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded bg-black/40 p-1.5">
-                      <span className="text-zinc-400">Director:</span>
-                      <span className="text-cyan-400 font-bold">Gemini 2.5 Flash</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded bg-black/40 p-1.5">
-                      <span className="text-zinc-400">Audio:</span>
-                      <span className="text-amber-400 font-bold">DeepMind Emotional Voice</span>
-                    </div>
-                  </div>
-
-                  {activePhase === 5 ? (
-                    <button
-                      id="dossier-advance-phase5-btn"
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSaveAndAdvance(5);
-                      }}
-                      className="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20 hover:scale-[1.01] active:scale-[0.99] transition cursor-pointer"
-                    >
-                      <span>Save &amp; Advance Phase 6</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                  ) : (
-                    <div className="w-full py-1 text-center rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold">
-                      Routing Locked ✓
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* PHASE 6 CARD: Video Gen */}
-              {activePhase >= 6 && (
-                <div 
-                  id="dossier-phase-6"
-                  onClick={() => setActivePhase(6)}
-                  className={`rounded-xl border p-3.5 sm:p-4 transition cursor-pointer ${
-                    activePhase === 6
-                      ? "border-2 border-emerald-400/90 bg-emerald-950/20 shadow-[0_0_22px_rgba(16,185,129,0.2)]"
-                      : "border-zinc-800/80 bg-zinc-900/60 hover:border-zinc-700/80"
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-xs font-mono text-zinc-400 mb-1.5">
-                    <span className="font-bold text-zinc-200">Phase 6: Video Gen</span>
-                    <div className="flex items-center gap-1.5">
-                      {activePhase === 6 && (
-                        <span className="rounded bg-emerald-400/20 border border-emerald-400/40 px-1.5 py-0.2 text-[10px] font-bold text-emerald-300">
-                          [Active]
-                        </span>
-                      )}
-                      <MoreVertical className="h-3.5 w-3.5 text-zinc-500" />
-                    </div>
-                  </div>
-                  <div className="text-xs font-mono text-zinc-300 mb-2">
-                    4K DCI Latent Diffusion (24fps SMPTE)
-                  </div>
-                  <div className="space-y-1.5 text-[11px] font-mono mb-3">
-                    <div className="flex items-center justify-between rounded bg-black/40 p-1.5">
-                      <span className="text-zinc-400">Resolution:</span>
-                      <span className="text-emerald-400 font-bold">3840 x 2160 DCI</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded bg-black/40 p-1.5">
-                      <span className="text-zinc-400">Temporal Coherence:</span>
-                      <span className="text-cyan-400 font-bold">99.4% Latent Stability</span>
-                    </div>
-                  </div>
-                  {activePhase === 6 ? (
-                    <button
-                      id="dossier-advance-phase6-btn"
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSaveAndAdvance(6);
-                      }}
-                      className="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20 hover:scale-[1.01] active:scale-[0.99] transition cursor-pointer"
-                    >
-                      <span>Save &amp; Advance Phase 7</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                  ) : (
-                    <div className="w-full py-1 text-center rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold">
-                      Keyframes Rendered ✓
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* PHASE 7 CARD: Audio & Foley */}
-              {activePhase >= 7 && (
-                <div 
-                  id="dossier-phase-7"
-                  onClick={() => setActivePhase(7)}
-                  className={`rounded-xl border p-3.5 sm:p-4 transition cursor-pointer ${
-                    activePhase === 7
-                      ? "border-2 border-emerald-400/90 bg-emerald-950/20 shadow-[0_0_22px_rgba(16,185,129,0.2)]"
-                      : "border-zinc-800/80 bg-zinc-900/60 hover:border-zinc-700/80"
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-xs font-mono text-zinc-400 mb-1.5">
-                    <span className="font-bold text-zinc-200">Phase 7: Audio &amp; Foley</span>
-                    <div className="flex items-center gap-1.5">
-                      {activePhase === 7 && (
-                        <span className="rounded bg-emerald-400/20 border border-emerald-400/40 px-1.5 py-0.2 text-[10px] font-bold text-emerald-300">
-                          [Active]
-                        </span>
-                      )}
-                      <MoreVertical className="h-3.5 w-3.5 text-zinc-500" />
-                    </div>
-                  </div>
-                  <div className="text-xs font-mono text-zinc-300 mb-2">
-                    EBU R128 (-24.0 LUFS broadcast mix)
-                  </div>
-                  <div className="space-y-1.5 text-[11px] font-mono mb-3">
-                    <div className="flex items-center justify-between rounded bg-black/40 p-1.5">
-                      <span className="text-zinc-400">Score &amp; Foley Mix:</span>
-                      <span className="text-emerald-400 font-bold">-24.0 LUFS Target</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded bg-black/40 p-1.5">
-                      <span className="text-zinc-400">Formant Convolution:</span>
-                      <span className="text-amber-400 font-bold">5-Band Vocal Tract</span>
-                    </div>
-                  </div>
-                  {activePhase === 7 ? (
-                    <button
-                      id="dossier-advance-phase7-btn"
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSaveAndAdvance(7);
-                      }}
-                      className="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20 hover:scale-[1.01] active:scale-[0.99] transition cursor-pointer"
-                    >
-                      <span>Save &amp; Advance Phase 8</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                  ) : (
-                    <div className="w-full py-1 text-center rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold">
-                      Audio Mixed ✓
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* PHASE 8 CARD: Lip-Sync & Visemes */}
-              {activePhase >= 8 && (
-                <div 
-                  id="dossier-phase-8"
-                  onClick={() => setActivePhase(8)}
-                  className={`rounded-xl border p-3.5 sm:p-4 transition cursor-pointer ${
-                    activePhase === 8
-                      ? "border-2 border-emerald-400/90 bg-emerald-950/20 shadow-[0_0_22px_rgba(16,185,129,0.2)]"
-                      : "border-zinc-800/80 bg-zinc-900/60 hover:border-zinc-700/80"
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-xs font-mono text-zinc-400 mb-1.5">
-                    <span className="font-bold text-zinc-200">Phase 8: Lip-Sync &amp; Visemes</span>
-                    <div className="flex items-center gap-1.5">
-                      {activePhase === 8 && (
-                        <span className="rounded bg-emerald-400/20 border border-emerald-400/40 px-1.5 py-0.2 text-[10px] font-bold text-emerald-300">
-                          [Active]
-                        </span>
-                      )}
-                      <MoreVertical className="h-3.5 w-3.5 text-zinc-500" />
-                    </div>
-                  </div>
-                  <div className="text-xs font-mono text-zinc-300 mb-2">
-                    Sub-12ms Audio-to-Lip Synchrony
-                  </div>
-                  <div className="space-y-1.5 text-[11px] font-mono mb-3">
-                    <div className="flex items-center justify-between rounded bg-black/40 p-1.5">
-                      <span className="text-zinc-400">Viseme Alignment:</span>
-                      <span className="text-emerald-400 font-bold">Wav2Lip Neural Sync</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded bg-black/40 p-1.5">
-                      <span className="text-zinc-400">Artifact Elimination:</span>
-                      <span className="text-cyan-400 font-bold">Zero Dialogue Bleed</span>
-                    </div>
-                  </div>
-                  {activePhase === 8 ? (
-                    <button
-                      id="dossier-advance-phase8-btn"
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSaveAndAdvance(8);
-                      }}
-                      className="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20 hover:scale-[1.01] active:scale-[0.99] transition cursor-pointer"
-                    >
-                      <span>Save &amp; Advance Phase 9</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                  ) : (
-                    <div className="w-full py-1 text-center rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold">
-                      Visemes Synced ✓
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* PHASE 9 CARD: Color & Optics */}
-              {activePhase >= 9 && (
-                <div 
-                  id="dossier-phase-9"
-                  onClick={() => setActivePhase(9)}
-                  className={`rounded-xl border p-3.5 sm:p-4 transition cursor-pointer ${
-                    activePhase === 9
-                      ? "border-2 border-emerald-400/90 bg-emerald-950/20 shadow-[0_0_22px_rgba(16,185,129,0.2)]"
-                      : "border-zinc-800/80 bg-zinc-900/60 hover:border-zinc-700/80"
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-xs font-mono text-zinc-400 mb-1.5">
-                    <span className="font-bold text-zinc-200">Phase 9: Color &amp; Optics</span>
-                    <div className="flex items-center gap-1.5">
-                      {activePhase === 9 && (
-                        <span className="rounded bg-emerald-400/20 border border-emerald-400/40 px-1.5 py-0.2 text-[10px] font-bold text-emerald-300">
-                          [Active]
-                        </span>
-                      )}
-                      <MoreVertical className="h-3.5 w-3.5 text-zinc-500" />
-                    </div>
-                  </div>
-                  <div className="text-xs font-mono text-zinc-300 mb-2">
-                    Rec.709 &amp; Anamorphic Color Grading
-                  </div>
-                  <div className="space-y-1.5 text-[11px] font-mono mb-3">
-                    <div className="flex items-center justify-between rounded bg-black/40 p-1.5">
-                      <span className="text-zinc-400">Color Gamut:</span>
-                      <span className="text-emerald-400 font-bold">Rec.709 DCI Cinema</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded bg-black/40 p-1.5">
-                      <span className="text-zinc-400">Optics &amp; Flare:</span>
-                      <span className="text-amber-400 font-bold">2.39:1 Anamorphic</span>
-                    </div>
-                  </div>
-                  {activePhase === 9 ? (
-                    <button
-                      id="dossier-advance-phase9-btn"
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSaveAndAdvance(9);
-                      }}
-                      className="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20 hover:scale-[1.01] active:scale-[0.99] transition cursor-pointer"
-                    >
-                      <span>Save &amp; Advance Phase 10</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                  ) : (
-                    <div className="w-full py-1 text-center rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold">
-                      Color Graded ✓
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* PHASE 10 CARD: Quality Gates */}
-              {activePhase >= 10 && (
-                <div 
-                  id="dossier-phase-10"
-                  onClick={() => setActivePhase(10)}
-                  className={`rounded-xl border p-3.5 sm:p-4 transition cursor-pointer ${
-                    activePhase === 10
-                      ? "border-2 border-emerald-400/90 bg-emerald-950/20 shadow-[0_0_22px_rgba(16,185,129,0.2)]"
-                      : "border-zinc-800/80 bg-zinc-900/60 hover:border-zinc-700/80"
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-xs font-mono text-zinc-400 mb-1.5">
-                    <span className="font-bold text-zinc-200">Phase 10: Quality Gates</span>
-                    <div className="flex items-center gap-1.5">
-                      {activePhase === 10 && (
-                        <span className="rounded bg-emerald-400/20 border border-emerald-400/40 px-1.5 py-0.2 text-[10px] font-bold text-emerald-300">
-                          [Active]
-                        </span>
-                      )}
-                      <MoreVertical className="h-3.5 w-3.5 text-zinc-500" />
-                    </div>
-                  </div>
-                  <div className={`text-xs font-mono font-bold mb-2 flex items-center gap-1.5 ${currentScene.video ? "text-emerald-400" : "text-amber-400"}`}>
-                    {currentScene.video ? (
-                      <span>13 Forensic Guards Certified [PASS]</span>
-                    ) : (
-                      <>
-                        <Loader2 className="h-3 w-3 animate-spin text-amber-400" />
-                        <span>Quality Gates: Video Diffusion In-Flight</span>
-                      </>
-                    )}
-                  </div>
-                  <div className="space-y-1.5 text-[11px] font-mono mb-3">
-                    <div className="flex items-center justify-between rounded bg-black/40 p-1.5">
-                      <span className="text-zinc-400">Forensic Guard 1-6 (Sync &amp; Biometrics):</span>
-                      <span className={`font-bold ${currentScene.video ? "text-emerald-400" : "text-amber-400"}`}>
-                        {currentScene.video ? "PASS" : "DIFFUSING"}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between rounded bg-black/40 p-1.5">
-                      <span className="text-zinc-400">Forensic Guard 7-13 (Acoustic &amp; Optics):</span>
-                      <span className={`font-bold ${currentScene.video ? "text-emerald-400" : "text-amber-400"}`}>
-                        {currentScene.video ? "PASS" : "AWAITING CUT"}
-                      </span>
-                    </div>
-                  </div>
-                  {activePhase === 10 ? (
-                    currentScene.video ? (
-                      <button
-                        id="dossier-advance-phase10-btn"
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSaveAndAdvance(10);
-                        }}
-                        className="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20 hover:scale-[1.01] active:scale-[0.99] transition cursor-pointer"
-                      >
-                        <span>Save &amp; Advance Phase 11</span>
-                        <ArrowRight className="h-4 w-4" />
-                      </button>
-                    ) : (
-                      <div className="w-full py-2 text-center rounded-lg bg-amber-950/40 border border-amber-500/30 text-amber-300 font-mono text-xs font-semibold">
-                        Awaiting Veo 3.1 Video Diffusion
-                      </div>
-                    )
-                  ) : completedPhases.includes(10) ? (
-                    <div className="w-full py-1 text-center rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold">
-                      Gates Cleared ✓
-                    </div>
-                  ) : null}
-                </div>
-              )}
-
-              {/* PHASE 11 CARD: Master Delivery */}
-              {activePhase >= 11 && (
-                <div 
-                  id="dossier-phase-11"
-                  onClick={() => setActivePhase(11)}
-                  className={`rounded-xl border p-3.5 sm:p-4 transition cursor-pointer ${
-                    activePhase === 11
-                      ? "border-2 border-emerald-400/90 bg-emerald-950/20 shadow-[0_0_22px_rgba(16,185,129,0.2)]"
-                      : "border-zinc-800/80 bg-zinc-900/60 hover:border-zinc-700/80"
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-xs font-mono text-zinc-400 mb-1.5">
-                    <span className="font-bold text-zinc-200">Phase 11: Master Delivery</span>
-                    <div className="flex items-center gap-1.5">
-                      {activePhase === 11 && (
-                        <span className="rounded bg-emerald-400/20 border border-emerald-400/40 px-1.5 py-0.2 text-[10px] font-bold text-emerald-300">
-                          [Active]
-                        </span>
-                      )}
-                      <MoreVertical className="h-3.5 w-3.5 text-zinc-500" />
-                    </div>
-                  </div>
-                  <div className="text-xs font-mono text-zinc-300 mb-2">
-                    4K DCI Master Film &amp; C2PA Cryptographic Provenance
-                  </div>
-
-                  <div className="space-y-1.5 text-[11px] font-mono mb-3">
-                    <div className="flex items-center justify-between rounded bg-black/40 p-1.5">
-                      <span className="text-zinc-400">Delivery Status:</span>
-                      <span className="text-emerald-400 font-bold">
-                        {isExported ? "Master Ready & Verified" : "Ready for Export"}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between rounded bg-black/40 p-1.5">
-                      <span className="text-zinc-400">Provenance:</span>
-                      <span className="text-cyan-400 font-bold">C2PA v2.1 Signed</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    {/* Primary Action in Phase 11: Export Master 4K Film */}
-                    <button
-                      id="omni-export-master-btn"
-                      type="button"
-                      disabled={isExporting}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleExportMaster();
-                      }}
-                      className="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md shadow-emerald-500/30 hover:scale-[1.01] active:scale-[0.99] transition cursor-pointer disabled:opacity-50"
-                    >
-                      {isExporting ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>{exportStatusText || "Exporting Master..."}</span>
-                        </>
-                      ) : (
-                        <>
-                          <Download className="h-4 w-4" />
-                          <span>Export Master 4K Film</span>
-                        </>
-                      )}
-                    </button>
-
-                    {/* Secondary Action in Phase 11: Start Reel Generation */}
-                    <button
-                      id="omni-start-generation-btn-phase11"
                       type="button"
                       disabled={isGeneratingReel}
                       onClick={(e) => {
@@ -2964,7 +2342,7 @@ export function OmniMultiPhaseStudio() {
                       className="w-full py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 border border-zinc-700 transition cursor-pointer disabled:opacity-50"
                     >
                       <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-                      <span>Re-Generate Reel (All 11 Phases)</span>
+                      <span>Re-Generate Master Reel</span>
                     </button>
 
                     {isExported && (
@@ -2982,9 +2360,8 @@ export function OmniMultiPhaseStudio() {
                       </button>
                     )}
                   </div>
-                </div>
-              )}
-
+                )}
+              </div>
             </div>
 
             {/* Directorial Generation & Live Status Bar */}
@@ -3071,7 +2448,7 @@ export function OmniMultiPhaseStudio() {
                 <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-black/60 border border-zinc-800/80 text-xs font-mono text-zinc-400">
                   <div className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-zinc-300 font-bold">11-Phase Directorial Pipeline</span>
+                    <span className="text-zinc-300 font-bold">Directorial Production Pipeline</span>
                   </div>
                   <span className="text-[11px] text-emerald-400 font-semibold">Active &amp; Calibrated ✓</span>
                 </div>
@@ -3109,7 +2486,7 @@ export function OmniMultiPhaseStudio() {
 
             <div>
               <div className="text-xs font-mono font-bold uppercase tracking-widest text-emerald-400 mb-1">
-                Google Omni 11-Phase Production Pipeline
+                Google Omni Production Pipeline
               </div>
               <h3 className="text-lg font-black text-white font-sans">
                 Generating 4K Cinema Master Reel
@@ -3123,7 +2500,7 @@ export function OmniMultiPhaseStudio() {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs font-mono">
                 <span className="text-zinc-400">Pipeline Step:</span>
-                <span className="text-emerald-400 font-bold">{reelGenStep} / 11 Phases ({reelGenProgress}%)</span>
+                <span className="text-emerald-400 font-bold">Directing Scene ({reelGenProgress}%)</span>
               </div>
               <div className="h-2.5 w-full overflow-hidden rounded-full bg-zinc-900 border border-zinc-800">
                 <div 
@@ -3140,7 +2517,7 @@ export function OmniMultiPhaseStudio() {
             </div>
 
             <div className="text-[11px] font-mono text-zinc-500">
-              Zero third-party cloud egress • 24fps SMPTE • EBU R128 (-24 LUFS) • C2PA Certified
+              Directorial Compilation • Neural Audio & Video Diffusion
             </div>
           </div>
         </div>
@@ -3164,7 +2541,7 @@ export function OmniMultiPhaseStudio() {
                     C2PA v2.1 Certified
                   </span>
                   <span className="text-zinc-500 text-xs font-mono">|</span>
-                  <span className="text-zinc-400 text-xs font-mono">4K DCI Master Film</span>
+                  <span className="text-zinc-400 text-xs font-mono">Master Film</span>
                 </div>
                 <h3 className="text-lg sm:text-xl font-black text-white font-sans mt-1">
                   Cinema Master Delivery Suite &amp; Screening Room
@@ -3223,11 +2600,11 @@ export function OmniMultiPhaseStudio() {
               </div>
               <div className="rounded-lg bg-black/50 border border-zinc-800/80 p-2">
                 <span className="text-zinc-500 block text-[10px]">FORMAT:</span>
-                <span className="text-emerald-400 font-bold block">4K DCI (3840x2160)</span>
+                <span className="text-emerald-400 font-bold block">4K (3840x2160)</span>
               </div>
               <div className="rounded-lg bg-black/50 border border-zinc-800/80 p-2">
                 <span className="text-zinc-500 block text-[10px]">AUDIO LOUDNESS:</span>
-                <span className="text-amber-400 font-bold block">-24.0 LUFS (EBU R128)</span>
+                <span className="text-amber-400 font-bold block">Normalized Master Audio</span>
               </div>
               <div className="rounded-lg bg-black/50 border border-zinc-800/80 p-2">
                 <span className="text-zinc-500 block text-[10px]">PROVENANCE:</span>
@@ -3315,120 +2692,6 @@ export function OmniMultiPhaseStudio() {
         productionId={currentScene.id}
         videoUrl={currentScene.video}
       />
-
-      {/* ============================================================ */}
-      {/* 6.5 DURATION & 30-MIN MOVIE ARCHITECTURE MODAL               */}
-      {/* ============================================================ */}
-      {showDurationModal && (
-        <div 
-          id="duration-info-modal-backdrop"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in"
-        >
-          <div className="relative w-full max-w-2xl rounded-2xl border border-cyan-500/40 bg-[#0B0F17] p-6 shadow-2xl space-y-5 text-white font-sans max-h-[90vh] overflow-y-auto">
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
-                  <Film className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-base sm:text-lg font-bold text-white">
-                    Reel Duration &amp; 30-Minute Cinema Architecture
-                  </h3>
-                  <p className="text-xs text-zinc-400 font-mono">
-                    Directorial specifications for Google Veo 3.1 &amp; YouTube Shorts
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                id="close-duration-info-modal-btn"
-                onClick={() => setShowDurationModal(false)}
-                className="rounded-lg p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
-                title="Close guide"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Content Body */}
-            <div className="space-y-4 text-xs sm:text-sm text-zinc-300 leading-relaxed">
-              {/* Section 1: YouTube Shorts Constraints */}
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3.5 space-y-1.5">
-                <h4 className="font-bold text-cyan-300 flex items-center gap-1.5 text-xs sm:text-sm font-mono uppercase">
-                  <Clock className="h-4 w-4" /> 1. YouTube Shorts Platform Length Limit
-                </h4>
-                <p className="text-xs text-zinc-300">
-                  YouTube Shorts has a strict platform ceiling: <strong>maximum 60 seconds</strong> (recently expanded up to <strong>3 minutes / 180 seconds</strong> for vertical videos uploaded after October 15, 2024). Any video exceeding 3 minutes is categorized by YouTube as a standard long-form video, not a Short.
-                </p>
-              </div>
-
-              {/* Section 2: AI Generative Diffusion Physics */}
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3.5 space-y-1.5">
-                <h4 className="font-bold text-emerald-300 flex items-center gap-1.5 text-xs sm:text-sm font-mono uppercase">
-                  <Sparkles className="h-4 w-4" /> 2. Neural Diffusion Physics (Veo 3.1)
-                </h4>
-                <p className="text-xs text-zinc-300">
-                  State-of-the-art cinematic AI diffusion models (Google Veo 3.1) synthesize coherent visual physics in discrete <strong>5 to 8-second continuous camera latents</strong>. Zyvoriq chains these shots seamlessly using canonical ArcFace biometric face anchoring:
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-[11px]">
-                  <div className="bg-black/60 p-2 rounded-lg border border-zinc-800">
-                    <span className="text-cyan-400 font-bold block">15s Teaser</span>
-                    <span className="text-zinc-400 text-[10px]">2–3 shots (~2m gen)</span>
-                  </div>
-                  <div className="bg-black/60 p-2 rounded-lg border border-zinc-800">
-                    <span className="text-emerald-400 font-bold block">30s Standard</span>
-                    <span className="text-zinc-400 text-[10px]">4–5 shots (~4m gen)</span>
-                  </div>
-                  <div className="bg-black/60 p-2 rounded-lg border border-zinc-800">
-                    <span className="text-amber-400 font-bold block">60s Story</span>
-                    <span className="text-zinc-400 text-[10px]">8–10 shots (~8m gen)</span>
-                  </div>
-                  <div className="bg-black/60 p-2 rounded-lg border border-zinc-800">
-                    <span className="text-purple-400 font-bold block">180s YouTube Max</span>
-                    <span className="text-zinc-400 text-[10px]">25–30 shots (~25m gen)</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 3: Can I generate a 30-minute movie? */}
-              <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3.5 space-y-2">
-                <h4 className="font-bold text-amber-300 flex items-center gap-1.5 text-xs sm:text-sm font-mono uppercase">
-                  <Film className="h-4 w-4" /> 3. Can I generate a 30-Minute Movie?
-                </h4>
-                <p className="text-xs text-zinc-200">
-                  <strong>Yes, via Multi-Scene Episodic Acts!</strong> A 30-minute film (1,800 seconds) requires approximately <strong>250 to 300 individual camera shots</strong>.
-                </p>
-                <p className="text-xs text-zinc-300">
-                  In cinema engineering, attempting to generate 300 continuous shots in a single prompt causes hallucination drift and quota timeouts. Instead, Zyvoriq structures 30-minute films into <strong>multi-scene acts</strong>:
-                </p>
-                <ul className="list-disc pl-5 space-y-1 text-xs text-zinc-300 font-mono">
-                  <li><strong>Act I (Exposition &amp; Inciting Incident)</strong>: 4–6 scenes (approx 8 minutes)</li>
-                  <li><strong>Act II (Rising Action &amp; Midpoint Crisis)</strong>: 8–10 scenes (approx 14 minutes)</li>
-                  <li><strong>Act III (Climax &amp; Denouement)</strong>: 4–5 scenes (approx 8 minutes)</li>
-                </ul>
-                <p className="text-xs text-zinc-400">
-                  Each scene retains ArcFace biometric facial locking, voice timbre (-24.0 LUFS EBU R128), and color grading, allowing you to assemble a continuous 30-minute short film.
-                </p>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-between border-t border-zinc-800 pt-3">
-              <span className="text-xs font-mono text-zinc-500">
-                Zyvoriq Omni Multimodal Directorial Engine
-              </span>
-              <button
-                type="button"
-                onClick={() => setShowDurationModal(false)}
-                className="rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 px-5 py-2 text-xs font-black text-slate-950 uppercase tracking-wider hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer"
-              >
-                Got It
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ============================================================ */}
       {/* 7. CELEBRATORY TOAST NOTIFICATION                             */}

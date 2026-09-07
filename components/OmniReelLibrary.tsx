@@ -243,7 +243,7 @@ export function OmniReelLibrary() {
             genre: m.creationIntent?.categoryLabel || m.genre || "Social Cinema",
             tone: m.tone || "Cinematic realism",
             aspectRatio: "9:16 Vertical",
-            audioClock: m.audio?.voice ? `Voice: ${m.audio.voice} • EBU R128 (-24 LUFS)` : "EBU R128 (-24 LUFS)",
+            audioClock: m.audio?.voice ? `Voice: ${m.audio.voice} • Normalized Audio` : "Normalized Audio",
             shots: shotsList
           };
         });
@@ -503,7 +503,7 @@ export function OmniReelLibrary() {
                       </div>
                       <div>
                         <span className="text-slate-400">Audio Bed:</span>{" "}
-                        <span className="text-amber-400 font-bold">EBU R128 (-24 LUFS)</span>
+                        <span className="text-amber-400 font-bold">Normalized Audio</span>
                       </div>
                     </div>
                   </div>

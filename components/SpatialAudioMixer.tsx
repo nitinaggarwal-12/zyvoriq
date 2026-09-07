@@ -209,7 +209,7 @@ export function SpatialAudioMixer({
               </span>
             </div>
             <p className="text-xs text-slate-400">
-              Live Web Audio DSP · ITU-R BS.1770 / EBU R128 Broadcast Standard (-14 LUFS)
+              Live Web Audio DSP · ITU-R BS.1770 Broadcast Standard (-14 LUFS)
             </p>
           </div>
         </div>

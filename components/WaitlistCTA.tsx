@@ -23,7 +23,7 @@ export function WaitlistCTA() {
                 Bring any concept, historical saga, or brand story. Google Omni compiles diffusion-safe prompts, guides 4K camera vectors, composes pure acoustic scores, and rejects defects on-set.
               </p>
               <div className="mt-7 flex flex-wrap gap-x-6 gap-y-3 text-xs sm:text-sm text-slate-400 font-mono">
-                {["Zero Prompts Wasted", "Veo 3.1 4K Photorealism", "Beethoven & Chamber Score", "Gemini 2.5 Vision Gatekeeper"].map((item) => (
+                {["Zero Prompts Wasted", "Veo 3.1 4K Photorealism", "Beethoven & Chamber Score", "Gemini Directorial QC"].map((item) => (
                   <span key={item} className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-teal-400 shrink-0" />
                     {item}
@@ -47,7 +47,7 @@ export function WaitlistCTA() {
                 Watch 180s Napoleon Master
               </a>
               <p className="text-center text-[11px] leading-relaxed text-slate-500 font-mono">
-                C2PA Cryptographic Provenance · EBU R128 Audio
+                C2PA Cryptographic Provenance · Normalized Audio
               </p>
             </div>
           </div>

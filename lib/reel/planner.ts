@@ -144,10 +144,12 @@ function splitIntoEditorialBeats(script: string, targetSec: number): string[] {
   if (!script.trim()) return [];
   const totalWords = countWords(script);
   // Veo clips are limited to 4s, 6s, 8s buckets.
+  // Maximum editorial duration ceiling is 7.5s to leave headroom below Veo's 8.0s hard cap.
   // At ~1.55 words/sec delivery cadence, each beat should have max 9 words to stay under ~5.8s,
   // guaranteeing beats fit cleanly into Veo's 6s bucket with zero clamp trim or duration overrun.
-  const desiredShotCount = Math.max(2, Math.ceil(targetSec / 5.5), Math.ceil(totalWords / 9));
-  const targetWordsPerShot = Math.max(6, Math.min(9, Math.round(totalWords / desiredShotCount)));
+  const MAX_EDITORIAL_SHOT_SEC = 7.5;
+  const desiredShotCount = Math.max(2, Math.ceil(targetSec / 6.0), Math.ceil(totalWords / 9));
+  const targetWordsPerShot = Math.max(5, Math.min(9, Math.round(totalWords / desiredShotCount)));
   const maxWordsPerShot = 9;
   const units = sentenceUnits(script).flatMap(unit => splitLongUnit(unit, maxWordsPerShot));
   const beats: string[] = [];
@@ -169,6 +171,22 @@ function splitIntoEditorialBeats(script: string, targetSec: number): string[] {
   if (beats.length === 1 && desiredShotCount > 1 && countWords(beats[0]) > 7) {
     return splitLongUnit(beats[0], Math.ceil(countWords(beats[0]) / 2));
   }
+
+  // Ensure no shot duration exceeds MAX_EDITORIAL_SHOT_SEC (7.5s)
+  while (targetSec / beats.length > MAX_EDITORIAL_SHOT_SEC) {
+    let maxIdx = 0;
+    for (let j = 1; j < beats.length; j++) {
+      if (countWords(beats[j]) > countWords(beats[maxIdx])) maxIdx = j;
+    }
+    const targetBeat = beats[maxIdx];
+    const words = targetBeat.split(/\s+/);
+    if (words.length <= 1) break;
+    const mid = Math.ceil(words.length / 2);
+    const firstHalf = words.slice(0, mid).join(" ");
+    const secondHalf = words.slice(mid).join(" ");
+    beats.splice(maxIdx, 1, firstHalf, secondHalf);
+  }
+
   return beats;
 }
 
@@ -237,9 +255,15 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
   ].filter(Boolean).join(" ");
 
   let cursor = 0;
+  const maxEditorialSec = 7.5;
   const shots: ReelShot[] = beats.map((beat, i) => {
-    const remaining = requestedDurationSec - cursor;
-    const editorialDurationSec = clock(i === beats.length - 1 ? remaining : perShot);
+    const remaining = clock(requestedDurationSec - cursor);
+    const remainingShots = beats.length - i;
+    const rawDur = i === beats.length - 1 ? remaining : clock(remaining / remainingShots);
+    const editorialDurationSec = clock(Math.min(maxEditorialSec, Math.max(1.5, rawDur)));
+    if (editorialDurationSec > 8.0) {
+      throw new Error(`Planner invariant failed: shot ${i + 1} duration ${editorialDurationSec}s exceeds 8.0s Veo ceiling`);
+    }
     const generationDurationSec = chooseGenerationDuration(editorialDurationSec);
     const previousAction = i === 0 ? "Presenter is composed and ready to begin." : `Continue naturally from shot ${i}.`;
     // Framing only. The presenter is present and identity-locked in every shot;

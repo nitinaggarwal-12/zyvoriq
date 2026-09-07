@@ -30,7 +30,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-bold text-white font-mono">2. Zero Third-Party Cloud Egress</h2>
+            <h2 className="text-lg font-bold text-white font-mono">2. Enterprise Cloud Privacy &amp; Data Processing</h2>
             <p>
               Your production briefs, private scripts, and custom media assets are processed on enterprise-grade infrastructure without being sold to third-party data brokers or used to train public foundation models without explicit organizational consent.
             </p>

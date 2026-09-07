@@ -277,7 +277,7 @@ export async function POST(req: NextRequest) {
               actuator: "REALITY_SHADER",
               strategyName: "Acoustic Ray-Tracing & Convolution Reverb Foundry",
               testedConfidence: 99.6,
-              trialsBenchmark: "Calibrated against SMPTE 2067 discrete 5.1/7.1 theatrical soundstage specs",
+              trialsBenchmark: "Calibrated against discrete 5.1/7.1 theatrical soundstage specs",
               steps: [
                 "1. Analyze camera distance (35m outdoor scale) and terrain absorption coefficients.",
                 "2. Convolve dialogue with outdoor impulse response (IR) decaying over 1.8s.",

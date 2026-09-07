@@ -30,7 +30,7 @@ const GENRES = [
   {
     id: "scifi",
     title: "Sci-Fi Worldbuilding",
-    subtitle: "4K DCI · Deep Space & Cyberpunk",
+    subtitle: "4K Cinema · Deep Space & Cyberpunk",
     description: "High-concept speculative worlds, futuristic orbital stations, and cyberpunk neon corridors rendered with coherent architectural depth and sound design.",
     icon: Rocket,
     badge: "SPECULATIVE SCI-FI",

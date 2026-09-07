@@ -96,7 +96,7 @@ export function OmniMasterShowcase() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-white/5">
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-3.5 py-1 text-xs font-black text-teal-300 font-mono tracking-wider uppercase">
-              <Sparkles className="h-3.5 w-3.5" /> 180.0s SMPTE Broadcast Master
+              <Sparkles className="h-3.5 w-3.5" /> 180.0s Broadcast Master
             </div>
             <h2 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
               Napoleon: The Emperor&apos;s Heart

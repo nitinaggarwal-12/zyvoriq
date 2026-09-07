@@ -85,13 +85,13 @@ const KNOWLEDGE_BASE: Record<string, { answer: string; quickActions?: { label: s
     ]
   },
   trend_radar: {
-    answer: "🔮 **Google Omni Curated Production Suites** encompass historical epics, A24 arthouse cinema, speculative sci-fi, and high-retention vertical formats:\n\n• **Lenses:** Cooke Anamorphic 2.39:1, Zeiss Master Prime, Panavision C-Series.\n• **Acoustics:** EBU R128 (-24.0 LUFS) Beethoven & orchestral arrangements.\n• **Quality Gate:** Gemini 2.5 Flash real-time multimodal visual QC.",
+    answer: "🔮 **Google Omni Curated Production Suites** encompass historical epics, A24 arthouse cinema, speculative sci-fi, and high-retention vertical formats:\n\n• **Lenses:** Cooke Anamorphic 2.39:1, Zeiss Master Prime, Panavision C-Series.\n• **Acoustics:** Broadcast Normalized (-24.0 LUFS) Beethoven & orchestral arrangements.\n• **Quality Gate:** Gemini Directorial QC real-time multimodal visual QC.",
     quickActions: [
       { label: "Explore Production Suites", action: "link:/#genres" }
     ]
   },
   book_studio: {
-    answer: "📚 **Omni Cinema & Narrative Architecture:**\n\n• **5-Act Screenplays:** 30 camera plates conforming to SMPTE standards.\n• **C2PA Cryptographic Provenance:** Tamper-proof metadata embedded into every master export.\n• **Zero Prompts Wasted:** 95% pre-flight preparation prevents hallucinations and character drift.",
+    answer: "📚 **Omni Cinema & Narrative Architecture:**\n\n• **5-Act Screenplays:** 30 camera plates conforming to cinematic standards.\n• **C2PA Cryptographic Provenance:** Tamper-proof metadata embedded into every master export.\n• **Zero Prompts Wasted:** Directorial pre-flight preparation prevents hallucinations and character drift.",
     quickActions: [
       { label: "View Architecture", action: "link:/#architecture" }
     ]

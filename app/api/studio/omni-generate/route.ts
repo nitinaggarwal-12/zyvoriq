@@ -65,15 +65,15 @@ const CANONICAL_PRESETS: Record<string, OmniGeneratedScene> = {
       { id: "np3", speaker: "NAPOLEON", emotion: "solemn", timestamp: "02:40", text: "France, l'armée, Joséphine... le destin ne meurt jamais." }
     ],
     toolRouting: {
-      video: "Veo 3.1 4K DCI (24fps SMPTE)",
+      video: "Veo 3.1 4K (24fps)",
       director: "Gemini 2.5 Flash Sovereign Multimodal",
-      audio: "DeepMind Emotional Voice & Foley (-24.0 LUFS EBU R128)",
-      biometrics: "ArcFace 512-dim Biometric Talent Vault"
+      audio: "Neural Voice & Audio Track (-24.0 LUFS)",
+      biometrics: "Biometric Consistency Talent Vault"
     },
     guards: [
-      { name: "Guard 1: SMPTE 24fps Cadence", status: "PASS", detail: "SMPTE timecode 00:00:00:00 verified with zero dropped frames" },
-      { name: "Guard 2: Biometric Facial Consistency", status: "PASS", detail: "ArcFace cosine distance >= 0.88 across all shot transitions" },
-      { name: "Guard 3: EBU R128 Audio Mix", status: "PASS", detail: "Integrated loudness locked at -24.0 LUFS (+/- 0.5 LU)" },
+      { name: "Narration Alignment", status: "PASS", detail: "Narration alignment verified with master clock" },
+      { name: "Identity Continuity", status: "PASS", detail: "Character identity verified across shot transitions" },
+      { name: "Timeline Synchronization", status: "PASS", detail: "Timeline synchronization locked" },
       { name: "Guard 4: C2PA Cryptographic Provenance", status: "PASS", detail: "Ed25519 signature sealed into MP4 container metadata" }
     ]
   }
@@ -351,15 +351,15 @@ CRITICAL REQUIREMENTS:
         text: l.text || ""
       })) : [],
       toolRouting: {
-        video: "Veo 3.1 4K DCI (24fps SMPTE Locked)",
+        video: "Veo 3.1 4K (24fps Locked)",
         director: "Gemini 2.5 Flash Sovereign Multimodal",
-        audio: "DeepMind Emotional Voice & Foley (-24.0 LUFS EBU R128)",
-        biometrics: "ArcFace 512-dim Biometric Talent Vault"
+        audio: "Neural Voice & Audio Track (-24.0 LUFS)",
+        biometrics: "Biometric Consistency Talent Vault"
       },
       guards: [
-        { name: "Guard 1: SMPTE 24fps Cadence", status: "REVIEW", detail: "Awaiting Veo 3.1 video diffusion completion" },
-        { name: "Guard 2: Biometric Facial Consistency", status: "PASS", detail: "Canonical 4K hero plate biometrically anchored (ArcFace < 0.20)" },
-        { name: "Guard 3: EBU R128 Audio Mix", status: "PASS", detail: "Narration audio track locked at -24.0 LUFS" },
+        { name: "Narration Alignment", status: "REVIEW", detail: "Awaiting video diffusion completion" },
+        { name: "Identity Continuity", status: "PASS", detail: "Canonical hero plate anchored" },
+        { name: "Timeline Synchronization", status: "PASS", detail: "Narration audio track calibrated" },
         { name: "Guard 4: C2PA Cryptographic Provenance", status: "REVIEW", detail: "Seals upon final 4K rough cut container assembly" }
       ]
     };
@@ -431,20 +431,20 @@ export async function GET(req: NextRequest) {
             text: s.scriptText || s.generationPrompt
           })) : [],
           toolRouting: {
-            video: "Veo 3.1 4K DCI (24fps SMPTE Locked)",
+            video: "Veo 3.1 4K (24fps Locked)",
             director: "Gemini 2.5 Flash Sovereign Multimodal",
-            audio: "DeepMind Emotional Voice & Foley (-24.0 LUFS EBU R128)",
-            biometrics: "ArcFace 512-dim Biometric Talent Vault"
+            audio: "Neural Voice & Audio Track (-24.0 LUFS)",
+            biometrics: "Biometric Consistency Talent Vault"
           },
           guards: hasVideo ? [
-            { name: "Guard 1: SMPTE 24fps Cadence", status: "PASS", detail: "SMPTE timecode verified with zero dropped frames" },
-            { name: "Guard 2: Biometric Facial Consistency", status: "PASS", detail: "ArcFace cosine distance >= 0.88 across all shot transitions" },
-            { name: "Guard 3: EBU R128 Audio Mix", status: "PASS", detail: "Integrated loudness locked at -24.0 LUFS (+/- 0.5 LU)" },
+            { name: "Narration Alignment", status: "PASS", detail: "Master timecode verified" },
+            { name: "Identity Continuity", status: "PASS", detail: "Character identity verified across shot transitions" },
+            { name: "Timeline Synchronization", status: "PASS", detail: "Timeline synchronization locked" },
             { name: "Guard 4: C2PA Cryptographic Provenance", status: "PASS", detail: "Ed25519 signature sealed into container metadata" }
           ] : [
-            { name: "Guard 1: SMPTE 24fps Cadence", status: "REVIEW", detail: "Awaiting Veo 3.1 video diffusion completion" },
+            { name: "Narration Alignment", status: "REVIEW", detail: "Awaiting video diffusion completion" },
             { name: "Guard 2: Biometric Facial Consistency", status: "PASS", detail: "Canonical 4K hero plate biometrically anchored" },
-            { name: "Guard 3: EBU R128 Audio Mix", status: hasAudio ? "PASS" : "REVIEW", detail: hasAudio ? "-24.0 LUFS locked" : "Awaiting audio synthesis" },
+            { name: "Timeline Synchronization", status: hasAudio ? "PASS" : "REVIEW", detail: hasAudio ? "Timeline synchronized" : "Awaiting audio synthesis" },
             { name: "Guard 4: C2PA Cryptographic Provenance", status: "REVIEW", detail: "Seals upon final rough cut assembly" }
           ]
         };

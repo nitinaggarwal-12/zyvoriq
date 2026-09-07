@@ -6,6 +6,7 @@ import { suppressUncertifiedStudio1Outputs } from "@/lib/studio1/fullReelCertifi
 import { studio1Service } from "@/lib/studio1/service";
 import { planStudio1ProductionTimeline, syncStudio1ProductionTimeline } from "@/lib/studio1/timelineSyncService";
 import type { Studio1SubjectMode } from "@/lib/studio1/planner";
+import { canExtend } from "@/lib/reel/preconditions";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -30,6 +31,12 @@ async function paidContext(id: string) {
 async function enqueueShot(production: NonNullable<Awaited<ReturnType<typeof studio1Service.get>>>, shotId: string, modelTier: "fast" | "quality" | "lite" = "fast", nonce?: string) {
   const shot = production.manifest.shots.find(item => item.id === shotId);
   if (!shot) throw new Error(`Shot ${shotId} not found`);
+
+  const gate = canExtend(shotId, production.manifest);
+  if (!gate.ok) {
+    throw new Error(`Cannot enqueue shot ${shotId}: [${gate.kind}] ${gate.reason}`);
+  }
+
   const control = await paidContext(production.id);
   const fp = fingerprint({ prompt: shot.generationPrompt, duration: shot.generationDurationSec, modelTier, round: (production.manifest as any).studio1?.generationRound, nonce });
   const idempotencyKey = operationKey({ productionId: production.id, generationToken: control.generationToken, kind: "SHOT", targetId: shot.id, manifestRevision: production.revision, fingerprint: fp });
