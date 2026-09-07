@@ -27,6 +27,23 @@ export async function GET(
       } else if (fs.existsSync(rootPath)) {
         targetFile = rootPath;
       } else {
+        // Fallback: proxy from dedicated worker asset server over private Railway network
+        const WORKER_ASSET_BASE = (process.env.ZYVORIQ_WORKER_ASSET_BASE_URL || "http://zyvoriq-reel-worker.railway.internal:8080/internal/reel-assets").replace(/\/$/, "");
+        try {
+          const upstream = await fetch(`${WORKER_ASSET_BASE}/${requestedPath}`, {
+            headers: req.headers.get("range") ? { range: req.headers.get("range")! } : {},
+            cache: "no-store"
+          });
+          if (upstream.ok || upstream.status === 206) {
+            const out = new Headers();
+            for (const name of ["content-type", "content-length", "content-range", "accept-ranges", "cache-control"]) {
+              const value = upstream.headers.get(name);
+              if (value) out.set(name, value);
+            }
+            return new Response(upstream.body, { status: upstream.status, headers: out });
+          }
+        } catch {}
+
         return new NextResponse(`Media not found: ${requestedPath}`, { status: 404 });
       }
     }

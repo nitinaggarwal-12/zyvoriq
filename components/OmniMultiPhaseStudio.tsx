@@ -194,6 +194,36 @@ export function OmniMultiPhaseStudio() {
         setSettingText(matched.setting);
         setDynamicText(matched.dynamic);
         setTotalDuration(matched.duration);
+      } else {
+        // Hydrate custom reel from localStorage or API
+        try {
+          const cached = localStorage.getItem("zyvoriq_reel_" + canonicalId);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            setCurrentScene(parsed);
+            setPromptInput(parsed.prompt || "");
+            setActivePresetId(parsed.id);
+            setScriptLines(parsed.lines || []);
+            setSettingText(parsed.setting || "");
+            setDynamicText(parsed.dynamic || "");
+            setTotalDuration(parsed.duration || 180);
+          } else {
+            fetch(`/api/studio/omni-generate?id=${encodeURIComponent(canonicalId)}`)
+              .then((res) => (res.ok ? res.json() : null))
+              .then((data) => {
+                if (data?.scene) {
+                  setCurrentScene(data.scene);
+                  setPromptInput(data.scene.prompt || "");
+                  setActivePresetId(data.scene.id);
+                  setScriptLines(data.scene.lines || []);
+                  setSettingText(data.scene.setting || "");
+                  setDynamicText(data.scene.dynamic || "");
+                  setTotalDuration(data.scene.duration || 180);
+                }
+              })
+              .catch(() => {});
+          }
+        } catch {}
       }
     }
 
@@ -830,57 +860,45 @@ export function OmniMultiPhaseStudio() {
                 </div>
               </div>
 
-              {/* Video Element with Fallback Poster */}
+              {/* Media Element: Video when ready, 4K Master Hero Plate when diffusing */}
               <div className="relative h-full w-full bg-black flex items-center justify-center overflow-hidden">
-                <video
-                  ref={videoRef}
-                  key={currentScene.id}
-                  src={currentScene.video}
-                  poster={currentScene.still}
-                  playsInline
-                  muted={isMuted}
-                  onTimeUpdate={handleTimeUpdate}
-                  onEnded={() => setIsPlaying(false)}
-                  onPlay={() => {
-                    if (typeof document !== "undefined") {
-                      document.querySelectorAll("video").forEach((v) => {
-                        if (v !== videoRef.current) v.pause();
-                      });
-                    }
-                    setIsPlaying(true);
-                  }}
-                  className="h-full w-full object-cover select-none"
-                />
+                {currentScene.video ? (
+                  <video
+                    ref={videoRef}
+                    key={currentScene.id}
+                    src={currentScene.video}
+                    poster={currentScene.still}
+                    playsInline
+                    muted={isMuted}
+                    onTimeUpdate={handleTimeUpdate}
+                    onEnded={() => setIsPlaying(false)}
+                    onPlay={() => {
+                      if (typeof document !== "undefined") {
+                        document.querySelectorAll("video").forEach((v) => {
+                          if (v !== videoRef.current) v.pause();
+                        });
+                      }
+                      setIsPlaying(true);
+                    }}
+                    className="h-full w-full object-cover select-none"
+                  />
+                ) : (
+                  <img
+                    key={currentScene.id}
+                    src={currentScene.still}
+                    alt={currentScene.title}
+                    className="h-full w-full object-cover select-none"
+                  />
+                )}
 
                 {/* Honest 4K Hero Plate Overlay when video is pending neural diffusion */}
                 {!currentScene.video && (
-                  <>
-                    <div className="absolute top-4 left-4 z-20 flex items-center gap-2 rounded-full bg-black/85 backdrop-blur-md border border-emerald-500/50 px-3.5 py-1.5 shadow-xl">
-                      <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                      <span className="text-xs font-mono font-bold text-emerald-300">
-                        4K Hero Plate Synthesized via Gemini 2.5 • Veo 3.1 Diffusion Ready
-                      </span>
-                    </div>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center pointer-events-none z-10">
-                      <div className="rounded-2xl bg-black/80 backdrop-blur-lg border border-emerald-500/40 p-5 max-w-lg shadow-2xl">
-                        <Sparkles className="h-7 w-7 text-emerald-400 mx-auto mb-2" />
-                        <h4 className="text-sm font-bold text-white mb-1 tracking-wide">
-                          4K Cinematic Master Plate Synthesized
-                        </h4>
-                        <p className="text-xs text-zinc-300 mb-3 leading-relaxed">
-                          Directorial cognition & character screenplay EDL locked. Frame rendered dynamically via Gemini 2.5 Flash Image.
-                        </p>
-                        <div className="flex items-center justify-center gap-2">
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 px-3 py-0.5 text-[11px] font-mono font-semibold text-emerald-300">
-                            Veo 3.1 4K DCI (24fps SMPTE)
-                          </span>
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/20 border border-cyan-500/40 px-3 py-0.5 text-[11px] font-mono font-semibold text-cyan-300">
-                            -24.0 LUFS EBU R128
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </>
+                  <div className="absolute top-4 left-4 z-20 flex items-center gap-2 rounded-full bg-black/85 backdrop-blur-md border border-emerald-500/50 px-3.5 py-1.5 shadow-xl">
+                    <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-xs font-mono font-bold text-emerald-300">
+                      4K Hero Plate Synthesized via Gemini 2.5 • Veo 3.1 Diffusion Enqueued
+                    </span>
+                  </div>
                 )}
 
                 {/* Large Center Play Button only when real video asset exists */}
@@ -2002,13 +2020,21 @@ export function OmniMultiPhaseStudio() {
 
             {/* Video Screening Theater Player (No autoPlay to prevent audio overlap) */}
             <div className="relative rounded-xl overflow-hidden bg-black border border-zinc-800 aspect-video shadow-2xl">
-              <video
-                src={currentScene.video}
-                controls
-                playsInline
-                loop
-                className="w-full h-full object-contain"
-              />
+              {currentScene.video ? (
+                <video
+                  src={currentScene.video}
+                  controls
+                  playsInline
+                  loop
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <img
+                  src={currentScene.still}
+                  alt={currentScene.title}
+                  className="w-full h-full object-contain"
+                />
+              )}
             </div>
 
             {/* Film Meta Badges with REEL ID */}

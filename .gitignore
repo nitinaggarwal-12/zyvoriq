@@ -14,7 +14,11 @@ scratch/
 *.db-shm
 temp/
 *.mp4
-!public/assets/video/*.mp4
+*.wav
+*.mp3
+*.webm
+!public/assets/video/napoleon_180s_master.mp4
+public/assets/stills/generated/
 *.checkpoint.json
 *.patch
 scripts/qa/*keyframes/

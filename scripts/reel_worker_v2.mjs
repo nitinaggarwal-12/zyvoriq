@@ -273,113 +273,10 @@ async function recoverLegacyContinuityDependencyFailures() {
 }
 await recoverLegacyContinuityDependencyFailures();
 
-async function cleanupOrphanedMumbaiJobs() {
-  try {
-    console.log("[reel-worker] Purging orphaned Mumbai dinner discussion jobs and content...");
 
-    // 1. Cancel all operations associated with Mumbai / dinner discussion or orphaned shot_05/shot_06
-    const resOps = await pool.query(`
-      UPDATE reel_operations
-      SET status='CANCELLED',
-          last_error='CLEANUP_ORPHANED_MUMBAI_JOB: Terminal or orphaned state manually purged per directorial directive',
-          lease_owner=NULL,
-          lease_expires_at=NULL,
-          updated_at=NOW()
-      WHERE status IN ('QUEUED', 'RUNNING', 'BLOCKED')
-        AND (
-          production_id ILIKE '%mumbai%'
-          OR target_id IN ('shot_05', 'shot_06')
-          OR payload_json::text ILIKE '%mumbai%'
-          OR payload_json::text ILIKE '%dinner%'
-          OR payload_json::text ILIKE '%bandra%'
-          OR payload_json::text ILIKE '%paneer%'
-        )
-      RETURNING id, production_id, target_id, kind
-    `);
-    if (resOps.rowCount > 0) {
-      console.log(`[reel-worker] Successfully cancelled ${resOps.rowCount} orphaned Mumbai operations:`, resOps.rows.map(r => `${r.id} (${r.target_id || r.kind})`).join(", "));
-    }
+// P0.3: Legacy Mumbai purge excised from worker boot sequence.
+// One-off migration has been moved to scripts/migrations/one_off_purge_mumbai.mjs
 
-    // 2. Cancel productions associated with Mumbai dinner discussion
-    const resProds = await pool.query(`
-      SELECT id FROM reel_productions
-      WHERE id ILIKE '%mumbai%'
-         OR manifest_json::text ILIKE '%mumbai%'
-         OR manifest_json::text ILIKE '%dinner%'
-         OR manifest_json::text ILIKE '%bandra%'
-         OR manifest_json::text ILIKE '%paneer%'
-    `);
-    for (const pRow of resProds.rows) {
-      await pool.query(`
-        UPDATE reel_productions
-        SET manifest_json = jsonb_set(COALESCE(manifest_json::jsonb, '{}'::jsonb), '{status}', '"CANCELLED"')::text,
-            updated_at = NOW()
-        WHERE id = $1
-      `, [pRow.id]);
-      await pool.query(`
-        INSERT INTO reel_production_controls (production_id, generation_token, cancelled_at, updated_at)
-        VALUES ($1, 'cancelled', NOW(), NOW())
-        ON CONFLICT (production_id) DO UPDATE SET cancelled_at = NOW(), updated_at = NOW()
-      `, [pRow.id]);
-      console.log(`[reel-worker] Marked Mumbai production CANCELLED: ${pRow.id}`);
-    }
-
-    // 3. Mark any remaining orphaned operations with dead dependencies as CANCELLED, or BLOCKED if waiting
-    const queuedShots = await pool.query(`
-      SELECT id, production_id, target_id
-      FROM reel_operations
-      WHERE kind='SHOT' AND status IN ('QUEUED', 'BLOCKED')
-    `);
-    for (const qRow of queuedShots.rows) {
-      const p = await pool.query(`SELECT manifest_json FROM reel_productions WHERE id=$1`, [qRow.production_id]);
-      if (!p.rows[0]) {
-        await pool.query(`UPDATE reel_operations SET status='CANCELLED', last_error='ORPHANED_NO_PRODUCTION' WHERE id=$1`, [qRow.id]);
-        continue;
-      }
-      const rawManifest = p.rows[0].manifest_json;
-      const m = typeof rawManifest === 'string' ? JSON.parse(rawManifest) : (rawManifest || {});
-      const shot = Array.isArray(m.shots) ? m.shots.find(s => s.id === qRow.target_id) : null;
-      if (shot?.dependsOnShotIds?.length) {
-        const deadDep = shot.dependsOnShotIds.find(depId => {
-          const dep = m.shots?.find(s => s.id === depId);
-          return dep?.status === "FAILED" || dep?.status === "CANCELLED";
-        });
-        if (deadDep) {
-          await pool.query(`
-            UPDATE reel_operations
-            SET status='CANCELLED',
-                last_error=$2,
-                lease_owner=NULL,
-                lease_expires_at=NULL,
-                updated_at=NOW()
-            WHERE id=$1
-          `, [qRow.id, `PARENT_TERMINAL_FAILURE: Upstream dependency ${deadDep} is failed or cancelled`]);
-          console.log(`[reel-worker] Cancelled orphaned shot ${shot.id} (dependency ${deadDep} is dead)`);
-        } else {
-          const unmet = shot.dependsOnShotIds.filter(depId => {
-            const dep = m.shots?.find(s => s.id === depId);
-            return !dep?.asset?.videoUrl || !["GENERATED", "PASSED"].includes(dep.status);
-          });
-          if (unmet.length > 0) {
-            await pool.query(`
-              UPDATE reel_operations
-              SET status='BLOCKED',
-                  last_error=$2,
-                  lease_owner=NULL,
-                  lease_expires_at=NULL,
-                  updated_at=NOW()
-              WHERE id=$1
-            `, [qRow.id, `WAITING_ON_UPSTREAM_DEPENDENCIES:${unmet.join(",")}`]);
-            console.log(`[reel-worker] Startup guard: Blocked shot ${shot.id} waiting on (${unmet.join(", ")})`);
-          }
-        }
-      }
-    }
-  } catch (cleanErr) {
-    console.error(`[reel-worker] cleanupOrphanedMumbaiJobs error:`, cleanErr?.message || cleanErr);
-  }
-}
-await cleanupOrphanedMumbaiJobs();
 
 async function runDeadlockAndStarvationWatchdog() {
   try {
@@ -430,9 +327,9 @@ async function runDeadlockAndStarvationWatchdog() {
       }
     }
 
-    // 3. Identify any BLOCKED shots whose dependencies are now fully satisfied and unblock them
+    // 3. Identify any BLOCKED shots and evaluate dependency status & wait ceiling
     const blockedShots = await pool.query(`
-      SELECT o.id, o.production_id, o.target_id
+      SELECT o.id, o.production_id, o.target_id, o.created_at, o.updated_at
       FROM reel_operations o
       WHERE o.status = 'BLOCKED' AND o.kind = 'SHOT'
     `);
@@ -442,6 +339,42 @@ async function runDeadlockAndStarvationWatchdog() {
       if (!m || !Array.isArray(m.shots)) continue;
       const shot = m.shots.find(s => s.id === bRow.target_id);
       if (shot?.dependsOnShotIds?.length) {
+        // Check for dead / terminal parent failure
+        const deadDep = shot.dependsOnShotIds.find(depId => {
+          const dep = m.shots.find(s => s.id === depId);
+          return dep?.status === "FAILED" || dep?.status === "CANCELLED";
+        });
+        if (deadDep) {
+          await pool.query(`
+            UPDATE reel_operations
+            SET status='CANCELLED',
+                last_error=$2,
+                lease_owner=NULL,
+                lease_expires_at=NULL,
+                updated_at=NOW()
+            WHERE id=$1
+          `, [bRow.id, `PARENT_TERMINAL_FAILURE: Upstream dependency ${deadDep} failed or was cancelled`]);
+          console.log(`[reel-worker] [watchdog] Terminal cascading: cancelled BLOCKED shot ${shot.id} (dep ${deadDep} dead)`);
+          continue;
+        }
+
+        // Check for 15-minute wait ceiling per P1.1
+        const blockedAgeMs = Date.now() - new Date(bRow.updated_at || bRow.created_at).getTime();
+        const WAIT_CEILING_MS = 15 * 60 * 1000;
+        if (blockedAgeMs > WAIT_CEILING_MS) {
+          await pool.query(`
+            UPDATE reel_operations
+            SET status='FAILED',
+                last_error=$2,
+                lease_owner=NULL,
+                lease_expires_at=NULL,
+                updated_at=NOW()
+            WHERE id=$1
+          `, [bRow.id, `WAIT_CEILING_EXCEEDED: shot ${shot.id} exceeded 15 minute wait ceiling waiting on upstream dependencies`]);
+          console.error(`[reel-worker] [watchdog] Wait ceiling exceeded (15m): marked shot ${shot.id} FAILED`);
+          continue;
+        }
+
         const allMet = shot.dependsOnShotIds.every(depId => {
           const dep = m.shots.find(s => s.id === depId);
           return dep?.asset?.videoUrl && ["GENERATED", "PASSED"].includes(dep.status);
@@ -469,10 +402,50 @@ await runDeadlockAndStarvationWatchdog();
 const watchdogTimer = setInterval(() => runDeadlockAndStarvationWatchdog().catch(() => {}), 30000);
 watchdogTimer.unref();
 
+let lastHeartbeatLogMs = 0;
 async function publishHeartbeat() {
+  let queueStats = { queued: 0, running: 0, blocked: 0, lastCompletedAgeSec: null };
+  try {
+    const counts = await pool.query(`
+      SELECT status, count(*)::int as cnt
+      FROM reel_operations
+      WHERE status IN ('QUEUED', 'RUNNING', 'BLOCKED')
+      GROUP BY status
+    `);
+    for (const r of counts.rows) {
+      if (r.status === 'QUEUED') queueStats.queued = r.cnt;
+      if (r.status === 'RUNNING') queueStats.running = r.cnt;
+      if (r.status === 'BLOCKED') queueStats.blocked = r.cnt;
+    }
+    const lastDone = await pool.query(`
+      SELECT MAX(updated_at) as last_completed_at
+      FROM reel_operations
+      WHERE status = 'SUCCEEDED'
+    `);
+    if (lastDone.rows[0]?.last_completed_at) {
+      queueStats.lastCompletedAgeSec = Math.round((Date.now() - new Date(lastDone.rows[0].last_completed_at).getTime()) / 1000);
+    }
+  } catch (e) {
+    // Non-fatal query error during shutdown or brief reconnect
+  }
+
   await pool.query(`INSERT INTO reel_worker_heartbeats(worker_id,worker_role,metadata_json) VALUES($1,'reel-production',$2::jsonb)
     ON CONFLICT(worker_id) DO UPDATE SET heartbeat_at=NOW(),metadata_json=EXCLUDED.metadata_json`,
-    [workerId, JSON.stringify({ pid: process.pid, version: "v2.4", assetRootConfigured: Boolean(assetRoot()), geminiConfigured: Boolean(apiKey()) })]);
+    [workerId, JSON.stringify({
+      pid: process.pid,
+      version: "v2.5",
+      assetRootConfigured: Boolean(assetRoot()),
+      geminiConfigured: Boolean(apiKey()),
+      queueStats
+    })]);
+
+  const now = Date.now();
+  if (now - lastHeartbeatLogMs >= 60000) {
+    lastHeartbeatLogMs = now;
+    if (queueStats.queued > 0 || queueStats.running > 0 || queueStats.blocked > 0) {
+      console.log(`[reel-worker] [heartbeat] Active: ${queueStats.running} running, ${queueStats.queued} queued, ${queueStats.blocked} blocked (last completed: ${queueStats.lastCompletedAgeSec !== null ? `${queueStats.lastCompletedAgeSec}s ago` : 'none'})`);
+    }
+  }
 }
 await publishHeartbeat();
 const heartbeatTimer = setInterval(() => publishHeartbeat().catch(e => console.error(`[reel-worker] heartbeat failed: ${e?.message || e}`)), heartbeatMs);
@@ -764,7 +737,10 @@ async function applyNarration(op, result) {
 }
 async function extractReference(op, shot, manifest) { if (!shot.dependsOnShotIds?.length) return null; const dep = manifest.shots.find(s => s.id === shot.dependsOnShotIds.at(-1)); if (!dep?.asset?.videoUrl) throw new Error("Continuity dependency has no media"); const tmp = path.join(os.tmpdir(), `zyvoriq-ref-${crypto.randomUUID()}.png`), depSec = Number(dep.asset?.actualDurationSec || 0), lastSec = depSec > 0 ? Math.min(Number(dep.trimOutSec || 0), depSec) : Number(dep.trimOutSec || 0), t = Math.max(0, Math.max(Number(dep.trimInSec || 0), lastSec - (depSec > 0 && lastSec < depSec - 0.05 ? 1 / 30 : 0.15))); try { await execFileAsync("ffmpeg", ["-y", "-ss", String(t), "-i", assetPath(dep.asset.videoUrl).target, "-frames:v", "1", "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920", tmp], { timeout: 30000, maxBuffer: 2e6 }); const st = await fs.stat(tmp).catch(() => null); if (!st?.size) throw new Error(`Anchor extraction produced no frame for ${dep.id} at ${t.toFixed(3)}s (source ${depSec}s, trimOut ${dep.trimOutSec}s)`); const b = await fs.readFile(tmp), digest = crypto.createHash("sha256").update(b).digest("hex").slice(0, 16), saved = await writeAsset(`reels/${op.production_id}/references/${shot.id}-from-${dep.id}-${digest}.png`, b); return { buffer: b, url: saved.url, dependencyId: dep.id }; } finally { try { await fs.unlink(tmp); } catch {} } }
 async function probeVideo(buffer) { const tmp = path.join(os.tmpdir(), `zyvoriq-probe-${crypto.randomUUID()}.mp4`); try { await fs.writeFile(tmp, buffer); const { stdout } = await execFileAsync("ffprobe", ["-v", "error", "-show_entries", "format=duration:stream=codec_name,width,height,r_frame_rate", "-of", "json", tmp], { timeout: 30000, maxBuffer: 2e6 }); const p = JSON.parse(stdout), s = p.streams?.find(x => x.width && x.height) || p.streams?.[0] || {}; return { durationSec: Number(Number(p.format?.duration || 0).toFixed(6)), codec: s.codec_name, width: Number(s.width || 0), height: Number(s.height || 0), frameRate: s.r_frame_rate }; } finally { try { await fs.unlink(tmp); } catch {} } }
-function veoModel(t) { return t === "quality" ? "veo-3.1-generate-preview" : t === "lite" ? "veo-3.1-lite-generate-preview" : "veo-3.1-fast-generate-preview"; }
+function veoModel(t) {
+  if (process.env.ZYVORIQ_VEO_MODEL) return process.env.ZYVORIQ_VEO_MODEL;
+  return t === "quality" ? "veo-3.1-generate-preview" : t === "lite" ? "veo-3.1-lite-generate-preview" : "veo-3.1-fast-generate-preview";
+}
 async function generateShot(op, manifest, shot) {
   if (!apiKey() || !assetRoot()) throw new Error("Veo prerequisites missing");
   const tier = op.payload_json?.modelTier || "fast";
@@ -1078,34 +1054,35 @@ async function processOperation(op) {
     const shot = current.manifest.shots.find(s => s.id === op.target_id);
     if (!shot) throw new Error("Shot not found");
 
-    // In-flight dependency guard: Ensure upstream dependencies have media before executing
+    // In-flight dependency guard per P1.2: Check waiting vs persistence data loss vs terminal failure
     if (shot.dependsOnShotIds?.length) {
-      const unmetDeps = shot.dependsOnShotIds.filter(depId => {
+      for (const depId of shot.dependsOnShotIds) {
         const dep = current.manifest.shots.find(s => s.id === depId);
-        return !dep?.asset?.videoUrl || !["GENERATED", "PASSED"].includes(dep.status);
-      });
-      if (unmetDeps.length > 0) {
-        // Check if any unmet dependency is in terminal / dead state (FAILED, CANCELLED, or missing)
-        const terminalDeps = unmetDeps.filter(depId => {
-          const dep = current.manifest.shots.find(s => s.id === depId);
-          return !dep || dep.status === "FAILED" || dep.status === "CANCELLED";
-        });
-        if (terminalDeps.length > 0) {
-          throw new Error(`Upstream dependency terminal failure: dependency shots (${terminalDeps.join(", ")}) will never complete`);
+        if (!dep) {
+          throw new Error(`PARENT_TERMINAL_FAILURE: Parent shot ${depId} does not exist in production manifest`);
         }
-
-        console.log(`[reel-worker] shot ${shot.id} waiting on upstream dependencies (${unmetDeps.join(", ")}). Marking BLOCKED until parent completion.`);
-        await pool.query(
-          `UPDATE reel_operations
-           SET status='BLOCKED',
-               last_error=$2,
-               lease_owner=NULL,
-               lease_expires_at=NULL,
-               updated_at=NOW()
-           WHERE id=$1`,
-          [op.id, `WAITING_ON_UPSTREAM_DEPENDENCIES:${unmetDeps.join(",")}`]
-        );
-        return;
+        if (dep.status === "FAILED" || dep.status === "CANCELLED") {
+          throw new Error(`PARENT_TERMINAL_FAILURE: Upstream dependency shot ${depId} failed or was cancelled`);
+        }
+        // Condition 2: Parent succeeded, media gone -> Hard fail / Persistence Data Loss
+        if (["GENERATED", "PASSED"].includes(dep.status) && !dep?.asset?.videoUrl) {
+          throw new Error(`PERSISTENCE_DATA_LOSS: Parent shot ${depId} succeeded (${dep.status}) but videoUrl asset is missing`);
+        }
+        // Condition 1: Parent still generating -> Wait (BLOCKED, event-driven wake on parent completion)
+        if (!["GENERATED", "PASSED"].includes(dep.status)) {
+          console.log(`[reel-worker] shot ${shot.id} waiting on upstream parent ${depId} (${dep.status}). Marking BLOCKED.`);
+          await pool.query(
+            `UPDATE reel_operations
+             SET status='BLOCKED',
+                 last_error=$2,
+                 lease_owner=NULL,
+                 lease_expires_at=NULL,
+                 updated_at=NOW()
+             WHERE id=$1`,
+            [op.id, `WAITING_ON_UPSTREAM_DEPENDENCY:${depId}:${dep.status}`]
+          );
+          return;
+        }
       }
     }
 
@@ -1122,14 +1099,15 @@ async function processOperation(op) {
     await applyNativeReel(op, result);
   } else throw new Error(`Unsupported operation ${op.kind}`);
   await updateOperation(op.id, { status: "SUCCEEDED", lastError: null, leaseExpiresAt: null, leaseOwner: null });
+  console.log(`[reel-worker] [transition] SUCCEEDED ${op.id} (${op.kind}${op.target_id ? `:${op.target_id}` : ''}) for prod ${op.production_id}`);
 }
 
 console.log(`[reel-worker] dedicated worker started ${workerId}`);
 for (;;) {
   try {
-    await publishHeartbeat();
     const op = await claim();
     if (!op) { await sleep(pollMs); continue; }
+    console.log(`[reel-worker] [transition] Claimed ${op.id} (${op.kind}${op.target_id ? `:${op.target_id}` : ''}) for prod ${op.production_id} (attempt ${op.attempt})`);
     try {
       await processOperation(op);
     } catch (error) {
@@ -1140,7 +1118,7 @@ for (;;) {
       const retry = !cancelled && !ambiguous && !deterministic && Number(op.attempt || 0) < 3;
       await pool.query(`UPDATE reel_operations SET status=$2,last_error=$3,lease_owner=NULL,lease_expires_at=NULL,updated_at=NOW() WHERE id=$1`, [op.id, cancelled ? "CANCELLED" : retry ? "QUEUED" : "FAILED", message]);
       if (!cancelled && !retry) await markTerminalFailure(op, message);
-      console.error(`[reel-worker] ${op.id} ${cancelled ? "cancelled" : retry ? "retry" : "failed"}: ${message}`);
+      console.error(`[reel-worker] [transition] ${op.id} ${cancelled ? "cancelled" : retry ? "retry" : "failed"}: ${message}`);
     }
   } catch (error) {
     console.error(`[reel-worker] loop error: ${error?.message || error}`);

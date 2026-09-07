@@ -58,9 +58,6 @@ async function handle(req: NextRequest, context: { params: Promise<{ key: string
     }
     return new Response(new Uint8Array(data), { status: 200, headers: { "Content-Type": contentType(assetKey), "Cache-Control": "private, max-age=3600", "Content-Length": String(data.length), "Accept-Ranges": "bytes" } });
   } catch (error: any) {
-    if (error?.code !== "ENOENT") {
-      return NextResponse.json({ success: false, error: error?.message || "Failed to read asset" }, { status: 500 });
-    }
     try {
       return await proxyFromWorker(req, assetKey, method);
     } catch (proxyError: any) {
