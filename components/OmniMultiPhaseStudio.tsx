@@ -2033,8 +2033,8 @@ export function OmniMultiPhaseStudio() {
               <h3 className="text-lg font-black text-white font-sans">
                 Generating 4K Cinema Master Reel
               </h3>
-              <p className="text-xs font-mono text-zinc-400 mt-1">
-                {currentScene.title}
+              <p className="text-xs font-mono text-emerald-400/90 mt-1 truncate max-w-sm mx-auto">
+                {promptInput.trim() ? `Directing: "${promptInput.trim().slice(0, 60)}${promptInput.trim().length > 60 ? "..." : ""}"` : currentScene.title}
               </p>
             </div>
 
