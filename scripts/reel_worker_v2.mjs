@@ -305,6 +305,25 @@ async function recoverLegacyContinuityDependencyFailures() {
 }
 await recoverLegacyContinuityDependencyFailures();
 
+async function recoverMislabeledMumbaiShots() {
+  const r = await pool.query(`
+    UPDATE reel_operations
+    SET status='QUEUED', attempt=0, last_error=NULL, lease_owner=NULL, lease_expires_at=NULL, updated_at=NOW()
+    WHERE status='CANCELLED'
+      AND last_error LIKE '%CLEANUP_ORPHANED_MUMBAI_JOB%'
+      AND production_id NOT ILIKE '%mumbai%'
+      AND payload_json::text NOT ILIKE '%mumbai%'
+      AND payload_json::text NOT ILIKE '%dinner%'
+      AND payload_json::text NOT ILIKE '%bandra%'
+      AND payload_json::text NOT ILIKE '%paneer%'
+    RETURNING id, production_id, target_id
+  `);
+  if (r.rowCount > 0) {
+    console.log(`[reel-worker] recovered ${r.rowCount} mislabeled shot(s):`, r.rows.map(x => `${x.production_id}:${x.target_id}`));
+  }
+}
+await recoverMislabeledMumbaiShots();
+
 // Reclaim any orphaned RUNNING operations whose lease belongs to a dead previous container instance
 async function reclaimOrphanedContainerLeases() {
   const r = await pool.query(`

@@ -55,11 +55,14 @@ if (url) {
         WHERE status IN ('QUEUED','RUNNING','BLOCKED')
           AND (
             production_id ILIKE '%mumbai%'
-            OR target_id IN ('shot_05', 'shot_06')
             OR payload_json::text ILIKE '%mumbai%'
             OR payload_json::text ILIKE '%dinner%'
             OR payload_json::text ILIKE '%bandra%'
             OR payload_json::text ILIKE '%paneer%'
+          )
+          AND (
+            target_id IN ('shot_05', 'shot_06')
+            OR production_id ILIKE '%mumbai%'
           )
       `);
       if (Number(purged.rowCount || 0) > 0) {
