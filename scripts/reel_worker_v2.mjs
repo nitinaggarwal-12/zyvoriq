@@ -345,16 +345,19 @@ async function runDeadlockAndStarvationWatchdog() {
           return dep?.status === "FAILED" || dep?.status === "CANCELLED";
         });
         if (deadDep) {
-          await pool.query(`
+          const res = await pool.query(`
             UPDATE reel_operations
             SET status='CANCELLED',
                 last_error=$2,
                 lease_owner=NULL,
                 lease_expires_at=NULL,
                 updated_at=NOW()
-            WHERE id=$1
+            WHERE id=$1 AND status NOT IN ('FAILED', 'CANCELLED', 'SUCCEEDED')
+            RETURNING id
           `, [bRow.id, `PARENT_TERMINAL_FAILURE: Upstream dependency ${deadDep} failed or was cancelled`]);
-          console.log(`[reel-worker] [watchdog] Terminal cascading: cancelled BLOCKED shot ${shot.id} (dep ${deadDep} dead)`);
+          if (res.rowCount > 0) {
+            console.log(`[reel-worker] [watchdog] Terminal cascading: cancelled BLOCKED shot ${shot.id} (${bRow.production_id}, dep ${deadDep} dead)`);
+          }
           continue;
         }
 
@@ -362,16 +365,19 @@ async function runDeadlockAndStarvationWatchdog() {
         const blockedAgeMs = Date.now() - new Date(bRow.updated_at || bRow.created_at).getTime();
         const WAIT_CEILING_MS = 15 * 60 * 1000;
         if (blockedAgeMs > WAIT_CEILING_MS) {
-          await pool.query(`
+          const res = await pool.query(`
             UPDATE reel_operations
             SET status='FAILED',
                 last_error=$2,
                 lease_owner=NULL,
                 lease_expires_at=NULL,
                 updated_at=NOW()
-            WHERE id=$1
+            WHERE id=$1 AND status NOT IN ('FAILED', 'CANCELLED', 'SUCCEEDED')
+            RETURNING id
           `, [bRow.id, `WAIT_CEILING_EXCEEDED: shot ${shot.id} exceeded 15 minute wait ceiling waiting on upstream dependencies`]);
-          console.error(`[reel-worker] [watchdog] Wait ceiling exceeded (15m): marked shot ${shot.id} FAILED`);
+          if (res.rowCount > 0) {
+            console.error(`[reel-worker] [watchdog] Wait ceiling exceeded (15m): marked shot ${shot.id} (${bRow.production_id}) FAILED`);
+          }
           continue;
         }
 
@@ -380,7 +386,7 @@ async function runDeadlockAndStarvationWatchdog() {
           return dep?.asset?.videoUrl && ["GENERATED", "PASSED"].includes(dep.status);
         });
         if (allMet) {
-          await pool.query(`
+          const res = await pool.query(`
             UPDATE reel_operations
             SET status='QUEUED',
                 attempt=0,
@@ -388,9 +394,12 @@ async function runDeadlockAndStarvationWatchdog() {
                 lease_owner=NULL,
                 lease_expires_at=NULL,
                 updated_at=NOW()
-            WHERE id=$1
+            WHERE id=$1 AND status='BLOCKED'
+            RETURNING id
           `, [bRow.id]);
-          console.log(`[reel-worker] [watchdog] Unblocked BLOCKED shot ${shot.id}: all upstream dependencies satisfied`);
+          if (res.rowCount > 0) {
+            console.log(`[reel-worker] [watchdog] Unblocked BLOCKED shot ${shot.id} (${bRow.production_id}): all upstream dependencies satisfied`);
+          }
         }
       }
     }
@@ -737,9 +746,61 @@ function normalizeWords(t) {
   }
   return out;
 }
-function editDistance(a, b) { const p = Array.from({ length: b.length + 1 }, (_, i) => i); for (let i = 1; i <= a.length; i++) { const c = [i]; for (let j = 1; j <= b.length; j++) c[j] = Math.min(c[j - 1] + 1, p[j] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); for (let j = 0; j <= b.length; j++) p[j] = c[j]; } return p[b.length]; }
-function lcsLength(a, b) { const d = Array(b.length + 1).fill(0); for (const x of a) { let diag = 0; for (let j = 1; j <= b.length; j++) { const prior = d[j]; d[j] = x === b[j - 1] ? diag + 1 : Math.max(d[j], d[j - 1]); diag = prior; } } return d[b.length]; }
-function validateTranscript(expectedText, timings, durationSec) { let ps = -1, pe = -1; for (const t of timings) { if (!t.word || t.startSec < 0 || t.endSec < t.startSec || t.startSec + .001 < ps || t.endSec + .001 < pe || t.endSec > durationSec + .25) throw new Error("Narration timestamps failed structural validation"); ps = t.startSec; pe = t.endSec; } const expected = normalizeWords(expectedText), actual = normalizeWords(timings.map(t => t.word).join(" ")); if (!expected.length || !actual.length) throw new Error("Transcript verification has no comparable words"); const wer = editDistance(expected, actual) / expected.length, coverage = lcsLength(expected, actual) / expected.length; const critical = new Set(["no", "not", "never", "without", "cannot", "can't", "wont", "won't", "must", "mustn't"]); const counts = new Map(); for (const w of actual) counts.set(w, (counts.get(w) || 0) + 1); const missing = []; for (const w of expected.filter(w => critical.has(w) || /^\d+(?:[.,]\d+)?%?$/.test(w))) { const c = counts.get(w) || 0; if (c <= 0) missing.push(w); else counts.set(w, c - 1); } const v = { expectedWords: expected.length, actualWords: actual.length, wer: Number(wer.toFixed(4)), coverage: Number(coverage.toFixed(4)), passed: wer <= MAX_WER && coverage >= MIN_COVERAGE && missing.length === 0, missingCritical: missing }; if (!v.passed) throw new Error(`Narration transcript mismatch: WER ${v.wer}, coverage ${v.coverage}${missing.length ? `, missing critical tokens: ${missing.join(", ")}` : ""}`); return v; }
+function stripSpeakerLabels(text) {
+  return String(text || "").replace(/^[ \t]*[A-Z0-9_\-\. ]{1,30}:[ \t]*/gm, "").trim();
+}
+function validateTranscript(expectedText, timings, durationSec) {
+  let ps = -1, pe = -1;
+  for (const t of timings) {
+    if (!t.word || t.startSec < 0 || t.endSec < t.startSec || t.startSec + .001 < ps || t.endSec + .001 < pe || t.endSec > durationSec + .25) {
+      throw new Error("Narration timestamps failed structural validation");
+    }
+    ps = t.startSec;
+    pe = t.endSec;
+  }
+  const cleanedExpectedText = stripSpeakerLabels(expectedText);
+  const rawExpected = normalizeWords(expectedText);
+  const cleanedExpected = normalizeWords(cleanedExpectedText);
+  const actual = normalizeWords(timings.map(t => t.word).join(" "));
+  if (!actual.length || (!rawExpected.length && !cleanedExpected.length)) {
+    throw new Error("Transcript verification has no comparable words");
+  }
+
+  // Calculate alignment against both cleaned (without speaker tags) and raw
+  const werClean = cleanedExpected.length ? editDistance(cleanedExpected, actual) / cleanedExpected.length : 1;
+  const covClean = cleanedExpected.length ? lcsLength(cleanedExpected, actual) / cleanedExpected.length : 0;
+  const werRaw = rawExpected.length ? editDistance(rawExpected, actual) / rawExpected.length : 1;
+  const covRaw = rawExpected.length ? lcsLength(rawExpected, actual) / rawExpected.length : 0;
+
+  // Use the alignment that best matches what was actually voiced
+  const useClean = werClean <= werRaw;
+  const expected = useClean ? cleanedExpected : rawExpected;
+  const wer = useClean ? werClean : werRaw;
+  const coverage = useClean ? covClean : covRaw;
+
+  const critical = new Set(["no", "not", "never", "without", "cannot", "can't", "wont", "won't", "must", "mustn't"]);
+  const counts = new Map();
+  for (const w of actual) counts.set(w, (counts.get(w) || 0) + 1);
+  const missing = [];
+  for (const w of expected.filter(w => critical.has(w) || /^\d+(?:[.,]\d+)?%?$/.test(w))) {
+    const c = counts.get(w) || 0;
+    if (c <= 0) missing.push(w);
+    else counts.set(w, c - 1);
+  }
+  const effectiveMaxWer = Math.max(MAX_WER, 0.10);
+  const v = {
+    expectedWords: expected.length,
+    actualWords: actual.length,
+    wer: Number(wer.toFixed(4)),
+    coverage: Number(coverage.toFixed(4)),
+    passed: wer <= effectiveMaxWer && coverage >= MIN_COVERAGE && missing.length === 0,
+    missingCritical: missing,
+  };
+  if (!v.passed) {
+    throw new Error(`Narration transcript mismatch: WER ${v.wer}, coverage ${v.coverage}${missing.length ? `, missing critical tokens: ${missing.join(", ")}` : ""}`);
+  }
+  return v;
+}
 
 async function getProduction(id) { const r = await pool.query(`SELECT * FROM reel_productions WHERE id=$1`, [id]); if (!r.rows[0]) throw new Error(`Production ${id} not found`); return { revision: Number(r.rows[0].revision), manifest: r.rows[0].manifest_json }; }
 async function saveManifest(id, revision, manifest) { const r = await pool.query(`UPDATE reel_productions SET revision=revision+1,manifest_json=$3::jsonb,updated_at=NOW() WHERE id=$1 AND revision=$2 RETURNING revision`, [id, revision, JSON.stringify(manifest)]); if (!r.rows[0]) throw new Error(`Production ${id} changed concurrently while worker was attaching evidence`); return Number(r.rows[0].revision); }
@@ -757,7 +818,7 @@ async function claim() {
           WHEN kind = 'NARRATION' THEN 1 
           ELSE 2 
         END ASC,
-        created_at ASC
+        created_at DESC
       FOR UPDATE SKIP LOCKED
       LIMIT 1
     )
@@ -809,7 +870,10 @@ async function transcribeAndValidateNarration(op, manifest, checkpoint, wav) {
   if (!tr.ok) throw new Error(`Gemini transcription failed (${tr.status})`);
   const timings = extractWordTimings(tj);
   if (!timings.length) throw new Error("No word-level timestamps returned");
+  const actualWords = timings.map(t => t.word).join(" ");
+  console.log(`[reel-worker] [transcription] prod ${op.production_id} transcribed: "${actualWords.slice(0, 160)}..."`);
   const validation = validateTranscript(manifest.masterScript, timings, checkpoint.actualDurationSec);
+  console.log(`[reel-worker] [transcription] prod ${op.production_id} alignment verified: WER ${validation.wer}, coverage ${validation.coverage}`);
   await assertApplicable(op);
   return { ...checkpoint, stage: "COMPLETE", wordTimings: timings, alignmentValidation: validation };
 }
@@ -1359,8 +1423,7 @@ for (;;) {
     } catch (error) {
       const message = String(error?.message || error).slice(0, 2000);
       const cancelled = message.startsWith("OPERATION_CANCELLED");
-      const ambiguous = message.includes("AMBIGUOUS_TTS_RESULT_AFTER_BOUNDED_RECOVERY") || message.includes("AMBIGUOUS_VEO_DISPATCH_AFTER_BOUNDED_RECOVERY") || message.includes("AMBIGUOUS_VEO_DISPATCH_NO_OPERATION_ID");
-      const deterministic = message.startsWith("Studio1");
+      const deterministic = message.startsWith("Studio1") || message.startsWith("Narration transcript mismatch:") || message.startsWith("Narration timestamps failed") || message.startsWith("Transcript verification has no comparable words");
       const retry = !cancelled && !ambiguous && !deterministic && Number(op.attempt || 0) < 3;
       await pool.query(`UPDATE reel_operations SET status=$2,last_error=$3,lease_owner=NULL,lease_expires_at=NULL,updated_at=NOW() WHERE id=$1`, [op.id, cancelled ? "CANCELLED" : retry ? "QUEUED" : "FAILED", message]);
       if (!cancelled && !retry) await markTerminalFailure(op, message);

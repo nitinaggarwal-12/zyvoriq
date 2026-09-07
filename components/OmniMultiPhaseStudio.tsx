@@ -442,15 +442,23 @@ export function OmniMultiPhaseStudio() {
       setPromptInput(targetScene.prompt);
       setActivePresetId(targetScene.id);
 
-      setCompletedPhases([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
-      setActivePhase(11);
+      if (targetScene.video) {
+        setCompletedPhases([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+        setActivePhase(11);
+        setIsExported(true);
+        setReelReadyBanner(true);
+        updateUrlParams(targetScene.id, 11);
+      } else {
+        // Honest phasing: Screenplay & 4K Plate are ready (Phases 1-5), Video Diffusion is in flight (Phase 6)
+        setCompletedPhases([1, 2, 3, 4, 5]);
+        setActivePhase(6);
+        setIsExported(false);
+        setReelReadyBanner(false);
+        updateUrlParams(targetScene.id, 6);
+      }
+
       setIsGeneratingReel(false);
       setIsGenerating(false);
-      setIsExported(true);
-      setReelReadyBanner(true);
-
-      // Update URL query parameters for deep linking
-      updateUrlParams(targetScene.id, 11);
 
       // Smooth playback ONLY if real video asset exists
       if (videoRef.current && targetScene.video) {
@@ -463,13 +471,14 @@ export function OmniMultiPhaseStudio() {
         videoRef.current.play().catch(() => {});
         setIsPlaying(true);
       } else {
+        setCurrentTime(0);
         setIsPlaying(false);
       }
 
       setToastMessage(
         targetScene.video
           ? `🎉 4K Master Reel "${targetScene.title}" loaded & playing!`
-          : `🎬 4K Plate & Screenplay "${targetScene.title}" synthesized via Gemini 2.5!`
+          : `🎬 4K Plate & Screenplay "${targetScene.title}" synthesized · Veo 3.1 video diffusion in progress!`
       );
       setTimeout(() => setToastMessage(null), 5000);
 
@@ -489,9 +498,19 @@ export function OmniMultiPhaseStudio() {
                   still: pollData.scene.still || prev.still,
                   lines: pollData.scene.lines || prev.lines
                 }));
+                setCompletedPhases([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+                setActivePhase(11);
+                setIsExported(true);
+                setReelReadyBanner(true);
+                updateUrlParams(prodId, 11);
                 setReelGenStatus("4K Master Cinema Reel Ready!");
                 setToastMessage(`🎉 4K Master Video Diffusion Complete! Now Playing "${pollData.scene.title}"`);
                 setTimeout(() => setToastMessage(null), 5000);
+                if (videoRef.current) {
+                  videoRef.current.currentTime = 0;
+                  videoRef.current.play().catch(() => {});
+                  setIsPlaying(true);
+                }
               }
             }
           } catch {}
@@ -945,19 +964,23 @@ export function OmniMultiPhaseStudio() {
                 
                 {/* Glowing Emerald Progress Scrubber */}
                 <div 
-                  onClick={handleSeek}
-                  className="relative h-1.5 w-full rounded-full bg-zinc-700/80 hover:h-2 cursor-pointer transition-all mb-2.5 group/track"
+                  onClick={currentScene.video ? handleSeek : undefined}
+                  className={`relative h-1.5 w-full rounded-full transition-all mb-2.5 group/track ${
+                    currentScene.video ? "bg-zinc-700/80 hover:h-2 cursor-pointer" : "bg-zinc-800 cursor-not-allowed opacity-60"
+                  }`}
                 >
                   {/* Progress Fill */}
                   <div 
                     className="absolute top-0 left-0 h-full rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.85)]"
-                    style={{ width: `${(currentTime / totalDuration) * 100}%` }}
+                    style={{ width: `${currentScene.video ? (currentTime / totalDuration) * 100 : 0}%` }}
                   />
                   {/* Scrubber Knob */}
-                  <div 
-                    className="absolute top-1/2 -translate-y-1/2 h-3.5 w-3.5 rounded-full bg-emerald-300 border-2 border-slate-950 shadow-[0_0_10px_rgba(16,185,129,1)] transition-transform group-hover/track:scale-125"
-                    style={{ left: `calc(${(currentTime / totalDuration) * 100}% - 7px)` }}
-                  />
+                  {currentScene.video && (
+                    <div 
+                      className="absolute top-1/2 -translate-y-1/2 h-3.5 w-3.5 rounded-full bg-emerald-300 border-2 border-slate-950 shadow-[0_0_10px_rgba(16,185,129,1)] transition-transform group-hover/track:scale-125"
+                      style={{ left: `calc(${(currentTime / totalDuration) * 100}% - 7px)` }}
+                    />
+                  )}
                 </div>
 
                 {/* Transport Controls Row */}
@@ -967,8 +990,9 @@ export function OmniMultiPhaseStudio() {
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
-                      onClick={togglePlay}
-                      className="text-white hover:text-emerald-400 transition cursor-pointer"
+                      onClick={currentScene.video ? togglePlay : undefined}
+                      disabled={!currentScene.video}
+                      className={`transition ${currentScene.video ? "text-white hover:text-emerald-400 cursor-pointer" : "text-zinc-600 cursor-not-allowed"}`}
                       aria-label={isPlaying ? "Pause" : "Play"}
                     >
                       {isPlaying ? (
@@ -979,7 +1003,14 @@ export function OmniMultiPhaseStudio() {
                     </button>
 
                     <span className="text-zinc-300 font-semibold tracking-wider">
-                      {formatTime(currentTime)} <span className="text-zinc-500">/</span> {formatTime(totalDuration)}
+                      {currentScene.video ? (
+                        <>{formatTime(currentTime)} <span className="text-zinc-500">/</span> {formatTime(totalDuration)}</>
+                      ) : (
+                        <span className="text-amber-400 flex items-center gap-1.5">
+                          <Loader2 className="h-3 w-3 animate-spin text-amber-400" />
+                          <span>00:00 [DIFFUSING]</span>
+                        </span>
+                      )}
                     </span>
 
                     <span className="rounded bg-black/70 border border-zinc-700/80 px-2 py-0.5 text-[10px] font-bold text-zinc-300 uppercase tracking-wider">
@@ -1759,37 +1790,54 @@ export function OmniMultiPhaseStudio() {
                       <MoreVertical className="h-3.5 w-3.5 text-zinc-500" />
                     </div>
                   </div>
-                  <div className="text-xs font-mono text-emerald-400 font-bold mb-2">
-                    13 Forensic Guards Certified [PASS]
+                  <div className={`text-xs font-mono font-bold mb-2 flex items-center gap-1.5 ${currentScene.video ? "text-emerald-400" : "text-amber-400"}`}>
+                    {currentScene.video ? (
+                      <span>13 Forensic Guards Certified [PASS]</span>
+                    ) : (
+                      <>
+                        <Loader2 className="h-3 w-3 animate-spin text-amber-400" />
+                        <span>Quality Gates: Video Diffusion In-Flight</span>
+                      </>
+                    )}
                   </div>
                   <div className="space-y-1.5 text-[11px] font-mono mb-3">
                     <div className="flex items-center justify-between rounded bg-black/40 p-1.5">
-                      <span className="text-zinc-400">Forensic Guard 1-6:</span>
-                      <span className="text-emerald-400 font-bold">Sync &amp; Biometrics PASS</span>
+                      <span className="text-zinc-400">Forensic Guard 1-6 (Sync &amp; Biometrics):</span>
+                      <span className={`font-bold ${currentScene.video ? "text-emerald-400" : "text-amber-400"}`}>
+                        {currentScene.video ? "PASS" : "DIFFUSING"}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between rounded bg-black/40 p-1.5">
-                      <span className="text-zinc-400">Forensic Guard 7-13:</span>
-                      <span className="text-emerald-400 font-bold">Acoustic &amp; Optics PASS</span>
+                      <span className="text-zinc-400">Forensic Guard 7-13 (Acoustic &amp; Optics):</span>
+                      <span className={`font-bold ${currentScene.video ? "text-emerald-400" : "text-amber-400"}`}>
+                        {currentScene.video ? "PASS" : "AWAITING CUT"}
+                      </span>
                     </div>
                   </div>
                   {activePhase === 10 ? (
-                    <button
-                      id="dossier-advance-phase10-btn"
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSaveAndAdvance(10);
-                      }}
-                      className="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20 hover:scale-[1.01] active:scale-[0.99] transition cursor-pointer"
-                    >
-                      <span>Save &amp; Advance Phase 11</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                  ) : (
+                    currentScene.video ? (
+                      <button
+                        id="dossier-advance-phase10-btn"
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSaveAndAdvance(10);
+                        }}
+                        className="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20 hover:scale-[1.01] active:scale-[0.99] transition cursor-pointer"
+                      >
+                        <span>Save &amp; Advance Phase 11</span>
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    ) : (
+                      <div className="w-full py-2 text-center rounded-lg bg-amber-950/40 border border-amber-500/30 text-amber-300 font-mono text-xs font-semibold">
+                        Awaiting Veo 3.1 Video Diffusion
+                      </div>
+                    )
+                  ) : completedPhases.includes(10) ? (
                     <div className="w-full py-1 text-center rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold">
                       Gates Cleared ✓
                     </div>
-                  )}
+                  ) : null}
                 </div>
               )}
 
