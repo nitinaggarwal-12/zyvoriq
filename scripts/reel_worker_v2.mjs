@@ -385,6 +385,115 @@ async function recoverCrossScriptNarrationFailures() {
 }
 await recoverCrossScriptNarrationFailures();
 
+async function recoverWaitCeilingExceededFailures() {
+  const failed = await pool.query(`
+    SELECT o.id, o.production_id, o.target_id
+    FROM reel_operations o
+    WHERE o.status = 'FAILED'
+      AND o.last_error LIKE 'WAIT_CEILING_EXCEEDED%'
+    ORDER BY o.created_at ASC
+  `);
+  for (const row of failed.rows) {
+    const p = await pool.query(`SELECT revision, manifest_json FROM reel_productions WHERE id=$1`, [row.production_id]);
+    if (!p.rows[0]) continue;
+    const m = p.rows[0].manifest_json || {};
+    const shot = Array.isArray(m.shots) ? m.shots.find(x => x.id === row.target_id) : null;
+    
+    let allMet = true;
+    if (shot?.dependsOnShotIds?.length) {
+      allMet = shot.dependsOnShotIds.every(depId => {
+        const dep = m.shots?.find(s => s.id === depId);
+        return dep?.asset?.videoUrl && ["GENERATED", "PASSED"].includes(dep.status);
+      });
+    }
+
+    const nextStatus = allMet ? 'QUEUED' : 'BLOCKED';
+    const initError = allMet ? null : `WAITING_ON_UPSTREAM_DEPENDENCIES:${shot?.dependsOnShotIds?.join(",") || ""}`;
+    const reset = await pool.query(`
+      UPDATE reel_operations
+      SET status=$2, attempt=0, provider_operation_name=NULL, result_json=NULL,
+          last_error=$3, lease_owner=NULL, lease_expires_at=NULL, updated_at=NOW()
+      WHERE id=$1 AND status='FAILED'
+      RETURNING id
+    `, [row.id, nextStatus, initError]);
+    if (!reset.rows[0]) continue;
+
+    if (["FAILED", "REPAIRING"].includes(m.status)) m.status = "VIDEO_GENERATING";
+    if (m.qa?.failures && Array.isArray(m.qa.failures)) {
+      m.qa.failures = m.qa.failures.filter(x => !String(x).includes("WAIT_CEILING_EXCEEDED"));
+    }
+    if (shot && !shot.asset?.videoUrl) {
+      shot.status = "PLANNED";
+      if (shot.qa?.failures && Array.isArray(shot.qa.failures)) {
+        shot.qa.failures = shot.qa.failures.filter(x => !String(x).includes("WAIT_CEILING_EXCEEDED"));
+      }
+    }
+    await pool.query(`
+      UPDATE reel_productions
+      SET revision=revision+1, manifest_json=$3::jsonb, updated_at=NOW()
+      WHERE id=$1 AND revision=$2
+    `, [row.production_id, Number(p.rows[0].revision), JSON.stringify(m)]);
+    console.log(`[reel-worker] recovered wait-ceiling-failed operation ${row.id} (${row.production_id}:${row.target_id}) -> ${nextStatus}`);
+  }
+}
+await recoverWaitCeilingExceededFailures();
+
+async function recoverVeoEmptyPayloadFailures() {
+  const failed = await pool.query(`
+    SELECT o.id, o.production_id, o.target_id, o.last_error
+    FROM reel_operations o
+    WHERE o.status = 'FAILED'
+      AND (
+        o.last_error LIKE '%Veo completed without video URI%'
+        OR o.last_error LIKE '%VEO_TRANSIENT_EMPTY_PAYLOAD%'
+        OR o.last_error LIKE '%VEO_SAFETY_FILTER_EMPTY%'
+      )
+    ORDER BY o.created_at ASC
+  `);
+  for (const row of failed.rows) {
+    const p = await pool.query(`SELECT revision, manifest_json FROM reel_productions WHERE id=$1`, [row.production_id]);
+    if (!p.rows[0]) continue;
+    const m = p.rows[0].manifest_json || {};
+    const shot = Array.isArray(m.shots) ? m.shots.find(x => x.id === row.target_id) : null;
+
+    let allMet = true;
+    if (shot?.dependsOnShotIds?.length) {
+      allMet = shot.dependsOnShotIds.every(depId => {
+        const dep = m.shots?.find(s => s.id === depId);
+        return dep?.asset?.videoUrl && ["GENERATED", "PASSED"].includes(dep.status);
+      });
+    }
+
+    const nextStatus = allMet ? 'QUEUED' : 'BLOCKED';
+    const initError = allMet ? null : `WAITING_ON_UPSTREAM_DEPENDENCIES:${shot?.dependsOnShotIds?.join(",") || ""}`;
+    await pool.query(`
+      UPDATE reel_operations
+      SET status=$2, attempt=0, provider_operation_name=NULL, result_json=NULL,
+          last_error=$3, lease_owner=NULL, lease_expires_at=NULL, updated_at=NOW()
+      WHERE id=$1 AND status='FAILED'
+      RETURNING id
+    `, [row.id, nextStatus, initError]);
+
+    if (["FAILED", "REPAIRING"].includes(m.status)) m.status = "VIDEO_GENERATING";
+    if (m.qa?.failures && Array.isArray(m.qa.failures)) {
+      m.qa.failures = m.qa.failures.filter(x => !String(x).includes("without video URI") && !String(x).includes("EMPTY"));
+    }
+    if (shot && !shot.asset?.videoUrl) {
+      shot.status = "PLANNED";
+      if (shot.qa?.failures && Array.isArray(shot.qa.failures)) {
+        shot.qa.failures = shot.qa.failures.filter(x => !String(x).includes("without video URI") && !String(x).includes("EMPTY"));
+      }
+    }
+    await pool.query(`
+      UPDATE reel_productions
+      SET revision=revision+1, manifest_json=$3::jsonb, updated_at=NOW()
+      WHERE id=$1 AND revision=$2
+    `, [row.production_id, Number(p.rows[0].revision), JSON.stringify(m)]);
+    console.log(`[reel-worker] recovered Veo-empty-failed operation ${row.id} (${row.production_id}:${row.target_id}) -> ${nextStatus}`);
+  }
+}
+await recoverVeoEmptyPayloadFailures();
+
 // Reclaim any orphaned RUNNING operations whose lease belongs to a dead previous container instance
 async function reclaimOrphanedContainerLeases() {
   const r = await pool.query(`
@@ -526,54 +635,21 @@ async function runDeadlockAndStarvationWatchdog() {
           continue;
         }
 
-        // Check if any upstream parent or any sibling in this production is actively QUEUED or RUNNING.
-        // A shot legitimately waiting in a multi-shot DAG or behind another queued production is NOT stalled!
-        const activeProdWork = await pool.query(`
-          SELECT id, status, target_id FROM reel_operations
-          WHERE production_id = $1
-            AND (
-              target_id = ANY($2::text[])
-              OR status IN ('QUEUED', 'RUNNING')
-            )
-          LIMIT 1
-        `, [bRow.production_id, shot.dependsOnShotIds]);
-
-        if (activeProdWork.rows.length > 0) {
-          // Healthy upstream dependency is queued/running or production is active.
-          // Touch updated_at so this row's age reflects ongoing active wait without artificial starvation.
-          await pool.query(`UPDATE reel_operations SET updated_at = NOW() WHERE id = $1`, [bRow.id]);
-          continue;
-        }
-
-        // Only enforce wait ceiling (30m) if the ENTIRE production has had zero QUEUED/RUNNING operations
-        // and zero successful operations for over 30 minutes (truly abandoned/orphaned DAG).
-        const recentProdActivity = await pool.query(`
-          SELECT id FROM reel_operations
-          WHERE production_id = $1
-            AND (status IN ('RUNNING', 'QUEUED') OR (status = 'SUCCEEDED' AND updated_at > NOW() - INTERVAL '30 minutes'))
-          LIMIT 1
-        `, [bRow.production_id]);
-
-        if (recentProdActivity.rows.length === 0) {
-          const blockedAgeMs = Date.now() - new Date(bRow.updated_at || bRow.created_at).getTime();
-          const WAIT_CEILING_MS = 30 * 60 * 1000;
-          if (blockedAgeMs > WAIT_CEILING_MS) {
-            const res = await pool.query(`
-              UPDATE reel_operations
-              SET status='FAILED',
-                  last_error=$2,
-                  lease_owner=NULL,
-                  lease_expires_at=NULL,
-                  updated_at=NOW()
-              WHERE id=$1 AND status NOT IN ('FAILED', 'CANCELLED', 'SUCCEEDED')
-              RETURNING id
-            `, [bRow.id, `WAIT_CEILING_EXCEEDED: shot ${shot.id} exceeded 30 minute wait ceiling with no active or queued operations`]);
-            if (res.rowCount > 0) {
-              console.error(`[reel-worker] [watchdog] Truly stalled production wait ceiling exceeded (30m): marked shot ${shot.id} (${bRow.production_id}) FAILED`);
-            }
-            continue;
-          }
-        }
+        // Upstream parent dependencies are legitimately pending or in-flight (PLANNED, GENERATING, QUEUED, RUNNING, or BLOCKED).
+        // A shot sitting BLOCKED behind an incomplete parent is NOT stalled; its turn has not yet arrived!
+        // Never enforce a wait ceiling on a shot while its upstream parent chain is alive and incomplete.
+        // Touch updated_at so the heartbeat clock stays fresh.
+        await pool.query(`UPDATE reel_operations SET updated_at = NOW() WHERE id = $1`, [bRow.id]);
+        continue;
+      } else {
+        // Shot has no dependencies but is marked BLOCKED - unblock to QUEUED immediately
+        await pool.query(`
+          UPDATE reel_operations
+          SET status='QUEUED', attempt=0, last_error=NULL, lease_owner=NULL, lease_expires_at=NULL, updated_at=NOW()
+          WHERE id=$1 AND status='BLOCKED'
+        `, [bRow.id]);
+        console.log(`[reel-worker] [watchdog] Unblocked shot ${shot?.id || bRow.target_id} (${bRow.production_id}): no upstream dependencies required`);
+        continue;
       }
     }
 
@@ -1069,7 +1145,12 @@ function validateTranscript(expectedText, timings, durationSec) {
 async function getProduction(id) { const r = await pool.query(`SELECT * FROM reel_productions WHERE id=$1`, [id]); if (!r.rows[0]) throw new Error(`Production ${id} not found`); return { revision: Number(r.rows[0].revision), manifest: r.rows[0].manifest_json }; }
 async function saveManifest(id, revision, manifest) { const r = await pool.query(`UPDATE reel_productions SET revision=revision+1,manifest_json=$3::jsonb,updated_at=NOW() WHERE id=$1 AND revision=$2 RETURNING revision`, [id, revision, JSON.stringify(manifest)]); if (!r.rows[0]) throw new Error(`Production ${id} changed concurrently while worker was attaching evidence`); return Number(r.rows[0].revision); }
 async function updateOperation(id, patch) { const fields = [], values = [id]; let n = 2; const map = { status: "status", providerOperationName: "provider_operation_name", result: "result_json", lastError: "last_error", leaseExpiresAt: "lease_expires_at", leaseOwner: "lease_owner" }; for (const [k, col] of Object.entries(map)) { if (!(k in patch)) continue; fields.push(`${col}=$${n++}${k === "result" ? "::jsonb" : ""}`); values.push(k === "result" ? JSON.stringify(patch[k]) : patch[k]); } fields.push("updated_at=NOW()"); await pool.query(`UPDATE reel_operations SET ${fields.join(",")} WHERE id=$1`, values); }
-async function operationHeartbeat(id) { await pool.query(`UPDATE reel_operations SET lease_expires_at=NOW()+INTERVAL '10 minutes',updated_at=NOW() WHERE id=$1 AND lease_owner=$2`, [id, workerId]); }
+async function operationHeartbeat(id, prodId) {
+  await pool.query(`UPDATE reel_operations SET lease_expires_at=NOW()+INTERVAL '10 minutes',updated_at=NOW() WHERE id=$1 AND lease_owner=$2`, [id, workerId]);
+  if (prodId) {
+    await pool.query(`UPDATE reel_operations SET updated_at=NOW() WHERE production_id=$1 AND status IN ('BLOCKED', 'QUEUED')`, [prodId]);
+  }
+}
 async function claim() {
   const r = await pool.query(`
     WITH c AS (
@@ -1295,6 +1376,7 @@ async function applyNarration(op, result) {
 
   m.status = "SHOTS_PLANNED";
   await saveManifest(op.production_id, c.revision, m);
+  await pool.query(`UPDATE reel_operations SET updated_at = NOW() WHERE production_id = $1`, [op.production_id]);
 
   // P0.1 & P0.4: Auto-enqueue sequential shot operations upon narration completion
   try {
@@ -1337,6 +1419,7 @@ async function applyNarration(op, result) {
       );
       console.log(`[reel-worker] [enqueue] Shot ${shot.id} enqueued (${initStatus}) for prod ${op.production_id}`);
     }
+    await pool.query(`UPDATE reel_operations SET updated_at = NOW() WHERE production_id = $1`, [op.production_id]);
   } catch (enqueueErr) {
     console.error(`[reel-worker] Failed to auto-enqueue shots after narration:`, enqueueErr?.message || enqueueErr);
   }
@@ -1458,7 +1541,7 @@ async function generateShot(op, manifest, shot) {
   for (let i = 0; i < 60; i++) {
     await sleep(5000);
     if (i % 3 === 0) {
-      await operationHeartbeat(op.id);
+      await operationHeartbeat(op.id, op.production_id);
       await assertApplicable(op);
     }
     let p;
@@ -1487,14 +1570,40 @@ async function generateShot(op, manifest, shot) {
           || pj.response?.candidates?.[0]?.finishReason
           || pj.response?.candidates?.[0]?.safetyRatings
           || pj.response?.error
-          || pj.error
-          || pj.metadata;
-        console.error(`[reel-worker] [veo-empty] Veo operation ${name} done without video URI. Complete response payload:`, JSON.stringify(pj));
+          || pj.error;
+        console.error(`[reel-worker] [veo-empty-payload] Veo operation ${name} completed without video URI. Complete response payload:\n${JSON.stringify(pj, null, 2)}`);
         await updateOperation(op.id, { providerOperationName: null });
 
-        // If Veo flagged real people's names or celebrity likeness, auto-heal the shot prompt in the manifest for subsequent attempts
-        const raiStr = JSON.stringify(raiReasons || "");
-        if (raiStr.includes("real people's names or likenesses") || raiStr.includes("celebrity reference")) {
+        const isSafety = Boolean(
+          raiReasons ||
+          pj.response?.candidates?.[0]?.finishReason === "SAFETY" ||
+          pj.promptFeedback?.blockReason ||
+          /safety|filtered|filter|rai|policy|prohibited|violat/i.test(JSON.stringify(pj))
+        );
+
+        // Store empty payload telemetry into payload_json for forensic audit
+        try {
+          await pool.query(`
+            UPDATE reel_operations
+            SET payload_json = jsonb_set(
+              COALESCE(payload_json, '{}'::jsonb),
+              '{last_empty_payload}',
+              $2::jsonb
+            )
+            WHERE id = $1
+          `, [op.id, JSON.stringify({
+            timestamp: new Date().toISOString(),
+            operationName: name,
+            isSafety,
+            raiReasons: raiReasons || null,
+            rawPayload: pj
+          })]);
+        } catch (dbErr) {
+          console.warn(`[reel-worker] Failed to record empty payload in DB: ${dbErr?.message}`);
+        }
+
+        if (isSafety) {
+          // Auto-heal prompt in manifest to bypass safety/likeness blocks
           try {
             const current = await getProduction(op.production_id);
             const m = current.manifest;
@@ -1502,19 +1611,24 @@ async function generateShot(op, manifest, shot) {
             if (targetShot) {
               targetShot.generationPrompt = targetShot.generationPrompt
                 .replace(/\b[A-Z][A-Za-z0-9_\s]{1,30}:/g, "")
-                .replace(/\b(?:Kiara|Akshay|Salman|Aishwarya|Shah\s*Rukh|SRK|Deepika|Ranveer|Alia|Ranbir|Hrithik|Katrina|Priyanka|Kareena|Saif|Amitabh)\b/gi, "lead performer");
+                .replace(/\b(?:Kiara|Akshay|Salman|Aishwarya|Shah\s*Rukh|SRK|Deepika|Ranveer|Alia|Ranbir|Hrithik|Katrina|Priyanka|Kareena|Saif|Amitabh)\b/gi, "lead performer")
+                .replace(/\blovers\b/gi, "characters")
+                .replace(/\bintimate\b/gi, "cinematic")
+                .replace(/\bpassionate\b/gi, "dramatic")
+                .replace(/\bcolonial\b/gi, "vintage 1940s")
+                .replace(/"[^"]*"/g, ""); // strip quoted dialogue
               await saveManifest(op.production_id, current.revision, m);
               console.log(`[reel-worker] [rai-auto-heal] Healed shot ${shot.id} prompt in manifest for retry`);
             }
           } catch (e) {
             console.warn(`[reel-worker] RAI auto-heal error: ${e?.message}`);
           }
+          const diagInfo = raiReasons ? JSON.stringify(raiReasons) : JSON.stringify(pj).slice(0, 300);
+          throw new Error(`VEO_SAFETY_FILTER_EMPTY: Veo completed without video URI due to safety/RAI filter (${diagInfo})`);
         }
 
-        const reasonStr = raiReasons 
-          ? ` (RAI/Safety: ${JSON.stringify(raiReasons)})` 
-          : ` (Payload: ${JSON.stringify(pj).slice(0, 300)})`;
-        throw new Error(`Veo completed without video URI${reasonStr}`);
+        // Transient Google infrastructure drop (no safety triggers)
+        throw new Error(`VEO_TRANSIENT_EMPTY_PAYLOAD: Veo operation ${name} completed without video URI (Google infrastructure transient drop). Response: ${JSON.stringify(pj).slice(0, 300)}`);
       }
       break;
     }
@@ -1547,6 +1661,7 @@ async function applyShot(op, result) {
   if (result.continuityReferenceUrl) s.continuityIn.referenceFrameUrl = result.continuityReferenceUrl;
   m.status = m.shots.every(x => x.asset?.videoUrl && ["GENERATED", "PASSED"].includes(x.status)) ? "ROUGH_CUT_READY" : "VIDEO_GENERATING";
   await saveManifest(op.production_id, c.revision, m);
+  await pool.query(`UPDATE reel_operations SET updated_at = NOW() WHERE production_id = $1`, [op.production_id]);
 
   // Parent completion event: unblock any dependent operations for this production whose upstream dependencies are now met!
   try {
@@ -1774,6 +1889,7 @@ async function applyRough(op, result) {
   if (result.timelineQa && m.studio1?.timelineSync) m.studio1.timelineSync.renderQa = result.timelineQa;
   m.status = "READY";
   await saveManifest(op.production_id, c.revision, m);
+  await pool.query(`UPDATE reel_operations SET updated_at = NOW() WHERE production_id = $1`, [op.production_id]);
   console.log(`[reel-worker] [completed] Production ${op.production_id} rough cut finished and status marked READY! Video URL: ${result.videoUrl}`);
 }
 
@@ -1815,7 +1931,7 @@ async function generateNativeReel(op, manifest, checkpoint) {
     onHop: async ({ completedBeats, uri }) => {
       // Persisted BEFORE the next hop so a crash resumes rather than restarting.
       await updateOperation(op.id, { result: { stage: "IN_PROGRESS", completedBeats, uri, totalBeats: beats.length } });
-      await operationHeartbeat(op.id);
+      await operationHeartbeat(op.id, op.production_id);
     },
   });
 
@@ -1973,6 +2089,69 @@ for (;;) {
           `Requeuing with ${delaySec}s backoff (capacity retry #${currentCapAttempts}, preserved attempt ${restoredAttempt}/5). Scheduled at +${delaySec}s.`
         );
         continue;
+      }
+
+      if (message.startsWith("VEO_TRANSIENT_EMPTY_PAYLOAD")) {
+        // Veo transient empty payload (Google infra drop): Do NOT burn standard operational attempt budget!
+        const currentTransientAttempts = Number(op.payload_json?.transientEmptyAttempts || 0) + 1;
+        if (currentTransientAttempts < 6) {
+          const baseSec = Math.min(180, 40 * Math.pow(1.5, Math.min(currentTransientAttempts - 1, 3)));
+          const jitterSec = Math.floor(Math.random() * 15) + 5;
+          const delaySec = Math.round(baseSec + jitterSec);
+
+          const restoredAttempt = Math.max(0, Number(op.attempt || 1) - 1);
+          const updatedPayload = { ...(op.payload_json || {}), transientEmptyAttempts: currentTransientAttempts };
+
+          await pool.query(
+            `UPDATE reel_operations
+             SET status='QUEUED',
+                 attempt=$2,
+                 scheduled_at=NOW() + ($3 || ' seconds')::INTERVAL,
+                 payload_json=$4::jsonb,
+                 provider_operation_name=NULL,
+                 last_error=$5,
+                 lease_owner=NULL,
+                 lease_expires_at=NULL,
+                 updated_at=NOW()
+             WHERE id=$1`,
+            [op.id, restoredAttempt, delaySec, JSON.stringify(updatedPayload), message]
+          );
+          console.warn(
+            `[reel-worker] [transient-empty-backoff] ${op.id} (${op.kind}${op.target_id ? `:${op.target_id}` : ''}) hit transient empty payload: "${message}". ` +
+            `Requeuing with ${delaySec}s backoff (transient retry #${currentTransientAttempts}/5, preserved attempt ${restoredAttempt}/5). Scheduled at +${delaySec}s.`
+          );
+          continue;
+        }
+      }
+
+      if (message.startsWith("VEO_SAFETY_FILTER_EMPTY")) {
+        // Veo safety filter triggered: Prompt has been auto-healed in manifest.
+        const currentSafetyAttempts = Number(op.payload_json?.safetyAttempts || 0) + 1;
+        if (currentSafetyAttempts <= 3) {
+          const delaySec = 35 + Math.floor(Math.random() * 15);
+          const restoredAttempt = Math.max(0, Number(op.attempt || 1) - 1);
+          const updatedPayload = { ...(op.payload_json || {}), safetyAttempts: currentSafetyAttempts };
+
+          await pool.query(
+            `UPDATE reel_operations
+             SET status='QUEUED',
+                 attempt=$2,
+                 scheduled_at=NOW() + ($3 || ' seconds')::INTERVAL,
+                 payload_json=$4::jsonb,
+                 provider_operation_name=NULL,
+                 last_error=$5,
+                 lease_owner=NULL,
+                 lease_expires_at=NULL,
+                 updated_at=NOW()
+             WHERE id=$1`,
+            [op.id, restoredAttempt, delaySec, JSON.stringify(updatedPayload), message]
+          );
+          console.warn(
+            `[reel-worker] [safety-filter-backoff] ${op.id} (${op.kind}${op.target_id ? `:${op.target_id}` : ''}) auto-sanitized after safety filter: "${message}". ` +
+            `Requeuing with ${delaySec}s backoff (safety retry #${currentSafetyAttempts}/3, preserved attempt ${restoredAttempt}/5). Scheduled at +${delaySec}s.`
+          );
+          continue;
+        }
       }
 
       const ambiguous = message.includes("AMBIGUOUS_TTS_RESULT_AFTER_BOUNDED_RECOVERY") || message.includes("AMBIGUOUS_VEO_DISPATCH_AFTER_BOUNDED_RECOVERY") || message.includes("AMBIGUOUS_VEO_DISPATCH_NO_OPERATION_ID");

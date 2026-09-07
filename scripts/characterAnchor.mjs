@@ -56,29 +56,41 @@ function sleep(ms) {
 }
 
 function sanitizePromptForImageGen(text) {
-  return text
+  return String(text || "")
+    .replace(/\b(?:Kiara|Akshay|Salman|Aishwarya|Shah\s*Rukh|SRK|Deepika|Ranveer|Alia|Ranbir|Hrithik|Katrina|Priyanka|Kareena|Saif|Amitabh)\b/gi, "lead performer")
+    .replace(/\b[A-Z][A-Za-z0-9_\s]{1,30}:/g, "")
     .replace(/\blovers\b/gi, "characters")
     .replace(/\bintimate\b/gi, "cinematic")
     .replace(/\bcolonial\b/gi, "vintage 1940s")
     .replace(/\bromance\b/gi, "narrative")
     .replace(/\bpassionate\b/gi, "dramatic")
+    .replace(/\bweapon|gun|knife|blood|injury\b/gi, "prop")
+    .replace(/"[^"]*"/g, "")
     .trim();
 }
 
-async function generateImage(parts, { retryCount = 2 } = {}) {
+async function generateImage(parts, { retryCount = 3 } = {}) {
   const key = apiKey();
   if (!key) throw new Error("Image generation requires GEMINI_API_KEY");
 
   for (let attempt = 0; attempt <= retryCount; attempt++) {
+    const currentModel = attempt >= 2
+      ? (process.env.ZYVORIQ_CHARACTER_FALLBACK_MODEL || "gemini-2.0-flash-exp")
+      : IMAGE_MODEL;
+
     // Ensure all text parts explicitly have an imperative image generation directive
     const requestParts = parts.map(p => {
-      if (p.text && !p.text.toLowerCase().startsWith("generate an image")) {
-        return { ...p, text: `Generate an image. ${p.text}` };
+      let txt = p.text || "";
+      if (attempt > 0) {
+        txt = sanitizePromptForImageGen(txt);
       }
-      return p;
+      if (txt && !txt.toLowerCase().startsWith("generate an image")) {
+        return { ...p, text: `Generate an image. ${txt}` };
+      }
+      return { ...p, text: txt };
     });
 
-    const res = await fetch(`${API_BASE}/v1beta/models/${IMAGE_MODEL}:generateContent?key=${key}`, {
+    const res = await fetch(`${API_BASE}/v1beta/models/${currentModel}:generateContent?key=${key}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contents: [{ role: "user", parts: requestParts }] }),
@@ -88,7 +100,7 @@ async function generateImage(parts, { retryCount = 2 } = {}) {
     if (!res.ok || json.error) {
       const errDetail = `Image gen HTTP ${res.status}: ${JSON.stringify(json.error || json).slice(0, 300)}`;
       if (attempt < retryCount) {
-        console.warn(`[characterAnchor] Retry ${attempt + 1}/${retryCount}: ${errDetail}`);
+        console.warn(`[characterAnchor] Retry ${attempt + 1}/${retryCount} (${currentModel}): ${errDetail}`);
         await sleep(1500 * (attempt + 1));
         continue;
       }
@@ -113,18 +125,21 @@ async function generateImage(parts, { retryCount = 2 } = {}) {
       safetyRatings ? `safetyRatings=${JSON.stringify(safetyRatings)}` : null,
     ].filter(Boolean).join(" | ");
 
-    console.warn(`[characterAnchor] Attempt ${attempt + 1}/${retryCount + 1} returned no inline image data: ${diagStr}`);
+    console.error(`[characterAnchor] [image-empty-payload] Complete response payload from ${currentModel} (attempt ${attempt + 1}/${retryCount + 1}):\n${JSON.stringify(json, null, 2)}`);
+
+    const isSafety = finishReason === "SAFETY" || blockReason || /safety|filter|prohibit|policy/i.test(JSON.stringify(json));
+    if (isSafety) {
+      console.warn(`[characterAnchor] [safety-filter-detected] Silent safety filter tripped: ${diagStr}`);
+    } else {
+      console.warn(`[characterAnchor] [transient-empty] Model returned no inline image data without safety filter: ${diagStr}`);
+    }
 
     if (attempt < retryCount) {
-      // Auto-sanitize text prompt on retry to bypass subtle filter blocks
-      for (const p of parts) {
-        if (p.text) p.text = sanitizePromptForImageGen(p.text);
-      }
       await sleep(1500 * (attempt + 1));
       continue;
     }
 
-    throw new Error(`Image gen returned no inline image data after ${retryCount + 1} attempts (${diagStr})`);
+    throw new Error(`Image gen returned no inline image data after ${retryCount + 1} attempts (${diagStr}). Full response: ${JSON.stringify(json).slice(0, 500)}`);
   }
 }
 
