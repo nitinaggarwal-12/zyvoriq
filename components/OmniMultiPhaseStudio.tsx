@@ -32,7 +32,11 @@ import {
   FileText,
   Copy,
   ExternalLink,
-  X
+  X,
+  Lock,
+  AlertCircle,
+  Terminal,
+  ChevronDown
 } from "lucide-react";
 import { SocialPublishModal } from "@/components/SocialPublishModal";
 
@@ -165,6 +169,12 @@ export function OmniMultiPhaseStudio() {
   const [reelGenProgress, setReelGenProgress] = useState(0);
   const [reelGenStatus, setReelGenStatus] = useState("");
 
+  // Live Generation Telemetry & Minute-over-Minute Monitor States
+  const [liveOperations, setLiveOperations] = useState<any[]>([]);
+  const [elapsedSec, setElapsedSec] = useState(0);
+  const [showTelemetryDrawer, setShowTelemetryDrawer] = useState(false);
+  const [productionCreatedAt, setProductionCreatedAt] = useState<string | null>(null);
+
   // URL Deep-Link Synchronization helper
   const updateUrlParams = (reelId: string, phaseNum: number) => {
     if (typeof window === "undefined") return;
@@ -234,6 +244,103 @@ export function OmniMultiPhaseStudio() {
       }
     }
   }, []);
+
+  // Continuous Polling & Telemetry Sync for In-Flight Diffusion
+  useEffect(() => {
+    if (!currentScene?.id || currentScene?.video) return;
+
+    let isSubscribed = true;
+    const prodId = currentScene.id;
+
+    const pollStatus = async () => {
+      try {
+        const res = await fetch(`/api/studio/omni-generate?id=${encodeURIComponent(prodId)}`);
+        if (!res.ok || !isSubscribed) return;
+        const data = await res.json();
+        if (!data.success || !isSubscribed) return;
+
+        if (Array.isArray(data.operations)) {
+          setLiveOperations(data.operations);
+        }
+
+        if (data.production?.created_at || data.production?.createdAt) {
+          setProductionCreatedAt(data.production.created_at || data.production.createdAt);
+        }
+
+        if (data.scene?.video) {
+          setCurrentScene((prev) => ({
+            ...prev,
+            video: data.scene.video,
+            still: data.scene.still || prev.still,
+            lines: data.scene.lines || prev.lines
+          }));
+          setCompletedPhases([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+          setActivePhase(11);
+          setIsExported(true);
+          setReelReadyBanner(true);
+          updateUrlParams(prodId, 11);
+          setReelGenStatus("4K Master Cinema Reel Ready!");
+          setToastMessage(`🎉 4K Master Video Diffusion Complete! Now Playing "${data.scene.title || "Film"}"`);
+          setTimeout(() => setToastMessage(null), 5000);
+          if (videoRef.current) {
+            videoRef.current.currentTime = 0;
+            videoRef.current.play().catch(() => {});
+            setIsPlaying(true);
+          }
+        }
+      } catch {}
+    };
+
+    pollStatus();
+    const interval = setInterval(pollStatus, 3500);
+
+    return () => {
+      isSubscribed = false;
+      clearInterval(interval);
+    };
+  }, [currentScene?.id, currentScene?.video]);
+
+  // Elapsed Seconds Counter
+  useEffect(() => {
+    if (currentScene?.video) {
+      return;
+    }
+    const timer = setInterval(() => {
+      if (productionCreatedAt) {
+        const started = new Date(productionCreatedAt).getTime();
+        setElapsedSec(Math.max(0, Math.floor((Date.now() - started) / 1000)));
+      } else {
+        setElapsedSec((prev) => prev + 1);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [currentScene?.video, productionCreatedAt]);
+
+  // Computed Live Telemetry Metrics
+  const shotOps = liveOperations.filter((op) => (op.operation_type || op.kind) === "SHOT");
+  const narrationOp = liveOperations.find((op) => (op.operation_type || op.kind) === "NARRATION");
+  const roughCutOp = liveOperations.find((op) => (op.operation_type || op.kind) === "ROUGH_CUT");
+
+  const succeededShots = shotOps.filter((op) => op.status === "SUCCEEDED").length;
+  const runningShot = shotOps.find((op) => op.status === "RUNNING");
+  const blockedShots = shotOps.filter((op) => op.status === "BLOCKED");
+  const failedOps = liveOperations.filter((op) => op.status === "FAILED");
+  const totalShots = Math.max(shotOps.length, 4);
+
+  const isDiffusionActive = !currentScene?.video && (
+    isGeneratingReel || 
+    isGenerating || 
+    liveOperations.some((op) => op.status === "RUNNING" || op.status === "QUEUED" || op.status === "BLOCKED")
+  );
+
+  const remainingShots = Math.max(0, totalShots - succeededShots);
+  const estRemainingSec = !isDiffusionActive ? 0 : Math.max(15, remainingShots * 65 + (roughCutOp?.status === "RUNNING" ? 15 : 25));
+
+  const formatElapsed = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}m ${s.toString().padStart(2, "0")}s`;
+  };
 
   // Audio Overlap Safeguard: Pause studio background player when Delivery Modal is open
   useEffect(() => {
@@ -1016,7 +1123,13 @@ export function OmniMultiPhaseStudio() {
                       ) : (
                         <span className="text-amber-400 flex items-center gap-1.5">
                           <Loader2 className="h-3 w-3 animate-spin text-amber-400" />
-                          <span>00:00 [DIFFUSING]</span>
+                          <span>
+                            {runningShot 
+                              ? `00:00 [DIFFUSING: ${(runningShot.target_id || "SHOT").toUpperCase()}]`
+                              : roughCutOp?.status === "RUNNING"
+                                ? "00:00 [ASSEMBLING ROUGH CUT]"
+                                : "00:00 [DIFFUSING]"}
+                          </span>
                         </span>
                       )}
                     </span>
@@ -1948,30 +2061,147 @@ export function OmniMultiPhaseStudio() {
 
             </div>
 
-            {/* Persistent Start Reel Generation Action at Bottom of Dossier */}
+            {/* Directorial Production & Telemetry Console */}
             <div className="mt-3 pt-3 border-t border-zinc-800/80 space-y-2.5">
-              <button
-                id="dossier-start-generation-btn"
-                type="button"
-                disabled={isGeneratingReel || isGenerating}
-                onClick={handleStartReelGeneration}
-                className="w-full py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 text-slate-950 font-black text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/30 hover:scale-[1.01] active:scale-[0.99] transition cursor-pointer disabled:opacity-75"
-                title="Synthesize all 11 phases and generate the 4K reel"
-              >
-                {isGeneratingReel ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin text-slate-950" />
-                    <span>Compiling All 11 Phases...</span>
-                  </>
-                ) : (
-                  <>
-                    <Play className="h-4 w-4 fill-current" />
-                    <span>Start Reel Generation (All 11 Phases)</span>
-                  </>
-                )}
-              </button>
+              {isDiffusionActive ? (
+                /* Active In-Flight Diffusion Card */
+                <div 
+                  id="live-diffusion-telemetry-card"
+                  className="rounded-xl border border-amber-500/40 bg-zinc-950/90 p-3 space-y-2.5 shadow-lg shadow-amber-500/10"
+                >
+                  {/* Status Header */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                      </div>
+                      <span className="text-xs font-mono font-bold uppercase text-amber-300">
+                        {roughCutOp?.status === "RUNNING" 
+                          ? "Rough Cut Assembling..." 
+                          : runningShot 
+                            ? `Veo 3.1: ${(runningShot.target_id || "Shot").toUpperCase()} Diffusing...`
+                            : "Veo 3.1 Video Diffusion In-Flight"}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono text-amber-400/90 bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                      ~{formatElapsed(estRemainingSec)} remaining
+                    </span>
+                  </div>
 
-              {/* Persistent Directorial Chat Form */}
+                  {/* Time & Progress Counters */}
+                  <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
+                    <div className="bg-black/60 rounded-lg p-2 border border-zinc-800">
+                      <span className="text-zinc-400 block text-[10px]">Time Elapsed</span>
+                      <span className="text-white font-bold">{formatElapsed(elapsedSec)}</span>
+                    </div>
+                    <div className="bg-black/60 rounded-lg p-2 border border-zinc-800">
+                      <span className="text-zinc-400 block text-[10px]">Shot Progress</span>
+                      <span className="text-emerald-400 font-bold">{succeededShots} / {totalShots} Complete</span>
+                    </div>
+                  </div>
+
+                  {/* Visual Progress Bar */}
+                  <div className="space-y-1">
+                    <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-amber-400 via-teal-400 to-emerald-400 transition-all duration-500"
+                        style={{ width: `${Math.min(96, Math.max(8, Math.round((succeededShots / totalShots) * 100)))}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400">
+                      <span>Audio: {narrationOp?.status === "SUCCEEDED" ? "✓ -24 LUFS" : "Synthesizing"}</span>
+                      {blockedShots.length > 0 && (
+                        <span className="text-zinc-400 flex items-center gap-1">
+                          <Lock className="h-2.5 w-2.5" /> {blockedShots.length} locked for continuity
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Failed Alert (if any) */}
+                  {failedOps.length > 0 && (
+                    <div className="rounded-lg bg-rose-950/50 border border-rose-500/40 p-2 text-[10px] font-mono text-rose-300 space-y-0.5">
+                      <div className="font-bold flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3 text-rose-400" />
+                        Operation Needs Attention
+                      </div>
+                      <p className="text-rose-200/80 truncate">
+                        {failedOps[0]?.last_error || failedOps[0]?.lastError || "Diffusion retry bounded"}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Toggle Minute-by-Minute Telemetry Drawer */}
+                  <button
+                    type="button"
+                    onClick={() => setShowTelemetryDrawer((prev) => !prev)}
+                    className="w-full py-1 text-[10px] font-mono text-zinc-400 hover:text-white flex items-center justify-center gap-1 transition cursor-pointer"
+                  >
+                    <Terminal className="h-3 w-3" />
+                    <span>{showTelemetryDrawer ? "Hide Minute-over-Minute Telemetry" : "View Minute-over-Minute Telemetry Logs"}</span>
+                    <ChevronDown className={`h-3 w-3 transition-transform ${showTelemetryDrawer ? "rotate-180" : ""}`} />
+                  </button>
+
+                  {/* Scrollable Live Minute-by-Minute Terminal Window */}
+                  {showTelemetryDrawer && (
+                    <div className="rounded-lg bg-black/90 border border-zinc-800 p-2 font-mono text-[10px] space-y-1.5 max-h-40 overflow-y-auto">
+                      <div className="text-zinc-500 text-[9px] pb-1 border-b border-zinc-800 flex justify-between">
+                        <span>LIVE EVENT STREAM</span>
+                        <span>{liveOperations.length} OPERATIONS</span>
+                      </div>
+                      {liveOperations.length === 0 ? (
+                        <div className="text-zinc-500 py-1 text-center">Polling worker queue telemetry...</div>
+                      ) : (
+                        liveOperations.slice().map((op, idx) => {
+                          const kind = (op.operation_type || op.kind);
+                          const target = op.target_id || op.targetId || "";
+                          const status = op.status;
+                          const timeStr = op.updated_at || op.updatedAt ? new Date(op.updated_at || op.updatedAt).toLocaleTimeString() : "";
+                          const isPass = status === "SUCCEEDED";
+                          const isRun = status === "RUNNING";
+                          const isBlock = status === "BLOCKED";
+                          const isFail = status === "FAILED";
+
+                          return (
+                            <div key={op.id || idx} className="flex items-start gap-1.5">
+                              <span className="text-zinc-500 shrink-0">[{timeStr || "00:00:00"}]</span>
+                              <span className={`px-1 py-0.2 rounded text-[9px] font-bold shrink-0 ${
+                                isPass ? "bg-emerald-500/20 text-emerald-300" :
+                                isRun ? "bg-amber-500/20 text-amber-300 animate-pulse" :
+                                isBlock ? "bg-zinc-800 text-zinc-400" :
+                                isFail ? "bg-rose-500/20 text-rose-300" : "bg-zinc-800 text-zinc-300"
+                              }`}>
+                                {status}
+                              </span>
+                              <span className="text-zinc-300 truncate">
+                                {kind === "NARRATION" ? "DeepMind Voice & Foley (-24 LUFS)" :
+                                 kind === "ROUGH_CUT" ? "SMPTE 24fps Rough Cut Stitch" :
+                                 `${target || "Shot"}: Veo 3.1 4K DCI Diffusion`}
+                              </span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Ready / Idle Action: Big Generate Button */
+                <button
+                  id="dossier-start-generation-btn"
+                  type="button"
+                  disabled={isGeneratingReel || isGenerating}
+                  onClick={handleStartReelGeneration}
+                  className="w-full py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 text-slate-950 font-black text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/30 hover:scale-[1.01] active:scale-[0.99] transition cursor-pointer disabled:opacity-75"
+                  title="Synthesize all 11 phases and generate the 4K reel"
+                >
+                  <Play className="h-4 w-4 fill-current" />
+                  <span>{currentScene?.video ? "Re-Generate 4K Reel (All 11 Phases)" : "Start Reel Generation (All 11 Phases)"}</span>
+                </button>
+              )}
+
+              {/* Directorial Chat / Prompt Revision Input */}
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -1987,7 +2217,7 @@ export function OmniMultiPhaseStudio() {
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Direct Omni: Type prompt to generate anything..."
+                  placeholder="Direct Omni: Type prompt to generate new scene..."
                   className="flex-1 rounded-xl bg-black/70 border border-zinc-700/80 px-3 py-2 text-xs text-white placeholder-zinc-500 focus:border-emerald-400 focus:outline-none font-sans"
                 />
                 <button
@@ -1997,11 +2227,7 @@ export function OmniMultiPhaseStudio() {
                   className="rounded-xl bg-emerald-400 hover:bg-emerald-300 disabled:opacity-50 text-slate-950 p-2 transition cursor-pointer shrink-0"
                   title="Direct Omni"
                 >
-                  {isGenerating ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Send className="h-3.5 w-3.5" />
-                  )}
+                  <Send className="h-3.5 w-3.5" />
                 </button>
               </form>
             </div>
