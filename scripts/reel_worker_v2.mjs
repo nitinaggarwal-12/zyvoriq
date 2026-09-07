@@ -1490,6 +1490,7 @@ function sanitizePromptForVeo(prompt) {
     { pattern: /\b(?:Leonardo\s*DiCaprio)\b/gi, replacement: "an intense, expressive dramatic leading man" },
     { pattern: /\b(?:Zendaya)\b/gi, replacement: "a stylish, striking modern leading lady" },
     { pattern: /\b(?:Timothee\s*Chalamet|Timothée\s*Chalamet)\b/gi, replacement: "a slender, expressive brooding leading man" },
+  ];
   for (const { pattern, replacement } of celebrityMap) {
     clean = clean.replace(pattern, replacement);
   }
