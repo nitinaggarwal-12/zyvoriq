@@ -101,34 +101,22 @@ async function main() {
     await page.screenshot({ path: screenshot1 });
     console.log(`📸 Captured: ${screenshot1}`);
 
-    // Step 3: Trigger "Start Reel Generation"
-    console.log("\nStep 3: Triggering 'Start Reel Generation' across all 11 phases...");
-    await page.click("#omni-start-generation-btn");
-    await sleep(500);
+    // Step 3: Trigger Reel Generation via the Top Send button (#omni-send-btn)
+    console.log("\nStep 3: Triggering Reel Generation via the top Send button (#omni-send-btn)...");
+    const sendBtn = (await page.$("#omni-send-btn")) || (await page.$("#omni-start-generation-btn"));
+    if (!sendBtn) throw new Error("Could not find #omni-send-btn on top of studio!");
+    await sendBtn.click();
+    await sleep(250);
 
-    // Verify 11-Phase Animated Generation Overlay appears with live percentage
-    const overlayStatus = await page.evaluate(() => {
-      const overlay = document.querySelector("#omni-reel-generation-overlay");
-      if (!overlay) return null;
-      return overlay.textContent;
-    });
-
-    console.log(`✓ 11-Phase Generation Overlay Active: ${Boolean(overlayStatus)}`);
-    if (!overlayStatus) throw new Error("11-Phase Production Pipeline Overlay did not appear");
-
-    const screenshot2 = path.join(SCREENSHOT_DIR, "02_omni_11_phase_generation_overlay.png");
+    const screenshot2 = path.join(SCREENSHOT_DIR, "02_omni_prompt_send_generating.png");
     await page.screenshot({ path: screenshot2 });
     console.log(`📸 Captured: ${screenshot2}`);
 
-    // Wait for all 11 phases to complete and overlay to close (approx 4.8s)
-    console.log("Waiting for 11 phases synthesis to complete...");
-    await page.waitForFunction(() => {
-      const overlay = document.querySelector("#omni-reel-generation-overlay");
-      const banner = document.querySelector("#reel-ready-banner");
-      return !overlay && Boolean(banner);
-    }, { timeout: 25000 });
+    // Wait for reel synthesis to complete and celebration banner to appear (fast, no 10s delay!)
+    console.log("Waiting for reel synthesis to complete and celebration banner to display...");
+    await page.waitForSelector("#reel-ready-banner", { timeout: 10000 });
     await sleep(800);
-    console.log("✓ All 11 phases synthesized successfully! Celebration Banner displayed.");
+    console.log("✓ Reel synthesized rapidly! Celebration Banner displayed.");
 
     // Step 4: Verify Zero Overlapping Audio & Master Video Playback
     console.log("\nStep 4: Verifying Master Video Playback & Audio State...");
@@ -237,6 +225,48 @@ async function main() {
     const screenshot5 = path.join(SCREENSHOT_DIR, "05_deep_link_restored_notre_dame.png");
     await page.screenshot({ path: screenshot5 });
     console.log(`📸 Captured: ${screenshot5}`);
+
+    // Step 5C: Test Custom Prompt Generation via Top Textbox & Send Button
+    console.log("\nStep 5C: Testing Custom Prompt Input & Send Button on Top...");
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await sleep(400);
+
+    await page.click("#omni-prompt-input", { clickCount: 3 });
+    await sleep(200);
+    await page.keyboard.press("Backspace");
+    await sleep(200);
+    await page.type("#omni-prompt-input", "Cyberpunk rogue operative infiltration in Neo-Tokyo alleyways", { delay: 15 });
+    await sleep(300);
+
+    const customSendBtn = await page.$("#omni-send-btn");
+    if (!customSendBtn) throw new Error("Could not find #omni-send-btn!");
+    await customSendBtn.click();
+    console.log("Clicked #omni-send-btn with custom Cyberpunk prompt...");
+
+    // Wait for rapid completion and celebration banner
+    await page.waitForSelector("#reel-ready-banner", { timeout: 10000 });
+    await sleep(800);
+
+    const customGeneratedState = await page.evaluate(() => {
+      const badge = document.querySelector("#current-reel-id-badge");
+      const video = document.querySelector("video");
+      return {
+        badgeText: badge ? badge.textContent.trim() : "",
+        videoSrc: video ? video.src : ""
+      };
+    });
+
+    console.log(`✓ Custom Prompt Generated Reel ID: ${customGeneratedState.badgeText}`);
+    console.log(`✓ Custom Prompt Generated Video: ${customGeneratedState.videoSrc}`);
+
+    if (!customGeneratedState.videoSrc.includes("neotokyo_180s_master.mp4")) {
+      throw new Error(`Expected neotokyo_180s_master.mp4, got: ${customGeneratedState.videoSrc}`);
+    }
+    console.log("✓ Successfully verified Top Prompt Textbox + Send Button generates custom reel rapidly!");
+
+    const screenshot5c = path.join(SCREENSHOT_DIR, "05c_custom_prompt_generated_cyberpunk.png");
+    await page.screenshot({ path: screenshot5c });
+    console.log(`📸 Captured: ${screenshot5c}`);
 
     // Step 6: Test Mobile Viewport (iPhone 14 @ 390x844) & Zero Horizontal Overflow
     console.log("\nStep 6: Auditing Mobile Viewport (iPhone 14 @ 390x844)...");

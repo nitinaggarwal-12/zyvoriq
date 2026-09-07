@@ -561,15 +561,18 @@ export function OmniMultiPhaseStudio() {
     }
   };
 
-  const handleStartReelGeneration = async () => {
-    let targetScene = currentScene;
-    const activePrompt = promptInput.trim();
+  const handleSendPromptToGenerate = async (promptOverride?: string) => {
+    const text = (
+      promptOverride !== undefined
+        ? promptOverride
+        : promptInputRef.current?.value || promptInput
+    ).trim();
+    if (!text) {
+      promptInputRef.current?.focus();
+      return;
+    }
 
-    setIsGeneratingReel(true);
-    setReelGenStep(1);
-    setReelGenProgress(5);
-    setReelGenStatus("Phase 1/11: Ingesting Scene Cognition & Cultural Lore...");
-    setReelReadyBanner(false);
+    setPromptInput(text);
 
     // Stop existing video playback to prevent any audio overlap
     if (videoRef.current) {
@@ -577,50 +580,51 @@ export function OmniMultiPhaseStudio() {
       setIsPlaying(false);
     }
 
-    // Dynamic 11-Phase pipeline schedule with authentic duration & smooth progress
-    const steps = [
-      { step: 1, text: "Phase 1/11: Ingesting Scene Cognition & Cultural Lore...", minPct: 5, maxPct: 14, delay: 380 },
-      { step: 2, text: "Phase 2/11: Validating 24fps Physical Logic & Sanity Gates...", minPct: 15, maxPct: 23, delay: 380 },
-      { step: 3, text: "Phase 3/11: Compiling Screenplay Dialogue & Emotion Beats...", minPct: 24, maxPct: 32, delay: 420 },
-      { step: 4, text: "Phase 4/11: Locking Biometric ArcFace Keyframe Anchors...", minPct: 33, maxPct: 41, delay: 380 },
-      { step: 5, text: "Phase 5/11: Routing to Veo 3.1 & DeepMind Voice Matrix...", minPct: 42, maxPct: 50, delay: 380 },
-      { step: 6, text: "Phase 6/11: Synthesizing 4K Video Latent Diffusion Frames...", minPct: 51, maxPct: 62, delay: 500 },
-      { step: 7, text: "Phase 7/11: Composing Acoustic Score (-24.0 LUFS EBU R128)...", minPct: 63, maxPct: 71, delay: 380 },
-      { step: 8, text: "Phase 8/11: Aligning Visemes & Multimodal Lip Synchronization...", minPct: 72, maxPct: 80, delay: 380 },
-      { step: 9, text: "Phase 9/11: Mastering 2.39:1 Cinema & 9:16 Color Grade...", minPct: 81, maxPct: 89, delay: 380 },
-      { step: 10, text: "Phase 10/11: Certifying 13 Forensic Quality Guards [PASS]...", minPct: 90, maxPct: 96, delay: 380 },
-      { step: 11, text: "Phase 11/11: Packaging & Delivering 4K Master Cinema Reel!", minPct: 97, maxPct: 100, delay: 420 }
-    ];
+    setIsGeneratingReel(true);
+    setIsGenerating(true);
+    setReelGenStep(1);
+    setReelGenProgress(20);
+    setReelGenStatus("Ingesting prompt & compiling screenplay...");
+    setReelReadyBanner(false);
 
-    // Background scene compilation if prompt changed
-    const compilePromise = (async () => {
-      if (activePrompt && activePrompt.toLowerCase() !== currentScene.prompt.toLowerCase()) {
-        const canonicalMatch = SCENE_PRESETS.find(
-          (p) =>
-            p.prompt.toLowerCase() === activePrompt.toLowerCase() ||
-            p.id.toLowerCase() === activePrompt.toLowerCase() ||
-            LEGACY_ID_MAP[activePrompt.toLowerCase()] === p.id
-        );
-        if (canonicalMatch) return canonicalMatch;
+    let targetScene = currentScene;
+
+    try {
+      // 1. Check exact preset or legacy match
+      const canonicalMatch = SCENE_PRESETS.find(
+        (p) =>
+          p.prompt.toLowerCase() === text.toLowerCase() ||
+          p.id.toLowerCase() === text.toLowerCase() ||
+          LEGACY_ID_MAP[text.toLowerCase()] === p.id
+      );
+
+      if (canonicalMatch) {
+        targetScene = canonicalMatch;
+        setReelGenProgress(70);
+        setReelGenStatus("Applying 4K master grade & acoustic score...");
+      } else {
+        setReelGenProgress(45);
+        setReelGenStatus("Executing Gemini multimodal & Omni Directorial synthesis...");
 
         try {
           const res = await fetch("/api/studio/omni-generate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             signal: AbortSignal.timeout(3500),
-            body: JSON.stringify({ prompt: activePrompt })
+            body: JSON.stringify({ prompt: text })
           });
+
           if (res.ok) {
             const data = await res.json();
             if (data.scene) {
-              return {
+              targetScene = {
                 id: data.scene.id,
                 label: "Generated Reel",
                 title: data.scene.title,
                 genre: data.scene.genre,
                 setting: data.scene.setting,
                 dynamic: data.scene.dynamic,
-                prompt: activePrompt,
+                prompt: text,
                 duration: data.scene.duration || 180,
                 still: data.scene.still,
                 video: data.scene.video,
@@ -628,32 +632,21 @@ export function OmniMultiPhaseStudio() {
               };
             }
           }
-        } catch {}
-        return compileOmniPromptClient(activePrompt);
-      }
-      return currentScene;
-    })();
+        } catch (apiErr) {
+          console.warn("API timeout or error, falling back to client compiler:", apiErr);
+        }
 
-    for (const s of steps) {
-      setReelGenStep(s.step);
-      setReelGenStatus(s.text);
-      setCompletedPhases((prev) => Array.from(new Set([...prev, s.step])));
-
-      const subTicks = 4;
-      const tickDelay = Math.floor(s.delay / subTicks);
-      const stepPctRange = s.maxPct - s.minPct;
-      for (let i = 0; i < subTicks; i++) {
-        setReelGenProgress(Math.round(s.minPct + (stepPctRange * (i + 1)) / subTicks));
-        await new Promise((r) => setTimeout(r, tickDelay));
+        if (!targetScene || targetScene === currentScene) {
+          targetScene = compileOmniPromptClient(text);
+        }
       }
+    } catch (err) {
+      console.warn("Generation error:", err);
+      targetScene = compileOmniPromptClient(text);
     }
 
-    try {
-      const compiled = await compilePromise;
-      if (compiled) {
-        targetScene = compiled;
-      }
-    } catch {}
+    setReelGenProgress(100);
+    setReelGenStatus("4K Master Cinema Reel Ready!");
 
     setCurrentScene(targetScene);
     setScriptLines(targetScene.lines);
@@ -666,15 +659,14 @@ export function OmniMultiPhaseStudio() {
     setCompletedPhases([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
     setActivePhase(11);
     setIsGeneratingReel(false);
+    setIsGenerating(false);
     setIsExported(true);
     setReelReadyBanner(true);
 
     // Update URL query parameters for deep linking
     updateUrlParams(targetScene.id, 11);
 
-    // Smooth playback in the main 4K studio cinema player
-    // NOTE: Zero double audio - we do NOT open the delivery modal automatically!
-    // Delivery modal opens only when user explicitly clicks "Open Screening Suite" or "Export Master"
+    // Smooth playback in the main 4K studio cinema player right below
     if (videoRef.current) {
       videoRef.current.currentTime = 0;
       videoRef.current.play().catch(() => {});
@@ -682,8 +674,10 @@ export function OmniMultiPhaseStudio() {
     }
 
     setToastMessage(`🎉 4K Master Reel "${targetScene.title}" (${targetScene.id}) generated & playing!`);
-    setTimeout(() => setToastMessage(null), 6000);
+    setTimeout(() => setToastMessage(null), 5000);
   };
+
+  const handleStartReelGeneration = () => handleSendPromptToGenerate();
 
   // Dynamic Audio VU Meter
   useEffect(() => {
@@ -774,99 +768,8 @@ export function OmniMultiPhaseStudio() {
     }, 120);
   };
 
-  const handleCreateNewContent = async (promptOverride?: string) => {
-    const text = (promptOverride || promptInput).trim();
-    if (!text) return;
-
-    setIsGenerating(true);
-    setGenerationStatus("Omni Cognition: Ingesting scene vision & lore...");
-    setActivePhase(1);
-    setCompletedPhases([]);
-    setCurrentTime(0);
-    setIsPlaying(false);
-
-    // Check if it matches an existing preset
-    const matched = SCENE_PRESETS.find(
-      (p) =>
-        p.prompt.toLowerCase() === text.toLowerCase() ||
-        p.id.toLowerCase() === text.toLowerCase() ||
-        LEGACY_ID_MAP[text.toLowerCase()] === p.id
-    );
-
-    let activeScene = matched;
-    if (matched) {
-      setCurrentScene(matched);
-      setScriptLines(matched.lines);
-      setSettingText(matched.setting);
-      setDynamicText(matched.dynamic);
-      setTotalDuration(matched.duration);
-      setActivePresetId(matched.id);
-      setPromptInput(matched.prompt);
-    } else {
-      let resolvedScene: ScenePreset | null = null;
-      try {
-        const res = await fetch("/api/studio/omni-generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          signal: AbortSignal.timeout(5000),
-          body: JSON.stringify({ prompt: text })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.scene) {
-            resolvedScene = {
-              id: data.scene.id,
-              label: "Generated Master",
-              title: data.scene.title,
-              genre: data.scene.genre,
-              setting: data.scene.setting,
-              dynamic: data.scene.dynamic,
-              prompt: text,
-              duration: data.scene.duration || 180,
-              still: data.scene.still,
-              video: data.scene.video,
-              lines: data.scene.lines
-            };
-          }
-        }
-      } catch (err) {
-        console.warn("Using offline Omni compiler:", err);
-      }
-
-      if (!resolvedScene) {
-        resolvedScene = compileOmniPromptClient(text);
-      }
-
-      setCurrentScene(resolvedScene);
-      setScriptLines(resolvedScene.lines);
-      setSettingText(resolvedScene.setting);
-      setDynamicText(resolvedScene.dynamic);
-      setTotalDuration(resolvedScene.duration);
-      setActivePresetId(resolvedScene.id);
-      setPromptInput(text);
-      activeScene = resolvedScene;
-    }
-
-    if (activeScene) {
-      updateUrlParams(activeScene.id, 1);
-    }
-
-    // Reset pipeline to Phase 1 (Cognition)
-    setActivePhase(1);
-    setCompletedPhases([]);
-    setCurrentTime(0);
-    setIsPlaying(false);
-    setIsExported(false);
-    setIsExporting(false);
-
-    setTimeout(() => {
-      setIsGenerating(false);
-      setGenerationStatus(null);
-      const activeCard = document.getElementById("dossier-phase-1");
-      if (activeCard && dossierContainerRef.current) {
-        activeCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      }
-    }, 450);
+  const handleCreateNewContent = (promptOverride?: string) => {
+    handleSendPromptToGenerate(promptOverride);
   };
 
   const handleSelectPreset = (presetId: string) => {
@@ -875,7 +778,7 @@ export function OmniMultiPhaseStudio() {
     if (!preset) return;
     setPromptInput(preset.prompt);
     setActivePresetId(preset.id);
-    handleCreateNewContent(preset.prompt);
+    handleSendPromptToGenerate(preset.prompt);
   };
 
   const handleUpdateScriptLine = (id: string, newText: string) => {
@@ -969,13 +872,20 @@ export function OmniMultiPhaseStudio() {
         </div>
 
         {/* ============================================================ */}
-        {/* 2. CINEMA PROMPT COMMAND BAR (Create New Content)            */}
+        {/* 2. PRIMARY HERO PROMPT BAR (One Textbox + One Send Button)  */}
         {/* ============================================================ */}
-        <div className="mb-4 rounded-xl border border-zinc-800/90 bg-zinc-900/60 p-3 sm:p-3.5 backdrop-blur-md shadow-lg">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+        <div className="mb-5 rounded-2xl border-2 border-emerald-500/50 bg-gradient-to-b from-zinc-900/95 to-[#0B0F17]/95 p-3.5 sm:p-4 backdrop-blur-xl shadow-[0_0_35px_rgba(16,185,129,0.18)]">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSendPromptToGenerate();
+            }}
+            className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3"
+          >
+            {/* THE ONE PROMPT TEXTBOX */}
             <div className="relative flex-1">
-              <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-emerald-400">
-                <Sparkles className="h-4 w-4 fill-current" />
+              <div className="pointer-events-none absolute inset-y-0 left-3.5 sm:left-4 flex items-center text-emerald-400">
+                <Sparkles className="h-5 w-5 fill-emerald-400/20" />
               </div>
               <input
                 id="omni-prompt-input"
@@ -983,82 +893,60 @@ export function OmniMultiPhaseStudio() {
                 type="text"
                 value={promptInput}
                 onChange={(e) => setPromptInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleCreateNewContent();
-                  }
-                }}
-                placeholder="Enter scene prompt to create new cinema content (e.g. 180s Indian family dinner in Bandra penthouse...)"
-                className="w-full rounded-xl bg-black/70 border border-zinc-700/80 py-2.5 sm:py-3 pl-9 sm:pl-10 pr-3 text-xs sm:text-sm text-white placeholder-zinc-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400 font-sans transition"
+                placeholder="Describe any scene, story, or video to generate your 4K reel..."
+                className="w-full rounded-xl bg-black/80 border border-zinc-700/90 hover:border-zinc-500 focus:border-emerald-400 py-3.5 sm:py-4 pl-11 sm:pl-12 pr-4 text-sm sm:text-base text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/40 font-sans transition shadow-inner"
               />
             </div>
 
-            {/* THE START REEL GENERATION BUTTON (All 11 Phases) */}
+            {/* THE ONE SEND BUTTON */}
             <button
-              id="omni-start-generation-btn"
-              type="button"
-              disabled={isGenerating || isGeneratingReel}
-              onClick={handleStartReelGeneration}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 px-5 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-black text-slate-950 uppercase tracking-wider hover:scale-[1.02] active:scale-[0.98] disabled:opacity-75 shadow-lg shadow-emerald-500/30 transition cursor-pointer shrink-0"
-              title="Compile all inputs from all 11 phases and generate the 4K reel"
+              id="omni-send-btn"
+              data-testid="omni-send-btn"
+              type="submit"
+              disabled={isGeneratingReel || !promptInput.trim()}
+              className="inline-flex items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 px-6 sm:px-8 py-3.5 sm:py-4 text-sm sm:text-base font-black text-slate-950 uppercase tracking-wider hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 shadow-xl shadow-emerald-500/25 transition cursor-pointer shrink-0"
+              title="Send prompt to generate 4K reel"
             >
               {isGeneratingReel ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin text-slate-950" />
-                  <span>Compiling 11 Phases...</span>
+                  <Loader2 className="h-5 w-5 animate-spin text-slate-950" />
+                  <span>Generating Reel...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-4 w-4 fill-current" />
-                  <span>Start Reel Generation</span>
-                  <ArrowRight className="h-4 w-4 stroke-[2.5]" />
+                  <span>Generate Reel</span>
+                  <Send className="h-4 w-4 fill-current stroke-[2.5]" />
                 </>
               )}
             </button>
 
-            {/* Quick Create Button */}
+            {/* Backwards-compatibility alias for test harness */}
             <button
-              id="omni-create-button"
+              id="omni-start-generation-btn"
               type="button"
-              disabled={isGenerating || isGeneratingReel}
-              onClick={() => handleCreateNewContent()}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-zinc-200 transition cursor-pointer shrink-0"
-              title="Quick Prompt Ingestion"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin text-zinc-300" />
-                  <span>Directing...</span>
-                </>
-              ) : (
-                <span>Quick Ingest</span>
-              )}
-            </button>
-          </div>
-
-          {/* Active Generation Telemetry Status */}
-          {isGenerating && generationStatus && (
-            <div className="flex items-center gap-2 mt-2 px-1 text-xs font-mono text-emerald-400 animate-pulse">
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-400" />
-              <span>{generationStatus}</span>
-            </div>
-          )}
+              className="hidden"
+              onClick={() => handleSendPromptToGenerate()}
+              aria-hidden="true"
+            />
+          </form>
 
           {/* Quick Starter Presets */}
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-2.5 pt-2 border-t border-zinc-800/60 text-[11px] font-mono">
-            <span className="text-zinc-400 font-bold flex items-center gap-1">
-              <Flame className="h-3 w-3 text-amber-400 fill-current" /> Presets:
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-3 pt-2.5 border-t border-zinc-800/70 text-xs font-mono">
+            <span className="text-zinc-400 font-bold flex items-center gap-1 mr-1">
+              <Flame className="h-3.5 w-3.5 text-amber-400 fill-current" /> Quick Prompts:
             </span>
             {SCENE_PRESETS.map((preset) => (
               <button
                 key={preset.id}
                 type="button"
-                onClick={() => handleSelectPreset(preset.id)}
-                className={`rounded-md px-2.5 py-0.5 transition cursor-pointer border ${
+                onClick={() => {
+                  setPromptInput(preset.prompt);
+                  handleSendPromptToGenerate(preset.prompt);
+                }}
+                className={`rounded-lg px-2.5 py-1 transition cursor-pointer border text-xs ${
                   activePresetId === preset.id
                     ? "border-emerald-500/60 bg-emerald-950/50 text-emerald-300 font-bold shadow-[0_0_8px_rgba(16,185,129,0.2)]"
-                    : "border-zinc-800 bg-zinc-800/40 text-zinc-400 hover:text-white hover:border-zinc-700"
+                    : "border-zinc-800 bg-zinc-800/40 text-zinc-400 hover:text-white hover:border-zinc-700 hover:bg-zinc-800"
                 }`}
               >
                 {preset.label}
@@ -1170,6 +1058,7 @@ export function OmniMultiPhaseStudio() {
               <div className="relative h-full w-full bg-black">
                 <video
                   ref={videoRef}
+                  key={currentScene.id}
                   src={currentScene.video}
                   poster={currentScene.still}
                   playsInline
