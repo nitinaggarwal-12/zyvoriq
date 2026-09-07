@@ -74,7 +74,7 @@ const CANONICAL_PRESETS: Record<string, OmniGeneratedScene> = {
       { name: "Narration Alignment", status: "PASS", detail: "Narration alignment verified with master clock" },
       { name: "Identity Continuity", status: "PASS", detail: "Character identity verified across shot transitions" },
       { name: "Timeline Synchronization", status: "PASS", detail: "Timeline synchronization locked" },
-      { name: "Guard 4: C2PA Cryptographic Provenance", status: "PASS", detail: "Ed25519 signature sealed into MP4 container metadata" }
+      { name: "C2PA & SynthID Platform Safety", status: "PASS", detail: "Labeled as AI, so platforms won't penalize you" }
     ]
   }
 };

@@ -91,13 +91,13 @@ const KNOWLEDGE_BASE: Record<string, { answer: string; quickActions?: { label: s
     ]
   },
   book_studio: {
-    answer: "📚 **Omni Cinema & Narrative Architecture:**\n\n• **5-Act Screenplays:** 30 camera plates conforming to cinematic standards.\n• **C2PA Cryptographic Provenance:** Tamper-proof metadata embedded into every master export.\n• **Zero Prompts Wasted:** Directorial pre-flight preparation prevents hallucinations and character drift.",
+    answer: "📚 **Omni Cinema & Narrative Architecture:**\n\n• **5-Act Screenplays:** 30 camera plates conforming to cinematic standards.\n• **C2PA & SynthID Platform Safety:** Labeled as AI so platforms won't penalize your reach.\n• **Zero Prompts Wasted:** Directorial pre-flight preparation prevents hallucinations and character drift.",
     quickActions: [
       { label: "View Architecture", action: "link:/#architecture" }
     ]
   },
   monetization: {
-    answer: "💰 **Monetization & Anti-Demonetization Armor:**\n\n• **100% Original Audio Stems:** Zero copyrighted music flags by utilizing procedural AI acoustic scores.\n• **C2PA Cryptographic Signatures:** Every video includes Ed25519 tamper-proof provenance, satisfying TikTok and YouTube AI disclosure rules.\n• **Ad-Friendly Scoring:** Real-time policy guard ensures zero advertiser blacklisted phrases.",
+    answer: "💰 **Monetization & Anti-Demonetization Armor:**\n\n• **100% Original Audio Stems:** Zero copyrighted music flags by utilizing procedural AI acoustic scores.\n• **C2PA & SynthID AI Disclosure:** Every video is labeled as AI, satisfying TikTok and YouTube AI disclosure rules without shadowbans.\n• **Ad-Friendly Scoring:** Real-time policy guard ensures zero advertiser blacklisted phrases.",
     quickActions: [
       { label: "View Terms & Policies", action: "link:/terms" },
       { label: "Verify Age & Identity", action: "link:/governance/verify" }
@@ -494,7 +494,7 @@ export function LiveSupportConcierge() {
         const aiMsg: Message = {
           id: `msg_ai_${Date.now()}`,
           sender: "ai",
-          text: "🛡️ **C2PA Provenance & Cryptographic Transparency**\n\nAll synthetic media generated via Zyvoriq embeds immutable cryptographic C2PA metadata and SynthID digital watermarks with zero biometric storage.\n\nClick below to review our Terms & Compliance policies:",
+          text: "🛡️ **C2PA & SynthID Platform Safety**\n\nAll synthetic media generated via Zyvoriq embeds verified C2PA metadata and SynthID digital watermarks, labeled as AI so platforms won't penalize your reach.\n\nClick below to review our Terms & Compliance policies:",
           quickActions: [
             { label: "View Terms & Compliance", action: "link:/terms" }
           ],

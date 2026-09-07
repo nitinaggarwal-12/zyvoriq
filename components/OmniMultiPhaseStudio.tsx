@@ -535,7 +535,7 @@ export function OmniMultiPhaseStudio() {
 
     await new Promise((r) => setTimeout(r, 350));
     setExportProgress(85);
-    setExportStatusText("Injecting C2PA v2.1 Cryptographic Provenance...");
+    setExportStatusText("Injecting C2PA v2.1 Platform Safety Disclosure...");
 
     await new Promise((r) => setTimeout(r, 350));
     setExportProgress(100);

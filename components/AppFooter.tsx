@@ -86,13 +86,13 @@ export function AppFooter() {
             </h4>
             <ul className="space-y-2">
               <li>
-                <a href="/#architecture" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-teal-400" /> Automated Studio Quality Gatekeeper
+                <a href="/#showcase" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-teal-400" /> Automated Scene Quality Guard
                 </a>
               </li>
               <li>
-                <a href="/#architecture" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-emerald-400" /> C2PA Cryptographic Provenance
+                <a href="/#showcase" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-emerald-400" /> C2PA &amp; SynthID Platform Safety
                 </a>
               </li>
               <li>

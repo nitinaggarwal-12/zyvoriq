@@ -47,7 +47,7 @@ export function WaitlistCTA() {
                 Watch 180s Napoleon Master
               </a>
               <p className="text-center text-[11px] leading-relaxed text-slate-500 font-mono">
-                C2PA Cryptographic Provenance · Normalized Audio
+                C2PA &amp; SynthID Platform Safety · Normalized Audio
               </p>
             </div>
           </div>
