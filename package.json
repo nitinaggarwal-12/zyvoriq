@@ -14,7 +14,7 @@
     "guard:viseme": "node scripts/guards/gate_viseme_phoneme_lipsync_presence.mjs --self-test",
     "guard:onset": "node scripts/guards/gate_speech_visual_onset_sync.mjs --self-test",
     "guard:velocity": "node scripts/guards/gate_motion_velocity_cadence.mjs --self-test",
-    "guard:certify": "node scripts/guards/certify_titanic_masters.mjs",
+    "guard:certify": "node scripts/guards/certify_napoleon_romance.mjs",
     "guard:conclave": "node scripts/guards/certify_conclave_act1.mjs",
     "guard:deterministic": "npm run guard:scope && npm run guard:mocks && npm run guard:audio && npm run guard:video && npm run guard:capabilities && npm run guard:bleed && npm run guard:script && npm run guard:viseme && npm run guard:onset && npm run guard:velocity && npm run guard:certify && npm run guard:conclave",
     "guard:legacy": "node scripts/governance/legacy_tech_guard.js",

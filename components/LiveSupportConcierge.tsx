@@ -78,7 +78,7 @@ const DEFAULT_INITIAL_MESSAGE: Message = {
 
 const KNOWLEDGE_BASE: Record<string, { answer: string; quickActions?: { label: string; action: string }[] }> = {
   onboarding: {
-    answer: "🚀 **Welcome to Zyvoriq! Here is how to direct your first cinema master in 3 steps:**\n\n1. **Enter a Prompt or Pick a Preset:** Select from Napoleon Historical, Joséphine Coronation, Titanic, or Neo-Tokyo.\n2. **Google Omni Pre-Flight Compilation:** Omni grounds the lore, locks character facial DNA, plans the lens optics, and composes -24 LUFS orchestral scores.\n3. **Click 'Generate 4K Video':** Synthesizes and autoplays your cinema cut directly in the console!",
+    answer: "🚀 **Welcome to Zyvoriq! Here is how to direct your first cinema master in 3 steps:**\n\n1. **Enter a Prompt or Pick a Preset:** Select Napoleon 180s Master or enter your own custom scene vision.\n2. **Google Omni Pre-Flight Compilation:** Omni grounds the lore, locks character facial DNA, plans the lens optics, and composes -24 LUFS orchestral scores.\n3. **Click 'Generate 4K Video':** Synthesizes and autoplays your cinema cut directly in the console!",
     quickActions: [
       { label: "Launch Omni Director", action: "link:/#hero-director" },
       { label: "Watch 180s Master", action: "link:/#master-showcase" }

@@ -43,7 +43,7 @@ const ACTS: ActPreview[] = [
     timeRange: "01:12 - 01:48",
     description: "Finckenstein Palace snowbound romance amidst the grueling winter campaigns of 1807.",
     character: "Countess Marie Walewska",
-    stillUrl: "/assets/stills/titanic_hero.jpg",
+    stillUrl: "/assets/stills/napoleon_hero.png",
     videoTime: 72
   },
   {

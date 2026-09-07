@@ -37,144 +37,24 @@ export interface OmniGeneratedScene {
   }>;
 }
 
-// 5 Curated Canonical Showcases (Explicit preset selections only)
+// Single Canonical Showcase (Explicit preset selection only)
 const CANONICAL_PRESETS: Record<string, OmniGeneratedScene> = {
-  reel_mumbai_luxury_penthouse: {
-    id: "reel_mumbai_luxury_penthouse",
-    title: "Luxury Mumbai Penthouse Dinner",
-    genre: "Contemporary Luxury Drama",
-    setting: "High-Rise Penthouse, Bandra West, Mumbai",
-    dynamic: "Warm Sibling Banter & Family Revelations",
-    prompt: "A modern Indian family dinner in a high-rise Bandra penthouse overlooking Mumbai night skyline and Sea Link. Sibling banter, warm golden interior lighting, authentic Hinglish dialogue, 24fps cinematic realism.",
+  reel_napoleon_180s_master: {
+    id: "reel_napoleon_180s_master",
+    title: "Napoleon: The Emperor's Heart (180s Master)",
+    genre: "Historical Epic / Romance",
+    setting: "1795–1815 Revolutionary France to St. Helena",
+    dynamic: "5-Act Imperial Epic & Tragic Romance",
+    prompt: "Napoleon Bonaparte 180-second cinematic master film across five acts: Toulon artillery siege, Malmaison romance with Joséphine, Notre-Dame imperial coronation, Austerlitz winter victory, and St. Helena Atlantic exile. Authentic 24fps Cooke anamorphic cinematography with Beethoven Op. 92 symphonic score.",
     duration: 180,
-    still: "/assets/stills/mumbai_penthouse.jpg",
-    video: "/assets/video/mumbai_penthouse_180s_master.mp4",
-    videoStatus: "READY",
-    paletteTheme: "Golden Interior Amber, Sea Link Cyan & Warm Ivory",
-    lines: [
-      { id: "mb1", speaker: "RAJ", emotion: "smiling", timestamp: "00:04", text: "Bas karo, Shweta! Paneer khatam ho jayega!" },
-      { id: "mb2", speaker: "SHWETA", emotion: "laughing", timestamp: "00:08", text: "Rahul is eating it all while looking at Mumbai Sea Link!" },
-      { id: "mb3", speaker: "RAHUL", emotion: "feigning innocence", timestamp: "00:14", text: "Family dinner rule number one: first come, first served!" }
-    ],
-    toolRouting: {
-      video: "Veo 3.1 4K DCI (24fps SMPTE)",
-      director: "Gemini 2.5 Flash Sovereign Multimodal",
-      audio: "DeepMind Emotional Voice & Foley (-24.0 LUFS EBU R128)",
-      biometrics: "ArcFace 512-dim Biometric Talent Vault"
-    },
-    guards: [
-      { name: "Guard 1: SMPTE 24fps Cadence", status: "PASS", detail: "SMPTE timecode 00:00:00:00 verified with zero dropped frames" },
-      { name: "Guard 2: Biometric Facial Consistency", status: "PASS", detail: "ArcFace cosine distance >= 0.88 across all shot transitions" },
-      { name: "Guard 3: EBU R128 Audio Mix", status: "PASS", detail: "Integrated loudness locked at -24.0 LUFS (+/- 0.5 LU)" },
-      { name: "Guard 4: C2PA Cryptographic Provenance", status: "PASS", detail: "Ed25519 signature sealed into MP4 container metadata" }
-    ]
-  },
-  reel_marseille_waterfront: {
-    id: "reel_marseille_waterfront",
-    title: "1795 Marseille Waterfront",
-    genre: "Period Maritime Drama",
-    setting: "Old Port of Marseille, France (1795)",
-    dynamic: "Military Mobilization & Mediterranean Intrigue",
-    prompt: "Napoleon Bonaparte arriving at the bustling 1795 Marseille waterfront. Cobblestone docks, towering masted frigates, Mediterranean evening sun, authentic French period dialogue.",
-    duration: 30,
     still: "/assets/stills/napoleon_hero.png",
     video: "/assets/video/napoleon_180s_master.mp4",
     videoStatus: "READY",
-    paletteTheme: "Sunset Terracotta, Salt Water Navy & Rigging Wood",
+    paletteTheme: "Imperial Gold, Velvet Crimson & French Blue",
     lines: [
-      { id: "ms1", speaker: "NAPOLEON", emotion: "determined", timestamp: "00:04", text: "Nous devons réquisitionner les cargaisons de blé pour l'armée d'Italie avant minuit." },
-      { id: "ms2", speaker: "DÉSIRÉE", emotion: "melancholy", timestamp: "00:09", text: "La marée est traîtresse ce soir, Napoléon. Même les héros se noient dans ces eaux." },
-      { id: "ms3", speaker: "NAPOLEON", emotion: "fierce", timestamp: "00:15", text: "Le destin ne se noie pas dans le port de Marseille. Préparez la frégate." }
-    ],
-    toolRouting: {
-      video: "Veo 3.1 4K DCI (24fps SMPTE)",
-      director: "Gemini 2.5 Flash Sovereign Multimodal",
-      audio: "DeepMind Emotional Voice & Foley (-24.0 LUFS EBU R128)",
-      biometrics: "ArcFace 512-dim Biometric Talent Vault"
-    },
-    guards: [
-      { name: "Guard 1: SMPTE 24fps Cadence", status: "PASS", detail: "SMPTE timecode 00:00:00:00 verified with zero dropped frames" },
-      { name: "Guard 2: Biometric Facial Consistency", status: "PASS", detail: "ArcFace cosine distance >= 0.88 across all shot transitions" },
-      { name: "Guard 3: EBU R128 Audio Mix", status: "PASS", detail: "Integrated loudness locked at -24.0 LUFS (+/- 0.5 LU)" },
-      { name: "Guard 4: C2PA Cryptographic Provenance", status: "PASS", detail: "Ed25519 signature sealed into MP4 container metadata" }
-    ]
-  },
-  reel_notre_dame_coronation: {
-    id: "reel_notre_dame_coronation",
-    title: "1804 Notre-Dame Imperial Coronation",
-    genre: "Imperial Epic / Historical",
-    setting: "Cathedral of Notre-Dame, Paris (1804)",
-    dynamic: "Sacred Sovereignty & Imperial Destiny",
-    prompt: "Grand imperial coronation inside Notre-Dame Cathedral. Candlelight gleaming off gold-embroidered velvet cloaks, Gregorian choral resonance, solemn dramatic atmosphere.",
-    duration: 30,
-    still: "/assets/stills/coronation_hero.png",
-    video: "/assets/video/coronation_180s_master.mp4",
-    videoStatus: "READY",
-    paletteTheme: "Imperial Gold, Velvet Crimson & Candlelight",
-    lines: [
-      { id: "np1", speaker: "NAPOLEON", emotion: "commanding", timestamp: "00:05", text: "Dieu me l'a donnée, gare à qui la touche." },
-      { id: "np2", speaker: "JOSEPHINE", emotion: "reverent", timestamp: "00:10", text: "The crown of France rests upon your brow, mon empereur." },
-      { id: "np3", speaker: "NAPOLEON", emotion: "solemn", timestamp: "00:16", text: "Not just France, Josephine. History itself begins today." }
-    ],
-    toolRouting: {
-      video: "Veo 3.1 4K DCI (24fps SMPTE)",
-      director: "Gemini 2.5 Flash Sovereign Multimodal",
-      audio: "DeepMind Emotional Voice & Foley (-24.0 LUFS EBU R128)",
-      biometrics: "ArcFace 512-dim Biometric Talent Vault"
-    },
-    guards: [
-      { name: "Guard 1: SMPTE 24fps Cadence", status: "PASS", detail: "SMPTE timecode 00:00:00:00 verified with zero dropped frames" },
-      { name: "Guard 2: Biometric Facial Consistency", status: "PASS", detail: "ArcFace cosine distance >= 0.88 across all shot transitions" },
-      { name: "Guard 3: EBU R128 Audio Mix", status: "PASS", detail: "Integrated loudness locked at -24.0 LUFS (+/- 0.5 LU)" },
-      { name: "Guard 4: C2PA Cryptographic Provenance", status: "PASS", detail: "Ed25519 signature sealed into MP4 container metadata" }
-    ]
-  },
-  reel_titanic_marconi_cabin: {
-    id: "reel_titanic_marconi_cabin",
-    title: "1912 Titanic Marconi Cabin",
-    genre: "Historical Disaster / Drama",
-    setting: "Marconi Wireless Cabin, RMS Titanic (North Atlantic, 1912)",
-    dynamic: "Desperate Emergency SOS Under Rising Sea",
-    prompt: "April 14, 1912, midnight in the Marconi wireless cabin. Jack Phillips transmitting CQD and SOS distress signals under flickering tungsten bulbs as ocean water rises.",
-    duration: 30,
-    still: "/assets/stills/titanic_hero.jpg",
-    video: "/assets/video/titanic_180s_master.mp4",
-    videoStatus: "READY",
-    paletteTheme: "Tungsten Brass, Cold Atlantic Black & Sea Mist",
-    lines: [
-      { id: "tt1", speaker: "PHILLIPS", emotion: "urgent", timestamp: "00:04", text: "CQD CQD SOS from MGY. Struck iceberg, sinking rapidly by the head." },
-      { id: "tt2", speaker: "BRIDE", emotion: "focused", timestamp: "00:09", text: "Carpathia acknowledges! Captain Rostron says they're steaming full speed." },
-      { id: "tt3", speaker: "PHILLIPS", emotion: "solemn", timestamp: "00:15", text: "Keep pounding the brass key, Harold. Power won't last another ten minutes." }
-    ],
-    toolRouting: {
-      video: "Veo 3.1 4K DCI (24fps SMPTE)",
-      director: "Gemini 2.5 Flash Sovereign Multimodal",
-      audio: "DeepMind Emotional Voice & Foley (-24.0 LUFS EBU R128)",
-      biometrics: "ArcFace 512-dim Biometric Talent Vault"
-    },
-    guards: [
-      { name: "Guard 1: SMPTE 24fps Cadence", status: "PASS", detail: "SMPTE timecode 00:00:00:00 verified with zero dropped frames" },
-      { name: "Guard 2: Biometric Facial Consistency", status: "PASS", detail: "ArcFace cosine distance >= 0.88 across all shot transitions" },
-      { name: "Guard 3: EBU R128 Audio Mix", status: "PASS", detail: "Integrated loudness locked at -24.0 LUFS (+/- 0.5 LU)" },
-      { name: "Guard 4: C2PA Cryptographic Provenance", status: "PASS", detail: "Ed25519 signature sealed into MP4 container metadata" }
-    ]
-  },
-  reel_neotokyo_cyberpunk: {
-    id: "reel_neotokyo_cyberpunk",
-    title: "Neo-Tokyo Downpour (2088)",
-    genre: "Cyberpunk / Sci-Fi",
-    setting: "Shinjuku Sublevel 4, Neo-Tokyo (2088)",
-    dynamic: "High-Stakes Grid Infiltration & Drone Evasion",
-    prompt: "Cyberpunk neon alleyway in Shinjuku drenched in acid rain. Hover-cabs casting cyan reflections on chrome asphalt, atmospheric synthwave bassline.",
-    duration: 30,
-    still: "/assets/stills/neotokyo_hero.jpg",
-    video: "/assets/video/neotokyo_180s_master.mp4",
-    videoStatus: "READY",
-    paletteTheme: "Electric Cyan, Neon Magenta & Rain-Slick Chrome",
-    lines: [
-      { id: "cb1", speaker: "KENJI", emotion: "whispering", timestamp: "00:04", text: "The perimeter power grid went dark. We have twelve seconds before the drone sweep." },
-      { id: "cb2", speaker: "AI OPERATOR", emotion: "calm", timestamp: "00:09", text: "Thermal trace confirmed on the roof. Neural jammer active." },
-      { id: "cb3", speaker: "KENJI", emotion: "determined", timestamp: "00:15", text: "Initiate terminal uplink. No one leaves this alley empty-handed." }
+      { id: "np1", speaker: "NAPOLEON", emotion: "determined", timestamp: "00:08", text: "Nous devons réquisitionner les approvisionnements pour l'armée immédiatement." },
+      { id: "np2", speaker: "JOSÉPHINE", emotion: "reverent", timestamp: "00:45", text: "Pour toujours, mon empereur. Même les couronnes pâlissent devant l'amour." },
+      { id: "np3", speaker: "NAPOLEON", emotion: "solemn", timestamp: "02:40", text: "France, l'armée, Joséphine... le destin ne meurt jamais." }
     ],
     toolRouting: {
       video: "Veo 3.1 4K DCI (24fps SMPTE)",

@@ -59,151 +59,44 @@ export interface ScenePreset {
 }
 
 export const LEGACY_ID_MAP: Record<string, string> = {
-  mumbai_penthouse: "reel_mumbai_luxury_penthouse",
-  marseille: "reel_marseille_waterfront",
-  notre_dame: "reel_notre_dame_coronation",
-  titanic: "reel_titanic_marconi_cabin",
-  neotokyo: "reel_neotokyo_cyberpunk"
+  napoleon: "reel_napoleon_180s_master",
+  napoleon_romance: "reel_napoleon_180s_master",
+  napoleon_180s: "reel_napoleon_180s_master",
+  napoleon_master: "reel_napoleon_180s_master"
 };
 
 export const SCENE_PRESETS: ScenePreset[] = [
   {
-    id: "reel_mumbai_luxury_penthouse",
-    label: "Luxury Penthouse (180s)",
-    title: "Luxury Mumbai Penthouse",
-    setting: "Bandra Penthouse, Mumbai",
-    dynamic: "Sibling Household, Warm Dinner Banter",
-    prompt: "A modern Indian family dinner in a high-rise Bandra penthouse overlooking Mumbai night skyline and Sea Link. Sibling banter, warm golden interior lighting, authentic Hinglish dialogue, 24fps cinematic realism.",
+    id: "reel_napoleon_180s_master",
+    label: "Napoleon Master (180s)",
+    title: "Napoleon: The Emperor's Heart (180s Master)",
+    setting: "1795–1815 Revolutionary France to St. Helena",
+    dynamic: "5-Act Imperial Epic & Tragic Romance",
+    prompt: "Napoleon Bonaparte 180-second cinematic master film across five acts: Toulon artillery siege, Malmaison romance with Joséphine, Notre-Dame imperial coronation, Austerlitz winter victory, and St. Helena Atlantic exile. Authentic 24fps Cooke anamorphic cinematography with Beethoven Op. 92 symphonic score.",
     duration: 180,
-    still: "/assets/stills/mumbai_penthouse.jpg",
-    video: "/assets/video/mumbai_penthouse_180s_master.mp4",
-    lines: [
-      {
-        id: "l1",
-        speaker: "RAJ",
-        emotion: "smiling",
-        timestamp: "01:21",
-        text: "Bas karo, Shweta! Paneer khatam ho jayega!"
-      },
-      {
-        id: "l2",
-        speaker: "SHWETA",
-        emotion: "laughing",
-        timestamp: "01:25",
-        text: "Rahul is eating it all!"
-      },
-      {
-        id: "l3",
-        speaker: "RAHUL",
-        timestamp: "01:27",
-        text: "No way!"
-      }
-    ]
-  },
-  {
-    id: "reel_marseille_waterfront",
-    label: "Marseille Port (30s)",
-    title: "1795 Marseille Waterfront",
-    setting: "Marseille Port, France (1795)",
-    dynamic: "Historic Drama, Military Dispatch",
-    prompt: "Napoleon Bonaparte arriving at the bustling 1795 Marseille waterfront. Cobblestone docks, towering masted frigates, Mediterranean evening sun, authentic French period dialogue.",
-    duration: 30,
     still: "/assets/stills/napoleon_hero.png",
     video: "/assets/video/napoleon_180s_master.mp4",
     lines: [
       {
-        id: "m1",
+        id: "np1",
         speaker: "NAPOLEON",
         emotion: "determined",
-        timestamp: "00:04",
-        text: "Nous devons sécuriser les approvisionnements pour l'armée immédiatement."
-      },
-      {
-        id: "m2",
-        speaker: "DESIREE",
-        emotion: "somber",
         timestamp: "00:08",
-        text: "Prenez garde, Napoléon. La mer est traîtresse ce soir."
-      }
-    ]
-  },
-  {
-    id: "reel_notre_dame_coronation",
-    label: "Notre-Dame (30s)",
-    title: "1804 Notre-Dame Coronation",
-    setting: "Cathedral of Notre-Dame, Paris",
-    dynamic: "Imperial Coronation, Sacred Choral",
-    prompt: "Grand imperial coronation inside Notre-Dame Cathedral. Candlelight gleaming off gold-embroidered velvet cloaks, Gregorian choral resonance, solemn dramatic atmosphere.",
-    duration: 30,
-    still: "/assets/stills/coronation_hero.png",
-    video: "/assets/video/coronation_180s_master.mp4",
-    lines: [
+        text: "Nous devons réquisitionner les approvisionnements pour l'armée immédiatement."
+      },
       {
-        id: "n1",
-        speaker: "NAPOLEON",
+        id: "np2",
+        speaker: "JOSÉPHINE",
         emotion: "reverent",
-        timestamp: "00:06",
-        text: "Dieu me l'a donnée, gare à qui la touche."
+        timestamp: "00:45",
+        text: "Pour toujours, mon empereur. Même les couronnes pâlissent devant l'amour."
       },
       {
-        id: "n2",
-        speaker: "JOSEPHINE",
-        emotion: "whispering",
-        timestamp: "00:10",
-        text: "Pour toujours, mon empereur."
-      }
-    ]
-  },
-  {
-    id: "reel_titanic_marconi_cabin",
-    label: "Titanic SOS (30s)",
-    title: "1912 Titanic Marconi Cabin",
-    setting: "Marconi Room, RMS Titanic",
-    dynamic: "High Tension Emergency SOS",
-    prompt: "April 14, 1912, midnight in the Marconi wireless cabin. Jack Phillips transmitting CQD and SOS distress signals under flickering tungsten bulbs as ocean water rises.",
-    duration: 30,
-    still: "/assets/stills/titanic_hero.jpg",
-    video: "/assets/video/titanic_180s_master.mp4",
-    lines: [
-      {
-        id: "t1",
-        speaker: "PHILLIPS",
-        emotion: "urgent",
-        timestamp: "00:05",
-        text: "CQD CQD SOS from MGY. Struck iceberg, sinking rapidly."
-      },
-      {
-        id: "t2",
-        speaker: "BRIDE",
-        emotion: "focused",
-        timestamp: "00:09",
-        text: "Carpathia acknowledges. Steaming full speed."
-      }
-    ]
-  },
-  {
-    id: "reel_neotokyo_cyberpunk",
-    label: "Neo-Tokyo (30s)",
-    title: "Neo-Tokyo Downpour (2088)",
-    setting: "Shinjuku Sublevel 4, Neo-Tokyo",
-    dynamic: "Cyberpunk Infiltration",
-    prompt: "Cyberpunk neon alleyway in Shinjuku drenched in acid rain. Hover-cabs casting cyan reflections on chrome asphalt, atmospheric synthwave bassline.",
-    duration: 30,
-    still: "/assets/stills/neotokyo_hero.jpg",
-    video: "/assets/video/neotokyo_180s_master.mp4",
-    lines: [
-      {
-        id: "k1",
-        speaker: "KENJI",
-        emotion: "whispering",
-        timestamp: "00:04",
-        text: "The power grid went dark thirty seconds ago. Move."
-      },
-      {
-        id: "k2",
-        speaker: "AI OPERATOR",
-        timestamp: "00:07",
-        text: "Thermal trace confirmed on the roof."
+        id: "np3",
+        speaker: "NAPOLEON",
+        emotion: "solemn",
+        timestamp: "02:40",
+        text: "France, l'armée, Joséphine... le destin ne meurt jamais."
       }
     ]
   }
@@ -240,7 +133,7 @@ export function OmniMultiPhaseStudio() {
 
   // Phase 3 editable script lines
   const [scriptLines, setScriptLines] = useState<ScriptLine[]>(SCENE_PRESETS[0].lines);
-  const [activeTag, setActiveTag] = useState<"Speakers" | "Tags" | "Hinglish">("Hinglish");
+  const [activeTag, setActiveTag] = useState<"Speakers" | "Tags" | "Dialogue">("Speakers");
 
   // Player state
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -813,10 +706,10 @@ export function OmniMultiPhaseStudio() {
             />
           </form>
 
-          {/* Quick Starter Presets */}
+          {/* Flagship Starter Preset */}
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-3 pt-2.5 border-t border-zinc-800/70 text-xs font-mono">
             <span className="text-zinc-400 font-bold flex items-center gap-1 mr-1">
-              <Flame className="h-3.5 w-3.5 text-amber-400 fill-current" /> Quick Prompts:
+              <Flame className="h-3.5 w-3.5 text-amber-400 fill-current" /> Flagship Showcase:
             </span>
             {SCENE_PRESETS.map((preset) => (
               <button
@@ -1384,7 +1277,7 @@ export function OmniMultiPhaseStudio() {
                   </span>
                   <div className="flex items-center gap-1.5">
                     <span className="rounded bg-black/60 border border-zinc-800 px-2 py-0.5 text-[10px] text-zinc-300">
-                      Hinglish
+                      Screenplay EDL
                     </span>
                     <MoreVertical className="h-3.5 w-3.5 text-zinc-500" />
                   </div>
@@ -1411,9 +1304,9 @@ export function OmniMultiPhaseStudio() {
                   ))}
                 </div>
 
-                {/* Filter Tags: Speakers, Tags, Hinglish */}
+                {/* Filter Tags: Speakers, Tags, Dialogue */}
                 <div className="flex items-center gap-1.5 mt-2.5 pt-2 border-t border-zinc-800/60">
-                  {(["Speakers", "Tags", "Hinglish"] as const).map((tag) => (
+                  {(["Speakers", "Tags", "Dialogue"] as const).map((tag) => (
                     <button
                       key={tag}
                       type="button"

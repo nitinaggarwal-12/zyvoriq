@@ -263,24 +263,9 @@ Return ONLY valid JSON matching this exact structure:
       ];
     }
 
-    // Select the optimal streaming video asset based on duration & context
-    let selectedVideoPath =
+    // Canonical 180s master streaming video asset
+    const selectedVideoPath =
       "/api/media/scratch/productions/napoleon_romance/master/napoleon_romance_180s_master.mp4";
-    if (durationSec >= 120) {
-      selectedVideoPath =
-        "/api/media/scratch/productions/napoleon_romance/master/napoleon_romance_180s_master.mp4";
-    } else if (
-      lowerPrompt.includes("coffee") ||
-      lowerPrompt.includes("friend") ||
-      lowerPrompt.includes("dining") ||
-      lowerPrompt.includes("laugh")
-    ) {
-      selectedVideoPath =
-        "/api/media/scratch/productions/titanic/titanic_dining_jokes_master.mp4";
-    } else {
-      selectedVideoPath =
-        "/api/media/scratch/productions/aetherius/aetherius_cinema_master_reel.mp4";
-    }
 
     // Generate Veritas C2PA Cryptographic Signature
     const hash = crypto
