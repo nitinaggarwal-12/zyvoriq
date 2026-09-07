@@ -1241,10 +1241,14 @@ async function applyNarration(op, result) {
     replan(m, result.actualDurationSec);
   }
 
-  // Anchor 4K Hero Plate as canonical reference image if passed in payload
-  if (op.payload_json?.heroPlateBase64) {
+  // Anchor 4K Hero Plate as canonical reference image if passed in payload or manifest
+  const heroBase64 = op.payload_json?.heroPlateBase64 ||
+    (m.stillUrl?.startsWith("data:image/") ? m.stillUrl.split(",")[1] : null) ||
+    (m.heroStillUrl?.startsWith("data:image/") ? m.heroStillUrl.split(",")[1] : null);
+
+  if (heroBase64) {
     try {
-      const heroBuf = Buffer.from(op.payload_json.heroPlateBase64, "base64");
+      const heroBuf = Buffer.from(heroBase64, "base64");
       const digest = crypto.createHash("sha256").update(heroBuf).digest("hex").slice(0, 16);
       const savedHero = await writeAsset(`reels/${op.production_id}/character/hero-${digest}.png`, heroBuf);
       m.stillUrl = savedHero.url;

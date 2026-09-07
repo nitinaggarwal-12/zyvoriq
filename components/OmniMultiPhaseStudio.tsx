@@ -371,7 +371,11 @@ export function OmniMultiPhaseStudio() {
         setTimeout(() => {
           const card = document.getElementById(`dossier-phase-${p}`);
           if (card && dossierContainerRef.current) {
-            card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            const container = dossierContainerRef.current;
+            const containerRect = container.getBoundingClientRect();
+            const cardRect = card.getBoundingClientRect();
+            const relativeTop = cardRect.top - containerRect.top + container.scrollTop;
+            container.scrollTo({ top: Math.max(0, relativeTop - 8), behavior: "smooth" });
           }
         }, 300);
       }
@@ -878,7 +882,11 @@ export function OmniMultiPhaseStudio() {
     setTimeout(() => {
       const activeCard = document.getElementById(`dossier-phase-${nextPhase}`);
       if (activeCard && dossierContainerRef.current) {
-        activeCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        const container = dossierContainerRef.current;
+        const containerRect = container.getBoundingClientRect();
+        const cardRect = activeCard.getBoundingClientRect();
+        const relativeTop = cardRect.top - containerRect.top + container.scrollTop;
+        container.scrollTo({ top: Math.max(0, relativeTop - 8), behavior: "smooth" });
       }
     }, 120);
   };
@@ -1120,7 +1128,7 @@ export function OmniMultiPhaseStudio() {
         {/* ============================================================ */}
         {/* 3. MAIN 70 / 30 WORKSTATION GRID                             */}
         {/* ============================================================ */}
-        <div className="grid grid-cols-1 lg:grid-cols-10 gap-5 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-10 gap-5 items-start">
           
           {/* ========================================================== */}
           {/* LEFT 70%: CINEMA PLAYER + 8-PHASE STEPPER + GATEKEEPER BAR */}
@@ -2195,7 +2203,7 @@ export function OmniMultiPhaseStudio() {
           {/* ========================================================== */}
           {/* RIGHT 30%: DIRECTORIAL DOSSIER & CHAT                      */}
           {/* ========================================================== */}
-          <div className="lg:col-span-3 lg:self-start lg:sticky lg:top-4 flex flex-col justify-start rounded-2xl border border-zinc-800/80 bg-[#0E131F]/90 p-4 sm:p-5 backdrop-blur-md shadow-xl relative overflow-hidden max-h-[calc(100vh-2rem)]">
+          <div className="lg:col-span-3 lg:self-start lg:sticky lg:top-4 flex flex-col justify-start rounded-2xl border border-zinc-800/80 bg-[#0E131F]/90 p-4 sm:p-5 backdrop-blur-md shadow-xl relative overflow-hidden h-fit max-h-[calc(100vh-2rem)]">
             
             {/* Dossier Header */}
             <div className="flex items-center justify-between border-b border-zinc-800/70 pb-3 mb-3.5 shrink-0">
@@ -2980,7 +2988,7 @@ export function OmniMultiPhaseStudio() {
             </div>
 
             {/* Directorial Generation & Live Status Bar */}
-            <div className="mt-3 pt-3 border-t border-zinc-800/80 space-y-2.5">
+            <div className="mt-3 pt-3 border-t border-zinc-800/80 space-y-2.5 shrink-0">
               {isDiffusionActive ? (
                 /* Active In-Flight Diffusion Indicator */
                 <div 

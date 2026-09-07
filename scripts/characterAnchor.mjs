@@ -268,6 +268,15 @@ export async function firstFrameForShot(manifest, shot, productionId, writeAsset
     }
   }
 
+  // For the opening shot (shot_01), the canonical hero plate IS the authoritative opening frame.
+  // Directly anchor shot_01 to canonical to ensure 100% fidelity without diffusion drift.
+  if (canonical && (!environmentFrame || shot.id === "shot_01")) {
+    const digest = crypto.createHash("sha256").update(canonical).digest("hex").slice(0, 16);
+    await writeAsset(`reels/${productionId}/frames/${shot.id}-${digest}.png`, canonical);
+    console.log(`[anchor] using canonical 4K hero plate directly as opening frame for ${shot.id}`);
+    return canonical;
+  }
+
   const primaryRef = environmentFrame || canonical;
   if (!primaryRef) return null;
 

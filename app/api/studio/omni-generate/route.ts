@@ -245,20 +245,51 @@ CRITICAL REQUIREMENTS:
           scriptText: fullScript,
           requestedDurationSec: targetSec,
           tone: screenplay.dynamic || "cinematic",
+          creationIntent: {
+            mode: "quick-brief",
+            conceptTitle: screenplay.title || prompt,
+            conceptPrompt: prompt,
+            characterDescription: prompt,
+            visualStyleDescription: `${screenplay.setting || prompt}. ${screenplay.paletteTheme || "Cinematic 8K 24fps photorealism"}`,
+          }
         });
 
         // Anchor hero still and character/environment locks directly on manifest
         (manifest as any).stillUrl = stillDataUri;
         (manifest as any).heroStillUrl = stillDataUri;
         if (manifest.creativeBible) {
-          manifest.creativeBible.characterLock = `Characters: ${prompt}. Maintain identical biometric facial DNA, wardrobe, and visual continuity across all shots.`;
+          manifest.creativeBible.characterLock = `Characters & Wardrobe: ${prompt}. Maintain identical biometric facial DNA, exact wardrobe, and visual continuity across all shots.`;
           manifest.creativeBible.environmentLock = screenplay.setting || prompt;
         }
         if (manifest.continuity?.characters?.[0]) {
           manifest.continuity.characters[0].appearance = {
-            description: `Characters: ${prompt}. Biometrically anchored to hero plate.`
+            description: `Characters & Wardrobe: ${prompt}. Biometrically anchored to hero plate.`
           };
+          manifest.continuity.characters[0].wardrobe = [
+            `Maintain identical wardrobe and grooming: ${prompt}`
+          ];
         }
+
+        // CRITICAL: Ground EVERY shot prompt directly in the scene directive and character wardrobe
+        manifest.shots.forEach((shot, idx) => {
+          const line = screenplay.lines?.[idx];
+          const shotDialogue = line?.text ? `Spoken dialogue: "${(line.speaker || "ACTOR").toUpperCase()}: ${line.text}".` : "";
+          shot.generationPrompt = [
+            `SCENE DIRECTIVE: ${prompt}.`,
+            `SETTING & WORLD: ${screenplay.setting || prompt}.`,
+            `CHARACTERS & WARDROBE: Strictly adhere to: ${prompt}. All performers must wear matching wardrobe and maintain identical biometric facial DNA across all clips.`,
+            shot.visualIntent,
+            shotDialogue,
+            `VISUAL STYLE: ${screenplay.paletteTheme || "Cinematic 8K 24fps photorealism, award-winning cinematography"}.`,
+            "STUDIO1 ENVIRONMENT LOCK: Continuous physical set matching the canonical hero plate.",
+            "STUDIO1 IDENTITY LOCK: Biometrically identical characters matching the canonical hero plate. Do not substitute actors or change wardrobe.",
+            "Do not render captions, subtitles, logos or UI text inside scene pixels."
+          ].filter(Boolean).join(" ");
+
+          if ((manifest as any).studio1?.basePrompts) {
+            (manifest as any).studio1.basePrompts[shot.id] = shot.generationPrompt;
+          }
+        });
 
         const prod = await reelProductionStore.create(manifest);
         finalReelId = prod.id;
