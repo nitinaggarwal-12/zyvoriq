@@ -20,10 +20,10 @@ export function WaitlistCTA() {
                 Ready to direct your first cinema master?
               </h2>
               <p className="mt-5 max-w-2xl text-base sm:text-lg leading-relaxed text-slate-300">
-                Bring any concept, historical saga, or brand story. Google Omni compiles diffusion-safe prompts, guides 4K camera vectors, composes pure acoustic scores, and rejects defects on-set.
+                Bring any concept, historical saga, or brand story. Google Omni compiles diffusion-safe prompts, guides camera vectors, composes pure acoustic scores, and rejects defects on-set.
               </p>
               <div className="mt-7 flex flex-wrap gap-x-6 gap-y-3 text-xs sm:text-sm text-slate-400 font-mono">
-                {["Zero Prompts Wasted", "Veo 3.1 4K Photorealism", "Beethoven & Chamber Score", "Gemini Directorial QC"].map((item) => (
+                {["Zero Prompts Wasted", "Veo 3.1 Neural Photorealism", "Beethoven & Chamber Score", "Gemini Directorial QC"].map((item) => (
                   <span key={item} className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-teal-400 shrink-0" />
                     {item}

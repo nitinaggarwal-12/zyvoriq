@@ -381,7 +381,7 @@ export function CreatorReelsHome() {
                 <div className="mt-4 p-4 rounded-xl bg-teal-950/40 border border-teal-500/30 flex items-center gap-3 animate-pulse">
                   <div className="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin shrink-0" />
                   <div className="text-xs sm:text-sm text-teal-200">
-                    <strong className="block text-white font-semibold">Generating Real 4K Character Anchor...</strong>
+                    <strong className="block text-white font-semibold">Generating Character Anchor...</strong>
                     <span>{generationStep || "Enqueuing background video diffusion worker..."}</span>
                   </div>
                 </div>
@@ -881,7 +881,7 @@ export function CreatorReelsHome() {
                   </li>
                   <li className="flex items-center gap-2.5">
                     <Check className="w-4 h-4 text-teal-400 shrink-0" />
-                    <span>4K vertical export (2160x3840)</span>
+                    <span>720p HD vertical export (720x1280)</span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <Check className="w-4 h-4 text-teal-400 shrink-0" />

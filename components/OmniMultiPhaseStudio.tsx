@@ -966,7 +966,7 @@ export function OmniMultiPhaseStudio() {
           <div className="flex items-center gap-2 sm:gap-3 ml-auto">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3 py-1 text-xs font-mono font-bold text-emerald-400">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Veo 3.1 4K
+              Veo 3.1 720p
             </div>
             <div className="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/30 bg-cyan-950/40 px-3 py-1 text-xs font-mono font-bold text-cyan-300">
               <Music2 className="h-3 w-3 text-cyan-400" />
@@ -1005,7 +1005,7 @@ export function OmniMultiPhaseStudio() {
                 type="text"
                 value={promptInput}
                 onChange={(e) => setPromptInput(e.target.value)}
-                placeholder="Describe any scene, story, or video to generate your 4K reel..."
+                placeholder="Describe any scene, story, or video to generate your reel..."
                 className="w-full rounded-xl bg-black/80 border border-zinc-700/90 hover:border-zinc-500 focus:border-emerald-400 py-3.5 sm:py-4 pl-11 sm:pl-12 pr-4 text-sm sm:text-base text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/40 font-sans transition shadow-inner"
               />
             </div>
@@ -1017,7 +1017,7 @@ export function OmniMultiPhaseStudio() {
               type="submit"
               disabled={isGeneratingReel || !promptInput.trim()}
               className="inline-flex items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 px-6 sm:px-8 py-3.5 sm:py-4 text-sm sm:text-base font-black text-slate-950 uppercase tracking-wider hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 shadow-xl shadow-emerald-500/25 transition cursor-pointer shrink-0"
-              title="Send prompt to generate 4K reel"
+              title="Send prompt to generate reel"
             >
               {isGeneratingReel ? (
                 <>
@@ -1134,7 +1134,7 @@ export function OmniMultiPhaseStudio() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-400">Master 4K Reel Ready</span>
+                      <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-400">Master Reel Ready</span>
                       <span className="rounded bg-emerald-500/20 px-1.5 py-0.2 text-[10px] font-mono text-emerald-300">24fps • Stereo</span>
                     </div>
                     <div className="text-sm font-bold text-white mt-0.5 flex flex-wrap items-center gap-2">
@@ -1184,7 +1184,7 @@ export function OmniMultiPhaseStudio() {
               {/* Overlaid Scene Title & Unique Reel ID Badges (Top-Left) */}
               <div className="absolute top-3 sm:top-4 left-3 sm:left-4 z-20 pointer-events-auto">
                 <h2 className="text-base sm:text-lg lg:text-xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] tracking-wide">
-                  {isNewCreation ? "Create Master 4K Reel" : currentScene.title}
+                  {isNewCreation ? "Create Master Reel" : currentScene.title}
                 </h2>
                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1">
                   {isNewCreation ? (

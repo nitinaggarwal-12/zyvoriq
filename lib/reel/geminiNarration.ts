@@ -162,14 +162,31 @@ async function uploadForTranscription(wav: Buffer, displayName: string) {
   return { uri: String(uri), name: String(json?.file?.name || json?.name || "") };
 }
 
-async function transcribeWithWordTimings(uri: string) {
+function extractBiasedVocabularyFromText(text: string, extraVocab: string[] = []): string[] {
+  const vocab = new Set<string>(extraVocab.filter(Boolean));
+  const matches = text.match(/\b[A-Z][a-zA-Z0-9']{2,}\b/g) || [];
+  for (const m of matches) {
+    if (!["The", "This", "That", "When", "What", "Where", "With", "Then", "From", "Into"].includes(m)) {
+      vocab.add(m);
+    }
+  }
+  return Array.from(vocab).filter(Boolean);
+}
+
+async function transcribeWithWordTimings(uri: string, biasedVocabulary: string[] = []) {
   const key = apiKey();
+  const input: Array<{ type: "audio" | "text"; uri?: string; mime_type?: string; text?: string }> = [];
+  if (biasedVocabulary.length) {
+    input.push({ type: "text", text: `Pronunciation and vocabulary biasing: ${biasedVocabulary.join(", ")}` });
+  }
+  input.push({ type: "audio", uri, mime_type: "audio/wav" });
+
   const response = await fetch(`${API_BASE}/v1beta/interactions`, {
     method: "POST",
     headers: { "x-goog-api-key": key, "Content-Type": "application/json" },
     body: JSON.stringify({
       model: "gemini-3.5-transcribe",
-      input: [{ type: "audio", uri, mime_type: "audio/wav" }],
+      input,
       generation_config: { transcription_config: { mode: { type: "verbatim", timestamp_granularities: ["word"] } } },
     }),
   });
@@ -180,7 +197,12 @@ async function transcribeWithWordTimings(uri: string) {
   return timings;
 }
 
-export async function generateAlignedNarration(input: { productionId: string; text: string; tone: string }) {
+export async function generateAlignedNarration(input: {
+  productionId: string;
+  text: string;
+  tone: string;
+  biasedVocabulary?: string[];
+}) {
   if (!input.text.trim()) throw new Error("Cannot synthesize empty narration");
   const storage = getAssetStoreCapability();
   if (!storage.configured || !storage.durable) {
@@ -193,7 +215,8 @@ export async function generateAlignedNarration(input: { productionId: string; te
   const durationSec = pcm.length / (SAMPLE_RATE * CHANNELS * SAMPLE_WIDTH);
   const wav = wavFromPcm(pcm);
   const uploaded = await uploadForTranscription(wav, `zyvoriq-${input.productionId}-narration.wav`);
-  const wordTimings = await transcribeWithWordTimings(uploaded.uri);
+  const vocab = extractBiasedVocabularyFromText(input.text, input.biasedVocabulary);
+  const wordTimings = await transcribeWithWordTimings(uploaded.uri, vocab);
   const digest = crypto.createHash("sha256").update(wav).digest("hex").slice(0, 16);
   const asset = await writeAsset(`reels/${input.productionId}/narration-${digest}.wav`, wav);
 

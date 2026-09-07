@@ -175,10 +175,26 @@ function syncCanonicalReference(manifest, charId, saved) {
       manifest.characters = compatibility;
     }
   }
-  if (compat) compat.canonicalReferenceImages = [{ url: saved.url, digest: saved.digest }];
+  if (compat) {
+    const existing = Array.isArray(compat.canonicalReferenceImages)
+      ? compat.canonicalReferenceImages.map(referenceUrl).filter(Boolean)
+      : [];
+    if (!existing.includes(saved.url)) {
+      existing.push(saved.url);
+    }
+    compat.canonicalReferenceImages = existing.slice(0, 3).map(url => ({ url, digest: saved.digest }));
+  }
 
   const canonical = manifest.continuity?.characters?.find(c => c.id === charId);
-  if (canonical) canonical.canonicalReferenceImages = [saved.url];
+  if (canonical) {
+    const existing = Array.isArray(canonical.canonicalReferenceImages)
+      ? canonical.canonicalReferenceImages.map(referenceUrl).filter(Boolean)
+      : [];
+    if (!existing.includes(saved.url)) {
+      existing.push(saved.url);
+    }
+    canonical.canonicalReferenceImages = existing.slice(0, 3);
+  }
 }
 
 export function buildOpeningFramePrompt(manifest, shot, { hasCanonical = false, hasEnvironmentReference = false } = {}) {
@@ -244,9 +260,8 @@ export async function ensureCharacterSheet(manifest, productionId, writeAsset) {
   const presenter = characters.find(c => c.id === "character_presenter") || characters[0];
   if (!presenter) return manifest;
 
-  const existing = (presenter.canonicalReferenceImages || []).map(referenceUrl).find(Boolean);
-  if (existing) {
-    syncCanonicalReference(manifest, presenter.id, { url: existing, digest: undefined });
+  const existing = (presenter.canonicalReferenceImages || []).map(referenceUrl).filter(Boolean);
+  if (existing.length >= 2) {
     return manifest;
   }
 

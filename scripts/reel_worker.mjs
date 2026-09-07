@@ -275,7 +275,23 @@ async function generateNarrationResult(op, manifest) {
   const uploadJson = await upload.json(); if (!upload.ok) throw new Error(`Gemini upload failed (${upload.status})`);
   const uri = uploadJson?.file?.uri || uploadJson?.uri; if (!uri) throw new Error("Gemini upload returned no file URI");
 
-  const transcribe = await fetch(`${API_BASE}/v1beta/interactions`, { method:"POST", headers:{"x-goog-api-key":apiKey(),"Content-Type":"application/json"}, body:JSON.stringify({ model:"gemini-3.5-transcribe", input:[{type:"audio",uri,mime_type:"audio/wav"}], generation_config:{transcription_config:{mode:{type:"verbatim",timestamp_granularities:["word"]}}} }) });
+  const vocabSet = new Set();
+  const chars = Array.isArray(manifest.characters) && manifest.characters.length ? manifest.characters : (manifest.continuity?.characters || []);
+  for (const c of chars) { if (c.name) vocabSet.add(c.name.trim()); }
+  if (manifest.masterScript) {
+    const matches = manifest.masterScript.match(/\b[A-Z][a-zA-Z0-9']{2,}\b/g) || [];
+    for (const m of matches) {
+      if (!["The", "This", "That", "When", "What", "Where", "With", "Then", "From", "Into"].includes(m)) vocabSet.add(m);
+    }
+  }
+  const vocabList = Array.from(vocabSet).filter(Boolean);
+  const trInput = [];
+  if (vocabList.length) {
+    trInput.push({ type: "text", text: `Pronunciation and vocabulary biasing: ${vocabList.join(", ")}` });
+  }
+  trInput.push({ type: "audio", uri, mime_type: "audio/wav" });
+
+  const transcribe = await fetch(`${API_BASE}/v1beta/interactions`, { method:"POST", headers:{"x-goog-api-key":apiKey(),"Content-Type":"application/json"}, body:JSON.stringify({ model:"gemini-3.5-transcribe", input:trInput, generation_config:{transcription_config:{mode:{type:"verbatim",timestamp_granularities:["word"]}}} }) });
   const transcribeJson = await transcribe.json(); if (!transcribe.ok) throw new Error(`Gemini transcription failed (${transcribe.status})`);
   const timings = extractWordTimings(transcribeJson); if (!timings.length) throw new Error("No word-level timestamps returned");
   const validation = validateTranscript(manifest.masterScript, timings, durationSec);

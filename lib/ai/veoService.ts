@@ -10,6 +10,12 @@ export interface VeoGenerationProgress {
   videoUrl?: string;
 }
 
+export interface VeoReferenceImage {
+  bytesBase64Encoded: string;
+  mimeType?: string;
+  referenceType?: "asset" | "style" | "character";
+}
+
 export interface VeoOptions {
   durationSeconds?: number;
   aspectRatio?: "16:9" | "9:16" | "1:1";
@@ -17,6 +23,7 @@ export interface VeoOptions {
   chainCycles?: number; // 1 to 20 cycles (up to 168s continuous)
   inputVideoUri?: string;
   lastFrameConditioning?: string; // base64 frame for temporal continuity
+  referenceImages?: (string | VeoReferenceImage)[]; // up to 3 canonical reference images
   promptBeats?: string[];
   onProgress?: (progress: VeoGenerationProgress) => void;
 }
@@ -47,9 +54,50 @@ export async function generateVeoVideoBytes(
     throw new Error("GEMINI_API_KEY or GOOGLE_API_KEY environment variable is missing on server.");
   }
 
+  // Token safety constraint: Prompt must strictly not exceed 1,024 tokens (~700 words max)
+  const promptWords = (prompt || "").trim().split(/\s+/);
+  const clampedPrompt = promptWords.length > 700 ? promptWords.slice(0, 700).join(" ") : prompt;
+
+  const instance: Record<string, any> = { prompt: clampedPrompt };
+
+  // Prepare referenceImages if provided (up to 3 images, asset referenceType)
+  let hasReferenceImages = false;
+  if (options.referenceImages && options.referenceImages.length > 0) {
+    const formattedRefs = options.referenceImages.slice(0, 3).map((ref) => {
+      if (typeof ref === "string") {
+        return {
+          image: { bytesBase64Encoded: ref, mimeType: "image/png" },
+          referenceType: "asset" as const,
+        };
+      }
+      return {
+        image: {
+          bytesBase64Encoded: ref.bytesBase64Encoded,
+          mimeType: ref.mimeType || "image/png",
+        },
+        referenceType: ref.referenceType || "asset",
+      };
+    });
+    if (formattedRefs.length > 0) {
+      instance.referenceImages = formattedRefs;
+      hasReferenceImages = true;
+    }
+  }
+
+  if (!hasReferenceImages) {
+    if (options.lastFrameConditioning) {
+      instance.image = { bytesBase64Encoded: options.lastFrameConditioning };
+    } else if (options.inputVideoUri) {
+      instance.video = { uri: options.inputVideoUri };
+    }
+  }
+
   // Google Veo 3.1 requires durationSeconds to be exactly 4, 6, or 8.
+  // When referenceImages are present, Veo strictly requires durationSeconds = 8.
   const rawDur = Math.round(options.durationSeconds || 8);
-  const durationSeconds: 4 | 6 | 8 = rawDur <= 5 ? 4 : rawDur <= 7 ? 6 : 8;
+  const durationSeconds: 4 | 6 | 8 = hasReferenceImages
+    ? 8
+    : (rawDur <= 5 ? 4 : rawDur <= 7 ? 6 : 8);
   const aspectRatio = options.aspectRatio || "16:9";
   const modelName =
     options.modelTier === "quality"
@@ -67,13 +115,6 @@ export async function generateVeoVideoBytes(
     percent: 10,
     elapsedSeconds: getElapsed()
   });
-
-  const instance: Record<string, any> = { prompt };
-  if (options.lastFrameConditioning) {
-    instance.image = { bytesBase64Encoded: options.lastFrameConditioning };
-  } else if (options.inputVideoUri) {
-    instance.video = { uri: options.inputVideoUri };
-  }
 
   const dispatchRes = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predictLongRunning?key=${apiKey}`,
@@ -224,7 +265,8 @@ export async function generateVeoRecursiveChainedVideo(
     const singleResult = await generateVeoVideo(cyclePrompt, {
       ...options,
       durationSeconds: 8,
-      chainCycles: 1
+      chainCycles: 1,
+      referenceImages: options.referenceImages,
     });
 
     videoUrls.push(singleResult.videoUrl);

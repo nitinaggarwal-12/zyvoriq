@@ -1198,6 +1198,31 @@ async function assertApplicable(op, { beforeDispatch = false } = {}) { await con
 async function markRunning(op) { const c = await assertApplicable(op); const m = c.manifest; if (op.kind === "NARRATION" && ["SCRIPT_READY", "FAILED"].includes(m.status)) m.status = "AUDIO_GENERATING"; if (op.kind === "SHOT") { const s = m.shots.find(x => x.id === op.target_id); if (["PLANNED", "FAILED"].includes(s.status)) s.status = "GENERATING"; if (["SHOTS_PLANNED", "REPAIRING"].includes(m.status)) m.status = "VIDEO_GENERATING"; } if (op.kind === "ROUGH_CUT" && ["ROUGH_CUT_READY", "REPAIRING", "READY"].includes(m.status)) m.status = "ROUGH_CUT_READY"; if (op.kind === "NATIVE_REEL" && ["SHOTS_PLANNED", "REPAIRING"].includes(m.status)) m.status = "VIDEO_GENERATING"; await saveManifest(op.production_id, c.revision, m); }
 async function markTerminalFailure(op, message) { try { const c = await getProduction(op.production_id), m = c.manifest; m.qa = m.qa || { minimumReadyScore: 90, passed: false, warnings: [], failures: [] }; m.qa.passed = false; m.qa.failures = [...(m.qa.failures || []), message]; if (op.kind === "SHOT") { const s = m.shots.find(x => x.id === op.target_id); if (s) { s.status = "FAILED"; s.qa = s.qa || { warnings: [], failures: [] }; s.qa.failures = [...(s.qa.failures || []), message]; } m.status = "REPAIRING"; } else if (op.kind === "ROUGH_CUT" || op.kind === "NATIVE_REEL") m.status = "REPAIRING"; else m.status = "FAILED"; await saveManifest(op.production_id, c.revision, m); } catch (e) { console.error(`[reel-worker] failure-state update failed: ${e?.message || e}`); } }
 
+function extractBiasedVocabulary(manifest) {
+  const vocab = new Set();
+  const characters = Array.isArray(manifest.characters) && manifest.characters.length
+    ? manifest.characters
+    : (manifest.continuity?.characters || []);
+  for (const c of characters) {
+    if (c.name) vocab.add(c.name.trim());
+  }
+  if (manifest.topic) {
+    for (const w of manifest.topic.split(/\s+/)) {
+      const clean = w.replace(/[^\p{L}\p{N}]/gu, "").trim();
+      if (clean.length > 2) vocab.add(clean);
+    }
+  }
+  if (manifest.masterScript) {
+    const matches = manifest.masterScript.match(/\b[A-Z][a-zA-Z0-9']{2,}\b/g) || [];
+    for (const m of matches) {
+      if (!["The", "This", "That", "When", "What", "Where", "With", "Then", "From", "Into"].includes(m)) {
+        vocab.add(m);
+      }
+    }
+  }
+  return Array.from(vocab).filter(Boolean);
+}
+
 async function transcribeAndValidateNarration(op, manifest, checkpoint, wav) {
   const start = await fetch(`${API_BASE}/upload/v1beta/files`, {
     method: "POST",
@@ -1219,10 +1244,19 @@ async function transcribeAndValidateNarration(op, manifest, checkpoint, wav) {
   if (!up.ok) throw new Error(`Gemini upload failed (${up.status})`);
   const uri = uj?.file?.uri || uj?.uri;
   if (!uri) throw new Error("Gemini upload returned no file URI");
+
+  const vocab = extractBiasedVocabulary(manifest);
+  const input = [];
+  if (vocab.length) {
+    input.push({ type: "text", text: `Pronunciation and vocabulary biasing: ${vocab.join(", ")}` });
+    console.log(`[reel-worker] [transcription] Applying vocabulary biasing: ${vocab.slice(0, 10).join(", ")}`);
+  }
+  input.push({ type: "audio", uri, mime_type: "audio/wav" });
+
   const tr = await fetch(`${API_BASE}/v1beta/interactions`, {
     method: "POST",
     headers: { "x-goog-api-key": apiKey(), "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "gemini-3.5-transcribe", input: [{ type: "audio", uri, mime_type: "audio/wav" }], generation_config: { transcription_config: { mode: { type: "verbatim", timestamp_granularities: ["word"] } } } }),
+    body: JSON.stringify({ model: "gemini-3.5-transcribe", input, generation_config: { transcription_config: { mode: { type: "verbatim", timestamp_granularities: ["word"] } } } }),
   });
   const tj = await tr.json();
   if (!tr.ok) throw new Error(`Gemini transcription failed (${tr.status})`);
@@ -1456,9 +1490,12 @@ function sanitizePromptForVeo(prompt) {
     { pattern: /\b(?:Leonardo\s*DiCaprio)\b/gi, replacement: "an intense, expressive dramatic leading man" },
     { pattern: /\b(?:Zendaya)\b/gi, replacement: "a stylish, striking modern leading lady" },
     { pattern: /\b(?:Timothee\s*Chalamet|Timothée\s*Chalamet)\b/gi, replacement: "a slender, expressive brooding leading man" },
-  ];
   for (const { pattern, replacement } of celebrityMap) {
     clean = clean.replace(pattern, replacement);
+  }
+  const words = clean.split(/\s+/);
+  if (words.length > 700) {
+    clean = words.slice(0, 700).join(" ");
   }
   return clean.replace(/\s{2,}/g, " ").trim();
 }
@@ -1483,36 +1520,79 @@ async function generateShot(op, manifest, shot) {
     const cleanPrompt = sanitizePromptForVeo(shot.generationPrompt);
     const instance = { prompt: cleanPrompt };
 
-    let anchorFrame = null;
-    try {
-      anchorFrame = await firstFrameForShot(manifest, shot, op.production_id, writeAsset, readAsset);
-    } catch (e) {
-      console.warn(`[reel-worker] anchor frame failed: ${e?.message || e}`);
+    // FIX-1: Sourced from character sheet (up to 3 reference images across every chain)
+    const characters = Array.isArray(manifest.characters) && manifest.characters.length
+      ? manifest.characters
+      : (manifest.continuity?.characters || []);
+    const charId = shot.continuityIn?.characterId || "character_presenter";
+    const char = characters.find(c => c.id === charId) || characters[0];
+    const canonicalUrls = (char?.canonicalReferenceImages || [])
+      .map(img => typeof img === "string" ? img : img?.url)
+      .filter(Boolean);
+
+    const refImages = [];
+    for (const imgUrl of canonicalUrls.slice(0, ref?.buffer ? 2 : 3)) {
+      try {
+        const buf = await readAsset(imgUrl);
+        if (buf?.length) {
+          refImages.push({
+            image: { bytesBase64Encoded: buf.toString("base64"), mimeType: "image/png" },
+            referenceType: "asset"
+          });
+        }
+      } catch (e) {
+        console.warn(`[reel-worker] Failed to load canonical reference ${imgUrl}: ${e?.message || e}`);
+      }
     }
-    if (anchorFrame) {
-      console.log(`[reel-worker] [anchor] applied canonical first frame to ${shot.id}`);
-      instance.image = { mimeType: "image/png", bytesBase64Encoded: anchorFrame.toString("base64") };
-    } else if (ref) {
-      instance.image = { mimeType: "image/png", bytesBase64Encoded: ref.buffer.toString("base64") };
+    // If continuing from previous shot, attach previous shot frame as additional asset reference
+    if (ref?.buffer && refImages.length < 3) {
+      refImages.push({
+        image: { bytesBase64Encoded: ref.buffer.toString("base64"), mimeType: "image/png" },
+        referenceType: "asset"
+      });
+    }
+
+    if (refImages.length > 0) {
+      instance.referenceImages = refImages;
+      console.log(`[reel-worker] [referenceImages] applied ${refImages.length} reference images to ${shot.id} (canonical + temporal)`);
+    } else {
+      // Fallback: single opening frame conditioning
+      let anchorFrame = null;
+      try {
+        anchorFrame = await firstFrameForShot(manifest, shot, op.production_id, writeAsset, readAsset);
+      } catch (e) {
+        console.warn(`[reel-worker] anchor frame failed: ${e?.message || e}`);
+      }
+      if (anchorFrame) {
+        console.log(`[reel-worker] [anchor] applied canonical first frame to ${shot.id}`);
+        instance.image = { mimeType: "image/png", bytesBase64Encoded: anchorFrame.toString("base64") };
+      } else if (ref) {
+        instance.image = { mimeType: "image/png", bytesBase64Encoded: ref.buffer.toString("base64") };
+      }
     }
 
     // Precondition Circuit Breaker: Refuse unanchored generation for shots requiring presenter continuity
     const requiresPresenter = shot.continuityIn?.characterId === "character_presenter";
-    if (requiresPresenter && !instance.image) {
-      throw new Error(`PRECONDITION_FAILED: ${shot.id} requires presenter continuity but has no canonical anchor frame or reference image. Refusing unanchored generation.`);
+    if (requiresPresenter && !instance.referenceImages?.length && !instance.image) {
+      throw new Error(`PRECONDITION_FAILED: ${shot.id} requires presenter continuity but has no canonical reference images or anchor frame. Refusing unanchored generation.`);
     }
     const seed = seedForShot(op.production_id, shot.id);
-
-
-
-    
+    const durationSeconds = instance.referenceImages?.length ? 8 : (shot.generationDurationSec || 8);
+    const parameters = {
+      aspectRatio: "9:16",
+      durationSeconds,
+      seed,
+    };
+    if (!instance.referenceImages?.length) {
+      parameters.negativePrompt = "different person, changing face, inconsistent character, morphing, on-screen text, captions, watermark, logo";
+    }
 
     let d;
     try {
       d = await fetch(`${API_BASE}/v1beta/models/${model}:predictLongRunning`, {
         method: "POST",
         headers: { "x-goog-api-key": apiKey(), "Content-Type": "application/json" },
-        body: JSON.stringify({ instances: [instance], parameters: { aspectRatio: "9:16", durationSeconds: shot.generationDurationSec, seed, negativePrompt: "different person, changing face, inconsistent character, morphing, on-screen text, captions, watermark, logo" } }),
+        body: JSON.stringify({ instances: [instance], parameters }),
       });
     } catch (error) {
       throw error;
