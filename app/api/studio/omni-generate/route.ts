@@ -170,8 +170,19 @@ function compileOmniPromptSemantic(rawPrompt: string): OmniGeneratedScene {
     ];
   }
 
-  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 24) || "custom_master";
-  const uniqueReelId = `reel_${slug}_${Math.random().toString(36).substring(2, 7)}`;
+  const CANONICAL_PRESETS: Record<string, string> = {
+    "a modern indian family dinner in a high-rise bandra penthouse overlooking mumbai night skyline and sea link. sibling banter, warm golden interior lighting, authentic hinglish dialogue, 24fps cinematic realism.": "reel_mumbai_luxury_penthouse",
+    "napoleon bonaparte arriving at the bustling 1795 marseille waterfront. cobblestone docks, towering masted frigates, mediterranean evening sun, authentic french period dialogue.": "reel_marseille_waterfront",
+    "grand imperial coronation inside notre-dame cathedral. candlelight gleaming off gold-embroidered velvet cloaks, gregorian choral resonance, solemn dramatic atmosphere.": "reel_notre_dame_coronation",
+    "april 14, 1912, midnight in the marconi wireless cabin. jack phillips transmitting cqd and sos distress signals under flickering tungsten bulbs as ocean water rises.": "reel_titanic_marconi_cabin",
+    "neo-tokyo 2088 rain-slicked shinjuku alleyway. rogue operative kenji infiltrating an arasaka data terminal under neon holograms, cinematic anamorphic 24fps.": "reel_neotokyo_cyberpunk"
+  };
+
+  let uniqueReelId = CANONICAL_PRESETS[lower];
+  if (!uniqueReelId) {
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 24) || "custom_master";
+    uniqueReelId = `reel_${slug}_${Math.random().toString(36).substring(2, 7)}`;
+  }
 
   return {
     id: uniqueReelId,
@@ -222,6 +233,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    console.log(`[OmniDirector API] Ingested reel prompt: "${prompt}"`);
     let scene = compileOmniPromptSemantic(prompt);
 
     const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
@@ -278,6 +290,8 @@ Return ONLY valid JSON.`;
         console.warn("Gemini Flash live enhancement fallback:", err.message);
       }
     }
+
+    console.log(`[OmniDirector API] Successfully synthesized scene: "${scene.title}" (${scene.id})`);
 
     return NextResponse.json({
       success: true,

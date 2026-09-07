@@ -23,7 +23,7 @@ const ACTS: ActPreview[] = [
     timeRange: "00:00 - 00:36",
     description: "Young artillery officer Bonaparte courting Désirée Clary on the bluffs of Marseille, 1795.",
     character: "Young Napoleon & Désirée",
-    stillUrl: "/scratch/productions/napoleon_romance/stills/ACT_01_4k_keyframe.png",
+    stillUrl: "/assets/stills/napoleon_hero.png",
     videoTime: 0
   },
   {
@@ -33,7 +33,7 @@ const ACTS: ActPreview[] = [
     timeRange: "00:36 - 01:12",
     description: "Notre-Dame coronation ceremony followed by Joséphine's tranquil rose haven at Malmaison.",
     character: "Empress Joséphine de Beauharnais",
-    stillUrl: "/scratch/productions/napoleon_romance/stills/ACT_02_4k_keyframe.png",
+    stillUrl: "/assets/stills/coronation_hero.png",
     videoTime: 36
   },
   {
@@ -43,7 +43,7 @@ const ACTS: ActPreview[] = [
     timeRange: "01:12 - 01:48",
     description: "Finckenstein Palace snowbound romance amidst the grueling winter campaigns of 1807.",
     character: "Countess Marie Walewska",
-    stillUrl: "/scratch/productions/napoleon_romance/stills/ACT_03_4k_keyframe.png",
+    stillUrl: "/assets/stills/titanic_hero.jpg",
     videoTime: 72
   },
   {
@@ -53,7 +53,7 @@ const ACTS: ActPreview[] = [
     timeRange: "01:48 - 02:24",
     description: "The heartbreaking legal dissolution of marriage for imperial heir Marie-Louise and Napoleon II.",
     character: "Empress Marie-Louise & Infant Heir",
-    stillUrl: "/scratch/productions/napoleon_romance/stills/ACT_04_4k_keyframe.png",
+    stillUrl: "/assets/stills/coronation_hero.png",
     videoTime: 108
   },
   {
@@ -63,7 +63,7 @@ const ACTS: ActPreview[] = [
     timeRange: "02:24 - 03:00",
     description: "Longwood House in the South Atlantic; the dying emperor's final whispered word: 'France, l'armée, Joséphine.'",
     character: "Napoleon in Exile",
-    stillUrl: "/scratch/productions/napoleon_romance/stills/ACT_05_4k_keyframe.png",
+    stillUrl: "/assets/stills/napoleon_hero.png",
     videoTime: 144
   }
 ];
@@ -77,6 +77,9 @@ export function OmniMasterShowcase() {
   const handleSelectAct = (index: number) => {
     setActiveActIndex(index);
     if (videoRef.current) {
+      document.querySelectorAll("video").forEach((v) => {
+        if (v !== videoRef.current) v.pause();
+      });
       videoRef.current.currentTime = ACTS[index].videoTime;
       videoRef.current.play().catch(() => {});
     }
@@ -137,7 +140,12 @@ export function OmniMasterShowcase() {
               poster={activeAct.stillUrl || "/assets/stills/napoleon_hero.png"}
               playsInline
               controls
-              preload="metadata"
+              preload="none"
+              onPlay={() => {
+                document.querySelectorAll("video").forEach((v) => {
+                  if (v !== videoRef.current) v.pause();
+                });
+              }}
             />
 
             <div className="pointer-events-none absolute top-4 right-4 z-20 flex items-center gap-2 rounded-lg bg-black/70 px-3 py-1.5 text-[11px] font-mono font-bold text-slate-200 backdrop-blur-md border border-white/10">

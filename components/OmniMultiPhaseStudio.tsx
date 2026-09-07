@@ -480,19 +480,6 @@ export function OmniMultiPhaseStudio() {
     setIsExporting(false);
     setIsExported(true);
 
-    // Trigger physical browser download for explicit export
-    try {
-      const link = document.createElement("a");
-      link.href = currentScene.video;
-      link.download = `zyvoriq_${currentScene.id}_master.mp4`;
-      link.target = "_blank";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (e) {
-      console.error("Direct download trigger error:", e);
-    }
-
     // Pause studio background player before opening modal to eliminate overlapping audio
     if (videoRef.current) {
       videoRef.current.pause();
@@ -500,7 +487,7 @@ export function OmniMultiPhaseStudio() {
     }
     setShowDeliveryModal(true);
 
-    setToastMessage("🎉 4K Cinema Master exported & download initiated! Delivery Suite unlocked.");
+    setToastMessage("🎉 4K Cinema Master certified & exported! Screening Suite unlocked.");
     setTimeout(() => setToastMessage(null), 5000);
   };
 
@@ -579,64 +566,65 @@ export function OmniMultiPhaseStudio() {
       videoRef.current.pause();
       setIsPlaying(false);
     }
+    if (typeof document !== "undefined") {
+      document.querySelectorAll("video").forEach((v) => {
+        if (v !== videoRef.current) v.pause();
+      });
+    }
 
     setIsGeneratingReel(true);
     setIsGenerating(true);
     setReelGenStep(1);
-    setReelGenProgress(20);
+    setReelGenProgress(25);
     setReelGenStatus("Ingesting prompt & compiling screenplay...");
     setReelReadyBanner(false);
 
     let targetScene = currentScene;
 
     try {
-      // 1. Check exact preset or legacy match
-      const canonicalMatch = SCENE_PRESETS.find(
-        (p) =>
-          p.prompt.toLowerCase() === text.toLowerCase() ||
-          p.id.toLowerCase() === text.toLowerCase() ||
-          LEGACY_ID_MAP[text.toLowerCase()] === p.id
-      );
+      setReelGenProgress(45);
+      setReelGenStatus("Executing Gemini multimodal & Omni Directorial synthesis...");
 
-      if (canonicalMatch) {
-        targetScene = canonicalMatch;
-        setReelGenProgress(70);
-        setReelGenStatus("Applying 4K master grade & acoustic score...");
-      } else {
-        setReelGenProgress(45);
-        setReelGenStatus("Executing Gemini multimodal & Omni Directorial synthesis...");
+      try {
+        const res = await fetch("/api/studio/omni-generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: AbortSignal.timeout(3500),
+          body: JSON.stringify({ prompt: text })
+        });
 
-        try {
-          const res = await fetch("/api/studio/omni-generate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            signal: AbortSignal.timeout(3500),
-            body: JSON.stringify({ prompt: text })
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            if (data.scene) {
-              targetScene = {
-                id: data.scene.id,
-                label: "Generated Reel",
-                title: data.scene.title,
-                genre: data.scene.genre,
-                setting: data.scene.setting,
-                dynamic: data.scene.dynamic,
-                prompt: text,
-                duration: data.scene.duration || 180,
-                still: data.scene.still,
-                video: data.scene.video,
-                lines: data.scene.lines
-              };
-            }
+        if (res.ok) {
+          const data = await res.json();
+          if (data.scene) {
+            targetScene = {
+              id: data.scene.id,
+              label: "Generated Reel",
+              title: data.scene.title,
+              genre: data.scene.genre,
+              setting: data.scene.setting,
+              dynamic: data.scene.dynamic,
+              prompt: text,
+              duration: data.scene.duration || 180,
+              still: data.scene.still,
+              video: data.scene.video,
+              lines: data.scene.lines
+            };
           }
-        } catch (apiErr) {
-          console.warn("API timeout or error, falling back to client compiler:", apiErr);
         }
+      } catch (apiErr) {
+        console.warn("API timeout or error, falling back to client compiler:", apiErr);
+      }
 
-        if (!targetScene || targetScene === currentScene) {
+      if (!targetScene || targetScene === currentScene) {
+        const canonicalMatch = SCENE_PRESETS.find(
+          (p) =>
+            p.prompt.toLowerCase() === text.toLowerCase() ||
+            p.id.toLowerCase() === text.toLowerCase() ||
+            LEGACY_ID_MAP[text.toLowerCase()] === p.id
+        );
+        if (canonicalMatch) {
+          targetScene = canonicalMatch;
+        } else {
           targetScene = compileOmniPromptClient(text);
         }
       }
@@ -668,6 +656,11 @@ export function OmniMultiPhaseStudio() {
 
     // Smooth playback in the main 4K studio cinema player right below
     if (videoRef.current) {
+      if (typeof document !== "undefined") {
+        document.querySelectorAll("video").forEach((v) => {
+          if (v !== videoRef.current) v.pause();
+        });
+      }
       videoRef.current.currentTime = 0;
       videoRef.current.play().catch(() => {});
       setIsPlaying(true);
@@ -1065,6 +1058,14 @@ export function OmniMultiPhaseStudio() {
                   muted={isMuted}
                   onTimeUpdate={handleTimeUpdate}
                   onEnded={() => setIsPlaying(false)}
+                  onPlay={() => {
+                    if (typeof document !== "undefined") {
+                      document.querySelectorAll("video").forEach((v) => {
+                        if (v !== videoRef.current) v.pause();
+                      });
+                    }
+                    setIsPlaying(true);
+                  }}
                   className="h-full w-full object-cover select-none"
                 />
 
