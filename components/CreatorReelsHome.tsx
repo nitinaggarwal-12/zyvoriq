@@ -142,14 +142,17 @@ export function CreatorReelsHome() {
     setGenerationStep("Analyzing prompt & composing multi-shot screenplay...");
 
     try {
-      const res = await fetch("/api/studio/omni-generate", {
+      const res = await fetch("/api/studio1/productions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          topic: text,
           prompt: text,
           duration: selectedDuration,
+          requestedDurationSec: selectedDuration,
           aspectRatio: selectedAspectRatio,
-          platform: "tiktok"
+          platform: "reels",
+          autoStart: true,
         })
       });
 
@@ -159,7 +162,11 @@ export function CreatorReelsHome() {
       }
 
       const data = await res.json();
-      setGeneratedResult(data);
+      setGeneratedResult({
+        ...data,
+        productionId: data.production?.id || data.productionId,
+        message: "Your Studio1 unbroken reel is planned and actively rendering in the background queue. Estimated time: ~7 minutes."
+      });
       setGenerationStep(null);
     } catch (err: any) {
       console.error("Failed to enqueue reel generation:", err);

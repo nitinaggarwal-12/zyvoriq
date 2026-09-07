@@ -24,13 +24,13 @@ async function runZeroKeywordZeroStaticGate() {
 
   const port = process.env.PORT || 3000;
   const baseUrl = `http://localhost:${port}`;
-  console.log(`[Gate Test] Sending POST request to ${baseUrl}/api/studio/omni-generate...`);
+  console.log(`[Gate Test] Sending POST request to ${baseUrl}/api/studio1/productions...`);
 
   const startTime = Date.now();
-  const res = await fetch(`${baseUrl}/api/studio/omni-generate`, {
+  const res = await fetch(`${baseUrl}/api/studio1/productions`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt: testPrompt })
+    body: JSON.stringify({ topic: testPrompt, prompt: testPrompt, autoStart: false })
   });
 
   const durationSec = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -43,7 +43,7 @@ async function runZeroKeywordZeroStaticGate() {
 
   const data = await res.json();
   assert(data.success === true, "Expected data.success to be true");
-  assert(data.scene, "Expected data.scene to exist");
+  assert(data.production, "Expected data.production to exist");
 
   const scene = data.scene;
   console.log(`[Gate Test] Scene ID: "${scene.id}"`);
