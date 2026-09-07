@@ -312,7 +312,7 @@ async function cleanupOrphanedMumbaiJobs() {
     for (const pRow of resProds.rows) {
       await pool.query(`
         UPDATE reel_productions
-        SET manifest_json = jsonb_set(COALESCE(manifest_json, '{}'::jsonb), '{status}', '"CANCELLED"'),
+        SET manifest_json = jsonb_set(COALESCE(manifest_json::jsonb, '{}'::jsonb), '{status}', '"CANCELLED"')::text,
             updated_at = NOW()
         WHERE id = $1
       `, [pRow.id]);
@@ -336,7 +336,8 @@ async function cleanupOrphanedMumbaiJobs() {
         await pool.query(`UPDATE reel_operations SET status='CANCELLED', last_error='ORPHANED_NO_PRODUCTION' WHERE id=$1`, [qRow.id]);
         continue;
       }
-      const m = p.rows[0].manifest_json || {};
+      const rawManifest = p.rows[0].manifest_json;
+      const m = typeof rawManifest === 'string' ? JSON.parse(rawManifest) : (rawManifest || {});
       const shot = Array.isArray(m.shots) ? m.shots.find(s => s.id === qRow.target_id) : null;
       if (shot?.dependsOnShotIds?.length) {
         const deadDep = shot.dependsOnShotIds.find(depId => {
