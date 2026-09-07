@@ -806,6 +806,9 @@ function normalizeWords(t) {
       out.push(w);
     }
   }
+  return out;
+}
+
 function editDistance(a, b) { const p = Array.from({ length: b.length + 1 }, (_, i) => i); for (let i = 1; i <= a.length; i++) { const c = [i]; for (let j = 1; j <= b.length; j++) c[j] = Math.min(c[j - 1] + 1, p[j] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); for (let j = 0; j <= b.length; j++) p[j] = c[j]; } return p[b.length]; }
 function lcsLength(a, b) { const d = Array(b.length + 1).fill(0); for (const x of a) { let diag = 0; for (let j = 1; j <= b.length; j++) { const prior = d[j]; d[j] = x === b[j - 1] ? diag + 1 : Math.max(d[j], d[j - 1]); diag = prior; } } return d[b.length]; }
 function stripSpeakerLabels(text) {
