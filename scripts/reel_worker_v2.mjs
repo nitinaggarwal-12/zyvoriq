@@ -872,8 +872,14 @@ async function transcribeAndValidateNarration(op, manifest, checkpoint, wav) {
   if (!timings.length) throw new Error("No word-level timestamps returned");
   const actualWords = timings.map(t => t.word).join(" ");
   console.log(`[reel-worker] [transcription] prod ${op.production_id} transcribed: "${actualWords.slice(0, 160)}..."`);
-  const validation = validateTranscript(manifest.masterScript, timings, checkpoint.actualDurationSec);
-  console.log(`[reel-worker] [transcription] prod ${op.production_id} alignment verified: WER ${validation.wer}, coverage ${validation.coverage}`);
+  let validation;
+  try {
+    validation = validateTranscript(manifest.masterScript, timings, checkpoint.actualDurationSec);
+    console.log(`[reel-worker] [transcription] prod ${op.production_id} alignment verified: WER ${validation.wer}, coverage ${validation.coverage}`);
+  } catch (valErr) {
+    console.error(`[reel-worker] [transcription-fail] prod ${op.production_id}: ${valErr.message}`);
+    throw valErr;
+  }
   await assertApplicable(op);
   return { ...checkpoint, stage: "COMPLETE", wordTimings: timings, alignmentValidation: validation };
 }
@@ -1423,6 +1429,7 @@ for (;;) {
     } catch (error) {
       const message = String(error?.message || error).slice(0, 2000);
       const cancelled = message.startsWith("OPERATION_CANCELLED");
+      const ambiguous = message.includes("AMBIGUOUS_TTS_RESULT_AFTER_BOUNDED_RECOVERY") || message.includes("AMBIGUOUS_VEO_DISPATCH_AFTER_BOUNDED_RECOVERY") || message.includes("AMBIGUOUS_VEO_DISPATCH_NO_OPERATION_ID");
       const deterministic = message.startsWith("Studio1") || message.startsWith("Narration transcript mismatch:") || message.startsWith("Narration timestamps failed") || message.startsWith("Transcript verification has no comparable words");
       const retry = !cancelled && !ambiguous && !deterministic && Number(op.attempt || 0) < 3;
       await pool.query(`UPDATE reel_operations SET status=$2,last_error=$3,lease_owner=NULL,lease_expires_at=NULL,updated_at=NOW() WHERE id=$1`, [op.id, cancelled ? "CANCELLED" : retry ? "QUEUED" : "FAILED", message]);
