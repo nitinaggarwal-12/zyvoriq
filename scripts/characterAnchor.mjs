@@ -80,14 +80,17 @@ async function generateImage(parts, { retryCount = 3 } = {}) {
 
     // Ensure all text parts explicitly have an imperative image generation directive
     const requestParts = parts.map(p => {
+      if (p.inline_data || p.inlineData) {
+        return p;
+      }
       let txt = p.text || "";
       if (attempt > 0) {
         txt = sanitizePromptForImageGen(txt);
       }
       if (txt && !txt.toLowerCase().startsWith("generate an image")) {
-        return { ...p, text: `Generate an image. ${txt}` };
+        return { text: `Generate an image. ${txt}` };
       }
-      return { ...p, text: txt };
+      return { text: txt };
     });
 
     const res = await fetch(`${API_BASE}/v1beta/models/${currentModel}:generateContent?key=${key}`, {
