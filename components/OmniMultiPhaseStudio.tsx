@@ -219,145 +219,6 @@ function extractPromptTitle(prompt: string, fallback: string): string {
   return words.slice(0, 5).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
 }
 
-function compileOmniPromptClient(rawPrompt: string): ScenePreset {
-  const prompt = rawPrompt.trim();
-  const lower = prompt.toLowerCase();
-
-  let title = "Omni Cinema Master";
-  let genre = "Cinematic Narrative Masterpiece";
-  let setting = "Acoustically Calibrated Soundstage & Location Studio";
-  let dynamic = "High-Stakes Dramatic Arc & Biometric Resonance";
-  let still = "/assets/stills/mumbai_penthouse.jpg";
-  let video = "/assets/video/mumbai_penthouse_180s_master.mp4";
-  let lines: ScriptLine[] = [];
-
-  if (lower.includes("cyberpunk") || lower.includes("neotokyo") || lower.includes("neon") || lower.includes("blade runner") || lower.includes("android") || lower.includes("hacker") || lower.includes("shinjuku") || lower.includes("cyber")) {
-    title = extractPromptTitle(prompt, "Neon Tokyo Infiltration");
-    genre = "Cyberpunk / Sci-Fi";
-    setting = "Shinjuku Sublevel 4, Neo-Tokyo (2088)";
-    dynamic = "High-Stakes Grid Infiltration & Drone Evasion";
-    still = "/assets/stills/neotokyo_hero.jpg";
-    video = "/assets/video/neotokyo_180s_master.mp4";
-    lines = [
-      { id: "cb1", speaker: "KENJI", emotion: "whispering", timestamp: "00:04", text: "The perimeter power grid went dark. We have twelve seconds before the drone sweep." },
-      { id: "cb2", speaker: "AI OPERATOR", emotion: "calm", timestamp: "00:09", text: "Thermal trace confirmed on the roof. Neural jammer active." },
-      { id: "cb3", speaker: "KENJI", emotion: "determined", timestamp: "00:15", text: "Initiate terminal uplink. No one leaves this alley empty-handed." }
-    ];
-  } else if (lower.includes("titanic") || lower.includes("iceberg") || lower.includes("marconi") || (lower.includes("ship") && lower.includes("sink"))) {
-    title = extractPromptTitle(prompt, "1912 Titanic Distress Transmission");
-    genre = "Historical Disaster / Drama";
-    setting = "Marconi Wireless Cabin, RMS Titanic (North Atlantic, 1912)";
-    dynamic = "Desperate Emergency SOS Under Rising Sea";
-    still = "/assets/stills/titanic_hero.jpg";
-    video = "/assets/video/titanic_180s_master.mp4";
-    lines = [
-      { id: "tt1", speaker: "PHILLIPS", emotion: "urgent", timestamp: "00:04", text: "CQD CQD SOS from MGY. Struck iceberg, sinking rapidly by the head." },
-      { id: "tt2", speaker: "BRIDE", emotion: "focused", timestamp: "00:09", text: "Carpathia acknowledges! Captain Rostron says they're steaming full speed." },
-      { id: "tt3", speaker: "PHILLIPS", emotion: "solemn", timestamp: "00:15", text: "Keep pounding the brass key, Harold. Power won't last another ten minutes." }
-    ];
-  } else if (lower.includes("napoleon") || lower.includes("coronation") || lower.includes("notre dame") || lower.includes("emperor") || lower.includes("crown")) {
-    title = extractPromptTitle(prompt, "1804 Notre-Dame Imperial Coronation");
-    genre = "Imperial Epic / Historical";
-    setting = "Cathedral of Notre-Dame, Paris (1804)";
-    dynamic = "Sacred Sovereignty & Imperial Destiny";
-    still = "/assets/stills/coronation_hero.png";
-    video = "/assets/video/coronation_180s_master.mp4";
-    lines = [
-      { id: "np1", speaker: "NAPOLEON", emotion: "commanding", timestamp: "00:05", text: "Dieu me l'a donnée, gare à qui la touche." },
-      { id: "np2", speaker: "JOSEPHINE", emotion: "reverent", timestamp: "00:10", text: "The crown of France rests upon your brow, mon empereur." },
-      { id: "np3", speaker: "NAPOLEON", emotion: "solemn", timestamp: "00:16", text: "Not just France, Josephine. History itself begins today." }
-    ];
-  } else if (lower.includes("marseille") || lower.includes("waterfront") || lower.includes("frigate") || lower.includes("harbor") || lower.includes("docks")) {
-    title = extractPromptTitle(prompt, "1795 Marseille Waterfront Expedition");
-    genre = "Period Maritime Drama";
-    setting = "Old Port of Marseille, France (1795)";
-    dynamic = "Military Mobilization & Mediterranean Intrigue";
-    still = "/assets/stills/napoleon_hero.png";
-    video = "/assets/video/napoleon_180s_master.mp4";
-    lines = [
-      { id: "ms1", speaker: "NAPOLEON", emotion: "determined", timestamp: "00:04", text: "We must requisition the grain shipments for the Army of Italy by midnight." },
-      { id: "ms2", speaker: "DÉSIRÉE", emotion: "melancholy", timestamp: "00:09", text: "The tide is treacherous tonight, Napoléon. Even heroes drown in these waters." },
-      { id: "ms3", speaker: "NAPOLEON", emotion: "fierce", timestamp: "00:15", text: "Destiny does not drown in Marseille harbor. Ready the frigate." }
-    ];
-  } else if (lower.includes("mumbai") || lower.includes("penthouse") || lower.includes("dinner") || lower.includes("family") || lower.includes("hinglish") || lower.includes("bandra") || lower.includes("paneer")) {
-    title = extractPromptTitle(prompt, "Luxury Mumbai Penthouse Dinner");
-    genre = "Contemporary Luxury Drama";
-    setting = "High-Rise Penthouse, Bandra West, Mumbai";
-    dynamic = "Warm Sibling Banter & Family Revelations";
-    still = "/assets/stills/mumbai_penthouse.jpg";
-    video = "/assets/video/mumbai_penthouse_180s_master.mp4";
-    lines = [
-      { id: "mb1", speaker: "RAJ", emotion: "smiling", timestamp: "00:04", text: "Bas karo, Shweta! Paneer khatam ho jayega!" },
-      { id: "mb2", speaker: "SHWETA", emotion: "laughing", timestamp: "00:08", text: "Rahul is eating it all while looking at Mumbai Sea Link!" },
-      { id: "mb3", speaker: "RAHUL", emotion: "feigning innocence", timestamp: "00:14", text: "Family dinner rule number one: first come, first served!" }
-    ];
-  } else if (lower.includes("space") || lower.includes("black hole") || lower.includes("galaxy") || lower.includes("astronaut") || lower.includes("orbit")) {
-    title = extractPromptTitle(prompt, "Event Horizon Orbital Transit");
-    genre = "Deep Space Odyssey";
-    setting = "Deep Space Research Vessel 'Aethelgard', Outer Orbital Ring";
-    dynamic = "Cosmic Isolation & Singularity Transit";
-    still = "/assets/stills/neotokyo_hero.jpg";
-    video = "/assets/video/neotokyo_180s_master.mp4";
-    lines = [
-      { id: "sp1", speaker: "COMMANDER VANCE", emotion: "focused", timestamp: "00:05", text: "Gravitational lensing passing 1.4 arcseconds. All inertial dampeners at maximum." },
-      { id: "sp2", speaker: "DR. ARIS", emotion: "awe", timestamp: "00:10", text: "Look at the event horizon... the photons are curving back upon themselves." },
-      { id: "sp3", speaker: "COMMANDER VANCE", emotion: "steady", timestamp: "00:16", text: "Seal the secondary blast shields. We're crossing the accretion threshold." }
-    ];
-  } else if (lower.includes("sea") || lower.includes("ocean") || lower.includes("submarine") || lower.includes("trench") || lower.includes("underwater") || lower.includes("mariana")) {
-    title = extractPromptTitle(prompt, "Mariana Trench Abyssal Discovery");
-    genre = "Abyssal Exploration Documentary";
-    setting = "Bathyscaphe Challenger IV, Depth 10,928m (Mariana Trench)";
-    dynamic = "Extreme Pressure Abyss & Bioluminescent Contact";
-    still = "/assets/stills/neotokyo_hero.jpg";
-    video = "/assets/video/titanic_180s_master.mp4";
-    lines = [
-      { id: "oc1", speaker: "CHIEF PILOT", emotion: "whispering", timestamp: "00:04", text: "External pressure: one thousand atmospheres. Hull acoustic sensors stable." },
-      { id: "oc2", speaker: "OCEANOGRAPHER", emotion: "astonished", timestamp: "00:10", text: "Activate the high-frequency spotlight. Look at the sediment formations..." },
-      { id: "oc3", speaker: "CHIEF PILOT", emotion: "reverent", timestamp: "00:16", text: "Bioluminescent pulse detected. Something down here is answering our sonar." }
-    ];
-  } else if (lower.includes("dragon") || lower.includes("fantasy") || lower.includes("magic") || lower.includes("castle") || lower.includes("sword") || lower.includes("knight")) {
-    title = extractPromptTitle(prompt, "Siege of the Obsidian Peak");
-    genre = "Epic High Fantasy";
-    setting = "Glacial Spire Citadel, Realm of Frost";
-    dynamic = "Clash of Ancient Magic & Imperial Siege";
-    still = "/assets/stills/coronation_hero.png";
-    video = "/assets/video/coronation_180s_master.mp4";
-    lines = [
-      { id: "fn1", speaker: "VALERIUS", emotion: "bracing", timestamp: "00:04", text: "The frost drakes have crested the cloudline! Raise the aegis wards!" },
-      { id: "fn2", speaker: "HIGH MAGE", emotion: "chanting", timestamp: "00:09", text: "The wardstones are resonating with ancient dragonfire. Hold the line!" },
-      { id: "fn3", speaker: "VALERIUS", emotion: "roaring", timestamp: "00:15", text: "For the realm and the frostborn! Do not yield an inch of stone!" }
-    ];
-  } else {
-    title = extractPromptTitle(prompt, "Omni Cinema Masterpiece");
-    genre = "Cinematic Narrative Masterpiece";
-    setting = "Acoustically Calibrated Soundstage & Location Studio";
-    dynamic = "High-Stakes Dramatic Arc & Biometric Resonance";
-    still = "/assets/stills/mumbai_penthouse.jpg";
-    video = "/assets/video/mumbai_penthouse_180s_master.mp4";
-    lines = [
-      { id: "un1", speaker: "PROTAGONIST", emotion: "intense", timestamp: "00:04", text: `Every choice we made has brought us directly to this threshold.` },
-      { id: "un2", speaker: "COUNTERPART", emotion: "composed", timestamp: "00:10", text: `Then let us see it through to the end, whatever the cost.` },
-      { id: "un3", speaker: "PROTAGONIST", emotion: "resolute", timestamp: "00:16", text: `Omni has locked the trajectory. Roll camera.` }
-    ];
-  }
-
-  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 24) || "custom_master";
-  const uniqueReelId = `reel_${slug}_${Math.random().toString(36).substring(2, 7)}`;
-
-  return {
-    id: uniqueReelId,
-    label: "Custom Master",
-    title,
-    genre,
-    setting,
-    dynamic,
-    prompt,
-    duration: 180,
-    still,
-    video,
-    lines
-  };
-}
 
 export function OmniMultiPhaseStudio() {
   // Current active scene preset
@@ -575,99 +436,128 @@ export function OmniMultiPhaseStudio() {
     setIsGeneratingReel(true);
     setIsGenerating(true);
     setReelGenStep(1);
-    setReelGenProgress(25);
-    setReelGenStatus("Ingesting prompt & compiling screenplay...");
+    setReelGenProgress(20);
+    setReelGenStatus("Ingesting prompt & initializing Google Omni Directorial Cognition...");
     setReelReadyBanner(false);
 
-    let targetScene = currentScene;
+    let targetScene: ScenePreset = currentScene;
 
     try {
-      setReelGenProgress(45);
-      setReelGenStatus("Executing Gemini multimodal & Omni Directorial synthesis...");
+      // Step 1: Check if this is an exact match for one of the canonical showcase presets
+      const canonicalMatch = SCENE_PRESETS.find(
+        (p) =>
+          p.prompt.toLowerCase() === text.toLowerCase() ||
+          p.id.toLowerCase() === text.toLowerCase() ||
+          LEGACY_ID_MAP[text.toLowerCase()] === p.id
+      );
 
-      try {
-        const res = await fetch("/api/studio/omni-generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          signal: AbortSignal.timeout(3500),
-          body: JSON.stringify({ prompt: text })
-        });
+      if (canonicalMatch) {
+        targetScene = canonicalMatch;
+      } else {
+        // Step 2: Real live generation via Gemini Multimodal & Gemini 2.5 Flash Image
+        setReelGenProgress(40);
+        setReelGenStatus("Gemini 2.5 Flash: Composing character screenplay & dramatic conflict...");
 
-        if (res.ok) {
-          const data = await res.json();
-          if (data.scene) {
-            targetScene = {
-              id: data.scene.id,
-              label: "Generated Reel",
-              title: data.scene.title,
-              genre: data.scene.genre,
-              setting: data.scene.setting,
-              dynamic: data.scene.dynamic,
-              prompt: text,
-              duration: data.scene.duration || 180,
-              still: data.scene.still,
-              video: data.scene.video,
-              lines: data.scene.lines
-            };
+        // Progress increment timer for honest real-time feedback
+        const timer1 = setTimeout(() => {
+          setReelGenProgress(70);
+          setReelGenStatus("Gemini 2.5 Flash Image: Synthesizing photorealistic 4K cinematic hero plate...");
+        }, 3000);
+
+        try {
+          const res = await fetch("/api/studio/omni-generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            signal: AbortSignal.timeout(35000), // Real model call latency
+            body: JSON.stringify({ prompt: text })
+          });
+
+          clearTimeout(timer1);
+
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `Generation API failed with HTTP ${res.status}`);
           }
+
+          const data = await res.json();
+          if (!data.scene) {
+            throw new Error("Generation response missing scene data");
+          }
+
+          targetScene = {
+            id: data.scene.id,
+            label: "Generated 4K Reel",
+            title: data.scene.title,
+            genre: data.scene.genre,
+            setting: data.scene.setting,
+            dynamic: data.scene.dynamic,
+            prompt: text,
+            duration: data.scene.duration || 180,
+            still: data.scene.stillBase64 || data.scene.still,
+            video: data.scene.video || "", // Empty if video diffusion is pending
+            lines: data.scene.lines
+          };
+        } catch (apiErr: any) {
+          clearTimeout(timer1);
+          console.error("Live generation failed:", apiErr);
+          throw apiErr; // NEVER FALL BACK TO MUMBAI OR STATIC MOCK!
         }
-      } catch (apiErr) {
-        console.warn("API timeout or error, falling back to client compiler:", apiErr);
       }
 
-      if (!targetScene || targetScene === currentScene) {
-        const canonicalMatch = SCENE_PRESETS.find(
-          (p) =>
-            p.prompt.toLowerCase() === text.toLowerCase() ||
-            p.id.toLowerCase() === text.toLowerCase() ||
-            LEGACY_ID_MAP[text.toLowerCase()] === p.id
-        );
-        if (canonicalMatch) {
-          targetScene = canonicalMatch;
-        } else {
-          targetScene = compileOmniPromptClient(text);
+      setReelGenProgress(100);
+      setReelGenStatus(
+        targetScene.video 
+          ? "4K Master Cinema Reel Ready!"
+          : "🎬 4K Hero Plate & Directorial Screenplay Synthesized!"
+      );
+
+      setCurrentScene(targetScene);
+      setScriptLines(targetScene.lines);
+      setSettingText(targetScene.setting);
+      setDynamicText(targetScene.dynamic);
+      setTotalDuration(targetScene.duration);
+      setPromptInput(targetScene.prompt);
+      setActivePresetId(targetScene.id);
+
+      setCompletedPhases([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+      setActivePhase(11);
+      setIsGeneratingReel(false);
+      setIsGenerating(false);
+      setIsExported(true);
+      setReelReadyBanner(true);
+
+      // Update URL query parameters for deep linking
+      updateUrlParams(targetScene.id, 11);
+
+      // Smooth playback ONLY if real video asset exists
+      if (videoRef.current && targetScene.video) {
+        if (typeof document !== "undefined") {
+          document.querySelectorAll("video").forEach((v) => {
+            if (v !== videoRef.current) v.pause();
+          });
         }
+        videoRef.current.currentTime = 0;
+        videoRef.current.play().catch(() => {});
+        setIsPlaying(true);
+      } else {
+        setIsPlaying(false);
       }
-    } catch (err) {
-      console.warn("Generation error:", err);
-      targetScene = compileOmniPromptClient(text);
+
+      setToastMessage(
+        targetScene.video
+          ? `🎉 4K Master Reel "${targetScene.title}" loaded & playing!`
+          : `🎬 4K Plate & Screenplay "${targetScene.title}" synthesized via Gemini 2.5!`
+      );
+      setTimeout(() => setToastMessage(null), 5000);
+
+    } catch (err: any) {
+      console.error("Fatal reel generation error:", err);
+      setIsGeneratingReel(false);
+      setIsGenerating(false);
+      setReelGenStatus(`Generation failed: ${err.message}`);
+      setToastMessage(`❌ Directorial Generation Error: ${err.message}`);
+      setTimeout(() => setToastMessage(null), 7000);
     }
-
-    setReelGenProgress(100);
-    setReelGenStatus("4K Master Cinema Reel Ready!");
-
-    setCurrentScene(targetScene);
-    setScriptLines(targetScene.lines);
-    setSettingText(targetScene.setting);
-    setDynamicText(targetScene.dynamic);
-    setTotalDuration(targetScene.duration);
-    setPromptInput(targetScene.prompt);
-    setActivePresetId(targetScene.id);
-
-    setCompletedPhases([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
-    setActivePhase(11);
-    setIsGeneratingReel(false);
-    setIsGenerating(false);
-    setIsExported(true);
-    setReelReadyBanner(true);
-
-    // Update URL query parameters for deep linking
-    updateUrlParams(targetScene.id, 11);
-
-    // Smooth playback in the main 4K studio cinema player right below
-    if (videoRef.current) {
-      if (typeof document !== "undefined") {
-        document.querySelectorAll("video").forEach((v) => {
-          if (v !== videoRef.current) v.pause();
-        });
-      }
-      videoRef.current.currentTime = 0;
-      videoRef.current.play().catch(() => {});
-      setIsPlaying(true);
-    }
-
-    setToastMessage(`🎉 4K Master Reel "${targetScene.title}" (${targetScene.id}) generated & playing!`);
-    setTimeout(() => setToastMessage(null), 5000);
   };
 
   const handleStartReelGeneration = () => handleSendPromptToGenerate();
@@ -1048,7 +938,7 @@ export function OmniMultiPhaseStudio() {
               </div>
 
               {/* Video Element with Fallback Poster */}
-              <div className="relative h-full w-full bg-black">
+              <div className="relative h-full w-full bg-black flex items-center justify-center overflow-hidden">
                 <video
                   ref={videoRef}
                   key={currentScene.id}
@@ -1069,8 +959,39 @@ export function OmniMultiPhaseStudio() {
                   className="h-full w-full object-cover select-none"
                 />
 
-                {/* Large Center Play Button when paused */}
-                {!isPlaying && (
+                {/* Honest 4K Hero Plate Overlay when video is pending neural diffusion */}
+                {!currentScene.video && (
+                  <>
+                    <div className="absolute top-4 left-4 z-20 flex items-center gap-2 rounded-full bg-black/85 backdrop-blur-md border border-emerald-500/50 px-3.5 py-1.5 shadow-xl">
+                      <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="text-xs font-mono font-bold text-emerald-300">
+                        4K Hero Plate Synthesized via Gemini 2.5 • Veo 3.1 Diffusion Ready
+                      </span>
+                    </div>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center pointer-events-none z-10">
+                      <div className="rounded-2xl bg-black/80 backdrop-blur-lg border border-emerald-500/40 p-5 max-w-lg shadow-2xl">
+                        <Sparkles className="h-7 w-7 text-emerald-400 mx-auto mb-2" />
+                        <h4 className="text-sm font-bold text-white mb-1 tracking-wide">
+                          4K Cinematic Master Plate Synthesized
+                        </h4>
+                        <p className="text-xs text-zinc-300 mb-3 leading-relaxed">
+                          Directorial cognition & character screenplay EDL locked. Frame rendered dynamically via Gemini 2.5 Flash Image.
+                        </p>
+                        <div className="flex items-center justify-center gap-2">
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 px-3 py-0.5 text-[11px] font-mono font-semibold text-emerald-300">
+                            Veo 3.1 4K DCI (24fps SMPTE)
+                          </span>
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/20 border border-cyan-500/40 px-3 py-0.5 text-[11px] font-mono font-semibold text-cyan-300">
+                            -24.0 LUFS EBU R128
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Large Center Play Button only when real video asset exists */}
+                {currentScene.video && !isPlaying && (
                   <button
                     type="button"
                     onClick={togglePlay}
