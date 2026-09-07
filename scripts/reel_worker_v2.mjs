@@ -457,12 +457,12 @@ async function runDeadlockAndStarvationWatchdog() {
       }
     }
 
-    // 5. Auto-enqueue ROUGH_CUT for productions that reached ROUGH_CUT_READY
+    // 5. Auto-enqueue / self-heal ROUGH_CUT for productions that reached ROUGH_CUT_READY or have all shots generated
     const readyProds = await pool.query(`
       SELECT p.id, p.revision, p.manifest_json, c.generation_token
       FROM reel_productions p
       JOIN reel_production_controls c ON c.production_id = p.id
-      WHERE (p.manifest_json->>'status' = 'ROUGH_CUT_READY' OR (
+      WHERE (p.manifest_json->>'status' IN ('ROUGH_CUT_READY', 'REPAIRING') OR (
         p.manifest_json->'shots' IS NOT NULL AND
         NOT EXISTS (
           SELECT 1 FROM jsonb_array_elements(p.manifest_json->'shots') elem
@@ -470,10 +470,14 @@ async function runDeadlockAndStarvationWatchdog() {
         )
       ))
       AND c.cancelled_at IS NULL
+      AND p.updated_at > NOW() - INTERVAL '6 hours'
     `);
     for (const rRow of readyProds.rows) {
       const rm = rRow.manifest_json;
       if (!rm?.audio?.narrationUrl || !rm.shots?.length) continue;
+      const allDone = rm.shots.every(s => s.asset?.videoUrl);
+      if (!allDone) continue;
+      const isStudio1 = rRow.id.startsWith("studio1_") && Boolean(rm.studio1?.timelineSync);
       const existingRc = await pool.query(
         `SELECT id, status FROM reel_operations WHERE production_id=$1 AND kind='ROUGH_CUT'`,
         [rRow.id]
@@ -483,10 +487,14 @@ async function runDeadlockAndStarvationWatchdog() {
           audio: rm.audio.narrationUrl,
           audioDuration: rm.audio.actualDurationSec,
           shots: rm.shots.map(s => [s.id, s.asset?.videoUrl, s.editorialStartSec, s.editorialDurationSec]),
-          studio1: true,
+          studio1: isStudio1,
         })).digest("hex").slice(0, 24);
         const rcIk = [rRow.id, rRow.generation_token || "legacy", "ROUGH_CUT", "production", rRow.revision, rfp].join(":");
         const rcOpId = `rop_${crypto.randomUUID()}`;
+        if (rm.status !== "ROUGH_CUT_READY" && rm.status !== "READY") {
+          rm.status = "ROUGH_CUT_READY";
+          await saveManifest(rRow.id, rRow.revision, rm);
+        }
         await pool.query(
           `INSERT INTO reel_operations (id, production_id, kind, target_id, idempotency_key, status, payload_json)
            VALUES ($1, $2, 'ROUGH_CUT', NULL, $3, 'QUEUED', $4::jsonb)
@@ -499,12 +507,29 @@ async function runDeadlockAndStarvationWatchdog() {
               manifestRevision: rRow.revision,
               generationToken: rRow.generation_token,
               semanticFingerprint: rfp,
-              studio1: true,
-              narrationSyncedTimeline: true,
+              studio1: isStudio1,
+              narrationSyncedTimeline: isStudio1,
             })
           ]
         );
         console.log(`[reel-worker] [watchdog-enqueue] ROUGH_CUT enqueued for prod ${rRow.id}`);
+      } else if (existingRc.rows[0]?.status === 'FAILED') {
+        if (rm.status !== "ROUGH_CUT_READY" && rm.status !== "READY") {
+          rm.status = "ROUGH_CUT_READY";
+          await saveManifest(rRow.id, rRow.revision, rm);
+        }
+        await pool.query(
+          `UPDATE reel_operations 
+           SET status='QUEUED', attempt=0, last_error=NULL, 
+               payload_json = jsonb_set(
+                 jsonb_set(COALESCE(payload_json, '{}'::jsonb), '{studio1}', $2::jsonb),
+                 '{narrationSyncedTimeline}', $3::jsonb
+               ),
+               updated_at=NOW()
+           WHERE id=$1`,
+          [existingRc.rows[0].id, JSON.stringify(isStudio1), JSON.stringify(isStudio1)]
+        );
+        console.log(`[reel-worker] [watchdog-selfheal] Reset failed ROUGH_CUT ${existingRc.rows[0].id} to QUEUED (studio1=${isStudio1}) for prod ${rRow.id}`);
       }
     }
 
@@ -749,7 +774,7 @@ async function claim() {
   return r.rows[0] || null;
 }
 async function controlFor(op) { const r = await pool.query(`SELECT * FROM reel_production_controls WHERE production_id=$1`, [op.production_id]); if (!r.rows[0]) throw new Error("OPERATION_CANCELLED: missing production control"); const c = r.rows[0]; if (c.cancelled_at) throw new Error("OPERATION_CANCELLED: production cancelled or superseded"); if (String(c.generation_token) !== String(op.payload_json?.generationToken || "")) throw new Error("OPERATION_CANCELLED: generation token no longer applies"); return c; }
-async function assertApplicable(op, { beforeDispatch = false } = {}) { await controlFor(op); const current = await getProduction(op.production_id); if (op.kind === "NARRATION" && !["SCRIPT_READY", "AUDIO_GENERATING"].includes(current.manifest.status)) throw new Error(`OPERATION_CANCELLED: narration no longer applies to ${current.manifest.status}`); if (op.kind === "SHOT") { const s = current.manifest.shots.find(x => x.id === op.target_id); if (!s) throw new Error("OPERATION_CANCELLED: shot removed"); if (s.asset?.videoUrl) throw new Error("OPERATION_CANCELLED: shot already has media"); if (!["PLANNED", "FAILED", "GENERATING"].includes(s.status)) throw new Error(`OPERATION_CANCELLED: shot no longer applies to ${s.status}`); } if (op.kind === "ROUGH_CUT" && current.manifest.status !== "ROUGH_CUT_READY") throw new Error(`OPERATION_CANCELLED: rough cut no longer applies to ${current.manifest.status}`); if (op.kind === "NATIVE_REEL" && !["SHOTS_PLANNED", "VIDEO_GENERATING", "REPAIRING"].includes(current.manifest.status)) throw new Error(`OPERATION_CANCELLED: native reel no longer applies to ${current.manifest.status}`); if (beforeDispatch && op.status === "CANCELLED") throw new Error("OPERATION_CANCELLED: operation cancelled"); return current; }
+async function assertApplicable(op, { beforeDispatch = false } = {}) { await controlFor(op); const current = await getProduction(op.production_id); if (op.kind === "NARRATION" && !["SCRIPT_READY", "AUDIO_GENERATING"].includes(current.manifest.status)) throw new Error(`OPERATION_CANCELLED: narration no longer applies to ${current.manifest.status}`); if (op.kind === "SHOT") { const s = current.manifest.shots.find(x => x.id === op.target_id); if (!s) throw new Error("OPERATION_CANCELLED: shot removed"); if (s.asset?.videoUrl) throw new Error("OPERATION_CANCELLED: shot already has media"); if (!["PLANNED", "FAILED", "GENERATING"].includes(s.status)) throw new Error(`OPERATION_CANCELLED: shot no longer applies to ${s.status}`); } if (op.kind === "ROUGH_CUT" && !["ROUGH_CUT_READY", "REPAIRING"].includes(current.manifest.status)) throw new Error(`OPERATION_CANCELLED: rough cut no longer applies to ${current.manifest.status}`); if (op.kind === "NATIVE_REEL" && !["SHOTS_PLANNED", "VIDEO_GENERATING", "REPAIRING"].includes(current.manifest.status)) throw new Error(`OPERATION_CANCELLED: native reel no longer applies to ${current.manifest.status}`); if (beforeDispatch && op.status === "CANCELLED") throw new Error("OPERATION_CANCELLED: operation cancelled"); return current; }
 
 async function markRunning(op) { const c = await assertApplicable(op); const m = c.manifest; if (op.kind === "NARRATION" && m.status === "SCRIPT_READY") m.status = "AUDIO_GENERATING"; if (op.kind === "SHOT") { const s = m.shots.find(x => x.id === op.target_id); if (["PLANNED", "FAILED"].includes(s.status)) s.status = "GENERATING"; if (["SHOTS_PLANNED", "REPAIRING"].includes(m.status)) m.status = "VIDEO_GENERATING"; } if (op.kind === "NATIVE_REEL" && ["SHOTS_PLANNED", "REPAIRING"].includes(m.status)) m.status = "VIDEO_GENERATING"; await saveManifest(op.production_id, c.revision, m); }
 async function markTerminalFailure(op, message) { try { const c = await getProduction(op.production_id), m = c.manifest; m.qa = m.qa || { minimumReadyScore: 90, passed: false, warnings: [], failures: [] }; m.qa.passed = false; m.qa.failures = [...(m.qa.failures || []), message]; if (op.kind === "SHOT") { const s = m.shots.find(x => x.id === op.target_id); if (s) { s.status = "FAILED"; s.qa = s.qa || { warnings: [], failures: [] }; s.qa.failures = [...(s.qa.failures || []), message]; } m.status = "REPAIRING"; } else if (op.kind === "ROUGH_CUT" || op.kind === "NATIVE_REEL") m.status = "REPAIRING"; else m.status = "FAILED"; await saveManifest(op.production_id, c.revision, m); } catch (e) { console.error(`[reel-worker] failure-state update failed: ${e?.message || e}`); } }
@@ -1063,14 +1088,16 @@ async function applyShot(op, result) {
   }
 
   // Auto-enqueue ROUGH_CUT if all shots are generated
-  if (m.status === "ROUGH_CUT_READY") {
+  const allShotsDone = m.shots.every(s => s.asset?.videoUrl && ["GENERATED", "PASSED"].includes(s.status));
+  if (m.status === "ROUGH_CUT_READY" || allShotsDone) {
     try {
+      const isStudio1 = op.production_id.startsWith("studio1_") && Boolean(m.studio1?.timelineSync);
       const ctrl = await controlFor(op);
       const rfp = crypto.createHash("sha256").update(JSON.stringify({
         audio: m.audio.narrationUrl,
         audioDuration: m.audio.actualDurationSec,
         shots: m.shots.map(shot => [shot.id, shot.asset?.videoUrl, shot.editorialStartSec, shot.editorialDurationSec]),
-        studio1: true,
+        studio1: isStudio1,
       })).digest("hex").slice(0, 24);
       const rcIk = [op.production_id, ctrl.generation_token || "legacy", "ROUGH_CUT", "production", c.revision, rfp].join(":");
       const rcOpId = `rop_${crypto.randomUUID()}`;
@@ -1086,8 +1113,8 @@ async function applyShot(op, result) {
             manifestRevision: c.revision,
             generationToken: ctrl.generation_token,
             semanticFingerprint: rfp,
-            studio1: true,
-            narrationSyncedTimeline: true,
+            studio1: isStudio1,
+            narrationSyncedTimeline: isStudio1,
           })
         ]
       );
@@ -1113,7 +1140,7 @@ async function renderRough(op, m) {
   await assertApplicable(op, { beforeDispatch: true });
   if (!assetRoot() || !m.audio?.narrationUrl || !m.audio?.actualDurationSec || !m.audio?.alignmentValidation?.passed) throw new Error("Validated narration and durable storage required");
 
-  const studio1 = op.payload_json?.studio1 === true;
+  const studio1 = op.payload_json?.studio1 === true && Boolean(m.studio1?.timelineSync);
   if (studio1) {
     if (!op.payload_json?.narrationSyncedTimeline) throw new Error("Studio1 exact render requires narrationSyncedTimeline operation evidence");
     if (Number(m.studio1?.timelineSync?.version || 0) < 2) throw new Error("Studio1 exact render requires timelineSync version 2");
