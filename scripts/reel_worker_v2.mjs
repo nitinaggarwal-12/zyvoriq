@@ -381,6 +381,94 @@ async function cleanupOrphanedMumbaiJobs() {
 }
 await cleanupOrphanedMumbaiJobs();
 
+async function runDeadlockAndStarvationWatchdog() {
+  try {
+    // 1. Circuit breaker: Quarantine any operation exceeding max attempts (>= 5) to prevent queue starvation
+    const poisonOps = await pool.query(`
+      UPDATE reel_operations
+      SET status='FAILED',
+          last_error='CIRCUIT_BREAKER_TRIGGERED: Exceeded maximum attempts (>= 5) without completion. Quarantined to prevent queue starvation.',
+          lease_owner=NULL,
+          lease_expires_at=NULL,
+          updated_at=NOW()
+      WHERE status IN ('QUEUED', 'RUNNING')
+        AND COALESCE(attempt, 0) >= 5
+      RETURNING id, production_id, target_id
+    `);
+    if (poisonOps.rowCount > 0) {
+      console.warn(`[reel-worker] [watchdog] Quarantined ${poisonOps.rowCount} poisoned operation(s):`, poisonOps.rows.map(r => r.id));
+    }
+
+    // 2. Identify any QUEUED shots that have unmet dependencies and convert them to BLOCKED
+    const queuedShots = await pool.query(`
+      SELECT o.id, o.production_id, o.target_id
+      FROM reel_operations o
+      WHERE o.status = 'QUEUED' AND o.kind = 'SHOT'
+    `);
+    for (const qRow of queuedShots.rows) {
+      const p = await pool.query(`SELECT manifest_json FROM reel_productions WHERE id=$1`, [qRow.production_id]);
+      const m = p.rows[0]?.manifest_json;
+      if (!m || !Array.isArray(m.shots)) continue;
+      const shot = m.shots.find(s => s.id === qRow.target_id);
+      if (shot?.dependsOnShotIds?.length) {
+        const unmet = shot.dependsOnShotIds.filter(depId => {
+          const dep = m.shots.find(s => s.id === depId);
+          return !dep?.asset?.videoUrl || !["GENERATED", "PASSED"].includes(dep.status);
+        });
+        if (unmet.length > 0) {
+          await pool.query(`
+            UPDATE reel_operations
+            SET status='BLOCKED',
+                last_error=$2,
+                lease_owner=NULL,
+                lease_expires_at=NULL,
+                updated_at=NOW()
+            WHERE id=$1
+          `, [qRow.id, `WAITING_ON_UPSTREAM_DEPENDENCIES:${unmet.join(",")}`]);
+          console.log(`[reel-worker] [watchdog] Safely blocked QUEUED shot ${shot.id} waiting on (${unmet.join(", ")})`);
+        }
+      }
+    }
+
+    // 3. Identify any BLOCKED shots whose dependencies are now fully satisfied and unblock them
+    const blockedShots = await pool.query(`
+      SELECT o.id, o.production_id, o.target_id
+      FROM reel_operations o
+      WHERE o.status = 'BLOCKED' AND o.kind = 'SHOT'
+    `);
+    for (const bRow of blockedShots.rows) {
+      const p = await pool.query(`SELECT manifest_json FROM reel_productions WHERE id=$1`, [bRow.production_id]);
+      const m = p.rows[0]?.manifest_json;
+      if (!m || !Array.isArray(m.shots)) continue;
+      const shot = m.shots.find(s => s.id === bRow.target_id);
+      if (shot?.dependsOnShotIds?.length) {
+        const allMet = shot.dependsOnShotIds.every(depId => {
+          const dep = m.shots.find(s => s.id === depId);
+          return dep?.asset?.videoUrl && ["GENERATED", "PASSED"].includes(dep.status);
+        });
+        if (allMet) {
+          await pool.query(`
+            UPDATE reel_operations
+            SET status='QUEUED',
+                attempt=0,
+                last_error=NULL,
+                lease_owner=NULL,
+                lease_expires_at=NULL,
+                updated_at=NOW()
+            WHERE id=$1
+          `, [bRow.id]);
+          console.log(`[reel-worker] [watchdog] Unblocked BLOCKED shot ${shot.id}: all upstream dependencies satisfied`);
+        }
+      }
+    }
+  } catch (err) {
+    console.error(`[reel-worker] [watchdog] Error running watchdog:`, err?.message || err);
+  }
+}
+await runDeadlockAndStarvationWatchdog();
+const watchdogTimer = setInterval(() => runDeadlockAndStarvationWatchdog().catch(() => {}), 30000);
+watchdogTimer.unref();
+
 async function publishHeartbeat() {
   await pool.query(`INSERT INTO reel_worker_heartbeats(worker_id,worker_role,metadata_json) VALUES($1,'reel-production',$2::jsonb)
     ON CONFLICT(worker_id) DO UPDATE SET heartbeat_at=NOW(),metadata_json=EXCLUDED.metadata_json`,
@@ -528,7 +616,28 @@ async function getProduction(id) { const r = await pool.query(`SELECT * FROM ree
 async function saveManifest(id, revision, manifest) { const r = await pool.query(`UPDATE reel_productions SET revision=revision+1,manifest_json=$3::jsonb,updated_at=NOW() WHERE id=$1 AND revision=$2 RETURNING revision`, [id, revision, JSON.stringify(manifest)]); if (!r.rows[0]) throw new Error(`Production ${id} changed concurrently while worker was attaching evidence`); return Number(r.rows[0].revision); }
 async function updateOperation(id, patch) { const fields = [], values = [id]; let n = 2; const map = { status: "status", providerOperationName: "provider_operation_name", result: "result_json", lastError: "last_error", leaseExpiresAt: "lease_expires_at", leaseOwner: "lease_owner" }; for (const [k, col] of Object.entries(map)) { if (!(k in patch)) continue; fields.push(`${col}=$${n++}${k === "result" ? "::jsonb" : ""}`); values.push(k === "result" ? JSON.stringify(patch[k]) : patch[k]); } fields.push("updated_at=NOW()"); await pool.query(`UPDATE reel_operations SET ${fields.join(",")} WHERE id=$1`, values); }
 async function operationHeartbeat(id) { await pool.query(`UPDATE reel_operations SET lease_expires_at=NOW()+INTERVAL '10 minutes',updated_at=NOW() WHERE id=$1 AND lease_owner=$2`, [id, workerId]); }
-async function claim() { const r = await pool.query(`WITH c AS(SELECT id FROM reel_operations WHERE status='QUEUED' OR(status='RUNNING' AND lease_expires_at<NOW()) ORDER BY created_at ASC FOR UPDATE SKIP LOCKED LIMIT 1) UPDATE reel_operations o SET status='RUNNING',attempt=o.attempt+1,lease_owner=$1,lease_expires_at=NOW()+INTERVAL '10 minutes',updated_at=NOW() FROM c WHERE o.id=c.id RETURNING o.*`, [workerId]); return r.rows[0] || null; }
+async function claim() {
+  const r = await pool.query(`
+    WITH c AS (
+      SELECT id FROM reel_operations
+      WHERE (status='QUEUED' AND COALESCE(attempt, 0) < 5)
+         OR (status='RUNNING' AND lease_expires_at < NOW() AND COALESCE(attempt, 0) < 5)
+      ORDER BY created_at ASC
+      FOR UPDATE SKIP LOCKED
+      LIMIT 1
+    )
+    UPDATE reel_operations o
+    SET status='RUNNING',
+        attempt=COALESCE(o.attempt, 0) + 1,
+        lease_owner=$1,
+        lease_expires_at=NOW() + INTERVAL '10 minutes',
+        updated_at=NOW()
+    FROM c
+    WHERE o.id=c.id
+    RETURNING o.*
+  `, [workerId]);
+  return r.rows[0] || null;
+}
 async function controlFor(op) { const r = await pool.query(`SELECT * FROM reel_production_controls WHERE production_id=$1`, [op.production_id]); if (!r.rows[0]) throw new Error("OPERATION_CANCELLED: missing production control"); const c = r.rows[0]; if (c.cancelled_at) throw new Error("OPERATION_CANCELLED: production cancelled or superseded"); if (String(c.generation_token) !== String(op.payload_json?.generationToken || "")) throw new Error("OPERATION_CANCELLED: generation token no longer applies"); return c; }
 async function assertApplicable(op, { beforeDispatch = false } = {}) { await controlFor(op); const current = await getProduction(op.production_id); if (op.kind === "NARRATION" && !["SCRIPT_READY", "AUDIO_GENERATING"].includes(current.manifest.status)) throw new Error(`OPERATION_CANCELLED: narration no longer applies to ${current.manifest.status}`); if (op.kind === "SHOT") { const s = current.manifest.shots.find(x => x.id === op.target_id); if (!s) throw new Error("OPERATION_CANCELLED: shot removed"); if (s.asset?.videoUrl) throw new Error("OPERATION_CANCELLED: shot already has media"); if (!["PLANNED", "FAILED", "GENERATING"].includes(s.status)) throw new Error(`OPERATION_CANCELLED: shot no longer applies to ${s.status}`); } if (op.kind === "ROUGH_CUT" && current.manifest.status !== "ROUGH_CUT_READY") throw new Error(`OPERATION_CANCELLED: rough cut no longer applies to ${current.manifest.status}`); if (op.kind === "NATIVE_REEL" && !["SHOTS_PLANNED", "VIDEO_GENERATING", "REPAIRING"].includes(current.manifest.status)) throw new Error(`OPERATION_CANCELLED: native reel no longer applies to ${current.manifest.status}`); if (beforeDispatch && op.status === "CANCELLED") throw new Error("OPERATION_CANCELLED: operation cancelled"); return current; }
 

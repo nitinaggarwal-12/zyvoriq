@@ -48,5 +48,22 @@
 - **Pre-Flight & Post-Deploy Health Checks**: Use `railway status` and `railway logs --service zyvoriq` on Cloudtop to inspect deployment lifecycle events, container startup, build logs, and runtime warnings before and after pushing code.
 - **Zero Unlinked Invocations**: Maintain active project and service linking to `zyvoriq` on Cloudtop (`production` environment, `zyvoriq` web service, `Postgres` database).
 
+# 🛡️ Mandatory Telemetry-First & Queue Concurrency Safeguard Protocol (Zero Silent Starvation)
+- **Telemetry-First Root-Cause Discipline**: Whenever generation hangs, infinite waits occur, or a user reports "not generating" / "stuck", NEVER assume a frontend issue, NEVER tweak UI buttons, and NEVER add artificial delays. Step 0 MUST ALWAYS be inspecting live backend telemetry via Cloudtop:
+  1. `railway logs --service zyvoriq-reel-worker --lines 50`
+  2. `railway logs --service zyvoriq --lines 50`
+  3. Query `reel_operations` status and heartbeats directly in Postgres.
+- **Strict Dependency State Machine & Zero Busy-Spin Repolls**:
+  1. Jobs with unmet upstream dependencies MUST NEVER remain or be re-queued with `status='QUEUED'`. They MUST immediately transition to `status='BLOCKED'`.
+  2. The worker claim query MUST ONLY pull jobs that are genuinely ready to execute. Unmet dependent jobs must never be repeatedly claimed.
+  3. Promotion from `BLOCKED` to `QUEUED` is strictly event-driven upon verified upstream parent completion (`GENERATED`).
+  4. Terminal Parent Cascading: If any upstream dependency fails, is cancelled, or is missing, all downstream dependent jobs must immediately transition to `CANCELLED` with explicit error causality (`PARENT_TERMINAL_FAILURE`).
+- **Deadlock & Attempt-Limit Circuit Breakers (Anti-Starvation)**:
+  1. Every operation has a strict maximum claim limit (`attempt >= 5`). Any job exceeding this threshold is automatically quarantined to `QUARANTINED` / `DEAD_LETTER` with an urgent log alert so it can never starve younger jobs.
+  2. The background worker runs a continuous 30-second watchdog (`runDeadlockAndStarvationWatchdog`) to autonomously self-heal orphaned states, unblock newly ready dependencies, and prune zombie leases.
+- **End-to-End Database State Progression in Verification**:
+  Never declare an async generation feature working based on HTTP 200 or an optimistic UI toast. Quality gate verification must assert that the database rows physically transitioned (`QUEUED -> RUNNING -> SUCCEEDED`) and that the final video asset was rendered and persisted.
+
+
 
 

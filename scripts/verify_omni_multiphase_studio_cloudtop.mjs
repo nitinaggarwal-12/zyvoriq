@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 
 const PORT = process.env.TEST_PORT || 3333;
-const BASE_URL = `http://localhost:${PORT}`;
+const BASE_URL = process.env.TEST_URL || `http://localhost:${PORT}`;
 const SCREENSHOT_DIR = path.resolve("scratch/cloudtop_e2e_screenshots");
 
 function sleep(ms) {
