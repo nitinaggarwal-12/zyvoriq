@@ -43,6 +43,28 @@ if (url) {
       if (Number(result.rowCount || 0) > 0) {
         console.warn(`[reel-worker] blocked ${result.rowCount} legacy paid operation(s); canonical Studio1 pipeline is required`);
       }
+
+      // Directorial cleanup: Purge orphaned Mumbai dinner discussion operations (shot_05, shot_06)
+      const purged = await pool.query(`
+        UPDATE reel_operations
+        SET status='CANCELLED',
+            last_error='CLEANUP_ORPHANED_MUMBAI_JOB: Terminal or orphaned state manually purged per directorial directive',
+            lease_owner=NULL,
+            lease_expires_at=NULL,
+            updated_at=NOW()
+        WHERE status IN ('QUEUED','RUNNING','BLOCKED')
+          AND (
+            production_id ILIKE '%mumbai%'
+            OR target_id IN ('shot_05', 'shot_06')
+            OR payload_json::text ILIKE '%mumbai%'
+            OR payload_json::text ILIKE '%dinner%'
+            OR payload_json::text ILIKE '%bandra%'
+            OR payload_json::text ILIKE '%paneer%'
+          )
+      `);
+      if (Number(purged.rowCount || 0) > 0) {
+        console.warn(`[canonical-guard] purged ${purged.rowCount} orphaned Mumbai dinner discussion operations`);
+      }
     }
   } finally {
     await pool.end();

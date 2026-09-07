@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { getPostgresPool } from "@/lib/db/client";
 
 export type ReelOperationKind = "NARRATION" | "SHOT" | "ROUGH_CUT" | "NATIVE_REEL";
-export type ReelOperationStatus = "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED" | "CANCELLED";
+export type ReelOperationStatus = "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED" | "CANCELLED" | "BLOCKED";
 
 export interface ReelOperation {
   id: string;

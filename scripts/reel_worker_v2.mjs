@@ -229,22 +229,34 @@ async function recoverLegacyContinuityDependencyFailures() {
     ORDER BY created_at ASC
   `);
   for (const row of failed.rows) {
-    const reset = await pool.query(`
-      UPDATE reel_operations
-      SET status='QUEUED', attempt=0, provider_operation_name=NULL, result_json=NULL,
-          last_error=NULL, lease_owner=NULL, lease_expires_at=NULL, updated_at=NOW()
-      WHERE id=$1 AND status='FAILED'
-      RETURNING id
-    `, [row.id]);
-    if (!reset.rows[0]) continue;
     const p = await pool.query(`SELECT revision, manifest_json FROM reel_productions WHERE id=$1`, [row.production_id]);
     if (!p.rows[0]) continue;
     const m = p.rows[0].manifest_json || {};
+    const shot = Array.isArray(m.shots) ? m.shots.find(x => x.id === row.target_id) : null;
+    
+    // Check if dependencies are actually met before re-queuing
+    let allMet = true;
+    if (shot?.dependsOnShotIds?.length) {
+      allMet = shot.dependsOnShotIds.every(depId => {
+        const dep = m.shots?.find(s => s.id === depId);
+        return dep?.asset?.videoUrl && ["GENERATED", "PASSED"].includes(dep.status);
+      });
+    }
+
+    const nextStatus = allMet ? 'QUEUED' : 'BLOCKED';
+    const reset = await pool.query(`
+      UPDATE reel_operations
+      SET status=$2, attempt=0, provider_operation_name=NULL, result_json=NULL,
+          last_error=NULL, lease_owner=NULL, lease_expires_at=NULL, updated_at=NOW()
+      WHERE id=$1 AND status='FAILED'
+      RETURNING id
+    `, [row.id, nextStatus]);
+    if (!reset.rows[0]) continue;
+
     if (["FAILED", "REPAIRING"].includes(m.status)) m.status = "SHOTS_PLANNED";
     if (m.qa?.failures && Array.isArray(m.qa.failures)) {
       m.qa.failures = m.qa.failures.filter(x => !String(x).includes("Continuity dependency") && !String(x).includes("is not generated"));
     }
-    const shot = Array.isArray(m.shots) ? m.shots.find(x => x.id === row.target_id) : null;
     if (shot && !shot.asset?.videoUrl) {
       shot.status = "PLANNED";
       if (shot.qa?.failures && Array.isArray(shot.qa.failures)) {
@@ -256,10 +268,117 @@ async function recoverLegacyContinuityDependencyFailures() {
       SET revision=revision+1, manifest_json=$3::jsonb, updated_at=NOW()
       WHERE id=$1 AND revision=$2
     `, [row.production_id, Number(p.rows[0].revision), JSON.stringify(m)]);
-    console.log(`[reel-worker] recovered premature continuity failure operation ${row.id}`);
+    console.log(`[reel-worker] recovered continuity operation ${row.id} as ${nextStatus}`);
   }
 }
 await recoverLegacyContinuityDependencyFailures();
+
+async function cleanupOrphanedMumbaiJobs() {
+  try {
+    console.log("[reel-worker] Purging orphaned Mumbai dinner discussion jobs and content...");
+
+    // 1. Cancel all operations associated with Mumbai / dinner discussion or orphaned shot_05/shot_06
+    const resOps = await pool.query(`
+      UPDATE reel_operations
+      SET status='CANCELLED',
+          last_error='CLEANUP_ORPHANED_MUMBAI_JOB: Terminal or orphaned state manually purged per directorial directive',
+          lease_owner=NULL,
+          lease_expires_at=NULL,
+          updated_at=NOW()
+      WHERE status IN ('QUEUED', 'RUNNING', 'BLOCKED')
+        AND (
+          production_id ILIKE '%mumbai%'
+          OR target_id IN ('shot_05', 'shot_06')
+          OR payload_json::text ILIKE '%mumbai%'
+          OR payload_json::text ILIKE '%dinner%'
+          OR payload_json::text ILIKE '%bandra%'
+          OR payload_json::text ILIKE '%paneer%'
+        )
+      RETURNING id, production_id, target_id, kind
+    `);
+    if (resOps.rowCount > 0) {
+      console.log(`[reel-worker] Successfully cancelled ${resOps.rowCount} orphaned Mumbai operations:`, resOps.rows.map(r => `${r.id} (${r.target_id || r.kind})`).join(", "));
+    }
+
+    // 2. Cancel productions associated with Mumbai dinner discussion
+    const resProds = await pool.query(`
+      SELECT id FROM reel_productions
+      WHERE id ILIKE '%mumbai%'
+         OR manifest_json::text ILIKE '%mumbai%'
+         OR manifest_json::text ILIKE '%dinner%'
+         OR manifest_json::text ILIKE '%bandra%'
+         OR manifest_json::text ILIKE '%paneer%'
+    `);
+    for (const pRow of resProds.rows) {
+      await pool.query(`
+        UPDATE reel_productions
+        SET manifest_json = jsonb_set(COALESCE(manifest_json, '{}'::jsonb), '{status}', '"CANCELLED"'),
+            updated_at = NOW()
+        WHERE id = $1
+      `, [pRow.id]);
+      await pool.query(`
+        INSERT INTO reel_production_controls (production_id, generation_token, cancelled_at, updated_at)
+        VALUES ($1, 'cancelled', NOW(), NOW())
+        ON CONFLICT (production_id) DO UPDATE SET cancelled_at = NOW(), updated_at = NOW()
+      `, [pRow.id]);
+      console.log(`[reel-worker] Marked Mumbai production CANCELLED: ${pRow.id}`);
+    }
+
+    // 3. Mark any remaining orphaned operations with dead dependencies as CANCELLED, or BLOCKED if waiting
+    const queuedShots = await pool.query(`
+      SELECT id, production_id, target_id
+      FROM reel_operations
+      WHERE kind='SHOT' AND status IN ('QUEUED', 'BLOCKED')
+    `);
+    for (const qRow of queuedShots.rows) {
+      const p = await pool.query(`SELECT manifest_json FROM reel_productions WHERE id=$1`, [qRow.production_id]);
+      if (!p.rows[0]) {
+        await pool.query(`UPDATE reel_operations SET status='CANCELLED', last_error='ORPHANED_NO_PRODUCTION' WHERE id=$1`, [qRow.id]);
+        continue;
+      }
+      const m = p.rows[0].manifest_json || {};
+      const shot = Array.isArray(m.shots) ? m.shots.find(s => s.id === qRow.target_id) : null;
+      if (shot?.dependsOnShotIds?.length) {
+        const deadDep = shot.dependsOnShotIds.find(depId => {
+          const dep = m.shots?.find(s => s.id === depId);
+          return dep?.status === "FAILED" || dep?.status === "CANCELLED";
+        });
+        if (deadDep) {
+          await pool.query(`
+            UPDATE reel_operations
+            SET status='CANCELLED',
+                last_error=$2,
+                lease_owner=NULL,
+                lease_expires_at=NULL,
+                updated_at=NOW()
+            WHERE id=$1
+          `, [qRow.id, `PARENT_TERMINAL_FAILURE: Upstream dependency ${deadDep} is failed or cancelled`]);
+          console.log(`[reel-worker] Cancelled orphaned shot ${shot.id} (dependency ${deadDep} is dead)`);
+        } else {
+          const unmet = shot.dependsOnShotIds.filter(depId => {
+            const dep = m.shots?.find(s => s.id === depId);
+            return !dep?.asset?.videoUrl || !["GENERATED", "PASSED"].includes(dep.status);
+          });
+          if (unmet.length > 0) {
+            await pool.query(`
+              UPDATE reel_operations
+              SET status='BLOCKED',
+                  last_error=$2,
+                  lease_owner=NULL,
+                  lease_expires_at=NULL,
+                  updated_at=NOW()
+              WHERE id=$1
+            `, [qRow.id, `WAITING_ON_UPSTREAM_DEPENDENCIES:${unmet.join(",")}`]);
+            console.log(`[reel-worker] Startup guard: Blocked shot ${shot.id} waiting on (${unmet.join(", ")})`);
+          }
+        }
+      }
+    }
+  } catch (cleanErr) {
+    console.error(`[reel-worker] cleanupOrphanedMumbaiJobs error:`, cleanErr?.message || cleanErr);
+  }
+}
+await cleanupOrphanedMumbaiJobs();
 
 async function publishHeartbeat() {
   await pool.query(`INSERT INTO reel_worker_heartbeats(worker_id,worker_role,metadata_json) VALUES($1,'reel-production',$2::jsonb)
@@ -639,7 +758,42 @@ async function generateShot(op, manifest, shot) {
   const asset = await writeAsset(`reels/${op.production_id}/shots/${shot.id}-${digest}.mp4`, buffer);
   return { videoUrl: asset.url, actualDurationSec: probe.durationSec, operationName: name, provider: "google-veo", model, continuityReferenceUrl: ref?.url };
 }
-async function applyShot(op, result) { await assertApplicable(op); const c = await getProduction(op.production_id), m = c.manifest, s = m.shots.find(x => x.id === op.target_id); if (!s) throw new Error("Shot removed"); s.asset = { videoUrl: result.videoUrl, actualDurationSec: result.actualDurationSec, operationName: result.operationName, provider: result.provider, model: result.model }; s.status = "GENERATED"; if (result.continuityReferenceUrl) s.continuityIn.referenceFrameUrl = result.continuityReferenceUrl; m.status = m.shots.every(x => x.asset?.videoUrl && ["GENERATED", "PASSED"].includes(x.status)) ? "ROUGH_CUT_READY" : "VIDEO_GENERATING"; await saveManifest(op.production_id, c.revision, m); }
+async function applyShot(op, result) {
+  await assertApplicable(op);
+  const c = await getProduction(op.production_id), m = c.manifest, s = m.shots.find(x => x.id === op.target_id);
+  if (!s) throw new Error("Shot removed");
+  s.asset = { videoUrl: result.videoUrl, actualDurationSec: result.actualDurationSec, operationName: result.operationName, provider: result.provider, model: result.model };
+  s.status = "GENERATED";
+  if (result.continuityReferenceUrl) s.continuityIn.referenceFrameUrl = result.continuityReferenceUrl;
+  m.status = m.shots.every(x => x.asset?.videoUrl && ["GENERATED", "PASSED"].includes(x.status)) ? "ROUGH_CUT_READY" : "VIDEO_GENERATING";
+  await saveManifest(op.production_id, c.revision, m);
+
+  // Parent completion event: unblock any dependent operations for this production whose upstream dependencies are now met!
+  try {
+    const blockedOps = await pool.query(
+      `SELECT id, target_id FROM reel_operations WHERE production_id=$1 AND status='BLOCKED'`,
+      [op.production_id]
+    );
+    for (const bRow of blockedOps.rows) {
+      const bShot = m.shots.find(x => x.id === bRow.target_id);
+      if (!bShot || !bShot.dependsOnShotIds?.length) {
+        await pool.query(`UPDATE reel_operations SET status='QUEUED', last_error=NULL, updated_at=NOW() WHERE id=$1`, [bRow.id]);
+        console.log(`[reel-worker] Parent shot ${s.id} completed. Unblocked operation ${bRow.id} (${bRow.target_id})`);
+        continue;
+      }
+      const stillUnmet = bShot.dependsOnShotIds.filter(depId => {
+        const dep = m.shots.find(x => x.id === depId);
+        return !dep?.asset?.videoUrl || !["GENERATED", "PASSED"].includes(dep.status);
+      });
+      if (stillUnmet.length === 0) {
+        await pool.query(`UPDATE reel_operations SET status='QUEUED', last_error=NULL, updated_at=NOW() WHERE id=$1`, [bRow.id]);
+        console.log(`[reel-worker] Parent shot ${s.id} completed. Unblocked dependent shot ${bShot.id}: all upstream dependencies satisfied!`);
+      }
+    }
+  } catch (unblockErr) {
+    console.error(`[reel-worker] Parent completion unblock error: ${unblockErr?.message || unblockErr}`);
+  }
+}
 
 function assertStudio1RenderAdaptation(plan) {
   for (const scene of plan.scenes) {
@@ -821,12 +975,26 @@ async function processOperation(op) {
         return !dep?.asset?.videoUrl || !["GENERATED", "PASSED"].includes(dep.status);
       });
       if (unmetDeps.length > 0) {
-        console.log(`[reel-worker] shot ${shot.id} waiting on upstream dependencies (${unmetDeps.join(", ")}). Releasing to queue.`);
+        // Check if any unmet dependency is in terminal / dead state (FAILED, CANCELLED, or missing)
+        const terminalDeps = unmetDeps.filter(depId => {
+          const dep = current.manifest.shots.find(s => s.id === depId);
+          return !dep || dep.status === "FAILED" || dep.status === "CANCELLED";
+        });
+        if (terminalDeps.length > 0) {
+          throw new Error(`Upstream dependency terminal failure: dependency shots (${terminalDeps.join(", ")}) will never complete`);
+        }
+
+        console.log(`[reel-worker] shot ${shot.id} waiting on upstream dependencies (${unmetDeps.join(", ")}). Marking BLOCKED until parent completion.`);
         await pool.query(
-          `UPDATE reel_operations SET status='QUEUED', attempt=GREATEST(0, attempt-1), lease_owner=NULL, lease_expires_at=NULL, updated_at=NOW() WHERE id=$1`,
-          [op.id]
+          `UPDATE reel_operations
+           SET status='BLOCKED',
+               last_error=$2,
+               lease_owner=NULL,
+               lease_expires_at=NULL,
+               updated_at=NOW()
+           WHERE id=$1`,
+          [op.id, `WAITING_ON_UPSTREAM_DEPENDENCIES:${unmetDeps.join(",")}`]
         );
-        await sleep(1500);
         return;
       }
     }
