@@ -349,8 +349,8 @@ export async function GET(req: NextRequest) {
           prompt: m.topic || "",
           duration: Math.round(m.plannedDurationSec || 180),
           still: (m as any).stillUrl || ((m as any).characters?.[0] as any)?.canonicalReferenceImages?.[0]?.url || "/assets/stills/napoleon_hero.png",
-          video: m.outputs?.narratedRoughCut?.videoUrl || (m.outputs as any)?.nativeReel?.videoUrl || "",
-          videoStatus: (m.status === "READY" || (m.status as string) === "COMPLETED") ? "READY" : "DIFFUSING",
+          video: m.outputs?.narratedRoughCut?.videoUrl || (m.outputs as any)?.nativeReel?.videoUrl || (m as any).asset?.videoUrl || "",
+          videoStatus: (Boolean(m.outputs?.narratedRoughCut?.videoUrl || (m.outputs as any)?.nativeReel?.videoUrl || (m as any).asset?.videoUrl) || m.status === "READY" || (m.status as string) === "COMPLETED") ? "READY" : "DIFFUSING",
           paletteTheme: m.creativeBible?.colorLanguage || "High-Contrast 8K HDR",
           lines: Array.isArray(m.shots) ? m.shots.map((s, idx) => ({
             id: s.id,

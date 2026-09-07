@@ -20,7 +20,7 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 const API_BASE = "https://generativelanguage.googleapis.com";
-const IMAGE_MODEL = process.env.ZYVORIQ_CHARACTER_IMAGE_MODEL || "gemini-3-pro-image-preview";
+const IMAGE_MODEL = process.env.ZYVORIQ_CHARACTER_IMAGE_MODEL || "gemini-2.5-flash-image";
 
 function apiKey() {
   return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";

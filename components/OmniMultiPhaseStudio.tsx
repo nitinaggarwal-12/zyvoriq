@@ -473,6 +473,32 @@ export function OmniMultiPhaseStudio() {
       );
       setTimeout(() => setToastMessage(null), 5000);
 
+      // Background poll for video diffusion completion from dedicated worker queue
+      if (!targetScene.video && targetScene.id) {
+        const prodId = targetScene.id;
+        const pollInterval = setInterval(async () => {
+          try {
+            const pollRes = await fetch(`/api/studio/omni-generate?id=${encodeURIComponent(prodId)}`);
+            if (pollRes.ok) {
+              const pollData = await pollRes.json();
+              if (pollData?.scene?.video) {
+                clearInterval(pollInterval);
+                setCurrentScene((prev) => ({
+                  ...prev,
+                  video: pollData.scene.video,
+                  still: pollData.scene.still || prev.still,
+                  lines: pollData.scene.lines || prev.lines
+                }));
+                setReelGenStatus("4K Master Cinema Reel Ready!");
+                setToastMessage(`🎉 4K Master Video Diffusion Complete! Now Playing "${pollData.scene.title}"`);
+                setTimeout(() => setToastMessage(null), 5000);
+              }
+            }
+          } catch {}
+        }, 5000);
+        setTimeout(() => clearInterval(pollInterval), 600000); // 10m ceiling
+      }
+
     } catch (err: any) {
       console.error("Fatal reel generation error:", err);
       setIsGeneratingReel(false);

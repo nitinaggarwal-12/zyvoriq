@@ -394,6 +394,118 @@ async function runDeadlockAndStarvationWatchdog() {
         }
       }
     }
+
+    // 4. Auto-enqueue ungenerated shots for productions in SHOTS_PLANNED or VIDEO_GENERATING
+    const plannedProds = await pool.query(`
+      SELECT p.id, p.revision, p.manifest_json, c.generation_token
+      FROM reel_productions p
+      JOIN reel_production_controls c ON c.production_id = p.id
+      WHERE (p.manifest_json->>'status' = 'SHOTS_PLANNED' OR p.manifest_json->>'status' = 'VIDEO_GENERATING')
+        AND c.cancelled_at IS NULL
+    `);
+    for (const prodRow of plannedProds.rows) {
+      const pm = prodRow.manifest_json;
+      if (!pm || !Array.isArray(pm.shots)) continue;
+      const ungenerated = pm.shots.filter(s => !s.asset?.videoUrl && ["PLANNED", "GENERATING"].includes(s.status));
+      if (!ungenerated.length) continue;
+
+      const existingOps = await pool.query(
+        `SELECT target_id FROM reel_operations WHERE production_id=$1 AND kind='SHOT'`,
+        [prodRow.id]
+      );
+      const existingShotIds = new Set(existingOps.rows.map(r => r.target_id));
+
+      for (const s of ungenerated) {
+        if (existingShotIds.has(s.id)) continue;
+        const modelTier = "fast";
+        const fp = crypto.createHash("sha256").update(JSON.stringify({
+          prompt: s.generationPrompt,
+          duration: s.generationDurationSec,
+          modelTier,
+          round: pm.studio1?.generationRound,
+        })).digest("hex").slice(0, 24);
+        const ik = [prodRow.id, prodRow.generation_token || "legacy", "SHOT", s.id, prodRow.revision, fp].join(":");
+        const hasUnmet = s.dependsOnShotIds?.some(depId => {
+          const dep = pm.shots.find(x => x.id === depId);
+          return !dep?.asset?.videoUrl || !["GENERATED", "PASSED"].includes(dep.status);
+        });
+        const initStatus = hasUnmet ? "BLOCKED" : "QUEUED";
+        const initError = hasUnmet ? `WAITING_ON_UPSTREAM_DEPENDENCY:${s.dependsOnShotIds.join(",")}` : null;
+        const shotOpId = `rop_${crypto.randomUUID()}`;
+        await pool.query(
+          `INSERT INTO reel_operations (id, production_id, kind, target_id, idempotency_key, status, last_error, payload_json)
+           VALUES ($1, $2, 'SHOT', $3, $4, $5, $6, $7::jsonb)
+           ON CONFLICT (idempotency_key) DO NOTHING`,
+          [
+            shotOpId,
+            prodRow.id,
+            s.id,
+            ik,
+            initStatus,
+            initError,
+            JSON.stringify({
+              manifestRevision: prodRow.revision,
+              generationToken: prodRow.generation_token,
+              semanticFingerprint: fp,
+              modelTier,
+              studio1: true,
+            })
+          ]
+        );
+        console.log(`[reel-worker] [watchdog-enqueue] Shot ${s.id} enqueued (${initStatus}) for prod ${prodRow.id}`);
+      }
+    }
+
+    // 5. Auto-enqueue ROUGH_CUT for productions that reached ROUGH_CUT_READY
+    const readyProds = await pool.query(`
+      SELECT p.id, p.revision, p.manifest_json, c.generation_token
+      FROM reel_productions p
+      JOIN reel_production_controls c ON c.production_id = p.id
+      WHERE (p.manifest_json->>'status' = 'ROUGH_CUT_READY' OR (
+        p.manifest_json->'shots' IS NOT NULL AND
+        NOT EXISTS (
+          SELECT 1 FROM jsonb_array_elements(p.manifest_json->'shots') elem
+          WHERE elem->'asset'->>'videoUrl' IS NULL
+        )
+      ))
+      AND c.cancelled_at IS NULL
+    `);
+    for (const rRow of readyProds.rows) {
+      const rm = rRow.manifest_json;
+      if (!rm?.audio?.narrationUrl || !rm.shots?.length) continue;
+      const existingRc = await pool.query(
+        `SELECT id, status FROM reel_operations WHERE production_id=$1 AND kind='ROUGH_CUT'`,
+        [rRow.id]
+      );
+      if (existingRc.rows.length === 0) {
+        const rfp = crypto.createHash("sha256").update(JSON.stringify({
+          audio: rm.audio.narrationUrl,
+          audioDuration: rm.audio.actualDurationSec,
+          shots: rm.shots.map(s => [s.id, s.asset?.videoUrl, s.editorialStartSec, s.editorialDurationSec]),
+          studio1: true,
+        })).digest("hex").slice(0, 24);
+        const rcIk = [rRow.id, rRow.generation_token || "legacy", "ROUGH_CUT", "production", rRow.revision, rfp].join(":");
+        const rcOpId = `rop_${crypto.randomUUID()}`;
+        await pool.query(
+          `INSERT INTO reel_operations (id, production_id, kind, target_id, idempotency_key, status, payload_json)
+           VALUES ($1, $2, 'ROUGH_CUT', NULL, $3, 'QUEUED', $4::jsonb)
+           ON CONFLICT (idempotency_key) DO NOTHING`,
+          [
+            rcOpId,
+            rRow.id,
+            rcIk,
+            JSON.stringify({
+              manifestRevision: rRow.revision,
+              generationToken: rRow.generation_token,
+              semanticFingerprint: rfp,
+              studio1: true,
+              narrationSyncedTimeline: true,
+            })
+          ]
+        );
+        console.log(`[reel-worker] [watchdog-enqueue] ROUGH_CUT enqueued for prod ${rRow.id}`);
+      }
+    }
   } catch (err) {
     console.error(`[reel-worker] [watchdog] Error running watchdog:`, err?.message || err);
   }
@@ -734,6 +846,51 @@ async function applyNarration(op, result) {
   try { await ensureCharacterSheet(m, op.production_id, writeAsset); } catch (e) { console.warn(`[reel-worker] character sheet skipped: ${e?.message || e}`); }
   m.status = "SHOTS_PLANNED";
   await saveManifest(op.production_id, c.revision, m);
+
+  // P0.1 & P0.4: Auto-enqueue sequential shot operations upon narration completion
+  try {
+    const ctrl = await controlFor(op);
+    const modelTier = op.payload_json?.modelTier || "fast";
+    for (const shot of m.shots) {
+      const fp = crypto.createHash("sha256").update(JSON.stringify({
+        prompt: shot.generationPrompt,
+        duration: shot.generationDurationSec,
+        modelTier,
+        round: m.studio1?.generationRound,
+      })).digest("hex").slice(0, 24);
+      const ik = [op.production_id, ctrl.generation_token || "legacy", "SHOT", shot.id, c.revision, fp].join(":");
+      const hasUnmet = shot.dependsOnShotIds?.some(depId => {
+        const dep = m.shots.find(s => s.id === depId);
+        return !dep?.asset?.videoUrl || !["GENERATED", "PASSED"].includes(dep.status);
+      });
+      const initStatus = hasUnmet ? "BLOCKED" : "QUEUED";
+      const initError = hasUnmet ? `WAITING_ON_UPSTREAM_DEPENDENCIES:${shot.dependsOnShotIds.join(",")}` : null;
+      const shotOpId = `rop_${crypto.randomUUID()}`;
+      await pool.query(
+        `INSERT INTO reel_operations (id, production_id, kind, target_id, idempotency_key, status, last_error, payload_json)
+         VALUES ($1, $2, 'SHOT', $3, $4, $5, $6, $7::jsonb)
+         ON CONFLICT (idempotency_key) DO NOTHING`,
+        [
+          shotOpId,
+          op.production_id,
+          shot.id,
+          ik,
+          initStatus,
+          initError,
+          JSON.stringify({
+            manifestRevision: c.revision,
+            generationToken: ctrl.generation_token,
+            semanticFingerprint: fp,
+            modelTier,
+            studio1: true,
+          })
+        ]
+      );
+      console.log(`[reel-worker] [enqueue] Shot ${shot.id} enqueued (${initStatus}) for prod ${op.production_id}`);
+    }
+  } catch (enqueueErr) {
+    console.error(`[reel-worker] Failed to auto-enqueue shots after narration:`, enqueueErr?.message || enqueueErr);
+  }
 }
 async function extractReference(op, shot, manifest) { if (!shot.dependsOnShotIds?.length) return null; const dep = manifest.shots.find(s => s.id === shot.dependsOnShotIds.at(-1)); if (!dep?.asset?.videoUrl) throw new Error("Continuity dependency has no media"); const tmp = path.join(os.tmpdir(), `zyvoriq-ref-${crypto.randomUUID()}.png`), depSec = Number(dep.asset?.actualDurationSec || 0), lastSec = depSec > 0 ? Math.min(Number(dep.trimOutSec || 0), depSec) : Number(dep.trimOutSec || 0), t = Math.max(0, Math.max(Number(dep.trimInSec || 0), lastSec - (depSec > 0 && lastSec < depSec - 0.05 ? 1 / 30 : 0.15))); try { await execFileAsync("ffmpeg", ["-y", "-ss", String(t), "-i", assetPath(dep.asset.videoUrl).target, "-frames:v", "1", "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920", tmp], { timeout: 30000, maxBuffer: 2e6 }); const st = await fs.stat(tmp).catch(() => null); if (!st?.size) throw new Error(`Anchor extraction produced no frame for ${dep.id} at ${t.toFixed(3)}s (source ${depSec}s, trimOut ${dep.trimOutSec}s)`); const b = await fs.readFile(tmp), digest = crypto.createHash("sha256").update(b).digest("hex").slice(0, 16), saved = await writeAsset(`reels/${op.production_id}/references/${shot.id}-from-${dep.id}-${digest}.png`, b); return { buffer: b, url: saved.url, dependencyId: dep.id }; } finally { try { await fs.unlink(tmp); } catch {} } }
 async function probeVideo(buffer) { const tmp = path.join(os.tmpdir(), `zyvoriq-probe-${crypto.randomUUID()}.mp4`); try { await fs.writeFile(tmp, buffer); const { stdout } = await execFileAsync("ffprobe", ["-v", "error", "-show_entries", "format=duration:stream=codec_name,width,height,r_frame_rate", "-of", "json", tmp], { timeout: 30000, maxBuffer: 2e6 }); const p = JSON.parse(stdout), s = p.streams?.find(x => x.width && x.height) || p.streams?.[0] || {}; return { durationSec: Number(Number(p.format?.duration || 0).toFixed(6)), codec: s.codec_name, width: Number(s.width || 0), height: Number(s.height || 0), frameRate: s.r_frame_rate }; } finally { try { await fs.unlink(tmp); } catch {} } }
@@ -879,6 +1036,41 @@ async function applyShot(op, result) {
   } catch (unblockErr) {
     console.error(`[reel-worker] Parent completion unblock error: ${unblockErr?.message || unblockErr}`);
   }
+
+  // Auto-enqueue ROUGH_CUT if all shots are generated
+  if (m.status === "ROUGH_CUT_READY") {
+    try {
+      const ctrl = await controlFor(op);
+      const rfp = crypto.createHash("sha256").update(JSON.stringify({
+        audio: m.audio.narrationUrl,
+        audioDuration: m.audio.actualDurationSec,
+        shots: m.shots.map(shot => [shot.id, shot.asset?.videoUrl, shot.editorialStartSec, shot.editorialDurationSec]),
+        studio1: true,
+      })).digest("hex").slice(0, 24);
+      const rcIk = [op.production_id, ctrl.generation_token || "legacy", "ROUGH_CUT", "production", c.revision, rfp].join(":");
+      const rcOpId = `rop_${crypto.randomUUID()}`;
+      await pool.query(
+        `INSERT INTO reel_operations (id, production_id, kind, target_id, idempotency_key, status, payload_json)
+         VALUES ($1, $2, 'ROUGH_CUT', NULL, $3, 'QUEUED', $4::jsonb)
+         ON CONFLICT (idempotency_key) DO NOTHING`,
+        [
+          rcOpId,
+          op.production_id,
+          rcIk,
+          JSON.stringify({
+            manifestRevision: c.revision,
+            generationToken: ctrl.generation_token,
+            semanticFingerprint: rfp,
+            studio1: true,
+            narrationSyncedTimeline: true,
+          })
+        ]
+      );
+      console.log(`[reel-worker] [auto-enqueue] All shots generated! Enqueued ROUGH_CUT for prod ${op.production_id}`);
+    } catch (rcErr) {
+      console.error(`[reel-worker] Failed to auto-enqueue ROUGH_CUT: ${rcErr?.message || rcErr}`);
+    }
+  }
 }
 
 function assertStudio1RenderAdaptation(plan) {
@@ -957,9 +1149,11 @@ async function applyRough(op, result) {
   await assertApplicable(op);
   const c = await getProduction(op.production_id), m = c.manifest;
   m.outputs = { ...(m.outputs || {}), narratedRoughCut: result };
+  m.asset = { videoUrl: result.videoUrl, actualDurationSec: result.actualDurationSec, operationName: result.operationName, provider: "rough-cut", model: "ffmpeg" };
   if (result.timelineQa && m.studio1?.timelineSync) m.studio1.timelineSync.renderQa = result.timelineQa;
-  m.status = "MIXING";
+  m.status = "READY";
   await saveManifest(op.production_id, c.revision, m);
+  console.log(`[reel-worker] [completed] Production ${op.production_id} rough cut finished and status marked READY! Video URL: ${result.videoUrl}`);
 }
 
 // ---- Option C: one continuous Veo generation, native audio, no TTS ----
