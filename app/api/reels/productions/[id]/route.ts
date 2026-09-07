@@ -4,6 +4,7 @@ import { reelOperationQueue } from "@/lib/reel/operationQueue";
 import { reelProductionControl } from "@/lib/reel/productionControl";
 import type { ReelOperation } from "@/lib/reel/operationQueue";
 import type { ReelProductionStatus } from "@/lib/reel/types";
+import { reelProductionStore } from "@/lib/reel/productionStore";
 import { suppressUncertifiedStudio1Outputs } from "@/lib/studio1/fullReelCertification";
 import { PATCH as studio1Patch } from "@/app/api/studio1/productions/[id]/route";
 
@@ -71,5 +72,15 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     const unavailable = message.includes("worker unavailable") || message.includes("Production control requires Postgres");
     const conflict = message.includes("concurrently") || message.includes("requires") || message.includes("not allowed") || message.includes("dependency") || message.includes("cancelled");
     return NextResponse.json({ success: false, error: message }, { status: unavailable ? 503 : conflict ? 409 : 400 });
+  }
+}
+
+export async function DELETE(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await context.params;
+    await reelProductionStore.delete(id);
+    return NextResponse.json({ success: true, deleted: true, id });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error?.message || "Failed to delete production" }, { status: 500 });
   }
 }

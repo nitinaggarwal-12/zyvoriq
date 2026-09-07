@@ -29,6 +29,7 @@ export interface OmniGeneratedScene {
   video: string;
   videoStatus?: "READY" | "DIFFUSION_READY" | "DIFFUSING" | "FAILED";
   paletteTheme: string;
+  aspectRatio?: string;
   lines: OmniScriptLine[];
   toolRouting: {
     video: string;
@@ -56,6 +57,7 @@ const CANONICAL_PRESETS: Record<string, OmniGeneratedScene> = {
     still: "/assets/stills/napoleon_hero.png",
     video: "/assets/video/napoleon_180s_master.mp4",
     videoStatus: "READY",
+    aspectRatio: "2.35:1",
     paletteTheme: "Imperial Gold, Velvet Crimson & French Blue",
     lines: [
       { id: "np1", speaker: "NAPOLEON", emotion: "determined", timestamp: "00:08", text: "Nous devons réquisitionner les approvisionnements pour l'armée immédiatement." },
@@ -124,6 +126,10 @@ export async function POST(req: NextRequest) {
 
     const slug = prompt.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 32) || "custom_reel";
     const uniqueReelId = `reel_${slug}_${Date.now().toString(36)}`;
+    const requestedDuration = typeof body.duration === "number" && body.duration > 0 ? body.duration : 30;
+    const targetSec = requestedDuration;
+    const lineCount = Math.max(5, Math.ceil(targetSec / 5.5));
+    const targetWords = Math.round(targetSec * 1.55);
 
     // Parallel execution: Gemini 2.5 Flash for Screenplay EDL + Gemini 2.5 Flash Image for 4K Plate
     const screenplayPromise = fetch(
@@ -137,7 +143,8 @@ export async function POST(req: NextRequest) {
             parts: [{
               text: `You are Google Omni, executive director of Zyvoriq.
 A creator has provided this scene vision prompt: "${prompt}".
-Generate a complete, high-craft 3-line cinematic screenplay EDL in valid JSON:
+Target master reel duration: ${targetSec} seconds.
+Generate a complete, high-craft cinematic screenplay EDL with ${lineCount} dialogue/spoken beats spanning the full ${targetSec}-second duration (approx ${targetWords} words total, each line strictly 6 to 9 words) in valid JSON:
 {
   "title": "Cinematic Title (2-5 words)",
   "genre": "Genre Category",
@@ -145,12 +152,18 @@ Generate a complete, high-craft 3-line cinematic screenplay EDL in valid JSON:
   "dynamic": "Interpersonal / Dramatic Conflict",
   "paletteTheme": "Cinematic Color Palette & Lighting",
   "lines": [
-    {"id": "l1", "speaker": "CHARACTER_NAME", "emotion": "tone", "timestamp": "00:04", "text": "Authentic dialogue"},
-    {"id": "l2", "speaker": "CHARACTER_NAME", "emotion": "tone", "timestamp": "00:09", "text": "Authentic dialogue"},
-    {"id": "l3", "speaker": "CHARACTER_NAME", "emotion": "tone", "timestamp": "00:15", "text": "Authentic dialogue"}
+    {"id": "l1", "speaker": "CHARACTER_NAME", "emotion": "tone", "timestamp": "00:03", "text": "Opening beat (6-9 words)"},
+    {"id": "l2", "speaker": "CHARACTER_NAME", "emotion": "tone", "timestamp": "00:08", "text": "Dramatic progression beat (6-9 words)"},
+    {"id": "l3", "speaker": "CHARACTER_NAME", "emotion": "tone", "timestamp": "00:14", "text": "Middle escalation beat (6-9 words)"},
+    {"id": "l4", "speaker": "CHARACTER_NAME", "emotion": "tone", "timestamp": "00:20", "text": "Penultimate climax beat (6-9 words)"},
+    {"id": "l5", "speaker": "CHARACTER_NAME", "emotion": "tone", "timestamp": "00:26", "text": "Concluding resolution beat (6-9 words)"}
   ]
 }
-Return ONLY valid JSON.`
+CRITICAL REQUIREMENTS:
+- Each spoken line MUST be strictly between 6 and 9 words (calibrated for ~1.55 words/sec delivery) so each beat fits cleanly into Veo's 6s clip generation window with zero clamp trim.
+- Spoken lines MUST span across the entire ${targetSec}-second timeline up to ~00:${targetSec - 4}.
+- CRITICAL SAFETY & RAI RULE: NEVER use real celebrity or living person names (e.g. Akshay, Kiara, Salman, Shah Rukh, etc.) in "title", "speaker" tags, or "text". Instead, use evocative fictional character names (e.g. KABIR, MEERA, ARJUN, DIYA, RAJ, SIMRAN) and describe their visual presence through archetypes so downstream Veo diffusion succeeds with zero likeness policy blocks.
+- Return ONLY valid JSON.`
             }]
           }]
         })
@@ -172,7 +185,7 @@ Return ONLY valid JSON.`
         body: JSON.stringify({
           contents: [{
             parts: [{
-              text: `Generate a photorealistic 4K cinematic still plate for a master cinema reel. Scene prompt: "${prompt}". Composition: Anamorphic 2.39:1 widescreen, award-winning cinematography, photorealistic 8K render, dramatic cinematic lighting, pristine visual fidelity, authentic environmental details, no text overlays.`
+              text: `Generate a photorealistic 4K cinematic still plate for a vertical social master reel. Scene prompt: "${prompt}". Composition: Vertical 9:16 cinematic framing, award-winning cinematography, photorealistic 8K render, dramatic lighting, pristine visual fidelity, authentic environmental details, fictional original character archetype without celebrity likenesses, no text overlays.`
             }]
           }]
         })
@@ -230,9 +243,22 @@ Return ONLY valid JSON.`
         const manifest = planStudio1({
           topic: screenplay.title || prompt,
           scriptText: fullScript,
-          requestedDurationSec: 30,
+          requestedDurationSec: targetSec,
           tone: screenplay.dynamic || "cinematic",
         });
+
+        // Anchor hero still and character/environment locks directly on manifest
+        (manifest as any).stillUrl = stillDataUri;
+        (manifest as any).heroStillUrl = stillDataUri;
+        if (manifest.creativeBible) {
+          manifest.creativeBible.characterLock = `Characters: ${prompt}. Maintain identical biometric facial DNA, wardrobe, and visual continuity across all shots.`;
+          manifest.creativeBible.environmentLock = screenplay.setting || prompt;
+        }
+        if (manifest.continuity?.characters?.[0]) {
+          manifest.continuity.characters[0].appearance = {
+            description: `Characters: ${prompt}. Biometrically anchored to hero plate.`
+          };
+        }
 
         const prod = await reelProductionStore.create(manifest);
         finalReelId = prod.id;
@@ -279,12 +305,13 @@ Return ONLY valid JSON.`
       setting: screenplay.setting || prompt,
       dynamic: screenplay.dynamic || "High-Stakes Dramatic Arc",
       prompt,
-      duration: 180,
+      duration: targetSec,
       still: stillDataUri, // 100% reliable base64 image data URI; never 404s
       stillBase64: stillDataUri,
       video: "", // Video diffusion is queued with background worker
       videoStatus: "DIFFUSION_READY",
-      paletteTheme: screenplay.paletteTheme || "High-Contrast 8K HDR, Anamorphic 2.39:1",
+      aspectRatio: "9:16",
+      paletteTheme: screenplay.paletteTheme || "High-Contrast 8K HDR, Vertical 9:16 Reel",
       lines: Array.isArray(screenplay.lines) ? screenplay.lines.map((l: any, i: number) => ({
         id: l.id || `l_${i + 1}`,
         speaker: (l.speaker || "ACTOR").toUpperCase(),
@@ -344,6 +371,15 @@ export async function GET(req: NextRequest) {
         const hasVideo = Boolean(videoAssetUrl);
         const hasAudio = Boolean((m.outputs as any)?.narration?.audioUrl || (m as any).audioUrl);
 
+        const ops = await reelOperationQueue.latestForProduction(prod.id, 20).catch(() => []);
+        const heroPlateFromOp = (ops as any[]).find(o => o.payload?.heroPlateBase64)?.payload?.heroPlateBase64;
+        const resolvedStill = (m as any).stillUrl
+          || (m as any).heroStillUrl
+          || ((m as any).characters?.[0] as any)?.canonicalReferenceImages?.[0]?.url
+          || (m.shots?.[0] as any)?.posterUrl
+          || (heroPlateFromOp ? `data:image/png;base64,${heroPlateFromOp}` : "")
+          || (id.includes("napoleon") ? "/assets/stills/napoleon_hero.png" : "");
+
         const scene: OmniGeneratedScene = {
           id: prod.id,
           title: (m as any).studio1?.projectTitle || m.topic || "Omni Master Reel",
@@ -351,10 +387,11 @@ export async function GET(req: NextRequest) {
           setting: m.creativeBible?.environmentLock || "Established Location",
           dynamic: m.tone || "Cinematic",
           prompt: m.topic || "",
-          duration: Math.round(m.plannedDurationSec || 180),
-          still: (m as any).stillUrl || ((m as any).characters?.[0] as any)?.canonicalReferenceImages?.[0]?.url || "/assets/stills/napoleon_hero.png",
+          duration: Math.round(m.plannedDurationSec || (m as any).requestedDurationSec || 30),
+          still: resolvedStill,
           video: videoAssetUrl,
           videoStatus: (hasVideo || m.status === "READY" || (m.status as string) === "COMPLETED") ? "READY" : "DIFFUSING",
+          aspectRatio: m.aspectRatio || "9:16",
           paletteTheme: m.creativeBible?.colorLanguage || "High-Contrast 8K HDR",
           lines: Array.isArray(m.shots) ? m.shots.map((s, idx) => ({
             id: s.id,
@@ -380,8 +417,13 @@ export async function GET(req: NextRequest) {
             { name: "Guard 4: C2PA Cryptographic Provenance", status: "REVIEW", detail: "Seals upon final rough cut assembly" }
           ]
         };
-        const ops = await reelOperationQueue.latestForProduction(prod.id, 20).catch(() => []);
-        return NextResponse.json({ success: true, scene, production: prod, operations: ops });
+        return NextResponse.json({
+          success: true,
+          scene: { ...scene, shots: m.shots || [] },
+          production: prod,
+          shots: m.shots || [],
+          operations: ops
+        });
       }
     } catch (pgErr) {
       console.warn("[OmniDirector API] Error loading production from db:", pgErr);

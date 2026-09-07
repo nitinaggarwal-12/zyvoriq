@@ -16,6 +16,7 @@ export interface ReelOperation {
   payload: Record<string, unknown>;
   result?: Record<string, unknown>;
   lastError?: string;
+  scheduledAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -35,11 +36,14 @@ CREATE TABLE IF NOT EXISTS reel_operations (
   last_error TEXT,
   lease_owner TEXT,
   lease_expires_at TIMESTAMPTZ,
+  scheduled_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+ALTER TABLE reel_operations ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMPTZ;
 CREATE INDEX IF NOT EXISTS idx_reel_operations_status_created ON reel_operations(status, created_at);
 CREATE INDEX IF NOT EXISTS idx_reel_operations_production ON reel_operations(production_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_reel_operations_scheduled ON reel_operations(status, scheduled_at);
 `;
 
 function poolOrThrow() {
@@ -67,6 +71,7 @@ function fromRow(row: any): ReelOperation {
     payload: row.payload_json || {},
     result: row.result_json || undefined,
     lastError: row.last_error || undefined,
+    scheduledAt: row.scheduled_at ? new Date(row.scheduled_at).toISOString() : undefined,
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
   };
@@ -123,5 +128,22 @@ export const reelOperationQueue = {
       [productionId, Math.max(1, Math.min(100, Math.floor(limit)))]
     );
     return result.rows.map(fromRow);
+  },
+
+  async retry(id: string): Promise<ReelOperation | null> {
+    const pool = await ensureTable();
+    const result = await pool.query(
+      `UPDATE reel_operations
+       SET status='QUEUED', attempt=0, last_error=NULL, provider_operation_name=NULL, lease_owner=NULL, lease_expires_at=NULL, updated_at=NOW()
+       WHERE id=$1
+       RETURNING *`,
+      [id]
+    );
+    if (result.rows[0]?.production_id) {
+      try {
+        await pool.query(`UPDATE reel_productions SET updated_at=NOW() WHERE id=$1`, [result.rows[0].production_id]);
+      } catch {}
+    }
+    return result.rows[0] ? fromRow(result.rows[0]) : null;
   },
 };

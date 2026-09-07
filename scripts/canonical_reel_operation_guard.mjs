@@ -19,6 +19,7 @@ if (url) {
     ssl: url.includes("localhost") || url.includes("127.0.0.1") ? false : { rejectUnauthorized: false },
     max: 1,
     idleTimeoutMillis: 5000,
+    connectionTimeoutMillis: 10000,
   });
 
   try {

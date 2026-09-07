@@ -149,18 +149,32 @@ export const reelProductionStore = {
 
   async delete(id: string, expectedRevision?: number): Promise<void> {
     const current = await this.get(id);
-    if (!current) throw new Error(`Production ${id} not found`);
-    if (expectedRevision !== undefined && current.revision !== expectedRevision) throw new Error(`Production ${id} changed concurrently (expected revision ${expectedRevision}, found ${current.revision})`);
+    if (!current) return; // Idempotent: already deleted
+    if (expectedRevision !== undefined && current.revision !== expectedRevision) {
+      throw new Error(`Production ${id} changed concurrently (expected revision ${expectedRevision}, found ${current.revision})`);
+    }
 
     const pool = await ensurePostgresTable();
     if (pool) {
-      const result = await pool.query(`DELETE FROM reel_productions WHERE id = $1 AND revision = $2`, [id, current.revision]);
-      if (Number(result.rowCount) !== 1) throw new Error(`Production ${id} changed concurrently`);
+      try { await pool.query(`DELETE FROM reel_operations WHERE production_id = $1`, [id]); } catch {}
+      try { await pool.query(`DELETE FROM reel_production_controls WHERE production_id = $1`, [id]); } catch {}
+      if (expectedRevision !== undefined) {
+        const result = await pool.query(`DELETE FROM reel_productions WHERE id = $1 AND revision = $2`, [id, expectedRevision]);
+        if (Number(result.rowCount) !== 1) throw new Error(`Production ${id} changed concurrently`);
+      } else {
+        await pool.query(`DELETE FROM reel_productions WHERE id = $1`, [id]);
+      }
       return;
     }
 
     const database = ensureSqliteTable();
-    const result = database.prepare(`DELETE FROM reel_productions WHERE id = ? AND revision = ?`).run(id, current.revision);
-    if (Number(result.changes) !== 1) throw new Error(`Production ${id} changed concurrently`);
+    try { database.prepare(`DELETE FROM reel_operations WHERE production_id = ?`).run(id); } catch {}
+    try { database.prepare(`DELETE FROM reel_production_controls WHERE production_id = ?`).run(id); } catch {}
+    if (expectedRevision !== undefined) {
+      const result = database.prepare(`DELETE FROM reel_productions WHERE id = ? AND revision = ?`).run(id, expectedRevision);
+      if (Number(result.changes) !== 1) throw new Error(`Production ${id} changed concurrently`);
+    } else {
+      database.prepare(`DELETE FROM reel_productions WHERE id = ?`).run(id);
+    }
   },
 };

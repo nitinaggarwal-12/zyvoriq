@@ -17,3 +17,18 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ id: st
     return NextResponse.json({ success: false, error: error?.message || "Failed to load operation" }, { status: 500 });
   }
 }
+
+export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await context.params;
+    const body = await req.json().catch(() => ({}));
+    if (body.action === "retry") {
+      const operation = await reelOperationQueue.retry(id);
+      if (!operation) return NextResponse.json({ success: false, error: "Operation not found" }, { status: 404 });
+      return NextResponse.json({ success: true, operation });
+    }
+    return NextResponse.json({ success: false, error: "Unsupported action" }, { status: 400 });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error?.message || "Failed to retry operation" }, { status: 500 });
+  }
+}

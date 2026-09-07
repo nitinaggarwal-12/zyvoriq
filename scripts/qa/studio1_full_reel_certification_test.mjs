@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import {
   isCertifiedStudio1RoughCut,
   suppressUncertifiedStudio1Outputs,
-} from "../../lib/studio1/fullReelCertification.ts";
+} from "../../lib/studio1/fullReelCertification.mjs";
 
 function semanticSync(overrides = {}) {
   return {

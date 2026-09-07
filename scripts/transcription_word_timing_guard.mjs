@@ -21,7 +21,8 @@ function sanitizeNode(value, explicitWordTimingsExist) {
   if (typeof copy.word !== "string" && typeof copy.text === "string" && hasTiming(copy)) {
     const text = copy.text.trim();
     const isSingleToken = text.length > 0 && !/\s/u.test(text);
-    if (explicitWordTimingsExist || !isSingleToken) delete copy.text;
+    const hasChildWords = Array.isArray(copy.words) || Array.isArray(copy.tokens) || Array.isArray(copy.wordTimings);
+    if (!isSingleToken || hasChildWords) delete copy.text;
   }
   return copy;
 }

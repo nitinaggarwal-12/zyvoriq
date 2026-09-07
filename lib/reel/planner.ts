@@ -83,7 +83,7 @@ function sentencePool(topic: string, intent?: ReelCreationIntent) {
 }
 
 function buildScript(topic: string, targetSec: number, intent?: ReelCreationIntent) {
-  const targetWords = Math.max(18, Math.round(targetSec * 2.0));
+  const targetWords = Math.max(16, Math.round(targetSec * 1.55));
   const candidates = sentencePool(topic, intent);
   let best: string[] = [];
   let bestDelta = Number.POSITIVE_INFINITY;
@@ -106,9 +106,15 @@ function buildScript(topic: string, targetSec: number, intent?: ReelCreationInte
 }
 
 function sentenceUnits(script: string) {
-  return (script.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [script])
-    .map(normalizeSpaces)
-    .filter(Boolean);
+  const lines = script.split(/\r?\n/).map(normalizeSpaces).filter(Boolean);
+  const units: string[] = [];
+  for (const line of lines) {
+    const sents = (line.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [line])
+      .map(normalizeSpaces)
+      .filter(Boolean);
+    units.push(...sents);
+  }
+  return units;
 }
 
 function splitLongUnit(unit: string, maxWords: number): string[] {
@@ -120,11 +126,11 @@ function splitLongUnit(unit: string, maxWords: number): string[] {
 
   while (words.length - start > maxWords) {
     const hardEnd = Math.min(words.length, start + maxWords);
-    const softStart = Math.min(hardEnd - 1, start + Math.max(6, maxWords - 5));
+    const softStart = Math.min(hardEnd - 1, start + Math.max(5, maxWords - 4));
     let splitAt = -1;
     for (let i = hardEnd - 1; i >= softStart; i--) {
       if (/[,:;—-]$/.test(words[i])) { splitAt = i + 1; break; }
-      if (semanticBreak.test(words[i]) && i > start + 5) { splitAt = i; break; }
+      if (semanticBreak.test(words[i]) && i > start + 4) { splitAt = i; break; }
     }
     if (splitAt <= start) splitAt = hardEnd;
     out.push(words.slice(start, splitAt).join(" "));
@@ -135,19 +141,23 @@ function splitLongUnit(unit: string, maxWords: number): string[] {
 }
 
 function splitIntoEditorialBeats(script: string, targetSec: number): string[] {
-  const normalized = normalizeSpaces(script);
-  if (!normalized) return [];
-  const totalWords = countWords(normalized);
-  const desiredShotCount = Math.max(2, Math.ceil(targetSec / 6));
-  const targetWordsPerShot = Math.max(7, Math.min(13, Math.round(totalWords / desiredShotCount)));
-  const maxWordsPerShot = 16;
-  const units = sentenceUnits(normalized).flatMap(unit => splitLongUnit(unit, maxWordsPerShot));
+  if (!script.trim()) return [];
+  const totalWords = countWords(script);
+  // Veo clips are limited to 4s, 6s, 8s buckets.
+  // At ~1.55 words/sec delivery cadence, each beat should have max 9 words to stay under ~5.8s,
+  // guaranteeing beats fit cleanly into Veo's 6s bucket with zero clamp trim or duration overrun.
+  const desiredShotCount = Math.max(2, Math.ceil(targetSec / 5.5), Math.ceil(totalWords / 9));
+  const targetWordsPerShot = Math.max(6, Math.min(9, Math.round(totalWords / desiredShotCount)));
+  const maxWordsPerShot = 9;
+  const units = sentenceUnits(script).flatMap(unit => splitLongUnit(unit, maxWordsPerShot));
   const beats: string[] = [];
   let current = "";
 
   for (const unit of units) {
+    // If unit starts with a new speaker marker (e.g. "NAME:"), flush previous beat to create a clean cut
+    const isNewSpeaker = /^[A-Z0-9_\-\s]{2,20}:/i.test(unit) && current;
     const proposed = current ? `${current} ${unit}` : unit;
-    if (current && (countWords(proposed) > maxWordsPerShot || countWords(current) >= targetWordsPerShot)) {
+    if (isNewSpeaker || (current && (countWords(proposed) > maxWordsPerShot || countWords(current) >= targetWordsPerShot))) {
       beats.push(current);
       current = unit;
     } else {
@@ -156,7 +166,7 @@ function splitIntoEditorialBeats(script: string, targetSec: number): string[] {
   }
   if (current) beats.push(current);
 
-  if (beats.length === 1 && desiredShotCount > 1 && countWords(beats[0]) > 8) {
+  if (beats.length === 1 && desiredShotCount > 1 && countWords(beats[0]) > 7) {
     return splitLongUnit(beats[0], Math.ceil(countWords(beats[0]) / 2));
   }
   return beats;
