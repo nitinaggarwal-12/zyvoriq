@@ -528,7 +528,15 @@ export function OmniMultiPhaseStudio() {
     }
   };
 
-  const handleStartReelGeneration = () => handleSendPromptToGenerate();
+  const handleStartReelGeneration = () => {
+    const chatText = chatInput.trim();
+    if (chatText) {
+      handleCreateNewContent(chatText);
+      setChatInput("");
+    } else {
+      handleSendPromptToGenerate();
+    }
+  };
 
   // Dynamic Audio VU Meter
   useEffect(() => {

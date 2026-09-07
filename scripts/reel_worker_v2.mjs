@@ -273,13 +273,43 @@ async function recoverLegacyContinuityDependencyFailures() {
 }
 await recoverLegacyContinuityDependencyFailures();
 
-
-// P0.3: Legacy Mumbai purge excised from worker boot sequence.
-// One-off migration has been moved to scripts/migrations/one_off_purge_mumbai.mjs
+// Reclaim any orphaned RUNNING operations whose lease belongs to a dead previous container instance
+async function reclaimOrphanedContainerLeases() {
+  const r = await pool.query(`
+    UPDATE reel_operations
+    SET status='QUEUED',
+        lease_owner=NULL,
+        lease_expires_at=NULL,
+        updated_at=NOW()
+    WHERE status='RUNNING'
+      AND (lease_owner IS NULL OR lease_owner != $1)
+    RETURNING id, production_id, kind, target_id
+  `, [workerId]);
+  if (r.rowCount > 0) {
+    console.log(`[reel-worker] Reclaimed ${r.rowCount} orphaned running operation(s) from previous container instances:`, r.rows.map(x => `${x.id} (${x.kind})`));
+  }
+}
+await reclaimOrphanedContainerLeases();
 
 
 async function runDeadlockAndStarvationWatchdog() {
   try {
+    // 0. Auto-reclaim any stranded RUNNING operations whose lease expired
+    const expiredRunning = await pool.query(`
+      UPDATE reel_operations
+      SET status='QUEUED',
+          lease_owner=NULL,
+          lease_expires_at=NULL,
+          updated_at=NOW()
+      WHERE status='RUNNING'
+        AND lease_expires_at < NOW()
+        AND COALESCE(attempt, 0) < 5
+      RETURNING id, kind, production_id
+    `);
+    if (expiredRunning.rowCount > 0) {
+      console.log(`[reel-worker] [watchdog] Auto-reclaimed ${expiredRunning.rowCount} expired RUNNING operation(s) to QUEUED:`, expiredRunning.rows.map(r => `${r.id} (${r.kind})`));
+    }
+
     // 1. Circuit breaker: Quarantine any operation exceeding max attempts (>= 5) to prevent queue starvation
     const poisonOps = await pool.query(`
       UPDATE reel_operations
