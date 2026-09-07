@@ -395,13 +395,14 @@ async function runDeadlockAndStarvationWatchdog() {
       }
     }
 
-    // 4. Auto-enqueue ungenerated shots for productions in SHOTS_PLANNED or VIDEO_GENERATING
+    // 4. Auto-enqueue ungenerated shots for productions in SHOTS_PLANNED or VIDEO_GENERATING (recent productions only)
     const plannedProds = await pool.query(`
       SELECT p.id, p.revision, p.manifest_json, c.generation_token
       FROM reel_productions p
       JOIN reel_production_controls c ON c.production_id = p.id
       WHERE (p.manifest_json->>'status' = 'SHOTS_PLANNED' OR p.manifest_json->>'status' = 'VIDEO_GENERATING')
         AND c.cancelled_at IS NULL
+        AND p.updated_at > NOW() - INTERVAL '6 hours'
     `);
     for (const prodRow of plannedProds.rows) {
       const pm = prodRow.manifest_json;
@@ -505,6 +506,24 @@ async function runDeadlockAndStarvationWatchdog() {
         );
         console.log(`[reel-worker] [watchdog-enqueue] ROUGH_CUT enqueued for prod ${rRow.id}`);
       }
+    }
+
+    // 6. Prune stale queued/blocked operations for abandoned productions (> 6 hours old)
+    const pruned = await pool.query(`
+      UPDATE reel_operations o
+      SET status = 'CANCELLED',
+          last_error = 'ABANDONED_PRODUCTION_TIMEOUT: Production inactive for > 6 hours',
+          lease_owner = NULL,
+          lease_expires_at = NULL,
+          updated_at = NOW()
+      FROM reel_productions p
+      WHERE o.production_id = p.id
+        AND o.status IN ('QUEUED', 'BLOCKED')
+        AND p.updated_at < NOW() - INTERVAL '6 hours'
+      RETURNING o.id
+    `);
+    if (pruned.rowCount > 0) {
+      console.log(`[reel-worker] [watchdog] Pruned ${pruned.rowCount} stale operations from abandoned productions`);
     }
   } catch (err) {
     console.error(`[reel-worker] [watchdog] Error running watchdog:`, err?.message || err);
@@ -707,7 +726,13 @@ async function claim() {
       SELECT id FROM reel_operations
       WHERE (status='QUEUED' AND COALESCE(attempt, 0) < 5)
          OR (status='RUNNING' AND lease_expires_at < NOW() AND COALESCE(attempt, 0) < 5)
-      ORDER BY created_at ASC
+      ORDER BY 
+        CASE 
+          WHEN kind = 'ROUGH_CUT' THEN 0 
+          WHEN kind = 'NARRATION' THEN 1 
+          ELSE 2 
+        END ASC,
+        created_at ASC
       FOR UPDATE SKIP LOCKED
       LIMIT 1
     )
