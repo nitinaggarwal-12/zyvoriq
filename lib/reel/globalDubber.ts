@@ -1,7 +1,7 @@
 /**
  * 🌍 Zyvoriq "MrBeast Global Dubber" & Lip-Sync Matrix (Tier 3)
  * Provides 1-click neural audio dubbing into 30+ languages, preserving original speaker
- * pitch, cadence, and vocal timber with zero-egress DeepMind neural synthesis.
+ * pitch, cadence, and vocal timber with high-fidelity DeepMind neural synthesis.
  */
 
 export interface DubbingLanguage {

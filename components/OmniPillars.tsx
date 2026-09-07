@@ -7,15 +7,15 @@ import Link from "next/link";
 const PILLARS = [
   {
     number: "01",
-    badge: "95% UP-FRONT PRE-FLIGHT SYNTHESIS",
+    badge: "PRE-FLIGHT STORY ARCHITECTURE",
     title: "Master Director & Story Architecture",
-    subtitle: "Eliminating blindspots, lore gaps, and drift before diffusion begins.",
-    description: "Omni completes 95% of the heavy lifting up-front: deep lore research, multi-act plot structures, character emotional subtext, naturalistic dialogues, and blocking. This eliminates diffusion drift, narrative blindspots, and continuity traps before spending GPU compute.",
+    subtitle: "Eliminating blindspots, lore gaps, and drift before generation begins.",
+    description: "Omni completes extensive directorial planning up-front: lore research, multi-act plot structures, character emotional subtext, naturalistic dialogues, and blocking. This eliminates continuity drift and narrative blindspots before calling video generation APIs.",
     features: [
-      "95% Up-Front Lore & Subject Grounding",
+      "In-Depth Lore & Subject Grounding",
       "Multi-Act Dramatic Tension & Pacing Arc",
       "Subtextual Dialogue & Speech Cadence",
-      "Authentic Human Emotions (Zero Caricature)"
+      "Authentic Human Emotions & Nuance"
     ],
     accent: "from-teal-500/20 to-emerald-500/5",
     border: "border-teal-500/30",
@@ -47,7 +47,7 @@ const PILLARS = [
       "Authentic Orchestral & Synthesizer BGM",
       "Poetic Songwriting & Lyrical Composition",
       "Calibrated to Broadcast Loudness (-24.0 LUFS)",
-      "100% Dialogue Bleed & Cross-Talk Elimination"
+      "Dialogue Bleed & Cross-Talk Elimination"
     ],
     accent: "from-amber-500/20 to-orange-500/5",
     border: "border-amber-500/30",
@@ -55,15 +55,15 @@ const PILLARS = [
   },
   {
     number: "04",
-    badge: "5% POST-DIFFUSION SURGICAL FIXING",
-    title: "Surgical Defect Auto-Repair Loop",
-    subtitle: "Pinpointing the final 5% gaps and healing them autonomously.",
-    description: "After the 95% baseline reel is compiled, Omni audits live frames with Gemini Directorial QC. It isolates remaining edge defects—an anatomical flicker or dialogue splice—and surgically re-rolls only that specific shot without discarding the master timeline.",
+    badge: "POST-GENERATION QUALITY ASSURANCE",
+    title: "Targeted Defect Remediation",
+    subtitle: "Auditing scene boundaries, dialogue sync, and visual consistency.",
+    description: "After the initial rough cut is compiled, Omni audits timeline sync and audio alignment. It isolates remaining edge defects—such as timing drift or boundary mismatches—and regenerates only that specific shot without discarding the master timeline.",
     features: [
-      "Gemini Directorial QC Frame-Level Gap Detection",
-      "Surgical Shot-Level Auto-Repair (Loop 1-3)",
+      "Directorial QC Frame-Level Gap Detection",
+      "Surgical Shot-Level Auto-Repair",
       "Zero-Master Discard Timeline Conformance",
-      "13 Forensic Quality Gates (100% Broadcast Pass)"
+      "Comprehensive Audio/Visual Quality Gates"
     ],
     accent: "from-purple-500/20 to-indigo-500/5",
     border: "border-purple-500/30",

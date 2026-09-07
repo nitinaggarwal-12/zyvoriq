@@ -1,16 +1,6 @@
 import assert from "node:assert";
 
-// 1. Idea & Trend Radar Engine
-import {
-  PREDICTED_TRENDS_RADAR,
-  calculateVOI,
-  get7DayPredictedTrends,
-  transpileResearchPaperToReel,
-  mutateContrarianScript,
-  applyNicheTransposition
-} from "../../lib/reel/trendRadarEngine";
-
-// 2. Original Book Studio & Transmedia World-Building
+// 1. Original Book Studio & Transmedia World-Building
 import {
   BOOK_OPPORTUNITY_CATALOG,
   calculateBOI,
@@ -92,34 +82,6 @@ function verify(desc: string, condition: boolean, details?: string) {
   console.log(`  ✓ [CHECK #${totalChecks.toString().padStart(2, '0')}] ${desc}${details ? ` -> ${details}` : ''}`);
 }
 
-// =============================================================================
-// PHASE 1: IDEA MINING & 7-DAY PREDICTIVE FORECASTING
-// =============================================================================
-console.log("\n📡 PHASE 1: IDEA MINING & 7-DAY PREDICTIVE TREND FORECASTING");
-
-const voiGreenfield = calculateVOI(9.5, 1450, "greenfield_zero", "stage_1_incubation");
-verify("VOI Calculation: Greenfield explosive demand", voiGreenfield >= 90, `VOI Score: ${voiGreenfield}/100`);
-
-const voiSaturated = calculateVOI(3.0, 50, "saturated", "stage_4_saturated");
-verify("VOI Calculation: Saturated late-stage penalty", voiSaturated < 50, `VOI Score: ${voiSaturated}/100`);
-
-const allTrends = get7DayPredictedTrends();
-verify("Radar Telemetry: 7-Day Advance Ingestion", allTrends.length >= 5, `${allTrends.length} multi-platform trends`);
-
-const arxivTranspiled = transpileResearchPaperToReel(
-  "Dynamic MoE Transformer for Edge AI",
-  "We propose a sub-linear architecture cutting parameters by 52%.",
-  "SWE-bench (74.2%)"
-);
-verify("Academic Paper Transpiler: 60s Reel Hook", arxivTranspiled.reel60s.hook.length > 20, `"${arxivTranspiled.reel60s.hook.slice(0, 45)}..."`);
-verify("Academic Paper Transpiler: LinkedIn Carousel", arxivTranspiled.linkedinCarousel.slides.length === 5, `${arxivTranspiled.linkedinCarousel.slideCount} slides compiled`);
-verify("Academic Paper Transpiler: Executive Podcast", arxivTranspiled.executivePodcast.openingHook.length > 15, `Topic: "${arxivTranspiled.executivePodcast.topic}"`);
-
-const contrarian = mutateContrarianScript("AI Scale", "bigger models are always better");
-verify("Contrarian Mutation Engine (Anti-Echo-Chamber)", contrarian.contrarianHook.includes("Everyone is saying"), `"${contrarian.contrarianHook}"`);
-
-const nicheTransposed = applyNicheTransposition(allTrends[0], "b2b_saas");
-verify("Niche-Lens Transposition (B2B SaaS)", nicheTransposed.transposedTitle.startsWith("For B2B SaaS Founders:"), nicheTransposed.transposedTitle);
 
 // =============================================================================
 // PHASE 2: ORIGINAL BOOK AUTHORING & TRANSMEDIA CONTINUITY

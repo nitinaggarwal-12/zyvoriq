@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { reelProductionStore, type StoredReelProduction } from "@/lib/reel/productionStore";
 import type { ReelProductionManifest } from "@/lib/reel/types";
-import { applyStudio1ShotPrompt, isStudio1Manifest, type Studio1Metadata, type Studio1SubjectMode } from "./planner";
+import { applyStudio1ShotPrompt, budgetStudio1NarrationAgainstCap, isStudio1Manifest, type Studio1Metadata, type Studio1SubjectMode } from "./planner";
 
 const clock = (value: number) => Number(value.toFixed(6));
 
@@ -218,6 +218,7 @@ export const studio1Service = {
     meta(manifest).basePrompts[shot.id] = [nextVisual, nextScript ? `Narrative beat: ${nextScript}` : "Silent visual continuation.", `Tone: ${manifest.tone}.`, manifest.creativeBible.visualStyle, manifest.creativeBible.cameraLanguage, "Do not render captions, subtitles, logos or UI text inside the generated video."].join(" ");
     if (scriptChanged) {
       manifest.masterScript = manifest.shots.map(item => item.scriptText.trim()).filter(Boolean).join(" ");
+      budgetStudio1NarrationAgainstCap(manifest);
       invalidateNarration(manifest);
     } else invalidateCombinedOutputs(manifest);
     rebuildStructure(manifest);

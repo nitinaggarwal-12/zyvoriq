@@ -112,7 +112,7 @@ export function VoiceCloneVault() {
     setIsPlayingClone(true);
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
-      const text = `This is a high-fidelity demonstration of ${voiceName}, cloned with Zyvoriq neural vocal tract modeling. Zero cloud egress. Encrypted and signed with C2PA Ed25519.`;
+      const text = `This is a high-fidelity demonstration of ${voiceName}, cloned with Zyvoriq neural vocal tract modeling. Encrypted and signed with C2PA metadata.`;
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 0.98;
       utterance.pitch = 1.0;
@@ -142,7 +142,7 @@ export function VoiceCloneVault() {
               </span>
             </div>
             <p className="text-xs text-slate-400">
-              Record or upload 30s of speech · 5-Band formant extraction · Zero 3rd-party egress
+              Record or upload 30s of speech · 5-Band formant extraction · Direct neural synthesis
             </p>
           </div>
         </div>
