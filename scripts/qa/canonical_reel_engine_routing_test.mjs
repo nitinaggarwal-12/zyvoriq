@@ -33,7 +33,11 @@ assert.ok(operationQueue.includes("LEGACY_REEL_PIPELINE_DISABLED"), "queue must 
 assert.ok(studio1Route.includes("studio1: true"), "Studio1 paid operations must carry canonical engine evidence");
 assert.ok(studio1Route.includes("narrationSyncedTimeline: true"), "Studio1 rough cuts must carry exact narration-sync evidence");
 assert.ok(worker.includes("if (op.payload_json?.studio1)"), "worker narration path must branch on canonical Studio1 evidence");
-assert.ok(worker.includes("const studio1 = op.payload_json?.studio1 === true"), "worker rough-cut path must branch on canonical Studio1 evidence");
+assert.ok(
+  worker.includes("const studio1 = op.payload_json?.studio1 === true") ||
+  /studio1\s*=\s*(?:Boolean\()?op\.payload_json\?\.studio1\s*===\s*true/.test(worker),
+  "worker rough-cut path must branch on canonical Studio1 evidence"
+);
 
 assert.ok(workerGuard.includes("LEGACY_REEL_PIPELINE_DISABLED"), "worker startup must reject legacy paid jobs queued before deployment");
 assert.ok(workerGuard.includes("kind IN ('NARRATION','SHOT','ROUGH_CUT')"), "worker guard must cover all paid legacy media operations");
