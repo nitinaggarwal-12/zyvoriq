@@ -1006,6 +1006,8 @@ async function runDeadlockAndStarvationWatchdog() {
         }
         const updatedPayload = {
           ...(rcRow.payload_json || {}),
+          generationToken: rRow.generation_token || rcRow.payload_json?.generationToken,
+          manifestRevision: rRow.revision,
           studio1: isStudio1,
           narrationSyncedTimeline: isStudio1,
           selfhealCount: selfhealCount + 1,
