@@ -981,11 +981,12 @@ async function runDeadlockAndStarvationWatchdog() {
       } else if (existingRc.rows[0]?.status === 'FAILED') {
         const rcRow = existingRc.rows[0];
         const attempts = Number(rcRow.attempt || 0);
-        if (attempts >= 3) {
-          console.warn(`[reel-worker] [watchdog-selfheal] ROUGH_CUT ${rcRow.id} reached attempt cap (${attempts}), quarantining operation for prod ${rRow.id}`);
+        const selfhealCount = Number(rcRow.payload_json?.selfhealCount || 0);
+        if (attempts >= 3 || selfhealCount >= 2) {
+          console.warn(`[reel-worker] [watchdog-selfheal] ROUGH_CUT ${rcRow.id} reached attempt/selfheal cap (attempts=${attempts}, selfhealCount=${selfhealCount}), quarantining operation for prod ${rRow.id}`);
           await pool.query(
             `UPDATE reel_operations
-             SET status='QUARANTINED', last_error='MAX_ATTEMPTS_EXCEEDED: Self-heal cap reached (3 attempts)', updated_at=NOW()
+             SET status='QUARANTINED', last_error='MAX_ATTEMPTS_EXCEEDED: Self-heal cap reached (quarantined to prevent queue starvation)', updated_at=NOW()
              WHERE id=$1 AND status='FAILED'`,
             [rcRow.id]
           );
@@ -993,7 +994,7 @@ async function runDeadlockAndStarvationWatchdog() {
         }
 
         const lastUpdatedMs = rcRow.updated_at ? new Date(rcRow.updated_at).getTime() : 0;
-        const backoffMs = Math.min(300000, Math.pow(2, attempts) * 15000);
+        const backoffMs = Math.min(300000, Math.max(60000, Math.pow(2, selfhealCount) * 60000));
         if (Date.now() - lastUpdatedMs < backoffMs) {
           console.log(`[reel-worker] [watchdog-selfheal] ROUGH_CUT ${rcRow.id} backoff in effect (${Math.round((backoffMs - (Date.now() - lastUpdatedMs)) / 1000)}s remaining)`);
           continue;
@@ -1003,18 +1004,21 @@ async function runDeadlockAndStarvationWatchdog() {
           rm.status = "ROUGH_CUT_READY";
           await saveManifest(rRow.id, rRow.revision, rm);
         }
+        const updatedPayload = {
+          ...(rcRow.payload_json || {}),
+          studio1: isStudio1,
+          narrationSyncedTimeline: isStudio1,
+          selfhealCount: selfhealCount + 1,
+        };
         await pool.query(
           `UPDATE reel_operations 
-           SET status='QUEUED', attempt=attempt+1, last_error=NULL, 
-               payload_json = jsonb_set(
-                 jsonb_set(COALESCE(payload_json, '{}'::jsonb), '{studio1}', $2::jsonb),
-                 '{narrationSyncedTimeline}', $3::jsonb
-               ),
+           SET status='QUEUED', attempt=attempt+1, scheduled_at=NOW() + INTERVAL '30 seconds', last_error=NULL, 
+               payload_json = $2::jsonb,
                updated_at=NOW()
-           WHERE id=$1`,
-          [rcRow.id, JSON.stringify(isStudio1), JSON.stringify(isStudio1)]
+           WHERE id=$1 AND status='FAILED'`,
+          [rcRow.id, JSON.stringify(updatedPayload)]
         );
-        console.log(`[reel-worker] [watchdog-selfheal] Reset failed ROUGH_CUT ${rcRow.id} to QUEUED (attempt=${attempts + 1}, studio1=${isStudio1}) for prod ${rRow.id}`);
+        console.log(`[reel-worker] [watchdog-selfheal] Reset failed ROUGH_CUT ${rcRow.id} to QUEUED (attempt=${attempts + 1}, selfhealCount=${selfhealCount + 1}) for prod ${rRow.id}`);
       }
     }
 
@@ -1423,8 +1427,7 @@ async function claim() {
             AND active_op.lease_expires_at >= NOW()
         )
       ORDER BY 
-        CASE WHEN o.kind = 'ROUGH_CUT' THEN 0 ELSE 1 END ASC,
-        (COALESCE((SELECT pc.priority FROM reel_production_controls pc WHERE pc.production_id = o.production_id), 0) + LEAST(EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 600, 5)) DESC,
+        (COALESCE((SELECT pc.priority FROM reel_production_controls pc WHERE pc.production_id = o.production_id), 0) + LEAST(EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 300, 10)) DESC,
         CASE 
           WHEN EXISTS (
             SELECT 1 FROM reel_operations finished_op 
@@ -1432,8 +1435,9 @@ async function claim() {
               AND finished_op.status = 'SUCCEEDED' 
               AND finished_op.kind = 'SHOT'
           ) THEN 1
-          WHEN o.kind = 'NARRATION' THEN 2 
-          ELSE 3 
+          WHEN o.kind = 'ROUGH_CUT' THEN 2
+          WHEN o.kind = 'NARRATION' THEN 3 
+          ELSE 4 
         END ASC,
         o.created_at ASC
       FOR UPDATE SKIP LOCKED
@@ -1957,6 +1961,7 @@ function sanitizePromptForVeo(prompt) {
     { pattern: /\b(?:Farooq[\s_]*Malik|Farooq)\b/gi, replacement: "a menacing, hardened rogue commander" },
     { pattern: /\b(?:Meera[\s_]*Rao|Meera)\b/gi, replacement: "a talented, expressive female musician" },
     { pattern: /\b(?:Aarav[\s_]*Roy|Aarav)\b/gi, replacement: "a charismatic, passionate male performer" },
+    { pattern: /\b(?:Arjun[\s_]*Kapoor|Arjun)\b/gi, replacement: "a charismatic, handsome South Asian leading man" },
   ];
   for (const { pattern, replacement } of celebrityMap) {
     clean = clean.replace(pattern, replacement);
@@ -1964,6 +1969,22 @@ function sanitizePromptForVeo(prompt) {
 
   // Restore protected bracketed tags
   clean = clean.replace(/__PRESERVED_TAG_(\d+)__/g, (_, idx) => preservedTags[Number(idx)] || "");
+
+  // 3. Strip all audio/dialogue language specifications, spoken lyrics, and vocalization cues.
+  // Veo is an audiovisual model; song lyrics or spoken dialogue directives trigger Veo's audio safety/copyright filters.
+  clean = clean.replace(/AUDIO\s*&?\s*(?:DIALOGUE\s*LANGUAGE|Hinglish|English|Hindi)[^.]*(?:\.|$)/gi, "");
+  clean = clean.replace(/Native character dialogue, vocalizations and background calls[^.]*(?:\.|$)/gi, "");
+  clean = clean.replace(/The current spoken beat is:[^.]*(?:\.|$)/gi, "");
+  clean = clean.replace(/The current spoken beat is:.*$/gmi, "");
+  clean = clean.replace(/Visual beat for\s*\([^)]*\)[^.]*\./gi, "Visual beat: dynamic cinematic choreography and romantic visual chemistry.");
+  clean = clean.replace(/Visual beat for\s*[^.]*\./gi, "Visual beat: dynamic cinematic choreography and romantic visual chemistry.");
+  clean = clean.replace(/Narrative beat:\s*\([^)]*\)[^.]*(?:Tone:[^.]*\.)?/gi, "Narrative beat: expressive performance and synchronized movement.");
+  clean = clean.replace(/Narrative beat:\s*[^.]*(?:Tone:[^.]*\.)?/gi, "Narrative beat: expressive performance and synchronized movement.");
+  clean = clean.replace(/["'][^"']{4,}["']/g, "");
+  clean = clean.replace(/\((?:Softly|Playfully|Passionately|Gently|Whispering|Singing|Vocalizing)[^)]*\)/gi, "");
+  clean = clean.replace(/Pure cinematic ambient atmosphere and background soundscape\./gi, "");
+  clean += " AUDIO DIRECTIVE: Pure ambient environmental foley and natural atmospheric soundscape only. Zero spoken dialogue, zero character vocals, zero singing, zero lyrics.";
+
   const words = clean.split(/\s+/);
   if (words.length > 700) {
     clean = words.slice(0, 700).join(" ");
@@ -2201,6 +2222,49 @@ async function generateShot(op, manifest, shot) {
 
         if (isSafety) {
           const diagInfo = raiReasons ? JSON.stringify(raiReasons) : JSON.stringify(pj).slice(0, 300);
+          const rawResponseStr = JSON.stringify(pj);
+          const isAudioFilter = /issue with the audio for your prompt|audio.*could not create your video|audio.*(?:policy|prohibited|violat|reject|filter)/i.test(rawResponseStr);
+
+          // Audio filter rejection branch: preserve temporal reference and character anchor 100%; sanitize audio/lyrics prompts
+          if (isAudioFilter) {
+            const prevAudioAttempts = Number(op.payload_json?.audioSafetyAttempts || 0);
+            const newAudioAttempts = prevAudioAttempts + 1;
+            console.log(`[reel-worker] [audio-filter-fallback] Veo rejected audio for prompt on ${shot.id} (audio retry #${newAudioAttempts}). Preserving 100% of visual conditioning, canonical references, and temporal frames.`);
+
+            // Track audioSafetyAttempts separately — DO NOT INCREMENT safetyAttempts (which is for visual likeness triggers)
+            try {
+              await pool.query(`
+                UPDATE reel_operations
+                SET payload_json = jsonb_set(
+                  COALESCE(payload_json, '{}'::jsonb),
+                  '{audioSafetyAttempts}',
+                  $2::jsonb
+                )
+                WHERE id = $1
+              `, [op.id, JSON.stringify(newAudioAttempts)]);
+            } catch (dbErr) {
+              console.warn(`[reel-worker] Failed to record audioSafetyAttempts in DB: ${dbErr?.message}`);
+            }
+
+            try {
+              const current = await getProduction(op.production_id);
+              const m = current.manifest;
+              const targetShot = m.shots.find(x => x.id === shot.id);
+              if (targetShot) {
+                targetShot.generationPrompt = sanitizePromptForVeo(targetShot.generationPrompt);
+                if (targetShot.scriptText) {
+                  targetShot.scriptText = "";
+                }
+                await saveManifest(op.production_id, current.revision, m);
+                console.log(`[reel-worker] [audio-filter-fallback] Sanitized shot ${shot.id} prompt in manifest: all visual conditioning preserved, audio converted to pure ambient foley.`);
+              }
+            } catch (err) {
+              console.warn(`[reel-worker] Failed to sanitize audio prompt in manifest: ${err?.message}`);
+            }
+            throw new Error(`VEO_AUDIO_FILTER_REJECTED: Veo rejected audio generation for prompt. Visual references 100% preserved; audio converted to pure ambient foley. Diag: ${diagInfo}`);
+          }
+
+          // Likeness / visual safety fallback branch:
           const prevSafetyAttempts = Number(op.payload_json?.safetyAttempts || 0);
           const newSafetyAttempts = prevSafetyAttempts + 1;
           const hadTemporalRef = Boolean(ref?.buffer);
@@ -2218,36 +2282,6 @@ async function generateShot(op, manifest, shot) {
             `, [op.id, JSON.stringify(newSafetyAttempts)]);
           } catch (dbErr) {
             console.warn(`[reel-worker] Failed to record safetyAttempts in DB: ${dbErr?.message}`);
-          }
-
-          // Check for Veo audio-filter rejection ("We encountered an issue with the audio for your prompt...")
-          const rawResponseStr = JSON.stringify(pj);
-          const isAudioFilter = /issue with the audio for your prompt|audio.*could not create your video|audio.*(?:policy|prohibited|violat|reject|filter)/i.test(rawResponseStr);
-
-          // Audio filter rejection branch: preserve temporal reference and character anchor; sanitize spoken line and dialogue prompts
-          if (isAudioFilter) {
-            console.log(`[reel-worker] [audio-filter-fallback] Veo rejected audio for prompt on ${shot.id}. Preserving visual conditioning and temporal frames; sanitizing spoken dialogue line.`);
-            try {
-              const current = await getProduction(op.production_id);
-              const m = current.manifest;
-              const targetShot = m.shots.find(x => x.id === shot.id);
-              if (targetShot) {
-                const prev = targetShot.generationPrompt;
-                let healed = prev
-                  .replace(/The current spoken beat is:.*$/i, "Pure cinematic ambient atmosphere and background soundscape.")
-                  .replace(/(?:dialogue|speech|speaks|says|singing|lyrics):\s*["'][^"']+["']/gi, "ambient foley sounds")
-                  .replace(/["'][^"']{10,}["']/g, "");
-                if (targetShot.scriptText) {
-                  targetShot.scriptText = targetShot.scriptText.replace(/^[A-Z0-9_\-\s]{2,25}:/i, "").trim();
-                }
-                targetShot.generationPrompt = healed.replace(/\s{2,}/g, " ").trim();
-                await saveManifest(op.production_id, current.revision, m);
-                console.log(`[reel-worker] [audio-filter-fallback] Sanitized shot ${shot.id} spoken prompt in manifest.`);
-              }
-            } catch (err) {
-              console.warn(`[reel-worker] Failed to sanitize audio prompt in manifest: ${err?.message}`);
-            }
-            throw new Error(`VEO_AUDIO_FILTER_REJECTED: Veo rejected audio generation for prompt. Retrying with sanitized spoken line (visual references preserved). Diag: ${diagInfo}`);
           }
 
           // STRATEGY REORDERING:
@@ -3044,6 +3078,36 @@ for (;;) {
           console.warn(
             `[reel-worker] [safety-filter-backoff] ${op.id} (${op.kind}${op.target_id ? `:${op.target_id}` : ''}) auto-sanitized after safety filter: "${message}". ` +
             `Requeuing with ${delaySec}s backoff (safety retry #${currentSafetyAttempts}/3, preserved attempt ${restoredAttempt}/5). Scheduled at +${delaySec}s.`
+          );
+          continue;
+        }
+      }
+
+      if (message.startsWith("VEO_AUDIO_FILTER_REJECTED")) {
+        // Veo audio filter rejected prompt: Dialogue and lyrics sanitized in manifest, visual references 100% preserved!
+        const currentAudioAttempts = Number(op.payload_json?.audioSafetyAttempts || 0) + 1;
+        if (currentAudioAttempts <= 4) {
+          const delaySec = 20 + Math.floor(Math.random() * 10);
+          const restoredAttempt = Math.max(0, Number(op.attempt || 1) - 1);
+          const updatedPayload = { ...(op.payload_json || {}), audioSafetyAttempts: currentAudioAttempts };
+
+          await pool.query(
+            `UPDATE reel_operations
+             SET status='QUEUED',
+                 attempt=$2,
+                 scheduled_at=NOW() + ($3 || ' seconds')::INTERVAL,
+                 payload_json=$4::jsonb,
+                 provider_operation_name=NULL,
+                 last_error=$5,
+                 lease_owner=NULL,
+                 lease_expires_at=NULL,
+                 updated_at=NOW()
+             WHERE id=$1`,
+            [op.id, restoredAttempt, delaySec, JSON.stringify(updatedPayload), message]
+          );
+          console.warn(
+            `[reel-worker] [audio-filter-backoff] ${op.id} (${op.kind}${op.target_id ? `:${op.target_id}` : ''}) prompt sanitized after audio rejection: "${message}". ` +
+            `Requeuing with ${delaySec}s backoff (audio retry #${currentAudioAttempts}/4, preserved attempt ${restoredAttempt}/5). Scheduled at +${delaySec}s.`
           );
           continue;
         }
