@@ -667,8 +667,14 @@ async function autonomousDiskCleanAndHealthGuard(forceAggressive = false) {
             if (prod.manifest.status === "REPAIRING") {
               prod.manifest.status = "VIDEO_GENERATING";
             }
-            await saveManifest(failedOp.production_id, prod.revision, prod.manifest);
           }
+          // Also reset any downstream shots that were cancelled due to parent failure
+          for (const ds of prod.manifest.shots) {
+            if (ds.status === "CANCELLED" && ds.dependsOnShotIds?.includes(failedOp.target_id)) {
+              ds.status = "PLANNED";
+            }
+          }
+          await saveManifest(failedOp.production_id, prod.revision, prod.manifest);
         }
       } catch (e) {
         console.warn(`[disk-guard] Failed updating manifest for ENOSPC heal: ${e?.message}`);
@@ -679,6 +685,14 @@ async function autonomousDiskCleanAndHealthGuard(forceAggressive = false) {
          SET status = 'QUEUED', attempt = 0, last_error = NULL, lease_owner = NULL, lease_expires_at = NULL, updated_at = NOW()
          WHERE id = $1`,
         [failedOp.id]
+      );
+
+      // Un-cancel any downstream dependent operations for the same production that were cancelled by parent cascading
+      await pool.query(
+        `UPDATE reel_operations 
+         SET status = 'BLOCKED', last_error = 'WAITING_ON_UPSTREAM_DEPENDENCIES:' || $2, lease_owner = NULL, lease_expires_at = NULL, updated_at = NOW()
+         WHERE production_id = $1 AND status = 'CANCELLED' AND last_error LIKE 'PARENT_TERMINAL_FAILURE%'`,
+        [failedOp.production_id, failedOp.target_id || ""]
       );
     }
   } catch (err) {
@@ -2403,7 +2417,7 @@ async function applyShot(op, result) {
     const blockedOps = await pool.query(
       `SELECT id, target_id FROM reel_operations 
        WHERE production_id=$1 
-         AND (status='BLOCKED' OR (status='FAILED' AND last_error LIKE 'WAIT_CEILING_EXCEEDED%'))`,
+         AND (status='BLOCKED' OR (status='FAILED' AND last_error LIKE 'WAIT_CEILING_EXCEEDED%') OR (status='CANCELLED' AND last_error LIKE 'PARENT_TERMINAL_FAILURE%'))`,
       [op.production_id]
     );
     for (const bRow of blockedOps.rows) {
