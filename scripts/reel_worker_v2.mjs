@@ -1529,11 +1529,26 @@ function stripSpeakerPrefixes(text) {
   const PRESERVED_DIRECTIVES = new Set([
     "CAMERA", "EYELINE", "LIGHTING", "FRAMING", "WARDROBE", "STYLE", "ACTION",
     "AUDIO", "MUSIC", "PROPS", "LOCATION", "SCENE", "SET", "ATMOSPHERE",
-    "SHOT", "LENS", "FOCUS", "COLOR", "COMPOSITION", "SPEED", "GRADE", "TONE", "MOOD"
+    "SHOT", "LENS", "FOCUS", "COLOR", "COMPOSITION", "SPEED", "GRADE", "TONE", "MOOD",
+    "HERO_CLOSE_UP", "CLOSE_UP", "EXTREME_CLOSE_UP", "MEDIUM_SHOT", "WIDE_SHOT",
+    "EXTREME_WIDE_SHOT", "OVER_THE_SHOULDER", "POINT_OF_VIEW", "DUTCH_ANGLE",
+    "DUTCH_ANGLE_LOW", "TWO_SHOT", "INSERT_SHOT", "ESTABLISHING_SHOT", "ESTABLISHING_WIDE",
+    "AERIAL_SHOT", "MASTER_SHOT", "CUTAWAY", "REVERSE_ANGLE"
   ]);
   return text.replace(/(?:^|\n|\b)([A-Z][A-Za-z0-9_]*(?:\s+[A-Z][A-Za-z0-9_]*)?):(?=\s)/g, (match, prefix) => {
     const norm = prefix.trim().toUpperCase();
-    if (PRESERVED_DIRECTIVES.has(norm) || norm.startsWith("STUDIO1") || norm.includes("LOCK") || norm.includes("RULE") || norm.includes("MODE") || norm.includes("TRACKING")) {
+    if (
+      PRESERVED_DIRECTIVES.has(norm) ||
+      norm.startsWith("STUDIO1") ||
+      norm.includes("LOCK") ||
+      norm.includes("RULE") ||
+      norm.includes("MODE") ||
+      norm.includes("TRACKING") ||
+      norm.includes("SHOT") ||
+      norm.includes("CLOSE") ||
+      norm.includes("ANGLE") ||
+      norm.includes("VIEW")
+    ) {
       return match;
     }
     if (/\b(?:is|are|was|were|at|in|on|to|for|with|by|from|about)\b/i.test(prefix)) {
@@ -1784,7 +1799,35 @@ async function generateShot(op, manifest, shot) {
         }
 
         if (isSafety) {
-          // Auto-heal prompt in manifest to bypass safety/likeness blocks
+          const diagInfo = raiReasons ? JSON.stringify(raiReasons) : JSON.stringify(pj).slice(0, 300);
+          const prevSafetyAttempts = Number(op.payload_json?.safetyAttempts || 0);
+          const newSafetyAttempts = prevSafetyAttempts + 1;
+          const hadTemporalRef = Boolean(ref?.buffer);
+
+          // Track safetyAttempts in payload_json
+          try {
+            await pool.query(`
+              UPDATE reel_operations
+              SET payload_json = jsonb_set(
+                COALESCE(payload_json, '{}'::jsonb),
+                '{safetyAttempts}',
+                $2::jsonb
+              )
+              WHERE id = $1
+            `, [op.id, JSON.stringify(newSafetyAttempts)]);
+          } catch (dbErr) {
+            console.warn(`[reel-worker] Failed to record safetyAttempts in DB: ${dbErr?.message}`);
+          }
+
+          // STRATEGY REORDERING:
+          // 1. FIRST LINE OF DEFENSE: Drop temporal reference frame on first retry (prompt left 100% untouched).
+          // Empirical testing proved the likeness trigger was caused by temporal frames conflicting with character sheets.
+          if (hadTemporalRef && prevSafetyAttempts === 0) {
+            console.log(`[reel-worker] [safety-fallback] Safety filter triggered on ${shot.id}. FIRST LINE OF DEFENSE: Pruning temporal dependency frame on retry; prompt preserved 100% pristine.`);
+            throw new Error(`VEO_SAFETY_FILTER_EMPTY: Veo completed without video URI due to safety/RAI filter. Retrying with temporal reference pruned (prompt untouched). Diag: ${diagInfo}`);
+          }
+
+          // 2. SECOND LINE OF DEFENSE: Text sanitization (only if frame-omission retry also failed, or if shot had no temporal frame).
           let changed = false;
           let prevPrompt = "";
           let healedPrompt = "";
@@ -1814,7 +1857,8 @@ async function generateShot(op, manifest, shot) {
                 },
                 {
                   name: "strip-quoted-dialogue",
-                  apply: (p) => p.replace(/"[^"]*"/g, "").replace(/'[^']*'/g, ""),
+                  // ONLY match paired double quotes or curly double quotes. NEVER match single quotes/apostrophes (e.g. Renjiro's, scene's)
+                  apply: (p) => p.replace(/"[^"]*"/g, "").replace(/[“"][^"”]*[”"]/g, ""),
                 },
               ];
 
@@ -1832,47 +1876,21 @@ async function generateShot(op, manifest, shot) {
               if (changed) {
                 targetShot.generationPrompt = healedPrompt;
                 await saveManifest(op.production_id, current.revision, m);
-                console.log(`[reel-worker] [rai-auto-heal] Healed shot ${shot.id} prompt for retry (matched: ${matchedRules.join(", ")}):`);
+                console.log(`[reel-worker] [rai-auto-heal] Healed shot ${shot.id} prompt on secondary text fallback (matched: ${matchedRules.join(", ")}):`);
                 console.log(`  BEFORE: "${prevPrompt.slice(0, 160)}..."`);
                 console.log(`  AFTER:  "${healedPrompt.slice(0, 160)}..."`);
               } else {
-                console.log(`[reel-worker] [rai-auto-heal] Prompt for shot ${shot.id} was UNCHANGED by auto-heal rules. Prompt: "${prevPrompt.slice(0, 160)}..."`);
+                console.log(`[reel-worker] [rai-auto-heal] Prompt for shot ${shot.id} was UNCHANGED by secondary text rules. Prompt: "${prevPrompt.slice(0, 160)}..."`);
               }
             }
           } catch (e) {
             console.warn(`[reel-worker] RAI auto-heal error: ${e?.message}`);
           }
 
-          // Track safetyAttempts in payload_json
-          const prevSafetyAttempts = Number(op.payload_json?.safetyAttempts || 0);
-          const newSafetyAttempts = prevSafetyAttempts + 1;
-          try {
-            await pool.query(`
-              UPDATE reel_operations
-              SET payload_json = jsonb_set(
-                COALESCE(payload_json, '{}'::jsonb),
-                '{safetyAttempts}',
-                $2::jsonb
-              )
-              WHERE id = $1
-            `, [op.id, JSON.stringify(newSafetyAttempts)]);
-          } catch (dbErr) {
-            console.warn(`[reel-worker] Failed to record safetyAttempts in DB: ${dbErr?.message}`);
-          }
-
-          const diagInfo = raiReasons ? JSON.stringify(raiReasons) : JSON.stringify(pj).slice(0, 300);
-          // If prompt was unchanged, check if structural reference pruning can heal on retry
-          const hadTemporalRef = Boolean(ref?.buffer);
-          const canHealViaRefPruning = hadTemporalRef && prevSafetyAttempts === 0;
-
-          if (!changed && !canHealViaRefPruning && newSafetyAttempts >= 2) {
-            // Truly unhealable safety block after both prompt and reference pruning exhausted
+          if (!changed && newSafetyAttempts >= 2) {
+            // Truly unhealable safety block after both frame-omission and text rules exhausted
             await pool.query(`UPDATE reel_operations SET attempt=5 WHERE id=$1`, [op.id]);
             throw new Error(`VEO_SAFETY_FILTER_FATAL: Veo safety/RAI filter triggered and prompt was unchanged by heal rules (${diagInfo})`);
-          }
-
-          if (canHealViaRefPruning && !changed) {
-            console.log(`[reel-worker] [rai-auto-heal] Prompt for shot ${shot.id} was unchanged, but conflicting temporal reference will be pruned on safety retry.`);
           }
 
           throw new Error(`VEO_SAFETY_FILTER_EMPTY: Veo completed without video URI due to safety/RAI filter (${diagInfo})`);
