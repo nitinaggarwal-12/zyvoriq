@@ -515,8 +515,182 @@ async function reclaimOrphanedContainerLeases() {
 await reclaimOrphanedContainerLeases();
 
 
+async function autonomousDiskCleanAndHealthGuard(forceAggressive = false) {
+  try {
+    const root = assetRoot();
+    const tmpDir = os.tmpdir();
+
+    // 1. Clean stale files in /tmp (files older than 5 minutes)
+    try {
+      const tmpEntries = await fs.readdir(tmpDir, { withFileTypes: true }).catch(() => []);
+      const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+      for (const entry of tmpEntries) {
+        if (entry.name.startsWith("zyvoriq-")) {
+          const fullPath = path.join(tmpDir, entry.name);
+          try {
+            const st = await fs.stat(fullPath);
+            if (st.mtimeMs < fiveMinutesAgo || forceAggressive) {
+              if (entry.isDirectory()) {
+                await fs.rm(fullPath, { recursive: true, force: true });
+              } else {
+                await fs.unlink(fullPath);
+              }
+            }
+          } catch {}
+        }
+      }
+    } catch (e) {
+      console.warn(`[disk-guard] Warning cleaning /tmp: ${e?.message}`);
+    }
+
+    if (!root) return;
+
+    // 2. Check filesystem stats
+    let rootStat = null;
+    try {
+      rootStat = await fs.statfs(root);
+    } catch {}
+
+    let freeMB = 5000;
+    let totalMB = 5000;
+    if (rootStat) {
+      const freeBytes = Number(rootStat.bavail) * Number(rootStat.bsize);
+      const totalBytes = Number(rootStat.blocks) * Number(rootStat.bsize);
+      freeMB = Math.round(freeBytes / (1024 * 1024));
+      totalMB = Math.round(totalBytes / (1024 * 1024));
+    }
+
+    // Clean scratch directory in asset root if present
+    const scratchDir = path.join(root, ".tmp");
+    if (fsSync.existsSync(scratchDir)) {
+      try {
+        const scratchEntries = await fs.readdir(scratchDir, { withFileTypes: true }).catch(() => []);
+        const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+        for (const entry of scratchEntries) {
+          const fullPath = path.join(scratchDir, entry.name);
+          try {
+            const st = await fs.stat(fullPath);
+            if (st.mtimeMs < fiveMinutesAgo || forceAggressive) {
+              if (entry.isDirectory()) {
+                await fs.rm(fullPath, { recursive: true, force: true });
+              } else {
+                await fs.unlink(fullPath);
+              }
+            }
+          } catch {}
+        }
+      } catch {}
+    }
+
+    // If free space is below 1500 MB (or forceAggressive), prune old inactive productions
+    if (freeMB < 1500 || forceAggressive) {
+      console.warn(`[disk-guard] [LOW_DISK_SPACE] Available: ${freeMB}MB / ${totalMB}MB. Initiating LRU prune of inactive test productions...`);
+
+      // Query active and recent productions to protect (last 6 hours)
+      const activeRes = await pool.query(`
+        SELECT DISTINCT production_id FROM reel_operations 
+        WHERE status IN ('RUNNING', 'QUEUED', 'BLOCKED') 
+           OR updated_at > NOW() - INTERVAL '6 hours'
+      `).catch(() => ({ rows: [] }));
+      const recentProdsRes = await pool.query(`
+        SELECT id FROM reel_productions WHERE updated_at > NOW() - INTERVAL '6 hours'
+      `).catch(() => ({ rows: [] }));
+
+      const protectedIds = new Set([
+        ...activeRes.rows.map(r => r.production_id),
+        ...recentProdsRes.rows.map(r => r.id),
+        "studio1_417f1625-665e-4097-97e7-28439b31105e",
+        "studio1_e2fa9fa8-694d-41b3-84ec-f8fa753364b0"
+      ]);
+
+      // Scan directories under root and root/reels
+      const scanDirs = [root, path.join(root, "reels")];
+      const candidates = [];
+
+      for (const sDir of scanDirs) {
+        try {
+          const entries = await fs.readdir(sDir, { withFileTypes: true }).catch(() => []);
+          for (const ent of entries) {
+            if (ent.isDirectory() && (ent.name.startsWith("studio1_") || ent.name.startsWith("reel_") || ent.name.startsWith("studio2_"))) {
+              if (!protectedIds.has(ent.name)) {
+                const fullPath = path.join(sDir, ent.name);
+                const st = await fs.stat(fullPath).catch(() => null);
+                if (st) {
+                  candidates.push({ path: fullPath, name: ent.name, mtimeMs: st.mtimeMs });
+                }
+              }
+            }
+          }
+        } catch {}
+      }
+
+      // Sort oldest first
+      candidates.sort((a, b) => a.mtimeMs - b.mtimeMs);
+
+      let reclaimedCount = 0;
+      for (const cand of candidates) {
+        try {
+          console.log(`[disk-guard] Pruning inactive production dir: ${cand.path}`);
+          await fs.rm(cand.path, { recursive: true, force: true });
+          reclaimedCount++;
+          const st = await fs.statfs(root).catch(() => null);
+          if (st) {
+            freeMB = Math.round((Number(st.bavail) * Number(st.bsize)) / (1024 * 1024));
+            if (freeMB >= 2500) {
+              console.log(`[disk-guard] Target headroom achieved: ${freeMB}MB free after pruning ${reclaimedCount} dirs.`);
+              break;
+            }
+          }
+        } catch (delErr) {
+          console.warn(`[disk-guard] Failed to prune ${cand.path}: ${delErr?.message}`);
+        }
+      }
+    }
+
+    // 3. Auto-heal any operations that failed due to ENOSPC so they re-queue and finish
+    const enospcOps = await pool.query(`
+      SELECT id, production_id, kind, target_id FROM reel_operations 
+      WHERE status = 'FAILED' AND last_error LIKE '%ENOSPC%'
+    `).catch(() => ({ rows: [] }));
+
+    for (const failedOp of enospcOps.rows) {
+      console.log(`[disk-guard] Auto-healing ENOSPC failure on ${failedOp.id} (${failedOp.kind}:${failedOp.target_id || ''}) for prod ${failedOp.production_id}`);
+
+      try {
+        const prod = await getProduction(failedOp.production_id);
+        if (prod?.manifest?.shots) {
+          const s = prod.manifest.shots.find(x => x.id === failedOp.target_id);
+          if (s && s.status === "FAILED") {
+            s.status = "PLANNED";
+            s.qa = s.qa || { warnings: [], failures: [] };
+            s.qa.failures = (s.qa.failures || []).filter(f => !f.includes("ENOSPC"));
+            if (prod.manifest.status === "REPAIRING") {
+              prod.manifest.status = "VIDEO_GENERATING";
+            }
+            await saveManifest(failedOp.production_id, prod.revision, prod.manifest);
+          }
+        }
+      } catch (e) {
+        console.warn(`[disk-guard] Failed updating manifest for ENOSPC heal: ${e?.message}`);
+      }
+
+      await pool.query(
+        `UPDATE reel_operations 
+         SET status = 'QUEUED', attempt = 0, last_error = NULL, lease_owner = NULL, lease_expires_at = NULL, updated_at = NOW()
+         WHERE id = $1`,
+        [failedOp.id]
+      );
+    }
+  } catch (err) {
+    console.error(`[disk-guard] Error running autonomous disk guard:`, err?.message || err);
+  }
+}
+
 async function runDeadlockAndStarvationWatchdog() {
   try {
+    // -1. Autonomous disk cleanup and health guard
+    await autonomousDiskCleanAndHealthGuard();
+
     // 0. Auto-reclaim any stranded RUNNING operations whose lease expired
     const expiredRunning = await pool.query(`
       UPDATE reel_operations
@@ -910,7 +1084,15 @@ async function publishHeartbeat() {
   const now = Date.now();
   if (now - lastHeartbeatLogMs >= 60000) {
     lastHeartbeatLogMs = now;
-    console.log(`[reel-worker] [heartbeat] Active: ${queueStats.running} running (oldest: ${queueStats.maxRunningLeaseAgeSec}s), ${queueStats.queued} queued (oldest: ${queueStats.maxQueuedAgeSec}s), ${queueStats.blocked} blocked`);
+    let diskInfo = "";
+    try {
+      const r = assetRoot();
+      if (r) {
+        const st = await fs.statfs(r);
+        diskInfo = ` | Disk: ${Math.round((Number(st.bavail) * Number(st.bsize)) / (1024 * 1024))}MB free / ${Math.round((Number(st.blocks) * Number(st.bsize)) / (1024 * 1024))}MB`;
+      }
+    } catch {}
+    console.log(`[reel-worker] [heartbeat] Active: ${queueStats.running} running (oldest: ${queueStats.maxRunningLeaseAgeSec}s), ${queueStats.queued} queued (oldest: ${queueStats.maxQueuedAgeSec}s), ${queueStats.blocked} blocked${diskInfo}`);
 
     // Starvation Alerts: gated on physical operation wait/running duration
     if (queueStats.queued > 0 && queueStats.maxQueuedAgeSec > 600) {
@@ -928,7 +1110,22 @@ heartbeatTimer.unref();
 function safeKey(key) { const n = String(key).replace(/\\/g, "/").replace(/^\/+/, ""); if (!n || n.includes("..") || n.startsWith("/")) throw new Error("Invalid asset key"); return n; }
 function assetKeyFromUrl(url) { const p = "/api/reels/assets/"; if (!String(url).startsWith(p)) throw new Error(`Non-owned asset URL: ${url}`); return safeKey(String(url).slice(p.length).split("/").map(decodeURIComponent).join("/")); }
 function assetPath(keyOrUrl) { const root = assetRoot(); if (!root) throw new Error("Durable asset storage is not configured"); const key = String(keyOrUrl).startsWith("/api/reels/assets/") ? assetKeyFromUrl(keyOrUrl) : safeKey(keyOrUrl); const rr = path.resolve(root), target = path.resolve(root, key); if (!target.startsWith(`${rr}${path.sep}`)) throw new Error("Asset path escaped durable root"); return { key, target }; }
-async function writeAsset(key, buffer) { const r = assetPath(key); await fs.mkdir(path.dirname(r.target), { recursive: true }); await fs.writeFile(r.target, buffer); return { key: r.key, url: `/api/reels/assets/${r.key.split("/").map(encodeURIComponent).join("/")}` }; }
+async function writeAsset(key, buffer) {
+  const r = assetPath(key);
+  await fs.mkdir(path.dirname(r.target), { recursive: true });
+  try {
+    await fs.writeFile(r.target, buffer);
+  } catch (err) {
+    if (err.code === "ENOSPC" || (err.message && err.message.includes("ENOSPC"))) {
+      console.warn(`[reel-worker] ENOSPC writing asset ${key}. Triggering immediate emergency disk purge...`);
+      await autonomousDiskCleanAndHealthGuard(true);
+      await fs.writeFile(r.target, buffer);
+    } else {
+      throw err;
+    }
+  }
+  return { key: r.key, url: `/api/reels/assets/${r.key.split("/").map(encodeURIComponent).join("/")}` };
+}
 async function readAsset(keyOrUrl) { return fs.readFile(assetPath(keyOrUrl).target); }
 
 
@@ -1614,8 +1811,57 @@ async function applyNarration(op, result) {
     console.error(`[reel-worker] Failed to auto-enqueue shots after narration:`, enqueueErr?.message || enqueueErr);
   }
 }
-async function extractReference(op, shot, manifest) { if (!shot.dependsOnShotIds?.length) return null; const dep = manifest.shots.find(s => s.id === shot.dependsOnShotIds.at(-1)); if (!dep?.asset?.videoUrl) throw new Error("Continuity dependency has no media"); const tmp = path.join(os.tmpdir(), `zyvoriq-ref-${crypto.randomUUID()}.png`), depSec = Number(dep.asset?.actualDurationSec || 0), lastSec = depSec > 0 ? Math.min(Number(dep.trimOutSec || 0), depSec) : Number(dep.trimOutSec || 0), t = Math.max(0, Math.max(Number(dep.trimInSec || 0), lastSec - (depSec > 0 && lastSec < depSec - 0.05 ? 1 / 30 : 0.15))); try { await execFileAsync("ffmpeg", ["-y", "-ss", String(t), "-i", assetPath(dep.asset.videoUrl).target, "-frames:v", "1", "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920", tmp], { timeout: 30000, maxBuffer: 2e6 }); const st = await fs.stat(tmp).catch(() => null); if (!st?.size) throw new Error(`Anchor extraction produced no frame for ${dep.id} at ${t.toFixed(3)}s (source ${depSec}s, trimOut ${dep.trimOutSec}s)`); const b = await fs.readFile(tmp), digest = crypto.createHash("sha256").update(b).digest("hex").slice(0, 16), saved = await writeAsset(`reels/${op.production_id}/references/${shot.id}-from-${dep.id}-${digest}.png`, b); return { buffer: b, url: saved.url, dependencyId: dep.id }; } finally { try { await fs.unlink(tmp); } catch {} } }
-async function probeVideo(buffer) { const tmp = path.join(os.tmpdir(), `zyvoriq-probe-${crypto.randomUUID()}.mp4`); try { await fs.writeFile(tmp, buffer); const { stdout } = await execFileAsync("ffprobe", ["-v", "error", "-show_entries", "format=duration:stream=codec_name,width,height,r_frame_rate", "-of", "json", tmp], { timeout: 30000, maxBuffer: 2e6 }); const p = JSON.parse(stdout), s = p.streams?.find(x => x.width && x.height) || p.streams?.[0] || {}; return { durationSec: Number(Number(p.format?.duration || 0).toFixed(6)), codec: s.codec_name, width: Number(s.width || 0), height: Number(s.height || 0), frameRate: s.r_frame_rate }; } finally { try { await fs.unlink(tmp); } catch {} } }
+async function extractReference(op, shot, manifest) {
+  if (!shot.dependsOnShotIds?.length) return null;
+  const dep = manifest.shots.find(s => s.id === shot.dependsOnShotIds.at(-1));
+  if (!dep?.asset?.videoUrl) throw new Error("Continuity dependency has no media");
+  let scratchDir = os.tmpdir();
+  if (assetRoot()) {
+    const s = path.join(assetRoot(), ".tmp");
+    await fs.mkdir(s, { recursive: true }).catch(() => {});
+    scratchDir = s;
+  }
+  const tmp = path.join(scratchDir, `zyvoriq-ref-${crypto.randomUUID()}.png`);
+  const depSec = Number(dep.asset?.actualDurationSec || 0);
+  const lastSec = depSec > 0 ? Math.min(Number(dep.trimOutSec || 0), depSec) : Number(dep.trimOutSec || 0);
+  const t = Math.max(0, Math.max(Number(dep.trimInSec || 0), lastSec - (depSec > 0 && lastSec < depSec - 0.05 ? 1 / 30 : 0.15)));
+  try {
+    await execFileAsync("ffmpeg", ["-y", "-ss", String(t), "-i", assetPath(dep.asset.videoUrl).target, "-frames:v", "1", "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920", tmp], { timeout: 30000, maxBuffer: 2e6 });
+    const st = await fs.stat(tmp).catch(() => null);
+    if (!st?.size) throw new Error(`Anchor extraction produced no frame for ${dep.id} at ${t.toFixed(3)}s (source ${depSec}s, trimOut ${dep.trimOutSec}s)`);
+    const b = await fs.readFile(tmp), digest = crypto.createHash("sha256").update(b).digest("hex").slice(0, 16), saved = await writeAsset(`reels/${op.production_id}/references/${shot.id}-from-${dep.id}-${digest}.png`, b);
+    return { buffer: b, url: saved.url, dependencyId: dep.id };
+  } finally {
+    try { await fs.unlink(tmp); } catch {}
+  }
+}
+async function probeVideo(buffer) {
+  let scratchDir = os.tmpdir();
+  if (assetRoot()) {
+    const s = path.join(assetRoot(), ".tmp");
+    await fs.mkdir(s, { recursive: true }).catch(() => {});
+    scratchDir = s;
+  }
+  const tmp = path.join(scratchDir, `zyvoriq-probe-${crypto.randomUUID()}.mp4`);
+  try {
+    try {
+      await fs.writeFile(tmp, buffer);
+    } catch (writeErr) {
+      if (writeErr.code === "ENOSPC" || (writeErr.message && writeErr.message.includes("ENOSPC"))) {
+        console.warn(`[reel-worker] ENOSPC writing probe file. Triggering immediate emergency disk purge...`);
+        await autonomousDiskCleanAndHealthGuard(true);
+        await fs.writeFile(tmp, buffer);
+      } else {
+        throw writeErr;
+      }
+    }
+    const { stdout } = await execFileAsync("ffprobe", ["-v", "error", "-show_entries", "format=duration:stream=codec_name,width,height,r_frame_rate", "-of", "json", tmp], { timeout: 30000, maxBuffer: 2e6 });
+    const p = JSON.parse(stdout), s = p.streams?.find(x => x.width && x.height) || p.streams?.[0] || {};
+    return { durationSec: Number(Number(p.format?.duration || 0).toFixed(6)), codec: s.codec_name, width: Number(s.width || 0), height: Number(s.height || 0), frameRate: s.r_frame_rate };
+  } finally {
+    try { await fs.unlink(tmp); } catch {}
+  }
+}
 function veoModel(t) {
   if (process.env.ZYVORIQ_VEO_MODEL) return process.env.ZYVORIQ_VEO_MODEL;
   return t === "quality" ? "veo-3.1-generate-preview" : t === "lite" ? "veo-3.1-lite-generate-preview" : "veo-3.1-fast-generate-preview";
@@ -2277,8 +2523,10 @@ async function renderRough(op, m) {
 
   const BATCH_SIZE = 6;
   const d = Number(m.audio.actualDurationSec);
-  const tmp = path.join(os.tmpdir(), `zyvoriq-rough-${crypto.randomUUID()}.mp4`);
-  const partsDir = path.join(os.tmpdir(), `zyvoriq-rough-parts-${crypto.randomUUID()}`);
+  const baseTmpDir = (assetRoot() && fsSync.existsSync(assetRoot())) ? path.join(assetRoot(), ".tmp") : os.tmpdir();
+  await fs.mkdir(baseTmpDir, { recursive: true }).catch(() => {});
+  const tmp = path.join(baseTmpDir, `zyvoriq-rough-${crypto.randomUUID()}.mp4`);
+  const partsDir = path.join(baseTmpDir, `zyvoriq-rough-parts-${crypto.randomUUID()}`);
   await fs.mkdir(partsDir, { recursive: true });
 
   let timelineQa = null;
