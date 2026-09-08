@@ -88,7 +88,9 @@ CREATE TABLE IF NOT EXISTS reel_operations (
 ALTER TABLE reel_operations ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMPTZ;
 CREATE TABLE IF NOT EXISTS reel_production_controls (
  production_id TEXT PRIMARY KEY, generation_token TEXT NOT NULL, cancelled_at TIMESTAMPTZ, superseded_by TEXT,
- created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW());
+ priority INT NOT NULL DEFAULT 0, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW());
+ALTER TABLE reel_production_controls ADD COLUMN IF NOT EXISTS priority INT NOT NULL DEFAULT 0;
+CREATE INDEX IF NOT EXISTS idx_pc_priority ON reel_production_controls (production_id, priority);
 CREATE TABLE IF NOT EXISTS reel_worker_heartbeats (
  worker_id TEXT PRIMARY KEY, worker_role TEXT NOT NULL, started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
  heartbeat_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), metadata_json JSONB NOT NULL DEFAULT '{}'::jsonb);
@@ -1167,22 +1169,25 @@ async function claim() {
       WHERE ((o.status='QUEUED' AND COALESCE(o.attempt, 0) < 5)
          OR (o.status='RUNNING' AND o.lease_expires_at < NOW() AND COALESCE(o.attempt, 0) < 5))
         AND (o.scheduled_at IS NULL OR o.scheduled_at <= NOW())
+        AND NOT EXISTS (
+          SELECT 1 FROM reel_operations active_op 
+          WHERE active_op.production_id = o.production_id 
+            AND active_op.id != o.id
+            AND active_op.status = 'RUNNING' 
+            AND active_op.lease_expires_at >= NOW()
+        )
       ORDER BY 
+        CASE WHEN o.kind = 'ROUGH_CUT' THEN 0 ELSE 1 END ASC,
+        (COALESCE((SELECT pc.priority FROM reel_production_controls pc WHERE pc.production_id = o.production_id), 0) + LEAST(EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 600, 5)) DESC,
         CASE 
-          WHEN o.kind = 'ROUGH_CUT' THEN 0 
-          WHEN EXISTS (
-            SELECT 1 FROM reel_operations active_op 
-            WHERE active_op.production_id = o.production_id 
-              AND active_op.status = 'RUNNING'
-          ) THEN 1
           WHEN EXISTS (
             SELECT 1 FROM reel_operations finished_op 
             WHERE finished_op.production_id = o.production_id 
               AND finished_op.status = 'SUCCEEDED' 
               AND finished_op.kind = 'SHOT'
-          ) THEN 2
-          WHEN o.kind = 'NARRATION' THEN 3 
-          ELSE 4 
+          ) THEN 1
+          WHEN o.kind = 'NARRATION' THEN 2 
+          ELSE 3 
         END ASC,
         o.created_at ASC
       FOR UPDATE SKIP LOCKED
@@ -1584,6 +1589,9 @@ function sanitizePromptForVeo(prompt) {
     { pattern: /\b(?:Leonardo\s*DiCaprio)\b/gi, replacement: "an intense, expressive dramatic leading man" },
     { pattern: /\b(?:Zendaya)\b/gi, replacement: "a stylish, striking modern leading lady" },
     { pattern: /\b(?:Timothee\s*Chalamet|Timothée\s*Chalamet)\b/gi, replacement: "a slender, expressive brooding leading man" },
+    { pattern: /\b(?:Kabir\s*Anand|Kabir)\b/gi, replacement: "a rugged, athletic covert operative" },
+    { pattern: /\b(?:Zoya\s*Rehman|Zoya)\b/gi, replacement: "a fierce, agile female intelligence officer" },
+    { pattern: /\b(?:Farooq\s*Malik|Farooq)\b/gi, replacement: "a menacing, hardened rogue commander" },
   ];
   for (const { pattern, replacement } of celebrityMap) {
     clean = clean.replace(pattern, replacement);
@@ -1845,7 +1853,7 @@ async function generateShot(op, manifest, shot) {
                 },
                 {
                   name: "replace-celebrity-names-with-generic-archetypes",
-                  apply: (p) => p.replace(/\b(?:Kiara\s*Advani|Kiara|Akshay\s*Kumar|Akshay|Salman\s*Khan|Salman|Aishwarya\s*Rai(?:\s*Bachchan)?|Aishwarya|Shah\s*Rukh\s*Khan|Shahrukh\s*Khan|SRK|Deepika\s*Padukone|Deepika|Ranveer\s*Singh|Ranveer|Alia\s*Bhatt|Alia|Ranbir\s*Kapoor|Ranbir|Hrithik\s*Roshan|Hrithik|Katrina\s*Kaif|Katrina|Priyanka\s*Chopra(?:\s*Jonas)?|Priyanka|Kareena\s*Kapoor(?:\s*Khan)?|Kareena|Saif\s*Ali\s*Khan|Saif|Amitabh\s*Bachchan|Amitabh|Tom\s*Cruise|Brad\s*Pitt|Leonardo\s*DiCaprio|Zendaya|Timothee\s*Chalamet|Timothée\s*Chalamet)\b/gi, "lead performer"),
+                  apply: (p) => p.replace(/\b(?:Kiara\s*Advani|Kiara|Akshay\s*Kumar|Akshay|Salman\s*Khan|Salman|Aishwarya\s*Rai(?:\s*Bachchan)?|Aishwarya|Shah\s*Rukh\s*Khan|Shahrukh\s*Khan|SRK|Deepika\s*Padukone|Deepika|Ranveer\s*Singh|Ranveer|Alia\s*Bhatt|Alia|Ranbir\s*Kapoor|Ranbir|Hrithik\s*Roshan|Hrithik|Katrina\s*Kaif|Katrina|Priyanka\s*Chopra(?:\s*Jonas)?|Priyanka|Kareena\s*Kapoor(?:\s*Khan)?|Kareena|Saif\s*Ali\s*Khan|Saif|Amitabh\s*Bachchan|Amitabh|Tom\s*Cruise|Brad\s*Pitt|Leonardo\s*DiCaprio|Zendaya|Timothee\s*Chalamet|Timothée\s*Chalamet|Kabir\s*Anand|Kabir|Zoya\s*Rehman|Zoya|Farooq\s*Malik|Farooq)\b/gi, "lead performer"),
                 },
                 {
                   name: "neutralize-sensory-romantic-terms",

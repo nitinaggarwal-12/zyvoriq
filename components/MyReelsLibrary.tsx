@@ -86,6 +86,7 @@ export interface LibraryReel {
   isSaved?: boolean;
   isHidden?: boolean;
   isArchived?: boolean;
+  priority?: number;
   shots: LibraryClip[];
 }
 
@@ -285,7 +286,7 @@ export function MyReelsLibrary() {
   const [selectedFolder, setSelectedFolder] = useState("All");
   const [folders, setFolders] = useState<string[]>(DEFAULT_FOLDERS);
   const [activeFilter, setActiveFilter] = useState<"ALL" | "READY" | "DIFFUSING" | "ATTENTION" | "DRAFTS" | "SAVED" | "ARCHIVE" | "HIDDEN">("ALL");
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "duration">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "duration" | "priority">("newest");
   
   // Expanded Reel IDs for multi-level hierarchy (Reel -> Clips)
   const [expandedReelIds, setExpandedReelIds] = useState<Record<string, boolean>>({});
@@ -508,6 +509,7 @@ export function MyReelsLibrary() {
               isSaved: meta.isSaved || false,
               isHidden: isReelHidden,
               isArchived: isReelArchived,
+              priority: Number(p.priority || 0),
               shots: shotsList
             };
           });
@@ -704,6 +706,35 @@ export function MyReelsLibrary() {
     showToast(newHidden ? `👁️ Hidden "${reel.title}". View in Hidden tab.` : `👁️ Unhidden "${reel.title}". Restored to library.`);
   };
 
+  // 10. Set Reel Priority (Normal = 0, High = 10, Urgent = 20)
+  const handleSetReelPriority = async (e: React.MouseEvent, reel: LibraryReel, nextPriority: number) => {
+    e.stopPropagation();
+    const endpoint = reel.id.startsWith("studio1_")
+      ? `/api/studio1/productions/${encodeURIComponent(reel.id)}`
+      : `/api/reels/productions/${encodeURIComponent(reel.id)}`;
+
+    // Optimistic local update
+    setReels(prev => prev.map(r => r.id === reel.id ? { ...r, priority: nextPriority } : r));
+    const label = nextPriority >= 20 ? "Urgent (P20)" : nextPriority >= 10 ? "High (P10)" : "Normal (P0)";
+    showToast(`⚡ Priority set to ${label} for "${reel.title}"`);
+
+    try {
+      const res = await fetch(endpoint, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "setPriority", priority: nextPriority }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast(`⚠️ Failed to update priority: ${data.error || "Unknown error"}`);
+        setReels(prev => prev.map(r => r.id === reel.id ? { ...r, priority: reel.priority || 0 } : r));
+      }
+    } catch (err: any) {
+      showToast(`⚠️ Priority network error: ${err?.message || err}`);
+      setReels(prev => prev.map(r => r.id === reel.id ? { ...r, priority: reel.priority || 0 } : r));
+    }
+  };
+
   // -------------------------------------------------------------
   // CLIP-LEVEL ACTION HANDLERS
   // -------------------------------------------------------------
@@ -895,6 +926,12 @@ export function MyReelsLibrary() {
         return true;
       })
       .sort((a, b) => {
+        if (sortBy === "priority") {
+          const pA = a.priority || 0;
+          const pB = b.priority || 0;
+          if (pB !== pA) return pB - pA;
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        }
         if (sortBy === "newest") {
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         }
@@ -1159,6 +1196,7 @@ export function MyReelsLibrary() {
                 onChange={e => setSortBy(e.target.value as any)}
                 className="rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs font-mono text-zinc-200 focus:border-emerald-500 focus:outline-none min-h-[44px]"
               >
+                <option value="priority">Highest Priority</option>
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>
                 <option value="duration">Longest Duration</option>
@@ -1344,6 +1382,32 @@ export function MyReelsLibrary() {
                               <Layers className="h-3 w-3 text-teal-400" />
                               {reel.shots.length} Clips
                             </span>
+
+                            {/* Interactive Priority Badge */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const current = Number(reel.priority || 0);
+                                const next = current === 0 ? 10 : current === 10 ? 20 : 0;
+                                handleSetReelPriority(e, reel, next);
+                              }}
+                              className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-mono font-bold transition cursor-pointer border shadow-sm ${
+                                (reel.priority || 0) >= 20
+                                  ? "bg-amber-500/20 border-amber-500/50 text-amber-300 hover:bg-amber-500/30 ring-1 ring-amber-500/30"
+                                  : (reel.priority || 0) >= 10
+                                  ? "bg-sky-500/20 border-sky-500/50 text-sky-300 hover:bg-sky-500/30"
+                                  : "bg-zinc-800/80 border-zinc-700/60 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/70"
+                              }`}
+                              title="Generation Priority: Normal (P0) → High (P10) → Urgent (P20). Click to cycle."
+                            >
+                              <Sparkles className={`h-3 w-3 ${
+                                (reel.priority || 0) >= 20 ? "text-amber-400 fill-amber-400" : (reel.priority || 0) >= 10 ? "text-sky-400" : "text-zinc-500"
+                              }`} />
+                              <span>
+                                {(reel.priority || 0) >= 20 ? "URGENT (P20)" : (reel.priority || 0) >= 10 ? "HIGH (P10)" : "NORMAL (P0)"}
+                              </span>
+                            </button>
 
                             {reel.isArchived && (
                               <span className="rounded bg-sky-500/10 border border-sky-500/30 px-2 py-0.5 text-[11px] text-sky-300 flex items-center gap-1">

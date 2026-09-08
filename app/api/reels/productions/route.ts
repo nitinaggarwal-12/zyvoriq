@@ -14,7 +14,15 @@ export async function GET(req: NextRequest) {
     const limit = Number(req.nextUrl.searchParams.get("limit") || 25);
     const productions = await reelProductionService.list(limit);
     const safeProductions = productions.map(production => production.id.startsWith("studio1_") ? suppressUncertifiedStudio1Outputs(production) : production);
-    return NextResponse.json({ success: true, productions: safeProductions }, { headers: { "Cache-Control": "no-store" } });
+    let priorityMap: Record<string, number> = {};
+    try {
+      priorityMap = await reelProductionControl.getPriorities(safeProductions.map(p => p.id));
+    } catch {}
+    const productionsWithPriority = safeProductions.map(p => ({
+      ...p,
+      priority: priorityMap[p.id] ?? 0,
+    }));
+    return NextResponse.json({ success: true, productions: productionsWithPriority }, { headers: { "Cache-Control": "no-store" } });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error?.message || "Failed to list productions" }, { status: 500 });
   }
@@ -43,8 +51,9 @@ export async function POST(req: NextRequest) {
     const production = await reelProductionStore.create(manifest);
 
     let control = null;
+    const initialPriority = Number(body.priority || 0);
     try {
-      control = await reelProductionControl.register(production.id);
+      control = await reelProductionControl.register(production.id, initialPriority);
       const supersedesProductionId = String(body.supersedesProductionId || "").trim();
       if (supersedesProductionId && supersedesProductionId !== production.id) {
         try { await reelProductionControl.cancel(supersedesProductionId, production.id); } catch {}

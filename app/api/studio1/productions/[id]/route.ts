@@ -50,7 +50,18 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ id: st
     if (!production) return NextResponse.json({ success: false, error: "Studio1 production not found" }, { status: 404 });
     let operations: ReelOperation[] = [];
     try { operations = await reelOperationQueue.latestForProduction(id, 20); } catch {}
-    return NextResponse.json({ success: true, production: presentProduction(production), operations }, { headers: { "Cache-Control": "no-store" } });
+    let priority = 0;
+    let control = null;
+    try {
+      control = await reelProductionControl.get(id);
+      if (control) priority = control.priority;
+    } catch {}
+    return NextResponse.json({
+      success: true,
+      production: { ...presentProduction(production), priority },
+      operations,
+      productionControl: control ? { generationToken: control.generationToken, priority: control.priority, cancelledAt: control.cancelledAt } : null,
+    }, { headers: { "Cache-Control": "no-store" } });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error?.message || "Failed to load Studio1 production" }, { status: 500 });
   }
@@ -66,6 +77,13 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     let current = await studio1Service.get(id);
     if (!current) return NextResponse.json({ success: false, error: "Studio1 production not found" }, { status: 404 });
     if (expectedRevision !== undefined && current.revision !== expectedRevision) return NextResponse.json({ success: false, error: `Production changed concurrently (expected revision ${expectedRevision}, found ${current.revision})` }, { status: 409 });
+
+    if (action === "setPriority") {
+      const priority = Number(body.priority);
+      if (isNaN(priority)) return NextResponse.json({ success: false, error: "priority must be a number" }, { status: 400 });
+      const control = await reelProductionControl.setPriority(id, priority);
+      return NextResponse.json({ success: true, priority: control.priority, productionControl: control });
+    }
 
     if (action === "renameProject") {
       const production = await studio1Service.renameProject(id, String(body.projectTitle || ""), current.revision);

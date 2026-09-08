@@ -7,9 +7,12 @@ CREATE TABLE IF NOT EXISTS reel_production_controls (
   generation_token TEXT NOT NULL,
   cancelled_at TIMESTAMPTZ,
   superseded_by TEXT,
+  priority INT NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+ALTER TABLE reel_production_controls ADD COLUMN IF NOT EXISTS priority INT NOT NULL DEFAULT 0;
+CREATE INDEX IF NOT EXISTS idx_pc_priority ON reel_production_controls (production_id, priority);
 CREATE TABLE IF NOT EXISTS reel_worker_heartbeats (
   worker_id TEXT PRIMARY KEY,
   worker_role TEXT NOT NULL,
@@ -42,6 +45,7 @@ async function getControl(productionId: string): Promise<ProductionControl | nul
     generationToken: row.generation_token,
     cancelledAt: row.cancelled_at ? new Date(row.cancelled_at).toISOString() : undefined,
     supersededBy: row.superseded_by || undefined,
+    priority: Number(row.priority || 0),
   };
 }
 
@@ -50,24 +54,83 @@ export interface ProductionControl {
   generationToken: string;
   cancelledAt?: string;
   supersededBy?: string;
+  priority: number;
 }
 
 export const reelProductionControl = {
-  async register(productionId: string): Promise<ProductionControl> {
+  async register(productionId: string, priority = 0): Promise<ProductionControl> {
     const pool = await ensureTables();
     const generationToken = crypto.randomUUID();
+    const clampedPriority = Math.max(0, Math.min(100, Math.floor(priority)));
     const result = await pool.query(
-      `INSERT INTO reel_production_controls (production_id, generation_token)
-       VALUES ($1,$2)
+      `INSERT INTO reel_production_controls (production_id, generation_token, priority)
+       VALUES ($1,$2,$3)
        ON CONFLICT (production_id) DO UPDATE SET updated_at=NOW()
        RETURNING *`,
-      [productionId, generationToken]
+      [productionId, generationToken, clampedPriority]
     );
     const row = result.rows[0];
-    return { productionId: row.production_id, generationToken: row.generation_token, cancelledAt: row.cancelled_at ? new Date(row.cancelled_at).toISOString() : undefined, supersededBy: row.superseded_by || undefined };
+    return {
+      productionId: row.production_id,
+      generationToken: row.generation_token,
+      cancelledAt: row.cancelled_at ? new Date(row.cancelled_at).toISOString() : undefined,
+      supersededBy: row.superseded_by || undefined,
+      priority: Number(row.priority || 0),
+    };
   },
 
   get: getControl,
+
+  async setPriority(productionId: string, priority: number): Promise<ProductionControl> {
+    const pool = await ensureTables();
+    const clampedPriority = Math.max(0, Math.min(100, Math.floor(priority)));
+    const result = await pool.query(
+      `UPDATE reel_production_controls
+       SET priority=$2, updated_at=NOW()
+       WHERE production_id=$1 RETURNING *`,
+      [productionId, clampedPriority]
+    );
+    if (!result.rows[0]) {
+      const generationToken = crypto.randomUUID();
+      const insertResult = await pool.query(
+        `INSERT INTO reel_production_controls (production_id, generation_token, priority)
+         VALUES ($1,$2,$3)
+         ON CONFLICT (production_id) DO UPDATE SET priority=$3, updated_at=NOW()
+         RETURNING *`,
+        [productionId, generationToken, clampedPriority]
+      );
+      const row = insertResult.rows[0];
+      return {
+        productionId: row.production_id,
+        generationToken: row.generation_token,
+        cancelledAt: row.cancelled_at ? new Date(row.cancelled_at).toISOString() : undefined,
+        supersededBy: row.superseded_by || undefined,
+        priority: Number(row.priority || 0),
+      };
+    }
+    const row = result.rows[0];
+    return {
+      productionId: row.production_id,
+      generationToken: row.generation_token,
+      cancelledAt: row.cancelled_at ? new Date(row.cancelled_at).toISOString() : undefined,
+      supersededBy: row.superseded_by || undefined,
+      priority: Number(row.priority || 0),
+    };
+  },
+
+  async getPriorities(productionIds: string[]): Promise<Record<string, number>> {
+    if (!productionIds.length) return {};
+    const pool = await ensureTables();
+    const result = await pool.query(
+      `SELECT production_id, priority FROM reel_production_controls WHERE production_id = ANY($1)`,
+      [productionIds]
+    );
+    const map: Record<string, number> = {};
+    for (const row of result.rows) {
+      map[row.production_id] = Number(row.priority || 0);
+    }
+    return map;
+  },
 
   async cancel(productionId: string, supersededBy?: string) {
     const pool = await ensureTables();

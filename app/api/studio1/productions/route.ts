@@ -26,7 +26,15 @@ export async function GET(req: NextRequest) {
   try {
     const limit = Number(req.nextUrl.searchParams.get("limit") || 25);
     const productions = await studio1Service.list(Math.max(1, Math.min(100, limit)));
-    return NextResponse.json({ success: true, productions }, { headers: { "Cache-Control": "no-store" } });
+    let priorityMap: Record<string, number> = {};
+    try {
+      priorityMap = await reelProductionControl.getPriorities(productions.map(p => p.id));
+    } catch {}
+    const productionsWithPriority = productions.map(p => ({
+      ...p,
+      priority: priorityMap[p.id] ?? 0,
+    }));
+    return NextResponse.json({ success: true, productions: productionsWithPriority }, { headers: { "Cache-Control": "no-store" } });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error?.message || "Failed to list Studio1 productions" }, { status: 500 });
   }
@@ -57,8 +65,9 @@ export async function POST(req: NextRequest) {
 
     let control = null;
     let operation = null;
+    const initialPriority = Number(body.priority || 0);
     try {
-      control = await reelProductionControl.register(production.id);
+      control = await reelProductionControl.register(production.id, initialPriority);
       if (body.autoStart !== false) {
         const ctrl = await paidContext(production.id);
         const fp = fingerprint({ script: manifest.masterScript, tone: manifest.tone, studio1: true });

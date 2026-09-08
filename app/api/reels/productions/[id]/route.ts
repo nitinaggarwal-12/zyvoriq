@@ -19,7 +19,12 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ id: st
     const safeProduction = production.id.startsWith("studio1_") ? suppressUncertifiedStudio1Outputs(production) : production;
     let operations: ReelOperation[] = [];
     try { operations = await reelOperationQueue.latestForProduction(id, 12); } catch {}
-    return NextResponse.json({ success: true, production: safeProduction, operations }, { headers: { "Cache-Control": "no-store" } });
+    let priority = 0;
+    try {
+      const control = await reelProductionControl.get(id);
+      if (control) priority = control.priority;
+    } catch {}
+    return NextResponse.json({ success: true, production: { ...safeProduction, priority }, operations }, { headers: { "Cache-Control": "no-store" } });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error?.message || "Failed to load production" }, { status: 500 });
   }
@@ -36,6 +41,13 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     const body = await req.json();
     const action = String(body.action || "");
     const expectedRevision = body.expectedRevision === undefined ? undefined : Number(body.expectedRevision);
+
+    if (action === "setPriority") {
+      const priority = Number(body.priority);
+      if (isNaN(priority)) return NextResponse.json({ success: false, error: "priority must be a number" }, { status: 400 });
+      const control = await reelProductionControl.setPriority(id, priority);
+      return NextResponse.json({ success: true, priority: control.priority, productionControl: control });
+    }
 
     if (action === "cancelProduction") {
       await reelProductionControl.cancel(id, body.supersededBy ? String(body.supersededBy) : undefined);
