@@ -2532,6 +2532,42 @@ async function generateContinuousScore(genre, durationSec, outPath) {
   const dur = Math.max(1, Number(durationSec.toFixed(2)));
   const g = String(genre || "").toUpperCase();
 
+  // 1. Check for authentic recorded orchestral / live instrument masters
+  const candidateStems = [
+    path.join(process.cwd(), "public", "assets", "audio", "music", "bollywood_romance_orchestra.mp3"),
+    path.join(process.cwd(), "public", "assets", "audio", "music", "bollywood_romance_orchestra.wav"),
+    "/data/assets/music/bollywood_romance_orchestra.mp3",
+    "/tmp/bollywood_romance_orchestra.mp3",
+    "/tmp/bollywood_romance_master_180s.wav",
+    "/tmp/bollywood_orchestra_test.wav"
+  ];
+
+  let stemPath = null;
+  if (g.includes("BOLLYWOOD") || g.includes("ROMANCE") || g.includes("MUSIC_VIDEO")) {
+    for (const p of candidateStems) {
+      if (fsSync.existsSync(p)) {
+        stemPath = p;
+        break;
+      }
+    }
+  }
+
+  if (stemPath) {
+    console.log(`[reel-worker] 🎶 Playing authentic acoustic orchestra & band score (${stemPath}) for ${g} (${dur}s)`);
+    const ffmpegArgs = [
+      "-y",
+      "-stream_loop", "-1",
+      "-i", stemPath,
+      "-t", String(dur),
+      "-af", `aresample=48000,afade=t=in:st=0:d=1,afade=t=out:st=${Math.max(0, dur - 1.8)}:d=1.8,loudnorm=I=-24:LRA=7:tp=-2`,
+      "-c:a", "pcm_s16le",
+      "-ar", "48000",
+      outPath
+    ];
+    await execFileAsync("ffmpeg", ffmpegArgs, { timeout: 60000, maxBuffer: 4e6 });
+    return;
+  }
+
   const generators = [];
   let filterComplex = "";
   if (g.includes("BOLLYWOOD_ROMANCE") || g.includes("ROMANCE") || g.includes("MUSIC_VIDEO")) {
@@ -2729,13 +2765,13 @@ async function renderRough(op, m) {
       let filterComplex = "";
       if (hasBgmFile && hasNarrationFile) {
         concatArgs.push("-i", bgmPath, "-i", narrationPath);
-        filterComplex = `[0:a]aresample=48000,volume=0.15[foley];[1:a]aresample=48000,volume=0.35[bgm];[2:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000,volume=1.2[voice];[voice][bgm][foley]amix=inputs=3:duration=first:dropout_transition=2,loudnorm=I=-24:LRA=7:tp=-2[aout]`;
+        filterComplex = `[0:a]aresample=48000,volume=0.10[foley];[1:a]aresample=48000,volume=0.55[bgm];[2:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000,volume=1.25[voice];[voice][bgm][foley]amix=inputs=3:duration=first:dropout_transition=2,loudnorm=I=-24:LRA=7:tp=-2[aout]`;
       } else if (hasBgmFile) {
         concatArgs.push("-i", bgmPath);
-        filterComplex = `[0:a]aresample=48000,volume=0.20[foley];[1:a]aresample=48000,volume=0.60[bgm];[bgm][foley]amix=inputs=2:duration=first:dropout_transition=2,loudnorm=I=-24:LRA=7:tp=-2[aout]`;
+        filterComplex = `[0:a]aresample=48000,volume=0.15[foley];[1:a]aresample=48000,volume=0.80[bgm];[bgm][foley]amix=inputs=2:duration=first:dropout_transition=2,loudnorm=I=-24:LRA=7:tp=-2[aout]`;
       } else if (hasNarrationFile) {
         concatArgs.push("-i", narrationPath);
-        filterComplex = `[0:a]aresample=48000,volume=0.20[foley];[1:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000,volume=1.2[voice];[voice][foley]amix=inputs=2:duration=first:dropout_transition=2,loudnorm=I=-24:LRA=7:tp=-2[aout]`;
+        filterComplex = `[0:a]aresample=48000,volume=0.15[foley];[1:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000,volume=1.25[voice];[voice][foley]amix=inputs=2:duration=first:dropout_transition=2,loudnorm=I=-24:LRA=7:tp=-2[aout]`;
       } else {
         filterComplex = `[0:a]aresample=48000,loudnorm=I=-24:LRA=7:tp=-2[aout]`;
       }
@@ -2869,10 +2905,10 @@ async function renderRough(op, m) {
         "-i", narrationPath,
       ];
 
-      let filterComplex = `[1:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000,volume=1.2[aout]`;
+      let filterComplex = `[1:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000,volume=1.25[aout]`;
       if (hasBgmFile) {
         concatArgs.push("-i", bgmPath);
-        filterComplex = `[1:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000,volume=1.2[voice];[2:a]aresample=48000,volume=0.35[bgm];[voice][bgm]amix=inputs=2:duration=first:dropout_transition=2,loudnorm=I=-24:LRA=7:tp=-2[aout]`;
+        filterComplex = `[1:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000,volume=1.25[voice];[2:a]aresample=48000,volume=0.55[bgm];[voice][bgm]amix=inputs=2:duration=first:dropout_transition=2,loudnorm=I=-24:LRA=7:tp=-2[aout]`;
       }
 
       concatArgs.push(

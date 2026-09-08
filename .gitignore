@@ -18,6 +18,8 @@ temp/
 *.mp3
 *.webm
 !public/assets/video/napoleon_180s_master.mp4
+!public/assets/audio/music/*.mp3
+!public/assets/audio/music/*.wav
 public/assets/stills/generated/
 *.checkpoint.json
 *.patch
