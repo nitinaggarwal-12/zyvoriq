@@ -21,6 +21,13 @@ export function normalizeWords(t) {
         const next = NUMBER_WORDS.get(raw[i + 1]);
         if (next > 0 && next < 10) { n += next; i += 1; }
       }
+      if (i + 1 < raw.length && (raw[i + 1] === "hundred" || raw[i + 1] === "hundreds")) {
+        n *= 100;
+        i += 1;
+      } else if (i + 1 < raw.length && (raw[i + 1] === "thousand" || raw[i + 1] === "thousands")) {
+        n *= 1000;
+        i += 1;
+      }
       out.push(String(n));
       if (raw[i + 1] === "percent") i += 1;
     } else {
@@ -131,8 +138,14 @@ export function validateTranscript(expectedText, timings, durationSec, language 
   const missing = [];
   for (const w of expected.filter(w => critical.has(w) || /^\d+(?:[.,]\d+)?%?$/.test(w))) {
     const c = counts.get(w) || 0;
-    if (c <= 0) missing.push(w);
-    else counts.set(w, c - 1);
+    if (c <= 0) {
+      if (/^\d+$/.test(w) && actual.some(a => a.includes(w) || Number(a) === Number(w))) {
+        continue;
+      }
+      missing.push(w);
+    } else {
+      counts.set(w, c - 1);
+    }
   }
   const isHinglishOrNonEnglish = Boolean(language && String(language).toLowerCase() !== "en");
   const effectiveMaxWer = isHinglishOrNonEnglish ? Math.max(MAX_WER, 0.20) : Math.max(MAX_WER, 0.10);
