@@ -23,6 +23,7 @@ import {
   Video,
   Clapperboard,
   X,
+  ChevronLeft,
   ChevronRight,
   Download,
   Share2,
@@ -289,13 +290,21 @@ export function MyReelsLibrary() {
   // Expanded Reel IDs for multi-level hierarchy (Reel -> Clips)
   const [expandedReelIds, setExpandedReelIds] = useState<Record<string, boolean>>({});
 
-  // Spotlight Cinema Modal Player
+  // Spotlight Cinema Modal Player (Supports Single Clip or Continuous Sequence Playlist)
   const [spotlightVideo, setSpotlightVideo] = useState<{
     url: string;
     title: string;
     subtitle?: string;
     reelId?: string;
     clipId?: string;
+    playlist?: Array<{
+      url: string;
+      title: string;
+      subtitle?: string;
+      order: number;
+      durationSec: number;
+    }>;
+    currentIndex?: number;
   } | null>(null);
 
   // Modal Dialog States
@@ -1221,6 +1230,26 @@ export function MyReelsLibrary() {
                           onClick={() => {
                             if (reel.videoUrl) {
                               setSpotlightVideo({ url: reel.videoUrl, title: reel.title, subtitle: reel.subtitle, reelId: reel.id });
+                            } else {
+                              const readyClips = reel.shots.filter(s => Boolean(s.videoUrl));
+                              if (readyClips.length > 0) {
+                                const playlist = readyClips.map(c => ({
+                                  url: c.videoUrl!,
+                                  title: `${reel.title} — Shot ${String(c.order).padStart(2, "0")}: ${c.title}`,
+                                  subtitle: c.scriptText ? `"${c.scriptText}"` : c.visualIntent || undefined,
+                                  order: c.order,
+                                  durationSec: c.durationSec
+                                }));
+                                setSpotlightVideo({
+                                  url: playlist[0].url,
+                                  title: playlist[0].title,
+                                  subtitle: playlist[0].subtitle,
+                                  reelId: reel.id,
+                                  clipId: readyClips[0].id,
+                                  playlist,
+                                  currentIndex: 0
+                                });
+                              }
                             }
                           }}
                           className="relative w-full sm:w-44 lg:w-48 aspect-video sm:aspect-[9/16] rounded-xl overflow-hidden bg-black/80 border border-zinc-800 shrink-0 group cursor-pointer shadow-md"
@@ -1520,17 +1549,57 @@ export function MyReelsLibrary() {
                     <div className="border-t border-zinc-800/80 bg-[#07090E]/80 p-4 sm:p-5 lg:p-6 space-y-4">
                       
                       {/* Clips Header Info */}
-                      <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-mono text-zinc-400 border-b border-zinc-800/70 pb-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-emerald-400 font-bold">EDL Sequence:</span>
-                          <span>{reel.shots.length} Continuous Shots</span>
-                          <span>•</span>
-                          <span>Biometric Facial Continuity: Locked (Verified Continuity)</span>
-                        </div>
-                        <div className="text-zinc-500">
-                          Total Timeline: {reel.durationSec.toFixed(1)}s
-                        </div>
-                      </div>
+                      {(() => {
+                        const completedClips = reel.shots.filter(s => Boolean(s.videoUrl));
+                        return (
+                          <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-mono text-zinc-400 border-b border-zinc-800/70 pb-3">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-emerald-400 font-bold">EDL Sequence:</span>
+                              <span>{reel.shots.length} Continuous Shots</span>
+                              <span>•</span>
+                              <span>Biometric Facial Continuity: Locked (Verified Continuity)</span>
+                              {completedClips.length > 0 && (
+                                <span className="text-emerald-300 font-semibold bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded-full text-[10px]">
+                                  {completedClips.length}/{reel.shots.length} Generated
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 flex-wrap">
+                              {completedClips.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const playlist = completedClips.map((c) => ({
+                                      url: c.videoUrl!,
+                                      title: `${reel.title} — Shot ${String(c.order).padStart(2, "0")}: ${c.title}`,
+                                      subtitle: c.scriptText ? `"${c.scriptText}"` : c.visualIntent || undefined,
+                                      order: c.order,
+                                      durationSec: c.durationSec
+                                    }));
+                                    setSpotlightVideo({
+                                      url: playlist[0].url,
+                                      title: playlist[0].title,
+                                      subtitle: playlist[0].subtitle,
+                                      reelId: reel.id,
+                                      clipId: completedClips[0].id,
+                                      playlist,
+                                      currentIndex: 0
+                                    });
+                                  }}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 text-xs font-mono font-bold transition shadow-lg hover:scale-105 cursor-pointer"
+                                  title="Play all completed shots back-to-back as a continuous sequence"
+                                >
+                                  <Play className="h-3.5 w-3.5 fill-current" />
+                                  <span>Play In-Progress Reel ({completedClips.length} Cuts)</span>
+                                </button>
+                              )}
+                              <div className="text-zinc-500">
+                                Total Timeline: {reel.durationSec.toFixed(1)}s
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
 
                       {/* Constituent Clips Grid */}
                       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
@@ -1795,43 +1864,163 @@ export function MyReelsLibrary() {
       {/* 5. MODALS & POPUPS                                            */}
       {/* ============================================================ */}
 
-      {/* A. Cinema Player Modal */}
+      {/* A. Cinema Player Modal (Continuous Sequence Player) */}
       {spotlightVideo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 sm:p-6 animate-in fade-in duration-200">
           <div className="relative w-full max-w-5xl rounded-2xl bg-[#0B0F17] border border-zinc-800 overflow-hidden shadow-2xl space-y-4 p-4 sm:p-6">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <div>
-                <h3 className="text-base sm:text-lg font-bold text-white line-clamp-1">{spotlightVideo.title}</h3>
-                {spotlightVideo.subtitle && <p className="text-xs text-zinc-400 line-clamp-1">{spotlightVideo.subtitle}</p>}
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3 gap-4">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-base sm:text-lg font-bold text-white truncate">{spotlightVideo.title}</h3>
+                  {spotlightVideo.playlist && typeof spotlightVideo.currentIndex === "number" && (
+                    <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded-full shrink-0">
+                      Cut {spotlightVideo.currentIndex + 1} of {spotlightVideo.playlist.length}
+                    </span>
+                  )}
+                </div>
+                {spotlightVideo.subtitle && <p className="text-xs text-zinc-400 line-clamp-1 mt-0.5">{spotlightVideo.subtitle}</p>}
               </div>
-              <button
-                type="button"
-                onClick={() => setSpotlightVideo(null)}
-                className="rounded-lg p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 transition min-h-[44px] min-w-[44px] flex items-center justify-center"
-              >
-                <X className="h-5 w-5" />
-              </button>
+
+              {/* Controls: Prev/Next Cut & Close */}
+              <div className="flex items-center gap-2 shrink-0">
+                {spotlightVideo.playlist && typeof spotlightVideo.currentIndex === "number" && (
+                  <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-1">
+                    <button
+                      type="button"
+                      disabled={spotlightVideo.currentIndex <= 0}
+                      onClick={() => {
+                        const prevIdx = (spotlightVideo.currentIndex || 0) - 1;
+                        if (prevIdx >= 0 && spotlightVideo.playlist) {
+                          const item = spotlightVideo.playlist[prevIdx];
+                          setSpotlightVideo({
+                            ...spotlightVideo,
+                            url: item.url,
+                            title: item.title,
+                            subtitle: item.subtitle,
+                            currentIndex: prevIdx
+                          });
+                        }
+                      }}
+                      className="p-1.5 text-zinc-400 hover:text-white disabled:opacity-30 disabled:hover:text-zinc-400 rounded transition cursor-pointer disabled:cursor-not-allowed"
+                      title="Previous Cut"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={spotlightVideo.currentIndex >= spotlightVideo.playlist.length - 1}
+                      onClick={() => {
+                        const nextIdx = (spotlightVideo.currentIndex || 0) + 1;
+                        if (spotlightVideo.playlist && nextIdx < spotlightVideo.playlist.length) {
+                          const item = spotlightVideo.playlist[nextIdx];
+                          setSpotlightVideo({
+                            ...spotlightVideo,
+                            url: item.url,
+                            title: item.title,
+                            subtitle: item.subtitle,
+                            currentIndex: nextIdx
+                          });
+                        }
+                      }}
+                      className="p-1.5 text-zinc-400 hover:text-white disabled:opacity-30 disabled:hover:text-zinc-400 rounded transition cursor-pointer disabled:cursor-not-allowed"
+                      title="Next Cut"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setSpotlightVideo(null)}
+                  className="rounded-lg p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 transition min-h-[44px] min-w-[44px] flex items-center justify-center"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
+            {/* Video Viewport */}
             <div className="relative aspect-video sm:aspect-[16/9] max-h-[70vh] bg-black rounded-xl overflow-hidden flex items-center justify-center">
               <video
+                key={spotlightVideo.url}
                 src={spotlightVideo.url}
                 controls
                 autoPlay
                 playsInline
                 preload="auto"
                 className="w-full h-full object-contain"
+                onEnded={() => {
+                  if (spotlightVideo.playlist && typeof spotlightVideo.currentIndex === "number") {
+                    const nextIdx = spotlightVideo.currentIndex + 1;
+                    if (nextIdx < spotlightVideo.playlist.length) {
+                      const nextItem = spotlightVideo.playlist[nextIdx];
+                      setSpotlightVideo({
+                        ...spotlightVideo,
+                        url: nextItem.url,
+                        title: nextItem.title,
+                        subtitle: nextItem.subtitle,
+                        currentIndex: nextIdx
+                      });
+                    }
+                  }
+                }}
               />
             </div>
 
+            {/* Interactive Segmented Timeline Scrubber */}
+            {spotlightVideo.playlist && spotlightVideo.playlist.length > 1 && typeof spotlightVideo.currentIndex === "number" && (
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center gap-1 w-full">
+                  {spotlightVideo.playlist.map((item, idx) => {
+                    const isCurrent = idx === spotlightVideo.currentIndex;
+                    const isPast = idx < (spotlightVideo.currentIndex || 0);
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setSpotlightVideo({
+                            ...spotlightVideo,
+                            url: item.url,
+                            title: item.title,
+                            subtitle: item.subtitle,
+                            currentIndex: idx
+                          });
+                        }}
+                        className={`h-2 flex-1 rounded-full transition-all cursor-pointer ${
+                          isCurrent
+                            ? "bg-emerald-400 ring-2 ring-emerald-400/50 scale-y-125"
+                            : isPast
+                            ? "bg-emerald-600/80 hover:bg-emerald-500"
+                            : "bg-zinc-800 hover:bg-zinc-700"
+                        }`}
+                        title={`Jump to Shot ${item.order}`}
+                      />
+                    );
+                  })}
+                </div>
+                <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400">
+                  <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Continuous Reel Mode (Auto-Advancing)
+                  </span>
+                  {spotlightVideo.currentIndex < spotlightVideo.playlist.length - 1 && (
+                    <span className="truncate max-w-[280px] sm:max-w-md text-zinc-400">
+                      Up Next: Shot {spotlightVideo.playlist[spotlightVideo.currentIndex + 1].order}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-between text-xs font-mono text-zinc-500 pt-2 border-t border-zinc-800">
-              <span>Google Omni Master Audio/Visual Synchronized</span>
+              <span>Google Omni Continuous Master Preview</span>
               <a
                 href={spotlightVideo.url}
                 download
                 className="flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-bold"
               >
-                <Download className="h-3.5 w-3.5" /> Download MP4
+                <Download className="h-3.5 w-3.5" /> Download Current Cut
               </a>
             </div>
           </div>
