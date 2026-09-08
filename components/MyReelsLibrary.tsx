@@ -278,6 +278,181 @@ const CANONICAL_SHOWCASES: LibraryReel[] = [
         transition: "fade-to-black"
       }
     ]
+  },
+  {
+    id: "reel_mumbai_penthouse_master",
+    title: "Luxury Mumbai Penthouse",
+    subtitle: "Sibling Household Dinner & Warm Banter in Bandra",
+    prompt: "4K DCI master film capturing affluent Mumbai penthouse evening. Warm dinner table dialogue with authentic banter, golden ambient chandelier lighting, and Cooke spherical portraits.",
+    status: "READY",
+    durationSec: 32.0,
+    videoUrl: "/assets/video/zyvoriq_mumbai_penthouse_master.mp4",
+    posterUrl: "/assets/stills/coronation_hero.png",
+    createdAt: "2026-09-08T18:00:00.000Z",
+    genre: "Family & Drama",
+    tone: "Warm, witty, affluent cinematic realism",
+    aspectRatio: "16:9 Cinema",
+    audioClock: "Original Hindi Foley & Dialogue (-24.0 LUFS)",
+    folder: "Favorites",
+    isSaved: true,
+    shots: [
+      {
+        id: "shot_01",
+        order: 1,
+        title: "Act I: Dining Table Banter & Paneer Defense",
+        videoUrl: "/assets/video/zyvoriq_mumbai_penthouse_master.mp4",
+        posterUrl: "/assets/stills/coronation_hero.png",
+        durationSec: 32.0,
+        status: "PASSED",
+        scriptText: "RAJ: Bas karo, Shweta! Paneer khatam ho jayega! SHWETA: Rahul is eating it all! RAHUL: No way!",
+        visualIntent: "Warm candid dinner table conversation overlooking glittering Bandra skyline through floor-to-ceiling glass.",
+        camera: "Cooke S4 50mm, gentle orbital push-in",
+        lighting: "Warm 3200K dining chandelier and Mumbai twilight backdrop",
+        character: "Raj, Shweta, and Rahul",
+        environment: "Bandra Sea Face Luxury Penthouse",
+        transition: "fade-to-black"
+      }
+    ]
+  },
+  {
+    id: "reel_neotokyo_180s_master",
+    title: "NeoTokyo: The Neon Breach",
+    subtitle: "3-Act Cyberpunk Heist & Orbital Data Vault Infiltration",
+    prompt: "NeoTokyo high-octane cyberpunk sequence: Rain-slicked Shinjuku alleys, holographic skybridge pursuit, and high-altitude data breach.",
+    status: "READY",
+    durationSec: 180.0,
+    videoUrl: "/assets/video/neotokyo_180s_master.mp4",
+    posterUrl: "/assets/stills/coronation_hero.png",
+    createdAt: "2026-09-07T06:00:00.000Z",
+    genre: "Sci-Fi Cyberpunk",
+    tone: "High-octane, neon-drenched, sleek",
+    aspectRatio: "2.39:1 Anamorphic",
+    audioClock: "Synthesizer Pulse & Bass Cadence",
+    folder: "Favorites",
+    isSaved: true,
+    shots: [
+      {
+        id: "shot_01",
+        order: 1,
+        title: "Act I: Rain-Slicked Shinjuku Alleyway Entry",
+        videoUrl: "/assets/video/neotokyo_180s_master.mp4",
+        posterUrl: "/assets/stills/coronation_hero.png",
+        durationSec: 60.0,
+        status: "PASSED",
+        scriptText: "KAI: The biometric locks cycle every forty seconds. Sync your neural deck now.",
+        visualIntent: "Low tracking camera through steam and iridescent neon reflections.",
+        camera: "Anamorphic 35mm, low tracking push",
+        lighting: "Cyan and magenta neon backlight through heavy rainfall",
+        character: "Kai, cyber-operative",
+        environment: "Shinjuku Sub-level 4",
+        transition: "cut-on-action"
+      }
+    ]
+  },
+  {
+    id: "reel_titanic_180s_master",
+    title: "Titanic: The Final Atlantic Waltz",
+    subtitle: "Grand Staircase Romance & The Looming Berg",
+    prompt: "Titanic grand cinematic sequence: Grand staircase ballroom elegance, starlight promenade romance, and the fateful whistle in the fog.",
+    status: "READY",
+    durationSec: 180.0,
+    videoUrl: "/assets/video/titanic_180s_master.mp4",
+    posterUrl: "/assets/stills/coronation_hero.png",
+    createdAt: "2026-09-07T07:00:00.000Z",
+    genre: "Historical Romance",
+    tone: "Majestic, poignant, timeless",
+    aspectRatio: "2.39:1 Anamorphic",
+    audioClock: "Edwardian String Quartet & Ocean Foley",
+    folder: "Favorites",
+    isSaved: true,
+    shots: [
+      {
+        id: "shot_01",
+        order: 1,
+        title: "Act I: The Grand Staircase Descent",
+        videoUrl: "/assets/video/titanic_180s_master.mp4",
+        posterUrl: "/assets/stills/coronation_hero.png",
+        durationSec: 60.0,
+        status: "PASSED",
+        scriptText: "JACK: Winning that ticket was the best thing that ever happened to me.",
+        visualIntent: "Sweeping crane descent under the ornate clock and carved oak balustrade.",
+        camera: "Cooke 40mm Anamorphic, crane sweeping drop",
+        lighting: "Gilded crystal chandelier warm amber brilliance",
+        character: "Jack and Rose",
+        environment: "Titanic First-Class Grand Staircase",
+        transition: "match-cut"
+      }
+    ]
+  },
+  {
+    id: "reel_coronation_180s_master",
+    title: "Notre-Dame: The Imperial Coronation",
+    subtitle: "Sacred Choirs, Incense, and The Crown of France",
+    prompt: "Imperial coronation ceremony in Notre-Dame Cathedral: Gilded ermine robes, incense billowing across stone vaults, and Beethoven Op. 92.",
+    status: "READY",
+    durationSec: 180.0,
+    videoUrl: "/assets/video/coronation_180s_master.mp4",
+    posterUrl: "/assets/stills/coronation_hero.png",
+    createdAt: "2026-09-07T08:00:00.000Z",
+    genre: "Historical Drama",
+    tone: "Sacred, awe-inspiring, gilded",
+    aspectRatio: "2.39:1 Anamorphic",
+    audioClock: "Notre-Dame Cathedral Choirs & Pipe Organ",
+    folder: "Favorites",
+    isSaved: true,
+    shots: [
+      {
+        id: "shot_01",
+        order: 1,
+        title: "Act I: Incense Through The Gothic Vaults",
+        videoUrl: "/assets/video/coronation_180s_master.mp4",
+        posterUrl: "/assets/stills/coronation_hero.png",
+        durationSec: 60.0,
+        status: "PASSED",
+        scriptText: "ARCHBISHOP: In the name of France and the eternal destiny of the empire.",
+        visualIntent: "Towering high-angle push down the cathedral aisle as sunlight pierces rose window stained glass.",
+        camera: "Zeiss Supreme 50mm, steady aisle glide",
+        lighting: "Stained glass jewel tones cutting through frankincense mist",
+        character: "Napoleon and Dignitaries",
+        environment: "Notre-Dame Nave, Paris 1804",
+        transition: "dissolve"
+      }
+    ]
+  },
+  {
+    id: "reel_priya_4k_master",
+    title: "Priya: 10-Act Bollywood Masterpiece",
+    subtitle: "4K Kathak-Fusion Epic across Royal Courtyards",
+    prompt: "4K DCI Bollywood kathak-fusion masterwork starring Priya: 10 continuous acts of swirling lehengas, rose-petal fountains, and pristine orchestral rhythms.",
+    status: "READY",
+    durationSec: 60.0,
+    videoUrl: "/assets/video/priya_4k_10act_master.mp4",
+    posterUrl: "/assets/stills/coronation_hero.png",
+    createdAt: "2026-09-08T12:00:00.000Z",
+    genre: "Music Video",
+    tone: "Joyous, vibrant, festive grandeur",
+    aspectRatio: "16:9 Cinema",
+    audioClock: "Tabla, Sitar & Live Studio Orchestra",
+    folder: "Favorites",
+    isSaved: true,
+    shots: [
+      {
+        id: "shot_01",
+        order: 1,
+        title: "Act I: The Marble Courtyard Lotus Fountain",
+        videoUrl: "/assets/video/priya_4k_10act_master.mp4",
+        posterUrl: "/assets/stills/coronation_hero.png",
+        durationSec: 60.0,
+        status: "PASSED",
+        scriptText: "PRIYA: When the rhythm takes hold, every step is a story of love.",
+        visualIntent: "Rapid push-in on Kathak footwork and swirling banarasi lehenga amidst cascading rose petals.",
+        camera: "Leica Summilux 35mm, circular dolly push",
+        lighting: "Golden afternoon sunshine reflecting off white Makrana marble",
+        character: "Priya and Ensemble",
+        environment: "Royal Rajasthani Palace Courtyard",
+        transition: "cut-on-action"
+      }
+    ]
   }
 ];
 

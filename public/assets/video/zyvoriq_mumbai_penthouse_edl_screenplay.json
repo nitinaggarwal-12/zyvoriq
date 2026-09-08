@@ -1,0 +1,34 @@
+{
+  "title": "Luxury Mumbai Penthouse",
+  "sceneId": "mumbai_penthouse",
+  "genre": "Cinematic Masterpiece",
+  "setting": "Bandra Penthouse, Mumbai",
+  "dynamicTension": "Sibling Household, Warm Dinner Banter",
+  "director": "Google Omni (v3.1)",
+  "masterResolution": "4K DCI (3840x2160)",
+  "frameRate": "24.000 fps SMPTE Locked",
+  "audioLoudness": "-24.0 LUFS (EBU R128)",
+  "c2paSignature": "sha256:c2pa_omni_1a078f26d06",
+  "screenplayLines": [
+    {
+      "id": "l1",
+      "speaker": "RAJ",
+      "emotion": "smiling",
+      "timestamp": "01:21",
+      "text": "Bas karo, Shweta! Paneer khatam ho jayega!"
+    },
+    {
+      "id": "l2",
+      "speaker": "SHWETA",
+      "emotion": "laughing",
+      "timestamp": "01:25",
+      "text": "Rahul is eating it all!"
+    },
+    {
+      "id": "l3",
+      "speaker": "RAHUL",
+      "timestamp": "01:27",
+      "text": "No way!"
+    }
+  ]
+}
