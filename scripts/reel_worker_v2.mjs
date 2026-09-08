@@ -1970,7 +1970,16 @@ function stripSpeakerPrefixes(text) {
       norm.includes("SHOT") ||
       norm.includes("CLOSE") ||
       norm.includes("ANGLE") ||
-      norm.includes("VIEW")
+      norm.includes("VIEW") ||
+      norm.includes("AUDIO") ||
+      norm.includes("DIALOGUE") ||
+      norm.includes("LANGUAGE") ||
+      norm.includes("BEAT") ||
+      norm.includes("SCENE") ||
+      norm.includes("SETTING") ||
+      norm.includes("CONTINUITY") ||
+      norm.includes("TONE") ||
+      norm.includes("GENRE")
     ) {
       return match;
     }
@@ -1981,8 +1990,35 @@ function stripSpeakerPrefixes(text) {
   });
 }
 
-function sanitizePromptForVeo(prompt) {
+function getGenreAudioStrategy(genre, manifest, op) {
+  if (manifest?.creationIntent?.audioStrategy) return manifest.creationIntent.audioStrategy;
+  if (op?.payload_json?.audioStrategy) return op.payload_json.audioStrategy;
+  if (manifest?.audioStrategy) return manifest.audioStrategy;
+
+  const normGenre = String(genre || "").toUpperCase();
+
+  // Genres where synthetic TTS master + symphonic orchestra score supplies the audio
+  // Prompts strip spoken dialogue / lyrics to prevent Veo audio safety/copyright rejections.
+  const TTS_DUB_GENRES = new Set([
+    "DOCUMENTARY_EXPLAINER",
+    "BOLLYWOOD_ROMANCE",
+    "BOLLYWOOD_ACTION",
+    "HISTORICAL_BIOPIC"
+  ]);
+
+  if (TTS_DUB_GENRES.has(normGenre)) {
+    return "tts_dub";
+  }
+
+  // Cinematic / drama / fantasy genres default to native character audio if shot audio streams exist
+  return "native";
+}
+
+function sanitizePromptForVeo(prompt, options = {}) {
   if (!prompt || typeof prompt !== "string") return prompt;
+  const { audioStrategy = "native", isAudioFilterRetry = false } = options;
+  const shouldStripDialogue = audioStrategy === "tts_dub" || isAudioFilterRetry;
+
   // 1. Strip dialogue speaker prefixes like "KIARA:", "AKSHAY:", etc. while preserving camera grammar tags
   let clean = stripSpeakerPrefixes(prompt);
   // Normalize prefix while PRESERVING distinct character IDs (e.g. IDENTITY LOCK [aarav_dancer]:)
@@ -2033,20 +2069,43 @@ function sanitizePromptForVeo(prompt) {
   // Restore protected bracketed tags
   clean = clean.replace(/__PRESERVED_TAG_(\d+)__/g, (_, idx) => preservedTags[Number(idx)] || "");
 
-  // 3. Strip all audio/dialogue language specifications, spoken lyrics, and vocalization cues.
-  // Veo is an audiovisual model; song lyrics or spoken dialogue directives trigger Veo's audio safety/copyright filters.
-  clean = clean.replace(/AUDIO\s*&?\s*(?:DIALOGUE\s*LANGUAGE|Hinglish|English|Hindi)[^.]*(?:\.|$)/gi, "");
-  clean = clean.replace(/Native character dialogue, vocalizations and background calls[^.]*(?:\.|$)/gi, "");
-  clean = clean.replace(/The current spoken beat is:[^.]*(?:\.|$)/gi, "");
-  clean = clean.replace(/The current spoken beat is:.*$/gmi, "");
-  clean = clean.replace(/Visual beat for\s*\([^)]*\)[^.]*\./gi, "Visual beat: dynamic cinematic choreography and romantic visual chemistry.");
-  clean = clean.replace(/Visual beat for\s*[^.]*\./gi, "Visual beat: dynamic cinematic choreography and romantic visual chemistry.");
-  clean = clean.replace(/Narrative beat:\s*\([^)]*\)[^.]*(?:Tone:[^.]*\.)?/gi, "Narrative beat: expressive performance and synchronized movement.");
-  clean = clean.replace(/Narrative beat:\s*[^.]*(?:Tone:[^.]*\.)?/gi, "Narrative beat: expressive performance and synchronized movement.");
-  clean = clean.replace(/["'][^"']{4,}["']/g, "");
-  clean = clean.replace(/\((?:Softly|Playfully|Passionately|Gently|Whispering|Singing|Vocalizing)[^)]*\)/gi, "");
-  clean = clean.replace(/Pure cinematic ambient atmosphere and background soundscape\./gi, "");
-  clean += " AUDIO DIRECTIVE: Pure ambient environmental foley and natural atmospheric soundscape only. Zero spoken dialogue, zero character vocals, zero singing, zero lyrics.";
+  // 3. Audio & dialogue directives: Gated on audioStrategy (Fix A, B, C)
+  if (shouldStripDialogue) {
+    // TTS dub path: strip dialogue/lyrics to avoid Veo audio safety/copyright triggers;
+    // renderRough will supply the master narration and symphonic bed.
+    const applySanitizerRule = (ruleName, regex, replacement = "") => {
+      const before = clean;
+      clean = clean.replace(regex, replacement);
+      if (clean !== before) {
+        console.log(`[reel-worker] [sanitizer-rule] Rule "${ruleName}" applied:\n  BEFORE: "${before.slice(0, 100)}..."\n  AFTER:  "${clean.slice(0, 100)}..."`);
+      }
+    };
+
+    // Strip language directives cleanly (anchored, non-greedy, never spanning across sentences)
+    applySanitizerRule("strip_audio_language_directive", /\bAUDIO\s*&?\s*DIALOGUE\s*LANGUAGE:[^.\n]+(?:\.|$)/gi, "");
+    applySanitizerRule("strip_native_character_dialogue_line", /\bNative character dialogue[^.\n]+(?:\.|$)/gi, "");
+    applySanitizerRule("strip_spoken_beat_line", /\bThe current spoken beat is:[^.\n]+(?:\.|$)/gi, "");
+    applySanitizerRule("sanitize_visual_beat_with_parentheses", /Visual beat for\s*\([^)]*\)[^.\n]*\./gi, "Visual beat: dynamic cinematic choreography and romantic visual chemistry.");
+    applySanitizerRule("sanitize_visual_beat_simple", /Visual beat for\s*[^.\n]*\./gi, "Visual beat: dynamic cinematic choreography and romantic visual chemistry.");
+    applySanitizerRule("sanitize_narrative_beat_with_parentheses", /Narrative beat:\s*\([^)]*\)[^.\n]*(?:Tone:[^.\n]*\.)?/gi, "Narrative beat: expressive performance and synchronized movement.");
+    applySanitizerRule("sanitize_narrative_beat_simple", /Narrative beat:\s*[^.\n]*(?:Tone:[^.\n]*\.)?/gi, "Narrative beat: expressive performance and synchronized movement.");
+    // Fix B: Strip ONLY double-quoted dialogue strings, NEVER single quotes (which are English apostrophes: scene's, don't, heroine's)
+    applySanitizerRule("strip_double_quoted_dialogue", /"[^"\r\n]{2,}"/g, "");
+    applySanitizerRule("strip_vocalization_tags", /\((?:Softly|Playfully|Passionately|Gently|Whispering|Singing|Vocalizing)[^)]*\)/gi, "");
+    applySanitizerRule("strip_ambient_soundscape_stub", /Pure cinematic ambient atmosphere and background soundscape\./gi, "");
+
+    clean = clean.replace(/\s{2,}/g, " ").trim();
+    clean += " AUDIO DIRECTIVE: Pure ambient environmental foley and natural atmospheric soundscape only. Zero spoken dialogue, zero character vocals, zero singing, zero lyrics.";
+  } else {
+    // Native audio path: Veo generates native speech, character vocals, and lip sync.
+    clean = clean.replace(/"([^"]+)"/g, "$1");
+    clean = clean.replace(/AUDIO DIRECTIVE:\s*Pure ambient environmental foley[^.]*(?:\.|$)/gi, "");
+    clean = clean.replace(/Zero spoken dialogue, zero character vocals, zero singing, zero lyrics\.?/gi, "");
+    clean = clean.replace(/\s{2,}/g, " ").trim();
+    if (!clean.includes("AUDIO DIRECTIVE:")) {
+      clean += " AUDIO DIRECTIVE: Synchronized native character dialogue, expressive vocal delivery, natural lip-sync, and ambient environmental foley.";
+    }
+  }
 
   const words = clean.split(/\s+/);
   if (words.length > 700) {
@@ -2140,7 +2199,9 @@ async function generateShot(op, manifest, shot) {
       omittedTemporalReason = "no-previous-frame";
     }
 
-    const cleanPrompt = sanitizePromptForVeo(shot.generationPrompt);
+    const genre = String(manifest?.creativeBible?.genre || manifest?.genre || op?.payload_json?.genre || "").toUpperCase();
+    const audioStrategy = getGenreAudioStrategy(genre, manifest, op);
+    const cleanPrompt = sanitizePromptForVeo(shot.generationPrompt, { audioStrategy, genre });
     let finalPrompt = cleanPrompt;
     if (!hasTemporalFrame) {
       finalPrompt = finalPrompt
@@ -2314,7 +2375,7 @@ async function generateShot(op, manifest, shot) {
               const m = current.manifest;
               const targetShot = m.shots.find(x => x.id === shot.id);
               if (targetShot) {
-                targetShot.generationPrompt = sanitizePromptForVeo(targetShot.generationPrompt);
+                targetShot.generationPrompt = sanitizePromptForVeo(targetShot.generationPrompt, { audioStrategy: "tts_dub", isAudioFilterRetry: true });
                 if (targetShot.scriptText) {
                   targetShot.scriptText = "";
                 }
@@ -2745,14 +2806,14 @@ async function renderRough(op, m) {
   }));
   const studio1 = op.payload_json?.studio1 === true && Boolean(m.studio1?.timelineSync);
   const genre = String(m.creativeBible?.genre || m.genre || op.payload_json?.genre || "").toUpperCase();
-  const isDocumentary = genre === "DOCUMENTARY_EXPLAINER";
+  const audioStrategy = getGenreAudioStrategy(genre, m, op);
   const hasValidShotAudio = shotAudioProbes.length === m.shots.length && shotAudioProbes.every(Boolean);
 
-  // Forensic-First: Preserve native speech, character voices, lip sync, and Foley sound effects
-  // for narrative, cinematic, drama, action, and romance genres whenever valid shot audio streams exist.
-  // Reserve synthetic TTS dub master exclusively for DOCUMENTARY_EXPLAINER or when shot audio is absent.
-  const hasNativeAudio = hasValidShotAudio && (!studio1 || !isDocumentary);
-  console.log(`[reel-worker] renderRough audio strategy for ${op.production_id} (genre: ${genre || "unknown"}): ${hasNativeAudio ? "NATIVE CHARACTER AUDIO & FOLEY (lip sync preserved)" : studio1 ? "STUDIO1 SYMPHONIC & TTS MASTER" : "SYNTHETIC TTS DUB"}`);
+  // Strategy agreement (Fix A):
+  // If genre uses "tts_dub", prompts stripped dialogue, so render MUST use the TTS dub / symphonic master path (hasNativeAudio = false).
+  // If genre uses "native", prompts preserved dialogue, so render preserves native character audio (hasNativeAudio = true).
+  const hasNativeAudio = hasValidShotAudio && audioStrategy === "native";
+  console.log(`[reel-worker] renderRough audio strategy for ${op.production_id} (genre: ${genre || "unknown"}, audioStrategy: ${audioStrategy}): ${hasNativeAudio ? "NATIVE CHARACTER AUDIO & FOLEY (lip sync preserved)" : studio1 ? "STUDIO1 SYMPHONIC & TTS MASTER" : "SYNTHETIC TTS DUB"}`);
 
   if (studio1) {
     if (!op.payload_json?.narrationSyncedTimeline) throw new Error("Studio1 exact render requires narrationSyncedTimeline operation evidence");
@@ -3384,4 +3445,4 @@ for (;;) {
   }
 }
 
-export { validateTranscript, extractBiasedVocabulary, sanitizePromptForVeo };
+export { validateTranscript, extractBiasedVocabulary, sanitizePromptForVeo, getGenreAudioStrategy };
