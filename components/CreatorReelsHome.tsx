@@ -633,12 +633,13 @@ export function CreatorReelsHome() {
                     {(activeTab === "instagram_tiktok"
                       ? [
                           { sec: 15, shots: 3 },
-                          { sec: 30, shots: 6, label: "Standard" },
-                          { sec: 45, shots: 9 }
+                          { sec: 30, shots: 5, label: "Standard" },
+                          { sec: 34, shots: 5, label: "34s Music Video" },
+                          { sec: 45, shots: 7 }
                         ]
                       : [
-                          { sec: 60, shots: 10, label: "Short" },
-                          { sec: 180, shots: 30, label: "5-Act Epic Master" }
+                          { sec: 60, shots: 9, label: "Short" },
+                          { sec: 180, shots: 25, label: "5-Act Epic Master" }
                         ]
                     ).map(d => (
                       <button
@@ -654,9 +655,21 @@ export function CreatorReelsHome() {
                         }`}
                       >
                         <span>{d.sec}s</span>
-                        <span className="text-[10px] text-slate-400">({d.shots} shots)</span>
+                        {d.label && <span className="hidden md:inline text-[10px] opacity-75">({d.label})</span>}
                       </button>
                     ))}
+                    <div className="flex items-center gap-1 ml-1 bg-white/5 px-2 py-0.5 rounded-md border border-white/10 min-h-[32px]">
+                      <input
+                        id="custom-duration-input"
+                        type="number"
+                        min="10"
+                        max="240"
+                        value={selectedDuration}
+                        onChange={(e) => setSelectedDuration(Math.max(10, Math.min(240, Number(e.target.value) || 30)))}
+                        className="w-10 bg-transparent text-xs text-white text-center font-bold focus:outline-none"
+                      />
+                      <span className="text-[10px] text-slate-400">s</span>
+                    </div>
                   </div>
                 </div>
 
