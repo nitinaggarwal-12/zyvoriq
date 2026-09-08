@@ -326,7 +326,7 @@ export interface ReelProductionManifest {
   createdAt: string;
   status: ReelProductionStatus;
   platform: "Instagram Reels" | "YouTube Shorts" | "TikTok";
-  aspectRatio: "9:16";
+  aspectRatio: "9:16" | "16:9" | "2.39:1";
   requestedDurationSec: number;
   plannedDurationSec: number;
   topic: string;

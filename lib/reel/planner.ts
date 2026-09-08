@@ -8,12 +8,19 @@ export interface PlanReelInput {
   requestedDurationSec?: number;
   scriptText?: string;
   creationIntent?: ReelCreationIntent;
+  aspectRatio?: "9:16" | "16:9" | "2.39:1";
 }
 
 const clock = (n: number) => Number(n.toFixed(6));
-const clampDuration = (n: number) => Math.max(8, Math.min(90, clock(n)));
+const clampDuration = (n: number) => Math.max(8, Math.min(180, clock(n)));
 const countWords = (value: string) => value.trim().split(/\s+/).filter(Boolean).length;
 const normalizeSpaces = (value: string) => value.trim().replace(/\s+/g, " ");
+
+// Narration budgeting and shot duration constants
+export const TARGET_SHOT_DURATION_SEC = 6.0;
+export const MAX_SHOT_DURATION_SEC = 7.5;
+export const MAX_WORDS_PER_SHOT = 12;
+export const WORDS_PER_SECOND = 1.65;
 
 // Pick the SMALLEST Veo bucket that can cover the narration slot within the
 // same local-adaptation limits the renderer enforces (<=0.75s and <=1.20x).
@@ -39,13 +46,30 @@ export async function generateNarrationScriptWithGemini(
   intent?: ReelCreationIntent
 ): Promise<string> {
   const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-  const targetShots = Math.max(2, Math.min(12, Math.round(targetDurationSec / 5.5)));
+  const targetShots = Math.max(2, Math.min(30, Math.round(targetDurationSec / TARGET_SHOT_DURATION_SEC)));
 
   if (!key) {
-    return createConciseFallbackScript(topic, targetShots, intent);
+    throw new Error(
+      "NARRATION_PRECONDITION_FAILED: Missing GEMINI_API_KEY or GOOGLE_API_KEY for dynamic narration script generation. Silent canned filler fallback is forbidden."
+    );
   }
 
-  const systemPrompt = `You are an elite short-form video director and social reel scriptwriter.
+  const isCinema = targetDurationSec >= 90;
+  const systemPrompt = isCinema
+    ? `You are an elite theatrical cinema director and master screenwriter directing an epic 5-Act cinematic short film.
+Topic: "${topic}"
+Tone: "${tone}"
+Target Duration: ${targetDurationSec} seconds across 5 dramatic acts (${targetShots} continuous visual shots total).
+
+RULES & HARD BUDGET:
+1. Output exactly ${targetShots} short, dramatic spoken lines or scene narrative beats, one per visual shot (spread across 5 dramatic acts).
+2. STRICT BUDGET: Each line MUST be between 5 and ${MAX_WORDS_PER_SHOT} words maximum. Never exceed ${MAX_WORDS_PER_SHOT} words per line.
+3. Authentic cinema: write impactful cinematic dialogue and narrative lines worthy of a theatrical masterpiece. Avoid corporate filler, canned clichés, or generic platitudes (NEVER say "Here is what deserves a closer look", "The obvious reaction is only the surface", "Experience the true atmosphere", "Every detail reveals another layer", "Notice the energy moving naturally", "Pure immersion, captured from start to finish", etc.).
+4. Focus directly and immersively on the subject: "${topic}".
+5. If character names or dialogue are implied, format with clean character markers (e.g. "NAPOLEON: ...", "JOSEPHINE: ...").
+6. Output format: Return a raw JSON array of strings containing exactly ${targetShots} lines:
+["Line 1", "Line 2", ...]`
+    : `You are an elite short-form video director and social reel scriptwriter.
 Write an authentic, punchy voiceover script for a 9:16 vertical video reel.
 Topic: "${topic}"
 Tone: "${tone}"
@@ -53,82 +77,78 @@ Target Duration: ${targetDurationSec} seconds.
 
 RULES & HARD BUDGET:
 1. Output exactly ${targetShots} short spoken lines, one per visual shot.
-2. STRICT BUDGET: Each line MUST be between 5 and 12 words maximum. Never exceed 12 words per line.
-3. Natural creator narration: write words a real creator would say aloud. Avoid robotic corporate filler, canned clichés, or generic platitudes (NEVER say "Here is what deserves a closer look", "The obvious reaction is only the surface", etc.).
+2. STRICT BUDGET: Each line MUST be between 5 and ${MAX_WORDS_PER_SHOT} words maximum. Never exceed ${MAX_WORDS_PER_SHOT} words per line.
+3. Natural creator narration: write words a real creator would say aloud. Avoid robotic corporate filler, canned clichés, or generic platitudes (NEVER say "Here is what deserves a closer look", "The obvious reaction is only the surface", "Experience the true atmosphere", "Every detail reveals another layer", "Notice the energy moving naturally", "Pure immersion, captured from start to finish", etc.).
 4. Focus directly and immersively on the subject: "${topic}".
 5. If character names or dialogue are implied, format with clean character markers or narrative speech.
 6. Output format: Return a raw JSON array of strings containing exactly ${targetShots} lines:
 ["Line 1", "Line 2", ...]`;
 
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: systemPrompt }] }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.7,
-        }
-      })
-    });
+  const primaryModel = process.env.GEMINI_SCRIPT_MODEL || "gemini-3.7-flash";
+  const candidateModels = primaryModel === "gemini-2.5-flash" ? ["gemini-2.5-flash"] : [primaryModel, "gemini-2.5-flash"];
 
-    if (!res.ok) {
-      console.warn(`[planner] Gemini script generation returned status ${res.status}`);
-      return createConciseFallbackScript(topic, targetShots, intent);
-    }
+  let lastError: Error | null = null;
+  let rawText = "";
 
-    const data = await res.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) return createConciseFallbackScript(topic, targetShots, intent);
-
-    let lines: string[] = [];
+  for (const model of candidateModels) {
     try {
-      const parsed = JSON.parse(rawText);
-      if (Array.isArray(parsed)) {
-        lines = parsed.map(s => String(s).trim()).filter(Boolean);
-      } else if (parsed && Array.isArray(parsed.lines)) {
-        lines = parsed.lines.map((s: any) => String(s).trim()).filter(Boolean);
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: systemPrompt }] }],
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.7,
+          }
+        })
+      });
+
+      if (!res.ok) {
+        const errorBody = await res.text().catch(() => "");
+        console.warn(`[planner] Script generation with ${model} returned ${res.status}: ${errorBody.slice(0, 200)}`);
+        lastError = new Error(`Gemini API script generation with ${model} failed with status ${res.status}`);
+        continue;
       }
-    } catch {
-      lines = rawText.split(/\r?\n/).map((l: string) => l.replace(/^[-*0-9.]+\s*/, "").trim()).filter(Boolean);
+
+      const data = await res.json();
+      rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      if (rawText) break;
+    } catch (err: any) {
+      console.warn(`[planner] Script generation with ${model} threw: ${err?.message || err}`);
+      lastError = err instanceof Error ? err : new Error(String(err));
     }
-
-    if (!lines.length) return createConciseFallbackScript(topic, targetShots, intent);
-
-    // Ensure each line obeys word limits
-    const budgeted = lines.map(line => {
-      const cleaned = line.replace(/^["']|["']$/g, "").trim();
-      return splitLongUnit(cleaned, 12).join(" ");
-    });
-
-    return budgeted.join(" ");
-  } catch (err: any) {
-    console.warn(`[planner] Gemini script generation error: ${err?.message || err}`);
-    return createConciseFallbackScript(topic, targetShots, intent);
   }
-}
 
-function createConciseFallbackScript(topic: string, targetShots: number, intent?: ReelCreationIntent): string {
-  const cleanTopic = topic.trim().replace(/[.]+$/, "");
-  if (intent?.conceptSpeechSample) return intent.conceptSpeechSample;
-  if (intent?.conceptHook) return `${intent.conceptHook} Watch how every moment unfolds.`;
-  const subjectLines = [
-    `Experience the true atmosphere of ${cleanTopic}.`,
-    "Every detail reveals another layer of the story.",
-    "Notice the energy moving naturally through the frame.",
-    "The perspective shifts as the moment deepens.",
-    "Pure immersion, captured from start to finish.",
-    "Take it all in before the next beat begins.",
-    "The rhythm carries the feeling forward.",
-    "That is where the real story lives."
-  ];
-  return subjectLines.slice(0, Math.max(2, targetShots)).join(" ");
-}
+  if (!rawText) {
+    throw new Error(
+      `NARRATION_PRECONDITION_FAILED: Failed to generate narration script via Gemini (${lastError?.message || "empty response"}). Silent canned filler fallback is forbidden.`
+    );
+  }
 
-function buildScript(topic: string, targetSec: number, intent?: ReelCreationIntent) {
-  const targetShots = Math.max(2, Math.min(12, Math.round(targetSec / 5.5)));
-  return createConciseFallbackScript(topic, targetShots, intent);
+  let lines: string[] = [];
+  try {
+    const parsed = JSON.parse(rawText);
+    if (Array.isArray(parsed)) {
+      lines = parsed.map(s => String(s).trim()).filter(Boolean);
+    } else if (parsed && Array.isArray(parsed.lines)) {
+      lines = parsed.lines.map((s: any) => String(s).trim()).filter(Boolean);
+    }
+  } catch {
+    lines = rawText.split(/\r?\n/).map((l: string) => l.replace(/^[-*0-9.]+\s*/, "").trim()).filter(Boolean);
+  }
+
+  if (!lines.length) {
+    throw new Error("NARRATION_PRECONDITION_FAILED: Gemini API returned zero valid script lines. Silent canned filler fallback is forbidden.");
+  }
+
+  // Ensure each line obeys word limits
+  const budgeted = lines.map(line => {
+    const cleaned = line.replace(/^["']|["']$/g, "").trim();
+    return splitLongUnit(cleaned, MAX_WORDS_PER_SHOT).join(" ");
+  });
+
+  return budgeted.join(" ");
 }
 
 function sentenceUnits(script: string) {
@@ -170,13 +190,12 @@ function splitIntoEditorialBeats(script: string, targetSec: number): string[] {
   if (!script.trim()) return [];
   const totalWords = countWords(script);
   // Veo clips are limited to 4s, 6s, 8s buckets.
-  // Maximum editorial duration ceiling is 7.5s to leave headroom below Veo's 8.0s hard cap.
-  // At ~1.55 words/sec delivery cadence, each beat should have max 9 words to stay under ~5.8s,
-  // guaranteeing beats fit cleanly into Veo's 6s bucket with zero clamp trim or duration overrun.
-  const MAX_EDITORIAL_SHOT_SEC = 7.5;
-  const desiredShotCount = Math.max(2, Math.ceil(targetSec / 6.0), Math.ceil(totalWords / 9));
-  const targetWordsPerShot = Math.max(5, Math.min(9, Math.round(totalWords / desiredShotCount)));
-  const maxWordsPerShot = 9;
+  // Maximum editorial duration ceiling is 7.5s (MAX_SHOT_DURATION_SEC) to leave headroom below Veo's 8.0s hard cap.
+  // At ~1.65 words/sec delivery cadence, each beat has max MAX_WORDS_PER_SHOT (12 words) to stay under ~7.2s,
+  // guaranteeing beats fit cleanly into Veo's bucket with zero clamp trim or duration overrun.
+  const desiredShotCount = Math.max(2, Math.ceil(targetSec / TARGET_SHOT_DURATION_SEC), Math.ceil(totalWords / MAX_WORDS_PER_SHOT));
+  const targetWordsPerShot = Math.max(5, Math.min(MAX_WORDS_PER_SHOT, Math.round(totalWords / desiredShotCount)));
+  const maxWordsPerShot = MAX_WORDS_PER_SHOT;
   const units = sentenceUnits(script).flatMap(unit => splitLongUnit(unit, maxWordsPerShot));
   const beats: string[] = [];
   let current = "";
@@ -198,8 +217,8 @@ function splitIntoEditorialBeats(script: string, targetSec: number): string[] {
     return splitLongUnit(beats[0], Math.ceil(countWords(beats[0]) / 2));
   }
 
-  // Ensure no shot duration exceeds MAX_EDITORIAL_SHOT_SEC (7.5s)
-  while (targetSec / beats.length > MAX_EDITORIAL_SHOT_SEC) {
+  // Ensure no shot duration exceeds MAX_SHOT_DURATION_SEC (7.5s)
+  while (targetSec / beats.length > MAX_SHOT_DURATION_SEC) {
     let maxIdx = 0;
     for (let j = 1; j < beats.length; j++) {
       if (countWords(beats[j]) > countWords(beats[maxIdx])) maxIdx = j;
@@ -251,12 +270,21 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
   const tone = input.tone || "Confident & conversational";
   const platform = input.platform || "Instagram Reels";
   const creationIntent = input.creationIntent;
-  const masterScript = (input.scriptText || "").trim() || buildScript(topic, requestedDurationSec, creationIntent);
+  const isCinema = requestedDurationSec >= 90 || platform === "YouTube Shorts";
+  const aspectRatio: "9:16" | "16:9" | "2.39:1" = input.aspectRatio || (isCinema ? "2.39:1" : "9:16");
+  const masterScript = (input.scriptText || input.creationIntent?.conceptSpeechSample || "").trim();
+  if (!masterScript) {
+    throw new Error(
+      "NARRATION_PRECONDITION_FAILED: Non-empty scriptText is required to plan a reel manifest synchronously. In async creation pipelines, use planStudio1() or planReelAsync() to dynamically synthesize the script via Gemini before calling synchronous planning."
+    );
+  }
   const beats = splitIntoEditorialBeats(masterScript, requestedDurationSec);
   const perShot = requestedDurationSec / beats.length;
 
   const selectedVisualStyle = creationIntent?.visualStyleDescription
     ? `${creationIntent.visualStyleLabel || creationIntent.visualStyleId}: ${creationIntent.visualStyleDescription}. Preserve social-first readability and do not render text in scene pixels.`
+    : isCinema
+    ? "Theatrical 4K cinematic realism; Cooke Anamorphic 2.39:1 framing; 24fps motion cadence; ACES 1.3 color grading; zero generated text in scene pixels."
     : "Premium social-first cinematic realism; intentional vertical composition; no generated text in scene pixels.";
   const selectedCharacter = creationIntent?.characterDescription
     ? `Primary performer identity: ${creationIntent.characterDescription} Maintain the same face, body proportions, age, hair, skin tone and distinguishing features whenever this performer appears.`
@@ -270,7 +298,11 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
     characterLock: selectedCharacter,
     wardrobeLock: "Maintain identical wardrobe, accessories and grooming within a continuous location/time block.",
     environmentLock: selectedEnvironment,
-    cameraLanguage: "9:16 social framing; deliberate mix of tight presenter shots, medium action shots and relevant b-roll; preserve eyeline and screen direction across contiguous action.",
+    cameraLanguage: aspectRatio === "2.39:1"
+      ? "2.39:1 Anamorphic cinema framing; deliberate mix of grand cinematic master shots, medium character two-shots and intimate close-ups; 24fps film motion."
+      : aspectRatio === "16:9"
+      ? "16:9 widescreen cinema framing; deliberate mix of wide landscape compositions, medium action shots and tight character close-ups."
+      : "9:16 social framing; deliberate mix of tight presenter shots, medium action shots and relevant b-roll; preserve eyeline and screen direction across contiguous action.",
     colorLanguage: "Consistent white balance, contrast and saturation across the full production; final master grade owns the look."
   };
 
@@ -281,7 +313,7 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
   ].filter(Boolean).join(" ");
 
   let cursor = 0;
-  const maxEditorialSec = 7.5;
+  const maxEditorialSec = MAX_SHOT_DURATION_SEC;
   const shots: ReelShot[] = beats.map((beat, i) => {
     const remaining = clock(requestedDurationSec - cursor);
     const remainingShots = beats.length - i;
@@ -385,7 +417,7 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
     createdAt: new Date().toISOString(),
     status: "SHOTS_PLANNED",
     platform,
-    aspectRatio: "9:16",
+    aspectRatio,
     requestedDurationSec,
     plannedDurationSec: clock(cursor),
     topic,
@@ -393,7 +425,7 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
     creationIntent,
     masterScript,
     creativeBible: bible,
-    audio: { masterClock: "narration", timingSource: "pending" },
+    audio: { masterClock: isCinema ? "music" : "narration", timingSource: "pending" },
     captions: { timingSource: "draft", cues: draftCaptionCues, safeZoneProfile: safeZoneProfile(platform) },
     continuity: {
       characters: [{
@@ -432,7 +464,20 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
       boundaries,
       objectStateGraph: Object.fromEntries(shots.map(s => [s.id, s.continuityIn.objectStates || []]))
     },
-    musicPlan: { sections: [{ startSec: 0, endSec: clock(cursor), intent: creationIntent?.musicPreset ? `Continuous supportive underscore. Planning direction: ${creationIntent.musicPreset}.` : "Continuous supportive underscore following the narrative arc.", energy: 0.45 }], continuousAcrossVisualCuts: true, duckUnderSpeech: true },
+    musicPlan: {
+      sections: [{
+        startSec: 0,
+        endSec: clock(cursor),
+        intent: isCinema
+          ? "5-Act Symphonic Orchestral masterwork bed (Beethoven Op. 92 allegretto movements), continuous across visual cuts, mastered to -24.0 LUFS EBU R128."
+          : creationIntent?.musicPreset
+          ? `Continuous supportive underscore. Planning direction: ${creationIntent.musicPreset}.`
+          : "Continuous supportive underscore following the narrative arc.",
+        energy: 0.45
+      }],
+      continuousAcrossVisualCuts: true,
+      duckUnderSpeech: true
+    },
     shots,
     qa: { minimumReadyScore: 90, passed: false, gates: initialGates(), warnings: ["Narration waveform alignment, generated media inspection, lip-sync verification, boundary QA and final master QA are pending."], failures: [] }
   };

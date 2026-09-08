@@ -1,5 +1,21 @@
 import assert from "node:assert";
-import { planStudio1, planStudio1Sync, WORDS_PER_SECOND, MAX_WORDS_PER_SHOT, MAX_SHOT_DURATION_SEC, splitScriptIntoBudgetedUnits } from "../../lib/studio1/planner.ts";
+import fs from "node:fs";
+import path from "node:path";
+import { planStudio1, planStudio1Sync, TARGET_SHOT_DURATION_SEC, WORDS_PER_SECOND, MAX_WORDS_PER_SHOT, MAX_SHOT_DURATION_SEC, splitScriptIntoBudgetedUnits } from "../../lib/studio1/planner.ts";
+
+// Load .env.local if present
+try {
+  const envPath = path.resolve(process.cwd(), ".env.local");
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, "utf8");
+    for (const line of envContent.split("\n")) {
+      const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+      if (match && !process.env[match[1]]) {
+        process.env[match[1]] = (match[2] || "").replace(/^['"]|['"]$/g, "").trim();
+      }
+    }
+  }
+} catch {}
 
 console.log("Testing Studio1 Narration Budgeting & Scene Splitting...");
 
@@ -87,14 +103,78 @@ console.log("Testing Studio1 Narration Budgeting & Scene Splitting...");
   const manifest = await planStudio1(input);
   assert.ok(manifest.shots.length >= 2, "Expected at least 2 shots generated dynamically");
   assert.ok(manifest.masterScript.length > 10, "Expected non-empty dynamic script");
-  assert.ok(!manifest.masterScript.includes("Here is what deserves a closer look"), "Must not contain canned sentence pool phrases");
-  assert.ok(!manifest.masterScript.includes("The obvious reaction is only the surface"), "Must not contain canned generic phrases");
+
+  const bannedPhrases = [
+    "Here is what deserves a closer look",
+    "The obvious reaction is only the surface",
+    "Look underneath it and notice the pattern",
+    "Experience the true atmosphere",
+    "Every detail reveals another layer",
+    "Notice the energy moving naturally",
+    "The perspective shifts as the moment deepens",
+    "Pure immersion, captured from start to finish",
+    "Take it all in before the next beat begins",
+    "The rhythm carries the feeling forward",
+    "That is where the real story lives"
+  ];
+  for (const phrase of bannedPhrases) {
+    assert.ok(
+      !manifest.masterScript.toLowerCase().includes(phrase.toLowerCase()),
+      `Master script must not contain canned phrase: "${phrase}"`
+    );
+  }
+
   for (const shot of manifest.shots) {
     const words = shot.scriptText.replace(/^[A-Z0-9_\-\s]{2,25}:/i, "").trim().split(/\s+/).filter(Boolean).length;
     assert.ok(words <= MAX_WORDS_PER_SHOT, `Dynamic shot ${shot.id} word count ${words} <= ${MAX_WORDS_PER_SHOT}`);
     assert.ok(shot.editorialDurationSec <= 8.0, `Dynamic shot ${shot.id} duration ${shot.editorialDurationSec} <= 8.0s`);
   }
   console.log("  ✓ Dynamic Gemini narration generation test passed (zero canned filler)");
+}
+
+// Test 6: Missing API key fails closed with NARRATION_PRECONDITION_FAILED (zero silent canned fallback)
+{
+  const prevGemini = process.env.GEMINI_API_KEY;
+  const prevGoogle = process.env.GOOGLE_API_KEY;
+  try {
+    delete process.env.GEMINI_API_KEY;
+    delete process.env.GOOGLE_API_KEY;
+
+    let threw = false;
+    try {
+      await planStudio1({ topic: "autonomous testing fail closed", requestedDurationSec: 20 });
+    } catch (err) {
+      threw = true;
+      assert.match(err.message, /NARRATION_PRECONDITION_FAILED/, "Must throw NARRATION_PRECONDITION_FAILED when API key missing");
+    }
+    assert.ok(threw, "planStudio1 must fail closed when Gemini key is missing; silent canned filler is strictly forbidden");
+    console.log("  ✓ Precondition gate enforced: missing API key fails closed without fallback");
+  } finally {
+    if (prevGemini) process.env.GEMINI_API_KEY = prevGemini;
+    if (prevGoogle) process.env.GOOGLE_API_KEY = prevGoogle;
+  }
+}
+
+// Test 7: Synchronous planStudio1Sync fails closed if scriptText is missing
+{
+  let threw = false;
+  try {
+    planStudio1Sync({ topic: "test empty sync", requestedDurationSec: 20 });
+  } catch (err) {
+    threw = true;
+    assert.match(err.message, /NARRATION_PRECONDITION_FAILED/, "planStudio1Sync must throw NARRATION_PRECONDITION_FAILED on empty scriptText");
+  }
+  assert.ok(threw, "planStudio1Sync must fail closed when scriptText is missing");
+  console.log("  ✓ Synchronous planning fails closed when scriptText is omitted");
+}
+
+// Test 8: Synchronized duration and budgeting constants
+{
+  assert.strictEqual(TARGET_SHOT_DURATION_SEC, 6.0, "TARGET_SHOT_DURATION_SEC must be 6.0s (Veo bucket match)");
+  assert.strictEqual(MAX_SHOT_DURATION_SEC, 7.5, "MAX_SHOT_DURATION_SEC must be 7.5s (Veo headroom cap)");
+  assert.strictEqual(MAX_WORDS_PER_SHOT, 12, "MAX_WORDS_PER_SHOT must be 12 words");
+  assert.strictEqual(WORDS_PER_SECOND, 1.65, "WORDS_PER_SECOND must be 1.65 wps");
+  console.log("  ✓ Synchronized budgeting constants verified");
 }
 
 console.log("🎉 ALL STUDIO1 NARRATION BUDGETING TESTS PASSED!");

@@ -38,10 +38,17 @@ export async function POST(req: NextRequest) {
     const topic = String(body.topic || body.prompt || "").trim();
     if (!topic) return NextResponse.json({ success: false, error: "topic is required" }, { status: 400 });
 
+    const platform = body.platform === "YouTube Shorts" || body.platform === "youtube"
+      ? "YouTube Shorts"
+      : body.platform === "TikTok" || body.platform === "tiktok"
+      ? "TikTok"
+      : "Instagram Reels";
+
     const manifest = await planStudio1({
       topic,
       tone: body.tone,
-      platform: body.platform || "reels",
+      platform,
+      aspectRatio: body.aspectRatio || (platform === "YouTube Shorts" ? "2.39:1" : "9:16"),
       requestedDurationSec: Number(body.requestedDurationSec || body.duration || 30),
       scriptText: body.scriptText,
     });

@@ -1,5 +1,5 @@
 import { auditReelManifest, REEL_QA_GATES_ENABLED } from "./audit";
-import { planReel, type PlanReelInput } from "./planner";
+import { planReel, planReelAsync, type PlanReelInput } from "./planner";
 import { reelProductionStore, type StoredReelProduction } from "./productionStore";
 import type { AlignmentValidation, CaptionCue, ReelProductionManifest, ReelProductionStatus, ReelRenderedOutput, WordTiming } from "./types";
 
@@ -92,7 +92,7 @@ function attachSpeechEvidence(manifest: ReelProductionManifest, wordTimings: Wor
 }
 
 export const reelProductionService = {
-  async create(input: PlanReelInput): Promise<StoredReelProduction> { const manifest = planReel(input); manifest.status = "SCRIPT_READY"; return reelProductionStore.create(manifest); },
+  async create(input: PlanReelInput): Promise<StoredReelProduction> { const manifest = await planReelAsync(input); manifest.status = "SCRIPT_READY"; return reelProductionStore.create(manifest); },
   async get(id: string) { return reelProductionStore.get(id); },
   async list(limit?: number) { return reelProductionStore.list(limit); },
 
