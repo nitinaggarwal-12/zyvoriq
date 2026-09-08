@@ -46,11 +46,36 @@ function buildSceneObject(production: { id: string; manifest: ReelProductionMani
   const firstShot = m.shots?.[0];
   const stillUrl = (firstShot?.asset as any)?.imageUrl || (firstShot?.asset as any)?.stillUrl || (m as any).posterUrl || (m as any).heroPlateUrl;
 
-  const scriptLines = Array.isArray((m as any).scriptLines) && (m as any).scriptLines.length > 0
+  const rawLines = Array.isArray((m as any).scriptLines) && (m as any).scriptLines.length > 0
     ? (m as any).scriptLines
     : (m as any).masterScript
-    ? String((m as any).masterScript).split("\n").map(line => line.trim()).filter(Boolean)
-    : m.shots.map(s => s.scriptText || s.visualIntent).filter(Boolean);
+    ? String((m as any).masterScript).split("\n").map((line: string) => line.trim()).filter(Boolean)
+    : (m.shots || []).map((s, idx) => ({
+        id: s.id || `shot_${String(idx + 1).padStart(2, "0")}`,
+        speaker: (s as any).characterId?.toUpperCase() || (s as any).speaker || "OMNI",
+        emotion: (s.continuityOut as any)?.emotion?.emotion || (s as any).emotion || "cinematic",
+        timestamp: `00:${String(Math.floor(s.editorialStartSec || 0)).padStart(2, "0")}`,
+        text: s.scriptText || s.visualIntent || `Scene beat ${idx + 1}`,
+      }));
+
+  const scriptLines = rawLines.map((item: any, idx: number) => {
+    if (typeof item === "string") {
+      return {
+        id: `line_${idx + 1}`,
+        speaker: "OMNI",
+        emotion: "cinematic",
+        timestamp: `00:${String(idx * 3).padStart(2, "0")}`,
+        text: item,
+      };
+    }
+    return {
+      id: item.id || `line_${idx + 1}`,
+      speaker: item.speaker || "OMNI",
+      emotion: item.emotion || "cinematic",
+      timestamp: item.timestamp || "00:00",
+      text: item.text || item.scriptText || item.dialogue || "",
+    };
+  });
 
   return {
     id: production.id,
@@ -71,8 +96,8 @@ function buildSceneObject(production: { id: string; manifest: ReelProductionMani
 export async function GET(req: NextRequest) {
   try {
     const id = req.nextUrl.searchParams.get("id");
-    if (!id) {
-      return NextResponse.json({ success: false, error: "id parameter is required" }, { status: 400 });
+    if (!id || id === "new_creation") {
+      return NextResponse.json({ success: false, error: "Valid id parameter is required" }, { status: 400 });
     }
 
     let production = await studio1Service.get(id);

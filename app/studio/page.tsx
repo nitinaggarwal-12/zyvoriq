@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { OmniMultiPhaseStudio } from "@/components/OmniMultiPhaseStudio";
 
 export const metadata = {
@@ -8,7 +9,9 @@ export const metadata = {
 export default function StudioPage() {
   return (
     <main id="top" className="min-h-screen bg-[#07090E] text-slate-100 selection:bg-teal-500/30 selection:text-teal-100">
-      <OmniMultiPhaseStudio />
+      <Suspense fallback={<div className="p-8 text-center text-sm font-mono text-emerald-400/80">Loading Omni Directorial Studio...</div>}>
+        <OmniMultiPhaseStudio />
+      </Suspense>
     </main>
   );
 }

@@ -177,6 +177,28 @@ function extractPromptTitle(prompt: string, fallback: string): string {
   return words.slice(0, 5).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
 }
 
+export function normalizeScriptLines(lines: any[]): ScriptLine[] {
+  if (!Array.isArray(lines)) return [];
+  return lines.map((l, idx) => {
+    if (typeof l === "string") {
+      return {
+        id: `shot_0${idx + 1}`,
+        speaker: "OMNI",
+        emotion: "cinematic",
+        timestamp: `00:${String(idx * 3).padStart(2, "0")}`,
+        text: l,
+      };
+    }
+    return {
+      id: l?.id || `shot_0${idx + 1}`,
+      speaker: l?.speaker || "OMNI",
+      emotion: l?.emotion || "cinematic",
+      timestamp: l?.timestamp || "00:00",
+      text: l?.text || l?.scriptText || l?.dialogue || "",
+    };
+  });
+}
+
 
 export function OmniMultiPhaseStudio() {
   // Current active scene preset (starts with clean new creation studio)
@@ -316,7 +338,7 @@ export function OmniMultiPhaseStudio() {
         setCurrentScene(matched);
         setPromptInput(matched.prompt);
         setActivePresetId(matched.id);
-        setScriptLines(matched.lines);
+        setScriptLines(normalizeScriptLines(matched.lines));
         setSettingText(matched.setting);
         setDynamicText(matched.dynamic);
         setTotalDuration(matched.duration);
@@ -329,7 +351,7 @@ export function OmniMultiPhaseStudio() {
             setCurrentScene(parsed);
             setPromptInput(parsed.prompt || "");
             setActivePresetId(parsed.id);
-            setScriptLines(parsed.lines || []);
+            setScriptLines(normalizeScriptLines(parsed.lines));
             setSettingText(parsed.setting || "");
             setDynamicText(parsed.dynamic || "");
             setTotalDuration(parsed.duration || 180);
@@ -341,7 +363,7 @@ export function OmniMultiPhaseStudio() {
                   setCurrentScene(data.scene);
                   setPromptInput(data.scene.prompt || "");
                   setActivePresetId(data.scene.id);
-                  setScriptLines(data.scene.lines || []);
+                  setScriptLines(normalizeScriptLines(data.scene.lines));
                   setSettingText(data.scene.setting || "");
                   setDynamicText(data.scene.dynamic || "");
                   setTotalDuration(data.scene.duration || (data.scene.aspectRatio === "9:16" ? 30 : 180));
@@ -383,7 +405,7 @@ export function OmniMultiPhaseStudio() {
 
   // Continuous Polling & Telemetry Sync for In-Flight Diffusion
   useEffect(() => {
-    if (!currentScene?.id || currentScene?.video) return;
+    if (!currentScene?.id || currentScene.id === "new_creation" || currentScene?.video) return;
 
     let isSubscribed = true;
     const prodId = currentScene.id;
@@ -421,7 +443,7 @@ export function OmniMultiPhaseStudio() {
             ...prev,
             video: data.scene.video,
             still: data.scene.still || prev.still,
-            lines: data.scene.lines || prev.lines,
+            lines: normalizeScriptLines(data.scene.lines || prev.lines),
             aspectRatio: data.scene.aspectRatio || prev.aspectRatio,
             duration: data.scene.duration || prev.duration,
           }));
@@ -499,19 +521,23 @@ export function OmniMultiPhaseStudio() {
     ? []
     : productionShots.length > 0
       ? productionShots
-      : currentScene.lines.length > 0
-        ? currentScene.lines.map((line, idx) => {
-            const matchingOp = shotOps.find((op) => (op.target_id || op.targetId) === line.id || (op.target_id || op.targetId) === `shot_0${idx + 1}`);
+      : (currentScene.lines?.length || 0) > 0
+        ? (currentScene.lines || []).map((line: any, idx: number) => {
+            const lineId = typeof line === "string" ? `shot_0${idx + 1}` : line.id || `shot_0${idx + 1}`;
+            const matchingOp = shotOps.find((op) => (op.target_id || op.targetId) === lineId || (op.target_id || op.targetId) === `shot_0${idx + 1}`);
             const isDone = matchingOp?.status === "SUCCEEDED" || Boolean(currentScene.video);
             const isRunning = matchingOp?.status === "RUNNING";
             const isBlocked = matchingOp?.status === "BLOCKED";
             const isFailed = matchingOp?.status === "FAILED";
+            const speaker = typeof line === "string" ? "OMNI" : line.speaker || "OMNI";
+            const text = typeof line === "string" ? line : line.text || "";
+            const lineCount = Math.max(1, currentScene.lines?.length || 1);
             return {
-              id: line.id?.startsWith("shot_") ? line.id : `shot_0${idx + 1}`,
-              scriptText: `${line.speaker}: ${line.text}`,
+              id: lineId.startsWith("shot_") ? lineId : `shot_0${idx + 1}`,
+              scriptText: `${speaker}: ${text}`,
               status: isDone ? "GENERATED" : isRunning ? "GENERATING" : isFailed ? "FAILED" : isBlocked ? "BLOCKED" : "PLANNED",
               videoUrl: isDone ? currentScene.video || null : null,
-              editorialDurationSec: Math.round(((currentScene.duration || 30) / Math.max(1, currentScene.lines.length)) * 10) / 10
+              editorialDurationSec: Math.round(((currentScene.duration || 30) / lineCount) * 10) / 10
             };
           })
         : [];
@@ -2285,8 +2311,8 @@ export function OmniMultiPhaseStudio() {
                       </div>
 
                       <textarea
-                        rows={line.text.length > 40 ? 2 : 1}
-                        value={line.text}
+                        rows={(line.text?.length || 0) > 40 ? 2 : 1}
+                        value={line.text || ""}
                         onChange={(e) => handleUpdateScriptLine(line.id, e.target.value)}
                         className="w-full resize-none rounded-md bg-black/20 p-1 text-xs text-zinc-300 font-medium focus:bg-black/60 focus:border focus:border-emerald-400/60 focus:outline-none transition leading-relaxed"
                       />
