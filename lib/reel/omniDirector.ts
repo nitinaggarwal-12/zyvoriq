@@ -46,6 +46,15 @@ export interface OmniShotStaging {
   cameraMotion: string;
   sceneEnvironment: string;
   visualAction: string;
+  facialExpression?: string;
+  bodyLanguage?: string;
+  choreography?: string;
+  spatialBlocking?: {
+    depthPlanes?: string;
+    proximity?: string;
+    contactPoints?: string;
+  };
+  coStarDescription?: string;
 }
 
 export type OmniGenre =

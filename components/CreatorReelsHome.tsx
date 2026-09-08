@@ -25,8 +25,20 @@ import {
   Clapperboard,
   Music2,
   Smartphone,
-  Languages
+  Languages,
+  Wand2,
+  Link2,
+  Users,
+  Palette,
+  Eye,
+  MessageSquare,
+  ChevronDown,
+  ChevronUp,
+  X,
+  Sliders,
+  Send
 } from "lucide-react";
+import type { OmniDirectorialTreatment } from "@/lib/reel/elaborateDirector";
 
 export const LANGUAGE_OPTIONS = [
   { id: "en", label: "English", desc: "US fast social pacing" },
@@ -173,6 +185,18 @@ export function CreatorReelsHome() {
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [annualBilling, setAnnualBilling] = useState(false);
 
+  // Directorial Elaboration & Reference Deconstruction State
+  const [referenceUrl, setReferenceUrl] = useState("");
+  const [showRefInput, setShowRefInput] = useState(false);
+  const [isElaborating, setIsElaborating] = useState(false);
+  const [elaborateStep, setElaborateStep] = useState<string | null>(null);
+  const [elaborateError, setElaborateError] = useState<string | null>(null);
+  const [treatment, setTreatment] = useState<OmniDirectorialTreatment | null>(null);
+  const [treatmentTab, setTreatmentTab] = useState<"screenplay" | "cast" | "score">("screenplay");
+  const [tweakPrompt, setTweakPrompt] = useState("");
+  const [isTweaking, setIsTweaking] = useState(false);
+  const [expandedShotIdx, setExpandedShotIdx] = useState<number | null>(0);
+
   // Auto-suggest Hinglish if user picks Bollywood Romance or Bollywood Action genre
   useEffect(() => {
     if ((selectedGenre === "BOLLYWOOD_ACTION" || selectedGenre === "BOLLYWOOD_ROMANCE") && selectedLanguage === "en") {
@@ -186,6 +210,17 @@ export function CreatorReelsHome() {
       setSelectedLanguage("hinglish-roman");
     }
   }, [promptText, selectedLanguage]);
+
+  // Smart detect if user pastes a YouTube URL into promptText
+  useEffect(() => {
+    if (/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)/i.test(promptText) && !referenceUrl) {
+      const match = promptText.match(/(https?:\/\/[^\s]+)/i);
+      if (match) {
+        setReferenceUrl(match[1]);
+        setShowRefInput(true);
+      }
+    }
+  }, [promptText, referenceUrl]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const activeReel = FINISHED_REELS[activeReelIndex];
@@ -239,9 +274,88 @@ export function CreatorReelsHome() {
     setPromptText(p);
   };
 
-  const handleGenerate = async () => {
+  const handleElaborate = async (overrideTweak?: string) => {
     const text = promptText.trim();
+    const url = referenceUrl.trim();
+
+    if (!text && !url) {
+      setElaborateError("Please enter a scene prompt or provide a reference YouTube / reel URL to elaborate.");
+      return;
+    }
+
+    if (overrideTweak) {
+      setIsTweaking(true);
+    } else {
+      setIsElaborating(true);
+    }
+    setElaborateError(null);
+    setElaborateStep(
+      url
+        ? "Deconstructing reference video (actors, lighting, choreography, acoustic bed)..."
+        : "Composing forensic 9-layer directorial treatment with Omni Director..."
+    );
+
+    try {
+      const res = await fetch("/api/studio1/elaborate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: text,
+          referenceUrl: url,
+          requestedDurationSec: selectedDuration,
+          aspectRatio: selectedAspectRatio,
+          genre: selectedGenre !== "AUTO" ? selectedGenre : undefined,
+          language: selectedLanguage,
+          tweakInstructions: overrideTweak || undefined,
+          previousTreatment: overrideTweak && treatment ? treatment : undefined,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || `Elaboration failed with status ${res.status}`);
+      }
+
+      const newTreatment: OmniDirectorialTreatment = data.treatment;
+      setTreatment(newTreatment);
+
+      if (newTreatment.refinedPrompt) {
+        setPromptText(newTreatment.refinedPrompt);
+      }
+      if (newTreatment.genre) {
+        setSelectedGenre(newTreatment.genre);
+      }
+      if (newTreatment.language) {
+        setSelectedLanguage(newTreatment.language);
+      }
+      if (newTreatment.aspectRatio) {
+        setSelectedAspectRatio(newTreatment.aspectRatio);
+      }
+      if (newTreatment.targetDurationSec) {
+        setSelectedDuration(newTreatment.targetDurationSec);
+      }
+
+      setTweakPrompt("");
+      setElaborateStep(null);
+    } catch (err: any) {
+      console.error("[CreatorReelsHome] Elaboration failed:", err);
+      setElaborateError(err?.message || "Failed to elaborate directorial treatment. Please try again.");
+    } finally {
+      setIsElaborating(false);
+      setIsTweaking(false);
+      setElaborateStep(null);
+    }
+  };
+
+  const handleGenerate = async (treatmentOverride?: OmniDirectorialTreatment) => {
+    const activeTreatment = treatmentOverride || treatment;
+    const text = (activeTreatment?.refinedPrompt || promptText).trim();
     if (!text) return;
+
+    const targetDuration = activeTreatment?.targetDurationSec || selectedDuration;
+    const targetAspect = activeTreatment?.aspectRatio || selectedAspectRatio;
+    const targetGenre = activeTreatment?.genre || (selectedGenre !== "AUTO" ? selectedGenre : undefined);
+    const targetLang = activeTreatment?.language || selectedLanguage;
 
     setIsGenerating(true);
     setGenerationError(null);
@@ -249,7 +363,7 @@ export function CreatorReelsHome() {
     setGenerationStep(
       activeTab === "youtube_shorts"
         ? "Analyzing prompt & composing 5-act 30-shot screenplay with Beethoven Op. 92..."
-        : "Analyzing prompt & composing multi-shot screenplay..."
+        : "Locking character biometric DNA & enqueuing unbroken scene takes..."
     );
 
     try {
@@ -260,11 +374,12 @@ export function CreatorReelsHome() {
         body: JSON.stringify({
           topic: text,
           prompt: text,
-          duration: selectedDuration,
-          requestedDurationSec: selectedDuration,
-          aspectRatio: selectedAspectRatio,
-          genre: selectedGenre !== "AUTO" ? selectedGenre : undefined,
-          language: selectedLanguage,
+          scriptText: activeTreatment?.masterScript || undefined,
+          duration: targetDuration,
+          requestedDurationSec: targetDuration,
+          aspectRatio: targetAspect,
+          genre: targetGenre,
+          language: targetLang,
           platform,
           autoStart: true,
         })
@@ -591,6 +706,64 @@ export function CreatorReelsHome() {
                   ))}
                 </div>
 
+                {/* Reference Video / YouTube Deconstruction Toggle & Input */}
+                <div className="mb-3">
+                  {!showRefInput && !referenceUrl ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowRefInput(true)}
+                      className="text-xs text-slate-400 hover:text-teal-300 flex items-center gap-1.5 transition-colors py-1 px-2 rounded-lg hover:bg-white/5 min-h-[36px]"
+                    >
+                      <Link2 className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                      <span>🔗 Have a YouTube / video reference? (Deconstruct cinematography, dance &amp; lighting)</span>
+                    </button>
+                  ) : (
+                    <div className="p-3 bg-[#080B11] border border-teal-500/30 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-teal-300 flex items-center gap-1.5">
+                          <Link2 className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                          <span>Reference Video / Public YouTube URL</span>
+                          <span className="text-[10px] text-slate-400 font-normal hidden sm:inline">(Deconstructs actors, choreography, lighting &amp; audio)</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReferenceUrl("");
+                            setShowRefInput(false);
+                          }}
+                          className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-white/10"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                        <input
+                          type="url"
+                          value={referenceUrl}
+                          onChange={(e) => setReferenceUrl(e.target.value)}
+                          placeholder="Paste YouTube URL (e.g. https://www.youtube.com/watch?v=... or https://youtu.be/...)"
+                          className="flex-1 bg-[#05070A] border border-white/10 rounded-lg px-3 py-2 text-base md:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-400 min-h-[44px]"
+                        />
+                        {referenceUrl && (
+                          <button
+                            type="button"
+                            onClick={() => handleElaborate()}
+                            disabled={isElaborating}
+                            className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-400 text-[#07090E] font-bold text-xs shrink-0 flex items-center justify-center gap-1.5 min-h-[44px] transition-colors"
+                          >
+                            {isElaborating ? (
+                              <div className="w-3.5 h-3.5 border-2 border-[#07090E] border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Wand2 className="w-3.5 h-3.5" />
+                            )}
+                            <span>Deconstruct URL</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Prompt Textarea */}
                 <div className="relative mb-4">
                   <textarea
@@ -639,39 +812,74 @@ export function CreatorReelsHome() {
                   ))}
                 </div>
 
-                {/* Submit button & wait time disclosure */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-2">
-                  <button
-                    type="button"
-                    onClick={handleGenerate}
-                    disabled={isGenerating || !promptText.trim()}
-                    className={`w-full sm:w-auto px-8 py-3.5 rounded-xl disabled:opacity-50 disabled:pointer-events-none text-[#07090E] font-black text-sm sm:text-base shadow-xl transition-all flex items-center justify-center gap-2 min-h-[48px] ${
-                      activeTab === "youtube_shorts"
-                        ? "bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 hover:from-amber-300 hover:to-orange-300 shadow-amber-500/25 hover:shadow-amber-500/40"
-                        : "bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 shadow-teal-500/25 hover:shadow-teal-500/40"
-                    }`}
-                  >
-                    {isGenerating ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-[#07090E] border-t-transparent rounded-full animate-spin" />
-                        <span>
-                          {activeTab === "youtube_shorts" ? "Directing 180s Screenplay..." : "Planning Unbroken Scene..."}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        {activeTab === "youtube_shorts" ? (
-                          <Clapperboard className="w-5 h-5 text-[#07090E]" />
-                        ) : (
-                          <Sparkles className="w-5 h-5 text-[#07090E]" />
-                        )}
-                        <span>
-                          {activeTab === "youtube_shorts" ? "Direct 180s Cinema Master" : "Generate 9:16 Reel"}
-                        </span>
-                        <ArrowRight className="w-4 h-4 text-[#07090E]" />
-                      </>
-                    )}
-                  </button>
+                {/* Actions Row: Elaborate Button + Submit Button + Stated Wait */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    {/* Primary Generate Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleGenerate()}
+                      disabled={isGenerating || isElaborating || !promptText.trim()}
+                      className={`px-6 sm:px-8 py-3.5 rounded-xl disabled:opacity-50 disabled:pointer-events-none text-[#07090E] font-black text-sm sm:text-base shadow-xl transition-all flex items-center justify-center gap-2 min-h-[48px] ${
+                        activeTab === "youtube_shorts"
+                          ? "bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 hover:from-amber-300 hover:to-orange-300 shadow-amber-500/25 hover:shadow-amber-500/40"
+                          : "bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 shadow-teal-500/25 hover:shadow-teal-500/40"
+                      }`}
+                    >
+                      {isGenerating ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-[#07090E] border-t-transparent rounded-full animate-spin" />
+                          <span>
+                            {activeTab === "youtube_shorts" ? "Directing 180s Screenplay..." : "Planning Unbroken Scene..."}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          {activeTab === "youtube_shorts" ? (
+                            <Clapperboard className="w-5 h-5 text-[#07090E]" />
+                          ) : (
+                            <Sparkles className="w-5 h-5 text-[#07090E]" />
+                          )}
+                          <span>
+                            {treatment
+                              ? `Approve & Direct ${treatment.targetDurationSec}s Reel`
+                              : activeTab === "youtube_shorts"
+                              ? "Direct 180s Cinema Master"
+                              : "Generate 9:16 Reel"}
+                          </span>
+                          <ArrowRight className="w-4 h-4 text-[#07090E]" />
+                        </>
+                      )}
+                    </button>
+
+                    {/* ✨ Elaborate & Deconstruct Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleElaborate()}
+                      disabled={isElaborating || isGenerating || (!promptText.trim() && !referenceUrl.trim())}
+                      className={`px-5 py-3.5 rounded-xl disabled:opacity-50 disabled:pointer-events-none font-bold text-xs sm:text-sm border transition-all flex items-center justify-center gap-2 min-h-[48px] ${
+                        activeTab === "youtube_shorts"
+                          ? "bg-amber-500/10 border-amber-400/40 text-amber-300 hover:bg-amber-500/20 hover:border-amber-400/70 shadow-lg shadow-amber-500/10"
+                          : "bg-teal-500/10 border-teal-400/40 text-teal-300 hover:bg-teal-500/20 hover:border-teal-400/70 shadow-lg shadow-teal-500/10"
+                      }`}
+                      title="Omni Director deconstructs actors, dialogues, emotions, choreography, and spatial blocking into an approved treatment"
+                    >
+                      {isElaborating ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          <span>Omni Deconstructing...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="w-4 h-4" />
+                          <span>✨ Elaborate &amp; Deconstruct</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 uppercase tracking-wider font-extrabold hidden lg:inline">
+                            Omni Pre-Flight
+                          </span>
+                        </>
+                      )}
+                    </button>
+                  </div>
 
                   {/* STATED WAIT: HONEST TIME IN PLAIN ENGLISH */}
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-300 bg-white/5 px-4 py-2.5 rounded-xl border border-white/5">
@@ -691,6 +899,27 @@ export function CreatorReelsHome() {
                   </div>
                 </div>
 
+                {/* Elaboration loading & error indicators */}
+                {isElaborating && (
+                  <div className="mt-3 p-3.5 rounded-xl bg-teal-950/40 border border-teal-500/30 flex items-center gap-3 animate-pulse">
+                    <div className="w-4 h-4 border-2 border-teal-400 border-t-transparent rounded-full animate-spin shrink-0" />
+                    <div className="text-xs text-teal-200">
+                      <strong className="block text-white font-semibold">Omni Director at Work...</strong>
+                      <span>{elaborateStep || "Deconstructing actors, locations, lighting, and choreography..."}</span>
+                    </div>
+                  </div>
+                )}
+
+                {elaborateError && (
+                  <div className="mt-3 p-3.5 rounded-xl bg-rose-950/40 border border-rose-500/30 flex items-center gap-3 text-xs text-rose-200">
+                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                    <div>
+                      <strong className="block text-white font-semibold">Director Elaboration Notice:</strong>
+                      <span>{elaborateError}</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* PLATFORM SAFETY GUARANTEE (C2PA + SYNTHID REFRAMED) */}
                 <div className="mt-4 pt-3 border-t border-white/5 flex items-center gap-2 text-xs text-slate-400">
                   <ShieldCheck className="w-4 h-4 text-teal-400 shrink-0" />
@@ -699,6 +928,377 @@ export function CreatorReelsHome() {
                   </span>
                 </div>
               </div>
+
+              {/* OMNI DIRECTOR'S TREATMENT DOSSIER CARD */}
+              {treatment && (
+                <div className="mt-6 w-full bg-[#0B0F19] border border-teal-500/40 rounded-2xl md:rounded-3xl p-5 sm:p-7 shadow-2xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-96 h-96 bg-teal-500/5 rounded-full blur-3xl pointer-events-none" />
+
+                  {/* Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10 relative z-10">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-teal-500/20 border border-teal-400/40 text-teal-300 text-[11px] font-bold uppercase tracking-wider">
+                          <Clapperboard className="w-3.5 h-3.5" />
+                          Omni Director Pre-Flight Treatment
+                        </span>
+                        <span className="px-2 py-0.5 rounded bg-amber-400/20 border border-amber-400/30 text-amber-300 text-[11px] font-semibold">
+                          Awaiting Approval
+                        </span>
+                        <span className="px-2 py-0.5 rounded bg-white/5 text-slate-300 text-[11px]">
+                          {treatment.targetDurationSec}s • {treatment.shots.length} Takes • {treatment.aspectRatio}
+                        </span>
+                        <span className="px-2 py-0.5 rounded bg-white/5 text-slate-300 text-[11px]">
+                          {treatment.language}
+                        </span>
+                      </div>
+                      <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                        {treatment.title}
+                      </h2>
+                      <p className="text-xs sm:text-sm text-slate-300 mt-1 italic max-w-3xl">
+                        &ldquo;{treatment.logline}&rdquo;
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setTreatment(null)}
+                      className="self-start sm:self-center px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white text-xs flex items-center gap-1.5 transition-colors"
+                      title="Dismiss treatment"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span>Dismiss Dossier</span>
+                    </button>
+                  </div>
+
+                  {/* Reference Deconstruction Banner */}
+                  {treatment.referenceAnalyzed && (
+                    <div className="mt-4 p-3 rounded-xl bg-teal-950/30 border border-teal-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-2">
+                        <Link2 className="w-4 h-4 text-teal-400 shrink-0" />
+                        <div>
+                          <span className="font-bold text-teal-200">Deconstructed Reference: </span>
+                          <span className="text-white font-medium">{treatment.referenceAnalyzed.detectedTitle || treatment.referenceAnalyzed.url}</span>
+                        </div>
+                      </div>
+                      <span className="text-slate-400 text-[11px] sm:text-right">
+                        Aesthetic: <span className="text-slate-200">{treatment.referenceAnalyzed.detectedAesthetic}</span>
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Dossier Tabs */}
+                  <div className="flex items-center gap-2 border-b border-white/10 mt-5 pb-2 overflow-x-auto scrollbar-none">
+                    <button
+                      type="button"
+                      onClick={() => setTreatmentTab("screenplay")}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 min-h-[40px] shrink-0 ${
+                        treatmentTab === "screenplay"
+                          ? "bg-teal-500 text-[#07090E] shadow-sm shadow-teal-500/30"
+                          : "text-slate-400 hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      <Film className="w-3.5 h-3.5" />
+                      <span>Screenplay &amp; Staging ({treatment.shots.length} Takes)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setTreatmentTab("cast")}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 min-h-[40px] shrink-0 ${
+                        treatmentTab === "cast"
+                          ? "bg-teal-500 text-[#07090E] shadow-sm shadow-teal-500/30"
+                          : "text-slate-400 hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      <Users className="w-3.5 h-3.5" />
+                      <span>Cast &amp; Wardrobe Progression ({treatment.cast.length})</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setTreatmentTab("score")}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 min-h-[40px] shrink-0 ${
+                        treatmentTab === "score"
+                          ? "bg-teal-500 text-[#07090E] shadow-sm shadow-teal-500/30"
+                          : "text-slate-400 hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      <Music2 className="w-3.5 h-3.5" />
+                      <span>Acoustic Bed &amp; Color Grade</span>
+                    </button>
+                  </div>
+
+                  {/* TAB 1: SCREENPLAY & STAGING */}
+                  {treatmentTab === "screenplay" && (
+                    <div className="mt-4 space-y-3">
+                      {treatment.shots.map((shot, idx) => {
+                        const isExpanded = expandedShotIdx === idx;
+                        const wordCount = shot.dialogueOrLyric.trim().split(/\s+/).filter(Boolean).length;
+                        return (
+                          <div
+                            key={shot.shotNumber}
+                            className="p-4 rounded-xl bg-[#070A11] border border-white/5 hover:border-teal-500/30 transition-all"
+                          >
+                            <div
+                              className="flex flex-wrap items-center justify-between gap-2 cursor-pointer select-none"
+                              onClick={() => setExpandedShotIdx(isExpanded ? null : idx)}
+                            >
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="w-7 h-7 rounded-lg bg-teal-500/20 text-teal-300 font-mono font-bold text-xs flex items-center justify-center">
+                                  #{shot.shotNumber}
+                                </span>
+                                <span className={`text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full ${
+                                  shot.characterDensity === "duet"
+                                    ? "bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                                    : shot.characterDensity === "ensemble"
+                                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                                    : "bg-teal-500/20 text-teal-300 border border-teal-500/30"
+                                }`}>
+                                  {shot.characterDensity}
+                                </span>
+                                <span className="text-xs font-semibold text-white">
+                                  {shot.onCameraCharacters.join(" & ") || "Atmospheric Scene"}
+                                </span>
+                                <span className="text-[11px] text-slate-400 hidden sm:inline">
+                                  • {shot.cameraAndOptics.framing} ({shot.cameraAndOptics.lens})
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] text-slate-400 font-mono">
+                                  {wordCount > 0 ? `${wordCount}w • budget safe` : "Visual take"}
+                                </span>
+                                {isExpanded ? (
+                                  <ChevronUp className="w-4 h-4 text-slate-400" />
+                                ) : (
+                                  <ChevronDown className="w-4 h-4 text-slate-400" />
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Expanded Performance Triad Details */}
+                            {isExpanded && (
+                              <div className="mt-3 pt-3 border-t border-white/5 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                                {/* Left Column: Dialogue & Facial Micro-Expressions */}
+                                <div className="space-y-2">
+                                  <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/5">
+                                    <div className="flex items-center justify-between text-[11px] text-teal-300 font-semibold mb-1">
+                                      <span>💬 Dialogue / Lyric</span>
+                                      <span className="text-[10px] text-slate-400">Speaker: {shot.speaker || "None"}</span>
+                                    </div>
+                                    <p className="text-slate-200 italic font-serif text-sm">
+                                      &ldquo;{shot.dialogueOrLyric || "(Instrumental beat / ambient foley)"}&rdquo;
+                                    </p>
+                                  </div>
+
+                                  <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/5">
+                                    <span className="text-[11px] text-cyan-300 font-semibold block mb-1">
+                                      👁️ Facial Micro-Expression &amp; Eyeline
+                                    </span>
+                                    <p className="text-slate-300">{shot.facialExpression}</p>
+                                  </div>
+                                </div>
+
+                                {/* Right Column: Body Language, Choreography & Spatial Blocking */}
+                                <div className="space-y-2">
+                                  <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/5">
+                                    <span className="text-[11px] text-amber-300 font-semibold block mb-1">
+                                      💃 Body Language &amp; Choreography
+                                    </span>
+                                    <p className="text-slate-300">
+                                      {shot.bodyLanguage} • {shot.choreography}
+                                    </p>
+                                  </div>
+
+                                  <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/5">
+                                    <span className="text-[11px] text-violet-300 font-semibold block mb-1">
+                                      📐 Spatial Blocking &amp; Camera Motion
+                                    </span>
+                                    <p className="text-slate-300">
+                                      {shot.spatialBlocking.depthPlanes} | Proximity: {shot.spatialBlocking.proximity} | Contact: {shot.spatialBlocking.contactPoints}
+                                    </p>
+                                    <p className="text-slate-400 text-[11px] mt-1">
+                                      Camera Motion: {shot.cameraAndOptics.cameraMotion}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* TAB 2: CAST & WARDROBE PROGRESSION */}
+                  {treatmentTab === "cast" && (
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {treatment.cast.map(c => (
+                        <div
+                          key={c.id}
+                          className="p-4 rounded-xl bg-[#070A11] border border-white/5 space-y-3 text-xs"
+                        >
+                          <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                            <div>
+                              <span className="text-sm font-bold text-white block">{c.name}</span>
+                              <span className="text-[11px] text-teal-300 uppercase font-semibold">{c.role}</span>
+                            </div>
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-teal-500/10 text-teal-300 border border-teal-500/20">
+                              Safe Archetype Lock
+                            </span>
+                          </div>
+
+                          <div>
+                            <span className="text-[11px] text-slate-400 block font-medium mb-0.5">Biometric Archetype:</span>
+                            <p className="text-slate-200">{c.archetypeSafeDescription}</p>
+                            <div className="mt-1 text-[11px] text-slate-400">
+                              {c.biometricDNA.ageBand} • {c.biometricDNA.hair} • {c.biometricDNA.facialFeatures}
+                            </div>
+                          </div>
+
+                          <div className="pt-2 border-t border-white/5 space-y-1.5">
+                            <span className="text-[11px] text-amber-300 font-semibold block">Wardrobe Progression:</span>
+                            <div className="space-y-1 text-[11px]">
+                              <div className="text-slate-300">
+                                <strong className="text-slate-400">Act 1–2:</strong> {c.wardrobeProgression.act1_2.costume} ({c.wardrobeProgression.act1_2.accessories})
+                              </div>
+                              <div className="text-slate-300">
+                                <strong className="text-slate-400">Act 3–4:</strong> {c.wardrobeProgression.act3_4.costume} ({c.wardrobeProgression.act3_4.accessories})
+                              </div>
+                              <div className="text-slate-300">
+                                <strong className="text-slate-400">Act 5:</strong> {c.wardrobeProgression.act5.costume} ({c.wardrobeProgression.act5.accessories})
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* TAB 3: ACOUSTIC SCORE & COLOR SCRIPT */}
+                  {treatmentTab === "score" && (
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                      {/* Acoustic Score */}
+                      <div className="p-4 rounded-xl bg-[#070A11] border border-white/5 space-y-3">
+                        <div className="flex items-center gap-2 pb-2 border-b border-white/5">
+                          <Music2 className="w-4 h-4 text-amber-400" />
+                          <span className="text-sm font-bold text-white">Acoustic Score Bed</span>
+                          <span className="ml-auto text-[10px] px-2 py-0.5 rounded bg-amber-400/10 text-amber-300 font-mono">
+                            {treatment.musicScore.lufsTarget}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-[11px]">
+                          <div>
+                            <span className="text-slate-400 block">Genre / Mood:</span>
+                            <span className="text-white font-medium">{treatment.musicScore.genre}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block">Tempo &amp; Key:</span>
+                            <span className="text-white font-medium">{treatment.musicScore.bpm} BPM • {treatment.musicScore.key} ({treatment.musicScore.meter})</span>
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="text-slate-400 block text-[11px]">Lead Instruments:</span>
+                          <span className="text-slate-200">{treatment.musicScore.instruments.join(", ")}</span>
+                        </div>
+
+                        <div>
+                          <span className="text-slate-400 block text-[11px]">Vocal Profile:</span>
+                          <span className="text-slate-200">{treatment.musicScore.vocalProfile}</span>
+                        </div>
+                      </div>
+
+                      {/* Color Script */}
+                      <div className="p-4 rounded-xl bg-[#070A11] border border-white/5 space-y-3">
+                        <div className="flex items-center gap-2 pb-2 border-b border-white/5">
+                          <Palette className="w-4 h-4 text-teal-400" />
+                          <span className="text-sm font-bold text-white">Directorial Color Script</span>
+                        </div>
+
+                        <div className="space-y-2 text-[11px]">
+                          <div>
+                            <strong className="text-teal-300 block">Act 1–2 (Exposition / Rise):</strong>
+                            <p className="text-slate-300">{treatment.colorScript.act1_2}</p>
+                          </div>
+                          <div>
+                            <strong className="text-amber-300 block">Act 3–4 (Climax / Dramatic Stakes):</strong>
+                            <p className="text-slate-300">{treatment.colorScript.act3_4}</p>
+                          </div>
+                          <div>
+                            <strong className="text-cyan-300 block">Act 5 (Resolution / Grand Finale):</strong>
+                            <p className="text-slate-300">{treatment.colorScript.act5}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Conversational Tweak with Omni Box */}
+                  <div className="mt-5 p-4 rounded-xl bg-[#080C14] border border-white/10">
+                    <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 mb-2">
+                      <MessageSquare className="w-3.5 h-3.5 text-teal-400" />
+                      <span>Want Omni to adjust any character, costume, choreography, or dialogue?</span>
+                    </label>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <input
+                        type="text"
+                        value={tweakPrompt}
+                        onChange={(e) => setTweakPrompt(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && tweakPrompt.trim() && !isTweaking) {
+                            handleElaborate(tweakPrompt);
+                          }
+                        }}
+                        placeholder="e.g. 'Make dance choreography higher energy in Shot 2', 'Change heroine saree to ruby red chiffon', 'More close-up yearning eyelines'..."
+                        className="flex-1 bg-[#05070A] border border-white/10 rounded-lg px-3 py-2 text-base md:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-400 min-h-[44px]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleElaborate(tweakPrompt)}
+                        disabled={isTweaking || !tweakPrompt.trim()}
+                        className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-xs shrink-0 flex items-center justify-center gap-1.5 min-h-[44px] transition-colors disabled:opacity-50"
+                      >
+                        {isTweaking ? (
+                          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Send className="w-3.5 h-3.5" />
+                        )}
+                        <span>Apply Tweak</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Primary Approval CTA */}
+                  <div className="mt-5 pt-4 border-t border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleGenerate(treatment)}
+                      disabled={isGenerating}
+                      className="px-8 py-4 rounded-xl bg-gradient-to-r from-teal-400 via-cyan-400 to-teal-300 hover:from-teal-300 hover:to-cyan-300 text-[#07090E] font-black text-sm sm:text-base shadow-xl shadow-teal-500/25 hover:shadow-teal-500/40 transition-all flex items-center justify-center gap-2 min-h-[50px]"
+                    >
+                      {isGenerating ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-[#07090E] border-t-transparent rounded-full animate-spin" />
+                          <span>Directing &amp; Enqueuing Reel Takes...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Clapperboard className="w-5 h-5 text-[#07090E]" />
+                          <span>🚀 Approve Treatment &amp; Direct {treatment.targetDurationSec}s Reel</span>
+                          <ArrowRight className="w-4 h-4 text-[#07090E]" />
+                        </>
+                      )}
+                    </button>
+
+                    <span className="text-xs text-slate-400 text-center sm:text-right">
+                      Omni will direct all {treatment.shots.length} takes with 100% actor &amp; costume continuity.
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* LIVE GENERATION STATUS OR RESULT CARD */}
               {isGenerating && (

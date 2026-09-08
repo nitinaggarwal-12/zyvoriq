@@ -464,7 +464,16 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
       ? "Finish with a confident readable hold."
       : `Complete the dramatic action before cut; Shot ${i + 2} continues naturally.`;
 
-    const visualIntent = `${shotGrammar}: ${safeAction}. Eyeline: ${eyeline}. Camera: ${cameraMotion}.`;
+    const performanceClauses: string[] = [];
+    if (dirShot?.choreography) performanceClauses.push(`Choreography: ${dirShot.choreography}.`);
+    if (dirShot?.facialExpression) performanceClauses.push(`Expression: ${dirShot.facialExpression}.`);
+    if (dirShot?.bodyLanguage) performanceClauses.push(`Body language: ${dirShot.bodyLanguage}.`);
+    if (dirShot?.spatialBlocking?.depthPlanes) performanceClauses.push(`Staging: ${dirShot.spatialBlocking.depthPlanes}.`);
+    if (dirShot?.spatialBlocking?.contactPoints && dirShot.spatialBlocking.contactPoints !== "None") performanceClauses.push(`Contact: ${dirShot.spatialBlocking.contactPoints}.`);
+    if (dirShot?.coStarDescription) performanceClauses.push(`Secondary performer: ${dirShot.coStarDescription}.`);
+
+    const enrichedPerformance = performanceClauses.length > 0 ? " " + performanceClauses.join(" ") : "";
+    const visualIntent = `${shotGrammar}: ${safeAction}. Eyeline: ${eyeline}. Camera: ${cameraMotion}.${enrichedPerformance}`;
     const emotion = { emotion: i === beats.length - 1 ? "confident" : i === 0 ? "curious" : "engaged", intensity: i === 0 ? 0.65 : 0.55, gestureEnergy: 0.4 };
 
     const sceneId = dirShot?.sceneId || `scene_${String(Math.floor(i / 4) + 1).padStart(2, "0")}`;
