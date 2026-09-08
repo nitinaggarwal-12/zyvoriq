@@ -1633,19 +1633,24 @@ async function generateShot(op, manifest, shot) {
       .map(img => typeof img === "string" ? img : img?.url)
       .filter(Boolean);
 
+    const safetyAttemptCount = Number(op.payload_json?.safetyAttempts || 0);
     const refImages = [];
     if (char && canonicalUrls.length) {
-      for (const imgUrl of canonicalUrls.slice(0, ref?.buffer ? 2 : 3)) {
-        try {
-          const buf = await readAsset(imgUrl);
-          if (buf?.length) {
-            refImages.push({
-              image: { bytesBase64Encoded: buf.toString("base64"), mimeType: "image/png" },
-              referenceType: "asset"
-            });
+      if (safetyAttemptCount >= 2) {
+        console.log(`[reel-worker] [safety-fallback] Omitting canonical reference image on safety retry #${safetyAttemptCount} for ${shot.id} to eliminate image-level likeness triggers; relying on directorial prompt.`);
+      } else {
+        for (const imgUrl of canonicalUrls.slice(0, ref?.buffer ? 2 : 3)) {
+          try {
+            const buf = await readAsset(imgUrl);
+            if (buf?.length) {
+              refImages.push({
+                image: { bytesBase64Encoded: buf.toString("base64"), mimeType: "image/png" },
+                referenceType: "asset"
+              });
+            }
+          } catch (e) {
+            console.warn(`[reel-worker] Failed to load canonical reference ${imgUrl}: ${e?.message || e}`);
           }
-        } catch (e) {
-          console.warn(`[reel-worker] Failed to load canonical reference ${imgUrl}: ${e?.message || e}`);
         }
       }
     }
@@ -1895,10 +1900,10 @@ async function generateShot(op, manifest, shot) {
             console.warn(`[reel-worker] RAI auto-heal error: ${e?.message}`);
           }
 
-          if (!changed && newSafetyAttempts >= 2) {
-            // Truly unhealable safety block after both frame-omission and text rules exhausted
+          if (!changed && newSafetyAttempts >= 3) {
+            // Truly unhealable safety block after all 3 tiers (temporal frame, text heal, and canonical images) exhausted
             await pool.query(`UPDATE reel_operations SET attempt=5 WHERE id=$1`, [op.id]);
-            throw new Error(`VEO_SAFETY_FILTER_FATAL: Veo safety/RAI filter triggered and prompt was unchanged by heal rules (${diagInfo})`);
+            throw new Error(`VEO_SAFETY_FILTER_FATAL: Veo safety/RAI filter triggered across all 3 defense tiers (${diagInfo})`);
           }
 
           throw new Error(`VEO_SAFETY_FILTER_EMPTY: Veo completed without video URI due to safety/RAI filter (${diagInfo})`);
