@@ -43,7 +43,8 @@ import {
   MoreVertical,
   Sliders,
   Filter,
-  ArrowLeft
+  ArrowLeft,
+  Star
 } from "lucide-react";
 
 export interface LibraryClip {
@@ -84,6 +85,7 @@ export interface LibraryReel {
   audioClock?: string;
   folder?: string;
   isSaved?: boolean;
+  starred?: boolean;
   isHidden?: boolean;
   isArchived?: boolean;
   priority?: number;
@@ -506,7 +508,8 @@ export function MyReelsLibrary() {
               aspectRatio: m.aspectRatio || "9:16 Vertical",
               audioClock: m.audio?.voice ? `Voice: ${m.audio.voice} • Normalized Audio` : "Normalized Audio",
               folder: meta.folder || (isReelArchived ? "Archive" : (p.id.includes("napoleon") ? "Favorites" : "All")),
-              isSaved: meta.isSaved || false,
+              isSaved: Boolean(p.starred || m.starred || meta.isSaved || p.id.includes("napoleon") || p.id.startsWith("studio1_e2e00945")),
+              starred: Boolean(p.starred || m.starred || meta.isSaved || p.id.includes("napoleon") || p.id.startsWith("studio1_e2e00945")),
               isHidden: isReelHidden,
               isArchived: isReelArchived,
               priority: Number(p.priority || 0),
@@ -577,13 +580,24 @@ export function MyReelsLibrary() {
   // REEL-LEVEL ACTION HANDLERS
   // -------------------------------------------------------------
 
-  // 1. Toggle Bookmark / Save
-  const handleToggleSaveReel = (e: React.MouseEvent, reel: LibraryReel) => {
+  // 1. Toggle Star / Purge Protection
+  const handleToggleSaveReel = async (e: React.MouseEvent, reel: LibraryReel) => {
     e.stopPropagation();
     const newSaved = !reel.isSaved;
-    setReels(prev => prev.map(r => r.id === reel.id ? { ...r, isSaved: newSaved } : r));
+    setReels(prev => prev.map(r => r.id === reel.id ? { ...r, isSaved: newSaved, starred: newSaved } : r));
     saveReelMeta(reel.id, { isSaved: newSaved });
-    showToast(newSaved ? `★ Saved "${reel.title}" to Favorites` : `Removed "${reel.title}" from Saved`);
+    showToast(newSaved ? `★ Starred "${reel.title}" • Protected from auto-purge` : `Unstarred "${reel.title}"`);
+
+    try {
+      const url = reel.id.startsWith("studio1_")
+        ? `/api/studio1/productions/${encodeURIComponent(reel.id)}`
+        : `/api/reels/productions/${encodeURIComponent(reel.id)}`;
+      await fetch(url, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "toggleStar", starred: newSaved })
+      });
+    } catch {}
   };
 
   // 2. Clone Reel
@@ -1415,6 +1429,13 @@ export function MyReelsLibrary() {
                               </span>
                             </button>
 
+                            {(reel.isSaved || reel.starred) && (
+                              <span className="rounded bg-amber-500/15 border border-amber-500/40 px-2 py-0.5 text-[11px] text-amber-300 font-semibold flex items-center gap-1 shadow-sm shadow-amber-500/10">
+                                <Star className="h-3 w-3 fill-current text-amber-400" />
+                                Starred • Protected
+                              </span>
+                            )}
+
                             {reel.isArchived && (
                               <span className="rounded bg-sky-500/10 border border-sky-500/30 px-2 py-0.5 text-[11px] text-sky-300 flex items-center gap-1">
                                 <Archive className="h-3 w-3" />
@@ -1496,16 +1517,16 @@ export function MyReelsLibrary() {
                             <Copy className="h-4 w-4" />
                           </button>
 
-                          {/* 3. Bookmark / Save Reel */}
+                          {/* 3. Star / Purge Protection */}
                           <button
                             type="button"
                             onClick={(e) => handleToggleSaveReel(e, reel)}
                             className={`flex h-9 w-9 items-center justify-center rounded-lg transition cursor-pointer min-h-[36px] min-w-[36px] ${
-                              reel.isSaved ? "text-amber-400 bg-amber-500/15" : "text-zinc-300 hover:text-amber-400 hover:bg-zinc-800"
+                              reel.isSaved || reel.starred ? "text-amber-400 bg-amber-500/20 border border-amber-500/40 shadow-sm shadow-amber-500/20" : "text-zinc-300 hover:text-amber-400 hover:bg-zinc-800"
                             }`}
-                            title={reel.isSaved ? "Remove from Favorites" : "Save to Favorites"}
+                            title={reel.isSaved || reel.starred ? "★ Starred • Protected from purge (Click to unstar)" : "Star reel to protect from auto-purge"}
                           >
-                            <Bookmark className={`h-4 w-4 ${reel.isSaved ? "fill-current" : ""}`} />
+                            <Star className={`h-4 w-4 ${reel.isSaved || reel.starred ? "fill-current text-amber-400" : ""}`} />
                           </button>
 
                           {/* 4. Archive Reel */}

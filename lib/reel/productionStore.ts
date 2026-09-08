@@ -8,6 +8,7 @@ export interface StoredReelProduction {
   id: string;
   revision: number;
   manifest: ReelProductionManifest;
+  starred?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -17,10 +18,13 @@ CREATE TABLE IF NOT EXISTS reel_productions (
   id TEXT PRIMARY KEY,
   revision INTEGER NOT NULL DEFAULT 1,
   manifest_json JSONB NOT NULL,
+  starred BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL
 );
+ALTER TABLE reel_productions ADD COLUMN IF NOT EXISTS starred BOOLEAN DEFAULT FALSE;
 CREATE INDEX IF NOT EXISTS idx_reel_productions_updated ON reel_productions(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_reel_productions_starred ON reel_productions(starred);
 `;
 
 function normalizeManifest(manifest: ReelProductionManifest) {
@@ -28,10 +32,14 @@ function normalizeManifest(manifest: ReelProductionManifest) {
 }
 
 function fromPostgres(row: any): StoredReelProduction {
+  const isStarred = Boolean(row.starred === true || row.manifest_json?.starred === true);
+  const manifest = normalizeManifest(row.manifest_json as ReelProductionManifest);
+  manifest.starred = isStarred;
   return {
     id: String(row.id),
     revision: Number(row.revision),
-    manifest: normalizeManifest(row.manifest_json as ReelProductionManifest),
+    manifest,
+    starred: isStarred,
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
   };
@@ -102,6 +110,27 @@ export const reelProductionStore = {
       [id, nextRevision, JSON.stringify(normalized), now, current.revision]
     );
     if (!result.rows[0]) throw new Error(`Production ${id} changed concurrently`);
+    return fromPostgres(result.rows[0]);
+  },
+
+  async setStarred(id: string, starred: boolean): Promise<StoredReelProduction> {
+    const current = await this.get(id);
+    if (!current) throw new Error(`Production ${id} not found`);
+    const nextRevision = current.revision + 1;
+    const now = new Date().toISOString();
+    const manifest: ReelProductionManifest = {
+      ...current.manifest,
+      starred,
+    };
+    const pool = await ensurePostgresTable();
+    const result = await pool.query(
+      `UPDATE reel_productions
+       SET revision = $2, starred = $3, manifest_json = $4::jsonb, updated_at = $5
+       WHERE id = $1
+       RETURNING *`,
+      [id, nextRevision, starred, JSON.stringify(manifest), now]
+    );
+    if (!result.rows[0]) throw new Error(`Production ${id} not found`);
     return fromPostgres(result.rows[0]);
   },
 

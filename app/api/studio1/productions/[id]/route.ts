@@ -7,6 +7,7 @@ import { studio1Service } from "@/lib/studio1/service";
 import { planStudio1ProductionTimeline, syncStudio1ProductionTimeline } from "@/lib/studio1/timelineSyncService";
 import type { Studio1SubjectMode } from "@/lib/studio1/planner";
 import { canExtend } from "@/lib/reel/preconditions";
+import { reelProductionStore } from "@/lib/reel/productionStore";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -77,6 +78,12 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     let current = await studio1Service.get(id);
     if (!current) return NextResponse.json({ success: false, error: "Studio1 production not found" }, { status: 404 });
     if (expectedRevision !== undefined && current.revision !== expectedRevision) return NextResponse.json({ success: false, error: `Production changed concurrently (expected revision ${expectedRevision}, found ${current.revision})` }, { status: 409 });
+
+    if (action === "toggleStar" || action === "setStarred") {
+      const nextStarred = body.starred !== undefined ? Boolean(body.starred) : !Boolean(current.manifest?.starred);
+      const updated = await reelProductionStore.setStarred(id, nextStarred);
+      return NextResponse.json({ success: true, starred: nextStarred, production: presentProduction(updated) });
+    }
 
     if (action === "setPriority") {
       const priority = Number(body.priority);

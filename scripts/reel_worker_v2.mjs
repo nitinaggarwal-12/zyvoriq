@@ -625,11 +625,32 @@ async function autonomousDiskCleanAndHealthGuard(forceAggressive = false) {
         SELECT id FROM reel_productions WHERE updated_at > NOW() - INTERVAL '6 hours'
       `).catch(() => ({ rows: [] }));
 
+      // Query user-starred reels: permanently immune from purge
+      const starredRes = await pool.query(`
+        SELECT id FROM reel_productions 
+        WHERE starred = true 
+           OR manifest_json->>'starred' = 'true'
+      `).catch(() => ({ rows: [] }));
+
+      const CANONICAL_SHOWCASE_IDS = [
+        "studio1_e2e00945-e431-4228-bb7b-33cc68f0fa72", // Midnight Cyberpunk Dance
+        "studio1_9f360810-20f5-48ba-b3a4-f315bd3ea5c8", // Alpine Sunrise Expedition
+        "studio1_d2d144d2-e696-48e3-9341-68f4ef96455a", // Dune Nomad Odyssey
+        "studio1_5bfb958d-cae5-4147-9bd5-bde17cf67ac4", // Cosmic Deep Space Ascent
+        "studio1_01bd8d8d-2917-4852-8706-5b430635e98a",
+        "studio1_05579f63-00ba-470a-a8fc-62cb4d3065a6",
+        "studio1_290443e2-7633-4f91-8fa1-d2c676993108",
+        "studio1_37f1f557-ca18-47fb-a79a-e1605dc9b0ee",
+        "studio1_417f1625-665e-4097-97e7-28439b31105e",
+        "studio1_e2fa9fa8-694d-41b3-84ec-f8fa753364b0",
+        "studio1_d50d1e44-1a72-4c65-92f9-d3f85aa21278"  // Alpine Romance
+      ];
+
       const protectedIds = new Set([
         ...activeRes.rows.map(r => r.production_id),
         ...recentProdsRes.rows.map(r => r.id),
-        "studio1_417f1625-665e-4097-97e7-28439b31105e",
-        "studio1_e2fa9fa8-694d-41b3-84ec-f8fa753364b0"
+        ...starredRes.rows.map(r => r.id),
+        ...CANONICAL_SHOWCASE_IDS
       ]);
 
       // Scan directories under root and root/reels
@@ -641,7 +662,8 @@ async function autonomousDiskCleanAndHealthGuard(forceAggressive = false) {
           const entries = await fs.readdir(sDir, { withFileTypes: true }).catch(() => []);
           for (const ent of entries) {
             if (ent.isDirectory() && (ent.name.startsWith("studio1_") || ent.name.startsWith("reel_") || ent.name.startsWith("studio2_"))) {
-              if (!protectedIds.has(ent.name)) {
+              const isProtected = Array.from(protectedIds).some(pid => ent.name.includes(pid) || pid.includes(ent.name));
+              if (!isProtected) {
                 const fullPath = path.join(sDir, ent.name);
                 const st = await fs.stat(fullPath).catch(() => null);
                 if (st) {

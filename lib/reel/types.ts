@@ -337,6 +337,7 @@ export interface ReelProductionManifest {
   topic: string;
   tone: string;
   language?: string;
+  starred?: boolean;
   creationIntent?: ReelCreationIntent;
   masterScript: string;
   creativeBible: {

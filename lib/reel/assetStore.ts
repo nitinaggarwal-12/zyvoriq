@@ -62,8 +62,30 @@ export async function writeAsset(key: string, data: Buffer) {
 }
 
 export async function readAsset(key: string) {
-  const { target } = resolveAssetPath(key);
-  return fs.readFile(target);
+  // Check if static or showcase video exists locally
+  const shortId = key.match(/studio1_[a-f0-9]{8}/i)?.[0];
+  if (shortId) {
+    const publicCandidate = path.resolve(process.cwd(), "public", "assets", "video", `${shortId}.mp4`);
+    if (fsSync.existsSync(publicCandidate)) {
+      return fs.readFile(publicCandidate);
+    }
+    const scratchCandidate = path.resolve(process.cwd(), "scratch", "reels_evaluation", `${shortId}.mp4`);
+    if (fsSync.existsSync(scratchCandidate)) {
+      return fs.readFile(scratchCandidate);
+    }
+  }
+
+  try {
+    const { target } = resolveAssetPath(key);
+    return await fs.readFile(target);
+  } catch (err: any) {
+    // Also check if relative key exists in public directory
+    const publicRelative = path.resolve(process.cwd(), "public", key);
+    if (fsSync.existsSync(publicRelative)) {
+      return fs.readFile(publicRelative);
+    }
+    throw err;
+  }
 }
 
 export async function deleteAsset(key: string) {

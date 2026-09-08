@@ -42,6 +42,14 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     const action = String(body.action || "");
     const expectedRevision = body.expectedRevision === undefined ? undefined : Number(body.expectedRevision);
 
+    if (action === "toggleStar" || action === "setStarred") {
+      const current = await reelProductionStore.get(id);
+      if (!current) return NextResponse.json({ success: false, error: "Production not found" }, { status: 404 });
+      const nextStarred = body.starred !== undefined ? Boolean(body.starred) : !Boolean(current.starred || current.manifest?.starred);
+      const updated = await reelProductionStore.setStarred(id, nextStarred);
+      return NextResponse.json({ success: true, starred: nextStarred, production: updated });
+    }
+
     if (action === "setPriority") {
       const priority = Number(body.priority);
       if (isNaN(priority)) return NextResponse.json({ success: false, error: "priority must be a number" }, { status: 400 });
