@@ -458,7 +458,7 @@ export function MyReelsLibrary() {
                 order: s.order || index + 1,
                 title: `Shot ${String(s.order || index + 1).padStart(2, "0")}: ${s.visualIntent?.slice(0, 42) || s.scriptText?.slice(0, 36) || "Cinematic Beat"}`,
                 videoUrl: s.asset?.videoUrl || null,
-                posterUrl: s.continuityIn?.referenceFrameUrl || null,
+                posterUrl: s.asset?.posterUrl || s.continuityIn?.referenceFrameUrl || (index === 0 ? (m.canonicalCharacterAnchorUrl || m.anchorImageUrl || m.stillUrl || m.characters?.[0]?.canonicalReferenceImages?.[0]) : null) || null,
                 durationSec: Number(s.editorialDurationSec || s.actualDurationSec || s.generationDurationSec || 5.5),
                 status: s.status || "PLANNED",
                 scriptText: s.scriptText || null,
@@ -1231,6 +1231,14 @@ export function MyReelsLibrary() {
                               alt={reel.title}
                               className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                             />
+                          ) : reel.videoUrl ? (
+                            <video
+                              src={reel.videoUrl}
+                              preload="metadata"
+                              playsInline
+                              muted
+                              className="w-full h-full object-cover group-hover:scale-105 transition duration-300 pointer-events-none"
+                            />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-zinc-900 to-black">
                               <Clapperboard className="h-8 w-8 text-zinc-600" />
@@ -1545,6 +1553,14 @@ export function MyReelsLibrary() {
                                     src={clip.posterUrl}
                                     alt={clip.title}
                                     className="w-full h-full object-cover group-hover:scale-105 transition duration-200"
+                                  />
+                                ) : hasClipVideo ? (
+                                  <video
+                                    src={clip.videoUrl!}
+                                    preload="metadata"
+                                    playsInline
+                                    muted
+                                    className="w-full h-full object-cover group-hover:scale-105 transition duration-200 pointer-events-none"
                                   />
                                 ) : (
                                   <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-950 text-zinc-600 gap-1">
