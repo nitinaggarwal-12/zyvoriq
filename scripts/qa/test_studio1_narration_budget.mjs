@@ -171,9 +171,9 @@ console.log("Testing Studio1 Narration Budgeting & Scene Splitting...");
 // Test 8: Synchronized duration and budgeting constants
 {
   assert.strictEqual(TARGET_SHOT_DURATION_SEC, 6.0, "TARGET_SHOT_DURATION_SEC must be 6.0s (Veo bucket match)");
-  assert.strictEqual(MAX_SHOT_DURATION_SEC, 7.5, "MAX_SHOT_DURATION_SEC must be 7.5s (Veo headroom cap)");
-  assert.strictEqual(MAX_WORDS_PER_SHOT, 21, "MAX_WORDS_PER_SHOT must be 21 words");
-  assert.strictEqual(WORDS_PER_SECOND, 2.9, "WORDS_PER_SECOND must be 2.9 wps");
+  assert.strictEqual(MAX_SHOT_DURATION_SEC, 7.36, "MAX_SHOT_DURATION_SEC must be 7.36s (Veo headroom cap)");
+  assert.strictEqual(MAX_WORDS_PER_SHOT, 15, "MAX_WORDS_PER_SHOT must be 15 words");
+  assert.strictEqual(WORDS_PER_SECOND, 2.1, "WORDS_PER_SECOND must be 2.1 wps");
   console.log("  ✓ Synchronized budgeting constants verified");
 }
 

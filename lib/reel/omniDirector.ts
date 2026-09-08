@@ -92,7 +92,7 @@ export interface OmniDirectorInput {
 }
 
 const TARGET_SHOT_DURATION_SEC = 6.0;
-const MAX_WORDS_PER_SHOT = 21;
+const MAX_WORDS_PER_SHOT = 15;
 
 function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 30) || "character";

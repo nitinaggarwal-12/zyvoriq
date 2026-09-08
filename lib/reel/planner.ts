@@ -56,11 +56,11 @@ const normalizeSpaces = (value: string) => value.trim().replace(/\s+/g, " ");
 // 7.27s and received ~4.1s, so the retime clamp bound on 10 of 10 shots and
 // ~31s of paid source was trimmed away.
 export const TARGET_SHOT_DURATION_SEC = 6.0;
-export const MAX_SHOT_DURATION_SEC = 7.5;
-export const WORDS_PER_SECOND = 2.9;
-// 7.36s = 8.0s Veo clip * 0.92 retime clamp floor. 21 words at 2.9 wps is
-// ~7.24s, which fills the clip without binding the clamp.
-export const MAX_WORDS_PER_SHOT = 21;
+export const MAX_SHOT_DURATION_SEC = 7.36;
+export const WORDS_PER_SECOND = 2.1;
+// 7.36s = 8.0s Veo clip * 0.92 retime clamp floor. 15 words at 2.1 wps is
+// ~7.14s, which fills the clip without binding the clamp.
+export const MAX_WORDS_PER_SHOT = 15;
 
 // Pick the SMALLEST Veo bucket that can cover the narration slot within the
 // same local-adaptation limits the renderer enforces (<=0.75s and <=1.20x).
@@ -87,7 +87,7 @@ export async function generateNarrationScriptWithGemini(
   language?: string
 ): Promise<string> {
   const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-  const targetShots = Math.max(2, Math.min(30, Math.round(targetDurationSec / TARGET_SHOT_DURATION_SEC)));
+  const targetShots = Math.max(1, Math.min(30, Math.ceil(targetDurationSec / MAX_SHOT_DURATION_SEC)));
 
   if (!key) {
     throw new Error(
@@ -247,11 +247,13 @@ function splitIntoEditorialBeats(script: string, targetSec: number): string[] {
   if (!script.trim()) return [];
   const totalWords = countWords(script);
   // Veo clips are limited to 4s, 6s, 8s buckets.
-  // Maximum editorial duration ceiling is 7.5s (MAX_SHOT_DURATION_SEC) to leave headroom below Veo's 8.0s hard cap.
-  // At ~2.9 words/sec measured delivery cadence, each beat has max MAX_WORDS_PER_SHOT (21 words) to stay under ~7.24s,
+  // Maximum editorial duration ceiling is 7.36s (MAX_SHOT_DURATION_SEC = 8.0s * 0.92 retime floor).
+  // At ~2.1 words/sec measured delivery cadence, each beat has max MAX_WORDS_PER_SHOT (15 words) to stay under ~7.14s,
   // guaranteeing beats fit cleanly into Veo's bucket with zero clamp trim or duration overrun.
-  const desiredShotCount = Math.max(2, Math.ceil(targetSec / TARGET_SHOT_DURATION_SEC), Math.ceil(totalWords / MAX_WORDS_PER_SHOT));
-  const targetWordsPerShot = Math.max(5, Math.min(MAX_WORDS_PER_SHOT, Math.round(totalWords / desiredShotCount)));
+  // Deriving shot count directly from narration duration: ceil(totalNarrationSec / 7.36)
+  const totalNarrationSec = totalWords > 0 ? totalWords / WORDS_PER_SECOND : targetSec;
+  const desiredShotCount = Math.max(1, Math.ceil(totalNarrationSec / MAX_SHOT_DURATION_SEC));
+  const targetWordsPerShot = Math.max(4, Math.min(MAX_WORDS_PER_SHOT, Math.round(totalWords / desiredShotCount)));
   const maxWordsPerShot = MAX_WORDS_PER_SHOT;
   const units = sentenceUnits(script).flatMap(unit => splitLongUnit(unit, maxWordsPerShot));
   const beats: string[] = [];

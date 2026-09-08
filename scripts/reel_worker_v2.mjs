@@ -756,7 +756,7 @@ async function runDeadlockAndStarvationWatchdog() {
       if (!allDone) continue;
       const isStudio1 = rRow.id.startsWith("studio1_") && Boolean(rm.studio1?.timelineSync);
       const existingRc = await pool.query(
-        `SELECT id, status FROM reel_operations WHERE production_id=$1 AND kind='ROUGH_CUT'`,
+        `SELECT id, status, attempt, updated_at, last_error FROM reel_operations WHERE production_id=$1 AND kind='ROUGH_CUT'`,
         [rRow.id]
       );
       if (existingRc.rows.length === 0) {
@@ -791,22 +791,42 @@ async function runDeadlockAndStarvationWatchdog() {
         );
         console.log(`[reel-worker] [watchdog-enqueue] ROUGH_CUT enqueued for prod ${rRow.id}`);
       } else if (existingRc.rows[0]?.status === 'FAILED') {
+        const rcRow = existingRc.rows[0];
+        const attempts = Number(rcRow.attempt || 0);
+        if (attempts >= 3) {
+          console.warn(`[reel-worker] [watchdog-selfheal] ROUGH_CUT ${rcRow.id} reached attempt cap (${attempts}), quarantining operation for prod ${rRow.id}`);
+          await pool.query(
+            `UPDATE reel_operations
+             SET status='QUARANTINED', last_error='MAX_ATTEMPTS_EXCEEDED: Self-heal cap reached (3 attempts)', updated_at=NOW()
+             WHERE id=$1 AND status='FAILED'`,
+            [rcRow.id]
+          );
+          continue;
+        }
+
+        const lastUpdatedMs = rcRow.updated_at ? new Date(rcRow.updated_at).getTime() : 0;
+        const backoffMs = Math.min(300000, Math.pow(2, attempts) * 15000);
+        if (Date.now() - lastUpdatedMs < backoffMs) {
+          console.log(`[reel-worker] [watchdog-selfheal] ROUGH_CUT ${rcRow.id} backoff in effect (${Math.round((backoffMs - (Date.now() - lastUpdatedMs)) / 1000)}s remaining)`);
+          continue;
+        }
+
         if (rm.status !== "ROUGH_CUT_READY" && rm.status !== "READY") {
           rm.status = "ROUGH_CUT_READY";
           await saveManifest(rRow.id, rRow.revision, rm);
         }
         await pool.query(
           `UPDATE reel_operations 
-           SET status='QUEUED', attempt=0, last_error=NULL, 
+           SET status='QUEUED', attempt=attempt+1, last_error=NULL, 
                payload_json = jsonb_set(
                  jsonb_set(COALESCE(payload_json, '{}'::jsonb), '{studio1}', $2::jsonb),
                  '{narrationSyncedTimeline}', $3::jsonb
                ),
                updated_at=NOW()
            WHERE id=$1`,
-          [existingRc.rows[0].id, JSON.stringify(isStudio1), JSON.stringify(isStudio1)]
+          [rcRow.id, JSON.stringify(isStudio1), JSON.stringify(isStudio1)]
         );
-        console.log(`[reel-worker] [watchdog-selfheal] Reset failed ROUGH_CUT ${existingRc.rows[0].id} to QUEUED (studio1=${isStudio1}) for prod ${rRow.id}`);
+        console.log(`[reel-worker] [watchdog-selfheal] Reset failed ROUGH_CUT ${rcRow.id} to QUEUED (attempt=${attempts + 1}, studio1=${isStudio1}) for prod ${rRow.id}`);
       }
     }
 
@@ -1940,6 +1960,36 @@ async function generateShot(op, manifest, shot) {
             console.warn(`[reel-worker] Failed to record safetyAttempts in DB: ${dbErr?.message}`);
           }
 
+          // Check for Veo audio-filter rejection ("We encountered an issue with the audio for your prompt...")
+          const rawResponseStr = JSON.stringify(pj);
+          const isAudioFilter = /issue with the audio for your prompt|audio.*could not create your video|audio.*(?:policy|prohibited|violat|reject|filter)/i.test(rawResponseStr);
+
+          // Audio filter rejection branch: preserve temporal reference and character anchor; sanitize spoken line and dialogue prompts
+          if (isAudioFilter) {
+            console.log(`[reel-worker] [audio-filter-fallback] Veo rejected audio for prompt on ${shot.id}. Preserving visual conditioning and temporal frames; sanitizing spoken dialogue line.`);
+            try {
+              const current = await getProduction(op.production_id);
+              const m = current.manifest;
+              const targetShot = m.shots.find(x => x.id === shot.id);
+              if (targetShot) {
+                const prev = targetShot.generationPrompt;
+                let healed = prev
+                  .replace(/The current spoken beat is:.*$/i, "Pure cinematic ambient atmosphere and background soundscape.")
+                  .replace(/(?:dialogue|speech|speaks|says|singing|lyrics):\s*["'][^"']+["']/gi, "ambient foley sounds")
+                  .replace(/["'][^"']{10,}["']/g, "");
+                if (targetShot.scriptText) {
+                  targetShot.scriptText = targetShot.scriptText.replace(/^[A-Z0-9_\-\s]{2,25}:/i, "").trim();
+                }
+                targetShot.generationPrompt = healed.replace(/\s{2,}/g, " ").trim();
+                await saveManifest(op.production_id, current.revision, m);
+                console.log(`[reel-worker] [audio-filter-fallback] Sanitized shot ${shot.id} spoken prompt in manifest.`);
+              }
+            } catch (err) {
+              console.warn(`[reel-worker] Failed to sanitize audio prompt in manifest: ${err?.message}`);
+            }
+            throw new Error(`VEO_AUDIO_FILTER_REJECTED: Veo rejected audio generation for prompt. Retrying with sanitized spoken line (visual references preserved). Diag: ${diagInfo}`);
+          }
+
           // STRATEGY REORDERING:
           // 1. FIRST LINE OF DEFENSE: Drop temporal reference frame on first retry (prompt left 100% untouched).
           // Empirical testing proved the likeness trigger was caused by temporal frames conflicting with character sheets.
@@ -2225,79 +2275,203 @@ async function renderRough(op, m) {
     console.warn(`[reel-worker] rough cut ${op.production_id} rendering on legacy unsynced path`);
   }
 
+  const BATCH_SIZE = 6;
   const d = Number(m.audio.actualDurationSec);
   const tmp = path.join(os.tmpdir(), `zyvoriq-rough-${crypto.randomUUID()}.mp4`);
-  const args = ["-y"];
-  for (const s of m.shots) {
-    if (!s.asset?.videoUrl) throw new Error(`${s.id} has no source`);
-    args.push("-i", assetPath(s.asset.videoUrl).target);
-  }
+  const partsDir = path.join(os.tmpdir(), `zyvoriq-rough-parts-${crypto.randomUUID()}`);
+  await fs.mkdir(partsDir, { recursive: true });
 
   let timelineQa = null;
   let renderPlan = null;
-  const f = [];
-
-  if (hasNativeAudio) {
-    // Forensic-First: Preserve native speech, character voices, and lip articulation
-    for (let i = 0; i < m.shots.length; i++) {
-      f.push(`[${i}:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30[v${i}]`);
-      f.push(`[${i}:a]aresample=48000,aformat=channel_layouts=stereo[a${i}]`);
-    }
-    f.push(`${m.shots.map((_, i) => `[v${i}][a${i}]`).join("")}concat=n=${m.shots.length}:v=1:a=1[vcat][acat]`);
-    f.push(`[acat]loudnorm=I=-24:LRA=7:tp=-2[aout]`);
-    args.push(
-      "-filter_complex", f.join(";"),
-      "-map", "[vcat]",
-      "-map", "[aout]",
-      "-c:v", "libx264",
-      "-preset", "veryfast",
-      "-crf", "20",
-      "-pix_fmt", "yuv420p",
-      "-c:a", "aac",
-      "-b:a", "192k",
-      "-movflags", "+faststart",
-      tmp
-    );
-  } else {
-    // Fallback / Studio 1: Master narration dub and symphonic music bed
-    args.push("-i", assetPath(m.audio.narrationUrl).target);
-    if (studio1) {
-      renderPlan = buildStudio1RenderPlan(m);
-      assertStudio1RenderAdaptation(renderPlan);
-      renderPlan.scenes.forEach(scene => f.push(buildStudio1VisualFilter(m.shots[scene.inputIndex], scene, { unifiedScale: true })));
-      f.push(`${m.shots.map((_, i) => `[v${i}]`).join("")}concat=n=${m.shots.length}:v=1:a=0[vcat]`);
-      f.push(`[vcat]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1[vout]`);
-    } else {
-      m.shots.forEach((s, i) => f.push(`[${i}:v]trim=start=${s.trimInSec}:end=${s.trimOutSec},setpts=PTS-STARTPTS,scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30[v${i}]`));
-      f.push(`${m.shots.map((_, i) => `[v${i}]`).join("")}concat=n=${m.shots.length}:v=1:a=0[vout]`);
-    }
-    f.push(`[${m.shots.length}:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000[aout]`);
-    args.push(
-      "-filter_threads", "2",
-      "-filter_complex_threads", "2",
-      "-filter_complex", f.join(";"),
-      "-map", "[vout]",
-      "-map", "[aout]",
-      "-t", String(d),
-      "-c:v", "libx264",
-      "-preset", "veryfast",
-      "-crf", "20",
-      "-pix_fmt", "yuv420p",
-      "-c:a", "aac",
-      "-b:a", "192k",
-      "-movflags", "+faststart",
-      tmp
-    );
-  }
 
   try {
-    try {
-      await execFileAsync("ffmpeg", args, { timeout: 600000, maxBuffer: 16e6 });
-    } catch (ffmpegErr) {
-      console.error(`[reel-worker] ffmpeg renderRough failed! Command args count: ${args.length}`);
-      if (ffmpegErr.stderr) console.error(`[reel-worker] ffmpeg stderr:\n${ffmpegErr.stderr.slice(-2000)}`);
-      throw new Error(`ffmpeg renderRough error: ${ffmpegErr.stderr ? ffmpegErr.stderr.slice(-1000) : ffmpegErr.message.slice(0, 1000)}`);
+    if (hasNativeAudio) {
+      // Forensic-First: Preserve native speech, character voices, and lip articulation
+      // Batch shots in groups of 6 to avoid swscaler filtergraph thread/memory exhaustion
+      const numBatches = Math.ceil(m.shots.length / BATCH_SIZE);
+      console.log(`[reel-worker] renderRough: batching ${m.shots.length} shots across ${numBatches} intermediate batches (BATCH_SIZE=${BATCH_SIZE})`);
+      
+      for (let b = 0; b < numBatches; b++) {
+        const startIdx = b * BATCH_SIZE;
+        const endIdx = Math.min(m.shots.length, startIdx + BATCH_SIZE);
+        const batchShots = m.shots.slice(startIdx, endIdx);
+        const batchArgs = ["-y"];
+        for (const s of batchShots) {
+          if (!s.asset?.videoUrl) throw new Error(`${s.id} has no source`);
+          batchArgs.push("-i", assetPath(s.asset.videoUrl).target);
+        }
+        const f = [];
+        for (let i = 0; i < batchShots.length; i++) {
+          f.push(`[${i}:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30[v${i}]`);
+          f.push(`[${i}:a]aresample=48000,aformat=channel_layouts=stereo[a${i}]`);
+        }
+        f.push(`${batchShots.map((_, i) => `[v${i}][a${i}]`).join("")}concat=n=${batchShots.length}:v=1:a=1[vcat][acat]`);
+        const batchOut = path.join(partsDir, `batch_${String(b).padStart(4, "0")}.mp4`);
+        batchArgs.push(
+          "-filter_threads", "2",
+          "-filter_complex_threads", "2",
+          "-filter_complex", f.join(";"),
+          "-map", "[vcat]",
+          "-map", "[acat]",
+          "-c:v", "libx264",
+          "-preset", "veryfast",
+          "-crf", "20",
+          "-pix_fmt", "yuv420p",
+          "-c:a", "aac",
+          "-b:a", "192k",
+          batchOut
+        );
+        try {
+          await execFileAsync("ffmpeg", batchArgs, { timeout: 300000, maxBuffer: 8e6 });
+        } catch (ffmpegErr) {
+          console.error(`[reel-worker] ffmpeg renderRough batch ${b} failed! Command args count: ${batchArgs.length}`);
+          if (ffmpegErr.stderr) console.error(`[reel-worker] ffmpeg stderr:\n${ffmpegErr.stderr.slice(-2000)}`);
+          throw new Error(`ffmpeg renderRough batch ${b} error: ${ffmpegErr.stderr ? ffmpegErr.stderr.slice(-1000) : ffmpegErr.message.slice(0, 1000)}`);
+        }
+      }
+
+      const listPath = path.join(partsDir, "filelist.txt");
+      const fileListContent = Array.from({ length: numBatches }, (_, i) => `file '${path.join(partsDir, `batch_${String(i).padStart(4, "0")}.mp4`)}'`).join("\n");
+      await fs.writeFile(listPath, fileListContent, "utf8");
+
+      try {
+        await execFileAsync("ffmpeg", [
+          "-y",
+          "-f", "concat",
+          "-safe", "0",
+          "-i", listPath,
+          "-c:v", "copy",
+          "-c:a", "aac",
+          "-b:a", "192k",
+          "-af", "loudnorm=I=-24:LRA=7:tp=-2",
+          "-movflags", "+faststart",
+          tmp
+        ], { timeout: 300000, maxBuffer: 8e6 });
+      } catch (ffmpegErr) {
+        console.error(`[reel-worker] ffmpeg renderRough final concat failed!`);
+        if (ffmpegErr.stderr) console.error(`[reel-worker] ffmpeg stderr:\n${ffmpegErr.stderr.slice(-2000)}`);
+        throw new Error(`ffmpeg renderRough final concat error: ${ffmpegErr.stderr ? ffmpegErr.stderr.slice(-1000) : ffmpegErr.message.slice(0, 1000)}`);
+      }
+    } else {
+      // Fallback / Studio 1: Master narration dub and symphonic music bed
+      // Batch video scenes in groups of 6 to prevent scaling graph memory exhaustion
+      let numBatches = 0;
+      if (studio1) {
+        renderPlan = buildStudio1RenderPlan(m);
+        assertStudio1RenderAdaptation(renderPlan);
+        const scenes = renderPlan.scenes;
+        numBatches = Math.ceil(scenes.length / BATCH_SIZE);
+        console.log(`[reel-worker] renderRough: studio1 batching ${scenes.length} scenes across ${numBatches} intermediate batches (BATCH_SIZE=${BATCH_SIZE})`);
+
+        for (let b = 0; b < numBatches; b++) {
+          const startIdx = b * BATCH_SIZE;
+          const endIdx = Math.min(scenes.length, startIdx + BATCH_SIZE);
+          const batchScenes = scenes.slice(startIdx, endIdx);
+          const batchArgs = ["-y"];
+          for (const scene of batchScenes) {
+            const s = m.shots[scene.inputIndex];
+            if (!s.asset?.videoUrl) throw new Error(`${s.id} has no source`);
+            batchArgs.push("-i", assetPath(s.asset.videoUrl).target);
+          }
+          const f = [];
+          batchScenes.forEach((scene, localIdx) => {
+            const s = m.shots[scene.inputIndex];
+            f.push(buildStudio1VisualFilter(s, { ...scene, inputIndex: localIdx }, { unifiedScale: true }));
+          });
+          f.push(`${batchScenes.map((_, i) => `[v${i}]`).join("")}concat=n=${batchScenes.length}:v=1:a=0[vcat]`);
+          f.push(`[vcat]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1[vout]`);
+          const batchOut = path.join(partsDir, `batch_${String(b).padStart(4, "0")}.mp4`);
+          batchArgs.push(
+            "-filter_threads", "2",
+            "-filter_complex_threads", "2",
+            "-filter_complex", f.join(";"),
+            "-map", "[vout]",
+            "-an",
+            "-c:v", "libx264",
+            "-preset", "veryfast",
+            "-crf", "20",
+            "-pix_fmt", "yuv420p",
+            batchOut
+          );
+          try {
+            await execFileAsync("ffmpeg", batchArgs, { timeout: 300000, maxBuffer: 8e6 });
+          } catch (ffmpegErr) {
+            console.error(`[reel-worker] ffmpeg renderRough studio1 batch ${b} failed! Command args count: ${batchArgs.length}`);
+            if (ffmpegErr.stderr) console.error(`[reel-worker] ffmpeg stderr:\n${ffmpegErr.stderr.slice(-2000)}`);
+            throw new Error(`ffmpeg renderRough studio1 batch ${b} error: ${ffmpegErr.stderr ? ffmpegErr.stderr.slice(-1000) : ffmpegErr.message.slice(0, 1000)}`);
+          }
+        }
+      } else {
+        numBatches = Math.ceil(m.shots.length / BATCH_SIZE);
+        console.log(`[reel-worker] renderRough: fallback batching ${m.shots.length} shots across ${numBatches} intermediate batches (BATCH_SIZE=${BATCH_SIZE})`);
+
+        for (let b = 0; b < numBatches; b++) {
+          const startIdx = b * BATCH_SIZE;
+          const endIdx = Math.min(m.shots.length, startIdx + BATCH_SIZE);
+          const batchShots = m.shots.slice(startIdx, endIdx);
+          const batchArgs = ["-y"];
+          for (const s of batchShots) {
+            if (!s.asset?.videoUrl) throw new Error(`${s.id} has no source`);
+            batchArgs.push("-i", assetPath(s.asset.videoUrl).target);
+          }
+          const f = [];
+          batchShots.forEach((s, localIdx) => {
+            f.push(`[${localIdx}:v]trim=start=${s.trimInSec}:end=${s.trimOutSec},setpts=PTS-STARTPTS,scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30[v${localIdx}]`);
+          });
+          f.push(`${batchShots.map((_, i) => `[v${i}]`).join("")}concat=n=${batchShots.length}:v=1:a=0[vout]`);
+          const batchOut = path.join(partsDir, `batch_${String(b).padStart(4, "0")}.mp4`);
+          batchArgs.push(
+            "-filter_threads", "2",
+            "-filter_complex_threads", "2",
+            "-filter_complex", f.join(";"),
+            "-map", "[vout]",
+            "-an",
+            "-c:v", "libx264",
+            "-preset", "veryfast",
+            "-crf", "20",
+            "-pix_fmt", "yuv420p",
+            batchOut
+          );
+          try {
+            await execFileAsync("ffmpeg", batchArgs, { timeout: 300000, maxBuffer: 8e6 });
+          } catch (ffmpegErr) {
+            console.error(`[reel-worker] ffmpeg renderRough fallback batch ${b} failed! Command args count: ${batchArgs.length}`);
+            if (ffmpegErr.stderr) console.error(`[reel-worker] ffmpeg stderr:\n${ffmpegErr.stderr.slice(-2000)}`);
+            throw new Error(`ffmpeg renderRough fallback batch ${b} error: ${ffmpegErr.stderr ? ffmpegErr.stderr.slice(-1000) : ffmpegErr.message.slice(0, 1000)}`);
+          }
+        }
+      }
+
+      // Concat batch intermediates via demuxer and mux narration audio
+      const listPath = path.join(partsDir, "filelist.txt");
+      const fileListContent = Array.from({ length: numBatches }, (_, i) => `file '${path.join(partsDir, `batch_${String(i).padStart(4, "0")}.mp4`)}'`).join("\n");
+      await fs.writeFile(listPath, fileListContent, "utf8");
+
+      const narrationPath = assetPath(m.audio.narrationUrl).target;
+      try {
+        await execFileAsync("ffmpeg", [
+          "-y",
+          "-f", "concat",
+          "-safe", "0",
+          "-i", listPath,
+          "-i", narrationPath,
+          "-c:v", "copy",
+          "-c:a", "aac",
+          "-b:a", "192k",
+          "-filter_complex", `[1:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000[aout]`,
+          "-map", "0:v",
+          "-map", "[aout]",
+          "-t", String(d),
+          "-movflags", "+faststart",
+          tmp
+        ], { timeout: 300000, maxBuffer: 8e6 });
+      } catch (ffmpegErr) {
+        console.error(`[reel-worker] ffmpeg renderRough narration mux failed!`);
+        if (ffmpegErr.stderr) console.error(`[reel-worker] ffmpeg stderr:\n${ffmpegErr.stderr.slice(-2000)}`);
+        throw new Error(`ffmpeg renderRough narration mux error: ${ffmpegErr.stderr ? ffmpegErr.stderr.slice(-1000) : ffmpegErr.message.slice(0, 1000)}`);
+      }
     }
+
     await assertApplicable(op);
     const buffer = await fs.readFile(tmp), probe = await probeVideo(buffer);
     if (!hasNativeAudio && Math.abs(probe.durationSec - d) > .25) {
@@ -2335,7 +2509,10 @@ async function renderRough(op, m) {
     }
     const digest = crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 16), asset = await writeAsset(`reels/${op.production_id}/renders/narrated-rough-${digest}.mp4`, buffer);
     return { videoUrl: asset.url, actualDurationSec: probe.durationSec, kind: "narrated-rough-cut", codec: probe.codec, width: probe.width, height: probe.height, frameRate: probe.frameRate, renderedAt: new Date().toISOString(), ...(timelineQa ? { timelineQa } : {}) };
-  } finally { try { await fs.unlink(tmp); } catch {} }
+  } finally {
+    try { await fs.unlink(tmp); } catch {}
+    try { await fs.rm(partsDir, { recursive: true, force: true }); } catch {}
+  }
 }
 async function applyRough(op, result) {
   await assertApplicable(op);
