@@ -629,7 +629,13 @@ export function MyReelsLibrary() {
       showToast(`🗑️ Production "${deleteConfirm.title}" deleted.`);
 
       // 3. Dispatch DELETE to backend to purge from DB and cascade cancel operations
-      await fetch(`/api/reels/productions/${encodeURIComponent(reelId)}`, { method: "DELETE" }).catch(() => {});
+      const deleteUrl = reelId.startsWith("studio1_")
+        ? `/api/studio1/productions/${encodeURIComponent(reelId)}`
+        : `/api/reels/productions/${encodeURIComponent(reelId)}`;
+      const delRes = await fetch(deleteUrl, { method: "DELETE" }).catch(() => null);
+      if (!delRes || !delRes.ok) {
+        await fetch(`/api/reels/productions/${encodeURIComponent(reelId)}`, { method: "DELETE" }).catch(() => {});
+      }
     } catch {
       setReels(prev => prev.filter(r => r.id !== reelId));
       showToast(`Removed "${deleteConfirm.title}" from library.`);

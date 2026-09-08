@@ -76,3 +76,48 @@ export async function deleteAsset(key: string) {
     throw error;
   }
 }
+
+const WORKER_ASSET_BASE = (process.env.ZYVORIQ_WORKER_ASSET_BASE_URL || "http://zyvoriq-reel-worker.railway.internal:8080/internal/reel-assets").replace(/\/$/, "");
+
+export async function deleteProductionAssets(productionId: string): Promise<void> {
+  const cleanId = safeKey(productionId);
+  const root = configuredRoot();
+  if (root) {
+    const targets = [
+      path.resolve(root, "reels", cleanId),
+      path.resolve(root, cleanId),
+    ];
+    const resolvedRoot = path.resolve(root);
+    for (const target of targets) {
+      if (target.startsWith(`${resolvedRoot}${path.sep}`) || target === resolvedRoot) {
+        try {
+          await fs.rm(target, { recursive: true, force: true });
+        } catch (err: any) {
+          if (err?.code !== "ENOENT") {
+            console.warn(`[asset-store] Warning: failed to delete local production assets for ${productionId}:`, err?.message || err);
+          }
+        }
+      }
+    }
+  }
+
+  // Also check RAILWAY_VOLUME_MOUNT_PATH directly if different from root
+  const volMount = process.env.RAILWAY_VOLUME_MOUNT_PATH;
+  if (volMount && volMount !== root) {
+    try {
+      await fs.rm(path.resolve(volMount, "reels", cleanId), { recursive: true, force: true }).catch(() => {});
+      await fs.rm(path.resolve(volMount, cleanId), { recursive: true, force: true }).catch(() => {});
+    } catch {}
+  }
+
+  // Forward deletion to worker asset server (which hosts the mounted persistent volume)
+  if (WORKER_ASSET_BASE) {
+    try {
+      await fetch(`${WORKER_ASSET_BASE}/reels/${encodeURIComponent(cleanId)}`, {
+        method: "DELETE",
+        cache: "no-store",
+      }).catch(() => {});
+    } catch {}
+  }
+}
+

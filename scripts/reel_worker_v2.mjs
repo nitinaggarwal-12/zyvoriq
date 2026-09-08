@@ -582,6 +582,35 @@ async function autonomousDiskCleanAndHealthGuard(forceAggressive = false) {
       } catch {}
     }
 
+    // Orphan cleanup: prune directories for productions that have been deleted from Postgres
+    try {
+      const allDbProds = await pool.query(`SELECT id FROM reel_productions`).catch(() => ({ rows: [] }));
+      const dbProdSet = new Set(allDbProds.rows.map(r => r.id));
+      const scanDirs = [root, path.join(root, "reels")];
+      if (process.env.RAILWAY_VOLUME_MOUNT_PATH && process.env.RAILWAY_VOLUME_MOUNT_PATH !== root) {
+        scanDirs.push(path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, "reels"));
+      }
+      for (const sDir of scanDirs) {
+        try {
+          const entries = await fs.readdir(sDir, { withFileTypes: true }).catch(() => []);
+          for (const ent of entries) {
+            if (ent.isDirectory() && (ent.name.startsWith("studio1_") || ent.name.startsWith("reel_") || ent.name.startsWith("studio2_"))) {
+              if (!dbProdSet.has(ent.name)) {
+                const fullPath = path.join(sDir, ent.name);
+                const st = await fs.stat(fullPath).catch(() => null);
+                if (st && (Date.now() - st.mtimeMs > 5 * 60 * 1000)) {
+                  console.log(`[disk-guard] Pruning orphaned deleted production dir: ${fullPath}`);
+                  await fs.rm(fullPath, { recursive: true, force: true }).catch(() => {});
+                }
+              }
+            }
+          }
+        } catch {}
+      }
+    } catch (orphanErr) {
+      console.warn(`[disk-guard] Orphan scan note: ${orphanErr?.message}`);
+    }
+
     // If free space is below 1500 MB (or forceAggressive), prune old inactive productions
     if (freeMB < 1500 || forceAggressive) {
       console.warn(`[disk-guard] [LOW_DISK_SPACE] Available: ${freeMB}MB / ${totalMB}MB. Initiating LRU prune of inactive test productions...`);
@@ -1197,8 +1226,8 @@ const assetServer = http.createServer(async (req, res) => {
       res.end(JSON.stringify({ success: false, error: "asset_storage_unavailable" }));
       return;
     }
-    if (req.method !== "GET" && req.method !== "HEAD") {
-      res.writeHead(405, { Allow: "GET, HEAD" });
+    if (req.method !== "GET" && req.method !== "HEAD" && req.method !== "DELETE") {
+      res.writeHead(405, { Allow: "GET, HEAD, DELETE" });
       res.end();
       return;
     }
@@ -1211,6 +1240,26 @@ const assetServer = http.createServer(async (req, res) => {
     }
     const encoded = url.pathname.slice(prefix.length);
     const key = encoded.split("/").map(decodeURIComponent).join("/");
+    if (req.method === "DELETE") {
+      try {
+        const resolved = assetPath(key);
+        await fs.rm(resolved.target, { recursive: true, force: true }).catch(() => {});
+        console.log(`[reel-worker] asset server deleted ${resolved.target}`);
+      } catch {}
+      try {
+        const root = assetRoot();
+        if (root) {
+          await fs.rm(path.resolve(root, key), { recursive: true, force: true }).catch(() => {});
+          await fs.rm(path.resolve(root, "reels", key.replace(/^reels\//, "")), { recursive: true, force: true }).catch(() => {});
+          if (process.env.RAILWAY_VOLUME_MOUNT_PATH) {
+            await fs.rm(path.resolve(process.env.RAILWAY_VOLUME_MOUNT_PATH, "reels", key.replace(/^reels\//, "")), { recursive: true, force: true }).catch(() => {});
+          }
+        }
+      } catch {}
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true, deleted: key }));
+      return;
+    }
     const resolved = assetPath(key);
     const stat = await fs.stat(resolved.target);
     if (!stat.isFile()) {
