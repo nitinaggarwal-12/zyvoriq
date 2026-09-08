@@ -366,7 +366,9 @@ export function applyStudio1ShotPrompt(manifest: ReelProductionManifest, shotId:
 
   const charId = shot.continuityIn.characterId;
   const char = (manifest.continuity?.characters || []).find(c => c.id === charId);
-  const charDesc = char?.appearance?.description || charId;
+  const purePhysicalDesc = char?.appearance?.face
+    ? `${char.appearance.ageBand || "mid 20s"}, ${char.appearance.face}, ${char.appearance.hair}`
+    : (char?.appearance?.description || "lead performer with expressive facial bone structure");
 
   shot.continuityIn.characterId = charId;
   shot.continuityOut.characterId = charId;
@@ -376,7 +378,7 @@ export function applyStudio1ShotPrompt(manifest: ReelProductionManifest, shotId:
     environmentRule,
     semanticOnsetRule,
     meta.presenterContinuity
-      ? `STUDIO1 IDENTITY LOCK [${charId}]: The canonical character reference for ${charDesc} is authoritative for this shot. Identity continuity is mandatory: identical face, age, skin tone, hair, body proportions, wardrobe and distinguishing features. Do not substitute, cast, morph into, or introduce a different actor. Eyeline: ${shot.continuityIn.eyeline || "conversational off-camera"}.`
+      ? `STUDIO1 IDENTITY LOCK [lead_performer]: The attached canonical character reference image is authoritative for this shot. Physical description: ${purePhysicalDesc}. Identity continuity is mandatory: identical face, age, skin tone, hair, body proportions, wardrobe and distinguishing features. Do not substitute, cast, morph into, or introduce a different actor. Eyeline: ${shot.continuityIn.eyeline || "conversational off-camera"}.`
       : "STUDIO1 ACTOR MODE: Canonical identity anchoring is disabled for this experiment."
   ].join(" ");
 }

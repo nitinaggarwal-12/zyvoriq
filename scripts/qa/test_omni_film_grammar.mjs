@@ -39,8 +39,8 @@ GROVES: Ten seconds on the master switch, Robert.`;
   for (const shot of manifest.shots) {
     assert.notEqual(shot.continuityIn.eyeline, "camera", "Drama / Biopic shots must not look directly into camera lens");
     assert.ok(
-      shot.generationPrompt.includes("IDENTITY LOCK [oppenheimer]") ||
-      shot.generationPrompt.includes("IDENTITY LOCK [groves]") ||
+      shot.generationPrompt.includes("IDENTITY LOCK [lead_performer]") ||
+      shot.generationPrompt.includes("IDENTITY LOCK [") ||
       shot.generationPrompt.includes("SUBJECT RULE: Pure cinematic action"),
       "Generation prompt must lock to specific actor or pure action"
     );

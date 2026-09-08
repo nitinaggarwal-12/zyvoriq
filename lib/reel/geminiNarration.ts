@@ -98,10 +98,10 @@ function extractWordTimings(value: unknown): WordTiming[] {
   return timings.filter(t => t.word && t.endSec >= t.startSec).sort((a, b) => a.startSec - b.startSec || a.endSec - b.endSec);
 }
 
-async function generatePcm(text: string, tone: string) {
+async function generatePcm(text: string, tone: string, voiceOverride?: string) {
   const key = apiKey();
   const model = process.env.ZYVORIQ_TTS_MODEL || "gemini-3.1-flash-tts-preview";
-  const voice = process.env.ZYVORIQ_TTS_VOICE || "Kore";
+  const voice = voiceOverride || process.env.ZYVORIQ_TTS_VOICE || "Charon";
   const prompt = [
     "Synthesize speech for the transcript below. Do not speak these instructions.",
     `Performance direction: ${tone}. Natural social-video delivery, clear articulation, no added words.`,
@@ -240,6 +240,7 @@ export async function generateAlignedNarration(input: {
   productionId: string;
   text: string;
   tone: string;
+  voice?: string;
   biasedVocabulary?: string[];
 }) {
   if (!input.text.trim()) throw new Error("Cannot synthesize empty narration");
@@ -249,7 +250,7 @@ export async function generateAlignedNarration(input: {
   }
   apiKey();
 
-  const { pcm, model, voice } = await generatePcm(input.text, input.tone);
+  const { pcm, model, voice } = await generatePcm(input.text, input.tone, input.voice);
   if (!pcm.length) throw new Error("Gemini TTS returned an empty PCM stream");
   const durationSec = pcm.length / (SAMPLE_RATE * CHANNELS * SAMPLE_WIDTH);
   const wav = wavFromPcm(pcm);

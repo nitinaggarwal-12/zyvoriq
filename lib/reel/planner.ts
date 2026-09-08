@@ -260,6 +260,10 @@ function initialGates(): ReelProductionManifest["qa"]["gates"] {
   return Object.fromEntries(ids.map(id => [id, { id, status: "PENDING" as const }])) as ReelProductionManifest["qa"]["gates"];
 }
 
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function safeZoneProfile(platform: ReelProductionManifest["platform"]): "instagram-reels" | "youtube-shorts" | "tiktok" {
   if (platform === "YouTube Shorts") return "youtube-shorts";
   if (platform === "TikTok") return "tiktok";
@@ -282,6 +286,15 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
   }
   const dir = directorial || compileDeterministicDirectorialPass(topic, masterScript, requestedDurationSec, creationIntent, input.genre);
   const beats = splitIntoEditorialBeats(masterScript, requestedDurationSec);
+
+  // Map of unique scenes: sceneId -> verbatim unvarying environment string across all contiguous shots
+  const sceneEnvironments: Record<string, string> = {};
+  for (let sIdx = 0; sIdx < beats.length; sIdx++) {
+    const sId = dir.shots[sIdx]?.sceneId || `scene_${String(Math.floor(sIdx / 4) + 1).padStart(2, "0")}`;
+    if (!sceneEnvironments[sId]) {
+      sceneEnvironments[sId] = dir.shots[sIdx]?.sceneEnvironment || dir.shots[0]?.sceneEnvironment || topic;
+    }
+  }
 
   const charactersList = dir.cast.map(c => ({
     id: c.id,
@@ -345,28 +358,52 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
     const dirShot = dir.shots[i];
     const onCameraCharId = dirShot ? dirShot.onCameraCharacterId : (dir.genre === "DOCUMENTARY_EXPLAINER" ? "character_presenter" : dir.cast[0]?.id || null);
     const onCameraChar = onCameraCharId ? charactersList.find(c => c.id === onCameraCharId) : null;
+    const onCameraCast = onCameraCharId ? dir.cast.find(c => c.id === onCameraCharId) : null;
     const eyeline = dirShot?.eyeline || (dir.genre === "DOCUMENTARY_EXPLAINER" ? "camera" : "screen_right");
     const shotGrammar = dirShot?.shotGrammar || "HERO_CLOSE_UP";
-    const visualAction = dirShot?.visualAction || `Visual beat for ${beat || topic}`;
+    const rawVisualAction = dirShot?.visualAction || `Visual beat for ${beat || topic}`;
     const cameraMotion = dirShot?.cameraMotion || bible.cameraLanguage;
 
+    // Substitute character names with generic performer archetypes before building the prompt
+    const subjectLabel = onCameraCast?.role === "antagonist" ? "the antagonist" : (onCameraChar?.role === "presenter" ? "the presenter" : "the lead performer");
+    let safeAction = rawVisualAction;
+    for (const member of dir.cast) {
+      const label = member.id === onCameraCharId ? subjectLabel : (member.role === "antagonist" ? "the antagonist" : "the secondary performer");
+      if (member.name) {
+        safeAction = safeAction.replace(new RegExp(`\\b${escapeRegex(member.name)}\\b`, "gi"), label);
+      }
+      const slugName = member.id.replace(/_/g, " ");
+      safeAction = safeAction.replace(new RegExp(`\\b${escapeRegex(slugName)}\\b`, "gi"), label);
+    }
+
     const previousAction = i === 0
-      ? (onCameraChar ? `${onCameraChar.id} is in position.` : "Establishing composition.")
+      ? (onCameraChar ? `${subjectLabel} is in position.` : "Establishing composition.")
       : `Continue naturally from shot ${i}.`;
 
     const actionOut = i === beats.length - 1
       ? "Finish with a confident readable hold."
       : `Complete the dramatic action before cut; Shot ${i + 2} continues naturally.`;
 
-    const visualIntent = `${shotGrammar}: ${visualAction}. Eyeline: ${eyeline}. Camera: ${cameraMotion}.`;
+    const visualIntent = `${shotGrammar}: ${safeAction}. Eyeline: ${eyeline}. Camera: ${cameraMotion}.`;
     const emotion = { emotion: i === beats.length - 1 ? "confident" : i === 0 ? "curious" : "engaged", intensity: i === 0 ? 0.65 : 0.55, gestureEnergy: 0.4 };
 
+    const sceneId = dirShot?.sceneId || `scene_${String(Math.floor(i / 4) + 1).padStart(2, "0")}`;
+    const sceneEnvironment = sceneEnvironments[sceneId] || bible.environmentLock;
+
+    const purePhysicalDesc = onCameraCast
+      ? `${onCameraCast.biometricDNA.ageBand}, ${onCameraCast.biometricDNA.facialFeatures}, ${onCameraCast.biometricDNA.hair}`
+      : (onCameraChar?.appearance?.face ? `${onCameraChar.appearance.face}, ${onCameraChar.appearance.hair}` : "lead performer with expressive eyes");
+
+    const identityLockClause = onCameraCharId
+      ? `IDENTITY LOCK [lead_performer]: Authoritative canonical reference sheet applies to ${subjectLabel} (${purePhysicalDesc}). Wardrobe: ${onCameraChar?.wardrobe?.[0] || "Era-appropriate costume"}. Eyeline: ${eyeline}. Maintain identical facial features and actor identity.`
+      : "SUBJECT RULE: Pure cinematic action, stunt, environment master, or object focus. NO talking presenters, NO direct-to-camera address.";
+
     const continuityIn: any = {
-      character: onCameraChar?.appearance.description,
+      character: purePhysicalDesc,
       characterId: onCameraCharId || undefined,
       wardrobe: onCameraChar?.wardrobe?.[0],
-      environment: dirShot?.sceneEnvironment || bible.environmentLock,
-      environmentId: "environment_primary",
+      environment: sceneEnvironment,
+      environmentId: sceneId,
       lighting: bible.colorLanguage,
       action: previousAction,
       camera: cameraMotion,
@@ -378,10 +415,9 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
 
     const promptParts = [
       `GENRE: ${dir.genre}.`,
-      onCameraCharId
-        ? `IDENTITY LOCK [${onCameraCharId}]: Authoritative reference sheet applies to ${onCameraChar?.appearance.description || onCameraCharId}. Wardrobe: ${onCameraChar?.wardrobe?.[0] || "Era-appropriate costume"}. Eyeline: ${eyeline}. Maintain identical facial features and actor identity.`
-        : "SUBJECT RULE: Pure cinematic action, stunt, environment master, or object focus. NO talking presenters, NO direct-to-camera address.",
-      `SCENE ACTION: ${visualAction}.`,
+      `VERBATIM SCENE SETTING [${sceneId}]: ${sceneEnvironment}. Preserve identical physical set architecture, geometry, materials, background elements, lighting direction and color temperature.`,
+      identityLockClause,
+      `SCENE ACTION: ${safeAction}.`,
       categoryDirection,
       `Narrative beat: ${narrative}.`,
       `Tone: ${tone}.`,

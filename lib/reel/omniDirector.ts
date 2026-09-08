@@ -37,6 +37,7 @@ export type OmniEyeline =
 
 export interface OmniShotStaging {
   shotNumber: number;
+  sceneId?: string;
   speaker: string | null;
   dialogue: string;
   onCameraCharacterId: string | null;
@@ -250,8 +251,12 @@ export function compileDeterministicDirectorialPass(
       }
     }
 
+    const sceneIndex = Math.floor(i / 4) + 1;
+    const sceneId = `scene_${String(sceneIndex).padStart(2, "0")}`;
+
     shots.push({
       shotNumber: i + 1,
+      sceneId,
       speaker,
       dialogue,
       onCameraCharacterId,
@@ -319,9 +324,11 @@ CRITICAL DIRECTORIAL REQUIREMENTS:
    - For Bollywood action (e.g. Dhurandhar), cast rugged, charismatic leads with tactical gear, leather jackets, or sharp tailored suits.
    - For general drama/sci-fi, design distinctive, memorable characters with distinct facial features.
    - For documentary explainer ONLY, you may cast a single modern presenter.
-   - Give each character a unique ID (lowercase slug, e.g. "oppenheimer", "groves", "ranveer_singh").
+   - Give each character a unique archetype ID (lowercase slug, e.g. "oppenheimer", "groves", "tactical_agent", "samurai_master", "operative_leader"). NEVER use celebrity actor names or real-world celebrity names (strictly forbidden: no Bollywood/Hollywood actor names).
 
-3. FILM GRAMMAR & SHOT STAGING:
+3. FILM GRAMMAR, SCENE GROUPING & SHOT STAGING:
+   - SCENE ARCHITECTURE: Group contiguous shots that occur in the same physical setting into cohesive scenes with "sceneId" (e.g., shots 1-4 in "scene_01", shots 5-8 in "scene_02").
+   - VERBATIM ENVIRONMENT LOCK: All shots that share the same "sceneId" MUST have the EXACT SAME verbatim "sceneEnvironment" string describing the set, geometry, lighting, and materials. Do NOT rephrase or invent new locations within the same scene!
    - NEVER force one presenter to talk to the camera in every shot unless genre is DOCUMENTARY_EXPLAINER.
    - Use true film grammar:
      * Shot / Reverse-Shot for dialogue: Character A speaks (looking screen_right) -> Character B reacts (looking screen_left).
@@ -366,13 +373,14 @@ Return a JSON object conforming strictly to this structure:
   "shots": [
     {
       "shotNumber": 1,
+      "sceneId": "scene_01",
       "speaker": "CHARACTER_NAME" or null,
       "dialogue": "Spoken line (5 to ${MAX_WORDS_PER_SHOT} words)",
       "onCameraCharacterId": "slug_id" or null,
       "shotGrammar": "ESTABLISHING_WIDE" | "HERO_CLOSE_UP" | "MEDIUM_TWO_SHOT" | "OVER_THE_SHOULDER" | "REVERSE_ANGLE" | "KINETIC_TRACKING" | "DUTCH_ANGLE_LOW" | "PRESENTER_DIRECT",
       "eyeline": "screen_left" | "screen_right" | "horizon_reflective" | "downward_intense" | "camera",
       "cameraMotion": "description of camera move",
-      "sceneEnvironment": "description of physical setting",
+      "sceneEnvironment": "VERBATIM unvarying physical description for this entire sceneId",
       "visualAction": "description of what occurs visually in this 6-second shot"
     }
   ]

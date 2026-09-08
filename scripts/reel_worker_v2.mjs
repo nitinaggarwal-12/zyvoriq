@@ -1334,6 +1334,31 @@ async function transcribeAndValidateNarration(op, manifest, checkpoint, wav) {
   return { ...checkpoint, stage: "COMPLETE", wordTimings: timings, alignmentValidation: validation };
 }
 
+function selectVoiceForManifest(manifest) {
+  if (process.env.ZYVORIQ_TTS_VOICE) return process.env.ZYVORIQ_TTS_VOICE;
+
+  const characters = Array.isArray(manifest.characters) && manifest.characters.length
+    ? manifest.characters
+    : (manifest.continuity?.characters || []);
+
+  const leadChar = characters[0];
+  const gender = String(leadChar?.biometricDNA?.gender || leadChar?.gender || "").toLowerCase();
+  const voiceProfile = String(leadChar?.voiceProfile || "").toLowerCase();
+
+  if (gender === "male" || voiceProfile.includes("baritone") || voiceProfile.includes("bass") || voiceProfile.includes("deep") || voiceProfile.includes("commanding") || voiceProfile.includes("gritty")) {
+    return (voiceProfile.includes("gritty") || voiceProfile.includes("gravel") || voiceProfile.includes("warrior")) ? "Fenrir" : "Charon";
+  }
+  if (gender === "female" || voiceProfile.includes("soprano") || voiceProfile.includes("alto") || voiceProfile.includes("melodic")) {
+    return voiceProfile.includes("clear") || voiceProfile.includes("melodic") ? "Aoede" : "Kore";
+  }
+
+  const genre = String(manifest.creativeBible?.genre || manifest.genre || "").toUpperCase();
+  if (["BOLLYWOOD_ACTION", "HISTORICAL_BIOPIC", "NEO_NOIR_THRILLER", "CINEMATIC_DRAMA", "HIGH_FANTASY"].includes(genre)) {
+    return "Charon";
+  }
+  return "Kore";
+}
+
 async function generateNarration(op, manifest, existingCheckpoint = null) {
   if (!apiKey()) throw new Error("Gemini API key is missing");
   if (!assetRoot()) throw new Error("Durable asset root is missing");
@@ -1353,7 +1378,7 @@ async function generateNarration(op, manifest, existingCheckpoint = null) {
     await updateOperation(op.id, { providerOperationName: prior === "tts-dispatch-started" ? "tts-recovery-dispatch-started" : "tts-dispatch-started" });
 
     const model = process.env.ZYVORIQ_TTS_MODEL || "gemini-3.1-flash-tts-preview";
-    const voice = process.env.ZYVORIQ_TTS_VOICE || "Kore";
+    const voice = selectVoiceForManifest(manifest);
     const prompt = [
       "Synthesize speech for the transcript below. Do not speak these instructions.",
       `Performance direction: ${manifest.tone}. Natural social-video delivery, clear articulation, no added words.`,
@@ -1567,8 +1592,10 @@ function sanitizePromptForVeo(prompt) {
   if (!prompt || typeof prompt !== "string") return prompt;
   // 1. Strip dialogue speaker prefixes like "KIARA:", "AKSHAY:", etc. while preserving camera grammar tags
   let clean = stripSpeakerPrefixes(prompt);
-  // Strip internal character ID tags like STUDIO1 IDENTITY LOCK [zoya_rehman]:
-  clean = clean.replace(/STUDIO1 IDENTITY LOCK \[[^\]]+\]:/gi, "STUDIO1 IDENTITY LOCK [lead_performer]:");
+  // Strip internal character ID tags like STUDIO1 IDENTITY LOCK [zoya_rehman]: or IDENTITY LOCK [meera_percussion]:
+  clean = clean.replace(/(?:STUDIO1\s+)?IDENTITY LOCK \[[^\]]+\]:/gi, "IDENTITY LOCK [lead_performer]:");
+  // Strip character name references in canonical reference clauses
+  clean = clean.replace(/The canonical character reference for [^,.]+(?:,\s*|\.\s*)/gi, "The canonical character reference for the performer, ");
   // 2. Map celebrity references and proper character names (with spaces or underscores) to high-craft cinematic visual archetypes
   const celebrityMap = [
     { pattern: /\b(?:Kiara[\s_]*Advani|Kiara)\b/gi, replacement: "a radiant, graceful Indian leading lady" },
@@ -1594,6 +1621,8 @@ function sanitizePromptForVeo(prompt) {
     { pattern: /\b(?:Kabir[\s_]*Anand|Kabir)\b/gi, replacement: "a rugged, athletic covert operative" },
     { pattern: /\b(?:Zoya[\s_]*Rehman|Zoya)\b/gi, replacement: "a fierce, agile female intelligence officer" },
     { pattern: /\b(?:Farooq[\s_]*Malik|Farooq)\b/gi, replacement: "a menacing, hardened rogue commander" },
+    { pattern: /\b(?:Meera[\s_]*Rao|Meera)\b/gi, replacement: "a talented, expressive female musician" },
+    { pattern: /\b(?:Aarav[\s_]*Roy|Aarav)\b/gi, replacement: "a charismatic, passionate male performer" },
   ];
   for (const { pattern, replacement } of celebrityMap) {
     clean = clean.replace(pattern, replacement);
@@ -1623,6 +1652,7 @@ async function generateShot(op, manifest, shot) {
     await updateOperation(op.id, { providerOperationName: dispatchMarker });
 
     const cleanPrompt = sanitizePromptForVeo(shot.generationPrompt);
+    console.log(`[reel-worker] [veo-dispatch] Dispatching ${shot.id} (safetyAttempt: ${op.payload_json?.safetyAttempts || 0}) with prompt:\n"${cleanPrompt}"`);
     const instance = { prompt: cleanPrompt };
 
     // FIX-1: Sourced from character sheet (up to 3 reference images across every chain)
@@ -1660,6 +1690,7 @@ async function generateShot(op, manifest, shot) {
     const depShot = manifest.shots?.find(s => s.id === shot.dependsOnShotIds?.at(-1));
     const depCharId = depShot?.continuityIn?.characterId;
     const isSameCharacter = Boolean(charId && depCharId && charId === depCharId);
+    const isCharacterSwitch = Boolean(charId && depCharId && charId !== depCharId);
     const hasSafetyHistory = Boolean(
       (op.payload_json?.safetyAttempts || 0) > 0 ||
       op.payload_json?.last_empty_payload?.isSafety ||
@@ -1669,11 +1700,13 @@ async function generateShot(op, manifest, shot) {
     // If continuing from previous shot, attach previous shot frame as additional asset reference
     // BUT omit temporal frame if:
     // 1) This is a safety retry (safety fallback isolates canonical character sheet to prevent multi-reference collision)
-    // 2) The shot transitions between different characters or from environment to character (prevents identity confusion)
+    // 2) Character A -> Character B transition: omit temporal frame to prevent face identity collision
+    // NOTE: When transitioning from b-roll/environment (char: none) to character, or vice-versa,
+    // the temporal frame is PRESERVED so physical environment, lighting, and set continuity are retained!
     if (ref?.buffer && refImages.length < 3) {
       if (charId && hasSafetyHistory) {
         console.log(`[reel-worker] [safety-fallback] Omitting temporal frame from previous shot (${depShot?.id || "unknown"}) on safety retry for ${shot.id}; using canonical character reference only.`);
-      } else if (charId && !isSameCharacter) {
+      } else if (charId && depCharId && !isSameCharacter) {
         console.log(`[reel-worker] [continuity] Shot ${shot.id} (char: ${charId}) transitions from ${depShot?.id || "none"} (char: ${depCharId || "none"}). Omitting non-matching temporal reference to prevent identity collision.`);
       } else {
         refImages.push({
@@ -1855,16 +1888,37 @@ async function generateShot(op, manifest, shot) {
             const targetShot = m.shots.find(x => x.id === shot.id);
             if (targetShot) {
               prevPrompt = targetShot.generationPrompt;
+              const allChars = Array.isArray(m.characters) && m.characters.length
+                ? m.characters
+                : (m.continuity?.characters || []);
+              const dynamicCharNames = allChars.flatMap(c => [c.name, c.id?.replace(/_/g, " ")]).filter(Boolean);
+
               const HEAL_RULES = [
+                {
+                  name: "sanitize-veo-prompt-rules",
+                  apply: (p) => sanitizePromptForVeo(p),
+                },
                 {
                   name: "strip-speaker-dialogue-prefixes",
                   apply: (p) => stripSpeakerPrefixes(p),
                 },
                 {
+                  name: "strip-manifest-character-names",
+                  apply: (p) => {
+                    let res = p;
+                    for (const cName of dynamicCharNames) {
+                      if (!cName || cName.length < 3) continue;
+                      const escaped = cName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                      res = res.replace(new RegExp(`\\b${escaped}\\b`, "gi"), "the performer");
+                    }
+                    return res;
+                  },
+                },
+                {
                   name: "replace-celebrity-names-with-generic-archetypes",
                   apply: (p) => p
-                    .replace(/STUDIO1 IDENTITY LOCK \[[^\]]+\]:/gi, "STUDIO1 IDENTITY LOCK [lead_performer]:")
-                    .replace(/\b(?:Kiara[\s_]*Advani|Kiara|Akshay[\s_]*Kumar|Akshay|Salman[\s_]*Khan|Salman|Aishwarya[\s_]*Rai(?:[\s_]*Bachchan)?|Aishwarya|Shah[\s_]*Rukh[\s_]*Khan|Shahrukh[\s_]*Khan|SRK|Deepika[\s_]*Padukone|Deepika|Ranveer[\s_]*Singh|Ranveer|Alia[\s_]*Bhatt|Alia|Ranbir[\s_]*Kapoor|Ranbir|Hrithik[\s_]*Roshan|Hrithik|Katrina[\s_]*Kaif|Katrina|Priyanka[\s_]*Chopra(?:[\s_]*Jonas)?|Priyanka|Kareena[\s_]*Kapoor(?:[\s_]*Khan)?|Kareena|Saif[\s_]*Ali[\s_]*Khan|Saif|Amitabh[\s_]*Bachchan|Amitabh|Tom[\s_]*Cruise|Brad[\s_]*Pitt|Leonardo[\s_]*DiCaprio|Zendaya|Timothee[\s_]*Chalamet|Timothée[\s_]*Chalamet|Kabir[\s_]*Anand|Kabir|Zoya[\s_]*Rehman|Zoya|Farooq[\s_]*Malik|Farooq)\b/gi, "lead performer"),
+                    .replace(/(?:STUDIO1\s+)?IDENTITY LOCK \[[^\]]+\]:/gi, "IDENTITY LOCK [lead_performer]:")
+                    .replace(/\b(?:Kiara[\s_]*Advani|Kiara|Akshay[\s_]*Kumar|Akshay|Salman[\s_]*Khan|Salman|Aishwarya[\s_]*Rai(?:[\s_]*Bachchan)?|Aishwarya|Shah[\s_]*Rukh[\s_]*Khan|Shahrukh[\s_]*Khan|SRK|Deepika[\s_]*Padukone|Deepika|Ranveer[\s_]*Singh|Ranveer|Alia[\s_]*Bhatt|Alia|Ranbir[\s_]*Kapoor|Ranbir|Hrithik[\s_]*Roshan|Hrithik|Katrina[\s_]*Kaif|Katrina|Priyanka[\s_]*Chopra(?:[\s_]*Jonas)?|Priyanka|Kareena[\s_]*Kapoor(?:[\s_]*Khan)?|Kareena|Saif[\s_]*Ali[\s_]*Khan|Saif|Amitabh[\s_]*Bachchan|Amitabh|Tom[\s_]*Cruise|Brad[\s_]*Pitt|Leonardo[\s_]*DiCaprio|Zendaya|Timothee[\s_]*Chalamet|Timothée[\s_]*Chalamet|Kabir[\s_]*Anand|Kabir|Zoya[\s_]*Rehman|Zoya|Farooq[\s_]*Malik|Farooq|Meera[\s_]*Rao|Meera|Aarav[\s_]*Roy|Aarav)\b/gi, "lead performer"),
                 },
                 {
                   name: "neutralize-sensory-romantic-terms",
@@ -1896,10 +1950,10 @@ async function generateShot(op, manifest, shot) {
                 targetShot.generationPrompt = healedPrompt;
                 await saveManifest(op.production_id, current.revision, m);
                 console.log(`[reel-worker] [rai-auto-heal] Healed shot ${shot.id} prompt on secondary text fallback (matched: ${matchedRules.join(", ")}):`);
-                console.log(`  BEFORE: "${prevPrompt.slice(0, 160)}..."`);
-                console.log(`  AFTER:  "${healedPrompt.slice(0, 160)}..."`);
+                console.log(`  BEFORE:\n${prevPrompt}`);
+                console.log(`  AFTER:\n${healedPrompt}`);
               } else {
-                console.log(`[reel-worker] [rai-auto-heal] Prompt for shot ${shot.id} was UNCHANGED by secondary text rules. Prompt: "${prevPrompt.slice(0, 160)}..."`);
+                console.log(`[reel-worker] [rai-auto-heal] Prompt for shot ${shot.id} was UNCHANGED by secondary text rules. Full Prompt:\n${prevPrompt}`);
               }
             }
           } catch (e) {
@@ -1908,8 +1962,9 @@ async function generateShot(op, manifest, shot) {
 
           if (!changed && newSafetyAttempts >= 3) {
             // Truly unhealable safety block after all 3 tiers (temporal frame, text heal, and canonical images) exhausted
+            console.error(`[reel-worker] [safety-fatal] Tier-3 failure for shot ${shot.id} (prod: ${op.production_id}). Full prompt sent to Veo:\n${cleanPrompt}`);
             await pool.query(`UPDATE reel_operations SET attempt=5 WHERE id=$1`, [op.id]);
-            throw new Error(`VEO_SAFETY_FILTER_FATAL: Veo safety/RAI filter triggered across all 3 defense tiers (${diagInfo})`);
+            throw new Error(`VEO_SAFETY_FILTER_FATAL: Veo safety/RAI filter triggered across all 3 defense tiers (${diagInfo}) | FULL_PROMPT: "${cleanPrompt}"`);
           }
 
           throw new Error(`VEO_SAFETY_FILTER_EMPTY: Veo completed without video URI due to safety/RAI filter (${diagInfo})`);
@@ -1938,7 +1993,8 @@ async function generateShot(op, manifest, shot) {
   await assertApplicable(op);
   const digest = crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 16);
   const asset = await writeAsset(`reels/${op.production_id}/shots/${shot.id}-${digest}.mp4`, buffer);
-  return { videoUrl: asset.url, actualDurationSec: probe.durationSec, operationName: name, provider: "google-veo", model, continuityReferenceUrl: ref?.url };
+  const unanchored = Boolean(safetyAttemptCount >= 2 || (!instance.referenceImages?.length && !instance.image && shot.continuityIn?.characterId));
+  return { videoUrl: asset.url, actualDurationSec: probe.durationSec, operationName: name, provider: "google-veo", model, continuityReferenceUrl: ref?.url, unanchored };
 }
 async function applyShot(op, result) {
   await assertApplicable(op);
@@ -1946,6 +2002,12 @@ async function applyShot(op, result) {
   if (!s) throw new Error("Shot removed");
   s.asset = { videoUrl: result.videoUrl, actualDurationSec: result.actualDurationSec, operationName: result.operationName, provider: result.provider, model: result.model };
   s.status = "GENERATED";
+  if (result.unanchored) {
+    s.unanchored = true;
+    m.qa = m.qa || { minimumReadyScore: 90, passed: true, warnings: [], failures: [] };
+    m.qa.warnings = [...(m.qa.warnings || []), `Shot ${s.id} generated unanchored via tier-3 safety fallback; flagged for selective re-anchoring`];
+    console.warn(`[reel-worker] [unanchored] Shot ${s.id} recorded as unanchored; flagged for re-anchoring when character sheet is clean.`);
+  }
   if (result.continuityReferenceUrl) s.continuityIn.referenceFrameUrl = result.continuityReferenceUrl;
   m.status = m.shots.every(x => x.asset?.videoUrl && ["GENERATED", "PASSED"].includes(x.status)) ? "ROUGH_CUT_READY" : "VIDEO_GENERATING";
   await saveManifest(op.production_id, c.revision, m);
@@ -2052,8 +2114,15 @@ async function renderRough(op, m) {
     }
   }));
   const studio1 = op.payload_json?.studio1 === true && Boolean(m.studio1?.timelineSync);
-  const hasNativeAudio = !studio1 && shotAudioProbes.length === m.shots.length && shotAudioProbes.every(Boolean);
-  console.log(`[reel-worker] renderRough audio strategy for ${op.production_id}: ${hasNativeAudio ? "NATIVE CHARACTER AUDIO & FOLLEY (lip sync preserved)" : studio1 ? "STUDIO1 SYMPHONIC & TTS MASTER" : "SYNTHETIC TTS DUB"}`);
+  const genre = String(m.creativeBible?.genre || m.genre || op.payload_json?.genre || "").toUpperCase();
+  const isDocumentary = genre === "DOCUMENTARY_EXPLAINER";
+  const hasValidShotAudio = shotAudioProbes.length === m.shots.length && shotAudioProbes.every(Boolean);
+
+  // Forensic-First: Preserve native speech, character voices, lip sync, and Foley sound effects
+  // for narrative, cinematic, drama, action, and samurai genres whenever valid shot audio streams exist.
+  // Reserve synthetic TTS dub master exclusively for DOCUMENTARY_EXPLAINER or when shot audio is absent.
+  const hasNativeAudio = hasValidShotAudio && (!studio1 || !isDocumentary);
+  console.log(`[reel-worker] renderRough audio strategy for ${op.production_id} (genre: ${genre || "unknown"}): ${hasNativeAudio ? "NATIVE CHARACTER AUDIO & FOLEY (lip sync preserved)" : studio1 ? "STUDIO1 SYMPHONIC & TTS MASTER" : "SYNTHETIC TTS DUB"}`);
 
   if (studio1) {
     if (!op.payload_json?.narrationSyncedTimeline) throw new Error("Studio1 exact render requires narrationSyncedTimeline operation evidence");
