@@ -1965,13 +1965,17 @@ async function renderRough(op, m) {
     if (studio1) {
       renderPlan = buildStudio1RenderPlan(m);
       assertStudio1RenderAdaptation(renderPlan);
-      renderPlan.scenes.forEach(scene => f.push(buildStudio1VisualFilter(m.shots[scene.inputIndex], scene)));
+      renderPlan.scenes.forEach(scene => f.push(buildStudio1VisualFilter(m.shots[scene.inputIndex], scene, { unifiedScale: true })));
+      f.push(`${m.shots.map((_, i) => `[v${i}]`).join("")}concat=n=${m.shots.length}:v=1:a=0[vcat]`);
+      f.push(`[vcat]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1[vout]`);
     } else {
       m.shots.forEach((s, i) => f.push(`[${i}:v]trim=start=${s.trimInSec}:end=${s.trimOutSec},setpts=PTS-STARTPTS,scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30[v${i}]`));
+      f.push(`${m.shots.map((_, i) => `[v${i}]`).join("")}concat=n=${m.shots.length}:v=1:a=0[vout]`);
     }
-    f.push(`${m.shots.map((_, i) => `[v${i}]`).join("")}concat=n=${m.shots.length}:v=1:a=0[vout]`);
     f.push(`[${m.shots.length}:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000[aout]`);
     args.push(
+      "-filter_threads", "2",
+      "-filter_complex_threads", "2",
       "-filter_complex", f.join(";"),
       "-map", "[vout]",
       "-map", "[aout]",

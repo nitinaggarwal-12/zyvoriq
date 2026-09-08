@@ -471,7 +471,7 @@ export function buildStudio1RenderPlan(manifest) {
   };
 }
 
-export function buildStudio1VisualFilter(shot, scenePlan) {
+export function buildStudio1VisualFilter(shot, scenePlan, { unifiedScale = false } = {}) {
   const start = Number(shot.trimInSec || 0);
   const end = Number(shot.trimOutSec || 0);
   const target = Number(scenePlan.targetSec);
@@ -485,8 +485,14 @@ export function buildStudio1VisualFilter(shot, scenePlan) {
   chain.push(
     `trim=duration=${clock(target)}`,
     "setpts=PTS-STARTPTS",
-    "scale=1080:1920:force_original_aspect_ratio=increase",
-    "crop=1080:1920",
+  );
+  if (!unifiedScale) {
+    chain.push(
+      "scale=1080:1920:force_original_aspect_ratio=increase",
+      "crop=1080:1920",
+    );
+  }
+  chain.push(
     "setsar=1",
     `fps=${FPS}`,
     `trim=end_frame=${scenePlan.frameCount}`,

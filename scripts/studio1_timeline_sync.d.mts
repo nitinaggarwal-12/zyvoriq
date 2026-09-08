@@ -69,4 +69,4 @@ export function synchronizeStudio1ManifestTimeline(
 ): Studio1TimelineSyncResult;
 
 export function buildStudio1RenderPlan(manifest: ReelProductionManifest): Studio1RenderPlan;
-export function buildStudio1VisualFilter(shot: ReelShot, scenePlan: Studio1RenderScenePlan): string;
+export function buildStudio1VisualFilter(shot: ReelShot, scenePlan: Studio1RenderScenePlan, options?: { unifiedScale?: boolean }): string;
