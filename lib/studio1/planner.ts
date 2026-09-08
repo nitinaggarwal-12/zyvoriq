@@ -22,13 +22,13 @@ export type Studio1Metadata = {
 };
 
 // Narration budgeting constants
-// Conversational speech in video generation / TTS averages ~1.65 words per second.
+// Conversational speech in video generation / TTS averages ~2.9 words per second.
 // Maximum editorial duration ceiling is 7.5s to maintain safe headroom below Veo's 8.0s hard cap.
-// At 1.65 wps, 12 words ~ 7.27s, which fits cleanly within the 8.0s Veo ceiling with zero clamp trim.
+// At 2.9 wps, 21 words ~ 7.24s, which fits cleanly within the 8.0s Veo ceiling with zero clamp trim.
 export const TARGET_SHOT_DURATION_SEC = 6.0;
-export const WORDS_PER_SECOND = 1.65;
+export const WORDS_PER_SECOND = 2.9;
 export const MAX_SHOT_DURATION_SEC = 7.5;
-export const MAX_WORDS_PER_SHOT = 12;
+export const MAX_WORDS_PER_SHOT = 21;
 
 const GENERATION_BUCKETS: Array<4 | 6 | 8> = [4, 6, 8];
 const MAX_LOCAL_EXTENSION_RATIO = 1.06;

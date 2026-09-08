@@ -42,10 +42,25 @@ const countWords = (value: string) => value.trim().split(/\s+/).filter(Boolean).
 const normalizeSpaces = (value: string) => value.trim().replace(/\s+/g, " ");
 
 // Narration budgeting and shot duration constants
+//
+// Veo locks durationSeconds to 8 whenever a referenceImages array is present
+// (see reel_worker_v2.mjs generateShot). Every shot in a character-led
+// production therefore generates exactly 8s of source regardless of what the
+// planner asks for, and Veo bills per second of generated video. Narration
+// must fill that 8s window or the surplus is paid for and discarded.
+//
+// WORDS_PER_SECOND was previously 1.65, which is far slower than the TTS
+// actually delivers. Measured against production render targets (10-shot
+// run studio1_c8d3d86f, targets 3.70-4.95s against a 12-word budget) the
+// real rate is ~2.9 wps. At 1.65 the planner budgeted 12 words expecting
+// 7.27s and received ~4.1s, so the retime clamp bound on 10 of 10 shots and
+// ~31s of paid source was trimmed away.
 export const TARGET_SHOT_DURATION_SEC = 6.0;
 export const MAX_SHOT_DURATION_SEC = 7.5;
-export const MAX_WORDS_PER_SHOT = 12;
-export const WORDS_PER_SECOND = 1.65;
+export const WORDS_PER_SECOND = 2.9;
+// 7.36s = 8.0s Veo clip * 0.92 retime clamp floor. 21 words at 2.9 wps is
+// ~7.24s, which fills the clip without binding the clamp.
+export const MAX_WORDS_PER_SHOT = 21;
 
 // Pick the SMALLEST Veo bucket that can cover the narration slot within the
 // same local-adaptation limits the renderer enforces (<=0.75s and <=1.20x).
@@ -233,7 +248,7 @@ function splitIntoEditorialBeats(script: string, targetSec: number): string[] {
   const totalWords = countWords(script);
   // Veo clips are limited to 4s, 6s, 8s buckets.
   // Maximum editorial duration ceiling is 7.5s (MAX_SHOT_DURATION_SEC) to leave headroom below Veo's 8.0s hard cap.
-  // At ~1.65 words/sec delivery cadence, each beat has max MAX_WORDS_PER_SHOT (12 words) to stay under ~7.2s,
+  // At ~2.9 words/sec measured delivery cadence, each beat has max MAX_WORDS_PER_SHOT (21 words) to stay under ~7.24s,
   // guaranteeing beats fit cleanly into Veo's bucket with zero clamp trim or duration overrun.
   const desiredShotCount = Math.max(2, Math.ceil(targetSec / TARGET_SHOT_DURATION_SEC), Math.ceil(totalWords / MAX_WORDS_PER_SHOT));
   const targetWordsPerShot = Math.max(5, Math.min(MAX_WORDS_PER_SHOT, Math.round(totalWords / desiredShotCount)));

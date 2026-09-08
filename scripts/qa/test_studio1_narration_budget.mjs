@@ -46,7 +46,7 @@ console.log("Testing Studio1 Narration Budgeting & Scene Splitting...");
   };
   const manifest = planStudio1Sync(input);
   console.log(`  Split long run-on into ${manifest.shots.length} budgeted scenes`);
-  assert.ok(manifest.shots.length >= 3, `Expected at least 3 scenes, got ${manifest.shots.length}`);
+  assert.ok(manifest.shots.length >= 2, `Expected at least 2 scenes, got ${manifest.shots.length}`);
   for (const shot of manifest.shots) {
     const words = shot.scriptText.replace(/^[A-Z0-9_\-\s]{2,25}:/i, "").trim().split(/\s+/).filter(Boolean).length;
     assert.ok(words <= MAX_WORDS_PER_SHOT, `Shot ${shot.id} has ${words} words, must be <= ${MAX_WORDS_PER_SHOT}`);
@@ -172,8 +172,8 @@ console.log("Testing Studio1 Narration Budgeting & Scene Splitting...");
 {
   assert.strictEqual(TARGET_SHOT_DURATION_SEC, 6.0, "TARGET_SHOT_DURATION_SEC must be 6.0s (Veo bucket match)");
   assert.strictEqual(MAX_SHOT_DURATION_SEC, 7.5, "MAX_SHOT_DURATION_SEC must be 7.5s (Veo headroom cap)");
-  assert.strictEqual(MAX_WORDS_PER_SHOT, 12, "MAX_WORDS_PER_SHOT must be 12 words");
-  assert.strictEqual(WORDS_PER_SECOND, 1.65, "WORDS_PER_SECOND must be 1.65 wps");
+  assert.strictEqual(MAX_WORDS_PER_SHOT, 21, "MAX_WORDS_PER_SHOT must be 21 words");
+  assert.strictEqual(WORDS_PER_SECOND, 2.9, "WORDS_PER_SECOND must be 2.9 wps");
   console.log("  ✓ Synchronized budgeting constants verified");
 }
 
