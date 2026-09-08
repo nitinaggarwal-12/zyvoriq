@@ -1209,8 +1209,8 @@ export function OmniMultiPhaseStudio() {
             >
               {/* Overlaid Scene Title & Unique Reel ID Badges (Top-Left) */}
               <div className="absolute top-3 sm:top-4 left-3 sm:left-4 z-20 pointer-events-auto">
-                <h2 className="text-base sm:text-lg lg:text-xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] tracking-wide">
-                  {isNewCreation ? "Create Master Reel" : currentScene.title}
+                <h2 className="text-sm sm:text-base lg:text-lg font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] tracking-wide line-clamp-1 max-w-[260px] sm:max-w-xs md:max-w-sm truncate">
+                  {isNewCreation ? "Create Master Reel" : extractPromptTitle(currentScene.title, "Omni Master Reel")}
                 </h2>
                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1">
                   {isNewCreation ? (

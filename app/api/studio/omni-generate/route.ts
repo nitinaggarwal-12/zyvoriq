@@ -40,6 +40,15 @@ function extractRoughCutUrl(manifest: ReelProductionManifest, operations: ReelOp
   return null;
 }
 
+function cleanTitle(m: any): string {
+  if (m.projectTitle && typeof m.projectTitle === "string" && m.projectTitle.length <= 60) return m.projectTitle;
+  if (m.title && typeof m.title === "string" && m.title.length <= 60) return m.title;
+  const raw = m.topic || m.prompt || "";
+  const words = String(raw).replace(/[^\w\s]/gi, " ").trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "Omni 4K Master Cinema Reel";
+  return words.slice(0, 6).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+}
+
 function buildSceneObject(production: { id: string; manifest: ReelProductionManifest }, operations: ReelOperation[] = []) {
   const m = production.manifest;
   const roughCutUrl = extractRoughCutUrl(m, operations);
@@ -79,7 +88,7 @@ function buildSceneObject(production: { id: string; manifest: ReelProductionMani
 
   return {
     id: production.id,
-    title: (m as any).projectTitle || (m as any).title || m.topic || "Omni 4K Master Cinema Reel",
+    title: cleanTitle(m),
     genre: (m as any).genre || (m as any).creationIntent?.categoryLabel || "Cinematic Reel",
     setting: (m as any).setting || (m.scenes && Object.values(m.scenes)[0]?.environment) || "",
     dynamic: (m as any).dynamic || m.tone || "",
