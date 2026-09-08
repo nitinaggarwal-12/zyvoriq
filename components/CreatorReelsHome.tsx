@@ -144,8 +144,9 @@ export const CINEMA_FINISHED_REELS: CinemaMasterReel[] = [
 
 export const OMNI_GENRES = [
   { id: "AUTO", label: "✨ Auto-Detect", desc: "Omni Director auto-infers best cinematic or documentary format from prompt" },
-  { id: "HISTORICAL_BIOPIC", label: "🎩 Historical Biopic", desc: "Era wardrobe, multi-character dialogue, period lighting" },
+  { id: "BOLLYWOOD_ROMANCE", label: "🌹 Bollywood Romance", desc: "Alpine musical duet, flowing chiffon sarees, violin motifs, 2.39:1 anamorphic" },
   { id: "BOLLYWOOD_ACTION", label: "💥 Bollywood Action", desc: "Kinetic tracking, combat stunts, tactical coverage" },
+  { id: "HISTORICAL_BIOPIC", label: "🎩 Historical Biopic", desc: "Era wardrobe, multi-character dialogue, period lighting" },
   { id: "CINEMATIC_DRAMA", label: "🎭 Cinematic Drama", desc: "Shot / reverse-shot, emotional stakes, anamorphic falloff" },
   { id: "SCI_FI_CYBERPUNK", label: "🚀 Sci-Fi Cyberpunk", desc: "Neon atmosphere, futuristic tech, synthetic score" },
   { id: "NEO_NOIR_THRILLER", label: "🕵️ Neo-Noir Thriller", desc: "High-contrast rain, venetian shadows, suspense" },
@@ -172,9 +173,9 @@ export function CreatorReelsHome() {
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [annualBilling, setAnnualBilling] = useState(false);
 
-  // Auto-suggest Hinglish if user picks Bollywood Action genre
+  // Auto-suggest Hinglish if user picks Bollywood Romance or Bollywood Action genre
   useEffect(() => {
-    if (selectedGenre === "BOLLYWOOD_ACTION" && selectedLanguage === "en") {
+    if ((selectedGenre === "BOLLYWOOD_ACTION" || selectedGenre === "BOLLYWOOD_ROMANCE") && selectedLanguage === "en") {
       setSelectedLanguage("hinglish-roman");
     }
   }, [selectedGenre, selectedLanguage]);
@@ -616,6 +617,7 @@ export function CreatorReelsHome() {
                         "Deep space astronaut suit reflection, nebula flare"
                       ]
                     : [
+                        "Yash Chopra 5-act romance: Violinist hero & flowing chiffon saree heroine in Swiss Alps, Mohabbatein aesthetic, Lyria Bollywood strings, 2.39:1",
                         "Napoleon Bonaparte: 5-act romance & imperial rise, Beethoven Op. 92 allegretto, anamorphic 2.39:1",
                         "Oppenheimer Trinity dawn: Desert countdown, heat mirage, orchestral crescendo, 35mm anamorphic",
                         "The Last Samurai of Kyoto: Rain-soaked cobblestones, silent duel at dawn, bamboo mist",

@@ -11,6 +11,7 @@ assert.strictEqual(resolveLanguage("hi-devanagari"), "hi-devanagari", "Explicit 
 assert.strictEqual(resolveLanguage(undefined, "make a Hindi reel about street food"), "hinglish-roman", "Hindi in topic must resolve to hinglish-roman");
 assert.strictEqual(resolveLanguage(undefined, "Desi wedding dholak beats"), "hinglish-roman", "Desi in topic must resolve to hinglish-roman");
 assert.strictEqual(resolveLanguage(undefined, "High octane stunts", undefined, "BOLLYWOOD_ACTION"), "hinglish-roman", "BOLLYWOOD_ACTION genre must resolve to hinglish-roman");
+assert.strictEqual(resolveLanguage(undefined, "Alpine musical duet in snow", undefined, "BOLLYWOOD_ROMANCE"), "hinglish-roman", "BOLLYWOOD_ROMANCE genre must resolve to hinglish-roman");
 assert.strictEqual(resolveLanguage(undefined, "Cyberpunk neon runner in Shinjuku"), "en", "Neutral topic must default to en");
 console.log("  ✓ Test 1 Passed: Language resolution correctly handles explicit, keyword-inferred, and genre-inferred cases");
 

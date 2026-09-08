@@ -51,6 +51,7 @@ export interface OmniShotStaging {
 export type OmniGenre =
   | "HISTORICAL_BIOPIC"
   | "BOLLYWOOD_ACTION"
+  | "BOLLYWOOD_ROMANCE"
   | "CINEMATIC_DRAMA"
   | "SCI_FI_CYBERPUNK"
   | "NEO_NOIR_THRILLER"
@@ -108,6 +109,8 @@ export function compileDeterministicDirectorialPass(
   if (!explicitGenre) {
     if (cleanTopic.includes("dhurandhar") || cleanTopic.includes("action") || cleanTopic.includes("stunt") || cleanTopic.includes("chase") || cleanTopic.includes("fight")) {
       genre = "BOLLYWOOD_ACTION";
+    } else if (cleanTopic.includes("romance") || cleanTopic.includes("romantic") || cleanTopic.includes("singing") || cleanTopic.includes("dancing") || cleanTopic.includes("switzerland") || cleanTopic.includes("chiffon") || cleanTopic.includes("saree") || cleanTopic.includes("mohabbatein") || cleanTopic.includes("ddlj") || cleanTopic.includes("music video") || cleanTopic.includes("love story")) {
+      genre = "BOLLYWOOD_ROMANCE";
     } else if (cleanTopic.includes("oppenheimer") || cleanTopic.includes("history") || cleanTopic.includes("biopic") || cleanTopic.includes("napoleon") || cleanTopic.includes("churchill") || cleanTopic.includes("rome")) {
       genre = "HISTORICAL_BIOPIC";
     } else if (cleanTopic.includes("cyberpunk") || cleanTopic.includes("sci-fi") || cleanTopic.includes("space") || cleanTopic.includes("future") || cleanTopic.includes("alien")) {
@@ -151,8 +154,8 @@ export function compileDeterministicDirectorialPass(
           hair: isLead ? "Dark textured hair" : "Neatly groomed hair"
         },
         wardrobe: {
-          costume: genre === "HISTORICAL_BIOPIC" ? "Bespoke 1940s charcoal wool suit with vest and tie" : genre === "BOLLYWOOD_ACTION" ? "Rugged tactical jacket, fitted dark henley shirt" : "Cinematic tailored wardrobe matching scene era",
-          accessories: genre === "HISTORICAL_BIOPIC" ? "Vintage felt fedora hat" : "Tactical timepiece, rugged leather belt"
+          costume: genre === "HISTORICAL_BIOPIC" ? "Bespoke 1940s charcoal wool suit with vest and tie" : genre === "BOLLYWOOD_ACTION" ? "Rugged tactical jacket, fitted dark henley shirt" : genre === "BOLLYWOOD_ROMANCE" ? "Tailored wool overcoat over fine knitwear" : "Cinematic tailored wardrobe matching scene era",
+          accessories: genre === "HISTORICAL_BIOPIC" ? "Vintage felt fedora hat" : genre === "BOLLYWOOD_ROMANCE" ? "Classic violin, slim spectacles" : "Tactical timepiece, rugged leather belt"
         },
         voiceProfile: isLead ? "Resonant commanding baritone" : "Firm authoritative voice"
       });
@@ -175,6 +178,41 @@ export function compileDeterministicDirectorialPass(
       },
       voiceProfile: "Warm, confident and articulate creator voice"
     });
+  } else if (genre === "BOLLYWOOD_ROMANCE") {
+    cast.push(
+      {
+        id: "romantic_hero",
+        name: "Romantic Hero",
+        role: "lead",
+        biometricDNA: {
+          gender: "male",
+          ageBand: "late 20s to early 30s",
+          facialFeatures: "Chiseled South Asian facial structure, warm expressive brown eyes, dark-rimmed wire spectacles, refined romantic gaze",
+          hair: "Lush dark layered hair with soft wind-swept bangs across forehead"
+        },
+        wardrobe: {
+          costume: "Tailored charcoal wool overcoat over black turtleneck, holding classic wooden violin with bow",
+          accessories: "Dark-rimmed wire spectacles, acoustic wooden violin, polished leather boots"
+        },
+        voiceProfile: "Warm, resonant romantic tenor with soft emotional cadence"
+      },
+      {
+        id: "romantic_heroine",
+        name: "Romantic Heroine",
+        role: "lead",
+        biometricDNA: {
+          gender: "female",
+          ageBand: "mid to late 20s",
+          facialFeatures: "Ethereal South Asian bone structure, luminous almond eyes, radiant smile",
+          hair: "Long waist-length dark wavy hair, cascading and billowing in mountain breeze"
+        },
+        wardrobe: {
+          costume: "Translucent flowing chiffon saree in emerald green and pastel pink with delicate silver border, sleeveless blouse",
+          accessories: "Silver jhumkas, crystal bangles, floating sheer dupatta"
+        },
+        voiceProfile: "Melodic, sweet soprano with poetic emotional cadence"
+      }
+    );
   } else {
     // Single lead hero or cinematic protagonist
     const leadName = creationIntent?.characterName || (genre === "HISTORICAL_BIOPIC" ? "Historical Protagonist" : genre === "BOLLYWOOD_ACTION" ? "Action Hero" : "Protagonist");
@@ -232,6 +270,31 @@ export function compileDeterministicDirectorialPass(
         shotGrammar = i % 2 === 0 ? "HERO_CLOSE_UP" : "DUTCH_ANGLE_LOW";
         eyeline = i % 2 === 0 ? "screen_right" : "screen_left";
       }
+    } else if (genre === "BOLLYWOOD_ROMANCE") {
+      // Bollywood romance / musical: duets, two-shots, sweeping crane shots, violin choreography
+      const hero = cast[0];
+      const heroine = cast[1] || cast[0];
+      if (i === 0) {
+        onCameraCharacterId = null; // Establishing wide of Swiss alpine peaks or stone arches
+        shotGrammar = "ESTABLISHING_WIDE";
+        eyeline = "horizon_reflective";
+      } else if (i % 4 === 1) {
+        onCameraCharacterId = hero?.id || null;
+        shotGrammar = "HERO_CLOSE_UP";
+        eyeline = "screen_right";
+      } else if (i % 4 === 2) {
+        onCameraCharacterId = heroine?.id || null;
+        shotGrammar = "HERO_CLOSE_UP";
+        eyeline = "screen_left";
+      } else if (i % 4 === 3) {
+        onCameraCharacterId = hero?.id || null;
+        shotGrammar = "MEDIUM_TWO_SHOT";
+        eyeline = "screen_right";
+      } else {
+        onCameraCharacterId = heroine?.id || null;
+        shotGrammar = "OVER_THE_SHOULDER";
+        eyeline = "screen_left";
+      }
     } else {
       // Cinematic Drama / Biopic: Shot / Reverse-Shot
       if (cast.length > 1) {
@@ -257,6 +320,16 @@ export function compileDeterministicDirectorialPass(
     const sceneIndex = Math.floor(i / 4) + 1;
     const sceneId = `scene_${String(sceneIndex).padStart(2, "0")}`;
 
+    const cameraMotion = genre === "BOLLYWOOD_ROMANCE"
+      ? (shotGrammar === "MEDIUM_TWO_SHOT"
+          ? "Sweeping 360-degree orbital camera dolly around the dancing couple with 24fps slow-motion cadence"
+          : shotGrammar === "ESTABLISHING_WIDE"
+          ? "Grand panoramic high-altitude drone tracking across snow-capped alpine summits and green valleys"
+          : "Slow graceful push-in on 85mm prime with golden hour lens flares and wind-blown fabric")
+      : (shotGrammar === "KINETIC_TRACKING"
+          ? "Dynamic high-speed camera tracking with kinetic whip pans"
+          : "Slow deliberate push-in on 85mm anamorphic prime");
+
     shots.push({
       shotNumber: i + 1,
       sceneId,
@@ -265,7 +338,7 @@ export function compileDeterministicDirectorialPass(
       onCameraCharacterId,
       shotGrammar,
       eyeline,
-      cameraMotion: shotGrammar === "KINETIC_TRACKING" ? "Dynamic high-speed camera tracking with kinetic whip pans" : "Slow deliberate push-in on 85mm anamorphic prime",
+      cameraMotion,
       sceneEnvironment: topic,
       visualAction: `Visual beat for ${dialogue || topic}`
     });
@@ -274,13 +347,21 @@ export function compileDeterministicDirectorialPass(
   return {
     genre,
     visualStyle: {
-      optics: aspectRatio === "9:16"
-        ? "Arri Alexa Mini LF, 35mm & 50mm spherical primes, 9:16 vertical framing, natural optical falloff"
-        : aspectRatio === "16:9"
-        ? "Arri Alexa Mini LF, 35mm & 50mm spherical primes, 16:9 widescreen framing, natural optical falloff"
-        : "Cooke Anamorphic 2.39:1 framing, 24fps motion cadence, natural optical falloff",
-      lightingPalette: "High-contrast cinematic key lighting, rich shadows, warm practicals",
-      atmosphere: `Atmospheric cinematic tone for ${topic}`
+      optics: genre === "BOLLYWOOD_ROMANCE"
+        ? (aspectRatio === "16:9"
+            ? "Arri Alexa Mini LF, 35mm & 50mm spherical primes, 16:9 widescreen framing, golden-hour lens roll-off, 24fps slow-motion cadence"
+            : "Cooke Anamorphic 2.39:1 lenses, warm horizontal amber flares, 24fps slow-motion cadence, dreamy optical roll-off")
+        : (aspectRatio === "9:16"
+            ? "Arri Alexa Mini LF, 35mm & 50mm spherical primes, 9:16 vertical framing, natural optical falloff"
+            : aspectRatio === "16:9"
+            ? "Arri Alexa Mini LF, 35mm & 50mm spherical primes, 16:9 widescreen framing, natural optical falloff"
+            : "Cooke Anamorphic 2.39:1 framing, 24fps motion cadence, natural optical falloff"),
+      lightingPalette: genre === "BOLLYWOOD_ROMANCE"
+        ? "Golden-hour alpine rim lighting, warm sunlight filtering through mist and snow crystals, soft high-key romantic fill"
+        : "High-contrast cinematic key lighting, rich shadows, warm practicals",
+      atmosphere: genre === "BOLLYWOOD_ROMANCE"
+        ? "Swirling autumn leaves, fluttering translucent chiffon fabric in alpine wind, ethereal mountain mist, floating snow flurries"
+        : `Atmospheric cinematic tone for ${topic}`
     },
     cast,
     shots,
@@ -309,7 +390,7 @@ export async function compileOmniDirectorialPass(
 
   const resolvedLang = (input.language || "").trim().toLowerCase() ||
     (input.creationIntent?.narrationLanguage || "").trim().toLowerCase() ||
-    (/\b(?:hindi|hinglish|desi|bollywood|in hindi|in hinglish)\b/i.test(topic) || input.genre === "BOLLYWOOD_ACTION" ? "hinglish-roman" :
+    (/\b(?:hindi|hinglish|desi|bollywood|in hindi|in hinglish)\b/i.test(topic) || input.genre === "BOLLYWOOD_ACTION" || input.genre === "BOLLYWOOD_ROMANCE" ? "hinglish-roman" :
      /\b(?:spanish|español|en español)\b/i.test(topic) ? "es" :
      /\b(?:japanese|nihongo|in japanese)\b/i.test(topic) ? "ja" : "en");
 
@@ -339,6 +420,7 @@ CRITICAL DIRECTORIAL REQUIREMENTS:
 1. GENRE IDENTIFICATION:
    ${input.genre ? `Set genre to "${input.genre}".` : `Classify the genre into one of:`}
    - "HISTORICAL_BIOPIC" (e.g. Oppenheimer, Napoleon, historical figures/events)
+   - "BOLLYWOOD_ROMANCE" (e.g. Yash Chopra Swiss musicals, Mohabbatein, DDLJ, dramatic duets, flowing chiffon sarees, violin solos, snow peaks, lush alpine meadows)
    - "BOLLYWOOD_ACTION" (e.g. Dhurandhar, high-octane stunts, espionage, tactical combat)
    - "CINEMATIC_DRAMA" (intense character conflicts, dialogue, emotional stakes)
    - "SCI_FI_CYBERPUNK" (futuristic tech, neon noir, space, dystopian)
@@ -349,10 +431,11 @@ CRITICAL DIRECTORIAL REQUIREMENTS:
 
 2. CASTING & BIOMETRICS (1 to 3 characters):
    - For historical figures (e.g. Oppenheimer, Groves, Napoleon), extract authentic biographical appearance, era-accurate clothing (1940s suits, fedoras, military uniforms), and age.
+   - For Bollywood romance (e.g. Yash Chopra Swiss musicals), cast an intense, charming romantic hero (e.g. violinist in long dark wool coat/sweater, wire spectacles) and an ethereal heroine in wind-blown translucent chiffon sarees with flowing pallu.
    - For Bollywood action (e.g. Dhurandhar), cast rugged, charismatic leads with tactical gear, leather jackets, or sharp tailored suits.
    - For general drama/sci-fi, design distinctive, memorable characters with distinct facial features.
    - For documentary explainer ONLY, you may cast a single modern presenter.
-   - Give each character a unique archetype ID (lowercase slug, e.g. "oppenheimer", "groves", "tactical_agent", "samurai_master", "operative_leader"). NEVER use celebrity actor names or real-world celebrity names (strictly forbidden: no Bollywood/Hollywood actor names).
+   - Give each character a unique archetype ID (lowercase slug, e.g. "romantic_hero", "romantic_heroine", "oppenheimer", "groves", "tactical_agent", "samurai_master", "operative_leader"). NEVER use celebrity actor names or real-world celebrity names (strictly forbidden: no Bollywood/Hollywood actor names).
 
 3. FILM GRAMMAR, SCENE GROUPING & SHOT STAGING:
    - SCENE ARCHITECTURE: Group contiguous shots that occur in the same physical setting into cohesive scenes with "sceneId" (e.g., shots 1-4 in "scene_01", shots 5-8 in "scene_02").
@@ -373,7 +456,7 @@ CRITICAL DIRECTORIAL REQUIREMENTS:
 
 Return a JSON object conforming strictly to this structure:
 {
-  "genre": "HISTORICAL_BIOPIC" | "BOLLYWOOD_ACTION" | "CINEMATIC_DRAMA" | "SCI_FI_CYBERPUNK" | "NEO_NOIR_THRILLER" | "HIGH_FANTASY" | "HORROR_MYSTERY" | "DOCUMENTARY_EXPLAINER",
+  "genre": "HISTORICAL_BIOPIC" | "BOLLYWOOD_ROMANCE" | "BOLLYWOOD_ACTION" | "CINEMATIC_DRAMA" | "SCI_FI_CYBERPUNK" | "NEO_NOIR_THRILLER" | "HIGH_FANTASY" | "HORROR_MYSTERY" | "DOCUMENTARY_EXPLAINER",
   "visualStyle": {
     "optics": "string description of camera, lens, aspect ratio, motion",
     "lightingPalette": "string description of color, key light, practicals",

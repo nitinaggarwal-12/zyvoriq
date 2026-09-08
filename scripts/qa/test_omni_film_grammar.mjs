@@ -185,4 +185,50 @@ Both operatives confirm the extraction window is now open.`,
   console.log("  ✓ Test 5 Passed: Explicit genre override cleanly accepted and enforced");
 }
 
+// Test 6: Bollywood Romance Swiss Musical with Violin and Chiffon Staging
+{
+  const script = `Snow-capped Swiss alpine peaks glisten in morning golden light.
+Hero in dark wool coat raises his acoustic wooden violin under ancient stone arches.
+Heroine in vibrant translucent chiffon saree spins gracefully as mountain breeze catches her dupatta.
+Both leads meet at the center of the alpine terrace for a lyrical duet in the crisp air.
+Hero gazes across the terrace as golden hour lens flare washes over the mountain horizon.`;
+
+  const input = {
+    topic: "Hindi music video with hero and heroine singing and dancing in Switzerland",
+    requestedDurationSec: 30,
+    scriptText: script
+  };
+
+  const manifest = planStudio1Sync(input);
+
+  assert.equal(manifest.creativeBible.genre, "BOLLYWOOD_ROMANCE", "Swiss romance topic must auto-infer BOLLYWOOD_ROMANCE");
+  assert.equal(manifest.language, "hinglish-roman", "Bollywood romance must auto-resolve language to hinglish-roman");
+
+  // Verify cast
+  const cast = manifest.continuity.characters;
+  assert.ok(cast.length >= 2, "Bollywood romance must cast at least hero and heroine");
+  const hero = cast.find(c => c.id === "romantic_hero");
+  const heroine = cast.find(c => c.id === "romantic_heroine");
+  assert.ok(hero, "Must cast romantic_hero");
+  assert.ok(heroine, "Must cast romantic_heroine");
+  const heroAccessories = (hero.accessories || []).join(" ").toLowerCase() + " " + (hero.wardrobe || []).join(" ").toLowerCase();
+  const heroineWardrobe = (heroine.wardrobe || []).join(" ").toLowerCase();
+  assert.ok(heroAccessories.includes("violin"), "Romantic hero must have violin");
+  assert.ok(heroineWardrobe.includes("chiffon"), "Romantic heroine must wear chiffon saree");
+
+  // Verify film grammar and shot staging
+  assert.ok(manifest.shots[0].visualIntent.startsWith("ESTABLISHING_WIDE"), "Shot 1 must be establishing wide");
+  assert.equal(manifest.shots[0].continuityIn.characterId, undefined, "Establishing wide has no character on camera");
+  assert.equal(manifest.shots[1].continuityIn.characterId, "romantic_hero", "Shot 2 must feature romantic hero");
+  assert.equal(manifest.shots[2].continuityIn.characterId, "romantic_heroine", "Shot 3 must feature romantic heroine");
+  assert.ok(manifest.shots[3].visualIntent.startsWith("MEDIUM_TWO_SHOT"), "Shot 4 must be duet two-shot");
+
+  // Verify visual style optics and atmosphere
+  const vs = manifest.creativeBible.visualStyle.toLowerCase();
+  assert.ok(vs.includes("cadence") || vs.includes("alexa") || vs.includes("anamorphic") || vs.includes("cinematic"), "Optics must specify cinematic lens and cadence");
+  assert.ok(vs.includes("chiffon"), "Visual style must include chiffon fabric and alpine elements");
+
+  console.log("  ✓ Test 6 Passed: Bollywood Romance Yash Chopra Swiss musical grammar, casting, and duet staging verified");
+}
+
 console.log("🎉 ALL OMNI FILM GRAMMAR QA TESTS PASSED!");

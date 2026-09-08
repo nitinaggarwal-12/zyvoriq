@@ -24,7 +24,7 @@ export function resolveLanguage(
   if (intent?.narrationLanguage && intent.narrationLanguage.trim()) return intent.narrationLanguage.trim().toLowerCase();
 
   const lowerTopic = topic.toLowerCase();
-  if (/\b(?:hindi|hinglish|desi|bollywood|in hindi|in hinglish)\b/i.test(lowerTopic) || genre === "BOLLYWOOD_ACTION") {
+  if (/\b(?:hindi|hinglish|desi|bollywood|in hindi|in hinglish)\b/i.test(lowerTopic) || genre === "BOLLYWOOD_ACTION" || genre === "BOLLYWOOD_ROMANCE") {
     return "hinglish-roman";
   }
   if (/\b(?:spanish|español|en español)\b/i.test(lowerTopic)) {
@@ -341,6 +341,7 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
     );
   }
   const dir = directorial || compileDeterministicDirectorialPass(topic, masterScript, requestedDurationSec, creationIntent, input.genre, aspectRatio, resolvedLanguage);
+  const genre = dir.genre || input.genre;
   const beats = splitIntoEditorialBeats(masterScript, requestedDurationSec);
 
   // Map of unique scenes: sceneId -> verbatim unvarying environment string across all contiguous shots
@@ -621,10 +622,18 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
         startSec: 0,
         endSec: clock(cursor),
         intent: isCinema
-          ? "5-Act Symphonic Orchestral masterwork bed (Beethoven Op. 92 allegretto movements), continuous across visual cuts, mastered to -24.0 LUFS EBU R128."
+          ? (genre === "BOLLYWOOD_ROMANCE"
+              ? "Grand Bollywood 5-Act Symphonic Romance score with acoustic solo violin, bansuri flute, soaring string ensembles, sitar embellishments, and subtle tabla/dholak rhythm, mastered to -24.0 LUFS EBU R128."
+              : genre === "BOLLYWOOD_ACTION"
+              ? "High-octane Bollywood action orchestral score with dynamic brass, kinetic percussion, and hybrid electronic bass, mastered to -24.0 LUFS EBU R128."
+              : "5-Act Symphonic Orchestral masterwork bed (Beethoven Op. 92 allegretto movements), continuous across visual cuts, mastered to -24.0 LUFS EBU R128.")
           : creationIntent?.musicPreset
           ? `Continuous supportive underscore. Planning direction: ${creationIntent.musicPreset}.`
-          : "Continuous supportive underscore following the narrative arc.",
+          : (genre === "BOLLYWOOD_ROMANCE"
+              ? "Lyrical Bollywood acoustic score with solo violin, bansuri flute, and subtle tabla rhythm, mastered to -24.0 LUFS EBU R128."
+              : genre === "BOLLYWOOD_ACTION"
+              ? "High-octane Bollywood action score with dynamic brass and kinetic percussion, mastered to -24.0 LUFS EBU R128."
+              : "Continuous supportive underscore following the narrative arc."),
         energy: 0.45
       }],
       continuousAcrossVisualCuts: true,

@@ -1389,7 +1389,7 @@ function selectVoiceForManifest(manifest) {
   }
 
   const genre = String(manifest.creativeBible?.genre || manifest.genre || "").toUpperCase();
-  if (["BOLLYWOOD_ACTION", "HISTORICAL_BIOPIC", "NEO_NOIR_THRILLER", "CINEMATIC_DRAMA", "HIGH_FANTASY"].includes(genre)) {
+  if (["BOLLYWOOD_ROMANCE", "BOLLYWOOD_ACTION", "HISTORICAL_BIOPIC", "NEO_NOIR_THRILLER", "CINEMATIC_DRAMA", "HIGH_FANTASY"].includes(genre)) {
     return "Charon";
   }
   return "Kore";
