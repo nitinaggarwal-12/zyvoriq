@@ -1639,6 +1639,8 @@ async function generateShot(op, manifest, shot) {
   const tier = op.payload_json?.modelTier || "fast";
   const model = veoModel(tier);
   const ref = await extractReference(op, shot, manifest);
+  const safetyAttemptCount = Number(op.payload_json?.safetyAttempts || 0);
+  let instance = null;
   const prior = String(op.provider_operation_name || "");
   const dispatchMarkers = new Set(["veo-dispatch-started", "veo-recovery-dispatch-started"]);
   let name = prior && !dispatchMarkers.has(prior) ? prior : null;   if (name) console.log(`[reel-worker] [anchor] SKIPPED for ${shot.id} — resuming existing Veo op, no new dispatch`);
@@ -1652,8 +1654,8 @@ async function generateShot(op, manifest, shot) {
     await updateOperation(op.id, { providerOperationName: dispatchMarker });
 
     const cleanPrompt = sanitizePromptForVeo(shot.generationPrompt);
-    console.log(`[reel-worker] [veo-dispatch] Dispatching ${shot.id} (safetyAttempt: ${op.payload_json?.safetyAttempts || 0}) with prompt:\n"${cleanPrompt}"`);
-    const instance = { prompt: cleanPrompt };
+    console.log(`[reel-worker] [veo-dispatch] Dispatching ${shot.id} (safetyAttempt: ${safetyAttemptCount}) with prompt:\n"${cleanPrompt}"`);
+    instance = { prompt: cleanPrompt };
 
     // FIX-1: Sourced from character sheet (up to 3 reference images across every chain)
     const characters = Array.isArray(manifest.characters) && manifest.characters.length
@@ -1665,7 +1667,6 @@ async function generateShot(op, manifest, shot) {
       .map(img => typeof img === "string" ? img : img?.url)
       .filter(Boolean);
 
-    const safetyAttemptCount = Number(op.payload_json?.safetyAttempts || 0);
     const refImages = [];
     if (char && canonicalUrls.length) {
       if (safetyAttemptCount >= 2) {
@@ -1993,7 +1994,7 @@ async function generateShot(op, manifest, shot) {
   await assertApplicable(op);
   const digest = crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 16);
   const asset = await writeAsset(`reels/${op.production_id}/shots/${shot.id}-${digest}.mp4`, buffer);
-  const unanchored = Boolean(safetyAttemptCount >= 2 || (!instance.referenceImages?.length && !instance.image && shot.continuityIn?.characterId));
+  const unanchored = Boolean(safetyAttemptCount >= 2 || (instance && !instance.referenceImages?.length && !instance.image && shot.continuityIn?.characterId));
   return { videoUrl: asset.url, actualDurationSec: probe.durationSec, operationName: name, provider: "google-veo", model, continuityReferenceUrl: ref?.url, unanchored };
 }
 async function applyShot(op, result) {
