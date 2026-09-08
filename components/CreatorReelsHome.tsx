@@ -222,9 +222,45 @@ export function CreatorReelsHome() {
     }
   }, [promptText, referenceUrl]);
 
+  const [reelsList, setReelsList] = useState<FinishedReel[]>(FINISHED_REELS);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const activeReel = FINISHED_REELS[activeReelIndex];
+  const activeReel = reelsList[activeReelIndex] || FINISHED_REELS[0];
   const activeCinema = CINEMA_FINISHED_REELS[activeCinemaIndex];
+
+  // Hydrate custom or generated reel from URL query params (e.g. ?id=... or ?reel=...)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const targetId = params.get("id") || params.get("reel");
+    if (!targetId) return;
+
+    fetch(`/api/studio/omni-generate?id=${encodeURIComponent(targetId)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.success && data?.scene) {
+          const s = data.scene;
+          const newReel: FinishedReel = {
+            id: s.id,
+            title: s.title || "4K Master Cinema Reel",
+            category: s.genre || "Bollywood Romance",
+            shots: data.shots?.length || 12,
+            durationSec: s.duration || 34,
+            videoUrl: s.video || FINISHED_REELS[0].videoUrl,
+            posterUrl: s.still || FINISHED_REELS[0].posterUrl,
+            prompt: s.prompt || "",
+            continuityProof: `${data.shots?.length || 12}-shot continuous sequence with 100% biometric facial identity lock.`,
+            tags: ["9:16 Vertical", `${data.shots?.length || 12} Shots`, "Master Reel", "Zero Drift"]
+          };
+          setReelsList((prev) => [newReel, ...prev.filter((r) => r.id !== s.id)]);
+          setActiveReelIndex(0);
+          if (videoRef.current && s.video) {
+            videoRef.current.currentTime = 0;
+            videoRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleTabChange = (tab: "instagram_tiktok" | "youtube_shorts") => {
     setActiveTab(tab);
@@ -244,7 +280,7 @@ export function CreatorReelsHome() {
       videoRef.current.currentTime = 0;
       videoRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
     }
-  }, [activeReelIndex, activeCinemaIndex, activeTab]);
+  }, [activeReelIndex, activeCinemaIndex, activeTab, reelsList]);
 
   const togglePlay = () => {
     if (!videoRef.current) return;
@@ -438,6 +474,12 @@ export function CreatorReelsHome() {
             <a href="#showcase" className="hover:text-teal-400 transition-colors">Finished Reels</a>
             <a href="#differentiator" className="hover:text-teal-400 transition-colors">Why Unbroken Takes?</a>
             <a href="#pricing" className="hover:text-teal-400 transition-colors">Pricing</a>
+            <Link href="/studio" className="hover:text-teal-400 transition-colors flex items-center gap-1.5">
+              <span>Omni Studio</span>
+              <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded bg-teal-500/10 border border-teal-500/30 text-teal-300">
+                11-Phase
+              </span>
+            </Link>
             <Link href="/my-reels" className="hover:text-teal-400 transition-colors">My Reels</Link>
           </nav>
 
@@ -1463,6 +1505,19 @@ export function CreatorReelsHome() {
                       onClick={togglePlay}
                     />
 
+                    {/* Big Center Play Button overlay when paused */}
+                    {!isPlaying && (
+                      <button
+                        type="button"
+                        onClick={togglePlay}
+                        className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-teal-500/90 hover:bg-teal-400 text-[#07090E] flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all z-30 cursor-pointer"
+                        aria-label="Play Reel"
+                        title="Play Full Combined Master Reel"
+                      >
+                        <Play className="w-8 h-8 fill-current translate-x-0.5" />
+                      </button>
+                    )}
+
                     {/* Top Badges Overlay */}
                     <div className="absolute top-8 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
                       <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[11px] font-bold text-white flex items-center gap-1.5">
@@ -1552,6 +1607,19 @@ export function CreatorReelsHome() {
                       className="w-full h-full object-cover select-none cursor-pointer rounded-xl sm:rounded-2xl"
                       onClick={togglePlay}
                     />
+
+                    {/* Big Center Cinema Play Button overlay when paused */}
+                    {!isPlaying && (
+                      <button
+                        type="button"
+                        onClick={togglePlay}
+                        className="absolute inset-0 m-auto w-20 h-20 rounded-full bg-amber-400/90 hover:bg-amber-300 text-[#07090E] flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all z-30 cursor-pointer"
+                        aria-label="Play Cinema Master"
+                        title="Play Full Combined Cinema Master Reel"
+                      >
+                        <Play className="w-10 h-10 fill-current translate-x-0.5" />
+                      </button>
+                    )}
 
                     {/* Top Cinema Overlay Badges */}
                     <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
