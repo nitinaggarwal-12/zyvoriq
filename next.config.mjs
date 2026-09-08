@@ -73,16 +73,6 @@ const nextConfig = {
   async redirects() {
     return [
       {
-        source: "/studio/:path*",
-        destination: "/#hero-director",
-        permanent: false
-      },
-      {
-        source: "/studio",
-        destination: "/#hero-director",
-        permanent: false
-      },
-      {
         source: "/studio1/:path*",
         destination: "/#hero-director",
         permanent: false
