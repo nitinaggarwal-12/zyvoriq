@@ -25,9 +25,10 @@ function hasSemanticTimelineEvidence(manifest: ReelProductionManifest) {
   const scenes = Array.isArray(sync?.sceneAlignment) ? sync.sceneAlignment as SceneAlignmentEvidence[] : [];
   const anchors = Array.isArray(sync?.boundaryAnchors) ? sync.boundaryAnchors : [];
   const boundaries = Array.isArray(sync?.boundariesSec) ? sync.boundariesSec : [];
+  const isSemanticSource = sync?.source === "transcript-scene-alignment" || sync?.source === "cross-script-proportional-alignment";
   if (
     Number(sync?.version || 0) < 2 ||
-    sync?.source !== "transcript-scene-alignment" ||
+    !isSemanticSource ||
     Number(sync?.globalExactRatio || 0) < 0.70 ||
     scenes.length !== manifest.shots.length ||
     anchors.length !== Math.max(0, manifest.shots.length - 1) ||
@@ -52,14 +53,13 @@ export function isCertifiedStudio1RoughCut(manifest: ReelProductionManifest) {
   const allowed = Number(qa?.maxAllowedBoundaryDriftMs ?? 50);
   const drift = Number(qa?.maxBoundaryDriftMs ?? Number.POSITIVE_INFINITY);
   const validContract = qa?.timingContract === "narration-master-clock" || qa?.timingContract === "native-shot-audio-master";
-  return Boolean(
-    roughCut?.videoUrl &&
-    hasSemanticTimelineEvidence(manifest) &&
-    validContract &&
-    qa?.passed === true &&
-    Number.isFinite(drift) &&
-    drift <= allowed
-  );
+  if (!roughCut?.videoUrl || !validContract || qa?.passed !== true || !Number.isFinite(drift) || drift > allowed) {
+    return false;
+  }
+  if (qa?.timingContract === "native-shot-audio-master") {
+    return true;
+  }
+  return hasSemanticTimelineEvidence(manifest);
 }
 
 export function suppressUncertifiedStudio1Outputs<T extends { manifest: ReelProductionManifest }>(stored: T): T {

@@ -1424,7 +1424,7 @@ export function OmniMultiPhaseStudio() {
                 )}
 
                 {/* Honest 4K Hero Plate Overlay when video is pending neural diffusion */}
-                {!isNewCreation && !currentScene.video && (
+                {!isNewCreation && !currentScene.video && !spotlightShotVideo && (
                   <div className="absolute top-4 left-4 z-20 flex items-center gap-2 rounded-full bg-black/85 backdrop-blur-md border border-emerald-500/50 px-3.5 py-1.5 shadow-xl">
                     <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                     <span className="text-xs font-mono font-bold text-emerald-300">
@@ -1434,7 +1434,7 @@ export function OmniMultiPhaseStudio() {
                 )}
 
                 {/* Large Center Play Button only when real video asset exists */}
-                {!isNewCreation && currentScene.video && !isPlaying && (
+                {!isNewCreation && (spotlightShotVideo?.url || currentScene.video) && !isPlaying && (
                   <button
                     type="button"
                     onClick={togglePlay}
@@ -1451,18 +1451,18 @@ export function OmniMultiPhaseStudio() {
                 
                 {/* Glowing Emerald Progress Scrubber */}
                 <div 
-                  onClick={currentScene.video ? handleSeek : undefined}
+                  onClick={(spotlightShotVideo?.url || currentScene.video) ? handleSeek : undefined}
                   className={`relative h-1.5 w-full rounded-full transition-all mb-2.5 group/track ${
-                    currentScene.video ? "bg-zinc-700/80 hover:h-2 cursor-pointer" : "bg-zinc-800 cursor-not-allowed opacity-60"
+                    (spotlightShotVideo?.url || currentScene.video) ? "bg-zinc-700/80 hover:h-2 cursor-pointer" : "bg-zinc-800 cursor-not-allowed opacity-60"
                   }`}
                 >
                   {/* Progress Fill */}
                   <div 
                     className="absolute top-0 left-0 h-full rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.85)]"
-                    style={{ width: `${currentScene.video ? (currentTime / totalDuration) * 100 : 0}%` }}
+                    style={{ width: `${(spotlightShotVideo?.url || currentScene.video) ? (currentTime / totalDuration) * 100 : 0}%` }}
                   />
                   {/* Scrubber Knob */}
-                  {currentScene.video && (
+                  {(spotlightShotVideo?.url || currentScene.video) && (
                     <div 
                       className="absolute top-1/2 -translate-y-1/2 h-3.5 w-3.5 rounded-full bg-emerald-300 border-2 border-slate-950 shadow-[0_0_10px_rgba(16,185,129,1)] transition-transform group-hover/track:scale-125"
                       style={{ left: `calc(${(currentTime / totalDuration) * 100}% - 7px)` }}
@@ -1477,9 +1477,9 @@ export function OmniMultiPhaseStudio() {
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
-                      onClick={currentScene.video ? togglePlay : undefined}
-                      disabled={!currentScene.video}
-                      className={`transition ${currentScene.video ? "text-white hover:text-emerald-400 cursor-pointer" : "text-zinc-600 cursor-not-allowed"}`}
+                      onClick={(spotlightShotVideo?.url || currentScene.video) ? togglePlay : undefined}
+                      disabled={!(spotlightShotVideo?.url || currentScene.video)}
+                      className={`transition ${(spotlightShotVideo?.url || currentScene.video) ? "text-white hover:text-emerald-400 cursor-pointer" : "text-zinc-600 cursor-not-allowed"}`}
                       aria-label={isPlaying ? "Pause" : "Play"}
                     >
                       {isPlaying ? (
@@ -1492,7 +1492,7 @@ export function OmniMultiPhaseStudio() {
                     <span className="text-zinc-300 font-semibold tracking-wider">
                       {isNewCreation ? (
                         <span>00:00 <span className="text-zinc-500">/</span> {formatTime(selectedDuration || 30)} <span className="text-emerald-400/80 text-[10px]">[STANDBY]</span></span>
-                      ) : currentScene.video ? (
+                      ) : (spotlightShotVideo?.url || currentScene.video) ? (
                         <>{formatTime(currentTime)} <span className="text-zinc-500">/</span> {formatTime(totalDuration)}</>
                       ) : (
                         <span className="text-amber-400 flex items-center gap-1.5">

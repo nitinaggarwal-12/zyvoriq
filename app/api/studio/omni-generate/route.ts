@@ -1,0 +1,177 @@
+import crypto from "node:crypto";
+import { NextRequest, NextResponse } from "next/server";
+import { reelProductionStore } from "@/lib/reel/productionStore";
+import { reelProductionControl } from "@/lib/reel/productionControl";
+import { operationKey, reelOperationQueue, type ReelOperation } from "@/lib/reel/operationQueue";
+import { planStudio1 } from "@/lib/studio1/planner";
+import { studio1Service } from "@/lib/studio1/service";
+import type { ReelProductionManifest } from "@/lib/reel/types";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+function fingerprint(value: unknown) {
+  return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex").slice(0, 24);
+}
+
+async function paidContext(id: string) {
+  const [control, worker] = await Promise.all([
+    reelProductionControl.requireActive(id),
+    reelProductionControl.workerHealth(),
+  ]);
+  if (!worker.healthy) throw new Error(`Dedicated production worker unavailable: ${worker.reason || "stale heartbeat"}`);
+  return control;
+}
+
+function extractRoughCutUrl(manifest: ReelProductionManifest, operations: ReelOperation[] = []): string | null {
+  const outputs = manifest.outputs as any;
+  const roughCutOutput = outputs?.narratedRoughCut?.videoUrl || outputs?.nativeReel?.videoUrl || outputs?.master?.videoUrl;
+  if (roughCutOutput) return roughCutOutput;
+
+  // Fallback to succeeded ROUGH_CUT operation result if manifest.outputs has not yet updated
+  const roughCutOp = operations.find(o => (o.kind === "ROUGH_CUT" || (o as any).operation_type === "ROUGH_CUT") && o.status === "SUCCEEDED");
+  if (roughCutOp?.result && typeof (roughCutOp.result as any).videoUrl === "string") {
+    return (roughCutOp.result as any).videoUrl;
+  }
+  if (roughCutOp?.payload && typeof (roughCutOp.payload as any).videoUrl === "string") {
+    return (roughCutOp.payload as any).videoUrl;
+  }
+
+  return null;
+}
+
+function buildSceneObject(production: { id: string; manifest: ReelProductionManifest }, operations: ReelOperation[] = []) {
+  const m = production.manifest;
+  const roughCutUrl = extractRoughCutUrl(m, operations);
+  const firstShot = m.shots?.[0];
+  const stillUrl = (firstShot?.asset as any)?.imageUrl || (firstShot?.asset as any)?.stillUrl || (m as any).posterUrl || (m as any).heroPlateUrl;
+
+  const scriptLines = Array.isArray((m as any).scriptLines) && (m as any).scriptLines.length > 0
+    ? (m as any).scriptLines
+    : (m as any).masterScript
+    ? String((m as any).masterScript).split("\n").map(line => line.trim()).filter(Boolean)
+    : m.shots.map(s => s.scriptText || s.visualIntent).filter(Boolean);
+
+  return {
+    id: production.id,
+    title: (m as any).projectTitle || (m as any).title || m.topic || "Omni 4K Master Cinema Reel",
+    genre: (m as any).genre || (m as any).creationIntent?.categoryLabel || "Cinematic Reel",
+    setting: (m as any).setting || (m.scenes && Object.values(m.scenes)[0]?.environment) || "",
+    dynamic: (m as any).dynamic || m.tone || "",
+    prompt: (m as any).prompt || (m as any).masterScript || m.topic || "",
+    duration: m.plannedDurationSec || (m as any).duration || (m as any).requestedDurationSec || (m.shots.length * 6),
+    aspectRatio: m.aspectRatio || "9:16",
+    video: roughCutUrl || undefined,
+    still: stillUrl || undefined,
+    lines: scriptLines,
+    shots: m.shots || [],
+  };
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const id = req.nextUrl.searchParams.get("id");
+    if (!id) {
+      return NextResponse.json({ success: false, error: "id parameter is required" }, { status: 400 });
+    }
+
+    let production = await studio1Service.get(id);
+    if (!production) {
+      production = await reelProductionStore.get(id);
+    }
+
+    if (!production) {
+      return NextResponse.json({ success: false, error: `Production ${id} not found` }, { status: 404 });
+    }
+
+    let operations: ReelOperation[] = [];
+    try {
+      operations = await reelOperationQueue.latestForProduction(id, 25);
+    } catch {}
+
+    const scene = buildSceneObject(production, operations);
+
+    return NextResponse.json({
+      success: true,
+      production,
+      operations,
+      shots: production.manifest.shots || [],
+      scene,
+    }, { headers: { "Cache-Control": "no-store" } });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error?.message || "Failed to get Omni studio generation" }, { status: 500 });
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const topic = String(body.topic || body.prompt || "").trim();
+    if (!topic) return NextResponse.json({ success: false, error: "prompt is required" }, { status: 400 });
+
+    const platform = body.platform === "YouTube Shorts" || body.platform === "youtube"
+      ? "YouTube Shorts"
+      : body.platform === "TikTok" || body.platform === "tiktok"
+      ? "TikTok"
+      : "Instagram Reels";
+
+    const manifest = await planStudio1({
+      topic,
+      tone: body.tone,
+      platform,
+      aspectRatio: body.aspectRatio || (platform === "YouTube Shorts" ? "2.39:1" : "9:16"),
+      requestedDurationSec: Number(body.requestedDurationSec || body.duration || 30),
+      scriptText: body.scriptText,
+      genre: body.genre,
+      language: body.language || body.narrationLanguage,
+    });
+
+    const production = await reelProductionStore.create(manifest);
+
+    let control = null;
+    let operation = null;
+    const initialPriority = Number(body.priority || 0);
+    try {
+      control = await reelProductionControl.register(production.id, initialPriority);
+      if (body.autoStart !== false) {
+        const ctrl = await paidContext(production.id);
+        const fp = fingerprint({ script: manifest.masterScript, tone: manifest.tone, language: manifest.language, studio1: true });
+        const idempotencyKey = operationKey({
+          productionId: production.id,
+          generationToken: ctrl.generationToken,
+          kind: "NARRATION",
+          manifestRevision: production.revision,
+          fingerprint: fp,
+        });
+        operation = await reelOperationQueue.enqueue({
+          productionId: production.id,
+          kind: "NARRATION",
+          idempotencyKey,
+          payload: {
+            manifestRevision: production.revision,
+            generationToken: ctrl.generationToken,
+            semanticFingerprint: fp,
+            studio1: true,
+            language: manifest.language,
+          },
+        });
+      }
+    } catch (ctrlErr: any) {
+      console.warn(`[omni-generate] Auto-start narration note: ${ctrlErr?.message || ctrlErr}`);
+    }
+
+    const scene = buildSceneObject(production, operation ? [operation] : []);
+
+    return NextResponse.json({
+      success: true,
+      production,
+      productionId: production.id,
+      productionControl: control ? { generationToken: control.generationToken } : null,
+      operation,
+      shots: production.manifest.shots || [],
+      scene,
+    }, { status: 201, headers: { "Cache-Control": "no-store" } });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error?.message || "Failed to execute Omni generation" }, { status: 500 });
+  }
+}
