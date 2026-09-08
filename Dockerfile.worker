@@ -7,6 +7,7 @@ RUN apk add --no-cache ffmpeg
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
+COPY public/ ./public/
 COPY scripts/ ./scripts/
 
 CMD ["npm", "run", "worker:reels"]

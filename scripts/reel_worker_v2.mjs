@@ -2550,6 +2550,29 @@ async function generateContinuousScore(genre, durationSec, outPath) {
         break;
       }
     }
+    if (!stemPath) {
+      const candidateUrls = [
+        "https://zyvoriq.up.railway.app/assets/audio/music/bollywood_romance_orchestra.mp3",
+        ...(process.env.RAILWAY_SERVICE_ZYVORIQ_URL ? [`https://${process.env.RAILWAY_SERVICE_ZYVORIQ_URL}/assets/audio/music/bollywood_romance_orchestra.mp3`] : []),
+        ...(process.env.NEXT_PUBLIC_APP_URL ? [`${process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/assets/audio/music/bollywood_romance_orchestra.mp3`] : [])
+      ];
+      const tmpDest = "/tmp/bollywood_romance_orchestra.mp3";
+      for (const url of candidateUrls) {
+        try {
+          console.log(`[reel-worker] Attempting to download authentic orchestra master from ${url}...`);
+          const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+          if (res.ok) {
+            const buf = Buffer.from(await res.arrayBuffer());
+            await fs.writeFile(tmpDest, buf);
+            stemPath = tmpDest;
+            console.log(`[reel-worker] Successfully downloaded authentic orchestra master (${buf.length} bytes) to ${tmpDest}`);
+            break;
+          }
+        } catch (err) {
+          console.warn(`[reel-worker] Could not fetch remote orchestra from ${url}: ${err?.message || err}`);
+        }
+      }
+    }
   }
 
   if (stemPath) {
