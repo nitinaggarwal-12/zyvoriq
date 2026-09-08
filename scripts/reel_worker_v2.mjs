@@ -942,11 +942,21 @@ async function runDeadlockAndStarvationWatchdog() {
       if (!rm?.audio?.narrationUrl || !rm.shots?.length) continue;
       const allDone = rm.shots.every(s => s.asset?.videoUrl);
       if (!allDone) continue;
+
+      // If manifest already reached READY or has renderUrl, rough cut is already complete
+      if (rm.status === "READY" || rm.renderUrl) continue;
+
       const isStudio1 = rRow.id.startsWith("studio1_") && Boolean(rm.studio1?.timelineSync);
       const existingRc = await pool.query(
-        `SELECT id, status, attempt, updated_at, last_error FROM reel_operations WHERE production_id=$1 AND kind='ROUGH_CUT'`,
+        `SELECT id, status, attempt, updated_at, last_error FROM reel_operations WHERE production_id=$1 AND kind='ROUGH_CUT' ORDER BY updated_at DESC`,
         [rRow.id]
       );
+
+      // Check if ANY existing ROUGH_CUT operation has succeeded or is currently in flight
+      const hasSucceeded = existingRc.rows.some(r => r.status === 'SUCCEEDED');
+      const hasActive = existingRc.rows.some(r => ['QUEUED', 'RUNNING'].includes(r.status));
+      if (hasSucceeded || hasActive) continue;
+
       if (existingRc.rows.length === 0) {
         const rfp = crypto.createHash("sha256").update(JSON.stringify({
           audio: rm.audio.narrationUrl,
@@ -978,8 +988,10 @@ async function runDeadlockAndStarvationWatchdog() {
           ]
         );
         console.log(`[reel-worker] [watchdog-enqueue] ROUGH_CUT enqueued for prod ${rRow.id}`);
-      } else if (existingRc.rows[0]?.status === 'FAILED') {
-        const rcRow = existingRc.rows[0];
+      } else {
+        const rcRow = existingRc.rows.find(r => r.status === 'FAILED');
+        if (!rcRow) continue;
+
         const attempts = Number(rcRow.attempt || 0);
         const selfhealCount = Number(rcRow.payload_json?.selfhealCount || 0);
         if (attempts >= 3 || selfhealCount >= 2) {
@@ -987,7 +999,7 @@ async function runDeadlockAndStarvationWatchdog() {
           await pool.query(
             `UPDATE reel_operations
              SET status='QUARANTINED', last_error='MAX_ATTEMPTS_EXCEEDED: Self-heal cap reached (quarantined to prevent queue starvation)', updated_at=NOW()
-             WHERE id=$1 AND status='FAILED'`,
+             WHERE id=$1 AND status='FAILED' AND status != 'SUCCEEDED'`,
             [rcRow.id]
           );
           continue;
@@ -1017,7 +1029,7 @@ async function runDeadlockAndStarvationWatchdog() {
            SET status='QUEUED', attempt=attempt+1, scheduled_at=NOW() + INTERVAL '30 seconds', last_error=NULL, 
                payload_json = $2::jsonb,
                updated_at=NOW()
-           WHERE id=$1 AND status='FAILED'`,
+           WHERE id=$1 AND status='FAILED' AND status != 'SUCCEEDED'`,
           [rcRow.id, JSON.stringify(updatedPayload)]
         );
         console.log(`[reel-worker] [watchdog-selfheal] Reset failed ROUGH_CUT ${rcRow.id} to QUEUED (attempt=${attempts + 1}, selfhealCount=${selfhealCount + 1}) for prod ${rRow.id}`);
@@ -2483,6 +2495,16 @@ async function applyShot(op, result) {
   const allShotsDone = m.shots.every(s => s.asset?.videoUrl && ["GENERATED", "PASSED"].includes(s.status));
   if (m.status === "ROUGH_CUT_READY" || allShotsDone) {
     try {
+      // Uniqueness check: do not enqueue if a ROUGH_CUT is already QUEUED, RUNNING, or SUCCEEDED
+      const existingActiveRc = await pool.query(
+        `SELECT id, status FROM reel_operations WHERE production_id=$1 AND kind='ROUGH_CUT' AND status IN ('QUEUED', 'RUNNING', 'SUCCEEDED')`,
+        [op.production_id]
+      );
+      if (existingActiveRc.rows.length > 0) {
+        console.log(`[reel-worker] [auto-enqueue] ROUGH_CUT already exists (${existingActiveRc.rows[0].status}) for prod ${op.production_id}, skipping duplicate enqueue`);
+        return;
+      }
+
       const isStudio1 = op.production_id.startsWith("studio1_") && Boolean(m.studio1?.timelineSync);
       const ctrl = await controlFor(op);
       const rfp = crypto.createHash("sha256").update(JSON.stringify({

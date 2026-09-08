@@ -206,6 +206,13 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       if (!complete) return NextResponse.json({ success: false, error: "Narrated rough-cut render requires every Studio1 scene to have a generated clip" }, { status: 409 });
       if (!current.manifest.audio?.narrationUrl || !current.manifest.audio?.alignmentValidation?.passed) return NextResponse.json({ success: false, error: "Narrated rough-cut render requires validated narration alignment" }, { status: 409 });
 
+      // Check if an active ROUGH_CUT operation is already QUEUED or RUNNING to prevent duplicates
+      const existingOps = await reelOperationQueue.latestForProduction(id, 10);
+      const activeRc = existingOps.find(o => o.kind === "ROUGH_CUT" && (o.status === "QUEUED" || o.status === "RUNNING"));
+      if (activeRc) {
+        return NextResponse.json({ success: true, queued: true, operation: activeRc, production: presentProduction(current), message: "ROUGH_CUT operation is already in progress" }, { status: 200 });
+      }
+
       current = await syncStudio1ProductionTimeline(id, current.revision);
       const control = await paidContext(id);
       const fp = fingerprint({

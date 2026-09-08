@@ -24,4 +24,6 @@ public/assets/stills/generated/
 *.checkpoint.json
 *.patch
 scripts/qa/*keyframes/
+antigravity_*
+ANTIGRAVITY_*
 

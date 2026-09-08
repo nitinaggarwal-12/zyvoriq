@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
-import { planReel, generateNarrationScriptWithGemini, type PlanReelInput } from "../reel/planner.ts";
+import { planReel, generateNarrationScriptWithGemini, mergeShortBeats, type PlanReelInput } from "../reel/planner.ts";
+export { mergeShortBeats };
 import { compileOmniDirectorialPass, type OmniDirectorialCompilation } from "../reel/omniDirector.ts";
 import type { ReelProductionManifest } from "../reel/types.ts";
 
@@ -29,6 +30,7 @@ export const TARGET_SHOT_DURATION_SEC = 6.0;
 export const WORDS_PER_SECOND = 2.1;
 export const MAX_SHOT_DURATION_SEC = 7.36;
 export const MAX_WORDS_PER_SHOT = 15;
+export const MIN_WORDS_PER_SHOT = 13;
 
 const GENERATION_BUCKETS: Array<4 | 6 | 8> = [4, 6, 8];
 const MAX_LOCAL_EXTENSION_RATIO = 1.06;

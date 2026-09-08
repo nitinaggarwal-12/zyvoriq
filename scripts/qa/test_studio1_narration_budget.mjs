@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import fs from "node:fs";
 import path from "node:path";
-import { planStudio1, planStudio1Sync, TARGET_SHOT_DURATION_SEC, WORDS_PER_SECOND, MAX_WORDS_PER_SHOT, MAX_SHOT_DURATION_SEC, splitScriptIntoBudgetedUnits } from "../../lib/studio1/planner.ts";
+import { planStudio1, planStudio1Sync, TARGET_SHOT_DURATION_SEC, WORDS_PER_SECOND, MAX_WORDS_PER_SHOT, MIN_WORDS_PER_SHOT, MAX_SHOT_DURATION_SEC, splitScriptIntoBudgetedUnits, mergeShortBeats } from "../../lib/studio1/planner.ts";
 
 // Load .env.local if present
 try {
@@ -173,8 +173,34 @@ console.log("Testing Studio1 Narration Budgeting & Scene Splitting...");
   assert.strictEqual(TARGET_SHOT_DURATION_SEC, 6.0, "TARGET_SHOT_DURATION_SEC must be 6.0s (Veo bucket match)");
   assert.strictEqual(MAX_SHOT_DURATION_SEC, 7.36, "MAX_SHOT_DURATION_SEC must be 7.36s (Veo headroom cap)");
   assert.strictEqual(MAX_WORDS_PER_SHOT, 15, "MAX_WORDS_PER_SHOT must be 15 words");
+  assert.strictEqual(MIN_WORDS_PER_SHOT, 13, "MIN_WORDS_PER_SHOT must be 13 words");
   assert.strictEqual(WORDS_PER_SECOND, 2.1, "WORDS_PER_SECOND must be 2.1 wps");
   console.log("  ✓ Synchronized budgeting constants verified");
+}
+
+// Test 9: Word floor merges sub-second beats (e.g. short Bollywood song lyrics) to eliminate video waste
+{
+  const lyricBeats = [
+    "Tu hi meri", // 3 words
+    "manzil hai", // 2 words
+    "har pal tera intezaar hai", // 4 words
+    "ishq mein tere fiza badal gayi", // 6 words
+    "chalo aao sanam", // 3 words
+    "bahon mein le lo mujhe", // 5 words
+    "ye hawayen keh rahi hain", // 4 words
+  ];
+  // Total words: 27 words.
+  // Without floor: 7 shots (each getting 8s Veo clip = 56s generated for ~13s audio -> 77% waste).
+  // With floor (MIN_WORDS_PER_SHOT = 13): merges adjacent lines into >=13 word beats.
+  const merged = mergeShortBeats(lyricBeats, 15, MIN_WORDS_PER_SHOT, MAX_WORDS_PER_SHOT);
+  console.log(`  Merged ${lyricBeats.length} short lyric beats down to ${merged.length} shots:`, merged);
+  assert.ok(merged.length <= 3, `Expected at most 3 shots after merging, got ${merged.length}`);
+  for (const beat of merged) {
+    const wc = beat.split(/\s+/).filter(Boolean).length;
+    assert.ok(wc >= 10, `Merged beat "${beat}" should have at least 10 words, got ${wc}`);
+    assert.ok(wc <= MAX_WORDS_PER_SHOT + 2, `Merged beat "${beat}" should not exceed max words cap (${MAX_WORDS_PER_SHOT + 2}), got ${wc}`);
+  }
+  console.log("  ✓ Word floor beat merging test passed (sub-second flashes eliminated)");
 }
 
 console.log("🎉 ALL STUDIO1 NARRATION BUDGETING TESTS PASSED!");

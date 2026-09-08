@@ -61,6 +61,9 @@ export const WORDS_PER_SECOND = 2.1;
 // 7.36s = 8.0s Veo clip * 0.92 retime clamp floor. 15 words at 2.1 wps is
 // ~7.14s, which fills the clip without binding the clamp.
 export const MAX_WORDS_PER_SHOT = 15;
+// Word floor: any beat under 13 words is merged with adjacent beats to prevent
+// sub-second flashes and eliminate 60%+ discarded video waste.
+export const MIN_WORDS_PER_SHOT = 13;
 
 // Pick the SMALLEST Veo bucket that can cover the narration slot within the
 // same local-adaptation limits the renderer enforces (<=0.75s and <=1.20x).
@@ -327,6 +330,60 @@ function safeZoneProfile(platform: ReelProductionManifest["platform"]): "instagr
   return "instagram-reels";
 }
 
+export function mergeShortBeats(
+  rawBeats: string[],
+  requestedDurationSec: number = 30,
+  minWords: number = MIN_WORDS_PER_SHOT,
+  maxWords: number = MAX_WORDS_PER_SHOT
+): string[] {
+  if (rawBeats.length <= 1) return rawBeats;
+  const minShots = Math.max(1, Math.ceil(requestedDurationSec / MAX_SHOT_DURATION_SEC));
+  const merged: string[] = [];
+  let buffer = "";
+
+  for (let i = 0; i < rawBeats.length; i++) {
+    const beat = rawBeats[i].trim();
+    if (!beat) continue;
+
+    if (!buffer) {
+      buffer = beat;
+    } else {
+      const bufWords = countWords(buffer);
+      const beatWords = countWords(beat);
+      const remainingRaw = rawBeats.length - i;
+      const canMerge = (merged.length + 1 + remainingRaw) > minShots;
+
+      // Merge if buffer is below word-floor, combination fits within max words, and does not violate min shots for duration ceiling
+      if (canMerge && bufWords < minWords && (bufWords + beatWords <= maxWords || bufWords <= 5)) {
+        buffer = `${buffer} ${beat}`;
+      } else {
+        merged.push(buffer);
+        buffer = beat;
+      }
+    }
+  }
+
+  if (buffer) {
+    if (merged.length > 0 && countWords(buffer) < minWords && (merged.length >= minShots || countWords(buffer) <= 6)) {
+      let mergedIntoSlot = false;
+      for (let j = merged.length - 1; j >= 0; j--) {
+        if (countWords(merged[j]) + countWords(buffer) <= maxWords + 1) {
+          merged[j] = `${merged[j]} ${buffer}`;
+          mergedIntoSlot = true;
+          break;
+        }
+      }
+      if (!mergedIntoSlot) {
+        merged.push(buffer);
+      }
+    } else {
+      merged.push(buffer);
+    }
+  }
+
+  return merged;
+}
+
 export function planReel(input: PlanReelInput, directorial?: OmniDirectorialCompilation): ReelProductionManifest {
   const requestedDurationSec = clampDuration(input.requestedDurationSec || 30);
   const topic = input.topic.trim() || "your topic";
@@ -344,7 +401,8 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
   }
   const dir = directorial || compileDeterministicDirectorialPass(topic, masterScript, requestedDurationSec, creationIntent, input.genre, aspectRatio, resolvedLanguage);
   const genre = dir.genre || input.genre;
-  const beats = splitIntoEditorialBeats(masterScript, requestedDurationSec);
+  const rawBeats = splitIntoEditorialBeats(masterScript, requestedDurationSec);
+  const beats = mergeShortBeats(rawBeats, requestedDurationSec, MIN_WORDS_PER_SHOT, MAX_WORDS_PER_SHOT);
 
   // Map of unique scenes: sceneId -> verbatim unvarying environment string across all contiguous shots
   const sceneEnvironments: Record<string, string> = {};
