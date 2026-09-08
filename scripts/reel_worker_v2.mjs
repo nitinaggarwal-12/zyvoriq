@@ -1592,10 +1592,18 @@ function sanitizePromptForVeo(prompt) {
   if (!prompt || typeof prompt !== "string") return prompt;
   // 1. Strip dialogue speaker prefixes like "KIARA:", "AKSHAY:", etc. while preserving camera grammar tags
   let clean = stripSpeakerPrefixes(prompt);
-  // Strip internal character ID tags like STUDIO1 IDENTITY LOCK [zoya_rehman]: or IDENTITY LOCK [meera_percussion]:
-  clean = clean.replace(/(?:STUDIO1\s+)?IDENTITY LOCK \[[^\]]+\]:/gi, "IDENTITY LOCK [lead_performer]:");
+  // Normalize prefix while PRESERVING distinct character IDs (e.g. IDENTITY LOCK [aarav_dancer]:)
+  clean = clean.replace(/STUDIO1 IDENTITY LOCK \[([^\]]+)\]:/gi, "IDENTITY LOCK [$1]:");
   // Strip character name references in canonical reference clauses
   clean = clean.replace(/The canonical character reference for [^,.]+(?:,\s*|\.\s*)/gi, "The canonical character reference for the performer, ");
+
+  // Protect bracketed metadata tags (e.g. [char_id], [scene_id]) from name/celebrity substitution
+  const preservedTags = [];
+  clean = clean.replace(/\[[a-zA-Z0-9_-]+\]/g, (match) => {
+    preservedTags.push(match);
+    return `__PRESERVED_TAG_${preservedTags.length - 1}__`;
+  });
+
   // 2. Map celebrity references and proper character names (with spaces or underscores) to high-craft cinematic visual archetypes
   const celebrityMap = [
     { pattern: /\b(?:Kiara[\s_]*Advani|Kiara)\b/gi, replacement: "a radiant, graceful Indian leading lady" },
@@ -1627,6 +1635,9 @@ function sanitizePromptForVeo(prompt) {
   for (const { pattern, replacement } of celebrityMap) {
     clean = clean.replace(pattern, replacement);
   }
+
+  // Restore protected bracketed tags
+  clean = clean.replace(/__PRESERVED_TAG_(\d+)__/g, (_, idx) => preservedTags[Number(idx)] || "");
   const words = clean.split(/\s+/);
   if (words.length > 700) {
     clean = words.slice(0, 700).join(" ");
@@ -1917,9 +1928,16 @@ async function generateShot(op, manifest, shot) {
                 },
                 {
                   name: "replace-celebrity-names-with-generic-archetypes",
-                  apply: (p) => p
-                    .replace(/(?:STUDIO1\s+)?IDENTITY LOCK \[[^\]]+\]:/gi, "IDENTITY LOCK [lead_performer]:")
-                    .replace(/\b(?:Kiara[\s_]*Advani|Kiara|Akshay[\s_]*Kumar|Akshay|Salman[\s_]*Khan|Salman|Aishwarya[\s_]*Rai(?:[\s_]*Bachchan)?|Aishwarya|Shah[\s_]*Rukh[\s_]*Khan|Shahrukh[\s_]*Khan|SRK|Deepika[\s_]*Padukone|Deepika|Ranveer[\s_]*Singh|Ranveer|Alia[\s_]*Bhatt|Alia|Ranbir[\s_]*Kapoor|Ranbir|Hrithik[\s_]*Roshan|Hrithik|Katrina[\s_]*Kaif|Katrina|Priyanka[\s_]*Chopra(?:[\s_]*Jonas)?|Priyanka|Kareena[\s_]*Kapoor(?:[\s_]*Khan)?|Kareena|Saif[\s_]*Ali[\s_]*Khan|Saif|Amitabh[\s_]*Bachchan|Amitabh|Tom[\s_]*Cruise|Brad[\s_]*Pitt|Leonardo[\s_]*DiCaprio|Zendaya|Timothee[\s_]*Chalamet|Timothée[\s_]*Chalamet|Kabir[\s_]*Anand|Kabir|Zoya[\s_]*Rehman|Zoya|Farooq[\s_]*Malik|Farooq|Meera[\s_]*Rao|Meera|Aarav[\s_]*Roy|Aarav)\b/gi, "lead performer"),
+                  apply: (p) => {
+                    let text = p.replace(/STUDIO1 IDENTITY LOCK \[([^\]]+)\]:/gi, "IDENTITY LOCK [$1]:");
+                    const preservedTags = [];
+                    text = text.replace(/\[[a-zA-Z0-9_-]+\]/g, (match) => {
+                      preservedTags.push(match);
+                      return `__PRESERVED_TAG_${preservedTags.length - 1}__`;
+                    });
+                    text = text.replace(/\b(?:Kiara[\s_]*Advani|Kiara|Akshay[\s_]*Kumar|Akshay|Salman[\s_]*Khan|Salman|Aishwarya[\s_]*Rai(?:[\s_]*Bachchan)?|Aishwarya|Shah[\s_]*Rukh[\s_]*Khan|Shahrukh[\s_]*Khan|SRK|Deepika[\s_]*Padukone|Deepika|Ranveer[\s_]*Singh|Ranveer|Alia[\s_]*Bhatt|Alia|Ranbir[\s_]*Kapoor|Ranbir|Hrithik[\s_]*Roshan|Hrithik|Katrina[\s_]*Kaif|Katrina|Priyanka[\s_]*Chopra(?:[\s_]*Jonas)?|Priyanka|Kareena[\s_]*Kapoor(?:[\s_]*Khan)?|Kareena|Saif[\s_]*Ali[\s_]*Khan|Saif|Amitabh[\s_]*Bachchan|Amitabh|Tom[\s_]*Cruise|Brad[\s_]*Pitt|Leonardo[\s_]*DiCaprio|Zendaya|Timothee[\s_]*Chalamet|Timothée[\s_]*Chalamet|Kabir[\s_]*Anand|Kabir|Zoya[\s_]*Rehman|Zoya|Farooq[\s_]*Malik|Farooq|Meera[\s_]*Rao|Meera|Aarav[\s_]*Roy|Aarav)\b/gi, "lead performer");
+                    return text.replace(/__PRESERVED_TAG_(\d+)__/g, (_, idx) => preservedTags[Number(idx)] || "");
+                  },
                 },
                 {
                   name: "neutralize-sensory-romantic-terms",

@@ -336,13 +336,22 @@ export function applyStudio1ShotPrompt(manifest: ReelProductionManifest, shotId:
   const shotIndex = manifest.shots.findIndex(item => item.id === shotId);
   const shot = manifest.shots[shotIndex];
   if (!shot) return;
-  const base = meta.basePrompts[shot.id] || shot.generationPrompt;
+  const rawBase = meta.basePrompts[shot.id] || shot.generationPrompt;
+  const base = rawBase
+    .replace(/(?:STUDIO1\s+)?IDENTITY LOCK \[[^\]]+\]:[^.]*\.(?:[^.]*\.)*(?:\s*Maintain identical facial features and actor identity\.)?/gi, "")
+    .replace(/STUDIO1 (?:SUBJECT RULE|ACTOR MODE):[^.]*\./gi, "")
+    .replace(/STUDIO1 ENVIRONMENT (?:LOCK|MODE):[^.]*\.(?:[^.]*\.)*/gi, "")
+    .replace(/STUDIO1 SEMANTIC ONSET LOCK:[^.]*\.(?:[^.]*\.)*/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
   const mode = meta.subjectModes[shot.id] || "PRESENTER";
   const previous = shotIndex > 0 ? manifest.shots[shotIndex - 1] : null;
   shot.dependsOnShotIds = meta.environmentContinuity && previous ? [previous.id] : [];
 
   const environmentRule = meta.environmentContinuity
-    ? "STUDIO1 ENVIRONMENT LOCK: Treat the established location as one continuous physical set across clips. The previous-scene visual reference supplied by the worker is authoritative for the set. Preserve the same room or location, background geometry, wall and floor materials, furniture placement, major props, lighting direction, color temperature, time-of-day and camera-side spatial relationships. Change only the action/framing required by this shot. Do not invent a living room, office, studio, outdoor location, electronics, tools, machinery, screens, desks, lab equipment, workshop activity, new furniture, or another new set unless the brief or this shot explicitly requires a location change."
+    ? (previous
+        ? "STUDIO1 ENVIRONMENT LOCK: Treat the established location as one continuous physical set across clips. The previous-scene visual reference supplied by the worker is authoritative for the set. Preserve the same room or location, background geometry, wall and floor materials, furniture placement, major props, lighting direction, color temperature, time-of-day and camera-side spatial relationships. Change only the action/framing required by this shot. Do not invent a living room, office, studio, outdoor location, electronics, tools, machinery, screens, desks, lab equipment, workshop activity, new furniture, or another new set unless the brief or this shot explicitly requires a location change."
+        : "STUDIO1 ENVIRONMENT LOCK: Establish the primary physical set for this scene. Preserve the room or location, background geometry, wall and floor materials, furniture placement, major props, lighting direction, color temperature, time-of-day and camera-side spatial relationships across all subsequent clips. Do not invent a living room, office, studio, outdoor location, electronics, tools, machinery, screens, desks, lab equipment, workshop activity, new furniture, or another new set unless the brief or this shot explicitly requires a location change.")
     : "STUDIO1 ENVIRONMENT MODE: Environment continuity is disabled for this experiment.";
 
   const semanticOnsetRule = [
@@ -378,7 +387,7 @@ export function applyStudio1ShotPrompt(manifest: ReelProductionManifest, shotId:
     environmentRule,
     semanticOnsetRule,
     meta.presenterContinuity
-      ? `STUDIO1 IDENTITY LOCK [lead_performer]: The attached canonical character reference image is authoritative for this shot. Physical description: ${purePhysicalDesc}. Identity continuity is mandatory: identical face, age, skin tone, hair, body proportions, wardrobe and distinguishing features. Do not substitute, cast, morph into, or introduce a different actor. Eyeline: ${shot.continuityIn.eyeline || "conversational off-camera"}.`
+      ? `STUDIO1 IDENTITY LOCK [${charId}]: The attached canonical character reference image is authoritative for this shot. Physical description: ${purePhysicalDesc}. Identity continuity is mandatory: identical face, age, skin tone, hair, body proportions, wardrobe and distinguishing features. Do not substitute, cast, morph into, or introduce a different actor. Eyeline: ${shot.continuityIn.eyeline || "conversational off-camera"}.`
       : "STUDIO1 ACTOR MODE: Canonical identity anchoring is disabled for this experiment."
   ].join(" ");
 }

@@ -395,7 +395,7 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
       : (onCameraChar?.appearance?.face ? `${onCameraChar.appearance.face}, ${onCameraChar.appearance.hair}` : "lead performer with expressive eyes");
 
     const identityLockClause = onCameraCharId
-      ? `IDENTITY LOCK [lead_performer]: Authoritative canonical reference sheet applies to ${subjectLabel} (${purePhysicalDesc}). Wardrobe: ${onCameraChar?.wardrobe?.[0] || "Era-appropriate costume"}. Eyeline: ${eyeline}. Maintain identical facial features and actor identity.`
+      ? `IDENTITY LOCK [${onCameraCharId}]: Authoritative canonical reference sheet applies to ${subjectLabel} (${purePhysicalDesc}). Wardrobe: ${onCameraChar?.wardrobe?.[0] || "Era-appropriate costume"}. Eyeline: ${eyeline}. Maintain identical facial features and actor identity.`
       : "SUBJECT RULE: Pure cinematic action, stunt, environment master, or object focus. NO talking presenters, NO direct-to-camera address.";
 
     const continuityIn: any = {
