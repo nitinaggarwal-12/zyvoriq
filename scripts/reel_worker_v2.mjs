@@ -1656,6 +1656,17 @@ async function generateShot(op, manifest, shot) {
   const dispatchMarkers = new Set(["veo-dispatch-started", "veo-recovery-dispatch-started"]);
   let name = prior && !dispatchMarkers.has(prior) ? prior : null;   if (name) console.log(`[reel-worker] [anchor] SKIPPED for ${shot.id} — resuming existing Veo op, no new dispatch`);
 
+  const characters = Array.isArray(manifest.characters) && manifest.characters.length
+    ? manifest.characters
+    : (manifest.continuity?.characters || []);
+  const charId = shot.continuityIn?.characterId;
+  const char = charId ? (characters.find(c => c.id === charId) || null) : null;
+  const canonicalUrls = (char?.canonicalReferenceImages || [])
+    .map(img => typeof img === "string" ? img : img?.url)
+    .filter(Boolean);
+  let hasTemporalFrame = false;
+  let omittedTemporalReason = null;
+
   if (!name) {
     if (prior === "veo-recovery-dispatch-started") {
       throw new Error("AMBIGUOUS_VEO_DISPATCH_AFTER_BOUNDED_RECOVERY");
@@ -1663,20 +1674,6 @@ async function generateShot(op, manifest, shot) {
     await assertApplicable(op, { beforeDispatch: true });
     const dispatchMarker = prior === "veo-dispatch-started" ? "veo-recovery-dispatch-started" : "veo-dispatch-started";
     await updateOperation(op.id, { providerOperationName: dispatchMarker });
-
-    const cleanPrompt = sanitizePromptForVeo(shot.generationPrompt);
-    console.log(`[reel-worker] [veo-dispatch] Dispatching ${shot.id} (safetyAttempt: ${safetyAttemptCount}) with prompt:\n"${cleanPrompt}"`);
-    instance = { prompt: cleanPrompt };
-
-    // FIX-1: Sourced from character sheet (up to 3 reference images across every chain)
-    const characters = Array.isArray(manifest.characters) && manifest.characters.length
-      ? manifest.characters
-      : (manifest.continuity?.characters || []);
-    const charId = shot.continuityIn?.characterId;
-    const char = charId ? (characters.find(c => c.id === charId) || null) : null;
-    const canonicalUrls = (char?.canonicalReferenceImages || [])
-      .map(img => typeof img === "string" ? img : img?.url)
-      .filter(Boolean);
 
     const refImages = [];
     if (char && canonicalUrls.length) {
@@ -1717,16 +1714,32 @@ async function generateShot(op, manifest, shot) {
     // the temporal frame is PRESERVED so physical environment, lighting, and set continuity are retained!
     if (ref?.buffer && refImages.length < 3) {
       if (charId && hasSafetyHistory) {
+        omittedTemporalReason = "safety-fallback";
         console.log(`[reel-worker] [safety-fallback] Omitting temporal frame from previous shot (${depShot?.id || "unknown"}) on safety retry for ${shot.id}; using canonical character reference only.`);
       } else if (charId && depCharId && !isSameCharacter) {
+        omittedTemporalReason = "character-switch";
         console.log(`[reel-worker] [continuity] Shot ${shot.id} (char: ${charId}) transitions from ${depShot?.id || "none"} (char: ${depCharId || "none"}). Omitting non-matching temporal reference to prevent identity collision.`);
       } else {
         refImages.push({
           image: { bytesBase64Encoded: ref.buffer.toString("base64"), mimeType: "image/png" },
           referenceType: "asset"
         });
+        hasTemporalFrame = true;
       }
+    } else if (!ref?.buffer) {
+      omittedTemporalReason = "no-previous-frame";
     }
+
+    const cleanPrompt = sanitizePromptForVeo(shot.generationPrompt);
+    let finalPrompt = cleanPrompt;
+    if (!hasTemporalFrame) {
+      finalPrompt = finalPrompt
+        .replace(/\s*The previous-scene visual reference supplied by the worker is authoritative for the set\./gi, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+    }
+    console.log(`[reel-worker] [veo-dispatch] Dispatching ${shot.id} (safetyAttempt: ${safetyAttemptCount}, temporal: ${hasTemporalFrame}) with prompt:\n"${finalPrompt}"`);
+    instance = { prompt: finalPrompt };
 
     if (refImages.length > 0) {
       instance.referenceImages = refImages;
@@ -1981,9 +1994,20 @@ async function generateShot(op, manifest, shot) {
 
           if (!changed && newSafetyAttempts >= 3) {
             // Truly unhealable safety block after all 3 tiers (temporal frame, text heal, and canonical images) exhausted
-            console.error(`[reel-worker] [safety-fatal] Tier-3 failure for shot ${shot.id} (prod: ${op.production_id}). Full prompt sent to Veo:\n${cleanPrompt}`);
+            const refAudit = {
+              shotId: shot.id,
+              charId: charId || "none",
+              characterAppearance: char?.appearance || null,
+              refImagesAttachedCount: instance?.referenceImages?.length || (instance?.image ? 1 : 0),
+              hasTemporalFrame: Boolean(hasTemporalFrame),
+              omittedTemporalReason: omittedTemporalReason || "none",
+              canonicalUrlsCount: canonicalUrls?.length || 0,
+              safetyAttemptCount: newSafetyAttempts,
+            };
+            console.error(`[reel-worker] [safety-fatal] Reference image audit for ${shot.id}:\n`, JSON.stringify(refAudit, null, 2));
+            console.error(`[reel-worker] [safety-fatal] Tier-3 failure for shot ${shot.id} (prod: ${op.production_id}). Full prompt sent to Veo:\n${instance?.prompt || shot.generationPrompt}`);
             await pool.query(`UPDATE reel_operations SET attempt=5 WHERE id=$1`, [op.id]);
-            throw new Error(`VEO_SAFETY_FILTER_FATAL: Veo safety/RAI filter triggered across all 3 defense tiers (${diagInfo}) | FULL_PROMPT: "${cleanPrompt}"`);
+            throw new Error(`VEO_SAFETY_FILTER_FATAL: Veo safety/RAI filter triggered across all 3 defense tiers (${diagInfo}) | FULL_PROMPT: "${instance?.prompt || shot.generationPrompt}"`);
           }
 
           throw new Error(`VEO_SAFETY_FILTER_EMPTY: Veo completed without video URI due to safety/RAI filter (${diagInfo})`);
