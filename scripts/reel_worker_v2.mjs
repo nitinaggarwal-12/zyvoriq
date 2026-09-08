@@ -1910,7 +1910,7 @@ async function renderRough(op, m) {
       return false;
     }
   }));
-  const studio1 = Boolean(op.payload_json?.studio1 === true || m.studio1?.timelineSync);
+  const studio1 = op.payload_json?.studio1 === true && Boolean(m.studio1?.timelineSync);
   const hasNativeAudio = !studio1 && shotAudioProbes.length === m.shots.length && shotAudioProbes.every(Boolean);
   console.log(`[reel-worker] renderRough audio strategy for ${op.production_id}: ${hasNativeAudio ? "NATIVE CHARACTER AUDIO & FOLLEY (lip sync preserved)" : studio1 ? "STUDIO1 SYMPHONIC & TTS MASTER" : "SYNTHETIC TTS DUB"}`);
 
