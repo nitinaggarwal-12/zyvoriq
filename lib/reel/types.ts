@@ -272,6 +272,7 @@ export interface QualityGateEvidence {
 
 export interface ReelShot {
   id: string;
+  sceneId?: string;
   order: number;
   editorialStartSec: number;
   editorialDurationSec: number;
@@ -363,6 +364,7 @@ export interface ReelProductionManifest {
     objectStateGraph: Record<string, ObjectState[]>;
   };
   musicPlan?: MusicPlan;
+  scenes?: Record<string, { id: string; environment: string }>;
   shots: ReelShot[];
   outputs?: {
     narratedRoughCut?: ReelRenderedOutput;

@@ -431,6 +431,7 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
 
     const shot: ReelShot = {
       id: `shot_${String(i + 1).padStart(2, "0")}`,
+      sceneId,
       order: i + 1,
       editorialStartSec: clock(cursor),
       editorialDurationSec,
@@ -501,13 +502,13 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
     captions: { timingSource: "draft", cues: draftCaptionCues, safeZoneProfile: safeZoneProfile(platform) },
     continuity: {
       characters: charactersList,
-      environments: [{
-        id: "environment_primary",
-        description: bible.environmentLock,
+      environments: Object.entries(sceneEnvironments).map(([sId, envDesc]) => ({
+        id: sId,
+        description: envDesc,
         palette: bible.colorLanguage,
         keyObjects: [],
         cameraAxis: bible.cameraLanguage
-      }],
+      })),
       performanceTracks: charactersList.map(char => ({
         id: `performance_${char.id}`,
         characterId: char.id,
@@ -525,6 +526,7 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
       boundaries,
       objectStateGraph: Object.fromEntries(shots.map(s => [s.id, s.continuityIn.objectStates || []]))
     },
+    scenes: Object.fromEntries(Object.entries(sceneEnvironments).map(([sId, env]) => [sId, { id: sId, environment: env }])),
     musicPlan: {
       sections: [{
         startSec: 0,
