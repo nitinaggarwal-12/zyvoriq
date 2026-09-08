@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
       requestedDurationSec: Number(body.requestedDurationSec || body.duration || 30),
       scriptText: body.scriptText,
       genre: body.genre,
+      language: body.language || body.narrationLanguage,
     });
     const production = await reelProductionStore.create(manifest);
 
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
       control = await reelProductionControl.register(production.id, initialPriority);
       if (body.autoStart !== false) {
         const ctrl = await paidContext(production.id);
-        const fp = fingerprint({ script: manifest.masterScript, tone: manifest.tone, studio1: true });
+        const fp = fingerprint({ script: manifest.masterScript, tone: manifest.tone, language: manifest.language, studio1: true });
         const idempotencyKey = operationKey({
           productionId: production.id,
           generationToken: ctrl.generationToken,
@@ -87,6 +88,7 @@ export async function POST(req: NextRequest) {
             generationToken: ctrl.generationToken,
             semanticFingerprint: fp,
             studio1: true,
+            language: manifest.language,
           },
         });
       }

@@ -257,10 +257,31 @@ export function budgetStudio1NarrationAgainstCap(manifest: ReelProductionManifes
     cursor = Number((cursor + s.editorialDurationSec).toFixed(6));
 
     const existingMode = meta.subjectModes[originalShotId] || meta.subjectModes[newId] || "PRESENTER";
-    newSubjectModes[newId] = existingMode;
+    const lang = String(manifest.language || manifest.creationIntent?.narrationLanguage || "").toLowerCase();
+    let langDirective = "";
+    if (lang === "hinglish-roman" || lang === "hinglish") {
+      langDirective = "AUDIO & DIALOGUE LANGUAGE: Hinglish (Hindi-English blend in Roman script). Native character dialogue, vocalizations and background calls must be in natural conversational Hinglish.";
+    } else if (lang === "hi-devanagari" || lang === "hindi") {
+      langDirective = "AUDIO & DIALOGUE LANGUAGE: Hindi (Devanagari). Native character dialogue, vocalizations and background calls must be in standard Hindi.";
+    } else if (lang && lang !== "en") {
+      langDirective = `AUDIO & DIALOGUE LANGUAGE: Native character dialogue and vocalizations must be in ${lang}.`;
+    }
+
+    const sceneSetting = (manifest.scenes && s.sceneId && manifest.scenes[s.sceneId]?.environment)
+      ? `VERBATIM SCENE SETTING [${s.sceneId}]: ${manifest.scenes[s.sceneId].environment}. Preserve identical physical set architecture, geometry, materials, background elements, lighting direction and color temperature.`
+      : "";
 
     const basePrompt = s.visualIntent
-      ? [s.visualIntent, s.scriptText ? `Narrative beat: ${s.scriptText}` : "", `Tone: ${manifest.tone}.`, manifest.creativeBible.visualStyle, manifest.creativeBible.cameraLanguage, "Do not render captions, subtitles, logos or UI text inside the generated video; those are composited later."].filter(Boolean).join(" ")
+      ? [
+          sceneSetting,
+          s.visualIntent,
+          s.scriptText ? `Narrative beat: ${s.scriptText}` : "",
+          `Tone: ${manifest.tone}.`,
+          langDirective,
+          manifest.creativeBible.visualStyle,
+          manifest.creativeBible.cameraLanguage,
+          "Do not render captions, subtitles, logos or UI text inside the generated video; those are composited later."
+        ].filter(Boolean).join(" ")
       : s.generationPrompt;
     newBasePrompts[newId] = basePrompt;
   }
@@ -444,6 +465,7 @@ export async function planStudio1(input: PlanReelInput): Promise<ReelProductionM
       creationIntent: input.creationIntent,
       aspectRatio: input.aspectRatio,
       genre: input.genre,
+      language: input.language,
     });
     scriptText = directorial.masterScript;
   }

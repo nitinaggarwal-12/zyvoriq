@@ -11,6 +11,29 @@ export interface PlanReelInput {
   creationIntent?: ReelCreationIntent;
   aspectRatio?: "9:16" | "16:9" | "2.39:1";
   genre?: OmniGenre;
+  language?: string;
+}
+
+export function resolveLanguage(
+  explicitLanguage?: string,
+  topic: string = "",
+  intent?: ReelCreationIntent,
+  genre?: OmniGenre
+): string {
+  if (explicitLanguage && explicitLanguage.trim()) return explicitLanguage.trim().toLowerCase();
+  if (intent?.narrationLanguage && intent.narrationLanguage.trim()) return intent.narrationLanguage.trim().toLowerCase();
+
+  const lowerTopic = topic.toLowerCase();
+  if (/\b(?:hindi|hinglish|desi|bollywood|in hindi|in hinglish)\b/i.test(lowerTopic) || genre === "BOLLYWOOD_ACTION") {
+    return "hinglish-roman";
+  }
+  if (/\b(?:spanish|español|en español)\b/i.test(lowerTopic)) {
+    return "es";
+  }
+  if (/\b(?:japanese|nihongo|in japanese)\b/i.test(lowerTopic)) {
+    return "ja";
+  }
+  return "en";
 }
 
 const clock = (n: number) => Number(n.toFixed(6));
@@ -45,7 +68,8 @@ export async function generateNarrationScriptWithGemini(
   topic: string,
   targetDurationSec: number = 30,
   tone: string = "Confident & conversational",
-  intent?: ReelCreationIntent
+  intent?: ReelCreationIntent,
+  language?: string
 ): Promise<string> {
   const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   const targetShots = Math.max(2, Math.min(30, Math.round(targetDurationSec / TARGET_SHOT_DURATION_SEC)));
@@ -54,6 +78,22 @@ export async function generateNarrationScriptWithGemini(
     throw new Error(
       "NARRATION_PRECONDITION_FAILED: Missing GEMINI_API_KEY or GOOGLE_API_KEY for dynamic narration script generation. Silent canned filler fallback is forbidden."
     );
+  }
+
+  const resolvedLang = resolveLanguage(language, topic, intent);
+  let languageRule = "";
+  if (resolvedLang === "hinglish-roman" || resolvedLang === "hinglish") {
+    languageRule = `
+7. MANDATORY LANGUAGE: Write entirely in natural conversational HINGLISH (modern Bollywood / North Indian code-switching of Hindi and English).
+8. MANDATORY SCRIPT FORMAT: Output 100% in LATIN / ROMAN SCRIPT (e.g., "Arjun ne jaise hi accelerator dabaya, crowd pagal ho gaya!"). NEVER output in Devanagari script. All Hindi words must be in Roman transliteration.
+9. Authentic creator cadence: Use punchy modern Bollywood expressions ("yaar", "chalo", "bhai", "kamaal", "dhamaal", "scene set hai").`;
+  } else if (resolvedLang === "hi-devanagari" || resolvedLang === "hindi") {
+    languageRule = `
+7. MANDATORY LANGUAGE: Write entirely in standard HINDI using authentic DEVANAGARI script (e.g., "अर्जुन ने जैसे ही गति बढ़ाई, भीड़ झूम उठी!").
+8. Ensure natural Hindi grammatical flow and authentic spoken cadence.`;
+  } else if (resolvedLang && resolvedLang !== "en") {
+    languageRule = `
+7. MANDATORY LANGUAGE: Write entirely in authentic natural ${resolvedLang}.`;
   }
 
   const isCinema = targetDurationSec >= 90;
@@ -70,7 +110,7 @@ RULES & HARD BUDGET:
 4. Focus directly and immersively on the subject: "${topic}".
 5. If character names or dialogue are implied, format with clean character markers (e.g. "NAPOLEON: ...", "JOSEPHINE: ...").
 6. Output format: Return a raw JSON array of strings containing exactly ${targetShots} lines:
-["Line 1", "Line 2", ...]`
+["Line 1", "Line 2", ...]${languageRule}`
     : `You are an elite short-form video director and social reel scriptwriter.
 Write an authentic, punchy voiceover script for a 9:16 vertical video reel.
 Topic: "${topic}"
@@ -84,7 +124,7 @@ RULES & HARD BUDGET:
 4. Focus directly and immersively on the subject: "${topic}".
 5. If character names or dialogue are implied, format with clean character markers or narrative speech.
 6. Output format: Return a raw JSON array of strings containing exactly ${targetShots} lines:
-["Line 1", "Line 2", ...]`;
+["Line 1", "Line 2", ...]${languageRule}`;
 
   const primaryModel = process.env.GEMINI_SCRIPT_MODEL || "gemini-3.7-flash";
   const candidateModels = primaryModel === "gemini-2.5-flash" ? ["gemini-2.5-flash"] : [primaryModel, "gemini-2.5-flash"];
@@ -276,6 +316,7 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
   const tone = input.tone || "Confident & conversational";
   const platform = input.platform || "Instagram Reels";
   const creationIntent = input.creationIntent;
+  const resolvedLanguage = resolveLanguage(input.language, topic, creationIntent, input.genre);
   const isCinema = requestedDurationSec >= 90 || platform === "YouTube Shorts";
   const aspectRatio: "9:16" | "16:9" | "2.39:1" = input.aspectRatio || (isCinema ? "2.39:1" : "9:16");
   const masterScript = (input.scriptText || directorial?.masterScript || input.creationIntent?.conceptSpeechSample || "").trim();
@@ -284,7 +325,7 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
       "NARRATION_PRECONDITION_FAILED: Non-empty scriptText is required to plan a reel manifest synchronously. In async creation pipelines, use planStudio1() or planReelAsync() to dynamically synthesize the script via Gemini before calling synchronous planning."
     );
   }
-  const dir = directorial || compileDeterministicDirectorialPass(topic, masterScript, requestedDurationSec, creationIntent, input.genre, aspectRatio);
+  const dir = directorial || compileDeterministicDirectorialPass(topic, masterScript, requestedDurationSec, creationIntent, input.genre, aspectRatio, resolvedLanguage);
   const beats = splitIntoEditorialBeats(masterScript, requestedDurationSec);
 
   // Map of unique scenes: sceneId -> verbatim unvarying environment string across all contiguous shots
@@ -434,6 +475,14 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
       emotion
     };
     const continuityOut = { ...continuityIn, action: actionOut };
+    let languageInstruction = "";
+    if (resolvedLanguage === "hinglish-roman" || resolvedLanguage === "hinglish") {
+      languageInstruction = "AUDIO & DIALOGUE LANGUAGE: Hinglish (Hindi-English blend in Roman script). Native character dialogue, vocalizations and background calls must be in natural conversational Hinglish.";
+    } else if (resolvedLanguage === "hi-devanagari" || resolvedLanguage === "hindi") {
+      languageInstruction = "AUDIO & DIALOGUE LANGUAGE: Hindi (Devanagari). Native character dialogue, vocalizations and background calls must be in standard Hindi.";
+    } else if (resolvedLanguage && resolvedLanguage !== "en") {
+      languageInstruction = `AUDIO & DIALOGUE LANGUAGE: Native character dialogue and vocalizations must be in ${resolvedLanguage}.`;
+    }
     const narrative = beat || `Visual continuation for ${topic}; support the surrounding narration without introducing a new claim.`;
 
     const promptParts = [
@@ -444,6 +493,7 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
       categoryDirection,
       `Narrative beat: ${narrative}.`,
       `Tone: ${tone}.`,
+      languageInstruction,
       bible.visualStyle,
       bible.cameraLanguage,
       `Continuity start: ${previousAction}`,
@@ -518,6 +568,7 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
     plannedDurationSec: clock(cursor),
     topic,
     tone,
+    language: resolvedLanguage,
     creationIntent,
     masterScript,
     creativeBible: bible,
@@ -580,6 +631,7 @@ export async function planReelAsync(input: PlanReelInput): Promise<ReelProductio
       creationIntent: input.creationIntent,
       aspectRatio: input.aspectRatio,
       genre: input.genre,
+      language: input.language,
     });
     scriptText = directorial.masterScript;
   }

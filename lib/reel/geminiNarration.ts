@@ -98,13 +98,21 @@ function extractWordTimings(value: unknown): WordTiming[] {
   return timings.filter(t => t.word && t.endSec >= t.startSec).sort((a, b) => a.startSec - b.startSec || a.endSec - b.endSec);
 }
 
-async function generatePcm(text: string, tone: string, voiceOverride?: string) {
+async function generatePcm(text: string, tone: string, voiceOverride?: string, language?: string) {
   const key = apiKey();
   const model = process.env.ZYVORIQ_TTS_MODEL || "gemini-3.1-flash-tts-preview";
   const voice = voiceOverride || process.env.ZYVORIQ_TTS_VOICE || "Charon";
+  let langDirection = "";
+  if (language === "hinglish-roman" || language === "hinglish") {
+    langDirection = " Language & Pronunciation: Hinglish (conversational Hindi-English blend). Pronounce Hindi words with authentic North Indian phonetics and conversational cadence, seamlessly blended with natural English vocabulary.";
+  } else if (language === "hi-devanagari" || language === "hindi") {
+    langDirection = " Language & Pronunciation: Hindi (Devanagari). Pronounce words with authentic standard Hindi pronunciation and natural cadence.";
+  } else if (language && language !== "en") {
+    langDirection = ` Language & Pronunciation: ${language}.`;
+  }
   const prompt = [
     "Synthesize speech for the transcript below. Do not speak these instructions.",
-    `Performance direction: ${tone}. Natural social-video delivery, clear articulation, no added words.`,
+    `Performance direction: ${tone}.${langDirection} Natural social-video delivery, clear articulation, no added words.`,
     "TRANSCRIPT START",
     text,
     "TRANSCRIPT END",
@@ -212,11 +220,20 @@ function extractBiasedVocabularyFromText(text: string, extraVocab: string[] = []
   return Array.from(vocab).filter(Boolean);
 }
 
-async function transcribeWithWordTimings(uri: string, biasedVocabulary: string[] = []) {
+async function transcribeWithWordTimings(uri: string, biasedVocabulary: string[] = [], language?: string) {
   const key = apiKey();
   const input: Array<{ type: "audio" | "text"; uri?: string; mime_type?: string; text?: string }> = [];
+  const instructions: string[] = [];
+  if (language === "hinglish-roman" || language === "hinglish") {
+    instructions.push("Spoken language is Hinglish (conversational Hindi-English blend). Transcribe in Latin/Roman script.");
+  } else if (language === "hi-devanagari" || language === "hindi") {
+    instructions.push("Spoken language is Hindi. Transcribe in Devanagari script.");
+  }
   if (biasedVocabulary.length) {
-    input.push({ type: "text", text: `Pronunciation and vocabulary biasing: ${biasedVocabulary.join(", ")}` });
+    instructions.push(`Pronunciation and vocabulary biasing: ${biasedVocabulary.join(", ")}`);
+  }
+  if (instructions.length) {
+    input.push({ type: "text", text: instructions.join(" ") });
   }
   input.push({ type: "audio", uri, mime_type: "audio/wav" });
 
@@ -242,6 +259,7 @@ export async function generateAlignedNarration(input: {
   tone: string;
   voice?: string;
   biasedVocabulary?: string[];
+  language?: string;
 }) {
   if (!input.text.trim()) throw new Error("Cannot synthesize empty narration");
   const storage = getAssetStoreCapability();
@@ -250,13 +268,13 @@ export async function generateAlignedNarration(input: {
   }
   apiKey();
 
-  const { pcm, model, voice } = await generatePcm(input.text, input.tone, input.voice);
+  const { pcm, model, voice } = await generatePcm(input.text, input.tone, input.voice, input.language);
   if (!pcm.length) throw new Error("Gemini TTS returned an empty PCM stream");
   const durationSec = pcm.length / (SAMPLE_RATE * CHANNELS * SAMPLE_WIDTH);
   const wav = wavFromPcm(pcm);
   const uploaded = await uploadForTranscription(wav, `zyvoriq-${input.productionId}-narration.wav`);
   const vocab = extractBiasedVocabularyFromText(input.text, input.biasedVocabulary);
-  const wordTimings = await transcribeWithWordTimings(uploaded.uri, vocab);
+  const wordTimings = await transcribeWithWordTimings(uploaded.uri, vocab, input.language);
   const digest = crypto.createHash("sha256").update(wav).digest("hex").slice(0, 16);
   const asset = await writeAsset(`reels/${input.productionId}/narration-${digest}.wav`, wav);
 

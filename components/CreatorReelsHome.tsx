@@ -24,8 +24,17 @@ import {
   AlertCircle,
   Clapperboard,
   Music2,
-  Smartphone
+  Smartphone,
+  Languages
 } from "lucide-react";
+
+export const LANGUAGE_OPTIONS = [
+  { id: "en", label: "English", desc: "US fast social pacing" },
+  { id: "hinglish-roman", label: "🇮🇳 Hinglish (Bollywood)", desc: "Conversational Hindi-English in Roman script" },
+  { id: "hi-devanagari", label: "हिन्दी (Devanagari)", desc: "Standard Hindi in Devanagari script" },
+  { id: "es", label: "Español", desc: "Spanish expressive pacing" },
+  { id: "ja", label: "日本語", desc: "Japanese dramatic stems" },
+];
 
 export interface FinishedReel {
   id: string;
@@ -154,6 +163,7 @@ export function CreatorReelsHome() {
   const [isMuted, setIsMuted] = useState(true);
   const [promptText, setPromptText] = useState("");
   const [selectedGenre, setSelectedGenre] = useState<string>("AUTO");
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
   const [selectedDuration, setSelectedDuration] = useState(30);
   const [selectedAspectRatio, setSelectedAspectRatio] = useState<"9:16" | "16:9" | "2.39:1">("9:16");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -161,6 +171,20 @@ export function CreatorReelsHome() {
   const [generatedResult, setGeneratedResult] = useState<any | null>(null);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [annualBilling, setAnnualBilling] = useState(false);
+
+  // Auto-suggest Hinglish if user picks Bollywood Action genre
+  useEffect(() => {
+    if (selectedGenre === "BOLLYWOOD_ACTION" && selectedLanguage === "en") {
+      setSelectedLanguage("hinglish-roman");
+    }
+  }, [selectedGenre, selectedLanguage]);
+
+  // Auto-suggest Hinglish if user writes Hindi/Hinglish in the prompt text
+  useEffect(() => {
+    if (/\b(?:hindi|hinglish|desi|bollywood|in hindi)\b/i.test(promptText) && selectedLanguage === "en") {
+      setSelectedLanguage("hinglish-roman");
+    }
+  }, [promptText, selectedLanguage]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const activeReel = FINISHED_REELS[activeReelIndex];
@@ -239,6 +263,7 @@ export function CreatorReelsHome() {
           requestedDurationSec: selectedDuration,
           aspectRatio: selectedAspectRatio,
           genre: selectedGenre !== "AUTO" ? selectedGenre : undefined,
+          language: selectedLanguage,
           platform,
           autoStart: true,
         })
@@ -537,6 +562,30 @@ export function CreatorReelsHome() {
                       }`}
                     >
                       <span>{g.label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Language & Dialect Selector */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-4 border-b border-white/5 scrollbar-none">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 shrink-0 flex items-center gap-1">
+                    <Languages className="w-3.5 h-3.5 text-teal-400" /> Language:
+                  </span>
+                  {LANGUAGE_OPTIONS.map(l => (
+                    <button
+                      key={l.id}
+                      type="button"
+                      onClick={() => setSelectedLanguage(l.id)}
+                      title={l.desc}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition-all min-h-[38px] flex items-center gap-1.5 ${
+                        selectedLanguage === l.id
+                          ? activeTab === "youtube_shorts"
+                            ? "bg-amber-400/20 border border-amber-400/50 text-amber-300 font-bold shadow-sm"
+                            : "bg-teal-500/20 border border-teal-400/50 text-teal-300 font-bold shadow-sm"
+                          : "bg-white/5 text-slate-400 hover:bg-white/10"
+                      }`}
+                    >
+                      <span>{l.label}</span>
                     </button>
                   ))}
                 </div>

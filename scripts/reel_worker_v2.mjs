@@ -1061,7 +1061,7 @@ function lcsLength(a, b) { const d = Array(b.length + 1).fill(0); for (const x o
 function stripSpeakerLabels(text) {
   return String(text || "").replace(/^[ \t]*[A-Z0-9_\-\. ]{1,30}:[ \t]*/gm, "").trim();
 }
-function validateTranscript(expectedText, timings, durationSec) {
+function validateTranscript(expectedText, timings, durationSec, language = "") {
   if (!Array.isArray(timings) || timings.length === 0) {
     throw new Error("Narration timestamps failed structural validation: empty timings");
   }
@@ -1138,13 +1138,15 @@ function validateTranscript(expectedText, timings, durationSec) {
     if (c <= 0) missing.push(w);
     else counts.set(w, c - 1);
   }
-  const effectiveMaxWer = Math.max(MAX_WER, 0.10);
+  const isHinglishOrNonEnglish = Boolean(language && String(language).toLowerCase() !== "en");
+  const effectiveMaxWer = isHinglishOrNonEnglish ? Math.max(MAX_WER, 0.20) : Math.max(MAX_WER, 0.10);
+  const effectiveMinCoverage = isHinglishOrNonEnglish ? Math.min(MIN_COVERAGE, 0.75) : MIN_COVERAGE;
   const v = {
     expectedWords: expected.length,
     actualWords: actual.length,
     wer: Number(wer.toFixed(4)),
     coverage: Number(coverage.toFixed(4)),
-    passed: wer <= effectiveMaxWer && coverage >= MIN_COVERAGE && missing.length === 0,
+    passed: wer <= effectiveMaxWer && coverage >= effectiveMinCoverage && missing.length === 0,
     missingCritical: missing,
   };
   if (!v.passed) {
@@ -1274,6 +1276,17 @@ function extractBiasedVocabulary(manifest) {
     }
   }
 
+  // 5. Proper nouns and cultural terms from Topic
+  if (manifest.topic) {
+    const topicTokens = manifest.topic.split(/\s+/);
+    for (const tok of topicTokens) {
+      const clean = tok.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
+      if (clean.length > 2 && /^[A-Z]/.test(clean) && !COMMON_ENGLISH_STOPWORDS.has(clean)) {
+        vocab.add(clean);
+      }
+    }
+  }
+
   return Array.from(vocab).filter(Boolean);
 }
 
@@ -1301,11 +1314,21 @@ async function transcribeAndValidateNarration(op, manifest, checkpoint, wav) {
   if (!uri) throw new Error("Gemini upload returned no file URI");
   try { await operationHeartbeat(op.id, op.production_id); } catch {}
 
+  const lang = String(manifest.language || manifest.creationIntent?.narrationLanguage || op.payload_json?.language || "").toLowerCase();
   const vocab = extractBiasedVocabulary(manifest);
   const input = [];
+  const instructions = [];
+  if (lang === "hinglish-roman" || lang === "hinglish") {
+    instructions.push("Spoken language is Hinglish (conversational Hindi-English blend). Transcribe in Latin/Roman script.");
+  } else if (lang === "hi-devanagari" || lang === "hindi") {
+    instructions.push("Spoken language is Hindi. Transcribe in Devanagari script.");
+  }
   if (vocab.length) {
-    input.push({ type: "text", text: `Pronunciation and vocabulary biasing: ${vocab.join(", ")}` });
-    console.log(`[reel-worker] [transcription] Applying vocabulary biasing: ${vocab.slice(0, 10).join(", ")}`);
+    instructions.push(`Pronunciation and vocabulary biasing: ${vocab.join(", ")}`);
+    console.log(`[reel-worker] [transcription] Applying vocabulary biasing (${lang || "en"}): ${vocab.slice(0, 10).join(", ")}`);
+  }
+  if (instructions.length) {
+    input.push({ type: "text", text: instructions.join(" ") });
   }
   input.push({ type: "audio", uri, mime_type: "audio/wav" });
 
@@ -1323,7 +1346,7 @@ async function transcribeAndValidateNarration(op, manifest, checkpoint, wav) {
   console.log(`[reel-worker] [transcription] prod ${op.production_id} transcribed: "${actualWords.slice(0, 160)}..."`);
   let validation;
   try {
-    validation = validateTranscript(manifest.masterScript, timings, checkpoint.actualDurationSec);
+    validation = validateTranscript(manifest.masterScript, timings, checkpoint.actualDurationSec, lang);
     console.log(`[reel-worker] [transcription] prod ${op.production_id} alignment verified: WER ${validation.wer}, coverage ${validation.coverage}`);
   } catch (valErr) {
     console.error(`[reel-worker] [transcription-fail] prod ${op.production_id}: ${valErr.message}`);
@@ -1379,9 +1402,19 @@ async function generateNarration(op, manifest, existingCheckpoint = null) {
 
     const model = process.env.ZYVORIQ_TTS_MODEL || "gemini-3.1-flash-tts-preview";
     const voice = selectVoiceForManifest(manifest);
+    const lang = String(manifest.language || manifest.creationIntent?.narrationLanguage || op.payload_json?.language || "").toLowerCase();
+    let langDirection = "";
+    if (lang === "hinglish-roman" || lang === "hinglish") {
+      langDirection = " Language & Pronunciation: Hinglish (conversational Hindi-English blend). Pronounce Hindi words with authentic North Indian phonetics and conversational cadence, seamlessly blended with natural English vocabulary.";
+    } else if (lang === "hi-devanagari" || lang === "hindi") {
+      langDirection = " Language & Pronunciation: Hindi (Devanagari). Pronounce words with authentic standard Hindi pronunciation and natural cadence.";
+    } else if (lang && lang !== "en") {
+      langDirection = ` Language & Pronunciation: ${lang}.`;
+    }
+
     const prompt = [
       "Synthesize speech for the transcript below. Do not speak these instructions.",
-      `Performance direction: ${manifest.tone}. Natural social-video delivery, clear articulation, no added words.`,
+      `Performance direction: ${manifest.tone}.${langDirection} Natural social-video delivery, clear articulation, no added words.`,
       "TRANSCRIPT START",
       manifest.masterScript,
       "TRANSCRIPT END",
@@ -2576,3 +2609,5 @@ for (;;) {
     await sleep(Math.max(pollMs, 3000));
   }
 }
+
+export { validateTranscript, extractBiasedVocabulary, sanitizePromptForVeo };

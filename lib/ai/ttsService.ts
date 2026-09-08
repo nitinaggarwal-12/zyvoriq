@@ -67,8 +67,17 @@ export async function synthesizeVoiceSpeech(
         : "Aoede";
 
     const primaryModel = process.env.ZYVORIQ_TTS_MODEL || "gemini-3.1-flash-tts-preview";
+    let promptText = cleanText;
+    if (options.language === "hinglish-roman" || options.language === "hinglish") {
+      promptText = `[Language: Hinglish. Authentic conversational North Indian Hindi-English blend] ${cleanText}`;
+    } else if (options.language === "hi-devanagari" || options.language === "hindi") {
+      promptText = `[Language: Hindi] ${cleanText}`;
+    } else if (options.language && options.language !== "en") {
+      promptText = `[Language: ${options.language}] ${cleanText}`;
+    }
+
     const payload = {
-      contents: [{ parts: [{ text: cleanText }] }],
+      contents: [{ parts: [{ text: promptText }] }],
       generationConfig: {
         responseModalities: ["AUDIO"],
         speechConfig: {

@@ -78,6 +78,7 @@ export interface OmniDirectorInput {
   aspectRatio?: "9:16" | "16:9" | "2.39:1";
   scriptText?: string;
   genre?: OmniGenre;
+  language?: string;
 }
 
 const TARGET_SHOT_DURATION_SEC = 6.0;
@@ -97,7 +98,8 @@ export function compileDeterministicDirectorialPass(
   requestedDurationSec: number = 30,
   creationIntent?: ReelCreationIntent,
   explicitGenre?: OmniGenre,
-  aspectRatio: "9:16" | "16:9" | "2.39:1" = "9:16"
+  aspectRatio: "9:16" | "16:9" | "2.39:1" = "9:16",
+  language?: string
 ): OmniDirectorialCompilation {
   const cleanTopic = topic.trim().toLowerCase();
   
@@ -305,6 +307,27 @@ export async function compileOmniDirectorialPass(
   const topic = input.topic.trim();
   const tone = input.tone || "Cinematic & immersive";
 
+  const resolvedLang = (input.language || "").trim().toLowerCase() ||
+    (input.creationIntent?.narrationLanguage || "").trim().toLowerCase() ||
+    (/\b(?:hindi|hinglish|desi|bollywood|in hindi|in hinglish)\b/i.test(topic) || input.genre === "BOLLYWOOD_ACTION" ? "hinglish-roman" :
+     /\b(?:spanish|español|en español)\b/i.test(topic) ? "es" :
+     /\b(?:japanese|nihongo|in japanese)\b/i.test(topic) ? "ja" : "en");
+
+  let languageDirective = "";
+  if (resolvedLang === "hinglish-roman" || resolvedLang === "hinglish") {
+    languageDirective = `
+   - MANDATORY SCRIPT LANGUAGE: Authentic conversational HINGLISH (natural modern Bollywood code-switching of Hindi and English).
+   - MANDATORY SCRIPT FORMAT: Write 100% in LATIN / ROMAN SCRIPT (e.g. "Arjun ne jaise hi accelerate kiya, crowd pagal ho gaya!").
+   - NEVER output in Devanagari script. All Hindi words must be in Roman transliteration.
+   - Dialogue must sound like modern Bollywood cinema: high impact, punchy, authentic Indian colloquial cadence ("yaar", "chalo", "bhai", "kamaal", "dhamaal").`;
+  } else if (resolvedLang === "hi-devanagari" || resolvedLang === "hindi") {
+    languageDirective = `
+   - MANDATORY SCRIPT LANGUAGE: Standard HINDI written in authentic DEVANAGARI script (e.g. "अर्जुन ने जैसे ही गति बढ़ाई, भीड़ झूम उठी!").`;
+  } else if (resolvedLang && resolvedLang !== "en") {
+    languageDirective = `
+   - MANDATORY SCRIPT LANGUAGE: Write all dialogue and narration in authentic natural ${resolvedLang}.`;
+  }
+
   const systemPrompt = `You are Google Omni, the sole executive director, master screenwriter, and cinematographer for Zyvoriq Studios.
 Compile a complete theatrical directorial blueprint for this production:
 Topic: "${topic}"
@@ -346,7 +369,7 @@ CRITICAL DIRECTORIAL REQUIREMENTS:
    - Output exactly ${targetShots} short lines, one per shot.
    - STRICT BUDGET: Each line MUST be between 5 and ${MAX_WORDS_PER_SHOT} words maximum. Never exceed ${MAX_WORDS_PER_SHOT} words per line.
    - Write authentic cinematic dialogue or dramatic narration worthy of a blockbuster film.
-   - Forbid corporate filler, canned clichés, or generic platitudes (NEVER say "Here is what deserves a closer look", "The obvious reaction is only the surface", "Experience the true atmosphere", etc.).
+   - Forbid corporate filler, canned clichés, or generic platitudes (NEVER say "Here is what deserves a closer look", "The obvious reaction is only the surface", "Experience the true atmosphere", etc.).${languageDirective}
 
 Return a JSON object conforming strictly to this structure:
 {
@@ -455,6 +478,6 @@ Return a JSON object conforming strictly to this structure:
     return parsed;
   } catch (parseErr: any) {
     console.warn(`[omni-director] Failed to parse JSON plan, falling back to deterministic compiler: ${parseErr?.message}`);
-    return compileDeterministicDirectorialPass(topic, rawText, requestedDurationSec, input.creationIntent, input.genre);
+    return compileDeterministicDirectorialPass(topic, rawText, requestedDurationSec, input.creationIntent, input.genre, input.aspectRatio, resolvedLang);
   }
 }

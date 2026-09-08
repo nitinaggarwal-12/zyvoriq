@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
       scriptText: body.scriptText,
       creationIntent,
       genre: body.genre,
+      language: body.language || body.narrationLanguage || creationIntent?.narrationLanguage,
     });
     const production = await reelProductionStore.create(manifest);
 

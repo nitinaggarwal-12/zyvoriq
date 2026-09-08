@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
       scriptText: body.scriptText,
       creationIntent: resolveReelCreationIntent(body.creationIntent),
       genre: body.genre,
+      language: body.language || body.narrationLanguage || body.creationIntent?.narrationLanguage,
     });
 
     return NextResponse.json({ success: true, manifest, canonicalEngine: "studio1" });
