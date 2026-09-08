@@ -198,14 +198,18 @@ function syncCanonicalReference(manifest, charId, saved) {
 }
 
 export function buildOpeningFramePrompt(manifest, shot, { hasCanonical = false, hasEnvironmentReference = false } = {}) {
-  const noPerson = !shot?.continuityIn?.characterId;
+  const charId = shot?.continuityIn?.characterId;
+  const noPerson = !charId;
+  const char = charId ? characterFrom(manifest, charId) : null;
+  const charLabel = char?.appearance?.description || char?.name || "actor";
+
   return [
     "OPENING-FRAME CONTRACT: this image is frame 0.000 of the CURRENT video scene.",
     "SEMANTIC ONSET LOCK: the current narration beat must already be visually true in this first frame. Do not use an establishing delay, neutral waiting pose, generic setup, delayed reveal, or transition period before the relevant visual begins.",
     shot?.scriptText ? `CURRENT NARRATION BEAT: ${shot.scriptText}` : "",
     `CURRENT VISUAL OBJECTIVE: ${shot?.visualIntent || "directly visualize the current narration beat"}.`,
-    hasCanonical
-      ? "IDENTITY REFERENCE: the first supplied reference is authoritative for the presenter identity, face, hair, body proportions and wardrobe. Preserve that person exactly."
+    hasCanonical && charId
+      ? `IDENTITY REFERENCE: the first supplied reference is authoritative for ${charLabel}'s identity, face, hair, body proportions and wardrobe. Preserve that person exactly.`
       : "",
     hasCanonical && hasEnvironmentReference
       ? "Do NOT copy the canonical identity sheet's plain studio background; that first image is for identity only."
@@ -214,8 +218,8 @@ export function buildOpeningFramePrompt(manifest, shot, { hasCanonical = false, 
       ? "ENVIRONMENT REFERENCE: the supplied previous-scene frame is authoritative for the physical set. Preserve the same background geometry, wall/floor materials, furniture placement, major props, lighting direction, color temperature and spatial relationships. Do not replace it with a living room, office, studio, outdoor location or any other new set unless the current visual objective explicitly requires a location change."
       : "",
     noPerson
-      ? "SUBJECT RULE: this frame must contain no visible people, faces, silhouettes, reflections or portraits. Preserve the established environment while staging the current B-roll subject."
-      : "Keep the same presenter already engaged in the current beat; do not make them wait before acting or speaking visually.",
+      ? "SUBJECT RULE: this frame must contain no visible people, faces, silhouettes, reflections or portraits. Preserve the established environment while staging the current action or B-roll subject."
+      : `Keep ${charLabel} already engaged in the current beat with eyeline ${shot?.continuityIn?.eyeline || "conversational"}; do not make them wait before acting.`,
     shot?.continuityIn?.environment ? `SETTING CONTRACT: ${shot.continuityIn.environment}.` : "",
     "MANDATORY: ONE single unified full-bleed 9:16 vertical photographic frame. Strictly forbidden: split-screen, dual panels, top/bottom split, collage, inset photos, borders, or multiple views.",
     "Photorealistic vertical 9:16 composition, natural continuity-preserving lighting, no text, captions, logos or UI.",
@@ -257,24 +261,47 @@ export async function ensureCharacterSheet(manifest, productionId, writeAsset) {
   const characters = Array.isArray(manifest.characters) && manifest.characters.length
     ? manifest.characters
     : (manifest.continuity?.characters || []);
-  const presenter = characters.find(c => c.id === "character_presenter") || characters[0];
-  if (!presenter) return manifest;
+  if (!characters.length) return manifest;
 
-  const existing = (presenter.canonicalReferenceImages || []).map(referenceUrl).filter(Boolean);
-  if (existing.length >= 2) {
-    return manifest;
+  // Identify all characters that actually appear in at least one shot
+  const onCameraCharIds = new Set(
+    (manifest.shots || [])
+      .map(s => s.continuityIn?.characterId)
+      .filter(Boolean)
+  );
+
+  // If no shots specify a characterId, default to the first character
+  const targetChars = onCameraCharIds.size > 0
+    ? characters.filter(c => onCameraCharIds.has(c.id))
+    : [characters[0]];
+
+  for (const char of targetChars) {
+    const existing = (char.canonicalReferenceImages || []).map(referenceUrl).filter(Boolean);
+    if (existing.length >= 1) {
+      syncCanonicalReference(manifest, char.id, { url: existing[0], digest: undefined });
+      continue;
+    }
+
+    const charDesc = char.appearance?.description || char.name || char.id;
+    const wardrobeDesc = Array.isArray(char.wardrobe) ? char.wardrobe.join(", ") : (char.wardrobe || "");
+    const genre = manifest.creativeBible?.genre || "";
+
+    const prompt = [
+      "Generate an image. Photorealistic canonical cinematic character reference sheet.",
+      `Full front-facing portrait of ONE person: ${charDesc}.`,
+      wardrobeDesc ? `Wardrobe: ${wardrobeDesc}.` : "",
+      genre ? `Cinematic genre styling: ${genre}.` : "",
+      "Neutral expression, direct eye contact, even cinematic studio lighting, seamless neutral background, no props, no text, no logo.",
+      "Photorealistic, sharp facial bone structure, natural skin texture. Canonical identity reference to be reused across all shots."
+    ].filter(Boolean).join(" ");
+
+    const png = await generateImage([{ text: prompt }]);
+    const digest = crypto.createHash("sha256").update(png).digest("hex").slice(0, 16);
+    const saved = await writeAsset(`reels/${productionId}/character/${char.id}-${digest}.png`, png);
+    syncCanonicalReference(manifest, char.id, { url: saved.url, digest });
+    console.log(`[anchor] Anchored canonical reference for character ${char.id}: ${saved.url}`);
   }
 
-  const prompt =
-    "Generate an image. Photorealistic canonical character reference sheet. Full front-facing portrait of ONE person. " +
-    characterDescription(manifest) +
-    " Neutral expression, direct eye contact, even studio lighting, plain light-grey seamless background, no props, no text, no logo. " +
-    "Photorealistic, sharp facial detail, natural skin texture. Canonical identity reference to be reused across all shots.";
-
-  const png = await generateImage([{ text: prompt }]);
-  const digest = crypto.createHash("sha256").update(png).digest("hex").slice(0, 16);
-  const saved = await writeAsset(`reels/${productionId}/character/${presenter.id}-${digest}.png`, png);
-  syncCanonicalReference(manifest, presenter.id, { url: saved.url, digest });
   return manifest;
 }
 

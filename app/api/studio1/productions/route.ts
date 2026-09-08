@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
       aspectRatio: body.aspectRatio || (platform === "YouTube Shorts" ? "2.39:1" : "9:16"),
       requestedDurationSec: Number(body.requestedDurationSec || body.duration || 30),
       scriptText: body.scriptText,
+      genre: body.genre,
     });
     const production = await reelProductionStore.create(manifest);
 

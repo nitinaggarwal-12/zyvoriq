@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
-import { BoundaryStrategy, QualityGateId, ReelCreationIntent, ReelProductionManifest, ReelShot, TransitionType } from "./types";
+import type { BoundaryStrategy, QualityGateId, ReelCreationIntent, ReelProductionManifest, ReelShot, TransitionType } from "./types.ts";
+import { compileDeterministicDirectorialPass, compileOmniDirectorialPass, type OmniDirectorialCompilation, type OmniGenre } from "./omniDirector.ts";
 
 export interface PlanReelInput {
   topic: string;
@@ -9,6 +10,7 @@ export interface PlanReelInput {
   scriptText?: string;
   creationIntent?: ReelCreationIntent;
   aspectRatio?: "9:16" | "16:9" | "2.39:1";
+  genre?: OmniGenre;
 }
 
 const clock = (n: number) => Number(n.toFixed(6));
@@ -264,7 +266,7 @@ function safeZoneProfile(platform: ReelProductionManifest["platform"]): "instagr
   return "instagram-reels";
 }
 
-export function planReel(input: PlanReelInput): ReelProductionManifest {
+export function planReel(input: PlanReelInput, directorial?: OmniDirectorialCompilation): ReelProductionManifest {
   const requestedDurationSec = clampDuration(input.requestedDurationSec || 30);
   const topic = input.topic.trim() || "your topic";
   const tone = input.tone || "Confident & conversational";
@@ -272,38 +274,54 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
   const creationIntent = input.creationIntent;
   const isCinema = requestedDurationSec >= 90 || platform === "YouTube Shorts";
   const aspectRatio: "9:16" | "16:9" | "2.39:1" = input.aspectRatio || (isCinema ? "2.39:1" : "9:16");
-  const masterScript = (input.scriptText || input.creationIntent?.conceptSpeechSample || "").trim();
+  const masterScript = (input.scriptText || directorial?.masterScript || input.creationIntent?.conceptSpeechSample || "").trim();
   if (!masterScript) {
     throw new Error(
       "NARRATION_PRECONDITION_FAILED: Non-empty scriptText is required to plan a reel manifest synchronously. In async creation pipelines, use planStudio1() or planReelAsync() to dynamically synthesize the script via Gemini before calling synchronous planning."
     );
   }
+  const dir = directorial || compileDeterministicDirectorialPass(topic, masterScript, requestedDurationSec, creationIntent, input.genre);
   const beats = splitIntoEditorialBeats(masterScript, requestedDurationSec);
-  const perShot = requestedDurationSec / beats.length;
+
+  const charactersList = dir.cast.map(c => ({
+    id: c.id,
+    role: c.role === "lead" ? ("character" as const) : c.role === "narrator" ? ("presenter" as const) : ("supporting" as const),
+    canonicalReferenceImages: [] as string[],
+    appearance: {
+      description: `${c.name}, ${c.biometricDNA.ageBand}. ${c.biometricDNA.facialFeatures}, ${c.biometricDNA.hair}.`,
+      face: c.biometricDNA.facialFeatures,
+      hair: c.biometricDNA.hair,
+      ageBand: c.biometricDNA.ageBand,
+    },
+    wardrobe: [c.wardrobe.costume + (c.wardrobe.accessories ? `, ${c.wardrobe.accessories}` : "")],
+    accessories: c.wardrobe.accessories ? [c.wardrobe.accessories] : [],
+    voiceProfile: c.voiceProfile,
+    gestureStyle: dir.genre === "DOCUMENTARY_EXPLAINER" ? "Natural conversational emphasis; avoid repetitive synthetic gestures." : "Cinematic dramatic presence; natural physical weight.",
+    gazeStyle: dir.genre === "DOCUMENTARY_EXPLAINER" ? "Maintain camera eyeline for direct-address presenter beats." : "Conversational off-camera eyelines; do NOT look into camera lens.",
+    emotionalRange: ["focused", "intense", "commanding", "calculating", "reflective"]
+  }));
 
   const selectedVisualStyle = creationIntent?.visualStyleDescription
     ? `${creationIntent.visualStyleLabel || creationIntent.visualStyleId}: ${creationIntent.visualStyleDescription}. Preserve social-first readability and do not render text in scene pixels.`
     : isCinema
     ? "Theatrical 4K cinematic realism; Cooke Anamorphic 2.39:1 framing; 24fps motion cadence; ACES 1.3 color grading; zero generated text in scene pixels."
-    : "Premium social-first cinematic realism; intentional vertical composition; no generated text in scene pixels.";
-  const selectedCharacter = creationIntent?.characterDescription
-    ? `Primary performer identity: ${creationIntent.characterDescription} Maintain the same face, body proportions, age, hair, skin tone and distinguishing features whenever this performer appears.`
-    : "Maintain the same face, body proportions, age, hair, skin tone and distinguishing features whenever the primary presenter appears.";
-  const selectedEnvironment = creationIntent?.conceptPrompt
-    ? `Concept world and scene direction: ${creationIntent.conceptPrompt} Preserve spatial layout, key props, weather and time-of-day whenever the sequence remains in the same location.`
-    : "Maintain spatial layout, key props, weather and time-of-day within a continuous location block.";
+    : `${dir.visualStyle.optics}; ${dir.visualStyle.lightingPalette}; ${dir.visualStyle.atmosphere}. Zero generated text in scene pixels.`;
+
+  const selectedCharacter = charactersList.map(c => `${c.id}: ${c.appearance.description}`).join(" | ");
+  const selectedEnvironment = dir.shots[0]?.sceneEnvironment || topic;
 
   const bible = {
+    genre: dir.genre,
     visualStyle: selectedVisualStyle,
     characterLock: selectedCharacter,
-    wardrobeLock: "Maintain identical wardrobe, accessories and grooming within a continuous location/time block.",
+    wardrobeLock: charactersList.map(c => `${c.id}: ${c.wardrobe.join(", ")}`).join(" | "),
     environmentLock: selectedEnvironment,
     cameraLanguage: aspectRatio === "2.39:1"
       ? "2.39:1 Anamorphic cinema framing; deliberate mix of grand cinematic master shots, medium character two-shots and intimate close-ups; 24fps film motion."
       : aspectRatio === "16:9"
       ? "16:9 widescreen cinema framing; deliberate mix of wide landscape compositions, medium action shots and tight character close-ups."
       : "9:16 social framing; deliberate mix of tight presenter shots, medium action shots and relevant b-roll; preserve eyeline and screen direction across contiguous action.",
-    colorLanguage: "Consistent white balance, contrast and saturation across the full production; final master grade owns the look."
+    colorLanguage: dir.visualStyle.lightingPalette
   };
 
   const categoryDirection = [
@@ -323,39 +341,57 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
       throw new Error(`Planner invariant failed: shot ${i + 1} duration ${editorialDurationSec}s exceeds 8.0s Veo ceiling`);
     }
     const generationDurationSec = chooseGenerationDuration(editorialDurationSec);
-    const previousAction = i === 0 ? "Presenter is composed and ready to begin." : `Continue naturally from shot ${i}.`;
-    // Framing only. The presenter is present and identity-locked in every shot;
-    // subjectForward changes what dominates frame, never who is in it.
-    // TODO: drive this from a per-beat shotType returned by the beat planner.
-    const subjectForward = i !== 0 && i !== beats.length - 1 && i % 3 === 1;
-    const actionOut = i === beats.length - 1 ? "Finish with a confident readable hold." : `Arrive at a settled, readable pose by the end of the clip; complete the gesture rather than ending mid-motion. Shot ${i + 2} continues from this final frame.`;
-    const visualIntent = i === 0
-      ? creationIntent?.conceptId
-        ? "High-retention opening inside the selected concept world; establish subject, genre and stakes immediately."
-        : "High-retention opening: tight presenter or visually surprising action; immediate subject clarity."
-      : i === beats.length - 1
-      ? "Payoff and CTA with clean negative space for editor-rendered captions."
-      : subjectForward
-      ? creationIntent?.conceptId
-        ? "Subject-forward framing: the concept subject dominates the frame while the same presenter stays visibly present at the edge of frame or gesturing toward it; never substitute a different person and avoid generic stock-like imagery."
-        : "Subject-forward framing: the thing being described dominates the frame while the same presenter stays visibly present at the edge of frame or gesturing toward it; never substitute a different person."
-      : "Presenter-driven explanation with a purposeful change in framing or camera motion.";
-    const emotion = { emotion: i === beats.length - 1 ? "confident" : i === 0 ? "curious" : "engaged", intensity: i === 0 ? 0.65 : 0.55, gestureEnergy: subjectForward ? 0.3 : 0.45 };
 
-    const continuityIn = {
-      character: bible.characterLock,
-      characterId: "character_presenter",
-      wardrobe: bible.wardrobeLock,
-      environment: bible.environmentLock,
+    const dirShot = dir.shots[i];
+    const onCameraCharId = dirShot ? dirShot.onCameraCharacterId : (dir.genre === "DOCUMENTARY_EXPLAINER" ? "character_presenter" : dir.cast[0]?.id || null);
+    const onCameraChar = onCameraCharId ? charactersList.find(c => c.id === onCameraCharId) : null;
+    const eyeline = dirShot?.eyeline || (dir.genre === "DOCUMENTARY_EXPLAINER" ? "camera" : "screen_right");
+    const shotGrammar = dirShot?.shotGrammar || "HERO_CLOSE_UP";
+    const visualAction = dirShot?.visualAction || `Visual beat for ${beat || topic}`;
+    const cameraMotion = dirShot?.cameraMotion || bible.cameraLanguage;
+
+    const previousAction = i === 0
+      ? (onCameraChar ? `${onCameraChar.id} is in position.` : "Establishing composition.")
+      : `Continue naturally from shot ${i}.`;
+
+    const actionOut = i === beats.length - 1
+      ? "Finish with a confident readable hold."
+      : `Complete the dramatic action before cut; Shot ${i + 2} continues naturally.`;
+
+    const visualIntent = `${shotGrammar}: ${visualAction}. Eyeline: ${eyeline}. Camera: ${cameraMotion}.`;
+    const emotion = { emotion: i === beats.length - 1 ? "confident" : i === 0 ? "curious" : "engaged", intensity: i === 0 ? 0.65 : 0.55, gestureEnergy: 0.4 };
+
+    const continuityIn: any = {
+      character: onCameraChar?.appearance.description,
+      characterId: onCameraCharId || undefined,
+      wardrobe: onCameraChar?.wardrobe?.[0],
+      environment: dirShot?.sceneEnvironment || bible.environmentLock,
       environmentId: "environment_primary",
       lighting: bible.colorLanguage,
       action: previousAction,
-      camera: bible.cameraLanguage,
-      eyeline: subjectForward ? "toward subject, presenter remains in frame" : "camera",
+      camera: cameraMotion,
+      eyeline,
       emotion
     };
     const continuityOut = { ...continuityIn, action: actionOut };
     const narrative = beat || `Visual continuation for ${topic}; support the surrounding narration without introducing a new claim.`;
+
+    const promptParts = [
+      `GENRE: ${dir.genre}.`,
+      onCameraCharId
+        ? `IDENTITY LOCK [${onCameraCharId}]: Authoritative reference sheet applies to ${onCameraChar?.appearance.description || onCameraCharId}. Wardrobe: ${onCameraChar?.wardrobe?.[0] || "Era-appropriate costume"}. Eyeline: ${eyeline}. Maintain identical facial features and actor identity.`
+        : "SUBJECT RULE: Pure cinematic action, stunt, environment master, or object focus. NO talking presenters, NO direct-to-camera address.",
+      `SCENE ACTION: ${visualAction}.`,
+      categoryDirection,
+      `Narrative beat: ${narrative}.`,
+      `Tone: ${tone}.`,
+      bible.visualStyle,
+      bible.cameraLanguage,
+      `Continuity start: ${previousAction}`,
+      `Continuity end: ${actionOut}`,
+      `Emotional state: ${emotion.emotion} at intensity ${emotion.intensity}.`,
+      "Do not render captions, subtitles, logos or UI text inside the generated video; those are composited later."
+    ];
 
     const shot: ReelShot = {
       id: `shot_${String(i + 1).padStart(2, "0")}`,
@@ -367,7 +403,7 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
       trimOutSec: editorialDurationSec,
       scriptText: beat,
       visualIntent,
-      generationPrompt: [visualIntent, categoryDirection, `Narrative beat: ${narrative}`, `Tone: ${tone}.`, bible.visualStyle, bible.characterLock, bible.wardrobeLock, bible.environmentLock, bible.cameraLanguage, `Continuity start: ${previousAction}`, `Continuity end: ${actionOut}`, `Emotional state: ${emotion.emotion} at intensity ${emotion.intensity}.`, "Do not render captions, subtitles, logos or UI text inside the generated video; those are composited later."].filter(Boolean).join(" "),
+      generationPrompt: promptParts.filter(Boolean).join(" "),
       continuityIn,
       continuityOut,
       transitionOut: transitionFor(i, beats.length),
@@ -428,18 +464,7 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
     audio: { masterClock: isCinema ? "music" : "narration", timingSource: "pending" },
     captions: { timingSource: "draft", cues: draftCaptionCues, safeZoneProfile: safeZoneProfile(platform) },
     continuity: {
-      characters: [{
-        id: "character_presenter",
-        role: "presenter",
-        canonicalReferenceImages: [],
-        appearance: { description: bible.characterLock },
-        wardrobe: [bible.wardrobeLock],
-        accessories: [],
-        voiceProfile: creationIntent?.characterName,
-        gestureStyle: "Natural conversational emphasis; avoid repetitive synthetic gestures.",
-        gazeStyle: "Maintain camera eyeline for direct-address presenter beats.",
-        emotionalRange: ["curious", "engaged", "reflective", "confident"]
-      }],
+      characters: charactersList,
       environments: [{
         id: "environment_primary",
         description: bible.environmentLock,
@@ -447,20 +472,20 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
         keyObjects: [],
         cameraAxis: bible.cameraLanguage
       }],
-      performanceTracks: [{
-        id: "performance_presenter",
-        characterId: "character_presenter",
-        audioTrack: "master-narration",
-        mode: "persistent-performer",
-        cues: shots.filter(s => s.continuityIn.characterId === "character_presenter").map(s => ({
+      performanceTracks: charactersList.map(char => ({
+        id: `performance_${char.id}`,
+        characterId: char.id,
+        audioTrack: "master-narration" as const,
+        mode: "persistent-performer" as const,
+        cues: shots.filter(s => s.continuityIn.characterId === char.id).map(s => ({
           startSec: s.editorialStartSec,
           endSec: clock(s.editorialStartSec + s.editorialDurationSec),
           emotion: s.continuityIn.emotion || { emotion: "engaged", intensity: 0.5 },
-          gaze: "camera" as const,
+          gaze: (s.continuityIn.eyeline?.includes("left") ? "off-camera-left" : s.continuityIn.eyeline?.includes("right") ? "off-camera-right" : s.continuityIn.eyeline === "camera" ? "camera" : "free") as any,
           gesture: s.continuityOut.action,
           speakingEnergy: s.continuityIn.emotion?.intensity || 0.5
         }))
-      }],
+      })),
       boundaries,
       objectStateGraph: Object.fromEntries(shots.map(s => [s.id, s.continuityIn.objectStates || []]))
     },
@@ -485,13 +510,17 @@ export function planReel(input: PlanReelInput): ReelProductionManifest {
 
 export async function planReelAsync(input: PlanReelInput): Promise<ReelProductionManifest> {
   let scriptText = (input.scriptText || "").trim();
+  let directorial: OmniDirectorialCompilation | undefined;
   if (!scriptText) {
-    scriptText = await generateNarrationScriptWithGemini(
-      input.topic,
-      input.requestedDurationSec || 30,
-      input.tone,
-      input.creationIntent
-    );
+    directorial = await compileOmniDirectorialPass({
+      topic: input.topic,
+      requestedDurationSec: input.requestedDurationSec || 30,
+      tone: input.tone,
+      creationIntent: input.creationIntent,
+      aspectRatio: input.aspectRatio,
+      genre: input.genre,
+    });
+    scriptText = directorial.masterScript;
   }
-  return planReel({ ...input, scriptText });
+  return planReel({ ...input, scriptText }, directorial);
 }

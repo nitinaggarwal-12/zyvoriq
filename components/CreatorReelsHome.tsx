@@ -133,6 +133,18 @@ export const CINEMA_FINISHED_REELS: CinemaMasterReel[] = [
   }
 ];
 
+export const OMNI_GENRES = [
+  { id: "AUTO", label: "✨ Auto-Detect", desc: "Omni Director auto-infers best cinematic or documentary format from prompt" },
+  { id: "HISTORICAL_BIOPIC", label: "🎩 Historical Biopic", desc: "Era wardrobe, multi-character dialogue, period lighting" },
+  { id: "BOLLYWOOD_ACTION", label: "💥 Bollywood Action", desc: "Kinetic tracking, combat stunts, tactical coverage" },
+  { id: "CINEMATIC_DRAMA", label: "🎭 Cinematic Drama", desc: "Shot / reverse-shot, emotional stakes, anamorphic falloff" },
+  { id: "SCI_FI_CYBERPUNK", label: "🚀 Sci-Fi Cyberpunk", desc: "Neon atmosphere, futuristic tech, synthetic score" },
+  { id: "NEO_NOIR_THRILLER", label: "🕵️ Neo-Noir Thriller", desc: "High-contrast rain, venetian shadows, suspense" },
+  { id: "HIGH_FANTASY", label: "🐉 High Fantasy", desc: "Mythic realms, epic wide masters, orchestral motifs" },
+  { id: "HORROR_MYSTERY", label: "🕯️ Horror / Mystery", desc: "Atmospheric dread, slow deliberate pushes, low key" },
+  { id: "DOCUMENTARY_EXPLAINER", label: "🎙️ Documentary Explainer", desc: "Direct-to-camera presenter, educational breakdown" },
+];
+
 export function CreatorReelsHome() {
   const [activeTab, setActiveTab] = useState<"instagram_tiktok" | "youtube_shorts">("instagram_tiktok");
   const [showcaseTab, setShowcaseTab] = useState<"instagram_tiktok" | "youtube_shorts">("instagram_tiktok");
@@ -141,6 +153,7 @@ export function CreatorReelsHome() {
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
   const [promptText, setPromptText] = useState("");
+  const [selectedGenre, setSelectedGenre] = useState<string>("AUTO");
   const [selectedDuration, setSelectedDuration] = useState(30);
   const [selectedAspectRatio, setSelectedAspectRatio] = useState<"9:16" | "16:9" | "2.39:1">("9:16");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -225,6 +238,7 @@ export function CreatorReelsHome() {
           duration: selectedDuration,
           requestedDurationSec: selectedDuration,
           aspectRatio: selectedAspectRatio,
+          genre: selectedGenre !== "AUTO" ? selectedGenre : undefined,
           platform,
           autoStart: true,
         })
@@ -503,6 +517,28 @@ export function CreatorReelsHome() {
                       </button>
                     ))}
                   </div>
+                </div>
+
+                {/* Omni Directorial Genre Selector */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-4 border-b border-white/5 scrollbar-none">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 shrink-0">Genre:</span>
+                  {OMNI_GENRES.map(g => (
+                    <button
+                      key={g.id}
+                      type="button"
+                      onClick={() => setSelectedGenre(g.id)}
+                      title={g.desc}
+                      className={`px-3 py-2 rounded-lg text-xs font-semibold shrink-0 transition-all min-h-[44px] flex items-center gap-1.5 ${
+                        selectedGenre === g.id
+                          ? activeTab === "youtube_shorts"
+                            ? "bg-amber-400 text-[#07090E] font-bold shadow-sm shadow-amber-400/30"
+                            : "bg-teal-500 text-[#07090E] font-bold shadow-sm shadow-teal-500/30"
+                          : "bg-white/5 text-slate-300 hover:bg-white/10"
+                      }`}
+                    >
+                      <span>{g.label}</span>
+                    </button>
+                  ))}
                 </div>
 
                 {/* Prompt Textarea */}

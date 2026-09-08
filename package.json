@@ -22,6 +22,7 @@
     "worker:check": "node --check scripts/canonical_reel_operation_guard.mjs && node --check scripts/transcription_word_timing_guard.mjs && node --check scripts/characterAnchor.mjs && node --check scripts/reel_worker_v2.mjs",
     "narration:qa": "node scripts/qa/transcription_word_timing_guard_test.mjs",
     "studio1:qa": "node scripts/qa/studio1_timeline_sync_test.mjs && node scripts/qa/studio1_full_reel_certification_test.mjs && node scripts/qa/studio1_continuity_onset_test.mjs",
+    "omni:qa": "npx tsx scripts/qa/test_omni_film_grammar.mjs",
     "canonical:qa": "node scripts/qa/canonical_reel_engine_routing_test.mjs",
     "inspector:qa": "node scripts/qa/reel_inspector_creator_ux_test.mjs",
     "library:qa": "node scripts/qa/library_direct_media_actions_test.mjs",

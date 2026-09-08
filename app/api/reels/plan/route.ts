@@ -12,6 +12,7 @@ export async function POST(req: NextRequest) {
       requestedDurationSec: Number(body.requestedDurationSec || 30),
       scriptText: body.scriptText,
       creationIntent: resolveReelCreationIntent(body.creationIntent),
+      genre: body.genre,
     });
 
     return NextResponse.json({ success: true, manifest, canonicalEngine: "studio1" });

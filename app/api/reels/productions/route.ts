@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
       requestedDurationSec: Number(body.requestedDurationSec || 30),
       scriptText: body.scriptText,
       creationIntent,
+      genre: body.genre,
     });
     const production = await reelProductionStore.create(manifest);
 

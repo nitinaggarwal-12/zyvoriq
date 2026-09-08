@@ -1436,11 +1436,12 @@ async function applyNarration(op, result) {
     }
   }
 
-  // Precondition Gate: Character sheet anchoring is mandatory when presenter continuity is required.
-  const requiresPresenter = m.studio1?.presenterContinuity !== false &&
-    (m.characters?.some(c => c.id === "character_presenter") || m.continuity?.characters?.some(c => c.id === "character_presenter"));
+  // Precondition Gate: Character sheet anchoring is mandatory when character continuity is required.
+  const onCameraCharIds = new Set((m.shots || []).map(s => s.continuityIn?.characterId).filter(Boolean));
+  const requiresCharacters = m.studio1?.presenterContinuity !== false &&
+    (onCameraCharIds.size > 0 || m.characters?.some(c => c.id === "character_presenter") || m.continuity?.characters?.some(c => c.id === "character_presenter"));
 
-  if (requiresPresenter) {
+  if (requiresCharacters) {
     try {
       await ensureCharacterSheet(m, op.production_id, writeAsset);
     } catch (csErr) {
@@ -1448,13 +1449,15 @@ async function applyNarration(op, result) {
       throw csErr; // Fail operation cleanly so queue retries with backoff; never silently skip!
     }
 
-    const characters = Array.isArray(m.characters) && m.characters.length ? m.characters : (m.continuity?.characters || []);
-    const presenter = characters.find(c => c.id === "character_presenter") || characters[0];
-    const hasCanonical = presenter?.canonicalReferenceImages?.some(img => typeof img === "string" ? Boolean(img) : Boolean(img?.url));
-    if (!hasCanonical) {
-      throw new Error(`PRECONDITION_FAILED: Canonical character reference image missing for ${op.production_id}. Refusing to proceed unanchored.`);
+    const updatedChars = Array.isArray(m.characters) && m.characters.length ? m.characters : (m.continuity?.characters || []);
+    for (const charId of onCameraCharIds) {
+      const char = updatedChars.find(c => c.id === charId);
+      const hasCanonical = char?.canonicalReferenceImages?.some(img => typeof img === "string" ? Boolean(img) : Boolean(img?.url));
+      if (!hasCanonical) {
+        throw new Error(`PRECONDITION_FAILED: Canonical character reference image missing for character ${charId} in ${op.production_id}. Refusing to proceed unanchored.`);
+      }
     }
-    console.log(`[reel-worker] [precondition] Verified canonical character reference anchored for ${op.production_id}`);
+    console.log(`[reel-worker] [precondition] Verified canonical character references anchored for ${onCameraCharIds.size} characters in ${op.production_id}`);
   }
 
   m.status = "SHOTS_PLANNED";
@@ -1574,24 +1577,26 @@ async function generateShot(op, manifest, shot) {
     const characters = Array.isArray(manifest.characters) && manifest.characters.length
       ? manifest.characters
       : (manifest.continuity?.characters || []);
-    const charId = shot.continuityIn?.characterId || "character_presenter";
-    const char = characters.find(c => c.id === charId) || characters[0];
+    const charId = shot.continuityIn?.characterId;
+    const char = charId ? (characters.find(c => c.id === charId) || null) : null;
     const canonicalUrls = (char?.canonicalReferenceImages || [])
       .map(img => typeof img === "string" ? img : img?.url)
       .filter(Boolean);
 
     const refImages = [];
-    for (const imgUrl of canonicalUrls.slice(0, ref?.buffer ? 2 : 3)) {
-      try {
-        const buf = await readAsset(imgUrl);
-        if (buf?.length) {
-          refImages.push({
-            image: { bytesBase64Encoded: buf.toString("base64"), mimeType: "image/png" },
-            referenceType: "asset"
-          });
+    if (char && canonicalUrls.length) {
+      for (const imgUrl of canonicalUrls.slice(0, ref?.buffer ? 2 : 3)) {
+        try {
+          const buf = await readAsset(imgUrl);
+          if (buf?.length) {
+            refImages.push({
+              image: { bytesBase64Encoded: buf.toString("base64"), mimeType: "image/png" },
+              referenceType: "asset"
+            });
+          }
+        } catch (e) {
+          console.warn(`[reel-worker] Failed to load canonical reference ${imgUrl}: ${e?.message || e}`);
         }
-      } catch (e) {
-        console.warn(`[reel-worker] Failed to load canonical reference ${imgUrl}: ${e?.message || e}`);
       }
     }
     // If continuing from previous shot, attach previous shot frame as additional asset reference
@@ -1604,7 +1609,7 @@ async function generateShot(op, manifest, shot) {
 
     if (refImages.length > 0) {
       instance.referenceImages = refImages;
-      console.log(`[reel-worker] [referenceImages] applied ${refImages.length} reference images to ${shot.id} (canonical + temporal)`);
+      console.log(`[reel-worker] [referenceImages] applied ${refImages.length} reference images to ${shot.id} (char: ${charId || "none"}, temporal: ${Boolean(ref?.buffer)})`);
     } else {
       // Fallback: single opening frame conditioning
       let anchorFrame = null;
@@ -1621,10 +1626,10 @@ async function generateShot(op, manifest, shot) {
       }
     }
 
-    // Precondition Circuit Breaker: Refuse unanchored generation for shots requiring presenter continuity
-    const requiresPresenter = shot.continuityIn?.characterId === "character_presenter";
-    if (requiresPresenter && !instance.referenceImages?.length && !instance.image) {
-      throw new Error(`PRECONDITION_FAILED: ${shot.id} requires presenter continuity but has no canonical reference images or anchor frame. Refusing unanchored generation.`);
+    // Precondition Circuit Breaker: Refuse unanchored generation for shots requiring character continuity
+    const requiresCharacter = Boolean(shot.continuityIn?.characterId);
+    if (requiresCharacter && !instance.referenceImages?.length && !instance.image) {
+      throw new Error(`PRECONDITION_FAILED: ${shot.id} requires character continuity (${shot.continuityIn.characterId}) but has no canonical reference images or anchor frame. Refusing unanchored generation.`);
     }
     const seed = seedForShot(op.production_id, shot.id);
     const durationSeconds = instance.referenceImages?.length ? 8 : (shot.generationDurationSec || 8);

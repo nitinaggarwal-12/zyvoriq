@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
-import { planReel, generateNarrationScriptWithGemini, type PlanReelInput } from "@/lib/reel/planner";
-import type { ReelProductionManifest } from "@/lib/reel/types";
+import { planReel, generateNarrationScriptWithGemini, type PlanReelInput } from "../reel/planner.ts";
+import { compileOmniDirectorialPass, type OmniDirectorialCompilation } from "../reel/omniDirector.ts";
+import type { ReelProductionManifest } from "../reel/types.ts";
 
 export type Studio1SubjectMode = "PRESENTER" | "NO_PERSON";
 
@@ -351,43 +352,45 @@ export function applyStudio1ShotPrompt(manifest: ReelProductionManifest, shotId:
     shot.scriptText ? `The current spoken beat is: ${shot.scriptText}` : "",
   ].filter(Boolean).join(" ");
 
-  if (mode === "NO_PERSON") {
+  if (mode === "NO_PERSON" || !shot.continuityIn?.characterId) {
     delete shot.continuityIn.characterId;
     delete shot.continuityOut.characterId;
     shot.generationPrompt = [
       base,
       environmentRule,
       semanticOnsetRule,
-      "STUDIO1 SUBJECT RULE: This shot is explicit B-roll with NO visible people, faces, presenters, human silhouettes, reflections, portraits, photographs of people, or person-like figures. Preserve the established environment and visual language without introducing a new human identity."
+      "STUDIO1 SUBJECT RULE: Pure cinematic action, stunt, environment master or object focus. NO talking presenters, NO direct-to-camera address. Preserve the established environment and visual language."
     ].join(" ");
     return;
   }
 
-  if (meta.presenterContinuity) {
-    shot.continuityIn.characterId = "character_presenter";
-    shot.continuityOut.characterId = "character_presenter";
-  } else {
-    delete shot.continuityIn.characterId;
-    delete shot.continuityOut.characterId;
-  }
+  const charId = shot.continuityIn.characterId;
+  const char = (manifest.continuity?.characters || []).find(c => c.id === charId);
+  const charDesc = char?.appearance?.description || charId;
+
+  shot.continuityIn.characterId = charId;
+  shot.continuityOut.characterId = charId;
 
   shot.generationPrompt = [
     base,
     environmentRule,
     semanticOnsetRule,
     meta.presenterContinuity
-      ? "STUDIO1 IDENTITY LOCK: The same canonical presenter must appear in this shot. Identity continuity is mandatory: identical face, age, skin tone, hair, body proportions, wardrobe and distinguishing features. Do not substitute, cast, morph into, or introduce a different presenter. The canonical reference frame supplied by the production worker is authoritative for identity, while the previous-scene reference is authoritative for the environment."
-      : "STUDIO1 PRESENTER MODE: A presenter is allowed, but canonical identity anchoring is disabled for this experiment."
+      ? `STUDIO1 IDENTITY LOCK [${charId}]: The canonical character reference for ${charDesc} is authoritative for this shot. Identity continuity is mandatory: identical face, age, skin tone, hair, body proportions, wardrobe and distinguishing features. Do not substitute, cast, morph into, or introduce a different actor. Eyeline: ${shot.continuityIn.eyeline || "conversational off-camera"}.`
+      : "STUDIO1 ACTOR MODE: Canonical identity anchoring is disabled for this experiment."
   ].join(" ");
 }
 
-export function planStudio1Sync(input: PlanReelInput): ReelProductionManifest {
-  const manifest = planReel(input);
+export function planStudio1Sync(input: PlanReelInput, directorial?: OmniDirectorialCompilation): ReelProductionManifest {
+  const manifest = planReel(input, directorial);
   manifest.id = `studio1_${crypto.randomUUID()}`;
   manifest.status = "SCRIPT_READY";
 
   const basePrompts = Object.fromEntries(manifest.shots.map(shot => [shot.id, shot.generationPrompt]));
-  const subjectModes = Object.fromEntries(manifest.shots.map(shot => [shot.id, "PRESENTER" as Studio1SubjectMode]));
+  const subjectModes = Object.fromEntries(manifest.shots.map(shot => [
+    shot.id,
+    (shot.continuityIn.characterId ? "PRESENTER" : "NO_PERSON") as Studio1SubjectMode
+  ]));
   const meta: Studio1Metadata = {
     schemaVersion: 1,
     projectTitle: input.topic,
@@ -420,15 +423,20 @@ export function planStudio1Sync(input: PlanReelInput): ReelProductionManifest {
 
 export async function planStudio1(input: PlanReelInput): Promise<ReelProductionManifest> {
   let scriptText = (input.scriptText || "").trim();
+  let directorial: OmniDirectorialCompilation | undefined;
+
   if (!scriptText) {
-    scriptText = await generateNarrationScriptWithGemini(
-      input.topic,
-      input.requestedDurationSec || 30,
-      input.tone,
-      input.creationIntent
-    );
+    directorial = await compileOmniDirectorialPass({
+      topic: input.topic,
+      requestedDurationSec: input.requestedDurationSec || 30,
+      tone: input.tone,
+      creationIntent: input.creationIntent,
+      aspectRatio: input.aspectRatio,
+      genre: input.genre,
+    });
+    scriptText = directorial.masterScript;
   }
-  return planStudio1Sync({ ...input, scriptText });
+  return planStudio1Sync({ ...input, scriptText }, directorial);
 }
 
 export function isStudio1Manifest(manifest: ReelProductionManifest) {
