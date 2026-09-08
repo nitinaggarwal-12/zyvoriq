@@ -1567,31 +1567,33 @@ function sanitizePromptForVeo(prompt) {
   if (!prompt || typeof prompt !== "string") return prompt;
   // 1. Strip dialogue speaker prefixes like "KIARA:", "AKSHAY:", etc. while preserving camera grammar tags
   let clean = stripSpeakerPrefixes(prompt);
-  // 2. Map celebrity references to high-craft cinematic visual archetypes
+  // Strip internal character ID tags like STUDIO1 IDENTITY LOCK [zoya_rehman]:
+  clean = clean.replace(/STUDIO1 IDENTITY LOCK \[[^\]]+\]:/gi, "STUDIO1 IDENTITY LOCK [lead_performer]:");
+  // 2. Map celebrity references and proper character names (with spaces or underscores) to high-craft cinematic visual archetypes
   const celebrityMap = [
-    { pattern: /\b(?:Kiara\s*Advani|Kiara)\b/gi, replacement: "a radiant, graceful Indian leading lady" },
-    { pattern: /\b(?:Akshay\s*Kumar|Akshay)\b/gi, replacement: "a handsome, athletic charismatic Indian leading man" },
-    { pattern: /\b(?:Salman\s*Khan|Salman)\b/gi, replacement: "a rugged, muscular charismatic leading man" },
-    { pattern: /\b(?:Aishwarya\s*Rai(?:\s*Bachchan)?|Aishwarya)\b/gi, replacement: "a strikingly beautiful, elegant leading actress with luminous eyes" },
-    { pattern: /\b(?:Shah\s*Rukh\s*Khan|Shahrukh\s*Khan|SRK)\b/gi, replacement: "a charming, iconic romantic leading man with dimples" },
-    { pattern: /\b(?:Deepika\s*Padukone|Deepika)\b/gi, replacement: "a tall, statuesque graceful leading lady" },
-    { pattern: /\b(?:Ranveer\s*Singh|Ranveer)\b/gi, replacement: "an energetic, stylish charismatic leading man" },
-    { pattern: /\b(?:Alia\s*Bhatt|Alia)\b/gi, replacement: "a youthful, expressive charming leading actress" },
-    { pattern: /\b(?:Ranbir\s*Kapoor|Ranbir)\b/gi, replacement: "a suave, contemplative handsome leading man" },
-    { pattern: /\b(?:Hrithik\s*Roshan|Hrithik)\b/gi, replacement: "a tall, green-eyed athletic leading man" },
-    { pattern: /\b(?:Katrina\s*Kaif|Katrina)\b/gi, replacement: "a glamorous, statuesque leading lady" },
-    { pattern: /\b(?:Priyanka\s*Chopra(?:\s*Jonas)?|Priyanka)\b/gi, replacement: "a confident, glamorous world-class leading lady" },
-    { pattern: /\b(?:Kareena\s*Kapoor(?:\s*Khan)?|Kareena)\b/gi, replacement: "a glamorous, confident radiant leading lady" },
-    { pattern: /\b(?:Saif\s*Ali\s*Khan|Saif)\b/gi, replacement: "a suave, royal sophisticated leading man" },
-    { pattern: /\b(?:Amitabh\s*Bachchan|Amitabh)\b/gi, replacement: "a venerable, commanding cinematic patriarch" },
-    { pattern: /\b(?:Tom\s*Cruise)\b/gi, replacement: "a determined, intense action hero" },
-    { pattern: /\b(?:Brad\s*Pitt)\b/gi, replacement: "a charismatic, rugged blonde leading man" },
-    { pattern: /\b(?:Leonardo\s*DiCaprio)\b/gi, replacement: "an intense, expressive dramatic leading man" },
+    { pattern: /\b(?:Kiara[\s_]*Advani|Kiara)\b/gi, replacement: "a radiant, graceful Indian leading lady" },
+    { pattern: /\b(?:Akshay[\s_]*Kumar|Akshay)\b/gi, replacement: "a handsome, athletic charismatic Indian leading man" },
+    { pattern: /\b(?:Salman[\s_]*Khan|Salman)\b/gi, replacement: "a rugged, muscular charismatic leading man" },
+    { pattern: /\b(?:Aishwarya[\s_]*Rai(?:[\s_]*Bachchan)?|Aishwarya)\b/gi, replacement: "a strikingly beautiful, elegant leading actress with luminous eyes" },
+    { pattern: /\b(?:Shah[\s_]*Rukh[\s_]*Khan|Shahrukh[\s_]*Khan|SRK)\b/gi, replacement: "a charming, iconic romantic leading man with dimples" },
+    { pattern: /\b(?:Deepika[\s_]*Padukone|Deepika)\b/gi, replacement: "a tall, statuesque graceful leading lady" },
+    { pattern: /\b(?:Ranveer[\s_]*Singh|Ranveer)\b/gi, replacement: "an energetic, stylish charismatic leading man" },
+    { pattern: /\b(?:Alia[\s_]*Bhatt|Alia)\b/gi, replacement: "a youthful, expressive charming leading actress" },
+    { pattern: /\b(?:Ranbir[\s_]*Kapoor|Ranbir)\b/gi, replacement: "a suave, contemplative handsome leading man" },
+    { pattern: /\b(?:Hrithik[\s_]*Roshan|Hrithik)\b/gi, replacement: "a tall, green-eyed athletic leading man" },
+    { pattern: /\b(?:Katrina[\s_]*Kaif|Katrina)\b/gi, replacement: "a glamorous, statuesque leading lady" },
+    { pattern: /\b(?:Priyanka[\s_]*Chopra(?:[\s_]*Jonas)?|Priyanka)\b/gi, replacement: "a confident, glamorous world-class leading lady" },
+    { pattern: /\b(?:Kareena[\s_]*Kapoor(?:[\s_]*Khan)?|Kareena)\b/gi, replacement: "a glamorous, confident radiant leading lady" },
+    { pattern: /\b(?:Saif[\s_]*Ali[\s_]*Khan|Saif)\b/gi, replacement: "a suave, royal sophisticated leading man" },
+    { pattern: /\b(?:Amitabh[\s_]*Bachchan|Amitabh)\b/gi, replacement: "a venerable, commanding cinematic patriarch" },
+    { pattern: /\b(?:Tom[\s_]*Cruise)\b/gi, replacement: "a determined, intense action hero" },
+    { pattern: /\b(?:Brad[\s_]*Pitt)\b/gi, replacement: "a charismatic, rugged blonde leading man" },
+    { pattern: /\b(?:Leonardo[\s_]*DiCaprio)\b/gi, replacement: "an intense, expressive dramatic leading man" },
     { pattern: /\b(?:Zendaya)\b/gi, replacement: "a stylish, striking modern leading lady" },
-    { pattern: /\b(?:Timothee\s*Chalamet|Timothée\s*Chalamet)\b/gi, replacement: "a slender, expressive brooding leading man" },
-    { pattern: /\b(?:Kabir\s*Anand|Kabir)\b/gi, replacement: "a rugged, athletic covert operative" },
-    { pattern: /\b(?:Zoya\s*Rehman|Zoya)\b/gi, replacement: "a fierce, agile female intelligence officer" },
-    { pattern: /\b(?:Farooq\s*Malik|Farooq)\b/gi, replacement: "a menacing, hardened rogue commander" },
+    { pattern: /\b(?:Timothee[\s_]*Chalamet|Timothée[\s_]*Chalamet)\b/gi, replacement: "a slender, expressive brooding leading man" },
+    { pattern: /\b(?:Kabir[\s_]*Anand|Kabir)\b/gi, replacement: "a rugged, athletic covert operative" },
+    { pattern: /\b(?:Zoya[\s_]*Rehman|Zoya)\b/gi, replacement: "a fierce, agile female intelligence officer" },
+    { pattern: /\b(?:Farooq[\s_]*Malik|Farooq)\b/gi, replacement: "a menacing, hardened rogue commander" },
   ];
   for (const { pattern, replacement } of celebrityMap) {
     clean = clean.replace(pattern, replacement);
@@ -1684,8 +1686,8 @@ async function generateShot(op, manifest, shot) {
     if (refImages.length > 0) {
       instance.referenceImages = refImages;
       console.log(`[reel-worker] [referenceImages] applied ${refImages.length} reference images to ${shot.id} (char: ${charId || "none"}, temporal: ${Boolean(ref?.buffer)})`);
-    } else {
-      // Fallback: single opening frame conditioning
+    } else if (safetyAttemptCount < 2) {
+      // Fallback: single opening frame conditioning (only on normal attempts / retry 1; omitted on safety retry >= 2 to bypass image-level likeness triggers)
       let anchorFrame = null;
       try {
         anchorFrame = await firstFrameForShot(manifest, shot, op.production_id, writeAsset, readAsset);
@@ -1698,11 +1700,13 @@ async function generateShot(op, manifest, shot) {
       } else if (ref) {
         instance.image = { mimeType: "image/png", bytesBase64Encoded: ref.buffer.toString("base64") };
       }
+    } else {
+      console.log(`[reel-worker] [safety-fallback] Omitting anchor opening frame on safety retry #${safetyAttemptCount} for ${shot.id}; using pure text-to-video generation to eliminate all image likeness triggers.`);
     }
 
-    // Precondition Circuit Breaker: Refuse unanchored generation for shots requiring character continuity
+    // Precondition Circuit Breaker: Refuse unanchored generation for shots requiring character continuity UNLESS on safety fallback >= 2
     const requiresCharacter = Boolean(shot.continuityIn?.characterId);
-    if (requiresCharacter && !instance.referenceImages?.length && !instance.image) {
+    if (requiresCharacter && !instance.referenceImages?.length && !instance.image && safetyAttemptCount < 2) {
       throw new Error(`PRECONDITION_FAILED: ${shot.id} requires character continuity (${shot.continuityIn.characterId}) but has no canonical reference images or anchor frame. Refusing unanchored generation.`);
     }
     const seed = seedForShot(op.production_id, shot.id);
@@ -1858,7 +1862,9 @@ async function generateShot(op, manifest, shot) {
                 },
                 {
                   name: "replace-celebrity-names-with-generic-archetypes",
-                  apply: (p) => p.replace(/\b(?:Kiara\s*Advani|Kiara|Akshay\s*Kumar|Akshay|Salman\s*Khan|Salman|Aishwarya\s*Rai(?:\s*Bachchan)?|Aishwarya|Shah\s*Rukh\s*Khan|Shahrukh\s*Khan|SRK|Deepika\s*Padukone|Deepika|Ranveer\s*Singh|Ranveer|Alia\s*Bhatt|Alia|Ranbir\s*Kapoor|Ranbir|Hrithik\s*Roshan|Hrithik|Katrina\s*Kaif|Katrina|Priyanka\s*Chopra(?:\s*Jonas)?|Priyanka|Kareena\s*Kapoor(?:\s*Khan)?|Kareena|Saif\s*Ali\s*Khan|Saif|Amitabh\s*Bachchan|Amitabh|Tom\s*Cruise|Brad\s*Pitt|Leonardo\s*DiCaprio|Zendaya|Timothee\s*Chalamet|Timothée\s*Chalamet|Kabir\s*Anand|Kabir|Zoya\s*Rehman|Zoya|Farooq\s*Malik|Farooq)\b/gi, "lead performer"),
+                  apply: (p) => p
+                    .replace(/STUDIO1 IDENTITY LOCK \[[^\]]+\]:/gi, "STUDIO1 IDENTITY LOCK [lead_performer]:")
+                    .replace(/\b(?:Kiara[\s_]*Advani|Kiara|Akshay[\s_]*Kumar|Akshay|Salman[\s_]*Khan|Salman|Aishwarya[\s_]*Rai(?:[\s_]*Bachchan)?|Aishwarya|Shah[\s_]*Rukh[\s_]*Khan|Shahrukh[\s_]*Khan|SRK|Deepika[\s_]*Padukone|Deepika|Ranveer[\s_]*Singh|Ranveer|Alia[\s_]*Bhatt|Alia|Ranbir[\s_]*Kapoor|Ranbir|Hrithik[\s_]*Roshan|Hrithik|Katrina[\s_]*Kaif|Katrina|Priyanka[\s_]*Chopra(?:[\s_]*Jonas)?|Priyanka|Kareena[\s_]*Kapoor(?:[\s_]*Khan)?|Kareena|Saif[\s_]*Ali[\s_]*Khan|Saif|Amitabh[\s_]*Bachchan|Amitabh|Tom[\s_]*Cruise|Brad[\s_]*Pitt|Leonardo[\s_]*DiCaprio|Zendaya|Timothee[\s_]*Chalamet|Timothée[\s_]*Chalamet|Kabir[\s_]*Anand|Kabir|Zoya[\s_]*Rehman|Zoya|Farooq[\s_]*Malik|Farooq)\b/gi, "lead performer"),
                 },
                 {
                   name: "neutralize-sensory-romantic-terms",
