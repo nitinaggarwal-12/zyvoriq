@@ -18,6 +18,11 @@ temp/
 *.mp3
 *.webm
 !public/assets/video/napoleon_180s_master.mp4
+!public/assets/video/studio1_e2e00945.mp4
+!public/assets/video/studio1_9f360810.mp4
+!public/assets/video/studio1_d2d144d2.mp4
+!public/assets/video/studio1_5bfb958d.mp4
+!public/assets/video/zyvoriq_mumbai_penthouse_master.mp4
 !public/assets/audio/music/*.mp3
 !public/assets/audio/music/*.wav
 public/assets/stills/generated/
