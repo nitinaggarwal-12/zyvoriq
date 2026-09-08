@@ -1,9 +1,28 @@
 import assert from "node:assert/strict";
 
+function stripSpeakerPrefixes(text) {
+  if (!text || typeof text !== "string") return text;
+  const PRESERVED_DIRECTIVES = new Set([
+    "CAMERA", "EYELINE", "LIGHTING", "FRAMING", "WARDROBE", "STYLE", "ACTION",
+    "AUDIO", "MUSIC", "PROPS", "LOCATION", "SCENE", "SET", "ATMOSPHERE",
+    "SHOT", "LENS", "FOCUS", "COLOR", "COMPOSITION", "SPEED", "GRADE", "TONE", "MOOD"
+  ]);
+  return text.replace(/(?:^|\n|\b)([A-Z][A-Za-z0-9_]*(?:\s+[A-Z][A-Za-z0-9_]*)?):(?=\s)/g, (match, prefix) => {
+    const norm = prefix.trim().toUpperCase();
+    if (PRESERVED_DIRECTIVES.has(norm) || norm.startsWith("STUDIO1") || norm.includes("LOCK") || norm.includes("RULE") || norm.includes("MODE") || norm.includes("TRACKING")) {
+      return match;
+    }
+    if (/\b(?:is|are|was|were|at|in|on|to|for|with|by|from|about)\b/i.test(prefix)) {
+      return match;
+    }
+    return "";
+  });
+}
+
 // 1. Test prompt sanitization and word clamping
 function sanitizePromptForVeo(prompt) {
   if (!prompt || typeof prompt !== "string") return prompt;
-  let clean = prompt.replace(/\b[A-Z][A-Za-z0-9_\s]{1,30}:/g, "");
+  let clean = stripSpeakerPrefixes(prompt);
   const celebrityMap = [
     { pattern: /\b(?:Kiara\s*Advani|Kiara)\b/gi, replacement: "a radiant, graceful Indian leading lady" },
     { pattern: /\b(?:Akshay\s*Kumar|Akshay)\b/gi, replacement: "a handsome, athletic charismatic Indian leading man" },
@@ -20,14 +39,19 @@ function sanitizePromptForVeo(prompt) {
 }
 
 console.log("Testing sanitizePromptForVeo...");
-const rawPrompt = "KIARA: Kiara is looking at the rain in Mumbai with SRK. " + "word ".repeat(800);
+const rawPrompt = "KIARA: Kiara is looking at the rain in Mumbai with SRK. Camera: slow 35mm pan. Eyeline: off-camera left. STUDIO1 ENVIRONMENT LOCK: maintain temple courtyard. The current spoken beat is: Destiny calls. KINETIC_TRACKING: Steadicam follow. " + "word ".repeat(800);
 const cleaned = sanitizePromptForVeo(rawPrompt);
 assert(!cleaned.includes("KIARA:"), "Must strip speaker label");
+assert(cleaned.includes("Camera:"), "Must PRESERVE Camera directive");
+assert(cleaned.includes("Eyeline:"), "Must PRESERVE Eyeline directive");
+assert(cleaned.includes("STUDIO1 ENVIRONMENT LOCK:"), "Must PRESERVE STUDIO1 ENVIRONMENT LOCK directive");
+assert(cleaned.includes("The current spoken beat is:"), "Must PRESERVE spoken beat context");
+assert(cleaned.includes("KINETIC_TRACKING:"), "Must PRESERVE KINETIC_TRACKING directive");
 assert(cleaned.includes("a radiant, graceful Indian leading lady"), "Must map Kiara");
 assert(cleaned.includes("a charming, iconic romantic leading man with dimples"), "Must map SRK");
 const wordCount = cleaned.split(/\s+/).length;
 assert(wordCount <= 700, `Word count must be <= 700, got ${wordCount}`);
-console.log(`✓ sanitizePromptForVeo passed (word count clamped to ${wordCount})`);
+console.log(`✓ sanitizePromptForVeo passed (speaker stripped, camera grammar preserved, word count clamped to ${wordCount})`);
 
 // 2. Test vocabulary biasing extraction
 function extractBiasedVocabulary(manifest) {

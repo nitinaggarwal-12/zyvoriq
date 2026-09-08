@@ -1273,6 +1273,7 @@ function extractBiasedVocabulary(manifest) {
 }
 
 async function transcribeAndValidateNarration(op, manifest, checkpoint, wav) {
+  try { await operationHeartbeat(op.id, op.production_id); } catch {}
   const start = await fetch(`${API_BASE}/upload/v1beta/files`, {
     method: "POST",
     headers: {
@@ -1293,6 +1294,7 @@ async function transcribeAndValidateNarration(op, manifest, checkpoint, wav) {
   if (!up.ok) throw new Error(`Gemini upload failed (${up.status})`);
   const uri = uj?.file?.uri || uj?.uri;
   if (!uri) throw new Error("Gemini upload returned no file URI");
+  try { await operationHeartbeat(op.id, op.production_id); } catch {}
 
   const vocab = extractBiasedVocabulary(manifest);
   const input = [];
@@ -1309,6 +1311,7 @@ async function transcribeAndValidateNarration(op, manifest, checkpoint, wav) {
   });
   const tj = await tr.json();
   if (!tr.ok) throw new Error(`Gemini transcription failed (${tr.status})`);
+  try { await operationHeartbeat(op.id, op.production_id); } catch {}
   const timings = extractWordTimings(tj);
   if (!timings.length) throw new Error("No word-level timestamps returned");
   const actualWords = timings.map(t => t.word).join(" ");
@@ -1322,12 +1325,14 @@ async function transcribeAndValidateNarration(op, manifest, checkpoint, wav) {
     throw valErr;
   }
   await assertApplicable(op);
+  try { await operationHeartbeat(op.id, op.production_id); } catch {}
   return { ...checkpoint, stage: "COMPLETE", wordTimings: timings, alignmentValidation: validation };
 }
 
 async function generateNarration(op, manifest, existingCheckpoint = null) {
   if (!apiKey()) throw new Error("Gemini API key is missing");
   if (!assetRoot()) throw new Error("Durable asset root is missing");
+  try { await operationHeartbeat(op.id, op.production_id); } catch {}
 
   let checkpoint = existingCheckpoint;
   let wav;
@@ -1335,6 +1340,7 @@ async function generateNarration(op, manifest, existingCheckpoint = null) {
   if (checkpoint?.stage === "AUDIO_PERSISTED" && checkpoint.narrationUrl) {
     wav = await readAsset(checkpoint.narrationUrl);
     await updateOperation(op.id, { providerOperationName: "tts-audio-persisted" });
+    try { await operationHeartbeat(op.id, op.production_id); } catch {}
   } else {
     const prior = String(op.provider_operation_name || "");
     if (prior === "tts-recovery-dispatch-started") throw new Error("AMBIGUOUS_TTS_RESULT_AFTER_BOUNDED_RECOVERY");
@@ -1366,6 +1372,7 @@ async function generateNarration(op, manifest, existingCheckpoint = null) {
       await updateOperation(op.id, { providerOperationName: null });
       throw new Error(`Gemini TTS failed (${r.status})`);
     }
+    try { await operationHeartbeat(op.id, op.production_id); } catch {}
     const b64 = findAudioData(j);
     if (!b64) {
       await updateOperation(op.id, { providerOperationName: null });
@@ -1377,6 +1384,7 @@ async function generateNarration(op, manifest, existingCheckpoint = null) {
     wav = wavFromPcm(pcm);
     const digest = crypto.createHash("sha256").update(wav).digest("hex").slice(0, 16);
     const asset = await writeAsset(`reels/${op.production_id}/narration-${digest}.wav`, wav);
+    try { await operationHeartbeat(op.id, op.production_id); } catch {}
     checkpoint = {
       stage: "AUDIO_PERSISTED",
       narrationUrl: asset.url,
@@ -1516,10 +1524,29 @@ function veoModel(t) {
   if (process.env.ZYVORIQ_VEO_MODEL) return process.env.ZYVORIQ_VEO_MODEL;
   return t === "quality" ? "veo-3.1-generate-preview" : t === "lite" ? "veo-3.1-lite-generate-preview" : "veo-3.1-fast-generate-preview";
 }
+function stripSpeakerPrefixes(text) {
+  if (!text || typeof text !== "string") return text;
+  const PRESERVED_DIRECTIVES = new Set([
+    "CAMERA", "EYELINE", "LIGHTING", "FRAMING", "WARDROBE", "STYLE", "ACTION",
+    "AUDIO", "MUSIC", "PROPS", "LOCATION", "SCENE", "SET", "ATMOSPHERE",
+    "SHOT", "LENS", "FOCUS", "COLOR", "COMPOSITION", "SPEED", "GRADE", "TONE", "MOOD"
+  ]);
+  return text.replace(/(?:^|\n|\b)([A-Z][A-Za-z0-9_]*(?:\s+[A-Z][A-Za-z0-9_]*)?):(?=\s)/g, (match, prefix) => {
+    const norm = prefix.trim().toUpperCase();
+    if (PRESERVED_DIRECTIVES.has(norm) || norm.startsWith("STUDIO1") || norm.includes("LOCK") || norm.includes("RULE") || norm.includes("MODE") || norm.includes("TRACKING")) {
+      return match;
+    }
+    if (/\b(?:is|are|was|were|at|in|on|to|for|with|by|from|about)\b/i.test(prefix)) {
+      return match;
+    }
+    return "";
+  });
+}
+
 function sanitizePromptForVeo(prompt) {
   if (!prompt || typeof prompt !== "string") return prompt;
-  // 1. Strip dialogue speaker prefixes like "KIARA:", "AKSHAY:", "SALMAN KHAN:", "AISHWARYA RAI:", etc.
-  let clean = prompt.replace(/\b[A-Z][A-Za-z0-9_\s]{1,30}:/g, "");
+  // 1. Strip dialogue speaker prefixes like "KIARA:", "AKSHAY:", etc. while preserving camera grammar tags
+  let clean = stripSpeakerPrefixes(prompt);
   // 2. Map celebrity references to high-craft cinematic visual archetypes
   const celebrityMap = [
     { pattern: /\b(?:Kiara\s*Advani|Kiara)\b/gi, replacement: "a radiant, graceful Indian leading lady" },
@@ -1599,12 +1626,31 @@ async function generateShot(op, manifest, shot) {
         }
       }
     }
+    // Determine character continuity across shots
+    const depShot = manifest.shots?.find(s => s.id === shot.dependsOnShotIds?.at(-1));
+    const depCharId = depShot?.continuityIn?.characterId;
+    const isSameCharacter = Boolean(charId && depCharId && charId === depCharId);
+    const hasSafetyHistory = Boolean(
+      (op.payload_json?.safetyAttempts || 0) > 0 ||
+      op.payload_json?.last_empty_payload?.isSafety ||
+      (op.last_error && op.last_error.includes("VEO_SAFETY_FILTER"))
+    );
+
     // If continuing from previous shot, attach previous shot frame as additional asset reference
+    // BUT omit temporal frame if:
+    // 1) This is a safety retry (safety fallback isolates canonical character sheet to prevent multi-reference collision)
+    // 2) The shot transitions between different characters or from environment to character (prevents identity confusion)
     if (ref?.buffer && refImages.length < 3) {
-      refImages.push({
-        image: { bytesBase64Encoded: ref.buffer.toString("base64"), mimeType: "image/png" },
-        referenceType: "asset"
-      });
+      if (charId && hasSafetyHistory) {
+        console.log(`[reel-worker] [safety-fallback] Omitting temporal frame from previous shot (${depShot?.id || "unknown"}) on safety retry for ${shot.id}; using canonical character reference only.`);
+      } else if (charId && !isSameCharacter) {
+        console.log(`[reel-worker] [continuity] Shot ${shot.id} (char: ${charId}) transitions from ${depShot?.id || "none"} (char: ${depCharId || "none"}). Omitting non-matching temporal reference to prevent identity collision.`);
+      } else {
+        refImages.push({
+          image: { bytesBase64Encoded: ref.buffer.toString("base64"), mimeType: "image/png" },
+          referenceType: "asset"
+        });
+      }
     }
 
     if (refImages.length > 0) {
@@ -1742,25 +1788,51 @@ async function generateShot(op, manifest, shot) {
           let changed = false;
           let prevPrompt = "";
           let healedPrompt = "";
+          const matchedRules = [];
           try {
             const current = await getProduction(op.production_id);
             const m = current.manifest;
             const targetShot = m.shots.find(x => x.id === shot.id);
             if (targetShot) {
               prevPrompt = targetShot.generationPrompt;
-              healedPrompt = targetShot.generationPrompt
-                .replace(/\b[A-Z][A-Za-z0-9_\s]{1,30}:/g, "")
-                .replace(/\b(?:Kiara|Akshay|Salman|Aishwarya|Shah\s*Rukh|SRK|Deepika|Ranveer|Alia|Ranbir|Hrithik|Katrina|Priyanka|Kareena|Saif|Amitabh)\b/gi, "lead performer")
-                .replace(/\blovers\b/gi, "characters")
-                .replace(/\bintimate\b/gi, "cinematic")
-                .replace(/\bpassionate\b/gi, "dramatic")
-                .replace(/\bcolonial\b/gi, "vintage 1940s")
-                .replace(/"[^"]*"/g, ""); // strip quoted dialogue
+              const HEAL_RULES = [
+                {
+                  name: "strip-speaker-dialogue-prefixes",
+                  apply: (p) => stripSpeakerPrefixes(p),
+                },
+                {
+                  name: "replace-celebrity-names-with-generic-archetypes",
+                  apply: (p) => p.replace(/\b(?:Kiara\s*Advani|Kiara|Akshay\s*Kumar|Akshay|Salman\s*Khan|Salman|Aishwarya\s*Rai(?:\s*Bachchan)?|Aishwarya|Shah\s*Rukh\s*Khan|Shahrukh\s*Khan|SRK|Deepika\s*Padukone|Deepika|Ranveer\s*Singh|Ranveer|Alia\s*Bhatt|Alia|Ranbir\s*Kapoor|Ranbir|Hrithik\s*Roshan|Hrithik|Katrina\s*Kaif|Katrina|Priyanka\s*Chopra(?:\s*Jonas)?|Priyanka|Kareena\s*Kapoor(?:\s*Khan)?|Kareena|Saif\s*Ali\s*Khan|Saif|Amitabh\s*Bachchan|Amitabh|Tom\s*Cruise|Brad\s*Pitt|Leonardo\s*DiCaprio|Zendaya|Timothee\s*Chalamet|Timothée\s*Chalamet)\b/gi, "lead performer"),
+                },
+                {
+                  name: "neutralize-sensory-romantic-terms",
+                  apply: (p) => p
+                    .replace(/\blovers\b/gi, "characters")
+                    .replace(/\bintimate\b/gi, "cinematic")
+                    .replace(/\bpassionate\b/gi, "dramatic")
+                    .replace(/\bcolonial\b/gi, "vintage 1940s"),
+                },
+                {
+                  name: "strip-quoted-dialogue",
+                  apply: (p) => p.replace(/"[^"]*"/g, "").replace(/'[^']*'/g, ""),
+                },
+              ];
+
+              let currentText = prevPrompt;
+              for (const rule of HEAL_RULES) {
+                const transformed = rule.apply(currentText);
+                if (transformed !== currentText) {
+                  matchedRules.push(rule.name);
+                  console.log(`[reel-worker] [rai-auto-heal] Rule matched: ${rule.name}`);
+                  currentText = transformed;
+                }
+              }
+              healedPrompt = currentText.replace(/\s{2,}/g, " ").trim();
               changed = (prevPrompt !== healedPrompt);
               if (changed) {
                 targetShot.generationPrompt = healedPrompt;
                 await saveManifest(op.production_id, current.revision, m);
-                console.log(`[reel-worker] [rai-auto-heal] Healed shot ${shot.id} prompt for retry:`);
+                console.log(`[reel-worker] [rai-auto-heal] Healed shot ${shot.id} prompt for retry (matched: ${matchedRules.join(", ")}):`);
                 console.log(`  BEFORE: "${prevPrompt.slice(0, 160)}..."`);
                 console.log(`  AFTER:  "${healedPrompt.slice(0, 160)}..."`);
               } else {
@@ -1770,12 +1842,39 @@ async function generateShot(op, manifest, shot) {
           } catch (e) {
             console.warn(`[reel-worker] RAI auto-heal error: ${e?.message}`);
           }
+
+          // Track safetyAttempts in payload_json
+          const prevSafetyAttempts = Number(op.payload_json?.safetyAttempts || 0);
+          const newSafetyAttempts = prevSafetyAttempts + 1;
+          try {
+            await pool.query(`
+              UPDATE reel_operations
+              SET payload_json = jsonb_set(
+                COALESCE(payload_json, '{}'::jsonb),
+                '{safetyAttempts}',
+                $2::jsonb
+              )
+              WHERE id = $1
+            `, [op.id, JSON.stringify(newSafetyAttempts)]);
+          } catch (dbErr) {
+            console.warn(`[reel-worker] Failed to record safetyAttempts in DB: ${dbErr?.message}`);
+          }
+
           const diagInfo = raiReasons ? JSON.stringify(raiReasons) : JSON.stringify(pj).slice(0, 300);
-          if (!changed) {
-            // Unchanged safety block is deterministic; fail immediately rather than wasting attempts
+          // If prompt was unchanged, check if structural reference pruning can heal on retry
+          const hadTemporalRef = Boolean(ref?.buffer);
+          const canHealViaRefPruning = hadTemporalRef && prevSafetyAttempts === 0;
+
+          if (!changed && !canHealViaRefPruning && newSafetyAttempts >= 2) {
+            // Truly unhealable safety block after both prompt and reference pruning exhausted
             await pool.query(`UPDATE reel_operations SET attempt=5 WHERE id=$1`, [op.id]);
             throw new Error(`VEO_SAFETY_FILTER_FATAL: Veo safety/RAI filter triggered and prompt was unchanged by heal rules (${diagInfo})`);
           }
+
+          if (canHealViaRefPruning && !changed) {
+            console.log(`[reel-worker] [rai-auto-heal] Prompt for shot ${shot.id} was unchanged, but conflicting temporal reference will be pruned on safety retry.`);
+          }
+
           throw new Error(`VEO_SAFETY_FILTER_EMPTY: Veo completed without video URI due to safety/RAI filter (${diagInfo})`);
         }
 
