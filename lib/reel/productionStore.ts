@@ -1,5 +1,4 @@
-import { getDatabase, getPostgresPool } from "@/lib/db/client";
-import type { Pool } from "pg";
+import { getPostgresPool } from "@/lib/db/client";
 import { attachReelArtifactIndex } from "../artifact/identity";
 import { deleteProductionAssets } from "./assetStore";
 import { enrichManifestV2 } from "./manifestV2";
@@ -38,22 +37,20 @@ function fromPostgres(row: any): StoredReelProduction {
   };
 }
 
-function poolOrThrow(): Pool {
+// Postgres is the single source of truth. There is deliberately no local
+// fallback: the web service and the reel worker run in separate containers on
+// separate volumes, so a container-local store silently diverges instead of
+// failing. Reels deleted from the UI reappearing was caused by exactly that.
+// If Postgres is unreachable, fail loudly.
+async function ensurePostgresTable() {
   const pool = getPostgresPool();
   if (!pool) {
-    console.error("[production-store] FATAL: Postgres pool unavailable; refusing silent SQLite split-brain fallback");
-    throw new Error("Durable production store requires Postgres; SQLite fallback is disabled to prevent multi-container split-brain");
+    throw new Error(
+      "Postgres is unavailable (DATABASE_URL missing or unreachable). " +
+      "reel_productions has no local fallback by design."
+    );
   }
-  return pool;
-}
-
-let pgTableEnsured = false;
-async function ensurePostgresTable(): Promise<Pool> {
-  const pool = poolOrThrow();
-  if (!pgTableEnsured) {
-    await pool.query(POSTGRES_TABLE);
-    pgTableEnsured = true;
-  }
+  await pool.query(POSTGRES_TABLE);
   return pool;
 }
 
@@ -109,46 +106,21 @@ export const reelProductionStore = {
   },
 
   async delete(id: string, expectedRevision?: number): Promise<void> {
-    const pool = await ensurePostgresTable();
     const current = await this.get(id);
-    if (!current) {
-      // Idempotent: already deleted from Postgres.
-      // Clean up any lingering SQLite ghost copies and disk assets
-      try {
-        const db = getDatabase();
-        db.prepare(`DELETE FROM reel_operations WHERE production_id = ?`).run(id);
-        db.prepare(`DELETE FROM reel_production_controls WHERE production_id = ?`).run(id);
-        db.prepare(`DELETE FROM reel_productions WHERE id = ?`).run(id);
-      } catch {}
-      try { await deleteProductionAssets(id); } catch {}
-      return;
-    }
+    if (!current) return; // Idempotent: already deleted
     if (expectedRevision !== undefined && current.revision !== expectedRevision) {
       throw new Error(`Production ${id} changed concurrently (expected revision ${expectedRevision}, found ${current.revision})`);
     }
 
-    try { await pool.query(`DELETE FROM reel_operations WHERE production_id = $1`, [id]); } catch {}
-    try { await pool.query(`DELETE FROM reel_production_controls WHERE production_id = $1`, [id]); } catch {}
+    const pool = await ensurePostgresTable();
+    await pool.query(`DELETE FROM reel_operations WHERE production_id = $1`, [id]);
+    await pool.query(`DELETE FROM reel_production_controls WHERE production_id = $1`, [id]);
     if (expectedRevision !== undefined) {
       const result = await pool.query(`DELETE FROM reel_productions WHERE id = $1 AND revision = $2`, [id, expectedRevision]);
       if (Number(result.rowCount) !== 1) throw new Error(`Production ${id} changed concurrently`);
     } else {
       await pool.query(`DELETE FROM reel_productions WHERE id = $1`, [id]);
     }
-
-    // Clean up local SQLite ghost copies if present
-    try {
-      const db = getDatabase();
-      db.prepare(`DELETE FROM reel_operations WHERE production_id = ?`).run(id);
-      db.prepare(`DELETE FROM reel_production_controls WHERE production_id = ?`).run(id);
-      db.prepare(`DELETE FROM reel_productions WHERE id = ?`).run(id);
-    } catch {}
-
-    // Clean up physical disk assets
-    try {
-      await deleteProductionAssets(id);
-    } catch (err) {
-      console.warn(`[production-store] Warning: failed to purge disk assets for ${id}:`, err);
-    }
+    try { await deleteProductionAssets(id); } catch {}
   },
 };
