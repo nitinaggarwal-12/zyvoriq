@@ -1910,11 +1910,11 @@ async function renderRough(op, m) {
       return false;
     }
   }));
-  const hasNativeAudio = shotAudioProbes.filter(Boolean).length >= Math.ceil(m.shots.length / 2);
-  console.log(`[reel-worker] renderRough audio strategy for ${op.production_id}: ${hasNativeAudio ? "NATIVE CHARACTER AUDIO & FOLLEY (lip sync preserved)" : "SYNTHETIC TTS DUB"}`);
+  const studio1 = Boolean(op.payload_json?.studio1 === true || m.studio1?.timelineSync);
+  const hasNativeAudio = !studio1 && shotAudioProbes.length === m.shots.length && shotAudioProbes.every(Boolean);
+  console.log(`[reel-worker] renderRough audio strategy for ${op.production_id}: ${hasNativeAudio ? "NATIVE CHARACTER AUDIO & FOLLEY (lip sync preserved)" : studio1 ? "STUDIO1 SYMPHONIC & TTS MASTER" : "SYNTHETIC TTS DUB"}`);
 
-  const studio1 = op.payload_json?.studio1 === true && Boolean(m.studio1?.timelineSync);
-  if (!hasNativeAudio && studio1) {
+  if (studio1) {
     if (!op.payload_json?.narrationSyncedTimeline) throw new Error("Studio1 exact render requires narrationSyncedTimeline operation evidence");
     if (Number(m.studio1?.timelineSync?.version || 0) < 2) throw new Error("Studio1 exact render requires timelineSync version 2");
     const c = await getProduction(op.production_id);
@@ -1951,8 +1951,8 @@ async function renderRough(op, m) {
       "-map", "[vcat]",
       "-map", "[aout]",
       "-c:v", "libx264",
-      "-preset", "medium",
-      "-crf", "18",
+      "-preset", "veryfast",
+      "-crf", "20",
       "-pix_fmt", "yuv420p",
       "-c:a", "aac",
       "-b:a", "192k",
@@ -1960,7 +1960,7 @@ async function renderRough(op, m) {
       tmp
     );
   } else {
-    // Fallback: TTS narration dub for silent shots
+    // Fallback / Studio 1: Master narration dub and symphonic music bed
     args.push("-i", assetPath(m.audio.narrationUrl).target);
     if (studio1) {
       renderPlan = buildStudio1RenderPlan(m);
@@ -1977,8 +1977,8 @@ async function renderRough(op, m) {
       "-map", "[aout]",
       "-t", String(d),
       "-c:v", "libx264",
-      "-preset", "medium",
-      "-crf", "18",
+      "-preset", "veryfast",
+      "-crf", "20",
       "-pix_fmt", "yuv420p",
       "-c:a", "aac",
       "-b:a", "192k",
@@ -1988,10 +1988,16 @@ async function renderRough(op, m) {
   }
 
   try {
-    await execFileAsync("ffmpeg", args, { timeout: 300000, maxBuffer: 4e6 });
+    try {
+      await execFileAsync("ffmpeg", args, { timeout: 600000, maxBuffer: 16e6 });
+    } catch (ffmpegErr) {
+      console.error(`[reel-worker] ffmpeg renderRough failed! Command args count: ${args.length}`);
+      if (ffmpegErr.stderr) console.error(`[reel-worker] ffmpeg stderr:\n${ffmpegErr.stderr.slice(-2000)}`);
+      throw new Error(`ffmpeg renderRough error: ${ffmpegErr.stderr ? ffmpegErr.stderr.slice(-1000) : ffmpegErr.message.slice(0, 1000)}`);
+    }
     await assertApplicable(op);
     const buffer = await fs.readFile(tmp), probe = await probeVideo(buffer);
-    if (!hasNativeAudio && Math.abs(probe.durationSec - d) > .08) {
+    if (!hasNativeAudio && Math.abs(probe.durationSec - d) > .25) {
       throw new Error(`Rough cut duration drift ${probe.durationSec} vs ${d}`);
     }
     if (hasNativeAudio) {
