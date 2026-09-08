@@ -96,7 +96,8 @@ export function compileDeterministicDirectorialPass(
   scriptText: string,
   requestedDurationSec: number = 30,
   creationIntent?: ReelCreationIntent,
-  explicitGenre?: OmniGenre
+  explicitGenre?: OmniGenre,
+  aspectRatio: "9:16" | "16:9" | "2.39:1" = "9:16"
 ): OmniDirectorialCompilation {
   const cleanTopic = topic.trim().toLowerCase();
   
@@ -271,7 +272,11 @@ export function compileDeterministicDirectorialPass(
   return {
     genre,
     visualStyle: {
-      optics: "Cooke Anamorphic 2.39:1 framing, 24fps motion cadence, natural optical falloff",
+      optics: aspectRatio === "9:16"
+        ? "Arri Alexa Mini LF, 35mm & 50mm spherical primes, 9:16 vertical framing, natural optical falloff"
+        : aspectRatio === "16:9"
+        ? "Arri Alexa Mini LF, 35mm & 50mm spherical primes, 16:9 widescreen framing, natural optical falloff"
+        : "Cooke Anamorphic 2.39:1 framing, 24fps motion cadence, natural optical falloff",
       lightingPalette: "High-contrast cinematic key lighting, rich shadows, warm practicals",
       atmosphere: `Atmospheric cinematic tone for ${topic}`
     },

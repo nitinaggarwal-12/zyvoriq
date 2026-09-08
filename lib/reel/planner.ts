@@ -284,7 +284,7 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
       "NARRATION_PRECONDITION_FAILED: Non-empty scriptText is required to plan a reel manifest synchronously. In async creation pipelines, use planStudio1() or planReelAsync() to dynamically synthesize the script via Gemini before calling synchronous planning."
     );
   }
-  const dir = directorial || compileDeterministicDirectorialPass(topic, masterScript, requestedDurationSec, creationIntent, input.genre);
+  const dir = directorial || compileDeterministicDirectorialPass(topic, masterScript, requestedDurationSec, creationIntent, input.genre, aspectRatio);
   const beats = splitIntoEditorialBeats(masterScript, requestedDurationSec);
 
   // Map of unique scenes: sceneId -> verbatim unvarying environment string across all contiguous shots
@@ -314,11 +314,34 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
     emotionalRange: ["focused", "intense", "commanding", "calculating", "reflective"]
   }));
 
+  // Harmonize optics and framing with manifest's requested aspectRatio to avoid contradictory camera instructions
+  let cleanOptics = dir.visualStyle.optics || "";
+  if (aspectRatio === "9:16") {
+    cleanOptics = cleanOptics
+      .replace(/\b(?:2\.39:1|16:9)\s*(?:aspect\s*ratio|framing|anamorphic)?\b/gi, "9:16 vertical framing")
+      .replace(/\bAnamorphic 2\.39:1\b/gi, "Spherical 9:16")
+      .replace(/\bCooke Anamorphic 2\.39:1 framing\b/gi, "35mm & 50mm spherical primes with 9:16 vertical framing");
+  } else if (aspectRatio === "16:9") {
+    cleanOptics = cleanOptics
+      .replace(/\b(?:2\.39:1|9:16)\s*(?:aspect\s*ratio|framing|anamorphic)?\b/gi, "16:9 widescreen framing")
+      .replace(/\bAnamorphic 2\.39:1\b/gi, "16:9 widescreen")
+      .replace(/\bCooke Anamorphic 2\.39:1 framing\b/gi, "35mm & 50mm spherical primes with 16:9 widescreen framing");
+  } else if (aspectRatio === "2.39:1") {
+    cleanOptics = cleanOptics
+      .replace(/\b(?:9:16|16:9)\s*(?:aspect\s*ratio|framing)?\b/gi, "2.39:1 Anamorphic cinema framing");
+  }
+
+  const cinemaFramingClause = aspectRatio === "2.39:1"
+    ? "Cooke Anamorphic 2.39:1 framing"
+    : aspectRatio === "16:9"
+    ? "16:9 widescreen framing"
+    : "9:16 vertical composition";
+
   const selectedVisualStyle = creationIntent?.visualStyleDescription
-    ? `${creationIntent.visualStyleLabel || creationIntent.visualStyleId}: ${creationIntent.visualStyleDescription}. Preserve social-first readability and do not render text in scene pixels.`
+    ? `${creationIntent.visualStyleLabel || creationIntent.visualStyleId}: ${creationIntent.visualStyleDescription}. Preserve ${aspectRatio === "9:16" ? "social-first" : "cinematic"} readability and do not render text in scene pixels.`
     : isCinema
-    ? "Theatrical 4K cinematic realism; Cooke Anamorphic 2.39:1 framing; 24fps motion cadence; ACES 1.3 color grading; zero generated text in scene pixels."
-    : `${dir.visualStyle.optics}; ${dir.visualStyle.lightingPalette}; ${dir.visualStyle.atmosphere}. Zero generated text in scene pixels.`;
+    ? `Theatrical 4K cinematic realism; ${cinemaFramingClause}; 24fps motion cadence; ACES 1.3 color grading; zero generated text in scene pixels.`
+    : `${cleanOptics}; ${dir.visualStyle.lightingPalette}; ${dir.visualStyle.atmosphere}. Zero generated text in scene pixels.`;
 
   const selectedCharacter = charactersList.map(c => `${c.id}: ${c.appearance.description}`).join(" | ");
   const selectedEnvironment = dir.shots[0]?.sceneEnvironment || topic;
