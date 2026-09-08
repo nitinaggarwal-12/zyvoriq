@@ -357,10 +357,14 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
 
   const charactersList = dir.cast.map(c => ({
     id: c.id,
+    name: c.name,
+    gender: c.biometricDNA.gender,
+    biometricDNA: c.biometricDNA,
     role: c.role === "lead" ? ("character" as const) : c.role === "narrator" ? ("presenter" as const) : ("supporting" as const),
     canonicalReferenceImages: [] as string[],
     appearance: {
-      description: `${c.name}, ${c.biometricDNA.ageBand}. ${c.biometricDNA.facialFeatures}, ${c.biometricDNA.hair}.`,
+      description: `${c.name}, ${c.biometricDNA.gender}, ${c.biometricDNA.ageBand}. ${c.biometricDNA.facialFeatures}, ${c.biometricDNA.hair}.`,
+      gender: c.biometricDNA.gender,
       face: c.biometricDNA.facialFeatures,
       hair: c.biometricDNA.hair,
       ageBand: c.biometricDNA.ageBand,

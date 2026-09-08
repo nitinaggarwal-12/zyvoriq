@@ -169,10 +169,14 @@ export interface PerformanceTrack {
 
 export interface CharacterBible {
   id: string;
+  name?: string;
+  gender?: "male" | "female" | "non-binary";
+  biometricDNA?: any;
   role: "presenter" | "character" | "supporting";
   canonicalReferenceImages: string[];
   appearance: {
     description: string;
+    gender?: string;
     face?: string;
     hair?: string;
     skin?: string;

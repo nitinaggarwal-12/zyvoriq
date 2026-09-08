@@ -2528,6 +2528,71 @@ function assertStudio1RenderAdaptation(plan) {
   }
 }
 
+async function generateContinuousScore(genre, durationSec, outPath) {
+  const dur = Math.max(1, Number(durationSec.toFixed(2)));
+  const g = String(genre || "").toUpperCase();
+
+  const generators = [];
+  let filterComplex = "";
+  if (g.includes("BOLLYWOOD_ROMANCE") || g.includes("ROMANCE") || g.includes("MUSIC_VIDEO")) {
+    generators.push(
+      `anoisesrc=d=${dur}:c=pink:r=48000:a=0.008,lowpass=f=400,volume=0.15`,
+      `sine=frequency=138.59:duration=${dur},volume=0.08`,
+      `sine=frequency=207.65:duration=${dur},volume=0.06`,
+      `sine=frequency=277.18:duration=${dur},volume=0.05`,
+      `sine=frequency=329.63:duration=${dur},volume=0.04`
+    );
+    filterComplex = `[0:a][1:a][2:a][3:a][4:a]amix=inputs=5:duration=first:dropout_transition=2,chorus=0.7:0.9:55:0.4:0.25:2,aecho=0.8:0.85:80:0.35,afade=t=in:st=0:d=1.5,afade=t=out:st=${Math.max(0, dur - 2.2)}:d=2.2[bgm]`;
+  } else if (g.includes("BOLLYWOOD_ACTION") || g.includes("ACTION")) {
+    generators.push(
+      `anoisesrc=d=${dur}:c=pink:r=48000:a=0.015,lowpass=f=300,volume=0.2`,
+      `sine=frequency=82.41:duration=${dur},volume=0.1`,
+      `sine=frequency=123.47:duration=${dur},volume=0.07`,
+      `sine=frequency=164.81:duration=${dur},volume=0.06`
+    );
+    filterComplex = `[0:a][1:a][2:a][3:a]amix=inputs=4:duration=first:dropout_transition=2,flanger=delay=5:depth=2:regen=50:width=80:speed=0.5,aecho=0.8:0.88:60:0.4,afade=t=in:st=0:d=0.8,afade=t=out:st=${Math.max(0, dur - 1.5)}:d=1.5[bgm]`;
+  } else if (g.includes("HISTORICAL") || g.includes("BIOPIC") || g.includes("DRAMA")) {
+    generators.push(
+      `anoisesrc=d=${dur}:c=pink:r=48000:a=0.01,lowpass=f=450,volume=0.12`,
+      `sine=frequency=110.00:duration=${dur},volume=0.08`,
+      `sine=frequency=164.81:duration=${dur},volume=0.06`,
+      `sine=frequency=220.00:duration=${dur},volume=0.05`,
+      `sine=frequency=329.63:duration=${dur},volume=0.04`
+    );
+    filterComplex = `[0:a][1:a][2:a][3:a][4:a]amix=inputs=5:duration=first:dropout_transition=2,chorus=0.6:0.8:60:0.3:0.2:1.5,aecho=0.85:0.88:100:0.4,afade=t=in:st=0:d=1.5,afade=t=out:st=${Math.max(0, dur - 2)}:d=2[bgm]`;
+  } else if (g.includes("SCI_FI") || g.includes("CYBERPUNK")) {
+    generators.push(
+      `anoisesrc=d=${dur}:c=pink:r=48000:a=0.012,lowpass=f=350,volume=0.15`,
+      `sine=frequency=65.41:duration=${dur},volume=0.1`,
+      `sine=frequency=130.81:duration=${dur},volume=0.08`,
+      `sine=frequency=196.00:duration=${dur},volume=0.06`
+    );
+    filterComplex = `[0:a][1:a][2:a][3:a]amix=inputs=4:duration=first:dropout_transition=2,chorus=0.8:0.9:45:0.4:0.3:3,aecho=0.8:0.88:70:0.45,afade=t=in:st=0:d=1,afade=t=out:st=${Math.max(0, dur - 1.5)}:d=1.5[bgm]`;
+  } else {
+    generators.push(
+      `anoisesrc=d=${dur}:c=pink:r=48000:a=0.008,lowpass=f=500,volume=0.12`,
+      `sine=frequency=130.81:duration=${dur},volume=0.07`,
+      `sine=frequency=196.00:duration=${dur},volume=0.05`,
+      `sine=frequency=261.63:duration=${dur},volume=0.04`
+    );
+    filterComplex = `[0:a][1:a][2:a][3:a]amix=inputs=4:duration=first:dropout_transition=2,aecho=0.8:0.85:60:0.3,afade=t=in:st=0:d=1,afade=t=out:st=${Math.max(0, dur - 1.5)}:d=1.5[bgm]`;
+  }
+
+  const ffmpegArgs = ["-y"];
+  for (const gen of generators) {
+    ffmpegArgs.push("-f", "lavfi", "-i", gen);
+  }
+  ffmpegArgs.push(
+    "-filter_complex", filterComplex,
+    "-map", "[bgm]",
+    "-t", String(dur),
+    "-c:a", "pcm_s16le",
+    "-ar", "48000",
+    outPath
+  );
+  await execFileAsync("ffmpeg", ffmpegArgs, { timeout: 60000, maxBuffer: 4e6 });
+}
+
 async function renderRough(op, m) {
   await assertApplicable(op, { beforeDispatch: true });
   if (!assetRoot() || !m.audio?.narrationUrl || !m.audio?.actualDurationSec || !m.audio?.alignmentValidation?.passed) throw new Error("Validated narration and durable storage required");
@@ -2554,7 +2619,7 @@ async function renderRough(op, m) {
   const hasValidShotAudio = shotAudioProbes.length === m.shots.length && shotAudioProbes.every(Boolean);
 
   // Forensic-First: Preserve native speech, character voices, lip sync, and Foley sound effects
-  // for narrative, cinematic, drama, action, and samurai genres whenever valid shot audio streams exist.
+  // for narrative, cinematic, drama, action, and romance genres whenever valid shot audio streams exist.
   // Reserve synthetic TTS dub master exclusively for DOCUMENTARY_EXPLAINER or when shot audio is absent.
   const hasNativeAudio = hasValidShotAudio && (!studio1 || !isDocumentary);
   console.log(`[reel-worker] renderRough audio strategy for ${op.production_id} (genre: ${genre || "unknown"}): ${hasNativeAudio ? "NATIVE CHARACTER AUDIO & FOLEY (lip sync preserved)" : studio1 ? "STUDIO1 SYMPHONIC & TTS MASTER" : "SYNTHETIC TTS DUB"}`);
@@ -2578,6 +2643,13 @@ async function renderRough(op, m) {
   const tmp = path.join(baseTmpDir, `zyvoriq-rough-${crypto.randomUUID()}.mp4`);
   const partsDir = path.join(baseTmpDir, `zyvoriq-rough-parts-${crypto.randomUUID()}`);
   await fs.mkdir(partsDir, { recursive: true });
+
+  const bgmPath = path.join(partsDir, "bgm_score.wav");
+  try {
+    await generateContinuousScore(genre, d, bgmPath);
+  } catch (bgmErr) {
+    console.warn(`[reel-worker] continuous BGM score synthesis warning: ${bgmErr?.message || bgmErr}`);
+  }
 
   let timelineQa = null;
   let renderPlan = null;
@@ -2632,19 +2704,56 @@ async function renderRough(op, m) {
       const fileListContent = Array.from({ length: numBatches }, (_, i) => `file '${path.join(partsDir, `batch_${String(i).padStart(4, "0")}.mp4`)}'`).join("\n");
       await fs.writeFile(listPath, fileListContent, "utf8");
 
+      const narrationPath = m.audio?.narrationUrl ? assetPath(m.audio.narrationUrl).target : null;
+      let hasNarrationFile = false;
+      if (narrationPath) {
+        try {
+          await fs.access(narrationPath);
+          hasNarrationFile = true;
+        } catch {}
+      }
+
+      let hasBgmFile = false;
       try {
-        await execFileAsync("ffmpeg", [
-          "-y",
-          "-f", "concat",
-          "-safe", "0",
-          "-i", listPath,
-          "-c:v", "copy",
-          "-c:a", "aac",
-          "-b:a", "192k",
-          "-af", "loudnorm=I=-24:LRA=7:tp=-2",
-          "-movflags", "+faststart",
-          tmp
-        ], { timeout: 300000, maxBuffer: 8e6 });
+        await fs.access(bgmPath);
+        hasBgmFile = true;
+      } catch {}
+
+      const concatArgs = [
+        "-y",
+        "-f", "concat",
+        "-safe", "0",
+        "-i", listPath,
+      ];
+
+      let filterComplex = "";
+      if (hasBgmFile && hasNarrationFile) {
+        concatArgs.push("-i", bgmPath, "-i", narrationPath);
+        filterComplex = `[0:a]aresample=48000,volume=0.15[foley];[1:a]aresample=48000,volume=0.35[bgm];[2:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000,volume=1.2[voice];[voice][bgm][foley]amix=inputs=3:duration=first:dropout_transition=2,loudnorm=I=-24:LRA=7:tp=-2[aout]`;
+      } else if (hasBgmFile) {
+        concatArgs.push("-i", bgmPath);
+        filterComplex = `[0:a]aresample=48000,volume=0.20[foley];[1:a]aresample=48000,volume=0.60[bgm];[bgm][foley]amix=inputs=2:duration=first:dropout_transition=2,loudnorm=I=-24:LRA=7:tp=-2[aout]`;
+      } else if (hasNarrationFile) {
+        concatArgs.push("-i", narrationPath);
+        filterComplex = `[0:a]aresample=48000,volume=0.20[foley];[1:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000,volume=1.2[voice];[voice][foley]amix=inputs=2:duration=first:dropout_transition=2,loudnorm=I=-24:LRA=7:tp=-2[aout]`;
+      } else {
+        filterComplex = `[0:a]aresample=48000,loudnorm=I=-24:LRA=7:tp=-2[aout]`;
+      }
+
+      concatArgs.push(
+        "-filter_complex", filterComplex,
+        "-map", "0:v",
+        "-map", "[aout]",
+        "-c:v", "copy",
+        "-c:a", "aac",
+        "-b:a", "192k",
+        "-t", String(d),
+        "-movflags", "+faststart",
+        tmp
+      );
+
+      try {
+        await execFileAsync("ffmpeg", concatArgs, { timeout: 300000, maxBuffer: 8e6 });
       } catch (ffmpegErr) {
         console.error(`[reel-worker] ffmpeg renderRough final concat failed!`);
         if (ffmpegErr.stderr) console.error(`[reel-worker] ffmpeg stderr:\n${ffmpegErr.stderr.slice(-2000)}`);
@@ -2746,23 +2855,40 @@ async function renderRough(op, m) {
       await fs.writeFile(listPath, fileListContent, "utf8");
 
       const narrationPath = assetPath(m.audio.narrationUrl).target;
+      let hasBgmFile = false;
       try {
-        await execFileAsync("ffmpeg", [
-          "-y",
-          "-f", "concat",
-          "-safe", "0",
-          "-i", listPath,
-          "-i", narrationPath,
-          "-c:v", "copy",
-          "-c:a", "aac",
-          "-b:a", "192k",
-          "-filter_complex", `[1:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000[aout]`,
-          "-map", "0:v",
-          "-map", "[aout]",
-          "-t", String(d),
-          "-movflags", "+faststart",
-          tmp
-        ], { timeout: 300000, maxBuffer: 8e6 });
+        await fs.access(bgmPath);
+        hasBgmFile = true;
+      } catch {}
+
+      const concatArgs = [
+        "-y",
+        "-f", "concat",
+        "-safe", "0",
+        "-i", listPath,
+        "-i", narrationPath,
+      ];
+
+      let filterComplex = `[1:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000,volume=1.2[aout]`;
+      if (hasBgmFile) {
+        concatArgs.push("-i", bgmPath);
+        filterComplex = `[1:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000,volume=1.2[voice];[2:a]aresample=48000,volume=0.35[bgm];[voice][bgm]amix=inputs=2:duration=first:dropout_transition=2,loudnorm=I=-24:LRA=7:tp=-2[aout]`;
+      }
+
+      concatArgs.push(
+        "-filter_complex", filterComplex,
+        "-map", "0:v",
+        "-map", "[aout]",
+        "-c:v", "copy",
+        "-c:a", "aac",
+        "-b:a", "192k",
+        "-t", String(d),
+        "-movflags", "+faststart",
+        tmp
+      );
+
+      try {
+        await execFileAsync("ffmpeg", concatArgs, { timeout: 300000, maxBuffer: 8e6 });
       } catch (ffmpegErr) {
         console.error(`[reel-worker] ffmpeg renderRough narration mux failed!`);
         if (ffmpegErr.stderr) console.error(`[reel-worker] ffmpeg stderr:\n${ffmpegErr.stderr.slice(-2000)}`);

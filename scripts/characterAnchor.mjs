@@ -57,8 +57,8 @@ function sleep(ms) {
 
 export function sanitizePromptForImageGen(text) {
   return String(text || "")
-    .replace(/\b(?:Dhurandhar|Kabir[\s_]*Anand|Zoya[\s_]*Rehman|Farooq[\s_]*Malik|Renjiro|Kagehisa|Meera[\s_]*Rao|Meera|Aarav[\s_]*Roy|Aarav)\b/gi, "lead performer")
-    .replace(/\b(?:Kiara|Akshay|Salman|Aishwarya|Shah\s*Rukh|SRK|Deepika|Ranveer|Alia|Ranbir|Hrithik|Katrina|Priyanka|Kareena|Saif|Amitabh)\b/gi, "lead performer")
+    .replace(/\b(?:Zoya[\s_]*Rehman|Meera[\s_]*Rao|Meera|Kiara|Aishwarya|Deepika|Alia|Katrina|Priyanka|Kareena)\b/gi, "female lead performer")
+    .replace(/\b(?:Dhurandhar|Kabir[\s_]*Anand|Farooq[\s_]*Malik|Renjiro|Kagehisa|Aarav[\s_]*Roy|Aarav|Akshay|Salman|Shah\s*Rukh|SRK|Ranveer|Ranbir|Hrithik|Saif|Amitabh)\b/gi, "male lead performer")
     .replace(/\bin the style of\b/gi, "with cinematic aesthetic of")
     .replace(/\b[A-Z][A-Za-z0-9_\s]{1,30}:/g, "")
     .replace(/\blovers\b/gi, "characters")
@@ -259,8 +259,11 @@ async function dependencyLastFrame(manifest, shot, readAsset) {
 
 export function purePhysicalCharacterDescription(char) {
   const parts = [];
+  const gender = char.biometricDNA?.gender || char.appearance?.gender || char.gender ||
+    (/\b(female|woman|girl|heroine)\b/i.test(char.appearance?.description || "") ? "female" :
+     /\b(male|man|boy|hero)\b/i.test(char.appearance?.description || "") ? "male" : "");
+  if (gender) parts.push(`${gender} performer`);
   if (char.appearance?.ageBand) parts.push(char.appearance.ageBand);
-  if (char.biometricDNA?.gender) parts.push(char.biometricDNA.gender);
   if (char.appearance?.face) parts.push(`Face: ${char.appearance.face}`);
   if (char.appearance?.hair) parts.push(`Hair: ${char.appearance.hair}`);
 
@@ -269,7 +272,7 @@ export function purePhysicalCharacterDescription(char) {
     desc = char.appearance.description;
   }
   if (!desc) {
-    desc = "cinematic lead performer, natural skin texture, expressive eyes";
+    desc = `${gender || "cinematic"} lead performer, natural skin texture, expressive eyes`;
   }
 
   // Pure physical description: strip all character names, actor names, film titles

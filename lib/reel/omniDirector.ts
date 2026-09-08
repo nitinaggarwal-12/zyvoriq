@@ -98,6 +98,107 @@ function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 30) || "character";
 }
 
+const FEMALE_NAMES_REGEX = /\b(?:meera|priya|ananya|simran|aisha|kavya|pooja|rani|radha|sita|zara|nisha|riya|sneha|kriti|dia|diya|tara|maya|sonia|sunita|geeta|neeta|kiran|zoya|leila|fatima|maria|elena|chloe|sarah|emily|jessica|emma|sophia|olivia|isabella|mia|charlotte|amelia|harper|evelyn|abigail|elizabeth|mila|ella|avery|sofia|camila|aria|scarlett|victoria|madison|luna|grace|penelope|layla|riley|zoey|nora|lily|eleanor|hannah|lillian|addison|aubrey|ellie|stella|natalie|zoe|leah|hazel|violet|aurora|savannah|audrey|brooklyn|bella|claire|skylar)\b/i;
+
+const MALE_NAMES_REGEX = /\b(?:arjun|rahul|kabir|aarav|rohan|dev|vikram|raj|prem|samar|ranveer|karan|aman|suraj|aditya|farooq|renjiro|kagehisa|marcus|david|john|james|alex|michael|robert|william|oppenheimer|groves|napoleon|churchill)\b/i;
+
+function inferSpeakerGender(speakerName: string, promptText: string): "female" | "male" {
+  if (FEMALE_NAMES_REGEX.test(speakerName)) return "female";
+  if (MALE_NAMES_REGEX.test(speakerName)) return "male";
+
+  const cleanSpeaker = speakerName.toLowerCase();
+  const femaleKeywords = /\b(female|woman|girl|heroine|beauty|actress|she|her|queen|princess)\b/i;
+  const maleKeywords = /\b(male|man|boy|hero|actor|he|him|king|prince)\b/i;
+
+  const clauses = promptText.split(/[.,;\n]/);
+  for (const clause of clauses) {
+    if (clause.toLowerCase().includes(cleanSpeaker)) {
+      if (femaleKeywords.test(clause)) return "female";
+      if (maleKeywords.test(clause)) return "male";
+    }
+  }
+  return "male";
+}
+
+function extractCharacterWardrobe(
+  speakerName: string,
+  isFemale: boolean,
+  genre: OmniGenre,
+  promptText: string
+): { costume: string; accessories: string } {
+  const cleanSpeaker = speakerName.toLowerCase();
+  const clauses = promptText.split(/[.;\n]/);
+  for (const clause of clauses) {
+    if (clause.toLowerCase().includes(cleanSpeaker)) {
+      const lehengaMatch = clause.match(/(?:in\s+a\s+|wearing\s+a\s+|dressed\s+in\s+)?([^,.]*?(?:lehenga|saree|chiffon|anarkali|ghagra|dupatta|dress|gown)[^,.]*)/i);
+      if (lehengaMatch) {
+        return {
+          costume: lehengaMatch[1].trim(),
+          accessories: isFemale ? "Traditional gold and silver jhumkas, crystal bangles, sheer dupatta" : "Traditional accessories"
+        };
+      }
+      const angrakhaMatch = clause.match(/(?:in\s+a\s+|wearing\s+a\s+|dressed\s+in\s+)?([^,.]*?(?:angrakha|kurta|sherwani|bandhgala|jacket|suit|tuxedo|blazer|overcoat)[^,.]*)/i);
+      if (angrakhaMatch) {
+        return {
+          costume: angrakhaMatch[1].trim(),
+          accessories: !isFemale ? "Subtle gold wrist cuff, traditional mojris" : "Coordinated traditional accessories"
+        };
+      }
+    }
+  }
+
+  if (genre === "BOLLYWOOD_ROMANCE") {
+    if (isFemale) {
+      return {
+        costume: "Radiant fuchsia and crimson Banarasi silk lehenga with intricate gold zardozi embroidery and floating sheer dupatta",
+        accessories: "Delicate traditional gold jhumkas, glass bangles, embroidered mojris"
+      };
+    }
+    if (/swiss|alps|switzerland|snow|violin/i.test(promptText)) {
+      return {
+        costume: "Tailored charcoal wool overcoat over black turtleneck, holding classic wooden violin with bow",
+        accessories: "Dark-rimmed wire spectacles, acoustic wooden violin, polished leather boots"
+      };
+    }
+    return {
+      costume: "Royal sapphire-blue silk angrakha with subtle gold zardozi embroidery over ivory churidar",
+      accessories: "Subtle gold wrist cuff, traditional royal mojris"
+    };
+  }
+
+  if (genre === "BOLLYWOOD_ACTION") {
+    if (isFemale) {
+      return {
+        costume: "Sleek tactical fitted dark jacket over tactical henley and combat trousers",
+        accessories: "Tactical timepiece, rugged utility belt, combat boots"
+      };
+    }
+    return {
+      costume: "Rugged tactical dark leather jacket over fitted dark henley shirt",
+      accessories: "Tactical timepiece, rugged leather belt, combat boots"
+    };
+  }
+
+  if (genre === "HISTORICAL_BIOPIC") {
+    return {
+      costume: isFemale ? "Period-accurate tailored 1940s vintage dress with elegant neckline" : "Bespoke 1940s charcoal wool suit with vest and tie",
+      accessories: isFemale ? "Vintage pearl necklace, classic timepiece" : "Vintage felt fedora hat, pocket watch"
+    };
+  }
+
+  if (genre === "DOCUMENTARY_EXPLAINER") {
+    return {
+      costume: "Modern studio smart-casual blazer and top",
+      accessories: "Minimal studio styling"
+    };
+  }
+
+  return {
+    costume: isFemale ? "Contemporary elegant styled attire matching scene tone" : "Tailored contemporary clothing matching scene era",
+    accessories: "Tasteful contemporary styling"
+  };
+}
+
 /**
  * Deterministic directorial compiler for synchronous planning and offline unit tests.
  * Extracts characters from speaker tags (e.g. "OPPENHEIMER:", "GROVES:") and infers genre from topic.
@@ -152,21 +253,28 @@ export function compileDeterministicDirectorialPass(
     for (const speaker of Array.from(detectedSpeakers)) {
       const id = slugify(speaker);
       const isLead = idx === 0;
+      const gender = inferSpeakerGender(speaker, `${topic} ${scriptText}`);
+      const isFemale = gender === "female";
+      const wardrobe = extractCharacterWardrobe(speaker, isFemale, genre, `${topic} ${creationIntent?.visualStyleDescription || ""}`);
+
       cast.push({
         id,
         name: speaker,
         role: isLead ? "lead" : "supporting",
         biometricDNA: {
-          gender: "male",
-          ageBand: isLead ? "late 30s" : "mid 40s",
-          facialFeatures: isLead ? "Intense focused gaze, strong defined jawline, expressive eyes" : "Stern weathered countenance, commanding presence",
-          hair: isLead ? "Dark textured hair" : "Neatly groomed hair"
+          gender,
+          ageBand: isFemale ? (isLead ? "mid to late 20s" : "late 20s") : (isLead ? "late 20s to early 30s" : "mid 30s"),
+          facialFeatures: isFemale
+            ? "Luminous almond-shaped eyes, elegant classical bone structure, warm expressive radiant smile"
+            : "Chiseled South Asian facial structure, intense warm expressive gaze, strong defined jawline",
+          hair: isFemale
+            ? "Long waist-length lustrous dark hair with soft flowing waves"
+            : "Lush dark textured hair styled naturally"
         },
-        wardrobe: {
-          costume: genre === "HISTORICAL_BIOPIC" ? "Bespoke 1940s charcoal wool suit with vest and tie" : genre === "BOLLYWOOD_ACTION" ? "Rugged tactical jacket, fitted dark henley shirt" : genre === "BOLLYWOOD_ROMANCE" ? "Tailored wool overcoat over fine knitwear" : "Cinematic tailored wardrobe matching scene era",
-          accessories: genre === "HISTORICAL_BIOPIC" ? "Vintage felt fedora hat" : genre === "BOLLYWOOD_ROMANCE" ? "Classic violin, slim spectacles" : "Tactical timepiece, rugged leather belt"
-        },
-        voiceProfile: isLead ? "Resonant commanding baritone" : "Firm authoritative voice"
+        wardrobe,
+        voiceProfile: isFemale
+          ? "Melodic, sweet expressive soprano with warm emotional nuance"
+          : "Warm, resonant romantic tenor with soft emotional cadence"
       });
       idx++;
     }
@@ -188,6 +296,7 @@ export function compileDeterministicDirectorialPass(
       voiceProfile: "Warm, confident and articulate creator voice"
     });
   } else if (genre === "BOLLYWOOD_ROMANCE") {
+    const isAlpine = /swiss|alps|switzerland|snow|violin/i.test(topic);
     cast.push(
       {
         id: "romantic_hero",
@@ -196,12 +305,18 @@ export function compileDeterministicDirectorialPass(
         biometricDNA: {
           gender: "male",
           ageBand: "late 20s to early 30s",
-          facialFeatures: "Chiseled South Asian facial structure, warm expressive brown eyes, dark-rimmed wire spectacles, refined romantic gaze",
+          facialFeatures: isAlpine
+            ? "Chiseled South Asian facial structure, warm expressive brown eyes, dark-rimmed wire spectacles, refined romantic gaze"
+            : "Chiseled South Asian facial structure, warm intense expressive gaze, strong defined jawline",
           hair: "Lush dark layered hair with soft wind-swept bangs across forehead"
         },
         wardrobe: {
-          costume: "Tailored charcoal wool overcoat over black turtleneck, holding classic wooden violin with bow",
-          accessories: "Dark-rimmed wire spectacles, acoustic wooden violin, polished leather boots"
+          costume: isAlpine
+            ? "Tailored charcoal wool overcoat over black turtleneck, holding classic wooden violin with bow"
+            : "Royal sapphire-blue silk angrakha with gold zardozi embroidery over ivory churidar",
+          accessories: isAlpine
+            ? "Dark-rimmed wire spectacles, acoustic wooden violin, polished leather boots"
+            : "Subtle gold wrist cuff, traditional royal mojris"
         },
         voiceProfile: "Warm, resonant romantic tenor with soft emotional cadence"
       },
@@ -216,8 +331,10 @@ export function compileDeterministicDirectorialPass(
           hair: "Long waist-length dark wavy hair, cascading and billowing in mountain breeze"
         },
         wardrobe: {
-          costume: "Translucent flowing chiffon saree in emerald green and pastel pink with delicate silver border, sleeveless blouse",
-          accessories: "Silver jhumkas, crystal bangles, floating sheer dupatta"
+          costume: isAlpine
+            ? "Translucent flowing chiffon saree in emerald green and pastel pink with delicate silver border, sleeveless blouse"
+            : "Swirling fuchsia and rani-pink Banarasi lehenga adorned with glittering mirror-work and flowing sheer dupatta",
+          accessories: "Silver and gold jhumkas, crystal bangles, floating sheer dupatta"
         },
         voiceProfile: "Melodic, sweet soprano with poetic emotional cadence"
       }
@@ -280,27 +397,45 @@ export function compileDeterministicDirectorialPass(
         eyeline = i % 2 === 0 ? "screen_right" : "screen_left";
       }
     } else if (genre === "BOLLYWOOD_ROMANCE") {
-      // Bollywood romance / musical: duets, two-shots, sweeping crane shots, violin choreography
-      const hero = cast[0];
-      const heroine = cast[1] || cast[0];
+      // Bollywood romance / musical: duets, two-shots, sweeping crane shots, dancing choreography
+      const maleHero = cast.find(c => c.biometricDNA.gender === "male") || cast[0];
+      const femaleHeroine = cast.find(c => c.biometricDNA.gender === "female") || cast[1] || cast[0];
+
+      const cleanSpk = (speaker || "").toUpperCase();
+      const isDuet = cleanSpk.includes("&") || cleanSpk.includes("AND") || cleanSpk.includes("BOTH");
+      const matchedHeroine = femaleHeroine && cleanSpk.includes(femaleHeroine.name.toUpperCase());
+      const matchedHero = maleHero && cleanSpk.includes(maleHero.name.toUpperCase());
+
       if (i === 0) {
-        onCameraCharacterId = null; // Establishing wide of Swiss alpine peaks or stone arches
+        onCameraCharacterId = null; // Establishing grand wide of royal palace courtyard or architectural setting
         shotGrammar = "ESTABLISHING_WIDE";
         eyeline = "horizon_reflective";
+      } else if (isDuet) {
+        onCameraCharacterId = femaleHeroine?.id || maleHero?.id || null;
+        shotGrammar = "MEDIUM_TWO_SHOT";
+        eyeline = "screen_right";
+      } else if (matchedHeroine) {
+        onCameraCharacterId = femaleHeroine.id;
+        shotGrammar = i % 2 === 0 ? "HERO_CLOSE_UP" : "OVER_THE_SHOULDER";
+        eyeline = "screen_left";
+      } else if (matchedHero) {
+        onCameraCharacterId = maleHero.id;
+        shotGrammar = i % 2 === 0 ? "HERO_CLOSE_UP" : "OVER_THE_SHOULDER";
+        eyeline = "screen_right";
       } else if (i % 4 === 1) {
-        onCameraCharacterId = hero?.id || null;
+        onCameraCharacterId = maleHero?.id || null;
         shotGrammar = "HERO_CLOSE_UP";
         eyeline = "screen_right";
       } else if (i % 4 === 2) {
-        onCameraCharacterId = heroine?.id || null;
+        onCameraCharacterId = femaleHeroine?.id || null;
         shotGrammar = "HERO_CLOSE_UP";
         eyeline = "screen_left";
       } else if (i % 4 === 3) {
-        onCameraCharacterId = hero?.id || null;
+        onCameraCharacterId = maleHero?.id || null;
         shotGrammar = "MEDIUM_TWO_SHOT";
         eyeline = "screen_right";
       } else {
-        onCameraCharacterId = heroine?.id || null;
+        onCameraCharacterId = femaleHeroine?.id || null;
         shotGrammar = "OVER_THE_SHOULDER";
         eyeline = "screen_left";
       }
@@ -333,7 +468,9 @@ export function compileDeterministicDirectorialPass(
       ? (shotGrammar === "MEDIUM_TWO_SHOT"
           ? "Sweeping 360-degree orbital camera dolly around the dancing couple with 24fps slow-motion cadence"
           : shotGrammar === "ESTABLISHING_WIDE"
-          ? "Grand panoramic high-altitude drone tracking across snow-capped alpine summits and green valleys"
+          ? (cleanTopic.includes("swiss") || cleanTopic.includes("alps")
+              ? "Grand panoramic high-altitude drone tracking across snow-capped alpine summits and green valleys"
+              : "Grand panoramic high-altitude camera tracking across the architectural expanse with festive atmospheric depth")
           : "Slow graceful push-in on 85mm prime with golden hour lens flares and wind-blown fabric")
       : (shotGrammar === "KINETIC_TRACKING"
           ? "Dynamic high-speed camera tracking with kinetic whip pans"
@@ -366,10 +503,18 @@ export function compileDeterministicDirectorialPass(
             ? "Arri Alexa Mini LF, 35mm & 50mm spherical primes, 16:9 widescreen framing, natural optical falloff"
             : "Cooke Anamorphic 2.39:1 framing, 24fps motion cadence, natural optical falloff"),
       lightingPalette: genre === "BOLLYWOOD_ROMANCE"
-        ? "Golden-hour alpine rim lighting, warm sunlight filtering through mist and snow crystals, soft high-key romantic fill"
+        ? (cleanTopic.includes("palace") || cleanTopic.includes("rajasthan") || cleanTopic.includes("temple") || cleanTopic.includes("courtyard")
+            ? "Warm golden-hour alpenglow (3400K) reflecting off polished marble floors, water droplet prismatic flares, soft flattering key light"
+            : cleanTopic.includes("swiss") || cleanTopic.includes("switzerland") || cleanTopic.includes("snow") || cleanTopic.includes("alps")
+            ? "Golden-hour alpine rim lighting, warm sunlight filtering through mist and snow crystals, soft high-key romantic fill"
+            : "Warm golden-hour rim lighting, rich cinematic contrast, soft flattering high-key romantic fill")
         : "High-contrast cinematic key lighting, rich shadows, warm practicals",
       atmosphere: genre === "BOLLYWOOD_ROMANCE"
-        ? "Swirling autumn leaves, fluttering translucent chiffon fabric in alpine wind, ethereal mountain mist, floating snow flurries"
+        ? (cleanTopic.includes("palace") || cleanTopic.includes("courtyard") || cleanTopic.includes("rajasthan")
+            ? "Cascades of fresh crimson rose and marigold petals floating on water, festive gold dust, romantic alpenglow"
+            : cleanTopic.includes("swiss") || cleanTopic.includes("switzerland") || cleanTopic.includes("snow") || cleanTopic.includes("chiffon") || cleanTopic.includes("alps")
+            ? "Swirling autumn leaves, fluttering translucent chiffon fabric in alpine wind, ethereal mountain mist, floating snow flurries"
+            : `Cascades of translucent chiffon fabric, ethereal romantic haze, floating flower petals, warm alpenglow for ${topic}`)
         : `Atmospheric cinematic tone for ${topic}`
     },
     cast,
@@ -440,7 +585,7 @@ CRITICAL DIRECTORIAL REQUIREMENTS:
 
 2. CASTING & BIOMETRICS (1 to 3 characters):
    - For historical figures (e.g. Oppenheimer, Groves, Napoleon), extract authentic biographical appearance, era-accurate clothing (1940s suits, fedoras, military uniforms), and age.
-   - For Bollywood romance (e.g. Yash Chopra Swiss musicals), cast an intense, charming romantic hero (e.g. violinist in long dark wool coat/sweater, wire spectacles) and an ethereal heroine in wind-blown translucent chiffon sarees with flowing pallu.
+   - For Bollywood romance, cast an intense, charismatic romantic hero (e.g. in royal embroidered angrakha/sherwani or tailored classic wardrobe) and an ethereal heroine (e.g. in swirling Banarasi lehenga or translucent chiffon saree with ornate jewelry). Only include winter overcoats or violins if explicitly requested in the topic.
    - For Bollywood action (e.g. Dhurandhar), cast rugged, charismatic leads with tactical gear, leather jackets, or sharp tailored suits.
    - For general drama/sci-fi, design distinctive, memorable characters with distinct facial features.
    - For documentary explainer ONLY, you may cast a single modern presenter.
@@ -460,7 +605,8 @@ CRITICAL DIRECTORIAL REQUIREMENTS:
 4. SCRIPT & DIALOGUE:
    - Output exactly ${targetShots} short lines, one per shot.
    - STRICT BUDGET: Each line MUST be between 5 and ${MAX_WORDS_PER_SHOT} words maximum. Never exceed ${MAX_WORDS_PER_SHOT} words per line.
-   - Write authentic cinematic dialogue or dramatic narration worthy of a blockbuster film.
+   - Write authentic cinematic dialogue, dramatic narration, or poetic song lyrics worthy of a blockbuster film.
+   - For Bollywood romance or music videos, write poetic rhyming Hindi/Hinglish song lyrics (mukhda and antara) with deep romantic feeling, musical rhythm, and evocative imagery (ishq, fiza, dil, jahaan, dhadkan, nazaare, khwaab). NEVER use cheap corporate filler or unromantic slang ("yaar", "bhai", "tips", "tricks").
    - Forbid corporate filler, canned clichés, or generic platitudes (NEVER say "Here is what deserves a closer look", "The obvious reaction is only the surface", "Experience the true atmosphere", etc.).${languageDirective}
 
 Return a JSON object conforming strictly to this structure:
