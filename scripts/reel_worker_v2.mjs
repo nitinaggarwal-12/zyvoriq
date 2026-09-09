@@ -2328,7 +2328,8 @@ async function generateShot(op, manifest, shot) {
   let instance = null;
   const prior = String(op.provider_operation_name || "");
   const dispatchMarkers = new Set(["veo-dispatch-started", "veo-recovery-dispatch-started"]);
-  let name = prior && !dispatchMarkers.has(prior) ? prior : null;   if (name) console.log(`[reel-worker] [anchor] SKIPPED for ${shot.id} — resuming existing Veo op, no new dispatch`);
+  let name = prior && !dispatchMarkers.has(prior) && !op.last_error ? prior : null;
+  if (name) console.log(`[reel-worker] [anchor] SKIPPED for ${shot.id} — resuming existing Veo op, no new dispatch`);
 
   const characters = getManifestCharacters(manifest);
   const charId = shot.continuityIn?.characterId;
@@ -2514,7 +2515,7 @@ async function generateShot(op, manifest, shot) {
     if (!p) throw new Error(`Veo polling network failure: ${pollFetchError?.message || 'unknown'}`);
     const pj = await p.json().catch(() => ({}));
     if (!p.ok || pj?.error) {
-      const isTransient = p.status === 503 || p.status === 429 || p.status === 500 || pj?.error?.code === 503 || pj?.error?.code === 429 || pj?.error?.code === 500 || /unavailable|overload|timeout|resource_exhausted|demand|busy|internal|server issue/i.test(pj?.error?.message || "");
+      const isTransient = (p.status === 503 || p.status === 429) || (pj?.error?.code === 503 || pj?.error?.code === 429) || /unavailable|overload|demand|busy/i.test(pj?.error?.message || "");
       if (isTransient) {
         console.warn(`[reel-worker] [transient-poll-retry] Transient Google API error during poll for ${name} (status: ${p.status}, message: "${pj?.error?.message}"). Waiting 8s and continuing poll loop (poll ${i + 1}/60)...`);
         await sleep(8000);
