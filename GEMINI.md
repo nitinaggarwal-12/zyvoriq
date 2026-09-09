@@ -64,6 +64,19 @@
 - **End-to-End Database State Progression in Verification**:
   Never declare an async generation feature working based on HTTP 200 or an optimistic UI toast. Quality gate verification must assert that the database rows physically transitioned (`QUEUED -> RUNNING -> SUCCEEDED`) and that the final video asset was rendered and persisted.
 
-
-
-
+# 🔍 Proactive Telemetry-First Forensic Log Auditing Protocol (Zero-Wait for External Agents)
+- **Autonomous Log Forensic Discipline (Never Wait for Claude or User)**: Never sit idle, never wait for Claude or the user to parse logs, do arithmetic on clip durations, or identify pipeline contradictions. Antigravity must proactively inspect, tail, and analyze live Railway logs (`zyvoriq` and `zyvoriq-reel-worker`) on Cloudtop during and immediately after every generation event.
+- **Mandatory Retime Clamp & Surplus Discard Auditing**:
+  1. For every generated shot, parse the `studio1 render resync` payload and assert `clampFloorBound === false`.
+  2. If `clampFloorBound === true`, immediately extract `targetSec`, `sourceSec`, `retimeFactor`, and `surplusSec`.
+  3. Calculate the total surplus duration discarded across the reel and the waste percentage (`surplusSec / totalSourceSec`). If surplus exceeds 20% or 3.0s on any shot, immediately flag as an active defect and autonomously diagnose the root cause (word ceiling too low, speech cadence faster than planned, or mismatched generation duration bucket).
+- **Mandatory Speech Cadence (WPS) vs. Planner Budget Auditing**:
+  1. Directly measure and log the words-per-second (`wps = words / duration`) from `[narration-cadence]`.
+  2. Compare measured WPS against `wordsPerSecondForGenre(genre)` in `lib/studio1/planner.ts`.
+  3. When measured WPS diverges from the budget by more than ±0.3 wps, autonomously update the planner's genre calibration so generation buckets and word counts stay tightly aligned.
+- **Mandatory Audio Strategy & Speech-Sync Verification**:
+  1. Inspect the logged `audio strategy (genre: ..., audioStrategy: ...)` for the production.
+  2. For genres requiring native performance (e.g. `MUSIC_VIDEO` with singing and lip sync), verify `audioStrategy === "native"`.
+  3. Verify `renderRough` never dubs synthetic TTS (`narrationPath`) over native character speech/singing, never truncates with `-t d`, and preserves native audio at volume 1.00 (-24 LUFS).
+- **Continuous Telemetry Watchdog Execution**:
+  Run `node scripts/telemetry_watchdog.mjs` on Cloudtop to tail live Railway logs and emit immediate diagnostic alerts for any clamp bindings, surplus spikes, audio strategy contradictions, or Veo safety retries.
