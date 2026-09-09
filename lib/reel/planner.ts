@@ -12,6 +12,14 @@ export interface PlanReelInput {
   aspectRatio?: "9:16" | "16:9" | "2.39:1";
   genre?: OmniGenre;
   language?: string;
+  continuationFrom?: {
+    parentProductionId: string;
+    parentTitle: string;
+    cast?: any[];
+    genre?: OmniGenre;
+    aspectRatio?: "9:16" | "16:9" | "2.39:1";
+    visualStyle?: any;
+  };
 }
 
 export function resolveLanguage(
@@ -399,7 +407,7 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
       "NARRATION_PRECONDITION_FAILED: Non-empty scriptText is required to plan a reel manifest synchronously. In async creation pipelines, use planStudio1() or planReelAsync() to dynamically synthesize the script via Gemini before calling synchronous planning."
     );
   }
-  const dir = directorial || compileDeterministicDirectorialPass(topic, masterScript, requestedDurationSec, creationIntent, input.genre, aspectRatio, resolvedLanguage);
+  const dir = directorial || compileDeterministicDirectorialPass(topic, masterScript, requestedDurationSec, creationIntent, input.genre, aspectRatio, resolvedLanguage, input.continuationFrom);
   const genre = dir.genre || input.genre;
   const rawBeats = splitIntoEditorialBeats(masterScript, requestedDurationSec);
   const beats = mergeShortBeats(rawBeats, requestedDurationSec, MIN_WORDS_PER_SHOT, MAX_WORDS_PER_SHOT);

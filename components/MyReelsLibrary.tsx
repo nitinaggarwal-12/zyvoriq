@@ -2119,14 +2119,28 @@ export function MyReelsLibrary() {
                           </button>
                         </div>
 
-                        {/* Open in Studio Link */}
-                        <Link
-                          href={`/?reel=${encodeURIComponent(reel.id)}&phase=6`}
-                          className="flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-emerald-300 transition py-1"
-                        >
-                          <span>Open in Studio</span>
-                          <ExternalLink className="h-3 w-3" />
-                        </Link>
+                        {/* Action links */}
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          {/* Direct Part 2 Continuation Reel Button */}
+                          <Link
+                            href={`/?continueReel=${encodeURIComponent(reel.id)}`}
+                            id={`direct-part2-btn-${reel.id}`}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-emerald-500/10 border border-emerald-500/60 hover:border-emerald-400 text-emerald-300 hover:text-white font-mono text-xs font-bold transition shadow-md shadow-emerald-950/40 hover:scale-105 min-h-[36px]"
+                            title="Direct Part 2 continuation with the exact same character, setting, and audio theme"
+                          >
+                            <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+                            <span>Direct Part 2</span>
+                          </Link>
+
+                          {/* Open in Studio Link */}
+                          <Link
+                            href={`/?reel=${encodeURIComponent(reel.id)}&phase=6`}
+                            className="flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-emerald-300 transition py-1 px-2 rounded-lg hover:bg-zinc-850"
+                          >
+                            <span>Open in Studio</span>
+                            <ExternalLink className="h-3 w-3" />
+                          </Link>
+                        </div>
                       </div>
                     </div>
 
@@ -2320,6 +2334,16 @@ export function MyReelsLibrary() {
                               )}
                             </div>
                             <div className="flex items-center gap-3 flex-wrap">
+                              {/* Direct Part 2 Continuation Button */}
+                              <Link
+                                href={`/?continueReel=${encodeURIComponent(reel.id)}`}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/50 hover:bg-emerald-500/30 text-emerald-300 hover:text-white text-xs font-mono font-bold transition shadow-md hover:scale-105 cursor-pointer"
+                                title="Direct Part 2 continuation with the exact same character, setting, and audio theme"
+                              >
+                                <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+                                <span>Direct Part 2 (Continuation Reel)</span>
+                              </Link>
+
                               {completedClips.length > 1 && (
                                 <button
                                   type="button"

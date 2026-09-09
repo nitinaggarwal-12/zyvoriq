@@ -36,7 +36,8 @@ import {
   ChevronUp,
   X,
   Sliders,
-  Send
+  Send,
+  Lock
 } from "lucide-react";
 import type { OmniDirectorialTreatment } from "@/lib/reel/elaborateDirector";
 
@@ -197,6 +198,19 @@ export function CreatorReelsHome() {
   const [isTweaking, setIsTweaking] = useState(false);
   const [expandedShotIdx, setExpandedShotIdx] = useState<number | null>(0);
 
+  // Continuation / Part 2 Reel State
+  const [continuationParent, setContinuationParent] = useState<{
+    id: string;
+    title: string;
+    category?: string;
+    prompt?: string;
+    aspectRatio?: string;
+    durationSec?: number;
+    posterUrl?: string;
+  } | null>(null);
+  const [showContinuationModal, setShowContinuationModal] = useState(false);
+  const [libraryReels, setLibraryReels] = useState<any[]>([]);
+
   // Auto-suggest Hinglish if user picks Bollywood Romance or Bollywood Action genre
   useEffect(() => {
     if ((selectedGenre === "BOLLYWOOD_ACTION" || selectedGenre === "BOLLYWOOD_ROMANCE") && selectedLanguage === "en") {
@@ -232,31 +246,112 @@ export function CreatorReelsHome() {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const targetId = params.get("id") || params.get("reel");
-    if (!targetId) return;
+    if (targetId) {
+      fetch(`/api/studio/omni-generate?id=${encodeURIComponent(targetId)}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.success && data?.scene) {
+            const s = data.scene;
+            const newReel: FinishedReel = {
+              id: s.id,
+              title: s.title || "4K Master Cinema Reel",
+              category: s.genre || "Bollywood Romance",
+              shots: data.shots?.length || 12,
+              durationSec: s.duration || 34,
+              videoUrl: s.video || FINISHED_REELS[0].videoUrl,
+              posterUrl: s.still || FINISHED_REELS[0].posterUrl,
+              prompt: s.prompt || "",
+              continuityProof: `${data.shots?.length || 12}-shot continuous sequence with 100% biometric facial identity lock.`,
+              tags: ["9:16 Vertical", `${data.shots?.length || 12} Shots`, "Master Reel", "Zero Drift"]
+            };
+            setReelsList((prev) => [newReel, ...prev.filter((r) => r.id !== s.id)]);
+            setActiveReelIndex(0);
+            if (videoRef.current && s.video) {
+              videoRef.current.currentTime = 0;
+              videoRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+            }
+          }
+        })
+        .catch(() => {});
+    }
 
-    fetch(`/api/studio/omni-generate?id=${encodeURIComponent(targetId)}`)
+    // Hydrate Part 2 Continuation from ?continueReel= or ?parentReel=
+    const continueId = params.get("continueReel") || params.get("parentReel");
+    if (continueId) {
+      const resolveLocal = FINISHED_REELS.find((r) => r.id === continueId) || CINEMA_FINISHED_REELS.find((r) => r.id === continueId);
+      if (resolveLocal) {
+        setContinuationParent({
+          id: resolveLocal.id,
+          title: resolveLocal.title,
+          category: resolveLocal.category,
+          prompt: resolveLocal.prompt,
+          aspectRatio: (resolveLocal as any).aspectRatio || "9:16",
+          durationSec: resolveLocal.durationSec,
+          posterUrl: resolveLocal.posterUrl,
+        });
+        setPromptText(`Act II: Continuation of "${resolveLocal.title}". The sequence continues seamlessly with the same character, wardrobe, and visual aesthetic: `);
+        if ((resolveLocal as any).aspectRatio === "2.39:1") {
+          setActiveTab("youtube_shorts");
+          setSelectedAspectRatio("2.39:1");
+        } else {
+          setActiveTab("instagram_tiktok");
+          setSelectedAspectRatio("9:16");
+        }
+        setTimeout(() => {
+          const el = document.getElementById("directorial-studio") || document.getElementById("prompt-studio-box");
+          if (el) el.scrollIntoView({ behavior: "smooth" });
+        }, 300);
+      } else {
+        fetch(`/api/reels/productions/${encodeURIComponent(continueId)}`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            const prod = data?.production;
+            if (prod) {
+              const m = prod.manifest || {};
+              let cleanTitle = m.topic || (m as any).studio1?.projectTitle || prod.id;
+              if (cleanTitle.length > 50) cleanTitle = cleanTitle.slice(0, 48) + "...";
+              let poster = prod.posterUrl;
+              if (!poster || poster.includes(".railway.internal")) {
+                if (prod.id.includes("e2e00945") || prod.id.includes("5b3c6b72")) poster = "/assets/stills/dubai_dance.jpg";
+                else if (prod.id.includes("9f360810") || prod.id.includes("39a1fe18")) poster = "/assets/stills/swiss_alpine.jpg";
+                else if (prod.id.includes("d2d144d2") || prod.id.includes("32ffc950")) poster = "/assets/stills/desert_spiral.jpg";
+                else if (prod.id.includes("5bfb958d") || prod.id.includes("1a8264ca")) poster = "/assets/stills/cosmic_nebula.jpg";
+                else if (prod.id.includes("napoleon")) poster = "/assets/stills/napoleon_hero.png";
+                else if (prod.id.includes("coronation")) poster = "/assets/stills/coronation_hero.png";
+              }
+              setContinuationParent({
+                id: prod.id,
+                title: cleanTitle,
+                category: m.genre || "Choreography & Style",
+                prompt: m.prompt || m.topic || "",
+                aspectRatio: m.aspectRatio || "9:16",
+                durationSec: m.requestedDurationSec || m.durationSec || 30,
+                posterUrl: poster,
+              });
+              setPromptText(`Act II: Continuation of "${cleanTitle}". The sequence continues seamlessly with the same character, wardrobe, and visual aesthetic: `);
+              if (m.aspectRatio === "2.39:1") {
+                setActiveTab("youtube_shorts");
+                setSelectedAspectRatio("2.39:1");
+              } else {
+                setActiveTab("instagram_tiktok");
+                setSelectedAspectRatio("9:16");
+              }
+              setTimeout(() => {
+                const el = document.getElementById("directorial-studio") || document.getElementById("prompt-studio-box");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+              }, 300);
+            }
+          })
+          .catch(() => {});
+      }
+    }
+
+    // Pre-fetch library productions for "Continue from Library" selector
+    fetch("/api/reels/productions?limit=30")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.success && data?.scene) {
-          const s = data.scene;
-          const newReel: FinishedReel = {
-            id: s.id,
-            title: s.title || "4K Master Cinema Reel",
-            category: s.genre || "Bollywood Romance",
-            shots: data.shots?.length || 12,
-            durationSec: s.duration || 34,
-            videoUrl: s.video || FINISHED_REELS[0].videoUrl,
-            posterUrl: s.still || FINISHED_REELS[0].posterUrl,
-            prompt: s.prompt || "",
-            continuityProof: `${data.shots?.length || 12}-shot continuous sequence with 100% biometric facial identity lock.`,
-            tags: ["9:16 Vertical", `${data.shots?.length || 12} Shots`, "Master Reel", "Zero Drift"]
-          };
-          setReelsList((prev) => [newReel, ...prev.filter((r) => r.id !== s.id)]);
-          setActiveReelIndex(0);
-          if (videoRef.current && s.video) {
-            videoRef.current.currentTime = 0;
-            videoRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
-          }
+        if (Array.isArray(data?.productions)) {
+          setLibraryReels(data.productions);
         }
       })
       .catch(() => {});
@@ -418,6 +513,7 @@ export function CreatorReelsHome() {
           language: targetLang,
           platform,
           autoStart: true,
+          parentProductionId: continuationParent?.id || undefined,
         })
       });
 
@@ -430,8 +526,9 @@ export function CreatorReelsHome() {
       setGeneratedResult({
         ...data,
         productionId: data.production?.id || data.productionId,
-        message:
-          activeTab === "youtube_shorts"
+        message: continuationParent
+          ? `Part 2 Continuation of "${continuationParent.title}" is queued with 100% biometric facial identity lock. Estimated time: ~7 minutes.`
+          : activeTab === "youtube_shorts"
             ? "Your 180s Theatrical Cinema Master is planned across 5 classical dramatic acts and actively rendering in the background queue. Estimated time: ~12–15 minutes."
             : "Your Studio1 unbroken reel is planned and actively rendering in the background queue. Estimated time: ~7 minutes."
       });
@@ -819,8 +916,63 @@ export function CreatorReelsHome() {
                   )}
                 </div>
 
+                {/* Part 2 Sequel Mode Active Banner */}
+                {continuationParent && (
+                  <div
+                    id="continuation-active-banner"
+                    className="mb-3.5 p-3.5 sm:p-4 rounded-xl bg-gradient-to-r from-teal-950/80 via-emerald-950/60 to-slate-900/90 border border-teal-500/50 shadow-xl shadow-teal-950/40 flex items-start justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-300"
+                  >
+                    <div className="flex items-start gap-3 min-w-0">
+                      {continuationParent.posterUrl ? (
+                        <img
+                          src={continuationParent.posterUrl}
+                          alt={continuationParent.title}
+                          className="w-12 h-16 sm:w-14 sm:h-20 rounded-lg object-cover border border-teal-500/50 shrink-0 shadow-md"
+                        />
+                      ) : (
+                        <div className="w-12 h-16 sm:w-14 sm:h-20 rounded-lg bg-teal-950/80 border border-teal-500/40 flex items-center justify-center shrink-0">
+                          <Sparkles className="w-5 h-5 text-teal-400" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/40 font-mono text-[10px] font-bold tracking-wider uppercase flex items-center gap-1 shadow-sm">
+                            <Sparkles className="w-3 h-3 text-teal-400" />
+                            Part 2 Sequel Mode
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full bg-black/50 text-emerald-300/90 border border-emerald-500/30 font-mono text-[10px] flex items-center gap-1">
+                            <Lock className="w-2.5 h-2.5 text-emerald-400" />
+                            Biometric DNA & Scene Continuity Locked
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-400">
+                            Parent: {continuationParent.id.slice(0, 16)}
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-semibold text-white truncate">
+                          Directing Sequel to: <span className="text-teal-300">{continuationParent.title}</span>
+                        </h4>
+                        <p className="text-xs text-slate-300/80 mt-0.5 line-clamp-2">
+                          All character facial anchors, wardrobe, visual style, and audio profile from Part 1 are locked. Type your continuation scene action or plot twist below.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setContinuationParent(null);
+                        setPromptText("");
+                      }}
+                      className="px-2.5 py-1 text-xs text-slate-400 hover:text-white rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 shrink-0 transition flex items-center gap-1"
+                      title="Exit continuation mode and direct a fresh standalone reel"
+                    >
+                      <X className="w-3 h-3" />
+                      <span>Clear</span>
+                    </button>
+                  </div>
+                )}
+
                 {/* Prompt Textarea */}
-                <div className="relative mb-4">
+                <div id="prompt-studio-box" className="relative mb-4">
                   <textarea
                     rows={3}
                     value={promptText}
@@ -834,8 +986,17 @@ export function CreatorReelsHome() {
                   />
                 </div>
 
-                {/* Quick starter pills */}
+                {/* Quick starter pills + Continuation Sequel from Library */}
                 <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-4 scrollbar-none text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setShowContinuationModal(true)}
+                    className="shrink-0 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25 text-[11px] font-semibold flex items-center gap-1.5 transition shadow-sm"
+                    title="Direct Part 2 of any previously generated reel with character and scene locked"
+                  >
+                    <Sparkles className="w-3 h-3 text-emerald-400" />
+                    <span>Direct Sequel from Library...</span>
+                  </button>
                   <span className="text-slate-400 shrink-0 text-[11px] font-medium">Try starter:</span>
                   {(activeTab === "instagram_tiktok"
                     ? [
@@ -866,6 +1027,158 @@ export function CreatorReelsHome() {
                     </button>
                   ))}
                 </div>
+
+                {/* Modal to pick any reel from library to continue */}
+                {showContinuationModal && (
+                  <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+                    <div className="bg-[#0D111A] border border-white/10 rounded-2xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl flex flex-col max-h-[85vh]">
+                      <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-5 h-5 text-teal-400" />
+                          <h3 className="text-base font-bold text-white">Select a Reel to Direct Part 2</h3>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowContinuationModal(false)}
+                          className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      <p className="text-xs text-slate-400 mt-2 mb-4">
+                        Choose any generated reel from your library. Omni Director will preserve the character's facial structure, wardrobe, and world continuity for the sequel.
+                      </p>
+
+                      <div className="overflow-y-auto space-y-2.5 pr-1 flex-1">
+                        {/* 1. Archive & Library Reels */}
+                        {libraryReels.map((p) => {
+                          const m = p.manifest || {};
+                          let title = m.topic || (m as any).studio1?.projectTitle || p.id;
+                          if (title.length > 60) title = title.slice(0, 58) + "...";
+                          let poster = p.posterUrl;
+                          if (!poster || poster.includes(".railway.internal")) {
+                            if (p.id.includes("e2e00945") || p.id.includes("5b3c6b72")) poster = "/assets/stills/dubai_dance.jpg";
+                            else if (p.id.includes("9f360810") || p.id.includes("39a1fe18")) poster = "/assets/stills/swiss_alpine.jpg";
+                            else if (p.id.includes("d2d144d2") || p.id.includes("32ffc950")) poster = "/assets/stills/desert_spiral.jpg";
+                            else if (p.id.includes("5bfb958d") || p.id.includes("1a8264ca")) poster = "/assets/stills/cosmic_nebula.jpg";
+                            else if (p.id.includes("napoleon")) poster = "/assets/stills/napoleon_hero.png";
+                            else if (p.id.includes("coronation")) poster = "/assets/stills/coronation_hero.png";
+                          }
+                          return (
+                            <div
+                              key={p.id}
+                              className="p-3 rounded-xl bg-white/[0.03] border border-white/5 hover:border-teal-500/40 hover:bg-teal-500/5 transition flex items-center justify-between gap-3 group"
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                {poster ? (
+                                  <img src={poster} alt={title} className="w-10 h-14 rounded-lg object-cover border border-white/10 shrink-0" />
+                                ) : (
+                                  <div className="w-10 h-14 rounded-lg bg-teal-950/40 border border-teal-500/30 flex items-center justify-center shrink-0">
+                                    <Clapperboard className="w-4 h-4 text-teal-400" />
+                                  </div>
+                                )}
+                                <div className="min-w-0">
+                                  <h4 className="text-xs font-semibold text-white group-hover:text-teal-300 transition truncate">
+                                    {title}
+                                  </h4>
+                                  <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono mt-0.5">
+                                    <span>ID: {p.id.slice(0, 12)}</span>
+                                    <span>•</span>
+                                    <span>{m.genre || "Reel"}</span>
+                                    <span>•</span>
+                                    <span>{m.aspectRatio || "9:16"}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setContinuationParent({
+                                    id: p.id,
+                                    title,
+                                    category: m.genre || "Reel",
+                                    prompt: m.prompt || m.topic || "",
+                                    aspectRatio: m.aspectRatio || "9:16",
+                                    durationSec: m.requestedDurationSec || 30,
+                                    posterUrl: poster,
+                                  });
+                                  setPromptText(`Act II: Continuation of "${title}". The sequence continues seamlessly with the same character, wardrobe, and visual aesthetic: `);
+                                  if (m.aspectRatio === "2.39:1") {
+                                    setActiveTab("youtube_shorts");
+                                    setSelectedAspectRatio("2.39:1");
+                                  } else {
+                                    setActiveTab("instagram_tiktok");
+                                    setSelectedAspectRatio("9:16");
+                                  }
+                                  setShowContinuationModal(false);
+                                  setTimeout(() => {
+                                    const el = document.getElementById("continuation-active-banner") || document.getElementById("prompt-studio-box");
+                                    if (el) el.scrollIntoView({ behavior: "smooth" });
+                                  }, 200);
+                                }}
+                                className="px-3 py-1.5 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/40 text-teal-300 text-xs font-semibold shrink-0 flex items-center gap-1 transition shadow-sm"
+                              >
+                                <Sparkles className="w-3 h-3 text-teal-400" />
+                                <span>Select Part 2</span>
+                              </button>
+                            </div>
+                          );
+                        })}
+
+                        {/* 2. Finished showcase reels */}
+                        {FINISHED_REELS.map((reel) => (
+                          <div
+                            key={reel.id}
+                            className="p-3 rounded-xl bg-white/[0.03] border border-white/5 hover:border-teal-500/40 hover:bg-teal-500/5 transition flex items-center justify-between gap-3 group"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <img src={reel.posterUrl} alt={reel.title} className="w-10 h-14 rounded-lg object-cover border border-white/10 shrink-0" />
+                              <div className="min-w-0">
+                                <h4 className="text-xs font-semibold text-white group-hover:text-teal-300 transition truncate">
+                                  {reel.title}
+                                </h4>
+                                <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono mt-0.5">
+                                  <span>{reel.category}</span>
+                                  <span>•</span>
+                                  <span>{reel.shots} Shots</span>
+                                  <span>•</span>
+                                  <span>9:16</span>
+                                </div>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setContinuationParent({
+                                  id: reel.id,
+                                  title: reel.title,
+                                  category: reel.category,
+                                  prompt: reel.prompt,
+                                  aspectRatio: "9:16",
+                                  durationSec: reel.durationSec,
+                                  posterUrl: reel.posterUrl,
+                                });
+                                setPromptText(`Act II: Continuation of "${reel.title}". The sequence continues seamlessly with the same character, wardrobe, and visual aesthetic: `);
+                                setActiveTab("instagram_tiktok");
+                                setSelectedAspectRatio("9:16");
+                                setShowContinuationModal(false);
+                                setTimeout(() => {
+                                  const el = document.getElementById("continuation-active-banner") || document.getElementById("prompt-studio-box");
+                                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                                }, 200);
+                              }}
+                              className="px-3 py-1.5 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/40 text-teal-300 text-xs font-semibold shrink-0 flex items-center gap-1 transition shadow-sm"
+                            >
+                              <Sparkles className="w-3 h-3 text-teal-400" />
+                              <span>Select Part 2</span>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Actions Row: Elaborate Button + Submit Button + Stated Wait */}
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
@@ -1826,11 +2139,37 @@ export function CreatorReelsHome() {
                         </p>
                       </div>
 
-                      <div className="mt-4 pt-3 border-t border-white/5">
+                      <div className="mt-4 pt-3 border-t border-white/5 flex flex-col gap-2.5">
                         <div className="flex items-start gap-1.5 text-[11px] text-slate-300">
                           <CheckCircle2 className="w-3.5 h-3.5 text-teal-400 shrink-0 mt-0.5" />
                           <span className="leading-tight">{reel.continuityProof}</span>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setContinuationParent({
+                              id: reel.id,
+                              title: reel.title,
+                              category: reel.category,
+                              prompt: reel.prompt,
+                              aspectRatio: "9:16",
+                              durationSec: reel.durationSec,
+                              posterUrl: reel.posterUrl,
+                            });
+                            setPromptText(`Act II: Continuation of "${reel.title}". The sequence continues seamlessly with the same character, wardrobe, and visual aesthetic: `);
+                            setActiveTab("instagram_tiktok");
+                            setSelectedAspectRatio("9:16");
+                            setTimeout(() => {
+                              const el = document.getElementById("continuation-active-banner") || document.getElementById("prompt-studio-box");
+                              if (el) el.scrollIntoView({ behavior: "smooth" });
+                            }, 100);
+                          }}
+                          className="w-full py-2 px-3 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 hover:border-teal-400 text-teal-300 hover:text-white font-mono text-xs font-semibold flex items-center justify-center gap-1.5 transition shadow-sm"
+                          title="Direct Part 2 continuation with the exact same character, wardrobe, and theme"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-teal-400" />
+                          <span>Direct Part 2 (Continuation)</span>
+                        </button>
                       </div>
                     </div>
                   </div>

@@ -468,10 +468,20 @@ export async function planStudio1(input: PlanReelInput): Promise<ReelProductionM
       aspectRatio: input.aspectRatio,
       genre: input.genre,
       language: input.language,
+      continuationFrom: input.continuationFrom,
     });
     scriptText = directorial.masterScript;
   }
-  return planStudio1Sync({ ...input, scriptText }, directorial);
+  const manifest = planStudio1Sync({ ...input, scriptText }, directorial);
+  if (input.continuationFrom?.parentProductionId) {
+    (manifest as any).parentProductionId = input.continuationFrom.parentProductionId;
+    (manifest as any).continuationPart = 2;
+    if ((manifest as any).studio1) {
+      (manifest as any).studio1.parentProductionId = input.continuationFrom.parentProductionId;
+      (manifest as any).studio1.continuationPart = 2;
+    }
+  }
+  return manifest;
 }
 
 export function isStudio1Manifest(manifest: ReelProductionManifest) {

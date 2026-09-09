@@ -89,6 +89,18 @@ export interface OmniDirectorInput {
   scriptText?: string;
   genre?: OmniGenre;
   language?: string;
+  continuationFrom?: {
+    parentProductionId: string;
+    parentTitle: string;
+    cast?: OmniCastMember[];
+    genre?: OmniGenre;
+    aspectRatio?: "9:16" | "16:9" | "2.39:1";
+    visualStyle?: {
+      optics?: string;
+      lightingPalette?: string;
+      atmosphere?: string;
+    };
+  };
 }
 
 const TARGET_SHOT_DURATION_SEC = 6.0;
@@ -210,13 +222,14 @@ export function compileDeterministicDirectorialPass(
   creationIntent?: ReelCreationIntent,
   explicitGenre?: OmniGenre,
   aspectRatio: "9:16" | "16:9" | "2.39:1" = "9:16",
-  language?: string
+  language?: string,
+  continuationFrom?: OmniDirectorInput["continuationFrom"]
 ): OmniDirectorialCompilation {
   const cleanTopic = topic.trim().toLowerCase();
   
   // 1. Detect Genre
-  let genre: OmniGenre = explicitGenre || "CINEMATIC_DRAMA";
-  if (!explicitGenre) {
+  let genre: OmniGenre = continuationFrom?.genre || explicitGenre || "CINEMATIC_DRAMA";
+  if (!explicitGenre && !continuationFrom?.genre) {
     if (cleanTopic.includes("dhurandhar") || cleanTopic.includes("action") || cleanTopic.includes("stunt") || cleanTopic.includes("chase") || cleanTopic.includes("fight")) {
       genre = "BOLLYWOOD_ACTION";
     } else if (cleanTopic.includes("romance") || cleanTopic.includes("romantic") || cleanTopic.includes("singing") || cleanTopic.includes("dancing") || cleanTopic.includes("switzerland") || cleanTopic.includes("chiffon") || cleanTopic.includes("saree") || cleanTopic.includes("mohabbatein") || cleanTopic.includes("ddlj") || cleanTopic.includes("music video") || cleanTopic.includes("love story")) {
@@ -248,7 +261,10 @@ export function compileDeterministicDirectorialPass(
   }
 
   const cast: OmniCastMember[] = [];
-  if (detectedSpeakers.size > 0) {
+  if (continuationFrom?.cast && continuationFrom.cast.length > 0) {
+    // Exact biometric DNA & wardrobe inheritance from Part 1
+    cast.push(...continuationFrom.cast);
+  } else if (detectedSpeakers.size > 0) {
     let idx = 0;
     for (const speaker of Array.from(detectedSpeakers)) {
       const id = slugify(speaker);
@@ -569,6 +585,15 @@ Topic: "${topic}"
 Tone: "${tone}"
 Target Duration: ${requestedDurationSec} seconds across exactly ${targetShots} visual shots.
 ${input.genre ? `MANDATORY GENRE OVERRIDE: The user has explicitly selected genre "${input.genre}". You MUST set "genre": "${input.genre}" and stage all visual action, cast, wardrobe and dialogue strictly to this genre.` : ""}
+${input.continuationFrom ? `
+MANDATORY DIRECTORIAL CONTINUITY LOCK (PART 2 SEQUEL):
+- This production is Part 2 (Direct Continuation / Sequel) of "${input.continuationFrom.parentTitle}".
+- You MUST preserve the exact same character identity, names, biometric facial features, and wardrobe from Part 1.
+${input.continuationFrom.cast && input.continuationFrom.cast.length > 0 ? `- Locked Cast from Part 1: ${JSON.stringify(input.continuationFrom.cast)}` : ""}
+${input.continuationFrom.genre ? `- Locked Genre: "${input.continuationFrom.genre}"` : ""}
+- Maintain continuous visual aesthetic, lighting palette, and optics.
+- The storyline, dialogue, and choreography/action must seamlessly continue where Part 1 left off.
+` : ""}
 
 CRITICAL DIRECTORIAL REQUIREMENTS:
 1. GENRE IDENTIFICATION:
@@ -704,6 +729,14 @@ Return a JSON object conforming strictly to this structure:
       parsed.genre = input.genre;
     }
 
+    if (input.continuationFrom?.cast && input.continuationFrom.cast.length > 0) {
+      // 100% Biometric identity and wardrobe preservation across continuation reels
+      parsed.cast = input.continuationFrom.cast;
+    }
+    if (input.continuationFrom?.genre) {
+      parsed.genre = input.continuationFrom.genre;
+    }
+
     // Sanitize shot word counts against the strict 12-word ceiling
     for (const shot of parsed.shots) {
       const cleanWords = (shot.dialogue || "").replace(/^[A-Z0-9_\-\s]{2,25}:/i, "").trim().split(/\s+/).filter(Boolean);
@@ -716,6 +749,6 @@ Return a JSON object conforming strictly to this structure:
     return parsed;
   } catch (parseErr: any) {
     console.warn(`[omni-director] Failed to parse JSON plan, falling back to deterministic compiler: ${parseErr?.message}`);
-    return compileDeterministicDirectorialPass(topic, rawText, requestedDurationSec, input.creationIntent, input.genre, input.aspectRatio, resolvedLang);
+    return compileDeterministicDirectorialPass(topic, rawText, requestedDurationSec, input.creationIntent, input.genre, input.aspectRatio, resolvedLang, input.continuationFrom);
   }
 }

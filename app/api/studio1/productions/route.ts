@@ -52,6 +52,43 @@ export async function POST(req: NextRequest) {
       ? "TikTok"
       : "Instagram Reels";
 
+    const parentProductionId = body.parentProductionId ? String(body.parentProductionId).trim() : undefined;
+    let continuationFrom = undefined;
+
+    if (parentProductionId) {
+      try {
+        const parent = await reelProductionStore.get(parentProductionId);
+        if (parent?.manifest) {
+          const m = parent.manifest;
+          const chars = (m.continuity?.characters?.length ? m.continuity.characters : (m as any).characters) || [];
+          continuationFrom = {
+            parentProductionId,
+            parentTitle: m.topic || (m as any).studio1?.projectTitle || parentProductionId,
+            cast: chars.map((c: any) => ({
+              id: c.id,
+              name: c.name,
+              role: c.role === "presenter" ? ("narrator" as const) : c.role === "character" ? ("lead" as const) : ("supporting" as const),
+              biometricDNA: c.biometricDNA || {
+                gender: c.gender || "female",
+                ageBand: c.appearance?.ageBand || "mid to late 20s",
+                facialFeatures: c.appearance?.face || c.appearance?.description || "Expressive classical features",
+                hair: c.appearance?.hair || "Dark styled hair",
+              },
+              wardrobe: {
+                costume: Array.isArray(c.wardrobe) ? c.wardrobe.join(", ") : (c.wardrobe || "Signature wardrobe"),
+                accessories: Array.isArray(c.accessories) ? c.accessories.join(", ") : (c.accessories || ""),
+              },
+              voiceProfile: c.voiceProfile || "Resonant cinematic tone",
+            })),
+            genre: (m as any).genre,
+            aspectRatio: m.aspectRatio,
+          };
+        }
+      } catch (err) {
+        console.warn(`[studio1] Could not resolve parent production ${parentProductionId}:`, err);
+      }
+    }
+
     const manifest = await planStudio1({
       topic,
       tone: body.tone,
@@ -61,6 +98,7 @@ export async function POST(req: NextRequest) {
       scriptText: body.scriptText,
       genre: body.genre,
       language: body.language || body.narrationLanguage,
+      continuationFrom,
     });
     const production = await reelProductionStore.create(manifest);
 
