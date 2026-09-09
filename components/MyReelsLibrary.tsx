@@ -41,10 +41,16 @@ import {
   Plus,
   Check,
   MoreVertical,
-  Sliders,
   Filter,
   ArrowLeft,
-  Star
+  Star,
+  CheckSquare,
+  Square,
+  ThumbsUp,
+  ThumbsDown,
+  MessageSquare,
+  MessageSquarePlus,
+  Send
 } from "lucide-react";
 
 export interface LibraryClip {
@@ -492,6 +498,162 @@ export function MyReelsLibrary() {
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "reel" | "clip"; reelId: string; clipId?: string; title: string } | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Multi-Select Bulk Operations State
+  const [selectedReelIds, setSelectedReelIds] = useState<Set<string>>(new Set());
+  const [isSelectMode, setIsSelectMode] = useState<boolean>(false);
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState<boolean>(false);
+
+  // Directorial Feedback State
+  const [expandedFeedbackId, setExpandedFeedbackId] = useState<string | null>(null);
+  const [feedbackMap, setFeedbackMap] = useState<Record<string, { id: string; production_id: string; rating: string; is_good: boolean; reasons: string[]; notes: string }>>({});
+  const [feedbackForm, setFeedbackForm] = useState<{ rating: "GOOD" | "NEEDS_IMPROVEMENT"; isGood: boolean; reasons: string[]; notes: string }>({
+    rating: "GOOD",
+    isGood: true,
+    reasons: ["Photorealistic Optics", "Accurate Lip-Sync"],
+    notes: ""
+  });
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState<boolean>(false);
+
+  // Toggle single reel selection
+  const toggleSelectReel = (reelId: string) => {
+    setSelectedReelIds(prev => {
+      const next = new Set(prev);
+      if (next.has(reelId)) {
+        next.delete(reelId);
+      } else {
+        next.add(reelId);
+      }
+      return next;
+    });
+  };
+
+  // Select all filtered reels
+  const selectAllFilteredReels = () => {
+    const all = new Set(filteredReels.map(r => r.id));
+    setSelectedReelIds(all);
+  };
+
+  // Deselect all reels
+  const deselectAllReels = () => {
+    setSelectedReelIds(new Set());
+  };
+
+  // Bulk Delete Execution
+  const confirmBulkDelete = async () => {
+    if (selectedReelIds.size === 0) return;
+    const count = selectedReelIds.size;
+    const idsToDelete = Array.from(selectedReelIds);
+
+    try {
+      // 1. Immediately register tombstones in local storage so they NEVER resurrect
+      for (const id of idsToDelete) {
+        addDeletedReelId(id);
+      }
+
+      // 2. Clean up local storage metadata
+      try {
+        const rawMeta = localStorage.getItem("zyvoriq_reels_meta");
+        if (rawMeta) {
+          const metaObj = JSON.parse(rawMeta);
+          for (const id of idsToDelete) {
+            delete metaObj[id];
+          }
+          localStorage.setItem("zyvoriq_reels_meta", JSON.stringify(metaObj));
+        }
+      } catch {}
+
+      // 3. Immediately remove from React state
+      setReels(prev => prev.filter(r => !selectedReelIds.has(r.id)));
+      showToast(`🗑️ Purged ${count} production(s) from library.`);
+
+      // 4. Dispatch DELETE requests in parallel to backend
+      await Promise.all(
+        idsToDelete.map(async (reelId) => {
+          const deleteUrl = reelId.startsWith("studio1_")
+            ? `/api/studio1/productions/${encodeURIComponent(reelId)}`
+            : `/api/reels/productions/${encodeURIComponent(reelId)}`;
+          const delRes = await fetch(deleteUrl, { method: "DELETE" }).catch(() => null);
+          if (!delRes || !delRes.ok) {
+            await fetch(`/api/reels/productions/${encodeURIComponent(reelId)}`, { method: "DELETE" }).catch(() => {});
+          }
+        })
+      );
+    } catch (e: any) {
+      console.error("Bulk delete error:", e);
+    } finally {
+      setSelectedReelIds(new Set());
+      setBulkDeleteConfirm(false);
+    }
+  };
+
+  // Toggle feedback drawer for a reel
+  const toggleFeedback = (reelId: string) => {
+    if (expandedFeedbackId === reelId) {
+      setExpandedFeedbackId(null);
+    } else {
+      setExpandedFeedbackId(reelId);
+      const existing = feedbackMap[reelId];
+      if (existing) {
+        setFeedbackForm({
+          rating: (existing.rating as any) || (existing.is_good ? "GOOD" : "NEEDS_IMPROVEMENT"),
+          isGood: existing.is_good,
+          reasons: existing.reasons || [],
+          notes: existing.notes || ""
+        });
+      } else {
+        setFeedbackForm({
+          rating: "GOOD",
+          isGood: true,
+          reasons: ["Photorealistic Optics", "Accurate Lip-Sync"],
+          notes: ""
+        });
+      }
+    }
+  };
+
+  // Save Directorial Feedback to PostgreSQL
+  const handleSaveFeedback = async (reel: LibraryReel) => {
+    if (!feedbackForm.rating) return;
+    setIsSubmittingFeedback(true);
+    try {
+      const res = await fetch("/api/reels/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productionId: reel.id,
+          reelTitle: reel.title,
+          rating: feedbackForm.rating,
+          isGood: feedbackForm.isGood,
+          reasons: feedbackForm.reasons,
+          notes: feedbackForm.notes,
+          metadata: {
+            genre: reel.genre || "General",
+            durationSec: reel.durationSec,
+            shotsCount: reel.shots.length,
+            prompt: reel.prompt
+          }
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.feedback) {
+          setFeedbackMap(prev => ({
+            ...prev,
+            [reel.id]: data.feedback
+          }));
+          showToast(feedbackForm.isGood ? `👍 Feedback recorded: Marked as Good Reel.` : `📝 Feedback recorded for future prompt & audio tuning.`);
+          setExpandedFeedbackId(null);
+        }
+      } else {
+        showToast("⚠️ Could not save feedback. Please try again.");
+      }
+    } catch (err: any) {
+      showToast("⚠️ Failed to record feedback: " + (err?.message || "network error"));
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
+  };
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
@@ -708,6 +870,25 @@ export function MyReelsLibrary() {
           })
         ];
         setReels(merged);
+
+        // Load feedback records for all productions
+        try {
+          const fbRes = await fetch("/api/reels/feedback", { cache: "no-store" }).catch(() => null);
+          if (fbRes && fbRes.ok) {
+            const fbData = await fbRes.json();
+            if (fbData.success && Array.isArray(fbData.feedback)) {
+              const fbMap: Record<string, any> = {};
+              fbData.feedback.forEach((f: any) => {
+                if (f.production_id) {
+                  fbMap[f.production_id] = f;
+                }
+              });
+              setFeedbackMap(fbMap);
+            }
+          }
+        } catch (e) {
+          console.warn("Could not load feedback map:", e);
+        }
 
         // Auto-expand the first reel by default
         if (merged.length > 0 && Object.keys(expandedReelIds).length === 0) {
@@ -1397,6 +1578,28 @@ export function MyReelsLibrary() {
                 <option value="duration">Longest Duration</option>
               </select>
             </div>
+
+            {/* Select Reels Mode Toggle Button */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                id="toggle-select-reels-btn"
+                onClick={() => {
+                  const nextMode = !isSelectMode;
+                  setIsSelectMode(nextMode);
+                  if (!nextMode) setSelectedReelIds(new Set());
+                }}
+                className={`rounded-xl border px-3.5 py-2 text-xs font-mono font-semibold transition min-h-[44px] flex items-center gap-2 ${
+                  isSelectMode || selectedReelIds.size > 0
+                    ? "border-emerald-500/60 bg-emerald-500/20 text-emerald-300 shadow-sm shadow-emerald-500/10"
+                    : "border-zinc-800 bg-zinc-900 text-zinc-300 hover:text-white hover:border-zinc-700"
+                }`}
+                title="Toggle multi-select mode to select and batch delete multiple reels"
+              >
+                <CheckSquare className="h-4 w-4 text-emerald-400" />
+                <span>{selectedReelIds.size > 0 ? `${selectedReelIds.size} Selected` : isSelectMode ? "Exit Select" : "Select Reels"}</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1514,13 +1717,36 @@ export function MyReelsLibrary() {
                             </div>
                           </div>
 
+                          {/* Multi-Select Checkbox Overlay */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleSelectReel(reel.id);
+                            }}
+                            className={`absolute top-2 left-2 z-20 rounded-lg p-1.5 backdrop-blur-md transition ${
+                              selectedReelIds.has(reel.id)
+                                ? "bg-emerald-500 text-black border border-emerald-400 shadow-lg scale-105"
+                                : isSelectMode
+                                ? "bg-black/80 text-zinc-300 border border-zinc-600 hover:text-white hover:border-emerald-400"
+                                : "bg-black/60 text-zinc-400 opacity-0 group-hover:opacity-100 border border-zinc-750 hover:text-white"
+                            }`}
+                            title={selectedReelIds.has(reel.id) ? "Deselect Reel" : "Select Reel for Batch Action"}
+                          >
+                            {selectedReelIds.has(reel.id) ? (
+                              <CheckSquare className="h-4 w-4" />
+                            ) : (
+                              <Square className="h-4 w-4" />
+                            )}
+                          </button>
+
                           {/* Duration Badge */}
                           <div className="absolute bottom-2 right-2 rounded bg-black/80 backdrop-blur-md px-1.5 py-0.5 text-[10px] font-mono text-zinc-300 border border-zinc-800">
                             {reel.durationSec.toFixed(1)}s
                           </div>
 
                           {/* Aspect Ratio Badge */}
-                          <div className="absolute top-2 left-2 rounded bg-black/80 backdrop-blur-md px-1.5 py-0.5 text-[9px] font-mono text-zinc-400 border border-zinc-800">
+                          <div className="absolute bottom-2 left-2 rounded bg-black/80 backdrop-blur-md px-1.5 py-0.5 text-[9px] font-mono text-zinc-400 border border-zinc-800">
                             {reel.aspectRatio || "9:16"}
                           </div>
                         </div>
@@ -1546,6 +1772,59 @@ export function MyReelsLibrary() {
                               <span>{getNetflixReelId(reel.id)}</span>
                               <Copy className="h-2.5 w-2.5 text-zinc-400 ml-0.5" />
                             </button>
+
+                            {/* Content Validity Status Indicator */}
+                            {(() => {
+                              const hasMaster = Boolean(reel.videoUrl && !reel.videoUrl.includes("sample_empty"));
+                              const hasClips = reel.shots.some(s => Boolean(s.videoUrl && !s.videoUrl.includes("sample_empty")));
+                              if (hasMaster) {
+                                return (
+                                  <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold border bg-emerald-500/15 border-emerald-500/40 text-emerald-300" title="Full stitched playable master ready and verified">
+                                    <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                                    <span>VALID MEDIA</span>
+                                  </span>
+                                );
+                              } else if (hasClips) {
+                                const validClipsCount = reel.shots.filter(s => Boolean(s.videoUrl && !s.videoUrl.includes("sample_empty"))).length;
+                                return (
+                                  <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold border bg-sky-500/15 border-sky-500/40 text-sky-300" title="Individual clip videos rendered and valid">
+                                    <Film className="h-3 w-3 text-sky-400" />
+                                    <span>CLIPS VALID ({validClipsCount}/{reel.shots.length})</span>
+                                  </span>
+                                );
+                              } else {
+                                return (
+                                  <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold border bg-rose-500/15 border-rose-500/40 text-rose-300" title="No valid video files generated for this reel yet">
+                                    <AlertCircle className="h-3 w-3 text-rose-400" />
+                                    <span>NO MEDIA</span>
+                                  </span>
+                                );
+                              }
+                            })()}
+
+                            {/* Directorial Feedback Summary Badge (if already rated) */}
+                            {feedbackMap[reel.id] && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleFeedback(reel.id);
+                                }}
+                                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-mono font-bold border transition cursor-pointer ${
+                                  feedbackMap[reel.id].is_good
+                                    ? "bg-emerald-950/60 border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/50"
+                                    : "bg-rose-950/60 border-rose-500/40 text-rose-300 hover:bg-rose-900/50"
+                                }`}
+                                title="Click to view or edit directorial feedback"
+                              >
+                                {feedbackMap[reel.id].is_good ? (
+                                  <ThumbsUp className="h-3 w-3 text-emerald-400" />
+                                ) : (
+                                  <ThumbsDown className="h-3 w-3 text-rose-400" />
+                                )}
+                                <span>{feedbackMap[reel.id].is_good ? "GOOD REEL" : "NEEDS WORK"}</span>
+                              </button>
+                            )}
 
                             {/* Multi-Tier Accurate Status Badge */}
                             {reel.status === "READY" || isReady ? (
@@ -1762,7 +2041,26 @@ export function MyReelsLibrary() {
                             <Share2 className="h-4 w-4" />
                           </button>
 
-                          {/* 9. Delete Reel */}
+                          {/* 9. Directorial Feedback Button */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleFeedback(reel.id);
+                            }}
+                            className={`flex h-9 w-9 items-center justify-center rounded-lg transition cursor-pointer min-h-[36px] min-w-[36px] ${
+                              expandedFeedbackId === reel.id
+                                ? "bg-emerald-500 text-black shadow-md shadow-emerald-500/20"
+                                : feedbackMap[reel.id]
+                                ? "text-emerald-400 bg-emerald-500/15 border border-emerald-500/30"
+                                : "text-zinc-300 hover:text-emerald-300 hover:bg-zinc-800"
+                            }`}
+                            title={feedbackMap[reel.id] ? "View/Edit Directorial Feedback" : "Give Directorial Feedback (Good/Bad + Reasons)"}
+                          >
+                            {feedbackMap[reel.id] ? <MessageSquare className="h-4 w-4 fill-current" /> : <MessageSquarePlus className="h-4 w-4" />}
+                          </button>
+
+                          {/* 10. Delete Reel */}
                           <button
                             type="button"
                             onClick={(e) => {
@@ -1786,6 +2084,152 @@ export function MyReelsLibrary() {
                         </Link>
                       </div>
                     </div>
+
+                    {/* -------------------------------------------------------- */}
+                    {/* DIRECTORIAL FEEDBACK PANEL (Expandable)                  */}
+                    {/* -------------------------------------------------------- */}
+                    {expandedFeedbackId === reel.id && (
+                      <div 
+                        onClick={e => e.stopPropagation()}
+                        className="mt-4 p-4 sm:p-5 rounded-2xl border border-emerald-500/40 bg-zinc-950/90 shadow-2xl backdrop-blur-xl animate-in fade-in duration-200"
+                      >
+                        <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3 mb-4">
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="h-4 w-4 text-emerald-400" />
+                            <h4 className="text-xs sm:text-sm font-bold text-zinc-100 font-mono tracking-wide">
+                              DIRECTORIAL FEEDBACK • <span className="text-emerald-400 font-bold">{reel.title}</span>
+                            </h4>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setExpandedFeedbackId(null)}
+                            className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+
+                        {/* Quality Rating Toggle: Good vs Needs Improvement */}
+                        <div className="space-y-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                            <span className="text-xs font-mono text-zinc-400 font-semibold">Quality Assessment:</span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setFeedbackForm(prev => ({
+                                  ...prev,
+                                  rating: "GOOD",
+                                  isGood: true,
+                                  reasons: prev.reasons.length === 0 ? ["Photorealistic Optics", "Accurate Lip-Sync"] : prev.reasons
+                                }))}
+                                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition border min-h-[38px] ${
+                                  feedbackForm.isGood
+                                    ? "bg-emerald-500/20 border-emerald-500 text-emerald-300 shadow-md shadow-emerald-500/20"
+                                    : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200"
+                                }`}
+                              >
+                                <ThumbsUp className="h-3.5 w-3.5 text-emerald-400" />
+                                <span>GOOD REEL</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setFeedbackForm(prev => ({
+                                  ...prev,
+                                  rating: "NEEDS_IMPROVEMENT",
+                                  isGood: false,
+                                  reasons: prev.reasons.length === 0 ? ["Dialogue Bleed", "Audio Desync"] : prev.reasons
+                                }))}
+                                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition border min-h-[38px] ${
+                                  !feedbackForm.isGood
+                                    ? "bg-rose-500/20 border-rose-500 text-rose-300 shadow-md shadow-rose-500/20"
+                                    : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200"
+                                }`}
+                              >
+                                <ThumbsDown className="h-3.5 w-3.5 text-rose-400" />
+                                <span>NEEDS WORK</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Reasons Chips */}
+                          <div>
+                            <label className="text-[11px] font-mono text-zinc-400 block mb-1.5">
+                              Key Quality Factors (Click to toggle tags):
+                            </label>
+                            <div className="flex flex-wrap gap-1.5">
+                              {(feedbackForm.isGood
+                                ? ["Photorealistic Optics", "Accurate Lip-Sync", "Cinematic Pacing", "Acoustic Score Mix", "Fluid Motion", "Flawless Cut-On-Action", "Rich Color Grading"]
+                                : ["Dialogue Bleed", "Audio Desync", "Motion Jitter", "Facial Distortion", "Empty Content", "Pacing Too Slow", "Cut Mismatch", "Subtitles Misaligned"]
+                              ).map(tag => {
+                                const isSelected = feedbackForm.reasons.includes(tag);
+                                return (
+                                  <button
+                                    key={tag}
+                                    type="button"
+                                    onClick={() => {
+                                      setFeedbackForm(prev => ({
+                                        ...prev,
+                                        reasons: isSelected
+                                          ? prev.reasons.filter(r => r !== tag)
+                                          : [...prev.reasons, tag]
+                                      }));
+                                    }}
+                                    className={`px-2.5 py-1 rounded-md text-[11px] font-mono transition border ${
+                                      isSelected
+                                        ? feedbackForm.isGood
+                                          ? "bg-emerald-500/25 border-emerald-500/60 text-emerald-200 font-semibold"
+                                          : "bg-rose-500/25 border-rose-500/60 text-rose-200 font-semibold"
+                                        : "bg-zinc-900/90 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+                                    }`}
+                                  >
+                                    {isSelected ? "✓ " : "+ "}{tag}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Notes Textarea */}
+                          <div>
+                            <label className="text-[11px] font-mono text-zinc-400 block mb-1.5">
+                              Directorial Notes & Improvement Feedback:
+                            </label>
+                            <textarea
+                              rows={2}
+                              value={feedbackForm.notes}
+                              onChange={e => setFeedbackForm(prev => ({ ...prev, notes: e.target.value }))}
+                              placeholder={feedbackForm.isGood ? "What made this reel standout? (e.g. Excellent scene pacing, great audio mastering...)" : "Specific flaws observed? (e.g. Lip sync drifting in shot 2, video artifact on camera pan...)"}
+                              className="w-full rounded-xl border border-zinc-800 bg-zinc-900/90 p-3 text-xs sm:text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 resize-none font-sans"
+                            />
+                          </div>
+
+                          {/* Submit Action */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-zinc-850">
+                            <span className="text-[10px] font-mono text-zinc-500">
+                              Recorded in PostgreSQL by Production ID: <code className="text-zinc-400">{reel.id}</code>
+                            </span>
+                            <div className="flex items-center gap-2 self-end sm:self-auto">
+                              <button
+                                type="button"
+                                onClick={() => setExpandedFeedbackId(null)}
+                                className="px-3 py-1.5 rounded-lg text-xs font-mono text-zinc-400 hover:text-zinc-200 transition min-h-[36px]"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                disabled={isSubmittingFeedback}
+                                onClick={() => handleSaveFeedback(reel)}
+                                className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-mono font-bold bg-emerald-500 hover:bg-emerald-400 text-black shadow-lg shadow-emerald-500/20 transition min-h-[38px] disabled:opacity-50"
+                              >
+                                <Send className="h-3.5 w-3.5" />
+                                <span>{isSubmittingFeedback ? "Saving..." : "Save Directorial Feedback"}</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* -------------------------------------------------------- */}
                     {/* EXPAND TRIGGER BAR (Click to reveal constituent clips)   */}
@@ -2515,6 +2959,88 @@ export function MyReelsLibrary() {
                 className="rounded-xl bg-rose-600 hover:bg-rose-500 px-4 py-2 text-xs font-mono font-bold text-white transition min-h-[44px]"
               >
                 Delete Permanently
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* G. Floating Batch Action Bar */}
+      {selectedReelIds.size > 0 && (
+        <div 
+          id="floating-batch-action-bar"
+          className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 flex flex-wrap items-center justify-between gap-3 sm:gap-4 bg-zinc-950/95 border border-emerald-500/50 shadow-2xl rounded-2xl px-5 py-3.5 backdrop-blur-xl animate-in slide-in-from-bottom duration-200 max-w-[95vw] sm:max-w-2xl"
+        >
+          <div className="flex items-center gap-2.5 pr-3 sm:border-r sm:border-zinc-800">
+            <CheckSquare className="h-5 w-5 text-emerald-400 shrink-0" />
+            <span className="text-xs sm:text-sm font-mono font-bold text-white">
+              {selectedReelIds.size} {selectedReelIds.size === 1 ? "Reel" : "Reels"} Selected
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <button
+              type="button"
+              id="batch-select-all-btn"
+              onClick={selectAllFilteredReels}
+              className="px-3 py-1.5 rounded-xl text-xs font-mono text-zinc-300 hover:text-white hover:bg-zinc-800 transition min-h-[38px]"
+            >
+              Select All ({filteredReels.length})
+            </button>
+
+            <button
+              type="button"
+              id="batch-clear-selection-btn"
+              onClick={deselectAllReels}
+              className="px-3 py-1.5 rounded-xl text-xs font-mono text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition min-h-[38px]"
+            >
+              Clear
+            </button>
+
+            <button
+              type="button"
+              id="batch-delete-btn"
+              onClick={() => setBulkDeleteConfirm(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-mono font-bold shadow-lg shadow-rose-950/60 transition min-h-[38px]"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>Delete Selected ({selectedReelIds.size})</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* H. Bulk Delete Confirmation Modal */}
+      {bulkDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="w-full max-w-md rounded-2xl bg-[#0E131F] border border-rose-900/60 p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-2.5 text-rose-400">
+              <AlertCircle className="h-5 w-5" />
+              <h3 className="text-base font-bold text-white">Confirm Bulk Deletion</h3>
+            </div>
+
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              Are you sure you want to permanently delete <strong className="text-rose-300 font-mono font-bold">{selectedReelIds.size} selected productions</strong> from your library?
+            </p>
+            <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">
+              All associated metadata, manifest assets, and database records will be permanently purged. This action cannot be undone.
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-zinc-800">
+              <button
+                type="button"
+                onClick={() => setBulkDeleteConfirm(false)}
+                className="rounded-xl px-4 py-2 text-xs font-mono text-zinc-400 hover:text-white min-h-[44px]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                id="confirm-bulk-delete-permanently-btn"
+                onClick={confirmBulkDelete}
+                className="rounded-xl bg-rose-600 hover:bg-rose-500 px-5 py-2 text-xs font-mono font-bold text-white shadow-lg shadow-rose-950/60 transition min-h-[44px]"
+              >
+                Delete {selectedReelIds.size} Reels Permanently
               </button>
             </div>
           </div>
