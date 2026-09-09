@@ -68,6 +68,13 @@ export async function readAsset(key: string) {
 
   // Check if static or showcase video exists locally (ONLY for video requests)
   if (isVideo) {
+    const fullId = key.match(/studio1_[a-f0-9\-]{36}/i)?.[0];
+    if (fullId) {
+      const masterCandidate = path.resolve(process.cwd(), "public", "assets", "reels", fullId, "narrated_rough_master.mp4");
+      if (fsSync.existsSync(masterCandidate)) {
+        return fs.readFile(masterCandidate);
+      }
+    }
     const shortId = key.match(/studio1_[a-f0-9]{8}/i)?.[0];
     if (shortId) {
       const publicCandidate = path.resolve(process.cwd(), "public", "assets", "video", `${shortId}.mp4`);
@@ -99,10 +106,14 @@ export async function readAsset(key: string) {
     const { target } = resolveAssetPath(key);
     return await fs.readFile(target);
   } catch (err: any) {
-    // Also check if relative key exists in public directory
+    // Also check if relative key exists in public directory or public/assets
     const publicRelative = path.resolve(process.cwd(), "public", key);
     if (fsSync.existsSync(publicRelative)) {
       return fs.readFile(publicRelative);
+    }
+    const publicAssetsRelative = path.resolve(process.cwd(), "public", "assets", key);
+    if (fsSync.existsSync(publicAssetsRelative)) {
+      return fs.readFile(publicAssetsRelative);
     }
 
     // Proxy and cache from live deployment if running locally without mounted volume
