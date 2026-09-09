@@ -2233,6 +2233,12 @@ function sanitizePromptForVeo(prompt, options = {}) {
     { pattern: /\b(?:Aarav[\s_]*Roy|Aarav)\b/gi, replacement: "a charismatic, passionate male performer" },
     { pattern: /\b(?:Arjun[\s_]*Kapoor|Arjun)\b/gi, replacement: "a charismatic, handsome South Asian leading man" },
     { pattern: /\b(?:Kuroda|Ren[\s_]*Kuroda)\b/gi, replacement: "a disciplined, sharp-eyed covert operative" },
+    { pattern: /\b(?:Ananya[\s_]*Sharma|Ananya[\s_]*Panday|Ananya)\b/gi, replacement: isMusicVideo ? "a stylish, energetic South Asian female college performer" : "a charismatic South Asian female performer" },
+    { pattern: /\b(?:Riya[\s_]*Sen|Riya)\b/gi, replacement: isMusicVideo ? "a vibrant, expressive South Asian female college performer" : "a charismatic South Asian female performer" },
+    { pattern: /\b(?:Sara[\s_]*Ali[\s_]*Khan|Sara)\b/gi, replacement: "a youthful, charming South Asian female performer" },
+    { pattern: /\b(?:Janhvi[\s_]*Kapoor|Janhvi)\b/gi, replacement: "an expressive, glamorous South Asian female performer" },
+    { pattern: /\b(?:Disha[\s_]*Patani|Disha)\b/gi, replacement: "an athletic, glamorous South Asian female performer" },
+    { pattern: /\b(?:Kriti[\s_]*Sanon|Kriti)\b/gi, replacement: "a statuesque, charismatic South Asian female performer" },
   ];
   for (const { pattern, replacement } of celebrityMap) {
     clean = clean.replace(pattern, replacement);
@@ -2240,6 +2246,23 @@ function sanitizePromptForVeo(prompt, options = {}) {
 
   // Restore protected scene tags
   clean = clean.replace(/__PRESERVED_TAG_(\d+)__/g, (_, idx) => preservedTags[Number(idx)] || "");
+
+  // Strip bloated meta-instructions that exceed Veo's prompt token limit
+  clean = clean.replace(/Do not invent a living room, office, studio, outdoor location[^.]*\./gi, "");
+  clean = clean.replace(/Do not spend the opening seconds establishing the room[^.]*\./gi, "");
+  clean = clean.replace(/STUDIO1 ENVIRONMENT LOCK:\s*/gi, "");
+  clean = clean.replace(/STUDIO1 SEMANTIC ONSET LOCK:\s*/gi, "");
+  clean = clean.replace(/the very first rendered frame of this clip must already communicate the CURRENT scene['’]s narration beat and visual objective\.\s*/gi, "");
+  clean = clean.replace(/Start with the relevant subject\/action\/state already underway at time 0\.000 and develop it naturally through the clip\.\s*/gi, "");
+  clean = clean.replace(/Do not render captions, subtitles, logos or UI text inside the generated video; those are composited later\.\s*/gi, "");
+  clean = clean.replace(/Zero generated text in scene pixels\.\s*/gi, "");
+  clean = clean.replace(/9:16 social framing; deliberate mix of tight presenter shots, medium action shots and relevant b-roll; preserve eyeline and screen direction across contiguous action\.\s*/gi, "");
+  clean = clean.replace(/Preserve identical physical set architecture, geometry, materials, background elements, lighting direction and color temperature\.\s*/gi, "");
+  clean = clean.replace(/Preserve the room or location, background geometry, wall and floor materials, furniture placement, major props, lighting direction, color temperature, time-of-day and camera-side spatial relationships across all subsequent clips\.\s*/gi, "");
+  clean = clean.replace(/Establish the primary physical set for this scene\.\s*/gi, "");
+  clean = clean.replace(/STUDIO1 IDENTITY LOCK \[[^\]]+\]:\s*/gi, "");
+  clean = clean.replace(/The attached canonical character reference image is authoritative for this shot\.\s*/gi, "");
+  clean = clean.replace(/The previous-scene visual reference supplied by the worker is authoritative for the set\.\s*/gi, "");
 
   // 3. Audio & dialogue directives: Gated on audioStrategy (Fix A, B, C)
   if (shouldStripDialogue) {
@@ -2290,8 +2313,8 @@ function sanitizePromptForVeo(prompt, options = {}) {
   }
 
   const words = clean.split(/\s+/);
-  if (words.length > 700) {
-    clean = words.slice(0, 700).join(" ");
+  if (words.length > 250) {
+    clean = words.slice(0, 250).join(" ");
   }
   return clean.replace(/\s{2,}/g, " ").trim();
 }
@@ -2491,7 +2514,7 @@ async function generateShot(op, manifest, shot) {
     if (!p) throw new Error(`Veo polling network failure: ${pollFetchError?.message || 'unknown'}`);
     const pj = await p.json().catch(() => ({}));
     if (!p.ok || pj?.error) {
-      const isTransient = p.status === 503 || p.status === 429 || pj?.error?.code === 503 || pj?.error?.code === 429 || /unavailable|overload|timeout|resource_exhausted|demand|busy/i.test(pj?.error?.message || "");
+      const isTransient = p.status === 503 || p.status === 429 || p.status === 500 || pj?.error?.code === 503 || pj?.error?.code === 429 || pj?.error?.code === 500 || /unavailable|overload|timeout|resource_exhausted|demand|busy|internal|server issue/i.test(pj?.error?.message || "");
       if (isTransient) {
         console.warn(`[reel-worker] [transient-poll-retry] Transient Google API error during poll for ${name} (status: ${p.status}, message: "${pj?.error?.message}"). Waiting 8s and continuing poll loop (poll ${i + 1}/60)...`);
         await sleep(8000);
