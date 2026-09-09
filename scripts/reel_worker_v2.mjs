@@ -2224,7 +2224,10 @@ function sanitizePromptForVeo(prompt, options = {}) {
     clean = clean.replace(/Zero spoken dialogue, zero character vocals, zero singing, zero lyrics\.?/gi, "");
     clean = clean.replace(/\s{2,}/g, " ").trim();
     if (!clean.includes("AUDIO DIRECTIVE:")) {
-      clean += " AUDIO DIRECTIVE: Synchronized native character dialogue, expressive vocal delivery, natural lip-sync, and ambient environmental foley.";
+      const isMusicVideo = String(genre || "").toUpperCase() === "MUSIC_VIDEO" || clean.includes("MUSIC_VIDEO") || clean.includes("music video");
+      clean += isMusicVideo
+        ? " AUDIO DIRECTIVE: High-fidelity melodic music video vocal track with synchronized singing lip performance, visible mouth phoneme articulation, rhythmically cohesive beat, and dynamic cinematic musical backing."
+        : " AUDIO DIRECTIVE: Synchronized native character dialogue, expressive vocal delivery, natural lip-sync, and ambient environmental foley.";
     }
   }
 

@@ -273,6 +273,11 @@ export function budgetStudio1NarrationAgainstCap(manifest: ReelProductionManifes
       ? `VERBATIM SCENE SETTING [${s.sceneId}]: ${manifest.scenes[s.sceneId].environment}. Preserve identical physical set architecture, geometry, materials, background elements, lighting direction and color temperature.`
       : "";
 
+    const isMusicVideo = String(manifest.creativeBible?.genre || (manifest as any).genre || "").toUpperCase() === "MUSIC_VIDEO";
+    const musicVideoLock = isMusicVideo
+      ? "MUSIC VIDEO PERFORMANCE & LIP-SYNC: The performer is actively singing the song lyrics on camera with visible mouth, lips, and facial articulation in precise sync with the vocals. Face, lips, and mouth are completely illuminated and unobstructed (no opaque visors, masks, or hands covering the mouth)."
+      : "";
+
     const basePrompt = s.visualIntent
       ? [
           sceneSetting,
@@ -282,6 +287,7 @@ export function budgetStudio1NarrationAgainstCap(manifest: ReelProductionManifes
           langDirective,
           manifest.creativeBible.visualStyle,
           manifest.creativeBible.cameraLanguage,
+          musicVideoLock,
           "Do not render captions, subtitles, logos or UI text inside the generated video; those are composited later."
         ].filter(Boolean).join(" ")
       : s.generationPrompt;

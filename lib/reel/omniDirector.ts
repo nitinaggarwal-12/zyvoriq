@@ -66,7 +66,8 @@ export type OmniGenre =
   | "NEO_NOIR_THRILLER"
   | "HIGH_FANTASY"
   | "HORROR_MYSTERY"
-  | "DOCUMENTARY_EXPLAINER";
+  | "DOCUMENTARY_EXPLAINER"
+  | "MUSIC_VIDEO";
 
 export interface OmniDirectorialCompilation {
   genre: OmniGenre;
@@ -198,6 +199,15 @@ function extractCharacterWardrobe(
     };
   }
 
+  if (genre === "MUSIC_VIDEO") {
+    return {
+      costume: isFemale
+        ? "Chic high-fashion music video performance attire with iridescent cropped jacket, stylish fitted performance top, and sleek trousers"
+        : "Fashion-forward music video wardrobe, tailored designer monochrome jacket, statement street-luxury styling",
+      accessories: "In-ear stage performance monitors, stylish jewelry, completely visible unobstructed mouth and lips for singing lip synchronization"
+    };
+  }
+
   if (genre === "DOCUMENTARY_EXPLAINER") {
     return {
       costume: "Modern studio smart-casual blazer and top",
@@ -232,8 +242,24 @@ export function compileDeterministicDirectorialPass(
   if (!explicitGenre && !continuationFrom?.genre) {
     if (cleanTopic.includes("dhurandhar") || cleanTopic.includes("action") || cleanTopic.includes("stunt") || cleanTopic.includes("chase") || cleanTopic.includes("fight")) {
       genre = "BOLLYWOOD_ACTION";
-    } else if (cleanTopic.includes("bollywood") || (cleanTopic.includes("romance") && (cleanTopic.includes("hindi") || cleanTopic.includes("chiffon") || cleanTopic.includes("saree") || cleanTopic.includes("mohabbatein") || cleanTopic.includes("ddlj") || cleanTopic.includes("yash chopra")))) {
+    } else if (
+      cleanTopic.includes("bollywood") ||
+      (cleanTopic.includes("romance") && (cleanTopic.includes("hindi") || cleanTopic.includes("chiffon") || cleanTopic.includes("saree") || cleanTopic.includes("mohabbatein") || cleanTopic.includes("ddlj") || cleanTopic.includes("yash chopra"))) ||
+      (cleanTopic.includes("hindi") && (cleanTopic.includes("switzerland") || cleanTopic.includes("swiss") || cleanTopic.includes("heroine") || cleanTopic.includes("hero and heroine")))
+    ) {
       genre = "BOLLYWOOD_ROMANCE";
+    } else if (
+      cleanTopic.includes("music video") ||
+      cleanTopic.includes("song") ||
+      cleanTopic.includes("sing") ||
+      cleanTopic.includes("musical duet") ||
+      cleanTopic.includes("pop idol") ||
+      cleanTopic.includes("vocal") ||
+      cleanTopic.includes("concert") ||
+      cleanTopic.includes("music track") ||
+      explicitGenre === "MUSIC_VIDEO"
+    ) {
+      genre = "MUSIC_VIDEO";
     } else if (cleanTopic.includes("oppenheimer") || cleanTopic.includes("history") || cleanTopic.includes("biopic") || cleanTopic.includes("napoleon") || cleanTopic.includes("churchill") || cleanTopic.includes("rome")) {
       genre = "HISTORICAL_BIOPIC";
     } else if (cleanTopic.includes("cyberpunk") || cleanTopic.includes("sci-fi") || cleanTopic.includes("space") || cleanTopic.includes("future") || cleanTopic.includes("alien")) {
@@ -356,24 +382,39 @@ export function compileDeterministicDirectorialPass(
       }
     );
   } else {
-    // Single lead hero or cinematic protagonist
-    const leadName = creationIntent?.characterName || (genre === "HISTORICAL_BIOPIC" ? "Historical Protagonist" : genre === "BOLLYWOOD_ACTION" ? "Action Hero" : "Protagonist");
+    // Single lead hero, musical artist, or cinematic protagonist
+    const leadName = creationIntent?.characterName || (
+      genre === "HISTORICAL_BIOPIC" ? "Historical Protagonist" :
+      genre === "BOLLYWOOD_ACTION" ? "Action Hero" :
+      genre === "MUSIC_VIDEO" ? "Lead Musical Artist" :
+      "Protagonist"
+    );
     const charId = slugify(leadName);
     cast.push({
       id: charId,
       name: leadName,
       role: "lead",
       biometricDNA: {
-        gender: "male",
-        ageBand: "late 30s",
-        facialFeatures: "Striking cinematic bone structure, intense gaze",
-        hair: "Dark styled hair"
+        gender: genre === "MUSIC_VIDEO" ? "female" : "male",
+        ageBand: genre === "MUSIC_VIDEO" ? "mid 20s" : "late 30s",
+        facialFeatures: genre === "MUSIC_VIDEO"
+          ? "Radiant, expressive facial bone structure with captivating eyes and clearly visible lips for musical vocal delivery"
+          : "Striking cinematic bone structure, intense gaze",
+        hair: genre === "MUSIC_VIDEO" ? "Stylized modern music video hair styling" : "Dark styled hair"
       },
       wardrobe: {
-        costume: genre === "HISTORICAL_BIOPIC" ? "Period-accurate 1940s tailored suit" : genre === "BOLLYWOOD_ACTION" ? "Rugged tactical leather jacket and dark shirt" : "Cinematic styling",
-        accessories: "Period-appropriate accessories"
+        costume: genre === "MUSIC_VIDEO"
+          ? "Chic high-fashion music video performance attire, iridescent jacket and fitted performance top"
+          : genre === "HISTORICAL_BIOPIC"
+          ? "Period-accurate 1940s tailored suit"
+          : genre === "BOLLYWOOD_ACTION"
+          ? "Rugged tactical leather jacket and dark shirt"
+          : "Cinematic styling",
+        accessories: genre === "MUSIC_VIDEO"
+          ? "In-ear stage performance monitors, completely visible unobstructed mouth and lips for singing performance"
+          : "Period-appropriate accessories"
       },
-      voiceProfile: "Low, measured cinematic voice"
+      voiceProfile: genre === "MUSIC_VIDEO" ? "Dynamic, expressive musical singing vocals with melodic cadence" : "Low, measured cinematic voice"
     });
   }
 
@@ -400,6 +441,26 @@ export function compileDeterministicDirectorialPass(
       onCameraCharacterId = isSubjectForward ? null : "character_presenter";
       shotGrammar = isSubjectForward ? "ESTABLISHING_WIDE" : "PRESENTER_DIRECT";
       eyeline = isSubjectForward ? "screen_right" : "camera";
+    } else if (genre === "MUSIC_VIDEO") {
+      // Music video: Lead singer on camera singing with visible lip sync, alternating with dynamic b-roll
+      const singer = cast[0];
+      if (i === 0) {
+        onCameraCharacterId = singer?.id || null;
+        shotGrammar = "HERO_CLOSE_UP";
+        eyeline = "camera"; // Direct singing lip-sync performance
+      } else if (i % 3 === 1) {
+        onCameraCharacterId = singer?.id || null;
+        shotGrammar = "KINETIC_TRACKING";
+        eyeline = "screen_right";
+      } else if (i % 3 === 2) {
+        onCameraCharacterId = singer?.id || null;
+        shotGrammar = "HERO_CLOSE_UP";
+        eyeline = "camera"; // Direct singing lip-sync performance
+      } else {
+        onCameraCharacterId = null; // High-energy conceptual b-roll / light sweeps
+        shotGrammar = "ESTABLISHING_WIDE";
+        eyeline = "horizon_reflective";
+      }
     } else if (genre === "BOLLYWOOD_ACTION") {
       // Bollywood action: mix of hero shots and kinetic action/stunts (no person)
       if (i % 3 === 2) {
@@ -488,6 +549,12 @@ export function compileDeterministicDirectorialPass(
               ? "Grand panoramic high-altitude drone tracking across snow-capped alpine summits and green valleys"
               : "Grand panoramic high-altitude camera tracking across the architectural expanse with festive atmospheric depth")
           : "Slow graceful push-in on 85mm prime with golden hour lens flares and wind-blown fabric")
+      : genre === "MUSIC_VIDEO"
+      ? (shotGrammar === "HERO_CLOSE_UP"
+          ? "Rhythmic rotational push-in directly toward lead artist with energetic lens flares and singing lip articulation"
+          : shotGrammar === "KINETIC_TRACKING"
+          ? "Dynamic rotational 360-degree tracking dolly around the performing artist with kinetic stage lighting sweeps"
+          : "Sweeping high-angle crane glide drifting into the vibrant music video stage set with atmospheric haze")
       : (shotGrammar === "KINETIC_TRACKING"
           ? "Dynamic high-speed camera tracking with kinetic whip pans"
           : "Slow deliberate push-in on 85mm anamorphic prime");
@@ -502,7 +569,9 @@ export function compileDeterministicDirectorialPass(
       eyeline,
       cameraMotion,
       sceneEnvironment: topic,
-      visualAction: `Visual beat for ${dialogue || topic}`
+      visualAction: genre === "MUSIC_VIDEO"
+        ? `Lead artist singing and articulating lyrics on camera: ${dialogue || topic}`
+        : `Visual beat for ${dialogue || topic}`
     });
   });
 
@@ -513,6 +582,10 @@ export function compileDeterministicDirectorialPass(
         ? (aspectRatio === "16:9"
             ? "Arri Alexa Mini LF, 35mm & 50mm spherical primes, 16:9 widescreen framing, golden-hour lens roll-off, 24fps slow-motion cadence"
             : "Cooke Anamorphic 2.39:1 lenses, warm horizontal amber flares, 24fps slow-motion cadence, dreamy optical roll-off")
+        : genre === "MUSIC_VIDEO"
+        ? (aspectRatio === "9:16"
+            ? "Arri Alexa Mini LF, high-speed anamorphic primes, 9:16 vertical framing, dynamic chromatic lens flares, rhythmic motion cadence"
+            : "Arri Alexa Mini LF, high-speed anamorphic primes, widescreen framing, dynamic chromatic lens flares, rhythmic motion cadence")
         : (aspectRatio === "9:16"
             ? "Arri Alexa Mini LF, 35mm & 50mm spherical primes, 9:16 vertical framing, natural optical falloff"
             : aspectRatio === "16:9"
@@ -524,6 +597,8 @@ export function compileDeterministicDirectorialPass(
             : cleanTopic.includes("swiss") || cleanTopic.includes("switzerland") || cleanTopic.includes("snow") || cleanTopic.includes("alps")
             ? "Golden-hour alpine rim lighting, warm sunlight filtering through mist and snow crystals, soft high-key romantic fill"
             : "Warm golden-hour rim lighting, rich cinematic contrast, soft flattering high-key romantic fill")
+        : genre === "MUSIC_VIDEO"
+        ? "Vibrant concert and stage lighting, saturated magenta and cyan volumetric rim lights, pulsating strobe accents, high-contrast dynamic fill"
         : "High-contrast cinematic key lighting, rich shadows, warm practicals",
       atmosphere: genre === "BOLLYWOOD_ROMANCE"
         ? (cleanTopic.includes("palace") || cleanTopic.includes("courtyard") || cleanTopic.includes("rajasthan")
@@ -531,6 +606,8 @@ export function compileDeterministicDirectorialPass(
             : cleanTopic.includes("swiss") || cleanTopic.includes("switzerland") || cleanTopic.includes("snow") || cleanTopic.includes("chiffon") || cleanTopic.includes("alps")
             ? "Swirling autumn leaves, fluttering translucent chiffon fabric in alpine wind, ethereal mountain mist, floating snow flurries"
             : `Cascades of translucent chiffon fabric, ethereal romantic haze, floating flower petals, warm alpenglow for ${topic}`)
+        : genre === "MUSIC_VIDEO"
+        ? "Atmospheric stage haze, floating luminous light motes, dynamic laser sweeps, high-energy music video particle dispersion"
         : `Atmospheric cinematic tone for ${topic}`
     },
     cast,
@@ -598,6 +675,7 @@ ${input.continuationFrom.genre ? `- Locked Genre: "${input.continuationFrom.genr
 CRITICAL DIRECTORIAL REQUIREMENTS:
 1. GENRE IDENTIFICATION:
    ${input.genre ? `Set genre to "${input.genre}".` : `Classify the genre into one of:`}
+   - "MUSIC_VIDEO" (Cinematic music video, pop/indie/rock/rap vocal performance, poetic rhyming song lyrics, visible singing lip synchronization, dynamic rhythmic editing, choreography)
    - "HISTORICAL_BIOPIC" (e.g. Oppenheimer, Napoleon, historical figures/events)
    - "BOLLYWOOD_ROMANCE" (e.g. Yash Chopra Swiss musicals, Mohabbatein, DDLJ, dramatic duets, flowing chiffon sarees, violin solos, snow peaks, lush alpine meadows)
    - "BOLLYWOOD_ACTION" (e.g. Dhurandhar, high-octane stunts, espionage, tactical combat)
@@ -610,34 +688,37 @@ CRITICAL DIRECTORIAL REQUIREMENTS:
 
 2. CASTING & BIOMETRICS (1 to 3 characters):
    - Setting-Specific Wardrobe & Environment Alignment: If the prompt specifies a setting (e.g. beach, ocean, pool, gym, office, street, home, party, hotel), you MUST cast performers whose wardrobe and appearance authentically match that location (e.g., for beach/ocean: barefoot dancers, stylish coastal resortwear, breezy linen shirts, or beach dance attire; for gym: athletic activewear; for pool: swimwear; for office: professional business attire). NEVER substitute unrelated sci-fi, cyberpunk, or royal palace tropes when the user requested a beach, dance, gym, or everyday real-world setting!
+   - For MUSIC_VIDEO, cast a charismatic lead musical artist/singer with high-fashion stage performance attire. The artist's mouth, lips, and jaw MUST be completely unobstructed and clearly illuminated (strictly NO full-face opaque masks, dark tinted visors, or face-concealing helmets) to allow natural singing phoneme/viseme articulation.
    - For historical figures (e.g. Oppenheimer, Groves, Napoleon), extract authentic biographical appearance, era-accurate clothing (1940s suits, fedoras, military uniforms), and age.
    - For Bollywood romance, cast an intense, charismatic romantic hero (e.g. in royal embroidered angrakha/sherwani or tailored classic wardrobe) and an ethereal heroine (e.g. in swirling Banarasi lehenga or translucent chiffon saree with ornate jewelry). Only include winter overcoats or violins if explicitly requested in the topic.
    - For Bollywood action (e.g. Dhurandhar), cast rugged, charismatic leads with tactical gear, leather jackets, or sharp tailored suits.
    - For general drama/sci-fi/action/dance, design distinctive, memorable characters with distinct facial features and location-appropriate attire.
    - For documentary explainer ONLY, you may cast a single modern presenter.
-   - Give each character a unique archetype ID (lowercase slug, e.g. "romantic_hero", "romantic_heroine", "oppenheimer", "groves", "tactical_agent", "samurai_master", "operative_leader"). NEVER use celebrity actor names or real-world celebrity names (strictly forbidden: no Bollywood/Hollywood actor names).
+   - Give each character a unique archetype ID (lowercase slug, e.g. "romantic_hero", "romantic_heroine", "lead_singer", "oppenheimer", "groves", "tactical_agent", "samurai_master", "operative_leader"). NEVER use celebrity actor names or real-world celebrity names (strictly forbidden: no Bollywood/Hollywood actor names).
 
 3. FILM GRAMMAR, SCENE GROUPING & SHOT STAGING:
    - SCENE ARCHITECTURE: Group contiguous shots that occur in the same physical setting into cohesive scenes with "sceneId" (e.g., shots 1-4 in "scene_01", shots 5-8 in "scene_02").
    - VERBATIM ENVIRONMENT LOCK: All shots that share the same "sceneId" MUST have the EXACT SAME verbatim "sceneEnvironment" string describing the set, geometry, lighting, and materials. Do NOT rephrase or invent new locations within the same scene!
    - NEVER force one presenter to talk to the camera in every shot unless genre is DOCUMENTARY_EXPLAINER.
+   - For MUSIC_VIDEO, alternate between intense hero close-ups with the artist singing directly to camera (eyeline: "camera") with visible lip articulation, and kinetic tracking/dance/concept choreography shots.
    - Use true film grammar:
      * Shot / Reverse-Shot for dialogue: Character A speaks (looking screen_right) -> Character B reacts (looking screen_left).
      * Over-the-shoulder (OTS) angles.
      * Pure action / stunt / landscape shots with NO character on camera ("onCameraCharacterId": null).
-     * Eyelines: "screen_left", "screen_right", "horizon_reflective", "downward_intense". Use "camera" ONLY if breaking the fourth wall or documentary.
+     * Eyelines: "screen_left", "screen_right", "horizon_reflective", "downward_intense". Use "camera" ONLY if breaking the fourth wall, music video singing, or documentary.
    - Note: Veo reference images condition ONE person per shot. Therefore, shots with characters should feature at most ONE hero character on camera ("onCameraCharacterId").
 
 4. SCRIPT & DIALOGUE:
    - Output exactly ${targetShots} short lines, one per shot.
    - STRICT BUDGET: Each line MUST be between 5 and ${MAX_WORDS_PER_SHOT} words maximum. Never exceed ${MAX_WORDS_PER_SHOT} words per line.
    - Write authentic cinematic dialogue, dramatic narration, or poetic song lyrics worthy of a blockbuster film.
-   - For Bollywood romance or music videos, write poetic rhyming Hindi/Hinglish song lyrics (mukhda and antara) with deep romantic feeling, musical rhythm, and evocative imagery (ishq, fiza, dil, jahaan, dhadkan, nazaare, khwaab). NEVER use cheap corporate filler or unromantic slang ("yaar", "bhai", "tips", "tricks").
+   - For MUSIC_VIDEO: NEVER write educational explanations, technical telemetry reports, or documentary voiceover. Write authentic, poetic, rhythmic song lyrics or rhyming vocal lines (verse, chorus, hook, drop) with natural musical cadence and emotional resonance. Each line must read like lyrics to a hit song.
+   - For Bollywood romance, write poetic rhyming Hindi/Hinglish song lyrics (mukhda and antara) with deep romantic feeling, musical rhythm, and evocative imagery (ishq, fiza, dil, jahaan, dhadkan, nazaare, khwaab). NEVER use cheap corporate filler or unromantic slang ("yaar", "bhai", "tips", "tricks").
    - Forbid corporate filler, canned clichés, or generic platitudes (NEVER say "Here is what deserves a closer look", "The obvious reaction is only the surface", "Experience the true atmosphere", etc.).${languageDirective}
 
 Return a JSON object conforming strictly to this structure:
 {
-  "genre": "HISTORICAL_BIOPIC" | "BOLLYWOOD_ROMANCE" | "BOLLYWOOD_ACTION" | "CINEMATIC_DRAMA" | "SCI_FI_CYBERPUNK" | "NEO_NOIR_THRILLER" | "HIGH_FANTASY" | "HORROR_MYSTERY" | "DOCUMENTARY_EXPLAINER",
+  "genre": "HISTORICAL_BIOPIC" | "BOLLYWOOD_ROMANCE" | "BOLLYWOOD_ACTION" | "CINEMATIC_DRAMA" | "SCI_FI_CYBERPUNK" | "NEO_NOIR_THRILLER" | "HIGH_FANTASY" | "HORROR_MYSTERY" | "DOCUMENTARY_EXPLAINER" | "MUSIC_VIDEO",
   "visualStyle": {
     "optics": "string description of camera, lens, aspect ratio, motion",
     "lightingPalette": "string description of color, key light, practicals",

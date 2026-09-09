@@ -183,7 +183,8 @@ export const CINEMA_FINISHED_REELS: CinemaMasterReel[] = [
 ];
 
 export const OMNI_GENRES = [
-  { id: "AUTO", label: "✨ Auto-Detect", desc: "Omni Director auto-infers best cinematic or documentary format from prompt" },
+  { id: "AUTO", label: "✨ Auto-Detect", desc: "Omni Director auto-infers best cinematic, music video, or documentary format from prompt" },
+  { id: "MUSIC_VIDEO", label: "🎵 Music Video", desc: "Vocal lip-sync performance, dynamic music video choreography, cinematic visual rhythm, melodic score" },
   { id: "BOLLYWOOD_ROMANCE", label: "🌹 Bollywood Romance", desc: "Alpine musical duet, flowing chiffon sarees, violin motifs, 2.39:1 anamorphic" },
   { id: "BOLLYWOOD_ACTION", label: "💥 Bollywood Action", desc: "Kinetic tracking, combat stunts, tactical coverage" },
   { id: "HISTORICAL_BIOPIC", label: "🎩 Historical Biopic", desc: "Era wardrobe, multi-character dialogue, period lighting" },
@@ -952,7 +953,12 @@ export function CreatorReelsHome() {
                       <button
                         key={d.sec}
                         type="button"
-                        onClick={() => setSelectedDuration(d.sec)}
+                        onClick={() => {
+                          setSelectedDuration(d.sec);
+                          if (d.label?.includes("Music Video") || d.sec === 34) {
+                            setSelectedGenre("MUSIC_VIDEO");
+                          }
+                        }}
                         className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition-all min-h-[32px] flex items-center gap-1 ${
                           selectedDuration === d.sec
                             ? activeTab === "youtube_shorts"

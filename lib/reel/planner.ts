@@ -644,6 +644,9 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
       languageInstruction,
       bible.visualStyle,
       bible.cameraLanguage,
+      dir.genre === "MUSIC_VIDEO"
+        ? "MUSIC VIDEO PERFORMANCE & LIP-SYNC: The performer is actively singing the song lyrics on camera with visible mouth, lips, and facial articulation in precise sync with the vocals. Face, lips, and mouth are completely illuminated and unobstructed (no opaque visors, masks, or hands covering the mouth)."
+        : "",
       `Continuity start: ${previousAction}`,
       `Continuity end: ${actionOut}`,
       `Emotional state: ${emotion.emotion} at intensity ${emotion.intensity}.`,
@@ -758,6 +761,8 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
               ? "Grand Bollywood 5-Act Symphonic Romance score with acoustic solo violin, bansuri flute, soaring string ensembles, sitar embellishments, and subtle tabla/dholak rhythm, mastered to -24.0 LUFS EBU R128."
               : genre === "BOLLYWOOD_ACTION"
               ? "High-octane Bollywood action orchestral score with dynamic brass, kinetic percussion, and hybrid electronic bass, mastered to -24.0 LUFS EBU R128."
+              : genre === "MUSIC_VIDEO"
+              ? "High-energy cinematic music video master track with dynamic percussion, driving rhythm, synth hooks, and seamless musical progression across visual cuts, mastered to -24.0 LUFS EBU R128."
               : "5-Act Symphonic Orchestral masterwork bed (Beethoven Op. 92 allegretto movements), continuous across visual cuts, mastered to -24.0 LUFS EBU R128.")
           : creationIntent?.musicPreset
           ? `Continuous supportive underscore. Planning direction: ${creationIntent.musicPreset}.`
@@ -765,6 +770,8 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
               ? "Lyrical Bollywood acoustic score with solo violin, bansuri flute, and subtle tabla rhythm, mastered to -24.0 LUFS EBU R128."
               : genre === "BOLLYWOOD_ACTION"
               ? "High-octane Bollywood action score with dynamic brass and kinetic percussion, mastered to -24.0 LUFS EBU R128."
+              : genre === "MUSIC_VIDEO"
+              ? "High-energy cinematic music video master track with dynamic percussion, driving rhythm, synth hooks, and seamless musical progression across visual cuts, mastered to -24.0 LUFS EBU R128."
               : "Continuous supportive underscore following the narrative arc."),
         energy: 0.45
       }],

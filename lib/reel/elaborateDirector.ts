@@ -176,7 +176,7 @@ CRITICAL DIRECTORIAL REQUIREMENTS:
 Return a JSON object conforming strictly to this structure:
 {
   "title": "Couture Title for this Production",
-  "genre": "BOLLYWOOD_ROMANCE" | "BOLLYWOOD_ACTION" | "HISTORICAL_BIOPIC" | "CINEMATIC_DRAMA" | "SCI_FI_CYBERPUNK" | "NEO_NOIR_THRILLER" | "HIGH_FANTASY" | "DOCUMENTARY_EXPLAINER",
+  "genre": "BOLLYWOOD_ROMANCE" | "BOLLYWOOD_ACTION" | "HISTORICAL_BIOPIC" | "CINEMATIC_DRAMA" | "SCI_FI_CYBERPUNK" | "NEO_NOIR_THRILLER" | "HIGH_FANTASY" | "DOCUMENTARY_EXPLAINER" | "MUSIC_VIDEO",
   "logline": "One-sentence cinematic logline summarizing the emotional stakes and setting",
   "targetDurationSec": ${requestedDurationSec},
   "aspectRatio": "${aspectRatio}",
