@@ -584,6 +584,8 @@ export function CreatorReelsHome() {
     const targetGenre = activeTreatment?.genre || (selectedGenre !== "AUTO" ? selectedGenre : undefined);
     const targetLang = activeTreatment?.language || selectedLanguage;
 
+    console.log(`[CreatorReelsHome] Initiating generation: targetGenre="${targetGenre || "AUTO"}", targetDuration=${targetDuration}, targetLang="${targetLang}"`);
+
     setIsGenerating(true);
     setGenerationError(null);
     setGeneratedResult(null);

@@ -24,6 +24,8 @@ export async function POST(req: NextRequest) {
     const tweakInstructions = body.tweakInstructions;
     const previousTreatment = body.previousTreatment;
 
+    console.log(`[api/studio1/elaborate] POST incoming: prompt="${prompt.slice(0, 60)}...", genre="${genre || ""}", duration=${duration}`);
+
     const treatment = await deconstructAndElaborateDirector({
       prompt,
       referenceUrl,

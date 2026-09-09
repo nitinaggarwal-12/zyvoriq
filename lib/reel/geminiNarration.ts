@@ -277,6 +277,10 @@ export async function generateAlignedNarration(input: {
   const { pcm, model, voice } = await generatePcm(input.text, input.tone, input.voice, input.language, input.character);
   if (!pcm.length) throw new Error("Gemini TTS returned an empty PCM stream");
   const durationSec = pcm.length / (SAMPLE_RATE * CHANNELS * SAMPLE_WIDTH);
+  const words = input.text.trim().split(/\s+/).filter(Boolean).length;
+  const actualSec = durationSec;
+  const wps = actualSec > 0 ? (words / actualSec).toFixed(2) : "0.00";
+  console.log(`[narration-cadence] ${words} words / ${actualSec.toFixed(2)}s = ${wps} wps (language: ${input.language || "en"}, voice: ${voice})`);
   const wav = wavFromPcm(pcm);
   const uploaded = await uploadForTranscription(wav, `zyvoriq-${input.productionId}-narration.wav`);
   const vocab = extractBiasedVocabularyFromText(input.text, input.biasedVocabulary);

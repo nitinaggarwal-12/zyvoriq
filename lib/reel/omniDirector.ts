@@ -69,6 +69,19 @@ export type OmniGenre =
   | "DOCUMENTARY_EXPLAINER"
   | "MUSIC_VIDEO";
 
+export const VALID_OMNI_GENRES: ReadonlySet<OmniGenre> = new Set<OmniGenre>([
+  "HISTORICAL_BIOPIC",
+  "BOLLYWOOD_ACTION",
+  "BOLLYWOOD_ROMANCE",
+  "CINEMATIC_DRAMA",
+  "SCI_FI_CYBERPUNK",
+  "NEO_NOIR_THRILLER",
+  "HIGH_FANTASY",
+  "HORROR_MYSTERY",
+  "DOCUMENTARY_EXPLAINER",
+  "MUSIC_VIDEO",
+]);
+
 export interface OmniDirectorialCompilation {
   genre: OmniGenre;
   visualStyle: {
@@ -237,9 +250,29 @@ export function compileDeterministicDirectorialPass(
 ): OmniDirectorialCompilation {
   const cleanTopic = topic.trim().toLowerCase();
   
+  console.log(`[omni-genre] Entry compileDeterministicDirectorialPass: explicitGenre="${explicitGenre || ""}", continuationGenre="${continuationFrom?.genre || ""}", topic="${topic}"`);
+
+  let validatedExplicitGenre: OmniGenre | undefined = undefined;
+  if (explicitGenre) {
+    const norm = String(explicitGenre).trim().toUpperCase() as OmniGenre;
+    if (VALID_OMNI_GENRES.has(norm)) {
+      validatedExplicitGenre = norm;
+    } else {
+      console.warn(`[omni-genre] WARNING: explicitGenre "${explicitGenre}" is invalid or unrecognised; not in OmniGenre union! Allowed: ${Array.from(VALID_OMNI_GENRES).join(", ")}`);
+    }
+  }
+
   // 1. Detect Genre
-  let genre: OmniGenre = continuationFrom?.genre || explicitGenre || "CINEMATIC_DRAMA";
-  if (!explicitGenre && !continuationFrom?.genre) {
+  let genre: OmniGenre;
+  if (continuationFrom?.genre && VALID_OMNI_GENRES.has(continuationFrom.genre)) {
+    genre = continuationFrom.genre;
+    console.log(`[omni-genre] Using locked continuation genre: "${genre}"`);
+  } else if (validatedExplicitGenre) {
+    genre = validatedExplicitGenre;
+    console.log(`[omni-genre] Using explicit user genre: "${genre}" (skipping keyword inference)`);
+  } else {
+    console.log(`[omni-genre] No valid explicit genre provided. Evaluating topic keywords on: "${cleanTopic}"`);
+    genre = "CINEMATIC_DRAMA";
     if (cleanTopic.includes("dhurandhar") || cleanTopic.includes("action") || cleanTopic.includes("stunt") || cleanTopic.includes("chase") || cleanTopic.includes("fight")) {
       genre = "BOLLYWOOD_ACTION";
     } else if (
@@ -256,8 +289,7 @@ export function compileDeterministicDirectorialPass(
       cleanTopic.includes("pop idol") ||
       cleanTopic.includes("vocal") ||
       cleanTopic.includes("concert") ||
-      cleanTopic.includes("music track") ||
-      explicitGenre === "MUSIC_VIDEO"
+      cleanTopic.includes("music track")
     ) {
       genre = "MUSIC_VIDEO";
     } else if (cleanTopic.includes("oppenheimer") || cleanTopic.includes("history") || cleanTopic.includes("biopic") || cleanTopic.includes("napoleon") || cleanTopic.includes("churchill") || cleanTopic.includes("rome")) {
@@ -273,6 +305,7 @@ export function compileDeterministicDirectorialPass(
     } else if (cleanTopic.includes("explain") || cleanTopic.includes("how to") || cleanTopic.includes("tutorial") || cleanTopic.includes("tips") || cleanTopic.includes("breakdown")) {
       genre = "DOCUMENTARY_EXPLAINER";
     }
+    console.log(`[omni-genre] Auto-detected genre: "${genre}"`);
   }
 
   // 2. Parse Dialogue and Speakers
@@ -623,6 +656,20 @@ export function compileDeterministicDirectorialPass(
 export async function compileOmniDirectorialPass(
   input: OmniDirectorInput
 ): Promise<OmniDirectorialCompilation> {
+  console.log(`[omni-director] Entry compileOmniDirectorialPass: explicitGenre="${input.genre || ""}", continuationGenre="${input.continuationFrom?.genre || ""}", topic="${input.topic}"`);
+
+  let validatedInputGenre: OmniGenre | undefined = undefined;
+  if (input.genre) {
+    const norm = String(input.genre).trim().toUpperCase() as OmniGenre;
+    if (VALID_OMNI_GENRES.has(norm)) {
+      validatedInputGenre = norm;
+      input.genre = norm;
+      console.log(`[omni-director] Validated explicitGenre: "${validatedInputGenre}"`);
+    } else {
+      console.warn(`[omni-director] WARNING: explicitGenre "${input.genre}" is invalid or unrecognised; not in OmniGenre union! Allowed: ${Array.from(VALID_OMNI_GENRES).join(", ")}`);
+    }
+  }
+
   const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (!key) {
     throw new Error(
@@ -807,17 +854,19 @@ Return a JSON object conforming strictly to this structure:
       throw new Error("Parsed Omni Directorial plan missing required keys (genre, cast, shots).");
     }
 
-    if (input.genre) {
-      parsed.genre = input.genre;
+    if (validatedInputGenre) {
+      parsed.genre = validatedInputGenre;
     }
 
     if (input.continuationFrom?.cast && input.continuationFrom.cast.length > 0) {
       // 100% Biometric identity and wardrobe preservation across continuation reels
       parsed.cast = input.continuationFrom.cast;
     }
-    if (input.continuationFrom?.genre) {
+    if (input.continuationFrom?.genre && VALID_OMNI_GENRES.has(input.continuationFrom.genre)) {
       parsed.genre = input.continuationFrom.genre;
     }
+
+    console.log(`[omni-director] Directorial compilation resolved genre: "${parsed.genre}" (explicit requested: "${input.genre || 'none'}")`);
 
     // Sanitize shot word counts against the strict 12-word ceiling
     for (const shot of parsed.shots) {

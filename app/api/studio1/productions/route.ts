@@ -46,6 +46,8 @@ export async function POST(req: NextRequest) {
     const topic = String(body.topic || body.prompt || "").trim();
     if (!topic) return NextResponse.json({ success: false, error: "topic is required" }, { status: 400 });
 
+    console.log(`[api/studio1/productions] POST incoming: topic="${topic.slice(0, 60)}...", genre="${body.genre || ""}", duration=${body.duration || body.requestedDurationSec}, platform="${body.platform || "Instagram Reels"}"`);
+
     const platform = body.platform === "YouTube Shorts" || body.platform === "youtube"
       ? "YouTube Shorts"
       : body.platform === "TikTok" || body.platform === "tiktok"
@@ -155,6 +157,12 @@ export async function POST(req: NextRequest) {
       locationIds: body.locationIds,
       continuationFrom,
     });
+    if (body.genre) {
+      manifest.genre = body.genre;
+      if (manifest.creativeBible) {
+        manifest.creativeBible.genre = body.genre;
+      }
+    }
     const production = await reelProductionStore.create(manifest);
 
     let control = null;

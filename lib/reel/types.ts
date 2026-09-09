@@ -342,10 +342,12 @@ export interface ReelProductionManifest {
   topic: string;
   tone: string;
   language?: string;
+  genre?: string;
   starred?: boolean;
   creationIntent?: ReelCreationIntent;
   masterScript: string;
   creativeBible: {
+    genre?: string;
     visualStyle: string;
     characterLock: string;
     wardrobeLock: string;

@@ -425,6 +425,11 @@ export function planStudio1Sync(input: PlanReelInput, directorial?: OmniDirector
   const manifest = planReel(input, directorial);
   manifest.id = `studio1_${crypto.randomUUID()}`;
   manifest.status = "SCRIPT_READY";
+  if (directorial?.genre) {
+    manifest.genre = directorial.genre;
+  } else if (input.genre) {
+    manifest.genre = input.genre;
+  }
 
   const basePrompts = Object.fromEntries(manifest.shots.map(shot => [shot.id, shot.generationPrompt]));
   const subjectModes = Object.fromEntries(manifest.shots.map(shot => [

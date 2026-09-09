@@ -42,7 +42,7 @@ assert.ok(shot1Prompt.includes("unobstructed") || shot1Prompt.includes("lips"), 
 assert.ok(manifest.musicPlan.sections[0].intent.includes("music video"), "Music plan must be configured with high-energy music video score");
 console.log("  ✓ Music Score Plan Intent:", manifest.musicPlan.sections[0].intent);
 
-// 6. Test: Explicit Genre Override
+// 6. Test: Explicit Genre Override & Top-Level manifest.genre persistence
 const explicitInput = {
   topic: "Deep space astronaut suit reflection, nebula flare",
   genre: "MUSIC_VIDEO",
@@ -56,6 +56,19 @@ Echoes across space and time.`
 
 const explicitManifest = planStudio1Sync(explicitInput);
 assert.equal(explicitManifest.creativeBible.genre, "MUSIC_VIDEO", "Explicit genre=MUSIC_VIDEO must be respected even with space topic");
+assert.equal(explicitManifest.genre, "MUSIC_VIDEO", "manifest.genre top-level must be populated with MUSIC_VIDEO");
 console.log("  ✓ Explicit genre override respected for space topic:", explicitManifest.creativeBible.genre);
+console.log("  ✓ Top-level manifest.genre verified:", explicitManifest.genre);
+
+// 7. Test: Invalid Genre Warning & Fallback
+const invalidInput = {
+  topic: "Deep space astronaut exploration",
+  genre: "INVALID_UNKNOWN_GENRE",
+  requestedDurationSec: 30,
+  scriptText: "Space exploration begins."
+};
+const invalidManifest = planStudio1Sync(invalidInput);
+assert.equal(invalidManifest.creativeBible.genre, "SCI_FI_CYBERPUNK", "Invalid genre must safely fall back to topic inference");
+console.log("  ✓ Invalid genre safely fell back to topic inference:", invalidManifest.creativeBible.genre);
 
 console.log("\n🎉 ALL MUSIC_VIDEO & LIP-SYNC QA VERIFICATIONS PASSED 100%!\n");

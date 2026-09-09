@@ -1876,6 +1876,9 @@ async function generateNarration(op, manifest, existingCheckpoint = null) {
 
     const pcm = Buffer.from(b64, "base64");
     const durationSec = pcm.length / (SAMPLE_RATE * CHANNELS * SAMPLE_WIDTH);
+    const words = String(manifest.masterScript || "").trim().split(/\s+/).filter(Boolean).length;
+    const wps = durationSec > 0 ? (words / durationSec).toFixed(2) : "0.00";
+    console.log(`[narration-cadence] ${words} words / ${durationSec.toFixed(2)}s = ${wps} wps (genre: ${manifest.genre || manifest.creativeBible?.genre || "unknown"}, lang: ${lang || "en"}, voice: ${voice})`);
     wav = wavFromPcm(pcm);
     const digest = crypto.createHash("sha256").update(wav).digest("hex").slice(0, 16);
     const asset = await writeAsset(`reels/${op.production_id}/narration-${digest}.wav`, wav);
