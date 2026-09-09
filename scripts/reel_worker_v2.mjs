@@ -2349,12 +2349,19 @@ async function generateShot(op, manifest, shot) {
 
     // If continuing from previous shot, attach previous shot frame as additional asset reference
     // BUT omit temporal frame if:
-    // 1) This is a safety retry (safety fallback isolates canonical character sheet to prevent multi-reference collision)
-    // 2) Character A -> Character B transition: omit temporal frame to prevent face identity collision
-    // NOTE: When transitioning from b-roll/environment (char: none) to character, or vice-versa,
+    // 1) The shot already has a canonical character reference image: Veo 3.1 flags multiple human face reference images
+    //    with an RAI likeness filter ("Sorry, we can't create videos with real people's names or likenesses").
+    //    Canonical character reference is authoritative for the actor; omitting the redundant temporal frame allows
+    //    generation to succeed on attempt 1 with zero safety retry backoffs.
+    // 2) This is a safety retry (safety fallback isolates canonical character sheet to prevent multi-reference collision)
+    // 3) Character A -> Character B transition: omit temporal frame to prevent face identity collision
+    // NOTE: When transitioning from b-roll/environment (char: none) or for shots without canonical portraits,
     // the temporal frame is PRESERVED so physical environment, lighting, and set continuity are retained!
     if (ref?.buffer && refImages.length < 3) {
-      if (charId && hasSafetyHistory) {
+      if (charId && refImages.length > 0) {
+        omittedTemporalReason = "canonical-character-authoritative";
+        console.log(`[reel-worker] [continuity] Shot ${shot.id} (char: ${charId}) already has canonical character reference. Omitting temporal face frame to prevent multi-reference likeness collisions.`);
+      } else if (charId && hasSafetyHistory) {
         omittedTemporalReason = "safety-fallback";
         console.log(`[reel-worker] [safety-fallback] Omitting temporal frame from previous shot (${depShot?.id || "unknown"}) on safety retry for ${shot.id}; using canonical character reference only.`);
       } else if (charId && depCharId && !isSameCharacter) {
