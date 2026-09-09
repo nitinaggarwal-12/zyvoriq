@@ -98,10 +98,15 @@ function extractWordTimings(value: unknown): WordTiming[] {
   return timings.filter(t => t.word && t.endSec >= t.startSec).sort((a, b) => a.startSec - b.startSec || a.endSec - b.endSec);
 }
 
-async function generatePcm(text: string, tone: string, voiceOverride?: string, language?: string) {
+async function generatePcm(text: string, tone: string, voiceOverride?: string, language?: string, character?: any) {
   const key = apiKey();
   const model = process.env.ZYVORIQ_TTS_MODEL || "gemini-3.1-flash-tts-preview";
-  const voice = voiceOverride || process.env.ZYVORIQ_TTS_VOICE || "Charon";
+  // Voice is a property of the character, not the production
+  const voice = voiceOverride
+    || character?.voiceId
+    || character?.defaultVoiceId
+    || process.env.ZYVORIQ_TTS_VOICE
+    || "Kore";
   let langDirection = "";
   if (language === "hinglish-roman" || language === "hinglish") {
     langDirection = " Language & Pronunciation: Hinglish (conversational Hindi-English blend). Pronounce Hindi words with authentic North Indian phonetics and conversational cadence, seamlessly blended with natural English vocabulary.";
@@ -258,6 +263,7 @@ export async function generateAlignedNarration(input: {
   text: string;
   tone: string;
   voice?: string;
+  character?: any;
   biasedVocabulary?: string[];
   language?: string;
 }) {
@@ -268,7 +274,7 @@ export async function generateAlignedNarration(input: {
   }
   apiKey();
 
-  const { pcm, model, voice } = await generatePcm(input.text, input.tone, input.voice, input.language);
+  const { pcm, model, voice } = await generatePcm(input.text, input.tone, input.voice, input.language, input.character);
   if (!pcm.length) throw new Error("Gemini TTS returned an empty PCM stream");
   const durationSec = pcm.length / (SAMPLE_RATE * CHANNELS * SAMPLE_WIDTH);
   const wav = wavFromPcm(pcm);

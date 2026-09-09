@@ -17,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark scroll-smooth" suppressHydrationWarning>
+    <html lang="en" className="dark scroll-smooth" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body
         className="bg-obsidian-950 dark:bg-obsidian-950 text-slate-900 dark:text-slate-100 antialiased min-h-screen flex flex-col selection:bg-teal-500/30 selection:text-teal-900 dark:selection:text-teal-100 transition-colors duration-200"
         suppressHydrationWarning

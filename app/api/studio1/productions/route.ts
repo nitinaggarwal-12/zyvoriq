@@ -151,6 +151,8 @@ export async function POST(req: NextRequest) {
       scriptText: body.scriptText,
       genre: body.genre,
       language: body.language || body.narrationLanguage,
+      castSelection: body.castSelection,
+      locationIds: body.locationIds,
       continuationFrom,
     });
     const production = await reelProductionStore.create(manifest);

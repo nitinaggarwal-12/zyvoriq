@@ -96,6 +96,39 @@ CREATE TABLE IF NOT EXISTS reel_worker_heartbeats (
  heartbeat_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), metadata_json JSONB NOT NULL DEFAULT '{}'::jsonb);
 CREATE INDEX IF NOT EXISTS idx_reel_operations_status_created ON reel_operations(status,created_at);
 CREATE INDEX IF NOT EXISTS idx_reel_operations_scheduled ON reel_operations(status,scheduled_at);
+CREATE TABLE IF NOT EXISTS character_library (
+  id                TEXT PRIMARY KEY,
+  display_name      TEXT NOT NULL,
+  archetype         TEXT NOT NULL,
+  description       TEXT NOT NULL,
+  gender            TEXT,
+  era               TEXT,
+  default_voice_id  TEXT,
+  validation_status TEXT NOT NULL DEFAULT 'UNVALIDATED',
+  validation_error  TEXT,
+  validated_at      TIMESTAMPTZ,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS character_wardrobe (
+  id            TEXT PRIMARY KEY,
+  character_id  TEXT NOT NULL REFERENCES character_library(id) ON DELETE CASCADE,
+  label         TEXT NOT NULL,
+  sheet_uris    TEXT[] NOT NULL,
+  is_default    BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS location_library (
+  id                 TEXT PRIMARY KEY,
+  display_name       TEXT NOT NULL,
+  environment_block  TEXT NOT NULL,
+  establishing_uri   TEXT,
+  era                TEXT,
+  time_of_day        TEXT,
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_wardrobe_char ON character_wardrobe (character_id);
+CREATE INDEX IF NOT EXISTS idx_charlib_valid ON character_library (validation_status);
 `);
 
 async function recoverLegacyAmbiguousTtsFailures() {
@@ -1718,14 +1751,19 @@ async function transcribeAndValidateNarration(op, manifest, checkpoint, wav) {
   return { ...checkpoint, stage: "COMPLETE", wordTimings: timings, alignmentValidation: validation };
 }
 
-function selectVoiceForManifest(manifest) {
-  if (process.env.ZYVORIQ_TTS_VOICE) return process.env.ZYVORIQ_TTS_VOICE;
-
+function selectVoiceForManifest(manifest, speakerCharId = null) {
   const characters = Array.isArray(manifest.characters) && manifest.characters.length
     ? manifest.characters
     : (manifest.continuity?.characters || []);
 
-  const leadChar = characters[0];
+  const leadChar = speakerCharId
+    ? (characters.find(c => c.id === speakerCharId) || characters[0])
+    : characters[0];
+
+  if (leadChar?.voiceId) return leadChar.voiceId;
+  if (leadChar?.defaultVoiceId) return leadChar.defaultVoiceId;
+  if (process.env.ZYVORIQ_TTS_VOICE) return process.env.ZYVORIQ_TTS_VOICE;
+
   const gender = String(leadChar?.biometricDNA?.gender || leadChar?.gender || "").toLowerCase();
   const voiceProfile = String(leadChar?.voiceProfile || "").toLowerCase();
 
@@ -2854,7 +2892,7 @@ async function renderRough(op, m) {
       return false;
     }
   }));
-  const studio1 = op.payload_json?.studio1 === true && Boolean(m.studio1?.timelineSync);
+  let studio1 = op.payload_json?.studio1 === true && Boolean(m.studio1?.timelineSync);
   const genre = String(m.creativeBible?.genre || m.genre || op.payload_json?.genre || "").toUpperCase();
   const audioStrategy = getGenreAudioStrategy(genre, m, op);
   const hasValidShotAudio = shotAudioProbes.length === m.shots.length && shotAudioProbes.every(Boolean);
@@ -2866,13 +2904,18 @@ async function renderRough(op, m) {
   console.log(`[reel-worker] renderRough audio strategy for ${op.production_id} (genre: ${genre || "unknown"}, audioStrategy: ${audioStrategy}): ${hasNativeAudio ? "NATIVE CHARACTER AUDIO & FOLEY (lip sync preserved)" : studio1 ? "STUDIO1 SYMPHONIC & TTS MASTER" : "SYNTHETIC TTS DUB"}`);
 
   if (studio1) {
-    if (!op.payload_json?.narrationSyncedTimeline) throw new Error("Studio1 exact render requires narrationSyncedTimeline operation evidence");
-    if (Number(m.studio1?.timelineSync?.version || 0) < 2) throw new Error("Studio1 exact render requires timelineSync version 2");
-    const c = await getProduction(op.production_id);
-    const sync = synchronizeStudio1ManifestTimeline(c.manifest, { mode: "render" });
-    await saveManifest(op.production_id, c.revision, c.manifest);
-    m = c.manifest;
-    console.log(`[reel-worker] studio1 render resync ${op.production_id} ${JSON.stringify(sync.adaptations)}`);
+    try {
+      if (!op.payload_json?.narrationSyncedTimeline) throw new Error("Studio1 exact render requires narrationSyncedTimeline operation evidence");
+      if (Number(m.studio1?.timelineSync?.version || 0) < 2) throw new Error("Studio1 exact render requires timelineSync version 2");
+      const c = await getProduction(op.production_id);
+      const sync = synchronizeStudio1ManifestTimeline(c.manifest, { mode: "render" });
+      await saveManifest(op.production_id, c.revision, c.manifest);
+      m = c.manifest;
+      console.log(`[reel-worker] studio1 render resync ${op.production_id} ${JSON.stringify(sync.adaptations)}`);
+    } catch (syncErr) {
+      console.warn(`[reel-worker] studio1 timeline synchronization failed (${syncErr.message}), falling back to cinematic montage cut`);
+      studio1 = false;
+    }
   } else if (!hasNativeAudio) {
     console.warn(`[reel-worker] rough cut ${op.production_id} rendering on legacy unsynced path`);
   }
@@ -3005,8 +3048,15 @@ async function renderRough(op, m) {
       // Batch video scenes in groups of 6 to prevent scaling graph memory exhaustion
       let numBatches = 0;
       if (studio1) {
-        renderPlan = buildStudio1RenderPlan(m);
-        assertStudio1RenderAdaptation(renderPlan);
+        try {
+          renderPlan = buildStudio1RenderPlan(m);
+          assertStudio1RenderAdaptation(renderPlan);
+        } catch (planErr) {
+          console.warn(`[reel-worker] buildStudio1RenderPlan failed (${planErr.message}), falling back to cinematic montage cut`);
+          studio1 = false;
+        }
+      }
+      if (studio1 && renderPlan) {
         const scenes = renderPlan.scenes;
         numBatches = Math.ceil(scenes.length / BATCH_SIZE);
         console.log(`[reel-worker] renderRough: studio1 batching ${scenes.length} scenes across ${numBatches} intermediate batches (BATCH_SIZE=${BATCH_SIZE})`);

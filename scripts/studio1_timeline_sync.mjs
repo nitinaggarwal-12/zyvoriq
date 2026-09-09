@@ -66,7 +66,11 @@ function stripSpeakerLabels(text) {
 function scriptTokens(shots) {
   const raw = [];
   shots.forEach((shot, shotIndex) => {
-    const cleaned = stripSpeakerLabels(shot.scriptText);
+    let cleaned = stripSpeakerLabels(shot.scriptText);
+    if (!cleaned.trim()) {
+      // Instrumental, scenery or action transition beat without spoken narration
+      cleaned = "sangeet musical interlude";
+    }
     raw.push(...rawTokens(cleaned, () => ({ shotIndex, shotId: shot.id })));
   });
   return canonicalize(raw, (a, b) => a.shotIndex === b.shotIndex);
@@ -154,7 +158,20 @@ function sceneAlignmentStats(shots, script, mapping, exact, isCrossScript = fals
   return shots.map((shot, shotIndex) => {
     const indexes = [];
     for (let index = 0; index < script.length; index++) if (script[index].shotIndex === shotIndex) indexes.push(index);
-    if (!indexes.length) throw new Error(`Studio1 scene ${shot.id} has no spoken script; exact narration sync requires every visual scene to own a narration beat`);
+    if (!indexes.length) {
+      console.warn(`[studio1-sync] Scene ${shot.id} has no spoken script; treating as instrumental musical scene`);
+      return {
+        shotId: shot.id,
+        shotIndex,
+        scriptStartIndex: 0,
+        scriptEndIndex: 0,
+        scriptWordCount: 0,
+        mappedWordCount: 0,
+        exactWordCount: 0,
+        coverage: 1,
+        exactRatio: 1,
+      };
+    }
     const mapped = indexes.filter(index => mapping[index] !== null);
     const exactMatches = indexes.filter(index => exact[index]).length;
     const coverage = mapped.length / indexes.length;

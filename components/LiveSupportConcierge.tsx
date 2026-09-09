@@ -667,6 +667,7 @@ export function LiveSupportConcierge() {
                       src={avatarPref.avatarImage}
                       alt={avatarPref.avatarName}
                       fill
+                      sizes="36px"
                       className="object-cover"
                     />
                   ) : (
@@ -863,6 +864,7 @@ export function LiveSupportConcierge() {
                                 src={avatarPref.avatarImage}
                                 alt={avatarPref.avatarName}
                                 fill
+                                sizes="64px"
                                 className="object-cover"
                               />
                             ) : (
@@ -1140,6 +1142,7 @@ export function LiveSupportConcierge() {
                               src={avatarPref.avatarImage}
                               alt={avatarPref.avatarName}
                               fill
+                              sizes="24px"
                               className="object-cover"
                             />
                           ) : (
@@ -1333,6 +1336,7 @@ export function LiveSupportConcierge() {
                   src={avatarPref.avatarImage}
                   alt={avatarPref.avatarName}
                   fill
+                  sizes="32px"
                   className="object-cover"
                 />
               ) : (

@@ -21,11 +21,25 @@ function encodedKey(key: string) {
   return key.split("/").map(encodeURIComponent).join("/");
 }
 
+const FALLBACK_IMAGE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" fill="none">
+  <rect width="640" height="360" fill="#0A0D14"/>
+  <rect x="0.5" y="0.5" width="639" height="359" stroke="#1E293B" stroke-opacity="0.6"/>
+  <circle cx="320" cy="180" r="40" fill="#141E33"/>
+  <path d="M312 165L334 180L312 195V165Z" fill="#2DD4BF"/>
+  <text x="320" y="240" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" fill="#64748B" text-anchor="middle" letter-spacing="0.05em">ZYVORIQ CINEMA FRAME</text>
+</svg>`;
+
 async function proxyFromProduction(req: NextRequest, assetKey: string, method: "GET" | "HEAD") {
   const headers = new Headers();
   const range = req.headers.get("range");
   if (range) headers.set("range", range);
   const upstream = await fetch(`${PRODUCTION_ASSET_BASE}/api/reels/assets/${encodedKey(assetKey)}`, { method, headers, cache: "no-store" });
+  if (upstream.status === 404) {
+    if (contentType(assetKey).startsWith("image/")) {
+      return new Response(FALLBACK_IMAGE_SVG, { status: 200, headers: { "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=300" } });
+    }
+    return new Response(null, { status: 404 });
+  }
   if (!upstream.ok) {
     throw new Error(`Upstream production returned HTTP ${upstream.status}`);
   }
@@ -43,6 +57,9 @@ async function proxyFromWorker(req: NextRequest, assetKey: string, method: "GET"
   const range = req.headers.get("range");
   if (range) headers.set("range", range);
   const upstream = await fetch(`${WORKER_ASSET_BASE}/${encodedKey(assetKey)}`, { method, headers, cache: "no-store" });
+  if (upstream.status === 404) {
+    return new Response(null, { status: 404 });
+  }
   const out = new Headers();
   for (const name of ["content-type", "content-length", "content-range", "accept-ranges", "cache-control"]) {
     const value = upstream.headers.get(name);
@@ -82,7 +99,16 @@ async function handle(req: NextRequest, context: { params: Promise<{ key: string
       try {
         return await proxyFromProduction(req, assetKey, method);
       } catch (prodError: any) {
-        return NextResponse.json({ success: false, error: prodError?.message || "Asset unavailable from worker" }, { status: 502 });
+        if (contentType(assetKey).startsWith("image/")) {
+          return new Response(FALLBACK_IMAGE_SVG, {
+            status: 200,
+            headers: {
+              "Content-Type": "image/svg+xml",
+              "Cache-Control": "public, max-age=300",
+            },
+          });
+        }
+        return NextResponse.json({ success: false, error: "Asset not found" }, { status: 404 });
       }
     }
   }

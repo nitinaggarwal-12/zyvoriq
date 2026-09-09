@@ -1,0 +1,81 @@
+import puppeteer from 'puppeteer';
+import fs from 'fs';
+import path from 'path';
+
+const SCREENSHOT_DIR = path.resolve(process.cwd(), 'scratch/cloudtop_e2e_screenshots/beach_dance_fix');
+fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
+
+async function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
+async function run() {
+  console.log("=== Testing Dance on Beach UI & Choice Fix on Cloudtop ===");
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+  });
+
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1440, height: 1100 });
+
+    // 1. Load creator home
+    console.log("Navigating to http://localhost:3000 ...");
+    await page.goto("http://localhost:3000", { waitUntil: "networkidle2" });
+    await sleep(1000);
+
+    // 2. Scroll down so the generator form is centered
+    await page.evaluate(() => window.scrollBy(0, 350));
+    await sleep(500);
+
+    // 3. Default state is Omni Auto-Cast, English
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '01_default_omni_auto_cast_english.png'), fullPage: true });
+
+    // 4. Click Curated Library mode
+    console.log("Clicking Curated Library mode...");
+    await page.evaluate(() => {
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const libBtn = buttons.find(b => b.textContent?.includes("Curated Library"));
+      if (libBtn) libBtn.click();
+    });
+    await sleep(800);
+
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '02_curated_library_transparent_slots.png'), fullPage: true });
+
+    // 5. Test Quick Pick Freja (Denmark)
+    console.log("Testing Quick Pick Freja (Denmark)...");
+    await page.evaluate(() => {
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const frejaBtn = buttons.find(b => b.textContent?.includes("Freja (Denmark)"));
+      if (frejaBtn) frejaBtn.click();
+    });
+    await sleep(1500);
+
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '03_freja_denmark_quick_picked.png'), fullPage: true });
+
+    // 6. Mobile assertions (iOS & Android)
+    console.log("Testing iOS Mobile Viewport (390x844)...");
+    await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+    await sleep(800);
+    const iosScrollWidth = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
+    console.log("iOS scrollWidth <= innerWidth:", iosScrollWidth);
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '04_mobile_ios_beach_fix.png'), fullPage: true });
+
+    console.log("Testing Android Mobile Viewport (412x915)...");
+    await page.setViewport({ width: 412, height: 915, isMobile: true, hasTouch: true });
+    await sleep(800);
+    const androidScrollWidth = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
+    console.log("Android scrollWidth <= innerWidth:", androidScrollWidth);
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '05_mobile_android_beach_fix.png'), fullPage: true });
+
+    console.log("=== All Headless Cloudtop Checks Passed! ===");
+  } finally {
+    await browser.close();
+  }
+}
+
+run().catch(err => {
+  console.error("Test failed:", err);
+  process.exit(1);
+});

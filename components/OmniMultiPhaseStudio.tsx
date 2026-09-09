@@ -42,7 +42,8 @@ import {
   Layers,
   Eye,
   Info,
-  Clapperboard
+  Clapperboard,
+  Tv
 } from "lucide-react";
 import { SocialPublishModal } from "@/components/SocialPublishModal";
 
@@ -968,6 +969,13 @@ export function OmniMultiPhaseStudio() {
                 <span>Create Reel</span>
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
               </button>
+              <Link
+                href="/episodes/create"
+                className="rounded-full border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 px-3.5 py-1 text-xs font-mono font-bold text-cyan-300 transition cursor-pointer flex items-center gap-1.5 shadow-[0_0_12px_rgba(6,182,212,0.25)]"
+              >
+                <Tv className="h-3.5 w-3.5 text-cyan-400" />
+                <span>Episodes (30m)</span>
+              </Link>
               <Link
                 href="/my-reels"
                 className="rounded-full border border-violet-500/40 bg-violet-500/10 hover:bg-violet-500/20 px-3.5 py-1 text-xs font-mono font-bold text-violet-300 transition cursor-pointer flex items-center gap-1.5 shadow-[0_0_12px_rgba(139,92,246,0.25)]"

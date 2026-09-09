@@ -232,7 +232,7 @@ export function compileDeterministicDirectorialPass(
   if (!explicitGenre && !continuationFrom?.genre) {
     if (cleanTopic.includes("dhurandhar") || cleanTopic.includes("action") || cleanTopic.includes("stunt") || cleanTopic.includes("chase") || cleanTopic.includes("fight")) {
       genre = "BOLLYWOOD_ACTION";
-    } else if (cleanTopic.includes("romance") || cleanTopic.includes("romantic") || cleanTopic.includes("singing") || cleanTopic.includes("dancing") || cleanTopic.includes("switzerland") || cleanTopic.includes("chiffon") || cleanTopic.includes("saree") || cleanTopic.includes("mohabbatein") || cleanTopic.includes("ddlj") || cleanTopic.includes("music video") || cleanTopic.includes("love story")) {
+    } else if (cleanTopic.includes("bollywood") || (cleanTopic.includes("romance") && (cleanTopic.includes("hindi") || cleanTopic.includes("chiffon") || cleanTopic.includes("saree") || cleanTopic.includes("mohabbatein") || cleanTopic.includes("ddlj") || cleanTopic.includes("yash chopra")))) {
       genre = "BOLLYWOOD_ROMANCE";
     } else if (cleanTopic.includes("oppenheimer") || cleanTopic.includes("history") || cleanTopic.includes("biopic") || cleanTopic.includes("napoleon") || cleanTopic.includes("churchill") || cleanTopic.includes("rome")) {
       genre = "HISTORICAL_BIOPIC";
@@ -560,7 +560,7 @@ export async function compileOmniDirectorialPass(
 
   const resolvedLang = (input.language || "").trim().toLowerCase() ||
     (input.creationIntent?.narrationLanguage || "").trim().toLowerCase() ||
-    (/\b(?:hindi|hinglish|desi|bollywood|in hindi|in hinglish)\b/i.test(topic) || input.genre === "BOLLYWOOD_ACTION" || input.genre === "BOLLYWOOD_ROMANCE" ? "hinglish-roman" :
+    (/\b(?:hindi|hinglish|desi|bollywood|in hindi|in hinglish)\b/i.test(topic) ? "hinglish-roman" :
      /\b(?:spanish|español|en español)\b/i.test(topic) ? "es" :
      /\b(?:japanese|nihongo|in japanese)\b/i.test(topic) ? "ja" : "en");
 
@@ -609,10 +609,11 @@ CRITICAL DIRECTORIAL REQUIREMENTS:
    - "DOCUMENTARY_EXPLAINER" (educational, creator breakdown, tech demo)
 
 2. CASTING & BIOMETRICS (1 to 3 characters):
+   - Setting-Specific Wardrobe & Environment Alignment: If the prompt specifies a setting (e.g. beach, ocean, pool, gym, office, street, home, party, hotel), you MUST cast performers whose wardrobe and appearance authentically match that location (e.g., for beach/ocean: barefoot dancers, stylish coastal resortwear, breezy linen shirts, or beach dance attire; for gym: athletic activewear; for pool: swimwear; for office: professional business attire). NEVER substitute unrelated sci-fi, cyberpunk, or royal palace tropes when the user requested a beach, dance, gym, or everyday real-world setting!
    - For historical figures (e.g. Oppenheimer, Groves, Napoleon), extract authentic biographical appearance, era-accurate clothing (1940s suits, fedoras, military uniforms), and age.
    - For Bollywood romance, cast an intense, charismatic romantic hero (e.g. in royal embroidered angrakha/sherwani or tailored classic wardrobe) and an ethereal heroine (e.g. in swirling Banarasi lehenga or translucent chiffon saree with ornate jewelry). Only include winter overcoats or violins if explicitly requested in the topic.
    - For Bollywood action (e.g. Dhurandhar), cast rugged, charismatic leads with tactical gear, leather jackets, or sharp tailored suits.
-   - For general drama/sci-fi, design distinctive, memorable characters with distinct facial features.
+   - For general drama/sci-fi/action/dance, design distinctive, memorable characters with distinct facial features and location-appropriate attire.
    - For documentary explainer ONLY, you may cast a single modern presenter.
    - Give each character a unique archetype ID (lowercase slug, e.g. "romantic_hero", "romantic_heroine", "oppenheimer", "groves", "tactical_agent", "samurai_master", "operative_leader"). NEVER use celebrity actor names or real-world celebrity names (strictly forbidden: no Bollywood/Hollywood actor names).
 

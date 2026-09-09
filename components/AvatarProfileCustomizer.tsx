@@ -139,6 +139,7 @@ export function AvatarProfileCustomizer() {
                           src={imgUrl}
                           alt={char.name}
                           fill
+                          sizes="48px"
                           className="object-cover"
                         />
                       ) : (
@@ -273,6 +274,7 @@ export function AvatarProfileCustomizer() {
                   src={pref.avatarImage}
                   alt={pref.avatarName}
                   fill
+                  sizes="(max-width: 768px) 100vw, 320px"
                   className="object-cover"
                 />
               ) : (

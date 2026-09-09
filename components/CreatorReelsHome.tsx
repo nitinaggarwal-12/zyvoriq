@@ -37,18 +37,44 @@ import {
   X,
   Sliders,
   Send,
-  Lock
+  Lock,
+  Compass,
+  User,
+  MapPin
 } from "lucide-react";
 import type { OmniDirectorialTreatment } from "@/lib/reel/elaborateDirector";
 import { getNextPartInfo } from "./MyReelsLibrary";
+import { CharacterLibrary } from "./CharacterLibrary";
+import { LocationLibrary } from "./LocationLibrary";
+import type { LibraryCharacter } from "@/lib/library/characterLibrary";
+import type { LibraryLocation } from "@/lib/library/locationLibrary";
 
 export const LANGUAGE_OPTIONS = [
   { id: "en", label: "English", desc: "US fast social pacing" },
   { id: "hinglish-roman", label: "🇮🇳 Hinglish (Bollywood)", desc: "Conversational Hindi-English in Roman script" },
   { id: "hi-devanagari", label: "हिन्दी (Devanagari)", desc: "Standard Hindi in Devanagari script" },
   { id: "es", label: "Español", desc: "Spanish expressive pacing" },
-  { id: "ja", label: "日本語", desc: "Japanese dramatic stems" },
 ];
+
+export function getWardrobeShortLabel(label: string): string {
+  const l = label.toLowerCase();
+  if (l.includes("gym") || l.includes("workout") || l.includes("athletic") || l.includes("fitness")) return "Gym";
+  if (l.includes("pool") || l.includes("swim") || l.includes("resort") || l.includes("beach")) return "Pool";
+  if (l.includes("office") || l.includes("suit") || l.includes("formal") || /\bwork\b/i.test(l)) return "Office";
+  if (l.includes("home") || l.includes("hygge") || l.includes("lounge") || l.includes("casual")) return "Home";
+  if (l.includes("market") || l.includes("grocery") || l.includes("denim") || l.includes("parka")) return "Market";
+  return label.split(" ")[0] || "Default";
+}
+
+export function getWardrobeIcon(label: string): string {
+  const l = label.toLowerCase();
+  if (l.includes("gym") || l.includes("workout") || l.includes("athletic") || l.includes("fitness")) return "🏃";
+  if (l.includes("pool") || l.includes("swim") || l.includes("resort") || l.includes("beach")) return "🏊";
+  if (l.includes("office") || l.includes("suit") || l.includes("formal") || /\bwork\b/i.test(l)) return "👔";
+  if (l.includes("home") || l.includes("hygge") || l.includes("lounge") || l.includes("casual")) return "☕";
+  if (l.includes("market") || l.includes("grocery") || l.includes("denim") || l.includes("parka")) return "🛒";
+  return "👟";
+}
 
 export interface FinishedReel {
   id: string;
@@ -181,6 +207,20 @@ export function CreatorReelsHome() {
   const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
   const [selectedDuration, setSelectedDuration] = useState(30);
   const [selectedAspectRatio, setSelectedAspectRatio] = useState<"9:16" | "16:9" | "2.39:1">("9:16");
+  const [selectedCastSize, setSelectedCastSize] = useState<1 | 2>(1);
+  const [leadCharacter, setLeadCharacter] = useState<LibraryCharacter | null>(null);
+  const [supportingCharacter, setSupportingCharacter] = useState<LibraryCharacter | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<LibraryLocation | null>(null);
+  const [showCharacterLibraryModal, setShowCharacterLibraryModal] = useState(false);
+  const [showLocationLibraryModal, setShowLocationLibraryModal] = useState(false);
+  const [showCastAndPlaceDrawer, setShowCastAndPlaceDrawer] = useState(true);
+  const [castingMode, setCastingMode] = useState<"library" | "omni_auto" | "custom">("omni_auto");
+  const [customLeadName, setCustomLeadName] = useState("");
+  const [customLeadArchetype, setCustomLeadArchetype] = useState("");
+  const [customLeadWardrobe, setCustomLeadWardrobe] = useState("");
+  const [customLeadGender, setCustomLeadGender] = useState<"female" | "male" | "non-binary">("female");
+  const [customLeadImageUri, setCustomLeadImageUri] = useState("");
+  const [customLocationDesc, setCustomLocationDesc] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStep, setGenerationStep] = useState<string | null>(null);
   const [generatedResult, setGeneratedResult] = useState<any | null>(null);
@@ -352,6 +392,55 @@ export function CreatorReelsHome() {
       }
     }
 
+    // Hydrate Character from ?lead=
+    const leadParam = params.get("lead");
+    const wardrobeParam = params.get("wardrobe");
+    const outfitParam = params.get("outfit");
+    if (leadParam) {
+      fetch(`/api/library/characters/${encodeURIComponent(leadParam)}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.character) {
+            const char = data.character;
+            if (wardrobeParam && Array.isArray(char.wardrobe)) {
+              char.wardrobe = char.wardrobe.map((w: any) => ({
+                ...w,
+                isDefault: w.id === wardrobeParam,
+              }));
+            }
+            setLeadCharacter(char);
+            setShowCastAndPlaceDrawer(true);
+
+            // Pre-fill / contextualize prompt if empty
+            const activeWardrobe = char.wardrobe?.find((w: any) => w.isDefault) || char.wardrobe?.[0];
+            const outfitName = outfitParam || activeWardrobe?.label;
+            if (outfitName) {
+              setPromptText((prev) => {
+                if (!prev || prev.trim() === "") {
+                  return `${char.displayName} in ${decodeURIComponent(outfitName)} attire`;
+                }
+                return prev;
+              });
+            }
+          }
+        })
+        .catch(() => {});
+    }
+
+    // Hydrate Location from ?location=
+    const locationParam = params.get("location");
+    if (locationParam) {
+      fetch(`/api/library/locations/${encodeURIComponent(locationParam)}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.location) {
+            setSelectedLocation(data.location);
+            setShowCastAndPlaceDrawer(true);
+          }
+        })
+        .catch(() => {});
+    }
+
     // Pre-fetch library productions for "Continue from Library" selector
     fetch("/api/reels/productions?limit=30")
       .then((res) => (res.ok ? res.json() : null))
@@ -505,18 +594,73 @@ export function CreatorReelsHome() {
 
     try {
       const platform = activeTab === "youtube_shorts" ? "YouTube Shorts" : "Instagram Reels";
+
+      // Build cast selection based on active castingMode
+      const castSelection: any[] = [];
+      let locationIds = undefined;
+      let finalTopic = text;
+
+      if (castingMode === "custom") {
+        if (customLeadName.trim()) {
+          castSelection.push({
+            libraryCharacterId: `custom_${Date.now()}`,
+            wardrobeId: "custom_wardrobe",
+            voiceId: customLeadGender === "male" ? "Puck" : "Aoede",
+            role: "lead",
+            displayName: customLeadName.trim(),
+            archetype: customLeadArchetype.trim() || `${customLeadName.trim()} in ${customLeadWardrobe.trim() || "custom attire"}`,
+            gender: customLeadGender,
+            sheetUris: customLeadImageUri.trim() ? [customLeadImageUri.trim()] : []
+          });
+        }
+        if (customLocationDesc.trim()) {
+          finalTopic = `${text}. Physical Setting: ${customLocationDesc.trim()}`;
+        }
+      } else if (castingMode === "library") {
+        if (!leadCharacter) {
+          setShowCharacterLibraryModal(true);
+          throw new Error("Please select a performer from the Character Library, or choose 'Omni Auto-Cast' above to let Omni cast dynamically.");
+        }
+        const defaultW = leadCharacter.wardrobe.find(w => w.isDefault) || leadCharacter.wardrobe[0];
+        castSelection.push({
+          libraryCharacterId: leadCharacter.id,
+          wardrobeId: defaultW?.id,
+          voiceId: leadCharacter.defaultVoiceId || "Kore",
+          role: "lead",
+          displayName: leadCharacter.displayName,
+          archetype: leadCharacter.archetype,
+          sheetUris: defaultW?.sheetUris || []
+        });
+        if (selectedCastSize === 2 && supportingCharacter) {
+          const defaultW = supportingCharacter.wardrobe.find(w => w.isDefault) || supportingCharacter.wardrobe[0];
+          castSelection.push({
+            libraryCharacterId: supportingCharacter.id,
+            wardrobeId: defaultW?.id,
+            voiceId: supportingCharacter.defaultVoiceId || "Charon",
+            role: "supporting",
+            displayName: supportingCharacter.displayName,
+            archetype: supportingCharacter.archetype,
+            sheetUris: defaultW?.sheetUris || []
+          });
+        }
+        locationIds = selectedLocation ? [selectedLocation.environmentBlock] : undefined;
+      }
+      // If castingMode === "omni_auto", castSelection remains empty and Omni dynamically auto-casts in planner & omniDirector!
+
       const res = await fetch("/api/studio1/productions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          topic: text,
-          prompt: text,
+          topic: finalTopic,
+          prompt: finalTopic,
           scriptText: activeTreatment?.masterScript || undefined,
           duration: targetDuration,
           requestedDurationSec: targetDuration,
           aspectRatio: targetAspect,
           genre: targetGenre,
           language: targetLang,
+          castSelection: castSelection.length > 0 ? castSelection : undefined,
+          locationIds,
           platform,
           autoStart: true,
           parentProductionId: continuationParent?.id || undefined,
@@ -575,12 +719,30 @@ export function CreatorReelsHome() {
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
             <a href="#showcase" className="hover:text-teal-400 transition-colors">Finished Reels</a>
+            <Link href="/characters" className="hover:text-teal-400 transition-colors flex items-center gap-1.5">
+              <span>Characters</span>
+              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-teal-500/10 border border-teal-500/30 text-teal-300">
+                Library
+              </span>
+            </Link>
+            <Link href="/locations" className="hover:text-amber-400 transition-colors flex items-center gap-1.5">
+              <span>Locations</span>
+              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-amber-500/10 border border-amber-500/30 text-amber-300">
+                Sets
+              </span>
+            </Link>
             <a href="#differentiator" className="hover:text-teal-400 transition-colors">Why Unbroken Takes?</a>
             <a href="#pricing" className="hover:text-teal-400 transition-colors">Pricing</a>
             <Link href="/studio" className="hover:text-teal-400 transition-colors flex items-center gap-1.5">
               <span>Omni Studio</span>
               <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded bg-teal-500/10 border border-teal-500/30 text-teal-300">
                 11-Phase
+              </span>
+            </Link>
+            <Link href="/episodes/create" className="hover:text-teal-400 transition-colors flex items-center gap-1.5">
+              <span>Episodes</span>
+              <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-cyan-300">
+                30m
               </span>
             </Link>
             <Link href="/my-reels" className="hover:text-teal-400 transition-colors">My Reels</Link>
@@ -862,6 +1024,530 @@ export function CreatorReelsHome() {
                       <span>{l.label}</span>
                     </button>
                   ))}
+                </div>
+
+                {/* Cast Size Selector (Spine Pick 3 - Strictly 1 or 2 with TTS ceiling enforcement) */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-4 border-b border-white/5 scrollbar-none">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 shrink-0 flex items-center gap-1">
+                    <Users className="w-3.5 h-3.5 text-cyan-400" /> Cast Size:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCastSize(1)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition-all min-h-[38px] flex items-center gap-1.5 ${
+                      selectedCastSize === 1
+                        ? "bg-teal-500/20 border border-teal-400/50 text-teal-300 font-bold shadow-sm"
+                        : "bg-white/5 text-slate-400 hover:bg-white/10"
+                    }`}
+                  >
+                    <span>Solo Lead (1 Actor)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCastSize(2)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition-all min-h-[38px] flex items-center gap-1.5 ${
+                      selectedCastSize === 2
+                        ? "bg-cyan-500/20 border border-cyan-400/50 text-cyan-300 font-bold shadow-sm"
+                        : "bg-white/5 text-slate-400 hover:bg-white/10"
+                    }`}
+                  >
+                    <span>Dialogue Duo (2 Actors)</span>
+                  </button>
+                  <span className="text-[10px] text-slate-500 ml-2 hidden lg:inline">
+                    (Max 2 speakers in TTS & single-subject Veo anchor)
+                  </span>
+                </div>
+
+                {/* Optional Cast & Place Selection Drawer */}
+                <div className="mb-4 p-3 rounded-2xl bg-[#07090E]/60 border border-white/5">
+                  <div
+                    onClick={() => setShowCastAndPlaceDrawer(!showCastAndPlaceDrawer)}
+                    className="flex items-center justify-between cursor-pointer group select-none"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Sliders className="w-4 h-4 text-teal-400 group-hover:rotate-45 transition-transform" />
+                      <span className="text-xs font-bold text-slate-200 group-hover:text-white transition-colors">Casting & Physical Set Lock</span>
+                      {(leadCharacter || selectedLocation) && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 font-bold">
+                          Configured
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowCastAndPlaceDrawer(!showCastAndPlaceDrawer)}
+                      className="text-xs text-teal-400 hover:text-teal-300 flex items-center gap-1 font-semibold"
+                    >
+                      <span>{showCastAndPlaceDrawer ? "Collapse" : "Configure Cast & Set"}</span>
+                      {showCastAndPlaceDrawer ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+
+                  {showCastAndPlaceDrawer && (
+                    <div className="mt-3 pt-3 border-t border-white/5 space-y-3">
+                      {/* 3-Tier Persona & Set Choice Architecture */}
+                      <div className="flex items-center gap-1.5 p-1 bg-black/40 rounded-xl border border-white/5">
+                        <button
+                          type="button"
+                          onClick={() => setCastingMode("omni_auto")}
+                          className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                            castingMode === "omni_auto"
+                              ? "bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold shadow-sm"
+                              : "text-slate-400 hover:text-white"
+                          }`}
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-teal-400" />
+                          <span>✨ Omni Auto-Cast (Default)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCastingMode("library")}
+                          className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                            castingMode === "library"
+                              ? "bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold shadow-sm"
+                              : "text-slate-400 hover:text-white"
+                          }`}
+                        >
+                          <Users className="w-3.5 h-3.5 text-teal-400" />
+                          <span>📚 Curated Library</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCastingMode("custom")}
+                          className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                            castingMode === "custom"
+                              ? "bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold shadow-sm"
+                              : "text-slate-400 hover:text-white"
+                          }`}
+                        >
+                          <Sliders className="w-3.5 h-3.5 text-teal-400" />
+                          <span>✏️ Enter Custom Details</span>
+                        </button>
+                      </div>
+
+                      {/* MODE 1: Omni Auto-Cast (Default) */}
+                      {castingMode === "omni_auto" && (
+                        <div className="p-4 rounded-xl bg-teal-500/5 border border-teal-500/20 space-y-2.5">
+                          <div className="flex items-center gap-2">
+                            <ShieldCheck className="w-4 h-4 text-teal-400" />
+                            <span className="text-xs font-bold text-teal-300">Autonomous Pre-Flight Cast & Physical Set Synthesis</span>
+                          </div>
+                          <p className="text-xs text-slate-300 leading-relaxed">
+                            Zero friction. You are not forced to choose existing personas or locations. Omni will automatically analyze your prompt, determine the optimal genre, character archetypes, facial biometric anchors, and physical sets in advance with guaranteed cross-shot continuity.
+                          </p>
+                          <div className="flex items-center gap-3 text-[11px] text-teal-400/90 pt-1 flex-wrap">
+                            <span>✓ Dynamic 1:1 Facial Anchor</span>
+                            <span>✓ Continuous Lore & Biometric Ledger</span>
+                            <span>✓ Calibrated -24.0 LUFS Voice Cast</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* MODE 3: Custom Details */}
+                      {castingMode === "custom" && (
+                        <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 space-y-3">
+                          <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                            <span className="text-xs font-bold text-teal-400 flex items-center gap-1.5">
+                              <Sliders className="w-3.5 h-3.5" /> Custom Performer & Set Specification
+                            </span>
+                            <span className="text-[10px] text-slate-400">Omni validates & anchors in advance</span>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="text-[11px] font-medium text-slate-300 block mb-1">Performer Name</label>
+                              <input
+                                type="text"
+                                value={customLeadName}
+                                onChange={(e) => setCustomLeadName(e.target.value)}
+                                placeholder="e.g. Astrid Vane, Det. Frederik, Maya Lin"
+                                className="w-full bg-[#0C1019] border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-500/50"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[11px] font-medium text-slate-300 block mb-1">Gender / Voice Profile</label>
+                              <div className="flex items-center gap-2">
+                                {(["female", "male", "non-binary"] as const).map(g => (
+                                  <button
+                                    key={g}
+                                    type="button"
+                                    onClick={() => setCustomLeadGender(g)}
+                                    className={`flex-1 py-2 px-2 rounded-lg text-xs font-medium border capitalize transition-all ${
+                                      customLeadGender === g
+                                        ? "bg-teal-500/20 text-teal-200 border-teal-500/50 font-bold"
+                                        : "bg-[#0C1019] text-slate-400 border-white/10 hover:text-white"
+                                    }`}
+                                  >
+                                    {g}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-[11px] font-medium text-slate-300 block mb-1">Appearance & Biometric Archetype</label>
+                            <input
+                              type="text"
+                              value={customLeadArchetype}
+                              onChange={(e) => setCustomLeadArchetype(e.target.value)}
+                              placeholder="e.g. 28yo Danish architect, intense blue eyes, structured jawline, short blonde hair"
+                              className="w-full bg-[#0C1019] border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-500/50"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="text-[11px] font-medium text-slate-300 block mb-1">Wardrobe / Costume Style</label>
+                              <input
+                                type="text"
+                                value={customLeadWardrobe}
+                                onChange={(e) => setCustomLeadWardrobe(e.target.value)}
+                                placeholder="e.g. Charcoal wool coat, black turtleneck"
+                                className="w-full bg-[#0C1019] border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-500/50"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[11px] font-medium text-slate-300 block mb-1">Reference Portrait URL (Optional)</label>
+                              <input
+                                type="text"
+                                value={customLeadImageUri}
+                                onChange={(e) => setCustomLeadImageUri(e.target.value)}
+                                placeholder="https://... or /assets/... (optional reference photo)"
+                                className="w-full bg-[#0C1019] border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-500/50"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-[11px] font-medium text-slate-300 block mb-1">Custom Physical Set / Location Environment</label>
+                            <input
+                              type="text"
+                              value={customLocationDesc}
+                              onChange={(e) => setCustomLocationDesc(e.target.value)}
+                              placeholder="e.g. Glass-walled penthouse overlooking Copenhagen harbour at sunset with rain on glass"
+                              className="w-full bg-[#0C1019] border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-500/50"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* MODE 2: Curated Library */}
+                      {castingMode === "library" && (
+                        <>
+                          {/* Cast slots */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {/* Lead Actor Slot */}
+                            <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex flex-col justify-between gap-2.5">
+                              {leadCharacter ? (
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="w-11 h-11 rounded-lg bg-[#0C1019] overflow-hidden border border-white/10 shrink-0">
+                                      <img
+                                        src={
+                                          (leadCharacter.wardrobe?.find(w => w.isDefault)?.sheetUris[0]) ||
+                                          leadCharacter.wardrobe?.[0]?.sheetUris[0] ||
+                                          "/assets/stills/dubai_dance.jpg"
+                                        }
+                                        alt="Lead"
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                    <div>
+                                      <div className="text-[10px] uppercase font-bold text-teal-400">Lead Performer</div>
+                                      <div className="text-xs font-bold text-white">{leadCharacter.displayName}</div>
+                                      <div className="text-[10px] text-slate-400 truncate max-w-[130px]">{leadCharacter.archetype}</div>
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowCharacterLibraryModal(true)}
+                                    className="px-2.5 py-1 text-xs rounded-lg bg-white/5 hover:bg-white/10 text-slate-300"
+                                  >
+                                    Change
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="flex flex-col gap-2">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2.5">
+                                      <div className="w-10 h-10 rounded-lg bg-teal-500/10 border border-teal-500/30 flex items-center justify-center shrink-0">
+                                        <User className="w-5 h-5 text-teal-400" />
+                                      </div>
+                                      <div>
+                                        <div className="text-[10px] uppercase font-bold text-teal-400">Lead Performer</div>
+                                        <div className="text-xs font-bold text-white">Select from 78 Personas</div>
+                                        <div className="text-[10px] text-slate-400">Denmark, France, UK, US, India...</div>
+                                      </div>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowCharacterLibraryModal(true)}
+                                      className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-teal-500/20 hover:bg-teal-500/30 text-teal-200 border border-teal-500/40"
+                                    >
+                                      Browse
+                                    </button>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 flex-wrap pt-1.5 border-t border-white/5">
+                                    <span className="text-[9px] text-slate-400">Quick pick:</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        fetch("/api/library/characters/freja_moller_dk")
+                                          .then(res => res.json())
+                                          .then(data => data?.character && setLeadCharacter(data.character));
+                                      }}
+                                      className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5 flex items-center gap-1"
+                                    >
+                                      <span>🇩🇰</span> Freja (Denmark)
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        fetch("/api/library/characters/mikkel_lind_dk")
+                                          .then(res => res.json())
+                                          .then(data => data?.character && setLeadCharacter(data.character));
+                                      }}
+                                      className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5 flex items-center gap-1"
+                                    >
+                                      <span>🇩🇰</span> Mikkel (Denmark)
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        fetch("/api/library/characters/camille_vidal")
+                                          .then(res => res.json())
+                                          .then(data => data?.character && setLeadCharacter(data.character));
+                                      }}
+                                      className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5 flex items-center gap-1"
+                                    >
+                                      <span>🇫🇷</span> Camille (France)
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {leadCharacter && leadCharacter.wardrobe && leadCharacter.wardrobe.length > 0 && (
+                                <div className="pt-1.5 border-t border-white/5 flex items-center justify-between gap-1 flex-wrap">
+                                  <span className="text-[10px] text-teal-300 font-medium truncate max-w-[150px]">
+                                    👗 {(leadCharacter.wardrobe.find(w => w.isDefault) || leadCharacter.wardrobe[0])?.label}
+                                  </span>
+                                  {leadCharacter.wardrobe.length > 1 && (
+                                    <div className="flex flex-wrap gap-1">
+                                      {leadCharacter.wardrobe.map((w) => {
+                                        const isCurrent = (leadCharacter.wardrobe.find(item => item.isDefault)?.id || leadCharacter.wardrobe[0]?.id) === w.id;
+                                        const shortName = getWardrobeShortLabel(w.label);
+                                        const icon = getWardrobeIcon(w.label);
+                                        return (
+                                          <button
+                                            key={w.id}
+                                            type="button"
+                                            onClick={() => {
+                                              setLeadCharacter({
+                                                ...leadCharacter,
+                                                wardrobe: leadCharacter.wardrobe.map(item => ({
+                                                  ...item,
+                                                  isDefault: item.id === w.id,
+                                                })),
+                                              });
+                                            }}
+                                            className={`px-1.5 py-0.5 rounded text-[9px] font-medium border transition-colors flex items-center gap-1 ${
+                                              isCurrent
+                                                ? "bg-teal-500/20 text-teal-200 border-teal-500/50 font-bold"
+                                                : "bg-white/5 text-slate-400 border-white/5 hover:text-white"
+                                            }`}
+                                          >
+                                            <span>{icon}</span>
+                                            <span>{shortName}</span>
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Co-Star Slot (Actor 2) */}
+                            {selectedCastSize === 2 ? (
+                              <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex flex-col justify-between gap-2.5">
+                                {supportingCharacter ? (
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2.5">
+                                      <div className="w-11 h-11 rounded-lg bg-[#0C1019] overflow-hidden border border-white/10 shrink-0">
+                                        <img
+                                          src={
+                                            (supportingCharacter.wardrobe?.find(w => w.isDefault)?.sheetUris[0]) ||
+                                            supportingCharacter.wardrobe?.[0]?.sheetUris[0] ||
+                                            "/assets/stills/ren_cyberpunk.jpg"
+                                          }
+                                          alt="Co-star"
+                                          className="w-full h-full object-cover"
+                                        />
+                                      </div>
+                                      <div>
+                                        <div className="text-[10px] uppercase font-bold text-cyan-400">Co-Star (Actor 2)</div>
+                                        <div className="text-xs font-bold text-white">{supportingCharacter.displayName}</div>
+                                        <div className="text-[10px] text-slate-400 truncate max-w-[130px]">{supportingCharacter.archetype}</div>
+                                      </div>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowCharacterLibraryModal(true)}
+                                      className="px-2.5 py-1 text-xs rounded-lg bg-white/5 hover:bg-white/10 text-slate-300"
+                                    >
+                                      Change
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="flex flex-col gap-2">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2.5">
+                                        <div className="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center shrink-0">
+                                          <User className="w-5 h-5 text-cyan-400" />
+                                        </div>
+                                        <div>
+                                          <div className="text-[10px] uppercase font-bold text-cyan-400">Co-Star (Actor 2)</div>
+                                          <div className="text-xs font-bold text-white">Select Co-Star</div>
+                                          <div className="text-[10px] text-slate-400">Choose 2nd character</div>
+                                        </div>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => setShowCharacterLibraryModal(true)}
+                                        className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-500/40"
+                                      >
+                                        Choose
+                                      </button>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 flex-wrap pt-1.5 border-t border-white/5">
+                                      <span className="text-[9px] text-slate-400">Quick pick:</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          fetch("/api/library/characters/mikkel_lind_dk")
+                                            .then(res => res.json())
+                                            .then(data => data?.character && setSupportingCharacter(data.character));
+                                        }}
+                                        className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5 flex items-center gap-1"
+                                      >
+                                        <span>🇩🇰</span> Mikkel (Denmark)
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          fetch("/api/library/characters/freja_moller_dk")
+                                            .then(res => res.json())
+                                            .then(data => data?.character && setSupportingCharacter(data.character));
+                                        }}
+                                        className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5 flex items-center gap-1"
+                                      >
+                                        <span>🇩🇰</span> Freja (Denmark)
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {supportingCharacter && supportingCharacter.wardrobe && supportingCharacter.wardrobe.length > 0 && (
+                                  <div className="pt-1.5 border-t border-white/5 flex items-center justify-between gap-1 flex-wrap">
+                                    <span className="text-[10px] text-cyan-300 font-medium truncate max-w-[150px]">
+                                      👗 {(supportingCharacter.wardrobe.find(w => w.isDefault) || supportingCharacter.wardrobe[0])?.label}
+                                    </span>
+                                    {supportingCharacter.wardrobe.length > 1 && (
+                                      <div className="flex flex-wrap gap-1">
+                                        {supportingCharacter.wardrobe.map((w) => {
+                                          const isCurrent = (supportingCharacter.wardrobe.find(item => item.isDefault)?.id || supportingCharacter.wardrobe[0]?.id) === w.id;
+                                          const shortName = getWardrobeShortLabel(w.label);
+                                          const icon = getWardrobeIcon(w.label);
+                                          return (
+                                            <button
+                                              key={w.id}
+                                              type="button"
+                                              onClick={() => {
+                                                setSupportingCharacter({
+                                                  ...supportingCharacter,
+                                                  wardrobe: supportingCharacter.wardrobe.map(item => ({
+                                                    ...item,
+                                                    isDefault: item.id === w.id,
+                                                  })),
+                                                });
+                                              }}
+                                              className={`px-1.5 py-0.5 rounded text-[9px] font-medium border transition-colors flex items-center gap-1 ${
+                                                isCurrent
+                                                  ? "bg-cyan-500/20 text-cyan-200 border-cyan-500/50 font-bold"
+                                                  : "bg-white/5 text-slate-400 border-white/5 hover:text-white"
+                                              }`}
+                                            >
+                                              <span>{icon}</span>
+                                              <span>{shortName}</span>
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="p-2.5 rounded-xl bg-black/20 border border-dashed border-white/5 flex items-center justify-between">
+                                <span className="text-xs text-slate-500">Solo production (1 actor active)</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedCastSize(2)}
+                                  className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold"
+                                >
+                                  + Enable 2 Actors
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Location Slot */}
+                          <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-14 h-10 rounded-lg bg-[#0C1019] overflow-hidden border border-white/10 shrink-0">
+                                <img
+                                  src={selectedLocation?.establishingUri || "/assets/stills/beach_sunset.jpg"}
+                                  alt="Location"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div>
+                                <div className="text-[10px] uppercase font-bold text-amber-400">Physical Set Contract</div>
+                                <div className="text-xs font-bold text-white">
+                                  {selectedLocation ? selectedLocation.displayName : "Auto-Match Scene to Prompt (Default)"}
+                                </div>
+                                <div className="text-[10px] text-slate-400 truncate max-w-[280px]">
+                                  {selectedLocation
+                                    ? `"${selectedLocation.environmentBlock}"`
+                                    : "Physical set will be dynamically created to match your prompt (e.g. beach, gym, pool, office)"}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {selectedLocation && (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedLocation(null)}
+                                  className="px-2 py-1 text-xs rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-300 transition-colors"
+                                  title="Reset to match prompt"
+                                >
+                                  Reset
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setShowLocationLibraryModal(true)}
+                                className="px-2.5 py-1 text-xs rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors"
+                              >
+                                {selectedLocation ? "Change Set" : "Lock Set"}
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Reference Video / YouTube Deconstruction Toggle & Input */}
@@ -1198,6 +1884,80 @@ export function CreatorReelsHome() {
                             })()}
                           </div>
                         ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Modal to pick character from library */}
+                {showCharacterLibraryModal && (
+                  <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
+                    <div className="bg-[#0D111A] border border-white/10 rounded-2xl max-w-5xl w-full p-4 sm:p-6 shadow-2xl flex flex-col max-h-[90vh]">
+                      <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                        <div className="flex items-center gap-2">
+                          <Users className="w-5 h-5 text-teal-400" />
+                          <h3 className="text-base font-bold text-white">Cast from Character Library</h3>
+                          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-teal-500/10 text-teal-300 border border-teal-500/30">
+                            Pre-Validated
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowCharacterLibraryModal(false)}
+                          className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <div className="overflow-y-auto flex-1 mt-4">
+                        <CharacterLibrary
+                          isSelectionMode={true}
+                          selectedLeadId={leadCharacter?.id}
+                          selectedSupportingId={supportingCharacter?.id}
+                          onSelectCharacter={(char, role) => {
+                            if (role === "lead") {
+                              setLeadCharacter(char);
+                            } else {
+                              setSupportingCharacter(char);
+                              setSelectedCastSize(2);
+                            }
+                            setShowCharacterLibraryModal(false);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Modal to pick physical set from location library */}
+                {showLocationLibraryModal && (
+                  <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
+                    <div className="bg-[#0D111A] border border-white/10 rounded-2xl max-w-5xl w-full p-4 sm:p-6 shadow-2xl flex flex-col max-h-[90vh]">
+                      <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                        <div className="flex items-center gap-2">
+                          <Compass className="w-5 h-5 text-amber-400" />
+                          <h3 className="text-base font-bold text-white">Lock Physical Set from Location Library</h3>
+                          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                            Byte-Identical Consistency
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowLocationLibraryModal(false)}
+                          className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <div className="overflow-y-auto flex-1 mt-4">
+                        <LocationLibrary
+                          isSelectionMode={true}
+                          selectedLocationId={selectedLocation?.id}
+                          onSelectLocation={(loc) => {
+                            setSelectedLocation(loc);
+                            setShowLocationLibraryModal(false);
+                          }}
+                        />
                       </div>
                     </div>
                   </div>

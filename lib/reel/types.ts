@@ -169,6 +169,11 @@ export interface PerformanceTrack {
 
 export interface CharacterBible {
   id: string;
+  libraryCharacterId?: string;
+  wardrobeId?: string;
+  archetype?: string;
+  voiceId?: string;
+  defaultVoiceId?: string;
   name?: string;
   gender?: "male" | "female" | "non-binary";
   biometricDNA?: any;

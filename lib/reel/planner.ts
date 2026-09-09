@@ -12,6 +12,17 @@ export interface PlanReelInput {
   aspectRatio?: "9:16" | "16:9" | "2.39:1";
   genre?: OmniGenre;
   language?: string;
+  castSelection?: Array<{
+    libraryCharacterId: string;
+    wardrobeId?: string;
+    voiceId?: string; // overrides the library default
+    role?: "lead" | "supporting";
+    displayName?: string;
+    archetype?: string;
+    gender?: "male" | "female" | "non-binary";
+    sheetUris?: string[];
+  }>;
+  locationIds?: string[]; // one per scene, in order
   continuationFrom?: {
     parentProductionId: string;
     parentTitle: string;
@@ -413,35 +424,75 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
   const beats = mergeShortBeats(rawBeats, requestedDurationSec, MIN_WORDS_PER_SHOT, MAX_WORDS_PER_SHOT);
 
   // Map of unique scenes: sceneId -> verbatim unvarying environment string across all contiguous shots
+  const explicitLocations = input.locationIds || [];
   const sceneEnvironments: Record<string, string> = {};
+  let locCounter = 0;
   for (let sIdx = 0; sIdx < beats.length; sIdx++) {
     const sId = dir.shots[sIdx]?.sceneId || `scene_${String(Math.floor(sIdx / 4) + 1).padStart(2, "0")}`;
     if (!sceneEnvironments[sId]) {
-      sceneEnvironments[sId] = dir.shots[sIdx]?.sceneEnvironment || dir.shots[0]?.sceneEnvironment || topic;
+      const explicitLoc = explicitLocations[locCounter] || explicitLocations[0];
+      if (explicitLoc) {
+        sceneEnvironments[sId] = explicitLoc;
+        locCounter++;
+      } else {
+        sceneEnvironments[sId] = dir.shots[sIdx]?.sceneEnvironment || dir.shots[0]?.sceneEnvironment || topic;
+      }
     }
   }
 
-  const charactersList = dir.cast.map(c => ({
-    id: c.id,
-    name: c.name,
-    gender: c.biometricDNA.gender,
-    biometricDNA: c.biometricDNA,
-    role: c.role === "lead" ? ("character" as const) : c.role === "narrator" ? ("presenter" as const) : ("supporting" as const),
-    canonicalReferenceImages: (((c as any).canonicalReferenceImages || []) as string[]),
-    appearance: {
-      description: `${c.name}, ${c.biometricDNA.gender}, ${c.biometricDNA.ageBand}. ${c.biometricDNA.facialFeatures}, ${c.biometricDNA.hair}.`,
-      gender: c.biometricDNA.gender,
-      face: c.biometricDNA.facialFeatures,
-      hair: c.biometricDNA.hair,
-      ageBand: c.biometricDNA.ageBand,
-    },
-    wardrobe: [c.wardrobe.costume + (c.wardrobe.accessories ? `, ${c.wardrobe.accessories}` : "")],
-    accessories: c.wardrobe.accessories ? [c.wardrobe.accessories] : [],
-    voiceProfile: c.voiceProfile,
-    gestureStyle: dir.genre === "DOCUMENTARY_EXPLAINER" ? "Natural conversational emphasis; avoid repetitive synthetic gestures." : "Cinematic dramatic presence; natural physical weight.",
-    gazeStyle: dir.genre === "DOCUMENTARY_EXPLAINER" ? "Maintain camera eyeline for direct-address presenter beats." : "Conversational off-camera eyelines; do NOT look into camera lens.",
-    emotionalRange: ["focused", "intense", "commanding", "calculating", "reflective"]
-  }));
+  const selectedCast = (input.castSelection && input.castSelection.length > 0)
+    ? input.castSelection.slice(0, 2)
+    : null;
+
+  const charactersList = selectedCast
+    ? selectedCast.map((c, idx) => ({
+        id: c.libraryCharacterId || `char_${idx + 1}`,
+        libraryCharacterId: c.libraryCharacterId,
+        wardrobeId: c.wardrobeId,
+        name: c.displayName || c.archetype || `Lead ${idx + 1}`,
+        archetype: c.archetype || "performer",
+        gender: (c.gender === "male" || c.gender === "female" || c.gender === "non-binary" ? c.gender : undefined) as ("male" | "female" | "non-binary" | undefined),
+        voiceId: c.voiceId || "Kore",
+        defaultVoiceId: c.voiceId || "Kore",
+        role: (c.role === "lead" || idx === 0 ? "character" : "supporting") as "character" | "supporting",
+        canonicalReferenceImages: Array.isArray(c.sheetUris) ? c.sheetUris.slice(0, 3) : [],
+        appearance: {
+          description: c.archetype || c.displayName || "performer",
+          gender: "unspecified",
+          face: "expressive facial features",
+          hair: "natural hair",
+          ageBand: "mid 20s to early 30s",
+        },
+        wardrobe: [c.wardrobeId || "canonical wardrobe"],
+        accessories: [],
+        voiceProfile: c.voiceId || "Kore",
+        gestureStyle: dir.genre === "DOCUMENTARY_EXPLAINER" ? "Natural conversational emphasis; avoid repetitive synthetic gestures." : "Cinematic dramatic presence; natural physical weight.",
+        gazeStyle: dir.genre === "DOCUMENTARY_EXPLAINER" ? "Maintain camera eyeline for direct-address presenter beats." : "Conversational off-camera eyelines; do NOT look into camera lens.",
+        emotionalRange: ["focused", "intense", "commanding", "calculating", "reflective"]
+      }))
+    : dir.cast.map(c => ({
+        id: c.id,
+        name: c.name,
+        gender: c.biometricDNA.gender,
+        biometricDNA: c.biometricDNA,
+        role: c.role === "lead" ? ("character" as const) : c.role === "narrator" ? ("presenter" as const) : ("supporting" as const),
+        canonicalReferenceImages: (((c as any).canonicalReferenceImages || []) as string[]),
+        appearance: {
+          description: `${c.name}, ${c.biometricDNA.gender}, ${c.biometricDNA.ageBand}. ${c.biometricDNA.facialFeatures}, ${c.biometricDNA.hair}.`,
+          gender: c.biometricDNA.gender,
+          face: c.biometricDNA.facialFeatures,
+          hair: c.biometricDNA.hair,
+          ageBand: c.biometricDNA.ageBand,
+        },
+        wardrobe: [c.wardrobe.costume + (c.wardrobe.accessories ? `, ${c.wardrobe.accessories}` : "")],
+        accessories: c.wardrobe.accessories ? [c.wardrobe.accessories] : [],
+        voiceProfile: c.voiceProfile,
+        voiceId: (c as any).voiceId || (c as any).defaultVoiceId,
+        defaultVoiceId: (c as any).defaultVoiceId || "Kore",
+        gestureStyle: dir.genre === "DOCUMENTARY_EXPLAINER" ? "Natural conversational emphasis; avoid repetitive synthetic gestures." : "Cinematic dramatic presence; natural physical weight.",
+        gazeStyle: dir.genre === "DOCUMENTARY_EXPLAINER" ? "Maintain camera eyeline for direct-address presenter beats." : "Conversational off-camera eyelines; do NOT look into camera lens.",
+        emotionalRange: ["focused", "intense", "commanding", "calculating", "reflective"]
+      }));
 
   // Harmonize optics and framing with manifest's requested aspectRatio to avoid contradictory camera instructions
   let cleanOptics = dir.visualStyle.optics || "";

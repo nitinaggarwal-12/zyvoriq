@@ -168,6 +168,73 @@ CREATE TABLE IF NOT EXISTS studio_production_jobs (
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now'))
 );
+
+-- 15. character_library
+CREATE TABLE IF NOT EXISTS character_library (
+  id TEXT PRIMARY KEY,
+  display_name TEXT NOT NULL,
+  archetype TEXT NOT NULL,
+  description TEXT NOT NULL,
+  gender TEXT,
+  era TEXT,
+  country TEXT,
+  country_code TEXT,
+  region TEXT,
+  language TEXT,
+  category TEXT DEFAULT 'creator',
+  default_voice_id TEXT,
+  validation_status TEXT NOT NULL DEFAULT 'UNVALIDATED',
+  validation_error TEXT,
+  validated_at TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
+-- 16. character_wardrobe
+CREATE TABLE IF NOT EXISTS character_wardrobe (
+  id TEXT PRIMARY KEY,
+  character_id TEXT NOT NULL REFERENCES character_library(id) ON DELETE CASCADE,
+  label TEXT NOT NULL,
+  sheet_uris TEXT NOT NULL,
+  is_default INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+-- 17. location_library
+CREATE TABLE IF NOT EXISTS location_library (
+  id TEXT PRIMARY KEY,
+  display_name TEXT NOT NULL,
+  environment_block TEXT NOT NULL,
+  establishing_uri TEXT,
+  era TEXT,
+  time_of_day TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_wardrobe_char ON character_wardrobe (character_id);
+CREATE INDEX IF NOT EXISTS idx_charlib_valid ON character_library (validation_status);
+
+-- 18. episode_productions (Long-Form 10-30+ Min Multi-Act Series & Pilots)
+CREATE TABLE IF NOT EXISTS episode_productions (
+  id TEXT PRIMARY KEY,
+  series_title TEXT NOT NULL,
+  episode_title TEXT NOT NULL,
+  season_num INTEGER DEFAULT 1,
+  episode_num INTEGER DEFAULT 1,
+  topic TEXT NOT NULL,
+  genre TEXT NOT NULL,
+  target_duration_sec INTEGER NOT NULL,
+  actual_duration_sec REAL DEFAULT 0,
+  blueprint_json TEXT NOT NULL,
+  status TEXT DEFAULT 'PLANNED',
+  progress INTEGER DEFAULT 0,
+  master_video_url TEXT,
+  master_poster_url TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_episodes_created ON episode_productions (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_episodes_status ON episode_productions (status);
 `;
 
 export const POSTGRES_SCHEMA = `
@@ -356,4 +423,71 @@ CREATE TABLE IF NOT EXISTS studio_production_jobs (
 CREATE INDEX IF NOT EXISTS idx_pg_studio_jobs_created ON studio_production_jobs (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_pg_studio_jobs_status ON studio_production_jobs (status);
 CREATE INDEX IF NOT EXISTS idx_pg_studio_tracks_created ON studio_series_tracks (created_at DESC);
+
+-- 15. character_library
+CREATE TABLE IF NOT EXISTS character_library (
+  id TEXT PRIMARY KEY,
+  display_name TEXT NOT NULL,
+  archetype TEXT NOT NULL,
+  description TEXT NOT NULL,
+  gender TEXT,
+  era TEXT,
+  country TEXT,
+  country_code TEXT,
+  region TEXT,
+  language TEXT,
+  category TEXT DEFAULT 'creator',
+  default_voice_id TEXT,
+  validation_status TEXT NOT NULL DEFAULT 'UNVALIDATED',
+  validation_error TEXT,
+  validated_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 16. character_wardrobe
+CREATE TABLE IF NOT EXISTS character_wardrobe (
+  id TEXT PRIMARY KEY,
+  character_id TEXT NOT NULL REFERENCES character_library(id) ON DELETE CASCADE,
+  label TEXT NOT NULL,
+  sheet_uris TEXT[] NOT NULL,
+  is_default BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 17. location_library
+CREATE TABLE IF NOT EXISTS location_library (
+  id TEXT PRIMARY KEY,
+  display_name TEXT NOT NULL,
+  environment_block TEXT NOT NULL,
+  establishing_uri TEXT,
+  era TEXT,
+  time_of_day TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_pg_wardrobe_char ON character_wardrobe (character_id);
+CREATE INDEX IF NOT EXISTS idx_pg_charlib_valid ON character_library (validation_status);
+
+-- 18. episode_productions (Long-Form 10-30+ Min Multi-Act Series & Pilots)
+CREATE TABLE IF NOT EXISTS episode_productions (
+  id TEXT PRIMARY KEY,
+  series_title TEXT NOT NULL,
+  episode_title TEXT NOT NULL,
+  season_num INT DEFAULT 1,
+  episode_num INT DEFAULT 1,
+  topic TEXT NOT NULL,
+  genre TEXT NOT NULL,
+  target_duration_sec INT NOT NULL,
+  actual_duration_sec NUMERIC(8,2) DEFAULT 0,
+  blueprint_json JSONB NOT NULL,
+  status VARCHAR(32) DEFAULT 'PLANNED',
+  progress INT DEFAULT 0,
+  master_video_url TEXT,
+  master_poster_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_pg_episodes_created ON episode_productions (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_pg_episodes_status ON episode_productions (status);
 `;

@@ -362,6 +362,31 @@ export async function ensureCharacterSheet(manifest, productionId, writeAsset) {
     : [characters[0]];
 
   for (const char of targetChars) {
+    // If the manifest character carries a libraryCharacterId, resolve the sheet
+    // from the library instead of generating. Library sheets are pre-validated,
+    // so the RAI three-strike path is skipped entirely.
+    if (char.libraryCharacterId) {
+      try {
+        const { characterLibrary } = await import("../lib/library/characterLibrary.ts");
+        const variant = await characterLibrary.resolveWardrobe(
+          char.libraryCharacterId, char.wardrobeId
+        );
+        if (variant && variant.sheetUris.length > 0) {
+          char.canonicalReferenceImages = variant.sheetUris;
+          char.archetype = variant.archetype;
+          if (variant.voiceId) {
+            char.voiceId = variant.voiceId;
+            char.defaultVoiceId = variant.voiceId;
+          }
+          syncCanonicalReference(manifest, char.id, { url: variant.sheetUris[0], digest: undefined });
+          console.log(`[anchor] Resolved library character ${char.libraryCharacterId} (${variant.displayName}): ${variant.sheetUris[0]}`);
+          continue; // skip generation
+        }
+      } catch (err) {
+        console.warn(`[anchor] Could not resolve library character ${char.libraryCharacterId}:`, err?.message || err);
+      }
+    }
+
     const existing = (char.canonicalReferenceImages || []).map(referenceUrl).filter(Boolean);
     if (existing.length >= 1) {
       syncCanonicalReference(manifest, char.id, { url: existing[0], digest: undefined });

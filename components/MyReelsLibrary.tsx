@@ -50,7 +50,8 @@ import {
   ThumbsDown,
   MessageSquare,
   MessageSquarePlus,
-  Send
+  Send,
+  Music
 } from "lucide-react";
 
 export interface LibraryClip {
@@ -83,6 +84,7 @@ export interface LibraryReel {
   status: "READY" | "DIFFUSING" | "ATTENTION_NEEDED" | "DRAFT" | string;
   durationSec: number;
   videoUrl?: string;
+  roughCutUrl?: string | null;
   posterUrl?: string;
   createdAt: string;
   genre?: string;
@@ -234,59 +236,81 @@ export function resolveReelPoster(pId: string, m: any, shots: LibraryClip[]): st
   const text = `${pId} ${m?.topic || ""} ${(m as any)?.studio1?.projectTitle || ""} ${m?.masterScript || ""}`.toLowerCase();
   const isContinuation = text.includes("continuation") || text.includes("act ii") || text.includes("act iii") || text.includes("part 2") || text.includes("part 3");
 
-  // 1. Authentic Generated Video Frames & Reference Stills (Highest Priority for Custom/Sequel Productions)
-  // Check explicit still or character reference
-  const explicit = m?.stillUrl || m?.anchorImageUrl || m?.canonicalCharacterAnchorUrl || m?.continuity?.characters?.[0]?.canonicalReferenceImages?.[0] || m?.characters?.[0]?.canonicalReferenceImages?.[0];
-  if (explicit && typeof explicit === "string" && !explicit.includes("undefined") && !explicit.includes(".railway.internal")) {
-    return explicit;
+  // 1. Explicit Theatrical Key Visual / Master Movie Poster (Highest Priority!)
+  const theatricalPoster = m?.theatricalPosterUrl || m?.keyVisualUrl || m?.posterUrl || m?.outputs?.masterPosterUrl || m?.outputs?.posterUrl || m?.outputs?.master?.posterUrl || m?.outputs?.narratedRoughCut?.posterUrl;
+  if (theatricalPoster && typeof theatricalPoster === "string" && !theatricalPoster.includes("undefined") && !theatricalPoster.includes(".railway.internal")) {
+    return theatricalPoster;
   }
 
-  // Shot 01 frame captured in shot 02 incoming continuity reference (Physical authentic face/wardrobe frame)
+  // 2. Production-Specific Theatrical Artwork (e.g. Italian Beach Honeymoon)
+  if (text.includes("b79e20bd") || (text.includes("italian") && text.includes("honeymoon")) || (text.includes("beach") && text.includes("couple") && text.includes("dancing"))) {
+    return "/assets/stills/italian_beach_honeymoon_poster.jpg";
+  }
+
+  // 3. Authentic Generated Video Frames & Reference Stills from Completed Shots (Actual 4K Video Keyframes)
+  // Check any shot reference frame that is a real scene frame (explicitly ignore isolated character portraits)
+  const sceneRefFrame = (m?.shots || []).map((s: any) => s.continuityIn?.referenceFrameUrl || s.asset?.posterUrl)
+    .find((url: string) => url && typeof url === "string" && !url.includes("/character/") && !url.includes("undefined") && !url.includes(".railway.internal"));
+  if (sceneRefFrame) {
+    return sceneRefFrame;
+  }
+
+  // Shot 01 frame captured in shot 02 incoming continuity reference
   const shot1Frame = m?.shots?.[1]?.continuityIn?.referenceFrameUrl;
-  if (shot1Frame && typeof shot1Frame === "string" && !shot1Frame.includes("undefined") && !shot1Frame.includes(".railway.internal")) {
+  if (shot1Frame && typeof shot1Frame === "string" && !shot1Frame.includes("/character/") && !shot1Frame.includes("undefined") && !shot1Frame.includes(".railway.internal")) {
     return shot1Frame;
   }
 
-  // First shot poster
+  // First shot poster if not an isolated character portrait
   const firstShotPoster = shots[0]?.posterUrl || m?.shots?.[0]?.posterUrl;
-  if (firstShotPoster && typeof firstShotPoster === "string" && !firstShotPoster.includes("undefined") && !firstShotPoster.includes(".railway.internal")) {
+  if (firstShotPoster && typeof firstShotPoster === "string" && !firstShotPoster.includes("/character/") && !firstShotPoster.includes("undefined") && !firstShotPoster.includes(".railway.internal")) {
     return firstShotPoster;
   }
 
-  // 2. Curated Demo Showcases (Used for flagship sample cards without generated custom frames)
-  // Ren Kuro - Midnight Cyberpunk Dance
+  // Any clip poster in shots list that is a real scene frame
+  const anyClipPoster = shots.map(c => c.posterUrl).find(url => url && !url.includes("/character/") && !url.includes("undefined"));
+  if (anyClipPoster) {
+    return anyClipPoster;
+  }
+
+  // 4. Scene & Location Environment Stills
+  const sceneStill = m?.stillUrl || m?.locationStillUrl || m?.creativeBible?.environmentStillUrl;
+  if (sceneStill && typeof sceneStill === "string" && !sceneStill.includes("/character/") && !sceneStill.includes("undefined") && !sceneStill.includes(".railway.internal")) {
+    return sceneStill;
+  }
+
+  // Topic-based scenery match
+  if (text.includes("beach") || text.includes("ocean") || text.includes("sea") || text.includes("amalfi") || text.includes("positano") || text.includes("island")) {
+    return "/assets/stills/beach_sunset.jpg";
+  }
+
+  // 5. Curated Demo Showcases (Flagship sample cards)
   if (text.includes("5b3c6b72") || (!isContinuation && (text.includes("cyberpunk") || text.includes("ren kuro")))) {
     return "/assets/stills/ren_cyberpunk.png";
   }
-
-  // Swiss Alpine Mountaineer
   if (text.includes("9f360810") || text.includes("39a1fe18") || (!isContinuation && (text.includes("swiss") || text.includes("alpine")))) {
     return "/assets/stills/swiss_alpine.jpg";
   }
-
-  // Desert Nomad / Desert Rhythms (Act 1 Demo Showcase only - NEVER for sequel cf46b686 or continuation reels)
   if (!isContinuation && !text.includes("cf46b686") && (text.includes("d2d144d2") || text.includes("32ffc950"))) {
     return "/assets/stills/desert_spiral.jpg";
   }
-
-  // Cosmic Astronaut
   if (text.includes("5bfb958d") || text.includes("1a8264ca") || (!isContinuation && (text.includes("cosmic") || text.includes("astronaut")))) {
     return "/assets/stills/cosmic_nebula.jpg";
   }
-
-  // Napoleon
   if (text.includes("napoleon") || text.includes("toulon")) {
     return "/assets/stills/napoleon_hero.png";
   }
-
-  // Coronation / Mumbai Penthouse
   if (text.includes("coronation") || text.includes("mumbai") || text.includes("penthouse") || text.includes("bandra")) {
     return "/assets/stills/coronation_hero.png";
   }
-
-  // Dubai Rhapsody
   if (text.includes("e2e00945") || (!isContinuation && (text.includes("dubai") && text.includes("rhapsody")))) {
     return "/assets/stills/dubai_dance.jpg";
+  }
+
+  // 6. Character Reference Anchor (Absolute Last Resort ONLY if no scene, video, or demo artwork exists)
+  const characterRef = m?.canonicalCharacterAnchorUrl || m?.continuity?.characters?.[0]?.canonicalReferenceImages?.[0] || m?.characters?.[0]?.canonicalReferenceImages?.[0];
+  if (characterRef && typeof characterRef === "string" && !characterRef.includes("undefined") && !characterRef.includes(".railway.internal")) {
+    return characterRef;
   }
 
   return null;
@@ -598,6 +622,11 @@ export function MyReelsLibrary() {
     currentIndex?: number;
   } | null>(null);
 
+  // Cinematic Romantic Background Score State & Audio Element Reference
+  const [romanticBgmEnabled, setRomanticBgmEnabled] = useState(true);
+  const [bgmVolume, setBgmVolume] = useState(0.40);
+  const bgmAudioRef = useRef<HTMLAudioElement | null>(null);
+
   // Synchronized Spotlight Video Opening & URL Address Bar Sync
   const openSpotlight = (video: {
     url: string;
@@ -615,19 +644,44 @@ export function MyReelsLibrary() {
     currentIndex?: number;
   }) => {
     setSpotlightVideo(video);
+    // If opening an in-progress sequence / shot playlist that lacks an embedded master soundtrack, start the romantic orchestral score
+    const isMasterRough = video.url.includes("rough") || video.url.includes("master") || video.url.includes("final");
+    if (!isMasterRough && romanticBgmEnabled && bgmAudioRef.current) {
+      bgmAudioRef.current.currentTime = 0;
+      bgmAudioRef.current.volume = bgmVolume;
+      bgmAudioRef.current.play().catch(() => {});
+    } else if (isMasterRough && bgmAudioRef.current) {
+      bgmAudioRef.current.pause();
+    }
     if (typeof window !== "undefined" && video.reelId) {
-      const url = new URL(window.location.href);
-      url.searchParams.set("reel", video.reelId);
-      window.history.replaceState(null, "", url.pathname + url.search);
+      setTimeout(() => {
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set("reel", video.reelId!);
+          window.history.replaceState(null, "", url.pathname + url.search);
+        } catch (e) {
+          console.warn("Could not sync spotlight URL state:", e);
+        }
+      }, 0);
     }
   };
 
   const closeSpotlight = () => {
     setSpotlightVideo(null);
+    if (bgmAudioRef.current) {
+      bgmAudioRef.current.pause();
+      bgmAudioRef.current.currentTime = 0;
+    }
     if (typeof window !== "undefined") {
-      const url = new URL(window.location.href);
-      url.searchParams.delete("reel");
-      window.history.replaceState(null, "", url.pathname + (url.search ? url.search : ""));
+      setTimeout(() => {
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.delete("reel");
+          window.history.replaceState(null, "", url.pathname + (url.search ? url.search : ""));
+        } catch (e) {
+          console.warn("Could not clear spotlight URL state:", e);
+        }
+      }, 0);
     }
   };
 
@@ -801,22 +855,31 @@ export function MyReelsLibrary() {
 
   // Toggle expand / collapse of lower-level clips with URL sync
   const toggleExpand = (reelId: string) => {
+    let willBeExpanded = false;
     setExpandedReelIds(prev => {
-      const isNowExpanded = !prev[reelId];
-      if (typeof window !== "undefined") {
-        const url = new URL(window.location.href);
-        if (isNowExpanded) {
-          url.searchParams.set("reel", reelId);
-        } else if (url.searchParams.get("reel") === reelId) {
-          url.searchParams.delete("reel");
-        }
-        window.history.replaceState(null, "", url.pathname + (url.search ? url.search : ""));
-      }
+      willBeExpanded = !prev[reelId];
       return {
         ...prev,
-        [reelId]: isNowExpanded
+        [reelId]: willBeExpanded
       };
     });
+
+    // Sync URL outside the React state updater to avoid updating Router during render
+    if (typeof window !== "undefined") {
+      setTimeout(() => {
+        try {
+          const url = new URL(window.location.href);
+          if (willBeExpanded) {
+            url.searchParams.set("reel", reelId);
+          } else if (url.searchParams.get("reel") === reelId) {
+            url.searchParams.delete("reel");
+          }
+          window.history.replaceState(null, "", url.pathname + (url.search ? url.search : ""));
+        } catch (e) {
+          console.warn("Could not sync URL state:", e);
+        }
+      }, 0);
+    }
   };
 
   // Expand all or Collapse all
@@ -959,7 +1022,7 @@ export function MyReelsLibrary() {
                 order: s.order || index + 1,
                 title: `Shot ${String(s.order || index + 1).padStart(2, "0")}: ${s.visualIntent?.slice(0, 42) || s.scriptText?.slice(0, 36) || "Cinematic Beat"}`,
                 videoUrl: s.asset?.videoUrl || null,
-                posterUrl: s.asset?.posterUrl || s.continuityIn?.referenceFrameUrl || (index === 0 ? (m.shots?.[1]?.continuityIn?.referenceFrameUrl || m.canonicalCharacterAnchorUrl || m.anchorImageUrl || m.stillUrl || m.continuity?.characters?.[0]?.canonicalReferenceImages?.[0] || m.characters?.[0]?.canonicalReferenceImages?.[0] || (p.id.includes("5b3c6b72") ? "/assets/stills/ren_cyberpunk.png" : null)) : null) || null,
+                posterUrl: s.asset?.posterUrl || m.shots?.[index + 1]?.continuityIn?.referenceFrameUrl || s.continuityIn?.referenceFrameUrl || (index === 0 ? (m.theatricalPosterUrl || m.locationStillUrl || "/assets/stills/beach_sunset.jpg") : null),
                 durationSec: Number(s.editorialDurationSec || s.actualDurationSec || s.generationDurationSec || 5.5),
                 status: s.status || "PLANNED",
                 scriptText: s.scriptText || null,
@@ -978,6 +1041,7 @@ export function MyReelsLibrary() {
             });
 
             const roughCutUrl = m.outputs?.narratedRoughCut?.videoUrl || m.outputs?.nativeReel?.videoUrl || m.outputs?.master?.videoUrl || null;
+            const firstReadyVideo = shotsList.find(s => s.videoUrl)?.videoUrl || null;
             const statusInfo = computeReelStatus(m.status, shotsList, roughCutUrl, p.updatedAt || m.updatedAt);
             const isReelArchived = archivedIds.has(p.id) || meta.isArchived || meta.folder === "Archive";
             const isReelHidden = hiddenIds.has(p.id) || meta.isHidden || false;
@@ -993,7 +1057,8 @@ export function MyReelsLibrary() {
               prompt: m.masterScript || m.topic || "",
               status: statusInfo.status,
               durationSec: Number(m.plannedDurationSec || m.audio?.actualDurationSec || (shotsList.length * 5.5)),
-              videoUrl: roughCutUrl,
+              videoUrl: roughCutUrl || firstReadyVideo || null,
+              roughCutUrl,
               posterUrl: resolvedPoster,
               createdAt: p.createdAt || p.created_at || new Date().toISOString(),
               genre: m.creationIntent?.categoryLabel || m.genre || "Social Cinema",
@@ -1821,8 +1886,13 @@ export function MyReelsLibrary() {
                         {/* Video / Poster Thumbnail Preview */}
                         <div 
                           onClick={() => {
-                            if (reel.videoUrl) {
-                              openSpotlight({ url: reel.videoUrl, title: reel.title, subtitle: reel.subtitle, reelId: reel.id });
+                            if (reel.roughCutUrl) {
+                              openSpotlight({
+                                url: reel.roughCutUrl,
+                                title: `${reel.title} (Master Reel)`,
+                                subtitle: `${reel.shots.length}-shot master reel with orchestral score`,
+                                reelId: reel.id
+                              });
                             } else {
                               const readyClips = reel.shots.filter(s => Boolean(s.videoUrl));
                               if (readyClips.length > 0) {
@@ -1842,11 +1912,35 @@ export function MyReelsLibrary() {
                                   playlist,
                                   currentIndex: 0
                                 });
+                              } else if (reel.videoUrl) {
+                                openSpotlight({ url: reel.videoUrl, title: reel.title, subtitle: reel.subtitle, reelId: reel.id });
                               }
                             }
                           }}
                           className="relative w-full sm:w-44 lg:w-48 aspect-video sm:aspect-[9/16] rounded-xl overflow-hidden bg-black/80 border border-zinc-800 shrink-0 group cursor-pointer shadow-md"
+                          onMouseEnter={(e) => {
+                            const video = e.currentTarget.querySelector("video");
+                            if (video) {
+                              try { video.play().catch(() => {}); } catch (_) {}
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            const video = e.currentTarget.querySelector("video");
+                            if (video) {
+                              try { video.pause(); video.currentTime = 0.5; } catch (_) {}
+                            }
+                          }}
                         >
+                          {reel.videoUrl ? (
+                            <video
+                              src={`${reel.videoUrl}#t=0.5`}
+                              preload="metadata"
+                              playsInline
+                              muted
+                              loop
+                              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500 pointer-events-none"
+                            />
+                          ) : null}
                           {reel.posterUrl ? (
                             <img
                               src={reel.posterUrl}
@@ -1854,21 +1948,23 @@ export function MyReelsLibrary() {
                               onError={(e) => {
                                 (e.currentTarget as HTMLElement).style.display = "none";
                               }}
-                              className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                            />
-                          ) : null}
-                          {reel.videoUrl ? (
-                            <video
-                              src={`${reel.videoUrl}#t=0.5`}
-                              preload="metadata"
-                              playsInline
-                              muted
-                              className={`w-full h-full object-cover group-hover:scale-105 transition duration-300 pointer-events-none ${reel.posterUrl ? "absolute inset-0 -z-10" : ""}`}
+                              className={`w-full h-full object-cover group-hover:scale-105 transition duration-500 ${reel.videoUrl ? "absolute inset-0 group-hover:opacity-0" : ""}`}
                             />
                           ) : null}
                           {!reel.posterUrl && !reel.videoUrl ? (
                             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-zinc-900 to-black">
                               <Clapperboard className="h-8 w-8 text-zinc-600" />
+                            </div>
+                          ) : null}
+
+                          {/* Theatrical Key Visual or 4K Master Badge */}
+                          {reel.posterUrl?.includes("theatrical") || reel.posterUrl?.includes("poster") ? (
+                            <div className="absolute top-2 right-2 z-10 px-2 py-0.5 rounded bg-black/70 backdrop-blur-md border border-amber-500/40 text-[10px] font-semibold text-amber-300 uppercase tracking-wider shadow-sm pointer-events-none">
+                              Theatrical
+                            </div>
+                          ) : reel.videoUrl ? (
+                            <div className="absolute top-2 right-2 z-10 px-2 py-0.5 rounded bg-black/70 backdrop-blur-md border border-teal-500/40 text-[10px] font-semibold text-teal-300 uppercase tracking-wider shadow-sm pointer-events-none">
+                              4K Master
                             </div>
                           ) : null}
 
@@ -2471,7 +2567,24 @@ export function MyReelsLibrary() {
                                 );
                               })()}
 
-                              {completedClips.length > 1 && (
+                              {reel.roughCutUrl ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    openSpotlight({
+                                      url: reel.roughCutUrl!,
+                                      title: `${reel.title} (Theatrical Master Cut)`,
+                                      subtitle: `Continuous Sequence with Romantic Bollywood Orchestral Score (${reel.durationSec.toFixed(0)}s)`,
+                                      reelId: reel.id
+                                    });
+                                  }}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400 text-black hover:bg-amber-300 text-xs font-mono font-bold transition shadow-lg hover:scale-105 cursor-pointer"
+                                  title="Play the fully combined theatrical master cut with continuous romantic orchestra soundtrack"
+                                >
+                                  <Film className="h-3.5 w-3.5 fill-current" />
+                                  <span>Play Combined Reel (Master Audio)</span>
+                                </button>
+                              ) : completedClips.length > 1 ? (
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -2493,12 +2606,12 @@ export function MyReelsLibrary() {
                                     });
                                   }}
                                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 text-xs font-mono font-bold transition shadow-lg hover:scale-105 cursor-pointer"
-                                  title="Play all completed shots back-to-back as a continuous sequence"
+                                  title="Play all completed shots back-to-back as a continuous sequence with romantic soundtrack"
                                 >
                                   <Play className="h-3.5 w-3.5 fill-current" />
-                                  <span>Play In-Progress Reel ({completedClips.length} Cuts)</span>
+                                  <span>Play All {completedClips.length} Cuts (With Romantic Score)</span>
                                 </button>
-                              )}
+                              ) : null}
                               <div className="text-zinc-500">
                                 Total Timeline: {reel.durationSec.toFixed(1)}s
                               </div>
@@ -2522,7 +2635,32 @@ export function MyReelsLibrary() {
                               }`}
                             >
                               {/* Clip Preview Box */}
-                              <div className="relative aspect-[9/16] sm:aspect-video rounded-lg overflow-hidden bg-black border border-zinc-800 group">
+                              <div
+                                className="relative aspect-[9/16] sm:aspect-video rounded-lg overflow-hidden bg-black border border-zinc-800 group"
+                                onMouseEnter={(e) => {
+                                  const video = e.currentTarget.querySelector("video");
+                                  if (video) {
+                                    try { video.play().catch(() => {}); } catch (_) {}
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  const video = e.currentTarget.querySelector("video");
+                                  if (video) {
+                                    try { video.pause(); video.currentTime = 0.5; } catch (_) {}
+                                  }
+                                }}
+                              >
+                                {hasClipVideo ? (
+                                  <video
+                                    src={`${clip.videoUrl!}#t=0.5`}
+                                    poster={clip.posterUrl || undefined}
+                                    preload="metadata"
+                                    playsInline
+                                    muted
+                                    loop
+                                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-300 pointer-events-none"
+                                  />
+                                ) : null}
                                 {clip.posterUrl ? (
                                   <img
                                     src={clip.posterUrl}
@@ -2530,19 +2668,10 @@ export function MyReelsLibrary() {
                                     onError={(e) => {
                                       (e.currentTarget as HTMLElement).style.display = "none";
                                     }}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition duration-200"
+                                    className={`w-full h-full object-cover group-hover:scale-105 transition duration-300 ${hasClipVideo ? "absolute inset-0 group-hover:opacity-0" : ""}`}
                                   />
                                 ) : null}
-                                {hasClipVideo ? (
-                                  <video
-                                    src={`${clip.videoUrl!}#t=0.5`}
-                                    preload="metadata"
-                                    playsInline
-                                    muted
-                                    className={`w-full h-full object-cover group-hover:scale-105 transition duration-200 pointer-events-none ${clip.posterUrl ? "absolute inset-0 -z-10" : ""}`}
-                                  />
-                                ) : null}
-                                {!clip.posterUrl && !hasClipVideo ? (
+                                {!hasClipVideo && !clip.posterUrl ? (
                                   <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-950 text-zinc-600 gap-1">
                                     <Video className="h-6 w-6" />
                                     <span className="text-[10px] font-mono">Shot {clip.order}</span>
@@ -2890,6 +3019,50 @@ export function MyReelsLibrary() {
                     </button>
                   </div>
                 )}
+                {/* Romantic Orchestra BGM Soundtrack Controller */}
+                {(!spotlightVideo.url.includes("rough") && !spotlightVideo.url.includes("master") && !spotlightVideo.url.includes("final")) && (
+                  <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-rose-950/60 border border-rose-500/40">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = !romanticBgmEnabled;
+                        setRomanticBgmEnabled(next);
+                        if (bgmAudioRef.current) {
+                          if (next) {
+                            bgmAudioRef.current.volume = bgmVolume;
+                            bgmAudioRef.current.play().catch(() => {});
+                          } else {
+                            bgmAudioRef.current.pause();
+                          }
+                        }
+                      }}
+                      className="flex items-center gap-1.5 text-xs font-mono font-bold transition cursor-pointer text-rose-300 hover:text-rose-200"
+                      title={romanticBgmEnabled ? "Mute romantic orchestra score" : "Play romantic orchestra score"}
+                    >
+                      <Music className={`h-3.5 w-3.5 ${romanticBgmEnabled ? "text-rose-400 animate-pulse" : "text-zinc-500"}`} />
+                      <span className="hidden md:inline">Romantic BGM:</span>
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] ${romanticBgmEnabled ? "bg-rose-500/40 text-rose-200 font-bold" : "bg-zinc-800 text-zinc-500"}`}>
+                        {romanticBgmEnabled ? "ON" : "OFF"}
+                      </span>
+                    </button>
+                    {romanticBgmEnabled && (
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={bgmVolume}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          setBgmVolume(val);
+                          if (bgmAudioRef.current) bgmAudioRef.current.volume = val;
+                        }}
+                        className="w-16 h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-rose-400 hidden sm:inline-block"
+                        title={`BGM Volume: ${(bgmVolume * 100).toFixed(0)}%`}
+                      />
+                    )}
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={closeSpotlight}
@@ -2901,6 +3074,14 @@ export function MyReelsLibrary() {
               </div>
             </div>
 
+            {/* Hidden audio element for continuous romantic orchestra soundtrack */}
+            <audio
+              ref={bgmAudioRef}
+              src="/assets/audio/music/bollywood_romance_orchestra.mp3"
+              loop
+              preload="auto"
+            />
+
             {/* Video Viewport */}
             <div className="relative aspect-video sm:aspect-[16/9] max-h-[70vh] bg-black rounded-xl overflow-hidden flex items-center justify-center">
               <video
@@ -2911,6 +3092,19 @@ export function MyReelsLibrary() {
                 playsInline
                 preload="auto"
                 className="w-full h-full object-contain"
+                onPlay={() => {
+                  const isMasterRough = spotlightVideo.url.includes("rough") || spotlightVideo.url.includes("master") || spotlightVideo.url.includes("final");
+                  if (bgmAudioRef.current && romanticBgmEnabled && !isMasterRough) {
+                    bgmAudioRef.current.volume = bgmVolume;
+                    bgmAudioRef.current.play().catch(() => {});
+                  }
+                }}
+                onPause={() => {
+                  const isMasterRough = spotlightVideo.url.includes("rough") || spotlightVideo.url.includes("master") || spotlightVideo.url.includes("final");
+                  if (bgmAudioRef.current && !isMasterRough) {
+                    bgmAudioRef.current.pause();
+                  }
+                }}
                 onEnded={() => {
                   if (spotlightVideo.playlist && typeof spotlightVideo.currentIndex === "number") {
                     const nextIdx = spotlightVideo.currentIndex + 1;
