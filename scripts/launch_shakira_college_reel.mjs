@@ -7,9 +7,16 @@ import crypto from 'crypto';
 import { planStudio1 } from '../lib/studio1/planner.ts';
 import { generateLyriaBackgroundMusic } from '../lib/ai/lyriaService.ts';
 
-const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL });
+function getPool() {
+  const conn = process.env.DATABASE_URL || process.env.POSTGRES_URL || "postgresql://postgres:pncyiYBLwkzpdbCTqOySjcmAofiHjLLL@altaria.proxy.rlwy.net:35535/railway";
+  return new pg.Pool({ connectionString: conn });
+}
 
 async function main() {
+  try {
+    process.loadEnvFile('.env.local');
+  } catch {}
+  const pool = getPool();
   console.log('[launch] ========================================================================');
   console.log('[launch] STEP 1: Physically Invoking DeepMind Lyria 3 Pro for Song Arrangement...');
   console.log('[launch] ========================================================================');
@@ -39,9 +46,9 @@ async function main() {
     ? `\nSong Lyrics from DeepMind Lyria:\n${lyriaMusic.lyrics.slice(0, 10).join("\n")}`
     : "";
 
-  const topic = `Commercial Latin-Indian pop dance music video featuring two charismatic Indian college performers dancing barefoot on a glossy wet concert stage with silver ghungroos/anklets, dynamic pelvic/hip isolations, belly dancing shimmies, synchronized power catwalk, hair flips, and water splash slow-motion.
+  const topic = `Commercial Latin-Indian pop dance music video featuring two charismatic South Asian female college performers (Priya and Riya) dancing barefoot on a glossy wet concert stage with silver ghungroos/anklets, dynamic pelvic/hip isolations, belly dancing shimmies, synchronized power catwalk, hair flips, and water splash slow-motion.
 Musical Arrangement: 128 BPM Latin-Desi pop fusion with live Punjabi Dhol drummers and Latin percussionists visible flanking the runway behind the performers, stadium concert strobes, cyan/magenta volumetric lasers, and cold-spark pyrotechnics.
-Performers wear vibrant sequined festival crop tops and flowing silk harem dance skirts with mirrorwork, with unobstructed faces and lips for expressive singing lip sync.${lyricsContext}`;
+Performers wear matching vibrant turquoise-cyan metallic sequined festival crop tops and flowing white silk harem dance pants with silver mirrorwork across all shots. Barefoot with silver ghungroos. Strict wardrobe continuity: zero costume color changes. Strict negative constraint: zero on-screen text, no burned-in subtitles, no captions, no typography.${lyricsContext}`;
 
   const input = {
     topic,
