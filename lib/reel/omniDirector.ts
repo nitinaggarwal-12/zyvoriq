@@ -614,17 +614,17 @@ export function compileDeterministicDirectorialPass(
     visualStyle: {
       optics: genre === "BOLLYWOOD_ROMANCE"
         ? (aspectRatio === "16:9"
-            ? "Arri Alexa Mini LF, 35mm & 50mm spherical primes, 16:9 widescreen framing, golden-hour lens roll-off, 24fps slow-motion cadence"
-            : "Cooke Anamorphic 2.39:1 lenses, warm horizontal amber flares, 24fps slow-motion cadence, dreamy optical roll-off")
+            ? "Cinema camera, 35mm & 50mm spherical primes, 16:9 widescreen framing, golden-hour lens roll-off, 24fps slow-motion cadence"
+            : "Anamorphic 2.39:1 lenses, warm horizontal amber flares, 24fps slow-motion cadence, dreamy optical roll-off")
         : genre === "MUSIC_VIDEO"
         ? (aspectRatio === "9:16"
-            ? "Arri Alexa Mini LF, high-speed anamorphic primes, 9:16 vertical framing, dynamic chromatic lens flares, rhythmic motion cadence"
-            : "Arri Alexa Mini LF, high-speed anamorphic primes, widescreen framing, dynamic chromatic lens flares, rhythmic motion cadence")
+            ? "Cinema camera, high-speed anamorphic primes, 9:16 vertical framing, dynamic chromatic lens flares, rhythmic motion cadence"
+            : "Cinema camera, high-speed anamorphic primes, widescreen framing, dynamic chromatic lens flares, rhythmic motion cadence")
         : (aspectRatio === "9:16"
-            ? "Arri Alexa Mini LF, 35mm & 50mm spherical primes, 9:16 vertical framing, natural optical falloff"
+            ? "Cinema camera, 35mm & 50mm spherical primes, 9:16 vertical framing, natural optical falloff"
             : aspectRatio === "16:9"
-            ? "Arri Alexa Mini LF, 35mm & 50mm spherical primes, 16:9 widescreen framing, natural optical falloff"
-            : "Cooke Anamorphic 2.39:1 framing, 24fps motion cadence, natural optical falloff"),
+            ? "Cinema camera, 35mm & 50mm spherical primes, 16:9 widescreen framing, natural optical falloff"
+            : "Anamorphic 2.39:1 framing, 24fps motion cadence, natural optical falloff"),
       lightingPalette: genre === "BOLLYWOOD_ROMANCE"
         ? (cleanTopic.includes("palace") || cleanTopic.includes("rajasthan") || cleanTopic.includes("temple") || cleanTopic.includes("courtyard")
             ? "Warm golden-hour alpenglow (3400K) reflecting off polished marble floors, water droplet prismatic flares, soft flattering key light"

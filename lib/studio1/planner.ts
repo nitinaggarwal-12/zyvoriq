@@ -317,22 +317,22 @@ export function budgetStudio1NarrationAgainstCap(manifest: ReelProductionManifes
     if (isMusicVideo) {
       const isHindiLang = lang === "hinglish-roman" || lang === "hinglish" || lang === "hi-devanagari" || lang === "hindi";
       const acousticStyle = isHindiLang
-        ? "Contemporary Bollywood Desi Pop dance song with bright high-register feminine female pop-star melodic singing vocals, high-pitched traditional Punjabi Tumbi hook, driving acoustic Dhol drum syncopations (dagga bass + tilli snap), deep 808 club sub-bass, and anthemic festival drop."
-        : "Contemporary pop dance anthem with bright female pop-star melodic singing vocals, energetic EDM synth production, punchy 808 sub-bass, driving modern drum rhythm, and infectious festival drop.";
+        ? "Contemporary South Asian pop dance song with bright high-register feminine vocal delivery, acoustic Dhol rhythm, deep club sub-bass, and celebratory festival drop."
+        : "Contemporary pop dance anthem with bright feminine vocal delivery, energetic production, deep club sub-bass, driving modern drum rhythm, and celebratory festival drop.";
 
-      const performanceLock = "MUSIC VIDEO PERFORMANCE & LIP-SYNC: The performer is actively singing/delivering the song lyrics on camera with visible mouth, lips, teeth, and facial articulation in precise sync with the vocals. Face, lips, and mouth are completely illuminated and unobstructed (no opaque visors, masks, or hands covering the mouth).";
+      const performanceLock = "MUSIC VIDEO PERFORMANCE & LIP-SYNC: The performer is actively singing/delivering vocal phrases on camera with visible mouth, lips, teeth, and facial articulation in precise sync. Face, lips, and mouth are completely illuminated and unobstructed. ZERO ON-SCREEN TEXT, NO SUBTITLES, NO CAPTIONS.";
 
-      // Modular 5-Shot Directorial Matrix (Shakira + J.Lo + Bollywood Firebrand Archetypes)
+      // Modular 5-Shot Directorial Matrix (Generic Descriptive Archetypes)
       if (idx === 0) {
-        musicVideoLock = `${performanceLock} MUSIC VIDEO HERO INTRO: ${acousticStyle} J.Lo-style slow-motion power catwalk forward toward camera with heavy hip swagger and direct piercing eye contact. Staging: Two energetic live Punjabi Dhol drummers in orange turbans and white kurtas flank the runway striking dhol drums in sync. Performer delivers confident spoken lyrics on camera with clear lip articulation. Lighting: Dramatic backlit silhouette cutting through volumetric haze, high-contrast cyan/magenta rim lighting. Dynamic speed ramp on downbeat. ACOUSTIC DIRECTIVE: Immediate 128.0 BPM acoustic Dhol downbeats and driving rhythm active from frame 0.000s under speech without delay. Negative: No camera metadata overlays, no camera model watermarks, clean raw sensor frame.`;
+        musicVideoLock = `${performanceLock} MUSIC VIDEO HERO INTRO: ${acousticStyle} Energetic slow-motion power catwalk forward toward camera with confident hip swagger and direct piercing eye contact. Staging: Two energetic live Dhol drummers in orange turbans and white kurtas flank the runway striking dhol drums in sync. Performer delivers confident musical vocals on camera with clear lip articulation. Lighting: Dramatic backlit silhouette cutting through volumetric haze, high-contrast cyan/magenta rim lighting. Dynamic speed ramp on downbeat. ACOUSTIC DIRECTIVE: Immediate 128.0 BPM acoustic Dhol downbeats and driving rhythm active from frame 0.000s under performance without delay. Negative: No camera metadata overlays, no camera model watermarks, clean raw sensor frame.`;
       } else if (idx === 1) {
-        musicVideoLock = `${performanceLock} MUSIC VIDEO CHORUS DROP: ${acousticStyle} Symmetrical V-formation dance troupe on main festival stage. Lead performer and co-performer lead 6 backup dancers in sharp, synchronized Fly-Girl Bhangra popping and high-kick turns with metallic waist chain accents. Performer actively sings chorus lyrics with mouth/lips/teeth in precise sync. Saturated magenta/cyan lasers slicing haze, cold-spark pyrotechnic geysers erupting on downbeats.`;
+        musicVideoLock = `${performanceLock} MUSIC VIDEO CHORUS DROP: ${acousticStyle} Symmetrical V-formation dance troupe on main festival stage. Lead performer and co-performer lead 6 backup dancers in sharp, synchronized rhythmic choreography and high-kick turns with metallic waist chain accents. Performer actively sings with mouth/lips/teeth in precise sync. Saturated magenta/cyan lasers slicing haze, cold-spark pyrotechnic geysers erupting on downbeats.`;
       } else if (idx === 2) {
-        musicVideoLock = `${performanceLock} MUSIC VIDEO GLAMOUR BREAKDOWN: ${acousticStyle} High-fashion wet-down studio with mirror-black reflective floor flooded with water. Performer dances barefoot with silver ankle bells (ghungroos), executing rapid 16th-note pelvic and hip vibration and fluid torso rolls to the live Dhol solo. Water droplets splashing off heels in 120fps slow-motion, wind-machine hair, macro 85mm anamorphic portrait angles.`;
+        musicVideoLock = `${performanceLock} MUSIC VIDEO GLAMOUR BREAKDOWN: ${acousticStyle} High-fashion wet-down studio with mirror-black reflective floor flooded with water. Performer dances barefoot with silver ankle bells (ghungroos), executing rapid rhythmic pelvic and hip isolations and fluid torso rolls to the live Dhol solo. Water droplets splashing off heels in 120fps slow-motion, wind-machine hair, macro portrait angles.`;
       } else if (idx === 3) {
-        musicVideoLock = `${performanceLock} MUSIC VIDEO FLOOR PROWL & SQUAD: ${acousticStyle} Wet-down reflective floor. Lead performer drops into a low feline floor crouch, arched back, looking up with fierce gaze into the lens, before rising into an athletic, synchronized power squad catwalk with co-performer and female dancers. Dynamic speed-ramping snapping from slow-motion prowl to fast unison choreography.`;
+        musicVideoLock = `${performanceLock} MUSIC VIDEO FLOOR PROWL & SQUAD: ${acousticStyle} Wet-down reflective floor. Lead performer drops into a low athletic floor crouch, arched back, looking up with fierce gaze into the lens, before rising into a synchronized power squad catwalk with co-performer and female dancers. Dynamic speed-ramping snapping from slow-motion prowl to fast unison choreography.`;
       } else {
-        musicVideoLock = `${performanceLock} MUSIC VIDEO GRAND FINALE: ${acousticStyle} Massive cultural festival spectacle. Entire 5,000-student festival crowd jumping in unison with ultraviolet glowsticks, golden marigold flower petal showers falling through spotlights, fireworks and cold sparks blasting. Lead performer executes a triumphant spin, looks directly into the camera lens, and throws her head back in a radiant, carefree laugh. Dynamic 360-degree orbital camera sweep.`;
+        musicVideoLock = `${performanceLock} MUSIC VIDEO GRAND FINALE: ${acousticStyle} Massive cultural festival spectacle. Entire festival crowd jumping in unison with ultraviolet glowsticks, golden marigold flower petal showers falling through spotlights, fireworks and cold sparks blasting. Lead performer executes a triumphant spin, looks directly into the camera lens, and throws her head back in a radiant, carefree laugh. Dynamic 360-degree orbital camera sweep.`;
       }
     }
 
@@ -340,13 +340,15 @@ export function budgetStudio1NarrationAgainstCap(manifest: ReelProductionManifes
       ? [
           sceneSetting,
           s.visualIntent,
-          s.scriptText ? `Narrative beat: ${s.scriptText}` : "",
+          isMusicVideo
+            ? "Visual beat: Dynamic dance performance and expressive musical delivery."
+            : (s.scriptText ? `Visual beat: Character delivers monologue with authentic emotional expression.` : ""),
           `Tone: ${manifest.tone}.`,
           langDirective,
           manifest.creativeBible.visualStyle,
           manifest.creativeBible.cameraLanguage,
           musicVideoLock,
-          "Do not render captions, subtitles, logos or UI text inside the generated video; those are composited later."
+          "STRICT NEGATIVE CONSTRAINT: Zero generated text, no captions, no subtitles, no words, no logos, no typography anywhere in the frame."
         ].filter(Boolean).join(" ")
       : s.generationPrompt;
     newBasePrompts[newId] = basePrompt;

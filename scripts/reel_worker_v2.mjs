@@ -2310,6 +2310,12 @@ function sanitizePromptForVeo(prompt, options = {}) {
     clean = clean.replace(/Zero spoken dialogue, zero character vocals, zero singing, zero lyrics\.?/gi, "");
     clean = clean.replace(/\bThe current spoken beat is:[^.\n]+(?:\.|$)/gi, "");
     clean = clean.replace(/Narrative beat:\s*[^.\n]*(?:Tone:[^.\n]*\.)?/gi, "Visual beat: dynamic dance performance and expressive musical delivery.");
+    // Strip third-party brand names, trademarks, and celebrity references
+    clean = clean.replace(/\b(?:Arri Alexa(?: Mini LF)?|RED V-Raptor|Sony FX[0-9]+|Panavision|Cooke Anamorphic)\b/gi, "cinema camera");
+    clean = clean.replace(/\bBollywood\b/gi, "South Asian cinema");
+    clean = clean.replace(/\b808(?:\s+sub-bass|\s+bass|\s+club)?\b/gi, "deep club sub-bass");
+    clean = clean.replace(/\bJ\.?Lo-style\b/gi, "confident");
+    clean = clean.replace(/\b(?:Aaja re|Duniya dekhegi|Dil bole boom boom|boom boom|From Mumbai to Madrid|Nachle tu mere saath|Zindagi ek jashn hai)[^.!\n]*[.!\n]?/gi, "");
     clean = clean.replace(/\s{2,}/g, " ").trim();
     if (!clean.includes("AUDIO DIRECTIVE:")) {
       const isMusicVideo = String(genre || "").toUpperCase() === "MUSIC_VIDEO" || clean.includes("MUSIC_VIDEO") || clean.includes("music video");
@@ -2325,6 +2331,11 @@ function sanitizePromptForVeo(prompt, options = {}) {
       }
     }
   }
+
+  // Strip any remaining brand names or celebrity tokens universally
+  clean = clean.replace(/\b(?:Arri Alexa(?: Mini LF)?|Panavision|Cooke Anamorphic)\b/gi, "cinema camera");
+  clean = clean.replace(/\bBollywood\b/gi, "South Asian cinema");
+  clean = clean.replace(/\b808\b/gi, "club");
 
   // Universal text suppression: Veo must NEVER burn subtitles, captions, or typography into scene pixels
   if (!clean.includes("STRICT NEGATIVE CONSTRAINT:")) {
@@ -2723,9 +2734,38 @@ async function generateShot(op, manifest, shot) {
                   // ONLY match paired double quotes or curly double quotes. NEVER match single quotes/apostrophes (e.g. Renjiro's, scene's)
                   apply: (p) => p.replace(/"[^"]*"/g, "").replace(/[“"][^"”]*[”"]/g, ""),
                 },
+                {
+                  name: "strip-third-party-brands-and-lyrics",
+                  apply: (p) => {
+                    let text = p;
+                    text = text.replace(/\b(?:Arri Alexa(?: Mini LF)?|RED V-Raptor|Sony FX[0-9]+|Panavision|Cooke Anamorphic)\b/gi, "cinema camera");
+                    text = text.replace(/\bBollywood\b/gi, "South Asian cinema");
+                    text = text.replace(/\b808(?:\s+sub-bass|\s+bass|\s+club)?\b/gi, "deep club sub-bass");
+                    text = text.replace(/\bJ\.?Lo-style\b/gi, "confident");
+                    text = text.replace(/\b(?:Aaja re|Duniya dekhegi|Dil bole boom boom|boom boom|From Mumbai to Madrid|Nachle tu mere saath|Zindagi ek jashn hai)[^.!\n]*[.!\n]?/gi, "");
+                    text = text.replace(/\b(?:Hinglish|Hindi)\s+dialogue\/vocals\b/gi, "musical vocal performance");
+                    return text;
+                  },
+                },
               ];
 
               let currentText = prevPrompt;
+              // Step 0: Intelligent Surgical AI Prompt Repair via Gemini reflection agent
+              try {
+                console.log(`[reel-worker] [rai-auto-heal] Invoking Surgical AI Prompt Repair Agent (gemini-2.5-flash) for shot ${shot.id}...`);
+                const aiRepair = await repairRejectedPrompt(currentText, diagInfo, {
+                  genre: m.genre || m.creativeBible?.genre,
+                  characterName: char?.name,
+                });
+                if (aiRepair?.repairedPrompt && aiRepair.repairedPrompt !== currentText) {
+                  currentText = aiRepair.repairedPrompt;
+                  matchedRules.push(`ai-surgical-repair:${aiRepair.fixApplied}`);
+                  console.log(`[reel-worker] [rai-auto-heal] AI Surgical Repair succeeded: ${aiRepair.fixApplied}`);
+                }
+              } catch (aiErr) {
+                console.warn(`[reel-worker] [rai-auto-heal] AI surgical repair warning: ${aiErr?.message}`);
+              }
+
               for (const rule of HEAL_RULES) {
                 const transformed = rule.apply(currentText);
                 if (transformed !== currentText) {
