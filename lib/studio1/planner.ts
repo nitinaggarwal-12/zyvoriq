@@ -32,6 +32,18 @@ export const MAX_SHOT_DURATION_SEC = 7.36;
 export const MAX_WORDS_PER_SHOT = 15;
 export const MIN_WORDS_PER_SHOT = 13;
 
+export function wordsPerSecondForGenre(genre?: string): number {
+  const norm = String(genre || "").toUpperCase();
+  if (norm === "MUSIC_VIDEO") return 1.4; // Singing cadence with held notes, rests, and musical phrasing
+  return 2.1; // Conversational dialogue
+}
+
+export function maxWordsPerShotForGenre(genre?: string): number {
+  const norm = String(genre || "").toUpperCase();
+  if (norm === "MUSIC_VIDEO") return 10; // 6-10 words per musical bar/lyric phrase
+  return 15;
+}
+
 const GENERATION_BUCKETS: Array<4 | 6 | 8> = [4, 6, 8];
 const MAX_LOCAL_EXTENSION_RATIO = 1.06;
 const MAX_LOCAL_EXTENSION_SEC = 0.25;
@@ -162,6 +174,9 @@ export function splitScriptIntoBudgetedUnits(text: string, maxWords: number = MA
 
 export function budgetStudio1NarrationAgainstCap(manifest: ReelProductionManifest): ReelProductionManifest {
   const meta = studio1Meta(manifest);
+  const genre = manifest.genre || manifest.creativeBible?.genre;
+  const wps = wordsPerSecondForGenre(genre);
+  const maxWords = maxWordsPerShotForGenre(genre);
   const originalShots = manifest.shots;
   const newShots: ReelProductionManifest["shots"] = [];
 
@@ -170,11 +185,11 @@ export function budgetStudio1NarrationAgainstCap(manifest: ReelProductionManifes
     const script = shot.scriptText?.trim() || "";
     const cleanWords = stripSpeakerLabels(script).split(/\s+/).filter(Boolean);
     const wordCount = cleanWords.length;
-    const estDurationSec = wordCount > 0 ? wordCount / WORDS_PER_SECOND : shot.editorialDurationSec;
+    const estDurationSec = wordCount > 0 ? wordCount / wps : shot.editorialDurationSec;
 
-    // A shot needs splitting if its word count exceeds the 8.0s Veo carrying capacity (>12 words),
-    // or if its editorial duration exceeds the 7.5s safe cap.
-    const needsSplit = (wordCount > MAX_WORDS_PER_SHOT || shot.editorialDurationSec > MAX_SHOT_DURATION_SEC || estDurationSec > MAX_SHOT_DURATION_SEC) && wordCount > 3;
+    // A shot needs splitting if its word count exceeds the genre carrying capacity (>10 words for lyrics, >15 for prose),
+    // or if its editorial duration exceeds the 7.36s safe cap.
+    const needsSplit = (wordCount > maxWords || shot.editorialDurationSec > MAX_SHOT_DURATION_SEC || estDurationSec > MAX_SHOT_DURATION_SEC) && wordCount > 3;
 
     if (!needsSplit) {
       newShots.push({
@@ -184,7 +199,7 @@ export function budgetStudio1NarrationAgainstCap(manifest: ReelProductionManifes
       continue;
     }
 
-    const units = splitScriptIntoBudgetedUnits(script, MAX_WORDS_PER_SHOT);
+    const units = splitScriptIntoBudgetedUnits(script, maxWords);
     if (units.length <= 1) {
       // Midpoint forced split if semantic splitter was unable to break
       const mid = Math.ceil(cleanWords.length / 2);
