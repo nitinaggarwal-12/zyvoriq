@@ -741,7 +741,7 @@ CRITICAL DIRECTORIAL REQUIREMENTS:
    - For Bollywood action (e.g. Dhurandhar), cast rugged, charismatic leads with tactical gear, leather jackets, or sharp tailored suits.
    - For general drama/sci-fi/action/dance, design distinctive, memorable characters with distinct facial features and location-appropriate attire.
    - For documentary explainer ONLY, you may cast a single modern presenter.
-   - Give each character a unique archetype ID (lowercase slug, e.g. "romantic_hero", "romantic_heroine", "lead_singer", "oppenheimer", "groves", "tactical_agent", "samurai_master", "operative_leader"). NEVER use celebrity actor names or real-world celebrity names (strictly forbidden: no Bollywood/Hollywood actor names).
+   - Give each character a unique archetype ID (lowercase slug, e.g. "lead_singer", "pop_performer", "romantic_hero", "romantic_heroine", "oppenheimer", "groves", "tactical_agent", "samurai_master", "operative_leader"). NEVER use real-world celebrity names or characters associated with celebrities (strictly forbidden: no Bollywood/Hollywood actor names, no "Kabir", no "Arjun", no "Shahrukh", no "Salman", no "Ranbir", no "Kiara", no "Alia").
 
 3. FILM GRAMMAR, SCENE GROUPING & SHOT STAGING:
    - SCENE ARCHITECTURE: Group contiguous shots that occur in the same physical setting into cohesive scenes with "sceneId" (e.g., shots 1-4 in "scene_01", shots 5-8 in "scene_02").

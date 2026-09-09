@@ -2198,7 +2198,8 @@ function sanitizePromptForVeo(prompt, options = {}) {
     return `__PRESERVED_TAG_${preservedTags.length - 1}__`;
   });
 
-  // 2. Map celebrity references and proper character names (with spaces or underscores) to high-craft cinematic visual archetypes
+  const isMusicVideo = String(genre).toUpperCase() === "MUSIC_VIDEO" || /music\s*video/i.test(prompt);
+
   const celebrityMap = [
     { pattern: /\b(?:Kiara[\s_]*Advani|Kiara)\b/gi, replacement: "a radiant, graceful Indian leading lady" },
     { pattern: /\b(?:Akshay[\s_]*Kumar|Akshay)\b/gi, replacement: "a handsome, athletic charismatic Indian leading man" },
@@ -2220,7 +2221,7 @@ function sanitizePromptForVeo(prompt, options = {}) {
     { pattern: /\b(?:Leonardo[\s_]*DiCaprio)\b/gi, replacement: "an intense, expressive dramatic leading man" },
     { pattern: /\b(?:Zendaya)\b/gi, replacement: "a stylish, striking modern leading lady" },
     { pattern: /\b(?:Timothee[\s_]*Chalamet|Timothée[\s_]*Chalamet)\b/gi, replacement: "a slender, expressive brooding leading man" },
-    { pattern: /\b(?:Kabir[\s_]*Anand|Kabir)\b/gi, replacement: "a rugged, athletic covert operative" },
+    { pattern: /\b(?:Kabir[\s_]*Anand|Kabir)\b/gi, replacement: isMusicVideo ? "a charismatic, stylish leading pop performer" : "a rugged, athletic covert operative" },
     { pattern: /\b(?:Zoya[\s_]*Rehman|Zoya)\b/gi, replacement: "a fierce, agile female intelligence officer" },
     { pattern: /\b(?:Farooq[\s_]*Malik|Farooq)\b/gi, replacement: "a menacing, hardened rogue commander" },
     { pattern: /\b(?:Meera[\s_]*Rao|Meera)\b/gi, replacement: "a talented, expressive female musician" },
@@ -2231,8 +2232,14 @@ function sanitizePromptForVeo(prompt, options = {}) {
     clean = clean.replace(pattern, replacement);
   }
 
-  // Restore protected bracketed tags
-  clean = clean.replace(/__PRESERVED_TAG_(\d+)__/g, (_, idx) => preservedTags[Number(idx)] || "");
+  // Restore protected bracketed tags (sanitizing any celebrity/person names inside tags)
+  clean = clean.replace(/__PRESERVED_TAG_(\d+)__/g, (_, idx) => {
+    let tag = preservedTags[Number(idx)] || "";
+    for (const { pattern } of celebrityMap) {
+      tag = tag.replace(pattern, isMusicVideo ? "pop_artist" : "lead_performer");
+    }
+    return tag;
+  });
 
   // 3. Audio & dialogue directives: Gated on audioStrategy (Fix A, B, C)
   if (shouldStripDialogue) {
@@ -3045,6 +3052,7 @@ async function renderRough(op, m) {
           if (!s.asset?.videoUrl) throw new Error(`${s.id} has no source`);
           batchArgs.push("-i", assetPath(s.asset.videoUrl).target);
         }
+        const f = [];
         for (let i = 0; i < batchShots.length; i++) {
           const s = batchShots[i];
           const shotDur = Number(s.editorialDurationSec || s.generationDurationSec || 6.0);
