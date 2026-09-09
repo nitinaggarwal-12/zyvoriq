@@ -436,8 +436,8 @@ export function applyStudio1ShotPrompt(manifest: ReelProductionManifest, shotId:
     environmentRule,
     semanticOnsetRule,
     meta.presenterContinuity
-      ? `STUDIO1 IDENTITY LOCK [${charId}]: The attached canonical character reference image is authoritative for this shot. Physical description: ${purePhysicalDesc}. Identity continuity is mandatory: identical face, age, skin tone, hair, body proportions, wardrobe and distinguishing features. Do not substitute, cast, morph into, or introduce a different actor. Eyeline: ${shot.continuityIn.eyeline || "conversational off-camera"}.`
-      : "STUDIO1 ACTOR MODE: Canonical identity anchoring is disabled for this experiment."
+      ? `STUDIO1 IDENTITY LOCK [${charId}]: The attached canonical character reference image is authoritative for this shot. Physical description: ${purePhysicalDesc}. Character continuity is mandatory: consistent face, age, skin tone, hair, body proportions, wardrobe and distinguishing features. Eyeline: ${shot.continuityIn.eyeline || "conversational off-camera"}.`
+      : "STUDIO1 CHARACTER MODE: Canonical identity anchoring is disabled for this experiment."
   ].join(" ");
 }
 

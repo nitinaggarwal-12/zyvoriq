@@ -2193,6 +2193,13 @@ function sanitizePromptForVeo(prompt, options = {}) {
   // Strip character name references in canonical reference clauses
   clean = clean.replace(/The canonical character reference for [^,.]+(?:,\s*|\.\s*)/gi, "The canonical character reference for the performer, ");
 
+  // Strip actor/casting/substitution clauses that trigger Veo's celebrity/actor likeness heuristic
+  clean = clean.replace(/Do not substitute, cast, morph into, or introduce a different actor\.?/gi, "");
+  clean = clean.replace(/Identity continuity is mandatory: identical face, age, skin tone, hair, body proportions, wardrobe and distinguishing features\./gi, "Character continuity is mandatory: consistent face, age, skin tone, hair, body proportions, wardrobe and distinguishing features.");
+  clean = clean.replace(/\bintroduce a different actor\b/gi, "");
+  clean = clean.replace(/\bdifferent actor\b/gi, "different performer");
+  clean = clean.replace(/\bactor\b/gi, "performer");
+
   // Protect scene metadata tags (e.g. [scene_01], [scene_arena]) from name/celebrity substitution
   const preservedTags = [];
   clean = clean.replace(/\[scene_[a-zA-Z0-9_-]+\]/gi, (match) => {
