@@ -2140,7 +2140,7 @@ function getGenreAudioStrategy(genre, manifest, op) {
 
 function sanitizePromptForVeo(prompt, options = {}) {
   if (!prompt || typeof prompt !== "string") return prompt;
-  const { audioStrategy = "native", isAudioFilterRetry = false } = options;
+  const { audioStrategy = "native", isAudioFilterRetry = false, genre = "" } = options;
   const shouldStripDialogue = audioStrategy === "tts_dub" || isAudioFilterRetry;
 
   // 1. Strip dialogue speaker prefixes like "KIARA:", "AKSHAY:", etc. while preserving camera grammar tags
@@ -2328,6 +2328,7 @@ async function generateShot(op, manifest, shot) {
 
     const genre = String(manifest?.creativeBible?.genre || manifest?.genre || op?.payload_json?.genre || "").toUpperCase();
     const audioStrategy = getGenreAudioStrategy(genre, manifest, op);
+    console.log(`[reel-worker] audio strategy (genre: ${genre || "unknown"}, audioStrategy: ${audioStrategy}): ${audioStrategy === "native" ? "NATIVE CHARACTER AUDIO & FOLEY (lip-sync singing)" : "SYNTHETIC TTS DUB"}`);
     const cleanPrompt = sanitizePromptForVeo(shot.generationPrompt, { audioStrategy, genre });
     let finalPrompt = cleanPrompt;
     if (!hasTemporalFrame) {
