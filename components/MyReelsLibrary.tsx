@@ -1804,6 +1804,7 @@ export function MyReelsLibrary() {
               return (
                 <div
                   key={reel.id}
+                  id={`reel-card-${reel.id}`}
                   className={`rounded-2xl border transition-all duration-200 bg-[#0B0F17] overflow-hidden shadow-xl ${
                     isExpanded ? "border-emerald-500/50 shadow-emerald-950/20" : "border-zinc-800/80 hover:border-zinc-700"
                   }`}

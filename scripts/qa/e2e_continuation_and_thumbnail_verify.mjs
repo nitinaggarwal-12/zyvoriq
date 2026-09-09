@@ -26,8 +26,10 @@ async function run() {
 
     // 1. Visit /my-reels
     console.log("[E2E] Step 1: Navigating to /my-reels...");
-    await page.goto(BASE_URL + "/my-reels", { waitUntil: "networkidle2", timeout: 30000 });
-    await sleep(1500);
+    await page.goto(BASE_URL + "/my-reels", { waitUntil: "domcontentloaded", timeout: 60000 });
+    await sleep(1000);
+    await page.waitForSelector('div[id^="reel-card-"]', { timeout: 15000 });
+    await sleep(800);
 
     // 2. Verify cf46b686 (Act II) Thumbnail and Button Label
     console.log("[E2E] Step 2: Inspecting Act II reel (cf46b686)...");
