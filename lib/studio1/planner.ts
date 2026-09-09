@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { planReel, generateNarrationScriptWithGemini, mergeShortBeats, type PlanReelInput } from "../reel/planner.ts";
 export { mergeShortBeats };
 import { compileOmniDirectorialPass, type OmniDirectorialCompilation } from "../reel/omniDirector.ts";
-import { verifyPromptPreFlight } from "../ai/promptVerifier.ts";
+import { verifyPromptPreFlight, sanitizeAndEnrichUserPrompt } from "../ai/promptVerifier.ts";
 import type { ReelProductionManifest } from "../reel/types.ts";
 
 export type Studio1SubjectMode = "PRESENTER" | "NO_PERSON";
@@ -569,6 +569,13 @@ export function extractDurationFromPrompt(text: string): number | null {
 }
 
 export async function planStudio1(input: PlanReelInput): Promise<ReelProductionManifest> {
+  // Step 0: Root User Prompt Sanitization & Semantic De-Risking
+  const promptCheck = await sanitizeAndEnrichUserPrompt(input.topic, { genre: input.genre });
+  if (promptCheck.wasRewritten) {
+    console.log(`[planner] Sanitized root user prompt at Step 0: reasons=${promptCheck.reasons.join(", ")}`);
+    input.topic = promptCheck.sanitizedTopic;
+  }
+
   let scriptText = (input.scriptText || "").trim();
   let directorial: OmniDirectorialCompilation | undefined;
 

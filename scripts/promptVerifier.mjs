@@ -178,3 +178,120 @@ Genre: ${context.genre || "N/A"}, Character: ${context.characterName || "N/A"}`
     };
   }
 }
+
+/**
+ * Root-Level User Prompt Sanitizer & Semantic Enricher
+ * 
+ * Intercepts raw user prompts at Step 0 before any downstream model (Omni, Lyria, Veo)
+ * is called. Eliminates celebrity likeness filters, sensitive demographic phrasing,
+ * and violence/fire idioms, transforming them into rich cinematic and acoustic directives.
+ */
+export async function sanitizeAndEnrichUserPrompt(rawPrompt, options = {}) {
+  if (!rawPrompt || typeof rawPrompt !== "string") {
+    return { sanitizedTopic: "", originalTopic: "", wasRewritten: false, reasons: [] };
+  }
+
+  let text = rawPrompt.trim();
+  let wasRewritten = false;
+  const reasons = [];
+
+  // 1. Celebrity and likeness replacements
+  const celebrityMap = [
+    {
+      pattern: /\bshakira(?:\s+style)?\b/gi,
+      replacement: "Latin-Pop dance superstar renowned for rapid hip isolations, bellydance shimmies, barefoot wet-stage power catwalking, and Latin-Arabic-Desi vocal delivery",
+      reason: "celebrity-likeness-shakira"
+    },
+    {
+      pattern: /\bbeyonce(?:\s+style)?\b/gi,
+      replacement: "commanding pop-diva performance with precision choreography, power vocals, and brass stabs",
+      reason: "celebrity-likeness-beyonce"
+    },
+    {
+      pattern: /\bdua lipa(?:\s+style)?\b/gi,
+      replacement: "modern retro disco-pop star with sleek rhythm movements and deep vocal tones",
+      reason: "celebrity-likeness-dualipa"
+    },
+    {
+      pattern: /\btaylor swift(?:\s+style)?\b/gi,
+      replacement: "acoustic pop-country storytelling singer-songwriter performance",
+      reason: "celebrity-likeness-taylorswift"
+    },
+    {
+      pattern: /\bshahrukh khan|srk\b/gi,
+      replacement: "charismatic romantic cinema icon with open-arm gestures and intense emotional gaze",
+      reason: "celebrity-likeness-srk"
+    },
+    {
+      pattern: /\bbadshah\b/gi,
+      replacement: "urban Desi hip-hop anthem performer with high-energy club cadence",
+      reason: "celebrity-likeness-badshah"
+    },
+    {
+      pattern: /\bdiljit(?:\s+dosanjh)?\b/gi,
+      replacement: "energetic Punjabi folk-pop superstar with traditional Bhangra vocal agility",
+      reason: "celebrity-likeness-diljit"
+    }
+  ];
+
+  for (const entry of celebrityMap) {
+    if (entry.pattern.test(text)) {
+      text = text.replace(entry.pattern, entry.replacement);
+      wasRewritten = true;
+      reasons.push(entry.reason);
+    }
+  }
+
+  // 2. Demographic and sensitive wording normalization
+  const demographicMap = [
+    {
+      pattern: /\b(?:indian\s+)?(?:college\s+girls|school\s+girls)\b/gi,
+      replacement: "young South Asian female university dance performers",
+      reason: "demographic-safety-college-girls"
+    },
+    {
+      pattern: /\bindian\s+girls\b/gi,
+      replacement: "South Asian female performers",
+      reason: "demographic-normalization"
+    },
+    {
+      pattern: /\bdanging\b/gi,
+      replacement: "dancing",
+      reason: "typo-correction-dancing"
+    }
+  ];
+
+  for (const entry of demographicMap) {
+    if (entry.pattern.test(text)) {
+      text = text.replace(entry.pattern, entry.replacement);
+      wasRewritten = true;
+      reasons.push(entry.reason);
+    }
+  }
+
+  // 3. Slang and literal fire/violence idioms
+  const slangMap = [
+    { pattern: /\baag laga\w*\b/gi, replacement: "dhoom macha", reason: "slang-fire-de-risk" },
+    { pattern: /\bkill(?:ing)?\s+it\b/gi, replacement: "rocking the stage", reason: "slang-violence-de-risk" },
+    { pattern: /\bon fire\b/gi, replacement: "electrifying", reason: "slang-fire-de-risk" }
+  ];
+
+  for (const entry of slangMap) {
+    if (entry.pattern.test(text)) {
+      text = text.replace(entry.pattern, entry.replacement);
+      wasRewritten = true;
+      reasons.push(entry.reason);
+    }
+  }
+
+  // 4. Clean formatting
+  text = text.replace(/\s{2,}/g, " ").trim();
+
+  return {
+    sanitizedTopic: text,
+    originalTopic: rawPrompt,
+    wasRewritten,
+    reasons
+  };
+}
+

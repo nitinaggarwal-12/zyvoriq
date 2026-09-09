@@ -1,4 +1,5 @@
 import type { ReelCreationIntent } from "./types.ts";
+import { sanitizeAndEnrichUserPrompt } from "../ai/promptVerifier.ts";
 
 export interface OmniCastMember {
   id: string;
@@ -679,7 +680,7 @@ export async function compileOmniDirectorialPass(
 
   const requestedDurationSec = input.requestedDurationSec || 30;
   const targetShots = Math.max(2, Math.min(30, Math.round(requestedDurationSec / TARGET_SHOT_DURATION_SEC)));
-  const topic = input.topic.trim();
+  const { sanitizedTopic: topic } = await sanitizeAndEnrichUserPrompt(input.topic, { genre: input.genre });
   const tone = input.tone || "Cinematic & immersive";
 
   const resolvedLang = (input.language || "").trim().toLowerCase() ||

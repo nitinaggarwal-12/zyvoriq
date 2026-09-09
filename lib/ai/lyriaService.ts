@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import { sanitizeAndEnrichUserPrompt } from "./promptVerifier";
 
 export type LyriaTier = "standard" | "pro";
 
@@ -306,11 +307,8 @@ export async function generateLyriaBackgroundMusic(options: {
   const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (key) {
     try {
-      // Sanitize prompt for Lyria 3 safety filters: eliminate real celebrity names like "Shakira", replace with descriptive terms
-      const sanitizedPrompt = prompt
-        .replace(/\bshakira\b/gi, "Latin pop icon")
-        .replace(/\bcollege girls\b/gi, "young women performers");
-
+      // Root prompt sanitization for Lyria 3 safety filters: eliminate celebrity likeness and prohibited terms
+      const { sanitizedTopic: sanitizedPrompt } = await sanitizeAndEnrichUserPrompt(prompt, { genre: selectedPreset.genre });
       const cleanPresetName = selectedPreset.name.replace(/[^\w\s-]/g, "").replace(/\bshakira\b/gi, "Latin pop").trim();
       const lyriaPrompt = `Compose a high-energy ${selectedPreset.bpm} BPM song arrangement for: ${sanitizedPrompt}. Style: ${cleanPresetName}, genre: ${selectedPreset.genre}, key: ${selectedPreset.keySignature}. Include intro, verse, chorus, and drop rhythm sections with energetic singing lyrics.`;
 

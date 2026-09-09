@@ -1,5 +1,5 @@
 // @ts-ignore
-import { verifyPromptPreFlight as verifyMjs, repairRejectedPrompt as repairMjs } from "./promptVerifier.mjs";
+import { verifyPromptPreFlight as verifyMjs, repairRejectedPrompt as repairMjs, sanitizeAndEnrichUserPrompt as sanitizeMjs } from "./promptVerifier.mjs";
 
 export interface PreFlightResult {
   verifiedPrompt: string;
@@ -10,6 +10,13 @@ export interface PreFlightResult {
 export interface RepairResult {
   repairedPrompt: string;
   fixApplied: string;
+}
+
+export interface SanitizedPromptResult {
+  sanitizedTopic: string;
+  originalTopic: string;
+  wasRewritten: boolean;
+  reasons: string[];
 }
 
 export async function verifyPromptPreFlight(
@@ -26,3 +33,11 @@ export async function repairRejectedPrompt(
 ): Promise<RepairResult> {
   return repairMjs(rejectedPrompt, rejectionReason, context);
 }
+
+export async function sanitizeAndEnrichUserPrompt(
+  prompt: string,
+  options?: { genre?: string }
+): Promise<SanitizedPromptResult> {
+  return sanitizeMjs(prompt, options);
+}
+
