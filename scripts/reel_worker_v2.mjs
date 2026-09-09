@@ -2473,7 +2473,7 @@ async function generateShot(op, manifest, shot) {
     if (!p) throw new Error(`Veo polling network failure: ${pollFetchError?.message || 'unknown'}`);
     const pj = await p.json().catch(() => ({}));
     if (!p.ok || pj?.error) {
-      const isTransient = p.status === 503 || p.status === 429 || pj?.error?.code === 503 || pj?.error?.code === 429 || /unavailable|overload|timeout|resource_exhausted/i.test(pj?.error?.message || "");
+      const isTransient = p.status === 503 || p.status === 429 || pj?.error?.code === 503 || pj?.error?.code === 429 || /unavailable|overload|timeout|resource_exhausted|demand|busy/i.test(pj?.error?.message || "");
       if (isTransient) {
         console.warn(`[reel-worker] [transient-poll-retry] Transient Google API error during poll for ${name} (status: ${p.status}, message: "${pj?.error?.message}"). Waiting 8s and continuing poll loop (poll ${i + 1}/60)...`);
         await sleep(8000);
@@ -3649,7 +3649,7 @@ for (;;) {
 
       const ambiguous = message.includes("AMBIGUOUS_TTS_RESULT_AFTER_BOUNDED_RECOVERY") || message.includes("AMBIGUOUS_VEO_DISPATCH_AFTER_BOUNDED_RECOVERY") || message.includes("AMBIGUOUS_VEO_DISPATCH_NO_OPERATION_ID");
       const deterministic = message.startsWith("Studio1") || message.startsWith("Narration transcript mismatch:") || message.startsWith("Narration timestamps failed") || message.startsWith("Transcript verification has no comparable words");
-      const isTransientError = /unavailable|503|429|ECONNRESET|ETIMEDOUT/i.test(message);
+      const isTransientError = /unavailable|503|429|ECONNRESET|ETIMEDOUT|demand|busy/i.test(message);
       const maxAllowedAttempts = isTransientError ? 5 : 3;
       const retry = !cancelled && !ambiguous && !deterministic && Number(op.attempt || 0) < maxAllowedAttempts;
       await pool.query(`UPDATE reel_operations SET status=$2,last_error=$3,lease_owner=NULL,lease_expires_at=NULL,updated_at=NOW() WHERE id=$1`, [op.id, cancelled ? "CANCELLED" : retry ? "QUEUED" : "FAILED", message]);
