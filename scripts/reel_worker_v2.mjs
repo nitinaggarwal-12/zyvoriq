@@ -2184,21 +2184,23 @@ function sanitizePromptForVeo(prompt, options = {}) {
   const { audioStrategy = "native", isAudioFilterRetry = false, genre = "" } = options;
   const shouldStripDialogue = audioStrategy === "tts_dub" || isAudioFilterRetry;
 
+  const isMusicVideo = String(genre).toUpperCase() === "MUSIC_VIDEO" || /music\s*video/i.test(prompt);
+
   // 1. Strip dialogue speaker prefixes like "KIARA:", "AKSHAY:", etc. while preserving camera grammar tags
   let clean = stripSpeakerPrefixes(prompt);
-  // Normalize prefix while PRESERVING distinct character IDs (e.g. IDENTITY LOCK [aarav_dancer]:)
-  clean = clean.replace(/STUDIO1 IDENTITY LOCK \[([^\]]+)\]:/gi, "IDENTITY LOCK [$1]:");
+  // Normalize prefix while eliminating any specific character IDs (e.g. IDENTITY LOCK [aarav_dancer]: -> IDENTITY LOCK [pop_artist]:)
+  clean = clean.replace(/(?:STUDIO1 )?IDENTITY LOCK \[[^\]]+\]:/gi, isMusicVideo ? "IDENTITY LOCK [pop_artist]:" : "IDENTITY LOCK [lead_performer]:");
   // Strip character name references in canonical reference clauses
   clean = clean.replace(/The canonical character reference for [^,.]+(?:,\s*|\.\s*)/gi, "The canonical character reference for the performer, ");
 
-  // Protect bracketed metadata tags (e.g. [char_id], [scene_id]) from name/celebrity substitution
+  // Protect scene metadata tags (e.g. [scene_01], [scene_arena]) from name/celebrity substitution
   const preservedTags = [];
-  clean = clean.replace(/\[[a-zA-Z0-9_-]+\]/g, (match) => {
+  clean = clean.replace(/\[scene_[a-zA-Z0-9_-]+\]/gi, (match) => {
     preservedTags.push(match);
     return `__PRESERVED_TAG_${preservedTags.length - 1}__`;
   });
-
-  const isMusicVideo = String(genre).toUpperCase() === "MUSIC_VIDEO" || /music\s*video/i.test(prompt);
+  // Any other bracketed tags (e.g. [operative_kuroda], [pop_star_kabir]) should be genericized immediately
+  clean = clean.replace(/\[[a-zA-Z0-9_-]+\]/g, isMusicVideo ? "[pop_artist]" : "[lead_performer]");
 
   const celebrityMap = [
     { pattern: /\b(?:Kiara[\s_]*Advani|Kiara)\b/gi, replacement: "a radiant, graceful Indian leading lady" },
@@ -2227,19 +2229,14 @@ function sanitizePromptForVeo(prompt, options = {}) {
     { pattern: /\b(?:Meera[\s_]*Rao|Meera)\b/gi, replacement: "a talented, expressive female musician" },
     { pattern: /\b(?:Aarav[\s_]*Roy|Aarav)\b/gi, replacement: "a charismatic, passionate male performer" },
     { pattern: /\b(?:Arjun[\s_]*Kapoor|Arjun)\b/gi, replacement: "a charismatic, handsome South Asian leading man" },
+    { pattern: /\b(?:Kuroda|Ren[\s_]*Kuroda)\b/gi, replacement: "a disciplined, sharp-eyed covert operative" },
   ];
   for (const { pattern, replacement } of celebrityMap) {
     clean = clean.replace(pattern, replacement);
   }
 
-  // Restore protected bracketed tags (sanitizing any celebrity/person names inside tags)
-  clean = clean.replace(/__PRESERVED_TAG_(\d+)__/g, (_, idx) => {
-    let tag = preservedTags[Number(idx)] || "";
-    for (const { pattern } of celebrityMap) {
-      tag = tag.replace(pattern, isMusicVideo ? "pop_artist" : "lead_performer");
-    }
-    return tag;
-  });
+  // Restore protected scene tags
+  clean = clean.replace(/__PRESERVED_TAG_(\d+)__/g, (_, idx) => preservedTags[Number(idx)] || "");
 
   // 3. Audio & dialogue directives: Gated on audioStrategy (Fix A, B, C)
   if (shouldStripDialogue) {
@@ -2476,6 +2473,12 @@ async function generateShot(op, manifest, shot) {
     if (!p) throw new Error(`Veo polling network failure: ${pollFetchError?.message || 'unknown'}`);
     const pj = await p.json().catch(() => ({}));
     if (!p.ok || pj?.error) {
+      const isTransient = p.status === 503 || p.status === 429 || pj?.error?.code === 503 || pj?.error?.code === 429 || /unavailable|overload|timeout|resource_exhausted/i.test(pj?.error?.message || "");
+      if (isTransient) {
+        console.warn(`[reel-worker] [transient-poll-retry] Transient Google API error during poll for ${name} (status: ${p.status}, message: "${pj?.error?.message}"). Waiting 8s and continuing poll loop (poll ${i + 1}/60)...`);
+        await sleep(8000);
+        continue;
+      }
       await updateOperation(op.id, { providerOperationName: null });
       throw new Error(`Veo polling failed: ${pj?.error?.message || p.status}`);
     }
@@ -2606,12 +2609,20 @@ async function generateShot(op, manifest, shot) {
               const allChars = Array.isArray(m.characters) && m.characters.length
                 ? m.characters
                 : (m.continuity?.characters || []);
-              const dynamicCharNames = allChars.flatMap(c => [c.name, c.id?.replace(/_/g, " ")]).filter(Boolean);
+              const dynamicCharNames = allChars.flatMap(c => {
+                const names = [c.name, c.id?.replace(/_/g, " ")];
+                if (c.name && typeof c.name === "string") {
+                  for (const part of c.name.split(/\s+/)) {
+                    if (part.length > 2) names.push(part);
+                  }
+                }
+                return names;
+              }).filter(Boolean);
 
               const HEAL_RULES = [
                 {
                   name: "sanitize-veo-prompt-rules",
-                  apply: (p) => sanitizePromptForVeo(p),
+                  apply: (p) => sanitizePromptForVeo(p, { genre: m.genre || m.creativeBible?.genre }),
                 },
                 {
                   name: "strip-speaker-dialogue-prefixes",
@@ -2632,14 +2643,10 @@ async function generateShot(op, manifest, shot) {
                 {
                   name: "replace-celebrity-names-with-generic-archetypes",
                   apply: (p) => {
-                    let text = p.replace(/STUDIO1 IDENTITY LOCK \[([^\]]+)\]:/gi, "IDENTITY LOCK [$1]:");
-                    const preservedTags = [];
-                    text = text.replace(/\[[a-zA-Z0-9_-]+\]/g, (match) => {
-                      preservedTags.push(match);
-                      return `__PRESERVED_TAG_${preservedTags.length - 1}__`;
-                    });
-                    text = text.replace(/\b(?:Kiara[\s_]*Advani|Kiara|Akshay[\s_]*Kumar|Akshay|Salman[\s_]*Khan|Salman|Aishwarya[\s_]*Rai(?:[\s_]*Bachchan)?|Aishwarya|Shah[\s_]*Rukh[\s_]*Khan|Shahrukh[\s_]*Khan|SRK|Deepika[\s_]*Padukone|Deepika|Ranveer[\s_]*Singh|Ranveer|Alia[\s_]*Bhatt|Alia|Ranbir[\s_]*Kapoor|Ranbir|Hrithik[\s_]*Roshan|Hrithik|Katrina[\s_]*Kaif|Katrina|Priyanka[\s_]*Chopra(?:[\s_]*Jonas)?|Priyanka|Kareena[\s_]*Kapoor(?:[\s_]*Khan)?|Kareena|Saif[\s_]*Ali[\s_]*Khan|Saif|Amitabh[\s_]*Bachchan|Amitabh|Tom[\s_]*Cruise|Brad[\s_]*Pitt|Leonardo[\s_]*DiCaprio|Zendaya|Timothee[\s_]*Chalamet|Timothée[\s_]*Chalamet|Kabir[\s_]*Anand|Kabir|Zoya[\s_]*Rehman|Zoya|Farooq[\s_]*Malik|Farooq|Meera[\s_]*Rao|Meera|Aarav[\s_]*Roy|Aarav)\b/gi, "lead performer");
-                    return text.replace(/__PRESERVED_TAG_(\d+)__/g, (_, idx) => preservedTags[Number(idx)] || "");
+                    let text = p.replace(/(?:STUDIO1 )?IDENTITY LOCK \[[^\]]+\]:/gi, "IDENTITY LOCK [lead_performer]:");
+                    text = text.replace(/\[(?!scene_)[a-zA-Z0-9_-]+\]/gi, "[lead_performer]");
+                    text = text.replace(/\b(?:Kiara[\s_]*Advani|Kiara|Akshay[\s_]*Kumar|Akshay|Salman[\s_]*Khan|Salman|Aishwarya[\s_]*Rai(?:[\s_]*Bachchan)?|Aishwarya|Shah[\s_]*Rukh[\s_]*Khan|Shahrukh[\s_]*Khan|SRK|Deepika[\s_]*Padukone|Deepika|Ranveer[\s_]*Singh|Ranveer|Alia[\s_]*Bhatt|Alia|Ranbir[\s_]*Kapoor|Ranbir|Hrithik[\s_]*Roshan|Hrithik|Katrina[\s_]*Kaif|Katrina|Priyanka[\s_]*Chopra(?:[\s_]*Jonas)?|Priyanka|Kareena[\s_]*Kapoor(?:[\s_]*Khan)?|Kareena|Saif[\s_]*Ali[\s_]*Khan|Saif|Amitabh[\s_]*Bachchan|Amitabh|Tom[\s_]*Cruise|Brad[\s_]*Pitt|Leonardo[\s_]*DiCaprio|Zendaya|Timothee[\s_]*Chalamet|Timothée[\s_]*Chalamet|Kabir[\s_]*Anand|Kabir|Zoya[\s_]*Rehman|Zoya|Farooq[\s_]*Malik|Farooq|Meera[\s_]*Rao|Meera|Aarav[\s_]*Roy|Aarav|Kuroda|Ren)\b/gi, "lead performer");
+                    return text;
                   },
                 },
                 {
@@ -2664,6 +2671,18 @@ async function generateShot(op, manifest, shot) {
                   matchedRules.push(rule.name);
                   console.log(`[reel-worker] [rai-auto-heal] Rule matched: ${rule.name}`);
                   currentText = transformed;
+                }
+              }
+              if (matchedRules.length === 0) {
+                // Guaranteed fallback character anonymization if specific rules did not trigger
+                const genericHealed = currentText
+                  .replace(/IDENTITY LOCK \[[^\]]+\]:[^.]*\./gi, "IDENTITY LOCK [lead_performer]: The established performer with dramatic cinematic presence.")
+                  .replace(/Physical description:[^.]*\./gi, "Physical description: Charismatic performer.")
+                  .replace(/\[(?!scene_)[a-zA-Z0-9_-]+\]/gi, "[lead_performer]");
+                if (genericHealed !== currentText) {
+                  matchedRules.push("generic-character-anonymization");
+                  currentText = genericHealed;
+                  console.log(`[reel-worker] [rai-auto-heal] Fallback generic character anonymization applied to shot ${shot.id}`);
                 }
               }
               healedPrompt = currentText.replace(/\s{2,}/g, " ").trim();
@@ -3630,7 +3649,9 @@ for (;;) {
 
       const ambiguous = message.includes("AMBIGUOUS_TTS_RESULT_AFTER_BOUNDED_RECOVERY") || message.includes("AMBIGUOUS_VEO_DISPATCH_AFTER_BOUNDED_RECOVERY") || message.includes("AMBIGUOUS_VEO_DISPATCH_NO_OPERATION_ID");
       const deterministic = message.startsWith("Studio1") || message.startsWith("Narration transcript mismatch:") || message.startsWith("Narration timestamps failed") || message.startsWith("Transcript verification has no comparable words");
-      const retry = !cancelled && !ambiguous && !deterministic && Number(op.attempt || 0) < 3;
+      const isTransientError = /unavailable|503|429|ECONNRESET|ETIMEDOUT/i.test(message);
+      const maxAllowedAttempts = isTransientError ? 5 : 3;
+      const retry = !cancelled && !ambiguous && !deterministic && Number(op.attempt || 0) < maxAllowedAttempts;
       await pool.query(`UPDATE reel_operations SET status=$2,last_error=$3,lease_owner=NULL,lease_expires_at=NULL,updated_at=NOW() WHERE id=$1`, [op.id, cancelled ? "CANCELLED" : retry ? "QUEUED" : "FAILED", message]);
       if (!cancelled && !retry) await markTerminalFailure(op, message);
       console.error(`[reel-worker] [transition] ${op.id} ${cancelled ? "cancelled" : retry ? "retry" : "failed"}: ${message}`);
