@@ -1209,7 +1209,35 @@ async function writeAsset(key, buffer) {
   }
   return { key: r.key, url: `/api/reels/assets/${r.key.split("/").map(encodeURIComponent).join("/")}` };
 }
-async function readAsset(keyOrUrl) { return fs.readFile(assetPath(keyOrUrl).target); }
+async function readAsset(keyOrUrl) {
+  try {
+    return await fs.readFile(assetPath(keyOrUrl).target);
+  } catch (err) {
+    const raw = String(keyOrUrl || "").replace(/^\/+/, "");
+    // 1. Check in repo public directory (e.g. public/assets/stills/dubai_dance.jpg)
+    const candidates = [
+      path.resolve(process.cwd(), "public", raw),
+      path.resolve(process.cwd(), "public", raw.replace(/^public\//, "")),
+      path.resolve(process.cwd(), raw),
+    ];
+    for (const c of candidates) {
+      try {
+        return await fs.readFile(c);
+      } catch {}
+    }
+    // 2. Fallback to production web endpoint
+    const webBase = (process.env.ZYVORIQ_WEB_BASE_URL || process.env.ZYVORIQ_PRODUCTION_URL || "https://zyvoriq.up.railway.app").replace(/\/$/, "");
+    try {
+      const url = raw.startsWith("http") ? raw : `${webBase}/${raw}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const ab = await res.arrayBuffer();
+        return Buffer.from(ab);
+      }
+    } catch {}
+    throw err;
+  }
+}
 
 
 function assetContentType(key) {
