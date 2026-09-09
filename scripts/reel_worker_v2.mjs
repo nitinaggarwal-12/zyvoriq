@@ -2803,7 +2803,7 @@ async function generateContinuousScore(genre, durationSec, outPath) {
   ];
 
   let stemPath = null;
-  if (g.includes("BOLLYWOOD") || g.includes("ROMANCE") || g.includes("MUSIC_VIDEO")) {
+  if (g.includes("BOLLYWOOD")) {
     for (const p of candidateStems) {
       if (fsSync.existsSync(p)) {
         stemPath = p;
@@ -2853,7 +2853,7 @@ async function generateContinuousScore(genre, durationSec, outPath) {
 
   const generators = [];
   let filterComplex = "";
-  if (g.includes("BOLLYWOOD_ROMANCE") || g.includes("ROMANCE") || g.includes("MUSIC_VIDEO")) {
+  if (g.includes("BOLLYWOOD_ROMANCE") || g.includes("BOLLYWOOD")) {
     generators.push(
       `anoisesrc=d=${dur}:c=pink:r=48000:a=0.008,lowpass=f=400,volume=0.15`,
       `sine=frequency=138.59:duration=${dur},volume=0.08`,
@@ -2862,6 +2862,14 @@ async function generateContinuousScore(genre, durationSec, outPath) {
       `sine=frequency=329.63:duration=${dur},volume=0.04`
     );
     filterComplex = `[0:a][1:a][2:a][3:a][4:a]amix=inputs=5:duration=first:dropout_transition=2,chorus=0.7:0.9:55:0.4:0.25:2,aecho=0.8:0.85:80:0.35,afade=t=in:st=0:d=1.5,afade=t=out:st=${Math.max(0, dur - 2.2)}:d=2.2[bgm]`;
+  } else if (g.includes("MUSIC_VIDEO") || g.includes("POP") || g.includes("ELECTRONIC")) {
+    generators.push(
+      `anoisesrc=d=${dur}:c=pink:r=48000:a=0.005,lowpass=f=400,volume=0.10`,
+      `sine=frequency=110.00:duration=${dur},volume=0.08`,
+      `sine=frequency=220.00:duration=${dur},volume=0.06`,
+      `sine=frequency=329.63:duration=${dur},volume=0.05`
+    );
+    filterComplex = `[0:a][1:a][2:a][3:a]amix=inputs=4:duration=first:dropout_transition=2,chorus=0.8:0.9:50:0.4:0.25:2,aecho=0.8:0.85:70:0.35,afade=t=in:st=0:d=1.5,afade=t=out:st=${Math.max(0, dur - 2)}:d=2[bgm]`;
   } else if (g.includes("BOLLYWOOD_ACTION") || g.includes("ACTION")) {
     generators.push(
       `anoisesrc=d=${dur}:c=pink:r=48000:a=0.015,lowpass=f=300,volume=0.2`,
@@ -2970,7 +2978,9 @@ async function renderRough(op, m) {
 
   const bgmPath = path.join(partsDir, "bgm_score.wav");
   try {
-    await generateContinuousScore(genre, d, bgmPath);
+    if (!hasNativeAudio || genre !== "MUSIC_VIDEO") {
+      await generateContinuousScore(genre, d, bgmPath);
+    }
   } catch (bgmErr) {
     console.warn(`[reel-worker] continuous BGM score synthesis warning: ${bgmErr?.message || bgmErr}`);
   }
@@ -3050,16 +3060,12 @@ async function renderRough(op, m) {
         "-i", listPath,
       ];
 
+      // Forensic-First: In native audio mode, [0:a] contains the native singing/dialogue performance.
+      // NEVER dub artificial TTS over characters whose lips are visibly articulating words.
       let filterComplex = "";
-      if (hasBgmFile && hasNarrationFile) {
-        concatArgs.push("-i", bgmPath, "-i", narrationPath);
-        filterComplex = `[0:a]aresample=48000,volume=0.10[foley];[1:a]aresample=48000,volume=0.55[bgm];[2:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000,volume=1.25[voice];[voice][bgm][foley]amix=inputs=3:duration=first:dropout_transition=2,loudnorm=I=-24:LRA=7:tp=-2[aout]`;
-      } else if (hasBgmFile) {
+      if (hasBgmFile && genre !== "MUSIC_VIDEO") {
         concatArgs.push("-i", bgmPath);
-        filterComplex = `[0:a]aresample=48000,volume=0.15[foley];[1:a]aresample=48000,volume=0.80[bgm];[bgm][foley]amix=inputs=2:duration=first:dropout_transition=2,loudnorm=I=-24:LRA=7:tp=-2[aout]`;
-      } else if (hasNarrationFile) {
-        concatArgs.push("-i", narrationPath);
-        filterComplex = `[0:a]aresample=48000,volume=0.15[foley];[1:a]atrim=duration=${d},asetpts=PTS-STARTPTS,aresample=48000,volume=1.25[voice];[voice][foley]amix=inputs=2:duration=first:dropout_transition=2,loudnorm=I=-24:LRA=7:tp=-2[aout]`;
+        filterComplex = `[0:a]aresample=48000,volume=1.00[dialogue];[1:a]aresample=48000,volume=0.20[bgm];[dialogue][bgm]amix=inputs=2:duration=first:dropout_transition=2,loudnorm=I=-24:LRA=7:tp=-2[aout]`;
       } else {
         filterComplex = `[0:a]aresample=48000,loudnorm=I=-24:LRA=7:tp=-2[aout]`;
       }
@@ -3071,7 +3077,6 @@ async function renderRough(op, m) {
         "-c:v", "copy",
         "-c:a", "aac",
         "-b:a", "192k",
-        "-t", String(d),
         "-movflags", "+faststart",
         tmp
       );
