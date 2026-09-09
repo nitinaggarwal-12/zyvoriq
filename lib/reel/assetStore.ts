@@ -62,16 +62,36 @@ export async function writeAsset(key: string, data: Buffer) {
 }
 
 export async function readAsset(key: string) {
-  // Check if static or showcase video exists locally
-  const shortId = key.match(/studio1_[a-f0-9]{8}/i)?.[0];
-  if (shortId) {
-    const publicCandidate = path.resolve(process.cwd(), "public", "assets", "video", `${shortId}.mp4`);
-    if (fsSync.existsSync(publicCandidate)) {
-      return fs.readFile(publicCandidate);
+  const ext = path.extname(key).toLowerCase();
+  const isVideo = ext === ".mp4" || ext === ".webm" || ext === ".mov" || !ext;
+  const isImage = ext === ".png" || ext === ".jpg" || ext === ".jpeg" || ext === ".webp";
+
+  // Check if static or showcase video exists locally (ONLY for video requests)
+  if (isVideo) {
+    const shortId = key.match(/studio1_[a-f0-9]{8}/i)?.[0];
+    if (shortId) {
+      const publicCandidate = path.resolve(process.cwd(), "public", "assets", "video", `${shortId}.mp4`);
+      if (fsSync.existsSync(publicCandidate)) {
+        return fs.readFile(publicCandidate);
+      }
+      const scratchCandidate = path.resolve(process.cwd(), "scratch", "reels_evaluation", `${shortId}.mp4`);
+      if (fsSync.existsSync(scratchCandidate)) {
+        return fs.readFile(scratchCandidate);
+      }
     }
-    const scratchCandidate = path.resolve(process.cwd(), "scratch", "reels_evaluation", `${shortId}.mp4`);
-    if (fsSync.existsSync(scratchCandidate)) {
-      return fs.readFile(scratchCandidate);
+  }
+
+  // Check if dedicated still exists locally for image requests
+  if (isImage) {
+    if (key.includes("5b3c6b72")) {
+      const renStill = path.resolve(process.cwd(), "public", "assets", "stills", "ren_cyberpunk.png");
+      if (fsSync.existsSync(renStill)) {
+        return fs.readFile(renStill);
+      }
+    }
+    const scratchCache = path.resolve(process.cwd(), "scratch", "asset_cache", key);
+    if (fsSync.existsSync(scratchCache)) {
+      return fs.readFile(scratchCache);
     }
   }
 
@@ -84,6 +104,25 @@ export async function readAsset(key: string) {
     if (fsSync.existsSync(publicRelative)) {
       return fs.readFile(publicRelative);
     }
+
+    // Proxy and cache from live deployment if running locally without mounted volume
+    if (process.env.NODE_ENV !== "production" && isImage) {
+      try {
+        const prodUrl = `https://zyvoriq.up.railway.app/api/reels/assets/${key.replace(/^\/+/, "")}`;
+        const res = await fetch(prodUrl, { signal: AbortSignal.timeout(4000) });
+        if (res.ok) {
+          const cType = res.headers.get("content-type") || "";
+          if (cType.startsWith("image/")) {
+            const buf = Buffer.from(await res.arrayBuffer());
+            const scratchCache = path.resolve(process.cwd(), "scratch", "asset_cache", key);
+            await fs.mkdir(path.dirname(scratchCache), { recursive: true }).catch(() => {});
+            await fs.writeFile(scratchCache, buf).catch(() => {});
+            return buf;
+          }
+        }
+      } catch {}
+    }
+
     throw err;
   }
 }

@@ -312,9 +312,13 @@ export function CreatorReelsHome() {
               if (cleanTitle.length > 50) cleanTitle = cleanTitle.slice(0, 48) + "...";
               let poster = prod.posterUrl;
               if (!poster || poster.includes(".railway.internal")) {
-                if (prod.id.includes("e2e00945") || prod.id.includes("5b3c6b72")) poster = "/assets/stills/dubai_dance.jpg";
+                poster = m.shots?.[1]?.continuityIn?.referenceFrameUrl || null;
+              }
+              if (!poster || poster.includes(".railway.internal")) {
+                if (prod.id.includes("5b3c6b72")) poster = "/assets/stills/ren_cyberpunk.png";
+                else if (prod.id.includes("e2e00945")) poster = "/assets/stills/dubai_dance.jpg";
                 else if (prod.id.includes("9f360810") || prod.id.includes("39a1fe18")) poster = "/assets/stills/swiss_alpine.jpg";
-                else if (prod.id.includes("d2d144d2") || prod.id.includes("32ffc950")) poster = "/assets/stills/desert_spiral.jpg";
+                else if (prod.id.includes("cf46b686") || prod.id.includes("d2d144d2") || prod.id.includes("32ffc950")) poster = "/assets/stills/desert_spiral.jpg";
                 else if (prod.id.includes("5bfb958d") || prod.id.includes("1a8264ca")) poster = "/assets/stills/cosmic_nebula.jpg";
                 else if (prod.id.includes("napoleon")) poster = "/assets/stills/napoleon_hero.png";
                 else if (prod.id.includes("coronation")) poster = "/assets/stills/coronation_hero.png";
@@ -1058,9 +1062,13 @@ export function CreatorReelsHome() {
                           if (title.length > 60) title = title.slice(0, 58) + "...";
                           let poster = p.posterUrl;
                           if (!poster || poster.includes(".railway.internal")) {
-                            if (p.id.includes("e2e00945") || p.id.includes("5b3c6b72")) poster = "/assets/stills/dubai_dance.jpg";
+                            poster = m.shots?.[1]?.continuityIn?.referenceFrameUrl || null;
+                          }
+                          if (!poster || poster.includes(".railway.internal")) {
+                            if (p.id.includes("5b3c6b72")) poster = "/assets/stills/ren_cyberpunk.png";
+                            else if (p.id.includes("e2e00945")) poster = "/assets/stills/dubai_dance.jpg";
                             else if (p.id.includes("9f360810") || p.id.includes("39a1fe18")) poster = "/assets/stills/swiss_alpine.jpg";
-                            else if (p.id.includes("d2d144d2") || p.id.includes("32ffc950")) poster = "/assets/stills/desert_spiral.jpg";
+                            else if (p.id.includes("cf46b686") || p.id.includes("d2d144d2") || p.id.includes("32ffc950")) poster = "/assets/stills/desert_spiral.jpg";
                             else if (p.id.includes("5bfb958d") || p.id.includes("1a8264ca")) poster = "/assets/stills/cosmic_nebula.jpg";
                             else if (p.id.includes("napoleon")) poster = "/assets/stills/napoleon_hero.png";
                             else if (p.id.includes("coronation")) poster = "/assets/stills/coronation_hero.png";
@@ -1072,7 +1080,14 @@ export function CreatorReelsHome() {
                             >
                               <div className="flex items-center gap-3 min-w-0">
                                 {poster ? (
-                                  <img src={poster} alt={title} className="w-10 h-14 rounded-lg object-cover border border-white/10 shrink-0" />
+                                  <img
+                                    src={poster}
+                                    alt={title}
+                                    onError={(e) => {
+                                      (e.currentTarget as HTMLElement).style.display = "none";
+                                    }}
+                                    className="w-10 h-14 rounded-lg object-cover border border-white/10 shrink-0"
+                                  />
                                 ) : (
                                   <div className="w-10 h-14 rounded-lg bg-teal-950/40 border border-teal-500/30 flex items-center justify-center shrink-0">
                                     <Clapperboard className="w-4 h-4 text-teal-400" />

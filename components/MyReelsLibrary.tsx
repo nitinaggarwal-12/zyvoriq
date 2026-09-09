@@ -197,29 +197,58 @@ export function cleanDisplayTitle(rawTitle: string): string {
 }
 
 export function resolveReelPoster(pId: string, m: any, shots: LibraryClip[]): string | null {
-  const explicit = shots[0]?.posterUrl || m.stillUrl || m.anchorImageUrl || m.canonicalCharacterAnchorUrl || m.characters?.[0]?.canonicalReferenceImages?.[0];
-  if (explicit && typeof explicit === "string" && !explicit.includes("undefined")) return explicit;
+  const text = `${pId} ${m?.topic || ""} ${(m as any)?.studio1?.projectTitle || ""} ${m?.masterScript || ""}`.toLowerCase();
 
-  const text = `${pId} ${m?.topic || ""} ${m?.masterScript || ""}`.toLowerCase();
-  if (text.includes("e2e00945") || text.includes("5b3c6b72") || text.includes("cyberpunk") || text.includes("dance") || text.includes("shinjuku")) {
-    return "/assets/stills/dubai_dance.jpg";
+  // 1. Known Showcases & Thematic Stills (Instant, authentic, zero-latency)
+  // Ren Kuro - Midnight Cyberpunk Dance (Male Cyberpunk Dancer in Shinjuku Neon)
+  if (text.includes("5b3c6b72") || text.includes("cyberpunk") || text.includes("ren kuro") || text.includes("shinjuku")) {
+    return "/assets/stills/ren_cyberpunk.png";
   }
+
+  // Swiss Alpine Mountaineer
   if (text.includes("9f360810") || text.includes("swiss") || text.includes("alpine") || text.includes("mountaineer")) {
     return "/assets/stills/swiss_alpine.jpg";
   }
-  if (text.includes("d2d144d2") || text.includes("desert") || text.includes("dune") || text.includes("nomad")) {
+
+  // Desert Nomad / Desert Rhythms
+  if (text.includes("cf46b686") || text.includes("d2d144d2") || text.includes("desert") || text.includes("dune") || text.includes("nomad")) {
     return "/assets/stills/desert_spiral.jpg";
   }
-  if (text.includes("5bfb958d") || text.includes("cosmic") || text.includes("space") || text.includes("astronaut")) {
+
+  // Cosmic Astronaut
+  if (text.includes("5bfb958d") || text.includes("cosmic") || text.includes("space") || text.includes("astronaut") || text.includes("nebula")) {
     return "/assets/stills/cosmic_nebula.jpg";
   }
+
+  // Napoleon
   if (text.includes("napoleon") || text.includes("toulon")) {
     return "/assets/stills/napoleon_hero.png";
   }
+
+  // Coronation / Mumbai
   if (text.includes("coronation") || text.includes("mumbai") || text.includes("penthouse") || text.includes("bandra")) {
     return "/assets/stills/coronation_hero.png";
   }
-  return "/assets/stills/dubai_dance.jpg";
+
+  // Dubai Rhapsody (Only when specifically Dubai/Rhapsody)
+  if (text.includes("e2e00945") || text.includes("dubai") || text.includes("rhapsody")) {
+    return "/assets/stills/dubai_dance.jpg";
+  }
+
+  // 2. Custom productions: Check explicit still or character reference
+  const explicit = m?.stillUrl || m?.anchorImageUrl || m?.canonicalCharacterAnchorUrl || m?.continuity?.characters?.[0]?.canonicalReferenceImages?.[0] || m?.characters?.[0]?.canonicalReferenceImages?.[0];
+  if (explicit && typeof explicit === "string" && !explicit.includes("undefined")) return explicit;
+
+  // 3. Custom productions: Shot 01 frame is captured in shot 02 incoming continuity reference
+  const shot1Frame = m?.shots?.[1]?.continuityIn?.referenceFrameUrl;
+  if (shot1Frame && typeof shot1Frame === "string") return shot1Frame;
+
+  const firstShotPoster = shots[0]?.posterUrl;
+  if (firstShotPoster && typeof firstShotPoster === "string" && !firstShotPoster.includes("undefined")) {
+    return firstShotPoster;
+  }
+
+  return null;
 }
 
 const CANONICAL_SHOWCASES: LibraryReel[] = [
@@ -844,7 +873,7 @@ export function MyReelsLibrary() {
                 order: s.order || index + 1,
                 title: `Shot ${String(s.order || index + 1).padStart(2, "0")}: ${s.visualIntent?.slice(0, 42) || s.scriptText?.slice(0, 36) || "Cinematic Beat"}`,
                 videoUrl: s.asset?.videoUrl || null,
-                posterUrl: s.asset?.posterUrl || s.continuityIn?.referenceFrameUrl || (index === 0 ? (m.canonicalCharacterAnchorUrl || m.anchorImageUrl || m.stillUrl || m.characters?.[0]?.canonicalReferenceImages?.[0]) : null) || null,
+                posterUrl: s.asset?.posterUrl || s.continuityIn?.referenceFrameUrl || (index === 0 ? (m.shots?.[1]?.continuityIn?.referenceFrameUrl || m.canonicalCharacterAnchorUrl || m.anchorImageUrl || m.stillUrl || m.continuity?.characters?.[0]?.canonicalReferenceImages?.[0] || m.characters?.[0]?.canonicalReferenceImages?.[0] || (p.id.includes("5b3c6b72") ? "/assets/stills/ren_cyberpunk.png" : null)) : null) || null,
                 durationSec: Number(s.editorialDurationSec || s.actualDurationSec || s.generationDurationSec || 5.5),
                 status: s.status || "PLANNED",
                 scriptText: s.scriptText || null,
@@ -1736,24 +1765,25 @@ export function MyReelsLibrary() {
                               src={reel.posterUrl}
                               alt={reel.title}
                               onError={(e) => {
-                                (e.currentTarget as HTMLImageElement).src = "/assets/stills/dubai_dance.jpg";
+                                (e.currentTarget as HTMLElement).style.display = "none";
                               }}
                               className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                             />
-                          ) : reel.videoUrl ? (
+                          ) : null}
+                          {reel.videoUrl ? (
                             <video
-                              src={`${reel.videoUrl}#t=0.1`}
+                              src={`${reel.videoUrl}#t=0.5`}
                               preload="metadata"
                               playsInline
                               muted
-                              poster={reel.posterUrl || undefined}
-                              className="w-full h-full object-cover group-hover:scale-105 transition duration-300 pointer-events-none"
+                              className={`w-full h-full object-cover group-hover:scale-105 transition duration-300 pointer-events-none ${reel.posterUrl ? "absolute inset-0 -z-10" : ""}`}
                             />
-                          ) : (
+                          ) : null}
+                          {!reel.posterUrl && !reel.videoUrl ? (
                             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-zinc-900 to-black">
                               <Clapperboard className="h-8 w-8 text-zinc-600" />
                             </div>
-                          )}
+                          ) : null}
 
                           {/* Play Overlay */}
                           <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 flex items-center justify-center transition">
@@ -2400,22 +2430,27 @@ export function MyReelsLibrary() {
                                   <img
                                     src={clip.posterUrl}
                                     alt={clip.title}
+                                    onError={(e) => {
+                                      (e.currentTarget as HTMLElement).style.display = "none";
+                                    }}
                                     className="w-full h-full object-cover group-hover:scale-105 transition duration-200"
                                   />
-                                ) : hasClipVideo ? (
+                                ) : null}
+                                {hasClipVideo ? (
                                   <video
-                                    src={clip.videoUrl!}
+                                    src={`${clip.videoUrl!}#t=0.5`}
                                     preload="metadata"
                                     playsInline
                                     muted
-                                    className="w-full h-full object-cover group-hover:scale-105 transition duration-200 pointer-events-none"
+                                    className={`w-full h-full object-cover group-hover:scale-105 transition duration-200 pointer-events-none ${clip.posterUrl ? "absolute inset-0 -z-10" : ""}`}
                                   />
-                                ) : (
+                                ) : null}
+                                {!clip.posterUrl && !hasClipVideo ? (
                                   <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-950 text-zinc-600 gap-1">
                                     <Video className="h-6 w-6" />
                                     <span className="text-[10px] font-mono">Shot {clip.order}</span>
                                   </div>
-                                )}
+                                ) : null}
 
                                 {/* Play Clip Button */}
                                 {hasClipVideo && (
