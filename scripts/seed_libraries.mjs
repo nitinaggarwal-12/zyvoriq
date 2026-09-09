@@ -4,8 +4,8 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { characterLibrary } from "../lib/library/characterLibrary.ts";
-import { locationLibrary } from "../lib/library/locationLibrary.ts";
+import { characterLibrary } from "../lib/library/characterLibrary.mjs";
+import { locationLibrary } from "../lib/library/locationLibrary.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

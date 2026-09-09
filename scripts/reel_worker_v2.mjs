@@ -860,15 +860,39 @@ async function runDeadlockAndStarvationWatchdog() {
     `);
     for (const bRow of blockedShots.rows) {
       const p = await pool.query(`SELECT manifest_json FROM reel_productions WHERE id=$1`, [bRow.production_id]);
+      if (p.rows.length === 0) {
+        await pool.query(`
+          UPDATE reel_operations
+          SET status='CANCELLED',
+              last_error='PARENT_TERMINAL_FAILURE: Parent production was deleted',
+              lease_owner=NULL,
+              lease_expires_at=NULL,
+              updated_at=NOW()
+          WHERE id=$1 AND status NOT IN ('FAILED', 'CANCELLED', 'SUCCEEDED')
+        `, [bRow.id]);
+        console.log(`[reel-worker] [watchdog] Cleaned orphaned BLOCKED operation ${bRow.id} (production ${bRow.production_id} no longer exists)`);
+        continue;
+      }
       const m = p.rows[0]?.manifest_json;
       if (!m || !Array.isArray(m.shots)) continue;
       const shot = m.shots.find(s => s.id === bRow.target_id);
       if (shot?.dependsOnShotIds?.length) {
-        // Check for dead / terminal parent failure
-        const deadDep = shot.dependsOnShotIds.find(depId => {
+        // Check for dead / terminal parent failure in manifest
+        let deadDep = shot.dependsOnShotIds.find(depId => {
           const dep = m.shots.find(s => s.id === depId);
           return dep?.status === "FAILED" || dep?.status === "CANCELLED";
         });
+        if (!deadDep) {
+          // Check reel_operations directly for terminal status of any parent dependency
+          const depOps = await pool.query(`
+            SELECT target_id, status FROM reel_operations
+            WHERE production_id = $1 AND kind = 'SHOT' AND target_id = ANY($2::text[])
+          `, [bRow.production_id, shot.dependsOnShotIds]);
+          const deadOp = depOps.rows.find(r => r.status === 'FAILED' || r.status === 'CANCELLED');
+          if (deadOp) {
+            deadDep = deadOp.target_id;
+          }
+        }
         if (deadDep) {
           const res = await pool.query(`
             UPDATE reel_operations
@@ -882,6 +906,15 @@ async function runDeadlockAndStarvationWatchdog() {
           `, [bRow.id, `PARENT_TERMINAL_FAILURE: Upstream dependency ${deadDep} failed or was cancelled`]);
           if (res.rowCount > 0) {
             console.log(`[reel-worker] [watchdog] Terminal cascading: cancelled BLOCKED shot ${shot.id} (${bRow.production_id}, dep ${deadDep} dead)`);
+            try {
+              const shotInManifest = m.shots.find(s => s.id === bRow.target_id);
+              if (shotInManifest && shotInManifest.status !== 'CANCELLED') {
+                shotInManifest.status = 'CANCELLED';
+                await pool.query(`UPDATE reel_productions SET manifest_json=$1, updated_at=NOW() WHERE id=$2`, [m, bRow.production_id]);
+              }
+            } catch (err) {
+              console.warn(`[reel-worker] [watchdog] Error syncing manifest for cancelled shot:`, err.message);
+            }
           }
           continue;
         }

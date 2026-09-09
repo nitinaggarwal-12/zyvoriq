@@ -367,7 +367,7 @@ export async function ensureCharacterSheet(manifest, productionId, writeAsset) {
     // so the RAI three-strike path is skipped entirely.
     if (char.libraryCharacterId) {
       try {
-        const { characterLibrary } = await import("../lib/library/characterLibrary.ts");
+        const { characterLibrary } = await import("../lib/library/characterLibrary.mjs");
         const variant = await characterLibrary.resolveWardrobe(
           char.libraryCharacterId, char.wardrobeId
         );

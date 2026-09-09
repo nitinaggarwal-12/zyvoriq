@@ -198,7 +198,7 @@ export async function validateCharacterSheet({
       }
 
       // Check if response contains empty payload or safety block
-      const finishReason = generatedVideo?.finishReason || pollJson.response?.finishReason;
+      const finishReason = generatedVideos?.[0]?.finishReason || generatedSamples?.[0]?.finishReason || pollJson.response?.finishReason;
       const isSafety = finishReason === "SAFETY" || /safety|filter|prohibit|policy/i.test(JSON.stringify(pollJson));
       if (isSafety) {
         const reason = `FINISH_REASON_SAFETY: ${JSON.stringify(pollJson.response || {})}`;
