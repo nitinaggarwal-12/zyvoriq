@@ -80,3 +80,13 @@
   3. Verify `renderRough` never dubs synthetic TTS (`narrationPath`) over native character speech/singing, never truncates with `-t d`, and preserves native audio at volume 1.00 (-24 LUFS).
 - **Continuous Telemetry Watchdog Execution**:
   Run `node scripts/telemetry_watchdog.mjs` on Cloudtop to tail live Railway logs and emit immediate diagnostic alerts for any clamp bindings, surplus spikes, audio strategy contradictions, or Veo safety retries.
+
+# 💡 The Art of the Possible & Proactive Eureka Engineering Protocol (Zero Defensiveness)
+- **Zero Defensive Mindset & No Surrendering to External Limits**: NEVER answer a technical challenge with defensive excuses, risk-averse disclaimers, or helplessness around external APIs (e.g., "Google Veo is a black box so it's not possible to guarantee", "third-party filters are outside our control"). That is defeatist engineering.
+- **The "Art of the Possible" First Principle**: Whenever an external model, service, or API presents volatility, constraints, or unexpected rejections, IMMEDIATELY ask: *"What architectural layer, agentic reflection loop, or proactive verification engine can we engineer to make this deterministic?"*
+- **Proactive Eureka & "Aha Moment" Ideation**: Never wait for the user to brainstorm the creative breakthrough or suggest self-healing architectures. Antigravity must proactively originate, propose, and prototype audacious solutions (e.g., 2-phase pre-flight prompt linters, self-repair reflection agents, phonetic lyric synthesizers, neural audiovisual sync locks) that elevate the system beyond ordinary expectations.
+- **Self-Healing Over Helplessness**: Every external vulnerability must be wrapped in an autonomous self-correction loop:
+  1. Pre-flight verification to catch and auto-heal risks before spending API quota/latency.
+  2. In-flight diagnosis with LLM reflection to repair and retry upon rejection without human friction.
+  3. Continuous closed-loop learning to prevent the same failure mode from ever impacting the user.
+

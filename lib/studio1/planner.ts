@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { planReel, generateNarrationScriptWithGemini, mergeShortBeats, type PlanReelInput } from "../reel/planner.ts";
 export { mergeShortBeats };
 import { compileOmniDirectorialPass, type OmniDirectorialCompilation } from "../reel/omniDirector.ts";
+import { verifyPromptPreFlight } from "../ai/promptVerifier.ts";
 import type { ReelProductionManifest } from "../reel/types.ts";
 
 export type Studio1SubjectMode = "PRESENTER" | "NO_PERSON";
@@ -547,6 +548,28 @@ export async function planStudio1(input: PlanReelInput): Promise<ReelProductionM
       (manifest as any).studio1.continuationPart = 2;
     }
   }
+  // Pre-flight prompt verification & auto-correction gate
+  try {
+    const genre = manifest.genre || manifest.creativeBible?.genre || input.genre;
+    const meta = (manifest as any).studio1;
+    await Promise.all(manifest.shots.map(async (shot) => {
+      if (shot.generationPrompt) {
+        const allChars = manifest.continuity?.characters || (manifest as any).characters || [];
+        const charName = allChars.find((c: any) => c.id === shot.continuityIn?.characterId)?.name;
+        const verification = await verifyPromptPreFlight(shot.generationPrompt, { genre, characterName: charName });
+        if (verification.wasRewritten) {
+          console.log(`[prompt-verifier] Pre-flight healed shot ${shot.id} prompt: ${verification.reasons.join(", ")}`);
+          shot.generationPrompt = verification.verifiedPrompt;
+          if (meta?.basePrompts && meta.basePrompts[shot.id]) {
+            meta.basePrompts[shot.id] = verification.verifiedPrompt;
+          }
+        }
+      }
+    }));
+  } catch (err) {
+    console.warn(`[prompt-verifier] Non-fatal pre-flight verification warning:`, err);
+  }
+
   return manifest;
 }
 

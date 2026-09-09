@@ -11,6 +11,7 @@ import pg from "pg";
 import { ensureCharacterSheet, firstFrameForShot, seedForShot, getManifestCharacters } from "./characterAnchor.mjs";
 import { buildStudio1RenderPlan, buildStudio1VisualFilter, synchronizeStudio1ManifestTimeline } from "./studio1_timeline_sync.mjs";
 import { generateContinuousReel, maxBeatsForDuration } from "./studio1_native.mjs";
+import { repairRejectedPrompt, verifyPromptPreFlight } from "../lib/ai/promptVerifier.mjs";
 
 const { Pool } = pg;
 const execFileAsync = promisify(execFile);
