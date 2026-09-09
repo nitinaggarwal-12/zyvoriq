@@ -31,7 +31,12 @@ Strict Rules:
 1. CELEBRITY & LIKENESS: Replace ANY real-world celebrity names (actors, singers, politicians) with descriptive archetypes (e.g. "Riya Sen" -> "a stylish, energetic South Asian female college performer").
 2. AUDIO & SLANG SAFETY: Replace colloquial idioms containing literal violence, weapons, or fire (e.g. Hindi "aag laga de" -> "dhoom macha de" or "toofaan macha de", "kill it" -> "rock it") with safe, high-energy festival/pop alternatives.
 3. PRESERVE INTENT: Retain 100% of the character's singing performance, musical choreography, visual setting, camera angles, and wardrobe continuity. Do NOT mute the character or convert singing to ambient foley.
-4. LENGTH: Keep total prompt strictly under 220 words. Strip redundant boilerplate.
+4. MUSIC VIDEO QUALITY ENHANCEMENT: For MUSIC_VIDEO genre, ensure:
+   - Feminine vocal archetype: Bright, high-register female pop-star melodic singing voice with expressive vibrato and autotuned sheen.
+   - Traditional Punjabi instrumentation: Traditional high-pitched Punjabi Tumbi riff driving the melody, acoustic Dhol syncopations (dagga bass + tilli snap), deep 808 club sub-bass.
+   - Live stage musicians: Staged live Punjabi Dhol drummers visible flanking the stage/runway behind the performers.
+   - Kinetic speed ramping: Dynamic speed ramps on downbeats (slow-motion on gestures, fast snap on kicks).
+5. LENGTH: Keep total prompt strictly under 220 words. Strip redundant boilerplate.
 
 Output format: Return ONLY valid JSON with keys:
 {

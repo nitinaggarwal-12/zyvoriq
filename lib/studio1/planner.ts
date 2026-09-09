@@ -33,6 +33,20 @@ export const MAX_SHOT_DURATION_SEC = 7.36;
 export const MAX_WORDS_PER_SHOT = 15;
 export const MIN_WORDS_PER_SHOT = 13;
 
+// 128 BPM Musical Bar Grid (4/4 time signature)
+// 1 beat = 60 / 128 = 0.46875s
+// 1 bar (4 beats) = 1.875s
+// 2 bars = 3.75s
+// 4 bars = 7.50s (fits Veo 8.0s bucket cleanly with factor 0.9375)
+export const MUSICAL_BAR_GRID_BPM = 128;
+export const SECONDS_PER_BEAT = 60 / MUSICAL_BAR_GRID_BPM; // 0.46875s
+export const SECONDS_PER_BAR = SECONDS_PER_BEAT * 4;      // 1.875s
+
+export function quantizeToMusicalBars(durationSec: number): number {
+  const bars = Math.max(1, Math.round(durationSec / SECONDS_PER_BAR));
+  return Number((bars * SECONDS_PER_BAR).toFixed(3));
+}
+
 export function wordsPerSecondForGenre(genre?: string): number {
   // Measured 2026-09-09: MUSIC_VIDEO produced 44 words / 20.64s = 2.13 wps —
   // identical to prose. Gemini TTS speaks lyrics at conversational pace; it
@@ -175,6 +189,7 @@ export function splitScriptIntoBudgetedUnits(text: string, maxWords: number = MA
 export function budgetStudio1NarrationAgainstCap(manifest: ReelProductionManifest): ReelProductionManifest {
   const meta = studio1Meta(manifest);
   const genre = manifest.genre || manifest.creativeBible?.genre;
+  const isMusicVideo = String(genre || "").toUpperCase() === "MUSIC_VIDEO";
   const wps = wordsPerSecondForGenre(genre);
   const maxWords = maxWordsPerShotForGenre(genre);
   const originalShots = manifest.shots;
@@ -187,14 +202,21 @@ export function budgetStudio1NarrationAgainstCap(manifest: ReelProductionManifes
     const wordCount = cleanWords.length;
     const estDurationSec = wordCount > 0 ? wordCount / wps : shot.editorialDurationSec;
 
+    // In MUSIC_VIDEO genre: Quantize duration to 128 BPM musical bars (1 bar = 1.875s)
+    if (isMusicVideo) {
+      const targetDuration = quantizeToMusicalBars(shot.editorialDurationSec || estDurationSec || 6.0);
+      shot.editorialDurationSec = Math.min(7.50, Math.max(SECONDS_PER_BAR, targetDuration));
+    }
+
     // A shot needs splitting if its word count exceeds the genre carrying capacity (>10 words for lyrics, >15 for prose),
-    // or if its editorial duration exceeds the 7.36s safe cap.
-    const needsSplit = (wordCount > maxWords || shot.editorialDurationSec > MAX_SHOT_DURATION_SEC || estDurationSec > MAX_SHOT_DURATION_SEC) && wordCount > 3;
+    // or if its editorial duration exceeds the 7.50s safe cap.
+    const maxDur = isMusicVideo ? 7.50 : MAX_SHOT_DURATION_SEC;
+    const needsSplit = (wordCount > maxWords || shot.editorialDurationSec > maxDur || estDurationSec > maxDur) && wordCount > 3;
 
     if (!needsSplit) {
       newShots.push({
         ...shot,
-        editorialDurationSec: Math.min(MAX_SHOT_DURATION_SEC, Math.max(2.0, shot.editorialDurationSec)),
+        editorialDurationSec: isMusicVideo ? quantizeToMusicalBars(shot.editorialDurationSec) : Math.min(MAX_SHOT_DURATION_SEC, Math.max(2.0, shot.editorialDurationSec)),
       });
       continue;
     }
@@ -216,7 +238,9 @@ export function budgetStudio1NarrationAgainstCap(manifest: ReelProductionManifes
       const unitText = units[uIdx];
       const unitWords = stripSpeakerLabels(unitText).split(/\s+/).filter(Boolean).length;
       const ratio = totalWords > 0 ? unitWords / totalWords : 1 / units.length;
-      const rawDur = Math.max(2.5, Math.min(MAX_SHOT_DURATION_SEC, Number((shot.editorialDurationSec * ratio).toFixed(2))));
+      const rawDur = isMusicVideo
+        ? Math.max(SECONDS_PER_BAR, Math.min(7.50, quantizeToMusicalBars(shot.editorialDurationSec * ratio)))
+        : Math.max(2.5, Math.min(MAX_SHOT_DURATION_SEC, Number((shot.editorialDurationSec * ratio).toFixed(2))));
       const editorialDurationSec = rawDur;
       const generationDurationSec = chooseGenerationDuration(editorialDurationSec);
 
@@ -293,14 +317,14 @@ export function budgetStudio1NarrationAgainstCap(manifest: ReelProductionManifes
     if (isMusicVideo) {
       const isHindiLang = lang === "hinglish-roman" || lang === "hinglish" || lang === "hi-devanagari" || lang === "hindi";
       const acousticStyle = isHindiLang
-        ? "Contemporary Bollywood Desi Pop dance song, energetic EDM synth production, punchy 808 sub-bass, driving club drum groove, crisp electronic percussion, autotuned pop vocal delivery, anthemic festival drop."
-        : "Contemporary pop dance anthem, upbeat EDM synth production, punchy 808 sub-bass, driving modern drum rhythm, energetic pop vocal delivery, infectious festival drop.";
+        ? "Contemporary Bollywood Desi Pop dance song with bright high-register feminine female pop-star melodic singing vocals, high-pitched traditional Punjabi Tumbi hook, driving acoustic Dhol drum syncopations (dagga bass + tilli snap), deep 808 club sub-bass, and anthemic festival drop."
+        : "Contemporary pop dance anthem with bright female pop-star melodic singing vocals, energetic EDM synth production, punchy 808 sub-bass, driving modern drum rhythm, and infectious festival drop.";
 
       const hasSinger = Boolean(s.continuityIn?.characterId);
       if (hasSinger) {
-        musicVideoLock = `MUSIC VIDEO PERFORMANCE & PRODUCTION: ${acousticStyle} The performer is actively singing the song lyrics on camera with visible mouth, lips, and facial articulation in precise sync with the vocals. Face, lips, and mouth are completely illuminated and unobstructed (no opaque visors, masks, or hands covering the mouth).`;
+        musicVideoLock = `MUSIC VIDEO PERFORMANCE & PRODUCTION: ${acousticStyle} The performer is actively singing the song lyrics on camera with visible mouth, lips, and facial articulation in precise sync with the vocals. Face, lips, and mouth are completely illuminated and unobstructed. Staging: Two energetic live Punjabi Dhol drummers flank the runway behind the performers striking traditional dhol drums in sync with the beat. Cinematography: Dynamic speed ramps on dhol downbeats.`;
       } else {
-        musicVideoLock = `MUSIC VIDEO PRODUCTION: ${acousticStyle} High-energy music video cinematic visual. Pure cinematic action, lighting and atmospheric stage effects.`;
+        musicVideoLock = `MUSIC VIDEO PRODUCTION: ${acousticStyle} High-energy music video cinematic visual with live Dhol drummers and dynamic speed ramps.`;
       }
     }
 
