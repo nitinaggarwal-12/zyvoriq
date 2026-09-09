@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const WORKER_ASSET_BASE = (process.env.ZYVORIQ_WORKER_ASSET_BASE_URL || "http://zyvoriq-reel-worker.railway.internal:8080/internal/reel-assets").replace(/\/$/, "");
+const PRODUCTION_ASSET_BASE = (process.env.ZYVORIQ_PRODUCTION_URL || "https://zyvoriq.up.railway.app").replace(/\/$/, "");
 
 function contentType(key: string) {
   if (key.endsWith(".wav")) return "audio/wav";
@@ -18,6 +19,23 @@ function contentType(key: string) {
 
 function encodedKey(key: string) {
   return key.split("/").map(encodeURIComponent).join("/");
+}
+
+async function proxyFromProduction(req: NextRequest, assetKey: string, method: "GET" | "HEAD") {
+  const headers = new Headers();
+  const range = req.headers.get("range");
+  if (range) headers.set("range", range);
+  const upstream = await fetch(`${PRODUCTION_ASSET_BASE}/api/reels/assets/${encodedKey(assetKey)}`, { method, headers, cache: "no-store" });
+  if (!upstream.ok) {
+    throw new Error(`Upstream production returned HTTP ${upstream.status}`);
+  }
+  const out = new Headers();
+  for (const name of ["content-type", "content-length", "content-range", "accept-ranges", "cache-control"]) {
+    const value = upstream.headers.get(name);
+    if (value) out.set(name, value);
+  }
+  if (!out.has("content-type")) out.set("content-type", contentType(assetKey));
+  return new Response(method === "HEAD" ? null : upstream.body, { status: upstream.status, headers: out });
 }
 
 async function proxyFromWorker(req: NextRequest, assetKey: string, method: "GET" | "HEAD") {
@@ -61,7 +79,11 @@ async function handle(req: NextRequest, context: { params: Promise<{ key: string
     try {
       return await proxyFromWorker(req, assetKey, method);
     } catch (proxyError: any) {
-      return NextResponse.json({ success: false, error: proxyError?.message || "Asset unavailable from worker" }, { status: 502 });
+      try {
+        return await proxyFromProduction(req, assetKey, method);
+      } catch (prodError: any) {
+        return NextResponse.json({ success: false, error: prodError?.message || "Asset unavailable from worker" }, { status: 502 });
+      }
     }
   }
 }

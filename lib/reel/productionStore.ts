@@ -80,7 +80,14 @@ export const reelProductionStore = {
 
   async get(id: string): Promise<StoredReelProduction | null> {
     const pool = await ensurePostgresTable();
-    const result = await pool.query(`SELECT * FROM reel_productions WHERE id = $1`, [id]);
+    let result = await pool.query(`SELECT * FROM reel_productions WHERE id = $1`, [id]);
+    if (!result.rows[0]) {
+      // Support prefix or partial UUID matching (e.g. "studio1_e2e00945" matching "studio1_e2e00945-e431...")
+      result = await pool.query(
+        `SELECT * FROM reel_productions WHERE id LIKE $1 || '%' OR id LIKE '%' || $1 || '%' ORDER BY created_at DESC LIMIT 1`,
+        [id]
+      );
+    }
     return result.rows[0] ? fromPostgres(result.rows[0]) : null;
   },
 

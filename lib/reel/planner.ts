@@ -427,7 +427,7 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
     gender: c.biometricDNA.gender,
     biometricDNA: c.biometricDNA,
     role: c.role === "lead" ? ("character" as const) : c.role === "narrator" ? ("presenter" as const) : ("supporting" as const),
-    canonicalReferenceImages: [] as string[],
+    canonicalReferenceImages: (((c as any).canonicalReferenceImages || []) as string[]),
     appearance: {
       description: `${c.name}, ${c.biometricDNA.gender}, ${c.biometricDNA.ageBand}. ${c.biometricDNA.facialFeatures}, ${c.biometricDNA.hair}.`,
       gender: c.biometricDNA.gender,
