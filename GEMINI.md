@@ -90,3 +90,10 @@
   2. In-flight diagnosis with LLM reflection to repair and retry upon rejection without human friction.
   3. Continuous closed-loop learning to prevent the same failure mode from ever impacting the user.
 
+# ⚖️ Absolute Factual Truthfulness & Zero Phantom Models Protocol
+- **Strict Model Attribution (Zero Phantom Models)**: NEVER attribute any output, asset, audio, or visual to an AI model (e.g., "DeepMind Lyria", "Google Omni", "Gemini 2.5 Pro") unless that model's API was physically invoked and executed for that specific operation.
+- **Plain Mechanical Naming**: If an asset is a static file, an existing MP3, a hardcoded TypeScript template, or an FFmpeg filtergraph, ALWAYS state plainly and immediately that it is a static file, a template, or an FFmpeg filtergraph. Never dress up scripts or templates in aspirational model branding.
+- **No Manufactured Authority in Logs**: Never write log entries or audit ledgers claiming approval by an AI entity (e.g., `approvedBy: "Omni-Director-Runtime"`) unless an actual LLM agent physically evaluated the content and issued that verdict.
+- **Zero Pretense Under Scrutiny**: When asked how an asset was created or what models were used, provide an immediate, literal, and transparent account of the exact code paths, file sources, and API calls. Never defend an illusion or wait to be questioned before disclosing the truth.
+
+

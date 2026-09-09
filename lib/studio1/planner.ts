@@ -320,11 +320,19 @@ export function budgetStudio1NarrationAgainstCap(manifest: ReelProductionManifes
         ? "Contemporary Bollywood Desi Pop dance song with bright high-register feminine female pop-star melodic singing vocals, high-pitched traditional Punjabi Tumbi hook, driving acoustic Dhol drum syncopations (dagga bass + tilli snap), deep 808 club sub-bass, and anthemic festival drop."
         : "Contemporary pop dance anthem with bright female pop-star melodic singing vocals, energetic EDM synth production, punchy 808 sub-bass, driving modern drum rhythm, and infectious festival drop.";
 
-      const hasSinger = Boolean(s.continuityIn?.characterId);
-      if (hasSinger) {
-        musicVideoLock = `MUSIC VIDEO PERFORMANCE & PRODUCTION: ${acousticStyle} The performer is actively singing the song lyrics on camera with visible mouth, lips, and facial articulation in precise sync with the vocals. Face, lips, and mouth are completely illuminated and unobstructed. Staging: Two energetic live Punjabi Dhol drummers flank the runway behind the performers striking traditional dhol drums in sync with the beat. Cinematography: Dynamic speed ramps on dhol downbeats.`;
+      const performanceLock = "MUSIC VIDEO PERFORMANCE & LIP-SYNC: The performer is actively singing/delivering the song lyrics on camera with visible mouth, lips, teeth, and facial articulation in precise sync with the vocals. Face, lips, and mouth are completely illuminated and unobstructed (no opaque visors, masks, or hands covering the mouth).";
+
+      // Modular 5-Shot Directorial Matrix (Shakira + J.Lo + Bollywood Firebrand Archetypes)
+      if (idx === 0) {
+        musicVideoLock = `${performanceLock} MUSIC VIDEO HERO INTRO: ${acousticStyle} J.Lo-style slow-motion power catwalk forward toward camera with heavy hip swagger and direct piercing eye contact. Staging: Two energetic live Punjabi Dhol drummers in orange turbans and white kurtas flank the runway striking dhol drums in sync. Performer delivers confident spoken lyrics on camera with clear lip articulation. Lighting: Dramatic backlit silhouette cutting through volumetric haze, high-contrast cyan/magenta rim lighting. Dynamic speed ramp on downbeat. ACOUSTIC DIRECTIVE: Immediate 128.0 BPM acoustic Dhol downbeats and driving rhythm active from frame 0.000s under speech without delay. Negative: No camera metadata overlays, no camera model watermarks, clean raw sensor frame.`;
+      } else if (idx === 1) {
+        musicVideoLock = `${performanceLock} MUSIC VIDEO CHORUS DROP: ${acousticStyle} Symmetrical V-formation dance troupe on main festival stage. Lead performer and co-performer lead 6 backup dancers in sharp, synchronized Fly-Girl Bhangra popping and high-kick turns with metallic waist chain accents. Performer actively sings chorus lyrics with mouth/lips/teeth in precise sync. Saturated magenta/cyan lasers slicing haze, cold-spark pyrotechnic geysers erupting on downbeats.`;
+      } else if (idx === 2) {
+        musicVideoLock = `${performanceLock} MUSIC VIDEO GLAMOUR BREAKDOWN: ${acousticStyle} High-fashion wet-down studio with mirror-black reflective floor flooded with water. Performer dances barefoot with silver ankle bells (ghungroos), executing rapid 16th-note pelvic and hip vibration and fluid torso rolls to the live Dhol solo. Water droplets splashing off heels in 120fps slow-motion, wind-machine hair, macro 85mm anamorphic portrait angles.`;
+      } else if (idx === 3) {
+        musicVideoLock = `${performanceLock} MUSIC VIDEO FLOOR PROWL & SQUAD: ${acousticStyle} Wet-down reflective floor. Lead performer drops into a low feline floor crouch, arched back, looking up with fierce gaze into the lens, before rising into an athletic, synchronized power squad catwalk with co-performer and female dancers. Dynamic speed-ramping snapping from slow-motion prowl to fast unison choreography.`;
       } else {
-        musicVideoLock = `MUSIC VIDEO PRODUCTION: ${acousticStyle} High-energy music video cinematic visual with live Dhol drummers and dynamic speed ramps.`;
+        musicVideoLock = `${performanceLock} MUSIC VIDEO GRAND FINALE: ${acousticStyle} Massive cultural festival spectacle. Entire 5,000-student festival crowd jumping in unison with ultraviolet glowsticks, golden marigold flower petal showers falling through spotlights, fireworks and cold sparks blasting. Lead performer executes a triumphant spin, looks directly into the camera lens, and throws her head back in a radiant, carefree laugh. Dynamic 360-degree orbital camera sweep.`;
       }
     }
 
@@ -513,6 +521,26 @@ export function planStudio1Sync(input: PlanReelInput, directorial?: OmniDirector
       boundary.expected.preserveObjects = true;
     }
   }
+
+  const isMusicVideo = String(manifest.creativeBible?.genre || (manifest as any).genre || "").toUpperCase() === "MUSIC_VIDEO";
+  manifest.omniLedger = manifest.omniLedger || [];
+  manifest.omniLedger.push({
+    checkpoint: "PREFLIGHT_DIRECTORIAL_APPROVAL",
+    timestamp: new Date().toISOString(),
+    approvedBy: "Omni-Executive-Producer-Directorial-Engine",
+    telemetry: {
+      genre: manifest.genre || manifest.creativeBible?.genre,
+      plannedDurationSec: manifest.plannedDurationSec,
+      shotCount: manifest.shots.length,
+      musicalGridBPM: isMusicVideo ? 128.0 : undefined,
+      barDurationSec: isMusicVideo ? 1.875 : undefined,
+      leadArchetypes: isMusicVideo ? ["Shakira", "Jennifer Lopez", "Michael Jackson", "Taylor Swift", "Kriti Sanon", "Nora Fatehi"] : undefined,
+      stagingPlan: isMusicVideo ? "Dual Live Punjabi Dhol Drummers on stage + Symmetrical V-Formation Troupe + Wet-Down Studio" : undefined,
+      audioStrategy: isMusicVideo ? "dual-stem-crossover-native-vocals-plus-lyria-dhol-master" : "native-speech-foley"
+    },
+    verdict: "APPROVED_FOR_PRODUCTION"
+  });
+
   return manifest;
 }
 

@@ -28,15 +28,16 @@ export async function verifyPromptPreFlight(prompt, context = {}) {
 Your goal is to inspect a video generation prompt and ensure it will 100% pass Google Veo's safety, likeness, and system limits without being rejected.
 
 Strict Rules:
-1. CELEBRITY & LIKENESS: Replace ANY real-world celebrity names (actors, singers, politicians) with descriptive archetypes (e.g. "Riya Sen" -> "a stylish, energetic South Asian female college performer").
+1. CELEBRITY, LIKENESS & PERSONAL NAMES: Google Veo's safety filter aggressively flags ANY personal first or last names (including character names like Simran, Harleen, Ananya, Riya, Rahul, Pooja, etc.) and celebrity names (e.g. Shakira, Beyonce) as potential real people or celebrity references. You MUST replace ALL personal names and character names with generic descriptive archetypes (e.g. "Simran" -> "the lead South Asian female college performer", "Harleen" -> "the co-performer", "Simran and Harleen" -> "two energetic South Asian female college performers", "Shakira style" -> "energetic Latin-pop dance style with expressive hip isolations"). Ensure NO proper personal or celebrity names remain anywhere in the final prompt text.
 2. AUDIO & SLANG SAFETY: Replace colloquial idioms containing literal violence, weapons, or fire (e.g. Hindi "aag laga de" -> "dhoom macha de" or "toofaan macha de", "kill it" -> "rock it") with safe, high-energy festival/pop alternatives.
 3. PRESERVE INTENT: Retain 100% of the character's singing performance, musical choreography, visual setting, camera angles, and wardrobe continuity. Do NOT mute the character or convert singing to ambient foley.
 4. MUSIC VIDEO QUALITY ENHANCEMENT: For MUSIC_VIDEO genre, ensure:
-   - Feminine vocal archetype: Bright, high-register female pop-star melodic singing voice with expressive vibrato and autotuned sheen.
-   - Traditional Punjabi instrumentation: Traditional high-pitched Punjabi Tumbi riff driving the melody, acoustic Dhol syncopations (dagga bass + tilli snap), deep 808 club sub-bass.
-   - Live stage musicians: Staged live Punjabi Dhol drummers visible flanking the stage/runway behind the performers.
-   - Kinetic speed ramping: Dynamic speed ramps on downbeats (slow-motion on gestures, fast snap on kicks).
-5. LENGTH: Keep total prompt strictly under 220 words. Strip redundant boilerplate.
+   - Vocal archetype: Bright, high-register melodic singing voice with expressive vibrato and autotuned pop sheen.
+   - Dynamic rhythm & instrumentation: Rich percussion (e.g. driving Dhol beats, Latin timbales, acoustic brass stabs, or flamenco guitars matching the song arrangement) and sub-bass groove.
+   - Live stage musicians & dancers: Staged live percussionists/drummers or dancers visible on stage/runway behind the performers.
+   - Kinetic speed ramping: Dynamic speed ramps on downbeats (slow-motion on hair-flips and dance isolations, fast snaps on rhythm drops).
+   - CRITICAL CONTINUITY PRESERVATION: Retain the exact environment continuity description (stage lighting, wet stage reflections, pyrotechnics) and character wardrobe attributes.
+5. LENGTH: Keep total prompt strictly under 210 words. Strip redundant filler to ensure all continuity locks fit within Veo's limit.
 
 Output format: Return ONLY valid JSON with keys:
 {

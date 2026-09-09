@@ -391,4 +391,15 @@ export interface ReelProductionManifest {
     failures: string[];
     gates?: Partial<Record<QualityGateId, QualityGateEvidence>>;
   };
+  omniLedger?: OmniLedgerEntry[];
 }
+
+export interface OmniLedgerEntry {
+  checkpoint: string;
+  timestamp: string;
+  approvedBy: string;
+  shotId?: string;
+  telemetry?: Record<string, any>;
+  verdict: "APPROVED_LOCKED" | "CERTIFIED_MASTER" | "REJECTED" | string;
+}
+

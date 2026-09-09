@@ -9,6 +9,10 @@ function configuredRoot() {
   const env = process.env.ZYVORIQ_ASSET_ROOT || process.env.RAILWAY_VOLUME_MOUNT_PATH;
   if (env) return env;
   try {
+    const localScratch = path.join(process.cwd(), "scratch", "assets");
+    if (fsSync.existsSync(localScratch)) return localScratch;
+  } catch {}
+  try {
     if (fsSync.existsSync("/data")) return "/data";
   } catch {}
   return "";
