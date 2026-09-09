@@ -2121,6 +2121,12 @@ function getGenreAudioStrategy(genre, manifest, op) {
 
   const normGenre = String(genre || "").toUpperCase();
 
+  // Native audio for MUSIC_VIDEO: let Veo generate both the singing vocal and the lip sync natively.
+  // Never dub synthetic TTS speech over character singing.
+  if (normGenre === "MUSIC_VIDEO") {
+    return "native";
+  }
+
   // Genres where synthetic TTS master + symphonic orchestra score supplies the audio
   // Prompts strip spoken dialogue / lyrics to prevent Veo audio safety/copyright rejections.
   const TTS_DUB_GENRES = new Set([

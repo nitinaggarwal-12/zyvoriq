@@ -757,9 +757,9 @@ CRITICAL DIRECTORIAL REQUIREMENTS:
 
 4. SCRIPT & DIALOGUE:
    - Output exactly ${targetShots} short lines, one per shot.
-   - STRICT BUDGET: Each line MUST be between 5 and ${input.genre === "MUSIC_VIDEO" ? 10 : MAX_WORDS_PER_SHOT} words maximum. Never exceed ${input.genre === "MUSIC_VIDEO" ? 10 : MAX_WORDS_PER_SHOT} words per line.
+   - STRICT BUDGET: Each line MUST be between 5 and ${MAX_WORDS_PER_SHOT} words maximum. Never exceed ${MAX_WORDS_PER_SHOT} words per line.
    - Write authentic cinematic dialogue, dramatic narration, or poetic song lyrics worthy of a blockbuster film.
-   - For MUSIC_VIDEO: NEVER write educational explanations, technical telemetry reports, or documentary voiceover. Write authentic, poetic, rhythmic song lyrics or rhyming vocal lines (verse, chorus, hook, drop) with natural musical cadence and emotional resonance. Target strictly 6 to 10 rhythmic words per line for natural musical tempo, held vowel notes, and singing cadence. Each line must read like lyrics to a hit song.
+   - For MUSIC_VIDEO: NEVER write educational explanations, technical telemetry reports, or documentary voiceover. Write authentic, poetic, rhythmic song lyrics or rhyming vocal lines (verse, chorus, hook, drop) with natural musical cadence and emotional resonance. Target up to 15 rhythmic words per line for natural musical tempo and singing cadence. Each line must read like lyrics to a hit song.
    - For Bollywood romance, write poetic rhyming Hindi/Hinglish song lyrics (mukhda and antara) with deep romantic feeling, musical rhythm, and evocative imagery (ishq, fiza, dil, jahaan, dhadkan, nazaare, khwaab). NEVER use cheap corporate filler or unromantic slang ("yaar", "bhai", "tips", "tricks").
    - Forbid corporate filler, canned clichés, or generic platitudes (NEVER say "Here is what deserves a closer look", "The obvious reaction is only the surface", "Experience the true atmosphere", etc.).${languageDirective}
 
@@ -868,8 +868,8 @@ Return a JSON object conforming strictly to this structure:
 
     console.log(`[omni-director] Directorial compilation resolved genre: "${parsed.genre}" (explicit requested: "${input.genre || 'none'}")`);
 
-    // Sanitize shot word counts against genre ceiling (10 words for MUSIC_VIDEO lyrics, 15 for dialogue)
-    const maxShotWords = (parsed.genre === "MUSIC_VIDEO" || input.genre === "MUSIC_VIDEO") ? 10 : MAX_WORDS_PER_SHOT;
+    // Sanitize shot word counts against ceiling (15 words per shot)
+    const maxShotWords = MAX_WORDS_PER_SHOT;
     for (const shot of parsed.shots) {
       const cleanWords = (shot.dialogue || "").replace(/^[A-Z0-9_\-\s]{2,25}:/i, "").trim().split(/\s+/).filter(Boolean);
       if (cleanWords.length > maxShotWords) {

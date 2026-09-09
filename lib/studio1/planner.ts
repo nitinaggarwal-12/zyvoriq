@@ -33,15 +33,14 @@ export const MAX_WORDS_PER_SHOT = 15;
 export const MIN_WORDS_PER_SHOT = 13;
 
 export function wordsPerSecondForGenre(genre?: string): number {
-  const norm = String(genre || "").toUpperCase();
-  if (norm === "MUSIC_VIDEO") return 1.4; // Singing cadence with held notes, rests, and musical phrasing
-  return 2.1; // Conversational dialogue
+  // Measured 2026-09-09: MUSIC_VIDEO produced 44 words / 20.64s = 2.13 wps —
+  // identical to prose. Gemini TTS speaks lyrics at conversational pace; it
+  // does not sing or hold notes, so there is no slower lyric cadence.
+  return 2.1;
 }
 
 export function maxWordsPerShotForGenre(genre?: string): number {
-  const norm = String(genre || "").toUpperCase();
-  if (norm === "MUSIC_VIDEO") return 10; // 6-10 words per musical bar/lyric phrase
-  return 15;
+  return 15;   // delete the MUSIC_VIDEO branch
 }
 
 const GENERATION_BUCKETS: Array<4 | 6 | 8> = [4, 6, 8];
