@@ -8,6 +8,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
 COPY public/ ./public/
+COPY lib/ ./lib/
 COPY scripts/ ./scripts/
 
 CMD ["npm", "run", "worker:reels"]
