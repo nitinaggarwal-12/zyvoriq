@@ -185,6 +185,43 @@ export function computeReelStatus(
 
 const DEFAULT_FOLDERS = ["All", "Favorites", "Dubai Series", "Commercials", "Social Shorts", "Archive"];
 
+export function cleanDisplayTitle(rawTitle: string): string {
+  if (!rawTitle) return "Custom Reel Production";
+  const titleMatch = rawTitle.match(/Title:\s*([^\n\r]+)/i);
+  if (titleMatch && titleMatch[1]?.trim()) {
+    return titleMatch[1].trim();
+  }
+  const firstLine = rawTitle.split("\n")[0].trim();
+  if (firstLine.length > 50) return firstLine.slice(0, 50) + "...";
+  return firstLine || "Custom Reel Production";
+}
+
+export function resolveReelPoster(pId: string, m: any, shots: LibraryClip[]): string | null {
+  const explicit = shots[0]?.posterUrl || m.stillUrl || m.anchorImageUrl || m.canonicalCharacterAnchorUrl || m.characters?.[0]?.canonicalReferenceImages?.[0];
+  if (explicit && typeof explicit === "string" && !explicit.includes("undefined")) return explicit;
+
+  const text = `${pId} ${m?.topic || ""} ${m?.masterScript || ""}`.toLowerCase();
+  if (text.includes("e2e00945") || text.includes("5b3c6b72") || text.includes("cyberpunk") || text.includes("dance") || text.includes("shinjuku")) {
+    return "/assets/stills/dubai_dance.jpg";
+  }
+  if (text.includes("9f360810") || text.includes("swiss") || text.includes("alpine") || text.includes("mountaineer")) {
+    return "/assets/stills/swiss_alpine.jpg";
+  }
+  if (text.includes("d2d144d2") || text.includes("desert") || text.includes("dune") || text.includes("nomad")) {
+    return "/assets/stills/desert_spiral.jpg";
+  }
+  if (text.includes("5bfb958d") || text.includes("cosmic") || text.includes("space") || text.includes("astronaut")) {
+    return "/assets/stills/cosmic_nebula.jpg";
+  }
+  if (text.includes("napoleon") || text.includes("toulon")) {
+    return "/assets/stills/napoleon_hero.png";
+  }
+  if (text.includes("coronation") || text.includes("mumbai") || text.includes("penthouse") || text.includes("bandra")) {
+    return "/assets/stills/coronation_hero.png";
+  }
+  return "/assets/stills/dubai_dance.jpg";
+}
+
 const CANONICAL_SHOWCASES: LibraryReel[] = [
   {
     id: "reel_napoleon_180s_master",
@@ -194,7 +231,7 @@ const CANONICAL_SHOWCASES: LibraryReel[] = [
     status: "READY",
     durationSec: 180.1,
     videoUrl: "/assets/video/napoleon_180s_master.mp4",
-    posterUrl: "/assets/stills/coronation_hero.png",
+    posterUrl: "/assets/stills/napoleon_hero.png",
     createdAt: "2026-09-07T05:00:00.000Z",
     genre: "Historical Epic",
     tone: "Grand, romantic, tragic",
@@ -328,7 +365,7 @@ const CANONICAL_SHOWCASES: LibraryReel[] = [
     status: "READY",
     durationSec: 180.0,
     videoUrl: "/assets/video/neotokyo_180s_master.mp4",
-    posterUrl: "/assets/stills/coronation_hero.png",
+    posterUrl: "/assets/stills/dubai_dance.jpg",
     createdAt: "2026-09-07T06:00:00.000Z",
     genre: "Sci-Fi Cyberpunk",
     tone: "High-octane, neon-drenched, sleek",
@@ -342,7 +379,7 @@ const CANONICAL_SHOWCASES: LibraryReel[] = [
         order: 1,
         title: "Act I: Rain-Slicked Shinjuku Alleyway Entry",
         videoUrl: "/assets/video/neotokyo_180s_master.mp4",
-        posterUrl: "/assets/stills/coronation_hero.png",
+        posterUrl: "/assets/stills/dubai_dance.jpg",
         durationSec: 60.0,
         status: "PASSED",
         scriptText: "KAI: The biometric locks cycle every forty seconds. Sync your neural deck now.",
@@ -433,7 +470,7 @@ const CANONICAL_SHOWCASES: LibraryReel[] = [
     status: "READY",
     durationSec: 60.0,
     videoUrl: "/assets/video/priya_4k_10act_master.mp4",
-    posterUrl: "/assets/stills/coronation_hero.png",
+    posterUrl: "/assets/stills/dubai_dance.jpg",
     createdAt: "2026-09-08T12:00:00.000Z",
     genre: "Music Video",
     tone: "Joyous, vibrant, festive grandeur",
@@ -830,15 +867,19 @@ export function MyReelsLibrary() {
             const isReelArchived = archivedIds.has(p.id) || meta.isArchived || meta.folder === "Archive";
             const isReelHidden = hiddenIds.has(p.id) || meta.isHidden || false;
 
+            const rawTitle = meta.title || m.topic || (m.studio1?.projectTitle) || "Custom Reel Production";
+            const displayTitle = cleanDisplayTitle(rawTitle);
+            const resolvedPoster = resolveReelPoster(p.id, m, shotsList);
+
             return {
               id: p.id,
-              title: meta.title || m.topic || (m.studio1?.projectTitle) || "Custom Reel Production",
+              title: displayTitle,
               subtitle: m.dynamic || m.tone || `${shotsList.length}-shot continuous narrative sequence`,
               prompt: m.masterScript || m.topic || "",
               status: statusInfo.status,
               durationSec: Number(m.plannedDurationSec || m.audio?.actualDurationSec || (shotsList.length * 5.5)),
               videoUrl: roughCutUrl,
-              posterUrl: shotsList[0]?.posterUrl || (m.stillUrl) || null,
+              posterUrl: resolvedPoster,
               createdAt: p.createdAt || p.created_at || new Date().toISOString(),
               genre: m.creationIntent?.categoryLabel || m.genre || "Social Cinema",
               tone: m.tone || "Cinematic realism",
@@ -1694,14 +1735,18 @@ export function MyReelsLibrary() {
                             <img
                               src={reel.posterUrl}
                               alt={reel.title}
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).src = "/assets/stills/dubai_dance.jpg";
+                              }}
                               className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                             />
                           ) : reel.videoUrl ? (
                             <video
-                              src={reel.videoUrl}
+                              src={`${reel.videoUrl}#t=0.1`}
                               preload="metadata"
                               playsInline
                               muted
+                              poster={reel.posterUrl || undefined}
                               className="w-full h-full object-cover group-hover:scale-105 transition duration-300 pointer-events-none"
                             />
                           ) : (
