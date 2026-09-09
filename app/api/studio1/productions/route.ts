@@ -3,11 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { reelProductionStore } from "@/lib/reel/productionStore";
 import { reelProductionControl } from "@/lib/reel/productionControl";
 import { operationKey, reelOperationQueue } from "@/lib/reel/operationQueue";
-import { planStudio1 } from "@/lib/studio1/planner";
+import { planStudio1, extractDurationFromPrompt } from "@/lib/studio1/planner";
 import { studio1Service } from "@/lib/studio1/service";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+export const maxDuration = 300;
 
 function fingerprint(value: unknown) {
   return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex").slice(0, 24);
@@ -144,12 +145,18 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const rawDuration = Number(body.requestedDurationSec || body.duration || 0);
+    const naturalDuration = extractDurationFromPrompt(topic);
+    const requestedDurationSec = rawDuration > 0
+      ? (rawDuration === 30 && naturalDuration ? naturalDuration : rawDuration)
+      : (naturalDuration || 30);
+
     const manifest = await planStudio1({
       topic,
       tone: body.tone,
       platform,
       aspectRatio: body.aspectRatio || (platform === "YouTube Shorts" ? "2.39:1" : "9:16"),
-      requestedDurationSec: Number(body.requestedDurationSec || body.duration || 30),
+      requestedDurationSec,
       scriptText: body.scriptText,
       genre: body.genre,
       language: body.language || body.narrationLanguage,

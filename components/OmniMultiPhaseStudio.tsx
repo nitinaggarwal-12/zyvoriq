@@ -127,6 +127,15 @@ export const CREATIVE_STARTERS = [
     dynamic: "Lyrical romantic crescendo, dramatic eye contact, slow-motion raindrops",
     duration: 30,
     aspectRatio: "9:16" as const
+  },
+  {
+    id: "starter_hindi_music_video_180s",
+    label: "🎵 3m Hindi Pop Music Video",
+    prompt: "Modern Bollywood pop music video in Hindi. Charismatic pop star in high-fashion streetwear performing on an electric neon stadium stage with backup dancers, punchy club EDM bass drop, vibrant kinetic lighting, lip-synchronized singing directly to camera.",
+    setting: "Neon concert stage with dynamic LED screens, moving laser trusses, atmospheric stage haze",
+    dynamic: "High-energy Desi Pop dance anthem, punchy 808 sub-bass, kinetic choreography, synchronized lip singing",
+    duration: 180,
+    aspectRatio: "9:16" as const
   }
 ];
 
@@ -1143,6 +1152,36 @@ export function OmniMultiPhaseStudio() {
               <Film className="h-3 w-3" />
               <span>Browse Saved Reels in My Reels →</span>
             </Link>
+          </div>
+
+          {/* Music Vibe / Sound Palette Quick-Tags */}
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-2 pt-2 border-t border-zinc-800/40 text-xs font-mono">
+            <span className="text-zinc-400 font-bold flex items-center gap-1 mr-1">
+              <Music2 className="h-3.5 w-3.5 text-fuchsia-400" /> Music Vibe:
+            </span>
+            {[
+              { id: "vibe_pop", label: "⚡ Modern Pop / Dance", append: "Modern energetic pop dance anthem, upbeat EDM synth production, punchy 808 sub-bass, club rhythm" },
+              { id: "vibe_indie", label: "🎸 Urban Indie", append: "Contemporary urban indie pop song, driving acoustic guitars, modern percussion, catchy melodic vocal hooks" },
+              { id: "vibe_hiphop", label: "🎤 Desi Hip-Hop", append: "Modern urban hip-hop track, hard-hitting trap drums, 808 bass, rhythmic melodic flow" },
+              { id: "vibe_synth", label: "🌙 Romantic Synth", append: "Contemporary romantic synth-pop ballad, atmospheric reverb pads, modern beat, emotive vocals" }
+            ].map((vibe) => (
+              <button
+                key={vibe.id}
+                type="button"
+                onClick={() => {
+                  setPromptInput(prev => {
+                    const trimmed = prev.trim();
+                    if (!trimmed) return `Music video in Hindi. ${vibe.append}.`;
+                    if (trimmed.toLowerCase().includes(vibe.label.split(" ")[1].toLowerCase())) return trimmed;
+                    return `${trimmed}. ${vibe.append}.`;
+                  });
+                  promptInputRef.current?.focus();
+                }}
+                className="rounded-lg px-2.5 py-1 transition cursor-pointer border text-xs border-fuchsia-950/60 bg-fuchsia-950/20 text-fuchsia-300 hover:text-white hover:border-fuchsia-700/60 hover:bg-fuchsia-900/30"
+              >
+                {vibe.label}
+              </button>
+            ))}
           </div>
         </div>
 

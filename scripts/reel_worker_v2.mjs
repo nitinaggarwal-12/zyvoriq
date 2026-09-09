@@ -1844,37 +1844,72 @@ async function generateNarration(op, manifest, existingCheckpoint = null) {
       langDirection = ` Language & Pronunciation: ${lang}.`;
     }
 
-    const prompt = [
-      "Synthesize speech for the transcript below. Do not speak these instructions.",
-      `Performance direction: ${manifest.tone}.${langDirection} Natural social-video delivery, clear articulation, no added words.`,
-      "TRANSCRIPT START",
-      manifest.masterScript,
-      "TRANSCRIPT END",
-    ].join("\n");
+    const scriptLines = (Array.isArray(manifest.shots) && manifest.shots.length > 0)
+      ? manifest.shots.map(s => String(s.scriptText || "").trim()).filter(Boolean)
+      : String(manifest.masterScript || "").split("\n").map(l => l.trim()).filter(Boolean);
 
-    let r;
-    try {
-      r = await fetch(`${API_BASE}/v1beta/interactions`, {
-        method: "POST",
-        headers: { "x-goog-api-key": apiKey(), "Content-Type": "application/json" },
-        body: JSON.stringify({ model, input: prompt, response_format: { type: "audio" }, generation_config: { speech_config: [{ voice }] } }),
-      });
-    } catch (e) {
-      throw e;
-    }
-    const j = await r.json();
-    if (!r.ok) {
-      await updateOperation(op.id, { providerOperationName: null });
-      throw new Error(`Gemini TTS failed (${r.status})`);
-    }
-    try { await operationHeartbeat(op.id, op.production_id); } catch {}
-    const b64 = findAudioData(j);
-    if (!b64) {
-      await updateOperation(op.id, { providerOperationName: null });
-      throw new Error("Gemini TTS returned no audio payload");
+    const totalWordCount = scriptLines.join(" ").split(/\s+/).filter(Boolean).length;
+
+    // If script is over 120 words, chunk into segments of ~80 words to prevent single-turn Gemini TTS audio truncation
+    const chunks = [];
+    if (totalWordCount > 120 && scriptLines.length > 5) {
+      let currentChunk = [];
+      let currentWords = 0;
+      for (const line of scriptLines) {
+        const lineWords = line.split(/\s+/).filter(Boolean).length;
+        if (currentWords + lineWords > 90 && currentChunk.length > 0) {
+          chunks.push(currentChunk.join("\n"));
+          currentChunk = [line];
+          currentWords = lineWords;
+        } else {
+          currentChunk.push(line);
+          currentWords += lineWords;
+        }
+      }
+      if (currentChunk.length > 0) {
+        chunks.push(currentChunk.join("\n"));
+      }
+      console.log(`[reel-worker] generateNarration: splitting ${totalWordCount} words into ${chunks.length} TTS chunks for ${op.production_id}`);
+    } else {
+      chunks.push(manifest.masterScript);
     }
 
-    const pcm = Buffer.from(b64, "base64");
+    const pcmBuffers = [];
+    for (let cIdx = 0; cIdx < chunks.length; cIdx++) {
+      const chunkText = chunks[cIdx];
+      const prompt = [
+        "Synthesize speech for the transcript below. Do not speak these instructions.",
+        `Performance direction: ${manifest.tone}.${langDirection} Natural social-video delivery, clear articulation, no added words.`,
+        "TRANSCRIPT START",
+        chunkText,
+        "TRANSCRIPT END",
+      ].join("\n");
+
+      let r;
+      try {
+        r = await fetch(`${API_BASE}/v1beta/interactions`, {
+          method: "POST",
+          headers: { "x-goog-api-key": apiKey(), "Content-Type": "application/json" },
+          body: JSON.stringify({ model, input: prompt, response_format: { type: "audio" }, generation_config: { speech_config: [{ voice }] } }),
+        });
+      } catch (e) {
+        throw e;
+      }
+      const j = await r.json();
+      if (!r.ok) {
+        await updateOperation(op.id, { providerOperationName: null });
+        throw new Error(`Gemini TTS chunk ${cIdx + 1}/${chunks.length} failed (${r.status})`);
+      }
+      try { await operationHeartbeat(op.id, op.production_id); } catch {}
+      const b64 = findAudioData(j);
+      if (!b64) {
+        await updateOperation(op.id, { providerOperationName: null });
+        throw new Error(`Gemini TTS chunk ${cIdx + 1}/${chunks.length} returned no audio payload`);
+      }
+      pcmBuffers.push(Buffer.from(b64, "base64"));
+    }
+
+    const pcm = Buffer.concat(pcmBuffers);
     const durationSec = pcm.length / (SAMPLE_RATE * CHANNELS * SAMPLE_WIDTH);
     const words = String(manifest.masterScript || "").trim().split(/\s+/).filter(Boolean).length;
     const wps = durationSec > 0 ? (words / durationSec).toFixed(2) : "0.00";
@@ -3010,10 +3045,12 @@ async function renderRough(op, m) {
           if (!s.asset?.videoUrl) throw new Error(`${s.id} has no source`);
           batchArgs.push("-i", assetPath(s.asset.videoUrl).target);
         }
-        const f = [];
         for (let i = 0; i < batchShots.length; i++) {
+          const s = batchShots[i];
+          const shotDur = Number(s.editorialDurationSec || s.generationDurationSec || 6.0);
+          const fadeOutStart = Math.max(0.01, shotDur - 0.015);
           f.push(`[${i}:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30[v${i}]`);
-          f.push(`[${i}:a]aresample=48000,aformat=channel_layouts=stereo[a${i}]`);
+          f.push(`[${i}:a]aresample=48000,aformat=channel_layouts=stereo,afade=t=in:st=0:d=0.01,afade=t=out:st=${fadeOutStart.toFixed(3)}:d=0.01[a${i}]`);
         }
         f.push(`${batchShots.map((_, i) => `[v${i}][a${i}]`).join("")}concat=n=${batchShots.length}:v=1:a=1[vcat][acat]`);
         const batchOut = path.join(partsDir, `batch_${String(b).padStart(4, "0")}.mp4`);

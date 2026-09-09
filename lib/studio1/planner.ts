@@ -288,9 +288,15 @@ export function budgetStudio1NarrationAgainstCap(manifest: ReelProductionManifes
       : "";
 
     const isMusicVideo = String(manifest.creativeBible?.genre || (manifest as any).genre || "").toUpperCase() === "MUSIC_VIDEO";
-    const musicVideoLock = isMusicVideo
-      ? "MUSIC VIDEO PERFORMANCE & LIP-SYNC: The performer is actively singing the song lyrics on camera with visible mouth, lips, and facial articulation in precise sync with the vocals. Face, lips, and mouth are completely illuminated and unobstructed (no opaque visors, masks, or hands covering the mouth)."
-      : "";
+    let musicVideoLock = "";
+    if (isMusicVideo) {
+      const isHindiLang = lang === "hinglish-roman" || lang === "hinglish" || lang === "hi-devanagari" || lang === "hindi";
+      const acousticStyle = isHindiLang
+        ? "Contemporary Bollywood Desi Pop dance song, energetic EDM synth production, punchy 808 sub-bass, driving club drum groove, crisp electronic percussion, autotuned pop vocal delivery, anthemic festival drop."
+        : "Contemporary pop dance anthem, upbeat EDM synth production, punchy 808 sub-bass, driving modern drum rhythm, energetic pop vocal delivery, infectious festival drop.";
+
+      musicVideoLock = `MUSIC VIDEO PERFORMANCE & PRODUCTION: ${acousticStyle} The performer is actively singing the song lyrics on camera with visible mouth, lips, and facial articulation in precise sync with the vocals. Face, lips, and mouth are completely illuminated and unobstructed (no opaque visors, masks, or hands covering the mouth).`;
+    }
 
     const basePrompt = s.visualIntent
       ? [
@@ -480,14 +486,44 @@ export function planStudio1Sync(input: PlanReelInput, directorial?: OmniDirector
   return manifest;
 }
 
+export function extractDurationFromPrompt(text: string): number | null {
+  if (!text) return null;
+  const clean = text.trim();
+  const minMatch = clean.match(/\b(?:(\d+)|one|two|three|four|five|six|seven|eight|nine|ten)\s*(?:-| )?\s*(?:min|minute|minutes|m)\b/i);
+  if (minMatch) {
+    const wordOrNum = minMatch[1] || minMatch[0].split(/[\s-]+/)[0].toLowerCase();
+    const wordMap: Record<string, number> = {
+      one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10
+    };
+    const mins = minMatch[1] ? parseInt(minMatch[1], 10) : (wordMap[wordOrNum] || 0);
+    if (mins > 0 && mins <= 10) {
+      return mins * 60;
+    }
+  }
+  const secMatch = clean.match(/\b(\d+)\s*(?:-| )?\s*(?:sec|second|seconds|s)\b/i);
+  if (secMatch) {
+    const secs = parseInt(secMatch[1], 10);
+    if (secs >= 10 && secs <= 600) {
+      return secs;
+    }
+  }
+  return null;
+}
+
 export async function planStudio1(input: PlanReelInput): Promise<ReelProductionManifest> {
   let scriptText = (input.scriptText || "").trim();
   let directorial: OmniDirectorialCompilation | undefined;
 
+  const rawDuration = input.requestedDurationSec || 0;
+  const naturalDuration = extractDurationFromPrompt(input.topic);
+  const effectiveDuration = rawDuration > 0
+    ? (rawDuration === 30 && naturalDuration ? naturalDuration : rawDuration)
+    : (naturalDuration || 30);
+
   if (!scriptText) {
     directorial = await compileOmniDirectorialPass({
       topic: input.topic,
-      requestedDurationSec: input.requestedDurationSec || 30,
+      requestedDurationSec: effectiveDuration,
       tone: input.tone,
       creationIntent: input.creationIntent,
       aspectRatio: input.aspectRatio,
@@ -497,7 +533,7 @@ export async function planStudio1(input: PlanReelInput): Promise<ReelProductionM
     });
     scriptText = directorial.masterScript;
   }
-  const manifest = planStudio1Sync({ ...input, scriptText }, directorial);
+  const manifest = planStudio1Sync({ ...input, requestedDurationSec: effectiveDuration, scriptText }, directorial);
   if (input.continuationFrom?.parentProductionId) {
     (manifest as any).parentProductionId = input.continuationFrom.parentProductionId;
     (manifest as any).continuationPart = 2;

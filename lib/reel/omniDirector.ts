@@ -273,15 +273,7 @@ export function compileDeterministicDirectorialPass(
   } else {
     console.log(`[omni-genre] No valid explicit genre provided. Evaluating topic keywords on: "${cleanTopic}"`);
     genre = "CINEMATIC_DRAMA";
-    if (cleanTopic.includes("dhurandhar") || cleanTopic.includes("action") || cleanTopic.includes("stunt") || cleanTopic.includes("chase") || cleanTopic.includes("fight")) {
-      genre = "BOLLYWOOD_ACTION";
-    } else if (
-      cleanTopic.includes("bollywood") ||
-      (cleanTopic.includes("romance") && (cleanTopic.includes("hindi") || cleanTopic.includes("chiffon") || cleanTopic.includes("saree") || cleanTopic.includes("mohabbatein") || cleanTopic.includes("ddlj") || cleanTopic.includes("yash chopra"))) ||
-      (cleanTopic.includes("hindi") && (cleanTopic.includes("switzerland") || cleanTopic.includes("swiss") || cleanTopic.includes("heroine") || cleanTopic.includes("hero and heroine")))
-    ) {
-      genre = "BOLLYWOOD_ROMANCE";
-    } else if (
+    if (
       cleanTopic.includes("music video") ||
       cleanTopic.includes("song") ||
       cleanTopic.includes("sing") ||
@@ -292,6 +284,14 @@ export function compileDeterministicDirectorialPass(
       cleanTopic.includes("music track")
     ) {
       genre = "MUSIC_VIDEO";
+    } else if (cleanTopic.includes("dhurandhar") || cleanTopic.includes("action") || cleanTopic.includes("stunt") || cleanTopic.includes("chase") || cleanTopic.includes("fight")) {
+      genre = "BOLLYWOOD_ACTION";
+    } else if (
+      cleanTopic.includes("bollywood") ||
+      (cleanTopic.includes("romance") && (cleanTopic.includes("hindi") || cleanTopic.includes("chiffon") || cleanTopic.includes("saree") || cleanTopic.includes("mohabbatein") || cleanTopic.includes("ddlj") || cleanTopic.includes("yash chopra"))) ||
+      (cleanTopic.includes("hindi") && (cleanTopic.includes("switzerland") || cleanTopic.includes("swiss") || cleanTopic.includes("heroine") || cleanTopic.includes("hero and heroine")))
+    ) {
+      genre = "BOLLYWOOD_ROMANCE";
     } else if (cleanTopic.includes("oppenheimer") || cleanTopic.includes("history") || cleanTopic.includes("biopic") || cleanTopic.includes("napoleon") || cleanTopic.includes("churchill") || cleanTopic.includes("rome")) {
       genre = "HISTORICAL_BIOPIC";
     } else if (cleanTopic.includes("cyberpunk") || cleanTopic.includes("sci-fi") || cleanTopic.includes("space") || cleanTopic.includes("future") || cleanTopic.includes("alien")) {
@@ -747,7 +747,18 @@ CRITICAL DIRECTORIAL REQUIREMENTS:
    - SCENE ARCHITECTURE: Group contiguous shots that occur in the same physical setting into cohesive scenes with "sceneId" (e.g., shots 1-4 in "scene_01", shots 5-8 in "scene_02").
    - VERBATIM ENVIRONMENT LOCK: All shots that share the same "sceneId" MUST have the EXACT SAME verbatim "sceneEnvironment" string describing the set, geometry, lighting, and materials. Do NOT rephrase or invent new locations within the same scene!
    - NEVER force one presenter to talk to the camera in every shot unless genre is DOCUMENTARY_EXPLAINER.
-   - For MUSIC_VIDEO, alternate between intense hero close-ups with the artist singing directly to camera (eyeline: "camera") with visible lip articulation, and kinetic tracking/dance/concept choreography shots.
+   - For MUSIC_VIDEO:
+     * STRUCTURED SONG ARC: Organize shots across musical song sections:
+       - Intro & Verse 1 (first ~20% of shots): Establish the artist, mood, and groove, mid-tempo storytelling lyrics.
+       - Pre-Chorus (next ~15% of shots): Rising tempo, accelerating rhythmic energy, tension building.
+       - Chorus / Anthem Hook (next ~25% of shots): Peak explosive energy, full stage lighting, hero singing key hook, synchronized dance chorus with repeating anthem lines.
+       - Verse 2 / Choreography Break (next ~15% of shots): Kinetic tracking, swagger, dynamic dance routine, stylish framing.
+       - Bridge / Vocal Climax (next ~15% of shots): Emotional high-register peak, dramatic contrast lighting, intense hero delivery.
+       - Final Chorus & Outro (last ~10% of shots): Massive celebration finale, final lyrical punch, fading iconic hero pose.
+     * VISUAL GRAMMAR 40/30/30 RATIO:
+       - ~40% Hero Lip-Sync (shotGrammar: "HERO_CLOSE_UP" or "MEDIUM_TWO_SHOT", eyeline: "camera"): The artist actively sings the song lyrics on camera with clear, synchronized mouth, lips, and facial articulation.
+       - ~30% Choreography & Movement (shotGrammar: "KINETIC_TRACKING" or "DUTCH_ANGLE_LOW"): Kinetic dance moves, dynamic camera glides, backup dancers, swagger walking.
+       - ~30% Atmospheric & Concept Visuals (shotGrammar: "ESTABLISHING_WIDE" or "OVER_THE_SHOULDER", onCameraCharacterId: null or silhouette): Dramatic stage lasers, neon reflections, pyro/smoke, scenic backdrop.
    - Use true film grammar:
      * Shot / Reverse-Shot for dialogue: Character A speaks (looking screen_right) -> Character B reacts (looking screen_left).
      * Over-the-shoulder (OTS) angles.
@@ -759,7 +770,16 @@ CRITICAL DIRECTORIAL REQUIREMENTS:
    - Output exactly ${targetShots} short lines, one per shot.
    - STRICT BUDGET: Each line MUST be between 5 and ${MAX_WORDS_PER_SHOT} words maximum. Never exceed ${MAX_WORDS_PER_SHOT} words per line.
    - Write authentic cinematic dialogue, dramatic narration, or poetic song lyrics worthy of a blockbuster film.
-   - For MUSIC_VIDEO: NEVER write educational explanations, technical telemetry reports, or documentary voiceover. Write authentic, poetic, rhythmic song lyrics or rhyming vocal lines (verse, chorus, hook, drop) with natural musical cadence and emotional resonance. Target up to 15 rhythmic words per line for natural musical tempo and singing cadence. Each line must read like lyrics to a hit song.
+   - For MUSIC_VIDEO:
+     * NEVER write educational explanations, technical telemetry reports, dialogue scenes, or documentary voiceover.
+     * Write authentic, rhythmic, catchy rhyming song lyrics (verse, pre-chorus, chorus anthem, bridge, outro) with irresistible musical meter and singing flow. Target up to 15 rhythmic words per line for natural musical tempo. Each line must read like lyrics to a contemporary hit song.
+     * For Hindi/Hinglish MUSIC_VIDEO:
+       - Write 100% ORIGINAL contemporary Desi Pop / Urban Hindi lyrics (modern Bollywood club dance / pop anthem style like Badshah, Diljit Dosanjh, AP Dhillon, Nucleya).
+       - Use punchy, rhythmic, rhyming lines with natural musical meter and OPEN VOWEL ENDINGS (-aa, -ee, -oo, -aye, -na, -ja) for effortless singing phoneme articulation.
+       - STRICTLY FORBIDDEN: NEVER write slow classical raga, ghazal, court poetry, devotional bhajans, or archaic 19th-century Urdu tropes (no "fiza", "jahaan", "shab-o-roz", "parwana", "mehfil").
+       - STRICTLY FORBIDDEN: NEVER copy real-world copyrighted Bollywood songs. All lyrics must be 100% original.
+     * For English/Global MUSIC_VIDEO:
+       - Write catchy, rhythmic modern pop/EDM/dance lyrics with infectious hooks and rhyming schemes.
    - For Bollywood romance, write poetic rhyming Hindi/Hinglish song lyrics (mukhda and antara) with deep romantic feeling, musical rhythm, and evocative imagery (ishq, fiza, dil, jahaan, dhadkan, nazaare, khwaab). NEVER use cheap corporate filler or unromantic slang ("yaar", "bhai", "tips", "tricks").
    - Forbid corporate filler, canned clichés, or generic platitudes (NEVER say "Here is what deserves a closer look", "The obvious reaction is only the surface", "Experience the true atmosphere", etc.).${languageDirective}
 
