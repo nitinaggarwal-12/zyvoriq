@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readAsset } from "@/lib/reel/assetStore";
+import { getPostgresPool, getDatabase } from "@/lib/db/client";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -29,7 +30,7 @@ const FALLBACK_IMAGE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="640" 
   <text x="320" y="240" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" fill="#64748B" text-anchor="middle" letter-spacing="0.05em">ZYVORIQ CINEMA FRAME</text>
 </svg>`;
 
-async function proxyFromProduction(req: NextRequest, assetKey: string, method: "GET" | "HEAD") {
+async function proxyFromProduction(req: NextRequest, assetKey: string, method: "GET" | "HEAD"): Promise<Response> {
   const headers = new Headers();
   const range = req.headers.get("range");
   if (range) headers.set("range", range);
@@ -37,6 +38,35 @@ async function proxyFromProduction(req: NextRequest, assetKey: string, method: "
   if (upstream.status === 404) {
     if (contentType(assetKey).startsWith("image/")) {
       return new Response(FALLBACK_IMAGE_SVG, { status: 200, headers: { "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=300" } });
+    }
+    // Fallback: If a master or rough cut variant was requested but not found, check if this reel has an available rendered rough cut
+    if (assetKey.includes("master") || assetKey.includes("rough")) {
+      const prodIdMatch = assetKey.match(/(studio1_[a-f0-9\-]{36}|reel_[a-f0-9\-]{36})/i);
+      if (prodIdMatch) {
+        const prodId = prodIdMatch[0];
+        try {
+          const pg = getPostgresPool();
+          let manifest: any = null;
+          if (pg) {
+            const row = await pg.query("SELECT manifest_json FROM reel_productions WHERE id = $1", [prodId]);
+            manifest = row.rows[0]?.manifest_json;
+          } else {
+            const db = getDatabase();
+            const row = db.prepare("SELECT manifest_json FROM reel_productions WHERE id = ?").get(prodId) as any;
+            manifest = typeof row?.manifest_json === "string" ? JSON.parse(row.manifest_json) : row?.manifest_json;
+          }
+          const altVideoUrl = manifest?.outputs?.narratedRoughCut?.videoUrl || manifest?.outputs?.nativeReel?.videoUrl || manifest?.outputs?.master?.videoUrl;
+          if (altVideoUrl && typeof altVideoUrl === "string") {
+            const altKey = altVideoUrl.replace(/^\/?api\/reels\/assets\//, "").replace(/^\/+/, "");
+            if (altKey && altKey !== assetKey) {
+              console.log(`[assets] Resolving rough/master variant ${assetKey} -> ${altKey}`);
+              return await proxyFromProduction(req, altKey, method);
+            }
+          }
+        } catch (e: any) {
+          console.warn(`[assets] Fallback lookup failed for ${prodId}:`, e.message);
+        }
+      }
     }
     return new Response(null, { status: 404 });
   }
