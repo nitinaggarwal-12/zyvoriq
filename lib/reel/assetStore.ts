@@ -66,15 +66,53 @@ export async function readAsset(key: string) {
   const isVideo = ext === ".mp4" || ext === ".webm" || ext === ".mov" || !ext;
   const isImage = ext === ".png" || ext === ".jpg" || ext === ".jpeg" || ext === ".webp";
 
-  // Check if static or showcase video exists locally (ONLY for video requests)
-  if (isVideo) {
+  // 1. Direct scratch cache lookup for all media types (shots, audio, images, renders)
+  const scratchCache = path.resolve(process.cwd(), "scratch", "asset_cache", key);
+  if (fsSync.existsSync(scratchCache)) {
+    return fs.readFile(scratchCache);
+  }
+
+  // 2. Direct public and public/assets lookup
+  const publicRelative = path.resolve(process.cwd(), "public", key);
+  if (fsSync.existsSync(publicRelative)) {
+    return fs.readFile(publicRelative);
+  }
+  const publicAssetsRelative = path.resolve(process.cwd(), "public", "assets", key);
+  if (fsSync.existsSync(publicAssetsRelative)) {
+    return fs.readFile(publicAssetsRelative);
+  }
+
+  // 3. Durable volume storage lookup (/data or ZYVORIQ_ASSET_ROOT)
+  try {
+    const { target } = resolveAssetPath(key);
+    if (fsSync.existsSync(target)) {
+      return await fs.readFile(target);
+    }
+  } catch {}
+
+  // 4. If this is explicitly a rough cut / master render request (NEVER for shots), check master candidate
+  const isRoughOrMaster = isVideo && (
+    key.includes("narrated-rough") ||
+    key.includes("rough_master") ||
+    key.includes("renders/") ||
+    key.endsWith("master.mp4")
+  );
+  if (isRoughOrMaster) {
     const fullId = key.match(/studio1_[a-f0-9\-]{36}/i)?.[0];
     if (fullId) {
       const masterCandidate = path.resolve(process.cwd(), "public", "assets", "reels", fullId, "narrated_rough_master.mp4");
       if (fsSync.existsSync(masterCandidate)) {
         return fs.readFile(masterCandidate);
       }
+      const scratchMaster = path.resolve(process.cwd(), "scratch", "asset_cache", "reels", fullId, "narrated_rough_cut_master.mp4");
+      if (fsSync.existsSync(scratchMaster)) {
+        return fs.readFile(scratchMaster);
+      }
     }
+  }
+
+  // 5. Short ID showcase video fallbacks
+  if (isVideo) {
     const shortId = key.match(/studio1_[a-f0-9]{8}/i)?.[0];
     if (shortId) {
       const publicCandidate = path.resolve(process.cwd(), "public", "assets", "video", `${shortId}.mp4`);
@@ -88,7 +126,7 @@ export async function readAsset(key: string) {
     }
   }
 
-  // Check if dedicated still exists locally for image requests
+  // 6. Dedicated demo stills and external proxy caching
   if (isImage) {
     if (key.includes("5b3c6b72")) {
       const renStill = path.resolve(process.cwd(), "public", "assets", "stills", "ren_cyberpunk.png");
@@ -96,28 +134,8 @@ export async function readAsset(key: string) {
         return fs.readFile(renStill);
       }
     }
-    const scratchCache = path.resolve(process.cwd(), "scratch", "asset_cache", key);
-    if (fsSync.existsSync(scratchCache)) {
-      return fs.readFile(scratchCache);
-    }
-  }
 
-  try {
-    const { target } = resolveAssetPath(key);
-    return await fs.readFile(target);
-  } catch (err: any) {
-    // Also check if relative key exists in public directory or public/assets
-    const publicRelative = path.resolve(process.cwd(), "public", key);
-    if (fsSync.existsSync(publicRelative)) {
-      return fs.readFile(publicRelative);
-    }
-    const publicAssetsRelative = path.resolve(process.cwd(), "public", "assets", key);
-    if (fsSync.existsSync(publicAssetsRelative)) {
-      return fs.readFile(publicAssetsRelative);
-    }
-
-    // Proxy and cache from live deployment if running locally without mounted volume
-    if (process.env.NODE_ENV !== "production" && isImage) {
+    if (process.env.NODE_ENV !== "production") {
       try {
         const prodUrl = `https://zyvoriq.up.railway.app/api/reels/assets/${key.replace(/^\/+/, "")}`;
         const res = await fetch(prodUrl, { signal: AbortSignal.timeout(4000) });
@@ -125,7 +143,6 @@ export async function readAsset(key: string) {
           const cType = res.headers.get("content-type") || "";
           if (cType.startsWith("image/")) {
             const buf = Buffer.from(await res.arrayBuffer());
-            const scratchCache = path.resolve(process.cwd(), "scratch", "asset_cache", key);
             await fs.mkdir(path.dirname(scratchCache), { recursive: true }).catch(() => {});
             await fs.writeFile(scratchCache, buf).catch(() => {});
             return buf;
@@ -133,9 +150,9 @@ export async function readAsset(key: string) {
         }
       } catch {}
     }
-
-    throw err;
   }
+
+  throw new Error(`Asset not found: ${key}`);
 }
 
 export async function deleteAsset(key: string) {

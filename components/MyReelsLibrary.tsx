@@ -593,6 +593,39 @@ const CANONICAL_SHOWCASES: LibraryReel[] = [
   }
 ];
 
+const ENGLISH_HONEYMOON_SCRIPTS: Record<number, string> = {
+  1: "The gentle Mediterranean breeze whispers as if eternity awaited us.",
+  2: "Italian morning airs singing the overture of our new beginning.",
+  3: "Every breath with you feels like a dream. Welcome, my love. Benvenuti amici!",
+  4: "Today belongs to love, sunshine, and the rhythm of our hearts.",
+  5: "Look Kabir, our dearest friends celebrating this journey right here!",
+  6: "Come on, let's run to the water's edge and lose ourselves in the waves!",
+  7: "Sunlight dancing upon turquoise waters, heaven descending on earth.",
+  8: "Warm golden sand beneath our feet, your hand resting in mine.",
+  9: "Seeing your radiant smile, even the ocean swells with joy.",
+  10: "Sing with the rhythm, my friends, dance with the tide!",
+  11: "Our heartbeats composing a melody known only to you and me.",
+  12: "The boat is ready—let us sail into the deep cobalt horizon!",
+  13: "Carving gentle ripples across the sea, footprints of love.",
+  14: "Wind in our hair, the sweet taste of freedom on the open sea!",
+  15: "The world fades away—only your eyes in the light. Sing with the waves!",
+  16: "Sangeet musical wave interlude across the Mediterranean.",
+  17: "I wish this voyage could go on forever, with time standing still.",
+  18: "Time will move, but this love will remain timeless, my heart.",
+  19: "Twilight lights up the cliffside bistro with acoustic melodies.",
+  20: "Sorrento lemon groves, warm laughter, and my soulmate beside me!",
+  21: "And now begins our celebration under the Italian evening sky!",
+  22: "Tara, will you take my hand and dance with me beneath the stars?",
+  23: "With every step you take, my heart is already yours, Kabir!",
+  24: "We will never let this twilight fade; our story continues forever.",
+  25: "A canopy of stars, bonfire embers painting the night in gold.",
+  26: "One final song dedicated to our beloved friends!",
+  27: "An enchanted Italian night and you—life is now complete.",
+  28: "Our greatest chapter is only just beginning.",
+  29: "Forever and always, across every lifetime, only you.",
+  30: "Written upon Italian shores, a romance that echoes for eternity."
+};
+
 export function MyReelsLibrary() {
   const [reels, setReels] = useState<LibraryReel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -601,6 +634,7 @@ export function MyReelsLibrary() {
   const [folders, setFolders] = useState<string[]>(DEFAULT_FOLDERS);
   const [activeFilter, setActiveFilter] = useState<"ALL" | "READY" | "DIFFUSING" | "ATTENTION" | "DRAFTS" | "SAVED" | "ARCHIVE" | "HIDDEN">("ALL");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "duration" | "priority">("newest");
+  const [selectedAudioLanguage, setSelectedAudioLanguage] = useState<"en" | "hi">("en");
   
   // Expanded Reel IDs for multi-level hierarchy (Reel -> Clips)
   const [expandedReelIds, setExpandedReelIds] = useState<Record<string, boolean>>({});
@@ -1800,6 +1834,38 @@ export function MyReelsLibrary() {
               </select>
             </div>
 
+            {/* Audio Language Switcher */}
+            <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-xl p-1 shrink-0">
+              <span className="text-xs font-mono text-zinc-500 px-2 hidden lg:inline">Audio Track:</span>
+              <button
+                type="button"
+                id="audio-lang-en-btn"
+                onClick={() => setSelectedAudioLanguage("en")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[36px] ${
+                  selectedAudioLanguage === "en"
+                    ? "bg-amber-400 text-black shadow-md"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+                title="English Theatrical Master Narration"
+              >
+                <span>🇬🇧 English</span>
+              </button>
+              <button
+                type="button"
+                id="audio-lang-hi-btn"
+                onClick={() => setSelectedAudioLanguage("hi")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[36px] ${
+                  selectedAudioLanguage === "hi"
+                    ? "bg-amber-400 text-black shadow-md"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+                title="Hindi Bollywood Master Narration"
+              >
+                <span>🇮🇳 Hindi</span>
+              </button>
+            </div>
+
+
             {/* Select Reels Mode Toggle Button */}
             <div className="flex items-center gap-2 shrink-0">
               <button
@@ -1887,10 +1953,15 @@ export function MyReelsLibrary() {
                         <div 
                           onClick={() => {
                             if (reel.roughCutUrl) {
+                              const masterUrl = selectedAudioLanguage === "en"
+                                ? `/api/reels/assets/reels/${reel.id}/renders/narrated_rough_master_en.mp4`
+                                : (reel.roughCutUrl || `/api/reels/assets/reels/${reel.id}/renders/narrated-rough-05fa3ad5c2aa9910.mp4`);
                               openSpotlight({
-                                url: reel.roughCutUrl,
-                                title: `${reel.title} (Master Reel)`,
-                                subtitle: `${reel.shots.length}-shot master reel with orchestral score`,
+                                url: masterUrl,
+                                title: `${reel.title} (${selectedAudioLanguage === "en" ? "English Theatrical Master" : "Hindi Bollywood Master"})`,
+                                subtitle: selectedAudioLanguage === "en"
+                                  ? "Continuous Sequence with English Theatrical Romance Narration & Bollywood Orchestra (122s)"
+                                  : "Continuous Sequence with Romantic Bollywood Orchestral Score (122s)",
                                 reelId: reel.id
                               });
                             } else {
@@ -1899,7 +1970,9 @@ export function MyReelsLibrary() {
                                 const playlist = readyClips.map(c => ({
                                   url: c.videoUrl!,
                                   title: `${reel.title} — Shot ${String(c.order).padStart(2, "0")}: ${c.title}`,
-                                  subtitle: c.scriptText ? `"${c.scriptText}"` : c.visualIntent || undefined,
+                                  subtitle: selectedAudioLanguage === "en"
+                                    ? (ENGLISH_HONEYMOON_SCRIPTS[c.order] || c.scriptText || c.visualIntent || undefined)
+                                    : (c.scriptText ? `"${c.scriptText}"` : c.visualIntent || undefined),
                                   order: c.order,
                                   durationSec: c.durationSec
                                 }));
@@ -2571,10 +2644,15 @@ export function MyReelsLibrary() {
                                 <button
                                   type="button"
                                   onClick={() => {
+                                    const masterUrl = selectedAudioLanguage === "en"
+                                      ? `/api/reels/assets/reels/${reel.id}/renders/narrated_rough_master_en.mp4`
+                                      : (reel.roughCutUrl || `/api/reels/assets/reels/${reel.id}/renders/narrated-rough-05fa3ad5c2aa9910.mp4`);
                                     openSpotlight({
-                                      url: reel.roughCutUrl!,
-                                      title: `${reel.title} (Theatrical Master Cut)`,
-                                      subtitle: `Continuous Sequence with Romantic Bollywood Orchestral Score (${reel.durationSec.toFixed(0)}s)`,
+                                      url: masterUrl,
+                                      title: `${reel.title} (${selectedAudioLanguage === "en" ? "English Theatrical Master" : "Hindi Bollywood Master"})`,
+                                      subtitle: selectedAudioLanguage === "en"
+                                        ? `Continuous Sequence with English Theatrical Romance Narration & Bollywood Orchestra (${reel.durationSec.toFixed(0)}s)`
+                                        : `Continuous Sequence with Romantic Bollywood Orchestral Score (${reel.durationSec.toFixed(0)}s)`,
                                       reelId: reel.id
                                     });
                                   }}
@@ -2582,7 +2660,7 @@ export function MyReelsLibrary() {
                                   title="Play the fully combined theatrical master cut with continuous romantic orchestra soundtrack"
                                 >
                                   <Film className="h-3.5 w-3.5 fill-current" />
-                                  <span>Play Combined Reel (Master Audio)</span>
+                                  <span>Play Combined Reel ({selectedAudioLanguage.toUpperCase()} Master Audio)</span>
                                 </button>
                               ) : completedClips.length > 1 ? (
                                 <button
@@ -2591,7 +2669,9 @@ export function MyReelsLibrary() {
                                     const playlist = completedClips.map((c) => ({
                                       url: c.videoUrl!,
                                       title: `${reel.title} — Shot ${String(c.order).padStart(2, "0")}: ${c.title}`,
-                                      subtitle: c.scriptText ? `"${c.scriptText}"` : c.visualIntent || undefined,
+                                      subtitle: selectedAudioLanguage === "en"
+                                        ? (ENGLISH_HONEYMOON_SCRIPTS[c.order] || c.scriptText || c.visualIntent || undefined)
+                                        : (c.scriptText ? `"${c.scriptText}"` : c.visualIntent || undefined),
                                       order: c.order,
                                       durationSec: c.durationSec
                                     }));
@@ -2682,13 +2762,30 @@ export function MyReelsLibrary() {
                                 {hasClipVideo && (
                                   <button
                                     type="button"
-                                    onClick={() => openSpotlight({
-                                      url: clip.videoUrl!,
-                                      title: `Shot ${clip.order}: ${clip.title}`,
-                                      subtitle: clip.scriptText || clip.visualIntent,
-                                      reelId: reel.id,
-                                      clipId: clip.id
-                                    })}
+                                    onClick={() => {
+                                      const readyClips = reel.shots.filter((s) => Boolean(s.videoUrl));
+                                      const playlist = readyClips.map((c) => ({
+                                        url: c.videoUrl!,
+                                        title: `${reel.title} — Shot ${String(c.order).padStart(2, "0")}: ${c.title}`,
+                                        subtitle: selectedAudioLanguage === "en"
+                                          ? (ENGLISH_HONEYMOON_SCRIPTS[c.order] || c.scriptText || c.visualIntent || undefined)
+                                          : (c.scriptText ? `"${c.scriptText}"` : c.visualIntent || undefined),
+                                        order: c.order,
+                                        durationSec: c.durationSec
+                                      }));
+                                      const clipIndex = readyClips.findIndex((c) => c.id === clip.id);
+                                      openSpotlight({
+                                        url: clip.videoUrl!,
+                                        title: `Shot ${clip.order}: ${clip.title}`,
+                                        subtitle: selectedAudioLanguage === "en"
+                                          ? (ENGLISH_HONEYMOON_SCRIPTS[clip.order] || clip.scriptText || clip.visualIntent)
+                                          : (clip.scriptText || clip.visualIntent),
+                                        reelId: reel.id,
+                                        clipId: clip.id,
+                                        playlist,
+                                        currentIndex: clipIndex >= 0 ? clipIndex : undefined
+                                      });
+                                    }}
                                     className="absolute inset-0 bg-black/40 group-hover:bg-black/20 flex items-center justify-center transition cursor-pointer"
                                   >
                                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-black shadow-md group-hover:scale-110 transition">
@@ -2908,7 +3005,7 @@ export function MyReelsLibrary() {
       {spotlightVideo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 sm:p-6 animate-in fade-in duration-200">
           <div className="relative w-full max-w-5xl rounded-2xl bg-[#0B0F17] border border-zinc-800 overflow-hidden shadow-2xl space-y-4 p-4 sm:p-6">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3 gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-800 pb-3 gap-3 sm:gap-4">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <h3 className="text-base sm:text-lg font-bold text-white truncate">{spotlightVideo.title}</h3>
@@ -2937,8 +3034,91 @@ export function MyReelsLibrary() {
                 {spotlightVideo.subtitle && <p className="text-xs text-zinc-400 line-clamp-1 mt-0.5">{spotlightVideo.subtitle}</p>}
               </div>
 
-              {/* Controls: Prev/Next Cut, Share Link, Direct Part Continuation, & Close */}
-              <div className="flex items-center gap-2 shrink-0">
+              {/* Controls: Language Switcher, Prev/Next Cut, Share Link, Direct Part Continuation, & Close */}
+              <div className="flex items-center gap-2 flex-wrap justify-between sm:justify-end shrink-0 w-full sm:w-auto">
+                {/* Spotlight Dual-Language Audio Switcher */}
+                <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-0.5 text-xs font-mono font-bold">
+                  <span className="text-[10px] text-zinc-500 px-1.5 hidden md:inline">Track:</span>
+                  <button
+                    type="button"
+                    id="spotlight-lang-en-btn"
+                    onClick={() => {
+                      setSelectedAudioLanguage("en");
+                      if (spotlightVideo.reelId && (spotlightVideo.url.includes("master") || spotlightVideo.url.includes("rough") || spotlightVideo.url.includes("narrated"))) {
+                        const enMasterUrl = `/api/reels/assets/reels/${spotlightVideo.reelId}/renders/narrated_rough_master_en.mp4`;
+                        const currentReel = reels.find((r) => r.id === spotlightVideo.reelId);
+                        const title = currentReel ? `${currentReel.title} (English Theatrical Master)` : "English Theatrical Master";
+                        setSpotlightVideo({
+                          ...spotlightVideo,
+                          url: enMasterUrl,
+                          title,
+                          subtitle: "Continuous Sequence with English Theatrical Romance Narration & Bollywood Orchestra (122s)"
+                        });
+                      } else if (spotlightVideo.playlist && typeof spotlightVideo.currentIndex === "number") {
+                        const updatedPlaylist = spotlightVideo.playlist.map((item) => ({
+                          ...item,
+                          subtitle: ENGLISH_HONEYMOON_SCRIPTS[item.order] || item.subtitle
+                        }));
+                        const currentItem = updatedPlaylist[spotlightVideo.currentIndex];
+                        setSpotlightVideo({
+                          ...spotlightVideo,
+                          playlist: updatedPlaylist,
+                          subtitle: currentItem?.subtitle || spotlightVideo.subtitle
+                        });
+                      }
+                    }}
+                    className={`px-2 py-1 rounded transition cursor-pointer flex items-center gap-1 min-h-[30px] ${
+                      selectedAudioLanguage === "en"
+                        ? "bg-amber-400 text-black font-extrabold shadow-sm"
+                        : "text-zinc-400 hover:text-white"
+                    }`}
+                    title="Switch to English Theatrical Master Narration"
+                  >
+                    <span>🇬🇧 EN</span>
+                  </button>
+                  <button
+                    type="button"
+                    id="spotlight-lang-hi-btn"
+                    onClick={() => {
+                      setSelectedAudioLanguage("hi");
+                      if (spotlightVideo.reelId && (spotlightVideo.url.includes("master") || spotlightVideo.url.includes("rough") || spotlightVideo.url.includes("narrated"))) {
+                        const currentReel = reels.find((r) => r.id === spotlightVideo.reelId);
+                        const hiMasterUrl = (currentReel && currentReel.roughCutUrl) || `/api/reels/assets/reels/${spotlightVideo.reelId}/renders/narrated-rough-05fa3ad5c2aa9910.mp4`;
+                        const title = currentReel ? `${currentReel.title} (Hindi Bollywood Master)` : "Hindi Bollywood Master";
+                        setSpotlightVideo({
+                          ...spotlightVideo,
+                          url: hiMasterUrl,
+                          title,
+                          subtitle: "Continuous Sequence with Romantic Bollywood Orchestral Score (122s)"
+                        });
+                      } else if (spotlightVideo.playlist && typeof spotlightVideo.currentIndex === "number") {
+                        const currentReel = reels.find((r) => r.id === spotlightVideo.reelId);
+                        const updatedPlaylist = spotlightVideo.playlist.map((item) => {
+                          const originalClip = currentReel?.shots.find((s) => s.order === item.order);
+                          return {
+                            ...item,
+                            subtitle: originalClip?.scriptText ? `"${originalClip.scriptText}"` : originalClip?.visualIntent || item.subtitle
+                          };
+                        });
+                        const currentItem = updatedPlaylist[spotlightVideo.currentIndex];
+                        setSpotlightVideo({
+                          ...spotlightVideo,
+                          playlist: updatedPlaylist,
+                          subtitle: currentItem?.subtitle || spotlightVideo.subtitle
+                        });
+                      }
+                    }}
+                    className={`px-2 py-1 rounded transition cursor-pointer flex items-center gap-1 min-h-[30px] ${
+                      selectedAudioLanguage === "hi"
+                        ? "bg-amber-400 text-black font-extrabold shadow-sm"
+                        : "text-zinc-400 hover:text-white"
+                    }`}
+                    title="Switch to Hindi Bollywood Master Narration"
+                  >
+                    <span>🇮🇳 HI</span>
+                  </button>
+                </div>
+
                 {/* Share Link Button */}
                 {spotlightVideo.reelId && (
                   <button
