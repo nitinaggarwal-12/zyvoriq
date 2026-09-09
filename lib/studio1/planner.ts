@@ -441,11 +441,16 @@ export function applyStudio1ShotPrompt(manifest: ReelProductionManifest, shotId:
         : "STUDIO1 ENVIRONMENT LOCK: Establish the primary physical set for this scene. Preserve the room or location, background geometry, wall and floor materials, furniture placement, major props, lighting direction, color temperature, time-of-day and camera-side spatial relationships across all subsequent clips. Do not invent a living room, office, studio, outdoor location, electronics, tools, machinery, screens, desks, lab equipment, workshop activity, new furniture, or another new set unless the brief or this shot explicitly requires a location change.")
     : "STUDIO1 ENVIRONMENT MODE: Environment continuity is disabled for this experiment.";
 
+  const isMusicVideo = manifest.genre === "MUSIC_VIDEO" || (manifest as any).creativeBible?.genre === "MUSIC_VIDEO";
   const semanticOnsetRule = [
     "STUDIO1 SEMANTIC ONSET LOCK: the very first rendered frame of this clip must already communicate the CURRENT scene's narration beat and visual objective.",
     "Do not spend the opening seconds establishing the room, waiting in a neutral pose, completing the previous scene's action, walking into position, revealing the subject later, or otherwise visually catching up to narration.",
     "Start with the relevant subject/action/state already underway at time 0.000 and develop it naturally through the clip.",
-    shot.scriptText ? `The current spoken beat is: ${shot.scriptText}` : "",
+    shot.scriptText
+      ? (isMusicVideo
+          ? "Visual performance: Performer actively sings with rhythmic lip-sync, expressive open-mouth visemes, visible teeth, and energetic facial delivery. STRICT NEGATIVE CONSTRAINT: Zero generated text, no captions, no subtitles, no words on screen."
+          : "Visual performance: Performer speaks naturally on camera with matching lip articulation. STRICT NEGATIVE CONSTRAINT: Zero generated text, no captions, no subtitles, no words on screen.")
+      : "",
   ].filter(Boolean).join(" ");
 
   if (mode === "NO_PERSON" || !shot.continuityIn?.characterId) {
@@ -455,7 +460,7 @@ export function applyStudio1ShotPrompt(manifest: ReelProductionManifest, shotId:
       base,
       environmentRule,
       semanticOnsetRule,
-      "STUDIO1 SUBJECT RULE: Pure cinematic action, stunt, environment master or object focus. NO talking presenters, NO direct-to-camera address. Preserve the established environment and visual language."
+      "STUDIO1 SUBJECT RULE: Pure cinematic action, stunt, environment master or object focus. NO talking presenters, NO direct-to-camera address. Preserve the established environment and visual language. ZERO TEXT, NO SUBTITLES."
     ].join(" ");
     return;
   }
@@ -465,6 +470,7 @@ export function applyStudio1ShotPrompt(manifest: ReelProductionManifest, shotId:
   const purePhysicalDesc = char?.appearance?.face
     ? `${char.appearance.ageBand || "mid 20s"}, ${char.appearance.face}, ${char.appearance.hair}`
     : (char?.appearance?.description || "lead performer with expressive facial bone structure");
+  const wardrobeDesc = char?.wardrobe ? (Array.isArray(char.wardrobe) ? char.wardrobe[0] : char.wardrobe) : "";
 
   shot.continuityIn.characterId = charId;
   shot.continuityOut.characterId = charId;
@@ -474,7 +480,7 @@ export function applyStudio1ShotPrompt(manifest: ReelProductionManifest, shotId:
     environmentRule,
     semanticOnsetRule,
     meta.presenterContinuity
-      ? `STUDIO1 IDENTITY LOCK [${charId}]: The attached canonical character reference image is authoritative for this shot. Physical description: ${purePhysicalDesc}. Character continuity is mandatory: consistent face, age, skin tone, hair, body proportions, wardrobe and distinguishing features. Eyeline: ${shot.continuityIn.eyeline || "conversational off-camera"}.`
+      ? `STUDIO1 IDENTITY LOCK [${charId}]: The attached canonical character reference image is authoritative for this shot. Physical description: ${purePhysicalDesc}. Character continuity is mandatory: consistent face, age, skin tone, hair, body proportions, wardrobe and distinguishing features.${wardrobeDesc ? ` Mandatory Locked Wardrobe: ${wardrobeDesc}.` : ""} Eyeline: ${shot.continuityIn.eyeline || "conversational off-camera"}. STRICT NEGATIVE CONSTRAINT: Zero text in scene pixels, no captions, no subtitles, no watermarks, no typography.`
       : "STUDIO1 CHARACTER MODE: Canonical identity anchoring is disabled for this experiment."
   ].join(" ");
 }

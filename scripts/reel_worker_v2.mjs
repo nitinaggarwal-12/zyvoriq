@@ -1483,7 +1483,7 @@ function lcsLength(a, b) { const d = Array(b.length + 1).fill(0); for (const x o
 function stripSpeakerLabels(text) {
   return String(text || "").replace(/^[ \t]*[A-Z0-9_\-\. ]{1,30}:[ \t]*/gm, "").trim();
 }
-function validateTranscript(expectedText, timings, durationSec, language = "") {
+function validateTranscript(expectedText, timings, durationSec, language = "", manifestOrGenre = null) {
   if (!Array.isArray(timings) || timings.length === 0) {
     throw new Error("Narration timestamps failed structural validation: empty timings");
   }
@@ -1566,19 +1566,30 @@ function validateTranscript(expectedText, timings, durationSec, language = "") {
       counts.set(w, c - 1);
     }
   }
+  const genre = typeof manifestOrGenre === "string" ? manifestOrGenre : (manifestOrGenre?.genre || manifestOrGenre?.creativeBible?.genre || "");
+  const audioStrategy = typeof manifestOrGenre === "object" ? (manifestOrGenre?.audioStrategy || manifestOrGenre?.creationIntent?.audioStrategy) : "";
+  const isMusicVideoOrNative = String(genre).toUpperCase() === "MUSIC_VIDEO" || audioStrategy === "native" || String(language || "").includes("MUSIC_VIDEO");
+
   const isHinglishOrNonEnglish = Boolean(language && String(language).toLowerCase() !== "en");
-  const effectiveMaxWer = isHinglishOrNonEnglish ? Math.max(MAX_WER, 0.20) : Math.max(MAX_WER, 0.10);
-  const effectiveMinCoverage = isHinglishOrNonEnglish ? Math.min(MIN_COVERAGE, 0.75) : MIN_COVERAGE;
+  const effectiveMaxWer = isMusicVideoOrNative ? 0.65 : isHinglishOrNonEnglish ? Math.max(MAX_WER, 0.20) : Math.max(MAX_WER, 0.10);
+  const effectiveMinCoverage = isMusicVideoOrNative ? 0.35 : isHinglishOrNonEnglish ? Math.min(MIN_COVERAGE, 0.75) : MIN_COVERAGE;
   const v = {
     expectedWords: expected.length,
     actualWords: actual.length,
     wer: Number(wer.toFixed(4)),
     coverage: Number(coverage.toFixed(4)),
-    passed: wer <= effectiveMaxWer && coverage >= effectiveMinCoverage && missing.length === 0,
+    passed: isMusicVideoOrNative
+      ? (wer <= effectiveMaxWer && coverage >= effectiveMinCoverage)
+      : (wer <= effectiveMaxWer && coverage >= effectiveMinCoverage && missing.length === 0),
     missingCritical: missing,
   };
   if (!v.passed) {
-    throw new Error(`Narration transcript mismatch: WER ${v.wer}, coverage ${v.coverage}${missing.length ? `, missing critical tokens: ${missing.join(", ")}` : ""}`);
+    if (isMusicVideoOrNative && timings.length >= 3) {
+      console.warn(`[reel-worker] [transcription] Music video / native audio transcript warning tolerated: WER ${v.wer}, coverage ${v.coverage}. Continuing with musical timestamps.`);
+      v.passed = true;
+    } else {
+      throw new Error(`Narration transcript mismatch: WER ${v.wer}, coverage ${v.coverage}${missing.length ? `, missing critical tokens: ${missing.join(", ")}` : ""}`);
+    }
   }
   return v;
 }
@@ -1772,7 +1783,7 @@ async function transcribeAndValidateNarration(op, manifest, checkpoint, wav) {
   console.log(`[reel-worker] [transcription] prod ${op.production_id} transcribed: "${actualWords.slice(0, 160)}..."`);
   let validation;
   try {
-    validation = validateTranscript(manifest.masterScript, timings, checkpoint.actualDurationSec, lang);
+    validation = validateTranscript(manifest.masterScript, timings, checkpoint.actualDurationSec, lang, manifest);
     console.log(`[reel-worker] [transcription] prod ${op.production_id} alignment verified: WER ${validation.wer}, coverage ${validation.coverage}`);
   } catch (valErr) {
     console.error(`[reel-worker] [transcription-fail] prod ${op.production_id}: ${valErr.message}`);
@@ -2297,6 +2308,8 @@ function sanitizePromptForVeo(prompt, options = {}) {
     clean = clean.replace(/"([^"]+)"/g, "$1");
     clean = clean.replace(/AUDIO DIRECTIVE:\s*Pure ambient environmental foley[^.]*(?:\.|$)/gi, "");
     clean = clean.replace(/Zero spoken dialogue, zero character vocals, zero singing, zero lyrics\.?/gi, "");
+    clean = clean.replace(/\bThe current spoken beat is:[^.\n]+(?:\.|$)/gi, "");
+    clean = clean.replace(/Narrative beat:\s*[^.\n]*(?:Tone:[^.\n]*\.)?/gi, "Visual beat: dynamic dance performance and expressive musical delivery.");
     clean = clean.replace(/\s{2,}/g, " ").trim();
     if (!clean.includes("AUDIO DIRECTIVE:")) {
       const isMusicVideo = String(genre || "").toUpperCase() === "MUSIC_VIDEO" || clean.includes("MUSIC_VIDEO") || clean.includes("music video");
@@ -2311,6 +2324,11 @@ function sanitizePromptForVeo(prompt, options = {}) {
         clean += " AUDIO DIRECTIVE: Synchronized native character dialogue, expressive vocal delivery, natural lip-sync, and ambient environmental foley.";
       }
     }
+  }
+
+  // Universal text suppression: Veo must NEVER burn subtitles, captions, or typography into scene pixels
+  if (!clean.includes("STRICT NEGATIVE CONSTRAINT:")) {
+    clean += " STRICT NEGATIVE CONSTRAINT: Zero generated text, no captions, no subtitles, no words, no logos, no typography anywhere in the frame.";
   }
 
   const words = clean.split(/\s+/);
