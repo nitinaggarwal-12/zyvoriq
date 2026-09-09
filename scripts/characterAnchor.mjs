@@ -343,10 +343,26 @@ export async function regenerateCharacterSheet(manifest, productionId, charId, w
   return manifest;
 }
 
+export function getManifestCharacters(manifest) {
+  const chars = [];
+  const seen = new Set();
+  for (const c of (Array.isArray(manifest?.characters) ? manifest.characters : [])) {
+    if (c?.id && !seen.has(c.id)) {
+      seen.add(c.id);
+      chars.push(c);
+    }
+  }
+  for (const c of (Array.isArray(manifest?.continuity?.characters) ? manifest.continuity.characters : [])) {
+    if (c?.id && !seen.has(c.id)) {
+      seen.add(c.id);
+      chars.push(c);
+    }
+  }
+  return chars;
+}
+
 export async function ensureCharacterSheet(manifest, productionId, writeAsset) {
-  const characters = Array.isArray(manifest.characters) && manifest.characters.length
-    ? manifest.characters
-    : (manifest.continuity?.characters || []);
+  const characters = getManifestCharacters(manifest);
   if (!characters.length) return manifest;
 
   // Identify all characters that actually appear in at least one shot

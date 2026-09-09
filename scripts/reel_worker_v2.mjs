@@ -8,7 +8,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import pg from "pg"; 
-import { ensureCharacterSheet, firstFrameForShot, seedForShot } from "./characterAnchor.mjs";
+import { ensureCharacterSheet, firstFrameForShot, seedForShot, getManifestCharacters } from "./characterAnchor.mjs";
 import { buildStudio1RenderPlan, buildStudio1VisualFilter, synchronizeStudio1ManifestTimeline } from "./studio1_timeline_sync.mjs";
 import { generateContinuousReel, maxBeatsForDuration } from "./studio1_native.mjs";
 
@@ -1660,9 +1660,7 @@ function extractBiasedVocabulary(manifest) {
   const vocab = new Set();
   
   // 1. Explicit Characters & Performer Names
-  const characters = Array.isArray(manifest.characters) && manifest.characters.length
-    ? manifest.characters
-    : (manifest.continuity?.characters || []);
+  const characters = getManifestCharacters(manifest);
   for (const c of characters) {
     if (c.name) {
       c.name.split(/\s+/).forEach(part => {
@@ -1785,9 +1783,7 @@ async function transcribeAndValidateNarration(op, manifest, checkpoint, wav) {
 }
 
 function selectVoiceForManifest(manifest, speakerCharId = null) {
-  const characters = Array.isArray(manifest.characters) && manifest.characters.length
-    ? manifest.characters
-    : (manifest.continuity?.characters || []);
+  const characters = getManifestCharacters(manifest);
 
   const leadChar = speakerCharId
     ? (characters.find(c => c.id === speakerCharId) || characters[0])
@@ -1990,7 +1986,7 @@ async function applyNarration(op, result) {
       throw csErr; // Fail operation cleanly so queue retries with backoff; never silently skip!
     }
 
-    const updatedChars = Array.isArray(m.characters) && m.characters.length ? m.characters : (m.continuity?.characters || []);
+    const updatedChars = getManifestCharacters(m);
     for (const charId of onCameraCharIds) {
       const char = updatedChars.find(c => c.id === charId);
       const hasCanonical = char?.canonicalReferenceImages?.some(img => typeof img === "string" ? Boolean(img) : Boolean(img?.url));
@@ -2311,9 +2307,7 @@ async function generateShot(op, manifest, shot) {
   const dispatchMarkers = new Set(["veo-dispatch-started", "veo-recovery-dispatch-started"]);
   let name = prior && !dispatchMarkers.has(prior) ? prior : null;   if (name) console.log(`[reel-worker] [anchor] SKIPPED for ${shot.id} — resuming existing Veo op, no new dispatch`);
 
-  const characters = Array.isArray(manifest.characters) && manifest.characters.length
-    ? manifest.characters
-    : (manifest.continuity?.characters || []);
+  const characters = getManifestCharacters(manifest);
   const charId = shot.continuityIn?.characterId;
   const char = charId ? (characters.find(c => c.id === charId) || null) : null;
   const canonicalUrls = (char?.canonicalReferenceImages || [])
@@ -2630,9 +2624,7 @@ async function generateShot(op, manifest, shot) {
             const targetShot = m.shots.find(x => x.id === shot.id);
             if (targetShot) {
               prevPrompt = targetShot.generationPrompt;
-              const allChars = Array.isArray(m.characters) && m.characters.length
-                ? m.characters
-                : (m.continuity?.characters || []);
+              const allChars = getManifestCharacters(m);
               const dynamicCharNames = allChars.flatMap(c => {
                 const names = [c.name, c.id?.replace(/_/g, " ")];
                 if (c.name && typeof c.name === "string") {
