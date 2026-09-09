@@ -295,7 +295,12 @@ export function budgetStudio1NarrationAgainstCap(manifest: ReelProductionManifes
         ? "Contemporary Bollywood Desi Pop dance song, energetic EDM synth production, punchy 808 sub-bass, driving club drum groove, crisp electronic percussion, autotuned pop vocal delivery, anthemic festival drop."
         : "Contemporary pop dance anthem, upbeat EDM synth production, punchy 808 sub-bass, driving modern drum rhythm, energetic pop vocal delivery, infectious festival drop.";
 
-      musicVideoLock = `MUSIC VIDEO PERFORMANCE & PRODUCTION: ${acousticStyle} The performer is actively singing the song lyrics on camera with visible mouth, lips, and facial articulation in precise sync with the vocals. Face, lips, and mouth are completely illuminated and unobstructed (no opaque visors, masks, or hands covering the mouth).`;
+      const hasSinger = Boolean(s.continuityIn?.characterId);
+      if (hasSinger) {
+        musicVideoLock = `MUSIC VIDEO PERFORMANCE & PRODUCTION: ${acousticStyle} The performer is actively singing the song lyrics on camera with visible mouth, lips, and facial articulation in precise sync with the vocals. Face, lips, and mouth are completely illuminated and unobstructed (no opaque visors, masks, or hands covering the mouth).`;
+      } else {
+        musicVideoLock = `MUSIC VIDEO PRODUCTION: ${acousticStyle} High-energy music video cinematic visual. Pure cinematic action, lighting and atmospheric stage effects.`;
+      }
     }
 
     const basePrompt = s.visualIntent

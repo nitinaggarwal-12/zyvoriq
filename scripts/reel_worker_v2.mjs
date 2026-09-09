@@ -1205,10 +1205,10 @@ async function publishHeartbeat() {
     }
     if (queueStats.queued > 0) {
       const queuedAge = await pool.query(`
-        SELECT EXTRACT(EPOCH FROM (NOW() - created_at))::int as max_age
+        SELECT EXTRACT(EPOCH FROM (NOW() - updated_at))::int as max_age
         FROM reel_operations
         WHERE status = 'QUEUED'
-        ORDER BY created_at ASC LIMIT 1
+        ORDER BY updated_at ASC LIMIT 1
       `);
       queueStats.maxQueuedAgeSec = queuedAge.rows[0]?.max_age || 0;
     }
@@ -2280,9 +2280,16 @@ function sanitizePromptForVeo(prompt, options = {}) {
     clean = clean.replace(/\s{2,}/g, " ").trim();
     if (!clean.includes("AUDIO DIRECTIVE:")) {
       const isMusicVideo = String(genre || "").toUpperCase() === "MUSIC_VIDEO" || clean.includes("MUSIC_VIDEO") || clean.includes("music video");
-      clean += isMusicVideo
-        ? " AUDIO DIRECTIVE: High-fidelity melodic music video vocal track with synchronized singing lip performance, visible mouth phoneme articulation, rhythmically cohesive beat, and dynamic cinematic musical backing."
-        : " AUDIO DIRECTIVE: Synchronized native character dialogue, expressive vocal delivery, natural lip-sync, and ambient environmental foley.";
+      const isEnvironmentOrNoPresenter = clean.includes("NO talking presenters") || clean.includes("Pure cinematic action") || clean.includes("environment master");
+      if (isMusicVideo && !isEnvironmentOrNoPresenter) {
+        clean += " AUDIO DIRECTIVE: High-fidelity melodic music video vocal track with synchronized singing lip performance, visible mouth phoneme articulation, rhythmically cohesive beat, and dynamic cinematic musical backing.";
+      } else if (isMusicVideo) {
+        clean += " AUDIO DIRECTIVE: High-fidelity melodic music video soundtrack, driving rhythmic beat, dynamic cinematic musical backing, and synchronized stage foley.";
+      } else if (isEnvironmentOrNoPresenter) {
+        clean += " AUDIO DIRECTIVE: Dynamic cinematic environmental sound design, impactful action foley, and atmospheric soundscape.";
+      } else {
+        clean += " AUDIO DIRECTIVE: Synchronized native character dialogue, expressive vocal delivery, natural lip-sync, and ambient environmental foley.";
+      }
     }
   }
 
@@ -2365,12 +2372,15 @@ async function generateShot(op, manifest, shot) {
     // NOTE: When transitioning from b-roll/environment (char: none) or for shots without canonical portraits,
     // the temporal frame is PRESERVED so physical environment, lighting, and set continuity are retained!
     if (ref?.buffer && refImages.length < 3) {
-      if (charId && refImages.length > 0) {
+      if (hasSafetyHistory) {
+        omittedTemporalReason = "safety-fallback";
+        console.log(`[reel-worker] [safety-fallback] Omitting temporal frame from previous shot (${depShot?.id || "unknown"}) on safety retry for ${shot.id}; text-to-video / canonical reference isolated.`);
+      } else if (charId && refImages.length > 0) {
         omittedTemporalReason = "canonical-character-authoritative";
         console.log(`[reel-worker] [continuity] Shot ${shot.id} (char: ${charId}) already has canonical character reference. Omitting temporal face frame to prevent multi-reference likeness collisions.`);
-      } else if (charId && hasSafetyHistory) {
-        omittedTemporalReason = "safety-fallback";
-        console.log(`[reel-worker] [safety-fallback] Omitting temporal frame from previous shot (${depShot?.id || "unknown"}) on safety retry for ${shot.id}; using canonical character reference only.`);
+      } else if (depCharId && !charId) {
+        omittedTemporalReason = "character-to-environment-transition";
+        console.log(`[reel-worker] [continuity] Shot ${shot.id} (environment/action, no char) transitions from character shot ${depShot?.id || "none"} (char: ${depCharId}). Omitting temporal character face frame to prevent likeness collision in environment.`);
       } else if (charId && depCharId && !isSameCharacter) {
         omittedTemporalReason = "character-switch";
         console.log(`[reel-worker] [continuity] Shot ${shot.id} (char: ${charId}) transitions from ${depShot?.id || "none"} (char: ${depCharId || "none"}). Omitting non-matching temporal reference to prevent identity collision.`);
@@ -2401,7 +2411,7 @@ async function generateShot(op, manifest, shot) {
 
     if (refImages.length > 0) {
       instance.referenceImages = refImages;
-      console.log(`[reel-worker] [referenceImages] applied ${refImages.length} reference images to ${shot.id} (char: ${charId || "none"}, temporal: ${Boolean(ref?.buffer)})`);
+      console.log(`[reel-worker] [referenceImages] applied ${refImages.length} reference images to ${shot.id} (char: ${charId || "none"}, temporal: ${hasTemporalFrame})`);
     } else if (safetyAttemptCount < 2) {
       // Fallback: single opening frame conditioning (only on normal attempts / retry 1; omitted on safety retry >= 2 to bypass image-level likeness triggers)
       let anchorFrame = null;
@@ -2413,7 +2423,7 @@ async function generateShot(op, manifest, shot) {
       if (anchorFrame) {
         console.log(`[reel-worker] [anchor] applied canonical first frame to ${shot.id}`);
         instance.image = { mimeType: "image/png", bytesBase64Encoded: anchorFrame.toString("base64") };
-      } else if (ref) {
+      } else if (ref && !hasSafetyHistory && (!depCharId || charId)) {
         instance.image = { mimeType: "image/png", bytesBase64Encoded: ref.buffer.toString("base64") };
       }
     } else {
@@ -2584,7 +2594,7 @@ async function generateShot(op, manifest, shot) {
           // Likeness / visual safety fallback branch:
           const prevSafetyAttempts = Number(op.payload_json?.safetyAttempts || 0);
           const newSafetyAttempts = prevSafetyAttempts + 1;
-          const hadTemporalRef = Boolean(ref?.buffer);
+          const hadTemporalRef = Boolean(hasTemporalFrame);
 
           // Track safetyAttempts in payload_json
           try {
@@ -3088,7 +3098,7 @@ async function renderRough(op, m) {
         const f = [];
         for (let i = 0; i < batchShots.length; i++) {
           const s = batchShots[i];
-          const shotDur = Number(s.editorialDurationSec || s.generationDurationSec || 6.0);
+          const shotDur = Number(s.asset?.actualDurationSec || s.editorialDurationSec || s.generationDurationSec || 6.0);
           const fadeOutStart = Math.max(0.01, shotDur - 0.015);
           f.push(`[${i}:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30[v${i}]`);
           f.push(`[${i}:a]aresample=48000,aformat=channel_layouts=stereo,afade=t=in:st=0:d=0.01,afade=t=out:st=${fadeOutStart.toFixed(3)}:d=0.01[a${i}]`);
