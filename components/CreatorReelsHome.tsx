@@ -40,6 +40,7 @@ import {
   Lock
 } from "lucide-react";
 import type { OmniDirectorialTreatment } from "@/lib/reel/elaborateDirector";
+import { getNextPartInfo } from "./MyReelsLibrary";
 
 export const LANGUAGE_OPTIONS = [
   { id: "en", label: "English", desc: "US fast social pacing" },
@@ -312,17 +313,18 @@ export function CreatorReelsHome() {
               if (cleanTitle.length > 50) cleanTitle = cleanTitle.slice(0, 48) + "...";
               let poster = prod.posterUrl;
               if (!poster || poster.includes(".railway.internal")) {
-                poster = m.shots?.[1]?.continuityIn?.referenceFrameUrl || null;
+                poster = m.shots?.[1]?.continuityIn?.referenceFrameUrl || m.shots?.[0]?.posterUrl || null;
               }
               if (!poster || poster.includes(".railway.internal")) {
                 if (prod.id.includes("5b3c6b72")) poster = "/assets/stills/ren_cyberpunk.png";
                 else if (prod.id.includes("e2e00945")) poster = "/assets/stills/dubai_dance.jpg";
                 else if (prod.id.includes("9f360810") || prod.id.includes("39a1fe18")) poster = "/assets/stills/swiss_alpine.jpg";
-                else if (prod.id.includes("cf46b686") || prod.id.includes("d2d144d2") || prod.id.includes("32ffc950")) poster = "/assets/stills/desert_spiral.jpg";
+                else if (!prod.id.includes("cf46b686") && (prod.id.includes("d2d144d2") || prod.id.includes("32ffc950"))) poster = "/assets/stills/desert_spiral.jpg";
                 else if (prod.id.includes("5bfb958d") || prod.id.includes("1a8264ca")) poster = "/assets/stills/cosmic_nebula.jpg";
                 else if (prod.id.includes("napoleon")) poster = "/assets/stills/napoleon_hero.png";
                 else if (prod.id.includes("coronation")) poster = "/assets/stills/coronation_hero.png";
               }
+              const partInfo = getNextPartInfo({ title: cleanTitle, prompt: m.prompt || m.topic });
               setContinuationParent({
                 id: prod.id,
                 title: cleanTitle,
@@ -332,7 +334,7 @@ export function CreatorReelsHome() {
                 durationSec: m.requestedDurationSec || m.durationSec || 30,
                 posterUrl: poster,
               });
-              setPromptText(`Act II: Continuation of "${cleanTitle}". The sequence continues seamlessly with the same character, wardrobe, and visual aesthetic: `);
+              setPromptText(`${partInfo.suggestedTitlePrefix} "${partInfo.baseTitle}". The sequence continues seamlessly with the same character, wardrobe, and visual aesthetic: `);
               if (m.aspectRatio === "2.39:1") {
                 setActiveTab("youtube_shorts");
                 setSelectedAspectRatio("2.39:1");
@@ -1062,17 +1064,18 @@ export function CreatorReelsHome() {
                           if (title.length > 60) title = title.slice(0, 58) + "...";
                           let poster = p.posterUrl;
                           if (!poster || poster.includes(".railway.internal")) {
-                            poster = m.shots?.[1]?.continuityIn?.referenceFrameUrl || null;
+                            poster = m.shots?.[1]?.continuityIn?.referenceFrameUrl || m.shots?.[0]?.posterUrl || null;
                           }
                           if (!poster || poster.includes(".railway.internal")) {
                             if (p.id.includes("5b3c6b72")) poster = "/assets/stills/ren_cyberpunk.png";
                             else if (p.id.includes("e2e00945")) poster = "/assets/stills/dubai_dance.jpg";
                             else if (p.id.includes("9f360810") || p.id.includes("39a1fe18")) poster = "/assets/stills/swiss_alpine.jpg";
-                            else if (p.id.includes("cf46b686") || p.id.includes("d2d144d2") || p.id.includes("32ffc950")) poster = "/assets/stills/desert_spiral.jpg";
+                            else if (!p.id.includes("cf46b686") && (p.id.includes("d2d144d2") || p.id.includes("32ffc950"))) poster = "/assets/stills/desert_spiral.jpg";
                             else if (p.id.includes("5bfb958d") || p.id.includes("1a8264ca")) poster = "/assets/stills/cosmic_nebula.jpg";
                             else if (p.id.includes("napoleon")) poster = "/assets/stills/napoleon_hero.png";
                             else if (p.id.includes("coronation")) poster = "/assets/stills/coronation_hero.png";
                           }
+                          const partInfo = getNextPartInfo({ title, prompt: m.prompt || m.topic });
                           return (
                             <div
                               key={p.id}
@@ -1118,7 +1121,7 @@ export function CreatorReelsHome() {
                                     durationSec: m.requestedDurationSec || 30,
                                     posterUrl: poster,
                                   });
-                                  setPromptText(`Act II: Continuation of "${title}". The sequence continues seamlessly with the same character, wardrobe, and visual aesthetic: `);
+                                  setPromptText(`${partInfo.suggestedTitlePrefix} "${partInfo.baseTitle}". The sequence continues seamlessly with the same character, wardrobe, and visual aesthetic: `);
                                   if (m.aspectRatio === "2.39:1") {
                                     setActiveTab("youtube_shorts");
                                     setSelectedAspectRatio("2.39:1");
@@ -1132,10 +1135,10 @@ export function CreatorReelsHome() {
                                     if (el) el.scrollIntoView({ behavior: "smooth" });
                                   }, 200);
                                 }}
-                                className="px-3 py-1.5 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/40 text-teal-300 text-xs font-semibold shrink-0 flex items-center gap-1 transition shadow-sm"
+                                className="px-3 py-1.5 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/40 text-teal-300 text-xs font-semibold shrink-0 flex items-center gap-1 transition shadow-sm cursor-pointer"
                               >
                                 <Sparkles className="w-3 h-3 text-teal-400" />
-                                <span>Select Part 2</span>
+                                <span>{partInfo.buttonText}</span>
                               </button>
                             </div>
                           );
@@ -1162,32 +1165,37 @@ export function CreatorReelsHome() {
                                 </div>
                               </div>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setContinuationParent({
-                                  id: reel.id,
-                                  title: reel.title,
-                                  category: reel.category,
-                                  prompt: reel.prompt,
-                                  aspectRatio: "9:16",
-                                  durationSec: reel.durationSec,
-                                  posterUrl: reel.posterUrl,
-                                });
-                                setPromptText(`Act II: Continuation of "${reel.title}". The sequence continues seamlessly with the same character, wardrobe, and visual aesthetic: `);
-                                setActiveTab("instagram_tiktok");
-                                setSelectedAspectRatio("9:16");
-                                setShowContinuationModal(false);
-                                setTimeout(() => {
-                                  const el = document.getElementById("continuation-active-banner") || document.getElementById("prompt-studio-box");
-                                  if (el) el.scrollIntoView({ behavior: "smooth" });
-                                }, 200);
-                              }}
-                              className="px-3 py-1.5 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/40 text-teal-300 text-xs font-semibold shrink-0 flex items-center gap-1 transition shadow-sm"
-                            >
-                              <Sparkles className="w-3 h-3 text-teal-400" />
-                              <span>Select Part 2</span>
-                            </button>
+                            {(() => {
+                              const partInfo = getNextPartInfo({ title: reel.title, prompt: reel.prompt });
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setContinuationParent({
+                                      id: reel.id,
+                                      title: reel.title,
+                                      category: reel.category,
+                                      prompt: reel.prompt,
+                                      aspectRatio: "9:16",
+                                      durationSec: reel.durationSec,
+                                      posterUrl: reel.posterUrl,
+                                    });
+                                    setPromptText(`${partInfo.suggestedTitlePrefix} "${partInfo.baseTitle}". The sequence continues seamlessly with the same character, wardrobe, and visual aesthetic: `);
+                                    setActiveTab("instagram_tiktok");
+                                    setSelectedAspectRatio("9:16");
+                                    setShowContinuationModal(false);
+                                    setTimeout(() => {
+                                      const el = document.getElementById("continuation-active-banner") || document.getElementById("prompt-studio-box");
+                                      if (el) el.scrollIntoView({ behavior: "smooth" });
+                                    }, 200);
+                                  }}
+                                  className="px-3 py-1.5 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/40 text-teal-300 text-xs font-semibold shrink-0 flex items-center gap-1 transition shadow-sm cursor-pointer"
+                                >
+                                  <Sparkles className="w-3 h-3 text-teal-400" />
+                                  <span>{partInfo.buttonText}</span>
+                                </button>
+                              );
+                            })()}
                           </div>
                         ))}
                       </div>

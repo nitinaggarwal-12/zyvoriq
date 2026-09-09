@@ -196,27 +196,81 @@ export function cleanDisplayTitle(rawTitle: string): string {
   return firstLine || "Custom Reel Production";
 }
 
+export function getNextPartInfo(reel: { id?: string; title?: string; prompt?: string }) {
+  const text = `${reel?.title || ""} ${reel?.prompt || ""}`.toLowerCase();
+
+  let currentPart = 1;
+  if (/\b(act\s*v|part\s*5|act\s*5)\b/i.test(text)) {
+    currentPart = 5;
+  } else if (/\b(act\s*iv|part\s*4|act\s*4)\b/i.test(text)) {
+    currentPart = 4;
+  } else if (/\b(act\s*iii|part\s*3|act\s*3)\b/i.test(text)) {
+    currentPart = 3;
+  } else if (/\b(act\s*ii|part\s*2|act\s*2)\b/i.test(text) || text.includes("continuation")) {
+    currentPart = 2;
+  }
+
+  const nextPart = currentPart + 1;
+  const romanNumerals = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+  const nextRoman = romanNumerals[nextPart - 1] || String(nextPart);
+
+  // Extract core base title if already prefixed with Act X: Continuation of "XYZ"
+  const rawTitle = reel?.title || "Reel Production";
+  const baseTitleMatch = rawTitle.match(/^Act\s+[IVXLCDM\d]+:\s*Continuation\s*of\s*["“']?([^"”']+)["”']?/i);
+  const baseTitle = baseTitleMatch ? baseTitleMatch[1].trim() : rawTitle.trim();
+
+  return {
+    currentPart,
+    nextPart,
+    nextRoman,
+    baseTitle,
+    buttonText: `Direct Part ${nextPart}`,
+    drawerButtonText: `Direct Part ${nextPart} (Continuation Reel)`,
+    suggestedTitlePrefix: `Act ${nextRoman}: Continuation of`,
+  };
+}
+
 export function resolveReelPoster(pId: string, m: any, shots: LibraryClip[]): string | null {
   const text = `${pId} ${m?.topic || ""} ${(m as any)?.studio1?.projectTitle || ""} ${m?.masterScript || ""}`.toLowerCase();
+  const isContinuation = text.includes("continuation") || text.includes("act ii") || text.includes("act iii") || text.includes("part 2") || text.includes("part 3");
 
-  // 1. Known Showcases & Thematic Stills (Instant, authentic, zero-latency)
-  // Ren Kuro - Midnight Cyberpunk Dance (Male Cyberpunk Dancer in Shinjuku Neon)
-  if (text.includes("5b3c6b72") || text.includes("cyberpunk") || text.includes("ren kuro") || text.includes("shinjuku")) {
+  // 1. Authentic Generated Video Frames & Reference Stills (Highest Priority for Custom/Sequel Productions)
+  // Check explicit still or character reference
+  const explicit = m?.stillUrl || m?.anchorImageUrl || m?.canonicalCharacterAnchorUrl || m?.continuity?.characters?.[0]?.canonicalReferenceImages?.[0] || m?.characters?.[0]?.canonicalReferenceImages?.[0];
+  if (explicit && typeof explicit === "string" && !explicit.includes("undefined") && !explicit.includes(".railway.internal")) {
+    return explicit;
+  }
+
+  // Shot 01 frame captured in shot 02 incoming continuity reference (Physical authentic face/wardrobe frame)
+  const shot1Frame = m?.shots?.[1]?.continuityIn?.referenceFrameUrl;
+  if (shot1Frame && typeof shot1Frame === "string" && !shot1Frame.includes("undefined") && !shot1Frame.includes(".railway.internal")) {
+    return shot1Frame;
+  }
+
+  // First shot poster
+  const firstShotPoster = shots[0]?.posterUrl || m?.shots?.[0]?.posterUrl;
+  if (firstShotPoster && typeof firstShotPoster === "string" && !firstShotPoster.includes("undefined") && !firstShotPoster.includes(".railway.internal")) {
+    return firstShotPoster;
+  }
+
+  // 2. Curated Demo Showcases (Used for flagship sample cards without generated custom frames)
+  // Ren Kuro - Midnight Cyberpunk Dance
+  if (text.includes("5b3c6b72") || (!isContinuation && (text.includes("cyberpunk") || text.includes("ren kuro")))) {
     return "/assets/stills/ren_cyberpunk.png";
   }
 
   // Swiss Alpine Mountaineer
-  if (text.includes("9f360810") || text.includes("swiss") || text.includes("alpine") || text.includes("mountaineer")) {
+  if (text.includes("9f360810") || text.includes("39a1fe18") || (!isContinuation && (text.includes("swiss") || text.includes("alpine")))) {
     return "/assets/stills/swiss_alpine.jpg";
   }
 
-  // Desert Nomad / Desert Rhythms
-  if (text.includes("cf46b686") || text.includes("d2d144d2") || text.includes("desert") || text.includes("dune") || text.includes("nomad")) {
+  // Desert Nomad / Desert Rhythms (Act 1 Demo Showcase only - NEVER for sequel cf46b686 or continuation reels)
+  if (!isContinuation && !text.includes("cf46b686") && (text.includes("d2d144d2") || text.includes("32ffc950"))) {
     return "/assets/stills/desert_spiral.jpg";
   }
 
   // Cosmic Astronaut
-  if (text.includes("5bfb958d") || text.includes("cosmic") || text.includes("space") || text.includes("astronaut") || text.includes("nebula")) {
+  if (text.includes("5bfb958d") || text.includes("1a8264ca") || (!isContinuation && (text.includes("cosmic") || text.includes("astronaut")))) {
     return "/assets/stills/cosmic_nebula.jpg";
   }
 
@@ -225,27 +279,14 @@ export function resolveReelPoster(pId: string, m: any, shots: LibraryClip[]): st
     return "/assets/stills/napoleon_hero.png";
   }
 
-  // Coronation / Mumbai
+  // Coronation / Mumbai Penthouse
   if (text.includes("coronation") || text.includes("mumbai") || text.includes("penthouse") || text.includes("bandra")) {
     return "/assets/stills/coronation_hero.png";
   }
 
-  // Dubai Rhapsody (Only when specifically Dubai/Rhapsody)
-  if (text.includes("e2e00945") || text.includes("dubai") || text.includes("rhapsody")) {
+  // Dubai Rhapsody
+  if (text.includes("e2e00945") || (!isContinuation && (text.includes("dubai") && text.includes("rhapsody")))) {
     return "/assets/stills/dubai_dance.jpg";
-  }
-
-  // 2. Custom productions: Check explicit still or character reference
-  const explicit = m?.stillUrl || m?.anchorImageUrl || m?.canonicalCharacterAnchorUrl || m?.continuity?.characters?.[0]?.canonicalReferenceImages?.[0] || m?.characters?.[0]?.canonicalReferenceImages?.[0];
-  if (explicit && typeof explicit === "string" && !explicit.includes("undefined")) return explicit;
-
-  // 3. Custom productions: Shot 01 frame is captured in shot 02 incoming continuity reference
-  const shot1Frame = m?.shots?.[1]?.continuityIn?.referenceFrameUrl;
-  if (shot1Frame && typeof shot1Frame === "string") return shot1Frame;
-
-  const firstShotPoster = shots[0]?.posterUrl;
-  if (firstShotPoster && typeof firstShotPoster === "string" && !firstShotPoster.includes("undefined")) {
-    return firstShotPoster;
   }
 
   return null;
@@ -557,6 +598,39 @@ export function MyReelsLibrary() {
     currentIndex?: number;
   } | null>(null);
 
+  // Synchronized Spotlight Video Opening & URL Address Bar Sync
+  const openSpotlight = (video: {
+    url: string;
+    title: string;
+    subtitle?: string;
+    reelId?: string;
+    clipId?: string;
+    playlist?: Array<{
+      url: string;
+      title: string;
+      subtitle?: string;
+      order: number;
+      durationSec: number;
+    }>;
+    currentIndex?: number;
+  }) => {
+    setSpotlightVideo(video);
+    if (typeof window !== "undefined" && video.reelId) {
+      const url = new URL(window.location.href);
+      url.searchParams.set("reel", video.reelId);
+      window.history.replaceState(null, "", url.pathname + url.search);
+    }
+  };
+
+  const closeSpotlight = () => {
+    setSpotlightVideo(null);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("reel");
+      window.history.replaceState(null, "", url.pathname + (url.search ? url.search : ""));
+    }
+  };
+
   // Modal Dialog States
   const [editingReel, setEditingReel] = useState<LibraryReel | null>(null);
   const [editingClip, setEditingClip] = useState<{ reelId: string; clip: LibraryClip } | null>(null);
@@ -725,12 +799,24 @@ export function MyReelsLibrary() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Toggle expand / collapse of lower-level clips
+  // Toggle expand / collapse of lower-level clips with URL sync
   const toggleExpand = (reelId: string) => {
-    setExpandedReelIds(prev => ({
-      ...prev,
-      [reelId]: !prev[reelId]
-    }));
+    setExpandedReelIds(prev => {
+      const isNowExpanded = !prev[reelId];
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href);
+        if (isNowExpanded) {
+          url.searchParams.set("reel", reelId);
+        } else if (url.searchParams.get("reel") === reelId) {
+          url.searchParams.delete("reel");
+        }
+        window.history.replaceState(null, "", url.pathname + (url.search ? url.search : ""));
+      }
+      return {
+        ...prev,
+        [reelId]: isNowExpanded
+      };
+    });
   };
 
   // Expand all or Collapse all
@@ -1735,7 +1821,7 @@ export function MyReelsLibrary() {
                         <div 
                           onClick={() => {
                             if (reel.videoUrl) {
-                              setSpotlightVideo({ url: reel.videoUrl, title: reel.title, subtitle: reel.subtitle, reelId: reel.id });
+                              openSpotlight({ url: reel.videoUrl, title: reel.title, subtitle: reel.subtitle, reelId: reel.id });
                             } else {
                               const readyClips = reel.shots.filter(s => Boolean(s.videoUrl));
                               if (readyClips.length > 0) {
@@ -1746,7 +1832,7 @@ export function MyReelsLibrary() {
                                   order: c.order,
                                   durationSec: c.durationSec
                                 }));
-                                setSpotlightVideo({
+                                openSpotlight({
                                   url: playlist[0].url,
                                   title: playlist[0].title,
                                   subtitle: playlist[0].subtitle,
@@ -2151,16 +2237,21 @@ export function MyReelsLibrary() {
 
                         {/* Action links */}
                         <div className="flex items-center gap-2.5 flex-wrap">
-                          {/* Direct Part 2 Continuation Reel Button */}
-                          <Link
-                            href={`/?continueReel=${encodeURIComponent(reel.id)}`}
-                            id={`direct-part2-btn-${reel.id}`}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-emerald-500/10 border border-emerald-500/60 hover:border-emerald-400 text-emerald-300 hover:text-white font-mono text-xs font-bold transition shadow-md shadow-emerald-950/40 hover:scale-105 min-h-[36px]"
-                            title="Direct Part 2 continuation with the exact same character, setting, and audio theme"
-                          >
-                            <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-                            <span>Direct Part 2</span>
-                          </Link>
+                          {/* Direct Next Part Continuation Reel Button */}
+                          {(() => {
+                            const partInfo = getNextPartInfo(reel);
+                            return (
+                              <Link
+                                href={`/?continueReel=${encodeURIComponent(reel.id)}&nextPart=${partInfo.nextPart}`}
+                                id={`direct-part2-btn-${reel.id}`}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-emerald-500/10 border border-emerald-500/60 hover:border-emerald-400 text-emerald-300 hover:text-white font-mono text-xs font-bold transition shadow-md shadow-emerald-950/40 hover:scale-105 min-h-[36px]"
+                                title={`Direct ${partInfo.buttonText} continuation with the exact same character, setting, and audio theme`}
+                              >
+                                <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+                                <span>{partInfo.buttonText}</span>
+                              </Link>
+                            );
+                          })()}
 
                           {/* Open in Studio Link */}
                           <Link
@@ -2364,15 +2455,20 @@ export function MyReelsLibrary() {
                               )}
                             </div>
                             <div className="flex items-center gap-3 flex-wrap">
-                              {/* Direct Part 2 Continuation Button */}
-                              <Link
-                                href={`/?continueReel=${encodeURIComponent(reel.id)}`}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/50 hover:bg-emerald-500/30 text-emerald-300 hover:text-white text-xs font-mono font-bold transition shadow-md hover:scale-105 cursor-pointer"
-                                title="Direct Part 2 continuation with the exact same character, setting, and audio theme"
-                              >
-                                <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-                                <span>Direct Part 2 (Continuation Reel)</span>
-                              </Link>
+                              {/* Direct Part X Continuation Button */}
+                              {(() => {
+                                const partInfo = getNextPartInfo(reel);
+                                return (
+                                  <Link
+                                    href={`/?continueReel=${encodeURIComponent(reel.id)}&nextPart=${partInfo.nextPart}`}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/50 hover:bg-emerald-500/30 text-emerald-300 hover:text-white text-xs font-mono font-bold transition shadow-md hover:scale-105 cursor-pointer"
+                                    title={`Direct ${partInfo.buttonText} continuation with the exact same character, setting, and audio theme`}
+                                  >
+                                    <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+                                    <span>{partInfo.drawerButtonText}</span>
+                                  </Link>
+                                );
+                              })()}
 
                               {completedClips.length > 1 && (
                                 <button
@@ -2385,7 +2481,7 @@ export function MyReelsLibrary() {
                                       order: c.order,
                                       durationSec: c.durationSec
                                     }));
-                                    setSpotlightVideo({
+                                    openSpotlight({
                                       url: playlist[0].url,
                                       title: playlist[0].title,
                                       subtitle: playlist[0].subtitle,
@@ -2456,7 +2552,7 @@ export function MyReelsLibrary() {
                                 {hasClipVideo && (
                                   <button
                                     type="button"
-                                    onClick={() => setSpotlightVideo({
+                                    onClick={() => openSpotlight({
                                       url: clip.videoUrl!,
                                       title: `Shot ${clip.order}: ${clip.title}`,
                                       subtitle: clip.scriptText || clip.visualIntent,
@@ -2684,8 +2780,24 @@ export function MyReelsLibrary() {
           <div className="relative w-full max-w-5xl rounded-2xl bg-[#0B0F17] border border-zinc-800 overflow-hidden shadow-2xl space-y-4 p-4 sm:p-6">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-3 gap-4">
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2.5 flex-wrap">
                   <h3 className="text-base sm:text-lg font-bold text-white truncate">{spotlightVideo.title}</h3>
+                  {spotlightVideo.reelId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nid = getNetflixReelId(spotlightVideo.reelId!);
+                        navigator.clipboard.writeText(nid).catch(() => {});
+                        showToast(`✓ Copied Reel ID: ${nid}`);
+                      }}
+                      className="text-xs font-mono font-bold text-amber-300 hover:text-amber-200 bg-amber-950/80 border border-amber-500/40 px-2.5 py-0.5 rounded-full shrink-0 flex items-center gap-1 transition cursor-pointer"
+                      title="Click to copy Netflix Reel ID"
+                    >
+                      <span className="text-zinc-400 font-normal">ID:</span>
+                      <span>{getNetflixReelId(spotlightVideo.reelId)}</span>
+                      <Copy className="h-2.5 w-2.5 text-zinc-400 ml-0.5" />
+                    </button>
+                  )}
                   {spotlightVideo.playlist && typeof spotlightVideo.currentIndex === "number" && (
                     <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded-full shrink-0">
                       Cut {spotlightVideo.currentIndex + 1} of {spotlightVideo.playlist.length}
@@ -2695,8 +2807,42 @@ export function MyReelsLibrary() {
                 {spotlightVideo.subtitle && <p className="text-xs text-zinc-400 line-clamp-1 mt-0.5">{spotlightVideo.subtitle}</p>}
               </div>
 
-              {/* Controls: Prev/Next Cut & Close */}
+              {/* Controls: Prev/Next Cut, Share Link, Direct Part Continuation, & Close */}
               <div className="flex items-center gap-2 shrink-0">
+                {/* Share Link Button */}
+                {spotlightVideo.reelId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const shareUrl = `${window.location.origin}/my-reels?reel=${encodeURIComponent(spotlightVideo.reelId!)}`;
+                      navigator.clipboard.writeText(shareUrl).catch(() => {});
+                      showToast(`✓ Copied deep link: ${shareUrl}`);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-850 hover:bg-zinc-800 border border-zinc-700/60 text-zinc-300 hover:text-white text-xs font-mono font-semibold transition cursor-pointer min-h-[36px]"
+                    title="Copy unique deep-link URL for this reel"
+                  >
+                    <Share2 className="h-3.5 w-3.5 text-emerald-400" />
+                    <span className="hidden sm:inline">Share Link</span>
+                  </button>
+                )}
+
+                {/* Direct Next Part Sequel Continuation Link */}
+                {(() => {
+                  const currentReel = reels.find((r) => r.id === spotlightVideo.reelId);
+                  if (!currentReel) return null;
+                  const partInfo = getNextPartInfo(currentReel);
+                  return (
+                    <Link
+                      href={`/?continueReel=${encodeURIComponent(currentReel.id)}&nextPart=${partInfo.nextPart}`}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/50 hover:bg-emerald-500/30 text-emerald-300 hover:text-white text-xs font-mono font-bold transition min-h-[36px]"
+                      title={`Direct ${partInfo.buttonText} sequel with identical character DNA`}
+                    >
+                      <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+                      <span className="hidden sm:inline">{partInfo.buttonText}</span>
+                    </Link>
+                  );
+                })()}
+
                 {spotlightVideo.playlist && typeof spotlightVideo.currentIndex === "number" && (
                   <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-1">
                     <button
@@ -2745,8 +2891,9 @@ export function MyReelsLibrary() {
                 )}
                 <button
                   type="button"
-                  onClick={() => setSpotlightVideo(null)}
-                  className="rounded-lg p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 transition min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  onClick={closeSpotlight}
+                  className="rounded-lg p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 transition min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
+                  title="Close Player"
                 >
                   <X className="h-5 w-5" />
                 </button>
