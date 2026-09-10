@@ -24,7 +24,7 @@
       {
         "type": "command",
         "command": "node /Users/nitinagga/.gemini/config/plugins/zyvoriq_guard/scripts/stop_quality_gate.mjs",
-        "timeout": 60
+        "timeout": 120
       }
     ]
   }

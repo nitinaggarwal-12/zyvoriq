@@ -81,10 +81,20 @@ process.stdin.on("end", async () => {
             }
 
             // Check if active scripts in directory or scripts/ used -stream_loop
-            const scriptFiles = [
-              path.join(workspace, "scripts", "auditorium", "produce_euro_auditorium_trio_5min_reel.mjs"),
-              path.join(workspace, "scripts", "auditorium", "produce_euro_auditorium_trio.mjs")
-            ];
+            function findScripts(baseDir) {
+              let res = [];
+              if (!fs.existsSync(baseDir)) return res;
+              for (const entry of fs.readdirSync(baseDir, { withFileTypes: true })) {
+                const full = path.join(baseDir, entry.name);
+                if (entry.isDirectory() && entry.name !== "node_modules" && entry.name !== ".git") {
+                  res = res.concat(findScripts(full));
+                } else if (entry.isFile() && (entry.name.endsWith(".mjs") || entry.name.endsWith(".ts"))) {
+                  res.push(full);
+                }
+              }
+              return res;
+            }
+            const scriptFiles = findScripts(path.join(workspace, "scripts")).concat(findScripts(dir));
             for (const sf of scriptFiles) {
               if (fs.existsSync(sf)) {
                 const sContent = fs.readFileSync(sf, "utf-8");
@@ -146,16 +156,34 @@ process.stdin.on("end", async () => {
             let anchorPath = "";
             if (fs.existsSync(anchorsDir)) {
               const anchorFiles = fs.readdirSync(anchorsDir).filter((f) => f.includes("composite") || f.includes("anchor"));
-              if (anchorFiles.length > 0) anchorPath = path.join(anchorsDir, anchorFiles[0]);
+              if (anchorFiles.length > 0) {
+                const comp = anchorFiles.find(f => f.includes("composite"));
+                anchorPath = path.join(anchorsDir, comp || anchorFiles[0]);
+              }
             }
 
             if (anchorPath && fs.existsSync(anchorPath) && apiKey) {
               const anchorB64 = fs.readFileSync(anchorPath).toString("base64");
-              // Sample cut boundary frames (e.g. 15s, 18s, 30s, 35s, 45s)
-              const sampleCutTimes = [15, 18, 30, 35, 45];
+              const remotePath = `~/zyvoriq_remote/${relativePath}`;
+
+              // Dynamic duration and uniform timeline sampling across all shot interiors
+              let totalDur = 40;
+              try {
+                const durCmd = `ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no nitinagga.c.googlers.com 'ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ${remotePath}'`;
+                const parsedDur = parseFloat(execSync(durCmd, { timeout: 10000 }).toString().trim());
+                if (!isNaN(parsedDur) && parsedDur > 0) totalDur = parsedDur;
+              } catch {}
+
+              // Calculate uniform sample points at shot midpoints (zero blind spots)
+              const numSamples = Math.min(8, Math.max(4, Math.floor(totalDur / 10)));
+              const sampleCutTimes = [];
+              const interval = totalDur / numSamples;
+              for (let i = 0; i < numSamples; i++) {
+                sampleCutTimes.push(Math.round((i * interval + interval / 2) * 10) / 10);
+              }
+
               for (const t of sampleCutTimes) {
                 try {
-                  const remotePath = `~/zyvoriq_remote/${relativePath}`;
                   const b64Cmd = `ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no nitinagga.c.googlers.com 'ffmpeg -y -ss ${t} -i ${remotePath} -vframes 1 -f image2pipe -vcodec mjpeg -q:v 2 - 2>/dev/null | base64'`;
                   const frameB64 = execSync(b64Cmd, { timeout: 15000, maxBuffer: 10 * 1024 * 1024 }).toString().replace(/\r?\n|\r/g, "").trim();
 
@@ -163,11 +191,10 @@ process.stdin.on("end", async () => {
                     const promptText = `You are the Zyvoriq Independent Chief Quality Auditor conducting a zero-tolerance visual continuity inspection.
 Compare the provided video frame directly against the reference anchor image.
 Zero-tolerance rules:
-1. Every character present must match their reference anchor costume, color, fabric, and accessories EXACTLY.
-2. If Yasmina's silver tiara or sapphire blue starburst gown is missing or changed (e.g. into dark green or sleeveless), output FAIL immediately.
-3. If Leyla's turquoise silk belly dance costume or gold forehead headpiece is missing or changed, output FAIL immediately.
-4. If Simran's yellow halter top or white shorts are missing or changed, output FAIL immediately.
-5. If there are duplicate characters or un-anchored extra performers, output FAIL immediately.
+1. ARTISTIC MEDIUM CONTINUITY: Both the reference anchor and the video frame must be in the EXACT same artistic medium (photorealistic live-action cinema vs 3D CGI animation). If a character shifts from a photorealistic live-action human into 3D CGI cartoon animation or cartoon styling, output FAIL immediately with REASON: MEDIUM_STYLE_MORPH.
+2. ANCHOR IDENTITY & BIOMETRICS: Every character present must match their reference anchor facial bone structure, skin complexion, hair color, and hairstyle (e.g. wavy hair vs braided crown).
+3. GARMENT STRUCTURE & CONSTRUCTION: Compare neckline cut, bodice construction (e.g. sweetheart crystal corset vs flat snowflake mesh yoke), sleeve style, and cape/cloak attachment (single-shoulder drape vs neck clasp). If garment construction differs from the anchor by even 5%, output FAIL immediately.
+4. NO PHANTOM CHARACTERS: No duplicate performers, no missing lead performers, and no un-anchored extra performers.
 Do NOT rationalize styling variations. If any detail differs by even 5%, output FAIL immediately.
 
 State your verdict clearly:

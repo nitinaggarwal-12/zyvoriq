@@ -38,11 +38,11 @@ process.stdin.on("end", () => {
       }
     }
 
-    const isFfmpegInvocation = (cmd.startsWith("ffmpeg") || cmd.includes(" ffmpeg ") || cmd.includes("/ffmpeg")) && !cmd.startsWith("git ") && !cmd.startsWith("echo ") && !cmd.startsWith("node ") && !cmd.startsWith("cat ");
+    const isFfmpegOrMediaCmd = (cmd.includes("ffmpeg") || cmd.includes("ffprobe")) && !cmd.startsWith("git ") && !cmd.startsWith("cat ");
 
     // 2. ZERO-ILLUSION GUARD: Strictly forbid -stream_loop on video clips
     // Looping video clips breaks character continuity, causes visual jumping, and destroys lip-sync
-    if (isFfmpegInvocation && cmd.includes("-stream_loop")) {
+    if ((isFfmpegOrMediaCmd || cmd.includes("-stream_loop")) && !cmd.startsWith("git ")) {
       const loopMatch = cmd.match(/-stream_loop\s+(\d+)/);
       if (loopMatch && parseInt(loopMatch[1], 10) > 0) {
         decision = "deny";
@@ -51,7 +51,7 @@ process.stdin.on("end", () => {
     }
 
     // 3. ZERO AUDIO COLLISION GUARD: Forbid mixing vocal stems over un-ducked vocal/music beds
-    if (isFfmpegInvocation && cmd.includes("amix") && (cmd.includes("adelay") || cmd.includes("vox")) && (cmd.includes("master_soundtrack") || cmd.includes("bed"))) {
+    if ((isFfmpegOrMediaCmd || cmd.includes("amix")) && (cmd.includes("adelay") || cmd.includes("vox")) && (cmd.includes("master_soundtrack") || cmd.includes("bed"))) {
       const bedMatch = cmd.match(/\[0:a\]volume=([0-9.]+)/);
       if (bedMatch && parseFloat(bedMatch[1]) >= 0.35) {
         decision = "deny";
