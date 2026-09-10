@@ -58,6 +58,20 @@ async function run() {
     const promptBarExists = await page.$('#prompt-bar');
     if (!promptBarExists) throw new Error('FAIL: #prompt-bar not found in DOM');
 
+    // Assert Consolidated Header Navigation Links
+    const headerNavText = await page.$eval('header nav', el => el.textContent);
+    console.log('Header Nav Text:', headerNavText);
+    if (!headerNavText.includes('Showcase') || !headerNavText.includes('Assets') || !headerNavText.includes('Studio') || !headerNavText.includes('Why Unbroken') || !headerNavText.includes('Pricing')) {
+      throw new Error(`FAIL: Missing consolidated nav item in header: ${headerNavText}`);
+    }
+
+    // Capture dedicated header screenshot
+    const headerEl = await page.$('header');
+    if (headerEl) {
+      await headerEl.screenshot({ path: path.join(SCREENSHOT_DIR, '00_consolidated_header_desktop.png') });
+      console.log('📸 Captured 00_consolidated_header_desktop.png');
+    }
+
     // Assert video element is playing or visible
     const videoExists = await page.$('video');
     if (!videoExists) throw new Error('FAIL: video player not found in DOM');

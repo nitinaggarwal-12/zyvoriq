@@ -40,7 +40,8 @@ import {
   Lock,
   Compass,
   User,
-  MapPin
+  MapPin,
+  Menu
 } from "lucide-react";
 import type { OmniDirectorialTreatment } from "@/lib/reel/elaborateDirector";
 import { getNextPartInfo } from "./MyReelsLibrary";
@@ -227,6 +228,9 @@ export function CreatorReelsHome() {
   const [generatedResult, setGeneratedResult] = useState<any | null>(null);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [annualBilling, setAnnualBilling] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [assetsMenuOpen, setAssetsMenuOpen] = useState(false);
+  const [studioMenuOpen, setStudioMenuOpen] = useState(false);
 
   // Directorial Elaboration & Reference Deconstruction State
   const [referenceUrl, setReferenceUrl] = useState("");
@@ -720,44 +724,155 @@ export function CreatorReelsHome() {
             </Link>
           </div>
 
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
-            <a href="#showcase" className="hover:text-teal-400 transition-colors">Finished Reels</a>
-            <Link href="/characters" className="hover:text-teal-400 transition-colors flex items-center gap-1.5">
-              <span>Characters</span>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-teal-500/10 border border-teal-500/30 text-teal-300">
-                Library
-              </span>
-            </Link>
-            <Link href="/locations" className="hover:text-amber-400 transition-colors flex items-center gap-1.5">
-              <span>Locations</span>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-amber-500/10 border border-amber-500/30 text-amber-300">
-                Sets
-              </span>
-            </Link>
-            <a href="#differentiator" className="hover:text-teal-400 transition-colors">Why Unbroken Takes?</a>
-            <a href="#pricing" className="hover:text-teal-400 transition-colors">Pricing</a>
-            <Link href="/studio" className="hover:text-teal-400 transition-colors flex items-center gap-1.5">
-              <span>Omni Studio</span>
-              <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded bg-teal-500/10 border border-teal-500/30 text-teal-300">
-                11-Phase
-              </span>
-            </Link>
-            <Link href="/episodes/create" className="hover:text-teal-400 transition-colors flex items-center gap-1.5">
-              <span>Episodes</span>
-              <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-cyan-300">
-                30m
-              </span>
-            </Link>
-            <Link href="/my-reels" className="hover:text-teal-400 transition-colors">My Reels</Link>
+          {/* CONSOLIDATED DESKTOP NAVIGATION */}
+          <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-sm font-medium text-slate-300">
+            <a href="#showcase" className="hover:text-teal-400 transition-colors py-2">
+              Showcase
+            </a>
+
+            {/* Assets Dropdown (Characters & Sets) */}
+            <div
+              className="relative group"
+              onMouseEnter={() => setAssetsMenuOpen(true)}
+              onMouseLeave={() => setAssetsMenuOpen(false)}
+            >
+              <button
+                type="button"
+                onClick={() => setAssetsMenuOpen(!assetsMenuOpen)}
+                className="flex items-center gap-1.5 hover:text-white transition-colors py-2 group-hover:text-teal-300"
+              >
+                <span>Assets</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${assetsMenuOpen ? "rotate-180 text-teal-400" : "text-slate-400"}`} />
+              </button>
+
+              <div
+                className={`absolute top-full left-0 pt-2 w-64 transition-all duration-200 z-50 ${
+                  assetsMenuOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-1 pointer-events-none"
+                }`}
+              >
+                <div className="p-2 rounded-2xl bg-[#0C1019]/98 backdrop-blur-2xl border border-white/10 shadow-2xl shadow-black/80 space-y-1">
+                  <Link
+                    href="/characters"
+                    onClick={() => setAssetsMenuOpen(false)}
+                    className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-white/5 transition-all group/item"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-500/20 flex items-center justify-center shrink-0 mt-0.5 group-hover/item:border-teal-400/50">
+                      <Users className="w-4 h-4 text-teal-400" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                        Characters
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-300 font-semibold uppercase">DNA</span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+                        Biometric face &amp; wardrobe continuity
+                      </div>
+                    </div>
+                  </Link>
+
+                  <Link
+                    href="/locations"
+                    onClick={() => setAssetsMenuOpen(false)}
+                    className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-white/5 transition-all group/item"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5 group-hover/item:border-amber-400/50">
+                      <MapPin className="w-4 h-4 text-amber-400" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                        Locations &amp; Sets
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-semibold uppercase">Sets</span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+                        Persistent physical sets &amp; environments
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Studio Dropdown (Omni Studio & Long-Form Episodes) */}
+            <div
+              className="relative group"
+              onMouseEnter={() => setStudioMenuOpen(true)}
+              onMouseLeave={() => setStudioMenuOpen(false)}
+            >
+              <button
+                type="button"
+                onClick={() => setStudioMenuOpen(!studioMenuOpen)}
+                className="flex items-center gap-1.5 hover:text-white transition-colors py-2 group-hover:text-teal-300"
+              >
+                <span>Studio</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${studioMenuOpen ? "rotate-180 text-teal-400" : "text-slate-400"}`} />
+              </button>
+
+              <div
+                className={`absolute top-full left-0 pt-2 w-64 transition-all duration-200 z-50 ${
+                  studioMenuOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-1 pointer-events-none"
+                }`}
+              >
+                <div className="p-2 rounded-2xl bg-[#0C1019]/98 backdrop-blur-2xl border border-white/10 shadow-2xl shadow-black/80 space-y-1">
+                  <Link
+                    href="/studio"
+                    onClick={() => setStudioMenuOpen(false)}
+                    className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-white/5 transition-all group/item"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-500/20 flex items-center justify-center shrink-0 mt-0.5 group-hover/item:border-teal-400/50">
+                      <Clapperboard className="w-4 h-4 text-teal-400" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                        Omni Studio
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-300 font-semibold uppercase">11-Phase</span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+                        Director treatment &amp; multimodal compiler
+                      </div>
+                    </div>
+                  </Link>
+
+                  <Link
+                    href="/episodes/create"
+                    onClick={() => setStudioMenuOpen(false)}
+                    className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-white/5 transition-all group/item"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0 mt-0.5 group-hover/item:border-cyan-400/50">
+                      <Film className="w-4 h-4 text-cyan-400" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                        Episodes (30m)
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 font-semibold uppercase">Series</span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+                        Full-length continuous episodic productions
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            <a href="#differentiator" className="hover:text-teal-400 transition-colors py-2">
+              Why Unbroken
+            </a>
+
+            <a href="#pricing" className="hover:text-teal-400 transition-colors py-2">
+              Pricing
+            </a>
           </nav>
 
+          {/* RIGHT ACTION ZONE */}
           <div className="flex items-center gap-3">
             <Link
               href="/my-reels"
-              className="text-xs sm:text-sm font-semibold text-slate-300 hover:text-white px-3.5 py-2 rounded-lg hover:bg-white/5 transition-colors"
+              className="text-xs sm:text-sm font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-xl hover:bg-white/5 transition-colors hidden sm:flex items-center gap-1.5"
             >
-              My Library
+              <Film className="w-3.5 h-3.5 text-teal-400" />
+              <span>My Reels</span>
             </Link>
+
             <a
               href="#prompt-bar"
               className="px-4 sm:px-5 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-[#07090E] font-bold text-xs sm:text-sm shadow-lg shadow-teal-500/25 hover:shadow-teal-500/40 transition-all flex items-center gap-1.5 min-h-[44px]"
@@ -765,8 +880,107 @@ export function CreatorReelsHome() {
               <Sparkles className="w-4 h-4" />
               <span>Create Reel</span>
             </a>
+
+            {/* Mobile menu toggle */}
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen(!mobileNavOpen)}
+              className="md:hidden p-2 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:text-white min-h-[44px] min-w-[44px] flex items-center justify-center"
+              aria-label="Toggle Navigation Menu"
+            >
+              {mobileNavOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+
+        {/* MOBILE NAVIGATION DRAWER */}
+        {mobileNavOpen && (
+          <div className="md:hidden bg-[#07090E]/98 border-b border-white/10 px-4 py-4 space-y-3 backdrop-blur-2xl animate-in slide-in-from-top-2 duration-200">
+            <div className="grid grid-cols-2 gap-2 pb-2 border-b border-white/5">
+              <a
+                href="#showcase"
+                onClick={() => setMobileNavOpen(false)}
+                className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-white flex items-center gap-2"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-teal-400" />
+                <span>Showcase</span>
+              </a>
+              <Link
+                href="/my-reels"
+                onClick={() => setMobileNavOpen(false)}
+                className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-white flex items-center gap-2"
+              >
+                <Film className="w-3.5 h-3.5 text-teal-400" />
+                <span>My Reels</span>
+              </Link>
+            </div>
+
+            <div className="space-y-1">
+              <div className="text-[10px] uppercase font-bold text-slate-500 px-1 tracking-wider">Creation &amp; Assets</div>
+              <Link
+                href="/characters"
+                onClick={() => setMobileNavOpen(false)}
+                className="flex items-center justify-between p-2 rounded-xl text-xs text-slate-300 hover:text-white hover:bg-white/5"
+              >
+                <span className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-teal-400" />
+                  Characters
+                </span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded bg-teal-500/10 text-teal-300">DNA</span>
+              </Link>
+              <Link
+                href="/locations"
+                onClick={() => setMobileNavOpen(false)}
+                className="flex items-center justify-between p-2 rounded-xl text-xs text-slate-300 hover:text-white hover:bg-white/5"
+              >
+                <span className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-amber-400" />
+                  Locations &amp; Sets
+                </span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-300">Sets</span>
+              </Link>
+              <Link
+                href="/studio"
+                onClick={() => setMobileNavOpen(false)}
+                className="flex items-center justify-between p-2 rounded-xl text-xs text-slate-300 hover:text-white hover:bg-white/5"
+              >
+                <span className="flex items-center gap-2">
+                  <Clapperboard className="w-4 h-4 text-teal-400" />
+                  Omni Studio
+                </span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded bg-teal-500/10 text-teal-300">11-Phase</span>
+              </Link>
+              <Link
+                href="/episodes/create"
+                onClick={() => setMobileNavOpen(false)}
+                className="flex items-center justify-between p-2 rounded-xl text-xs text-slate-300 hover:text-white hover:bg-white/5"
+              >
+                <span className="flex items-center gap-2">
+                  <Film className="w-4 h-4 text-cyan-400" />
+                  Episodes (30m)
+                </span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded bg-cyan-500/10 text-cyan-300">Series</span>
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
+              <a
+                href="#differentiator"
+                onClick={() => setMobileNavOpen(false)}
+                className="text-center p-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/5"
+              >
+                Why Unbroken
+              </a>
+              <a
+                href="#pricing"
+                onClick={() => setMobileNavOpen(false)}
+                className="text-center p-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/5"
+              >
+                Pricing
+              </a>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* 2. THE FOLD: HERO WITH PLAYING REEL + PROMPT BAR */}
