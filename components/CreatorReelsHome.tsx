@@ -2758,15 +2758,20 @@ export function CreatorReelsHome() {
                       </div>
                     </div>
 
-                    {/* Monitor Card Body: Smartphone frame + Sample Productions & Continuity Lock side-by-side */}
+                    {/* Monitor Card Body: iPhone 17 Pro Max Flagship Frame + Sample Productions side-by-side */}
                     <div className="flex flex-col sm:flex-row items-center sm:items-start justify-center gap-3.5 flex-1 py-1">
-                      {/* Smartphone Frame (Condensed height ~340px) */}
-                      <div className="relative w-[190px] sm:w-[200px] shrink-0 aspect-[9/16] bg-black rounded-[26px] p-2 shadow-2xl shadow-teal-500/20 border-2 border-white/15 ring-1 ring-white/10 flex flex-col justify-between overflow-hidden group">
-                        {/* Simulated mobile phone ear notch */}
-                        <div className="absolute top-3 left-1/2 -translate-x-1/2 w-20 h-3 bg-[#07090E] rounded-full z-30 pointer-events-none border border-white/5" />
+                      {/* iPhone 17 Pro Max Flagship Chassis (6.9" display, 19.5:9 ratio, titanium frame, Dynamic Island) */}
+                      <div className="relative w-[230px] sm:w-[245px] md:w-[255px] shrink-0 aspect-[9/19.5] bg-gradient-to-b from-slate-700 via-slate-800 to-slate-900 rounded-[42px] p-2.5 shadow-2xl shadow-teal-500/20 border-[3.5px] border-slate-600/80 ring-1 ring-white/20 flex flex-col justify-between overflow-hidden group">
+                        {/* Dynamic Island pill with camera & sensor */}
+                        <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-24 h-4.5 bg-black rounded-full z-30 pointer-events-none border border-white/10 flex items-center justify-between px-2.5 shadow-md">
+                          <div className="w-2.5 h-2.5 rounded-full bg-[#111622] border border-blue-400/30 flex items-center justify-center">
+                            <div className="w-1 h-1 rounded-full bg-blue-400/80 animate-pulse" />
+                          </div>
+                          <div className="w-2 h-2 rounded-full bg-[#0d1017] border border-white/10" />
+                        </div>
 
-                        {/* THE 9:16 VIDEO ELEMENT */}
-                        <div className="relative w-full h-full rounded-[20px] overflow-hidden bg-slate-950">
+                        {/* THE 19.5:9 FLAGSHIP VIDEO ELEMENT */}
+                        <div className="relative w-full h-full rounded-[32px] overflow-hidden bg-slate-950">
                           <video
                             ref={videoRef}
                             key={activeReel.videoUrl}
@@ -2781,8 +2786,8 @@ export function CreatorReelsHome() {
                             onClick={togglePlay}
                           />
 
-                          {/* Top Badges Overlay */}
-                          <div className="absolute top-6 left-2.5 right-2.5 z-20 flex items-center justify-between pointer-events-none">
+                          {/* Top Badges Overlay (below Dynamic Island) */}
+                          <div className="absolute top-8 left-2.5 right-2.5 z-20 flex items-center justify-between pointer-events-none">
                             <span className="px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md border border-white/10 text-[9px] font-bold text-white flex items-center gap-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
                               <span>{activeReel.shots} Shots • {activeReel.durationSec}s</span>
@@ -2794,7 +2799,7 @@ export function CreatorReelsHome() {
                           </div>
 
                           {/* Controls overlay: Mute & Play toggles */}
-                          <div className="absolute top-6 right-2.5 z-30 flex flex-col gap-1.5">
+                          <div className="absolute top-8 right-2.5 z-30 flex flex-col gap-1.5">
                             <button
                               type="button"
                               onClick={toggleMute}
@@ -2815,7 +2820,7 @@ export function CreatorReelsHome() {
                           </div>
 
                           {/* Bottom Info Bar inside Reel */}
-                          <div className="absolute bottom-0 inset-x-0 p-2.5 pt-8 bg-gradient-to-t from-black/95 via-black/60 to-transparent z-20 flex flex-col">
+                          <div className="absolute bottom-3 inset-x-0 p-2.5 pt-8 bg-gradient-to-t from-black/95 via-black/60 to-transparent z-20 flex flex-col">
                             <span className="text-[9px] font-bold uppercase tracking-wider text-teal-400">
                               {activeReel.category}
                             </span>
@@ -2831,21 +2836,24 @@ export function CreatorReelsHome() {
                                 <CheckCircle2 className="w-2.5 h-2.5 text-teal-400" />
                                 Single continuous take
                               </span>
-                              <span>9:16 Vertical</span>
+                              <span>9:19.5 Flagship</span>
                             </div>
                           </div>
                         </div>
+
+                        {/* iOS Bottom Home Indicator Bar */}
+                        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-24 h-1 bg-white/40 rounded-full z-30 pointer-events-none shadow-sm" />
                       </div>
 
-                      {/* Companion Side Column: Sample Productions Grid + Continuity Lock Card */}
-                      <div className="flex-1 flex flex-col gap-2.5 w-full">
+                      {/* Companion Side Column: Sample Productions Grid */}
+                      <div className="flex-1 flex flex-col justify-between w-full h-full min-h-0">
                         {/* Switch active reel filmstrip cards */}
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           <div className="flex items-center justify-between px-0.5 text-xs text-slate-400">
                             <span className="font-bold text-teal-300 uppercase tracking-wider text-[10px] flex items-center gap-1">
                               <Film className="w-3 h-3" /> Sample Productions
                             </span>
-                            <span className="text-[9px] text-slate-500">Tap to load</span>
+                            <span className="text-[9px] text-slate-400">Tap to load</span>
                           </div>
                           <div className="grid grid-cols-2 gap-1.5">
                             {FINISHED_REELS.map((reel, idx) => (
@@ -2875,14 +2883,15 @@ export function CreatorReelsHome() {
                           </div>
                         </div>
 
-                        {/* Continuity Proof Badge Card */}
-                        <div className="w-full p-2.5 rounded-xl bg-[#0A0E17] border border-teal-500/25 text-xs text-slate-300 flex items-start gap-2 shadow-md">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-teal-400 shrink-0 mt-0.5" />
-                          <div>
-                            <strong className="text-teal-300 block font-semibold text-[11px]">Biometric Continuity Lock:</strong>
-                            <span className="text-slate-400 text-[10px] leading-snug block mt-0.5">
-                              {activeReel.continuityProof}
-                            </span>
+                        {/* Active Reel Production Telemetry Strip */}
+                        <div className="mt-2 p-2 rounded-xl bg-[#0A0E17] border border-teal-500/20 flex items-center justify-between text-[10px] text-slate-300">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse shrink-0" />
+                            <span className="font-semibold text-white truncate max-w-[150px]">{activeReel.title}</span>
+                          </div>
+                          <div className="flex items-center gap-1 font-mono text-[9px] text-teal-300 shrink-0">
+                            <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/5">{activeReel.shots} Takes</span>
+                            <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/5">{activeReel.durationSec}s</span>
                           </div>
                         </div>
                       </div>
