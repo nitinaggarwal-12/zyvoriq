@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   Play,
@@ -197,6 +197,21 @@ export const OMNI_GENRES = [
   { id: "DOCUMENTARY_EXPLAINER", label: "🎙️ Documentary Explainer", desc: "Direct-to-camera presenter, educational breakdown" },
 ];
 
+export const FORMAT_CONFIGS = [
+  { id: "9:16" as const, label: "9:16 Vertical", icon: "📱", badge: "Reels / TikTok", desc: "Full-bleed vertical smartphone immersion" },
+  { id: "16:9" as const, label: "16:9 Landscape", icon: "🖥️", badge: "YouTube UHD", desc: "Cinematic widescreen desktop displays" },
+  { id: "2.39:1" as const, label: "2.39:1 Anamorphic", icon: "🎬", badge: "Cinema Master", desc: "Theatrical anamorphic scope falloff" },
+];
+
+export const DURATION_CONFIGS = [
+  { sec: 15, label: "15s", badge: "Short Hook", desc: "3 takes • Quick viral hook" },
+  { sec: 30, label: "30s", badge: "Standard Reel", desc: "5 takes • Social algorithm pacing" },
+  { sec: 34, label: "34s", badge: "Music Video", desc: "5 takes • Synchronized lip-sync & dance" },
+  { sec: 45, label: "45s", badge: "Extended", desc: "7 takes • Detailed narrative progression" },
+  { sec: 60, label: "60s", badge: "Short Master", desc: "9 takes • Complete 1-minute narrative arc" },
+  { sec: 180, label: "180s", badge: "5-Act Master", desc: "25 takes • 3-minute 5-act theatrical epic" },
+];
+
 export function CreatorReelsHome() {
   const [activeTab, setActiveTab] = useState<"instagram_tiktok" | "youtube_shorts">("instagram_tiktok");
   const [showcaseTab, setShowcaseTab] = useState<"instagram_tiktok" | "youtube_shorts">("instagram_tiktok");
@@ -209,6 +224,21 @@ export function CreatorReelsHome() {
   const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
   const [selectedDuration, setSelectedDuration] = useState(30);
   const [selectedAspectRatio, setSelectedAspectRatio] = useState<"9:16" | "16:9" | "2.39:1">("9:16");
+  const [openDropdown, setOpenDropdown] = useState<"format" | "duration" | "genre" | "language" | null>(null);
+
+  // Click outside listener for dropdowns
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      const target = e.target as HTMLElement;
+      if (!target.closest?.(".dropdown-container")) {
+        setOpenDropdown(null);
+      }
+    }
+    if (openDropdown) {
+      document.addEventListener("click", handleClickOutside);
+      return () => document.removeEventListener("click", handleClickOutside);
+    }
+  }, [openDropdown]);
   const [selectedCastSize, setSelectedCastSize] = useState<1 | 2>(1);
   const [leadCharacter, setLeadCharacter] = useState<LibraryCharacter | null>(null);
   const [supportingCharacter, setSupportingCharacter] = useState<LibraryCharacter | null>(null);
@@ -1088,171 +1118,440 @@ export function CreatorReelsHome() {
                     : "border-white/10 focus-within:border-teal-500/50"
                 }`}
               >
-                {/* Format & Duration in ONE sleek row */}
-                <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-2 border-b border-white/5">
-                  {/* Format selector */}
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mr-0.5">Format:</span>
-                    {activeTab === "instagram_tiktok" ? (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedAspectRatio("9:16")}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all min-h-[30px] flex items-center gap-1 ${
-                            selectedAspectRatio === "9:16"
-                              ? "bg-teal-500 text-[#07090E] shadow-sm shadow-teal-500/30"
-                              : "bg-white/5 text-slate-300 hover:bg-white/10"
-                          }`}
-                        >
-                          <span>📱 9:16 Vertical</span>
-                          <span className="text-[10px] opacity-75 font-normal">(Reels)</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedAspectRatio("16:9")}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all min-h-[30px] ${
-                            selectedAspectRatio === "16:9"
-                              ? "bg-teal-500 text-[#07090E]"
-                              : "bg-white/5 text-slate-400 hover:bg-white/10"
-                          }`}
-                        >
-                          16:9 Landscape
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedAspectRatio("2.39:1")}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all min-h-[30px] flex items-center gap-1 ${
-                            selectedAspectRatio === "2.39:1"
-                              ? "bg-amber-400 text-[#07090E] shadow-sm shadow-amber-400/30"
-                              : "bg-white/5 text-slate-300 hover:bg-white/10"
-                          }`}
-                        >
-                          <span>🎬 2.39:1 Anamorphic</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedAspectRatio("16:9")}
-                          className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all min-h-[30px] ${
-                            selectedAspectRatio === "16:9"
-                              ? "bg-amber-400 text-[#07090E]"
-                              : "bg-white/5 text-slate-400 hover:bg-white/10"
-                          }`}
-                        >
-                          16:9
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedAspectRatio("9:16")}
-                          className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all min-h-[30px] ${
-                            selectedAspectRatio === "9:16"
-                              ? "bg-amber-400 text-[#07090E]"
-                              : "bg-white/5 text-slate-400 hover:bg-white/10"
-                          }`}
-                        >
-                          9:16
-                        </button>
-                      </>
+                {/* STUDIO DYNAMIC CONFIGURATION BAR: 4 CONSOLIDATED DYNAMIC DROPDOWNS */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2 pb-2 border-b border-white/5 relative z-30">
+                  {/* 1. FORMAT DROPDOWN */}
+                  <div className="relative dropdown-container">
+                    <button
+                      type="button"
+                      data-dropdown-trigger="format"
+                      onClick={() => setOpenDropdown(openDropdown === "format" ? null : "format")}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-xl border transition-all flex items-center justify-between gap-1 min-h-[42px] ${
+                        openDropdown === "format"
+                          ? activeTab === "youtube_shorts"
+                            ? "bg-[#141A26] border-amber-400/60 ring-1 ring-amber-400/30"
+                            : "bg-[#141A26] border-teal-400/60 ring-1 ring-teal-400/30"
+                          : "bg-[#090D15] hover:bg-[#101522] border-white/10 hover:border-white/20"
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 leading-none mb-0.5">Format</span>
+                        <span className="block text-xs font-bold text-white truncate flex items-center gap-1">
+                          <span>{selectedAspectRatio === "9:16" ? "📱" : selectedAspectRatio === "16:9" ? "🖥️" : "🎬"}</span>
+                          <span>{selectedAspectRatio === "2.39:1" ? "2.39:1 Scope" : selectedAspectRatio}</span>
+                        </span>
+                      </div>
+                      <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${openDropdown === "format" ? "rotate-180 text-teal-400" : ""}`} />
+                    </button>
+
+                    {openDropdown === "format" && (
+                      <div className="absolute top-full left-0 mt-1.5 z-50 w-64 bg-[#0B0F18]/95 backdrop-blur-2xl border border-white/15 rounded-xl p-2 shadow-2xl shadow-black/90 space-y-1.5 animate-in fade-in duration-150">
+                        {/* Dynamic Recommended Section */}
+                        <div>
+                          <div className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-teal-400 flex items-center justify-between">
+                            <span>⭐ Recommended for {activeTab === "youtube_shorts" ? "Cinema" : "Reels"}</span>
+                            <span className="text-[8px] text-slate-400 font-mono">Smart Pick</span>
+                          </div>
+                          <div className="space-y-0.5 mt-1">
+                            {FORMAT_CONFIGS.filter(f => (activeTab === "youtube_shorts" || selectedDuration >= 60 || ["HISTORICAL_BIOPIC", "CINEMATIC_DRAMA"].includes(selectedGenre)) ? (f.id === "2.39:1" || f.id === "16:9") : (f.id === "9:16" || f.id === "16:9")).map(fmt => (
+                              <button
+                                key={`rec-${fmt.id}`}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedAspectRatio(fmt.id);
+                                  if (fmt.id === "2.39:1" && selectedDuration < 60) {
+                                    setSelectedDuration(180);
+                                  } else if (fmt.id === "9:16" && selectedDuration === 180) {
+                                    setSelectedDuration(30);
+                                  }
+                                  setOpenDropdown(null);
+                                }}
+                                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors ${
+                                  selectedAspectRatio === fmt.id
+                                    ? "bg-teal-500/20 text-teal-200 font-bold border border-teal-500/40"
+                                    : "hover:bg-white/5 text-slate-200"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span>{fmt.icon}</span>
+                                  <span className="truncate font-semibold">{fmt.label}</span>
+                                </div>
+                                {selectedAspectRatio === fmt.id && <Check className="w-3.5 h-3.5 text-teal-400 shrink-0" />}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="border-t border-white/10 my-1" />
+
+                        {/* All Options Section */}
+                        <div>
+                          <div className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                            All Formats
+                          </div>
+                          <div className="space-y-0.5 mt-1">
+                            {FORMAT_CONFIGS.map(fmt => (
+                              <button
+                                key={fmt.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedAspectRatio(fmt.id);
+                                  if (fmt.id === "2.39:1" && selectedDuration < 60) {
+                                    setSelectedDuration(180);
+                                  } else if (fmt.id === "9:16" && selectedDuration === 180) {
+                                    setSelectedDuration(30);
+                                  }
+                                  setOpenDropdown(null);
+                                }}
+                                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors ${
+                                  selectedAspectRatio === fmt.id
+                                    ? "bg-teal-500/20 text-teal-200 font-bold border border-teal-500/40"
+                                    : "hover:bg-white/5 text-slate-300"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span>{fmt.icon}</span>
+                                  <div className="min-w-0">
+                                    <div className="truncate font-semibold">{fmt.label}</div>
+                                    <div className="text-[9px] text-slate-400 truncate">{fmt.desc}</div>
+                                  </div>
+                                </div>
+                                {selectedAspectRatio === fmt.id && <Check className="w-3.5 h-3.5 text-teal-400 shrink-0" />}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
                     )}
                   </div>
 
-                  {/* Duration selector */}
-                  <div className="flex items-center gap-1">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mr-0.5">Duration:</span>
-                    {(activeTab === "instagram_tiktok"
-                      ? [
-                          { sec: 15, shots: 3 },
-                          { sec: 30, shots: 5, label: "Std" },
-                          { sec: 34, shots: 5, label: "34s Music" },
-                          { sec: 45, shots: 7 }
-                        ]
-                      : [
-                          { sec: 60, shots: 9, label: "Short" },
-                          { sec: 180, shots: 25, label: "5-Act Master" }
-                        ]
-                    ).map(d => (
-                      <button
-                        key={d.sec}
-                        type="button"
-                        onClick={() => {
-                          setSelectedDuration(d.sec);
-                          if (d.label?.includes("Music") || d.sec === 34) {
-                            setSelectedGenre("MUSIC_VIDEO");
-                          }
-                        }}
-                        className={`px-2 py-0.5 rounded-md text-xs font-semibold transition-all min-h-[28px] flex items-center gap-1 ${
-                          selectedDuration === d.sec
-                            ? activeTab === "youtube_shorts"
-                              ? "bg-amber-400/20 border border-amber-400/40 text-amber-300 font-bold"
-                              : "bg-teal-500/20 border border-teal-400/40 text-teal-300 font-bold"
-                            : "bg-white/5 text-slate-400 hover:bg-white/10"
-                        }`}
-                      >
-                        <span>{d.sec}s</span>
-                        {d.label && <span className="hidden xl:inline text-[9px] opacity-75">({d.label})</span>}
-                      </button>
-                    ))}
-                    <div className="flex items-center gap-0.5 ml-0.5 bg-white/5 px-1.5 py-0.5 rounded-md border border-white/10 min-h-[28px]">
-                      <input
-                        id="custom-duration-input"
-                        type="number"
-                        min="10"
-                        max="240"
-                        value={selectedDuration}
-                        onChange={(e) => setSelectedDuration(Math.max(10, Math.min(240, Number(e.target.value) || 30)))}
-                        className="w-8 bg-transparent text-xs text-white text-center font-bold focus:outline-none"
-                      />
-                      <span className="text-[9px] text-slate-400">s</span>
-                    </div>
-                  </div>
-                </div>
+                  {/* 2. DURATION DROPDOWN */}
+                  <div className="relative dropdown-container">
+                    <button
+                      type="button"
+                      data-dropdown-trigger="duration"
+                      onClick={() => setOpenDropdown(openDropdown === "duration" ? null : "duration")}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-xl border transition-all flex items-center justify-between gap-1 min-h-[42px] ${
+                        openDropdown === "duration"
+                          ? activeTab === "youtube_shorts"
+                            ? "bg-[#141A26] border-amber-400/60 ring-1 ring-amber-400/30"
+                            : "bg-[#141A26] border-teal-400/60 ring-1 ring-teal-400/30"
+                          : "bg-[#090D15] hover:bg-[#101522] border-white/10 hover:border-white/20"
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 leading-none mb-0.5">Duration</span>
+                        <span className="block text-xs font-bold text-white truncate flex items-center gap-1">
+                          <span>⏱️</span>
+                          <span>{selectedDuration}s</span>
+                          <span className="text-[10px] text-slate-400 font-normal">
+                            {selectedDuration === 30 ? "(Std)" : selectedDuration === 34 ? "(Music)" : selectedDuration === 180 ? "(Master)" : selectedDuration === 60 ? "(Short)" : ""}
+                          </span>
+                        </span>
+                      </div>
+                      <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${openDropdown === "duration" ? "rotate-180 text-teal-400" : ""}`} />
+                    </button>
 
-                {/* Genre & Language in ONE sleek row */}
-                <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-2 border-b border-white/5">
-                  <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 shrink-0 mr-1">Genre:</span>
-                    {OMNI_GENRES.map(g => (
-                      <button
-                        key={g.id}
-                        type="button"
-                        onClick={() => setSelectedGenre(g.id)}
-                        title={g.desc}
-                        className={`px-2 py-1 rounded-md text-xs font-semibold shrink-0 transition-all min-h-[28px] flex items-center gap-1 ${
-                          selectedGenre === g.id
-                            ? activeTab === "youtube_shorts"
-                              ? "bg-amber-400 text-[#07090E] font-bold shadow-sm"
-                              : "bg-teal-500 text-[#07090E] font-bold shadow-sm"
-                            : "bg-white/5 text-slate-300 hover:bg-white/10"
-                        }`}
-                      >
-                        <span>{g.label}</span>
-                      </button>
-                    ))}
+                    {openDropdown === "duration" && (
+                      <div className="absolute top-full left-0 sm:left-0 mt-1.5 z-50 w-72 bg-[#0B0F18]/95 backdrop-blur-2xl border border-white/15 rounded-xl p-2 shadow-2xl shadow-black/90 space-y-1.5 animate-in fade-in duration-150">
+                        {/* Dynamic Recommended Section */}
+                        <div>
+                          <div className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-teal-400 flex items-center justify-between">
+                            <span>
+                              ⭐ Recommended for {selectedGenre === "MUSIC_VIDEO" ? "Music Video" : activeTab === "youtube_shorts" ? "Cinema" : "Reels"}
+                            </span>
+                            <span className="text-[8px] text-slate-400 font-mono">Smart Pick</span>
+                          </div>
+                          <div className="space-y-0.5 mt-1">
+                            {(selectedGenre === "MUSIC_VIDEO"
+                              ? DURATION_CONFIGS.filter(d => d.sec === 34 || d.sec === 15 || d.sec === 30)
+                              : activeTab === "youtube_shorts" || selectedAspectRatio === "2.39:1" || ["HISTORICAL_BIOPIC", "CINEMATIC_DRAMA"].includes(selectedGenre)
+                              ? DURATION_CONFIGS.filter(d => d.sec === 180 || d.sec === 60)
+                              : DURATION_CONFIGS.filter(d => d.sec === 30 || d.sec === 15 || d.sec === 34)
+                            ).map(d => (
+                              <button
+                                key={`rec-${d.sec}`}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedDuration(d.sec);
+                                  if (d.sec === 34) setSelectedGenre("MUSIC_VIDEO");
+                                  if (d.sec === 180) setSelectedAspectRatio("2.39:1");
+                                  setOpenDropdown(null);
+                                }}
+                                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors ${
+                                  selectedDuration === d.sec
+                                    ? "bg-teal-500/20 text-teal-200 font-bold border border-teal-500/40"
+                                    : "hover:bg-white/5 text-slate-200"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="font-bold text-teal-300">{d.label}</span>
+                                  {d.badge && (
+                                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-teal-500/15 text-teal-300 font-medium">
+                                      {d.badge}
+                                    </span>
+                                  )}
+                                  <span className="text-[9px] text-slate-400 truncate">{d.desc.split("•")[1] || d.desc}</span>
+                                </div>
+                                {selectedDuration === d.sec && <Check className="w-3.5 h-3.5 text-teal-400 shrink-0" />}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="border-t border-white/10 my-1" />
+
+                        {/* All Durations Section */}
+                        <div>
+                          <div className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                            All Durations
+                          </div>
+                          <div className="grid grid-cols-3 gap-1 mt-1">
+                            {DURATION_CONFIGS.map(d => (
+                              <button
+                                key={d.sec}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedDuration(d.sec);
+                                  if (d.sec === 34) setSelectedGenre("MUSIC_VIDEO");
+                                  if (d.sec === 180) setSelectedAspectRatio("2.39:1");
+                                  setOpenDropdown(null);
+                                }}
+                                className={`px-2 py-1.5 rounded-lg text-xs font-semibold flex flex-col items-center justify-center border transition-all ${
+                                  selectedDuration === d.sec
+                                    ? "bg-teal-500/20 text-teal-200 border-teal-500/40 font-bold"
+                                    : "bg-white/5 hover:bg-white/10 text-slate-300 border-white/5"
+                                }`}
+                              >
+                                <span>{d.sec}s</span>
+                                {d.badge && <span className="text-[8px] text-slate-400 opacity-80">{d.badge.split(" ")[0]}</span>}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Custom Duration Input */}
+                        <div className="pt-2 mt-1 border-t border-white/10 flex items-center justify-between px-1 text-xs">
+                          <span className="text-[10px] text-slate-400 font-medium">Custom duration:</span>
+                          <div className="flex items-center gap-1">
+                            <input
+                              id="custom-duration-input"
+                              type="number"
+                              min="10"
+                              max="240"
+                              value={selectedDuration}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                const val = Math.max(10, Math.min(240, Number(e.target.value) || 30));
+                                setSelectedDuration(val);
+                              }}
+                              className="w-12 bg-black/60 border border-white/20 rounded px-1.5 py-0.5 text-xs text-white text-center font-bold focus:outline-none focus:border-teal-400"
+                            />
+                            <span className="text-[10px] text-slate-400">sec</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 shrink-0 flex items-center gap-1 mr-1">
-                      <Languages className="w-3 h-3 text-teal-400" /> Lang:
-                    </span>
-                    {LANGUAGE_OPTIONS.map(l => (
-                      <button
-                        key={l.id}
-                        type="button"
-                        onClick={() => setSelectedLanguage(l.id)}
-                        title={l.desc}
-                        className={`px-2 py-0.5 rounded-md text-xs font-semibold shrink-0 transition-all min-h-[28px] flex items-center gap-1 ${
-                          selectedLanguage === l.id
-                            ? activeTab === "youtube_shorts"
-                              ? "bg-amber-400/20 border border-amber-400/50 text-amber-300 font-bold"
-                              : "bg-teal-500/20 border border-teal-400/50 text-teal-300 font-bold"
-                            : "bg-white/5 text-slate-400 hover:bg-white/10"
-                        }`}
-                      >
-                        <span>{l.label}</span>
-                      </button>
-                    ))}
+                  {/* 3. GENRE DROPDOWN */}
+                  <div className="relative dropdown-container">
+                    <button
+                      type="button"
+                      data-dropdown-trigger="genre"
+                      onClick={() => setOpenDropdown(openDropdown === "genre" ? null : "genre")}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-xl border transition-all flex items-center justify-between gap-1 min-h-[42px] ${
+                        openDropdown === "genre"
+                          ? activeTab === "youtube_shorts"
+                            ? "bg-[#141A26] border-amber-400/60 ring-1 ring-amber-400/30"
+                            : "bg-[#141A26] border-teal-400/60 ring-1 ring-teal-400/30"
+                          : "bg-[#090D15] hover:bg-[#101522] border-white/10 hover:border-white/20"
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 leading-none mb-0.5">Genre</span>
+                        <span className="block text-xs font-bold text-white truncate">
+                          {OMNI_GENRES.find(g => g.id === selectedGenre)?.label || "✨ Auto-Detect"}
+                        </span>
+                      </div>
+                      <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${openDropdown === "genre" ? "rotate-180 text-teal-400" : ""}`} />
+                    </button>
+
+                    {openDropdown === "genre" && (
+                      <div className="absolute top-full left-0 sm:left-auto sm:right-0 md:left-auto md:right-0 mt-1.5 z-50 w-72 bg-[#0B0F18]/95 backdrop-blur-2xl border border-white/15 rounded-xl p-2 shadow-2xl shadow-black/90 space-y-1.5 animate-in fade-in duration-150">
+                        {/* Dynamic Recommended Section */}
+                        <div>
+                          <div className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-teal-400 flex items-center justify-between">
+                            <span>
+                              ⭐ Recommended for {selectedDuration === 34 ? "34s Music" : activeTab === "youtube_shorts" ? "Cinema Master" : "Viral Reel"}
+                            </span>
+                            <span className="text-[8px] text-slate-400 font-mono">Smart Pick</span>
+                          </div>
+                          <div className="space-y-0.5 mt-1">
+                            {(selectedDuration === 34
+                              ? OMNI_GENRES.filter(g => ["MUSIC_VIDEO", "AUTO", "BOLLYWOOD_ROMANCE"].includes(g.id))
+                              : activeTab === "youtube_shorts" || selectedDuration >= 60 || selectedAspectRatio === "2.39:1"
+                              ? OMNI_GENRES.filter(g => ["HISTORICAL_BIOPIC", "CINEMATIC_DRAMA", "AUTO", "BOLLYWOOD_ROMANCE"].includes(g.id))
+                              : OMNI_GENRES.filter(g => ["AUTO", "MUSIC_VIDEO", "BOLLYWOOD_ROMANCE", "BOLLYWOOD_ACTION"].includes(g.id))
+                            ).map(g => (
+                              <button
+                                key={`rec-${g.id}`}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedGenre(g.id);
+                                  if (g.id === "MUSIC_VIDEO" && selectedDuration !== 34) {
+                                    setSelectedDuration(34);
+                                    if (activeTab === "instagram_tiktok") setSelectedAspectRatio("9:16");
+                                  } else if (["BOLLYWOOD_ROMANCE", "BOLLYWOOD_ACTION"].includes(g.id) && selectedLanguage === "en") {
+                                    setSelectedLanguage("hinglish-roman");
+                                  }
+                                  setOpenDropdown(null);
+                                }}
+                                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors ${
+                                  selectedGenre === g.id
+                                    ? "bg-teal-500/20 text-teal-200 font-bold border border-teal-500/40"
+                                    : "hover:bg-white/5 text-slate-200"
+                                }`}
+                              >
+                                <span className="font-semibold truncate">{g.label}</span>
+                                {selectedGenre === g.id && <Check className="w-3.5 h-3.5 text-teal-400 shrink-0" />}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="border-t border-white/10 my-1" />
+
+                        {/* All Genres Section */}
+                        <div>
+                          <div className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                            All Genres
+                          </div>
+                          <div className="max-h-52 overflow-y-auto space-y-0.5 mt-1 pr-1 scrollbar-thin">
+                            {OMNI_GENRES.map(g => (
+                              <button
+                                key={g.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedGenre(g.id);
+                                  if (g.id === "MUSIC_VIDEO" && selectedDuration !== 34) {
+                                    setSelectedDuration(34);
+                                    if (activeTab === "instagram_tiktok") setSelectedAspectRatio("9:16");
+                                  } else if (["BOLLYWOOD_ROMANCE", "BOLLYWOOD_ACTION"].includes(g.id) && selectedLanguage === "en") {
+                                    setSelectedLanguage("hinglish-roman");
+                                  }
+                                  setOpenDropdown(null);
+                                }}
+                                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors ${
+                                  selectedGenre === g.id
+                                    ? "bg-teal-500/20 text-teal-200 font-bold border border-teal-500/40"
+                                    : "hover:bg-white/5 text-slate-300"
+                                }`}
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-semibold truncate">{g.label}</div>
+                                  <div className="text-[9px] text-slate-400 truncate">{g.desc}</div>
+                                </div>
+                                {selectedGenre === g.id && <Check className="w-3.5 h-3.5 text-teal-400 shrink-0 ml-1.5" />}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 4. LANGUAGE DROPDOWN */}
+                  <div className="relative dropdown-container">
+                    <button
+                      type="button"
+                      data-dropdown-trigger="language"
+                      onClick={() => setOpenDropdown(openDropdown === "language" ? null : "language")}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-xl border transition-all flex items-center justify-between gap-1 min-h-[42px] ${
+                        openDropdown === "language"
+                          ? activeTab === "youtube_shorts"
+                            ? "bg-[#141A26] border-amber-400/60 ring-1 ring-amber-400/30"
+                            : "bg-[#141A26] border-teal-400/60 ring-1 ring-teal-400/30"
+                          : "bg-[#090D15] hover:bg-[#101522] border-white/10 hover:border-white/20"
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 leading-none mb-0.5">Language</span>
+                        <span className="block text-xs font-bold text-white truncate flex items-center gap-1">
+                          <Languages className="w-3 h-3 text-teal-400 shrink-0" />
+                          <span className="truncate">{LANGUAGE_OPTIONS.find(l => l.id === selectedLanguage)?.label || "English"}</span>
+                        </span>
+                      </div>
+                      <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${openDropdown === "language" ? "rotate-180 text-teal-400" : ""}`} />
+                    </button>
+
+                    {openDropdown === "language" && (
+                      <div className="absolute top-full right-0 left-auto mt-1.5 z-50 w-64 bg-[#0B0F18]/95 backdrop-blur-2xl border border-white/15 rounded-xl p-2 shadow-2xl shadow-black/90 space-y-1.5 animate-in fade-in duration-150">
+                        {/* Dynamic Recommended Section */}
+                        <div>
+                          <div className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-teal-400 flex items-center justify-between">
+                            <span>
+                              ⭐ Recommended for {["BOLLYWOOD_ROMANCE", "BOLLYWOOD_ACTION"].includes(selectedGenre) ? "Bollywood" : "Global"}
+                            </span>
+                            <span className="text-[8px] text-slate-400 font-mono">Smart Pick</span>
+                          </div>
+                          <div className="space-y-0.5 mt-1">
+                            {(["BOLLYWOOD_ROMANCE", "BOLLYWOOD_ACTION"].includes(selectedGenre)
+                              ? LANGUAGE_OPTIONS.filter(l => ["hinglish-roman", "hi-devanagari", "en"].includes(l.id))
+                              : LANGUAGE_OPTIONS.filter(l => ["en", "hinglish-roman"].includes(l.id))
+                            ).map(l => (
+                              <button
+                                key={`rec-${l.id}`}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedLanguage(l.id);
+                                  setOpenDropdown(null);
+                                }}
+                                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors ${
+                                  selectedLanguage === l.id
+                                    ? "bg-teal-500/20 text-teal-200 font-bold border border-teal-500/40"
+                                    : "hover:bg-white/5 text-slate-200"
+                                }`}
+                              >
+                                <span className="font-semibold truncate">{l.label}</span>
+                                {selectedLanguage === l.id && <Check className="w-3.5 h-3.5 text-teal-400 shrink-0" />}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="border-t border-white/10 my-1" />
+
+                        {/* All Options Section */}
+                        <div>
+                          <div className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                            All Languages
+                          </div>
+                          <div className="space-y-0.5 mt-1">
+                            {LANGUAGE_OPTIONS.map(l => (
+                              <button
+                                key={l.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedLanguage(l.id);
+                                  setOpenDropdown(null);
+                                }}
+                                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors ${
+                                  selectedLanguage === l.id
+                                    ? "bg-teal-500/20 text-teal-200 font-bold border border-teal-500/40"
+                                    : "hover:bg-white/5 text-slate-300"
+                                }`}
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-semibold truncate">{l.label}</div>
+                                  <div className="text-[9px] text-slate-400 truncate">{l.desc}</div>
+                                </div>
+                                {selectedLanguage === l.id && <Check className="w-3.5 h-3.5 text-teal-400 shrink-0" />}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

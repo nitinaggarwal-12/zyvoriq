@@ -86,6 +86,40 @@ async function run() {
     console.log(`Horizontal overflow (Desktop Mode 1): ${hasHorizontalOverflow}`);
     if (hasHorizontalOverflow) throw new Error('FAIL: Detected horizontal overflow in Mode 1');
 
+    // Assert the 4 Dynamic Dropdowns Exist
+    const dropdownTriggers = await page.$$eval('button[data-dropdown-trigger]', btns => btns.map(b => b.getAttribute('data-dropdown-trigger')));
+    console.log('Found Dropdown Triggers:', dropdownTriggers);
+    if (dropdownTriggers.length < 4) {
+      throw new Error(`FAIL: Expected 4 dropdown triggers, found ${dropdownTriggers.length}: ${JSON.stringify(dropdownTriggers)}`);
+    }
+
+    // Open Format Dropdown & Assert Recommended Section
+    const formatBtn = await page.$('button[data-dropdown-trigger="format"]');
+    await page.evaluate(el => el.click(), formatBtn);
+    await new Promise(r => setTimeout(r, 400));
+    const formatMenuText = await page.$eval('.dropdown-container', el => el.textContent);
+    console.log('Format Menu Content:', formatMenuText);
+    if (!formatMenuText.includes('Recommended') || !formatMenuText.includes('All Formats')) {
+      throw new Error(`FAIL: Format dropdown missing Recommended or All Formats section: ${formatMenuText}`);
+    }
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '06_format_dropdown_open.png') });
+    console.log('📸 Captured 06_format_dropdown_open.png');
+
+    // Open Genre Dropdown & Assert Dynamic Recommendations
+    const genreBtn = await page.$('button[data-dropdown-trigger="genre"]');
+    await page.evaluate(el => el.click(), genreBtn);
+    await new Promise(r => setTimeout(r, 400));
+    const genreMenuText = await page.evaluate(() => document.body.textContent);
+    if (!genreMenuText.includes('All Genres')) {
+      throw new Error('FAIL: Genre dropdown missing All Genres section');
+    }
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '07_genre_dropdown_open.png') });
+    console.log('📸 Captured 07_genre_dropdown_open.png');
+
+    // Close dropdowns by clicking headline
+    await page.click('h1');
+    await new Promise(r => setTimeout(r, 400));
+
     // Assert Left and Right Card Dimensions (Equal Size Quality Gate)
     const leftBox1 = await page.$eval('#prompt-bar', el => {
       const r = el.getBoundingClientRect();
