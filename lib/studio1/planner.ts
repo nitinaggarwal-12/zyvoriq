@@ -535,7 +535,7 @@ export function planStudio1Sync(input: PlanReelInput, directorial?: OmniDirector
   manifest.omniLedger.push({
     checkpoint: "PREFLIGHT_DIRECTORIAL_APPROVAL",
     timestamp: new Date().toISOString(),
-    approvedBy: "Omni-Executive-Producer-Directorial-Engine",
+    approvedBy: directorial ? "gemini-2.5-flash:OmniDirectorialCompilation" : "algorithmic-production-planner",
     telemetry: {
       genre: manifest.genre || manifest.creativeBible?.genre,
       plannedDurationSec: manifest.plannedDurationSec,

@@ -38,19 +38,19 @@ Her platinum hair and gossamer capelets flutter in the arctic sea breeze as glow
   {
     num: 3,
     id: "shot_03_astrid_freya_harmonies",
-    prompt: `Wide 16:9 cinematic two-shot. Two real human live-action actresses standing side-by-side on a coastal cliff overlooking turbulent ocean waves:
-On the left: A live-action singer with wavy platinum-blonde hair, wearing a fitted white crystal-embellished sweetheart corset gown with sheer gossamer capelets.
-On the right: A live-action singer with auburn hair styled in a braided crown updo, wearing a tailored charcoal wool coat dress with dark teal trim and a rich magenta satin-lined traveling cloak over her shoulder.
-Both real human women look at each other and sing vocal harmonies into the camera against the stormy sea and green coastal cliffs.
-Shot on 35mm motion picture film, live-action feature film, realistic natural skin texture and pores, photorealistic live-action human faces, realistic natural sunlight, strictly zero 3D CGI, zero animation, zero cartoon styling, zero text.`
+    prompt: `Wide 16:9 cinematic two-shot. Two real human live-action actresses standing side-by-side on an arctic coastal cliff overlooking turbulent crashing ocean waves beneath a shimmering emerald Aurora Borealis:
+On the left: A real live-action singer with wavy platinum-blonde hair, porcelain skin, wearing a white ice-crystal gown with a sheer illusion neckline featuring crystal sparkles over an embellished sweetheart bodice, sheer gossamer sleeves with crystal cuff accents, and flowing gossamer capelets.
+On the right: A real live-action singer with auburn hair in a neat braided crown updo, warm hazel eyes, wearing a tailored charcoal wool coat dress with dark teal trim, circular bronze brooch pin at the collar, and a rich royal-magenta satin-lined traveling cloak draped over one shoulder.
+Both real human women look toward each other and sing vocal harmonies into the camera against the dark arctic sea and green northern lights.
+Shot on 35mm motion picture film, live-action feature film, realistic natural skin texture and pores, photorealistic live-action human faces, natural nighttime cinematic lighting with green aurora rim-light, strictly zero 3D CGI, zero animation, zero cartoon styling, zero text.`
   },
   {
     num: 4,
     id: "shot_04_aurora_climax_finale",
     prompt: `Wide 16:9 cinematic grand finale two-shot on an arctic coastal cliff overlooking crashing ocean waves beneath a shimmering emerald Aurora Borealis.
 Two real human live-action actresses perform a triumphant musical finale side-by-side:
-On the left: A real live-action singer with wavy platinum-blonde hair, wearing a white ice-crystal gown featuring a sheer illusion neckline with crystal sparkles over an embellished sweetheart bodice and sheer gossamer capelets flowing in the wind.
-On the right: A real live-action singer with auburn hair in a neat braided crown updo, wearing a tailored charcoal wool coat dress with dark teal trim and a rich magenta satin-lined traveling cloak draped over one shoulder.
+On the left: The exact same live-action singer with wavy platinum-blonde hair, porcelain skin, wearing a white ice-crystal gown featuring a sheer illusion neckline with crystal sparkles over an embellished sweetheart bodice, sheer gossamer sleeves with crystal cuff accents, and flowing gossamer capelets.
+On the right: The exact same live-action singer with auburn hair in a neat braided crown updo, warm hazel eyes, wearing a tailored charcoal wool coat dress with dark teal trim, circular bronze brooch pin at the collar, and a rich royal-magenta satin-lined traveling cloak draped over one shoulder.
 Both real human women raise their arms gracefully toward the northern sky and sing their triumphant final high note as waves crash on the dark rocks below.
 Shot on 35mm motion picture film, live-action feature film, realistic natural skin texture and pores, photorealistic live-action human faces, natural nighttime cinematic lighting with green aurora rim-light, strictly zero 3D CGI, zero animation, zero cartoon styling, strictly zero on-screen text.`
   }
