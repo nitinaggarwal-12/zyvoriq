@@ -123,6 +123,18 @@ export const LYRIA_MUSIC_PRESETS: LyriaMusicPreset[] = [
     samplePrompt: "High-octane Latin pop and Bollywood stage anthem with live dhol drums, timbales, brass stabs, flamenco guitar, and infectious 128 BPM dance groove."
   },
   {
+    id: "chandigarh_denmark_fusion",
+    name: "⚡ Chandigarh-Copenhagen Summer Pop Dance Fusion",
+    badge: "DeepMind Lyria 3.5 Pro",
+    description: "High-octane Punjabi pop dance anthem fusing Chandigarh bhangra energy with Scandinavian summer festival brass, clean 128 BPM live dhol groove, modern electronic synth drops, and stadium orchestra dynamics.",
+    genre: "Punjabi Pop / Modern Western Dance Fusion",
+    bpm: 128,
+    keySignature: "G Minor",
+    instruments: ["Live Punjabi Dhol", "Scandinavian Brass Ensemble", "Tumbi Riff", "Analog Moog Bass", "Stadium String Section", "Stage Percussion"],
+    recommendedAesthetics: ["stage_concert", "photorealistic_keynote", "wet_stage"],
+    samplePrompt: "Top-charting Indian Punjabi pop dance anthem with live dhol drums, vibrant Scandinavian brass stabs, soaring Punjabi female vocal hooks, driving 128 BPM electronic festival beat, and electric concert ambience."
+  },
+  {
     id: "precision_industrial",
     name: "🏎️ High-Torque Precision Machining Beat",
     badge: "Automotive & Engineering",
@@ -303,6 +315,7 @@ export async function generateLyriaBackgroundMusic(options: {
   // Physical Google DeepMind Lyria 3 Pro API call
   let lyriaRawArrangement: string | undefined;
   let lyrics: string[] | undefined;
+  let generatedAudioUrl = "";
 
   const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (key) {
@@ -312,37 +325,68 @@ export async function generateLyriaBackgroundMusic(options: {
       const cleanPresetName = selectedPreset.name.replace(/[^\w\s-]/g, "").replace(/\bshakira\b/gi, "Latin pop").trim();
       const lyriaPrompt = `Compose a high-energy ${selectedPreset.bpm} BPM song arrangement for: ${sanitizedPrompt}. Style: ${cleanPresetName}, genre: ${selectedPreset.genre}, key: ${selectedPreset.keySignature}. Include intro, verse, chorus, and drop rhythm sections with energetic singing lyrics.`;
 
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/lyria-3-pro-preview:generateContent?key=${key}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: lyriaPrompt }] }]
-        })
-      });
+      // Physical Google DeepMind Lyria models: lyria-3-clip-preview (returns text + audio/mpeg), lyria-3.5, lyria-3-pro-preview
+      const candidateLyriaModels = tier === "pro" 
+        ? ["lyria-3-clip-preview", "lyria-3.5", "lyria-3-pro-preview"]
+        : ["lyria-3-clip-preview", "lyria-3.5"];
 
-      if (res.ok) {
-        const data = await res.json();
-        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (rawText) {
-          lyriaRawArrangement = rawText;
-          lyrics = rawText
-            .split("\n")
-            .filter((l: string) => l.startsWith("[:]"))
-            .map((l: string) => l.replace(/^\[:\]\s*/, "").trim())
-            .filter(Boolean);
-          console.log(`[lyria-service] Successfully generated DeepMind Lyria 3 Pro song arrangement with ${lyrics?.length || 0} lyric lines.`);
+      for (const modelToTry of candidateLyriaModels) {
+        try {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelToTry}:generateContent?key=${key}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ role: "user", parts: [{ text: lyriaPrompt }] }]
+            })
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            const parts = data?.candidates?.[0]?.content?.parts || [];
+            let textAcc = "";
+            let audioB64 = "";
+
+            for (const p of parts) {
+              if (p.text) textAcc += p.text + "\n";
+              if (p.inlineData && p.inlineData.data) {
+                audioB64 = p.inlineData.data;
+              }
+            }
+
+            if (textAcc) {
+              lyriaRawArrangement = textAcc;
+              // Extract timestamped lines or bracketed lines
+              lyrics = textAcc
+                .split("\n")
+                .map(l => l.trim())
+                .filter(l => l.length > 0 && (l.includes(":") || l.startsWith("[")));
+            }
+
+            if (audioB64) {
+              const audioMime = "audio/mp3";
+              generatedAudioUrl = `data:${audioMime};base64,${audioB64}`;
+              console.log(`[lyria-service] Successfully received physical DeepMind ${modelToTry} audio (${Math.round(audioB64.length * 0.75 / 1024)} KB).`);
+            }
+
+            if (textAcc || audioB64) {
+              console.log(`[lyria-service] Completed Lyria generation via ${modelToTry}.`);
+              break;
+            }
+          } else {
+            const errText = await res.text().catch(() => "");
+            console.warn(`[lyria-service] ${modelToTry} returned status ${res.status}: ${errText.slice(0, 200)}`);
+          }
+        } catch (callErr: any) {
+          console.warn(`[lyria-service] Error trying ${modelToTry}:`, callErr.message);
         }
-      } else {
-        const errText = await res.text().catch(() => "");
-        console.warn(`[lyria-service] Lyria 3 Pro API returned status ${res.status}: ${errText.slice(0, 200)}`);
       }
     } catch (err: any) {
-      console.warn(`[lyria-service] Physical Lyria 3 Pro invocation warning: ${err?.message || err}`);
+      console.warn(`[lyria-service] Physical Lyria invocation warning: ${err?.message || err}`);
     }
   }
 
   return {
-    audioUrl: "",
+    audioUrl: generatedAudioUrl || "",
     duration: effectiveDuration,
     tier,
     presetId: selectedPreset.id,
