@@ -3,7 +3,7 @@ import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
-const GUARD_DIR = "/Users/nitinagga/.gemini/config/plugins/zyvoriq_guard";
+const GUARD_DIR = path.join(process.env.HOME || "", ".gemini/config/plugins/zyvoriq_guard");
 const PRE_TOOL_SCRIPT = path.join(GUARD_DIR, "scripts", "pre_tool_guard.mjs");
 const STOP_SCRIPT = path.join(GUARD_DIR, "scripts", "stop_quality_gate.mjs");
 const PRE_INVOC_SCRIPT = path.join(GUARD_DIR, "scripts", "pre_invocation_memory.mjs");
@@ -32,11 +32,11 @@ const hooksConfig = JSON.parse(fs.readFileSync(HOOKS_JSON, "utf-8"));
 assert("hooks.json is enabled", hooksConfig.zyvoriq_guard?.enabled === true);
 assert("PreInvocation hook registered", hooksConfig.zyvoriq_guard?.PreInvocation?.length > 0);
 assert("PreToolUse hook registered for run_command", hooksConfig.zyvoriq_guard?.PreToolUse?.[0]?.matcher === "run_command");
-assert("Stop hook timeout is 60s for thorough cut inspection", hooksConfig.zyvoriq_guard?.Stop?.[0]?.timeout === 60);
+assert("Stop hook timeout is at least 60s (configured to 120s) for thorough cut inspection", hooksConfig.zyvoriq_guard?.Stop?.[0]?.timeout >= 60);
 
 // SUITE 2: pre_invocation_memory.mjs Gatekeeper Enforcement
 console.log("\n📋 [SUITE 2/4] pre_invocation_memory.mjs Gatekeeper Enforcement");
-const preInvocInput = JSON.stringify({ workspacePaths: ["/Users/nitinagga/Documents/zyvoriq"] });
+const preInvocInput = JSON.stringify({ workspacePaths: [process.cwd()] });
 const preInvocOut = JSON.parse(execSync(`echo '${preInvocInput}' | node ${PRE_INVOC_SCRIPT}`).toString());
 const injectedMsg = preInvocOut.injectSteps?.[0]?.ephemeralMessage || "";
 assert("Injects Zero-Illusion Gatekeepers", injectedMsg.includes("ZERO-ILLUSION MANDATORY PRODUCTION GATEKEEPERS"));
@@ -79,11 +79,11 @@ assert("Concat repetition detector identifies non-unique segments", uniqueFiles.
 fs.rmSync(testConcatDir, { recursive: true, force: true });
 
 console.log("🔍 Testing Live Zero-Tolerance Visual Comparison against 00_trio_composite_anchor.png...");
-const anchorPath = "/Users/nitinagga/Documents/zyvoriq/scratch/euro_auditorium_trio_5m/anchors/00_trio_composite_anchor.png";
-const framePath = "/Users/nitinagga/Documents/zyvoriq/scratch/euro_auditorium_trio_5m/audit_5m/user_t15.jpg";
+const anchorPath = path.join(process.cwd(), "scratch/euro_auditorium_trio_5m/anchors/00_trio_composite_anchor.png");
+const framePath = path.join(process.cwd(), "scratch/euro_auditorium_trio_5m/audit_5m/user_t15.jpg");
 
 if (fs.existsSync(anchorPath) && fs.existsSync(framePath)) {
-  const envContent = fs.readFileSync("/Users/nitinagga/Documents/zyvoriq/.env.local", "utf-8");
+  const envContent = fs.readFileSync(path.join(process.cwd(), ".env.local"), "utf-8");
   let apiKey = "";
   for (const line of envContent.split("\n")) {
     if (line.startsWith("GEMINI_API_KEY=")) apiKey = line.split("=")[1].trim();
