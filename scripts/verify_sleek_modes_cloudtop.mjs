@@ -27,24 +27,29 @@ async function run() {
     await page.goto('http://localhost:3000', { waitUntil: 'domcontentloaded', timeout: 30000 });
     await new Promise(r => setTimeout(r, 1200));
 
-    // Dismiss transparency banner if present
+    // Verify and measure the ultra-compact consent pill before dismissing
     try {
-      const bannerClose = await page.$('button[aria-label="Close"]');
-      if (bannerClose) {
-        await bannerClose.click();
-      } else {
-        const allButtons = await page.$$('button');
-        for (const btn of allButtons) {
-          const txt = await page.evaluate(el => el.textContent, btn);
-          if (txt && (txt.includes('Accept All') || txt.includes('Essential'))) {
-            await page.evaluate(el => el.click(), btn);
-            break;
-          }
-        }
+      await page.waitForSelector('aside[aria-label="Cookie and AI Transparency Consent"]', { timeout: 3000 });
+      const bannerBox = await page.$eval('aside[aria-label="Cookie and AI Transparency Consent"] > div', el => {
+        const r = el.getBoundingClientRect();
+        return { w: Math.round(r.width), h: Math.round(r.height), top: Math.round(r.top), bottom: Math.round(r.bottom), right: Math.round(r.right) };
+      });
+      console.log('Compact Consent Pill Box:', bannerBox);
+      if (bannerBox.h > 50) {
+        throw new Error(`FAIL: Consent banner is still too large! Height is ${bannerBox.h}px > 50px`);
       }
-      await new Promise(r => setTimeout(r, 500));
+      await page.screenshot({ path: path.join(SCREENSHOT_DIR, '05_compact_consent_pill.png') });
+      console.log('📸 Captured 05_compact_consent_pill.png');
+
+      // Now click Accept All to dismiss
+      const acceptBtn = await page.$('button[aria-label="Close cookie consent banner"]') || 
+        (await page.$$('button')).find(async b => (await page.evaluate(el => el.textContent, b))?.includes('Accept All'));
+      if (acceptBtn) {
+        await page.evaluate(el => el.click(), acceptBtn);
+        await new Promise(r => setTimeout(r, 400));
+      }
     } catch (e) {
-      console.log('Banner dismiss notice:', e.message);
+      console.log('Consent pill check notice:', e.message);
     }
 
     // Assert DOM elements
