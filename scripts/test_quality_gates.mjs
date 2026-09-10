@@ -31,8 +31,12 @@ console.log("\n📋 [SUITE 1/4] hooks.json Configuration Verification");
 const hooksConfig = JSON.parse(fs.readFileSync(HOOKS_JSON, "utf-8"));
 assert("hooks.json is enabled", hooksConfig.zyvoriq_guard?.enabled === true);
 assert("PreInvocation hook registered", hooksConfig.zyvoriq_guard?.PreInvocation?.length > 0);
-assert("PreToolUse hook registered for run_command", hooksConfig.zyvoriq_guard?.PreToolUse?.[0]?.matcher === "run_command");
-assert("Stop hook timeout is at least 60s (configured to 120s) for thorough cut inspection", hooksConfig.zyvoriq_guard?.Stop?.[0]?.timeout >= 60);
+assert("PreToolUse hook registered for commands and file edits", 
+  hooksConfig.zyvoriq_guard?.PreToolUse?.[0]?.matcher.includes("run_command") &&
+  hooksConfig.zyvoriq_guard?.PreToolUse?.[0]?.matcher.includes("write_to_file") &&
+  hooksConfig.zyvoriq_guard?.PreToolUse?.[0]?.matcher.includes("replace_file_content")
+);
+assert("Stop hook timeout is at least 120s (configured to 180s) for thorough cut inspection", hooksConfig.zyvoriq_guard?.Stop?.[0]?.timeout >= 120);
 
 // SUITE 2: pre_invocation_memory.mjs Gatekeeper Enforcement
 console.log("\n📋 [SUITE 2/4] pre_invocation_memory.mjs Gatekeeper Enforcement");
@@ -44,6 +48,8 @@ assert("Enforces Gatekeeper 2 (-stream_loop ban)", injectedMsg.includes("ZERO FA
 assert("Enforces Gatekeeper 3 (Zero Audio Collision)", injectedMsg.includes("ZERO AUDIO COLLISION"));
 assert("Enforces Gatekeeper 4 (Anchor-Conditioned Continuity)", injectedMsg.includes("ANCHOR-CONDITIONED ZERO-TOLERANCE VISUAL CONTINUITY"));
 assert("Enforces Gatekeeper 5 (Direct Video Auditing)", injectedMsg.includes("DIRECT VIDEO AUDITING (NO DETACHED JPEGS/MP3s)"));
+assert("Enforces Gatekeeper 10 (Environmental & Lighting Continuity)", injectedMsg.includes("ENVIRONMENTAL & LIGHTING CONTINUITY (ZERO DAY/NIGHT JUMPS)"));
+assert("Enforces Gatekeeper 11 (Cut-Boundary Pairwise Face & Wardrobe Locking)", injectedMsg.includes("CUT-BOUNDARY PAIRWISE CONTINUITY & CAST LOCKING"));
 
 // SUITE 3: pre_tool_guard.mjs Interception
 console.log("\n📋 [SUITE 3/4] pre_tool_guard.mjs Interception Assertions");
@@ -59,6 +65,16 @@ const audioColInput = JSON.stringify({ toolCall: { name: "run_command", args: { 
 const audioColRes = JSON.parse(execSync(`echo '${audioColInput}' | node ${PRE_TOOL_SCRIPT}`).toString());
 assert("Denies audio collision with un-ducked bed (volume >= 0.35)", audioColRes.decision === "deny");
 assert("Explains audio collision ducking requirement", audioColRes.reason.includes("Audio collision detected") && audioColRes.reason.includes("<= 0.20"));
+
+// Test file write interception for -stream_loop
+const badFileWrite = JSON.stringify({ toolCall: { name: "write_to_file", args: { TargetFile: "scripts/bad.mjs", CodeContent: "ffmpeg -stream_loop 3 -i clip.mp4" } } });
+const fileWriteRes = JSON.parse(execSync(`echo '${badFileWrite}' | node ${PRE_TOOL_SCRIPT}`).toString());
+assert("Denies write_to_file containing -stream_loop", fileWriteRes.decision === "deny");
+
+// Test file write interception for environmental lighting contradiction
+const badLightingScript = JSON.stringify({ toolCall: { name: "write_to_file", args: { TargetFile: "scripts/shots.mjs", CodeContent: "const SHOTS = [{ prompt: 'broad daylight sunlight coastal cliff' }, { prompt: 'nighttime midnight aurora borealis' }];" } } });
+const lightingRes = JSON.parse(execSync(`echo '${badLightingScript}' | node ${PRE_TOOL_SCRIPT}`).toString());
+assert("Denies write_to_file with day/night lighting contradiction", lightingRes.decision === "deny");
 
 const legitCmd = ["ffmpeg", "-y", "-ss", "0", "-t", "15", "-i", "shot1.mp4", "out.mp4"].join(" ");
 const legitCmdInput = JSON.stringify({ toolCall: { name: "run_command", args: { CommandLine: legitCmd } } });

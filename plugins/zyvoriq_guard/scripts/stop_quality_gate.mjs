@@ -174,7 +174,7 @@ process.stdin.on("end", async () => {
                 if (!isNaN(parsedDur) && parsedDur > 0) totalDur = parsedDur;
               } catch {}
 
-              // Calculate uniform sample points at shot midpoints (zero blind spots)
+              // 4a. Anchor-Conditioned Visual Audit at Shot Midpoints
               const numSamples = Math.min(8, Math.max(4, Math.floor(totalDur / 10)));
               const sampleCutTimes = [];
               const interval = totalDur / numSamples;
@@ -191,7 +191,7 @@ process.stdin.on("end", async () => {
                     const promptText = `You are the Zyvoriq Independent Chief Quality Auditor conducting a zero-tolerance visual continuity inspection.
 Compare the provided video frame directly against the reference anchor image.
 Zero-tolerance rules:
-1. ARTISTIC MEDIUM CONTINUITY: Both the reference anchor and the video frame must be in the EXACT same artistic medium (photorealistic live-action cinema vs 3D CGI animation). If a character shifts from a photorealistic live-action human into 3D CGI cartoon animation or cartoon styling, output FAIL immediately with REASON: MEDIUM_STYLE_MORPH.
+1. ARTISTIC MEDIUM CONTINUITY: Both the reference anchor and the video frame must be in the EXACT same artistic medium (photorealistic live-action cinema vs 3D CGI animation). If a character shifts into 3D CGI cartoon animation or cartoon styling, output FAIL immediately with REASON: MEDIUM_STYLE_MORPH.
 2. ANCHOR IDENTITY & BIOMETRICS: Every character present must match their reference anchor facial bone structure, skin complexion, hair color, and hairstyle (e.g. wavy hair vs braided crown).
 3. GARMENT STRUCTURE & CONSTRUCTION: Compare neckline cut, bodice construction (e.g. sweetheart crystal corset vs flat snowflake mesh yoke), sleeve style, and cape/cloak attachment (single-shoulder drape vs neck clasp). If garment construction differs from the anchor by even 5%, output FAIL immediately.
 4. NO PHANTOM CHARACTERS: No duplicate performers, no missing lead performers, and no un-anchored extra performers.
@@ -243,6 +243,83 @@ REASON: <concise explanation>`;
                   }
                 } catch (err) {
                   // If remote extraction or network call fails, proceed to next checks
+                }
+              }
+
+              // =========================================================================
+              // ASSERTION 4b: PAIRWISE CUT-BOUNDARY DELTA INSPECTION (SEAM COMPARISON)
+              // =========================================================================
+              // Identify cut boundaries (e.g. every 10s or from concat list)
+              const cutSeams = [];
+              for (let s = 10; s <= totalDur - 5; s += 10) {
+                cutSeams.push(s);
+              }
+
+              for (const cutTime of cutSeams) {
+                try {
+                  const tPre = Math.max(0.1, Math.round((cutTime - 0.2) * 10) / 10);
+                  const tPost = Math.min(totalDur - 0.1, Math.round((cutTime + 0.2) * 10) / 10);
+
+                  const preCmd = `ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no nitinagga.c.googlers.com 'ffmpeg -y -ss ${tPre} -i ${remotePath} -vframes 1 -f image2pipe -vcodec mjpeg -q:v 2 - 2>/dev/null | base64'`;
+                  const postCmd = `ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no nitinagga.c.googlers.com 'ffmpeg -y -ss ${tPost} -i ${remotePath} -vframes 1 -f image2pipe -vcodec mjpeg -q:v 2 - 2>/dev/null | base64'`;
+
+                  const preB64 = execSync(preCmd, { timeout: 15000, maxBuffer: 10 * 1024 * 1024 }).toString().replace(/\r?\n|\r/g, "").trim();
+                  const postB64 = execSync(postCmd, { timeout: 15000, maxBuffer: 10 * 1024 * 1024 }).toString().replace(/\r?\n|\r/g, "").trim();
+
+                  if (preB64.length > 5000 && postB64.length > 5000) {
+                    const seamPrompt = `You are the Zyvoriq Chief Quality Auditor inspecting a pairwise cut transition at seam t=${cutTime}s.
+Compare the OUTGOING frame (just before cut at t=${tPre}s) directly with the INCOMING frame (just after cut at t=${tPost}s).
+Zero-tolerance transition rules:
+1. ENVIRONMENTAL & LIGHTING CONTINUITY: The time of day, sky, weather, and color temperature must be continuous across the cut. A violent jump from broad daylight/sunlight to nighttime/midnight aurora in consecutive performance cuts is strictly forbidden (FAIL: DAY_NIGHT_LIGHTING_JUMP).
+2. ACTOR BIOMETRIC CAST LOCKING: The same character must not jump to a different human actor across the seam. Facial bone structure, jawline geometry, nose shape, eye spacing, and skin texture must belong to the exact same performer. Cast substitutions between shots are strictly forbidden (FAIL: ACTOR_CAST_SUBSTITUTION).
+3. WARDROBE & ACCESSORY STABILITY: Garments, accessories, cloaks, and fasteners must remain stable across the cut. Sudden appearance of brooches, buttons, sleeve changes, or shifting bodice crystal patterns across the seam is strictly forbidden (FAIL: WARDROBE_SEAM_MORPH).
+
+State your verdict clearly:
+VERDICT: FAIL or PASS
+REASON: <concise explanation>`;
+
+                    const seamRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        contents: [{
+                          role: "user",
+                          parts: [
+                            { text: seamPrompt },
+                            { text: `\n[OUTGOING VIDEO FRAME AT t=${tPre}s]:` },
+                            { inlineData: { mimeType: "image/jpeg", data: preB64 } },
+                            { text: `\n[INCOMING VIDEO FRAME AT t=${tPost}s]:` },
+                            { inlineData: { mimeType: "image/jpeg", data: postB64 } }
+                          ]
+                        }]
+                      })
+                    });
+
+                    if (seamRes.ok) {
+                      const seamData = await seamRes.json();
+                      const seamText = seamData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                      let isSeamFail = false;
+                      let seamReason = "";
+
+                      if (seamText.includes("VERDICT: FAIL") || seamText.includes('"verdict": "FAIL"') || (seamText.includes("FAIL") && !seamText.includes("VERDICT: PASS"))) {
+                        isSeamFail = true;
+                        const matchReason = seamText.match(/REASON:\s*([^\n]+)/i);
+                        seamReason = matchReason ? matchReason[1].trim() : seamText.slice(0, 300).trim();
+                      }
+
+                      if (isSeamFail) {
+                        console.log(
+                          JSON.stringify({
+                            decision: "continue",
+                            reason: `[ZYVORIQ ZERO-TOLERANCE QUALITY GATE BLOCKED]: Cut-boundary transition defect at t=${cutTime}s! Outgoing frame (t=${tPre}s) and incoming frame (t=${tPost}s) failed continuity! Reason: ${seamReason}. Remediate environmental lighting and actor consistency across cuts.`
+                          })
+                        );
+                        return;
+                      }
+                    }
+                  }
+                } catch (e) {
+                  // Proceed if network call or extraction fails
                 }
               }
             }

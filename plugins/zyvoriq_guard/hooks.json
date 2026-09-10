@@ -4,17 +4,17 @@
     "PreInvocation": [
       {
         "type": "command",
-        "command": "node /Users/nitinagga/.gemini/config/plugins/zyvoriq_guard/scripts/pre_invocation_memory.mjs",
+        "command": "node ~/.gemini/config/plugins/zyvoriq_guard/scripts/pre_invocation_memory.mjs",
         "timeout": 10
       }
     ],
     "PreToolUse": [
       {
-        "matcher": "run_command",
+        "matcher": "run_command|write_to_file|replace_file_content",
         "hooks": [
           {
             "type": "command",
-            "command": "node /Users/nitinagga/.gemini/config/plugins/zyvoriq_guard/scripts/pre_tool_guard.mjs",
+            "command": "node ~/.gemini/config/plugins/zyvoriq_guard/scripts/pre_tool_guard.mjs",
             "timeout": 15
           }
         ]
@@ -23,8 +23,8 @@
     "Stop": [
       {
         "type": "command",
-        "command": "node /Users/nitinagga/.gemini/config/plugins/zyvoriq_guard/scripts/stop_quality_gate.mjs",
-        "timeout": 120
+        "command": "node ~/.gemini/config/plugins/zyvoriq_guard/scripts/stop_quality_gate.mjs",
+        "timeout": 180
       }
     ]
   }
