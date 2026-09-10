@@ -67,6 +67,23 @@ async function run() {
     console.log(`Horizontal overflow (Desktop Mode 1): ${hasHorizontalOverflow}`);
     if (hasHorizontalOverflow) throw new Error('FAIL: Detected horizontal overflow in Mode 1');
 
+    // Assert Left and Right Card Dimensions (Equal Size Quality Gate)
+    const leftBox1 = await page.$eval('#prompt-bar', el => {
+      const r = el.getBoundingClientRect();
+      return { w: Math.round(r.width), h: Math.round(r.height), top: Math.round(r.top), bottom: Math.round(r.bottom) };
+    });
+    const rightBox1 = await page.$eval('#monitor-card', el => {
+      const r = el.getBoundingClientRect();
+      return { w: Math.round(r.width), h: Math.round(r.height), top: Math.round(r.top), bottom: Math.round(r.bottom) };
+    });
+    console.log('Mode 1 Dimensions -> Left (#prompt-bar):', leftBox1, 'Right (#monitor-card):', rightBox1);
+    if (Math.abs(leftBox1.w - rightBox1.w) > 4) {
+      throw new Error(`FAIL: Width mismatch in Mode 1: Left=${leftBox1.w}px, Right=${rightBox1.w}px`);
+    }
+    if (Math.abs(leftBox1.h - rightBox1.h) > 4) {
+      throw new Error(`FAIL: Height mismatch in Mode 1: Left=${leftBox1.h}px, Right=${rightBox1.h}px`);
+    }
+
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, '01_instagram_tiktok_mode_desktop.png'), fullPage: false });
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, '01_instagram_tiktok_mode_fullpage.png'), fullPage: true });
     console.log('📸 Captured 01_instagram_tiktok_mode_desktop.png & fullpage');
@@ -102,6 +119,23 @@ async function run() {
     console.log(`Found Act buttons: ${actButtons.join(', ')}`);
     if (actButtons.length < 5) {
       throw new Error(`FAIL: Expected 5 act scrubber buttons, found ${actButtons.length}`);
+    }
+
+    // Assert Left and Right Card Dimensions (Equal Size Quality Gate)
+    const leftBox2 = await page.$eval('#prompt-bar', el => {
+      const r = el.getBoundingClientRect();
+      return { w: Math.round(r.width), h: Math.round(r.height), top: Math.round(r.top), bottom: Math.round(r.bottom) };
+    });
+    const rightBox2 = await page.$eval('#monitor-card', el => {
+      const r = el.getBoundingClientRect();
+      return { w: Math.round(r.width), h: Math.round(r.height), top: Math.round(r.top), bottom: Math.round(r.bottom) };
+    });
+    console.log('Mode 2 Dimensions -> Left (#prompt-bar):', leftBox2, 'Right (#monitor-card):', rightBox2);
+    if (Math.abs(leftBox2.w - rightBox2.w) > 4) {
+      throw new Error(`FAIL: Width mismatch in Mode 2: Left=${leftBox2.w}px, Right=${rightBox2.w}px`);
+    }
+    if (Math.abs(leftBox2.h - rightBox2.h) > 4) {
+      throw new Error(`FAIL: Height mismatch in Mode 2: Left=${leftBox2.h}px, Right=${rightBox2.h}px`);
     }
 
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, '02_youtube_cinema_mode_desktop.png'), fullPage: false });

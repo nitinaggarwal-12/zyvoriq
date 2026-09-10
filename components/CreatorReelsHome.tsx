@@ -214,7 +214,7 @@ export function CreatorReelsHome() {
   const [selectedLocation, setSelectedLocation] = useState<LibraryLocation | null>(null);
   const [showCharacterLibraryModal, setShowCharacterLibraryModal] = useState(false);
   const [showLocationLibraryModal, setShowLocationLibraryModal] = useState(false);
-  const [showCastAndPlaceDrawer, setShowCastAndPlaceDrawer] = useState(true);
+  const [showCastAndPlaceDrawer, setShowCastAndPlaceDrawer] = useState(false);
   const [castingMode, setCastingMode] = useState<"library" | "omni_auto" | "custom">("omni_auto");
   const [customLeadName, setCustomLeadName] = useState("");
   const [customLeadArchetype, setCustomLeadArchetype] = useState("");
@@ -861,14 +861,14 @@ export function CreatorReelsHome() {
             )}
           </div>
 
-          {/* TWO-COLUMN STUDIO CONSOLE: LEFT COMMAND DECK (7 cols) & RIGHT PRODUCTION MONITOR (5 cols) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-start">
-            {/* LEFT COLUMN: COMMAND & PROMPT BAR (7 cols) */}
-            <div className="lg:col-span-7 flex flex-col">
+          {/* TWO-COLUMN STUDIO CONSOLE: EQUAL SIZE (50% / 50% split, items-stretch) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 items-stretch">
+            {/* LEFT COLUMN: COMMAND & PROMPT BAR (50% width) */}
+            <div className="flex flex-col h-full">
               {/* THE PROMPT BAR CONTAINER */}
               <div
                 id="prompt-bar"
-                className={`w-full bg-[#0E121B] border rounded-2xl md:rounded-3xl p-3 sm:p-4 shadow-2xl shadow-black/60 relative transition-all ${
+                className={`w-full h-full bg-[#0E121B] border rounded-2xl md:rounded-3xl p-3 sm:p-4 shadow-2xl shadow-black/60 relative flex flex-col justify-between transition-all ${
                   activeTab === "youtube_shorts"
                     ? "border-amber-500/20 focus-within:border-amber-500/50"
                     : "border-white/10 focus-within:border-teal-500/50"
@@ -2511,287 +2511,358 @@ export function CreatorReelsHome() {
 
             </div>
 
-            {/* RIGHT COLUMN: THE LIVE PRODUCTION MONITOR (5 cols) */}
-            <div className="lg:col-span-5 flex flex-col items-center">
-              {activeTab === "instagram_tiktok" ? (
-                /* Phone-like 9:16 viewport frame + Sample filmstrip + Continuity lock in sleek side-by-side */
-                <div className="w-full flex flex-col sm:flex-row items-center sm:items-start justify-center gap-3">
-                  {/* Smartphone Frame (Condensed height ~340px) */}
-                  <div className="relative w-[185px] sm:w-[195px] shrink-0 aspect-[9/16] bg-black rounded-[26px] p-2 shadow-2xl shadow-teal-500/20 border-2 border-white/15 ring-1 ring-white/10 flex flex-col justify-between overflow-hidden group">
-                    {/* Simulated mobile phone ear notch */}
-                    <div className="absolute top-3 left-1/2 -translate-x-1/2 w-20 h-3 bg-[#07090E] rounded-full z-30 pointer-events-none border border-white/5" />
-
-                    {/* THE 9:16 VIDEO ELEMENT */}
-                    <div className="relative w-full h-full rounded-[20px] overflow-hidden bg-slate-950">
-                      <video
-                        ref={videoRef}
-                        key={activeReel.videoUrl}
-                        src={activeReel.videoUrl}
-                        poster={activeReel.posterUrl}
-                        playsInline
-                        muted={isMuted}
-                        autoPlay
-                        loop
-                        preload="auto"
-                        className="w-full h-full object-cover select-none cursor-pointer"
-                        onClick={togglePlay}
-                      />
-
-                      {/* Top Badges Overlay */}
-                      <div className="absolute top-6 left-2.5 right-2.5 z-20 flex items-center justify-between pointer-events-none">
-                        <span className="px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md border border-white/10 text-[9px] font-bold text-white flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                          <span>{activeReel.shots} Shots • {activeReel.durationSec}s</span>
+            {/* RIGHT COLUMN: THE LIVE PRODUCTION MONITOR (50% width, matching exact container card) */}
+            <div className="flex flex-col h-full">
+              {/* MATCHING PRODUCTION MONITOR CONTAINER CARD */}
+              <div
+                id="monitor-card"
+                className={`w-full h-full bg-[#0E121B] border rounded-2xl md:rounded-3xl p-3 sm:p-4 shadow-2xl shadow-black/60 relative flex flex-col justify-between transition-all ${
+                  activeTab === "youtube_shorts"
+                    ? "border-amber-500/20 hover:border-amber-500/40"
+                    : "border-white/10 hover:border-teal-500/30"
+                }`}
+              >
+                {activeTab === "instagram_tiktok" ? (
+                  /* Instagram / TikTok Mode 1 Monitor Content */
+                  <>
+                    {/* Monitor Card Top Header */}
+                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/5 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
+                        <span className="font-bold text-white text-xs sm:text-sm tracking-tight flex items-center gap-1.5">
+                          <Smartphone className="w-3.5 h-3.5 text-teal-400" />
+                          Live Production Monitor
                         </span>
-
-                        <span className="px-1.5 py-0.5 rounded-full bg-teal-500/90 backdrop-blur-md text-[#07090E] text-[8px] font-black uppercase tracking-wider">
-                          Zero Drift
+                        <span className="px-2 py-0.5 rounded-full bg-teal-500/10 border border-teal-400/30 text-teal-300 text-[10px] font-semibold">
+                          9:16 Vertical
                         </span>
                       </div>
+                      <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono">
+                        <span className="px-2 py-0.5 rounded bg-white/5 border border-white/5">
+                          1080×1920 (4K Upscaled)
+                        </span>
+                      </div>
+                    </div>
 
-                      {/* Controls overlay: Mute & Play toggles */}
-                      <div className="absolute top-6 right-2.5 z-30 flex flex-col gap-1.5">
-                        <button
-                          type="button"
-                          onClick={toggleMute}
-                          className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
-                          title={isMuted ? "Unmute Audio" : "Mute Audio"}
-                        >
-                          {isMuted ? <VolumeX className="w-3.5 h-3.5 text-amber-300" /> : <Volume2 className="w-3.5 h-3.5 text-teal-400" />}
-                        </button>
+                    {/* Monitor Card Body: Smartphone frame + Sample Productions & Continuity Lock side-by-side */}
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start justify-center gap-3.5 flex-1 py-1">
+                      {/* Smartphone Frame (Condensed height ~340px) */}
+                      <div className="relative w-[190px] sm:w-[200px] shrink-0 aspect-[9/16] bg-black rounded-[26px] p-2 shadow-2xl shadow-teal-500/20 border-2 border-white/15 ring-1 ring-white/10 flex flex-col justify-between overflow-hidden group">
+                        {/* Simulated mobile phone ear notch */}
+                        <div className="absolute top-3 left-1/2 -translate-x-1/2 w-20 h-3 bg-[#07090E] rounded-full z-30 pointer-events-none border border-white/5" />
 
-                        <button
-                          type="button"
-                          onClick={togglePlay}
-                          className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
-                          title={isPlaying ? "Pause" : "Play"}
-                        >
-                          {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 translate-x-0.5 text-teal-400" />}
-                        </button>
+                        {/* THE 9:16 VIDEO ELEMENT */}
+                        <div className="relative w-full h-full rounded-[20px] overflow-hidden bg-slate-950">
+                          <video
+                            ref={videoRef}
+                            key={activeReel.videoUrl}
+                            src={activeReel.videoUrl}
+                            poster={activeReel.posterUrl}
+                            playsInline
+                            muted={isMuted}
+                            autoPlay
+                            loop
+                            preload="auto"
+                            className="w-full h-full object-cover select-none cursor-pointer"
+                            onClick={togglePlay}
+                          />
+
+                          {/* Top Badges Overlay */}
+                          <div className="absolute top-6 left-2.5 right-2.5 z-20 flex items-center justify-between pointer-events-none">
+                            <span className="px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md border border-white/10 text-[9px] font-bold text-white flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                              <span>{activeReel.shots} Shots • {activeReel.durationSec}s</span>
+                            </span>
+
+                            <span className="px-1.5 py-0.5 rounded-full bg-teal-500/90 backdrop-blur-md text-[#07090E] text-[8px] font-black uppercase tracking-wider">
+                              Zero Drift
+                            </span>
+                          </div>
+
+                          {/* Controls overlay: Mute & Play toggles */}
+                          <div className="absolute top-6 right-2.5 z-30 flex flex-col gap-1.5">
+                            <button
+                              type="button"
+                              onClick={toggleMute}
+                              className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
+                              title={isMuted ? "Unmute Audio" : "Mute Audio"}
+                            >
+                              {isMuted ? <VolumeX className="w-3.5 h-3.5 text-amber-300" /> : <Volume2 className="w-3.5 h-3.5 text-teal-400" />}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={togglePlay}
+                              className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
+                              title={isPlaying ? "Pause" : "Play"}
+                            >
+                              {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 translate-x-0.5 text-teal-400" />}
+                            </button>
+                          </div>
+
+                          {/* Bottom Info Bar inside Reel */}
+                          <div className="absolute bottom-0 inset-x-0 p-2.5 pt-8 bg-gradient-to-t from-black/95 via-black/60 to-transparent z-20 flex flex-col">
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-teal-400">
+                              {activeReel.category}
+                            </span>
+                            <h3 className="text-xs font-bold text-white leading-tight drop-shadow-md truncate">
+                              {activeReel.title}
+                            </h3>
+                            <p className="text-[9px] text-slate-300 mt-0.5 line-clamp-1 leading-snug">
+                              {activeReel.prompt}
+                            </p>
+
+                            <div className="mt-1.5 pt-1.5 border-t border-white/10 flex items-center justify-between text-[8px] text-slate-400">
+                              <span className="flex items-center gap-0.5 text-teal-300 font-medium">
+                                <CheckCircle2 className="w-2.5 h-2.5 text-teal-400" />
+                                Single continuous take
+                              </span>
+                              <span>9:16 Vertical</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Bottom Info Bar inside Reel */}
-                      <div className="absolute bottom-0 inset-x-0 p-2.5 pt-8 bg-gradient-to-t from-black/95 via-black/60 to-transparent z-20 flex flex-col">
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-teal-400">
-                          {activeReel.category}
-                        </span>
-                        <h3 className="text-xs font-bold text-white leading-tight drop-shadow-md truncate">
-                          {activeReel.title}
-                        </h3>
-                        <p className="text-[9px] text-slate-300 mt-0.5 line-clamp-1 leading-snug">
-                          {activeReel.prompt}
-                        </p>
+                      {/* Companion Side Column: Sample Productions Grid + Continuity Lock Card */}
+                      <div className="flex-1 flex flex-col gap-2.5 w-full">
+                        {/* Switch active reel filmstrip cards */}
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between px-0.5 text-xs text-slate-400">
+                            <span className="font-bold text-teal-300 uppercase tracking-wider text-[10px] flex items-center gap-1">
+                              <Film className="w-3 h-3" /> Sample Productions
+                            </span>
+                            <span className="text-[9px] text-slate-500">Tap to load</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {FINISHED_REELS.map((reel, idx) => (
+                              <button
+                                key={reel.id}
+                                type="button"
+                                onClick={() => setActiveReelIndex(idx)}
+                                className={`relative aspect-[16/9] rounded-lg overflow-hidden border-2 transition-all group ${
+                                  activeReelIndex === idx
+                                    ? "border-teal-400 shadow-md shadow-teal-500/30 scale-[1.02] z-10"
+                                    : "border-white/10 opacity-70 hover:opacity-100 hover:border-white/30"
+                                }`}
+                                title={reel.title}
+                              >
+                                <img src={reel.posterUrl} alt={reel.title} className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                                <div className="absolute bottom-1 inset-x-1 flex items-center justify-between">
+                                  <span className="text-[9px] font-bold text-white truncate text-left">
+                                    {reel.title}
+                                  </span>
+                                  <span className="text-[8px] font-mono text-teal-300 shrink-0 bg-black/50 px-1 rounded">
+                                    {reel.durationSec}s
+                                  </span>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
 
-                        <div className="mt-1.5 pt-1.5 border-t border-white/10 flex items-center justify-between text-[8px] text-slate-400">
-                          <span className="flex items-center gap-0.5 text-teal-300 font-medium">
-                            <CheckCircle2 className="w-2.5 h-2.5 text-teal-400" />
-                            Single continuous take
-                          </span>
-                          <span>9:16 Vertical</span>
+                        {/* Continuity Proof Badge Card */}
+                        <div className="w-full p-2.5 rounded-xl bg-[#0A0E17] border border-teal-500/25 text-xs text-slate-300 flex items-start gap-2 shadow-md">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-teal-400 shrink-0 mt-0.5" />
+                          <div>
+                            <strong className="text-teal-300 block font-semibold text-[11px]">Biometric Continuity Lock:</strong>
+                            <span className="text-slate-400 text-[10px] leading-snug block mt-0.5">
+                              {activeReel.continuityProof}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Companion Side Column: Sample Productions Grid + Continuity Lock Card */}
-                  <div className="flex-1 flex flex-col gap-2 w-full max-w-[280px] sm:max-w-none">
-                    {/* Switch active reel filmstrip cards */}
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between px-0.5 text-xs text-slate-400">
-                        <span className="font-bold text-teal-300 uppercase tracking-wider text-[10px] flex items-center gap-1">
-                          <Film className="w-3 h-3" /> Sample Productions
+                    {/* Monitor Card Bottom Footer */}
+                    <div className="mt-2 pt-2 border-t border-white/5 flex items-center gap-1.5 text-[10px] sm:text-[11px] text-slate-400">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                      <span>
+                        <strong className="text-slate-200">Biometric Identity Continuity Certified.</strong> Facial geometry, bone anchors &amp; physical wardrobe lock 100% across all cuts.
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  /* YouTube / Cinema Mode 2 Monitor Content */
+                  <>
+                    {/* Monitor Card Top Header */}
+                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/5 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                        <span className="font-bold text-white text-xs sm:text-sm tracking-tight flex items-center gap-1.5">
+                          <Clapperboard className="w-3.5 h-3.5 text-amber-400" />
+                          Cinema Master Monitor
                         </span>
-                        <span className="text-[9px] text-slate-500">Tap to load</span>
+                        <span className="px-2 py-0.5 rounded-full bg-amber-400/15 border border-amber-400/40 text-amber-300 text-[10px] font-semibold">
+                          2.39:1 Anamorphic
+                        </span>
                       </div>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {FINISHED_REELS.map((reel, idx) => (
+                      <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono">
+                        <span className="px-2 py-0.5 rounded bg-white/5 border border-white/5">
+                          30 Takes • 180s Total
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Monitor Card Body: 2.39:1 Player + 5 Acts Scrubber + Side-by-Side Cards */}
+                    <div className="flex flex-col gap-2 flex-1 justify-between py-1">
+                      {/* Widescreen 2.39:1 Video Container */}
+                      <div className="relative w-full aspect-[2.39/1] bg-black rounded-xl sm:rounded-2xl p-1.5 shadow-2xl shadow-amber-500/15 border-2 border-amber-500/40 ring-1 ring-amber-500/20 overflow-hidden group">
+                        <video
+                          ref={videoRef}
+                          key={activeCinema.videoUrl}
+                          src={activeCinema.videoUrl}
+                          poster={activeCinema.posterUrl}
+                          playsInline
+                          muted={isMuted}
+                          autoPlay
+                          loop
+                          preload="auto"
+                          className="w-full h-full object-cover select-none cursor-pointer rounded-lg sm:rounded-xl"
+                          onClick={togglePlay}
+                        />
+
+                        {/* Center Cinema Play Button overlay when paused */}
+                        {!isPlaying && (
                           <button
-                            key={reel.id}
                             type="button"
-                            onClick={() => setActiveReelIndex(idx)}
-                            className={`relative aspect-[16/9] rounded-lg overflow-hidden border-2 transition-all group ${
-                              activeReelIndex === idx
-                                ? "border-teal-400 shadow-md shadow-teal-500/30 scale-[1.02] z-10"
-                                : "border-white/10 opacity-70 hover:opacity-100 hover:border-white/30"
-                            }`}
-                            title={reel.title}
+                            onClick={togglePlay}
+                            className="absolute inset-0 m-auto w-12 h-12 rounded-full bg-amber-400/90 hover:bg-amber-300 text-[#07090E] flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all z-30 cursor-pointer"
+                            aria-label="Play Cinema Master"
+                            title="Play Full Combined Cinema Master Reel"
                           >
-                            <img src={reel.posterUrl} alt={reel.title} className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                            <div className="absolute bottom-1 inset-x-1 flex items-center justify-between">
-                              <span className="text-[9px] font-bold text-white truncate text-left">
-                                {reel.title}
-                              </span>
-                              <span className="text-[8px] font-mono text-teal-300 shrink-0 bg-black/50 px-1 rounded">
-                                {reel.durationSec}s
-                              </span>
-                            </div>
+                            <Play className="w-6 h-6 fill-current translate-x-0.5" />
                           </button>
-                        ))}
-                      </div>
-                    </div>
+                        )}
 
-                    {/* Continuity Proof Badge Card */}
-                    <div className="w-full p-2.5 rounded-xl bg-[#0A0E17] border border-teal-500/25 text-xs text-slate-300 flex items-start gap-2 shadow-md">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-teal-400 shrink-0 mt-0.5" />
-                      <div>
-                        <strong className="text-teal-300 block font-semibold text-[11px]">Biometric Continuity Lock:</strong>
-                        <span className="text-slate-400 text-[10px] leading-snug block mt-0.5">
-                          {activeReel.continuityProof}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                /* Cinema Master 180s Theatrical Showcase Frame + Scrubber + Score & Acts in Compact Format */
-                <div className="w-full max-w-[620px] flex flex-col gap-2">
-                  <div className="relative w-full aspect-[2.39/1] bg-black rounded-xl sm:rounded-2xl p-1.5 shadow-2xl shadow-amber-500/15 border-2 border-amber-500/40 ring-1 ring-amber-500/20 overflow-hidden group">
-                    <video
-                      ref={videoRef}
-                      key={activeCinema.videoUrl}
-                      src={activeCinema.videoUrl}
-                      poster={activeCinema.posterUrl}
-                      playsInline
-                      muted={isMuted}
-                      autoPlay
-                      loop
-                      preload="auto"
-                      className="w-full h-full object-cover select-none cursor-pointer rounded-lg sm:rounded-xl"
-                      onClick={togglePlay}
-                    />
+                        {/* Top Cinema Overlay Badges */}
+                        <div className="absolute top-2 left-2.5 right-2.5 z-20 flex items-center justify-between pointer-events-none">
+                          <span className="px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md border border-white/15 text-[9px] font-bold text-white flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                            <span>30 Shots • 180s • 5 Classical Acts</span>
+                          </span>
 
-                    {/* Center Cinema Play Button overlay when paused */}
-                    {!isPlaying && (
-                      <button
-                        type="button"
-                        onClick={togglePlay}
-                        className="absolute inset-0 m-auto w-12 h-12 rounded-full bg-amber-400/90 hover:bg-amber-300 text-[#07090E] flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all z-30 cursor-pointer"
-                        aria-label="Play Cinema Master"
-                        title="Play Full Combined Cinema Master Reel"
-                      >
-                        <Play className="w-6 h-6 fill-current translate-x-0.5" />
-                      </button>
-                    )}
+                          <span className="px-1.5 py-0.5 rounded-full bg-amber-400/90 backdrop-blur-md text-[#07090E] text-[8px] font-black uppercase tracking-wider">
+                            2.39:1 Anamorphic
+                          </span>
+                        </div>
 
-                    {/* Top Cinema Overlay Badges */}
-                    <div className="absolute top-2 left-2.5 right-2.5 z-20 flex items-center justify-between pointer-events-none">
-                      <span className="px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md border border-white/15 text-[9px] font-bold text-white flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                        <span>30 Shots • 180s • 5 Classical Acts</span>
-                      </span>
-
-                      <span className="px-1.5 py-0.5 rounded-full bg-amber-400/90 backdrop-blur-md text-[#07090E] text-[8px] font-black uppercase tracking-wider">
-                        2.39:1 Anamorphic
-                      </span>
-                    </div>
-
-                    {/* Controls overlay: Mute & Play toggles */}
-                    <div className="absolute top-2 right-2.5 z-30 flex gap-1.5">
-                      <button
-                        type="button"
-                        onClick={toggleMute}
-                        className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
-                        title={isMuted ? "Unmute Audio" : "Mute Audio"}
-                      >
-                        {isMuted ? <VolumeX className="w-3.5 h-3.5 text-amber-300" /> : <Volume2 className="w-3.5 h-3.5 text-amber-400" />}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={togglePlay}
-                        className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
-                        title={isPlaying ? "Pause" : "Play"}
-                      >
-                        {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 translate-x-0.5 text-amber-400" />}
-                      </button>
-                    </div>
-
-                    {/* Bottom Info Bar */}
-                    <div className="absolute bottom-0 inset-x-0 p-2 pt-6 bg-gradient-to-t from-black/95 via-black/60 to-transparent z-20 flex flex-col">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400">
-                          {activeCinema.category}
-                        </span>
-                        <span className="text-[9px] text-slate-300 truncate max-w-[260px]">
-                          {activeCinema.subtitle}
-                        </span>
-                      </div>
-                      <h3 className="text-xs sm:text-sm font-bold text-white leading-tight drop-shadow-md truncate">
-                        {activeCinema.title}
-                      </h3>
-                    </div>
-                  </div>
-
-                  {/* 5 ACTS TIME JUMP SCRUBBER */}
-                  <div className="bg-[#0C1019] rounded-xl p-1.5 border border-amber-500/20 shadow-md flex flex-col gap-1">
-                    <div className="flex items-center justify-between text-xs px-1 text-slate-400 font-medium">
-                      <span className="text-amber-300 font-bold uppercase tracking-wider flex items-center gap-1 text-[10px]">
-                        <Clapperboard className="w-3 h-3 text-amber-400" />
-                        Jump to Act:
-                      </span>
-                      <span className="text-[9px] text-slate-500">Interactive Timeline</span>
-                    </div>
-                    <div className="grid grid-cols-5 gap-1">
-                      {[
-                        { act: 1, label: "Marseilles", time: 0, timecode: "0:00" },
-                        { act: 2, label: "Notre-Dame", time: 36, timecode: "0:36" },
-                        { act: 3, label: "Poland", time: 72, timecode: "1:12" },
-                        { act: 4, label: "Tuileries", time: 108, timecode: "1:48" },
-                        { act: 5, label: "St. Helena", time: 144, timecode: "2:24" }
-                      ].map(item => (
-                        <button
-                          key={item.act}
-                          type="button"
-                          onClick={() => seekToTime(item.time)}
-                          className="px-1 py-0.5 rounded-lg bg-white/5 hover:bg-amber-400/20 hover:border-amber-400/40 border border-white/5 text-slate-300 hover:text-amber-200 transition-all text-center flex flex-col items-center min-h-[30px] justify-center"
-                        >
-                          <span className="text-amber-400 font-bold text-[10px]">Act {item.act}</span>
-                          <span className="text-[8px] text-slate-400">{item.timecode}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Side-by-Side: Score Bed & Classical 5-Act Narrative Arc */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {/* Master Symphonic Score Bed Card */}
-                    <div className="p-2 rounded-xl bg-[#0A0E17] border border-amber-500/20 text-xs text-slate-300 flex items-start gap-2 shadow-md">
-                      <Music2 className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                      <div>
-                        <strong className="text-amber-300 block font-semibold text-[10px] uppercase tracking-wider">Master Symphonic Bed (-24.0 LUFS):</strong>
-                        <span className="text-slate-300 text-[10px] block mt-0.5 leading-snug">{activeCinema.scoreTitle}</span>
-                      </div>
-                    </div>
-
-                    {/* Classical 5-Act Breakdown */}
-                    <div className="p-2 rounded-xl bg-[#080B11] border border-white/10 text-xs shadow-md overflow-hidden">
-                      <div className="flex items-center justify-between text-[10px] text-amber-400 font-bold border-b border-white/5 pb-1 mb-1">
-                        <span className="flex items-center gap-1">
-                          <Clapperboard className="w-3 h-3 text-amber-400" />
-                          Classical 5-Act Narrative Arc
-                        </span>
-                        <span className="text-slate-400 font-mono text-[9px]">30 Takes • 180s</span>
-                      </div>
-                      <div className="space-y-0.5 text-[10px]">
-                        {activeCinema.acts.map((act) => (
-                          <div
-                            key={act.act}
-                            className="flex items-center justify-between gap-1 cursor-pointer hover:text-amber-200 transition-colors py-0.5"
-                            onClick={() => seekToTime(act.act === 1 ? 0 : act.act === 2 ? 36 : act.act === 3 ? 72 : act.act === 4 ? 108 : 144)}
+                        {/* Controls overlay: Mute & Play toggles */}
+                        <div className="absolute top-2 right-2.5 z-30 flex gap-1.5">
+                          <button
+                            type="button"
+                            onClick={toggleMute}
+                            className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
+                            title={isMuted ? "Unmute Audio" : "Mute Audio"}
                           >
-                            <div className="flex items-center gap-1 truncate">
-                              <span className="font-mono text-amber-400 font-bold shrink-0">A{act.act}:</span>
-                              <strong className="text-white font-medium truncate">{act.title}</strong>
-                            </div>
-                            <span className="text-slate-500 font-mono text-[9px] shrink-0">{act.timecode}</span>
+                            {isMuted ? <VolumeX className="w-3.5 h-3.5 text-amber-300" /> : <Volume2 className="w-3.5 h-3.5 text-amber-400" />}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={togglePlay}
+                            className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
+                            title={isPlaying ? "Pause" : "Play"}
+                          >
+                            {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 translate-x-0.5 text-amber-400" />}
+                          </button>
+                        </div>
+
+                        {/* Bottom Info Bar */}
+                        <div className="absolute bottom-0 inset-x-0 p-2 pt-6 bg-gradient-to-t from-black/95 via-black/60 to-transparent z-20 flex flex-col">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400">
+                              {activeCinema.category}
+                            </span>
+                            <span className="text-[9px] text-slate-300 truncate max-w-[260px]">
+                              {activeCinema.subtitle}
+                            </span>
                           </div>
-                        ))}
+                          <h3 className="text-xs sm:text-sm font-bold text-white leading-tight drop-shadow-md truncate">
+                            {activeCinema.title}
+                          </h3>
+                        </div>
+                      </div>
+
+                      {/* 5 ACTS TIME JUMP SCRUBBER */}
+                      <div className="bg-[#0C1019] rounded-xl p-1.5 border border-amber-500/20 shadow-md flex flex-col gap-1">
+                        <div className="flex items-center justify-between text-xs px-1 text-slate-400 font-medium">
+                          <span className="text-amber-300 font-bold uppercase tracking-wider flex items-center gap-1 text-[10px]">
+                            <Clapperboard className="w-3 h-3 text-amber-400" />
+                            Jump to Act:
+                          </span>
+                          <span className="text-[9px] text-slate-500">Interactive Timeline</span>
+                        </div>
+                        <div className="grid grid-cols-5 gap-1">
+                          {[
+                            { act: 1, label: "Marseilles", time: 0, timecode: "0:00" },
+                            { act: 2, label: "Notre-Dame", time: 36, timecode: "0:36" },
+                            { act: 3, label: "Poland", time: 72, timecode: "1:12" },
+                            { act: 4, label: "Tuileries", time: 108, timecode: "1:48" },
+                            { act: 5, label: "St. Helena", time: 144, timecode: "2:24" }
+                          ].map(item => (
+                            <button
+                              key={item.act}
+                              type="button"
+                              onClick={() => seekToTime(item.time)}
+                              className="px-1 py-0.5 rounded-lg bg-white/5 hover:bg-amber-400/20 hover:border-amber-400/40 border border-white/5 text-slate-300 hover:text-amber-200 transition-all text-center flex flex-col items-center min-h-[30px] justify-center"
+                            >
+                              <span className="text-amber-400 font-bold text-[10px]">Act {item.act}</span>
+                              <span className="text-[8px] text-slate-400">{item.timecode}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Side-by-Side: Score Bed & Classical 5-Act Narrative Arc */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {/* Master Symphonic Score Bed Card */}
+                        <div className="p-2 rounded-xl bg-[#0A0E17] border border-amber-500/20 text-xs text-slate-300 flex items-start gap-2 shadow-md">
+                          <Music2 className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                          <div>
+                            <strong className="text-amber-300 block font-semibold text-[10px] uppercase tracking-wider">Master Symphonic Bed (-24.0 LUFS):</strong>
+                            <span className="text-slate-300 text-[10px] block mt-0.5 leading-snug">{activeCinema.scoreTitle}</span>
+                          </div>
+                        </div>
+
+                        {/* Classical 5-Act Breakdown */}
+                        <div className="p-2 rounded-xl bg-[#080B11] border border-white/10 text-xs shadow-md overflow-hidden">
+                          <div className="flex items-center justify-between text-[10px] text-amber-400 font-bold border-b border-white/5 pb-1 mb-1">
+                            <span className="flex items-center gap-1">
+                              <Clapperboard className="w-3 h-3 text-amber-400" />
+                              Classical 5-Act Narrative Arc
+                            </span>
+                            <span className="text-slate-400 font-mono text-[9px]">30 Takes • 180s</span>
+                          </div>
+                          <div className="space-y-0.5 text-[10px]">
+                            {activeCinema.acts.map((act) => (
+                              <div
+                                key={act.act}
+                                className="flex items-center justify-between gap-1 cursor-pointer hover:text-amber-200 transition-colors py-0.5"
+                                onClick={() => seekToTime(act.act === 1 ? 0 : act.act === 2 ? 36 : act.act === 3 ? 72 : act.act === 4 ? 108 : 144)}
+                              >
+                                <div className="flex items-center gap-1 truncate">
+                                  <span className="font-mono text-amber-400 font-bold shrink-0">A{act.act}:</span>
+                                  <strong className="text-white font-medium truncate">{act.title}</strong>
+                                </div>
+                                <span className="text-slate-500 font-mono text-[9px] shrink-0">{act.timecode}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              )}
+
+                    {/* Monitor Card Bottom Footer */}
+                    <div className="mt-2 pt-2 border-t border-white/5 flex items-center gap-1.5 text-[10px] sm:text-[11px] text-slate-400">
+                      <ShieldCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span>
+                        <strong className="text-slate-200">Theatrical Master Certified.</strong> 5-act classical drama, Cooke 2.39:1 anamorphic optics &amp; EBU R128 master acoustic bed.
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
