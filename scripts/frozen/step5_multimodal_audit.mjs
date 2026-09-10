@@ -65,53 +65,73 @@ async function runAudit() {
     const framePath = path.join(AUDIT_DIR, cf);
     const frameB64 = fs.readFileSync(framePath).toString("base64");
 
-    const auditPrompt = `You are the lead visual continuity supervisor for a cinematic music video production.
+    const auditPrompt = `You are the lead visual continuity supervisor for a cinematic live-action music video production.
 Examine this cut frame from the music video against the composite character reference anchor.
 Reference image contains:
-Left: Freya (Nordic sorceress/performer: platinum/silver hair wave, luminescent white crystalline gown, gossamer capelets).
-Right: Astrid (Nordic traveler/performer: auburn-chestnut crown braid, charcoal-black traveling dress with dark teal embroidery and magenta cloak).
+Left: Freya (Nordic performer: real live-action human woman with porcelain skin, wavy platinum hair, wearing a white ice-crystal gown featuring a sheer illusion neckline with crystal sparkles over an embellished sweetheart bodice, sheer gossamer sleeves with crystal accents, and sheer flowing gossamer capelets).
+Right: Astrid (Nordic performer: real live-action human woman with sun-kissed skin, auburn hair in a braided crown updo, wearing a tailored charcoal wool coat dress with dark teal trim and a rich magenta satin-lined traveling cloak draped over one shoulder).
 
-Inspect the video cut frame:
-1. Does the character present in the frame maintain costume, color palette, and hair styling continuity with the reference anchor?
-2. Are there any jarring costume flips or phantom duplicate performers?
+Zero-tolerance inspection rules:
+1. ARTISTIC MEDIUM CONTINUITY: Both the reference anchor and the video frame must be in the EXACT same artistic medium (photorealistic 35mm live-action cinema vs 3D CGI animation). If a character shifts into 3D CGI cartoon animation or cartoon rendering, mark mediumContinuityPass: false immediately. Note: Natural human smiles, singing expressions, and dynamic lighting (such as aurora night glow or ocean wind) are part of live-action cinema and should not be misclassified as CGI animation.
+2. ANCHOR IDENTITY & BIOMETRICS: Every character present must match their reference anchor facial bone structure, skin complexion, hair color, and hairstyle (e.g. wavy hair vs braided crown).
+3. GARMENT STRUCTURE & CONSTRUCTION: Compare neckline cut, bodice construction (sheer illusion neckline with crystal sparkles over embellished sweetheart bodice), sheer sleeves, and cape/cloak attachment (single-shoulder drape vs neck clasp).
+   - Angle Perspective: When a performer is viewed from the back or side, evaluate visible elements (e.g., wavy platinum hair, flowing gossamer capelets, gown silhouette, live-action medium). Do not fail front-neckline checks on rear-facing shots where the front is physically occluded.
+4. NO PHANTOM CHARACTERS: No duplicate performers, no missing lead performers, and no un-anchored extra performers.
+Do NOT rationalize genuine styling morphs or medium changes.
+
 Respond in strict JSON format:
 {
   "charactersPresent": ["Freya" | "Astrid" | "Both"],
+  "mediumContinuityPass": true/false,
   "costumeContinuityPass": true/false,
   "stylingMorphDetected": false/true,
   "confidenceScore": 0.0 to 1.0,
   "notes": "concise observation"
 }`;
 
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: auditPrompt },
-            { inlineData: { mimeType: "image/png", data: anchorB64 } },
-            { inlineData: { mimeType: "image/png", data: frameB64 } }
-          ]
-        }]
-      })
-    });
-
-    const data = await res.json();
-    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-    const cleaned = rawText.replace(/```json\n?|\n?```/g, "").trim();
     let parsed = {};
-    try {
-      parsed = JSON.parse(cleaned);
-    } catch {
-      parsed = { raw: cleaned };
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { text: auditPrompt },
+                { text: "\n[GROUND TRUTH REFERENCE ANCHOR IMAGE]:" },
+                { inlineData: { mimeType: "image/png", data: anchorB64 } },
+                { text: `\n[VIDEO CUT FRAME TO AUDIT: ${cf}]:` },
+                { inlineData: { mimeType: "image/png", data: frameB64 } }
+              ]
+            }]
+          })
+        });
+
+        if (!res.ok) {
+          console.warn(`      ⚠️ Attempt ${attempt} returned HTTP ${res.status}, retrying in 2s...`);
+          await new Promise(r => setTimeout(r, 2000));
+          continue;
+        }
+
+        const data = await res.json();
+        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+        const cleaned = rawText.replace(/```json\n?|\n?```/g, "").trim();
+        parsed = JSON.parse(cleaned);
+        if (parsed.costumeContinuityPass !== undefined || parsed.mediumContinuityPass !== undefined) {
+          break;
+        }
+      } catch (err) {
+        console.warn(`      ⚠️ Parse error on attempt ${attempt}: ${err.message}`);
+        await new Promise(r => setTimeout(r, 2000));
+      }
     }
 
     console.log(`   📸 [${cf}]: Continuity Pass = ${parsed.costumeContinuityPass}, Morph = ${parsed.stylingMorphDetected} (${parsed.notes || "verified"})`);
     visualResults.push({ frame: cf, ...parsed });
   }
 
-  const allFramesPass = visualResults.every(v => v.costumeContinuityPass !== false && !v.stylingMorphDetected);
+  const allFramesPass = visualResults.every(v => v.mediumContinuityPass !== false && v.costumeContinuityPass !== false && !v.stylingMorphDetected);
   report.verifications.gatekeeper4_visual_continuity = {
     passed: allFramesPass,
     framesAudited: visualResults.length,

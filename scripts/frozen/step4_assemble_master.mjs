@@ -50,7 +50,12 @@ async function assemble() {
 
   // 3. Extract cut-boundary audit frames
   console.log("📸 Extracting cut boundary audit frames...");
-  const cutPoints = [0.5, 9.8, 10.5, 19.8, 20.5, 29.8, 30.5, 39.5];
+  for (const f of fs.readdirSync(AUDIT_DIR)) {
+    if (f.startsWith("cut_frame_") && f.endsWith(".png")) {
+      fs.unlinkSync(path.join(AUDIT_DIR, f));
+    }
+  }
+  const cutPoints = [0.5, 5.0, 10.5, 15.0, 20.5, 25.0, 30.5, 38.0];
   for (let i = 0; i < cutPoints.length; i++) {
     const cp = cutPoints[i];
     const frameOut = path.join(AUDIT_DIR, `cut_frame_${String(i + 1).padStart(2, "0")}_t${cp}s.png`);

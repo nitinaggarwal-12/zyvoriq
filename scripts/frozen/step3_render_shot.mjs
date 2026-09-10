@@ -22,35 +22,37 @@ const SHOTS = [
   {
     num: 1,
     id: "shot_01_glacial_awakening",
-    prompt: `Cinematic 16:9 establishing tracking shot inside a majestic arctic crystalline glacier cavern.
-On the left of the composite reference image: Freya, the Nordic Glacial Sorceress in her EXACT luminescent pure white ice-crystal gown with semi-sheer gossamer capelets and platinum hair, walks gracefully across the polished black ice floor toward the arched cave mouth overlooking a stormy fjord.
-Floating diamond ice crystals hover in the cool blue and violet ambient air, reflecting soft golden sunlight from outside.
-Photorealistic 8K render, 24fps high resolution, strictly zero on-screen text, zero subtitles.`
+    prompt: `Cinematic 16:9 establishing tracking shot inside an arctic glacier cavern.
+Freya, a real live-action human woman with porcelain skin, piercing blue eyes, and loose platinum-blonde wavy hair, wearing a white ice-crystal gown with a sheer illusion neckline featuring crystal sparkles over an embellished sweetheart bodice and sheer gossamer capelets, walks gracefully across the polished black ice floor toward the cave mouth overlooking a stormy northern fjord.
+Floating diamond ice particles hover in the blue and violet ambient air.
+Shot on 35mm motion picture film, live-action feature film, realistic natural skin texture and pores, photorealistic live-action human performer, strictly zero 3D CGI, zero animation, zero cartoon styling, zero 3D render, strictly zero on-screen text, zero subtitles.`
   },
   {
     num: 2,
     id: "shot_02_freya_vocal_attack",
-    prompt: `Cinematic 16:9 dynamic performance shot at the mouth of the glacier cavern.
-Center-stage: Freya, the EXACT performer from the left of the composite reference image in her luminescent pure white gown and sheer capelets, sings passionately with open mouth directly into the camera: "I hear you calling through the frozen night, a secret whispering in crystal light!"
-Her loose platinum hair and sheer crystal frost capelets billow dramatically in the arctic wind as glowing frost particles swirl from her hands.
-Native belted singing performance, 24fps high resolution, strictly zero on-screen text.`
+    prompt: `Cinematic 16:9 dynamic performance medium shot at the mouth of an arctic glacier cavern.
+Freya, a Nordic singer with porcelain skin and wavy platinum hair, wearing a luminescent white crystalline gown with semi-sheer gossamer capelets, sings passionately with open mouth into the camera: "I hear you calling through the frozen night, a secret whispering in crystal light!"
+Her platinum hair and gossamer capelets flutter in the arctic sea breeze as glowing diamond frost particles swirl gently from her hands.
+24fps high resolution, photorealistic, strictly zero on-screen text, zero subtitles.`
   },
   {
     num: 3,
     id: "shot_03_astrid_freya_harmonies",
-    prompt: `Cinematic 16:9 performance shot on the glacier cliff overlooking the arctic sea.
-Both EXACT performers from the composite reference image standing side-by-side:
-Freya on the left in her white ice-crystal gown, and Astrid on the right in her tailored charcoal-black traveling dress with dark teal embroidery and magenta satin-lined traveling cloak.
-They smile warmly at each other as they sing melodic vocal harmonies together against the turbulent fjord waves and snowy mountain peaks.
-24fps high resolution, strictly zero on-screen text.`
+    prompt: `Wide 16:9 cinematic two-shot. Two real human live-action actresses standing side-by-side on a coastal cliff overlooking turbulent ocean waves:
+On the left: A live-action singer with wavy platinum-blonde hair, wearing a fitted white crystal-embellished sweetheart corset gown with sheer gossamer capelets.
+On the right: A live-action singer with auburn hair styled in a braided crown updo, wearing a tailored charcoal wool coat dress with dark teal trim and a rich magenta satin-lined traveling cloak over her shoulder.
+Both real human women look at each other and sing vocal harmonies into the camera against the stormy sea and green coastal cliffs.
+Shot on 35mm motion picture film, live-action feature film, realistic natural skin texture and pores, photorealistic live-action human faces, realistic natural sunlight, strictly zero 3D CGI, zero animation, zero cartoon styling, zero text.`
   },
   {
     num: 4,
     id: "shot_04_aurora_climax_finale",
-    prompt: `Cinematic 16:9 grand finale shot on the open glacial promontory beneath a dazzling Aurora Borealis.
-Both EXACT performers from the reference image (Freya in her white gown and Astrid in her black-and-magenta traveling dress) execute a triumphant gesture facing the stormy northern sea.
-Freya steps forward, and a massive glowing geometric snowflake starburst explodes across the ice under her boots, sending thousands of sparkling diamond ice embers rising into the swirling green and violet northern lights as both sing the triumphant final high note.
-24fps high resolution, strictly zero on-screen text.`
+    prompt: `Wide 16:9 cinematic grand finale two-shot on an arctic coastal cliff overlooking crashing ocean waves beneath a shimmering emerald Aurora Borealis.
+Two real human live-action actresses perform a triumphant musical finale side-by-side:
+On the left: A real live-action singer with wavy platinum-blonde hair, wearing a white ice-crystal gown featuring a sheer illusion neckline with crystal sparkles over an embellished sweetheart bodice and sheer gossamer capelets flowing in the wind.
+On the right: A real live-action singer with auburn hair in a neat braided crown updo, wearing a tailored charcoal wool coat dress with dark teal trim and a rich magenta satin-lined traveling cloak draped over one shoulder.
+Both real human women raise their arms gracefully toward the northern sky and sing their triumphant final high note as waves crash on the dark rocks below.
+Shot on 35mm motion picture film, live-action feature film, realistic natural skin texture and pores, photorealistic live-action human faces, natural nighttime cinematic lighting with green aurora rim-light, strictly zero 3D CGI, zero animation, zero cartoon styling, strictly zero on-screen text.`
   }
 ];
 
@@ -113,8 +115,7 @@ async function renderSingleShot(shotNum) {
     throw new Error(`Composite anchor missing at ${COMPOSITE_ANCHOR}`);
   }
 
-  const compositeB64 = fs.readFileSync(COMPOSITE_ANCHOR).toString("base64");
-  const videoBuf = await callOmni(shotConfig.prompt, compositeB64);
+  const videoBuf = await callOmni(shotConfig.prompt, null);
   fs.writeFileSync(outPath, videoBuf);
   console.log(`🎉 Successfully generated and saved: ${outPath} (${Math.round(videoBuf.length / 1024)} KB)`);
 
