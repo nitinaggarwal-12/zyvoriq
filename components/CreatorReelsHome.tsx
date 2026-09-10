@@ -770,49 +770,49 @@ export function CreatorReelsHome() {
       </header>
 
       {/* 2. THE FOLD: HERO WITH PLAYING REEL + PROMPT BAR */}
-      <section className="relative pt-8 sm:pt-12 md:pt-16 pb-16 md:pb-24 border-b border-white/5 overflow-hidden">
+      <section className="relative pt-2 sm:pt-3 pb-3 md:pb-4 border-b border-white/5 overflow-hidden">
         {/* Subtle background glow tailored to activeTab */}
-        <div className={`absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] md:w-[1200px] h-[550px] blur-[160px] pointer-events-none transition-all duration-700 ${
+        <div className={`absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] md:w-[1200px] h-[450px] blur-[140px] pointer-events-none transition-all duration-700 ${
           activeTab === "youtube_shorts"
             ? "bg-gradient-to-tr from-amber-600/15 via-orange-500/10 to-transparent"
             : "bg-gradient-to-tr from-teal-600/15 via-cyan-500/10 to-transparent"
         }`} />
 
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 md:px-12 lg:px-16 relative z-10">
-          {/* MASTHEAD HEADER ZONE: Centered, commanding, zero empty space */}
-          <div className="flex flex-col items-center text-center max-w-4xl mx-auto mb-10 md:mb-14">
+          {/* MASTHEAD HEADER ZONE: Sleek, compact, condensed, zero scrolling required */}
+          <div className="flex flex-col items-center text-center max-w-4xl mx-auto mb-2 sm:mb-2.5">
             {/* DUAL FORMAT SELECTOR: TAB 1 (Instagram / TikTok) vs TAB 2 (YouTube Shorts & 180s Cinema) */}
-            <div className="inline-flex p-1.5 bg-[#0C1019]/90 border border-white/10 rounded-2xl mb-6 shadow-2xl backdrop-blur-xl w-full max-w-lg">
+            <div className="inline-flex p-1 bg-[#0C1019]/90 border border-white/10 rounded-xl mb-1.5 shadow-lg backdrop-blur-xl w-full max-w-md">
               <button
                 type="button"
                 onClick={() => handleTabChange("instagram_tiktok")}
-                className={`flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 min-h-[44px] ${
+                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-h-[36px] ${
                   activeTab === "instagram_tiktok"
-                    ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-[#07090E] shadow-lg shadow-teal-500/30"
+                    ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-[#07090E] shadow-md shadow-teal-500/30"
                     : "text-slate-400 hover:text-white hover:bg-white/5"
                 }`}
               >
-                <Smartphone className="w-4 h-4 shrink-0" />
+                <Smartphone className="w-3.5 h-3.5 shrink-0" />
                 <span>Instagram / TikTok</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-extrabold uppercase ${
+                <span className={`text-[9px] px-1.5 py-0.5 rounded font-extrabold uppercase ${
                   activeTab === "instagram_tiktok" ? "bg-[#07090E]/20 text-[#07090E]" : "bg-white/5 text-slate-400"
                 }`}>
-                  9:16 Vertical
+                  9:16
                 </span>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleTabChange("youtube_shorts")}
-                className={`flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 min-h-[44px] ${
+                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-h-[36px] ${
                   activeTab === "youtube_shorts"
-                    ? "bg-gradient-to-r from-amber-400 via-orange-500 to-amber-300 text-[#07090E] shadow-lg shadow-orange-500/30"
+                    ? "bg-gradient-to-r from-amber-400 via-orange-500 to-amber-300 text-[#07090E] shadow-md shadow-orange-500/30"
                     : "text-slate-400 hover:text-white hover:bg-white/5"
                 }`}
               >
-                <Clapperboard className="w-4 h-4 shrink-0" />
+                <Clapperboard className="w-3.5 h-3.5 shrink-0" />
                 <span>YouTube / Cinema</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-extrabold uppercase ${
+                <span className={`text-[9px] px-1.5 py-0.5 rounded font-extrabold uppercase ${
                   activeTab === "youtube_shorts" ? "bg-[#07090E]/20 text-[#07090E]" : "bg-white/5 text-slate-400"
                 }`}>
                   180s Master
@@ -822,13 +822,13 @@ export function CreatorReelsHome() {
 
             {/* Live Specification Pill Badge */}
             {activeTab === "instagram_tiktok" ? (
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/25 text-teal-300 text-xs sm:text-sm font-semibold mb-4">
-                <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/25 text-teal-300 text-[10px] sm:text-[11px] font-semibold mb-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
                 <span>Single Unbroken Take • Zero Character Drift • 9:16 Vertical</span>
               </div>
             ) : (
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs sm:text-sm font-semibold mb-4">
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[10px] sm:text-[11px] font-semibold mb-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                 <span>Classical 5-Act Drama • Anamorphic Cinematography • Symphonic Bed (-24.0 LUFS)</span>
               </div>
             )}
@@ -836,67 +836,67 @@ export function CreatorReelsHome() {
             {/* Main Headline */}
             {activeTab === "instagram_tiktok" ? (
               <>
-                <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight text-white leading-[1.08] mb-4">
+                <h1 className="text-lg sm:text-xl md:text-2xl lg:text-[28px] font-black tracking-tight text-white leading-tight mb-0.5">
                   Generate 9:16 reels that{" "}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-cyan-300 to-teal-200">
                     actually keep the same face.
                   </span>
                 </h1>
-                <p className="text-base sm:text-lg md:text-xl text-slate-300 leading-relaxed max-w-3xl">
-                  Other AI video tools stitch disjointed 3-second clips that morph your character’s face on every cut. Zyvoriq extends one continuous scene frame-to-frame with 100% biometric facial identity lock.
+                <p className="text-xs sm:text-sm text-slate-300 leading-normal max-w-2xl">
+                  Other AI tools morph your character on every cut. Zyvoriq extends continuous scenes with 100% biometric facial identity lock.
                 </p>
               </>
             ) : (
               <>
-                <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight text-white leading-[1.08] mb-4">
+                <h1 className="text-lg sm:text-xl md:text-2xl lg:text-[28px] font-black tracking-tight text-white leading-tight mb-0.5">
                   Direct 180s cinema that{" "}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-400 to-amber-200">
                     commands the big screen.
                   </span>
                 </h1>
-                <p className="text-base sm:text-lg md:text-xl text-slate-300 leading-relaxed max-w-3xl">
-                  Synthesize 3-minute 30-shot theatrical epics structured in classical 5-act narrative arcs, Cooke anamorphic 2.39:1 optics, dynamic camera choreography, and mastering-grade symphonic scores.
+                <p className="text-xs sm:text-sm text-slate-300 leading-normal max-w-2xl">
+                  Synthesize 3-minute 30-shot theatrical epics in 5-act narrative arcs, Cooke anamorphic 2.39:1 optics, and -24.0 LUFS symphonic scores.
                 </p>
               </>
             )}
           </div>
 
           {/* TWO-COLUMN STUDIO CONSOLE: LEFT COMMAND DECK (7 cols) & RIGHT PRODUCTION MONITOR (5 cols) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-start">
             {/* LEFT COLUMN: COMMAND & PROMPT BAR (7 cols) */}
             <div className="lg:col-span-7 flex flex-col">
               {/* THE PROMPT BAR CONTAINER */}
               <div
                 id="prompt-bar"
-                className={`w-full bg-[#0E121B] border rounded-2xl md:rounded-3xl p-4 sm:p-6 shadow-2xl shadow-black/60 relative transition-all ${
+                className={`w-full bg-[#0E121B] border rounded-2xl md:rounded-3xl p-3 sm:p-4 shadow-2xl shadow-black/60 relative transition-all ${
                   activeTab === "youtube_shorts"
                     ? "border-amber-500/20 focus-within:border-amber-500/50"
                     : "border-white/10 focus-within:border-teal-500/50"
                 }`}
               >
-                {/* Format & Duration toggles */}
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-white/5">
+                {/* Format & Duration in ONE sleek row */}
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-2 border-b border-white/5">
                   {/* Format selector */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Format:</span>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mr-0.5">Format:</span>
                     {activeTab === "instagram_tiktok" ? (
                       <>
                         <button
                           type="button"
                           onClick={() => setSelectedAspectRatio("9:16")}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all min-h-[36px] flex items-center gap-1.5 ${
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all min-h-[30px] flex items-center gap-1 ${
                             selectedAspectRatio === "9:16"
                               ? "bg-teal-500 text-[#07090E] shadow-sm shadow-teal-500/30"
                               : "bg-white/5 text-slate-300 hover:bg-white/10"
                           }`}
                         >
                           <span>📱 9:16 Vertical</span>
-                          <span className="text-[10px] opacity-75 font-normal">(Reels & TikTok)</span>
+                          <span className="text-[10px] opacity-75 font-normal">(Reels)</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => setSelectedAspectRatio("16:9")}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all min-h-[36px] ${
+                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all min-h-[30px] ${
                             selectedAspectRatio === "16:9"
                               ? "bg-teal-500 text-[#07090E]"
                               : "bg-white/5 text-slate-400 hover:bg-white/10"
@@ -910,54 +910,53 @@ export function CreatorReelsHome() {
                         <button
                           type="button"
                           onClick={() => setSelectedAspectRatio("2.39:1")}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all min-h-[36px] flex items-center gap-1.5 ${
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all min-h-[30px] flex items-center gap-1 ${
                             selectedAspectRatio === "2.39:1"
                               ? "bg-amber-400 text-[#07090E] shadow-sm shadow-amber-400/30"
                               : "bg-white/5 text-slate-300 hover:bg-white/10"
                           }`}
                         >
                           <span>🎬 2.39:1 Anamorphic</span>
-                          <span className="text-[10px] opacity-75 font-normal">(Cinema Master)</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => setSelectedAspectRatio("16:9")}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all min-h-[36px] ${
+                          className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all min-h-[30px] ${
                             selectedAspectRatio === "16:9"
                               ? "bg-amber-400 text-[#07090E]"
                               : "bg-white/5 text-slate-400 hover:bg-white/10"
                           }`}
                         >
-                          16:9 Widescreen
+                          16:9
                         </button>
                         <button
                           type="button"
                           onClick={() => setSelectedAspectRatio("9:16")}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all min-h-[36px] ${
+                          className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all min-h-[30px] ${
                             selectedAspectRatio === "9:16"
                               ? "bg-amber-400 text-[#07090E]"
                               : "bg-white/5 text-slate-400 hover:bg-white/10"
                           }`}
                         >
-                          9:16 Shorts
+                          9:16
                         </button>
                       </>
                     )}
                   </div>
 
                   {/* Duration selector */}
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 mr-1">Duration:</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mr-0.5">Duration:</span>
                     {(activeTab === "instagram_tiktok"
                       ? [
                           { sec: 15, shots: 3 },
-                          { sec: 30, shots: 5, label: "Standard" },
-                          { sec: 34, shots: 5, label: "34s Music Video" },
+                          { sec: 30, shots: 5, label: "Std" },
+                          { sec: 34, shots: 5, label: "34s Music" },
                           { sec: 45, shots: 7 }
                         ]
                       : [
                           { sec: 60, shots: 9, label: "Short" },
-                          { sec: 180, shots: 25, label: "5-Act Epic Master" }
+                          { sec: 180, shots: 25, label: "5-Act Master" }
                         ]
                     ).map(d => (
                       <button
@@ -965,11 +964,11 @@ export function CreatorReelsHome() {
                         type="button"
                         onClick={() => {
                           setSelectedDuration(d.sec);
-                          if (d.label?.includes("Music Video") || d.sec === 34) {
+                          if (d.label?.includes("Music") || d.sec === 34) {
                             setSelectedGenre("MUSIC_VIDEO");
                           }
                         }}
-                        className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition-all min-h-[32px] flex items-center gap-1 ${
+                        className={`px-2 py-0.5 rounded-md text-xs font-semibold transition-all min-h-[28px] flex items-center gap-1 ${
                           selectedDuration === d.sec
                             ? activeTab === "youtube_shorts"
                               ? "bg-amber-400/20 border border-amber-400/40 text-amber-300 font-bold"
@@ -978,10 +977,10 @@ export function CreatorReelsHome() {
                         }`}
                       >
                         <span>{d.sec}s</span>
-                        {d.label && <span className="hidden md:inline text-[10px] opacity-75">({d.label})</span>}
+                        {d.label && <span className="hidden xl:inline text-[9px] opacity-75">({d.label})</span>}
                       </button>
                     ))}
-                    <div className="flex items-center gap-1 ml-1 bg-white/5 px-2 py-0.5 rounded-md border border-white/10 min-h-[32px]">
+                    <div className="flex items-center gap-0.5 ml-0.5 bg-white/5 px-1.5 py-0.5 rounded-md border border-white/10 min-h-[28px]">
                       <input
                         id="custom-duration-input"
                         type="number"
@@ -989,118 +988,116 @@ export function CreatorReelsHome() {
                         max="240"
                         value={selectedDuration}
                         onChange={(e) => setSelectedDuration(Math.max(10, Math.min(240, Number(e.target.value) || 30)))}
-                        className="w-10 bg-transparent text-xs text-white text-center font-bold focus:outline-none"
+                        className="w-8 bg-transparent text-xs text-white text-center font-bold focus:outline-none"
                       />
-                      <span className="text-[10px] text-slate-400">s</span>
+                      <span className="text-[9px] text-slate-400">s</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Omni Directorial Genre Selector */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-4 border-b border-white/5 scrollbar-none">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 shrink-0">Genre:</span>
-                  {OMNI_GENRES.map(g => (
-                    <button
-                      key={g.id}
-                      type="button"
-                      onClick={() => setSelectedGenre(g.id)}
-                      title={g.desc}
-                      className={`px-3 py-2 rounded-lg text-xs font-semibold shrink-0 transition-all min-h-[44px] flex items-center gap-1.5 ${
-                        selectedGenre === g.id
-                          ? activeTab === "youtube_shorts"
-                            ? "bg-amber-400 text-[#07090E] font-bold shadow-sm shadow-amber-400/30"
-                            : "bg-teal-500 text-[#07090E] font-bold shadow-sm shadow-teal-500/30"
-                          : "bg-white/5 text-slate-300 hover:bg-white/10"
-                      }`}
-                    >
-                      <span>{g.label}</span>
-                    </button>
-                  ))}
+                {/* Genre & Language in ONE sleek row */}
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-2 border-b border-white/5">
+                  <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 shrink-0 mr-1">Genre:</span>
+                    {OMNI_GENRES.map(g => (
+                      <button
+                        key={g.id}
+                        type="button"
+                        onClick={() => setSelectedGenre(g.id)}
+                        title={g.desc}
+                        className={`px-2 py-1 rounded-md text-xs font-semibold shrink-0 transition-all min-h-[28px] flex items-center gap-1 ${
+                          selectedGenre === g.id
+                            ? activeTab === "youtube_shorts"
+                              ? "bg-amber-400 text-[#07090E] font-bold shadow-sm"
+                              : "bg-teal-500 text-[#07090E] font-bold shadow-sm"
+                            : "bg-white/5 text-slate-300 hover:bg-white/10"
+                        }`}
+                      >
+                        <span>{g.label}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 shrink-0 flex items-center gap-1 mr-1">
+                      <Languages className="w-3 h-3 text-teal-400" /> Lang:
+                    </span>
+                    {LANGUAGE_OPTIONS.map(l => (
+                      <button
+                        key={l.id}
+                        type="button"
+                        onClick={() => setSelectedLanguage(l.id)}
+                        title={l.desc}
+                        className={`px-2 py-0.5 rounded-md text-xs font-semibold shrink-0 transition-all min-h-[28px] flex items-center gap-1 ${
+                          selectedLanguage === l.id
+                            ? activeTab === "youtube_shorts"
+                              ? "bg-amber-400/20 border border-amber-400/50 text-amber-300 font-bold"
+                              : "bg-teal-500/20 border border-teal-400/50 text-teal-300 font-bold"
+                            : "bg-white/5 text-slate-400 hover:bg-white/10"
+                        }`}
+                      >
+                        <span>{l.label}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                {/* Language & Dialect Selector */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-4 border-b border-white/5 scrollbar-none">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 shrink-0 flex items-center gap-1">
-                    <Languages className="w-3.5 h-3.5 text-teal-400" /> Language:
-                  </span>
-                  {LANGUAGE_OPTIONS.map(l => (
-                    <button
-                      key={l.id}
-                      type="button"
-                      onClick={() => setSelectedLanguage(l.id)}
-                      title={l.desc}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition-all min-h-[38px] flex items-center gap-1.5 ${
-                        selectedLanguage === l.id
-                          ? activeTab === "youtube_shorts"
-                            ? "bg-amber-400/20 border border-amber-400/50 text-amber-300 font-bold shadow-sm"
-                            : "bg-teal-500/20 border border-teal-400/50 text-teal-300 font-bold shadow-sm"
-                          : "bg-white/5 text-slate-400 hover:bg-white/10"
-                      }`}
-                    >
-                      <span>{l.label}</span>
-                    </button>
-                  ))}
-                </div>
+                {/* Compact Cast & Reference Controls bar */}
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowRefInput(!showRefInput)}
+                    className="text-[11px] text-slate-400 hover:text-teal-300 flex items-center gap-1 transition-colors py-0.5 px-1.5 rounded-lg hover:bg-white/5"
+                  >
+                    <Link2 className="w-3 h-3 text-teal-400 shrink-0" />
+                    <span>🔗 YouTube / Reference URL</span>
+                  </button>
 
-                {/* Cast Size Selector (Spine Pick 3 - Strictly 1 or 2 with TTS ceiling enforcement) */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-4 border-b border-white/5 scrollbar-none">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 shrink-0 flex items-center gap-1">
-                    <Users className="w-3.5 h-3.5 text-cyan-400" /> Cast Size:
-                  </span>
                   <button
                     type="button"
-                    onClick={() => setSelectedCastSize(1)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition-all min-h-[38px] flex items-center gap-1.5 ${
-                      selectedCastSize === 1
-                        ? "bg-teal-500/20 border border-teal-400/50 text-teal-300 font-bold shadow-sm"
-                        : "bg-white/5 text-slate-400 hover:bg-white/10"
-                    }`}
+                    onClick={() => setShowCastAndPlaceDrawer(!showCastAndPlaceDrawer)}
+                    className="text-[11px] text-slate-400 hover:text-teal-300 flex items-center gap-1 transition-colors py-0.5 px-1.5 rounded-lg hover:bg-white/5"
                   >
-                    <span>Solo Lead (1 Actor)</span>
+                    <Sliders className="w-3 h-3 text-teal-400 shrink-0" />
+                    <span>⚙️ Cast & Physical Set Lock</span>
+                    {(leadCharacter || selectedLocation) && (
+                      <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-teal-500/20 text-teal-300 font-bold">
+                        Active
+                      </span>
+                    )}
+                    {showCastAndPlaceDrawer ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedCastSize(2)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition-all min-h-[38px] flex items-center gap-1.5 ${
-                      selectedCastSize === 2
-                        ? "bg-cyan-500/20 border border-cyan-400/50 text-cyan-300 font-bold shadow-sm"
-                        : "bg-white/5 text-slate-400 hover:bg-white/10"
-                    }`}
-                  >
-                    <span>Dialogue Duo (2 Actors)</span>
-                  </button>
-                  <span className="text-[10px] text-slate-500 ml-2 hidden lg:inline">
-                    (Max 2 speakers in TTS & single-subject Veo anchor)
-                  </span>
                 </div>
 
                 {/* Optional Cast & Place Selection Drawer */}
-                <div className="mb-4 p-3 rounded-2xl bg-[#07090E]/60 border border-white/5">
-                  <div
-                    onClick={() => setShowCastAndPlaceDrawer(!showCastAndPlaceDrawer)}
-                    className="flex items-center justify-between cursor-pointer group select-none"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Sliders className="w-4 h-4 text-teal-400 group-hover:rotate-45 transition-transform" />
-                      <span className="text-xs font-bold text-slate-200 group-hover:text-white transition-colors">Casting & Physical Set Lock</span>
-                      {(leadCharacter || selectedLocation) && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 font-bold">
-                          Configured
-                        </span>
-                      )}
+                {showCastAndPlaceDrawer && (
+                  <div className="mb-3 p-3 rounded-xl bg-[#07090E]/80 border border-white/10 space-y-3 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                      <span className="text-xs font-bold text-slate-200">Casting & Physical Set Lock</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-slate-400 mr-1">Cast Size:</span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCastSize(1)}
+                          className={`px-2 py-0.5 rounded text-xs ${
+                            selectedCastSize === 1 ? "bg-teal-500/20 text-teal-300 font-bold border border-teal-500/40" : "bg-white/5 text-slate-400"
+                          }`}
+                        >
+                          Solo Lead
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCastSize(2)}
+                          className={`px-2 py-0.5 rounded text-xs ${
+                            selectedCastSize === 2 ? "bg-teal-500/20 text-teal-300 font-bold border border-teal-500/40" : "bg-white/5 text-slate-400"
+                          }`}
+                        >
+                          Dialogue Duo
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowCastAndPlaceDrawer(!showCastAndPlaceDrawer)}
-                      className="text-xs text-teal-400 hover:text-teal-300 flex items-center gap-1 font-semibold"
-                    >
-                      <span>{showCastAndPlaceDrawer ? "Collapse" : "Configure Cast & Set"}</span>
-                      {showCastAndPlaceDrawer ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                    </button>
-                  </div>
 
-                  {showCastAndPlaceDrawer && (
-                    <div className="mt-3 pt-3 border-t border-white/5 space-y-3">
+                    <div className="mt-2 pt-2 border-t border-white/5 space-y-2">
                       {/* 3-Tier Persona & Set Choice Architecture */}
                       <div className="flex items-center gap-1.5 p-1 bg-black/40 rounded-xl border border-white/5">
                         <button
@@ -1563,66 +1560,55 @@ export function CreatorReelsHome() {
                         </>
                       )}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
 
-                {/* Reference Video / YouTube Deconstruction Toggle & Input */}
-                <div className="mb-3">
-                  {!showRefInput && !referenceUrl ? (
-                    <button
-                      type="button"
-                      onClick={() => setShowRefInput(true)}
-                      className="text-xs text-slate-400 hover:text-teal-300 flex items-center gap-1.5 transition-colors py-1 px-2 rounded-lg hover:bg-white/5 min-h-[36px]"
-                    >
-                      <Link2 className="w-3.5 h-3.5 text-teal-400 shrink-0" />
-                      <span>🔗 Have a YouTube / video reference? (Deconstruct cinematography, dance &amp; lighting)</span>
-                    </button>
-                  ) : (
-                    <div className="p-3 bg-[#080B11] border border-teal-500/30 rounded-xl space-y-2">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-semibold text-teal-300 flex items-center gap-1.5">
-                          <Link2 className="w-3.5 h-3.5 text-teal-400 shrink-0" />
-                          <span>Reference Video / Public YouTube URL</span>
-                          <span className="text-[10px] text-slate-400 font-normal hidden sm:inline">(Deconstructs actors, choreography, lighting &amp; audio)</span>
-                        </label>
+                {/* Reference Video / YouTube Input when expanded */}
+                {(showRefInput || referenceUrl) && (
+                  <div className="mb-2 p-2.5 bg-[#080B11] border border-teal-500/30 rounded-xl space-y-2 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-teal-300 flex items-center gap-1.5">
+                        <Link2 className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                        <span>Reference Video / Public YouTube URL</span>
+                        <span className="text-[10px] text-slate-400 font-normal hidden sm:inline">(Deconstructs cinematography, lighting &amp; audio)</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReferenceUrl("");
+                          setShowRefInput(false);
+                        }}
+                        className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-white/10"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <input
+                        type="url"
+                        value={referenceUrl}
+                        onChange={(e) => setReferenceUrl(e.target.value)}
+                        placeholder="Paste YouTube URL (e.g. https://www.youtube.com/watch?v=... or https://youtu.be/...)"
+                        className="flex-1 bg-[#05070A] border border-white/10 rounded-lg px-3 py-1.5 text-base md:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-400 min-h-[38px]"
+                      />
+                      {referenceUrl && (
                         <button
                           type="button"
-                          onClick={() => {
-                            setReferenceUrl("");
-                            setShowRefInput(false);
-                          }}
-                          className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-white/10"
+                          onClick={() => handleElaborate()}
+                          disabled={isElaborating}
+                          className="px-3.5 py-1.5 rounded-lg bg-teal-500 hover:bg-teal-400 text-[#07090E] font-bold text-xs shrink-0 flex items-center justify-center gap-1.5 min-h-[38px] transition-colors"
                         >
-                          <X className="w-3.5 h-3.5" />
+                          {isElaborating ? (
+                            <div className="w-3.5 h-3.5 border-2 border-[#07090E] border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Wand2 className="w-3.5 h-3.5" />
+                          )}
+                          <span>Deconstruct</span>
                         </button>
-                      </div>
-                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                        <input
-                          type="url"
-                          value={referenceUrl}
-                          onChange={(e) => setReferenceUrl(e.target.value)}
-                          placeholder="Paste YouTube URL (e.g. https://www.youtube.com/watch?v=... or https://youtu.be/...)"
-                          className="flex-1 bg-[#05070A] border border-white/10 rounded-lg px-3 py-2 text-base md:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-400 min-h-[44px]"
-                        />
-                        {referenceUrl && (
-                          <button
-                            type="button"
-                            onClick={() => handleElaborate()}
-                            disabled={isElaborating}
-                            className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-400 text-[#07090E] font-bold text-xs shrink-0 flex items-center justify-center gap-1.5 min-h-[44px] transition-colors"
-                          >
-                            {isElaborating ? (
-                              <div className="w-3.5 h-3.5 border-2 border-[#07090E] border-t-transparent rounded-full animate-spin" />
-                            ) : (
-                              <Wand2 className="w-3.5 h-3.5" />
-                            )}
-                            <span>Deconstruct URL</span>
-                          </button>
-                        )}
-                      </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 {/* Part 2 Sequel Mode Active Banner */}
                 {continuationParent && (
@@ -1980,14 +1966,14 @@ export function CreatorReelsHome() {
                 )}
 
                 {/* Actions Row: Elaborate Button + Submit Button + Stated Wait */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
                     {/* Primary Generate Button */}
                     <button
                       type="button"
                       onClick={() => handleGenerate()}
                       disabled={isGenerating || isElaborating || !promptText.trim()}
-                      className={`px-6 sm:px-8 py-3.5 rounded-xl disabled:opacity-50 disabled:pointer-events-none text-[#07090E] font-black text-sm sm:text-base shadow-xl transition-all flex items-center justify-center gap-2 min-h-[48px] ${
+                      className={`px-4 sm:px-5 py-2 rounded-xl disabled:opacity-50 disabled:pointer-events-none text-[#07090E] font-black text-xs sm:text-sm shadow-xl transition-all flex items-center justify-center gap-1.5 min-h-[38px] ${
                         activeTab === "youtube_shorts"
                           ? "bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 hover:from-amber-300 hover:to-orange-300 shadow-amber-500/25 hover:shadow-amber-500/40"
                           : "bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 shadow-teal-500/25 hover:shadow-teal-500/40"
@@ -1995,7 +1981,7 @@ export function CreatorReelsHome() {
                     >
                       {isGenerating ? (
                         <>
-                          <div className="w-4 h-4 border-2 border-[#07090E] border-t-transparent rounded-full animate-spin" />
+                          <div className="w-3.5 h-3.5 border-2 border-[#07090E] border-t-transparent rounded-full animate-spin" />
                           <span>
                             {activeTab === "youtube_shorts" ? "Directing 180s Screenplay..." : "Planning Unbroken Scene..."}
                           </span>
@@ -2003,9 +1989,9 @@ export function CreatorReelsHome() {
                       ) : (
                         <>
                           {activeTab === "youtube_shorts" ? (
-                            <Clapperboard className="w-5 h-5 text-[#07090E]" />
+                            <Clapperboard className="w-4 h-4 text-[#07090E]" />
                           ) : (
-                            <Sparkles className="w-5 h-5 text-[#07090E]" />
+                            <Sparkles className="w-4 h-4 text-[#07090E]" />
                           )}
                           <span>
                             {treatment
@@ -2014,7 +2000,7 @@ export function CreatorReelsHome() {
                               ? "Direct 180s Cinema Master"
                               : "Generate 9:16 Reel"}
                           </span>
-                          <ArrowRight className="w-4 h-4 text-[#07090E]" />
+                          <ArrowRight className="w-3.5 h-3.5 text-[#07090E]" />
                         </>
                       )}
                     </button>
@@ -2024,7 +2010,7 @@ export function CreatorReelsHome() {
                       type="button"
                       onClick={() => handleElaborate()}
                       disabled={isElaborating || isGenerating || (!promptText.trim() && !referenceUrl.trim())}
-                      className={`px-5 py-3.5 rounded-xl disabled:opacity-50 disabled:pointer-events-none font-bold text-xs sm:text-sm border transition-all flex items-center justify-center gap-2 min-h-[48px] ${
+                      className={`px-3.5 py-2 rounded-xl disabled:opacity-50 disabled:pointer-events-none font-bold text-xs border transition-all flex items-center justify-center gap-1.5 min-h-[38px] ${
                         activeTab === "youtube_shorts"
                           ? "bg-amber-500/10 border-amber-400/40 text-amber-300 hover:bg-amber-500/20 hover:border-amber-400/70 shadow-lg shadow-amber-500/10"
                           : "bg-teal-500/10 border-teal-400/40 text-teal-300 hover:bg-teal-500/20 hover:border-teal-400/70 shadow-lg shadow-teal-500/10"
@@ -2033,14 +2019,14 @@ export function CreatorReelsHome() {
                     >
                       {isElaborating ? (
                         <>
-                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                           <span>Omni Deconstructing...</span>
                         </>
                       ) : (
                         <>
-                          <Wand2 className="w-4 h-4" />
+                          <Wand2 className="w-3.5 h-3.5" />
                           <span>✨ Elaborate &amp; Deconstruct</span>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 uppercase tracking-wider font-extrabold hidden lg:inline">
+                          <span className="text-[9px] px-1 py-0.5 rounded bg-white/10 uppercase tracking-wider font-extrabold hidden xl:inline">
                             Omni Pre-Flight
                           </span>
                         </>
@@ -2049,18 +2035,18 @@ export function CreatorReelsHome() {
                   </div>
 
                   {/* STATED WAIT: HONEST TIME IN PLAIN ENGLISH */}
-                  <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-300 bg-white/5 px-4 py-2.5 rounded-xl border border-white/5">
-                    <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+                  <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-slate-300 bg-white/5 px-2.5 py-1.5 rounded-xl border border-white/5">
+                    <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                     <div>
                       <span className="font-bold text-white">
                         {activeTab === "youtube_shorts"
-                          ? "~12–15 minutes for a 30-shot theatrical master."
-                          : "~7 minutes for a 6-shot reel."}
+                          ? "~12–15m for 30-shot master."
+                          : "~7m for 6-shot reel."}
                       </span>
-                      <span className="text-slate-400 block text-[11px]">
+                      <span className="text-slate-400 block text-[10px]">
                         {activeTab === "youtube_shorts"
-                          ? "5 classical acts, Beethoven score & 4K mastering in background."
-                          : "We render in background; you get notified when ready."}
+                          ? "5 acts & Beethoven score in background."
+                          : "Renders in background; notify when ready."}
                       </span>
                     </div>
                   </div>
@@ -2068,9 +2054,9 @@ export function CreatorReelsHome() {
 
                 {/* Elaboration loading & error indicators */}
                 {isElaborating && (
-                  <div className="mt-3 p-3.5 rounded-xl bg-teal-950/40 border border-teal-500/30 flex items-center gap-3 animate-pulse">
-                    <div className="w-4 h-4 border-2 border-teal-400 border-t-transparent rounded-full animate-spin shrink-0" />
-                    <div className="text-xs text-teal-200">
+                  <div className="mt-2 p-2.5 rounded-xl bg-teal-950/40 border border-teal-500/30 flex items-center gap-2.5 animate-pulse">
+                    <div className="w-3.5 h-3.5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin shrink-0" />
+                    <div className="text-[11px] text-teal-200">
                       <strong className="block text-white font-semibold">Omni Director at Work...</strong>
                       <span>{elaborateStep || "Deconstructing actors, locations, lighting, and choreography..."}</span>
                     </div>
@@ -2078,8 +2064,8 @@ export function CreatorReelsHome() {
                 )}
 
                 {elaborateError && (
-                  <div className="mt-3 p-3.5 rounded-xl bg-rose-950/40 border border-rose-500/30 flex items-center gap-3 text-xs text-rose-200">
-                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                  <div className="mt-2 p-2.5 rounded-xl bg-rose-950/40 border border-rose-500/30 flex items-center gap-2 text-xs text-rose-200">
+                    <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
                     <div>
                       <strong className="block text-white font-semibold">Director Elaboration Notice:</strong>
                       <span>{elaborateError}</span>
@@ -2088,10 +2074,10 @@ export function CreatorReelsHome() {
                 )}
 
                 {/* PLATFORM SAFETY GUARANTEE (C2PA + SYNTHID REFRAMED) */}
-                <div className="mt-4 pt-3 border-t border-white/5 flex items-center gap-2 text-xs text-slate-400">
-                  <ShieldCheck className="w-4 h-4 text-teal-400 shrink-0" />
+                <div className="mt-2 pt-2 border-t border-white/5 flex items-center gap-1.5 text-[10px] sm:text-[11px] text-slate-400">
+                  <ShieldCheck className="w-3.5 h-3.5 text-teal-400 shrink-0" />
                   <span>
-                    <strong className="text-slate-200">Labeled as AI, so platforms won&apos;t penalize you.</strong> Every reel embeds verified C2PA Content Credentials &amp; SynthID watermarks, satisfying YouTube, TikTok and Instagram disclosure rules without reach throttling.
+                    <strong className="text-slate-200">Labeled as AI, so platforms won&apos;t penalize you.</strong> Verified C2PA Content Credentials &amp; SynthID watermarks satisfy disclosure rules without reach throttling.
                   </span>
                 </div>
               </div>
@@ -2528,14 +2514,15 @@ export function CreatorReelsHome() {
             {/* RIGHT COLUMN: THE LIVE PRODUCTION MONITOR (5 cols) */}
             <div className="lg:col-span-5 flex flex-col items-center">
               {activeTab === "instagram_tiktok" ? (
-                /* Phone-like 9:16 viewport frame + Sample filmstrip + Continuity lock */
-                <div className="w-full max-w-[380px] flex flex-col items-center gap-4">
-                  <div className="relative w-full aspect-[9/16] bg-black rounded-[36px] p-2.5 shadow-2xl shadow-teal-500/20 border-2 border-white/15 ring-1 ring-white/10 flex flex-col justify-between overflow-hidden group">
+                /* Phone-like 9:16 viewport frame + Sample filmstrip + Continuity lock in sleek side-by-side */
+                <div className="w-full flex flex-col sm:flex-row items-center sm:items-start justify-center gap-3">
+                  {/* Smartphone Frame (Condensed height ~340px) */}
+                  <div className="relative w-[185px] sm:w-[195px] shrink-0 aspect-[9/16] bg-black rounded-[26px] p-2 shadow-2xl shadow-teal-500/20 border-2 border-white/15 ring-1 ring-white/10 flex flex-col justify-between overflow-hidden group">
                     {/* Simulated mobile phone ear notch */}
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 w-28 h-4 bg-[#07090E] rounded-full z-30 pointer-events-none border border-white/5" />
+                    <div className="absolute top-3 left-1/2 -translate-x-1/2 w-20 h-3 bg-[#07090E] rounded-full z-30 pointer-events-none border border-white/5" />
 
                     {/* THE 9:16 VIDEO ELEMENT */}
-                    <div className="relative w-full h-full rounded-[28px] overflow-hidden bg-slate-950">
+                    <div className="relative w-full h-full rounded-[20px] overflow-hidden bg-slate-950">
                       <video
                         ref={videoRef}
                         key={activeReel.videoUrl}
@@ -2551,53 +2538,53 @@ export function CreatorReelsHome() {
                       />
 
                       {/* Top Badges Overlay */}
-                      <div className="absolute top-8 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
-                        <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[11px] font-bold text-white flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                      <div className="absolute top-6 left-2.5 right-2.5 z-20 flex items-center justify-between pointer-events-none">
+                        <span className="px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md border border-white/10 text-[9px] font-bold text-white flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
                           <span>{activeReel.shots} Shots • {activeReel.durationSec}s</span>
                         </span>
 
-                        <span className="px-2.5 py-1 rounded-full bg-teal-500/90 backdrop-blur-md text-[#07090E] text-[10px] font-black uppercase tracking-wider">
+                        <span className="px-1.5 py-0.5 rounded-full bg-teal-500/90 backdrop-blur-md text-[#07090E] text-[8px] font-black uppercase tracking-wider">
                           Zero Drift
                         </span>
                       </div>
 
                       {/* Controls overlay: Mute & Play toggles */}
-                      <div className="absolute top-8 right-4 z-30 flex flex-col gap-2">
+                      <div className="absolute top-6 right-2.5 z-30 flex flex-col gap-1.5">
                         <button
                           type="button"
                           onClick={toggleMute}
-                          className="w-9 h-9 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[36px]"
+                          className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
                           title={isMuted ? "Unmute Audio" : "Mute Audio"}
                         >
-                          {isMuted ? <VolumeX className="w-4 h-4 text-amber-300" /> : <Volume2 className="w-4 h-4 text-teal-400" />}
+                          {isMuted ? <VolumeX className="w-3.5 h-3.5 text-amber-300" /> : <Volume2 className="w-3.5 h-3.5 text-teal-400" />}
                         </button>
 
                         <button
                           type="button"
                           onClick={togglePlay}
-                          className="w-9 h-9 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[36px]"
+                          className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
                           title={isPlaying ? "Pause" : "Play"}
                         >
-                          {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 translate-x-0.5 text-teal-400" />}
+                          {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 translate-x-0.5 text-teal-400" />}
                         </button>
                       </div>
 
                       {/* Bottom Info Bar inside Reel */}
-                      <div className="absolute bottom-0 inset-x-0 p-4 pt-12 bg-gradient-to-t from-black/95 via-black/60 to-transparent z-20 flex flex-col">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-teal-400">
+                      <div className="absolute bottom-0 inset-x-0 p-2.5 pt-8 bg-gradient-to-t from-black/95 via-black/60 to-transparent z-20 flex flex-col">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-teal-400">
                           {activeReel.category}
                         </span>
-                        <h3 className="text-base font-bold text-white leading-tight drop-shadow-md">
+                        <h3 className="text-xs font-bold text-white leading-tight drop-shadow-md truncate">
                           {activeReel.title}
                         </h3>
-                        <p className="text-[11px] text-slate-300 mt-1 line-clamp-2 leading-snug">
+                        <p className="text-[9px] text-slate-300 mt-0.5 line-clamp-1 leading-snug">
                           {activeReel.prompt}
                         </p>
 
-                        <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-slate-400">
-                          <span className="flex items-center gap-1 text-teal-300 font-medium">
-                            <CheckCircle2 className="w-3 h-3 text-teal-400" />
+                        <div className="mt-1.5 pt-1.5 border-t border-white/10 flex items-center justify-between text-[8px] text-slate-400">
+                          <span className="flex items-center gap-0.5 text-teal-300 font-medium">
+                            <CheckCircle2 className="w-2.5 h-2.5 text-teal-400" />
                             Single continuous take
                           </span>
                           <span>9:16 Vertical</span>
@@ -2606,52 +2593,60 @@ export function CreatorReelsHome() {
                     </div>
                   </div>
 
-                  {/* Switch active reel filmstrip cards */}
-                  <div className="w-full space-y-2">
-                    <div className="flex items-center justify-between px-1 text-xs text-slate-400">
-                      <span className="font-bold text-teal-300 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                        <Film className="w-3.5 h-3.5" /> Sample Productions
-                      </span>
-                      <span className="text-[10px] text-slate-500">Tap to load</span>
+                  {/* Companion Side Column: Sample Productions Grid + Continuity Lock Card */}
+                  <div className="flex-1 flex flex-col gap-2 w-full max-w-[280px] sm:max-w-none">
+                    {/* Switch active reel filmstrip cards */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between px-0.5 text-xs text-slate-400">
+                        <span className="font-bold text-teal-300 uppercase tracking-wider text-[10px] flex items-center gap-1">
+                          <Film className="w-3 h-3" /> Sample Productions
+                        </span>
+                        <span className="text-[9px] text-slate-500">Tap to load</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {FINISHED_REELS.map((reel, idx) => (
+                          <button
+                            key={reel.id}
+                            type="button"
+                            onClick={() => setActiveReelIndex(idx)}
+                            className={`relative aspect-[16/9] rounded-lg overflow-hidden border-2 transition-all group ${
+                              activeReelIndex === idx
+                                ? "border-teal-400 shadow-md shadow-teal-500/30 scale-[1.02] z-10"
+                                : "border-white/10 opacity-70 hover:opacity-100 hover:border-white/30"
+                            }`}
+                            title={reel.title}
+                          >
+                            <img src={reel.posterUrl} alt={reel.title} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                            <div className="absolute bottom-1 inset-x-1 flex items-center justify-between">
+                              <span className="text-[9px] font-bold text-white truncate text-left">
+                                {reel.title}
+                              </span>
+                              <span className="text-[8px] font-mono text-teal-300 shrink-0 bg-black/50 px-1 rounded">
+                                {reel.durationSec}s
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <div className="grid grid-cols-4 gap-2">
-                      {FINISHED_REELS.map((reel, idx) => (
-                        <button
-                          key={reel.id}
-                          type="button"
-                          onClick={() => setActiveReelIndex(idx)}
-                          className={`relative aspect-[9/16] rounded-xl overflow-hidden border-2 transition-all group ${
-                            activeReelIndex === idx
-                              ? "border-teal-400 shadow-lg shadow-teal-500/30 scale-[1.03] z-10"
-                              : "border-white/10 opacity-60 hover:opacity-100 hover:border-white/30"
-                          }`}
-                          title={reel.title}
-                        >
-                          <img src={reel.posterUrl} alt={reel.title} className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                          <span className="absolute bottom-1 inset-x-0 text-[9px] font-bold text-white text-center truncate px-0.5">
-                            {reel.title.split(" ")[0]}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
 
-                  {/* Continuity Proof Badge Card */}
-                  <div className="w-full p-3.5 rounded-2xl bg-[#0A0E17] border border-teal-500/25 text-xs text-slate-300 flex items-start gap-2.5 shadow-lg">
-                    <CheckCircle2 className="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="text-teal-300 block font-semibold text-xs">Biometric Continuity Lock:</strong>
-                      <span className="text-slate-400 text-[11px] leading-relaxed block mt-0.5">
-                        {activeReel.continuityProof}
-                      </span>
+                    {/* Continuity Proof Badge Card */}
+                    <div className="w-full p-2.5 rounded-xl bg-[#0A0E17] border border-teal-500/25 text-xs text-slate-300 flex items-start gap-2 shadow-md">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-teal-400 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="text-teal-300 block font-semibold text-[11px]">Biometric Continuity Lock:</strong>
+                        <span className="text-slate-400 text-[10px] leading-snug block mt-0.5">
+                          {activeReel.continuityProof}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
               ) : (
-                /* Cinema Master 180s Theatrical Showcase Frame + Scrubber + Score & Acts */
-                <div className="w-full max-w-[620px] flex flex-col gap-3.5">
-                  <div className="relative w-full aspect-[16/9] bg-black rounded-2xl sm:rounded-3xl p-2 shadow-2xl shadow-amber-500/15 border-2 border-amber-500/40 ring-1 ring-amber-500/20 overflow-hidden group">
+                /* Cinema Master 180s Theatrical Showcase Frame + Scrubber + Score & Acts in Compact Format */
+                <div className="w-full max-w-[620px] flex flex-col gap-2">
+                  <div className="relative w-full aspect-[2.39/1] bg-black rounded-xl sm:rounded-2xl p-1.5 shadow-2xl shadow-amber-500/15 border-2 border-amber-500/40 ring-1 ring-amber-500/20 overflow-hidden group">
                     <video
                       ref={videoRef}
                       key={activeCinema.videoUrl}
@@ -2662,80 +2657,82 @@ export function CreatorReelsHome() {
                       autoPlay
                       loop
                       preload="auto"
-                      className="w-full h-full object-cover select-none cursor-pointer rounded-xl sm:rounded-2xl"
+                      className="w-full h-full object-cover select-none cursor-pointer rounded-lg sm:rounded-xl"
                       onClick={togglePlay}
                     />
 
-                    {/* Big Center Cinema Play Button overlay when paused */}
+                    {/* Center Cinema Play Button overlay when paused */}
                     {!isPlaying && (
                       <button
                         type="button"
                         onClick={togglePlay}
-                        className="absolute inset-0 m-auto w-20 h-20 rounded-full bg-amber-400/90 hover:bg-amber-300 text-[#07090E] flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all z-30 cursor-pointer"
+                        className="absolute inset-0 m-auto w-12 h-12 rounded-full bg-amber-400/90 hover:bg-amber-300 text-[#07090E] flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all z-30 cursor-pointer"
                         aria-label="Play Cinema Master"
                         title="Play Full Combined Cinema Master Reel"
                       >
-                        <Play className="w-10 h-10 fill-current translate-x-0.5" />
+                        <Play className="w-6 h-6 fill-current translate-x-0.5" />
                       </button>
                     )}
 
                     {/* Top Cinema Overlay Badges */}
-                    <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
-                      <span className="px-3 py-1 rounded-full bg-black/70 backdrop-blur-md border border-white/15 text-[11px] font-bold text-white flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                    <div className="absolute top-2 left-2.5 right-2.5 z-20 flex items-center justify-between pointer-events-none">
+                      <span className="px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md border border-white/15 text-[9px] font-bold text-white flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                         <span>30 Shots • 180s • 5 Classical Acts</span>
                       </span>
 
-                      <span className="px-2.5 py-1 rounded-full bg-amber-400/90 backdrop-blur-md text-[#07090E] text-[10px] font-black uppercase tracking-wider">
+                      <span className="px-1.5 py-0.5 rounded-full bg-amber-400/90 backdrop-blur-md text-[#07090E] text-[8px] font-black uppercase tracking-wider">
                         2.39:1 Anamorphic
                       </span>
                     </div>
 
                     {/* Controls overlay: Mute & Play toggles */}
-                    <div className="absolute top-4 right-4 z-30 flex flex-col gap-2">
+                    <div className="absolute top-2 right-2.5 z-30 flex gap-1.5">
                       <button
                         type="button"
                         onClick={toggleMute}
-                        className="w-9 h-9 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[36px]"
+                        className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
                         title={isMuted ? "Unmute Audio" : "Mute Audio"}
                       >
-                        {isMuted ? <VolumeX className="w-4 h-4 text-amber-300" /> : <Volume2 className="w-4 h-4 text-amber-400" />}
+                        {isMuted ? <VolumeX className="w-3.5 h-3.5 text-amber-300" /> : <Volume2 className="w-3.5 h-3.5 text-amber-400" />}
                       </button>
 
                       <button
                         type="button"
                         onClick={togglePlay}
-                        className="w-9 h-9 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[36px]"
+                        className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
                         title={isPlaying ? "Pause" : "Play"}
                       >
-                        {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 translate-x-0.5 text-amber-400" />}
+                        {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 translate-x-0.5 text-amber-400" />}
                       </button>
                     </div>
 
                     {/* Bottom Info Bar */}
-                    <div className="absolute bottom-0 inset-x-0 p-4 pt-10 bg-gradient-to-t from-black/95 via-black/60 to-transparent z-20 flex flex-col">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400">
-                        {activeCinema.category}
-                      </span>
-                      <h3 className="text-base sm:text-lg font-bold text-white leading-tight drop-shadow-md">
+                    <div className="absolute bottom-0 inset-x-0 p-2 pt-6 bg-gradient-to-t from-black/95 via-black/60 to-transparent z-20 flex flex-col">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400">
+                          {activeCinema.category}
+                        </span>
+                        <span className="text-[9px] text-slate-300 truncate max-w-[260px]">
+                          {activeCinema.subtitle}
+                        </span>
+                      </div>
+                      <h3 className="text-xs sm:text-sm font-bold text-white leading-tight drop-shadow-md truncate">
                         {activeCinema.title}
                       </h3>
-                      <p className="text-xs text-slate-300 mt-1 line-clamp-1">
-                        {activeCinema.subtitle}
-                      </p>
                     </div>
                   </div>
 
                   {/* 5 ACTS TIME JUMP SCRUBBER */}
-                  <div className="bg-[#0C1019] rounded-2xl p-3 border border-amber-500/20 shadow-lg flex flex-col gap-2">
+                  <div className="bg-[#0C1019] rounded-xl p-1.5 border border-amber-500/20 shadow-md flex flex-col gap-1">
                     <div className="flex items-center justify-between text-xs px-1 text-slate-400 font-medium">
-                      <span className="text-amber-300 font-bold uppercase tracking-wider flex items-center gap-1.5 text-[11px]">
-                        <Clapperboard className="w-3.5 h-3.5 text-amber-400" />
+                      <span className="text-amber-300 font-bold uppercase tracking-wider flex items-center gap-1 text-[10px]">
+                        <Clapperboard className="w-3 h-3 text-amber-400" />
                         Jump to Act:
                       </span>
-                      <span className="text-[10px] text-slate-500">Interactive Timeline</span>
+                      <span className="text-[9px] text-slate-500">Interactive Timeline</span>
                     </div>
-                    <div className="grid grid-cols-5 gap-1.5">
+                    <div className="grid grid-cols-5 gap-1">
                       {[
                         { act: 1, label: "Marseilles", time: 0, timecode: "0:00" },
                         { act: 2, label: "Notre-Dame", time: 36, timecode: "0:36" },
@@ -2747,48 +2744,50 @@ export function CreatorReelsHome() {
                           key={item.act}
                           type="button"
                           onClick={() => seekToTime(item.time)}
-                          className="px-1.5 py-2 rounded-xl bg-white/5 hover:bg-amber-400/20 hover:border-amber-400/40 border border-white/5 text-slate-300 hover:text-amber-200 transition-all text-center flex flex-col items-center min-h-[44px] justify-center"
+                          className="px-1 py-0.5 rounded-lg bg-white/5 hover:bg-amber-400/20 hover:border-amber-400/40 border border-white/5 text-slate-300 hover:text-amber-200 transition-all text-center flex flex-col items-center min-h-[30px] justify-center"
                         >
-                          <span className="text-amber-400 font-bold text-xs">Act {item.act}</span>
-                          <span className="text-[10px] text-slate-400">{item.timecode}</span>
+                          <span className="text-amber-400 font-bold text-[10px]">Act {item.act}</span>
+                          <span className="text-[8px] text-slate-400">{item.timecode}</span>
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {/* Master Symphonic Score Bed Card */}
-                  <div className="p-3.5 rounded-2xl bg-[#0A0E17] border border-amber-500/20 text-xs text-slate-300 flex items-start gap-3 shadow-lg">
-                    <Music2 className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="text-amber-300 block font-semibold text-xs">Master Symphonic Bed (-24.0 LUFS EBU R128):</strong>
-                      <span className="text-slate-300 text-[11px] block mt-0.5">{activeCinema.scoreTitle}</span>
+                  {/* Side-by-Side: Score Bed & Classical 5-Act Narrative Arc */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {/* Master Symphonic Score Bed Card */}
+                    <div className="p-2 rounded-xl bg-[#0A0E17] border border-amber-500/20 text-xs text-slate-300 flex items-start gap-2 shadow-md">
+                      <Music2 className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="text-amber-300 block font-semibold text-[10px] uppercase tracking-wider">Master Symphonic Bed (-24.0 LUFS):</strong>
+                        <span className="text-slate-300 text-[10px] block mt-0.5 leading-snug">{activeCinema.scoreTitle}</span>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Classical 5-Act Breakdown & Continuity Proof */}
-                  <div className="p-3.5 rounded-2xl bg-[#080B11] border border-white/10 text-xs space-y-2.5 shadow-lg">
-                    <div className="flex items-center justify-between text-[11px] text-amber-400 font-bold border-b border-white/5 pb-2">
-                      <span className="flex items-center gap-1.5">
-                        <Clapperboard className="w-3.5 h-3.5 text-amber-400" />
-                        Classical 5-Act Narrative Arc
-                      </span>
-                      <span className="text-slate-400 font-mono text-[10px]">30 Takes • 180s Total</span>
-                    </div>
-                    <div className="space-y-2 text-[11px]">
-                      {activeCinema.acts.map((act) => (
-                        <div
-                          key={act.act}
-                          className="flex items-start gap-2 cursor-pointer hover:text-amber-200 transition-colors"
-                          onClick={() => seekToTime(act.act === 1 ? 0 : act.act === 2 ? 36 : act.act === 3 ? 72 : act.act === 4 ? 108 : 144)}
-                        >
-                          <span className="font-mono text-amber-400 font-bold shrink-0">Act {act.act}:</span>
-                          <div className="flex-1 truncate">
-                            <strong className="text-white font-semibold">{act.title}</strong>
-                            <span className="text-slate-400 hidden sm:inline"> — {act.theme}</span>
+                    {/* Classical 5-Act Breakdown */}
+                    <div className="p-2 rounded-xl bg-[#080B11] border border-white/10 text-xs shadow-md overflow-hidden">
+                      <div className="flex items-center justify-between text-[10px] text-amber-400 font-bold border-b border-white/5 pb-1 mb-1">
+                        <span className="flex items-center gap-1">
+                          <Clapperboard className="w-3 h-3 text-amber-400" />
+                          Classical 5-Act Narrative Arc
+                        </span>
+                        <span className="text-slate-400 font-mono text-[9px]">30 Takes • 180s</span>
+                      </div>
+                      <div className="space-y-0.5 text-[10px]">
+                        {activeCinema.acts.map((act) => (
+                          <div
+                            key={act.act}
+                            className="flex items-center justify-between gap-1 cursor-pointer hover:text-amber-200 transition-colors py-0.5"
+                            onClick={() => seekToTime(act.act === 1 ? 0 : act.act === 2 ? 36 : act.act === 3 ? 72 : act.act === 4 ? 108 : 144)}
+                          >
+                            <div className="flex items-center gap-1 truncate">
+                              <span className="font-mono text-amber-400 font-bold shrink-0">A{act.act}:</span>
+                              <strong className="text-white font-medium truncate">{act.title}</strong>
+                            </div>
+                            <span className="text-slate-500 font-mono text-[9px] shrink-0">{act.timecode}</span>
                           </div>
-                          <span className="text-slate-500 font-mono text-[10px] shrink-0">{act.timecode}</span>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2797,7 +2796,7 @@ export function CreatorReelsHome() {
           </div>
 
           {/* THREE CREATOR PROMISES ROW (FULL-WIDTH 12 COLS) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mt-12 pt-10 border-t border-white/5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-white/5">
             {activeTab === "instagram_tiktok" ? (
               <>
                 <div className="p-5 rounded-2xl bg-[#0A0E17]/80 border border-teal-500/20 shadow-lg flex items-start gap-3.5 hover:border-teal-500/40 transition-colors">
