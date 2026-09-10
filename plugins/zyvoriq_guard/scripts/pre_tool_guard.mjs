@@ -22,24 +22,40 @@ process.stdin.on("end", () => {
     let decision = "allow";
     let reason = "";
 
-    // 1. FILE WRITE & EDIT INSPECTION
-    if (toolName === "write_to_file" || toolName === "replace_file_content") {
-      const targetFile = args.TargetFile || "";
-      if (fileContent.includes("-stream_loop") && !fileContent.includes("// -stream_loop")) {
+    // 1. FILE WRITE & EDIT INSPECTION (Files, Notebooks, MCP write tools)
+    const isWriteOrEdit = toolName === "write_to_file" ||
+                          toolName === "replace_file_content" ||
+                          toolName === "notebook_edit" ||
+                          (toolName === "call_mcp_tool" && (args.ToolName || "").includes("file"));
+
+    if (isWriteOrEdit) {
+      const targetFile = args.TargetFile || args.NotebookPath || "";
+      const writeContent = (args.CodeContent || args.ReplacementContent || args.Content || (typeof args.Arguments === "object" ? JSON.stringify(args.Arguments) : "") || "").trim();
+
+      // Check for executable -stream_loop invocation
+      const hasExecutableStreamLoop =
+        /(?:ffmpeg|avconv)[^;\n]*[\s"']-stream_loop[\s"']|exec(?:Sync|File)?\([^)]*-stream_loop/i.test(writeContent) ||
+        (writeContent.includes("-stream_loop") &&
+          !writeContent.includes("// -stream_loop") &&
+          !writeContent.includes("/* -stream_loop") &&
+          !writeContent.includes("BAN") &&
+          !writeContent.includes("GATEKEEPER") &&
+          !writeContent.includes("prohibited"));
+
+      if (hasExecutableStreamLoop) {
         decision = "deny";
-        reason = `[ZYVORIQ ZERO-ILLUSION GUARD]: Cannot write script containing -stream_loop! Looping video clips causes visual jumping, breaks character costume continuity across iterations, and destroys lip-sync synchronization. Every segment must be a unique, dedicated generation.`;
-      } else if (fileContent.includes("amix") && (fileContent.includes("adelay") || fileContent.includes("vox"))) {
-        const bedMatch = fileContent.match(/\[0:a\]volume=([0-9.]+)/);
+        reason = `[ZYVORIQ ZERO-ILLUSION GUARD]: Cannot write script containing executable -stream_loop! Looping video clips causes visual jumping, breaks character costume continuity across iterations, and destroys lip-sync synchronization. Every segment must be a unique, dedicated generation.`;
+      } else if (writeContent.includes("amix") && (writeContent.includes("adelay") || writeContent.includes("vox"))) {
+        const bedMatch = writeContent.match(/\[0:a\]volume=([0-9.]+)/);
         if (bedMatch && parseFloat(bedMatch[1]) >= 0.35) {
           decision = "deny";
           reason = `[ZYVORIQ ZERO-ILLUSION GUARD]: Cannot write script with audio collision! Backing bed volume is set to ${bedMatch[1]} while mixing vocal stems. Must be ducked to <= 0.20.`;
         }
-      } else if (targetFile.includes("scripts/") && (targetFile.endsWith(".mjs") || targetFile.endsWith(".ts"))) {
+      } else if (targetFile.includes("scripts/") && !targetFile.includes("test_") && (targetFile.endsWith(".mjs") || targetFile.endsWith(".ts"))) {
         // Check for conflicting consecutive shot prompts (e.g. broad daylight vs nighttime aurora in the same scene)
-        const hasDaylight = /daylight|broad daylight|natural sunlight|golden hour/i.test(fileContent);
-        const hasNight = /nighttime|midnight|dark night|aurora borealis|night sky/i.test(fileContent);
-        if (hasDaylight && hasNight && fileContent.includes("SHOTS = [") && !fileContent.includes("sunset transition") && !fileContent.includes("twilight bridge")) {
-          // Check if both exist across shots in the same sequence without a transition
+        const hasDaylight = /daylight|broad daylight|natural sunlight|golden hour/i.test(writeContent);
+        const hasNight = /nighttime|midnight|dark night|aurora borealis|night sky/i.test(writeContent);
+        if (hasDaylight && hasNight && writeContent.includes("SHOTS = [") && !writeContent.includes("sunset transition") && !writeContent.includes("twilight bridge")) {
           decision = "deny";
           reason = `[ZYVORIQ ZERO-ILLUSION GUARD]: Environmental lighting contradiction detected! Script defines consecutive scene shots mixing daylight/sunlight and nighttime/aurora without an explicit transition bridge. Continuous performance scenes must maintain unified lighting and time-of-day.`;
         }

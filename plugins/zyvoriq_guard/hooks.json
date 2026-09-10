@@ -4,18 +4,30 @@
     "PreInvocation": [
       {
         "type": "command",
-        "command": "node ~/.gemini/config/plugins/zyvoriq_guard/scripts/pre_invocation_memory.mjs",
+        "command": "node scripts/pre_invocation_memory.mjs",
         "timeout": 10
       }
     ],
     "PreToolUse": [
       {
+        "matcher": "run_command|write_to_file|replace_file_content|notebook_edit|call_mcp_tool",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node scripts/pre_tool_guard.mjs",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
         "matcher": "run_command|write_to_file|replace_file_content",
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/.gemini/config/plugins/zyvoriq_guard/scripts/pre_tool_guard.mjs",
-            "timeout": 15
+            "command": "node scripts/post_tool_verifier.mjs",
+            "timeout": 20
           }
         ]
       }
@@ -23,7 +35,7 @@
     "Stop": [
       {
         "type": "command",
-        "command": "node ~/.gemini/config/plugins/zyvoriq_guard/scripts/stop_quality_gate.mjs",
+        "command": "node scripts/stop_quality_gate.mjs",
         "timeout": 180
       }
     ]
