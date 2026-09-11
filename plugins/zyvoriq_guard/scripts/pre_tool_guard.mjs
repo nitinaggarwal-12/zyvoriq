@@ -69,11 +69,15 @@ process.stdin.on("end", () => {
       if (isVideoAssemblyCmd) {
         const scratchMatch = cmd.match(/scratch\/([a-zA-Z0-9_-]+)/);
         if (scratchMatch) {
-          const targetDir = `/Users/nitinagga/Documents/zyvoriq/scratch/${scratchMatch[1]}`;
+          const targetDir = path.resolve(process.cwd(), "scratch", scratchMatch[1]);
+          const altTargetDir = `/Users/nitinagga/Documents/zyvoriq/scratch/${scratchMatch[1]}`;
           const hasMasterAudio = fs.existsSync(`${targetDir}/master_soundtrack_5min.mp3`) || 
                                  fs.existsSync(`${targetDir}/master_soundtrack_full_300s.mp3`) ||
-                                 fs.existsSync(`${targetDir}/master_soundtrack.mp3`);
-          const hasLyrics = fs.existsSync(`${targetDir}/lyrics_timestamps.json`) || fs.existsSync(`${targetDir}/lyrics_timestamps_5m.json`);
+                                 fs.existsSync(`${targetDir}/master_soundtrack.mp3`) ||
+                                 fs.existsSync(`${altTargetDir}/master_soundtrack.mp3`);
+          const hasLyrics = fs.existsSync(`${targetDir}/lyrics_timestamps.json`) || 
+                            fs.existsSync(`${targetDir}/lyrics_timestamps_5m.json`) ||
+                            fs.existsSync(`${altTargetDir}/lyrics_timestamps.json`);
 
           if (!hasMasterAudio && !hasLyrics) {
             decision = "deny";
@@ -91,6 +95,12 @@ process.stdin.on("end", () => {
           decision = "deny";
           reason = `[ZYVORIQ ZERO-ILLUSION GUARD]: -stream_loop (${loopMatch[1]}) is strictly forbidden for music video productions! Looping short video clips causes visual jumping, breaks character costume continuity across iterations, and destroys lip-sync synchronization. Every segment must be a unique, dedicated generation or continuous shot.`;
         }
+      }
+
+      // Strictly forbid synthetic sine wave oscillators or noise generators pretending to be music soundtracks
+      if ((isFfmpegOrMediaCmd || cmd.includes("ffmpeg")) && (cmd.includes("sine=frequency=") || cmd.includes("anoisesrc=")) && (cmd.includes("master_soundtrack") || cmd.includes("bed") || cmd.includes("music"))) {
+        decision = "deny";
+        reason = `[ZYVORIQ ZERO-ILLUSION GUARD]: Synthetic oscillator tone detected (sine=frequency=/anoisesrc=)! Master soundtracks must be generated via Google DeepMind Lyria (models/lyria-3.5), not simulated with synthetic sine waves or monotone humming oscillators.`;
       }
 
       // Forbid mixing vocal stems over un-ducked vocal/music beds

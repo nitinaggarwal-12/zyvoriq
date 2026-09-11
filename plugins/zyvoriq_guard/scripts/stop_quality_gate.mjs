@@ -132,6 +132,27 @@ process.stdin.on("end", async () => {
             }
 
             // =========================================================================
+            // ASSERTION 2b: DETECT SYNTHETIC OSCILLATOR AUDIO (ZERO SINE WAVE BAN)
+            // =========================================================================
+            for (const sf of scriptFiles) {
+              if (fs.existsSync(sf)) {
+                const sContent = fs.readFileSync(sf, "utf-8");
+                if (
+                  (sContent.includes("sine=frequency=") || sContent.includes("anoisesrc=")) &&
+                  (sContent.includes("master_soundtrack") || sContent.includes("bed") || sContent.includes("music"))
+                ) {
+                  console.log(
+                    JSON.stringify({
+                      decision: "continue",
+                      reason: `[ZYVORIQ ZERO-ILLUSION GATE BLOCKED]: Synthetic audio oscillator detected in ${path.basename(sf)} (sine=frequency=/anoisesrc=)! Simulating music with monotone test tones or sine hums is strictly forbidden. Master soundtracks must be generated via Google DeepMind Lyria (models/lyria-3.5:generateContent).`
+                    })
+                  );
+                  return;
+                }
+              }
+            }
+
+            // =========================================================================
             // ASSERTION 3: REMOTE ZERO SILENCE ON CLOUDTOP (-40dB, 0.3s)
             // =========================================================================
             try {

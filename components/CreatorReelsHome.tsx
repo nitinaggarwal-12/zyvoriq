@@ -90,19 +90,70 @@ export interface FinishedReel {
   tags: string[];
 }
 
-export const FINISHED_REELS: FinishedReel[] = [
+export const FINISHED_MUSIC_VIDEOS: FinishedReel[] = [
   {
-    id: "studio1_e2e00945",
-    title: "Midnight Cyberpunk Dance",
-    category: "Choreography & Style",
-    shots: 8,
-    durationSec: 42,
-    videoUrl: "/assets/video/studio1_e2e00945.mp4",
-    posterUrl: "/assets/stills/dubai_dance.jpg",
-    prompt: "Street dancer performing liquid popping choreography under neon rain in Shinjuku, continuous camera orbit, synthwave bass drop at 0:15.",
-    continuityProof: "Full 8-shot unbroken extension. Facial structure, wet hair physics, and cyberpunk jacket stay 100% coherent from shot 1 to shot 8 without face-morphing.",
-    tags: ["9:16 Vertical", "8 Shots", "Liquid Motion", "Zero Face Drift"]
+    id: "mv_01_fuego_y_arena",
+    title: "Fuego y Arena — Camila Morales & The Seville Flamenco Squad",
+    category: "Latin Pop & Flamenco Urbano",
+    shots: 3,
+    durationSec: 24,
+    videoUrl: "/assets/video/mv_01_fuego_y_arena_master.mp4",
+    posterUrl: "/assets/stills/mv_01_fuego_y_arena_poster.jpg",
+    prompt: "Camila Morales & her flamenco troupe performing high-energy Spanish Latin pop choreography in a sunlit Seville courtyard.",
+    continuityProof: "3 dedicated 8-second Veo 3.1 camera takes. 100% biometric facial identity lock, locked ruby-red ruffled attire, continuous golden-hour lighting.",
+    tags: ["9:16 Vertical", "Spain", "3 Dedicated Takes", "Veo 3.1", "Flamenco Pop", "Zero Stream Loop"]
   },
+  {
+    id: "mv_02_supernova_velocity",
+    title: "Supernova Velocity — Min-Ji & The Seoul Wave Troupe",
+    category: "K-Pop High-Octane Dance",
+    shots: 3,
+    durationSec: 24,
+    videoUrl: "/assets/video/mv_02_supernova_velocity_master.mp4",
+    posterUrl: "/assets/stills/mv_02_supernova_velocity_poster.jpg",
+    prompt: "Min-Ji & her K-Pop dance crew executing razor-sharp choreography on a wet reflective glass stage surrounded by cylindrical LED pillars in Seoul.",
+    continuityProof: "3 dedicated 8-second Veo 3.1 camera takes. 100% biometric facial identity lock, holographic silver-violet metallic attire, continuous stage lighting.",
+    tags: ["9:16 Vertical", "South Korea", "3 Dedicated Takes", "Veo 3.1", "K-Pop", "Zero Stream Loop"]
+  },
+  {
+    id: "mv_03_lagos_midnight_sun",
+    title: "Lagos Midnight Sun — Amara & The Eko Dance Collective",
+    category: "Afrobeats & Amapiano",
+    shots: 3,
+    durationSec: 24,
+    videoUrl: "/assets/video/mv_03_lagos_midnight_sun_master.mp4",
+    posterUrl: "/assets/stills/mv_03_lagos_midnight_sun_poster.jpg",
+    prompt: "Amara & The Eko Dance Collective performing fluid synchronized Afrobeats choreography on a luxury Lagos rooftop overlooking the sunset lagoon.",
+    continuityProof: "3 dedicated 8-second Veo 3.1 camera takes. 100% biometric facial identity lock, emerald and gold Ankara attire, continuous sunset lighting.",
+    tags: ["9:16 Vertical", "Nigeria", "3 Dedicated Takes", "Veo 3.1", "Afrobeats", "Zero Stream Loop"]
+  },
+  {
+    id: "mv_04_nachle_dholna",
+    title: "Nachle Dholna — Simran Kaur & The Punjab Folk Ensemble",
+    category: "Punjabi Festival Pop & Bhangra",
+    shots: 3,
+    durationSec: 24,
+    videoUrl: "/assets/video/mv_04_nachle_dholna_master.mp4",
+    posterUrl: "/assets/stills/mv_04_nachle_dholna_poster.jpg",
+    prompt: "Simran Kaur & her Bhangra ensemble performing high-energy festival choreography with dhol drums in front of a grand illuminated Haveli in Punjab at sunset.",
+    continuityProof: "3 dedicated 8-second Veo 3.1 camera takes. 100% biometric facial identity lock, mustard yellow and royal fuchsia Punjabi attire, continuous golden sunset lighting.",
+    tags: ["9:16 Vertical", "India", "3 Dedicated Takes", "Veo 3.1", "Punjabi Bhangra", "Zero Stream Loop"]
+  },
+  {
+    id: "mv_05_lumiere_damour",
+    title: "Lumière d'Amour — Camille & The Parisian Modern Ballet",
+    category: "French Touch & Electro-Pop",
+    shots: 3,
+    durationSec: 24,
+    videoUrl: "/assets/video/mv_05_lumiere_damour_master.mp4",
+    posterUrl: "/assets/stills/mv_05_lumiere_damour_poster.jpg",
+    prompt: "Camille & The Parisian Modern Ballet performing modern ballet choreography along the River Seine in Paris at twilight blue hour.",
+    continuityProof: "3 dedicated 8-second Veo 3.1 camera takes. 100% biometric facial identity lock, midnight-navy silk attire, continuous blue-hour twilight.",
+    tags: ["9:16 Vertical", "France", "3 Dedicated Takes", "Veo 3.1", "French Touch", "Zero Stream Loop"]
+  }
+];
+
+export const FINISHED_SOCIAL_REELS: FinishedReel[] = [
   {
     id: "studio1_9f360810",
     title: "Alpine Sunrise Expedition",
@@ -139,6 +190,11 @@ export const FINISHED_REELS: FinishedReel[] = [
     continuityProof: "5-shot unbroken orbital arc. Visor curvature reflections, helmet seams, and zero-G drift maintain identity lock from start to finish.",
     tags: ["9:16 Vertical", "5 Shots", "Orbital Arc", "Visor Optics"]
   }
+];
+
+export const FINISHED_REELS: FinishedReel[] = [
+  ...FINISHED_MUSIC_VIDEOS,
+  ...FINISHED_SOCIAL_REELS
 ];
 
 export interface CinemaMasterReel {
@@ -212,17 +268,19 @@ export const DURATION_CONFIGS = [
   { sec: 180, label: "180s", badge: "5-Act Master", desc: "25 takes • 3-minute 5-act theatrical epic" },
 ];
 
+export type StudioTabType = "music_videos" | "motion_pictures" | "social_reels";
+
 export function CreatorReelsHome() {
-  const [activeTab, setActiveTab] = useState<"instagram_tiktok" | "youtube_shorts">("instagram_tiktok");
-  const [showcaseTab, setShowcaseTab] = useState<"instagram_tiktok" | "youtube_shorts">("instagram_tiktok");
+  const [activeTab, setActiveTab] = useState<StudioTabType>("music_videos");
+  const [showcaseTab, setShowcaseTab] = useState<StudioTabType>("music_videos");
   const [activeReelIndex, setActiveReelIndex] = useState(0);
   const [activeCinemaIndex, setActiveCinemaIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
   const [promptText, setPromptText] = useState("");
-  const [selectedGenre, setSelectedGenre] = useState<string>("AUTO");
-  const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
-  const [selectedDuration, setSelectedDuration] = useState(30);
+  const [selectedGenre, setSelectedGenre] = useState<string>("MUSIC_VIDEO");
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("es");
+  const [selectedDuration, setSelectedDuration] = useState(34);
   const [selectedAspectRatio, setSelectedAspectRatio] = useState<"9:16" | "16:9" | "2.39:1">("9:16");
   const [openDropdown, setOpenDropdown] = useState<"format" | "duration" | "genre" | "language" | null>(null);
 
@@ -312,9 +370,9 @@ export function CreatorReelsHome() {
     }
   }, [promptText, referenceUrl]);
 
-  const [reelsList, setReelsList] = useState<FinishedReel[]>(FINISHED_REELS);
+  const [reelsList, setReelsList] = useState<FinishedReel[]>(FINISHED_MUSIC_VIDEOS);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const activeReel = reelsList[activeReelIndex] || FINISHED_REELS[0];
+  const activeReel = reelsList[activeReelIndex] || FINISHED_MUSIC_VIDEOS[0];
   const activeCinema = CINEMA_FINISHED_REELS[activeCinemaIndex];
 
   // Hydrate custom or generated reel from URL query params (e.g. ?id=... or ?reel=...)
@@ -367,10 +425,13 @@ export function CreatorReelsHome() {
         });
         setPromptText(`Act II: Continuation of "${resolveLocal.title}". The sequence continues seamlessly with the same character, wardrobe, and visual aesthetic: `);
         if ((resolveLocal as any).aspectRatio === "2.39:1") {
-          setActiveTab("youtube_shorts");
+          setActiveTab("motion_pictures");
           setSelectedAspectRatio("2.39:1");
+        } else if (resolveLocal.category.includes("Music") || resolveLocal.category.includes("Choreography") || resolveLocal.category.includes("Pop")) {
+          setActiveTab("music_videos");
+          setSelectedAspectRatio("9:16");
         } else {
-          setActiveTab("instagram_tiktok");
+          setActiveTab("social_reels");
           setSelectedAspectRatio("9:16");
         }
         setTimeout(() => {
@@ -411,10 +472,13 @@ export function CreatorReelsHome() {
               });
               setPromptText(`${partInfo.suggestedTitlePrefix} "${partInfo.baseTitle}". The sequence continues seamlessly with the same character, wardrobe, and visual aesthetic: `);
               if (m.aspectRatio === "2.39:1") {
-                setActiveTab("youtube_shorts");
+                setActiveTab("motion_pictures");
                 setSelectedAspectRatio("2.39:1");
+              } else if (m.genre === "MUSIC_VIDEO" || m.genre?.includes("MUSIC") || m.genre?.includes("Choreography")) {
+                setActiveTab("music_videos");
+                setSelectedAspectRatio("9:16");
               } else {
-                setActiveTab("instagram_tiktok");
+                setActiveTab("social_reels");
                 setSelectedAspectRatio("9:16");
               }
               setTimeout(() => {
@@ -487,15 +551,29 @@ export function CreatorReelsHome() {
       .catch(() => {});
   }, []);
 
-  const handleTabChange = (tab: "instagram_tiktok" | "youtube_shorts") => {
+  const handleTabChange = (tab: StudioTabType) => {
     setActiveTab(tab);
     setShowcaseTab(tab);
-    if (tab === "youtube_shorts") {
+    if (tab === "music_videos") {
+      setSelectedAspectRatio("9:16");
+      setSelectedDuration(34);
+      setSelectedGenre("MUSIC_VIDEO");
+      setSelectedLanguage("es");
+      setReelsList(FINISHED_MUSIC_VIDEOS);
+      setActiveReelIndex(0);
+    } else if (tab === "motion_pictures") {
       setSelectedAspectRatio("2.39:1");
       setSelectedDuration(180);
+      setSelectedGenre("HISTORICAL_BIOPIC");
+      setSelectedLanguage("en");
+      setActiveCinemaIndex(0);
     } else {
       setSelectedAspectRatio("9:16");
       setSelectedDuration(30);
+      setSelectedGenre("AUTO");
+      setSelectedLanguage("en");
+      setReelsList(FINISHED_SOCIAL_REELS);
+      setActiveReelIndex(0);
     }
   };
 
@@ -624,13 +702,20 @@ export function CreatorReelsHome() {
     setGenerationError(null);
     setGeneratedResult(null);
     setGenerationStep(
-      activeTab === "youtube_shorts"
+      activeTab === "motion_pictures"
         ? "Analyzing prompt & composing 5-act 30-shot screenplay with Beethoven Op. 92..."
+        : activeTab === "music_videos"
+        ? "Aligning DeepMind Lyria 3.5 master stems, Spanish vocal cadence & choreography cues..."
         : "Locking character biometric DNA & enqueuing unbroken scene takes..."
     );
 
     try {
-      const platform = activeTab === "youtube_shorts" ? "YouTube Shorts" : "Instagram Reels";
+      const platform =
+        activeTab === "motion_pictures"
+          ? "Motion Pictures (Cinemascope)"
+          : activeTab === "music_videos"
+          ? "Music Videos (Lyria 3.5)"
+          : "Viral Reels";
 
       // Build cast selection based on active castingMode
       const castSelection: any[] = [];
@@ -715,8 +800,10 @@ export function CreatorReelsHome() {
         productionId: data.production?.id || data.productionId,
         message: continuationParent
           ? `Part 2 Continuation of "${continuationParent.title}" is queued with 100% biometric facial identity lock. Estimated time: ~7 minutes.`
-          : activeTab === "youtube_shorts"
+          : activeTab === "motion_pictures"
             ? "Your 180s Theatrical Cinema Master is planned across 5 classical dramatic acts and actively rendering in the background queue. Estimated time: ~12–15 minutes."
+            : activeTab === "music_videos"
+            ? "Your DeepMind Lyria 3.5 Music Video is planned with lyric alignment and actively rendering in the background queue. Estimated time: ~6–8 minutes."
             : "Your Studio1 unbroken reel is planned and actively rendering in the background queue. Estimated time: ~7 minutes."
       });
       setGenerationStep(null);
@@ -1017,7 +1104,9 @@ export function CreatorReelsHome() {
       <section className="relative pt-2 sm:pt-3 pb-3 md:pb-4 border-b border-white/5 overflow-hidden">
         {/* Subtle background glow tailored to activeTab */}
         <div className={`absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] md:w-[1200px] h-[450px] blur-[140px] pointer-events-none transition-all duration-700 ${
-          activeTab === "youtube_shorts"
+          activeTab === "music_videos"
+            ? "bg-gradient-to-tr from-pink-600/15 via-rose-500/10 to-transparent"
+            : activeTab === "motion_pictures"
             ? "bg-gradient-to-tr from-amber-600/15 via-orange-500/10 to-transparent"
             : "bg-gradient-to-tr from-teal-600/15 via-cyan-500/10 to-transparent"
         }`} />
@@ -1025,60 +1114,107 @@ export function CreatorReelsHome() {
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 md:px-12 lg:px-16 relative z-10">
           {/* MASTHEAD HEADER ZONE: Sleek, compact, condensed, zero scrolling required */}
           <div className="flex flex-col items-center text-center max-w-4xl mx-auto mb-2 sm:mb-2.5">
-            {/* DUAL FORMAT SELECTOR: TAB 1 (Instagram / TikTok) vs TAB 2 (YouTube Shorts & 180s Cinema) */}
-            <div className="inline-flex p-1 bg-[#0C1019]/90 border border-white/10 rounded-xl mb-1.5 shadow-lg backdrop-blur-xl w-full max-w-md">
+            {/* THREE FORMAT SELECTOR: TAB 1 (Music Videos) vs TAB 2 (Motion Pictures) vs TAB 3 (Viral Reels) */}
+            <div className="inline-flex p-1 bg-[#0C1019]/90 border border-white/10 rounded-xl mb-1.5 shadow-lg backdrop-blur-xl w-full max-w-lg">
               <button
                 type="button"
-                onClick={() => handleTabChange("instagram_tiktok")}
+                onClick={() => handleTabChange("music_videos")}
                 className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-h-[36px] ${
-                  activeTab === "instagram_tiktok"
-                    ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-[#07090E] shadow-md shadow-teal-500/30"
+                  activeTab === "music_videos"
+                    ? "bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 text-white shadow-md shadow-rose-500/30"
                     : "text-slate-400 hover:text-white hover:bg-white/5"
                 }`}
               >
-                <Smartphone className="w-3.5 h-3.5 shrink-0" />
-                <span>Instagram / TikTok</span>
+                <Music2 className="w-3.5 h-3.5 shrink-0" />
+                <span>Music Videos</span>
                 <span className={`text-[9px] px-1.5 py-0.5 rounded font-extrabold uppercase ${
-                  activeTab === "instagram_tiktok" ? "bg-[#07090E]/20 text-[#07090E]" : "bg-white/5 text-slate-400"
+                  activeTab === "music_videos" ? "bg-white/20 text-white" : "bg-white/5 text-slate-400"
                 }`}>
-                  9:16
+                  Lyria 3.5
                 </span>
               </button>
 
               <button
                 type="button"
-                onClick={() => handleTabChange("youtube_shorts")}
+                onClick={() => handleTabChange("motion_pictures")}
                 className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-h-[36px] ${
-                  activeTab === "youtube_shorts"
+                  activeTab === "motion_pictures"
                     ? "bg-gradient-to-r from-amber-400 via-orange-500 to-amber-300 text-[#07090E] shadow-md shadow-orange-500/30"
                     : "text-slate-400 hover:text-white hover:bg-white/5"
                 }`}
               >
                 <Clapperboard className="w-3.5 h-3.5 shrink-0" />
-                <span>YouTube / Cinema</span>
+                <span>Motion Pictures</span>
                 <span className={`text-[9px] px-1.5 py-0.5 rounded font-extrabold uppercase ${
-                  activeTab === "youtube_shorts" ? "bg-[#07090E]/20 text-[#07090E]" : "bg-white/5 text-slate-400"
+                  activeTab === "motion_pictures" ? "bg-[#07090E]/20 text-[#07090E]" : "bg-white/5 text-slate-400"
                 }`}>
-                  180s Master
+                  Napoleon
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleTabChange("social_reels")}
+                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-h-[36px] ${
+                  activeTab === "social_reels"
+                    ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-[#07090E] shadow-md shadow-teal-500/30"
+                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <Smartphone className="w-3.5 h-3.5 shrink-0" />
+                <span>Viral Reels</span>
+                <span className={`text-[9px] px-1.5 py-0.5 rounded font-extrabold uppercase ${
+                  activeTab === "social_reels" ? "bg-[#07090E]/20 text-[#07090E]" : "bg-white/5 text-slate-400"
+                }`}>
+                  9:16
                 </span>
               </button>
             </div>
 
             {/* Live Specification Pill Badge */}
-            {activeTab === "instagram_tiktok" ? (
+            {activeTab === "music_videos" ? (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/25 text-rose-300 text-[10px] sm:text-[11px] font-semibold mb-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
+                <span>DeepMind Lyria 3.5 Pro • Native Singing Lip-Sync • 128 BPM Stems • Zero Fake Looping</span>
+              </div>
+            ) : activeTab === "motion_pictures" ? (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[10px] sm:text-[11px] font-semibold mb-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                <span>Classical 5-Act Drama • Anamorphic 2.39:1 Cinema • Symphonic Bed (-24.0 LUFS)</span>
+              </div>
+            ) : (
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/25 text-teal-300 text-[10px] sm:text-[11px] font-semibold mb-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
                 <span>Single Unbroken Take • Zero Character Drift • 9:16 Vertical</span>
               </div>
-            ) : (
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[10px] sm:text-[11px] font-semibold mb-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                <span>Classical 5-Act Drama • Anamorphic Cinematography • Symphonic Bed (-24.0 LUFS)</span>
-              </div>
             )}
 
             {/* Main Headline */}
-            {activeTab === "instagram_tiktok" ? (
+            {activeTab === "music_videos" ? (
+              <>
+                <h1 className="text-lg sm:text-xl md:text-2xl lg:text-[28px] font-black tracking-tight text-white leading-tight mb-0.5">
+                  Create viral Music Videos that{" "}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-pink-300 to-amber-300">
+                    actually sync voice, dance &amp; rhythm.
+                  </span>
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-300 leading-normal max-w-2xl">
+                  Spanish pop, choreography, and vocal performance powered by Google DeepMind Lyria 3.5 Pro and Veo with zero character drift.
+                </p>
+              </>
+            ) : activeTab === "motion_pictures" ? (
+              <>
+                <h1 className="text-lg sm:text-xl md:text-2xl lg:text-[28px] font-black tracking-tight text-white leading-tight mb-0.5">
+                  Direct 180s Motion Pictures that{" "}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-400 to-amber-200">
+                    commands the big screen.
+                  </span>
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-300 leading-normal max-w-2xl">
+                  Synthesize 3-minute 30-shot theatrical epics in 5-act narrative arcs, Cooke anamorphic 2.39:1 optics, and -24.0 LUFS Beethoven symphonic scores.
+                </p>
+              </>
+            ) : (
               <>
                 <h1 className="text-lg sm:text-xl md:text-2xl lg:text-[28px] font-black tracking-tight text-white leading-tight mb-0.5">
                   Generate 9:16 reels that{" "}
@@ -1088,18 +1224,6 @@ export function CreatorReelsHome() {
                 </h1>
                 <p className="text-xs sm:text-sm text-slate-300 leading-normal max-w-2xl">
                   Other AI tools morph your character on every cut. Zyvoriq extends continuous scenes with 100% biometric facial identity lock.
-                </p>
-              </>
-            ) : (
-              <>
-                <h1 className="text-lg sm:text-xl md:text-2xl lg:text-[28px] font-black tracking-tight text-white leading-tight mb-0.5">
-                  Direct 180s cinema that{" "}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-400 to-amber-200">
-                    commands the big screen.
-                  </span>
-                </h1>
-                <p className="text-xs sm:text-sm text-slate-300 leading-normal max-w-2xl">
-                  Synthesize 3-minute 30-shot theatrical epics in 5-act narrative arcs, Cooke anamorphic 2.39:1 optics, and -24.0 LUFS symphonic scores.
                 </p>
               </>
             )}
@@ -1113,8 +1237,10 @@ export function CreatorReelsHome() {
               <div
                 id="prompt-bar"
                 className={`w-full h-full bg-[#0E121B] border rounded-2xl md:rounded-3xl p-3 sm:p-4 shadow-2xl shadow-black/60 relative flex flex-col justify-between transition-all ${
-                  activeTab === "youtube_shorts"
+                  activeTab === "motion_pictures"
                     ? "border-amber-500/20 focus-within:border-amber-500/50"
+                    : activeTab === "music_videos"
+                    ? "border-rose-500/20 focus-within:border-rose-500/50"
                     : "border-white/10 focus-within:border-teal-500/50"
                 }`}
               >
@@ -1128,8 +1254,10 @@ export function CreatorReelsHome() {
                       onClick={() => setOpenDropdown(openDropdown === "format" ? null : "format")}
                       className={`w-full text-left px-2.5 py-1.5 rounded-xl border transition-all flex items-center justify-between gap-1 min-h-[42px] ${
                         openDropdown === "format"
-                          ? activeTab === "youtube_shorts"
+                          ? activeTab === "motion_pictures"
                             ? "bg-[#141A26] border-amber-400/60 ring-1 ring-amber-400/30"
+                            : activeTab === "music_videos"
+                            ? "bg-[#141A26] border-rose-400/60 ring-1 ring-rose-400/30"
                             : "bg-[#141A26] border-teal-400/60 ring-1 ring-teal-400/30"
                           : "bg-[#090D15] hover:bg-[#101522] border-white/10 hover:border-white/20"
                       }`}
@@ -1149,11 +1277,11 @@ export function CreatorReelsHome() {
                         {/* Dynamic Recommended Section */}
                         <div>
                           <div className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-teal-400 flex items-center justify-between">
-                            <span>⭐ Recommended for {activeTab === "youtube_shorts" ? "Cinema" : "Reels"}</span>
+                            <span>⭐ Recommended for {activeTab === "music_videos" ? "Music Video" : activeTab === "motion_pictures" ? "Cinema" : "Reels"}</span>
                             <span className="text-[8px] text-slate-400 font-mono">Smart Pick</span>
                           </div>
                           <div className="space-y-0.5 mt-1">
-                            {FORMAT_CONFIGS.filter(f => (activeTab === "youtube_shorts" || selectedDuration >= 60 || ["HISTORICAL_BIOPIC", "CINEMATIC_DRAMA"].includes(selectedGenre)) ? (f.id === "2.39:1" || f.id === "16:9") : (f.id === "9:16" || f.id === "16:9")).map(fmt => (
+                            {FORMAT_CONFIGS.filter(f => (activeTab === "motion_pictures" || selectedDuration >= 60 || ["HISTORICAL_BIOPIC", "CINEMATIC_DRAMA"].includes(selectedGenre)) ? (f.id === "2.39:1" || f.id === "16:9") : (f.id === "9:16" || f.id === "16:9")).map(fmt => (
                               <button
                                 key={`rec-${fmt.id}`}
                                 type="button"
@@ -1233,7 +1361,7 @@ export function CreatorReelsHome() {
                       onClick={() => setOpenDropdown(openDropdown === "duration" ? null : "duration")}
                       className={`w-full text-left px-2.5 py-1.5 rounded-xl border transition-all flex items-center justify-between gap-1 min-h-[42px] ${
                         openDropdown === "duration"
-                          ? activeTab === "youtube_shorts"
+                          ? activeTab === "motion_pictures"
                             ? "bg-[#141A26] border-amber-400/60 ring-1 ring-amber-400/30"
                             : "bg-[#141A26] border-teal-400/60 ring-1 ring-teal-400/30"
                           : "bg-[#090D15] hover:bg-[#101522] border-white/10 hover:border-white/20"
@@ -1258,14 +1386,14 @@ export function CreatorReelsHome() {
                         <div>
                           <div className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-teal-400 flex items-center justify-between">
                             <span>
-                              ⭐ Recommended for {selectedGenre === "MUSIC_VIDEO" ? "Music Video" : activeTab === "youtube_shorts" ? "Cinema" : "Reels"}
+                              ⭐ Recommended for {activeTab === "music_videos" || selectedGenre === "MUSIC_VIDEO" ? "Music Video" : activeTab === "motion_pictures" ? "Cinema" : "Reels"}
                             </span>
                             <span className="text-[8px] text-slate-400 font-mono">Smart Pick</span>
                           </div>
                           <div className="space-y-0.5 mt-1">
-                            {(selectedGenre === "MUSIC_VIDEO"
+                            {(activeTab === "music_videos" || selectedGenre === "MUSIC_VIDEO"
                               ? DURATION_CONFIGS.filter(d => d.sec === 34 || d.sec === 15 || d.sec === 30)
-                              : activeTab === "youtube_shorts" || selectedAspectRatio === "2.39:1" || ["HISTORICAL_BIOPIC", "CINEMATIC_DRAMA"].includes(selectedGenre)
+                              : activeTab === "motion_pictures" || selectedAspectRatio === "2.39:1" || ["HISTORICAL_BIOPIC", "CINEMATIC_DRAMA"].includes(selectedGenre)
                               ? DURATION_CONFIGS.filter(d => d.sec === 180 || d.sec === 60)
                               : DURATION_CONFIGS.filter(d => d.sec === 30 || d.sec === 15 || d.sec === 34)
                             ).map(d => (
@@ -1361,7 +1489,7 @@ export function CreatorReelsHome() {
                       onClick={() => setOpenDropdown(openDropdown === "genre" ? null : "genre")}
                       className={`w-full text-left px-2.5 py-1.5 rounded-xl border transition-all flex items-center justify-between gap-1 min-h-[42px] ${
                         openDropdown === "genre"
-                          ? activeTab === "youtube_shorts"
+                          ? activeTab === "motion_pictures"
                             ? "bg-[#141A26] border-amber-400/60 ring-1 ring-amber-400/30"
                             : "bg-[#141A26] border-teal-400/60 ring-1 ring-teal-400/30"
                           : "bg-[#090D15] hover:bg-[#101522] border-white/10 hover:border-white/20"
@@ -1382,14 +1510,14 @@ export function CreatorReelsHome() {
                         <div>
                           <div className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-teal-400 flex items-center justify-between">
                             <span>
-                              ⭐ Recommended for {selectedDuration === 34 ? "34s Music" : activeTab === "youtube_shorts" ? "Cinema Master" : "Viral Reel"}
+                              ⭐ Recommended for {activeTab === "music_videos" ? "Music Video" : activeTab === "motion_pictures" ? "Cinema Master" : "Viral Reel"}
                             </span>
                             <span className="text-[8px] text-slate-400 font-mono">Smart Pick</span>
                           </div>
                           <div className="space-y-0.5 mt-1">
-                            {(selectedDuration === 34
+                            {(activeTab === "music_videos" || selectedDuration === 34
                               ? OMNI_GENRES.filter(g => ["MUSIC_VIDEO", "AUTO", "BOLLYWOOD_ROMANCE"].includes(g.id))
-                              : activeTab === "youtube_shorts" || selectedDuration >= 60 || selectedAspectRatio === "2.39:1"
+                              : activeTab === "motion_pictures" || selectedDuration >= 60 || selectedAspectRatio === "2.39:1"
                               ? OMNI_GENRES.filter(g => ["HISTORICAL_BIOPIC", "CINEMATIC_DRAMA", "AUTO", "BOLLYWOOD_ROMANCE"].includes(g.id))
                               : OMNI_GENRES.filter(g => ["AUTO", "MUSIC_VIDEO", "BOLLYWOOD_ROMANCE", "BOLLYWOOD_ACTION"].includes(g.id))
                             ).map(g => (
@@ -1400,7 +1528,7 @@ export function CreatorReelsHome() {
                                   setSelectedGenre(g.id);
                                   if (g.id === "MUSIC_VIDEO" && selectedDuration !== 34) {
                                     setSelectedDuration(34);
-                                    if (activeTab === "instagram_tiktok") setSelectedAspectRatio("9:16");
+                                    if (activeTab === "social_reels" || activeTab === "music_videos") setSelectedAspectRatio("9:16");
                                   } else if (["BOLLYWOOD_ROMANCE", "BOLLYWOOD_ACTION"].includes(g.id) && selectedLanguage === "en") {
                                     setSelectedLanguage("hinglish-roman");
                                   }
@@ -1435,7 +1563,7 @@ export function CreatorReelsHome() {
                                   setSelectedGenre(g.id);
                                   if (g.id === "MUSIC_VIDEO" && selectedDuration !== 34) {
                                     setSelectedDuration(34);
-                                    if (activeTab === "instagram_tiktok") setSelectedAspectRatio("9:16");
+                                    if (activeTab === "social_reels" || activeTab === "music_videos") setSelectedAspectRatio("9:16");
                                   } else if (["BOLLYWOOD_ROMANCE", "BOLLYWOOD_ACTION"].includes(g.id) && selectedLanguage === "en") {
                                     setSelectedLanguage("hinglish-roman");
                                   }
@@ -1468,7 +1596,7 @@ export function CreatorReelsHome() {
                       onClick={() => setOpenDropdown(openDropdown === "language" ? null : "language")}
                       className={`w-full text-left px-2.5 py-1.5 rounded-xl border transition-all flex items-center justify-between gap-1 min-h-[42px] ${
                         openDropdown === "language"
-                          ? activeTab === "youtube_shorts"
+                          ? activeTab === "motion_pictures"
                             ? "bg-[#141A26] border-amber-400/60 ring-1 ring-amber-400/30"
                             : "bg-[#141A26] border-teal-400/60 ring-1 ring-teal-400/30"
                           : "bg-[#090D15] hover:bg-[#101522] border-white/10 hover:border-white/20"
@@ -2185,8 +2313,10 @@ export function CreatorReelsHome() {
                     value={promptText}
                     onChange={(e) => setPromptText(e.target.value)}
                     placeholder={
-                      activeTab === "youtube_shorts"
+                      activeTab === "motion_pictures"
                         ? "Describe your 180s cinematic story (e.g., Napoleon Bonaparte 5-act romance, from Marseilles youth to Notre-Dame coronation and solitary exile, Beethoven Op. 92 Allegretto, anamorphic 2.39:1...)"
+                        : activeTab === "music_videos"
+                        ? "Describe your music video (e.g., Midnight cyberpunk dancer performing liquid popping under neon rain in Shinjuku, continuous camera orbit, synthwave bass drop at 0:15...)"
                         : "Describe your scene or action (e.g., A street dancer performing in neon-lit Shinjuku at midnight, continuous camera push-in, synthwave bass drop...)"
                     }
                     className="w-full bg-[#080B11] border border-white/5 rounded-xl p-3.5 sm:p-4 text-base md:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-400/50 resize-none"
@@ -2205,19 +2335,26 @@ export function CreatorReelsHome() {
                     <span>Direct Sequel from Library...</span>
                   </button>
                   <span className="text-slate-400 shrink-0 text-[11px] font-medium">Try starter:</span>
-                  {(activeTab === "instagram_tiktok"
+                  {(activeTab === "music_videos"
                     ? [
-                        "Cyberpunk street dance in neon rain, bass drop at 0:15",
-                        "High alpine climber reaching sunlit peak, wind in jacket",
-                        "Desert nomad traversing sandstorms, cinematic dunes",
-                        "Deep space astronaut suit reflection, nebula flare"
+                        "Shakira-style Spanish pop star & dance crew on wet arena stage, laser beams, timbales & cold sparks, Lyria 3.5 128 BPM",
+                        "Midnight cyberpunk liquid popping dance in neon rain, synthwave drop at 0:15",
+                        "Rosalía-inspired flamenco trap choreography, urban Madrid courtyard, claps & sub-bass",
+                        "Dua Lipa disco funk dance routine in retro roller rink, neon lights, 120 BPM groove"
                       ]
-                    : [
-                        "Yash Chopra 5-act romance: Violinist hero & flowing chiffon saree heroine in Swiss Alps, Mohabbatein aesthetic, Lyria Bollywood strings, 2.39:1",
+                    : activeTab === "motion_pictures"
+                    ? [
                         "Napoleon Bonaparte: 5-act romance & imperial rise, Beethoven Op. 92 allegretto, anamorphic 2.39:1",
+                        "Yash Chopra 5-act romance: Violinist hero & flowing chiffon saree heroine in Swiss Alps, Mohabbatein aesthetic, Lyria Bollywood strings, 2.39:1",
                         "Oppenheimer Trinity dawn: Desert countdown, heat mirage, orchestral crescendo, 35mm anamorphic",
                         "The Last Samurai of Kyoto: Rain-soaked cobblestones, silent duel at dawn, bamboo mist",
                         "Interstellar Kepler Voyage: Relativistic tidal wave on ocean world, organ crescendo"
+                      ]
+                    : [
+                        "High alpine climber reaching sunlit peak, wind in jacket",
+                        "Desert nomad traversing sandstorms, cinematic dunes",
+                        "Deep space astronaut suit reflection, nebula flare",
+                        "Cyberpunk street dance in neon rain, bass drop at 0:15"
                       ]
                   ).map((preset, idx) => (
                     <button
@@ -2225,7 +2362,7 @@ export function CreatorReelsHome() {
                       type="button"
                       onClick={() => handleSelectStarterPrompt(preset)}
                       className={`shrink-0 px-2.5 py-1 rounded-full bg-white/5 border border-white/5 text-slate-300 text-[11px] transition-colors truncate max-w-[260px] ${
-                        activeTab === "youtube_shorts"
+                        activeTab === "motion_pictures"
                           ? "hover:bg-amber-500/10 hover:border-amber-500/30"
                           : "hover:bg-teal-500/10 hover:border-teal-500/30"
                       }`}
@@ -2324,10 +2461,13 @@ export function CreatorReelsHome() {
                                   });
                                   setPromptText(`${partInfo.suggestedTitlePrefix} "${partInfo.baseTitle}". The sequence continues seamlessly with the same character, wardrobe, and visual aesthetic: `);
                                   if (m.aspectRatio === "2.39:1") {
-                                    setActiveTab("youtube_shorts");
+                                    setActiveTab("motion_pictures");
                                     setSelectedAspectRatio("2.39:1");
+                                  } else if (m.genre === "MUSIC_VIDEO" || selectedGenre === "MUSIC_VIDEO") {
+                                    setActiveTab("music_videos");
+                                    setSelectedAspectRatio("9:16");
                                   } else {
-                                    setActiveTab("instagram_tiktok");
+                                    setActiveTab("social_reels");
                                     setSelectedAspectRatio("9:16");
                                   }
                                   setShowContinuationModal(false);
@@ -2382,7 +2522,11 @@ export function CreatorReelsHome() {
                                       posterUrl: reel.posterUrl,
                                     });
                                     setPromptText(`${partInfo.suggestedTitlePrefix} "${partInfo.baseTitle}". The sequence continues seamlessly with the same character, wardrobe, and visual aesthetic: `);
-                                    setActiveTab("instagram_tiktok");
+                                    if (reel.category.includes("Latin") || reel.category.includes("Choreography") || reel.id.includes("music") || reel.id.includes("dance")) {
+                                      handleTabChange("music_videos");
+                                    } else {
+                                      handleTabChange("social_reels");
+                                    }
                                     setSelectedAspectRatio("9:16");
                                     setShowContinuationModal(false);
                                     setTimeout(() => {
@@ -2487,7 +2631,7 @@ export function CreatorReelsHome() {
                       onClick={() => handleGenerate()}
                       disabled={isGenerating || isElaborating || !promptText.trim()}
                       className={`px-4 sm:px-5 py-2 rounded-xl disabled:opacity-50 disabled:pointer-events-none text-[#07090E] font-black text-xs sm:text-sm shadow-xl transition-all flex items-center justify-center gap-1.5 min-h-[38px] ${
-                        activeTab === "youtube_shorts"
+                        activeTab === "motion_pictures"
                           ? "bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 hover:from-amber-300 hover:to-orange-300 shadow-amber-500/25 hover:shadow-amber-500/40"
                           : "bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 shadow-teal-500/25 hover:shadow-teal-500/40"
                       }`}
@@ -2496,21 +2640,29 @@ export function CreatorReelsHome() {
                         <>
                           <div className="w-3.5 h-3.5 border-2 border-[#07090E] border-t-transparent rounded-full animate-spin" />
                           <span>
-                            {activeTab === "youtube_shorts" ? "Directing 180s Screenplay..." : "Planning Unbroken Scene..."}
+                            {activeTab === "motion_pictures"
+                              ? "Directing 180s Screenplay..."
+                              : activeTab === "music_videos"
+                              ? "Composing Lyria 3.5 Music Video..."
+                              : "Planning Unbroken Scene..."}
                           </span>
                         </>
                       ) : (
                         <>
-                          {activeTab === "youtube_shorts" ? (
+                          {activeTab === "motion_pictures" ? (
                             <Clapperboard className="w-4 h-4 text-[#07090E]" />
+                          ) : activeTab === "music_videos" ? (
+                            <Music2 className="w-4 h-4 text-[#07090E]" />
                           ) : (
                             <Sparkles className="w-4 h-4 text-[#07090E]" />
                           )}
                           <span>
                             {treatment
                               ? `Approve & Direct ${treatment.targetDurationSec}s Reel`
-                              : activeTab === "youtube_shorts"
+                              : activeTab === "motion_pictures"
                               ? "Direct 180s Cinema Master"
+                              : activeTab === "music_videos"
+                              ? "Direct Lyria Music Video"
                               : "Generate 9:16 Reel"}
                           </span>
                           <ArrowRight className="w-3.5 h-3.5 text-[#07090E]" />
@@ -2524,7 +2676,7 @@ export function CreatorReelsHome() {
                       onClick={() => handleElaborate()}
                       disabled={isElaborating || isGenerating || (!promptText.trim() && !referenceUrl.trim())}
                       className={`px-3.5 py-2 rounded-xl disabled:opacity-50 disabled:pointer-events-none font-bold text-xs border transition-all flex items-center justify-center gap-1.5 min-h-[38px] ${
-                        activeTab === "youtube_shorts"
+                        activeTab === "motion_pictures"
                           ? "bg-amber-500/10 border-amber-400/40 text-amber-300 hover:bg-amber-500/20 hover:border-amber-400/70 shadow-lg shadow-amber-500/10"
                           : "bg-teal-500/10 border-teal-400/40 text-teal-300 hover:bg-teal-500/20 hover:border-teal-400/70 shadow-lg shadow-teal-500/10"
                       }`}
@@ -2552,13 +2704,17 @@ export function CreatorReelsHome() {
                     <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                     <div>
                       <span className="font-bold text-white">
-                        {activeTab === "youtube_shorts"
+                        {activeTab === "motion_pictures"
                           ? "~12–15m for 30-shot master."
+                          : activeTab === "music_videos"
+                          ? "~6–8m for 5-take music video."
                           : "~7m for 6-shot reel."}
                       </span>
                       <span className="text-slate-400 block text-[10px]">
-                        {activeTab === "youtube_shorts"
+                        {activeTab === "motion_pictures"
                           ? "5 acts & Beethoven score in background."
+                          : activeTab === "music_videos"
+                          ? "Lyria 3.5 stem mix & choreography lock."
                           : "Renders in background; notify when ready."}
                       </span>
                     </div>
@@ -3030,29 +3186,38 @@ export function CreatorReelsHome() {
               <div
                 id="monitor-card"
                 className={`w-full h-full bg-[#0E121B] border rounded-2xl md:rounded-3xl p-3 sm:p-4 shadow-2xl shadow-black/60 relative flex flex-col justify-between transition-all ${
-                  activeTab === "youtube_shorts"
+                  activeTab === "motion_pictures"
                     ? "border-amber-500/20 hover:border-amber-500/40"
                     : "border-white/10 hover:border-teal-500/30"
                 }`}
               >
-                {activeTab === "instagram_tiktok" ? (
-                  /* Instagram / TikTok Mode 1 Monitor Content */
+                {activeTab !== "motion_pictures" ? (
+                  /* Music Video & Viral Reels 9:16 Vertical Monitor Content */
                   <>
                     {/* Monitor Card Top Header */}
                     <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/5 text-xs">
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
                         <span className="font-bold text-white text-xs sm:text-sm tracking-tight flex items-center gap-1.5">
-                          <Smartphone className="w-3.5 h-3.5 text-teal-400" />
-                          Live Production Monitor
+                          {activeTab === "music_videos" ? (
+                            <>
+                              <Music2 className="w-3.5 h-3.5 text-teal-400" />
+                              Music Video Production Monitor
+                            </>
+                          ) : (
+                            <>
+                              <Smartphone className="w-3.5 h-3.5 text-teal-400" />
+                              Live Production Monitor
+                            </>
+                          )}
                         </span>
                         <span className="px-2 py-0.5 rounded-full bg-teal-500/10 border border-teal-400/30 text-teal-300 text-[10px] font-semibold">
-                          9:16 Vertical
+                          {activeTab === "music_videos" ? "9:16 Vertical • Lyria 3.5" : "9:16 Vertical"}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono">
                         <span className="px-2 py-0.5 rounded bg-white/5 border border-white/5">
-                          1080×1920 (4K Upscaled)
+                          {activeTab === "music_videos" ? "1080×1920 • 128 BPM • Native Lip Sync" : "1080×1920 (4K Upscaled)"}
                         </span>
                       </div>
                     </div>
@@ -3093,7 +3258,7 @@ export function CreatorReelsHome() {
                             </span>
 
                             <span className="px-1.5 py-0.5 rounded-full bg-teal-500/90 backdrop-blur-md text-[#07090E] text-[8px] font-black uppercase tracking-wider">
-                              Zero Drift
+                              {activeTab === "music_videos" ? "Lyria Lip Sync" : "Zero Drift"}
                             </span>
                           </div>
 
@@ -3131,11 +3296,11 @@ export function CreatorReelsHome() {
                             </p>
 
                             <div className="mt-1.5 pt-1.5 border-t border-white/10 flex items-center justify-between text-[8px] text-slate-400">
-                              <span className="flex items-center gap-0.5 text-teal-300 font-medium">
-                                <CheckCircle2 className="w-2.5 h-2.5 text-teal-400" />
-                                Single continuous take
+                              <span className="flex items-center gap-0.5 text-teal-300 font-medium truncate">
+                                <CheckCircle2 className="w-2.5 h-2.5 text-teal-400 shrink-0" />
+                                {activeTab === "music_videos" ? "Lyria 3.5 Master Vocal Stem" : "Single continuous take"}
                               </span>
-                              <span>9:19.5 Flagship</span>
+                              <span className="shrink-0">9:19.5 Flagship</span>
                             </div>
                           </div>
                         </div>
@@ -3150,12 +3315,20 @@ export function CreatorReelsHome() {
                         <div className="space-y-1.5">
                           <div className="flex items-center justify-between px-0.5 text-xs text-slate-400">
                             <span className="font-bold text-teal-300 uppercase tracking-wider text-[10px] flex items-center gap-1">
-                              <Film className="w-3 h-3" /> Sample Productions
+                              {activeTab === "music_videos" ? (
+                                <>
+                                  <Music2 className="w-3 h-3" /> Music Videos
+                                </>
+                              ) : (
+                                <>
+                                  <Film className="w-3 h-3" /> Sample Productions
+                                </>
+                              )}
                             </span>
                             <span className="text-[9px] text-slate-400">Tap to load</span>
                           </div>
                           <div className="grid grid-cols-2 gap-1.5">
-                            {FINISHED_REELS.map((reel, idx) => (
+                            {reelsList.map((reel: FinishedReel, idx: number) => (
                               <button
                                 key={reel.id}
                                 type="button"
@@ -3200,7 +3373,15 @@ export function CreatorReelsHome() {
                     <div className="mt-2 pt-2 border-t border-white/5 flex items-center gap-1.5 text-[10px] sm:text-[11px] text-slate-400">
                       <CheckCircle2 className="w-3.5 h-3.5 text-teal-400 shrink-0" />
                       <span>
-                        <strong className="text-slate-200">Biometric Identity Continuity Certified.</strong> Facial geometry, bone anchors &amp; physical wardrobe lock 100% across all cuts.
+                        {activeTab === "music_videos" ? (
+                          <>
+                            <strong className="text-slate-200">Lyria 3.5 Pro &amp; Lip-Sync Certified.</strong> Spanish vocal cadence, choreography timing &amp; 128 BPM acoustic master synchronized across all 5 cuts.
+                          </>
+                        ) : (
+                          <>
+                            <strong className="text-slate-200">Biometric Identity Continuity Certified.</strong> Facial geometry, bone anchors &amp; physical wardrobe lock 100% across all cuts.
+                          </>
+                        )}
                       </span>
                     </div>
                   </>
@@ -3390,39 +3571,39 @@ export function CreatorReelsHome() {
 
           {/* THREE CREATOR PROMISES ROW (FULL-WIDTH 12 COLS) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-white/5">
-            {activeTab === "instagram_tiktok" ? (
+            {activeTab === "music_videos" ? (
               <>
                 <div className="p-5 rounded-2xl bg-[#0A0E17]/80 border border-teal-500/20 shadow-lg flex items-start gap-3.5 hover:border-teal-500/40 transition-colors">
                   <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center shrink-0 text-teal-400">
-                    <Layers className="w-5 h-5" />
+                    <Music2 className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="text-base font-bold text-white">Zero Face Drift</h4>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">Continuous scene extension keeps character facial identity 100% locked across all cuts.</p>
+                    <h4 className="text-base font-bold text-white">DeepMind Lyria 3.5 Stems</h4>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">Master musical backing beds ducked seamlessly under Spanish lead vocals with 0 audio collision.</p>
                   </div>
                 </div>
 
                 <div className="p-5 rounded-2xl bg-[#0A0E17]/80 border border-cyan-500/20 shadow-lg flex items-start gap-3.5 hover:border-cyan-500/40 transition-colors">
                   <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center shrink-0 text-cyan-400">
-                    <Clock className="w-5 h-5" />
+                    <Sparkles className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="text-base font-bold text-white">~7 Minute Turnaround</h4>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">Honest wait times stated upfront. Render in background with immediate completion alerts.</p>
+                    <h4 className="text-base font-bold text-white">Native Lip-Sync &amp; Choreography</h4>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">Vocal phonemes and stage dance cues aligned with 128 BPM Latin pop beats across 5 unique takes.</p>
                   </div>
                 </div>
 
                 <div className="p-5 rounded-2xl bg-[#0A0E17]/80 border border-emerald-500/20 shadow-lg flex items-start gap-3.5 hover:border-emerald-500/40 transition-colors">
                   <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-400">
-                    <ShieldCheck className="w-5 h-5" />
+                    <Layers className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="text-base font-bold text-white">Platform-Safe AI</h4>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">Compliant C2PA metadata &amp; SynthID watermarks safeguard account reach on TikTok &amp; IG.</p>
+                    <h4 className="text-base font-bold text-white">Zero Face Drift</h4>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">Lead singer Sofia and her 4-dancer crew retain 100% facial geometry and sequin wardrobe across cuts.</p>
                   </div>
                 </div>
               </>
-            ) : (
+            ) : activeTab === "motion_pictures" ? (
               <>
                 <div className="p-5 rounded-2xl bg-[#0A0E17]/80 border border-amber-500/20 shadow-lg flex items-start gap-3.5 hover:border-amber-500/40 transition-colors">
                   <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-400">
@@ -3454,6 +3635,38 @@ export function CreatorReelsHome() {
                   </div>
                 </div>
               </>
+            ) : (
+              <>
+                <div className="p-5 rounded-2xl bg-[#0A0E17]/80 border border-teal-500/20 shadow-lg flex items-start gap-3.5 hover:border-teal-500/40 transition-colors">
+                  <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center shrink-0 text-teal-400">
+                    <Layers className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-base font-bold text-white">Zero Face Drift</h4>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">Continuous scene extension keeps character facial identity 100% locked across all cuts.</p>
+                  </div>
+                </div>
+
+                <div className="p-5 rounded-2xl bg-[#0A0E17]/80 border border-cyan-500/20 shadow-lg flex items-start gap-3.5 hover:border-cyan-500/40 transition-colors">
+                  <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center shrink-0 text-cyan-400">
+                    <Clock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-base font-bold text-white">~7 Minute Turnaround</h4>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">Honest wait times stated upfront. Render in background with immediate completion alerts.</p>
+                  </div>
+                </div>
+
+                <div className="p-5 rounded-2xl bg-[#0A0E17]/80 border border-emerald-500/20 shadow-lg flex items-start gap-3.5 hover:border-emerald-500/40 transition-colors">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-400">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-base font-bold text-white">Platform-Safe AI</h4>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">Compliant C2PA metadata &amp; SynthID watermarks safeguard account reach on TikTok &amp; IG.</p>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -3475,37 +3688,138 @@ export function CreatorReelsHome() {
             </p>
 
             {/* Showcase tab selector */}
-            <div className="flex items-center justify-center gap-2 mt-6">
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-6">
               <button
                 type="button"
-                onClick={() => setShowcaseTab("instagram_tiktok")}
+                onClick={() => setShowcaseTab("music_videos")}
                 className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 min-h-[40px] ${
-                  showcaseTab === "instagram_tiktok"
+                  showcaseTab === "music_videos"
                     ? "bg-teal-500 text-[#07090E] shadow-md shadow-teal-500/20"
                     : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
                 }`}
               >
-                <span>📱 Instagram / TikTok (9:16)</span>
+                <span>🎵 Music Videos (Lyria 3.5)</span>
               </button>
               <button
                 type="button"
-                onClick={() => setShowcaseTab("youtube_shorts")}
+                onClick={() => setShowcaseTab("motion_pictures")}
                 className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 min-h-[40px] ${
-                  showcaseTab === "youtube_shorts"
+                  showcaseTab === "motion_pictures"
                     ? "bg-amber-400 text-[#07090E] shadow-md shadow-amber-400/20"
                     : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
                 }`}
               >
-                <span>🎬 YouTube / 180s Cinema (2.39:1)</span>
+                <span>🎬 Motion Pictures (Napoleon)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowcaseTab("social_reels")}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 min-h-[40px] ${
+                  showcaseTab === "social_reels"
+                    ? "bg-cyan-500 text-[#07090E] shadow-md shadow-cyan-500/20"
+                    : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
+                }`}
+              >
+                <span>📱 Viral Reels (9:16)</span>
               </button>
             </div>
           </div>
 
-          {showcaseTab === "instagram_tiktok" ? (
-            /* 4 REELS RESPONSIVE GRID */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-              {FINISHED_REELS.map((reel, index) => {
-                const isSelected = activeReelIndex === index && activeTab === "instagram_tiktok";
+          {showcaseTab === "music_videos" ? (
+            /* MUSIC VIDEOS SHOWCASE GRID */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto">
+              {FINISHED_MUSIC_VIDEOS.map((reel, index) => {
+                const isSelected = activeReelIndex === index && activeTab === "music_videos";
+                return (
+                  <div
+                    key={reel.id}
+                    className={`bg-[#0E121B] rounded-2xl border transition-all overflow-hidden flex flex-col group ${
+                      isSelected
+                        ? "border-teal-500 ring-2 ring-teal-500/30 shadow-xl shadow-teal-500/10"
+                        : "border-white/10 hover:border-white/25 hover:shadow-xl"
+                    }`}
+                  >
+                    {/* Reel 9:16 Video Container */}
+                    <div className="relative aspect-[9/16] max-h-[560px] bg-black overflow-hidden">
+                      <video
+                        src={reel.videoUrl}
+                        poster={reel.posterUrl}
+                        playsInline
+                        muted
+                        loop
+                        autoPlay
+                        preload="auto"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+
+                      {/* Top overlay badges */}
+                      <div className="absolute top-3 inset-x-3 flex items-center justify-between z-10">
+                        <span className="px-2 py-0.5 rounded bg-black/70 backdrop-blur-md text-[10px] font-bold text-white flex items-center gap-1">
+                          <Music2 className="w-3 h-3 text-teal-400" />
+                          <span>{reel.shots} Takes • {reel.durationSec}s</span>
+                        </span>
+                        <span className="px-2 py-0.5 rounded bg-teal-500/90 text-[#07090E] text-[10px] font-black uppercase">
+                          Lyria 3.5
+                        </span>
+                      </div>
+
+                      {/* Bottom CTA to load into main player */}
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleTabChange("music_videos");
+                            setActiveReelIndex(index);
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
+                          className="px-4 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-[#07090E] font-bold text-xs flex items-center gap-1.5 shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all"
+                        >
+                          <Play className="w-4 h-4 fill-current" />
+                          <span>Watch in Music Player</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Reel Metadata */}
+                    <div className="p-4 sm:p-5 flex flex-col flex-grow justify-between">
+                      <div>
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="text-[11px] font-semibold text-teal-400 uppercase tracking-wide flex items-center gap-1">
+                            <Sparkles className="w-3 h-3" />
+                            {reel.category}
+                          </span>
+                        </div>
+                        <h3 className="text-base font-bold text-white group-hover:text-teal-300 transition-colors">
+                          {reel.title}
+                        </h3>
+                        <p className="text-xs text-slate-400 mt-2 line-clamp-2">
+                          {reel.prompt}
+                        </p>
+                      </div>
+
+                      <div className="mt-4 pt-3 border-t border-white/5 flex flex-col gap-2.5">
+                        <div className="flex items-start gap-1.5 text-[11px] text-slate-300">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-teal-400 shrink-0 mt-0.5" />
+                          <span className="leading-tight">{reel.continuityProof}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {reel.tags.map((tag, tIdx) => (
+                            <span key={tIdx} className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-slate-400">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : showcaseTab === "social_reels" ? (
+            /* VIRAL REELS SHOWCASE GRID */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+              {FINISHED_SOCIAL_REELS.map((reel, index) => {
+                const isSelected = activeReelIndex === index && activeTab === "social_reels";
                 return (
                   <div
                     key={reel.id}
@@ -3533,7 +3847,7 @@ export function CreatorReelsHome() {
                         <span className="px-2 py-0.5 rounded bg-black/70 backdrop-blur-md text-[10px] font-bold text-white">
                           {reel.shots} Shots • {reel.durationSec}s
                         </span>
-                        <span className="px-2 py-0.5 rounded bg-teal-500/90 text-[#07090E] text-[10px] font-black uppercase">
+                        <span className="px-2 py-0.5 rounded bg-cyan-500/90 text-[#07090E] text-[10px] font-black uppercase">
                           9:16
                         </span>
                       </div>
@@ -3543,11 +3857,11 @@ export function CreatorReelsHome() {
                         <button
                           type="button"
                           onClick={() => {
-                            setActiveTab("instagram_tiktok");
+                            handleTabChange("social_reels");
                             setActiveReelIndex(index);
                             window.scrollTo({ top: 0, behavior: "smooth" });
                           }}
-                          className="px-4 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-[#07090E] font-bold text-xs flex items-center gap-1.5 shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all"
+                          className="px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-[#07090E] font-bold text-xs flex items-center gap-1.5 shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all"
                         >
                           <Play className="w-4 h-4 fill-current" />
                           <span>Watch in Main Player</span>
@@ -3559,11 +3873,11 @@ export function CreatorReelsHome() {
                     <div className="p-4 sm:p-5 flex flex-col flex-grow justify-between">
                       <div>
                         <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className="text-[11px] font-semibold text-teal-400 uppercase tracking-wide">
+                          <span className="text-[11px] font-semibold text-cyan-400 uppercase tracking-wide">
                             {reel.category}
                           </span>
                         </div>
-                        <h3 className="text-base font-bold text-white group-hover:text-teal-300 transition-colors">
+                        <h3 className="text-base font-bold text-white group-hover:text-cyan-300 transition-colors">
                           {reel.title}
                         </h3>
                         <p className="text-xs text-slate-400 mt-2 line-clamp-2">
@@ -3573,7 +3887,7 @@ export function CreatorReelsHome() {
 
                       <div className="mt-4 pt-3 border-t border-white/5 flex flex-col gap-2.5">
                         <div className="flex items-start gap-1.5 text-[11px] text-slate-300">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-teal-400 shrink-0 mt-0.5" />
+                          <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
                           <span className="leading-tight">{reel.continuityProof}</span>
                         </div>
                         <button
@@ -3589,17 +3903,17 @@ export function CreatorReelsHome() {
                               posterUrl: reel.posterUrl,
                             });
                             setPromptText(`Act II: Continuation of "${reel.title}". The sequence continues seamlessly with the same character, wardrobe, and visual aesthetic: `);
-                            setActiveTab("instagram_tiktok");
+                            handleTabChange("social_reels");
                             setSelectedAspectRatio("9:16");
                             setTimeout(() => {
                               const el = document.getElementById("continuation-active-banner") || document.getElementById("prompt-studio-box");
                               if (el) el.scrollIntoView({ behavior: "smooth" });
                             }, 100);
                           }}
-                          className="w-full py-2 px-3 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 hover:border-teal-400 text-teal-300 hover:text-white font-mono text-xs font-semibold flex items-center justify-center gap-1.5 transition shadow-sm"
+                          className="w-full py-2 px-3 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 hover:border-cyan-400 text-cyan-300 hover:text-white font-mono text-xs font-semibold flex items-center justify-center gap-1.5 transition shadow-sm"
                           title="Direct Part 2 continuation with the exact same character, wardrobe, and theme"
                         >
-                          <Sparkles className="w-3.5 h-3.5 text-teal-400" />
+                          <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
                           <span>Direct Part 2 (Continuation)</span>
                         </button>
                       </div>
@@ -3642,7 +3956,7 @@ export function CreatorReelsHome() {
                           <button
                             type="button"
                             onClick={() => {
-                              setActiveTab("youtube_shorts");
+                              handleTabChange("motion_pictures");
                               window.scrollTo({ top: 0, behavior: "smooth" });
                             }}
                             className="px-5 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#07090E] font-black text-sm flex items-center gap-2 shadow-xl transform translate-y-2 group-hover:translate-y-0 transition-all"

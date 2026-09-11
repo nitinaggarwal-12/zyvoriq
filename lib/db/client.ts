@@ -1,4 +1,3 @@
-import { DatabaseSync } from "node:sqlite";
 import path from "node:path";
 import type { Pool } from "pg";
 import { SQLITE_SCHEMA, POSTGRES_SCHEMA } from "./schema";
@@ -17,7 +16,15 @@ import type {
   PublishDispatch
 } from "./types";
 
-let dbInstance: DatabaseSync | null = null;
+let DatabaseSync: any = null;
+try {
+  // Use dynamic require so webpack doesn't crash if node:sqlite isn't bundled
+  DatabaseSync = require("node:sqlite")?.DatabaseSync;
+} catch {
+  // Handled in getDatabase()
+}
+
+let dbInstance: any = null;
 let pgPool: Pool | null = null;
 let pgSchemaMigrated = false;
 
@@ -71,7 +78,7 @@ export function safeJsonParse<T>(jsonStr: any, fallback: T): T {
   }
 }
 
-export function getDatabase(): DatabaseSync {
+export function getDatabase(): any {
   if (!dbInstance) {
     try {
       const dbPath = path.resolve(process.cwd(), "dev.db");

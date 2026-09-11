@@ -96,4 +96,12 @@
 - **No Manufactured Authority in Logs**: Never write log entries or audit ledgers claiming approval by an AI entity (e.g., `approvedBy: "Omni-Director-Runtime"`) unless an actual LLM agent physically evaluated the content and issued that verdict.
 - **Zero Pretense Under Scrutiny**: When asked how an asset was created or what models were used, provide an immediate, literal, and transparent account of the exact code paths, file sources, and API calls. Never defend an illusion or wait to be questioned before disclosing the truth.
 
+# 🎼 Mandatory Google DeepMind Lyria 3.5 Audio Protocol (Zero-Sine Oscillator Ban)
+- **100% Genuine Lyria Execution**: Master music soundtracks for all music videos, dance reels, and song productions MUST be generated directly via Google DeepMind Lyria (`models/lyria-3.5:generateContent`). Never simulate, mockup, or placeholder music using synthetic sine-wave oscillators (`sine=frequency=`), noise generators (`anoisesrc=`), or static monotone sweeps.
+- **Pre-Flight Harmonic & Multi-Stem Verification**: Before video assembly or final cut delivery, every master soundtrack in `scratch/` must be verified for true polyphonic instrumentation, drums, basslines, and multi-section arrangement. Monotone humming, single-frequency test tones, and synthetic oscillator loops are strictly forbidden and will be rejected by pre-tool and stop quality gates.
+- **Direct API Payload Standard**: All Lyria generation calls must invoke `https://generativelanguage.googleapis.com/v1beta/models/lyria-3.5:generateContent` with rich stylistic, tempo, and lyrical prompt grounding, extracting `inlineData` MP3 audio bytes directly from the response candidates.
+
+
+
+
 

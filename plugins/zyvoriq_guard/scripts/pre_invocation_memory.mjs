@@ -27,7 +27,8 @@ process.stdin.on("end", () => {
         "8. CUT-BOUNDARY ACOUSTIC CONTINUITY: Never hard-cut singing vocals mid-syllable. Always apply a 300ms natural acoustic decay (afade=t=out) and crossfade incoming stems (afade=t=in).",
         "9. REMOTE CLOUDTOP EXECUTION: All heavy ffmpeg, rendering, and test harnesses must execute on Cloudtop (nitinagga.c.googlers.com).",
         "10. ENVIRONMENTAL & LIGHTING CONTINUITY (ZERO DAY/NIGHT JUMPS): Never abruptly jump lighting, sky, or time of day (e.g. broad daylight to midnight aurora) between consecutive shots of a continuous performance scene. Lighting temperature and atmosphere must flow naturally.",
-        "11. CUT-BOUNDARY PAIRWISE CONTINUITY & CAST LOCKING: Every cut transition must pass a pairwise delta check across t_cut ± 0.2s. Exact actor facial bone structure, jawline geometry, skin texture, and garment accessories (no sudden brooches, buttons, or embellishment changes) must remain locked across the cut."
+        "11. CUT-BOUNDARY PAIRWISE CONTINUITY & CAST LOCKING: Every cut transition must pass a pairwise delta check across t_cut ± 0.2s. Exact actor facial bone structure, jawline geometry, skin texture, and garment accessories (no sudden brooches, buttons, or embellishment changes) must remain locked across the cut.",
+        "12. GENUINE LYRIA 3.5 MUSIC MANDATE (ZERO SINE WAVE OSCILLATOR BAN): Master soundtracks must be generated directly by Google DeepMind Lyria (models/lyria-3.5) with authentic instruments, rhythm section, and singing vocals. Simulating music with FFmpeg synthetic tone generators (sine=frequency=, anoisesrc=) or monotone humming is strictly forbidden and rejected at all gates."
       ].join("\n");
 
       console.log(JSON.stringify({
