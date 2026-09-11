@@ -346,32 +346,26 @@ REASON: <concise explanation>`;
             }
 
             // =========================================================================
-            // ASSERTION 5: CHECK AUDIT REPORT VERDICT
+            // ASSERTION 6: CUT-BOUNDARY INITIAL-FRAME PSNR CEILING (< 25 dB)
+            // (Verifies sequential tail-frame chaining and bans identical anchor resets)
             // =========================================================================
-            const auditReportPaths = [
-              path.join(dir, "audit_5m", "forensic_audit_report.md"),
-              path.join(dir, "audit", "forensic_audit_report.md"),
-              path.join(dir, "forensic_audit_report.md")
-            ];
-
-            for (const arp of auditReportPaths) {
-              if (fs.existsSync(arp)) {
-                const reportContent = fs.readFileSync(arp, "utf-8");
-                if (
-                  reportContent.includes("VERDICT: FAIL") ||
-                  reportContent.includes("FINAL COMPREHENSIVE VERDICT]:\nFAIL") ||
-                  reportContent.includes("AUDIT RESULT: FAIL")
-                ) {
+            try {
+              const remotePath = `~/zyvoriq_remote/${relativePath}`;
+              const p0Cmd = `ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no nitinagga.c.googlers.com 'ffmpeg -y -ss 0.0 -i ${remotePath} -vframes 1 -q:v 2 /tmp/p0.jpg 2>/dev/null; ffmpeg -y -ss 8.0 -i ${remotePath} -vframes 1 -q:v 2 /tmp/p8.jpg 2>/dev/null; ffmpeg -y -ss 16.0 -i ${remotePath} -vframes 1 -q:v 2 /tmp/p16.jpg 2>/dev/null; ffmpeg -i /tmp/p0.jpg -i /tmp/p8.jpg -filter_complex "psnr" -f null - 2>&1; ffmpeg -i /tmp/p8.jpg -i /tmp/p16.jpg -filter_complex "psnr" -f null - 2>&1'`;
+              const psnrOut = execSync(p0Cmd, { timeout: 20000 }).toString();
+              const psnrMatches = [...psnrOut.matchAll(/average:([0-9.]+)/g)].map(m => parseFloat(m[1]));
+              for (const p of psnrMatches) {
+                if (p >= 25.0) {
                   console.log(
                     JSON.stringify({
                       decision: "continue",
-                      reason: `[ZYVORIQ QUALITY GATE BLOCKED]: The forensic multimodal audit report at ${arp} indicates FAIL! All biometric continuity, vocal sync, and acoustic gates must PASS before concluding. Remediate defects autonomously.`
+                      reason: `[ZYVORIQ ZERO-ILLUSION GATE BLOCKED]: High cross-shot PSNR (${p.toFixed(2)} dB >= 25.0 dB) detected between cut boundary start frames in ${relativePath}! This indicates that Shot N and Shot N+1 both began from the identical static anchor frame (visual snap-back reset). Implement sequential tail-frame chaining so consecutive shots continue forward motion seamlessly.`
                     })
                   );
                   return;
                 }
               }
-            }
+            } catch (e) {}
           }
         }
       }

@@ -101,6 +101,23 @@
 - **Pre-Flight Harmonic & Multi-Stem Verification**: Before video assembly or final cut delivery, every master soundtrack in `scratch/` must be verified for true polyphonic instrumentation, drums, basslines, and multi-section arrangement. Monotone humming, single-frequency test tones, and synthetic oscillator loops are strictly forbidden and will be rejected by pre-tool and stop quality gates.
 - **Direct API Payload Standard**: All Lyria generation calls must invoke `https://generativelanguage.googleapis.com/v1beta/models/lyria-3.5:generateContent` with rich stylistic, tempo, and lyrical prompt grounding, extracting `inlineData` MP3 audio bytes directly from the response candidates.
 
+# ⛓️ Mandatory Sequential Tail-Frame Chaining Protocol (Zero Anchor Re-use Loop)
+- **Frame-0 Reset Trap Ban**: In Google Veo, image conditioning locks Frame 0 of the generated clip to the provided image. Passing the same static poster still to consecutive shots (Shot 1, Shot 2, Shot 3) forces the character to teleport back to the opening pose at every cut boundary ($t=0\text{s}, 8\text{s}, 16\text{s}$), creating an unnatural repeating loop.
+- **Sequential Tail-Frame Pipeline**:
+  1. Shot 1 ($0-8\text{s}$): Conditioned on the Character Anchor Poster.
+  2. At $t=7.9\text{s}$, extract the exact tail frame of Shot 1: `ffmpeg -sseof -0.1 -i shot_01.mp4 -vframes 1 -q:v 2 shot_01_tail.jpg`.
+  3. Shot 2 ($8-16\text{s}$): MUST be conditioned on `shot_01_tail.jpg`.
+  4. At $t=15.9\text{s}$, extract the exact tail frame of Shot 2: `ffmpeg -sseof -0.1 -i shot_02.mp4 -vframes 1 -q:v 2 shot_02_tail.jpg`.
+  5. Shot 3 ($16-24\text{s}$): MUST be conditioned on `shot_02_tail.jpg`.
+- **Cut-Boundary Initial Frame PSNR Ceiling**: The PSNR between Frame 0 of consecutive shots (e.g. $t=0.0\text{s}$ vs $t=8.0\text{s}$ vs $t=16.0\text{s}$) MUST be LESS than $25.0\text{ dB}$. Any PSNR $\ge 25.0\text{ dB}$ indicates an illegal visual reset loop and will immediately trip the stop quality gate.
+
+# 🎙️ Audio-Visual Vocal Coincidence Mandate (Zero Phantom Mouthing)
+- **Pre-Flight Acoustic Analysis Order**: Before writing or dispatching Veo video prompts, the system MUST run an acoustic analysis on the Lyria soundtrack to extract the exact timestamp $T_{\text{vocal}}$ where singing vocals actually begin.
+- **Instrumental Window Mouth-Locking**: For any timeframe ($0.0\text{s} - T_{\text{vocal}}$) where the music is playing an instrumental intro, beat build, or interlude without singing vocals, video prompts MUST explicitly mandate **pure dance choreography, fashion runway modeling, head turns, smiling, and eye contact with mouth closed**. Prompts must explicitly state: `mouth closed, no singing, non-vocal dance performance`.
+- **Vocal Drop Synchronization**: Prompts for singing performance are strictly restricted to timestamps where lead singing vocals are physically present and audible in the audio track.
+- **Unified Multimodal Audit**: All quality audits and stop gates must inspect the video and audio together as a unified multimodal timeline. If character lips articulate words during an instrumental intro, the production will be rejected with `FAIL: PHANTOM_VOCAL_MOUTHING`.
+
+
 
 
 

@@ -183,19 +183,28 @@ export async function generateVeoClip(rawPrompt, durationSeconds = 8, maxRetries
 }
 
 export async function generateImagenAnchor(prompt) {
-  console.log(`🎨 Generating Imagen 3 anchor: "${prompt.slice(0, 80)}..."`);
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${key}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      instances: [{ prompt }],
-      parameters: { aspectRatio: "9:16", sampleCount: 1 }
-    })
-  });
-  if (res.ok) {
-    const data = await res.json();
-    const b64 = data.predictions?.[0]?.bytesBase64Encoded;
-    if (b64) return Buffer.from(b64, "base64");
+  console.log(`🎨 Generating character anchor via Gemini Image: "${prompt.slice(0, 80)}..."`);
+  for (const model of ["gemini-3.1-flash-image-preview", "gemini-2.5-flash-image"]) {
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `${prompt}, high resolution, 9:16 aspect ratio, masterpiece` }] }]
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const parts = data.candidates?.[0]?.content?.parts || [];
+        for (const p of parts) {
+          if (p.inlineData?.data) {
+            return Buffer.from(p.inlineData.data, "base64");
+          }
+        }
+      }
+    } catch (err) {
+      console.warn(`Model ${model} warning:`, err.message);
+    }
   }
   return null;
 }

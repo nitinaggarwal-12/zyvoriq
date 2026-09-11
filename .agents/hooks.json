@@ -171,6 +171,12 @@
       },
       "rules": {
         "ban_stream_loop": true,
+        "ban_identical_shot_image_conditioning": true,
+        "require_sequential_tail_frame_chaining": true,
+        "require_preflight_audio_vocal_timestamp_extraction": true,
+        "ban_singing_prompts_during_instrumental_intros": true,
+        "max_cross_shot_initial_frame_psnr": 25.0,
+        "require_multimodal_audio_visual_lipsync_gate": true,
         "max_vocal_bed_volume": 0.20,
         "biometric_anchor_threshold": 0.05,
         "zero_silence_required": true

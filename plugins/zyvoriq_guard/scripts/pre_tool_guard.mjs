@@ -59,6 +59,17 @@ process.stdin.on("end", () => {
           decision = "deny";
           reason = `[ZYVORIQ ZERO-ILLUSION GUARD]: Environmental lighting contradiction detected! Script defines consecutive scene shots mixing daylight/sunlight and nighttime/aurora without an explicit transition bridge. Continuous performance scenes must maintain unified lighting and time-of-day.`;
         }
+
+        // Check for identical anchor still reuse across consecutive shots in a loop
+        const hasMultiShotLoopWithStaticAnchor =
+          /(?:for\s*\([^)]*shots\)|shots\.map|shots\.forEach)[^}]*generateVeo(?:Clip|Shot)\([^)]*anchor/i.test(writeContent) &&
+          !writeContent.includes("tail") &&
+          !writeContent.includes("sseof");
+
+        if (hasMultiShotLoopWithStaticAnchor) {
+          decision = "deny";
+          reason = `[ZYVORIQ ZERO-ILLUSION GUARD]: Cannot write script reusing identical anchor still across consecutive shots! Veo locks Frame 0 to the input image, causing a visual snap-back reset at cut boundaries. You must implement sequential tail-frame chaining (conditioning Shot N+1 on Shot N's extracted tail frame).`;
+        }
       }
     }
 
