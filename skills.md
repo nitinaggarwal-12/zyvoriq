@@ -1,107 +1,104 @@
-# 🧰 Zyvoriq Workspace Skills & Engineering Protocols
+# Zyvoriq Workspace Skills & Engineering Protocols
 
-This document defines the specialized autonomous engineering skills, forensic telemetry procedures, and quality protocols enforced across the Zyvoriq codebase.
-
----
-
-## 1. 🔍 `proactive-telemetry-forensics` (Zero-Wait Autonomous Log Auditing)
-
-### Purpose & Trigger Conditions
-Trigger this skill immediately during and after any video/audio generation event, queue transition, or worker execution.
-**CRITICAL RULE**: Never wait for Claude, external tools, or the user to inspect logs, extract error messages, or perform forensic math on clip durations. Antigravity must autonomously pull, parse, and diagnose Railway container logs directly on Cloudtop.
-
-### Core Protocol & Verification Steps
-1. **Live Log Tailing on Cloudtop**:
-   Stream or query live JSON logs from both services:
-   ```bash
-   ssh nitinagga.c.googlers.com 'export PATH=$HOME/bin:$PATH; cd ~/zyvoriq_remote && railway logs --service zyvoriq-reel-worker --lines 100 --json'
-   ssh nitinagga.c.googlers.com 'export PATH=$HOME/bin:$PATH; cd ~/zyvoriq_remote && railway logs --service zyvoriq --lines 100 --json'
-   ```
-   Or execute the dedicated live watchdog:
-   ```bash
-   ssh nitinagga.c.googlers.com 'export PATH=$HOME/bin:$PATH; cd ~/zyvoriq_remote && node scripts/telemetry_watchdog.mjs --once --lines 150'
-   ```
-
-2. **Automated Retime Clamp & Surplus Duration Math**:
-   - Parse `studio1 render resync` telemetry payloads.
-   - Audit every shot for `clampFloorBound === true`.
-   - Compute exact surplus seconds trimmed: `surplusSec = sourceSec - (usableSec || targetSec)`.
-   - Compute total clip discard percentage: `totalSurplus / totalGenerated`.
-   - **Action Threshold**: If surplus exceeds 3.0s on any shot or total waste exceeds 20%, immediately diagnose root cause:
-     - Is the word ceiling too low (e.g. 10 words yielding only 3s audio)?
-     - Is TTS speaking faster than planned (e.g. 2.1 wps vs 1.4 wps)?
-     - Is Veo locked to an 8s bucket due to image attachments?
-   - Autonomously iterate and correct the planner or prompts without waiting for user instruction.
-
-3. **Speech Cadence (WPS) Calibration**:
-   - Track `[narration-cadence]`: `words / duration = wps`.
-   - Compare against `wordsPerSecondForGenre(genre)` in `lib/studio1/planner.ts`.
-   - Maintain historical measurements (e.g. 2026-09-09 telemetry: `44 words / 20.64s = 2.13 wps`).
-
-4. **Audio Strategy & Speech-Sync Integrity**:
-   - Assert `audio strategy` explicitly matches the requested genre.
-   - For `MUSIC_VIDEO`, strictly verify `audioStrategy === "native"`.
-   - Enforce that `renderRough` never blends synthetic TTS (`narrationPath`) over native character singing/speaking.
-   - Enforce that native audio is kept at `volume=1.00` normalized to `-24 LUFS` with zero `-t d` truncation.
+Specialized autonomous engineering skills enforced across the Zyvoriq codebase.
+Every skill here maps to code that actually runs. If a skill references a check,
+that check is wired into the worker pipeline and/or CI.
 
 ---
 
-## 2. 🎬 `cinema-feature-film-qa` (15-Minute Feature Film Player & EDL QA)
+## 1. `omni-plan-authority` (Omni 1.1 supremacy)
 
-### Purpose & Trigger Conditions
-Trigger when modifying:
-- 15-minute Cinema Originals player: `app/studio/cinema/page.tsx`
-- Cinema Audit & Scoring Hub: `app/studio/cinema/audit/page.tsx`
-- 118-Shot EDL generator: `lib/cinema/dharmakshetra15m.ts`
+**Trigger:** any production, any model call, any regeneration.
 
-### Core Rules
-1. **Absolute Ban on Synthetic `<video loop>`**: Long-form master players must never loop clips to mask asset shortages.
-2. **15-Minute Master Timeline Clock**: Playback progression is governed by `timeline15mSec` (0 to 900s), advancing monotonically forward.
-3. **118-Shot Visual Continuity**: Every shot in the EDL (#001 through #118) must possess unique optics, camera motions, and lighting without repetitive cycling.
-4. **Automated Guard Suite**: Run `node scripts/qa/verify_15min_feature_film.mjs` until all 4 guards pass.
-
----
-
-## 3. 📱 `cross-viewport-auditor` (Dual-OS Mobile & Ultra-Wide Compatibility)
-
-### Purpose & Trigger Conditions
-Trigger when modifying UI components, responsive grids, media cards, or navigation bars.
-
-### Core Rules
-1. **Zero Horizontal Overflow (`overflow-x-hidden`)**: All containers must satisfy `document.documentElement.scrollWidth <= window.innerWidth`.
-2. **Automated Dual-OS Viewport Assertions**: Every QA run must test:
-   - iOS Safari: iPhone 14 @ `390x844`
-   - Android Chrome: Pixel 7 @ `412x915`
-   - Ultra-Wide Desktop: `1600x950`
-3. **iOS Auto-Zoom Prevention**: Inputs must use `font-size >= 16px` on mobile (`text-base md:text-sm`).
-4. **Touch Target Accessibility**: Minimum `44x44px` clickable/tap area for all buttons and interactive controls.
-5. **Native Inline Video**: All `<video>` tags must specify `playsInline`, `muted`, `autoPlay`, and `preload="auto"`.
+- No model runs without an Omni Execution Plan (`lib/reel/omniExecutionPlan.ts`).
+  The plan is a signed DAG with an `omni_plan_token` on `reel_production_controls`.
+- Every operation carries `omniPlanToken` + `omniNodeId`. The worker's
+  `controlFor()` calls `assertAuthorizedByOmniPlan()`; a mismatch refuses the op
+  with `OPERATION_CANCELLED` (drains, no cascade).
+- Model calling order is Omni's, not the worker's: Lyria (5-min music) → Nano
+  Banana (`gemini-2.5-flash-image`) anchors with continuity → Veo per shot →
+  lip/face mapping → audit.
+- `regen_reel` mints a new plan token, de-authorizing all in-flight ops.
 
 ---
 
-## 4. 🗄️ `database-schema-guard` (Dual SQLite & PostgreSQL Safety)
+## 2. `deterministic-quality-gates` (Omni's sensors)
 
-### Purpose & Trigger Conditions
-Trigger when modifying SQL schemas, migrations, or database queries.
+**Trigger:** every reel/shot render, in-pipeline and in CI.
 
-### Core Rules
-1. **Dual-Engine Type Compatibility**: SQLite integer booleans (`0` / `1`) must map cleanly to PostgreSQL booleans (`true` / `false`).
-2. **Foreign Key Enforcement**: Always execute `PRAGMA foreign_keys = ON;` in SQLite connections to mirror PostgreSQL.
-3. **Migration Safety**: Always use `ADD COLUMN IF NOT EXISTS` syntax when modifying database columns.
+- The deterministic suite in `scripts/guards/` is the sensor layer:
+  `gate_viseme_phoneme_lipsync_presence`, `gate_speech_visual_onset_sync`,
+  `gate_video_optical_flow`, `gate_scene_boundary_audio_bleed`,
+  `gate_asr_script_semantic_match`, `gate_motion_velocity_cadence`,
+  `gate_audio_semantic_ground_truth`, `gate_platform_capabilities`.
+- Run in CI: `npm run guard:deterministic`. Run in the worker post-render for the
+  active production. **A gate not wired into the pipeline is not a gate.**
+- Sensors flag frames; **Omni adjudicates only flagged frames** and returns
+  `surgical_fix | regen_clip | regen_reel`. Omni is never the per-frame scanner.
 
 ---
 
-## 5. ⚡ `performance-and-telemetry` (Client Vitals & Server Health)
+## 3. `proactive-telemetry-forensics` (Zero-Wait log auditing)
 
-### Purpose & Trigger Conditions
-Trigger when benchmarking page speed, server container memory, or API latency.
+**Trigger:** during/after any generation event, queue transition, worker run.
 
-### Core Rules
-1. **Client Core Web Vitals Budget**:
-   - LCP ≤ 2.5s
-   - CLS ≤ 0.1
-   - TTFB ≤ 800ms
-2. **Container Telemetry Budget**:
-   - Worker volume disk free > 1000MB.
-   - Claim attempt circuit breaker: `attempt < 5` (quarantine at >= 5).
-   - Zero deadlock starvation: 30-second background watchdog active.
+- Pull live logs on Cloudtop:
+  `railway logs --service zyvoriq-reel-worker --lines 100`
+  and `--service zyvoriq`.
+- Audit `studio1 render resync`: flag `clampFloorBound === true`; compute
+  discarded surplus. **Do not compress shots** — target per-shot duration is
+  aligned to the ~8 s Veo delivers, so `retimeFactor` should stay ≈ 1.0. Surplus
+  > 3.0 s on any shot or > 20% total is a planner-calibration defect.
+- Audit `[narration-cadence]` WPS vs `wordsPerSecondForGenre(genre)` in
+  `lib/studio1/planner.ts`; if it diverges by > ±0.3 wps, recalibrate the planner.
+- For `MUSIC_VIDEO`, assert `audioStrategy === "native"`; `renderRough` must not
+  dub synthetic TTS over native singing, must not truncate with `-t d`, and keeps
+  native audio at `volume=1.00` / −24 LUFS.
+
+---
+
+## 4. `cinema-feature-film-qa` (15-min feature player & EDL QA)
+
+**Trigger:** editing `app/studio/cinema/page.tsx`,
+`lib/cinema/dharmakshetra15m.ts` (118-shot EDL), or the cinema audit surface.
+(Verify these paths exist before wiring a trigger; do not reference a page that
+was removed.)
+
+- Ban synthetic `<video loop>` in long-form players.
+- 15-minute master clock `timeline15mSec` (0–900 s), monotonic forward.
+- 118 shots, each unique optics/motion/lighting, no cycling.
+- Run `node scripts/qa/verify_15min_feature_film.mjs` until all guards pass.
+
+---
+
+## 5. `cross-viewport-auditor` (Dual-OS mobile & ultra-wide)
+
+**Trigger:** editing UI components, responsive grids, media cards, nav.
+
+- Zero horizontal overflow: `document.documentElement.scrollWidth <= window.innerWidth`.
+- Assert + screenshot iOS Safari (390×844), Android Chrome (412×915), ultra-wide (1600×950).
+- iOS inputs ≥ 16px font. Touch targets ≥ 44×44px. `<video>` uses
+  `playsInline muted autoPlay preload="auto"`.
+
+---
+
+## 6. `database-schema-guard` (Dual SQLite & Postgres)
+
+**Trigger:** editing SQL schemas, migrations, queries.
+
+- SQLite `0/1` booleans must map cleanly to Postgres `true/false`.
+- SQLite connections run `PRAGMA foreign_keys = ON;`.
+- **Migrations run through a versioned runner** (`migrations/*.sql`, ordered,
+  awaited, transactional). Schema changes use `ADD COLUMN IF NOT EXISTS` — note
+  that re-running a `CREATE TABLE IF NOT EXISTS` block does NOT add new columns to
+  an existing table, which is why column changes must be explicit migrations.
+
+---
+
+## 7. `performance-and-telemetry` (Vitals & server health)
+
+**Trigger:** benchmarking page speed, worker memory, API latency.
+
+- Client budget: LCP ≤ 2.5 s, CLS ≤ 0.1, TTFB ≤ 800 ms.
+- Worker: volume free > 1000 MB; claim attempt circuit breaker `< 5` (quarantine
+  at ≥ 5); 30-second watchdog active.
