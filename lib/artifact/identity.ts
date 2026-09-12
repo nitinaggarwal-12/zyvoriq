@@ -81,6 +81,11 @@ function ref(input: Omit<ArtifactReference, "canonicalPath">): ArtifactReference
 export function buildReelArtifactIndex(manifest: ReelProductionManifest): ArtifactReference[] {
   const projectId = manifest.id;
   const projectTitle = (manifest as any).studio1?.projectTitle || manifest.topic || projectId;
+  // Persisted manifests predate the current required audio/shots schema. Artifact
+  // indexing runs on every list read, so it must remain safe for those legacy
+  // rows rather than taking down the complete production archive.
+  const audio = manifest?.audio;
+  const shots = Array.isArray(manifest?.shots) ? manifest.shots : [];
   const artifacts: ArtifactReference[] = [
     ref({ id: projectId, kind: "project", role: "project", title: projectTitle, sourceKey: "project" }),
     ref({ id: scopedArtifactId("document", projectId, "master-script"), kind: "document", role: "master-script", title: `${projectTitle} · Master script`, parentProjectId: projectId, sourceKey: "master-script" }),
@@ -90,17 +95,18 @@ export function buildReelArtifactIndex(manifest: ReelProductionManifest): Artifa
   if (manifest.captions) {
     artifacts.push(ref({ id: scopedArtifactId("document", projectId, "captions"), kind: "document", role: "captions", title: `${projectTitle} · Captions`, parentProjectId: projectId, sourceKey: "captions" }));
   }
-  if (manifest.audio.wordTimings?.length) {
+  if (audio?.wordTimings?.length) {
     artifacts.push(ref({ id: scopedArtifactId("document", projectId, "word-alignment"), kind: "document", role: "word-alignment", title: `${projectTitle} · Word alignment`, parentProjectId: projectId, sourceKey: "word-alignment" }));
   }
-  if (manifest.audio.narrationUrl) {
-    artifacts.push(ref({ id: scopedArtifactId("audio", projectId, "narration"), kind: "audio", role: "narration", title: `${projectTitle} · Narration`, parentProjectId: projectId, sourceKey: "narration", mediaUrl: manifest.audio.narrationUrl }));
+  if (audio?.narrationUrl) {
+    artifacts.push(ref({ id: scopedArtifactId("audio", projectId, "narration"), kind: "audio", role: "narration", title: `${projectTitle} · Narration`, parentProjectId: projectId, sourceKey: "narration", mediaUrl: audio.narrationUrl }));
   }
-  if (manifest.audio.musicUrl) {
-    artifacts.push(ref({ id: scopedArtifactId("audio", projectId, "music"), kind: "audio", role: "music", title: `${projectTitle} · Music`, parentProjectId: projectId, sourceKey: "music", mediaUrl: manifest.audio.musicUrl }));
+  if (audio?.musicUrl) {
+    artifacts.push(ref({ id: scopedArtifactId("audio", projectId, "music"), kind: "audio", role: "music", title: `${projectTitle} · Music`, parentProjectId: projectId, sourceKey: "music", mediaUrl: audio.musicUrl }));
   }
 
-  for (const [index, shot] of manifest.shots.entries()) {
+  for (const [index, shot] of shots.entries()) {
+    if (!shot || typeof shot !== "object") continue;
     if (shot.asset?.videoUrl) {
       artifacts.push(ref({ id: scopedArtifactId("clip", projectId, shot.id), kind: "clip", role: "clip", title: `${projectTitle} · Clip ${index + 1}`, parentProjectId: projectId, sourceKey: shot.id, mediaUrl: shot.asset.videoUrl }));
     }

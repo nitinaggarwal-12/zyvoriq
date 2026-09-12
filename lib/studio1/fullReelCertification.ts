@@ -21,6 +21,7 @@ type NarratedRoughCutWithQa = NonNullable<NonNullable<ReelProductionManifest["ou
 };
 
 function hasSemanticTimelineEvidence(manifest: ReelProductionManifest) {
+  const shots = Array.isArray(manifest?.shots) ? manifest.shots : [];
   const sync = (manifest as any).studio1?.timelineSync;
   const scenes = Array.isArray(sync?.sceneAlignment) ? sync.sceneAlignment as SceneAlignmentEvidence[] : [];
   const anchors = Array.isArray(sync?.boundaryAnchors) ? sync.boundaryAnchors : [];
@@ -30,9 +31,9 @@ function hasSemanticTimelineEvidence(manifest: ReelProductionManifest) {
     Number(sync?.version || 0) < 2 ||
     !isSemanticSource ||
     Number(sync?.globalExactRatio || 0) < 0.70 ||
-    scenes.length !== manifest.shots.length ||
-    anchors.length !== Math.max(0, manifest.shots.length - 1) ||
-    boundaries.length !== manifest.shots.length + 1
+    scenes.length !== shots.length ||
+    anchors.length !== Math.max(0, shots.length - 1) ||
+    boundaries.length !== shots.length + 1
   ) return false;
 
   return scenes.every(scene => {
@@ -77,10 +78,10 @@ export function suppressUncertifiedStudio1Outputs<T extends { manifest: ReelProd
     delete clone.manifest.outputs.narratedRoughCut;
     delete clone.manifest.outputs.master;
   }
-  const complete = clone.manifest.shots.length > 0 && clone.manifest.shots.every(shot => Boolean(shot.asset?.videoUrl) && ["GENERATED", "PASSED"].includes(shot.status));
+  const shots = Array.isArray(clone.manifest.shots) ? clone.manifest.shots : [];
+  const complete = shots.length > 0 && shots.every(shot => Boolean(shot?.asset?.videoUrl) && ["GENERATED", "PASSED"].includes(shot.status));
   if (complete && clone.manifest.audio?.narrationUrl && clone.manifest.audio?.alignmentValidation?.passed) clone.manifest.status = "ROUGH_CUT_READY";
   delete (clone.manifest as any).artifact;
   delete (clone.manifest as any).artifacts;
   return clone;
 }
-

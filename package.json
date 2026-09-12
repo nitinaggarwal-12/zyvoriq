@@ -27,6 +27,7 @@
     "inspector:qa": "node scripts/qa/reel_inspector_creator_ux_test.mjs",
     "library:qa": "node scripts/qa/library_direct_media_actions_test.mjs",
     "artifact:qa": "node scripts/qa/artifact_identity_contract_test.mjs",
+    "manifest-read:qa": "node scripts/qa/reel_manifest_read_compatibility_test.mjs",
     "check": "npm run canonical:qa && next build",
     "build": "npm run canonical:qa && next build",
     "worker:reels": "node --import ./scripts/canonical_reel_operation_guard.mjs --import ./scripts/transcription_word_timing_guard.mjs scripts/reel_worker_v2.mjs",

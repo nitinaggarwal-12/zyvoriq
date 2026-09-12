@@ -1,7 +1,6 @@
 import { getPostgresPool } from "@/lib/db/client";
-import { attachReelArtifactIndex } from "../artifact/identity";
 import { deleteProductionAssets } from "./assetStore";
-import { enrichManifestV2 } from "./manifestV2";
+import { collectValidStoredProductions, normalizePersistedReelManifest } from "./manifestCompatibility";
 import type { ReelProductionManifest } from "./types";
 
 export interface StoredReelProduction {
@@ -27,13 +26,13 @@ CREATE INDEX IF NOT EXISTS idx_reel_productions_updated ON reel_productions(upda
 CREATE INDEX IF NOT EXISTS idx_reel_productions_starred ON reel_productions(starred);
 `;
 
-function normalizeManifest(manifest: ReelProductionManifest) {
-  return attachReelArtifactIndex(enrichManifestV2(manifest));
+function normalizeManifest(manifest: unknown, fallbackId?: string) {
+  return normalizePersistedReelManifest(manifest, fallbackId);
 }
 
 function fromPostgres(row: any): StoredReelProduction {
   const isStarred = Boolean(row.starred === true || row.manifest_json?.starred === true);
-  const manifest = normalizeManifest(row.manifest_json as ReelProductionManifest);
+  const manifest = normalizeManifest(row.manifest_json, String(row.id || ""));
   manifest.starred = isStarred;
   return {
     id: String(row.id),
@@ -95,7 +94,14 @@ export const reelProductionStore = {
     const safeLimit = Math.max(1, Math.min(100, Math.floor(limit)));
     const pool = await ensurePostgresTable();
     const result = await pool.query(`SELECT * FROM reel_productions ORDER BY updated_at DESC LIMIT $1`, [safeLimit]);
-    return result.rows.map(fromPostgres);
+    return collectValidStoredProductions(
+      result.rows,
+      fromPostgres,
+      (row, error) => console.error("[reel-production-store] Skipping invalid persisted production", {
+        productionId: String(row?.id || "unknown"),
+        error: error instanceof Error ? error.message : String(error),
+      }),
+    );
   },
 
   async replace(id: string, manifest: ReelProductionManifest, expectedRevision?: number): Promise<StoredReelProduction> {
