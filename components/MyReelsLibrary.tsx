@@ -455,76 +455,6 @@ const CANONICAL_SHOWCASES: LibraryReel[] = [
     ]
   },
   {
-    id: "reel_neotokyo_180s_master",
-    title: "NeoTokyo: The Neon Breach",
-    subtitle: "3-Act Cyberpunk Heist & Orbital Data Vault Infiltration",
-    prompt: "NeoTokyo high-octane cyberpunk sequence: Rain-slicked Shinjuku alleys, holographic skybridge pursuit, and high-altitude data breach.",
-    status: "READY",
-    durationSec: 180.0,
-    videoUrl: "/assets/video/neotokyo_180s_master.mp4",
-    posterUrl: "/assets/stills/dubai_dance.jpg",
-    createdAt: "2026-09-07T06:00:00.000Z",
-    genre: "Sci-Fi Cyberpunk",
-    tone: "High-octane, neon-drenched, sleek",
-    aspectRatio: "2.39:1 Anamorphic",
-    audioClock: "Synthesizer Pulse & Bass Cadence",
-    folder: "Favorites",
-    isSaved: true,
-    shots: [
-      {
-        id: "shot_01",
-        order: 1,
-        title: "Act I: Rain-Slicked Shinjuku Alleyway Entry",
-        videoUrl: "/assets/video/neotokyo_180s_master.mp4",
-        posterUrl: "/assets/stills/dubai_dance.jpg",
-        durationSec: 60.0,
-        status: "PASSED",
-        scriptText: "KAI: The biometric locks cycle every forty seconds. Sync your neural deck now.",
-        visualIntent: "Low tracking camera through steam and iridescent neon reflections.",
-        camera: "Anamorphic 35mm, low tracking push",
-        lighting: "Cyan and magenta neon backlight through heavy rainfall",
-        character: "Kai, cyber-operative",
-        environment: "Shinjuku Sub-level 4",
-        transition: "cut-on-action"
-      }
-    ]
-  },
-  {
-    id: "reel_titanic_180s_master",
-    title: "Titanic: The Final Atlantic Waltz",
-    subtitle: "Grand Staircase Romance & The Looming Berg",
-    prompt: "Titanic grand cinematic sequence: Grand staircase ballroom elegance, starlight promenade romance, and the fateful whistle in the fog.",
-    status: "READY",
-    durationSec: 180.0,
-    videoUrl: "/assets/video/titanic_180s_master.mp4",
-    posterUrl: "/assets/stills/coronation_hero.png",
-    createdAt: "2026-09-07T07:00:00.000Z",
-    genre: "Historical Romance",
-    tone: "Majestic, poignant, timeless",
-    aspectRatio: "2.39:1 Anamorphic",
-    audioClock: "Edwardian String Quartet & Ocean Foley",
-    folder: "Favorites",
-    isSaved: true,
-    shots: [
-      {
-        id: "shot_01",
-        order: 1,
-        title: "Act I: The Grand Staircase Descent",
-        videoUrl: "/assets/video/titanic_180s_master.mp4",
-        posterUrl: "/assets/stills/coronation_hero.png",
-        durationSec: 60.0,
-        status: "PASSED",
-        scriptText: "JACK: Winning that ticket was the best thing that ever happened to me.",
-        visualIntent: "Sweeping crane descent under the ornate clock and carved oak balustrade.",
-        camera: "Cooke 40mm Anamorphic, crane sweeping drop",
-        lighting: "Gilded crystal chandelier warm amber brilliance",
-        character: "Jack and Rose",
-        environment: "Titanic First-Class Grand Staircase",
-        transition: "match-cut"
-      }
-    ]
-  },
-  {
     id: "reel_coronation_180s_master",
     title: "Notre-Dame: The Imperial Coronation",
     subtitle: "Sacred Choirs, Incense, and The Crown of France",
@@ -942,13 +872,41 @@ export function MyReelsLibrary() {
   };
 
   // Persistent deleted reel tracking (so deleted showcases and live reels NEVER resurrect)
+  const PERMANENTLY_PURGED_REEL_IDS = useMemo(() => new Set<string>([
+    "reel_neotokyo_180s_master",
+    "reel_titanic_180s_master",
+    "studio1_afd75414-6f4e-495e-9739-10a54febf3ee",
+    "studio1_bf7a3b0f-9516-4e94-b296-b64b4b273c4f",
+    "studio1_d1218706-44a7-4da9-be83-d24741e6f2fd",
+    "studio1_816c8230-92cc-4730-973e-0a44f58303db",
+    "studio1_57a05c00-4531-4b81-997e-c04f1c2bd0a0",
+    "studio1_c5111882-9e6a-4787-b73a-a62faa1315cd",
+    "studio1_5b3c6b72-f7db-4f37-9074-e7dd52708917",
+    "studio1_45ebe284-2536-4aac-8bde-5c16c6841791",
+    "studio1_86250e26-b67a-40d9-929f-5c6373937d99",
+    "studio1_bf406fbd-aa93-4a4a-b363-137fe36a2863",
+    "studio1_de25761a-88a8-4bc6-87b0-8d288044c4cb",
+    "studio1_6725284b-62df-4d82-aeb4-f86b03141918",
+    "studio1_93abd6bb-9dd4-4afc-a1a6-c6ea8e04f4f3",
+    "studio1_5c35371a-533d-4a9c-93b5-4c423cdbea57",
+    "yt_2f569eea-4b5a-4a10-aeb7-cada58784b4f",
+    "yt_676b346c-7f38-4343-adb5-f525ff4908bc",
+    "yt_0a1bf4af-7700-4e82-81b2-162148ad6177"
+  ]), []);
+
   const getDeletedReelIds = (): Set<string> => {
+    const set = new Set<string>(PERMANENTLY_PURGED_REEL_IDS);
     try {
-      if (typeof window === "undefined") return new Set();
+      if (typeof window === "undefined") return set;
       const raw = localStorage.getItem("zyvoriq_deleted_reels");
-      if (raw) return new Set(JSON.parse(raw));
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          for (const id of parsed) set.add(id);
+        }
+      }
     } catch {}
-    return new Set();
+    return set;
   };
 
   const addDeletedReelId = (id: string) => {
@@ -1061,6 +1019,15 @@ export function MyReelsLibrary() {
 
         const liveReels: LibraryReel[] = data.productions
           .filter((p: any) => !deletedIds.has(p.id))
+          .filter((p: any) => {
+            if (p.id.startsWith("studio1_")) {
+              const m = p.manifest || {};
+              const hasVideo = Boolean(m.outputs?.narratedRoughCut?.videoUrl || m.outputs?.nativeReel?.videoUrl || m.outputs?.master?.videoUrl || m.studio1?.roughCutVideoUrl);
+              const qaPassed = Boolean(m.qa?.passed || m.studio1?.outputCertification?.certified);
+              return hasVideo || qaPassed || p.id === "studio1_e2e00945-e431-4228-bb7b-33cc68f0fa72";
+            }
+            return true;
+          })
           .map((p: any) => {
             const m = p.manifest || {};
             const meta = savedMeta[p.id] || {};
@@ -1135,7 +1102,7 @@ export function MyReelsLibrary() {
 
         const ytReels: LibraryReel[] = Array.isArray(ytData.productions)
           ? ytData.productions
-              .filter((p: any) => !deletedIds.has(p.id))
+              .filter((p: any) => !deletedIds.has(p.id) && (p.status === "READY" || p.status === "COMPLETED"))
               .map((p: any) => {
                 const m = p.manifest || {};
                 const assets = m.assets || {};
@@ -1263,7 +1230,13 @@ export function MyReelsLibrary() {
       const params = new URLSearchParams(window.location.search);
       const targetReel = params.get("reel");
       if (targetReel) {
-        setExpandedReelIds(prev => ({ ...prev, [targetReel]: true }));
+        if (PERMANENTLY_PURGED_REEL_IDS.has(targetReel) || getDeletedReelIds().has(targetReel)) {
+          params.delete("reel");
+          const newUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : "");
+          window.history.replaceState(null, "", newUrl);
+        } else {
+          setExpandedReelIds(prev => ({ ...prev, [targetReel]: true }));
+        }
       }
     }
   }, []);

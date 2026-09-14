@@ -1240,51 +1240,38 @@ export function ReelTimelineEditor({
           </div>
 
           {/* COLOR GRADING & 35MM LUT CONTROLLER */}
-          <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-2">
-                <Palette className="w-4 h-4 text-pink-400" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200">
-                  Track 5 • Theatrical Color Grading &amp; 35mm LUT Matrix
-                </h3>
-              </div>
-              <div className="flex items-center gap-2">
-                {currentState.colorGrading !== "none" && (
-                  <button
-                    type="button"
-                    onClick={handleResetLut}
-                    className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-pink-300 border border-pink-800/40 transition cursor-pointer"
-                    title="Reset color grading to Natural Rec.709"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                    <span>Reset LUT</span>
-                  </button>
-                )}
-                <span className="text-xs font-mono text-pink-300 bg-pink-950/40 border border-pink-800/40 px-2 py-0.5 rounded">
-                  Live Video Preview Filter Active
-                </span>
-              </div>
+          <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Palette className="w-4 h-4 text-pink-400 shrink-0" />
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200">
+                Track 5 • 35mm Color Grading LUT:
+              </h3>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {Object.entries(COLOR_GRADING_LUT_MAP).map(([key, info]) => {
-                const isSelected = (currentState.colorGrading || "none") === key;
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => pushState((prev) => ({ ...prev, colorGrading: key }))}
-                    className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
-                      isSelected
-                        ? "bg-pink-950/40 border-pink-500 shadow-md shadow-pink-950/50"
-                        : "bg-slate-950 border-slate-800 hover:border-slate-700"
-                    }`}
-                  >
-                    <div className="text-xs font-bold text-slate-200">{info.label}</div>
-                    <div className="text-[10px] text-slate-400 mt-1 leading-tight">{info.description}</div>
-                  </button>
-                );
-              })}
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <select
+                value={currentState.colorGrading || "none"}
+                onChange={(e) => pushState((prev) => ({ ...prev, colorGrading: e.target.value }))}
+                className="px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs font-bold text-pink-300 focus:outline-none focus:border-pink-500 cursor-pointer min-w-[240px]"
+              >
+                {Object.entries(COLOR_GRADING_LUT_MAP).map(([key, info]) => (
+                  <option key={key} value={key} className="bg-slate-900 text-slate-200">
+                    {info.label} — {info.description}
+                  </option>
+                ))}
+              </select>
+
+              {currentState.colorGrading !== "none" && (
+                <button
+                  type="button"
+                  onClick={handleResetLut}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-pink-300 border border-pink-800/40 transition cursor-pointer"
+                  title="Reset color grading to Natural Rec.709"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Reset LUT</span>
+                </button>
+              )}
             </div>
           </div>
 

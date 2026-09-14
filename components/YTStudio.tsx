@@ -25,7 +25,22 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
 
   const [isResuming, setIsResuming] = useState(false);
 
+  const PURGED_YT_IDS = React.useMemo(() => new Set([
+    "yt_2f569eea-4b5a-4a10-aeb7-cada58784b4f",
+    "yt_676b346c-7f38-4343-adb5-f525ff4908bc",
+    "yt_0a1bf4af-7700-4e82-81b2-162148ad6177"
+  ]), []);
+
   const loadProduction = async (id: string) => {
+    if (PURGED_YT_IDS.has(id)) {
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("reel");
+        window.history.replaceState({}, "", url.pathname + url.search);
+      }
+      fetchRecentList(true);
+      return;
+    }
     setProductionId(id);
     setActiveVideoMode("hybrid");
     if (typeof window !== "undefined") {
@@ -40,6 +55,9 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
         setProduction(data.production);
         const st = data.production.status;
         setIsPolling(st === "RUNNING" || st === "PENDING" || st === "QUEUED");
+      } else {
+        // Production not found or purged - fall back to recent verified list
+        fetchRecentList(true);
       }
     } catch (err) {
       console.error("Failed to load production", err);
@@ -67,13 +85,16 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
       const res = await fetch("/api/yt/productions?limit=12");
       const data = await res.json();
       if (data.success && Array.isArray(data.productions)) {
-        setRecentProductions(data.productions);
-        if (selectFirst && data.productions.length > 0 && !productionId) {
+        const verifiedReady = data.productions.filter(
+          (p: any) => !PURGED_YT_IDS.has(p.id) && (p.status === "READY" || p.status === "COMPLETED")
+        );
+        setRecentProductions(verifiedReady);
+        if (selectFirst && verifiedReady.length > 0 && !productionId) {
           const urlReel = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("reel") : null;
-          if (urlReel) {
+          if (urlReel && !PURGED_YT_IDS.has(urlReel)) {
             loadProduction(urlReel);
           } else {
-            loadProduction(data.productions[0].id);
+            loadProduction(verifiedReady[0].id);
           }
         }
       }
@@ -84,10 +105,15 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
 
   useEffect(() => {
     const urlReel = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("reel") : null;
-    if (urlReel) {
+    if (urlReel && !PURGED_YT_IDS.has(urlReel)) {
       loadProduction(urlReel);
       fetchRecentList(false);
     } else {
+      if (urlReel && typeof window !== "undefined") {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("reel");
+        window.history.replaceState({}, "", url.pathname + url.search);
+      }
       fetchRecentList(true);
     }
   }, []);
