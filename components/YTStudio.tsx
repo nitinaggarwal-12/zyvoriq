@@ -449,6 +449,12 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
                 <h2 className="text-2xl font-bold text-slate-100">Master Output</h2>
                 {videoUrl && (
                   <div className="flex items-center gap-2 flex-wrap">
+                    <a
+                      href={`/my-reels?reel=${encodeURIComponent(production?.id || productionId || "")}`}
+                      className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 text-xs font-extrabold transition-all shadow-md flex items-center gap-1.5"
+                    >
+                      <span>🎬</span> Full-Page Director Suite
+                    </a>
                     <button
                       onClick={() => setShowEditor((prev) => !prev)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${

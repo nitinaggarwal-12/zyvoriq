@@ -55,6 +55,7 @@ import {
   Scissors
 } from "lucide-react";
 import { ReelTimelineEditor } from "@/components/ReelTimelineEditor";
+import WorldClassDirectorSuite from "@/components/WorldClassDirectorSuite";
 
 export interface LibraryClip {
   id: string;
@@ -1675,6 +1676,59 @@ export function MyReelsLibrary() {
   const archivedCount = reels.filter(r => (r.isArchived || r.folder === "Archive") && !r.isHidden).length;
   const hiddenCount = reels.filter(r => r.isHidden).length;
 
+  // Full-Page Directorial Studio Mode (Replaces narrow floating popup modal)
+  if (spotlightVideo) {
+    const currentReel = reels.find((r) => r.id === spotlightVideo.reelId);
+    const directorReelData = {
+      id: currentReel?.id || spotlightVideo.reelId || "yt_spain_pool_party_omni_hybrid",
+      title: currentReel?.title || spotlightVideo.title,
+      subtitle: currentReel?.subtitle || spotlightVideo.subtitle,
+      prompt: currentReel?.prompt || spotlightVideo.title,
+      videoUrl: spotlightVideo.url || currentReel?.videoUrl || null,
+      posterUrl: currentReel?.posterUrl || null,
+      durationSec: currentReel?.durationSec || 24,
+      aspectRatio: currentReel?.aspectRatio || "9:16 Vertical",
+      genre: currentReel?.genre || "MUSIC_VIDEO",
+      tone: currentReel?.tone || "Cinematic",
+      audioClock: currentReel?.audioClock || "Lyria 3.5 + Demucs Vocal Stem",
+      shots: (currentReel?.shots || []).map((s, idx) => ({
+        id: s.id || `shot_${idx + 1}`,
+        order: s.order || idx + 1,
+        title: s.title || `Shot 0${idx + 1}`,
+        videoUrl: s.videoUrl || null,
+        posterUrl: s.posterUrl || null,
+        durationSec: s.durationSec || 6,
+        scriptText: s.scriptText || null,
+        visualIntent: s.visualIntent || null,
+        camera: s.camera || "35mm Anamorphic",
+        lighting: s.lighting || "Golden Hour 3200K",
+        character: s.character || "Lead Artist",
+        environment: s.environment || "Studio Set",
+      })),
+    };
+
+    return (
+      <WorldClassDirectorSuite
+        reel={directorReelData}
+        onBack={() => {
+          setSpotlightVideo(null);
+          if (typeof window !== "undefined") {
+            window.history.pushState({}, "", "/my-reels");
+          }
+        }}
+        onDirectPart2={
+          currentReel
+            ? () => {
+                setSpotlightVideo(null);
+                const partInfo = getNextPartInfo(currentReel);
+                window.location.href = `/?continueReel=${encodeURIComponent(currentReel.id)}&nextPart=${partInfo.nextPart}`;
+              }
+            : undefined
+        }
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#07090E] text-slate-100 selection:bg-teal-500/30 selection:text-teal-100">
       
@@ -3094,601 +3148,6 @@ export function MyReelsLibrary() {
       {/* ============================================================ */}
       {/* 5. MODALS & POPUPS                                            */}
       {/* ============================================================ */}
-
-      {/* A. Cinema Player Modal (Continuous Sequence Player) */}
-      {spotlightVideo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 sm:p-6 animate-in fade-in duration-200">
-          <div className="relative w-full max-w-5xl rounded-2xl bg-[#0B0F17] border border-zinc-800 overflow-hidden shadow-2xl space-y-4 p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-800 pb-3 gap-3 sm:gap-4">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <h3 className="text-base sm:text-lg font-bold text-white truncate">{spotlightVideo.title}</h3>
-                  {spotlightVideo.reelId && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const nid = getNetflixReelId(spotlightVideo.reelId!);
-                        navigator.clipboard.writeText(nid).catch(() => {});
-                        showToast(`✓ Copied Reel ID: ${nid}`);
-                      }}
-                      className="text-xs font-mono font-bold text-amber-300 hover:text-amber-200 bg-amber-950/80 border border-amber-500/40 px-2.5 py-0.5 rounded-full shrink-0 flex items-center gap-1 transition cursor-pointer"
-                      title="Click to copy Netflix Reel ID"
-                    >
-                      <span className="text-zinc-400 font-normal">ID:</span>
-                      <span>{getNetflixReelId(spotlightVideo.reelId)}</span>
-                      <Copy className="h-2.5 w-2.5 text-zinc-400 ml-0.5" />
-                    </button>
-                  )}
-                  {(() => {
-                    const currentReel = reels.find((r) => r.id === spotlightVideo.reelId);
-                    const masterUrl = (currentReel && (
-                      (isHoneymoonReel(currentReel) && selectedAudioLanguage === "en"
-                        ? `/api/reels/assets/reels/${currentReel.id}/renders/narrated_rough_master_en.mp4`
-                        : currentReel.roughCutUrl) || currentReel.roughCutUrl
-                    )) || (spotlightVideo.url.includes("master") || spotlightVideo.url.includes("rough") || spotlightVideo.url.includes("final") ? spotlightVideo.url : null);
-                    
-                    const isPlayingCombined = Boolean(
-                      spotlightVideo.isCombinedMaster ||
-                      (!spotlightVideo.playlist && masterUrl && spotlightVideo.url === masterUrl) ||
-                      spotlightVideo.url.includes("rough") ||
-                      spotlightVideo.url.includes("master") ||
-                      spotlightVideo.url.includes("final")
-                    );
-
-                    if (isPlayingCombined) {
-                      return (
-                        <span className="text-xs font-mono font-bold text-amber-400 bg-amber-950/80 border border-amber-500/40 px-2.5 py-0.5 rounded-full shrink-0 flex items-center gap-1">
-                          <Film className="h-3 w-3 fill-current" />
-                          <span>Combined Master Reel {currentReel?.durationSec ? `(${currentReel.durationSec.toFixed(0)}s)` : ""}</span>
-                        </span>
-                      );
-                    }
-
-                    if (spotlightVideo.playlist && typeof spotlightVideo.currentIndex === "number") {
-                      return (
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded-full shrink-0">
-                            Cut {spotlightVideo.currentIndex + 1} of {spotlightVideo.playlist.length}
-                          </span>
-                          {masterUrl && (
-                            <button
-                              type="button"
-                              id="spotlight-quick-switch-combined-btn"
-                              onClick={() => {
-                                setSpotlightVideo({
-                                  ...spotlightVideo,
-                                  url: masterUrl,
-                                  title: currentReel ? `${currentReel.title} (Combined Master Cut)` : `${spotlightVideo.title} (Combined Master Cut)`,
-                                  subtitle: currentReel ? `Full Combined Master Reel (${currentReel.durationSec.toFixed(0)}s Seamless Timeline)` : "Full Combined Master Timeline",
-                                  isCombinedMaster: true,
-                                  playlist: undefined,
-                                  currentIndex: undefined
-                                });
-                                showToast("🎬 Switched to Combined One Reel mode");
-                              }}
-                              className="text-xs font-mono font-bold text-amber-300 hover:text-black hover:bg-amber-400 bg-amber-950/80 border border-amber-500/40 px-2.5 py-0.5 rounded-full shrink-0 flex items-center gap-1 transition cursor-pointer shadow-sm hover:scale-105"
-                              title="Switch from individual cut to full combined reel"
-                            >
-                              <Film className="h-3 w-3 fill-current" />
-                              <span>▶ Play Combined One Reel {currentReel?.durationSec ? `(${currentReel.durationSec.toFixed(0)}s)` : ""}</span>
-                            </button>
-                          )}
-                        </div>
-                      );
-                    }
-
-                    return null;
-                  })()}
-                </div>
-                {spotlightVideo.subtitle && <p className="text-xs text-zinc-400 line-clamp-1 mt-0.5">{spotlightVideo.subtitle}</p>}
-              </div>
-
-              {/* Controls: Mode Switcher, Language Switcher, Prev/Next Cut, Share Link, Direct Part Continuation, & Close */}
-              <div className="flex items-center gap-2 flex-wrap justify-between sm:justify-end shrink-0 w-full sm:w-auto">
-                {/* Playback Mode Switcher: Combined Reel vs Cut-by-Cut */}
-                {(() => {
-                  const currentReel = reels.find((r) => r.id === spotlightVideo.reelId);
-                  const masterUrl = (currentReel && (
-                    (isHoneymoonReel(currentReel) && selectedAudioLanguage === "en"
-                      ? `/api/reels/assets/reels/${currentReel.id}/renders/narrated_rough_master_en.mp4`
-                      : currentReel.roughCutUrl) || currentReel.roughCutUrl
-                  )) || (spotlightVideo.url.includes("master") || spotlightVideo.url.includes("rough") || spotlightVideo.url.includes("final") ? spotlightVideo.url : null);
-                  
-                  const readyClips = currentReel?.shots.filter(s => Boolean(s.videoUrl)) || [];
-                  const hasPlaylist = Boolean(spotlightVideo.playlist && spotlightVideo.playlist.length > 0) || readyClips.length > 0;
-                  const isPlayingCombined = Boolean(
-                    spotlightVideo.isCombinedMaster ||
-                    (!spotlightVideo.playlist && masterUrl && spotlightVideo.url === masterUrl) ||
-                    spotlightVideo.url.includes("rough") ||
-                    spotlightVideo.url.includes("master") ||
-                    spotlightVideo.url.includes("final")
-                  );
-
-                  if (!masterUrl && !hasPlaylist) return null;
-
-                  return (
-                    <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-0.5 text-xs font-mono font-bold">
-                      {masterUrl && (
-                        <button
-                          type="button"
-                          id="spotlight-mode-combined-btn"
-                          onClick={() => {
-                            setSpotlightVideo({
-                              ...spotlightVideo,
-                              url: masterUrl,
-                              title: currentReel ? `${currentReel.title} (Combined Master Cut)` : `${spotlightVideo.title} (Combined Master Cut)`,
-                              subtitle: currentReel ? `Full Combined Sequence (${currentReel.durationSec.toFixed(0)}s Master Timeline)` : "Full Combined Master Timeline",
-                              isCombinedMaster: true,
-                              playlist: undefined,
-                              currentIndex: undefined
-                            });
-                            showToast("🎬 Playing Combined One Reel");
-                          }}
-                          className={`px-2.5 py-1 rounded transition cursor-pointer flex items-center gap-1.5 min-h-[30px] ${
-                            isPlayingCombined
-                              ? "bg-amber-400 text-black font-extrabold shadow-sm"
-                              : "text-zinc-400 hover:text-white hover:bg-zinc-800"
-                          }`}
-                          title="Play the complete combined single reel"
-                        >
-                          <Film className="h-3.5 w-3.5 fill-current" />
-                          <span>Combined Reel {currentReel?.durationSec ? `(${currentReel.durationSec.toFixed(0)}s)` : ""}</span>
-                        </button>
-                      )}
-
-                      {hasPlaylist && (
-                        <button
-                          type="button"
-                          id="spotlight-mode-cuts-btn"
-                          onClick={() => {
-                            const playlist = spotlightVideo.playlist || readyClips.map((c) => ({
-                              url: c.videoUrl!,
-                              title: `${currentReel?.title || "Reel"} — Shot ${String(c.order).padStart(2, "0")}: ${c.title}`,
-                              subtitle: c.scriptText ? `"${c.scriptText}"` : c.visualIntent || undefined,
-                              order: c.order,
-                              durationSec: c.durationSec
-                            }));
-                            const targetIdx = typeof spotlightVideo.currentIndex === "number" && spotlightVideo.currentIndex < playlist.length ? spotlightVideo.currentIndex : 0;
-                            const item = playlist[targetIdx] || playlist[0];
-                            if (item) {
-                              setSpotlightVideo({
-                                ...spotlightVideo,
-                                url: item.url,
-                                title: item.title,
-                                subtitle: item.subtitle,
-                                playlist,
-                                currentIndex: targetIdx,
-                                isCombinedMaster: false
-                              });
-                              showToast(`🎞️ Inspecting Cut ${item.order} of ${playlist.length}`);
-                            }
-                          }}
-                          className={`px-2.5 py-1 rounded transition cursor-pointer flex items-center gap-1.5 min-h-[30px] ${
-                            !isPlayingCombined
-                              ? "bg-emerald-500 text-black font-extrabold shadow-sm"
-                              : "text-zinc-400 hover:text-white hover:bg-zinc-800"
-                          }`}
-                          title="Inspect individual shots cut-by-cut"
-                        >
-                          <Layers className="h-3.5 w-3.5" />
-                          <span>Cut-by-Cut ({readyClips.length || spotlightVideo.playlist?.length || 0})</span>
-                        </button>
-                      )}
-                    </div>
-                  );
-                })()}
-                {/* Spotlight Dual-Language Audio Switcher: only display for dual-track honeymoon reels */}
-                {(() => {
-                  const currentReel = reels.find((r) => r.id === spotlightVideo.reelId);
-                  const isHoneymoon = isHoneymoonReel(currentReel);
-                  if (!isHoneymoon) return null;
-                  return (
-                    <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-0.5 text-xs font-mono font-bold">
-                      <span className="text-[10px] text-zinc-500 px-1.5 hidden md:inline">Track:</span>
-                      <button
-                        type="button"
-                        id="spotlight-lang-en-btn"
-                        onClick={() => {
-                          setSelectedAudioLanguage("en");
-                          if (spotlightVideo.reelId && (spotlightVideo.url.includes("master") || spotlightVideo.url.includes("rough") || spotlightVideo.url.includes("narrated"))) {
-                            const enMasterUrl = `/api/reels/assets/reels/${spotlightVideo.reelId}/renders/narrated_rough_master_en.mp4`;
-                            const title = currentReel ? `${currentReel.title} (English Theatrical Master)` : "English Theatrical Master";
-                            setSpotlightVideo({
-                              ...spotlightVideo,
-                              url: enMasterUrl,
-                              title,
-                              subtitle: "Continuous Sequence with English Theatrical Romance Narration & Bollywood Orchestra (122s)"
-                            });
-                          } else if (spotlightVideo.playlist && typeof spotlightVideo.currentIndex === "number") {
-                            const updatedPlaylist = spotlightVideo.playlist.map((item) => ({
-                              ...item,
-                              subtitle: ENGLISH_HONEYMOON_SCRIPTS[item.order] || item.subtitle
-                            }));
-                            const currentItem = updatedPlaylist[spotlightVideo.currentIndex];
-                            setSpotlightVideo({
-                              ...spotlightVideo,
-                              playlist: updatedPlaylist,
-                              subtitle: currentItem?.subtitle || spotlightVideo.subtitle
-                            });
-                          }
-                        }}
-                        className={`px-2 py-1 rounded transition cursor-pointer flex items-center gap-1 min-h-[30px] ${
-                          selectedAudioLanguage === "en"
-                            ? "bg-amber-400 text-black font-extrabold shadow-sm"
-                            : "text-zinc-400 hover:text-white"
-                        }`}
-                        title="Switch to English Theatrical Master Narration"
-                      >
-                        <span>🇬🇧 EN</span>
-                      </button>
-                      <button
-                        type="button"
-                        id="spotlight-lang-hi-btn"
-                        onClick={() => {
-                          setSelectedAudioLanguage("hi");
-                          if (spotlightVideo.reelId && (spotlightVideo.url.includes("master") || spotlightVideo.url.includes("rough") || spotlightVideo.url.includes("narrated"))) {
-                            const hiMasterUrl = (currentReel && currentReel.roughCutUrl) || `/api/reels/assets/reels/${spotlightVideo.reelId}/renders/narrated-rough-05fa3ad5c2aa9910.mp4`;
-                            const title = currentReel ? `${currentReel.title} (Hindi Bollywood Master)` : "Hindi Bollywood Master";
-                            setSpotlightVideo({
-                              ...spotlightVideo,
-                              url: hiMasterUrl,
-                              title,
-                              subtitle: "Continuous Sequence with Romantic Bollywood Orchestral Score (122s)"
-                            });
-                          } else if (spotlightVideo.playlist && typeof spotlightVideo.currentIndex === "number") {
-                            const updatedPlaylist = spotlightVideo.playlist.map((item) => {
-                              const originalClip = currentReel?.shots.find((s) => s.order === item.order);
-                              return {
-                                ...item,
-                                subtitle: originalClip?.scriptText ? `"${originalClip.scriptText}"` : originalClip?.visualIntent || item.subtitle
-                              };
-                            });
-                            const currentItem = updatedPlaylist[spotlightVideo.currentIndex];
-                            setSpotlightVideo({
-                              ...spotlightVideo,
-                              playlist: updatedPlaylist,
-                              subtitle: currentItem?.subtitle || spotlightVideo.subtitle
-                            });
-                          }
-                        }}
-                        className={`px-2 py-1 rounded transition cursor-pointer flex items-center gap-1 min-h-[30px] ${
-                          selectedAudioLanguage === "hi"
-                            ? "bg-amber-400 text-black font-extrabold shadow-sm"
-                            : "text-zinc-400 hover:text-white"
-                        }`}
-                        title="Switch to Hindi Bollywood Master Narration"
-                      >
-                        <span>🇮🇳 HI</span>
-                      </button>
-                    </div>
-                  );
-                })()}
-
-                {/* Share Link Button */}
-                {spotlightVideo.reelId && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const shareUrl = `${window.location.origin}/my-reels?reel=${encodeURIComponent(spotlightVideo.reelId!)}`;
-                      navigator.clipboard.writeText(shareUrl).catch(() => {});
-                      showToast(`✓ Copied deep link: ${shareUrl}`);
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-850 hover:bg-zinc-800 border border-zinc-700/60 text-zinc-300 hover:text-white text-xs font-mono font-semibold transition cursor-pointer min-h-[36px]"
-                    title="Copy unique deep-link URL for this reel"
-                  >
-                    <Share2 className="h-3.5 w-3.5 text-emerald-400" />
-                    <span className="hidden sm:inline">Share Link</span>
-                  </button>
-                )}
-
-                {/* Direct Next Part Sequel Continuation Link */}
-                {(() => {
-                  const currentReel = reels.find((r) => r.id === spotlightVideo.reelId);
-                  if (!currentReel) return null;
-                  const partInfo = getNextPartInfo(currentReel);
-                  return (
-                    <Link
-                      href={`/?continueReel=${encodeURIComponent(currentReel.id)}&nextPart=${partInfo.nextPart}`}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/50 hover:bg-emerald-500/30 text-emerald-300 hover:text-white text-xs font-mono font-bold transition min-h-[36px]"
-                      title={`Direct ${partInfo.buttonText} sequel with identical character DNA`}
-                    >
-                      <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-                      <span className="hidden sm:inline">{partInfo.buttonText}</span>
-                    </Link>
-                  );
-                })()}
-
-                {spotlightVideo.playlist && typeof spotlightVideo.currentIndex === "number" && (
-                  <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-1">
-                    <button
-                      type="button"
-                      disabled={spotlightVideo.currentIndex <= 0}
-                      onClick={() => {
-                        const prevIdx = (spotlightVideo.currentIndex || 0) - 1;
-                        if (prevIdx >= 0 && spotlightVideo.playlist) {
-                          const item = spotlightVideo.playlist[prevIdx];
-                          setSpotlightVideo({
-                            ...spotlightVideo,
-                            url: item.url,
-                            title: item.title,
-                            subtitle: item.subtitle,
-                            currentIndex: prevIdx
-                          });
-                        }
-                      }}
-                      className="p-1.5 text-zinc-400 hover:text-white disabled:opacity-30 disabled:hover:text-zinc-400 rounded transition cursor-pointer disabled:cursor-not-allowed"
-                      title="Previous Cut"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      disabled={spotlightVideo.currentIndex >= spotlightVideo.playlist.length - 1}
-                      onClick={() => {
-                        const nextIdx = (spotlightVideo.currentIndex || 0) + 1;
-                        if (spotlightVideo.playlist && nextIdx < spotlightVideo.playlist.length) {
-                          const item = spotlightVideo.playlist[nextIdx];
-                          setSpotlightVideo({
-                            ...spotlightVideo,
-                            url: item.url,
-                            title: item.title,
-                            subtitle: item.subtitle,
-                            currentIndex: nextIdx
-                          });
-                        }
-                      }}
-                      className="p-1.5 text-zinc-400 hover:text-white disabled:opacity-30 disabled:hover:text-zinc-400 rounded transition cursor-pointer disabled:cursor-not-allowed"
-                      title="Next Cut"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                )}
-                {/* Romantic Orchestra BGM Soundtrack Controller */}
-                {(!spotlightVideo.url.includes("rough") && !spotlightVideo.url.includes("master") && !spotlightVideo.url.includes("final")) && (
-                  <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-rose-950/60 border border-rose-500/40">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const next = !romanticBgmEnabled;
-                        setRomanticBgmEnabled(next);
-                        if (bgmAudioRef.current) {
-                          if (next) {
-                            bgmAudioRef.current.volume = bgmVolume;
-                            bgmAudioRef.current.play().catch(() => {});
-                          } else {
-                            bgmAudioRef.current.pause();
-                          }
-                        }
-                      }}
-                      className="flex items-center gap-1.5 text-xs font-mono font-bold transition cursor-pointer text-rose-300 hover:text-rose-200"
-                      title={romanticBgmEnabled ? "Mute romantic orchestra score" : "Play romantic orchestra score"}
-                    >
-                      <Music className={`h-3.5 w-3.5 ${romanticBgmEnabled ? "text-rose-400 animate-pulse" : "text-zinc-500"}`} />
-                      <span className="hidden md:inline">Romantic BGM:</span>
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] ${romanticBgmEnabled ? "bg-rose-500/40 text-rose-200 font-bold" : "bg-zinc-800 text-zinc-500"}`}>
-                        {romanticBgmEnabled ? "ON" : "OFF"}
-                      </span>
-                    </button>
-                    {romanticBgmEnabled && (
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={bgmVolume}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value);
-                          setBgmVolume(val);
-                          if (bgmAudioRef.current) bgmAudioRef.current.volume = val;
-                        }}
-                        className="w-16 h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-rose-400 hidden sm:inline-block"
-                        title={`BGM Volume: ${(bgmVolume * 100).toFixed(0)}%`}
-                      />
-                    )}
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={closeSpotlight}
-                  className="rounded-lg p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 transition min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
-                  title="Close Player"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Hidden audio element for continuous romantic orchestra soundtrack */}
-            <audio
-              ref={bgmAudioRef}
-              src="/assets/audio/music/bollywood_romance_orchestra.mp3"
-              loop
-              preload="auto"
-            />
-
-            {/* Video Viewport */}
-            <div className="relative aspect-video sm:aspect-[16/9] max-h-[70vh] bg-black rounded-xl overflow-hidden flex items-center justify-center">
-              <video
-                key={spotlightVideo.url}
-                src={spotlightVideo.url}
-                controls
-                autoPlay
-                playsInline
-                preload="auto"
-                className="w-full h-full object-contain"
-                onPlay={() => {
-                  const isMasterRough = spotlightVideo.url.includes("rough") || spotlightVideo.url.includes("master") || spotlightVideo.url.includes("final");
-                  if (bgmAudioRef.current && romanticBgmEnabled && !isMasterRough) {
-                    bgmAudioRef.current.volume = bgmVolume;
-                    bgmAudioRef.current.play().catch(() => {});
-                  }
-                }}
-                onPause={() => {
-                  const isMasterRough = spotlightVideo.url.includes("rough") || spotlightVideo.url.includes("master") || spotlightVideo.url.includes("final");
-                  if (bgmAudioRef.current && !isMasterRough) {
-                    bgmAudioRef.current.pause();
-                  }
-                }}
-                onEnded={() => {
-                  if (spotlightVideo.playlist && typeof spotlightVideo.currentIndex === "number") {
-                    const nextIdx = spotlightVideo.currentIndex + 1;
-                    if (nextIdx < spotlightVideo.playlist.length) {
-                      const nextItem = spotlightVideo.playlist[nextIdx];
-                      setSpotlightVideo({
-                        ...spotlightVideo,
-                        url: nextItem.url,
-                        title: nextItem.title,
-                        subtitle: nextItem.subtitle,
-                        currentIndex: nextIdx
-                      });
-                    }
-                  }
-                }}
-              />
-            </div>
-
-            {/* Interactive Timeline Scrubber & Mode State */}
-            {spotlightVideo.playlist && spotlightVideo.playlist.length > 1 && typeof spotlightVideo.currentIndex === "number" ? (
-              <div className="space-y-1.5 pt-1">
-                <div className="flex items-center gap-1 w-full">
-                  {spotlightVideo.playlist.map((item, idx) => {
-                    const isCurrent = idx === spotlightVideo.currentIndex;
-                    const isPast = idx < (spotlightVideo.currentIndex || 0);
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => {
-                          setSpotlightVideo({
-                            ...spotlightVideo,
-                            url: item.url,
-                            title: item.title,
-                            subtitle: item.subtitle,
-                            currentIndex: idx
-                          });
-                        }}
-                        className={`h-2 flex-1 rounded-full transition-all cursor-pointer ${
-                          isCurrent
-                            ? "bg-emerald-400 ring-2 ring-emerald-400/50 scale-y-125"
-                            : isPast
-                            ? "bg-emerald-600/80 hover:bg-emerald-500"
-                            : "bg-zinc-800 hover:bg-zinc-700"
-                        }`}
-                        title={`Jump to Shot ${item.order}`}
-                      />
-                    );
-                  })}
-                </div>
-                <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400">
-                  <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    Cut-by-Cut Mode: Shot {(spotlightVideo.currentIndex || 0) + 1} of {spotlightVideo.playlist.length}
-                  </span>
-                  {(() => {
-                    const currentReel = reels.find((r) => r.id === spotlightVideo.reelId);
-                    const masterUrl = currentReel?.roughCutUrl;
-                    if (!masterUrl) return null;
-                    return (
-                      <button
-                        type="button"
-                        id="spotlight-scrubber-switch-combined-btn"
-                        onClick={() => {
-                          setSpotlightVideo({
-                            ...spotlightVideo,
-                            url: masterUrl,
-                            title: `${currentReel.title} (Combined Master Cut)`,
-                            subtitle: `Full Combined Master Reel (${currentReel.durationSec.toFixed(0)}s Seamless Timeline)`,
-                            isCombinedMaster: true,
-                            playlist: undefined,
-                            currentIndex: undefined
-                          });
-                          showToast("🎬 Switched to Combined One Reel mode");
-                        }}
-                        className="text-amber-400 hover:text-amber-300 transition cursor-pointer flex items-center gap-1 font-bold underline"
-                      >
-                        <Film className="h-3 w-3 fill-current" /> Switch to Combined One Reel ({currentReel.durationSec.toFixed(0)}s)
-                      </button>
-                    );
-                  })()}
-                </div>
-              </div>
-            ) : (
-              /* Combined One Reel Status Banner */
-              <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 pt-1">
-                <span className="flex items-center gap-1.5 text-amber-400 font-bold">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
-                  Combined One Reel Master ({(() => {
-                    const currentReel = reels.find(r => r.id === spotlightVideo.reelId);
-                    return currentReel?.durationSec ? `${currentReel.durationSec.toFixed(0)}s` : "Full";
-                  })()} Continuous Seamless Timeline)
-                </span>
-                {(() => {
-                  const currentReel = reels.find(r => r.id === spotlightVideo.reelId);
-                  const readyClips = currentReel?.shots.filter(s => Boolean(s.videoUrl)) || [];
-                  if (readyClips.length <= 1) return null;
-                  return (
-                    <button
-                      type="button"
-                      id="spotlight-switch-to-cuts-btn"
-                      onClick={() => {
-                        const playlist = readyClips.map((c) => ({
-                          url: c.videoUrl!,
-                          title: `${currentReel?.title || "Reel"} — Shot ${String(c.order).padStart(2, "0")}: ${c.title}`,
-                          subtitle: c.scriptText ? `"${c.scriptText}"` : c.visualIntent || undefined,
-                          order: c.order,
-                          durationSec: c.durationSec
-                        }));
-                        setSpotlightVideo({
-                          ...spotlightVideo,
-                          url: playlist[0].url,
-                          title: playlist[0].title,
-                          subtitle: playlist[0].subtitle,
-                          playlist,
-                          currentIndex: 0,
-                          isCombinedMaster: false
-                        });
-                        showToast("🎞️ Switched to Cut-by-Cut mode");
-                      }}
-                      className="text-zinc-400 hover:text-emerald-400 transition cursor-pointer flex items-center gap-1 text-[11px]"
-                    >
-                      <Layers className="h-3 w-3" /> Inspect {readyClips.length} Cuts Separately
-                    </button>
-                  );
-                })()}
-              </div>
-            )}
-
-            <div className="flex items-center justify-between text-xs font-mono text-zinc-500 pt-2 border-t border-zinc-800 flex-wrap gap-2">
-              <span>Google Omni Continuous Master Preview</span>
-              <div className="flex items-center gap-3">
-                {(() => {
-                  const currentReel = reels.find(r => r.id === spotlightVideo.reelId);
-                  const masterUrl = currentReel?.roughCutUrl;
-                  if (!masterUrl) return null;
-                  return (
-                    <a
-                      href={masterUrl}
-                      download
-                      className="flex items-center gap-1.5 text-amber-400 hover:text-amber-300 font-bold"
-                      title="Download the full combined master video"
-                    >
-                      <Download className="h-3.5 w-3.5" /> Download Combined Reel {currentReel?.durationSec ? `(${currentReel.durationSec.toFixed(0)}s)` : ""}
-                    </a>
-                  );
-                })()}
-                <a
-                  href={spotlightVideo.url}
-                  download
-                  className="flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-bold"
-                >
-                  <Download className="h-3.5 w-3.5" /> Download Current Video
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* B. Edit Reel Modal */}
       {editingReel && (

@@ -1028,3 +1028,6 @@ export function ReelTimelineEditor({
     </div>
   );
 }
+
+export default ReelTimelineEditor;
+
