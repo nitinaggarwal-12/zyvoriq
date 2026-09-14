@@ -725,56 +725,8 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
         }`} />
 
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 md:px-10 lg:px-12 relative z-10">
-          {/* STUDIO MODE SWITCHER & HEADER */}
+          {/* STUDIO HEADER */}
           <div className="flex flex-col items-center text-center max-w-4xl mx-auto mb-4">
-            <div className="flex flex-wrap sm:flex-nowrap p-1 bg-[#0C1019]/90 border border-white/10 rounded-xl mb-3 shadow-lg backdrop-blur-xl w-full max-w-2xl gap-1">
-              <button
-                type="button"
-                onClick={() => handleTabChange("instagram_tiktok")}
-                className={`flex-1 py-2 px-2.5 sm:px-3 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 min-h-[38px] cursor-pointer ${
-                  activeTab === "instagram_tiktok"
-                    ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-[#07090E] shadow-md shadow-teal-500/30"
-                    : "text-slate-400 hover:text-white hover:bg-white/5"
-                }`}
-              >
-                <Smartphone className="w-4 h-4 shrink-0" />
-                <span>Reels</span>
-                <span className={`hidden sm:inline-block text-[10px] px-2 py-0.5 rounded-full font-extrabold uppercase ${
-                  activeTab === "instagram_tiktok" ? "bg-[#07090E]/20 text-[#07090E]" : "bg-white/5 text-slate-400"
-                }`}>
-                  9:16 Unbroken
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleTabChange("music_video")}
-                className={`flex-1 py-2 px-2.5 sm:px-3 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 min-h-[38px] cursor-pointer ${
-                  activeTab === "music_video"
-                    ? "bg-gradient-to-r from-teal-500 to-cyan-400 text-[#07090E] shadow-md shadow-teal-500/30"
-                    : "text-slate-400 hover:text-white hover:bg-white/5"
-                }`}
-              >
-                <Music2 className="w-4 h-4 shrink-0" />
-                <span>Music Video Studio</span>
-                <span className={`hidden sm:inline-block text-[10px] px-2 py-0.5 rounded-full font-extrabold uppercase ${
-                  activeTab === "music_video" ? "bg-[#07090E]/20 text-[#07090E]" : "bg-white/5 text-teal-300"
-                }`}>
-                  Omni 1.1 Hybrid
-                </span>
-              </button>
-
-              <Link
-                href="/feature-films"
-                className="flex-1 py-2 px-2.5 sm:px-3 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 min-h-[38px] text-amber-300 hover:text-white hover:bg-amber-500/15 border border-transparent hover:border-amber-500/30"
-              >
-                <Clapperboard className="w-4 h-4 shrink-0 text-amber-400" />
-                <span>Feature Films</span>
-                <span className="hidden sm:inline-block text-[10px] px-2 py-0.5 rounded-full font-extrabold uppercase bg-amber-500/20 text-amber-300">
-                  2.39:1 Cinema →
-                </span>
-              </Link>
-            </div>
 
             {activeTab === "instagram_tiktok" ? (
               <>
