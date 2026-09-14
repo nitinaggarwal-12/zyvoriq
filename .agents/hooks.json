@@ -1,1 +1,742 @@
-/Users/nitinagga/.gemini/config/hooks.json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "omni_guard",
+  "version": "5.1.5",
+  "description": "Google Omni 1.1 Universal Multi-Project Quality, Model Selection & Multi-Agent Orchestration Engine (Generative-Source Amendment)",
+  "global_governance": {
+    "sme_director": "Google Omni 1.1 (End-to-End Subject Matter Expert Director & Chief Orchestrator)",
+    "chief_auditor": "Gemini 2.5 Pro (Independent Forensic Quality Auditor & Remediation Gatekeeper)",
+    "unmatched_fallback": {
+      "action": "REJECT",
+      "default_auditor": "Gemini 2.5 Pro"
+    },
+    "hyper_realism_policy": {
+      "photorealism_level": "ULTRA_STUDIO_GRADE",
+      "human_deception_standard": "PASS_HUMAN_INSPECTION",
+      "prohibit_text_to_video_generation_for_faces": true,
+      "mandatory_biometric_anchoring": true,
+      "mandatory_master_audio_source": true,
+      "optical_film_emulation": {
+        "apply_35mm_grain_overlay": true,
+        "chromatic_aberration_range_px": [
+          0.5,
+          1.5
+        ],
+        "sensor_noise_floor_db": -48,
+        "ban_ai_skin_smoothing": true
+      },
+      "accepted_master_audio_sources": [
+        "REAL_RECORDED_48KHZ_INGESTION",
+        "DEEPMIND_LYRIA_GENERATED_MASTER"
+      ]
+    },
+    "state_management": {
+      "persisted_state_store": "PostgreSQL table reel_operations (SELECT ... FOR UPDATE SKIP LOCKED)",
+      "lock_ttl_ms": 180000,
+      "idempotency_key_header": "X-Omni-Execution-ID",
+      "max_agent_recursion_depth": 5,
+      "max_total_tool_calls_per_dag": 250,
+      "checkpointing": {
+        "enabled": true,
+        "store_intermediate_artifacts": true,
+        "auto_resume_on_failure": true,
+        "resume_requires_matching_input_hash": true,
+        "resume_hash_inputs": [
+          "prompt",
+          "seed",
+          "duration_sec",
+          "aspect_ratio",
+          "anchor_image_sha256"
+        ],
+        "ban_resume_on_file_existence_alone": true,
+        "require_quality_gate_pass_before_reuse": true
+      },
+      "store_dsn_env_var": "DATABASE_URL",
+      "lock_heartbeat_interval_ms": 15000,
+      "idempotency_strategy": "persist_veo_operation_name_before_first_poll",
+      "max_tool_calls_per_stage": 60
+    },
+    "production_hardening": {
+      "secret_sanitization": {
+        "enabled": true,
+        "redact_patterns": [
+          "Bearer\\s+[A-Za-z0-9\\-\\._~\\+\\/]+=*",
+          "AKIA[0-9A-Z]{16}",
+          "key-[0-9a-zA-Z]{32}",
+          "AIza[0-9A-Za-z_\\-]{35}",
+          "postgres(?:ql)?://[^:\\s]+:[^@\\s]+@[^\\s\"']+",
+          "GOOGLE_API_KEY\\s*=\\s*\\S+",
+          "DATABASE_URL\\s*=\\s*\\S+",
+          "-----BEGIN [A-Z ]*PRIVATE KEY-----"
+        ],
+        "ban_hardcoded_credentials_in_scripts": true,
+        "known_violations_to_remediate": [
+          "scripts/launch_shakira_college_reel.mjs:11",
+          "scripts/plan_and_compile_chandigarh_reel.mjs:13",
+          "scripts/produce_italy_summer_pool_reel.mjs:12"
+        ]
+      },
+      "circuit_breaker": {
+        "failure_threshold": 5,
+        "recovery_time_sec": 60,
+        "dead_letter_queue": "redis://localhost:6379/omni_dlq",
+        "scope": "per_model",
+        "breaker_counts_retry_exhaustion_as": 1,
+        "dead_letter_sink": "postgres:reel_operations(status='DEAD_LETTER')"
+      },
+      "filesystem_sandbox": {
+        "enforce_root_jail": true,
+        "disallow_relative_traversal": true,
+        "canonicalize_paths": true
+      },
+      "hardware_budgets": {
+        "max_concurrent_gpu_jobs": 2,
+        "max_vram_usage_mb": 24576,
+        "process_memory_limit_mb": 16384,
+        "applicability": "ADVISORY_ONLY - all generation models are remote HTTP APIs; no local GPU/VRAM is consumed."
+      },
+      "project_isolation": {
+        "strict_context_segmentation": true,
+        "cross_domain_data_sharing": false
+      },
+      "api_quota_budgets": {
+        "max_concurrent_veo_operations": 3,
+        "max_requests_per_minute_per_model": 10,
+        "quota_exhaustion_backoff_ms": 30000,
+        "max_daily_veo_shots": 200
+      }
+    },
+    "skill_routing_matrix": {
+      "enforce_strict_mapping": true,
+      "routes": [
+        {
+          "task_type": "spatial_topology_and_blueprint",
+          "required_skill": "diagram-generation-engine",
+          "assigned_model": "Google Omni 1.1",
+          "allowed_tools": [
+            "write_to_file",
+            "replace_file_content",
+            "run_command"
+          ],
+          "allowed_command_prefixes": [
+            "node",
+            "npx"
+          ],
+          "submitted_skill_title": "Blueprint Strategy & Architecture Design"
+        },
+        {
+          "task_type": "drawio_ast_construction",
+          "required_skill": "diagram-decompilation-and-geometry",
+          "assigned_model": "Gemini 3.8 Flash",
+          "allowed_tools": [
+            "write_to_file",
+            "run_command"
+          ],
+          "allowed_command_prefixes": [
+            "node",
+            "python3"
+          ],
+          "submitted_skill_title": "AST Graph Generator"
+        },
+        {
+          "task_type": "vocal_stem_isolation",
+          "required_skill": "deepmind-emotional-audio-engine",
+          "assigned_model": "Demucs Vocal Separator Agent",
+          "allowed_tools": [
+            "run_command"
+          ],
+          "allowed_command_prefixes": [
+            "python3",
+            "node",
+            "ffmpeg",
+            "ssh"
+          ],
+          "submitted_skill_title": "Vocal Separator Agent"
+        },
+        {
+          "task_type": "high_fidelity_lip_sync",
+          "required_skill": "cinema-feature-film-qa",
+          "assigned_model": "Sync.so / Flashloop Engine",
+          "allowed_tools": [
+            "run_command"
+          ],
+          "allowed_command_prefixes": [
+            "node",
+            "ffmpeg",
+            "ffprobe",
+            "python3",
+            "ssh"
+          ],
+          "submitted_skill_title": "60fps Micro-Phoneme Alignment Engine"
+        },
+        {
+          "task_type": "cinematic_motion_render",
+          "required_skill": "deepmind-video-generation",
+          "assigned_model": "Kling 3.0 / Sora 2 / Google Veo 3.1",
+          "allowed_tools": [
+            "run_command",
+            "write_to_file"
+          ],
+          "allowed_command_prefixes": [
+            "node",
+            "ffmpeg",
+            "ffprobe",
+            "ssh"
+          ],
+          "submitted_skill_title": "Photorealistic Motion Vector Transfer"
+        },
+        {
+          "task_type": "forensic_quality_audit",
+          "required_skill": "visual-regression-testing",
+          "assigned_model": "Gemini 2.5 Pro",
+          "allowed_tools": [
+            "run_command"
+          ],
+          "allowed_command_prefixes": [
+            "node",
+            "npx",
+            "ffprobe",
+            "python3"
+          ],
+          "submitted_skill_title": "Independent Forensic Verification"
+        },
+        {
+          "task_type": "e2e_browser_verification",
+          "required_skill": "puppeteer-pair-programming",
+          "assigned_model": "Gemini 2.5 Flash",
+          "allowed_tools": [
+            "run_command",
+            "write_to_file"
+          ],
+          "allowed_command_prefixes": [
+            "node",
+            "npx",
+            "ssh"
+          ]
+        },
+        {
+          "task_type": "security_static_analysis",
+          "required_skill": "security-code-scanner",
+          "assigned_model": "Gemini 2.5 Pro",
+          "allowed_tools": [
+            "run_command"
+          ],
+          "allowed_command_prefixes": [
+            "node",
+            "npm",
+            "npx",
+            "rg",
+            "grep"
+          ]
+        },
+        {
+          "task_type": "database_schema_change",
+          "required_skill": "database-schema-guard",
+          "assigned_model": "Gemini 2.5 Pro",
+          "allowed_tools": [
+            "run_command",
+            "replace_file_content"
+          ],
+          "allowed_command_prefixes": [
+            "node",
+            "psql"
+          ]
+        }
+      ],
+      "binding_note": "required_skill values are literal skill DIRECTORY identifiers under ~/.gemini/config/skills/ or <project_root>/skills/. Prose titles cannot bind and resolve to undefined.",
+      "validate_on_load": true,
+      "on_unknown_skill": "HARD_FAIL"
+    },
+    "resilience_policy": {
+      "max_retries": 3,
+      "backoff_strategy": "exponential",
+      "hook_failure_mode": "FAIL_CLOSED"
+    },
+    "dynamic_model_orchestration": {
+      "orchestrator": "Google Omni 1.1",
+      "authority": "Google Omni 1.1 decides model invocation, execution DAG order, context schemas, and remediation triggers.",
+      "model_inventory": {
+        "vision_extraction": "Gemini 2.5 Flash",
+        "deep_reasoning_and_pedagogy": "Gemini 2.5 Pro",
+        "ast_graph_synthesis": "Gemini 3.8 Flash",
+        "audio_composition": "DeepMind Lyria 3.5 (generated master) OR Master Studio Track Ingestion (real recorded 48kHz)",
+        "photoreal_video_generation": "Google Veo 3.1 (ONLY implemented generator)",
+        "spatial_acoustic_dsp": "Acoustic IR Reverb Matching Engine",
+        "sandbox_runner": "Isolated Container Environment Runner",
+        "scoring_evaluator": "Multi-Dimensional Weighted Evaluator",
+        "protocol_mesh": "A2A Protocol & MCP Governance Engine",
+        "unavailable_declared_models": {
+          "Kling 3.0": "no client",
+          "Sora 2": "no client",
+          "Sync.so / Flashloop Engine": "no client",
+          "Demucs Vocal Separator Agent": "not installed"
+        }
+      },
+      "coordination_rules": [
+        "1. Omni 1.1 formulates an execution DAG based on request modality, project domain, and target aspect ratio.",
+        "2. Biometric anchors and master audio stems are validated prior to initiating video rendering passes.",
+        "3. Intermediate JSON/AST schemas are strictly validated prior to downstream model invocation.",
+        "4. Gemini 2.5 Pro conducts independent forensic audits to detect temporal warping, plastic skin, or artificial mouth artifacts.",
+        "5. Schema or runtime errors trigger context-aware exponential retries up to 3 attempts before routing to the DLQ."
+      ]
+    },
+    "enforcement": "Strict Zero-Bypass Across All 5 Projects",
+    "provenance_ledger": {
+      "enabled": true,
+      "ledger_path": "scratch/provenance/<production_id>.receipts.jsonl",
+      "append_only": true,
+      "emit_from": "the single outbound model HTTP wrapper - no model call may bypass it",
+      "receipt_schema": {
+        "stage": "string",
+        "model": "string",
+        "endpoint": "string",
+        "http_status": "integer",
+        "request_sha256": "string",
+        "response_bytes": "integer",
+        "started_at": "iso8601",
+        "duration_ms": "integer"
+      },
+      "assertions": [
+        "execution_order is satisfied only if the receipt stage sequence is a topological order of the declared DAG.",
+        "skill_routing_matrix is satisfied only if each receipt model equals the assigned_model for that stage.",
+        "omniLedger.modelsInvoked MUST be derived from receipts and MUST NEVER be hand-authored.",
+        "A stage declared in execution_order with zero receipts is a HARD FAIL.",
+        "Stage 0 (Omni 1.1 director) MUST have a receipt with http_status 200 before any generative API spend. No receipt = production invalid."
+      ],
+      "ban_self_reported_model_attribution": true,
+      "unimplemented_models_note": "Kling 3.0, Sora 2 and Sync.so / Flashloop are declared in model_inventory but no client exists in this codebase. Under ban_self_reported_model_attribution they may NOT be cited in any ledger until a real client emits receipts."
+    }
+  },
+  "projects": {
+    "PromptCanvas": {
+      "tag": "PromptCanvas",
+      "priority": 1,
+      "path_matchers": [
+        "^PromptCanvas(/.*)?$"
+      ],
+      "domain": "architecture_blueprints_and_canvas",
+      "omni_sme_director": {
+        "model": "Google Omni 1.1",
+        "role": "Chief Architecture SME Director & Model Orchestrator"
+      },
+      "omni_sme_auditor": {
+        "model": "Gemini 2.5 Pro",
+        "role": "Independent Forensic Auditor (Visual Overlap & Zero-Collision Gate)"
+      },
+      "model_orchestration": {
+        "execution_order": [
+          "Stage 1: Google Omni 1.1 - Blueprint & Spatial Topology Planning",
+          "Stage 2: Gemini 2.5 Flash - OCR & Node Inventory Extraction",
+          "Stage 3: Gemini 3.8 Flash - Draw.io AST Graph Construction",
+          "Stage 4: Gemini 2.5 Pro - Visual QA & Zero-Collision Audit"
+        ]
+      },
+      "rules": {
+        "card_anatomy": "2-column flexbox with left icon rail (display:flex; gap:8px)",
+        "min_icon_density": 0.25,
+        "min_connector_density": 0.15,
+        "bus_routing_required": true,
+        "ban_global_dark": true,
+        "ban_external_http_icons": true,
+        "allow_svg_sprite_system": true,
+        "mandatory_screenshots": true
+      }
+    },
+    "scorex": {
+      "tag": "scorex",
+      "priority": 2,
+      "path_matchers": [
+        "^scorex(/.*)?$",
+        "^usecase-scoring(/.*)?$",
+        "^assessments(/.*)?$"
+      ],
+      "domain": "enterprise_ai_maturity_and_scoring",
+      "omni_sme_director": {
+        "model": "Google Omni 1.1",
+        "role": "Chief AI Maturity SME Director"
+      },
+      "omni_sme_auditor": {
+        "model": "Gemini 2.5 Pro",
+        "role": "Independent Forensic Auditor (Score Boundaries & Dual-DB Integrity)"
+      },
+      "model_orchestration": {
+        "execution_order": [
+          "Stage 1: Google Omni 1.1 - Rubric Vector Architecture",
+          "Stage 2: Gemini 2.5 Flash - Evidence Ingestion",
+          "Stage 3: Multi-Dimensional Weighted Evaluator - Matrix Calculations",
+          "Stage 4: Gemini 2.5 Pro - Dual-DB Parity Audit (SQLite & Postgres)"
+        ]
+      },
+      "rules": {
+        "strict_score_bounds": [
+          1,
+          5
+        ],
+        "require_deterministic_recalculation": true,
+        "dual_engine_db_safety": true,
+        "db_transaction_locking": "STRICT_SERIALIZABLE",
+        "ban_ungrounded_capability_scores": true
+      }
+    },
+    "vidoxis": {
+      "tag": "vidoxis",
+      "priority": 3,
+      "path_matchers": [
+        "^vidoxis(/.*)?$",
+        "^trainex(/.*)?$",
+        "^enablement(/.*)?$"
+      ],
+      "domain": "enterprise_video_enablement_and_training",
+      "omni_sme_director": {
+        "model": "Google Omni 1.1",
+        "role": "Chief Enablement SME Director"
+      },
+      "omni_sme_auditor": {
+        "model": "Gemini 2.5 Pro",
+        "role": "Independent Forensic Auditor (Lab Reproducibility & Link Integrity)"
+      },
+      "model_orchestration": {
+        "execution_order": [
+          "Stage 1: Google Omni 1.1 - Pedagogical Strategy & Curriculum DAG",
+          "Stage 2: Gemini 2.5 Pro - Script & Module Authoring",
+          "Stage 3: Sandbox Runner - Command Execution in Hermetic Containers",
+          "Stage 4: Gemini 2.5 Pro - Forensic Enablement Audit"
+        ]
+      },
+      "rules": {
+        "ban_broken_curriculum_links": true,
+        "require_reproducible_commands": true,
+        "require_persona_coverage": true
+      }
+    },
+    "a2a-enterprise-strategy": {
+      "tag": "a2a-enterprise-strategy",
+      "priority": 4,
+      "path_matchers": [
+        "^a2a-enterprise-gateway(/.*)?$",
+        "^a2a_sdk(/.*)?$"
+      ],
+      "domain": "agent_to_agent_enterprise_gateway_and_mesh",
+      "omni_sme_director": {
+        "model": "Google Omni 1.1",
+        "role": "Chief Multi-Agent Systems SME Director"
+      },
+      "omni_sme_auditor": {
+        "model": "Gemini 2.5 Pro",
+        "role": "Independent Forensic Auditor (Security & Policy Armor)"
+      },
+      "model_orchestration": {
+        "execution_order": [
+          "Stage 1: Google Omni 1.1 - Multi-Agent Interaction Topology",
+          "Stage 2: Protocol Mesh - Rate-Limiting, Quotas, mTLS & Security Armor",
+          "Stage 3: MCP Governance Engine - JSON Schema Verification",
+          "Stage 4: Gemini 2.5 Pro - Agent Boundary Fuzzing Audit"
+        ]
+      },
+      "rules": {
+        "require_valid_json_schema_mcp": true,
+        "ban_unauthenticated_agent_hops": true,
+        "enforce_circuit_breakers": true,
+        "enforce_rate_limiting": true
+      }
+    },
+    "zyvoriq": {
+      "tag": "zyvoriq",
+      "priority": 5,
+      "path_matchers": [
+        "^zyvoriq(/.*)?$",
+        "^genmedia[0-9]*\\.0(/.*)?$"
+      ],
+      "domain": "generative_cinema_music_video_and_reels",
+      "omni_sme_director": {
+        "model": "Google Omni 1.1",
+        "role": "Chief Cinematic SME Director & Audio-Visual Orchestrator"
+      },
+      "omni_sme_auditor": {
+        "model": "Gemini 2.5 Pro",
+        "role": "Independent Forensic Auditor (Viseme, Photorealism & Biometric Gate)"
+      },
+      "model_orchestration": {
+        "execution_order": [
+          "Stage 0: Google Omni 1.1 - MANDATORY BLOCKING Directorial Pre-Flight (95% of creative work: concept, shot list, choreography, wardrobe, camera vectors, colour script, per-shot prompts, acoustic brief). Production HALTS if Omni does not respond.",
+          "Stage 1: DeepMind Lyria 3.5 - Master Soundtrack Generation (48kHz) to Omni's acoustic brief",
+          "Stage 2: Gemini 2.5 Flash Image - High-Res Biometric Anchor Plate to Omni's casting/wardrobe spec",
+          "Stage 3: Gemini 2.5 Flash - Acoustic Ground-Truth Analysis & Vocal Onset Map",
+          "Stage 4: Google Veo 3.1 - Image-Conditioned Render with Sequential Tail-Frame Chaining, executing Omni's per-shot prompts",
+          "Stage 5: Optical Post-Process - 35mm Grain, Chromatic Aberration & Rec.709 Grade",
+          "Stage 6: Google Omni 1.1 + Gemini 2.5 Pro - In-Flight Review and Forensic Photorealism Audit"
+        ],
+        "removed_stages": {
+          "Sync.so / Flashloop Engine": "No client exists. Under ban_self_reported_model_attribution this stage could never be truthfully receipted, so declaring it would guarantee a false ledger.",
+          "Demucs Vocal Separator": "Not installed. Vocal stem isolation is unavailable; require_vocal_stem_isolation_preflight is therefore scoped to productions that supply pre-separated stems."
+        },
+        "director_policy": {
+          "director": "Google Omni 1.1",
+          "endpoint": "POST https://generativelanguage.googleapis.com/v1beta/interactions (models/gemini-omni-1.1-flash)",
+          "blocking": true,
+          "on_director_failure": "HALT_PRODUCTION",
+          "ban_fail_open_director": true,
+          "rationale": "The previous callOmni() swallowed errors and returned null while callers proceeded, so a production could run entirely undirected yet still record Omni 1.1 in its ledger. A director that can be skipped is not a director.",
+          "minimum_preflight_coverage_pct": 95,
+          "must_produce": [
+            "concept",
+            "shot_list",
+            "choreography",
+            "wardrobe",
+            "camera_vectors",
+            "colour_script",
+            "per_shot_prompts",
+            "acoustic_brief"
+          ]
+        }
+      },
+      "rules": {
+        "target_aspect_ratio": "9:16",
+        "require_real_female_model_biometric_anchors": true,
+        "require_real_recorded_master_song_ingestion": true,
+        "prohibit_pure_text_to_video_face_generation": true,
+        "ban_plastic_skin_and_ai_smoothing": true,
+        "anti_plastic_skin_reinforcement": {
+          "inject_micro_surface_texture_tokens": true,
+          "enforce_skin_pore_frequency_per_sq_inch": 1200,
+          "reject_smoothness_coefficient_above": 0.12
+        },
+        "ban_stream_loop": true,
+        "ban_static_character_prompts": true,
+        "allow_dynamic_viseme_prompts_during_vocals": true,
+        "viseme_token_isolation_scope": "append_to_dynamic_motion_prompt_only",
+        "require_active_vocal_lip_sync_on_singing_shots": true,
+        "require_vocal_stem_isolation_preflight": false,
+        "require_acoustic_neural_latency_adelay_calibration": true,
+        "adelay_calibration_bounds_ms": [
+          100,
+          300
+        ],
+        "require_downbeat_cut_alignment": true,
+        "enforce_camera_motion_vector_continuity": true,
+        "enforce_palette_and_lut_consistency": true,
+        "isolated_vocal_bed_mix_volume": 0.2,
+        "biometric_anchor_threshold": 0.02,
+        "psnr_quality_gate": {
+          "min_sequential_tail_frame_psnr": 28,
+          "max_sequential_tail_frame_psnr_dynamic": "enforce_micro_jitter_check_if_magnitude_below_0.05",
+          "min_hard_scene_cut_psnr_difference": 18,
+          "max_sequential_tail_frame_psnr": 42,
+          "max_cross_cut_frame0_psnr": 25
+        },
+        "suppress_omni_native_video_audio": true,
+        "audio_sync_precision": {
+          "render_micro_fps": 60,
+          "timecode_clock": "90kHz_integer_ticks",
+          "enforce_variable_rate_rejection": true,
+          "co_articulatory_lookahead_ms": 200,
+          "multi_performer_bounding_box_audio_mapping": true,
+          "acoustic_reverb_spatialization": true
+        },
+        "advanced_physical_sync": {
+          "involuntary_biological_motion_during_silence": true,
+          "pre_transient_strike_offset_ms": [
+            -30,
+            -15
+          ],
+          "anticipation_curve_mapping": true,
+          "require_intra_oral_volumetric_depth_mapping": true,
+          "acoustic_to_facial_tension_coupling": true,
+          "cross_shot_viseme_phase_continuity": true,
+          "plosive_occlusion_fallback_remediation": "force_jaw_closure_keyframe"
+        },
+        "vocal_isolation": {
+          "separator": "Demucs",
+          "residual_bleed_threshold_db": -45,
+          "transient_spike_grace_multiplier": 1.5,
+          "action": "auto_quarantine_on_transient_spike"
+        },
+        "audio_resample_rate_hz": 48000,
+        "export_encoding_profile": "H.264 Rec.709 YUV420p faststart",
+        "short_form_pacing": {
+          "intro_cut_duration_sec": [
+            0.5,
+            1.2
+          ],
+          "verse_cut_duration_sec": [
+            2,
+            3
+          ],
+          "chorus_quarter_note_montage": true
+        },
+        "music_video_correctness": {
+          "source_audit": "omni_guard_v2.6.0_gap_audit.md (9 blindspots), still absent in v4.1.0",
+          "ban_silent_padding_filters": true,
+          "banned_padding_filters": [
+            "aloop",
+            "apad",
+            "areverse-pad"
+          ],
+          "detector": "scripts/guards/gate_audio_loudness_spectrum.mjs",
+          "loudness": {
+            "target_integrated_lufs": -14,
+            "tolerance_lu": 1,
+            "max_true_peak_dbtp": -1,
+            "background_bed_lufs": -24,
+            "vocal_stem_lufs_range": [
+              -18,
+              -16
+            ]
+          },
+          "spectrum": {
+            "min_sub_bass_energy_retention_pct": 60,
+            "sub_bass_ceiling_hz": 150,
+            "max_allowed_highpass_hz": 80,
+            "ban_highpass_at_or_above_hz": 200,
+            "rationale": "highpass=f=200 gutted the kick, sub-bass and synth groove and produced the tinny master. Full 35Hz-20kHz spectrum must survive."
+          },
+          "require_bpm_downbeat_cut_alignment": true,
+          "max_cut_to_downbeat_offset_ms": 60,
+          "bpm_detector": "scripts/guards/gate_bpm_downbeat_cut_alignment.mjs",
+          "require_song_structure_duration_parity": true,
+          "max_structure_duration_drift_sec": 0.25,
+          "structure_detector": "scripts/guards/gate_song_structure_duration_parity.mjs",
+          "max_horizon_tilt_degrees": 3,
+          "max_camera_roll_degrees": 3,
+          "tilt_detector": "scripts/guards/gate_horizon_tilt_and_roll.mjs",
+          "tilt_incident_reference": "shot_03 of studio1_d5dbfcf2 shipped rotated 90 degrees. No rule covered this.",
+          "require_poster_frame_authenticity": true,
+          "ban_stock_fallback_posters": true,
+          "banned_poster_paths": [
+            "/assets/stills/beach_sunset.jpg"
+          ],
+          "require_poster_extracted_from_own_render": true,
+          "poster_detector": "scripts/guards/gate_poster_authenticity.mjs",
+          "poster_incident_reference": "MyReelsLibrary.tsx:1069 fell back to a stock beach still, surfacing a man in a white shirt as the thumbnail of a reel he does not appear in.",
+          "ban_vertical_crop_of_9_16_assets": true,
+          "ban_aspect_video_class_on_vertical_assets": true,
+          "crop_incident_reference": "sm:aspect-video forced 9:16 clips into 16:9 boxes and cropped every head.",
+          "veo_retry_budget": {
+            "max_attempts_per_shot": 4,
+            "max_safety_rejections_per_shot": 2,
+            "on_budget_exhausted": "QUARANTINE_SHOT_AND_ALERT"
+          },
+          "bpm_grid_enforcement": {
+            "require_bar_aligned_cuts": true,
+            "max_cut_to_downbeat_offset_ms": 60,
+            "note": "Cut boundaries must land on bar downbeats. At 118 BPM a bar is 2033.9ms, so 6.0s cuts drift 102-407ms and would fail the gate. Shot lengths must be integer multiples of the bar."
+          }
+        },
+        "accepted_master_audio_sources": [
+          "REAL_RECORDED_48KHZ_INGESTION",
+          "DEEPMIND_LYRIA_GENERATED_MASTER"
+        ],
+        "master_audio_source_note": "A Lyria-generated master satisfies this rule ONLY if the Lyria API was physically invoked and a provenance receipt exists. Synthetic oscillators, noise generators and static tones remain banned under Rule 12.",
+        "ban_synthetic_oscillator_master": true,
+        "accepted_biometric_anchor_sources": [
+          "REAL_PHOTOGRAPHIC_PLATE",
+          "GENERATED_HIGH_RES_ANCHOR_PLATE_WITH_MANDATORY_IMAGE_CONDITIONING"
+        ],
+        "require_image_conditioning_on_every_shot": true,
+        "anchor_source_note": "A generated anchor is permitted because every shot is image-conditioned from that single plate, which is what preserves biometric identity. Pure text-to-video face generation (no anchor image) remains prohibited.",
+        "vocal_stem_isolation_disabled_reason": "Demucs is not installed on either machine. Re-enable once a real separator client exists."
+      }
+    }
+  },
+  "lifecycle_hooks": {
+    "SessionStart": {
+      "enabled": false,
+      "handler": "python .claude/hooks/session_start.py",
+      "timeout_seconds": 15,
+      "on_timeout": "FAIL_CLOSED",
+      "exit_code_contract": {
+        "0": "PROCEED",
+        "1": "DENY",
+        "2": "BLOCK"
+      },
+      "disabled_reason": "Handler .claude/hooks/session_start.py does not exist in any project. Re-enable once a real handler is present."
+    },
+    "PreInvocation": {
+      "enabled": true,
+      "handler": "node scripts/pre_invocation_memory.mjs",
+      "timeout_seconds": 15,
+      "on_timeout": "FAIL_CLOSED",
+      "exit_code_contract": {
+        "0": "PROCEED",
+        "1": "DENY",
+        "2": "BLOCK"
+      }
+    },
+    "PreToolUse": {
+      "enabled": true,
+      "matcher_regex": "^(run_command|write_to_file|replace_file_content|notebook_edit|call_mcp_tool|Edit|Write)$",
+      "handler": "node scripts/pre_tool_guard.mjs",
+      "timeout_seconds": 30,
+      "on_timeout": "FAIL_CLOSED",
+      "exit_code_contract": {
+        "0": "ALLOW",
+        "1": "DENY",
+        "2": "BLOCK"
+      }
+    },
+    "PostToolUse": {
+      "enabled": true,
+      "matcher_regex": "^(run_command|write_to_file|replace_file_content|notebook_edit|call_mcp_tool|Edit|Write)$",
+      "handler": "node scripts/post_tool_verifier.mjs",
+      "timeout_seconds": 30,
+      "on_timeout": "FAIL_CLOSED",
+      "retry_policy": {
+        "max_attempts": 3,
+        "backoff": "exponential"
+      },
+      "exit_code_contract": {
+        "0": "PASS",
+        "1": "REMEDIATE",
+        "2": "REJECT"
+      }
+    },
+    "Stop": {
+      "enabled": true,
+      "handler": "node scripts/stop_quality_gate.mjs",
+      "timeout_seconds": 360,
+      "on_timeout": "ABORT_DEPLOYMENT",
+      "exit_code_contract": {
+        "0": "CERTIFIED_PASS",
+        "1": "RETRY_STAGE",
+        "2": "HARD_STOP"
+      }
+    }
+  },
+  "canonical_source": {
+    "path": "~/.gemini/config/hooks.json",
+    "policy": "SINGLE_SOURCE_OF_TRUTH",
+    "note": "Exactly one hooks.json exists system-wide across all projects. Every other location is a symlink to this file or must not exist. Enforced by scripts/guards/guard_single_hooks_source.mjs."
+  },
+  "corrections_applied": {
+    "base_version": "5.1.3-patch2 (as submitted)",
+    "applied": [
+      "lifecycle_hooks.PreToolUse.handler: 'bash .claude/hooks/block_migrations.sh' -> 'node scripts/pre_tool_guard.mjs' (submitted handler does not exist; would disable all 37 rules)",
+      "lifecycle_hooks.PostToolUse.handler: 'bash .claude/hooks/format_python.sh' -> 'node scripts/post_tool_verifier.mjs' (submitted handler does not exist)",
+      "lifecycle_hooks.SessionStart: disabled (handler 'python .claude/hooks/session_start.py' does not exist; enabled+FAIL_CLOSED on a missing handler blocks every session)",
+      "RETAINED submitted matcher_regex widening (adds Edit|Write) on PreToolUse and PostToolUse",
+      "state_management.persisted_state_store: Redis -> PostgreSQL reel_operations (redis not installed, not a dependency)",
+      "state_management.lock_ttl_ms: 30000 -> 180000 + 15000ms heartbeat (measured Veo shot latency 57s exceeded the 30s lease)",
+      "state_management.idempotency: X-Omni-Execution-ID header -> persist veo operation name (Google GenAI does not honour custom idempotency headers)",
+      "state_management.max_total_tool_calls_per_dag: 50 -> 250 + per-stage cap 60 (one 5-shot reel with remediation already consumed ~50)",
+      "checkpointing: auto_resume now requires a matching input hash (file-existence resume re-served the rotated shot_03)",
+      "secret_sanitization.redact_patterns: added AIza keys + postgres DSNs + private keys (the two secret classes actually present in the repo)",
+      "circuit_breaker: scoped per-model, retry-exhaustion counts as 1 failure, DLQ -> postgres (redis DLQ unreachable)",
+      "added api_quota_budgets (Veo/Lyria/Gemini are remote HTTP APIs; GPU/VRAM budgets govern hardware never used). hardware_budgets retained but marked advisory.",
+      "skill_routing_matrix: required_skill prose titles -> real skill directory ids; allowed_tools fictional names -> real tool surface + command prefixes",
+      "added provenance_ledger - without receipts execution_order and skill routing are unfalsifiable and modelsInvoked stays self-reported"
+    ]
+  },
+  "amendment_log": {
+    "from": "5.1.3-patch2",
+    "to": "5.1.4",
+    "reason": "Generative-source amendment approved by user",
+    "changes": [
+      "audio: require_real_recorded_master_song_ingestion now satisfied by a GENUINELY generated Lyria master (was: ingestion only, which contradicted GEMINI.md's Lyria mandate)",
+      "model_inventory.audio_composition: 'Master Studio Track Ingestion' -> restored DeepMind Lyria 3.5 as a first-class generator",
+      "anchors: synthetic high-res anchor plate permitted, PROVIDED every shot is image-conditioned from it (the text-to-video face ban stays in force)",
+      "execution_order: Stage 3 'Sync.so / Flashloop Engine' removed - no client exists in this codebase and it could not be truthfully receipted. Veo 3.1 native lip-sync is used instead.",
+      "model_inventory: Kling 3.0 / Sora 2 / Sync.so flagged UNAVAILABLE - declared but no client exists",
+      "added bpm_grid_enforcement so cut boundaries are computed from the bar grid rather than round numbers"
+    ]
+  }
+}
