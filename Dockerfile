@@ -18,12 +18,15 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
+RUN apk add --no-cache ffmpeg python3
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
-RUN mkdir -p /app && chown -R nextjs:nodejs /app
+RUN mkdir -p /app /app/scratch/yt /app/scratch/yt_logs /app/public/renders/yt /app/public/renders/edited && chown -R nextjs:nodejs /app
 
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
+RUN chown -R nextjs:nodejs /app/scratch /app/public/renders /app/scripts
 
 USER nextjs
 EXPOSE 3000
