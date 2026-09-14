@@ -2499,9 +2499,9 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                     </div>
 
                     {/* Body: Side-by-side Smartphone & Companion Content */}
-                    <div className="flex-1 flex flex-col sm:flex-row items-center sm:items-stretch justify-center gap-4">
-                      {/* Smartphone Frame (Expanded height ~410px for balanced scaling) */}
-                      <div className="relative w-[210px] sm:w-[225px] shrink-0 aspect-[9/16] bg-black rounded-[28px] p-2 shadow-2xl shadow-teal-500/20 border-2 border-white/15 ring-1 ring-white/10 flex flex-col justify-between overflow-hidden group">
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start justify-center gap-5">
+                      {/* Smartphone Frame (Locked to true 9:16 aspect ratio: 236px x 420px, never vertically stretched) */}
+                      <div className="relative w-[220px] sm:w-[236px] h-[391px] sm:h-[420px] shrink-0 aspect-[9/16] self-start bg-black rounded-[28px] p-2 shadow-2xl shadow-teal-500/20 border-2 border-white/15 ring-1 ring-white/10 flex flex-col justify-between overflow-hidden group">
                         {/* Simulated mobile phone ear notch */}
                         <div className="absolute top-3 left-1/2 -translate-x-1/2 w-20 h-3 bg-[#07090E] rounded-full z-30 pointer-events-none border border-white/5" />
 
@@ -2577,17 +2577,17 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                         </div>
                       </div>
 
-                      {/* Companion Side Column: Sample Productions Grid + Continuity Lock Card */}
-                      <div className="flex-1 flex flex-col justify-between gap-3 w-full max-w-[320px] sm:max-w-none">
+                      {/* Companion Side Column: Sample Productions Grid + Continuity Lock Card (Matched 420px height) */}
+                      <div className="flex-1 flex flex-col justify-between sm:h-[420px] gap-3 w-full max-w-[320px] sm:max-w-none">
                         {/* Switch active reel filmstrip cards */}
-                        <div className="space-y-1.5">
+                        <div className="space-y-2">
                           <div className="flex items-center justify-between px-0.5 text-xs text-slate-400">
                             <span className="font-bold text-teal-300 uppercase tracking-wider text-[11px] flex items-center gap-1">
                               <Film className="w-3.5 h-3.5 text-teal-400" /> Sample Productions
                             </span>
                             <span className="text-[10px] text-slate-400">Tap to load</span>
                           </div>
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-2 gap-2.5">
                             {FINISHED_REELS.map((reel, idx) => (
                               <button
                                 key={reel.id}
@@ -2616,7 +2616,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                         </div>
 
                         {/* Continuity Proof Badge Card */}
-                        <div className="w-full p-3 rounded-xl bg-teal-500/5 border border-teal-500/20 text-xs text-slate-300 flex items-start gap-2.5 shadow-sm">
+                        <div className="w-full p-3.5 rounded-xl bg-teal-500/5 border border-teal-500/20 text-xs text-slate-300 flex items-start gap-2.5 shadow-sm">
                           <CheckCircle2 className="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
                           <div>
                             <strong className="text-teal-300 block font-semibold text-[11px]">Biometric Continuity Lock:</strong>
@@ -2625,6 +2625,25 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                             </span>
                           </div>
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Lower Production Telemetry & Pipeline Spec Deck (Balances card height when left-side Casting panel is expanded) */}
+                    <div className="grid grid-cols-3 gap-2.5 pt-2">
+                      <div className="p-2.5 rounded-xl bg-white/[0.02] border border-white/5 flex flex-col justify-between">
+                        <span className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Acoustic Clock</span>
+                        <span className="text-xs font-bold text-teal-300 mt-0.5">Lyria 3.5 Master</span>
+                        <span className="text-[10px] text-slate-400 mt-0.5">-14.0 LUFS Polyphonic</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-white/[0.02] border border-white/5 flex flex-col justify-between">
+                        <span className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Visual Continuity</span>
+                        <span className="text-xs font-bold text-teal-300 mt-0.5">Tail-Frame Chain</span>
+                        <span className="text-[10px] text-slate-400 mt-0.5">Cut PSNR &lt; 25.0 dB</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-white/[0.02] border border-white/5 flex flex-col justify-between">
+                        <span className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Director Engine</span>
+                        <span className="text-xs font-bold text-teal-300 mt-0.5">Omni 1.1 Pre-Flight</span>
+                        <span className="text-[10px] text-slate-400 mt-0.5">Zero Phantom Mouthing</span>
                       </div>
                     </div>
 
