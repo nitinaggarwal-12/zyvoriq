@@ -38,12 +38,13 @@ function compileCaptionCues(wordTimings: WordTiming[]): { words: WordTiming[]; c
 }
 
 function syncBoundaries(manifest: ReelProductionManifest) {
-  if (!manifest.continuity) return;
-  const existing = new Map(manifest.continuity.boundaries.map(boundary => [`${boundary.fromShotId}:${boundary.toShotId}`, boundary]));
+  if (!manifest.continuity || !Array.isArray(manifest.shots)) return;
+  const priorBoundaries = Array.isArray(manifest.continuity.boundaries) ? manifest.continuity.boundaries : [];
+  const existing = new Map(priorBoundaries.map(boundary => [`${boundary.fromShotId}:${boundary.toShotId}`, boundary]));
   manifest.continuity.boundaries = manifest.shots.slice(0, -1).map((from, index): BoundaryState => {
     const to = manifest.shots[index + 1];
     const prior = existing.get(`${from.id}:${to.id}`);
-    const samePresenter = Boolean(from.continuityOut.characterId && from.continuityOut.characterId === to.continuityIn.characterId);
+    const samePresenter = Boolean(from.continuityOut?.characterId && from.continuityOut.characterId === to.continuityIn?.characterId);
     return {
       id: prior?.id || `boundary_${from.id}_${to.id}`,
       fromShotId: from.id,
@@ -66,9 +67,11 @@ function syncBoundaries(manifest: ReelProductionManifest) {
 }
 
 function syncPerformance(manifest: ReelProductionManifest) {
-  const track = manifest.continuity?.performanceTracks.find(item => item.characterId === "character_presenter");
+  const performanceTracks = Array.isArray(manifest.continuity?.performanceTracks) ? manifest.continuity.performanceTracks : [];
+  const shots = Array.isArray(manifest.shots) ? manifest.shots : [];
+  const track = performanceTracks.find(item => item?.characterId === "character_presenter");
   if (!track) return;
-  track.cues = manifest.shots.filter(shot => shot.continuityIn.characterId === track.characterId).map((shot): PerformanceCue => ({
+  track.cues = shots.filter(shot => shot?.continuityIn?.characterId === track.characterId).map((shot): PerformanceCue => ({
     startSec: shot.editorialStartSec,
     endSec: clock(shot.editorialStartSec + shot.editorialDurationSec),
     emotion: shot.continuityIn.emotion || { emotion: "engaged", intensity: 0.5 },
@@ -81,6 +84,14 @@ function syncPerformance(manifest: ReelProductionManifest) {
 export function enrichManifestV2(input: ReelProductionManifest): ReelProductionManifest {
   if (input.version !== 2) return input;
   const manifest = structuredClone(input);
+  // V2 was introduced before runtime schema validation. Leave incomplete legacy
+  // records readable; final QA remains responsible for rejecting them as valid
+  // productions, while archive hydration must never throw.
+  if (!manifest.audio || typeof manifest.audio !== "object" || Array.isArray(manifest.audio) ||
+      !manifest.qa || typeof manifest.qa !== "object" || Array.isArray(manifest.qa) ||
+      !Array.isArray(manifest.shots)) {
+    return manifest;
+  }
   syncBoundaries(manifest);
   syncPerformance(manifest);
 
