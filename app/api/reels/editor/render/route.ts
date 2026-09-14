@@ -87,9 +87,11 @@ export async function POST(req: NextRequest) {
 
     const editId = `edit_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
     const workDir = path.join(process.cwd(), "scratch", "nle_renders", editId);
-    const outDir = path.join(process.cwd(), "public", "renders", "edited");
+    const outDir = path.join(process.cwd(), "scratch", "renders", "edited");
+    const pubOutDir = path.join(process.cwd(), "public", "renders", "edited");
     fs.mkdirSync(workDir, { recursive: true });
     fs.mkdirSync(outDir, { recursive: true });
+    fs.mkdirSync(pubOutDir, { recursive: true });
 
     const globalVideoSpeed = Math.max(0.25, Math.min(4.0, Number(body.globalVideoSpeed || 1.0)));
 
@@ -296,6 +298,9 @@ export async function POST(req: NextRequest) {
       "-shortest",
       finalOutputPath,
     ]);
+    try {
+      fs.copyFileSync(finalOutputPath, path.join(pubOutDir, finalFileName));
+    } catch {}
 
     // 4. Append as a new non-destructive Version (v2, v3...) in DB record
     let savedVersionNumber = 2;

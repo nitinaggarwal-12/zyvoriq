@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import fs from "node:fs";
+import path from "node:path";
 import { readAsset } from "@/lib/reel/assetStore";
 import { getPostgresPool, getDatabase } from "@/lib/db/client";
 
@@ -7,6 +9,37 @@ export const revalidate = 0;
 
 const WORKER_ASSET_BASE = (process.env.ZYVORIQ_WORKER_ASSET_BASE_URL || "http://zyvoriq-reel-worker.railway.internal:8080/internal/reel-assets").replace(/\/$/, "");
 const PRODUCTION_ASSET_BASE = (process.env.ZYVORIQ_PRODUCTION_URL || "https://zyvoriq.up.railway.app").replace(/\/$/, "");
+
+function resolveLocalStaticFallback(assetKey: string): { buffer: Buffer; mime: string } | null {
+  try {
+    if (assetKey.includes("studio1_e2e00945")) {
+      let rel = "public/assets/video/studio1_e2e00945_poster.jpg";
+      let mime = "image/jpeg";
+      if (assetKey.includes("shot_01")) rel = "public/assets/video/studio1_e2e00945_shot_01.jpg";
+      else if (assetKey.includes("shot_02")) rel = "public/assets/video/studio1_e2e00945_shot_02.jpg";
+      else if (assetKey.includes("shot_03")) rel = "public/assets/video/studio1_e2e00945_shot_03.jpg";
+      else if (assetKey.endsWith(".mp4")) {
+        rel = "public/assets/video/studio1_e2e00945.mp4";
+        mime = "video/mp4";
+      }
+      const abs = path.join(process.cwd(), rel);
+      if (fs.existsSync(abs) && fs.statSync(abs).isFile()) {
+        return { buffer: fs.readFileSync(abs), mime };
+      }
+    }
+    const candidates = [
+      path.join(process.cwd(), "public", assetKey),
+      path.join(process.cwd(), "public", "renders", assetKey),
+      path.join(process.cwd(), "scratch", assetKey),
+    ];
+    for (const c of candidates) {
+      if (fs.existsSync(c) && fs.statSync(c).isFile()) {
+        return { buffer: fs.readFileSync(c), mime: contentType(c) };
+      }
+    }
+  } catch {}
+  return null;
+}
 
 function contentType(key: string) {
   if (key.endsWith(".wav")) return "audio/wav";
@@ -31,6 +64,9 @@ const FALLBACK_IMAGE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="640" 
 </svg>`;
 
 async function proxyFromProduction(req: NextRequest, assetKey: string, method: "GET" | "HEAD"): Promise<Response> {
+  if (req.url.includes("zyvoriq.up.railway.app")) {
+    throw new Error("Already on production host; skipping self-proxy");
+  }
   const headers = new Headers();
   const range = req.headers.get("range");
   if (range) headers.set("range", range);
@@ -39,36 +75,7 @@ async function proxyFromProduction(req: NextRequest, assetKey: string, method: "
     if (contentType(assetKey).startsWith("image/")) {
       return new Response(FALLBACK_IMAGE_SVG, { status: 200, headers: { "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=300" } });
     }
-    // Fallback: If a master or rough cut variant was requested but not found, check if this reel has an available rendered rough cut
-    if (assetKey.includes("master") || assetKey.includes("rough")) {
-      const prodIdMatch = assetKey.match(/(studio1_[a-f0-9\-]{36}|reel_[a-f0-9\-]{36})/i);
-      if (prodIdMatch) {
-        const prodId = prodIdMatch[0];
-        try {
-          const pg = getPostgresPool();
-          let manifest: any = null;
-          if (pg) {
-            const row = await pg.query("SELECT manifest_json FROM reel_productions WHERE id = $1", [prodId]);
-            manifest = row.rows[0]?.manifest_json;
-          } else {
-            const db = getDatabase();
-            const row = db.prepare("SELECT manifest_json FROM reel_productions WHERE id = ?").get(prodId) as any;
-            manifest = typeof row?.manifest_json === "string" ? JSON.parse(row.manifest_json) : row?.manifest_json;
-          }
-          const altVideoUrl = manifest?.outputs?.narratedRoughCut?.videoUrl || manifest?.outputs?.nativeReel?.videoUrl || manifest?.outputs?.master?.videoUrl;
-          if (altVideoUrl && typeof altVideoUrl === "string") {
-            const altKey = altVideoUrl.replace(/^\/?api\/reels\/assets\//, "").replace(/^\/+/, "");
-            if (altKey && altKey !== assetKey) {
-              console.log(`[assets] Resolving rough/master variant ${assetKey} -> ${altKey}`);
-              return await proxyFromProduction(req, altKey, method);
-            }
-          }
-        } catch (e: any) {
-          console.warn(`[assets] Fallback lookup failed for ${prodId}:`, e.message);
-        }
-      }
-    }
-    return new Response(null, { status: 404 });
+    throw new Error("Upstream production returned 404");
   }
   if (!upstream.ok) {
     throw new Error(`Upstream production returned HTTP ${upstream.status}`);
@@ -87,8 +94,8 @@ async function proxyFromWorker(req: NextRequest, assetKey: string, method: "GET"
   const range = req.headers.get("range");
   if (range) headers.set("range", range);
   const upstream = await fetch(`${WORKER_ASSET_BASE}/${encodedKey(assetKey)}`, { method, headers, cache: "no-store" });
-  if (upstream.status === 404) {
-    return new Response(null, { status: 404 });
+  if (!upstream.ok) {
+    throw new Error(`Worker returned HTTP ${upstream.status}`);
   }
   const out = new Headers();
   for (const name of ["content-type", "content-length", "content-range", "accept-ranges", "cache-control"]) {
@@ -123,6 +130,19 @@ async function handle(req: NextRequest, context: { params: Promise<{ key: string
     }
     return new Response(new Uint8Array(data), { status: 200, headers: { "Content-Type": contentType(assetKey), "Cache-Control": "private, max-age=3600", "Content-Length": String(data.length), "Accept-Ranges": "bytes" } });
   } catch (error: any) {
+    // Check local static fallback first (e.g., studio1_e2e00945 extracted frames & public renders)
+    const localFallback = resolveLocalStaticFallback(assetKey);
+    if (localFallback) {
+      return new Response(method === "HEAD" ? null : new Uint8Array(localFallback.buffer), {
+        status: 200,
+        headers: {
+          "Content-Type": localFallback.mime,
+          "Content-Length": String(localFallback.buffer.length),
+          "Cache-Control": "public, max-age=3600",
+          "Accept-Ranges": "bytes",
+        },
+      });
+    }
     try {
       return await proxyFromWorker(req, assetKey, method);
     } catch (proxyError: any) {

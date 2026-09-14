@@ -201,11 +201,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const outDir = path.join(process.cwd(), "public", "renders", "edited");
+    const outDir = path.join(process.cwd(), "scratch", "renders", "edited");
+    const pubOutDir = path.join(process.cwd(), "public", "renders", "edited");
     fs.mkdirSync(outDir, { recursive: true });
+    fs.mkdirSync(pubOutDir, { recursive: true });
     const stamp = Date.now();
     const outFilename = `${reelId}_director_${stamp}.mp4`;
     const outPath = path.join(outDir, outFilename);
+    const pubOutPath = path.join(pubOutDir, outFilename);
     const publicOutUrl = `/renders/edited/${outFilename}`;
 
     const gradingFilter = buildColorGradingFilter(direction.location?.colorGrading);
@@ -292,6 +295,9 @@ export async function POST(req: NextRequest) {
     );
 
     execFileSync("ffmpeg", args, { stdio: "pipe" });
+    try {
+      fs.copyFileSync(outPath, pubOutPath);
+    } catch {}
 
     //Probe duration
     let durationSec = 24.0;
