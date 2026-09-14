@@ -252,37 +252,94 @@ export async function POST(req: NextRequest) {
 
     const filterParts: string[] = [];
     const surgicalCuts = direction.surgicalCuts || [];
+    const lightingStyle = direction.location?.lighting || "natural";
+    const vfxStyle = (direction.location as any)?.vfxStyle || "none";
 
-    // Video stream filter (color grading LUT + surgical frame blackouts/freezes)
+    // Video stream filter (color grading LUT + lighting + VFX + ripple frame deletion + speed setpts)
     const videoFilterStages: string[] = [];
+
+    // 1. Ripple Frame Deletion (physically drops frames in [s,e] and re-stamps PTS)
+    const rippleCuts = surgicalCuts.filter((c) => c.target === "ripple_both");
+    if (rippleCuts.length > 0) {
+      const notBetweenExpr = rippleCuts
+        .map((c) => {
+          const s = Math.max(0, Number(c.startSec) || 0).toFixed(3);
+          const e = Math.max(Number(s) + 0.05, Number(c.endSec) || 0).toFixed(3);
+          return `between(t,${s},${e})`;
+        })
+        .join("+");
+      videoFilterStages.push(`select='not(${notBetweenExpr})',setpts=N/FRAME_RATE/TB`);
+    }
+
+    // 2. Video Speed Cadence Retiming (matches audio atempo)
+    if (Math.abs(vocalSpd - 1.0) >= 0.01) {
+      videoFilterStages.push(`setpts=${(1.0 / vocalSpd).toFixed(4)}*PTS`);
+    }
+
+    // 3. Theme Color Grading LUT
     if (gradingFilter) {
       videoFilterStages.push(gradingFilter);
     }
+
+    // 4. Studio Lighting Relighting Curves
+    if (lightingStyle === "rembrandt_gold") {
+      videoFilterStages.push("colorbalance=rm=0.16:gm=0.04:bm=-0.10:rh=0.12:gh=0.06:bh=-0.08");
+    } else if (lightingStyle === "cyber_laser") {
+      videoFilterStages.push("colorbalance=rs=-0.10:bs=0.20:rh=0.18:gh=-0.04:bh=0.22");
+    } else if (lightingStyle === "moonlight_noir") {
+      videoFilterStages.push("colorbalance=rs=-0.12:gs=-0.04:bs=0.24:rm=-0.06:bm=0.14");
+    }
+
+    // 5. Special VFX Shaders (35mm grain, flare halation, neon contrast)
+    if (vfxStyle === "film_grain_35mm") {
+      videoFilterStages.push("noise=alls=12:allf=t+u");
+    } else if (vfxStyle === "anamorphic_flare" || vfxStyle === "concert_lasers") {
+      videoFilterStages.push("eq=contrast=1.06:brightness=0.03:saturation=1.18");
+    }
+
+    // 6. Blackout / Freeze Video ONLY cuts
     for (const cut of surgicalCuts) {
-      if (cut.target === "ripple_both" || cut.target === "freeze_video") {
+      if (cut.target === "freeze_video") {
         const s = Math.max(0, Number(cut.startSec) || 0).toFixed(3);
         const e = Math.max(Number(s) + 0.05, Number(cut.endSec) || 0).toFixed(3);
-        videoFilterStages.push(
-          `drawbox=enable='between(t,${s},${e})':color=black@0.92:t=fill`
-        );
+        videoFilterStages.push(`drawbox=enable='between(t,${s},${e})':color=black@0.95:t=fill`);
       }
     }
+
     const hasVideoFilter = videoFilterStages.length > 0;
     if (hasVideoFilter) {
       filterParts.push(`[0:v]${videoFilterStages.join(",")}[vout]`);
     }
 
-    // Audio stream mixing + surgical stem mute windows
+    // Audio stream mixing + ripple audio deletion + surgical stem mute windows
     const audioMixInputs: string[] = [];
     const atempoVocal = buildAtempoFilter(vocalSpd);
+
+    const vocalRippleStage =
+      rippleCuts.length > 0
+        ? `aselect='not(${rippleCuts
+            .map((c) => {
+              const s = Math.max(0, Number(c.startSec) || 0).toFixed(3);
+              const e = Math.max(Number(s) + 0.05, Number(c.endSec) || 0).toFixed(3);
+              return `between(t,${s},${e})`;
+            })
+            .join("+")})',asetpts=N/SR/TB`
+        : "";
+
     const vocalMuteStages = surgicalCuts
-      .filter((c) => c.target === "ripple_both" || c.target === "mute_vocal")
+      .filter((c) => c.target === "mute_vocal")
       .map((c) => {
         const s = Math.max(0, Number(c.startSec) || 0).toFixed(3);
         const e = Math.max(Number(s) + 0.05, Number(c.endSec) || 0).toFixed(3);
         return `volume=enable='between(t,${s},${e})':volume=0`;
       });
-    const vocalFilterChain = [`volume=${vocalVol.toFixed(2)}`, ...vocalMuteStages, atempoVocal]
+
+    const vocalFilterChain = [
+      vocalRippleStage,
+      `volume=${vocalVol.toFixed(2)}`,
+      ...vocalMuteStages,
+      atempoVocal,
+    ]
       .filter(Boolean)
       .join(",");
     filterParts.push(`[0:a]${vocalFilterChain}[a_base]`);
@@ -291,7 +348,7 @@ export async function POST(req: NextRequest) {
     if (musicIdx >= 0) {
       const atempoMusic = buildAtempoFilter(musicSpd);
       const musicMuteStages = surgicalCuts
-        .filter((c) => c.target === "ripple_both" || c.target === "mute_music")
+        .filter((c) => c.target === "mute_music")
         .map((c) => {
           const s = Math.max(0, Number(c.startSec) || 0).toFixed(3);
           const e = Math.max(Number(s) + 0.05, Number(c.endSec) || 0).toFixed(3);

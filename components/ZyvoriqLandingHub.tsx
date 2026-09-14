@@ -1210,6 +1210,8 @@ export function ZyvoriqLandingHub() {
             },
             location: {
               environment: selectedLocationId,
+              lighting: selectedLightingId,
+              vfxStyle: selectedVfxId,
               colorGrading: selectedLut === "none" ? undefined : selectedLut,
             },
             dialogue: {
