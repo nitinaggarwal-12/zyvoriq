@@ -1,0 +1,15 @@
+.git
+node_modules
+.next
+scratch
+.venv
+**/venv
+tools/asr/.venv
+tools/lipsync
+public/assets/reels
+public/renders/edited
+*.log
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
