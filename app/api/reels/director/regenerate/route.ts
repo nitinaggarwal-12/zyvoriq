@@ -189,23 +189,21 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Mode 2: Instant Director Re-Master (applies custom color grading, audio/Lyria stem mixing, vocal/music speed, SFX & saves a new non-destructive version immediately)
+    // Mode 2: Instant Director Re-Master (applies custom color grading, True Separated Vocal + Lyria stem mixing, multi-clip Shot 2 Take stitching, vocal/music speed, SFX & saves a new non-destructive version immediately)
     let inputVideoPath = sourceVideoUrl ? resolveLocalFile(sourceVideoUrl) : null;
     if (!inputVideoPath) {
-      // Fallback search by reelId
       const ytCandidate = path.join(process.cwd(), "public", "renders", "yt", reelId, "master_hybrid.mp4");
       const ytCandidate2 = path.join(process.cwd(), "public", "renders", "yt", reelId, "master.mp4");
       const studioCandidate = path.join(process.cwd(), "public", "assets", "video", "studio1_e2e00945.mp4");
+      const napoleonCandidate = path.join(process.cwd(), "public", "assets", "video", "napoleon_180s_master.mp4");
+      const directCandidate = path.join(process.cwd(), "public", "assets", "video", `${reelId}.mp4`);
+      const directCandidate2 = path.join(process.cwd(), "public", "assets", "video", `${reelId.replace(/^reel_/, "")}.mp4`);
       if (fs.existsSync(ytCandidate)) inputVideoPath = ytCandidate;
       else if (fs.existsSync(ytCandidate2)) inputVideoPath = ytCandidate2;
+      else if (reelId.includes("napoleon") && fs.existsSync(napoleonCandidate)) inputVideoPath = napoleonCandidate;
+      else if (fs.existsSync(directCandidate)) inputVideoPath = directCandidate;
+      else if (fs.existsSync(directCandidate2)) inputVideoPath = directCandidate2;
       else if (fs.existsSync(studioCandidate)) inputVideoPath = studioCandidate;
-    }
-
-    if (!inputVideoPath || !fs.existsSync(inputVideoPath)) {
-      return NextResponse.json(
-        { error: `Could not locate base master video file for ${reelId} to re-master.` },
-        { status: 404 }
-      );
     }
 
     const outDir = path.join(process.cwd(), "scratch", "renders", "edited");
@@ -217,6 +215,58 @@ export async function POST(req: NextRequest) {
     const outPath = path.join(outDir, outFilename);
     const pubOutPath = path.join(pubOutDir, outFilename);
     const publicOutUrl = `/renders/edited/${outFilename}`;
+
+    // Upgrade B: Multi-Clip Anchor Shot Sequencer Stitching (Shot 1 + Shot 2 Take A/B/C + Shot 3)
+    // ONLY stitch if explicitly requested for showcase/studio1 multi-take reels! NEVER hijack Napoleon or standalone reels.
+    const isShowcaseOrMultiTakeReel =
+      reelId.includes("showcase") || reelId.includes("studio1_e2e00945") || reelId === "default";
+    const explicitTake = (direction.choreography as any)?.shot2Take;
+
+    if (isShowcaseOrMultiTakeReel && explicitTake) {
+      const requestedTake = explicitTake || "take_a";
+      const shot1File = path.join(process.cwd(), "public", "showcase", "shots", "shot_01_base.mp4");
+      const shot2File = path.join(process.cwd(), "public", "showcase", "shots", `shot_02_${requestedTake}.mp4`);
+      const shot3File = path.join(process.cwd(), "public", "showcase", "shots", "shot_03_base.mp4");
+
+      if (fs.existsSync(shot1File) && fs.existsSync(shot2File) && fs.existsSync(shot3File)) {
+        try {
+          const stitchedTmp = path.join(outDir, `stitched_seq_${stamp}.mp4`);
+          const concatListPath = path.join(outDir, `concat_${stamp}.txt`);
+          fs.writeFileSync(
+            concatListPath,
+            `file '${shot1File}'\nfile '${shot2File}'\nfile '${shot3File}'\n`,
+            "utf8"
+          );
+          execFileSync("ffmpeg", ["-y", "-f", "concat", "-safe", "0", "-i", concatListPath, "-c", "copy", stitchedTmp], {
+            stdio: "pipe",
+          });
+          if (fs.existsSync(stitchedTmp)) {
+            inputVideoPath = stitchedTmp;
+          }
+        } catch (concatErr) {
+          console.warn("[director/regenerate] Multi-clip concat fallback:", concatErr);
+        }
+      }
+    }
+
+    if (!inputVideoPath || !fs.existsSync(inputVideoPath)) {
+      return NextResponse.json(
+        { error: `Could not locate base master video file for ${reelId} to re-master.` },
+        { status: 404 }
+      );
+    }
+
+    // Probe base video duration to avoid audio loop overruns or infinite hangs
+    let baseVideoDuration = 24.0;
+    try {
+      const probe = execFileSync(
+        "ffprobe",
+        ["-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", inputVideoPath],
+        { encoding: "utf8" }
+      );
+      const parsed = parseFloat(probe.trim());
+      if (Number.isFinite(parsed) && parsed > 0) baseVideoDuration = Number(parsed.toFixed(2));
+    } catch {}
 
     const gradingFilter = buildColorGradingFilter(direction.location?.colorGrading);
     const vocalVol = Number(direction.dialogue?.vocalVolume ?? 1.0);
@@ -235,12 +285,25 @@ export async function POST(req: NextRequest) {
     const sfxFile = sfxPreset !== "none" && sfxMap[sfxPreset] && fs.existsSync(sfxMap[sfxPreset]) ? sfxMap[sfxPreset] : null;
     const customMusicFile = direction.audio?.musicTrackUrl ? resolveLocalFile(direction.audio.musicTrackUrl) : null;
 
+    // Upgrade A: True Separated Vocal Stem Master
+    const separatedVocalStemPath = path.join(process.cwd(), "public", "assets", "stems", "vocal_stem_master.mp3");
+    // Only use separated vocal stem if explicitly requested via direction OR if this is a music video production that has it
+    const shouldUseVocalStem =
+      Boolean((direction.dialogue as any)?.useSeparatedStem) ||
+      (reelId.startsWith("yt_") && !customMusicFile && fs.existsSync(separatedVocalStemPath));
+    const hasSeparatedVocalStem = shouldUseVocalStem && fs.existsSync(separatedVocalStemPath);
+
     // Build FFmpeg command
     const args: string[] = ["-y", "-i", inputVideoPath];
     let inputIdx = 1;
+    let vocalIdx = 0; // defaults to [0:a] unless separated vocal stem is loaded
     let musicIdx = -1;
     let sfxIdx = -1;
 
+    if (hasSeparatedVocalStem) {
+      args.push("-stream_loop", "-1", "-i", separatedVocalStemPath);
+      vocalIdx = inputIdx++;
+    }
     if (customMusicFile && fs.existsSync(customMusicFile)) {
       args.push("-stream_loop", "-1", "-i", customMusicFile);
       musicIdx = inputIdx++;
@@ -342,7 +405,7 @@ export async function POST(req: NextRequest) {
     ]
       .filter(Boolean)
       .join(",");
-    filterParts.push(`[0:a]${vocalFilterChain}[a_base]`);
+    filterParts.push(`[${vocalIdx}:a]${vocalFilterChain}[a_base]`);
     audioMixInputs.push("[a_base]");
 
     if (musicIdx >= 0) {
@@ -374,23 +437,28 @@ export async function POST(req: NextRequest) {
       filterParts.push(`[a_base]anull[aout]`);
     }
 
-    args.push(
-      "-filter_complex",
-      filterParts.join(";"),
-      "-map",
-      hasVideoFilter ? "[vout]" : "0:v",
-      "-map",
-      "[aout]",
-      "-c:v",
-      gradingFilter ? "libx264" : "copy",
-      ...(gradingFilter ? ["-preset", "fast", "-crf", "22"] : []),
-      "-c:a",
-      "aac",
-      "-b:a",
-      "192k",
-      "-shortest",
-      outPath
-    );
+    if (filterParts.length > 0) {
+      args.push("-filter_complex", filterParts.join(";"));
+    }
+
+    // Video mapping: if filters exist, use ultrafast hardware-friendly encoding; else stream copy
+    if (hasVideoFilter) {
+      args.push("-map", "[vout]", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "22", "-tune", "fastdecode", "-threads", "0");
+    } else {
+      args.push("-map", "0:v", "-c:v", "copy");
+    }
+
+    // Audio mapping: encoded with clean high-fidelity AAC
+    args.push("-map", "[aout]", "-c:a", "aac", "-b:a", "192k");
+
+    // Output duration clamp to ensure exact duration matches video and prevents infinite audio loops or copy stalls
+    if (baseVideoDuration > 0) {
+      args.push("-t", baseVideoDuration.toFixed(2));
+    } else {
+      args.push("-shortest");
+    }
+
+    args.push(outPath);
 
     execFileSync("ffmpeg", args, { stdio: "pipe" });
     try {

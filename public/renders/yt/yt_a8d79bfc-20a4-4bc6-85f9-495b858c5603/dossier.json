@@ -1,0 +1,36 @@
+{
+  "concept": "A high-energy, sun-drenched YouTube Short capturing the explosive joy of a Brazilian soccer match through the eyes of a dynamic cheerleading squad. The video fuses athletic cheer choreography with infectious Samba rhythms, set against the vibrant backdrop of a roaring stadium, celebrating unity, passion, and the spirit of the game.",
+  "viral_hook_strategy": "model priors: The video opens with an extreme low-angle, slow-motion shot of the cheerleaders' feet executing a complex, synchronized Samba step on the vibrant green turf, immediately establishing a high-production value and rhythmic energy. This visual non-sequitur, focusing on intricate footwork before revealing faces, is designed to pique curiosity and create a 'wait for it' moment, compelling viewers to watch until the beat drops and the full performance is revealed.",
+  "casting_lock": "The lead performer is a female of athletic build with a warm, sun-kissed complexion and defined musculature indicative of a dancer's physique. Her expressive face is framed by long, voluminous dark brown hair with natural waves that move dynamically with her choreography. She possesses large, almond-shaped, deep brown eyes that convey both intense focus and infectious joy, capable of connecting with the camera with a single glance.",
+  "wardrobe_and_accessory_lock": "The squad wears a modern, two-piece cheerleading uniform. The top is a fitted athletic crop top in canary yellow with bold green side panels and a sharp V-neckline. The bottom is a matching high-waisted, pleated A-line skirt in royal blue with yellow and green trim along the hem. The fabric is a high-performance, moisture-wicking material with a slight sheen. The single accessory is a delicate, thin gold chain anklet worn on the right ankle, which catches the light during intricate footwork.",
+  "choreography_notes": "The choreography is a powerful fusion of sharp, high-energy cheerleading pom motions (high V's, T-motions, punches) with the fluid hip and leg work of Brazilian Samba no pé and the rhythmic pulse of Funk Carioca. Emphasis is on synchronized group formations that rapidly transition from tight lines to explosive starburst patterns. Key moves include high kicks, pirouettes, and body rolls, all executed with precision and a celebratory, confident flair.",
+  "camera_plan": "Shot on a RED Komodo 6K camera to allow for high-frame-rate capture (120fps) for dynamic slow-motion effects and flexible reframing in post. A primary wide-angle lens (18mm) on a gimbal will be used for sweeping, kinetic shots that follow the choreography and capture the stadium's scale. A 50mm prime lens will be used for tight, expressive close-ups, isolating micro-expressions and capturing the intensity of the performance with a shallow depth of field.",
+  "lyrics": "Feel the pulse, the stadium starts to sway / Let the music carry you away / Hear the roar, a symphony so loud / We are dancing high above the crowd",
+  "shots": [
+    {
+      "action": "A tight close-up on the lead cheerleader's face. She winks directly into the lens as the first beat of the music hits, a genuine smile spreading across her face. The background is a vibrant blur of the green field and stadium lights.",
+      "emotion": "Confident, playful, inviting.",
+      "micro_expressions": "A slight crinkle at the corner of her eyes during the smile, a quick, deliberate eyelid flutter during the wink."
+    },
+    {
+      "action": "A medium shot from the waist up shows three cheerleaders executing a sharp, synchronized arm movement, punching their poms towards the camera. They are perfectly in sync, their bodies moving as one.",
+      "emotion": "Unified, powerful, energetic.",
+      "micro_expressions": "Intense focus in their eyes, lips slightly parted in exertion, a shared look of determination."
+    },
+    {
+      "action": "A low-angle shot focusing on their legs and feet performing a rapid Samba step. The camera tracks with their movement, highlighting the intricate footwork and the flash of the gold anklet against the green turf.",
+      "emotion": "Rhythmic, dynamic, skillful.",
+      "micro_expressions": "Not applicable as faces are not in frame."
+    },
+    {
+      "action": "A wide shot from a slightly elevated position captures the entire squad performing against the backdrop of the cheering crowd. A soccer player scores a goal in the deep background, causing the crowd to erupt, and the cheerleaders' energy visibly intensifies in response.",
+      "emotion": "Exhilarated, celebratory, connected.",
+      "micro_expressions": "Wide eyes reflecting the stadium lights, joyous open-mouthed smiles, heads thrown back in celebration."
+    },
+    {
+      "action": "The camera, mounted on a gimbal, rapidly orbits the lead cheerleader as she executes a flawless, high-speed pirouette while the rest of the squad drops into a low pose around her. As the final beat hits, she stops perfectly, arms striking a triumphant pose, looking directly into the lens as the world blurs around her from the camera's kinetic motion.",
+      "emotion": "Triumphant, powerful, climactic.",
+      "micro_expressions": "A flash of fierce determination in her eyes as she spots her landing, transitioning into a confident, breathless smile as the music ends."
+    }
+  ]
+}

@@ -19,11 +19,15 @@ import {
   XCircle,
   ArrowRight,
   Scissors,
-  Award,
   Cpu,
-  Flame,
   Glasses,
   Sparkle,
+  Upload,
+  Search,
+  FolderInput,
+  Plus,
+  X,
+  RotateCcw,
 } from "lucide-react";
 import ReelTimelineEditor, { SavedVersionItem } from "@/components/ReelTimelineEditor";
 
@@ -41,17 +45,64 @@ export const DEFAULT_EDITABLE_REELS: EditableReelItem[] = [
   {
     id: "yt_spain_pool_party_master",
     title: "Spanish Pool Party: Sunlit Reggaeton (4-Shot Master)",
-    genre: "Music Video • 9:16 Social Canvas",
+    genre: "Reggaeton / Latin Pop • 9:16 Social Canvas",
+    videoUrl: "/renders/yt/yt_spain_pool_party_omni_hybrid/master_hybrid.mp4",
+    durationSec: 24.0,
+    shots: [
+      { id: "shot_1", title: "Shot 1 • Poolside Golden Sun", videoUrl: "/renders/yt/yt_spain_pool_party_omni_hybrid/shot_1.mp4", durationSec: 6.3 },
+      { id: "shot_2", title: "Shot 2 • Sunlit Choreography & Splash", videoUrl: "/renders/yt/yt_spain_pool_party_omni_hybrid/shot_2.mp4", durationSec: 6.0 },
+      { id: "shot_3", title: "Shot 3 • Turquoise Water Reflections", videoUrl: "/renders/yt/yt_spain_pool_party_omni_hybrid/shot_3.mp4", durationSec: 6.0 },
+      { id: "shot_4", title: "Shot 4 • Sunset Fiesta Climax", videoUrl: "/renders/yt/yt_spain_pool_party_omni_hybrid/shot_4.mp4", durationSec: 5.8 },
+    ],
+    versions: [
+      { versionNumber: 1, label: "v1 • Original Master", url: "/renders/yt/yt_spain_pool_party_omni_hybrid/master_hybrid.mp4", durationSec: 24.0 },
+    ],
+  },
+  {
+    id: "mv_01_summer_asia_master",
+    title: "Neon Horizon: Tokyo Skyline Rooftop (4-Shot Master)",
+    genre: "J-Pop / Electronic Pop • 9:16 Social Canvas",
     videoUrl: "/assets/video/mv_01_summer_asia_master.mp4",
     durationSec: 24.0,
     shots: [
-      { id: "shot_1", title: "Shot 1 • Poolside Lounge & Palm Shadows", videoUrl: "/assets/video/mv_01_summer_asia_master.mp4", durationSec: 6.0 },
-      { id: "shot_2", title: "Shot 2 • Sunlit Choreography & Water Ripples", videoUrl: "/assets/video/studio1_e2e00945.mp4", durationSec: 6.0 },
-      { id: "shot_3", title: "Shot 3 • Floating Glamour & Turquoise Reflections", videoUrl: "/assets/video/mv_02_summer_europe_master.mp4", durationSec: 6.0 },
-      { id: "shot_4", title: "Shot 4 • Beachside Sunset Finale", videoUrl: "/assets/video/mv_03_summer_usa_master.mp4", durationSec: 6.0 },
+      { id: "shot_1", title: "Shot 1 • Shibuya Rooftop Horizon", videoUrl: "/assets/video/mv_01_summer_asia_master.mp4", durationSec: 6.0 },
+      { id: "shot_2", title: "Shot 2 • Neon Core Choreography", videoUrl: "/assets/video/mv_01_summer_asia_master.mp4", durationSec: 6.0 },
+      { id: "shot_3", title: "Shot 3 • Tokyo Tower Panorama", videoUrl: "/assets/video/mv_01_summer_asia_master.mp4", durationSec: 6.0 },
+      { id: "shot_4", title: "Shot 4 • Strobe Finale", videoUrl: "/assets/video/mv_01_summer_asia_master.mp4", durationSec: 6.0 },
     ],
     versions: [
       { versionNumber: 1, label: "v1 • Original Master", url: "/assets/video/mv_01_summer_asia_master.mp4", durationSec: 24.0 },
+    ],
+  },
+  {
+    id: "yt_chandigarh_club_master",
+    title: "Chandigarh Club Night: Neon Dhol & Bass (4-Shot Master)",
+    genre: "Bhangra / Punjabi Pop • 9:16 Social Canvas",
+    videoUrl: "/renders/yt/yt_chandigarh_club_omni_hybrid/master_hybrid.mp4",
+    durationSec: 24.0,
+    shots: [
+      { id: "shot_1", title: "Shot 1 • VIP Lounge Opening", videoUrl: "/renders/yt/yt_chandigarh_club_omni_hybrid/shot_1.mp4", durationSec: 6.0 },
+      { id: "shot_2", title: "Shot 2 • Strobe Dancefloor Drop", videoUrl: "/renders/yt/yt_chandigarh_club_omni_hybrid/shot_2.mp4", durationSec: 6.0 },
+      { id: "shot_3", title: "Shot 3 • Synchronized Hook Step", videoUrl: "/renders/yt/yt_chandigarh_club_omni_hybrid/shot_3.mp4", durationSec: 6.0 },
+      { id: "shot_4", title: "Shot 4 • Confetti Climax", videoUrl: "/renders/yt/yt_chandigarh_club_omni_hybrid/shot_4.mp4", durationSec: 6.0 },
+    ],
+    versions: [
+      { versionNumber: 1, label: "v1 • Original Master", url: "/renders/yt/yt_chandigarh_club_omni_hybrid/master_hybrid.mp4", durationSec: 24.0 },
+    ],
+  },
+  {
+    id: "yt_punjabi_stage_master",
+    title: "Punjabi Mela Stage: Royal Folk Performance",
+    genre: "Desi Folk / Stage Live • 9:16 Social Canvas",
+    videoUrl: "/renders/yt/yt_punjabi_stage_omni_hybrid/master_hybrid.mp4",
+    durationSec: 24.0,
+    shots: [
+      { id: "shot_1", title: "Shot 1 • Golden Stage Entrance", videoUrl: "/renders/yt/yt_punjabi_stage_omni_hybrid/shot_1.mp4", durationSec: 8.0 },
+      { id: "shot_2", title: "Shot 2 • High-Energy Boliyan", videoUrl: "/renders/yt/yt_punjabi_stage_omni_hybrid/shot_2.mp4", durationSec: 8.0 },
+      { id: "shot_3", title: "Shot 3 • Royal Finale", videoUrl: "/renders/yt/yt_punjabi_stage_omni_hybrid/shot_3.mp4", durationSec: 8.0 },
+    ],
+    versions: [
+      { versionNumber: 1, label: "v1 • Original Master", url: "/renders/yt/yt_punjabi_stage_omni_hybrid/master_hybrid.mp4", durationSec: 24.0 },
     ],
   },
   {
@@ -61,10 +112,10 @@ export const DEFAULT_EDITABLE_REELS: EditableReelItem[] = [
     videoUrl: "/assets/video/napoleon_180s_master.mp4",
     durationSec: 30.0,
     shots: [
-      { id: "shot_1", title: "Shot 1 • Heavy Cavalry Charge Formations", videoUrl: "/assets/video/napoleon_180s_master.mp4", durationSec: 7.5 },
-      { id: "shot_2", title: "Shot 2 • Volumetric Cannon & Gunpowder Smoke", videoUrl: "/assets/video/napoleon_30s_cut.mp4", durationSec: 7.5 },
-      { id: "shot_3", title: "Shot 3 • The Emperor's Command Tent Close-Up", videoUrl: "/assets/video/napoleon_preview.mp4", durationSec: 7.5 },
-      { id: "shot_4", title: "Shot 4 • Muddy Rainfield Decisive Turn", videoUrl: "/assets/video/napoleon_180s_master.mp4", durationSec: 7.5 },
+      { id: "shot_1", title: "Shot 1 • Heavy Cavalry Charge Formations", videoUrl: "/assets/video/napoleon_30s_cut.mp4", durationSec: 7.5 },
+      { id: "shot_2", title: "Shot 2 • Volumetric Cannon & Gunpowder Smoke", videoUrl: "/assets/video/napoleon_preview.mp4", durationSec: 7.5 },
+      { id: "shot_3", title: "Shot 3 • The Emperor's Command Tent Close-Up", videoUrl: "/assets/video/napoleon_30s_cut.mp4", durationSec: 7.5 },
+      { id: "shot_4", title: "Shot 4 • Muddy Rainfield Decisive Turn", videoUrl: "/assets/video/napoleon_preview.mp4", durationSec: 7.5 },
     ],
     versions: [
       { versionNumber: 1, label: "v1 • Original Master", url: "/assets/video/napoleon_180s_master.mp4", durationSec: 30.0 },
@@ -77,188 +128,30 @@ export const DEFAULT_EDITABLE_REELS: EditableReelItem[] = [
     videoUrl: "/assets/video/neotokyo_180s_master.mp4",
     durationSec: 24.0,
     shots: [
-      { id: "shot_1", title: "Shot 1 • Neon Rooftop Atmospheric Descent", videoUrl: "/assets/video/neotokyo_180s_master.mp4", durationSec: 6.0 },
-      { id: "shot_2", title: "Shot 2 • Shinjuku Back-Alley Rain Puddles", videoUrl: "/assets/video/neotokyo_30s_cut.mp4", durationSec: 6.0 },
-      { id: "shot_3", title: "Shot 3 • Cybernetic Contact & Lens Flares", videoUrl: "/assets/video/neotokyo_preview.mp4", durationSec: 6.0 },
-      { id: "shot_4", title: "Shot 4 • Holographic Megastructure Skyline", videoUrl: "/assets/video/neotokyo_180s_master.mp4", durationSec: 6.0 },
+      { id: "shot_1", title: "Shot 1 • Neon Rooftop Atmospheric Descent", videoUrl: "/assets/video/neotokyo_30s_cut.mp4", durationSec: 6.0 },
+      { id: "shot_2", title: "Shot 2 • Shinjuku Back-Alley Rain Puddles", videoUrl: "/assets/video/neotokyo_preview.mp4", durationSec: 6.0 },
+      { id: "shot_3", title: "Shot 3 • Cybernetic Contact & Lens Flares", videoUrl: "/assets/video/neotokyo_30s_cut.mp4", durationSec: 6.0 },
+      { id: "shot_4", title: "Shot 4 • Holographic Megastructure Skyline", videoUrl: "/assets/video/neotokyo_preview.mp4", durationSec: 6.0 },
     ],
     versions: [
       { versionNumber: 1, label: "v1 • Original Master", url: "/assets/video/neotokyo_180s_master.mp4", durationSec: 24.0 },
     ],
   },
   {
-    id: "coronation_180s_master",
+    id: "coronation_30s_cut",
     title: "Imperial Coronation: Hall of Mirrors",
     genre: "Historical Drama • 2.39:1 Scope",
-    videoUrl: "/assets/video/coronation_180s_master.mp4",
+    videoUrl: "/assets/video/coronation_30s_cut.mp4",
     durationSec: 24.0,
     shots: [
-      { id: "shot_1", title: "Shot 1 • Royal Procession Down the Nave", videoUrl: "/assets/video/coronation_180s_master.mp4", durationSec: 6.0 },
+      { id: "shot_1", title: "Shot 1 • Royal Procession Down the Nave", videoUrl: "/assets/video/coronation_preview.mp4", durationSec: 6.0 },
       { id: "shot_2", title: "Shot 2 • Anointing of the Golden Diadem", videoUrl: "/assets/video/coronation_30s_cut.mp4", durationSec: 6.0 },
       { id: "shot_3", title: "Shot 3 • The Grand Banquet & Candlelit Gold", videoUrl: "/assets/video/coronation_preview.mp4", durationSec: 6.0 },
-      { id: "shot_4", title: "Shot 4 • Hall of Mirrors Velvet Waltz", videoUrl: "/assets/video/coronation_180s_master.mp4", durationSec: 6.0 },
+      { id: "shot_4", title: "Shot 4 • Hall of Mirrors Velvet Waltz", videoUrl: "/assets/video/coronation_30s_cut.mp4", durationSec: 6.0 },
     ],
     versions: [
-      { versionNumber: 1, label: "v1 • Original Master", url: "/assets/video/coronation_180s_master.mp4", durationSec: 24.0 },
+      { versionNumber: 1, label: "v1 • Original Master", url: "/assets/video/coronation_30s_cut.mp4", durationSec: 24.0 },
     ],
-  },
-];
-
-interface BlockbusterBenchmark {
-  rank: number;
-  title: string;
-  gross: string;
-  studio: string;
-  director: string;
-  vfxBreakthrough: string;
-  physicsChallenge: string;
-  aiEquivalence: string;
-  feasibilityTier: "ready" | "hybrid" | "moat";
-  accent: string;
-  badge: string;
-  sampleVideo: string;
-}
-
-const BLOCKBUSTER_2025_BENCHMARKS: BlockbusterBenchmark[] = [
-  {
-    rank: 1,
-    title: "Ne Zha 2",
-    gross: "$2,215,690,000",
-    studio: "Beijing Enlight",
-    director: "Jiaozi",
-    vfxBreakthrough: "Volumetric Fluid/Ink & Mythological Particle Collisions",
-    physicsChallenge: "Hundreds of thousands of rigged soldiers colliding with procedural water/fire dragons at macro scales without mesh clipping.",
-    aiEquivalence: "Instanced latent particle generation with GPU-accelerated collision bounds. Can synthesize massive crowd dynamics, but requires strict bounding boxes to prevent character merging.",
-    feasibilityTier: "hybrid",
-    accent: "from-red-500 to-amber-500",
-    badge: "#1 All-Time Animated Film",
-    sampleVideo: "/assets/video/coronation_180s_master.mp4",
-  },
-  {
-    rank: 2,
-    title: "Zootopia 2",
-    gross: "$1,870,309,291",
-    studio: "Walt Disney Pictures",
-    director: "Byron Howard",
-    vfxBreakthrough: "Micro-Strand Species Grooming & Non-Human Cloth Solvers",
-    physicsChallenge: "Multi-million-strand hair shading across diverse mammalian species; tailoring cloth dynamics across non-human skeletal proportions.",
-    aiEquivalence: "SAM-2 edge matting + DensePose UV wrapping. Achievable for short-haired/medium-furred characters; extreme translucent long fur requires clean-plate inpainting behind fur volumes.",
-    feasibilityTier: "ready",
-    accent: "from-cyan-500 to-blue-500",
-    badge: "Disney's Highest-Grossing Animated Film",
-    sampleVideo: "/assets/video/studio1_e2e00945.mp4",
-  },
-  {
-    rank: 3,
-    title: "Avatar: Fire and Ash",
-    gross: "$1,490,386,712",
-    studio: "20th Century / Lightstorm",
-    director: "James Cameron",
-    vfxBreakthrough: "Ash Volumetrics & Melanistic Skin Subsurface Scattering",
-    physicsChallenge: "Dense airborne particulate ash illuminating Na'vi facial pores with bidirectional path tracing; ash clan cracked dermal textures.",
-    aiEquivalence: "Depth-guided volumetric ash particle overlays combined with estimated surface normal relighting. Replicates 90% of theatrical depth without multi-day render farms.",
-    feasibilityTier: "hybrid",
-    accent: "from-amber-600 to-orange-500",
-    badge: "$1.4B+ Global IMAX Titan",
-    sampleVideo: "/assets/video/napoleon_180s_master.mp4",
-  },
-  {
-    rank: 4,
-    title: "Lilo & Stitch",
-    gross: "$1,038,027,526",
-    studio: "Walt Disney Pictures",
-    director: "Dean Fleischer Camp",
-    vfxBreakthrough: "Tactile Live-Action Contact & Dynamic Fabric Tugging",
-    physicsChallenge: "3D digital character physically interacting with live human actors, casting realistic ambient occlusion and compressing human skin/fabric.",
-    aiEquivalence: "Latent inpainting with shadow-catcher composite layers. Direct physical contact (hugging, clothing tugs) requires multi-pass depth matte blending to prevent pixel smear.",
-    feasibilityTier: "hybrid",
-    accent: "from-teal-400 to-cyan-500",
-    badge: "1st Live-Action Hybrid to Cross $1B",
-    sampleVideo: "/assets/video/mv_01_summer_asia_master.mp4",
-  },
-  {
-    rank: 5,
-    title: "A Minecraft Movie",
-    gross: "$961,287,780",
-    studio: "Warner Bros. / Legendary",
-    director: "Jared Hess",
-    vfxBreakthrough: "Photorealistic Voxel Texturing & Procedural World Geometry",
-    physicsChallenge: "Projecting high-fidelity organic textures (animal fur, wool, rock strata) onto rigid cubical voxel geometry with natural lighting.",
-    aiEquivalence: "100% solvable with generative depth conditioning (ControlNet Depth + Normal). Rigid geometric structures are ideal for neural texture projection.",
-    feasibilityTier: "ready",
-    accent: "from-emerald-500 to-teal-600",
-    badge: "$960M+ Global Gaming Phenomenon",
-    sampleVideo: "/assets/video/neotokyo_180s_master.mp4",
-  },
-  {
-    rank: 6,
-    title: "Jurassic World Rebirth",
-    gross: "$872,428,220",
-    studio: "Universal Pictures",
-    director: "Gareth Edwards",
-    vfxBreakthrough: "Soft-Body Muscle & Skin Sliding over Skeletal Rigs",
-    physicsChallenge: "Dinosaur epidermal skin sliding over contracting muscle groups during rapid predatory locomotion, combined with practical animatronic hand-offs.",
-    aiEquivalence: "DensePose-guided anatomical deformation. Excellent for visual skin texture and muscle definition; extreme fast-twitch biting collisions still benefit from 3D physics anchors.",
-    feasibilityTier: "hybrid",
-    accent: "from-lime-500 to-emerald-600",
-    badge: "Gareth Edwards Franchise Reinvigoration",
-    sampleVideo: "/assets/video/titanic_180s_master.mp4",
-  },
-  {
-    rank: 7,
-    title: "Demon Slayer: Infinity Castle",
-    gross: "$793,491,854",
-    studio: "Toho / Aniplex / Crunchyroll",
-    director: "Haruo Sotozaki",
-    vfxBreakthrough: "3D Infinite Shifting Architecture with 2D Hand-Drawn Flow",
-    physicsChallenge: "Constantly rotating 3D architectural rooms (sliding shoji doors, inverted gravity) interacting seamlessly with 24fps cel-shaded sword combat.",
-    aiEquivalence: "Hybrid 3D camera projection + temporal optical flow tracking. Generates flawless stylized cel-shading over structured 3D spatial geometry.",
-    feasibilityTier: "ready",
-    accent: "from-purple-500 to-indigo-600",
-    badge: "Highest-Grossing Anime in Cinema History",
-    sampleVideo: "/assets/video/studio1_01bd8d8d.mp4",
-  },
-  {
-    rank: 8,
-    title: "How to Train Your Dragon",
-    gross: "$639,866,451",
-    studio: "Universal Pictures",
-    director: "Dean DeBlois",
-    vfxBreakthrough: "Aerodynamic Membrane Wing Physics & High-Altitude Lighting",
-    physicsChallenge: "Simulating wind pressure deforming thin leather dragon wings during cloud bank dives, matched to real Scottish highland lighting plates.",
-    aiEquivalence: "Optical flow velocity warping + volumetric cloud scattering. Generative base handles cloud density; wing flutter locked via RAFT motion vectors.",
-    feasibilityTier: "hybrid",
-    accent: "from-sky-500 to-blue-600",
-    badge: "Live-Action Flying Masterclass",
-    sampleVideo: "/assets/video/studio1_37f1f557.mp4",
-  },
-  {
-    rank: 9,
-    title: "F1",
-    gross: "$634,142,436",
-    studio: "Warner Bros. / Apple Original",
-    director: "Joseph Kosinski",
-    vfxBreakthrough: "Real-G High-Velocity Native Cockpit Cinematography",
-    physicsChallenge: "Bolting custom 6K IMAX cameras into genuine F1 race cars at 180+ mph; real G-force pulling actor facial muscles, real cockpit vibrations.",
-    aiEquivalence: "The Hollywood Physical Moat: Generative AI can simulate motion blur and camera shake, but cannot replicate true centrifugal gravitational force pulling on live human tissue.",
-    feasibilityTier: "moat",
-    accent: "from-rose-500 to-red-600",
-    badge: "Kosinski & Pitt Live Racing Record",
-    sampleVideo: "/assets/video/studio1_5bfb958d.mp4",
-  },
-  {
-    rank: 10,
-    title: "Superman",
-    gross: "$618,723,803",
-    studio: "Warner Bros. / DC Studios",
-    director: "James Gunn",
-    vfxBreakthrough: "Tactile Practical Suit Integration & High-Velocity Flight Dynamics",
-    physicsChallenge: "Transitioning David Corenswet's textured physical costume into digital doubles during sonic booms and supersonic atmospheric re-entry.",
-    aiEquivalence: "DensePose costume tracking + high-pass texture retention. Flawlessly preserves fabric weave across digital take transitions with zero texture swim.",
-    feasibilityTier: "ready",
-    accent: "from-blue-600 to-red-500",
-    badge: "James Gunn's DCU Launch Epic",
-    sampleVideo: "/assets/video/studio1_417f1625_rough_cut.mp4",
   },
 ];
 
@@ -337,9 +230,6 @@ const MODULAR_VFX_STACK: VFXLayer[] = [
 ];
 
 export default function MotionPicturesStudio() {
-  const [selectedBenchmark, setSelectedBenchmark] = useState<BlockbusterBenchmark>(
-    BLOCKBUSTER_2025_BENCHMARKS[0]
-  );
   const [activeVfxView, setActiveVfxView] = useState<
     "composite" | "matte" | "densepose" | "depth" | "inpaint"
   >("composite");
@@ -374,37 +264,65 @@ export default function MotionPicturesStudio() {
   // Post-Generation Component Master Studio State
   const [editableReels, setEditableReels] = useState<EditableReelItem[]>(DEFAULT_EDITABLE_REELS);
   const [selectedReelId, setSelectedReelId] = useState<string>("yt_spain_pool_party_master");
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importTab, setImportTab] = useState<"library" | "url" | "upload">("library");
+  const [librarySearchQuery, setLibrarySearchQuery] = useState("");
+  const [importedReelIdInput, setImportedReelIdInput] = useState("");
+  const [importedVideoUrlInput, setImportedVideoUrlInput] = useState("");
+  const [importedReelTitleInput, setImportedReelTitleInput] = useState("");
+  const [importedNumShots, setImportedNumShots] = useState(4);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [allAvailableProductions, setAllAvailableProductions] = useState<any[]>([]);
 
+  // Load existing productions from both /api/reels/productions and /api/yt/productions
   useEffect(() => {
     async function loadProductions() {
       try {
-        const res = await fetch("/api/reels/productions");
-        const data = await res.json();
-        const productions = Array.isArray(data) ? data : data?.productions || [];
-        if (productions.length > 0) {
-          const mapped: EditableReelItem[] = productions
-            .filter((p: any) => p && p.id && (p.videoUrl || p.manifest?.outputVideoUrl || p.manifest?.roughCutUrl))
+        const [reelsRes, ytRes] = await Promise.all([
+          fetch("/api/reels/productions?limit=100").catch(() => null),
+          fetch("/api/yt/productions?limit=100").catch(() => null),
+        ]);
+        const reelsData = reelsRes ? await reelsRes.json().catch(() => []) : [];
+        const ytData = ytRes ? await ytRes.json().catch(() => []) : [];
+        const combined = [
+          ...(Array.isArray(reelsData) ? reelsData : reelsData?.productions || []),
+          ...(Array.isArray(ytData) ? ytData : ytData?.productions || []),
+        ];
+        if (combined.length > 0) {
+          setAllAvailableProductions(combined);
+          const mapped: EditableReelItem[] = combined
+            .filter((p: any) => {
+              if (!p || !p.id) return false;
+              if (p.id.startsWith("studio1_") && !p.qa?.passed && p.status !== "READY") return false;
+              if (p.qa && p.qa.passed === false) return false;
+              const hasVideo = Boolean(p.videoUrl || p.manifest?.outputVideoUrl);
+              const title = p.topic || p.title;
+              if (!title || title.startsWith("Production #studio1_") || title.startsWith("Production #")) return false;
+              return hasVideo;
+            })
             .map((p: any) => {
+              const masterUrl = p.videoUrl || p.manifest?.outputVideoUrl;
               const shots = (p.manifest?.shots || []).map((s: any, idx: number) => ({
                 id: s.id || `shot_${idx + 1}`,
                 title: s.title || `Shot #${idx + 1}`,
-                videoUrl: s.videoUrl || s.url || p.videoUrl || p.manifest?.outputVideoUrl,
+                videoUrl: s.videoUrl || s.url || masterUrl,
                 durationSec: Number(s.durationSec || 6.0),
               }));
               return {
                 id: p.id,
-                title: p.topic || p.title || `Production #${p.id.slice(0, 8)}`,
+                title: p.topic || p.title,
                 genre: p.genre || "Music Video • Social Canvas",
-                videoUrl: p.videoUrl || p.manifest?.outputVideoUrl || p.manifest?.roughCutUrl,
+                videoUrl: masterUrl,
                 durationSec: Number(p.manifest?.durationSec || 24.0),
-                shots: shots.length > 0 ? shots : [
-                  { id: "shot_1", title: "Shot 1", videoUrl: p.videoUrl || p.manifest?.outputVideoUrl, durationSec: 6.0 },
-                  { id: "shot_2", title: "Shot 2", videoUrl: p.videoUrl || p.manifest?.outputVideoUrl, durationSec: 6.0 },
-                  { id: "shot_3", title: "Shot 3", videoUrl: p.videoUrl || p.manifest?.outputVideoUrl, durationSec: 6.0 },
-                  { id: "shot_4", title: "Shot 4", videoUrl: p.videoUrl || p.manifest?.outputVideoUrl, durationSec: 6.0 },
-                ],
+                shots: shots.length > 0 ? shots : [0, 1, 2, 3].map((i) => ({
+                  id: `shot_${i + 1}`,
+                  title: `Shot #${i + 1} (${i * 6}s–${(i + 1) * 6}s)`,
+                  videoUrl: masterUrl,
+                  durationSec: 6.0,
+                })),
                 versions: p.manifest?.versions || [
-                  { versionNumber: 1, label: "v1 • Master Cut", url: p.videoUrl || p.manifest?.outputVideoUrl, durationSec: 24.0 },
+                  { versionNumber: 1, label: "v1 • Master Cut", url: masterUrl, durationSec: 24.0 },
                 ],
               };
             });
@@ -412,9 +330,8 @@ export default function MotionPicturesStudio() {
             setEditableReels((prev) => {
               const existingIds = new Set(prev.map((r) => r.id));
               const newItems = mapped.filter((m) => !existingIds.has(m.id));
-              return [...newItems, ...prev];
+              return [...prev, ...newItems];
             });
-            setSelectedReelId(mapped[0].id);
           }
         }
       } catch (e) {
@@ -424,8 +341,148 @@ export default function MotionPicturesStudio() {
     loadProductions();
   }, []);
 
+  // Support deep linking via URL query params (?reelId=... or ?id=...)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const targetReelId = params.get("reelId") || params.get("id");
+      if (targetReelId) {
+        setSelectedReelId(targetReelId);
+        const elem = document.getElementById("post-generation-studio");
+        if (elem) {
+          elem.scrollIntoView({ behavior: "smooth" });
+        }
+      }
+    }
+  }, [editableReels.length]);
+
   const activeSelectedReel =
     editableReels.find((r) => r.id === selectedReelId) || editableReels[0];
+
+  const handleImportProduction = (prod: any) => {
+    const masterUrl =
+      prod.videoUrl ||
+      prod.manifest?.outputVideoUrl ||
+      prod.manifest?.roughCutUrl ||
+      "/assets/video/mv_01_summer_asia_master.mp4";
+    const rawShots = prod.manifest?.shots || [];
+    const shots =
+      rawShots.length > 0
+        ? rawShots.map((s: any, idx: number) => ({
+            id: s.id || `shot_${idx + 1}`,
+            title: s.title || `Shot #${idx + 1}`,
+            videoUrl: s.videoUrl || s.url || masterUrl,
+            durationSec: Number(s.durationSec || 6.0),
+          }))
+        : [0, 1, 2, 3].map((i: number) => ({
+            id: `shot_${i + 1}`,
+            title: `Shot #${i + 1} (${i * 6}s–${(i + 1) * 6}s)`,
+            videoUrl: masterUrl,
+            durationSec: 6.0,
+          }));
+
+    const newReel: EditableReelItem = {
+      id: prod.id,
+      title: prod.topic || prod.title || `Production #${prod.id.slice(0, 8)}`,
+      genre: prod.genre || "Music Video • Social Canvas",
+      videoUrl: masterUrl,
+      durationSec: Number(prod.manifest?.durationSec || 24.0),
+      shots,
+      versions: prod.manifest?.versions || [
+        { versionNumber: 1, label: "v1 • Master Cut", url: masterUrl, durationSec: 24.0 },
+      ],
+    };
+
+    setEditableReels((prev) => [newReel, ...prev.filter((r) => r.id !== newReel.id)]);
+    setSelectedReelId(newReel.id);
+    setIsImportModalOpen(false);
+  };
+
+  const handleImportByUrlOrId = async () => {
+    setImportLoading(true);
+    setImportError(null);
+    try {
+      if (importedReelIdInput.trim()) {
+        const id = importedReelIdInput.trim();
+        const found = allAvailableProductions.find((p) => p.id === id);
+        if (found) {
+          handleImportProduction(found);
+          return;
+        }
+        const res = await fetch(`/api/reels/productions/${encodeURIComponent(id)}`).catch(() => null);
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data && data.id) {
+            handleImportProduction(data);
+            return;
+          }
+        }
+      }
+
+      if (importedVideoUrlInput.trim()) {
+        const url = importedVideoUrlInput.trim();
+        const cutsCount = Math.max(1, Math.min(8, importedNumShots || 4));
+        const estimatedDuration = 24.0;
+        const sliceDuration = estimatedDuration / cutsCount;
+        const newReel: EditableReelItem = {
+          id: `custom_reel_${Date.now()}`,
+          title: importedReelTitleInput.trim() || `Custom Master (${url.split("/").pop() || "Video"})`,
+          genre: "Custom Theatrical Cut • Multi-Track NLE",
+          videoUrl: url,
+          durationSec: estimatedDuration,
+          shots: Array.from({ length: cutsCount }).map((_, idx) => ({
+            id: `shot_${idx + 1}`,
+            title: `Shot #${idx + 1} (${(idx * sliceDuration).toFixed(1)}s–${((idx + 1) * sliceDuration).toFixed(1)}s)`,
+            videoUrl: url,
+            durationSec: sliceDuration,
+          })),
+          versions: [
+            { versionNumber: 1, label: "v1 • Original Imported Cut", url, durationSec: estimatedDuration },
+          ],
+        };
+        setEditableReels((prev) => [newReel, ...prev]);
+        setSelectedReelId(newReel.id);
+        setIsImportModalOpen(false);
+        setImportedReelIdInput("");
+        setImportedVideoUrlInput("");
+        setImportedReelTitleInput("");
+        return;
+      }
+
+      throw new Error("Please enter a Reel ID or a valid Video URL.");
+    } catch (err: any) {
+      setImportError(err?.message || "Failed to import reel.");
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  const handleUploadLocalFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const blobUrl = URL.createObjectURL(file);
+    const cutsCount = 4;
+    const sliceDur = 6.0;
+    const newReel: EditableReelItem = {
+      id: `local_upload_${Date.now()}`,
+      title: file.name.replace(/\.[^/.]+$/, "") || "Uploaded Video Master",
+      genre: "Uploaded Media • Master Sequence",
+      videoUrl: blobUrl,
+      durationSec: 24.0,
+      shots: Array.from({ length: cutsCount }).map((_, idx) => ({
+        id: `shot_${idx + 1}`,
+        title: `Shot #${idx + 1} (Cut ${idx + 1})`,
+        videoUrl: blobUrl,
+        durationSec: sliceDur,
+      })),
+      versions: [
+        { versionNumber: 1, label: "v1 • Original Local File", url: blobUrl, durationSec: 24.0 },
+      ],
+    };
+    setEditableReels((prev) => [newReel, ...prev]);
+    setSelectedReelId(newReel.id);
+    setIsImportModalOpen(false);
+  };
 
   const toggleLayer = (layerId: string) => {
     setActiveLayers((prev) => ({
@@ -453,61 +510,61 @@ export default function MotionPicturesStudio() {
 
   return (
     <div className="w-full min-h-screen bg-[#07090E] text-slate-100 selection:bg-amber-500/30 selection:text-amber-200">
-      {/* ── TOP HERO DIRECTORIAL MASTHEAD ── */}
-      <section className="relative w-full border-b border-white/10 bg-gradient-to-b from-[#0B111E] via-[#07090E] to-[#07090E] pt-8 pb-12 md:pb-16 overflow-hidden">
-        {/* Cinematic Ambient Glow */}
-        <div className="absolute top-0 left-1/4 w-[600px] h-[350px] bg-amber-500/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2" />
-        <div className="absolute top-10 right-1/4 w-[500px] h-[300px] bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+      {/* ── TOP TECHNICAL WORKSTATION MASTHEAD (ZERO MARKETING FLUFF) ── */}
+      <section className="relative w-full border-b border-white/10 bg-gradient-to-b from-[#0B111E] via-[#07090E] to-[#07090E] pt-8 pb-10 md:pb-12 overflow-hidden">
+        {/* Subtle Ambient Glow */}
+        <div className="absolute top-0 left-1/4 w-[600px] h-[300px] bg-teal-500/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2" />
+        <div className="absolute top-10 right-1/4 w-[500px] h-[250px] bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 md:px-10 lg:px-12 relative z-10">
-          {/* Breadcrumb & Pill */}
+          {/* Engineering Tech Spec Badges */}
           <div className="flex flex-wrap items-center gap-3 mb-4">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 font-mono text-xs font-bold uppercase tracking-wider">
-              <Clapperboard className="w-3.5 h-3.5 text-amber-400" />
-              THEATRICAL CINEMA PIPELINE
-            </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-500/15 border border-teal-500/40 text-teal-300 font-mono text-xs font-bold uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5 text-teal-400" />
-              2025 BOX OFFICE BENCHMARKS
+              <Sliders className="w-3.5 h-3.5 text-teal-400" />
+              POST-GENERATION COMPONENT MASTER STUDIO
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 font-mono text-xs font-bold uppercase tracking-wider">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              ZERO FULL RE-RENDER PIPELINE
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-300 font-mono text-xs font-semibold">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              NON-DESTRUCTIVE 6-LAYER MODULAR STACK
+              <Layers className="w-3.5 h-3.5 text-cyan-400" />
+              NON-DESTRUCTIVE MULTI-STEM DSP
             </span>
           </div>
 
-          {/* Main Title & Vision */}
+          {/* Main Title & Technical Architecture */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
-            <div className="lg:col-span-8 space-y-4">
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight text-white uppercase leading-[1.05]">
-                MOTION <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-teal-400">PICTURES</span>
+            <div className="lg:col-span-8 space-y-3">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white uppercase leading-[1.08]">
+                MOTION PICTURES <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-cyan-400 to-emerald-400">ENGINEERING STUDIO</span>
               </h1>
-              <p className="text-base sm:text-lg md:text-xl text-slate-300 max-w-4xl leading-relaxed font-normal">
-                Where classical Hollywood VFX engineering meets generative neural synthesis. Discover what is mathematically possible today: analyze the highest-grossing films since 2025, deconstruct the 6-layer modular VFX stack, and direct 2.39:1 widescreen masters with zero video re-rendering.
+              <p className="text-sm sm:text-base md:text-lg text-slate-300 max-w-4xl leading-relaxed font-normal">
+                Sub-frame deterministic post-generation workstation. Edit constituent clips with 100% component independence: frame-accurate in/out trims, dynamic speed scaling (0.25x–4.00x), tri-stem acoustic balancing (-24.0 LUFS EBU R128), and 6-layer modular VFX compositing with zero full-video re-rendering.
               </p>
             </div>
 
-            {/* Metrics HUD */}
+            {/* Technical Wins HUD */}
             <div className="lg:col-span-4 grid grid-cols-2 gap-3 sm:gap-4 bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 backdrop-blur-md">
               <div className="space-y-1">
-                <span className="text-xs font-mono font-bold text-slate-400 uppercase">#1 2025 Benchmark</span>
-                <div className="text-2xl sm:text-3xl font-black text-amber-400">$2.22B</div>
-                <span className="text-[11px] text-slate-400 block truncate">Ne Zha 2 (All-Time High)</span>
+                <span className="text-xs font-mono font-bold text-slate-400 uppercase">Render Latency</span>
+                <div className="text-2xl sm:text-3xl font-black text-emerald-400">In-Place</div>
+                <span className="text-[11px] text-slate-400 block truncate">PTS Re-clocking (&lt;4s)</span>
               </div>
               <div className="space-y-1">
-                <span className="text-xs font-mono font-bold text-slate-400 uppercase">VFX Architecture</span>
+                <span className="text-xs font-mono font-bold text-slate-400 uppercase">Modular Stack</span>
                 <div className="text-2xl sm:text-3xl font-black text-teal-400">6 Layers</div>
-                <span className="text-[11px] text-slate-400 block truncate">Modular Non-Destructive</span>
+                <span className="text-[11px] text-slate-400 block truncate">DensePose UV + SAM-2</span>
               </div>
               <div className="space-y-1">
                 <span className="text-xs font-mono font-bold text-slate-400 uppercase">Aspect Standard</span>
                 <div className="text-2xl sm:text-3xl font-black text-white">2.39:1</div>
-                <span className="text-[11px] text-slate-400 block truncate">Cooke Anamorphic Scope</span>
+                <span className="text-[11px] text-slate-400 block truncate">Theatrical Scope</span>
               </div>
               <div className="space-y-1">
                 <span className="text-xs font-mono font-bold text-slate-400 uppercase">Acoustic Spec</span>
-                <div className="text-2xl sm:text-3xl font-black text-emerald-400">-24.0</div>
-                <span className="text-[11px] text-slate-400 block truncate">LUFS EBU R128 Symphonic</span>
+                <div className="text-2xl sm:text-3xl font-black text-cyan-400">-24.0</div>
+                <span className="text-[11px] text-slate-400 block truncate">LUFS EBU R128 Tri-Stem</span>
               </div>
             </div>
           </div>
@@ -531,16 +588,26 @@ export default function MotionPicturesStudio() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-mono text-slate-400">Master Reel Library:</span>
-              <span className="px-2.5 py-1 rounded-full bg-teal-500/20 border border-teal-500/40 text-teal-300 font-mono text-xs font-bold">
-                {editableReels.length} Reels Ready to Edit
-              </span>
+            <div className="flex items-center gap-3 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setIsImportModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-black text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-teal-950/50 hover:scale-[1.02]"
+              >
+                <Plus className="w-4 h-4 text-slate-950 stroke-[3]" />
+                <span>+ Import Any Reel</span>
+              </button>
+              <div className="flex items-center gap-1.5 text-xs font-mono text-slate-400">
+                <span>Library:</span>
+                <span className="px-2.5 py-1 rounded-full bg-teal-500/20 border border-teal-500/40 text-teal-300 font-mono text-xs font-bold">
+                  {editableReels.length} Ready
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Reel Selector Strip */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Reel Selector Strip with Import Card */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             {editableReels.map((reel) => {
               const isSelected = reel.id === activeSelectedReel.id;
               return (
@@ -570,6 +637,25 @@ export default function MotionPicturesStudio() {
                 </button>
               );
             })}
+
+            {/* Direct Import Action Card */}
+            <button
+              type="button"
+              onClick={() => setIsImportModalOpen(true)}
+              className="p-3.5 rounded-xl text-left border border-dashed border-teal-500/50 hover:border-teal-400 bg-teal-500/5 hover:bg-teal-500/15 transition cursor-pointer flex flex-col justify-between group min-h-[96px]"
+            >
+              <div>
+                <div className="flex items-center gap-1.5 text-[11px] font-mono text-teal-400 font-bold mb-1">
+                  <Plus className="w-3.5 h-3.5 text-teal-300 group-hover:scale-125 transition-transform" />
+                  <span>IMPORT ANY REEL</span>
+                </div>
+                <div className="font-bold text-sm text-white">Load from Library or URL</div>
+              </div>
+              <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] font-mono text-slate-400">
+                <span>My Reels • URL • Upload</span>
+                <span className="text-teal-300 font-bold group-hover:translate-x-0.5 transition-transform">Add Reel +</span>
+              </div>
+            </button>
           </div>
 
           {/* Embedded Upgraded ReelTimelineEditor with Real-Time Reactive Engine */}
@@ -595,161 +681,258 @@ export default function MotionPicturesStudio() {
         </div>
       </section>
 
-      {/* ── SECTION 1: 2025 BLOCKBUSTER BOX OFFICE & VFX OBSERVATORY ── */}
-      <section className="w-full py-12 md:py-16 border-b border-white/10 bg-[#080B14]">
-        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 md:px-10 lg:px-12 space-y-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 text-amber-400 text-xs font-mono font-bold uppercase tracking-wider mb-2">
-                <Award className="w-4 h-4" />
-                GLOBAL CINEMA INTELLIGENCE
-              </div>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight">
-                Top Money-Making Movies Released Since 2025
-              </h2>
-              <p className="text-sm md:text-base text-slate-400 mt-1 max-w-3xl">
-                The commercial titans of 2025 and their core visual breakthroughs. Click any film to audit the VFX physics challenge and how the hybrid neural studio approaches it.
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-mono text-slate-400 hidden sm:inline">Feasibility Index:</span>
-              <span className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                100% Ready
-              </span>
-              <span className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                Hybrid Solved
-              </span>
-              <span className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40">
-                Hollywood Moat
-              </span>
-            </div>
-          </div>
-
-          {/* Film Selector Horizontal Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-            {BLOCKBUSTER_2025_BENCHMARKS.map((film) => {
-              const isSelected = selectedBenchmark.rank === film.rank;
-              return (
-                <button
-                  key={film.rank}
-                  onClick={() => setSelectedBenchmark(film)}
-                  className={`p-3 sm:p-4 rounded-xl text-left transition-all border min-h-[44px] flex flex-col justify-between ${
-                    isSelected
-                      ? "bg-white/10 border-amber-500/80 shadow-lg shadow-amber-500/10 ring-1 ring-amber-500/50"
-                      : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-1 mb-1.5">
-                      <span className="text-[11px] font-mono font-black text-amber-400">
-                        #{film.rank}
-                      </span>
-                      <span
-                        className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded ${
-                          film.feasibilityTier === "ready"
-                            ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                            : film.feasibilityTier === "hybrid"
-                            ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
-                            : "bg-red-500/20 text-red-300 border border-red-500/40"
-                        }`}
-                      >
-                        {film.feasibilityTier === "ready"
-                          ? "READY"
-                          : film.feasibilityTier === "hybrid"
-                          ? "HYBRID"
-                          : "MOAT"}
-                      </span>
-                    </div>
-                    <div className="font-bold text-sm text-white truncate">{film.title}</div>
-                    <div className="text-xs font-mono font-black text-slate-300 mt-1">
-                      {film.gross}
-                    </div>
-                  </div>
-                  <div className="text-[11px] text-slate-400 mt-2 truncate font-sans">
-                    {film.studio}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Selected Film Forensic Deep-Dive Card */}
-          <div className="bg-gradient-to-r from-[#0C1222] to-[#0A0E1A] border border-white/15 rounded-2xl p-6 md:p-8 space-y-6">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-white/10">
-              <div>
-                <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <span className="text-xs font-mono font-black px-2.5 py-1 rounded-md bg-amber-500/20 border border-amber-500/40 text-amber-300">
-                    RANK #{selectedBenchmark.rank} AT 2025 BOX OFFICE
-                  </span>
-                  <span className="text-xs font-mono px-2.5 py-1 rounded-md bg-white/10 text-slate-300">
-                    {selectedBenchmark.badge}
-                  </span>
-                  <span className="text-xs font-mono px-2.5 py-1 rounded-md bg-white/10 text-slate-400">
-                    Directed by {selectedBenchmark.director} • {selectedBenchmark.studio}
-                  </span>
-                </div>
-                <h3 className="text-3xl sm:text-4xl font-black text-white">
-                  {selectedBenchmark.title}{" "}
-                  <span className="text-amber-400 font-mono text-2xl sm:text-3xl ml-2">
-                    {selectedBenchmark.gross}
-                  </span>
-                </h3>
-              </div>
-
+      {/* ── IMPORT ANY REEL MODAL (LIBRARY, REEL ID, VIDEO URL, OR UPLOAD) ── */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-[#0B111E] border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
               <div className="flex items-center gap-3">
-                <div className="text-right hidden sm:block">
-                  <span className="text-xs font-mono text-slate-400 block">Feasibility Category</span>
-                  <span className="text-sm font-bold text-white capitalize">
-                    {selectedBenchmark.feasibilityTier === "ready"
-                      ? "Deterministic Neural Inpaint (100% Ready)"
-                      : selectedBenchmark.feasibilityTier === "hybrid"
-                      ? "Hybrid Scaffolding Required (Solved)"
-                      : "Classical Hollywood Physical Moat"}
-                  </span>
+                <div className="p-2.5 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-400">
+                  <FolderInput className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Import Any Reel into Motion Pictures Studio</h3>
+                  <p className="text-xs text-slate-400">
+                    Load any previously generated production, external MP4 URL, or upload a video file for component editing.
+                  </p>
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setIsImportModalOpen(false)}
+                className="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            {/* 3-Column Engineering Comparison */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white/5 border border-white/10 rounded-xl p-5 space-y-2.5">
-                <div className="flex items-center gap-2 text-amber-400 text-xs font-mono font-bold uppercase">
-                  <Flame className="w-4 h-4 text-amber-400" />
-                  Primary VFX Breakthrough
-                </div>
-                <h4 className="text-base font-bold text-white">
-                  {selectedBenchmark.vfxBreakthrough}
-                </h4>
-                <p className="text-xs text-slate-300 leading-relaxed font-normal">
-                  The primary technical achievement that made audiences pay for IMAX/theatrical tickets.
-                </p>
-              </div>
+            {/* Modal Tabs */}
+            <div className="flex items-center border-b border-slate-800 bg-slate-950/40 px-6 pt-3 gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setImportTab("library")}
+                className={`pb-3 px-3 text-xs font-bold font-mono transition cursor-pointer border-b-2 flex items-center gap-2 ${
+                  importTab === "library"
+                    ? "border-teal-500 text-teal-300"
+                    : "border-transparent text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <Layers className="w-4 h-4" />
+                <span>1. Select from My Reels &amp; Archive ({allAvailableProductions.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setImportTab("url")}
+                className={`pb-3 px-3 text-xs font-bold font-mono transition cursor-pointer border-b-2 flex items-center gap-2 ${
+                  importTab === "url"
+                    ? "border-teal-500 text-teal-300"
+                    : "border-transparent text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <Sliders className="w-4 h-4" />
+                <span>2. Import by Reel ID or MP4 URL</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setImportTab("upload")}
+                className={`pb-3 px-3 text-xs font-bold font-mono transition cursor-pointer border-b-2 flex items-center gap-2 ${
+                  importTab === "upload"
+                    ? "border-teal-500 text-teal-300"
+                    : "border-transparent text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <Upload className="w-4 h-4" />
+                <span>3. Upload Local Video File</span>
+              </button>
+            </div>
 
-              <div className="bg-white/5 border border-white/10 rounded-xl p-5 space-y-2.5">
-                <div className="flex items-center gap-2 text-rose-400 text-xs font-mono font-bold uppercase">
-                  <AlertTriangle className="w-4 h-4 text-rose-400" />
-                  The Classical Physics Problem
-                </div>
-                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-normal">
-                  {selectedBenchmark.physicsChallenge}
-                </p>
-              </div>
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto max-h-[60vh] space-y-4">
+              {/* TAB 1: LIBRARY BROWSER */}
+              {importTab === "library" && (
+                <div className="space-y-4">
+                  <div className="relative">
+                    <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={librarySearchQuery}
+                      onChange={(e) => setLibrarySearchQuery(e.target.value)}
+                      placeholder="Search reels by title, topic, or Reel ID..."
+                      className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-teal-500"
+                    />
+                  </div>
 
-              <div className="bg-white/5 border border-teal-500/30 rounded-xl p-5 space-y-2.5 bg-teal-500/5">
-                <div className="flex items-center gap-2 text-teal-300 text-xs font-mono font-bold uppercase">
-                  <Cpu className="w-4 h-4 text-teal-400" />
-                  Zyvoriq / Neural Equivalence
+                  {allAvailableProductions.length === 0 ? (
+                    <div className="text-center py-12 text-slate-500 space-y-2">
+                      <Layers className="w-8 h-8 mx-auto text-slate-600" />
+                      <p className="text-xs">No user-generated productions found in database yet.</p>
+                      <p className="text-[11px] text-slate-600">
+                        You can import via Reel ID, MP4 URL, or upload a video file.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {allAvailableProductions
+                        .filter((p) => {
+                          if (!librarySearchQuery) return true;
+                          const q = librarySearchQuery.toLowerCase();
+                          return (
+                            (p.id || "").toLowerCase().includes(q) ||
+                            (p.topic || "").toLowerCase().includes(q) ||
+                            (p.title || "").toLowerCase().includes(q) ||
+                            (p.genre || "").toLowerCase().includes(q)
+                          );
+                        })
+                        .map((p) => {
+                          const numShots = p.manifest?.shots?.length || 4;
+                          return (
+                            <div
+                              key={p.id}
+                              className="p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-teal-500/50 transition flex flex-col justify-between space-y-3 group"
+                            >
+                              <div>
+                                <div className="flex items-center justify-between text-[11px] font-mono mb-1">
+                                  <span className="text-teal-400 font-semibold">{p.genre || "Music Video"}</span>
+                                  <span className="text-slate-500">{numShots} shots</span>
+                                </div>
+                                <h4 className="text-sm font-bold text-white group-hover:text-teal-300 transition-colors line-clamp-1">
+                                  {p.topic || p.title || `Production #${p.id.slice(0, 8)}`}
+                                </h4>
+                                <div className="text-[11px] font-mono text-slate-500 mt-1 truncate">
+                                  ID: {p.id}
+                                </div>
+                              </div>
+
+                              <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                                <span className="text-[11px] font-mono text-slate-400">
+                                  Duration: {Number(p.manifest?.durationSec || 24.0).toFixed(1)}s
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleImportProduction(p)}
+                                  className="px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+                                >
+                                  <span>Load into Studio</span>
+                                  <ArrowRight className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
                 </div>
-                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-normal">
-                  {selectedBenchmark.aiEquivalence}
-                </p>
-              </div>
+              )}
+
+              {/* TAB 2: IMPORT BY REEL ID OR MP4 URL */}
+              {importTab === "url" && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-teal-400">
+                      Option A: Paste Existing Reel ID
+                    </label>
+                    <input
+                      type="text"
+                      value={importedReelIdInput}
+                      onChange={(e) => setImportedReelIdInput(e.target.value)}
+                      placeholder="e.g. yt_a8d79bfc-20a4-4bc6-85f9-495b858c5603 or studio1_..."
+                      className="w-full px-3 py-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-teal-500 font-mono"
+                    />
+                    <p className="text-[11px] text-slate-500">
+                      Fetches the production manifest, Lyria stems, character locks, and all constituent shots.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-purple-400">
+                      Option B: Paste Video URL or Local Path
+                    </label>
+                    <input
+                      type="text"
+                      value={importedVideoUrlInput}
+                      onChange={(e) => setImportedVideoUrlInput(e.target.value)}
+                      placeholder="e.g. /assets/video/titanic_180s_master.mp4 or https://..."
+                      className="w-full px-3 py-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-purple-500 font-mono"
+                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <div>
+                        <label className="block text-xs text-slate-400 mb-1">Custom Title (Optional):</label>
+                        <input
+                          type="text"
+                          value={importedReelTitleInput}
+                          onChange={(e) => setImportedReelTitleInput(e.target.value)}
+                          placeholder="e.g. Titanic 180s Theatrical Cut"
+                          className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-purple-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-400 mb-1">Constituent Shot Slices:</label>
+                        <select
+                          value={importedNumShots}
+                          onChange={(e) => setImportedNumShots(parseInt(e.target.value, 10))}
+                          className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-purple-500 cursor-pointer"
+                        >
+                          <option value={2}>2 Shots (Two 12s cuts)</option>
+                          <option value={3}>3 Shots (Three 8s cuts)</option>
+                          <option value={4}>4 Shots (Four 6s cuts - Standard)</option>
+                          <option value={6}>6 Shots (Six 4s cuts - Rapid)</option>
+                          <option value={8}>8 Shots (Eight 3s cuts - High Octane)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {importError && (
+                    <div className="p-3 rounded-xl bg-red-950/70 border border-red-700 text-red-200 text-xs">
+                      {importError}
+                    </div>
+                  )}
+
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="button"
+                      disabled={importLoading || (!importedReelIdInput.trim() && !importedVideoUrlInput.trim())}
+                      onClick={handleImportByUrlOrId}
+                      className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-teal-950/50 cursor-pointer"
+                    >
+                      {importLoading ? "Fetching Reel..." : "Import into Studio →"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: UPLOAD LOCAL FILE */}
+              {importTab === "upload" && (
+                <div className="space-y-4">
+                  <div className="p-8 rounded-2xl border-2 border-dashed border-slate-800 hover:border-teal-500/60 bg-slate-950/60 text-center flex flex-col items-center justify-center space-y-3 transition">
+                    <div className="p-3 rounded-2xl bg-teal-500/10 text-teal-400">
+                      <Upload className="w-8 h-8" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">Select Any MP4 / MOV Video from Computer</h4>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Instant browser blob ingest with zero network latency. Auto-partitions into 4 editable constituent shots.
+                      </p>
+                    </div>
+                    <label className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs cursor-pointer shadow-lg shadow-teal-950/50 transition">
+                      <span>Browse Video File...</span>
+                      <input
+                        type="file"
+                        accept="video/mp4,video/quicktime,video/webm"
+                        onChange={handleUploadLocalFile}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
-      </section>
+      )}
 
-      {/* ── SECTION 2: INTERACTIVE 6-LAYER MODULAR VFX STACK SIMULATOR ── */}
+      {/* ── SECTION 1: INTERACTIVE 6-LAYER MODULAR VFX STACK SIMULATOR (ZERO FULL RE-RENDER) ── */}
       <section className="w-full py-12 md:py-16 border-b border-white/10 bg-[#07090E]">
         <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 md:px-10 lg:px-12 space-y-8">
           <div>
@@ -773,7 +956,7 @@ export default function MotionPicturesStudio() {
                 <video
                   ref={videoRef}
                   src="/assets/video/neotokyo_180s_master.mp4"
-                  poster="/samples/yt_spain_pool_party_poster.jpg"
+                  poster="/assets/stills/mv_01_summer_asia_poster.jpg"
                   playsInline
                   muted={isMuted}
                   autoPlay
@@ -1358,8 +1541,8 @@ export default function MotionPicturesStudio() {
                 title: "Imperial Coronation: Hall of Mirrors",
                 genre: "Historical Epic • 2.39:1 Scope",
                 specs: "Arri Master Anamorphic • 35mm Grain",
-                video: "/assets/video/coronation_180s_master.mp4",
-                duration: "180s Master",
+                video: "/assets/video/coronation_30s_cut.mp4",
+                duration: "30s Master",
               },
               {
                 title: "Waterloo 1815: The Fog of War",

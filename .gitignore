@@ -38,8 +38,12 @@ temp/
 !public/renders/yt/*/master_hybrid.mp4
 !public/renders/yt/*/master_native.mp4
 !public/renders/yt/*/master.mp4
+!public/renders/yt/*/*16s_tight.mp4
+!public/renders/yt/*/*tight16s.mp4
 !public/renders/yt/*/shot_*.mp4
 !public/renders/yt/*/song.mp3
+!public/assets/stems/*.mp3
+!public/showcase/shots/*.mp4
 public/assets/reels/studio1_b79e20bd-9f77-45de-ba4a-275700f31531/
 public/assets/reels/studio1_d1218706-44a7-4da9-be83-d24741e6f2fd/
 !public/assets/reels/studio1_aebb020a-490c-4157-8985-eb8ac75e04d6/renders/*.mp4

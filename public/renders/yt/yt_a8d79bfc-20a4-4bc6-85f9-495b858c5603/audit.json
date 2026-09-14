@@ -1,0 +1,186 @@
+{
+  "generated_at": "2026-09-14T21:58:52.267Z",
+  "topic": "a group cheerleaders at soccer match in Brazil dancing",
+  "genre": "MUSIC_VIDEO",
+  "target_duration_sec": 24,
+  "master_measured": {
+    "durationSec": 24.033333,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "audioCodec": "aac",
+    "sampleRate": 48000,
+    "lufs": -13.8,
+    "truePeakDb": -1.8,
+    "subBassMeanDb": -19.8,
+    "silenceEvents": 0,
+    "cropDetect": "1080:1920:0:0",
+    "crossCutWorstPsnrDb": 16.88,
+    "crossCutOffenders": 0
+  },
+  "master_spec": {
+    "lufs": -14,
+    "truePeakDb": -1,
+    "sampleRate": 48000,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "song_window_start_sec": 0,
+  "vocal_onset_song_sec": 2.211,
+  "vocal_onset_master_sec": 2.211,
+  "audit_frame_timestamps": [
+    1.11,
+    3.19,
+    4.2,
+    6.53,
+    8.06,
+    9.29,
+    12.78,
+    14.77,
+    17.03,
+    18.5,
+    20.73,
+    21.19,
+    22.95
+  ],
+  "lyric_lines_master": [
+    {
+      "text": "Feel the pulse, the stadium starts to sway",
+      "start": 2.211,
+      "end": 5.293
+    },
+    {
+      "text": "Let the music carry you away",
+      "start": 7.774,
+      "end": 11.396
+    },
+    {
+      "text": "Hear the roar, a symphony so loud",
+      "start": 14.158,
+      "end": 17.559
+    },
+    {
+      "text": "We are dancing high above the crowd",
+      "start": 19.44,
+      "end": 21.862
+    }
+  ],
+  "omni_http_status": 200,
+  "omni_vision": {
+    "frames": [
+      {
+        "i": 0,
+        "t": 1.11,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Woman with long brown hair dancing"
+      },
+      {
+        "i": 1,
+        "t": 3.19,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Woman with long brown hair dancing"
+      },
+      {
+        "i": 2,
+        "t": 4.2,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": false,
+        "subject_desc": "Woman with long brown hair dancing"
+      },
+      {
+        "i": 3,
+        "t": 6.53,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Woman with long brown hair dancing"
+      },
+      {
+        "i": 4,
+        "t": 8.06,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": false,
+        "subject_desc": "Woman with long brown hair dancing"
+      },
+      {
+        "i": 5,
+        "t": 9.29,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": false,
+        "subject_desc": "Woman with long brown hair dancing"
+      },
+      {
+        "i": 6,
+        "t": 12.78,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Woman with long brown hair dancing"
+      },
+      {
+        "i": 7,
+        "t": 14.77,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": false,
+        "subject_desc": "Woman with long brown hair dancing"
+      },
+      {
+        "i": 8,
+        "t": 17.03,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Woman with long brown hair dancing"
+      },
+      {
+        "i": 9,
+        "t": 18.5,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Woman with long brown hair dancing"
+      },
+      {
+        "i": 10,
+        "t": 20.73,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": false,
+        "subject_desc": "Woman with long brown hair dancing"
+      },
+      {
+        "i": 11,
+        "t": 21.19,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": false,
+        "subject_desc": "Woman with long brown hair dancing"
+      },
+      {
+        "i": 12,
+        "t": 22.95,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Woman with long brown hair dancing"
+      }
+    ],
+    "identity_continuity": true,
+    "identity_notes": "The same woman appears consistently across all frames.",
+    "wardrobe_continuity": true,
+    "wardrobe_desc": "Yellow and green sports bra with a blue pleated skirt.",
+    "ai_artifact_severity": "none",
+    "artifact_notes": "No AI-related artifacts are observable."
+  },
+  "failures": [],
+  "verdict": "PASS"
+}

@@ -233,6 +233,66 @@ export function ReelTimelineEditor({
     pushState(() => JSON.parse(JSON.stringify(initialSnapshot)));
   };
 
+  const handleResetShot = (idx: number) => {
+    pushState((prev) => {
+      const copy = [...prev.clips];
+      if (copy[idx]) {
+        copy[idx] = {
+          ...copy[idx],
+          trimStartSec: 0,
+          trimEndSec: copy[idx].sourceDurationSec,
+          speed: 1.0,
+          enabled: true,
+        };
+      }
+      return { ...prev, clips: copy };
+    });
+  };
+
+  const handleResetAllClips = () => {
+    pushState((prev) => ({
+      ...prev,
+      clips: buildDefaultClips(),
+      globalVideoSpeed: 1.0,
+    }));
+  };
+
+  const handleResetGlobalSpeed = () => {
+    pushState((prev) => ({ ...prev, globalVideoSpeed: 1.0 }));
+  };
+
+  const handleResetLut = () => {
+    pushState((prev) => ({ ...prev, colorGrading: "none" }));
+  };
+
+  const handleResetVocals = () => {
+    pushState((prev) => ({
+      ...prev,
+      vocalMode: "original",
+      vocalVolume: 1.0,
+      vocalSpeed: 1.0,
+    }));
+  };
+
+  const handleResetMusic = () => {
+    pushState((prev) => ({
+      ...prev,
+      musicTrack: "original_lyria",
+      musicLockMode: "unaltered",
+      musicVolume: 0.65,
+      musicSpeed: 1.0,
+    }));
+  };
+
+  const handleResetSfx = () => {
+    pushState((prev) => ({
+      ...prev,
+      sfxTrack: "none",
+      sfxVolume: 0.35,
+      sfxSpeed: 1.0,
+    }));
+  };
+
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
@@ -671,11 +731,11 @@ export function ReelTimelineEditor({
             <Layers className="w-3.5 h-3.5 text-teal-400" />
             Saved Versions ({versions.length}):
           </span>
-          {versions.map((ver) => {
+          {versions.map((ver, vIdx) => {
             const isActive = activeVersionUrl === ver.url;
             return (
               <button
-                key={ver.versionNumber}
+                key={`ver_${ver.versionNumber ?? vIdx}_${vIdx}`}
                 type="button"
                 onClick={() => {
                   setActiveVersionUrl(ver.url);
@@ -852,6 +912,15 @@ export function ReelTimelineEditor({
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
+                    onClick={() => handleResetShot(selectedClipIndex)}
+                    className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-semibold flex items-center gap-1 cursor-pointer transition"
+                    title="Reset selected shot trim and speed back to full source duration"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    Reset Shot
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => handleSplitClipAtMidpoint(selectedClipIndex)}
                     className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1 cursor-pointer"
                     title="Split shot into two independent clips at midpoint frame"
@@ -905,7 +974,7 @@ export function ReelTimelineEditor({
                     className="bg-slate-900 text-teal-300 font-mono text-xs rounded px-2 py-1 border border-slate-700 outline-none w-full max-w-[260px] cursor-pointer"
                   >
                     {initialShots.map((s, idx) => (
-                      <option key={s.id || idx} value={s.videoUrl || (s as any).url}>
+                      <option key={`init_shot_${s.id || idx}_${idx}`} value={s.videoUrl || (s as any).url}>
                         {s.title || `Shot #${idx + 1}`} ({s.durationSec || 6}s)
                       </option>
                     ))}
@@ -1006,6 +1075,16 @@ export function ReelTimelineEditor({
                   <span className="text-xs font-mono font-bold text-teal-300 w-10 text-right">
                     {currentState.globalVideoSpeed.toFixed(2)}x
                   </span>
+                  {currentState.globalVideoSpeed !== 1.0 && (
+                    <button
+                      type="button"
+                      onClick={handleResetGlobalSpeed}
+                      title="Reset global video speed to 1.00x"
+                      className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 transition cursor-pointer"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                    </button>
+                  )}
                 </div>
 
                 {initialShots.length > 0 && (
@@ -1017,7 +1096,7 @@ export function ReelTimelineEditor({
                       if (s) {
                         pushState((prev) => {
                           const newClip: TimelineClipItem = {
-                            id: `shot_${Date.now().toString().slice(-4)}`,
+                            id: `shot_${Date.now().toString().slice(-4)}_${prev.clips.length + 1}`,
                             title: s.title || `Shot #${prev.clips.length + 1}`,
                             videoUrl: s.videoUrl || (s as any).url || masterVideoUrl,
                             sourceDurationSec: Number(s.durationSec || 6.0),
@@ -1037,7 +1116,7 @@ export function ReelTimelineEditor({
                   >
                     <option value="" disabled>+ Add Constituent Shot...</option>
                     {initialShots.map((s, idx) => (
-                      <option key={s.id || idx} value={s.videoUrl || (s as any).url} className="bg-slate-900 text-slate-200">
+                      <option key={`add_shot_${s.id || idx}_${idx}`} value={s.videoUrl || (s as any).url} className="bg-slate-900 text-slate-200">
                         + {s.title || `Shot #${idx + 1}`} ({s.durationSec || 6}s)
                       </option>
                     ))}
@@ -1052,6 +1131,16 @@ export function ReelTimelineEditor({
                   <Plus className="w-3.5 h-3.5" />
                   Add Frame Cut
                 </button>
+
+                <button
+                  type="button"
+                  onClick={handleResetAllClips}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-amber-300 text-xs font-semibold flex items-center gap-1 cursor-pointer transition"
+                  title="Reset all constituent shots back to original timeline cuts"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                  Reset Shots
+                </button>
               </div>
             </div>
 
@@ -1065,7 +1154,7 @@ export function ReelTimelineEditor({
                 );
                 return (
                   <div
-                    key={clip.id}
+                    key={`${clip.id || "clip"}_${idx}`}
                     onClick={() => {
                       setSelectedClipIndex(idx);
                       setPreviewMode("shot");
@@ -1121,6 +1210,17 @@ export function ReelTimelineEditor({
                         >
                           <ChevronRight className="w-3.5 h-3.5" />
                         </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleResetShot(idx);
+                          }}
+                          className="p-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-amber-300 cursor-pointer transition"
+                          title="Reset shot trim & speed"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                        </button>
                       </div>
                       <button
                         type="button"
@@ -1148,9 +1248,22 @@ export function ReelTimelineEditor({
                   Track 5 • Theatrical Color Grading &amp; 35mm LUT Matrix
                 </h3>
               </div>
-              <span className="text-xs font-mono text-pink-300 bg-pink-950/40 border border-pink-800/40 px-2 py-0.5 rounded">
-                Live Video Preview Filter Active
-              </span>
+              <div className="flex items-center gap-2">
+                {currentState.colorGrading !== "none" && (
+                  <button
+                    type="button"
+                    onClick={handleResetLut}
+                    className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-pink-300 border border-pink-800/40 transition cursor-pointer"
+                    title="Reset color grading to Natural Rec.709"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset LUT</span>
+                  </button>
+                )}
+                <span className="text-xs font-mono text-pink-300 bg-pink-950/40 border border-pink-800/40 px-2 py-0.5 rounded">
+                  Live Video Preview Filter Active
+                </span>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -1184,22 +1297,33 @@ export function ReelTimelineEditor({
                   Track 2 • Dialogue &amp; Singing Vocals (Independent Speed &amp; Gain)
                 </h3>
               </div>
-              <button
-                type="button"
-                onClick={() =>
-                  pushState((prev) => ({
-                    ...prev,
-                    vocalMode: prev.vocalMode === "mute" ? "original" : "mute",
-                  }))
-                }
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                  currentState.vocalMode === "mute"
-                    ? "bg-red-950/70 border border-red-700 text-red-300"
-                    : "bg-blue-950/60 border border-blue-700 text-blue-300"
-                }`}
-              >
-                {currentState.vocalMode === "mute" ? "🔇 Dialogues Muted" : "🎤 Dialogues / Vocals Active"}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleResetVocals}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-blue-300 border border-blue-800/40 transition cursor-pointer"
+                  title="Reset vocal stem gain and speed back to 100% and 1.00x"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Reset Vocals</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    pushState((prev) => ({
+                      ...prev,
+                      vocalMode: prev.vocalMode === "mute" ? "original" : "mute",
+                    }))
+                  }
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    currentState.vocalMode === "mute"
+                      ? "bg-red-950/70 border border-red-700 text-red-300"
+                      : "bg-blue-950/60 border border-blue-700 text-blue-300"
+                  }`}
+                >
+                  {currentState.vocalMode === "mute" ? "🔇 Dialogues Muted" : "🎤 Dialogues / Vocals Active"}
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1255,34 +1379,45 @@ export function ReelTimelineEditor({
                 </h3>
               </div>
 
-              {/* Unaltered Music Lock Switch */}
-              <button
-                type="button"
-                onClick={() =>
-                  pushState((prev) => ({
-                    ...prev,
-                    musicLockMode: prev.musicLockMode === "unaltered" ? "custom_trim" : "unaltered",
-                  }))
-                }
-                className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
-                  currentState.musicLockMode === "unaltered"
-                    ? "bg-emerald-950/80 border border-emerald-600/80 text-emerald-300"
-                    : "bg-slate-800 border border-slate-700 text-slate-300"
-                }`}
-                title="When Unaltered Lock is ON, cutting or adding video frames will NEVER chop or restart the music bed"
-              >
-                {currentState.musicLockMode === "unaltered" ? (
-                  <>
-                    <Lock className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Music Locked Unaltered (Seamless)</span>
-                  </>
-                ) : (
-                  <>
-                    <Unlock className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Music Trimmed to Cuts</span>
-                  </>
-                )}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleResetMusic}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-800/40 transition cursor-pointer"
+                  title="Reset music bed to original Lyria master at 65% volume"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Reset Music</span>
+                </button>
+                {/* Unaltered Music Lock Switch */}
+                <button
+                  type="button"
+                  onClick={() =>
+                    pushState((prev) => ({
+                      ...prev,
+                      musicLockMode: prev.musicLockMode === "unaltered" ? "custom_trim" : "unaltered",
+                    }))
+                  }
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+                    currentState.musicLockMode === "unaltered"
+                      ? "bg-emerald-950/80 border border-emerald-600/80 text-emerald-300"
+                      : "bg-slate-800 border border-slate-700 text-slate-300"
+                  }`}
+                  title="When Unaltered Lock is ON, cutting or adding video frames will NEVER chop or restart the music bed"
+                >
+                  {currentState.musicLockMode === "unaltered" ? (
+                    <>
+                      <Lock className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Music Locked Unaltered (Seamless)</span>
+                    </>
+                  ) : (
+                    <>
+                      <Unlock className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Music Trimmed to Cuts</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1357,16 +1492,27 @@ export function ReelTimelineEditor({
                 </h3>
               </div>
 
-              {currentState.sfxTrack !== "none" && (
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={toggleAuditionSFX}
-                  className="px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-semibold flex items-center gap-1.5 cursor-pointer hover:bg-amber-500/30"
+                  onClick={handleResetSfx}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-800/40 transition cursor-pointer"
+                  title="Reset SFX track to None"
                 >
-                  {isAuditioningSFX ? <Pause className="w-3.5 h-3.5 text-amber-400" /> : <Play className="w-3.5 h-3.5 text-amber-400" />}
-                  <span>{isAuditioningSFX ? "Stop Audition" : "🔊 Audition SFX (4s)"}</span>
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Reset SFX</span>
                 </button>
-              )}
+                {currentState.sfxTrack !== "none" && (
+                  <button
+                    type="button"
+                    onClick={toggleAuditionSFX}
+                    className="px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-semibold flex items-center gap-1.5 cursor-pointer hover:bg-amber-500/30"
+                  >
+                    {isAuditioningSFX ? <Pause className="w-3.5 h-3.5 text-amber-400" /> : <Play className="w-3.5 h-3.5 text-amber-400" />}
+                    <span>{isAuditioningSFX ? "Stop Audition" : "🔊 Audition SFX (4s)"}</span>
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

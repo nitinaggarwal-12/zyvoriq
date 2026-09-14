@@ -136,10 +136,10 @@ interface AuditorConflictItem {
 const LYRIA_SONGS = [
   {
     id: "original",
-    label: "Lyria 3.5 — Separated Master Backing Stem",
+    label: "Lyria 3.5 — Original Master Soundtrack",
     bpm: "124 BPM",
-    genre: "Separated Instrumental",
-    audioUrl: "/assets/stems/lyria_shibuya_pop_124bpm.mp3",
+    genre: "Clean Master Audio",
+    audioUrl: "/assets/stems/master_soundtrack_original.mp3",
   },
   {
     id: "shibuya_pop",
@@ -1434,23 +1434,35 @@ export function ZyvoriqLandingHub() {
     );
   };
 
-  // Upgrade A: Synchronized Dual Separated Vocal & Lyria Instrumental Stems
+  // Upgrade A: Synchronized Audio Architecture (Zero Double-Music Clash & Zero Cross-Song Bleed)
   useEffect(() => {
     if (sandboxVideoRef.current) {
       sandboxVideoRef.current.playbackRate = playbackRate;
-      // Keep native video audio muted when separated stems are active so zero double-music clash occurs
+      // Always keep native video audio strictly muted so zero double-music clash occurs
       sandboxVideoRef.current.muted = true;
     }
+
+    const isAlternativeSong = selectedSongId !== "original";
+
     if (vocalAudioRef.current) {
       vocalAudioRef.current.playbackRate = playbackRate;
       vocalAudioRef.current.muted = sandboxMuted;
-      vocalAudioRef.current.volume = Math.min(1.0, vocalVolume / 100);
-      if (!sandboxMuted && sandboxPlaying) {
-        vocalAudioRef.current.play().catch(() => {});
-      } else {
+      // CRITICAL FIX: If an alternative song is active, completely pause & mute the old vocal stem!
+      if (isAlternativeSong) {
+        vocalAudioRef.current.volume = 0;
         vocalAudioRef.current.pause();
+      } else {
+        // Original Master: only play separate vocal stem if user intentionally ducks/mutes the music accompaniment
+        const effVocalVol = musicVolume < 100 ? vocalVolume / 100 : 0;
+        vocalAudioRef.current.volume = Math.min(1.0, effVocalVol);
+        if (!sandboxMuted && sandboxPlaying && effVocalVol > 0) {
+          vocalAudioRef.current.play().catch(() => {});
+        } else {
+          vocalAudioRef.current.pause();
+        }
       }
     }
+
     if (companionAudioRef.current) {
       companionAudioRef.current.playbackRate = playbackRate;
       companionAudioRef.current.muted = sandboxMuted;
@@ -1481,12 +1493,12 @@ export function ZyvoriqLandingHub() {
       const t = vid.currentTime;
       setLivePlayheadSec(Number(t.toFixed(2)));
 
-      // Time-lock separated vocal and instrumental stems to video playhead
-      if (vocalAudioRef.current && Math.abs(vocalAudioRef.current.currentTime - t) > 0.28) {
-        vocalAudioRef.current.currentTime = t % (vocalAudioRef.current.duration || 12);
+      // Time-lock active audio stem to video playhead (tolerance > 0.45s to avoid stutter)
+      if (companionAudioRef.current && Math.abs(companionAudioRef.current.currentTime - t) > 0.45) {
+        companionAudioRef.current.currentTime = t % (companionAudioRef.current.duration || 24);
       }
-      if (companionAudioRef.current && Math.abs(companionAudioRef.current.currentTime - t) > 0.28) {
-        companionAudioRef.current.currentTime = t % (companionAudioRef.current.duration || 12);
+      if (vocalAudioRef.current && selectedSongId === "original" && Math.abs(vocalAudioRef.current.currentTime - t) > 0.45) {
+        vocalAudioRef.current.currentTime = t % (vocalAudioRef.current.duration || 24);
       }
 
       if (!surgicalCuts || surgicalCuts.length === 0) return;
@@ -1495,8 +1507,8 @@ export function ZyvoriqLandingHub() {
       for (const cut of surgicalCuts) {
         if (cut.target === "ripple_both" && t >= cut.startSec && t < cut.endSec - 0.08) {
           vid.currentTime = cut.endSec;
-          if (vocalAudioRef.current) vocalAudioRef.current.currentTime = cut.endSec;
           if (companionAudioRef.current) companionAudioRef.current.currentTime = cut.endSec;
+          if (vocalAudioRef.current) vocalAudioRef.current.currentTime = cut.endSec;
           return;
         }
       }
@@ -1512,7 +1524,7 @@ export function ZyvoriqLandingHub() {
       const baseVocalGain = inVocalMute ? 0 : vocalVolume;
       const baseMusicGain = inMusicMute ? 0 : musicVolume;
 
-      if (vocalAudioRef.current) {
+      if (vocalAudioRef.current && selectedSongId === "original") {
         vocalAudioRef.current.volume = Math.min(1.0, baseVocalGain / 100);
       }
       if (companionAudioRef.current) {
@@ -1522,7 +1534,7 @@ export function ZyvoriqLandingHub() {
 
     vid.addEventListener("timeupdate", onTimeUpdate);
     return () => vid.removeEventListener("timeupdate", onTimeUpdate);
-  }, [surgicalCuts, vocalVolume, musicVolume]);
+  }, [surgicalCuts, vocalVolume, musicVolume, selectedSongId]);
 
   // Upgrade C: Live 30fps HTML5 Canvas Alpha-Matte Foreground Segmentation & Backdrop Replacer
   useEffect(() => {
@@ -1647,11 +1659,14 @@ export function ZyvoriqLandingHub() {
     if (!sandboxVideoRef.current) return;
     if (sandboxVideoRef.current.paused) {
       sandboxVideoRef.current.play().catch(() => {});
-      if (vocalAudioRef.current && !sandboxMuted) {
-        vocalAudioRef.current.play().catch(() => {});
-      }
+      const t = sandboxVideoRef.current.currentTime;
       if (companionAudioRef.current && !sandboxMuted) {
+        companionAudioRef.current.currentTime = t % (companionAudioRef.current.duration || 24);
         companionAudioRef.current.play().catch(() => {});
+      }
+      if (vocalAudioRef.current && !sandboxMuted && selectedSongId === "original" && musicVolume < 100) {
+        vocalAudioRef.current.currentTime = t % (vocalAudioRef.current.duration || 24);
+        vocalAudioRef.current.play().catch(() => {});
       }
       setSandboxPlaying(true);
     } else {
@@ -1664,15 +1679,119 @@ export function ZyvoriqLandingHub() {
 
   const toggleSandboxMute = () => {
     const next = !sandboxMuted;
-    if (vocalAudioRef.current) {
-      vocalAudioRef.current.muted = next;
-      if (!next && sandboxPlaying) vocalAudioRef.current.play().catch(() => {});
-    }
     if (companionAudioRef.current) {
       companionAudioRef.current.muted = next;
       if (!next && sandboxPlaying) companionAudioRef.current.play().catch(() => {});
     }
+    if (vocalAudioRef.current) {
+      vocalAudioRef.current.muted = next;
+      if (!next && sandboxPlaying && selectedSongId === "original" && musicVolume < 100) {
+        vocalAudioRef.current.play().catch(() => {});
+      }
+    }
     setSandboxMuted(next);
+  };
+
+  // Individual & Global Reset Handlers for Every Control Dimension
+  const handleSelectSong = (songId: string) => {
+    if (companionAudioRef.current) companionAudioRef.current.pause();
+    if (vocalAudioRef.current) {
+      vocalAudioRef.current.pause();
+      vocalAudioRef.current.currentTime = 0;
+    }
+    pushSnapshot((prev) => ({ ...prev, selectedSongId: songId }));
+    const t = sandboxVideoRef.current?.currentTime || 0;
+    setTimeout(() => {
+      if (companionAudioRef.current) {
+        companionAudioRef.current.currentTime = t % (companionAudioRef.current.duration || 24);
+        if (!sandboxMuted && sandboxPlaying) {
+          companionAudioRef.current.play().catch(() => {});
+        }
+      }
+    }, 60);
+  };
+
+  const handleResetSong = () => {
+    if (companionAudioRef.current) companionAudioRef.current.pause();
+    if (vocalAudioRef.current) vocalAudioRef.current.pause();
+    pushSnapshot((prev) => ({ ...prev, selectedSongId: "original" }));
+    const t = sandboxVideoRef.current?.currentTime || 0;
+    setTimeout(() => {
+      if (companionAudioRef.current) {
+        companionAudioRef.current.currentTime = t % (companionAudioRef.current.duration || 24);
+        if (!sandboxMuted && sandboxPlaying) companionAudioRef.current.play().catch(() => {});
+      }
+    }, 60);
+    setBakeMessage("↺ Audio track reset to Original Master Soundtrack!");
+    setTimeout(() => setBakeMessage(""), 2500);
+  };
+
+  const handleResetDemographics = () => {
+    handleSelectDemographic("east_asian");
+    setBakeMessage("↺ Cast persona reset to East Asian (Kaito & Hana)!");
+    setTimeout(() => setBakeMessage(""), 2500);
+  };
+
+  const handleResetWardrobe = () => {
+    pushSnapshot((prev) => ({ ...prev, selectedWardrobeId: "emerald_sequin" }));
+    setShowWardrobeOverlayInMonitor(false);
+    setWardrobeKeyframeResult(null);
+    setBakeMessage("↺ Wardrobe styling reset to Emerald Sequin Couture!");
+    setTimeout(() => setBakeMessage(""), 2500);
+  };
+
+  const handleResetLocation = () => {
+    handleSelectLocation("shinjuku_neon");
+    setIsLiveAlphaMatteEnabled(false);
+    setBakeMessage("↺ Location reset to Shinjuku Neon Rain Alley (Alpha Matte OFF)!");
+    setTimeout(() => setBakeMessage(""), 2500);
+  };
+
+  const handleResetOccasion = () => {
+    handleSelectOccasion("club_anthem");
+    setBakeMessage("↺ Occasion & Vibe reset to Midnight Club Anthem!");
+    setTimeout(() => setBakeMessage(""), 2500);
+  };
+
+  const handleResetSpeed = () => {
+    pushSnapshot((prev) => ({ ...prev, playbackRate: 1.0 }));
+    setBakeMessage("↺ Playback speed cadence reset to 1.0x (Normal)!");
+    setTimeout(() => setBakeMessage(""), 2500);
+  };
+
+  const handleResetMixer = () => {
+    pushSnapshot((prev) => ({ ...prev, vocalVolume: 100, musicVolume: 100 }));
+    setBakeMessage("↺ Stems mixer reset to 100% Vocal / 100% Lyria Master!");
+    setTimeout(() => setBakeMessage(""), 2500);
+  };
+
+  const handleResetLut = () => {
+    pushSnapshot((prev) => ({ ...prev, selectedLut: "none" }));
+    setBakeMessage("↺ Cinema color grade reset to Natural Rec.709!");
+    setTimeout(() => setBakeMessage(""), 2500);
+  };
+
+  const handleResetAnchorShots = () => {
+    pushSnapshot((prev) => ({ ...prev, activeAnchorShotIndex: 0, shot2Take: "take_a" }));
+    if (sandboxVideoRef.current) {
+      sandboxVideoRef.current.currentTime = 0;
+    }
+    setBakeMessage("↺ Anchor shots & takes reset to Base Performance (0.0s)!");
+    setTimeout(() => setBakeMessage(""), 2500);
+  };
+
+  const handleResetAllControls = () => {
+    if (companionAudioRef.current) companionAudioRef.current.pause();
+    if (vocalAudioRef.current) vocalAudioRef.current.pause();
+    pushSnapshot(() => ({ ...INITIAL_SNAPSHOT }));
+    setIsLiveAlphaMatteEnabled(false);
+    setShowWardrobeOverlayInMonitor(false);
+    setWardrobeKeyframeResult(null);
+    if (sandboxVideoRef.current) {
+      sandboxVideoRef.current.currentTime = 0;
+    }
+    setBakeMessage("↺ ALL 12 Dimension Controls Reset to Factory Defaults!");
+    setTimeout(() => setBakeMessage(""), 3000);
   };
 
   // Compute combined CSS filter from LUT + Wardrobe tint
@@ -2206,6 +2325,16 @@ export function ZyvoriqLandingHub() {
                   <Zap className="w-3.5 h-3.5 text-amber-400" />
                   <span>⚡ Test Conflict Scenarios</span>
                 </button>
+                <button
+                  type="button"
+                  data-testid="btn-reset-all-controls"
+                  onClick={handleResetAllControls}
+                  className="px-3 py-1.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/40 text-[11px] font-bold text-red-200 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer"
+                  title="Reset all 12 controls and layers to original defaults"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-red-400" />
+                  <span>↺ Reset All Controls</span>
+                </button>
               </div>
             </div>
 
@@ -2557,7 +2686,19 @@ export function ZyvoriqLandingHub() {
                     <Compass className="w-3.5 h-3.5" />
                     <span>Anchor Shots Sequencer (Click Shot to Hot-Swap Timecode)</span>
                   </span>
-                  <span className="text-[11px] text-slate-400">Tail-Chained Continuity</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-slate-400 hidden sm:inline">Tail-Chained Continuity</span>
+                    <button
+                      type="button"
+                      data-testid="btn-reset-anchor-shots"
+                      onClick={handleResetAnchorShots}
+                      className="px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-mono text-slate-400 hover:text-white flex items-center gap-1 cursor-pointer transition"
+                      title="Reset anchor shots and takes to base"
+                    >
+                      <RotateCcw className="w-2.5 h-2.5" />
+                      <span>Reset</span>
+                    </button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {currentPreset.anchorShots.map((shot, idx) => {
@@ -2893,24 +3034,34 @@ export function ZyvoriqLandingHub() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* 1. Lyria 3.5 Music & Songs Switcher */}
                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 space-y-2.5">
-                  <label className="text-xs font-bold text-white flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
                       <Music className="w-4 h-4 text-purple-400" />
                       <span>1. Lyria 3.5 Music &amp; Songs Switcher</span>
                     </span>
-                    <span className="text-[11px] text-purple-300 font-semibold">
-                      {currentSong.bpm}
-                    </span>
-                  </label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-purple-300 font-semibold">
+                        {currentSong.bpm}
+                      </span>
+                      <button
+                        type="button"
+                        data-testid="btn-reset-song"
+                        onClick={handleResetSong}
+                        className="px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-mono text-slate-400 hover:text-white flex items-center gap-1 cursor-pointer transition"
+                        title="Reset song to original master soundtrack"
+                      >
+                        <RotateCcw className="w-2.5 h-2.5" />
+                        <span>Reset</span>
+                      </button>
+                    </div>
+                  </div>
                   <div className="space-y-1.5">
                     {LYRIA_SONGS.map((song) => (
                       <button
                         key={song.id}
                         type="button"
                         data-testid={`song-${song.id}`}
-                        onClick={() =>
-                          pushSnapshot((prev) => ({ ...prev, selectedSongId: song.id }))
-                        }
+                        onClick={() => handleSelectSong(song.id)}
                         className={`w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between border transition-all ${
                           selectedSongId === song.id
                             ? "bg-purple-500/20 border-purple-400 text-white shadow-sm"
@@ -2928,13 +3079,25 @@ export function ZyvoriqLandingHub() {
 
                 {/* 2. Demographics & Lead Persona Switcher */}
                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 space-y-2.5">
-                  <label className="text-xs font-bold text-white flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
                       <Users className="w-4 h-4 text-teal-400" />
                       <span>2. Demographics &amp; Cast Persona</span>
                     </span>
-                    <span className="text-[11px] text-teal-300 font-semibold">Biometric Lock</span>
-                  </label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-teal-300 font-semibold hidden sm:inline">Biometric Lock</span>
+                      <button
+                        type="button"
+                        data-testid="btn-reset-demographics"
+                        onClick={handleResetDemographics}
+                        className="px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-mono text-slate-400 hover:text-white flex items-center gap-1 cursor-pointer transition"
+                        title="Reset cast persona"
+                      >
+                        <RotateCcw className="w-2.5 h-2.5" />
+                        <span>Reset</span>
+                      </button>
+                    </div>
+                  </div>
                   <div className="space-y-1.5">
                     {DEMOGRAPHICS_OPTIONS.map((demo) => (
                       <button
@@ -2960,10 +3123,22 @@ export function ZyvoriqLandingHub() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* 3. Wardrobe & Attire Styling */}
                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 space-y-2">
-                  <label className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <Shirt className="w-4 h-4 text-amber-400" />
-                    <span>3. Wardrobe &amp; Styling</span>
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <Shirt className="w-4 h-4 text-amber-400" />
+                      <span>3. Wardrobe &amp; Styling</span>
+                    </label>
+                    <button
+                      type="button"
+                      data-testid="btn-reset-wardrobe"
+                      onClick={handleResetWardrobe}
+                      className="px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-mono text-slate-400 hover:text-white flex items-center gap-1 cursor-pointer transition"
+                      title="Reset wardrobe styling"
+                    >
+                      <RotateCcw className="w-2.5 h-2.5" />
+                      <span>Reset</span>
+                    </button>
+                  </div>
                   <div className="space-y-1.5">
                     {WARDROBE_OPTIONS.map((w) => (
                       <button
@@ -3014,10 +3189,22 @@ export function ZyvoriqLandingHub() {
 
                 {/* 4. Background & Location Replacer */}
                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 space-y-2">
-                  <label className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4 text-cyan-400" />
-                    <span>4. Background Location</span>
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <MapPin className="w-4 h-4 text-cyan-400" />
+                      <span>4. Background Location</span>
+                    </label>
+                    <button
+                      type="button"
+                      data-testid="btn-reset-location"
+                      onClick={handleResetLocation}
+                      className="px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-mono text-slate-400 hover:text-white flex items-center gap-1 cursor-pointer transition"
+                      title="Reset background location"
+                    >
+                      <RotateCcw className="w-2.5 h-2.5" />
+                      <span>Reset</span>
+                    </button>
+                  </div>
                   <div className="space-y-1.5">
                     {LOCATION_OPTIONS.map((loc) => (
                       <button
@@ -3061,10 +3248,22 @@ export function ZyvoriqLandingHub() {
 
                 {/* 5. Occasion & Atmosphere Preset */}
                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 space-y-2">
-                  <label className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <PartyPopper className="w-4 h-4 text-pink-400" />
-                    <span>5. Occasion &amp; Vibe</span>
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <PartyPopper className="w-4 h-4 text-pink-400" />
+                      <span>5. Occasion &amp; Vibe</span>
+                    </label>
+                    <button
+                      type="button"
+                      data-testid="btn-reset-occasion"
+                      onClick={handleResetOccasion}
+                      className="px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-mono text-slate-400 hover:text-white flex items-center gap-1 cursor-pointer transition"
+                      title="Reset occasion and vibe"
+                    >
+                      <RotateCcw className="w-2.5 h-2.5" />
+                      <span>Reset</span>
+                    </button>
+                  </div>
                   <div className="space-y-1.5">
                     {OCCASION_OPTIONS.map((occ) => (
                       <button
@@ -3094,9 +3293,21 @@ export function ZyvoriqLandingHub() {
                       <Gauge className="w-4 h-4 text-teal-400" />
                       <span>6. Speed Cadence &amp; Retiming</span>
                     </label>
-                    <span className="text-xs font-mono font-bold text-teal-300">
-                      {playbackRate.toFixed(2)}x
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono font-bold text-teal-300">
+                        {playbackRate.toFixed(2)}x
+                      </span>
+                      <button
+                        type="button"
+                        data-testid="btn-reset-speed"
+                        onClick={handleResetSpeed}
+                        className="px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-mono text-slate-400 hover:text-white flex items-center gap-1 cursor-pointer transition"
+                        title="Reset speed to 1.0x"
+                      >
+                        <RotateCcw className="w-2.5 h-2.5" />
+                        <span>Reset</span>
+                      </button>
+                    </div>
                   </div>
                   <div className="grid grid-cols-5 gap-1.5">
                     {[0.5, 0.75, 1.0, 1.25, 1.5].map((rate) => (
@@ -3119,10 +3330,22 @@ export function ZyvoriqLandingHub() {
 
                 {/* 7. Multi-Stem Acoustic Mixer */}
                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 space-y-2.5">
-                  <label className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <Radio className="w-4 h-4 text-purple-400" />
-                    <span>7. Demucs Vocal Stem &amp; Lyria Score Mixer</span>
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <Radio className="w-4 h-4 text-purple-400" />
+                      <span>7. Demucs Vocal Stem &amp; Lyria Score Mixer</span>
+                    </label>
+                    <button
+                      type="button"
+                      data-testid="btn-reset-mixer"
+                      onClick={handleResetMixer}
+                      className="px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-mono text-slate-400 hover:text-white flex items-center gap-1 cursor-pointer transition"
+                      title="Reset vocal and music gains to 100%"
+                    >
+                      <RotateCcw className="w-2.5 h-2.5" />
+                      <span>Reset</span>
+                    </button>
+                  </div>
                   <div className="space-y-1">
                     <div className="flex justify-between text-[11px]">
                       <span className="text-slate-300">Lead Vocal Stem (Demucs Isolated)</span>
@@ -3168,10 +3391,22 @@ export function ZyvoriqLandingHub() {
               <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 space-y-4">
                 {/* 8. Theme & Style LUT */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <Palette className="w-4 h-4 text-teal-400" />
-                    <span>8. Theme &amp; Cinema Color Grading LUT</span>
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <Palette className="w-4 h-4 text-teal-400" />
+                      <span>8. Theme &amp; Cinema Color Grading LUT</span>
+                    </label>
+                    <button
+                      type="button"
+                      data-testid="btn-reset-lut"
+                      onClick={handleResetLut}
+                      className="px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-mono text-slate-400 hover:text-white flex items-center gap-1 cursor-pointer transition"
+                      title="Reset color grade LUT"
+                    >
+                      <RotateCcw className="w-2.5 h-2.5" />
+                      <span>Reset</span>
+                    </button>
+                  </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {Object.entries(LUT_FILTERS).map(([key, lut]) => (
                       <button
