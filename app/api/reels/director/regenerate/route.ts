@@ -241,11 +241,9 @@ export async function POST(req: NextRequest) {
     }
 
     const filterParts: string[] = [];
-    // Video stream
+    // Video stream filter (only if color grading LUT is selected)
     if (gradingFilter) {
       filterParts.push(`[0:v]${gradingFilter}[vout]`);
-    } else {
-      filterParts.push(`[0:v]copy[vout]`);
     }
 
     // Audio stream mixing
@@ -279,7 +277,7 @@ export async function POST(req: NextRequest) {
       "-filter_complex",
       filterParts.join(";"),
       "-map",
-      "[vout]",
+      gradingFilter ? "[vout]" : "0:v",
       "-map",
       "[aout]",
       "-c:v",
