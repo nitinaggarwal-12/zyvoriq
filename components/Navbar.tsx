@@ -34,6 +34,7 @@ export function Navbar() {
     livePath === "/studio" ||
     livePath === "/music-video";
   const isFeatureFilms = livePath?.startsWith("/feature-films");
+  const isMotionPictures = livePath?.startsWith("/motion-pictures");
   const isCharacters = livePath?.startsWith("/characters");
   const isLocations = livePath?.startsWith("/locations");
   const isLibrary = livePath?.startsWith("/my-reels");
@@ -84,6 +85,15 @@ export function Navbar() {
           >
             <Clapperboard className="w-4 h-4 text-amber-400" />
             <span>Feature Films</span>
+          </Link>
+          <Link
+            href="/motion-pictures"
+            className={`hover:text-amber-400 transition-colors flex items-center gap-1.5 ${
+              isMotionPictures ? "text-amber-300 font-bold" : "text-slate-300"
+            }`}
+          >
+            <Film className="w-4 h-4 text-amber-400" />
+            <span>Motion Pictures</span>
           </Link>
           <Link
             href="/characters"
@@ -152,6 +162,14 @@ export function Navbar() {
           >
             <Clapperboard className="w-4 h-4 text-amber-400" />
             <span>Feature Films</span>
+          </Link>
+          <Link
+            href="/motion-pictures"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/5 min-h-[44px]"
+          >
+            <Film className="w-4 h-4 text-amber-400" />
+            <span>Motion Pictures</span>
           </Link>
           <Link
             href="/characters"

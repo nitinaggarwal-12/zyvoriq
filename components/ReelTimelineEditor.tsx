@@ -21,6 +21,11 @@ import {
   Gauge,
   Lock,
   Unlock,
+  Play,
+  Pause,
+  Palette,
+  Activity,
+  Eye,
 } from "lucide-react";
 
 export interface TimelineClipItem {
@@ -30,7 +35,7 @@ export interface TimelineClipItem {
   sourceDurationSec: number;
   trimStartSec: number;
   trimEndSec: number;
-  speed: number; // Per-clip visual speed (0.5x - 2.0x)
+  speed: number; // Per-clip visual speed (0.25x - 4.0x)
   enabled: boolean;
 }
 
@@ -44,20 +49,21 @@ export interface SavedVersionItem {
 
 export interface EditorSnapshotState {
   clips: TimelineClipItem[];
-  globalVideoSpeed: number; // Global visual speed multiplier (0.5x - 2.0x)
+  globalVideoSpeed: number; // Global visual speed multiplier (0.25x - 4.0x)
+  colorGrading: string; // "none" | "cyberpunk_neon" | "golden_hour_warm" | "mediterranean_sunlit" | "bollywood_royal" | "vintage_film"
   // Track 2: Dialogue / Vocals
   vocalMode: "original" | "mute" | "custom";
-  vocalVolume: number;
-  vocalSpeed: number; // Independent dialogue/vocal speed (0.5x - 2.0x)
+  vocalVolume: number; // 0.0 to 1.5 (150%)
+  vocalSpeed: number; // Independent dialogue/vocal speed (0.25x - 4.0x)
   // Track 3: Music Bed (Unaltered continuous lock by default)
   musicTrack: string;
   musicLockMode: "unaltered" | "custom_trim";
-  musicVolume: number;
-  musicSpeed: number; // Independent music speed (0.5x - 2.0x)
+  musicVolume: number; // 0.0 to 1.5
+  musicSpeed: number; // Independent music speed (0.25x - 4.0x)
   // Track 4: Background SFX
   sfxTrack: string;
-  sfxVolume: number;
-  sfxSpeed: number; // Independent SFX speed (0.5x - 2.0x)
+  sfxVolume: number; // 0.0 to 1.0
+  sfxSpeed: number; // Independent SFX speed (0.25x - 4.0x)
 }
 
 interface ReelTimelineEditorProps {
@@ -75,20 +81,62 @@ interface ReelTimelineEditorProps {
   onVersionSaved?: (newVersion: SavedVersionItem, allVersions: SavedVersionItem[]) => void;
 }
 
-const MUSIC_PRESETS = [
-  { label: "🎼 Original Lyria 3.5 Instrumental Stem (Unaltered)", value: "original_lyria" },
+export const MUSIC_PRESETS = [
+  { label: "🎼 Original Lyria 3.5 Master Soundtrack (Unaltered)", value: "original_lyria" },
   { label: "🎻 Romantic Orchestra Score (Bollywood Strings)", value: "/assets/audio/music/bollywood_romance_orchestra.mp3" },
   { label: "🥁 Punjabi Dhol & Tumbi Groove (128 BPM)", value: "/assets/audio/music/punjabi_dhol_tumbi_128bpm.mp3" },
   { label: "🔇 No Background Music Bed", value: "none" },
 ];
 
-const SFX_PRESETS = [
+export const SFX_PRESETS = [
   { label: "🔇 None (Clean Studio Mix)", value: "none" },
   { label: "🏖️ Summer Pool Party Water Splashes & Sun", value: "/assets/audio/sfx/pool_party_splash.mp3" },
   { label: "🎉 Nightclub Stage Concert Crowd Cheer", value: "/assets/audio/sfx/club_crowd_cheer.mp3" },
   { label: "☕ Coastal Ocean Breeze & Surf Ambiance", value: "/assets/audio/sfx/coastal_ocean_breeze.mp3" },
   { label: "🌧️ Cinematic Vinyl Crackle & Warm Rain", value: "/assets/audio/sfx/vinyl_rain_ambiance.mp3" },
 ];
+
+export const COLOR_GRADING_LUT_MAP: Record<
+  string,
+  { label: string; filter: string; description: string; badge: string }
+> = {
+  none: {
+    label: "🎞️ Natural Rec.709 (No Grade)",
+    filter: "none",
+    description: "Standard cinematic color profile with neutral balance",
+    badge: "Rec.709 Neutral",
+  },
+  cyberpunk_neon: {
+    label: "🌆 Cyberpunk Neon Cyan/Magenta",
+    filter: "contrast(1.22) saturate(1.4) hue-rotate(-15deg)",
+    description: "Deep cool shadows with saturated high-energy neon highlights",
+    badge: "Teal & Magenta",
+  },
+  golden_hour_warm: {
+    label: "🌅 Golden Hour Mediterranean Warmth",
+    filter: "sepia(0.25) saturate(1.3) contrast(1.1) brightness(1.04)",
+    description: "Sun-drenched Mediterranean bronze tones with rich skin warmth",
+    badge: "3200K Sunset",
+  },
+  mediterranean_sunlit: {
+    label: "☀️ Sunlit Turquoise Pool Horizon",
+    filter: "contrast(1.15) saturate(1.3) brightness(1.05) hue-rotate(5deg)",
+    description: "Vibrant coastal blues and crisp radiant poolside highlights",
+    badge: "Vibrant Aqua",
+  },
+  bollywood_royal: {
+    label: "👑 Bollywood Royal Velvet & Gold",
+    filter: "contrast(1.2) saturate(1.4) brightness(1.02) sepia(0.12)",
+    description: "Rich opulent jewel tones with golden highlights and velvety blacks",
+    badge: "Opulent Regal",
+  },
+  vintage_film: {
+    label: "🎥 Vintage 35mm Technicolor Warmth",
+    filter: "sepia(0.35) contrast(1.12) brightness(0.96)",
+    description: "Classic analog celluloid warmth with softened contrast and grain feel",
+    badge: "1970s Stock",
+  },
+};
 
 export function ReelTimelineEditor({
   reelId,
@@ -139,6 +187,7 @@ export function ReelTimelineEditor({
   const initialSnapshot: EditorSnapshotState = {
     clips: buildDefaultClips(),
     globalVideoSpeed: 1.0,
+    colorGrading: "none",
     vocalMode: "original",
     vocalVolume: 1.0,
     vocalSpeed: 1.0,
@@ -222,35 +271,163 @@ export function ReelTimelineEditor({
   const [renderErrorMsg, setRenderErrorMsg] = useState<string | null>(null);
   const [versionTitleInput, setVersionTitleInput] = useState<string>("");
 
-  // Live preview players
+  // Live preview & playback states
+  // "shot": preview the selected constituent shot in isolation with frame looping & shot speed
+  // "sequence": preview the rendered master sequence with global speed
+  const [previewMode, setPreviewMode] = useState<"shot" | "sequence">("shot");
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [currentPlayTime, setCurrentPlayTime] = useState<number>(0);
+  const [isAuditioningSFX, setIsAuditioningSFX] = useState<boolean>(false);
+  const [isAuditioningMusic, setIsAuditioningMusic] = useState<boolean>(false);
+
+  // Live preview player DOM elements
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const musicAudioRef = useRef<HTMLAudioElement | null>(null);
   const sfxAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Sync browser playback speed & volumes in real time
+  const activeClip = currentState.clips[selectedClipIndex] || currentState.clips[0];
+
+  // Compute effective visual playback speed
+  const effectiveVisualSpeed =
+    previewMode === "shot"
+      ? (activeClip?.speed || 1.0) * (currentState.globalVideoSpeed || 1.0)
+      : currentState.globalVideoSpeed || 1.0;
+
+  // Determine active video source URL
+  const currentVideoSrc =
+    previewMode === "shot"
+      ? activeClip?.videoUrl || masterVideoUrl
+      : activeVersionUrl;
+
+  // Real-time synchronization of playback rates, volumes, and audio states
   useEffect(() => {
     if (videoRef.current) {
+      // Direct unclamped playback rate supporting 0.25x to 4.0x
+      const rate = Math.max(0.25, Math.min(4.0, effectiveVisualSpeed));
+      try {
+        videoRef.current.playbackRate = rate;
+      } catch (err) {
+        // Fallback if browser limits
+      }
       videoRef.current.volume =
-        currentState.vocalMode === "mute" ? 0 : Math.min(1, currentState.vocalVolume);
-      videoRef.current.playbackRate = Math.max(0.5, Math.min(2.0, currentState.globalVideoSpeed || 1.0));
+        currentState.vocalMode === "mute" ? 0 : Math.min(1.0, currentState.vocalVolume);
     }
     if (musicAudioRef.current) {
-      musicAudioRef.current.volume = Math.min(1, currentState.musicVolume);
-      musicAudioRef.current.playbackRate = Math.max(0.5, Math.min(2.0, currentState.musicSpeed || 1.0));
+      musicAudioRef.current.volume = Math.min(1.0, currentState.musicVolume);
+      const mRate = Math.max(0.25, Math.min(4.0, currentState.musicSpeed || 1.0));
+      try {
+        musicAudioRef.current.playbackRate = mRate;
+      } catch (err) {}
     }
     if (sfxAudioRef.current) {
-      sfxAudioRef.current.volume = Math.min(1, currentState.sfxVolume);
-      sfxAudioRef.current.playbackRate = Math.max(0.5, Math.min(2.0, currentState.sfxSpeed || 1.0));
+      sfxAudioRef.current.volume = Math.min(1.0, currentState.sfxVolume);
+      const sRate = Math.max(0.25, Math.min(4.0, currentState.sfxSpeed || 1.0));
+      try {
+        sfxAudioRef.current.playbackRate = sRate;
+      } catch (err) {}
     }
   }, [
+    effectiveVisualSpeed,
     currentState.vocalMode,
     currentState.vocalVolume,
-    currentState.globalVideoSpeed,
     currentState.musicVolume,
     currentState.musicSpeed,
     currentState.sfxVolume,
     currentState.sfxSpeed,
   ]);
+
+  // Frame-accurate time update & looping logic
+  const handleTimeUpdate = () => {
+    if (!videoRef.current) return;
+    const ct = videoRef.current.currentTime;
+    setCurrentPlayTime(ct);
+
+    // In isolated shot preview mode, clamp and loop strictly within trimStartSec and trimEndSec
+    if (previewMode === "shot" && activeClip) {
+      const inSec = activeClip.trimStartSec;
+      const outSec = activeClip.trimEndSec;
+      if (ct < inSec || ct >= outSec) {
+        videoRef.current.currentTime = inSec;
+      }
+    }
+  };
+
+  // Sync secondary audio elements on play
+  const handlePlay = () => {
+    setIsPlaying(true);
+    if (
+      musicAudioRef.current &&
+      currentState.musicTrack !== "none" &&
+      currentState.musicTrack !== "original_lyria"
+    ) {
+      musicAudioRef.current.currentTime = videoRef.current?.currentTime || 0;
+      musicAudioRef.current.play().catch(() => {});
+    }
+    if (sfxAudioRef.current && currentState.sfxTrack !== "none") {
+      sfxAudioRef.current.currentTime = videoRef.current?.currentTime || 0;
+      sfxAudioRef.current.play().catch(() => {});
+    }
+  };
+
+  const handlePause = () => {
+    setIsPlaying(false);
+    musicAudioRef.current?.pause();
+    sfxAudioRef.current?.pause();
+  };
+
+  // Immediate interactive frame seeking when scrubbing in/out sliders
+  const handleSeekFrame = (targetSec: number) => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = targetSec;
+      setCurrentPlayTime(targetSec);
+    }
+  };
+
+  // Toggle SFX Auditioning (allows hearing the sound effect on demand)
+  const toggleAuditionSFX = () => {
+    if (isAuditioningSFX) {
+      sfxAudioRef.current?.pause();
+      setIsAuditioningSFX(false);
+    } else {
+      if (sfxAudioRef.current && currentState.sfxTrack !== "none") {
+        sfxAudioRef.current.currentTime = 0;
+        sfxAudioRef.current.play().then(() => {
+          setIsAuditioningSFX(true);
+          setTimeout(() => {
+            sfxAudioRef.current?.pause();
+            setIsAuditioningSFX(false);
+          }, 4000);
+        }).catch(() => {
+          setIsAuditioningSFX(false);
+        });
+      }
+    }
+  };
+
+  // Toggle Music Bed Auditioning
+  const toggleAuditionMusic = () => {
+    if (isAuditioningMusic) {
+      musicAudioRef.current?.pause();
+      setIsAuditioningMusic(false);
+    } else {
+      if (
+        musicAudioRef.current &&
+        currentState.musicTrack !== "none" &&
+        currentState.musicTrack !== "original_lyria"
+      ) {
+        musicAudioRef.current.currentTime = 0;
+        musicAudioRef.current.play().then(() => {
+          setIsAuditioningMusic(true);
+          setTimeout(() => {
+            musicAudioRef.current?.pause();
+            setIsAuditioningMusic(false);
+          }, 5000);
+        }).catch(() => {
+          setIsAuditioningMusic(false);
+        });
+      }
+    }
+  };
 
   const totalEditedDurationSec = currentState.clips
     .filter((c) => c.enabled)
@@ -341,6 +518,7 @@ export function ReelTimelineEditor({
             `v${versions.length + 1} • Edited Master (${totalEditedDurationSec.toFixed(1)}s)`,
           clips: currentState.clips,
           globalVideoSpeed: currentState.globalVideoSpeed,
+          colorGrading: currentState.colorGrading,
           vocalMode: currentState.vocalMode,
           vocalVolume: currentState.vocalVolume,
           vocalSpeed: currentState.vocalSpeed,
@@ -370,9 +548,10 @@ export function ReelTimelineEditor({
       const updatedVersions = data.versions?.length ? data.versions : [...versions, newVer];
       setVersions(updatedVersions);
       setActiveVersionUrl(data.outputUrl);
+      setPreviewMode("sequence");
       setVersionTitleInput("");
       setRenderSuccessMsg(
-        `✓ Saved new version "${newVer.label}"! Original master (v1) is safely preserved.`
+        `✓ Rendered and saved new version "${newVer.label}" in ${data.durationSec}s! Original master (v1) is preserved.`
       );
       if (onVersionSaved) {
         onVersionSaved(newVer, updatedVersions);
@@ -384,7 +563,8 @@ export function ReelTimelineEditor({
     }
   };
 
-  const activeClip = currentState.clips[selectedClipIndex] || currentState.clips[0];
+  const activeColorFilter =
+    COLOR_GRADING_LUT_MAP[currentState.colorGrading || "none"]?.filter || "none";
 
   return (
     <div className="w-full bg-[#090D16] text-slate-100 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden my-6">
@@ -396,9 +576,9 @@ export function ReelTimelineEditor({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-white">Studio NLE Multi-Track Video & Audio Editor</h2>
+              <h2 className="text-lg font-bold text-white">Studio NLE Multi-Track Video &amp; Audio Editor</h2>
               <span className="px-2 py-0.5 text-[11px] font-mono font-semibold rounded bg-teal-950 text-teal-300 border border-teal-800">
-                Independent 4-Track Speeds & Unaltered Music Lock
+                Independent 4-Track Speeds &amp; Unaltered Music Lock
               </span>
             </div>
             <p className="text-xs text-slate-400 truncate max-w-md">
@@ -467,7 +647,7 @@ export function ReelTimelineEditor({
             ) : (
               <>
                 <Check className="w-4 h-4" />
-                <span>Render & Save New Version (v{versions.length + 1})</span>
+                <span>Render &amp; Save New Version (v{versions.length + 1})</span>
               </>
             )}
           </button>
@@ -497,7 +677,10 @@ export function ReelTimelineEditor({
               <button
                 key={ver.versionNumber}
                 type="button"
-                onClick={() => setActiveVersionUrl(ver.url)}
+                onClick={() => {
+                  setActiveVersionUrl(ver.url);
+                  setPreviewMode("sequence");
+                }}
                 className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold transition cursor-pointer flex items-center gap-1.5 ${
                   isActive
                     ? "bg-teal-500/20 border border-teal-500 text-teal-300"
@@ -548,40 +731,115 @@ export function ReelTimelineEditor({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6">
         {/* LEFT 5 COLS: Live Video Preview & Selected Shot Frame Trimmer */}
         <div className="lg:col-span-5 flex flex-col gap-4">
-          <div className="relative bg-black rounded-xl border border-slate-800 overflow-hidden aspect-[9/16] max-h-[440px] flex items-center justify-center mx-auto w-full">
+          {/* Dual Preview Switcher: Shot Preview vs Master Sequence Preview */}
+          <div className="flex items-center justify-between p-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+            <button
+              type="button"
+              onClick={() => {
+                setPreviewMode("shot");
+                if (videoRef.current && activeClip) {
+                  videoRef.current.currentTime = activeClip.trimStartSec;
+                }
+              }}
+              className={`flex-1 py-1.5 px-2 rounded-lg font-semibold transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                previewMode === "shot"
+                  ? "bg-teal-500/20 border border-teal-500/60 text-teal-300"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>Isolated Shot #{selectedClipIndex + 1} Preview</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPreviewMode("sequence");
+                if (videoRef.current) {
+                  videoRef.current.currentTime = 0;
+                }
+              }}
+              className={`flex-1 py-1.5 px-2 rounded-lg font-semibold transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                previewMode === "sequence"
+                  ? "bg-teal-500/20 border border-teal-500/60 text-teal-300"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <Film className="w-3.5 h-3.5" />
+              <span>Full Sequence Preview</span>
+            </button>
+          </div>
+
+          {/* Interactive Player Viewport with Live Color LUT Filter and Real-Time Speed */}
+          <div className="relative bg-black rounded-xl border border-slate-800 overflow-hidden aspect-[9/16] max-h-[440px] flex items-center justify-center mx-auto w-full group">
             <video
               ref={videoRef}
-              key={activeVersionUrl}
-              src={activeVersionUrl}
+              key={previewMode === "shot" ? `shot_${selectedClipIndex}_${activeClip?.videoUrl}` : `seq_${activeVersionUrl}`}
+              src={currentVideoSrc}
               controls
               playsInline
               preload="auto"
-              className="w-full h-full object-contain"
-              onPlay={() => {
-                if (
-                  musicAudioRef.current &&
-                  currentState.musicTrack !== "none" &&
-                  currentState.musicTrack !== "original_lyria"
-                ) {
-                  musicAudioRef.current.currentTime = videoRef.current?.currentTime || 0;
-                  musicAudioRef.current.play().catch(() => {});
-                }
-                if (sfxAudioRef.current && currentState.sfxTrack !== "none") {
-                  sfxAudioRef.current.currentTime = videoRef.current?.currentTime || 0;
-                  sfxAudioRef.current.play().catch(() => {});
-                }
-              }}
-              onPause={() => {
-                musicAudioRef.current?.pause();
-                sfxAudioRef.current?.pause();
-              }}
+              style={{ filter: activeColorFilter }}
+              className="w-full h-full object-contain transition-all duration-200"
+              onTimeUpdate={handleTimeUpdate}
+              onPlay={handlePlay}
+              onPause={handlePause}
             />
+
+            {/* Audio elements for music and SFX */}
             {currentState.musicTrack !== "none" && currentState.musicTrack !== "original_lyria" && (
               <audio ref={musicAudioRef} src={currentState.musicTrack} loop preload="auto" />
             )}
             {currentState.sfxTrack !== "none" && (
               <audio ref={sfxAudioRef} src={currentState.sfxTrack} loop preload="auto" />
             )}
+
+            {/* Live Playback Telemetry HUD Overlays */}
+            <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 pointer-events-none">
+              <span className="px-2 py-0.5 rounded bg-black/80 border border-teal-500/40 text-[11px] font-mono font-bold text-teal-300 backdrop-blur-md">
+                ⚡ {effectiveVisualSpeed.toFixed(2)}x Visual Speed
+              </span>
+              {currentState.colorGrading !== "none" && (
+                <span className="px-2 py-0.5 rounded bg-black/80 border border-purple-500/40 text-[10px] font-mono font-bold text-purple-300 backdrop-blur-md">
+                  🎨 {COLOR_GRADING_LUT_MAP[currentState.colorGrading]?.badge}
+                </span>
+              )}
+            </div>
+
+            <div className="absolute bottom-12 right-2.5 flex items-center gap-1.5 pointer-events-none">
+              <span className="px-2 py-0.5 rounded bg-black/80 border border-white/20 text-[10px] font-mono text-slate-300 backdrop-blur-md">
+                {previewMode === "shot"
+                  ? `In: ${activeClip.trimStartSec.toFixed(2)}s → Out: ${activeClip.trimEndSec.toFixed(2)}s`
+                  : `Master Sequence (${totalEditedDurationSec.toFixed(1)}s)`}
+              </span>
+            </div>
+          </div>
+
+          {/* Motional Waveform & Playback Telemetry Visualizer */}
+          <div className="p-3 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-between text-xs font-mono">
+            <div className="flex items-center gap-2">
+              <Activity className={`w-4 h-4 ${isPlaying ? "text-teal-400 animate-pulse" : "text-slate-600"}`} />
+              <span className="text-slate-400">
+                Live Engine:{" "}
+                <strong className={isPlaying ? "text-emerald-300" : "text-slate-400"}>
+                  {isPlaying ? "Playing (Real-Time Reactive)" : "Paused"}
+                </strong>
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500 text-[11px]">Audio Pressure:</span>
+              <div className="flex items-end gap-0.5 h-3">
+                {[4, 8, 12, 16, 10, 14, 6].map((h, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      height: isPlaying ? `${Math.min(16, h * (currentState.vocalVolume || 1))}px` : "3px",
+                      backgroundColor: isPlaying ? (i % 2 === 0 ? "#2dd4bf" : "#a855f7") : "#334155",
+                    }}
+                    className="w-1 rounded-sm transition-all duration-150"
+                  />
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Selected Shot Frame Trimmer & Per-Clip Speed Inspector */}
@@ -625,12 +883,42 @@ export function ReelTimelineEditor({
                 </div>
               </div>
 
-              {/* Frame-accurate In/Out Trimmers + Per-Clip Visual Speed */}
+              {/* Source Shot Switcher for Multi-Shot Productions */}
+              {initialShots.length > 0 && (
+                <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950/80 border border-slate-800 text-xs">
+                  <span className="text-slate-400 shrink-0 font-medium">Switch Shot Source:</span>
+                  <select
+                    value={activeClip.videoUrl}
+                    onChange={(e) => {
+                      const sel = initialShots.find((s) => (s.videoUrl || (s as any).url) === e.target.value);
+                      if (sel) {
+                        const dur = Number(sel.durationSec || 6.0);
+                        updateClip(selectedClipIndex, {
+                          videoUrl: sel.videoUrl || (sel as any).url,
+                          title: sel.title || activeClip.title,
+                          sourceDurationSec: dur,
+                          trimEndSec: Math.min(activeClip.trimEndSec, dur),
+                        });
+                        setPreviewMode("shot");
+                      }
+                    }}
+                    className="bg-slate-900 text-teal-300 font-mono text-xs rounded px-2 py-1 border border-slate-700 outline-none w-full max-w-[260px] cursor-pointer"
+                  >
+                    {initialShots.map((s, idx) => (
+                      <option key={s.id || idx} value={s.videoUrl || (s as any).url}>
+                        {s.title || `Shot #${idx + 1}`} ({s.durationSec || 6}s)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Frame-accurate In/Out Trimmers + Per-Clip Visual Speed with Interactive Frame Seeking */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
                 <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-slate-400">Trim In-Frame:</span>
-                    <span className="font-mono text-teal-300">
+                    <span className="font-mono text-teal-300 font-bold">
                       {activeClip.trimStartSec.toFixed(2)}s ({Math.round(activeClip.trimStartSec * 24)}f)
                     </span>
                   </div>
@@ -640,14 +928,18 @@ export function ReelTimelineEditor({
                     max={Math.max(0, activeClip.trimEndSec - 0.2)}
                     step={0.04}
                     value={activeClip.trimStartSec}
-                    onChange={(e) => updateClip(selectedClipIndex, { trimStartSec: parseFloat(e.target.value) })}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      updateClip(selectedClipIndex, { trimStartSec: val });
+                      handleSeekFrame(val);
+                    }}
                     className="w-full accent-teal-400 cursor-pointer"
                   />
                 </div>
                 <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-slate-400">Trim Out-Frame:</span>
-                    <span className="font-mono text-teal-300">
+                    <span className="font-mono text-teal-300 font-bold">
                       {activeClip.trimEndSec.toFixed(2)}s ({Math.round(activeClip.trimEndSec * 24)}f)
                     </span>
                   </div>
@@ -657,14 +949,18 @@ export function ReelTimelineEditor({
                     max={activeClip.sourceDurationSec}
                     step={0.04}
                     value={activeClip.trimEndSec}
-                    onChange={(e) => updateClip(selectedClipIndex, { trimEndSec: parseFloat(e.target.value) })}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      updateClip(selectedClipIndex, { trimEndSec: val });
+                      handleSeekFrame(val);
+                    }}
                     className="w-full accent-teal-400 cursor-pointer"
                   />
                 </div>
                 <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-slate-400">Shot Visual Speed:</span>
-                    <span className="font-mono text-teal-300">{(activeClip.speed || 1).toFixed(2)}x</span>
+                    <span className="font-mono text-teal-300 font-bold">{(activeClip.speed || 1).toFixed(2)}x</span>
                   </div>
                   <input
                     type="range"
@@ -681,7 +977,7 @@ export function ReelTimelineEditor({
           )}
         </div>
 
-        {/* RIGHT 7 COLS: 4 Independent Tracks (1. Visual Video, 2. Dialogue/Vocals, 3. Unaltered Music, 4. Background SFX) */}
+        {/* RIGHT 7 COLS: 4 Independent Tracks + Cinematic Color Grading */}
         <div className="lg:col-span-7 flex flex-col gap-4">
           {/* TRACK 1: VISUAL VIDEO SEQUENCE & GLOBAL VISUAL SPEED */}
           <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
@@ -692,7 +988,7 @@ export function ReelTimelineEditor({
                   Track 1 • Visual Video Frames ({currentState.clips.filter((c) => c.enabled).length} cuts)
                 </h3>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-2 bg-slate-950 px-3 py-1 rounded-lg border border-slate-800">
                   <Gauge className="w-3.5 h-3.5 text-teal-400" />
                   <span className="text-xs text-slate-400">Global Video Speed:</span>
@@ -711,6 +1007,43 @@ export function ReelTimelineEditor({
                     {currentState.globalVideoSpeed.toFixed(2)}x
                   </span>
                 </div>
+
+                {initialShots.length > 0 && (
+                  <select
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (!val) return;
+                      const s = initialShots.find((item) => (item.videoUrl || (item as any).url) === val);
+                      if (s) {
+                        pushState((prev) => {
+                          const newClip: TimelineClipItem = {
+                            id: `shot_${Date.now().toString().slice(-4)}`,
+                            title: s.title || `Shot #${prev.clips.length + 1}`,
+                            videoUrl: s.videoUrl || (s as any).url || masterVideoUrl,
+                            sourceDurationSec: Number(s.durationSec || 6.0),
+                            trimStartSec: 0,
+                            trimEndSec: Number(s.durationSec || 6.0),
+                            speed: 1.0,
+                            enabled: true,
+                          };
+                          return { ...prev, clips: [...prev.clips, newClip] };
+                        });
+                        setSelectedClipIndex(currentState.clips.length);
+                      }
+                      e.target.value = "";
+                    }}
+                    defaultValue=""
+                    className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-semibold cursor-pointer outline-none"
+                  >
+                    <option value="" disabled>+ Add Constituent Shot...</option>
+                    {initialShots.map((s, idx) => (
+                      <option key={s.id || idx} value={s.videoUrl || (s as any).url} className="bg-slate-900 text-slate-200">
+                        + {s.title || `Shot #${idx + 1}`} ({s.durationSec || 6}s)
+                      </option>
+                    ))}
+                  </select>
+                )}
+
                 <button
                   type="button"
                   onClick={() => handleDuplicateOrAddClip(currentState.clips.length - 1)}
@@ -733,7 +1066,10 @@ export function ReelTimelineEditor({
                 return (
                   <div
                     key={clip.id}
-                    onClick={() => setSelectedClipIndex(idx)}
+                    onClick={() => {
+                      setSelectedClipIndex(idx);
+                      setPreviewMode("shot");
+                    }}
                     className={`p-3 rounded-xl border transition cursor-pointer flex flex-col justify-between ${
                       !clip.enabled
                         ? "bg-slate-950/40 border-slate-800/50 opacity-45"
@@ -768,7 +1104,7 @@ export function ReelTimelineEditor({
                             e.stopPropagation();
                             handleMoveClip(idx, -1);
                           }}
-                          className="p-1 rounded bg-slate-900 hover:bg-slate-800 disabled:opacity-30 text-slate-300"
+                          className="p-1 rounded bg-slate-900 hover:bg-slate-800 disabled:opacity-30 text-slate-300 cursor-pointer disabled:cursor-not-allowed"
                           title="Move Left"
                         >
                           <ChevronLeft className="w-3.5 h-3.5" />
@@ -780,7 +1116,7 @@ export function ReelTimelineEditor({
                             e.stopPropagation();
                             handleMoveClip(idx, 1);
                           }}
-                          className="p-1 rounded bg-slate-900 hover:bg-slate-800 disabled:opacity-30 text-slate-300"
+                          className="p-1 rounded bg-slate-900 hover:bg-slate-800 disabled:opacity-30 text-slate-300 cursor-pointer disabled:cursor-not-allowed"
                           title="Move Right"
                         >
                           <ChevronRight className="w-3.5 h-3.5" />
@@ -792,12 +1128,48 @@ export function ReelTimelineEditor({
                           e.stopPropagation();
                           updateClip(idx, { enabled: !clip.enabled });
                         }}
-                        className="text-[11px] font-semibold text-slate-400 hover:text-red-400"
+                        className="text-[11px] font-semibold text-slate-400 hover:text-red-400 cursor-pointer"
                       >
                         {clip.enabled ? "Remove" : "Restore"}
                       </button>
                     </div>
                   </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* COLOR GRADING & 35MM LUT CONTROLLER */}
+          <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <Palette className="w-4 h-4 text-pink-400" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200">
+                  Track 5 • Theatrical Color Grading &amp; 35mm LUT Matrix
+                </h3>
+              </div>
+              <span className="text-xs font-mono text-pink-300 bg-pink-950/40 border border-pink-800/40 px-2 py-0.5 rounded">
+                Live Video Preview Filter Active
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {Object.entries(COLOR_GRADING_LUT_MAP).map(([key, info]) => {
+                const isSelected = (currentState.colorGrading || "none") === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => pushState((prev) => ({ ...prev, colorGrading: key }))}
+                    className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                      isSelected
+                        ? "bg-pink-950/40 border-pink-500 shadow-md shadow-pink-950/50"
+                        : "bg-slate-950 border-slate-800 hover:border-slate-700"
+                    }`}
+                  >
+                    <div className="text-xs font-bold text-slate-200">{info.label}</div>
+                    <div className="text-[10px] text-slate-400 mt-1 leading-tight">{info.description}</div>
+                  </button>
                 );
               })}
             </div>
@@ -809,7 +1181,7 @@ export function ReelTimelineEditor({
               <div className="flex items-center gap-2">
                 <Volume2 className="w-4 h-4 text-blue-400" />
                 <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200">
-                  Track 2 • Dialogue & Singing Vocals (Independent Speed & Gain)
+                  Track 2 • Dialogue &amp; Singing Vocals (Independent Speed &amp; Gain)
                 </h3>
               </div>
               <button
@@ -834,7 +1206,7 @@ export function ReelTimelineEditor({
               <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-slate-400">Dialogue / Vocal Gain:</span>
-                  <span className="font-mono text-blue-300">
+                  <span className="font-mono text-blue-300 font-bold">
                     {currentState.vocalMode === "mute" ? "0%" : `${Math.round(currentState.vocalVolume * 100)}%`}
                   </span>
                 </div>
@@ -855,7 +1227,7 @@ export function ReelTimelineEditor({
               <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-slate-400">Independent Dialogue Speed:</span>
-                  <span className="font-mono text-blue-300">{currentState.vocalSpeed.toFixed(2)}x</span>
+                  <span className="font-mono text-blue-300 font-bold">{currentState.vocalSpeed.toFixed(2)}x</span>
                 </div>
                 <input
                   type="range"
@@ -915,11 +1287,23 @@ export function ReelTimelineEditor({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Select Music Track:</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs text-slate-400">Select Music Track:</label>
+                  {currentState.musicTrack !== "none" && currentState.musicTrack !== "original_lyria" && (
+                    <button
+                      type="button"
+                      onClick={toggleAuditionMusic}
+                      className="text-[10px] font-mono text-purple-300 hover:text-white flex items-center gap-1 cursor-pointer"
+                    >
+                      {isAuditioningMusic ? <Pause className="w-3 h-3 text-purple-400" /> : <Play className="w-3 h-3 text-purple-400" />}
+                      <span>{isAuditioningMusic ? "Stop Test" : "Audition (5s)"}</span>
+                    </button>
+                  )}
+                </div>
                 <select
                   value={currentState.musicTrack}
                   onChange={(e) => pushState((prev) => ({ ...prev, musicTrack: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-purple-500"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-purple-500 cursor-pointer"
                 >
                   {MUSIC_PRESETS.map((p) => (
                     <option key={p.value} value={p.value}>
@@ -932,7 +1316,7 @@ export function ReelTimelineEditor({
               <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-slate-400">Music Volume:</span>
-                  <span className="font-mono text-purple-300">{Math.round(currentState.musicVolume * 100)}%</span>
+                  <span className="font-mono text-purple-300 font-bold">{Math.round(currentState.musicVolume * 100)}%</span>
                 </div>
                 <input
                   type="range"
@@ -948,7 +1332,7 @@ export function ReelTimelineEditor({
               <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-slate-400">Independent Music Speed:</span>
-                  <span className="font-mono text-purple-300">{currentState.musicSpeed.toFixed(2)}x</span>
+                  <span className="font-mono text-purple-300 font-bold">{currentState.musicSpeed.toFixed(2)}x</span>
                 </div>
                 <input
                   type="range"
@@ -965,13 +1349,24 @@ export function ReelTimelineEditor({
 
           {/* TRACK 4: BACKGROUND SOUND EFFECT / FOLEY (Independent Speed & Volume) */}
           <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-amber-400" />
                 <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200">
-                  Track 4 • Background Sound Effect / Foley (Independent Speed & Volume)
+                  Track 4 • Background Sound Effect / Foley (Audible &amp; Feelable)
                 </h3>
               </div>
+
+              {currentState.sfxTrack !== "none" && (
+                <button
+                  type="button"
+                  onClick={toggleAuditionSFX}
+                  className="px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-semibold flex items-center gap-1.5 cursor-pointer hover:bg-amber-500/30"
+                >
+                  {isAuditioningSFX ? <Pause className="w-3.5 h-3.5 text-amber-400" /> : <Play className="w-3.5 h-3.5 text-amber-400" />}
+                  <span>{isAuditioningSFX ? "Stop Audition" : "🔊 Audition SFX (4s)"}</span>
+                </button>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -980,7 +1375,7 @@ export function ReelTimelineEditor({
                 <select
                   value={currentState.sfxTrack}
                   onChange={(e) => pushState((prev) => ({ ...prev, sfxTrack: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-amber-500 cursor-pointer"
                 >
                   {SFX_PRESETS.map((p) => (
                     <option key={p.value} value={p.value}>
@@ -993,7 +1388,7 @@ export function ReelTimelineEditor({
               <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-slate-400">SFX Volume:</span>
-                  <span className="font-mono text-amber-300">{Math.round(currentState.sfxVolume * 100)}%</span>
+                  <span className="font-mono text-amber-300 font-bold">{Math.round(currentState.sfxVolume * 100)}%</span>
                 </div>
                 <input
                   type="range"
@@ -1009,7 +1404,7 @@ export function ReelTimelineEditor({
               <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-slate-400">Independent SFX Speed:</span>
-                  <span className="font-mono text-amber-300">{currentState.sfxSpeed.toFixed(2)}x</span>
+                  <span className="font-mono text-amber-300 font-bold">{currentState.sfxSpeed.toFixed(2)}x</span>
                 </div>
                 <input
                   type="range"
@@ -1030,4 +1425,3 @@ export function ReelTimelineEditor({
 }
 
 export default ReelTimelineEditor;
-

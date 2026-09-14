@@ -12,6 +12,7 @@ import {
   Users,
   BarChart3,
   Film,
+  Clapperboard,
   Award,
   Globe,
   CheckCircle2,
@@ -59,6 +60,11 @@ export function AppFooter() {
               <li>
                 <Link href="/feature-films" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
                   <Film className="w-3.5 h-3.5 text-amber-400" /> 180s Cinema Feature Films
+                </Link>
+              </li>
+              <li>
+                <Link href="/motion-pictures" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
+                  <Clapperboard className="w-3.5 h-3.5 text-amber-400" /> Motion Pictures (Hybrid VFX)
                 </Link>
               </li>
               <li>

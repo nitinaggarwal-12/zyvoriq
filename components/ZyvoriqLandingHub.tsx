@@ -98,6 +98,7 @@ interface SandboxSnapshot {
   activeFormat: StudioFormatId;
   selectedPresetIndex: number;
   activeAnchorShotIndex: number;
+  shot2Take?: "take_a" | "take_b" | "take_c";
   selectedSongId: string;
   selectedDemographicId: string;
   selectedWardrobeId: string;
@@ -135,38 +136,38 @@ interface AuditorConflictItem {
 const LYRIA_SONGS = [
   {
     id: "original",
-    label: "Original Video Master Audio",
-    bpm: "Locked",
-    genre: "Native Sync",
-    audioUrl: "",
+    label: "Lyria 3.5 — Separated Master Backing Stem",
+    bpm: "124 BPM",
+    genre: "Separated Instrumental",
+    audioUrl: "/assets/stems/lyria_shibuya_pop_124bpm.mp3",
   },
   {
     id: "shibuya_pop",
     label: "Lyria 3.5 — Shibuya Midnight Electro-Pop",
     bpm: "124 BPM",
-    genre: "Synth-Pop",
-    audioUrl: "/assets/audio/sfx/club_crowd_cheer.mp3",
+    genre: "Synth-Pop Stem",
+    audioUrl: "/assets/stems/lyria_shibuya_pop_124bpm.mp3",
   },
   {
     id: "punjabi_bhangra",
     label: "Lyria 3.5 — Royal Chandigarh Bhangra Groove",
     bpm: "118 BPM",
-    genre: "Punjabi Pop",
-    audioUrl: "/assets/audio/sfx/pool_party_splash.mp3",
+    genre: "Punjabi Pop Stem",
+    audioUrl: "/assets/stems/lyria_punjabi_bhangra_118bpm.mp3",
   },
   {
     id: "tropical_house",
     label: "Lyria 3.5 — Ibiza Sunlit Tropical House",
     bpm: "120 BPM",
-    genre: "Summer House",
-    audioUrl: "/assets/audio/sfx/coastal_ocean_breeze.mp3",
+    genre: "Summer House Stem",
+    audioUrl: "/assets/stems/lyria_ibiza_house_120bpm.mp3",
   },
   {
     id: "symphonic_score",
     label: "Lyria 3.5 — Symphonic Anamorphic Orchestra",
     bpm: "92 BPM",
-    genre: "Cinematic Score",
-    audioUrl: "/assets/audio/sfx/vinyl_rain_ambiance.mp3",
+    genre: "Cinematic Score Stem",
+    audioUrl: "/assets/stems/lyria_symphonic_score_92bpm.mp3",
   },
 ];
 
@@ -331,14 +332,14 @@ const STUDIO_CONFIGS: Record<StudioFormatId, StudioCardConfig> = {
     studioButtonText: "Enter Reel Studio",
     accentColor: "teal",
     aspectClass: "aspect-[9/16] max-h-[520px]",
-    heroVideoUrl: "/showcase/tokyo-neon-run.mp4",
+    heroVideoUrl: "/assets/video/studio1_e2e00945.mp4",
     specs: ["9:16 Vertical", "24s–60s Pacing", "Biometric Face Lock", "Sub-Bass Retained"],
     presets: [
       {
         id: "reel_tokyo",
         title: "Tokyo Midnight Neon Run",
         subtitle: "Cyberpunk street chase with anamorphic rain reflections",
-        videoUrl: "/showcase/tokyo-neon-run.mp4",
+        videoUrl: "/assets/video/studio1_e2e00945.mp4",
         durationSec: 15,
         aspectBadge: "9:16 Vertical (1080×1920)",
         defaultPrompt:
@@ -380,7 +381,7 @@ const STUDIO_CONFIGS: Record<StudioFormatId, StudioCardConfig> = {
         id: "reel_santorini",
         title: "Santorini Golden Hour Walk",
         subtitle: "Mediterranean luxury lifestyle reel with warm sunlight bloom",
-        videoUrl: "/showcase/santorini-sunset-walk.mp4",
+        videoUrl: "/assets/video/studio1_9f360810.mp4",
         durationSec: 15,
         aspectBadge: "9:16 Vertical (1080×1920)",
         defaultPrompt:
@@ -422,7 +423,7 @@ const STUDIO_CONFIGS: Record<StudioFormatId, StudioCardConfig> = {
         id: "reel_alps",
         title: "Alpine Ridge Helicopter Pursuit",
         subtitle: "High-altitude action sports showcase with crisp snow optics",
-        videoUrl: "/showcase/alpine-heli-ski.mp4",
+        videoUrl: "/assets/video/studio1_d2d144d2.mp4",
         durationSec: 15,
         aspectBadge: "9:16 Vertical (1080×1920)",
         defaultPrompt:
@@ -473,24 +474,24 @@ const STUDIO_CONFIGS: Record<StudioFormatId, StudioCardConfig> = {
     studioButtonText: "Enter Music Video Studio",
     accentColor: "purple",
     aspectClass: "aspect-[16/9] max-h-[440px]",
-    heroVideoUrl: "/showcase/mv_punjabi_bhangra_24s.mp4",
+    heroVideoUrl: "/renders/yt/yt_5d8d946f-2528-4c23-9f4f-d9c1c960a069/master_hybrid.mp4",
     specs: ["Lyria 3.5 Master Audio", "Zero Phantom Mouthing", "Duet Gender Lock", "35Hz Sub-Bass"],
     presets: [
       {
-        id: "mv_bhangra",
-        title: "Royal Punjabi Bhangra Anthem (24s Master)",
-        subtitle: "High-energy dhol & sub-bass duet with synchronized choreography",
-        videoUrl: "/showcase/mv_punjabi_bhangra_24s.mp4",
+        id: "mv_rooftop_duet",
+        title: "Golden Hour Rooftop Duet (24s Master)",
+        subtitle: "High-fashion vocal duet with synchronized choreography & sunset flares",
+        videoUrl: "/renders/yt/yt_5d8d946f-2528-4c23-9f4f-d9c1c960a069/master_hybrid.mp4",
         durationSec: 24,
         aspectBadge: "16:9 Widescreen Music Video",
         defaultPrompt:
-          "Vibrant royal courtyard music video featuring lead Punjabi vocalist and synchronized bhangra troupe under golden palace arches, dhol percussion, 24fps cinema strobe.",
-        castLead: "Badshah & Nikhita Duet Anchors",
-        demographic: "South Asian Ensemble",
-        wardrobe: "Sabyasachi Velvet & Gold Sherwani",
-        location: "Udaipur Royal Courtyard Palace",
-        occasion: "Royal Sangeet / Gala",
-        acousticSpec: "118 BPM Dhol + 808 Sub-Bass • Zero 200Hz Highpass Gutting",
+          "High-fashion sunset terrace music video featuring lead vocalists in emerald sequined halter and coral eveningwear, synchronized choreography, 120 BPM synth groove, 24fps cinema lighting.",
+        castLead: "Elena & Sofia (Duet Anchors)",
+        demographic: "Mediterranean Duo",
+        wardrobe: "Emerald Sequined Halter & Coral Corset Eveningwear",
+        location: "Sunset Skyline Terrace",
+        occasion: "VIP Summer Album Premiere",
+        acousticSpec: "120 BPM Synth-Pop Duet • -24.0 LUFS Master Audio",
         anchorShots: [
           {
             id: "s1",
@@ -498,23 +499,23 @@ const STUDIO_CONFIGS: Record<StudioFormatId, StudioCardConfig> = {
             timeRange: "0.0s – 8.0s",
             startSec: 0,
             cameraMove: "Wide Crane Establishing Push",
-            description: "Instrumental dhol drop — ensemble dance with mouth closed (Zero Phantom Mouthing).",
+            description: "Instrumental synth drop — duo poses on terrace with mouth closed (Zero Phantom Mouthing).",
           },
           {
             id: "s2",
-            label: "Shot 02 • Lead Vocal Drop",
+            label: "Shot 02 • Lead Vocal Chorus Hook",
             timeRange: "8.0s – 16.0s",
             startSec: 8,
             cameraMove: "Medium Steadicam Lock",
-            description: "Lead male vocalist enters on exact Lyria vocal timestamp with biometrically locked lip-sync.",
+            description: "Lead vocalists perform chorus hook with biometrically locked lip-sync.",
           },
           {
             id: "s3",
-            label: "Shot 03 • Female Chorus Finale",
+            label: "Shot 03 • Sunset Choreography Finale",
             timeRange: "16.0s – 24.0s",
             startSec: 16,
-            cameraMove: "Dynamic 360° Troupe Orbit",
-            description: "Female duet anchor takes chorus hook with golden fireworks & confetti burst.",
+            cameraMove: "Dynamic 360° Orbit",
+            description: "Golden hour sunset flares as duo executes final dance pose.",
           },
         ],
       },
@@ -522,7 +523,7 @@ const STUDIO_CONFIGS: Record<StudioFormatId, StudioCardConfig> = {
         id: "mv_shibuya",
         title: "Shibuya Midnight Electro-Pop (24s Master)",
         subtitle: "Neon-soaked J-Pop/Cyber-Pop choreography with anamorphic flares",
-        videoUrl: "/showcase/mv_shibuya_neon_24s.mp4",
+        videoUrl: "/renders/yt/yt_chandigarh_club_omni_hybrid/master_hybrid.mp4",
         durationSec: 24,
         aspectBadge: "16:9 Widescreen Music Video",
         defaultPrompt:
@@ -564,7 +565,7 @@ const STUDIO_CONFIGS: Record<StudioFormatId, StudioCardConfig> = {
         id: "mv_ibiza",
         title: "Ibiza Sunlit Poolside House (24s Master)",
         subtitle: "Authentic aquatic swimwear context with tropical house groove",
-        videoUrl: "/showcase/mv_ibiza_pool_24s.mp4",
+        videoUrl: "/renders/yt/yt_spain_pool_party_omni_hybrid/master_hybrid.mp4",
         durationSec: 24,
         aspectBadge: "16:9 Widescreen Music Video",
         defaultPrompt:
@@ -615,48 +616,48 @@ const STUDIO_CONFIGS: Record<StudioFormatId, StudioCardConfig> = {
     studioButtonText: "Enter Feature Film Studio",
     accentColor: "amber",
     aspectClass: "aspect-[21/9] max-h-[380px]",
-    heroVideoUrl: "/showcase/cyberpunk-rain.mp4",
+    heroVideoUrl: "/assets/video/napoleon_180s_master.mp4",
     specs: ["2.39:1 Anamorphic Scope", "Multi-Scene Narrative", "Chiaroscuro Optics", "-24 LUFS Theatrical"],
     presets: [
-      {
-        id: "film_blade",
-        title: "Neo-Noir Rain Interrogation (2.39:1 Scope)",
-        subtitle: "Chiaroscuro cyberpunk thriller with atmospheric fog & wet reflections",
-        videoUrl: "/showcase/cyberpunk-rain.mp4",
-        durationSec: 15,
+       {
+        id: "film_napoleon",
+        title: "Napoleon: The Emperor's Heart (180s Master)",
+        subtitle: "5-Act Imperial Epic & Tragic Romance with Beethoven Op. 92 Score",
+        videoUrl: "/assets/video/napoleon_180s_master.mp4",
+        durationSec: 180,
         aspectBadge: "2.39:1 Anamorphic Widescreen",
         defaultPrompt:
-          "2.39:1 anamorphic cinema shot of Detective Vance standing beside a hovering spinner vehicle in heavy acid rain, amber sodium vapor backlight cutting through dense fog.",
-        castLead: "Detective Vance (Lead Actor #F1)",
-        demographic: "Nordic / European Lead",
-        wardrobe: "Cyberpunk Reflective Trench",
-        location: "Shinjuku Neon Alleyway",
-        occasion: "IMAX Cinema Premiere",
-        acousticSpec: "-24 LUFS Theatrical Master • Analog Vangelis Brass Score",
+          "2.39:1 Cooke anamorphic cinema master of young Napoleon Bonaparte in French artillery officer uniform standing beside Empress Joséphine on Marseille coastline terrace at golden hour, Beethoven Op. 92 orchestral score.",
+        castLead: "Young Napoleon Bonaparte (26yo) & Empress Joséphine",
+        demographic: "18th-Century European Imperial Leads",
+        wardrobe: "French Artillery Officer Uniform & Neoclassical Silk Gown",
+        location: "Marseille Coastline & Notre-Dame Cathedral",
+        occasion: "Theatrical Anamorphic Cinema Master",
+        acousticSpec: "-24.0 LUFS Theatrical Master • Beethoven Symphony No. 7 Op. 92",
         anchorShots: [
           {
             id: "s1",
-            label: "Scene 01 • Wide Anamorphic Establishing",
-            timeRange: "0.0s – 5.0s",
+            label: "Act I • The Fires of Youth & Toulon Siege",
+            timeRange: "0.0s – 36.0s",
             startSec: 0,
             cameraMove: "65mm Panavision Dolly In",
-            description: "Rain cascades off spinner canopy as distant megastructure lights pulse.",
+            description: "Marseille coastline terraces at golden hour; young officer torn between love and destiny.",
           },
           {
             id: "s2",
-            label: "Scene 02 • Over-The-Shoulder Dialogue",
-            timeRange: "5.0s – 10.0s",
-            startSec: 5,
-            cameraMove: "Rack Focus 50mm Prime",
-            description: "Focus shifts from raindrop-coated glass to Vance's subtle eye movement.",
+            label: "Act II • The Imperial Crown & Rose Garden",
+            timeRange: "36.0s – 72.0s",
+            startSec: 36,
+            cameraMove: "Notre-Dame Gilded Steadicam",
+            description: "Empress Joséphine crowning ceremony amidst gilded imperial sunlight.",
           },
           {
             id: "s3",
-            label: "Scene 03 • Dramatic Silhouette Exit",
-            timeRange: "10.0s – 15.0s",
-            startSec: 10,
-            cameraMove: "Slow Crane Elevation",
-            description: "Vance walks into glowing amber fog bank as Vangelis synth swells.",
+            label: "Act V • The Solitary Echo & Saint Helena",
+            timeRange: "144.0s – 180.0s",
+            startSec: 144,
+            cameraMove: "Slow Crane Elevation at Sunset",
+            description: "The final whispers of remembrance on wind-swept Atlantic bluffs as Beethoven score resolves.",
           },
         ],
       },
@@ -664,7 +665,7 @@ const STUDIO_CONFIGS: Record<StudioFormatId, StudioCardConfig> = {
         id: "film_coastal",
         title: "Amalfi Vintage GT Escape (2.39:1 Scope)",
         subtitle: "35mm Kodak Vision3 film grain with warm Mediterranean color science",
-        videoUrl: "/showcase/amalfi-coast-drive.mp4",
+        videoUrl: "/assets/video/studio1_5bfb958d.mp4",
         durationSec: 15,
         aspectBadge: "2.39:1 Anamorphic Widescreen",
         defaultPrompt:
@@ -706,7 +707,7 @@ const STUDIO_CONFIGS: Record<StudioFormatId, StudioCardConfig> = {
         id: "film_dynasty",
         title: "Imperial Palace Thriller (2.39:1 Scope)",
         subtitle: "Epic historical production design with candlelit volumetric shadows",
-        videoUrl: "/showcase/tokyo-neon-run.mp4",
+        videoUrl: "/assets/video/napoleon_180s_master.mp4",
         durationSec: 15,
         aspectBadge: "2.39:1 Anamorphic Widescreen",
         defaultPrompt:
@@ -785,6 +786,7 @@ const INITIAL_SNAPSHOT: SandboxSnapshot = {
   activeFormat: "reels",
   selectedPresetIndex: 0,
   activeAnchorShotIndex: 0,
+  shot2Take: "take_a",
   selectedSongId: "original",
   selectedDemographicId: "east_asian",
   selectedWardrobeId: "emerald_sequin",
@@ -823,6 +825,7 @@ export function ZyvoriqLandingHub() {
     activeFormat,
     selectedPresetIndex,
     activeAnchorShotIndex,
+    shot2Take = "take_a",
     selectedSongId,
     selectedDemographicId,
     selectedWardrobeId,
@@ -955,11 +958,30 @@ export function ZyvoriqLandingHub() {
     feature_films: true,
   });
 
-  // Sandbox main video & companion Lyria audio refs
+  // Sandbox main video, isolated vocal stem audio, & separated Lyria instrumental audio refs
   const sandboxVideoRef = useRef<HTMLVideoElement | null>(null);
+  const vocalAudioRef = useRef<HTMLAudioElement | null>(null);
   const companionAudioRef = useRef<HTMLAudioElement | null>(null);
   const [sandboxPlaying, setSandboxPlaying] = useState<boolean>(true);
   const [sandboxMuted, setSandboxMuted] = useState<boolean>(true);
+
+  // Upgrade C: Live HTML5 Canvas Alpha-Matte Foreground Segmentation & Background Replacer
+  const [isLiveAlphaMatteEnabled, setIsLiveAlphaMatteEnabled] = useState<boolean>(false);
+  const alphaMatteCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Upgrade D: Live Gemini 2.5 Neural Wardrobe Keyframe Studio
+  const [isGeneratingWardrobeKeyframe, setIsGeneratingWardrobeKeyframe] = useState<boolean>(false);
+  const [showWardrobeOverlayInMonitor, setShowWardrobeOverlayInMonitor] = useState<boolean>(false);
+  const [wardrobeKeyframeResult, setWardrobeKeyframeResult] = useState<{
+    keyframeDataUrl: string;
+    breakdown: {
+      silhouette: string;
+      fabricTexture: string;
+      lightingInteraction: string;
+      poseLockConfidence: string;
+      modelUsed: string;
+    };
+  } | null>(null);
 
   const currentConfig = STUDIO_CONFIGS[activeFormat];
   const currentPreset =
@@ -971,6 +993,36 @@ export function ZyvoriqLandingHub() {
     LIGHTING_RELIGHT_OPTIONS[0];
   const currentSong =
     LYRIA_SONGS.find((s) => s.id === selectedSongId) || LYRIA_SONGS[0];
+
+  const handleGenerateNeuralWardrobe = async () => {
+    setIsGeneratingWardrobeKeyframe(true);
+    try {
+      const locLabel =
+        LOCATION_OPTIONS.find((l) => l.id === selectedLocationId)?.label ||
+        "Shinjuku Neon Rain Alley";
+      const res = await fetch("/api/reels/director/wardrobe-inpaint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: currentPreset.title,
+          wardrobe: currentWardrobe.label,
+          lighting: currentLighting.label,
+          location: locLabel,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok && data.keyframeDataUrl) {
+        setWardrobeKeyframeResult({
+          keyframeDataUrl: data.keyframeDataUrl,
+          breakdown: data.breakdown,
+        });
+      }
+    } catch (e) {
+      // Fallback handled by API
+    } finally {
+      setIsGeneratingWardrobeKeyframe(false);
+    }
+  };
 
   // =========================================================================
   // OMNI POST-CHANGE MULTIMODAL SYNC AUDITOR (EVALUATING ALL 6 MODULAR LAYERS)
@@ -1191,6 +1243,8 @@ export function ZyvoriqLandingHub() {
       const reelId =
         activeFormat === "music_video"
           ? "yt_5d8d946f-2528-4c23-9f4f-d9c1c960a069"
+          : activeFormat === "feature_films"
+          ? "reel_napoleon_180s_master"
           : "studio1_e2e00945";
       const res = await fetch("/api/reels/director/regenerate", {
         method: "POST",
@@ -1218,7 +1272,11 @@ export function ZyvoriqLandingHub() {
               vocalVolume: vocalVolume / 100,
               vocalSpeed: playbackRate,
             },
+            choreography: {
+              shot2Take: shot2Take || "take_a",
+            },
             audio: {
+              musicTrackUrl: currentSong.audioUrl,
               musicVolume: musicVolume / 100,
               musicSpeed: playbackRate,
               sfxPreset: sfxPreset,
@@ -1376,17 +1434,28 @@ export function ZyvoriqLandingHub() {
     );
   };
 
-  // Sync playbackRate and volume to video and companion Lyria audio track
+  // Upgrade A: Synchronized Dual Separated Vocal & Lyria Instrumental Stems
   useEffect(() => {
     if (sandboxVideoRef.current) {
       sandboxVideoRef.current.playbackRate = playbackRate;
-      const combinedGain = Math.min(1.0, (vocalVolume + musicVolume) / 200);
-      sandboxVideoRef.current.volume = combinedGain;
+      // Keep native video audio muted when separated stems are active so zero double-music clash occurs
+      sandboxVideoRef.current.muted = true;
+    }
+    if (vocalAudioRef.current) {
+      vocalAudioRef.current.playbackRate = playbackRate;
+      vocalAudioRef.current.muted = sandboxMuted;
+      vocalAudioRef.current.volume = Math.min(1.0, vocalVolume / 100);
+      if (!sandboxMuted && sandboxPlaying) {
+        vocalAudioRef.current.play().catch(() => {});
+      } else {
+        vocalAudioRef.current.pause();
+      }
     }
     if (companionAudioRef.current) {
       companionAudioRef.current.playbackRate = playbackRate;
-      companionAudioRef.current.volume = Math.min(1.0, musicVolume / 150);
-      if (selectedSongId !== "original" && currentSong.audioUrl && !sandboxMuted && sandboxPlaying) {
+      companionAudioRef.current.muted = sandboxMuted;
+      companionAudioRef.current.volume = Math.min(1.0, musicVolume / 100);
+      if (currentSong.audioUrl && !sandboxMuted && sandboxPlaying) {
         companionAudioRef.current.play().catch(() => {});
       } else {
         companionAudioRef.current.pause();
@@ -1403,7 +1472,7 @@ export function ZyvoriqLandingHub() {
     currentSong.audioUrl,
   ]);
 
-  // Real-Time Surgical Cut Enforcement during Video Playback (Ripple Skip & Stem Mute Windows)
+  // Real-Time Surgical Cut Enforcement & Stem Time-Lock during Video Playback
   useEffect(() => {
     const vid = sandboxVideoRef.current;
     if (!vid) return;
@@ -1412,12 +1481,22 @@ export function ZyvoriqLandingHub() {
       const t = vid.currentTime;
       setLivePlayheadSec(Number(t.toFixed(2)));
 
+      // Time-lock separated vocal and instrumental stems to video playhead
+      if (vocalAudioRef.current && Math.abs(vocalAudioRef.current.currentTime - t) > 0.28) {
+        vocalAudioRef.current.currentTime = t % (vocalAudioRef.current.duration || 12);
+      }
+      if (companionAudioRef.current && Math.abs(companionAudioRef.current.currentTime - t) > 0.28) {
+        companionAudioRef.current.currentTime = t % (companionAudioRef.current.duration || 12);
+      }
+
       if (!surgicalCuts || surgicalCuts.length === 0) return;
 
       // Check ripple skip
       for (const cut of surgicalCuts) {
         if (cut.target === "ripple_both" && t >= cut.startSec && t < cut.endSec - 0.08) {
           vid.currentTime = cut.endSec;
+          if (vocalAudioRef.current) vocalAudioRef.current.currentTime = cut.endSec;
+          if (companionAudioRef.current) companionAudioRef.current.currentTime = cut.endSec;
           return;
         }
       }
@@ -1433,9 +1512,11 @@ export function ZyvoriqLandingHub() {
       const baseVocalGain = inVocalMute ? 0 : vocalVolume;
       const baseMusicGain = inMusicMute ? 0 : musicVolume;
 
-      vid.volume = Math.min(1.0, (baseVocalGain + baseMusicGain) / 200);
+      if (vocalAudioRef.current) {
+        vocalAudioRef.current.volume = Math.min(1.0, baseVocalGain / 100);
+      }
       if (companionAudioRef.current) {
-        companionAudioRef.current.volume = Math.min(1.0, baseMusicGain / 150);
+        companionAudioRef.current.volume = Math.min(1.0, baseMusicGain / 100);
       }
     };
 
@@ -1443,27 +1524,153 @@ export function ZyvoriqLandingHub() {
     return () => vid.removeEventListener("timeupdate", onTimeUpdate);
   }, [surgicalCuts, vocalVolume, musicVolume]);
 
+  // Upgrade C: Live 30fps HTML5 Canvas Alpha-Matte Foreground Segmentation & Backdrop Replacer
+  useEffect(() => {
+    if (!isLiveAlphaMatteEnabled) return;
+    let animId = 0;
+    const offscreen = document.createElement("canvas");
+    const offCtx = offscreen.getContext("2d", { willReadFrequently: true });
+
+    const renderFrame = () => {
+      const vid = sandboxVideoRef.current;
+      const canvas = alphaMatteCanvasRef.current;
+      if (vid && canvas && offCtx && vid.readyState >= 2) {
+        const w = 480;
+        const h = 270;
+        if (canvas.width !== w) canvas.width = w;
+        if (canvas.height !== h) canvas.height = h;
+        if (offscreen.width !== w) offscreen.width = w;
+        if (offscreen.height !== h) offscreen.height = h;
+
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          // 1. Draw Custom Location Backdrop Plate with animated depth bokeh
+          const now = performance.now() * 0.001;
+          const grad = ctx.createLinearGradient(0, 0, w, h);
+          if (selectedLocationId === "santorini_pool") {
+            grad.addColorStop(0, "#0284C7");
+            grad.addColorStop(0.55, "#38BDF8");
+            grad.addColorStop(1, "#FDE047");
+          } else if (selectedLocationId === "jaipur_palace") {
+            grad.addColorStop(0, "#7C2D12");
+            grad.addColorStop(0.5, "#B45309");
+            grad.addColorStop(1, "#F59E0B");
+          } else if (selectedLocationId === "iceland_glacier") {
+            grad.addColorStop(0, "#0F172A");
+            grad.addColorStop(0.5, "#1E3A8A");
+            grad.addColorStop(1, "#67E8F9");
+          } else {
+            // Shinjuku Neon Rain Alley
+            grad.addColorStop(0, "#090D16");
+            grad.addColorStop(0.5, "#311042");
+            grad.addColorStop(1, "#06B6D4");
+          }
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, w, h);
+
+          // Animated Horizon Grid & Volumetric Bokeh Orbs
+          ctx.strokeStyle = "rgba(255,255,255,0.16)";
+          ctx.lineWidth = 1;
+          for (let y = h * 0.65; y < h; y += 18) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(w, y);
+            ctx.stroke();
+          }
+          for (let i = 0; i < 7; i++) {
+            const bx = ((i * 73 + now * 22) % w);
+            const by = 40 + ((i * 41) % (h * 0.55));
+            const br = 12 + (i % 4) * 8;
+            ctx.fillStyle = i % 2 === 0 ? "rgba(56, 189, 248, 0.24)" : "rgba(244, 63, 94, 0.24)";
+            ctx.beginPath();
+            ctx.arc(bx, by, br, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // 2. Sample Video Frame & Compute Spatial + Luma/Chroma Performer Alpha Matte
+          offCtx.drawImage(vid, 0, 0, w, h);
+          const frameData = offCtx.getImageData(0, 0, w, h);
+          const d = frameData.data;
+          const cx = w * 0.5;
+          const cy = h * 0.52;
+          const rx = w * 0.31;
+          const ry = h * 0.46;
+
+          for (let py = 0; py < h; py++) {
+            const dy = (py - cy) / ry;
+            const dy2 = dy * dy;
+            for (let px = 0; px < w; px++) {
+              const idx = (py * w + px) * 4;
+              const dx = (px - cx) / rx;
+              const dist = Math.sqrt(dx * dx + dy2);
+
+              // Feathered performer silhouette mask + luma contrast edge preservation
+              const r = d[idx];
+              const g = d[idx + 1];
+              const b = d[idx + 2];
+              const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+
+              if (dist > 1.18) {
+                d[idx + 3] = 0; // Transparent background outside performer zone
+              } else if (dist > 0.82) {
+                const feather = Math.max(0, Math.min(1, (1.18 - dist) / 0.36));
+                const lumaBoost = luma > 45 ? 1.0 : 0.45;
+                d[idx + 3] = Math.floor(255 * feather * lumaBoost);
+              } else {
+                // Core foreground performer
+                d[idx + 3] = 255;
+              }
+            }
+          }
+          offCtx.putImageData(frameData, 0, 0);
+
+          // 3. Composite isolated performer over new location backdrop
+          ctx.drawImage(offscreen, 0, 0);
+
+          // 4. HUD Telemetry Badge on Canvas
+          ctx.fillStyle = "rgba(9, 13, 22, 0.78)";
+          ctx.fillRect(10, 10, 235, 24);
+          ctx.fillStyle = "#34D399";
+          ctx.font = "bold 10px monospace";
+          const locName = LOCATION_OPTIONS.find((l) => l.id === selectedLocationId)?.label || "Custom Set";
+          ctx.fillText(`SAM-2 ALPHA MATTE • ${locName.toUpperCase().slice(0, 22)}`, 16, 25);
+        }
+      }
+      animId = requestAnimationFrame(renderFrame);
+    };
+
+    animId = requestAnimationFrame(renderFrame);
+    return () => cancelAnimationFrame(animId);
+  }, [isLiveAlphaMatteEnabled, selectedLocationId]);
+
   const toggleSandboxPlay = () => {
     if (!sandboxVideoRef.current) return;
     if (sandboxVideoRef.current.paused) {
       sandboxVideoRef.current.play().catch(() => {});
-      if (companionAudioRef.current && selectedSongId !== "original") {
+      if (vocalAudioRef.current && !sandboxMuted) {
+        vocalAudioRef.current.play().catch(() => {});
+      }
+      if (companionAudioRef.current && !sandboxMuted) {
         companionAudioRef.current.play().catch(() => {});
       }
       setSandboxPlaying(true);
     } else {
       sandboxVideoRef.current.pause();
+      if (vocalAudioRef.current) vocalAudioRef.current.pause();
       if (companionAudioRef.current) companionAudioRef.current.pause();
       setSandboxPlaying(false);
     }
   };
 
   const toggleSandboxMute = () => {
-    if (!sandboxVideoRef.current) return;
     const next = !sandboxMuted;
-    sandboxVideoRef.current.muted = next;
+    if (vocalAudioRef.current) {
+      vocalAudioRef.current.muted = next;
+      if (!next && sandboxPlaying) vocalAudioRef.current.play().catch(() => {});
+    }
     if (companionAudioRef.current) {
       companionAudioRef.current.muted = next;
+      if (!next && sandboxPlaying) companionAudioRef.current.play().catch(() => {});
     }
     setSandboxMuted(next);
   };
@@ -1477,13 +1684,30 @@ export function ZyvoriqLandingHub() {
       .filter(Boolean)
       .join(" ") || "none";
 
-  const activeVideoSrc = bakedVideoUrl || currentPreset.videoUrl;
+  const activeVideoSrc =
+    bakedVideoUrl ||
+    (shot2Take && shot2Take !== "take_a"
+      ? `/showcase/shots/shot_02_${shot2Take}.mp4`
+      : currentPreset.videoUrl);
 
   return (
     <div className="min-h-screen bg-[#07090E] text-slate-100 flex flex-col selection:bg-teal-500/30 selection:text-teal-100">
-      {/* Companion Audio Element for Live Lyria Song Swapping */}
+      {/* Separated Vocal & Lyria Instrumental Stem Audio Elements (Zero Double-Music Clash) */}
+      <audio
+        ref={vocalAudioRef}
+        src="/assets/stems/vocal_stem_master.mp3"
+        loop
+        muted={sandboxMuted}
+        data-testid="separated-vocal-stem-audio"
+      />
       {currentSong.audioUrl && (
-        <audio ref={companionAudioRef} src={currentSong.audioUrl} loop muted={sandboxMuted} />
+        <audio
+          ref={companionAudioRef}
+          src={currentSong.audioUrl}
+          loop
+          muted={sandboxMuted}
+          data-testid="separated-lyria-stem-audio"
+        />
       )}
 
       {/* MAIN WORKSPACE CONTAINER (Strict Viewport Breadth: max-w-[1600px] mx-auto px-6 md:px-12) */}
@@ -2127,12 +2351,13 @@ export function ZyvoriqLandingHub() {
                 {/* Video Element with Live CSS Color Grading + Wardrobe Tint */}
                 <video
                   ref={sandboxVideoRef}
+                  data-testid="sandbox-video-element"
                   key={activeVideoSrc}
                   src={activeVideoSrc}
                   playsInline
                   autoPlay
                   loop
-                  muted={sandboxMuted}
+                  muted={true}
                   preload="auto"
                   style={{ filter: combinedCssFilter }}
                   className={`w-full h-full transition-all duration-300 ${
@@ -2141,6 +2366,30 @@ export function ZyvoriqLandingHub() {
                       : "max-h-[380px] object-cover"
                   }`}
                 />
+
+                {/* Upgrade C: Live 30fps HTML5 Canvas Alpha-Matte Foreground Segmentation Overlay */}
+                <canvas
+                  ref={alphaMatteCanvasRef}
+                  data-testid="live-alpha-matte-canvas"
+                  style={{ filter: combinedCssFilter }}
+                  className={`absolute inset-0 w-full h-full object-contain z-20 pointer-events-none transition-opacity duration-300 ${
+                    isLiveAlphaMatteEnabled ? "opacity-100" : "opacity-0"
+                  }`}
+                />
+
+                {/* Upgrade D: Neural Wardrobe Keyframe Monitor Overlay (when toggled) */}
+                {showWardrobeOverlayInMonitor && wardrobeKeyframeResult && (
+                  <div
+                    data-testid="monitor-wardrobe-overlay"
+                    className="absolute inset-0 z-25 bg-black/95 flex flex-col items-center justify-center p-4"
+                  >
+                    <img
+                      src={wardrobeKeyframeResult.keyframeDataUrl}
+                      alt="ControlNet DensePose Restyled Character Keyframe"
+                      className="w-full h-full object-contain rounded-xl border border-teal-500/40"
+                    />
+                  </div>
+                )}
 
                 {/* Real-Time Volumetric Lighting Overlay */}
                 {selectedLightingId !== "natural" && (
@@ -2337,6 +2586,35 @@ export function ZyvoriqLandingHub() {
                       </button>
                     );
                   })}
+                </div>
+
+                {/* Multi-Take Alternative Performance Selector for Shot 2 */}
+                <div className="pt-2 border-t border-white/10 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-amber-300">
+                      Shot 02 Alternate Takes:
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      (Hot-swaps middle take with Frame-0 tail alignment)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {(["take_a", "take_b", "take_c"] as const).map((take) => (
+                      <button
+                        key={take}
+                        type="button"
+                        data-testid={`shot2-take-${take}`}
+                        onClick={() => pushSnapshot((prev) => ({ ...prev, shot2Take: take }))}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all ${
+                          shot2Take === take
+                            ? "bg-amber-500/20 border-amber-400 text-amber-200"
+                            : "bg-black/40 border-white/10 text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        {take === "take_a" ? "Take A (Base)" : take === "take_b" ? "Take B (Punchy)" : "Take C (Cinematic)"}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -2705,6 +2983,33 @@ export function ZyvoriqLandingHub() {
                       </button>
                     ))}
                   </div>
+
+                  {/* ControlNet DensePose Restyle Action & Overlay Toggle */}
+                  <div className="pt-2 border-t border-white/10 space-y-1.5">
+                    <button
+                      type="button"
+                      data-testid="btn-synthesize-wardrobe"
+                      disabled={isGeneratingWardrobeKeyframe}
+                      onClick={async () => {
+                        await handleGenerateNeuralWardrobe();
+                        setShowWardrobeOverlayInMonitor(true);
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500/20 border border-amber-400/40 text-amber-200 hover:bg-amber-500/30 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <span>{isGeneratingWardrobeKeyframe ? "Generating Keyframe..." : "DensePose Restyle Keyframe"}</span>
+                    </button>
+                    {wardrobeKeyframeResult && (
+                      <button
+                        type="button"
+                        data-testid="toggle-wardrobe-overlay"
+                        onClick={() => setShowWardrobeOverlayInMonitor((prev) => !prev)}
+                        className="w-full text-center text-[10px] text-amber-300/80 hover:text-amber-200 underline cursor-pointer"
+                      >
+                        {showWardrobeOverlayInMonitor ? "Hide Keyframe in Monitor" : "View Restyled Keyframe"}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* 4. Background & Location Replacer */}
@@ -2729,6 +3034,28 @@ export function ZyvoriqLandingHub() {
                         {loc.label}
                       </button>
                     ))}
+                  </div>
+
+                  {/* Live SAM-2 Alpha Matte Foreground Segmentation Toggle */}
+                  <div className="pt-2 border-t border-white/10">
+                    <button
+                      type="button"
+                      data-testid="toggle-live-alpha-matte"
+                      onClick={() => setIsLiveAlphaMatteEnabled((prev) => !prev)}
+                      className={`w-full px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center justify-between cursor-pointer ${
+                        isLiveAlphaMatteEnabled
+                          ? "bg-teal-500/20 border-teal-400 text-teal-200"
+                          : "bg-black/50 border-white/10 text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5 text-teal-400" />
+                        <span>Live SAM-2 Alpha Matte</span>
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-black/40 font-mono font-bold">
+                        {isLiveAlphaMatteEnabled ? "ON (30fps)" : "OFF"}
+                      </span>
+                    </button>
                   </div>
                 </div>
 

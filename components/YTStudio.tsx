@@ -623,7 +623,7 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
 
       {/* STUDIO NLE VIDEO & AUDIO TIMELINE EDITOR */}
       {showEditor && production && videoUrl && (
-        <div className="mt-8">
+        <div id="nle-timeline-editor" className="mt-8 scroll-mt-24">
           <ReelTimelineEditor
             reelId={production.id}
             reelTitle={production.topic || "Music Video Production"}
@@ -796,15 +796,31 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
           {/* Row 2: Individual Veo / Omni Generated Shots */}
           {assets.shots && assets.shots.length > 0 && (
             <div className="space-y-4 pt-4 border-t border-slate-800">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <span className="text-xs font-mono uppercase font-bold text-blue-400">STAGE 5 • CONSTITUENT SHOTS ({assets.shots.length} CLIPS)</span>
                   <h4 className="text-xl font-bold text-white mt-0.5">Individual Veo / Omni Generated Shots (Tail-Chained)</h4>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Trim, re-order, or combine these {assets.shots.length} constituent shots into an updated master cut using the multi-track NLE Timeline Editor.
+                  </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditor(true);
+                    setTimeout(() => {
+                      const el = document.getElementById("nle-timeline-editor");
+                      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }, 100);
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 text-xs font-extrabold shadow-lg shadow-teal-950/40 flex items-center gap-2 cursor-pointer shrink-0 transition-all hover:scale-[1.02]"
+                >
+                  <span>✂️</span> Edit &amp; Combine {assets.shots.length} Clips in Timeline Editor
+                </button>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                {assets.shots.map((s: any) => (
+                {assets.shots.map((s: any, sIdx: number) => (
                   <div key={s.id} className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col justify-between space-y-3">
                     <div>
                       <div className="flex items-center justify-between text-xs font-mono mb-2">
@@ -830,15 +846,30 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
                       />
                     </div>
 
-                    <div className="flex items-center justify-between pt-1">
+                    <div className="flex items-center justify-between pt-1 gap-2">
                       <span className="text-[11px] font-mono text-slate-500 truncate">{s.id}</span>
-                      <a
-                        href={s.videoUrl}
-                        download
-                        className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-semibold"
-                      >
-                        ⬇️ MP4
-                      </a>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowEditor(true);
+                            setTimeout(() => {
+                              const el = document.getElementById("nle-timeline-editor");
+                              if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                            }, 100);
+                          }}
+                          className="px-2.5 py-1 rounded bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 border border-teal-500/30 text-xs font-mono font-semibold transition cursor-pointer flex items-center gap-1"
+                        >
+                          <span>✂️</span> Edit
+                        </button>
+                        <a
+                          href={s.videoUrl}
+                          download
+                          className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-semibold"
+                        >
+                          ⬇️ MP4
+                        </a>
+                      </div>
                     </div>
                   </div>
                 ))}

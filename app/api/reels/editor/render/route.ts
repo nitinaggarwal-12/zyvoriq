@@ -21,23 +21,24 @@ export interface EditorRenderRequest {
   reelId: string;
   title?: string;
   clips: EditorClipInput[];
-  globalVideoSpeed?: number; // Global visual speed multiplier (0.5x - 2.0x)
+  globalVideoSpeed?: number; // Global visual speed multiplier (0.25x - 4.0x)
+  colorGrading?: string; // "none" | "cyberpunk_neon" | "golden_hour_warm" | "moonlight_noir" | "bollywood_royal" | "vintage_film"
   // Independent Dialogue / Vocals Track
   vocalMode: "original" | "mute" | "custom";
   vocalUrl?: string;
   vocalVolume: number; // 0.0 to 1.5
-  vocalSpeed?: number; // Independent vocal/dialogue speed (0.5x - 2.0x)
+  vocalSpeed?: number; // Independent vocal/dialogue speed (0.25x - 4.0x)
   // Independent Music Track (Unaltered across video cuts by default)
   musicTrack: string; // URL or preset path ("original_lyria", "/assets/audio/music/...", "none")
   musicLockMode?: "unaltered" | "custom_trim"; // "unaltered" keeps music continuous even when video frames are cut/added
   musicTrimStartSec?: number;
   musicTrimEndSec?: number;
   musicVolume: number; // 0.0 to 1.5
-  musicSpeed?: number; // Independent music tempo/playback speed (0.5x - 2.0x)
+  musicSpeed?: number; // Independent music tempo/playback speed (0.25x - 4.0x)
   // Independent Background Sound Effect (SFX) Track
   sfxTrack: string; // URL or preset path ("none", "/assets/audio/sfx/...", etc.)
   sfxVolume: number; // 0.0 to 1.0
-  sfxSpeed?: number; // Independent SFX playback speed (0.5x - 2.0x)
+  sfxSpeed?: number; // Independent SFX playback speed (0.25x - 4.0x)
 }
 
 function resolveLocalFilePath(urlOrPath: any): string | null {
@@ -53,6 +54,23 @@ function resolveLocalFilePath(urlOrPath: any): string | null {
   }
   if (fs.existsSync(clean)) return clean;
   return null;
+}
+
+function buildColorGradingFilter(grading?: string): string {
+  switch (grading) {
+    case "cyberpunk_neon":
+      return "eq=contrast=1.18:saturation=1.38:brightness=0.02,colorbalance=rs=-0.08:gs=0.04:bs=0.18:rh=0.12:gh=-0.04:bh=0.15";
+    case "golden_hour_warm":
+      return "eq=contrast=1.08:saturation=1.22:brightness=0.03,colorbalance=rs=0.14:gs=0.06:bs=-0.12:rh=0.10:gh=0.04:bh=-0.08";
+    case "mediterranean_sunlit":
+      return "eq=contrast=1.12:saturation=1.28:brightness=0.04,colorbalance=rs=0.06:gs=0.05:bs=0.08";
+    case "bollywood_royal":
+      return "eq=contrast=1.16:saturation=1.34:gamma=1.04,colorbalance=rs=0.12:gs=0.02:bs=-0.05:rh=0.15:gh=0.05:bh=-0.05";
+    case "vintage_film":
+      return "eq=contrast=1.06:saturation=0.82:brightness=0.02,colorbalance=rs=0.08:gs=0.04:bs=-0.06";
+    default:
+      return "";
+  }
 }
 
 /** Build pitch-preserved FFmpeg atempo filter chain for speeds in [0.25, 4.0] */
@@ -117,10 +135,15 @@ export async function POST(req: NextRequest) {
       const segPath = path.join(workDir, `seg_${String(i).padStart(2, "0")}.mp4`);
 
       const effectiveVideoSpeed = Math.max(0.25, Math.min(4.0, Number(clip.speed || 1.0) * globalVideoSpeed));
-      const vfFilter =
-        Math.abs(effectiveVideoSpeed - 1.0) > 0.01
-          ? `setpts=${(1 / effectiveVideoSpeed).toFixed(4)}*PTS,fps=24`
-          : `fps=24`;
+      const vfStages: string[] = [];
+      if (Math.abs(effectiveVideoSpeed - 1.0) > 0.01) {
+        vfStages.push(`setpts=${(1 / effectiveVideoSpeed).toFixed(4)}*PTS`);
+      }
+      const gradingFilter = buildColorGradingFilter(body.colorGrading);
+      if (gradingFilter) {
+        vfStages.push(gradingFilter);
+      }
+      vfStages.push("fps=24");
 
       execFileSync("ffmpeg", [
         "-y",
@@ -132,13 +155,17 @@ export async function POST(req: NextRequest) {
         localSrc,
         "-an", // Pure visual stream; audio stems are mixed independently below
         "-vf",
-        vfFilter,
+        vfStages.join(","),
         "-c:v",
         "libx264",
         "-preset",
-        "fast",
+        "ultrafast",
         "-crf",
-        "20",
+        "22",
+        "-tune",
+        "fastdecode",
+        "-threads",
+        "0",
         segPath,
       ]);
       trimmedSegments.push(segPath);
