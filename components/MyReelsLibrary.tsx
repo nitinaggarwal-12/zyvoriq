@@ -1067,12 +1067,16 @@ export function MyReelsLibrary() {
             const shotsList: LibraryClip[] = (m.shots || []).map((s: any, index: number) => {
               const clipId = s.id || `shot_${index + 1}`;
               const isClipHidden = hiddenClipKeys.has(`${p.id}:${clipId}`);
+              const rawPoster = s.asset?.posterUrl || m.shots?.[index + 1]?.continuityIn?.referenceFrameUrl || s.continuityIn?.referenceFrameUrl || (index === 0 ? (m.theatricalPosterUrl || m.locationStillUrl || null) : null);
+              const normalizedPoster = rawPoster && typeof rawPoster === "string"
+                ? (rawPoster.startsWith("/") || rawPoster.startsWith("http") || rawPoster.startsWith("data:") ? rawPoster : `/api/reels/assets/reels/${p.id}/references/${rawPoster}`)
+                : null;
               return {
                 id: clipId,
                 order: s.order || index + 1,
                 title: `Shot ${String(s.order || index + 1).padStart(2, "0")}: ${s.visualIntent?.slice(0, 42) || s.scriptText?.slice(0, 36) || "Cinematic Beat"}`,
                 videoUrl: s.asset?.videoUrl || null,
-                posterUrl: s.asset?.posterUrl || m.shots?.[index + 1]?.continuityIn?.referenceFrameUrl || s.continuityIn?.referenceFrameUrl || (index === 0 ? (m.theatricalPosterUrl || m.locationStillUrl || null) : null),
+                posterUrl: normalizedPoster,
                 durationSec: Number(s.editorialDurationSec || s.actualDurationSec || s.generationDurationSec || 5.5),
                 status: s.status || "PLANNED",
                 scriptText: s.scriptText || null,
@@ -1098,7 +1102,10 @@ export function MyReelsLibrary() {
 
             const rawTitle = meta.title || m.topic || (m.studio1?.projectTitle) || "Custom Reel Production";
             const displayTitle = cleanDisplayTitle(rawTitle);
-            const resolvedPoster = resolveReelPoster(p.id, m, shotsList);
+            const resolvedPosterRaw = resolveReelPoster(p.id, m, shotsList);
+            const resolvedPoster = resolvedPosterRaw && typeof resolvedPosterRaw === "string"
+              ? (resolvedPosterRaw.startsWith("/") || resolvedPosterRaw.startsWith("http") || resolvedPosterRaw.startsWith("data:") ? resolvedPosterRaw : `/api/reels/assets/reels/${p.id}/references/${resolvedPosterRaw}`)
+              : null;
 
             return {
               id: p.id,
@@ -1154,7 +1161,8 @@ export function MyReelsLibrary() {
                   isArchived: meta.isArchived || false,
                 }));
 
-                const vUrl = assets.masterHybridUrl || m.videoUrl || `/renders/yt/${p.id}.mp4`;
+                const isReady = p.status === "READY" || p.status === "COMPLETED";
+                const vUrl = assets.masterHybridUrl || m.videoUrl || (isReady ? `/renders/yt/${p.id}/master_hybrid.mp4` : null);
                 const isReelArchived = archivedIds.has(p.id) || meta.isArchived || meta.folder === "Archive";
                 const isReelHidden = hiddenIds.has(p.id) || meta.isHidden || false;
 

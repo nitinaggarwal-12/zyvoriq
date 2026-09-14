@@ -18,6 +18,10 @@ temp/
 *.mp3
 *.webm
 !public/assets/video/napoleon_180s_master.mp4
+!public/assets/video/coronation_180s_master.mp4
+!public/assets/video/neotokyo_180s_master.mp4
+!public/assets/video/titanic_180s_master.mp4
+!public/assets/video/priya_4k_10act_master.mp4
 !public/assets/video/studio1_e2e00945.mp4
 !public/assets/video/studio1_9f360810.mp4
 !public/assets/video/studio1_d2d144d2.mp4
@@ -31,6 +35,15 @@ temp/
 !public/assets/audio/music/*.mp3
 !public/assets/audio/music/*.wav
 !public/assets/audio/sfx/*.mp3
+!public/renders/yt/*/master_hybrid.mp4
+!public/renders/yt/*/master_native.mp4
+!public/renders/yt/*/master.mp4
+!public/renders/yt/*/shot_*.mp4
+!public/renders/yt/*/song.mp3
+public/assets/reels/studio1_b79e20bd-9f77-45de-ba4a-275700f31531/
+public/assets/reels/studio1_d1218706-44a7-4da9-be83-d24741e6f2fd/
+!public/assets/reels/studio1_aebb020a-490c-4157-8985-eb8ac75e04d6/renders/*.mp4
+!public/assets/reels/studio1_d5dbfcf2-3001-470b-b229-4a521684f4bb/renders/*.mp4
 .venv/
 **/venv/
 tools/asr/.venv/

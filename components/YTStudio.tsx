@@ -173,7 +173,7 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
     production?.manifest?.master?.url ||
     production?.renders?.master?.url ||
     ((production?.status === "READY" || production?.status === "COMPLETED") && production?.id
-      ? `/renders/yt/${production.id}.mp4`
+      ? `/renders/yt/${production.id}/master_hybrid.mp4`
       : null);
 
   const videoUrl =
