@@ -1,14 +1,11 @@
-import { CreatorReelsHome } from "@/components/CreatorReelsHome";
+import { ZyvoriqLandingHub } from "@/components/ZyvoriqLandingHub";
 
 export const metadata = {
-  title: "Zyvoriq — Viral 9:16 AI Reels with Zero Character Drift",
-  description: "Generate unbroken 9:16 vertical reels with 100% character face lock. ~7 minutes for a 6-shot reel. Labeled as AI with C2PA and SynthID so platforms never penalize your reach.",
+  title: "Zyvoriq — Omni 1.1 Cinema Hub | Reels, Music Video & Feature Film Studios",
+  description:
+    "Explore interactive sandbox controls for 9:16 Viral Reels, DeepMind Lyria 3.5 Music Videos, and 2.39:1 Anamorphic Feature Films—or enter the full production studios.",
 };
 
 export default function Home() {
-  return (
-    <main id="top" className="min-h-screen bg-[#07090E] text-slate-100 selection:bg-teal-500/30 selection:text-teal-100">
-      <CreatorReelsHome />
-    </main>
-  );
+  return <ZyvoriqLandingHub />;
 }
