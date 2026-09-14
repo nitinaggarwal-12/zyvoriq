@@ -1,0 +1,46 @@
+{
+  "concept": "A clash of intense cinematic drama and upbeat modern pop, set in a dark, atmospheric studio transformed by saturated neon beams and haze. The narrative focuses on the magnetic connection between two performers, dynamic choreography, and crisp lip-syncing to create the feeling of a headline concert.",
+  "viral_hook_strategy": "The strategy relies on three core elements: 1. The Saturated Color Contrast of emerald-green and ruby-red against a dark background for thumb-stopping appeal. 2. The Micro-Expression Shift, using sudden changes from fierce intensity to joyful bursts to trigger emotional engagement. 3. Looping Choreography, where the final shot seamlessly transitions back to the opening pose to encourage continuous replay on YouTube Shorts.",
+  "casting_lock": "Performer A (Left): A young female model with a sharp, chiseled jawline, high cheekbones, and intense, piercing eyes. Her hair is straight, jet-black, and styled sleek. Performer B (Right): A young female model with large, expressive eyes and a warm, dimpled smile. Her hair consists of voluminous, dark wavy curls that bounce with movement.",
+  "wardrobe_and_accessory_lock": "High-fashion nightclub stage outfits. Performer A (Left) wears an emerald-green sequin halter crop top with a black pleated mini skirt and thick silver dynamic hoop earrings. Performer B (Right) wears a ruby-red satin corseted crop top with a metallic silver mini skirt and layered thin gold necklaces.",
+  "choreography_notes": "The choreography features sharp, dramatic isolation movements like shoulder rolls and head whips that transition into fluid, upbeat pop dance steps. It includes synchronized hand choreography designed for vertical framing and 'Vocal Sell' power-poses where performers lean into the camera to emphasize facial micro-expressions.",
+  "camera_plan": "The video will be shot in a 9:16 vertical aspect ratio using premium 35mm and 50mm f/1.2 prime lenses for sharp focus and cinematic bokeh. Camera movement will be a dynamic mix of steady close-ups, dramatic push-ins to emphasize emotional beats, and whip-pans to transition between fast dance moves.",
+  "lyrics": "We burn bright in the neon light,\nDancing through the summer night!\nFeel the beat, we're flying high,\nUnderneath the emerald sky!",
+  "shots": [
+    {
+      "action": "Medium Shot. Establishing framing of both performers side-by-side. Performer A is on the left, Performer B on the right. They sing Line 1 of the chorus as cinematic backlighting casts a neon glow on their hair.",
+      "emotion": "Intense and warm",
+      "micro_expressions": "Performer A holds a dramatic, focused stare into the lens. Performer B delivers a warm dimpled smile directed slightly off-camera. Both articulate the words clearly."
+    },
+    {
+      "action": "Extreme Close-Up on Performer A. Her sharp features and jet-black hair frame the shot as neon lights cast high-contrast shadows. She delivers Line 2.",
+      "emotion": "Fierce and confident",
+      "micro_expressions": "Her expression shifts from fierce to a slight, confident smirk, maintaining intense eye contact with the viewer."
+    },
+    {
+      "action": "Close-Up on Performer B. Her voluminous dark wavy curls bounce in frame as she sings Line 3. Light reflects off her ruby-red satin corset.",
+      "emotion": "Radiant and energetic",
+      "micro_expressions": "Her dimpled smile radiates pure summer pop energy."
+    },
+    {
+      "action": "Wide Shot. Studio lights pulse with the tempo. Both performers execute a synchronized choreography move, swaying their skirts and articulating Line 4 together, leaning toward the camera.",
+      "emotion": "Joyful and competitive",
+      "micro_expressions": "Smiling and laughing in dynamic, friendly competition, displaying genuine joy."
+    },
+    {
+      "action": "Medium Shot from a low angle, tilting up. Both performers execute a quick, sassy shoulder roll and hair whip as saturated laser lights swirl around them.",
+      "emotion": "Sassy and high-energy",
+      "micro_expressions": "Confident and sassy expressions matching the sharp choreography."
+    },
+    {
+      "action": "Tight Medium Shot, pushing in on both performers. They deliver a final vocal sell. Performer A points playfully at the camera, and Performer B blows a quick kiss.",
+      "emotion": "Playful and intense",
+      "micro_expressions": "Intense clarity in lip-syncing with bright, engaging facial expressions."
+    },
+    {
+      "action": "Freeze Frame Outro. A quick whip-pan resolves into a static final pose. The performers lock eyes with the camera, breathing slightly from the exertion.",
+      "emotion": "Dramatic and final",
+      "micro_expressions": "A final, held, dramatic gaze that allows the video to loop seamlessly back to the first shot."
+    }
+  ]
+}

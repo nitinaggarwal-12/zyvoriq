@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
-import { sanitizeAndEnrichUserPrompt } from "./promptVerifier";
+import { sanitizeAndEnrichUserPrompt } from "./promptVerifier.ts";
 
 export type LyriaTier = "standard" | "pro";
 
@@ -404,3 +404,107 @@ export async function generateLyriaBackgroundMusic(options: {
     lyrics
   };
 }
+
+export interface LyriaMasterOutput {
+  audioBuffer: Buffer;
+  lyrics: string[];
+  arrangementText: string;
+  modelUsed: string;
+  durationSec: number;
+}
+
+/**
+ * Direct DeepMind Lyria master track generation for worker audio pipeline.
+ * Returns raw MP3 buffer and timestamped lyrics/chorus from models/lyria-3-clip-preview or models/lyria-3.5.
+ */
+export async function generateLyriaMusicMaster(options: {
+  prompt: string;
+  genre?: string;
+  durationSec?: number;
+  bpm?: number;
+  keySignature?: string;
+}): Promise<LyriaMasterOutput | null> {
+  const apiKey =
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
+    process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+
+  if (!apiKey) {
+    console.warn("[lyria-master] Missing GEMINI_API_KEY, skipping Lyria audio generation");
+    return null;
+  }
+
+  const { prompt, genre = "Bollywood Action & Romance", durationSec = 30, bpm = 128, keySignature = "D minor" } = options;
+  const isBollywood = /bollywood|desi|hindi|punjabi|india/i.test(genre + " " + prompt);
+  const instruments = isBollywood
+    ? "Live Punjabi Dhol, energetic tabla, soaring cinematic violins, dramatic sitar leads, and brass drops"
+    : "Symphonic strings, brass crescendos, punchy electronic drums, and deep sub-bass";
+
+  const lyriaPrompt = `Compose a high-energy, authentic cinematic musical score and song chorus for: "${prompt.trim()}".
+Style: ${genre}, Tempo: ${bpm} BPM, Key: ${keySignature}.
+Instrumentation: ${instruments}.
+Include memorable song lyrics, melodic chorus drops, and dynamic musical momentum.`;
+
+  const candidateModels = [
+    "models/lyria-3-clip-preview",
+    "models/lyria-3.5",
+    "models/lyria-3-pro-preview"
+  ];
+
+  for (const model of candidateModels) {
+    try {
+      console.log(`[lyria-master] Invoking DeepMind ${model} for "${prompt.slice(0, 60)}..."`);
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/${model}:generateContent?key=${apiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: lyriaPrompt }] }]
+        })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+        console.warn(`[lyria-master] ${model} returned ${res.status}: ${errText.slice(0, 200)}`);
+        continue;
+      }
+
+      const data = await res.json();
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      let textAcc = "";
+      let audioBuffer: Buffer | null = null;
+
+      for (const p of parts) {
+        if (p.text) textAcc += p.text + "\n";
+        if (p.inlineData?.data) {
+          audioBuffer = Buffer.from(p.inlineData.data, "base64");
+        }
+      }
+
+      if (audioBuffer && audioBuffer.length > 1000) {
+        const lyrics = textAcc
+          .split("\n")
+          .map(l => l.trim())
+          .filter(l => l.length > 0 && (l.includes(":") || l.startsWith("[")));
+
+        console.log(`[lyria-master] Successfully generated ${audioBuffer.length} bytes audio (~${Math.round(audioBuffer.length / 1024)} KB) via ${model}`);
+        if (lyrics.length) {
+          console.log(`[lyria-master] Extracted ${lyrics.length} chorus/lyric lines from Lyria arrangement`);
+        }
+
+        return {
+          audioBuffer,
+          lyrics,
+          arrangementText: textAcc,
+          modelUsed: model,
+          durationSec
+        };
+      }
+    } catch (err: any) {
+      console.warn(`[lyria-master] Error invoking ${model}:`, err?.message || err);
+    }
+  }
+
+  return null;
+}
+

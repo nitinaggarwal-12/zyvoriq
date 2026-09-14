@@ -1,0 +1,82 @@
+[
+  {
+    "action": "Medium Shot. Both performers stand side-by-side poolside, framed vertically against an infinity pool and blurred partygoers. They dance with dynamic confidence, looking at the camera and singing. Quick zoom-in.",
+    "emotion": "Dynamic confidence, radiant joy.",
+    "micro_expressions": "Performer A gives a confident smirk; Performer B beams a radiant smile.",
+    "index": 1,
+    "startSec": 0,
+    "endSec": 6.25,
+    "durationSec": 6.25,
+    "beats": 12,
+    "singing": true,
+    "sungFraction": 0.86,
+    "lyric": "Feel the heat under Spanish skies",
+    "lyricParts": [
+      {
+        "text": "Feel the heat under Spanish skies",
+        "start": 0.25,
+        "end": 5.65
+      }
+    ]
+  },
+  {
+    "action": "Medium Close-Up. Camera tracks Performer A. Sun flares bounce off her gold hoop earrings as her hair moves in the breeze. She sings passionately, locking eyes with the camera.",
+    "emotion": "Passionate, playful.",
+    "micro_expressions": "A playful micro-wink while articulating lyrics perfectly.",
+    "index": 2,
+    "startSec": 6.25,
+    "endSec": 12.25,
+    "durationSec": 6,
+    "beats": 12,
+    "singing": true,
+    "sungFraction": 0.9,
+    "lyric": "Catch the rhythm, let your spirit rise",
+    "lyricParts": [
+      {
+        "text": "Catch the rhythm, let your spirit rise",
+        "start": 6.25,
+        "end": 11.65
+      }
+    ]
+  },
+  {
+    "action": "Medium Close-Up. Quick whip-pan to Performer B. Her dark curls bounce as she grooves. She sings with intense energy and playfully points her finger at the lens.",
+    "emotion": "Intense, joyous, ecstatic.",
+    "micro_expressions": "Bright brown eyes flashing with an audition-ready expression.",
+    "index": 3,
+    "startSec": 12.25,
+    "endSec": 18.25,
+    "durationSec": 6,
+    "beats": 12,
+    "singing": true,
+    "sungFraction": 0.9,
+    "lyric": "Diving deep in the turquoise blue",
+    "lyricParts": [
+      {
+        "text": "Diving deep in the turquoise blue",
+        "start": 12.25,
+        "end": 17.65
+      }
+    ]
+  },
+  {
+    "action": "Low-Angle Close-Up. Focus on the models' feet doing synchronized choreography on the wet pool deck. Splashes of water kick up as they step and spin.",
+    "emotion": "Energetic, powerful.",
+    "micro_expressions": "N/A",
+    "index": 4,
+    "startSec": 18.25,
+    "endSec": 24,
+    "durationSec": 5.75,
+    "beats": 11,
+    "singing": true,
+    "sungFraction": 0.94,
+    "lyric": "Summer's calling, and I'm calling you",
+    "lyricParts": [
+      {
+        "text": "Summer's calling, and I'm calling you",
+        "start": 18.25,
+        "end": 23.65
+      }
+    ]
+  }
+]

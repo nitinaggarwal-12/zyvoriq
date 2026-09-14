@@ -1,0 +1,31 @@
+{
+  "concept": "A high-octane, neon-drenched dance reel that bridges the gap between stage performance and street energy. This music video short captures visual kinetic energy, featuring two charismatic female leads, their hype-crew, and an interactive audience. The focus is on rapid visual cuts, radiating joy, high-fashion glow, and electric, synchronized movements that demand looping.",
+  "viral_hook_strategy": "The Focal Illusion (Color Contrast): Leveraging the strong visual contrast of emerald-green and ruby-red against a dark, laser-lit nightclub. Dynamic color pops trigger higher viewer retention in the first frame. Replicable Micro-Choreography: Inserting a distinct, 3-second 'point-and-turn' dance move in the middle of the reel that viewers can easily replicate for TikTok/Shorts trends. Immersive Crew Framing: Breaking the fourth wall by having a crew member interact directly with the camera while dynamic audience hands frame the bottom of the shot, making the viewer feel like they are in the front row of a live concert.",
+  "casting_lock": "Performer A (Left): Standing on the left, a performer with striking, straight jet-black hair that falls past her shoulders. She possesses a sharp, defined jawline and fierce, focused eyes. Performer B (Right): Standing on the right, side-by-side with Performer A, a performer with voluminous dark wavy curls that bounce with her movements. She has a warm, inviting dimpled smile and soft, expressive eyes.",
+  "wardrobe_and_accessory_lock": "Performer A (Left): High-fashion nightclub stage outfit consisting of an emerald-green sequin halter crop top that catches and scatters laser light, paired with a black pleated mini skirt that accentuates her sharp movements. Accessories include stacked silver metallic bangles on both wrists. Performer B (Right): High-fashion nightclub stage outfit consisting of a structured ruby-red satin corseted crop top that provides a bold silhouette, paired with a metallic silver mini skirt that reflects the stage floor lights. Accessories include large, thin gold hoop earrings that catch dynamic light flares.",
+  "choreography_notes": "Style: High-energy pop-commercial fusion with hip-hop isolations. Crew Integration: Crew members acting as hype-men in the background, performing synchronized jumps and power moves on cue. One crew member executes a dramatic floor slide. Audience Interaction: Dancers reach hands out to dynamic audience silhouettes at the edge of the stage, creating a unified call-and-response energy.",
+  "camera_plan": "Camera: Vertical 9:16 framing, dynamic handheld look to simulate visual urgency. Lenses: Wide-angle anamorphic lenses to capture the full width of the stage in visual verticality, allowing blue and purple streak flares from the stage lights. Camera Motion: Intense kinetic moves—fast pushes, low-angle tilts, and a rapid circular orbit for the climax.",
+  "lyrics": "Feel the heat tonight, under glowing Spanish skies,\nJump into the rhythm, let your crazy spirit rise.\nRock the stage with us, let the music set you free,\nDance together with the crew, as wild as the sea!",
+  "shots": [
+    {
+      "action": "Dynamic Establishing Medium Shot. The scene opens on a bustling nightclub stage under pulsing blue lasers. Performer A stands on the left, her straight jet-black hair whipping as she executes a sharp shoulder isolation. Performer B stands on the right. In the background, three crew members do a synchronized leap. In the foreground, audience hands wave rhythmically.",
+      "emotion": "Dynamic, infectious energy.",
+      "micro_expressions": "Performer B flashes her warm dimpled smile as her voluminous curls bounce."
+    },
+    {
+      "action": "Medium Close-Up. Camera cuts to a tighter shot framing the girls from the chest up. Performer A and Performer B perform a synchronized arm-rolling choreography. They lock eyes with the camera. Edge light outlines their high-fashion crop tops.",
+      "emotion": "Fierce intensity from Performer A, joyful energy from Performer B.",
+      "micro_expressions": "Performer A shows a fierce, intense micro-expression, her sharp jawline catching the backlight, while Performer B maintains a joyful, energetic expression."
+    },
+    {
+      "action": "Low-Angle Interactive Shot. The camera lowers to the stage floor looking up at the dancers. A male crew member slides across the stage between the camera and the girls, hyping up the lens. Audience hands frame the bottom of the screen, reaching up toward the stage. Dancers lean forward, Performer A points to the audience, and Performer B reaches down to touch a fan's hand.",
+      "emotion": "Determined and interactive.",
+      "micro_expressions": "Performer A has a determined look as she points to the audience, while Performer B laughs as she interacts with a fan."
+    },
+    {
+      "action": "Final Full-Body Kinetic Orbit. The camera pulls back to frame full bodies. Performer A and Performer B step close together and execute continuous, fast, synchronized dance spins. The camera orbits them rapidly, blurring the background into streaks of color. They drop suddenly into a synchronized, powerful final pose—knees bent, arms extended outward. The camera shakes slightly on the final heavy beat.",
+      "emotion": "Visually electric and powerful.",
+      "micro_expressions": "Both performers hold a powerful, confident expression in their final synchronized pose."
+    }
+  ]
+}

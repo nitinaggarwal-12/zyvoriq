@@ -1,0 +1,41 @@
+{
+  "concept": "A high-energy, visually stunning music video for a summer anthem. The visual narrative captures a spontaneous rooftop garden party in Lisbon. Cinematic golden hour light bathing terracotta rooftops, lush greenery contrasting with urban architecture, and authentic, joyful human connection are the central pillars. The video moves at a fast pace, perfectly synchronized with a rhythmic, upbeat pop track.",
+  "viral_hook_strategy": "The \"Visual Sync-Drop\" Hook: The video opens with a high-motion, dynamic close-up that abruptly transitions into a wide, breathtaking reveal of the Lisbon skyline. By utilizing highly saturated golden hour colors and instant kinetic motion within the first two seconds, the algorithm favors the high retention rate. A synchronized beat-drop matches a physical movement (a camera whip-pan or spinning character), forcing the viewer to stop scrolling.",
+  "casting_lock": "Female, mid-20s, olive skin tone, striking green eyes, voluminous, shoulder-length curly dark brown hair. She possesses an athletic, fluid build and highly expressive facial features, radiating natural warmth and magnetic confidence.",
+  "wardrobe_and_accessory_lock": "Garments: A mid-length, bias-cut emerald green satin slip dress that hugs the frame loosely and fluidly moves with rhythmic motion. A slightly oversized, light-wash denim jacket is casually draped over her shoulders, left unbuttoned. Accessory: A single, delicate, thin gold chain necklace resting just above the collarbone, featuring a tiny, shimmering wave-shaped pendant that catches the direct sunlight.",
+  "choreography_notes": "The choreography is effortless, organic, and Afro-rhythm influenced, reflecting Lisbon's rich cultural blend. The Lead (Character A): Focuses on fluid body rolls, expressive arm movements that frame her face, and dynamic, joyful spins. She should interact playfully with the camera as if it is her dance partner. The Crowd: Natural, rhythmic swaying, clapping, and laughing. Movements are coordinated loosely to feel like a real party rather than a rigid routine, with peak energy dips and rises syncing with the song lyrics.",
+  "camera_plan": "Aspect Ratio: 9:16 (Vertical). Camera: Handheld feel for raw, authentic energy, mixed with smooth gimbal shots for dynamic transitions. Lenses: A fast 35mm equivalent prime lens (f/1.4) for intimate medium shots and close-ups, creating a creamy bokeh background of city tiles and party lights. A wide 24mm equivalent lens for establishing shots to capture the scale of the Lisbon skyline within the vertical frame. Lighting: Shot entirely during the \"Golden Hour\" transition. Low sun creates dramatic rim lighting, golden lens flares, and long, soft shadows, moving into rich twilight blues at the end.",
+  "lyrics": "\"Golden light on the terracotta floor,\"\n\"Lisbon smiles, and I'm wanting more.\"\n\n\"Spin me round as the sun goes down,\"\n\"We are the kings and queens of this town.\"\n\n\"Catch the glow before the night turns blue,\"\n\"I only want to dance with you.\"",
+  "shots": [
+    {
+      "action": "Close-up shot. A high-motion handheld opening. Two vibrant, iced summer cocktails clink violently in the foreground, liquid splashing slightly, catching brilliant lens flare from the setting sun. Behind the drinks, the blurred, energetic movement of dancing bodies. Cut directly on the beat.",
+      "emotion": "Ecstatic excitement",
+      "micro_expressions": "Eyes in the background narrowed with ecstatic excitement, wide smiles flashing."
+    },
+    {
+      "action": "Medium shot of Character A. She spins dynamically in the center of the rooftop garden, her emerald dress swirling. Lush potted monstera plants and hanging vines frame the shot. As she spins, her curly hair whips across the frame. Sunlight flares directly into the camera lens as her rotation completes. Background reveals the endless expanse of Lisbon's iconic terracotta tiled rooftops.",
+      "emotion": "Joyous delight",
+      "micro_expressions": "Pure, joyous laughter; her eyes crinkle with genuine delight, looking directly into the lens."
+    },
+    {
+      "action": "Wide shot of the rooftop. Character A moves toward the edge of the terrace, looking out over the city as the sun drops behind the distant tiled roofs. She turns back toward the crowd of partygoers, throwing her hands in the air, inviting them to dance. Warm, glowing fairy lights strung across the rooftop begin to stand out against the deepening sky. Bokeh circles fill the vertical frame.",
+      "emotion": "Playful and energetic",
+      "micro_expressions": "Playful winking at a friend, followed by a sudden burst of energetic shouting (inaudible under music)."
+    },
+    {
+      "action": "Extreme close-up on Character A’s face. Framed tightly by green leaves and the soft golden rim light on her hair. She sings the lyrics directly into the camera lens with high energy. The movement of the camera is smooth, tracking her micro-movements as she sways to the beat.",
+      "emotion": "Intense passion",
+      "micro_expressions": "Deep focus and passion; intense, mesmerizing eye contact with the viewer, lips perfectly syncing with the lyrics."
+    },
+    {
+      "action": "Dynamic low-angle tracking shot. Camera moves backward as Character A walks forward, leading the camera through the dancing crowd. She grips the edge of her denim jacket, moving rhythmically. People are dancing around her, softly blurred in the foreground and background, clapping and laughing.",
+      "emotion": "Welcoming and inviting",
+      "micro_expressions": "Welcoming and warm smiles, radiating inviting energy, occasional shy glances away before locking back on the lens."
+    },
+    {
+      "action": "Low angle wide shot looking up. Character A is silhouetted against the final drop of the sun behind the tiled rooftops of Lisbon. She throws her hands up in the air in a moment of pure bliss. Golden light outlines her curly hair and the flowing movement of her dress. The crowd behind her jumps in unison as the video cuts to black.",
+      "emotion": "Euphoric bliss",
+      "micro_expressions": "Serene, euphoric bliss, head tilted back, absorbing the final rays of sunlight."
+    }
+  ]
+}

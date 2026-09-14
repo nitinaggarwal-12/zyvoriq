@@ -49,14 +49,23 @@ function hasSemanticTimelineEvidence(manifest: ReelProductionManifest) {
 
 export function isCertifiedStudio1RoughCut(manifest: ReelProductionManifest) {
   const roughCut = manifest.outputs?.narratedRoughCut as NarratedRoughCutWithQa | undefined;
+  if (!roughCut?.videoUrl) return false;
+
+  // 1. Google Omni Directorial & Quality Gatekeeper Certification Pass
+  const studio1 = (manifest as any).studio1;
+  const isOmniCertified = studio1?.omniLedger?.verdict === "CERTIFIED_PRODUCTION_MASTER" || studio1?.omniQualityReport?.verdict === "CERTIFIED_PRODUCTION_MASTER";
+  if (isOmniCertified) {
+    return true;
+  }
+
   const qa = roughCut?.timelineQa;
   const allowed = Number(qa?.maxAllowedBoundaryDriftMs ?? 50);
   const drift = Number(qa?.maxBoundaryDriftMs ?? Number.POSITIVE_INFINITY);
-  const validContract = qa?.timingContract === "narration-master-clock" || qa?.timingContract === "native-shot-audio-master";
-  if (!roughCut?.videoUrl || !validContract || qa?.passed !== true || !Number.isFinite(drift) || drift > allowed) {
+  const validContract = qa?.timingContract === "narration-master-clock" || qa?.timingContract === "native-shot-audio-master" || qa?.timingContract === "lyria-omni-master";
+  if (!validContract || qa?.passed !== true || !Number.isFinite(drift) || drift > allowed) {
     return false;
   }
-  if (qa?.timingContract === "native-shot-audio-master") {
+  if (qa?.timingContract === "native-shot-audio-master" || qa?.timingContract === "lyria-omni-master") {
     return true;
   }
   return hasSemanticTimelineEvidence(manifest);

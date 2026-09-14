@@ -1,0 +1,152 @@
+[
+  {
+    "action": "Close-up shot. A high-motion handheld opening. Two vibrant, iced summer cocktails clink violently in the foreground, liquid splashing slightly, catching brilliant lens flare from the setting sun. Behind the drinks, the blurred, energetic movement of dancing bodies. Cut directly on the beat.",
+    "emotion": "Ecstatic excitement",
+    "micro_expressions": "Eyes in the background narrowed with ecstatic excitement, wide smiles flashing.",
+    "index": 1,
+    "startSec": 0,
+    "endSec": 3.447,
+    "durationSec": 3.447,
+    "beats": 7,
+    "singing": true,
+    "sungFraction": 0.5,
+    "lyric": "Golden light on the",
+    "lyricParts": [
+      {
+        "text": "Golden light on the",
+        "start": 1.1459049835115906,
+        "end": 2.8659049835115904
+      }
+    ]
+  },
+  {
+    "action": "Medium shot of Character A. She spins dynamically in the center of the rooftop garden, her emerald dress swirling. Lush potted monstera plants and hanging vines frame the shot. As she spins, her curly hair whips across the frame. Sunlight flares directly into the camera lens as her rotation completes. Background reveals the endless expanse of Lisbon's iconic terracotta tiled rooftops.",
+    "emotion": "Joyous delight",
+    "micro_expressions": "Pure, joyous laughter; her eyes crinkle with genuine delight, looking directly into the lens.",
+    "index": 2,
+    "startSec": 3.447,
+    "endSec": 8.888,
+    "durationSec": 5.441,
+    "beats": 11,
+    "singing": false,
+    "sungFraction": 0.35,
+    "lyric": "terra cotta floor.",
+    "lyricParts": [
+      {
+        "text": "terra cotta floor.",
+        "start": 3.4469049835115904,
+        "end": 5.36690498351159
+      }
+    ]
+  },
+  {
+    "action": "Wide shot of the rooftop. Character A moves toward the edge of the terrace, looking out over the city as the sun drops behind the distant tiled roofs. She turns back toward the crowd of partygoers, throwing her hands in the air, inviting them to dance. Warm, glowing fairy lights strung across the rooftop begin to stand out against the deepening sky. Bokeh circles fill the vertical frame.",
+    "emotion": "Playful and energetic",
+    "micro_expressions": "Playful winking at a friend, followed by a sudden burst of energetic shouting (inaudible under music).",
+    "index": 3,
+    "startSec": 8.888,
+    "endSec": 11.489,
+    "durationSec": 2.601,
+    "beats": 5,
+    "singing": true,
+    "sungFraction": 0.7,
+    "lyric": "There's been smiles and",
+    "lyricParts": [
+      {
+        "text": "There's been smiles and",
+        "start": 8.887904983511591,
+        "end": 10.70890498351159
+      }
+    ]
+  },
+  {
+    "action": "Extreme close-up on Character A’s face. Framed tightly by green leaves and the soft golden rim light on her hair. She sings the lyrics directly into the camera lens with high energy. The movement of the camera is smooth, tracking her micro-movements as she sways to the beat.",
+    "emotion": "Intense passion",
+    "micro_expressions": "Deep focus and passion; intense, mesmerizing eye contact with the viewer, lips perfectly syncing with the lyrics.",
+    "index": 4,
+    "startSec": 11.489,
+    "endSec": 15.63,
+    "durationSec": 4.141,
+    "beats": 8,
+    "singing": true,
+    "sungFraction": 0.47,
+    "lyric": "I'm wanting more.",
+    "lyricParts": [
+      {
+        "text": "I'm wanting more.",
+        "start": 11.48890498351159,
+        "end": 13.429904983511591
+      }
+    ]
+  },
+  {
+    "action": "Dynamic low-angle tracking shot. Camera moves backward as Character A walks forward, leading the camera through the dancing crowd. She grips the edge of her denim jacket, moving rhythmically. People are dancing around her, softly blurred in the foreground and background, clapping and laughing.",
+    "emotion": "Welcoming and inviting",
+    "micro_expressions": "Welcoming and warm smiles, radiating inviting energy, occasional shy glances away before locking back on the lens.",
+    "index": 5,
+    "startSec": 15.63,
+    "endSec": 17.911,
+    "durationSec": 2.281,
+    "beats": 5,
+    "singing": true,
+    "sungFraction": 0.81,
+    "lyric": "Spin me / round",
+    "lyricParts": [
+      {
+        "text": "Spin me",
+        "start": 15.62990498351159,
+        "end": 16.82990498351159
+      },
+      {
+        "text": "round",
+        "start": 17.090904983511592,
+        "end": 17.73090498351159
+      }
+    ]
+  },
+  {
+    "action": "Low angle wide shot looking up. Character A is silhouetted against the final drop of the sun behind the tiled rooftops of Lisbon. She throws her hands up in the air in a moment of pure bliss. Golden light outlines her curly hair and the flowing movement of her dress. The crowd behind her jumps in unison as the video cuts to black.",
+    "emotion": "Euphoric bliss",
+    "micro_expressions": "Serene, euphoric bliss, head tilted back, absorbing the final rays of sunlight.",
+    "index": 6,
+    "startSec": 17.911,
+    "endSec": 20.492,
+    "durationSec": 2.581,
+    "beats": 5,
+    "singing": true,
+    "sungFraction": 0.97,
+    "lyric": "as the sun goes",
+    "lyricParts": [
+      {
+        "text": "as the sun goes",
+        "start": 17.91090498351159,
+        "end": 20.41190498351159
+      }
+    ]
+  },
+  {
+    "action": "Low angle wide shot looking up. Character A is silhouetted against the final drop of the sun behind the tiled rooftops of Lisbon. She throws her hands up in the air in a moment of pure bliss. Golden light outlines her curly hair and the flowing movement of her dress. The crowd behind her jumps in unison as the video cuts to black.",
+    "emotion": "Euphoric bliss",
+    "micro_expressions": "Serene, euphoric bliss, head tilted back, absorbing the final rays of sunlight.",
+    "index": 7,
+    "startSec": 20.492,
+    "endSec": 24,
+    "durationSec": 3.508,
+    "beats": 7,
+    "singing": true,
+    "sungFraction": 0.81,
+    "lyric": "down. / We are the kings",
+    "lyricParts": [
+      {
+        "text": "down.",
+        "start": 20.491904983511592,
+        "end": 22.991904983511592
+      },
+      {
+        "text": "We are the kings",
+        "start": 23.651904983511592,
+        "end": 24
+      }
+    ]
+  }
+]

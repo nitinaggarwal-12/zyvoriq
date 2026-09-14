@@ -1,0 +1,36 @@
+{
+  "concept": "Two college friends are sitting on a campus bench, reminiscing about their shared past. As a powerful memory surfaces, the mundane campus setting dissolves into a hyper-stylized, high-fashion nightclub dreamscape where they relive their most vibrant moments through a synchronized dance anthem, embodying the peak energy of their youth.",
+  "viral_hook_strategy": "Model Priors: The video will employ a 'bait-and-switch' narrative structure. It opens with a relatable, quiet, dramatic scene of two friends chatting, which then abruptly transitions into a high-energy, visually spectacular dance sequence. This stark contrast in tone and aesthetic is designed to create surprise and intrigue, encouraging immediate re-watches to understand the transformation.",
+  "casting_lock": "Two distinct performers standing side-by-side. Performer A, positioned on the left, features straight jet-black hair and a sharp jawline. Performer B, positioned on the right, features voluminous dark wavy curls and a warm dimpled smile. The performers have distinct facial features with zero cloning. No clothing is specified in this section.",
+  "wardrobe_and_accessory_lock": "Performer A (left) wears an emerald-green sequin halter crop top with a black pleated mini skirt. Performer B (right) wears a ruby-red satin corseted crop top paired with a metallic silver mini skirt. Both wear minimalist silver hoop earrings and black platform boots.",
+  "choreography_notes": "The choreography will be sharp, energetic, and synchronized, drawing from commercial pop and K-pop influences. Movements should be expansive and confident, emphasizing powerful arm gestures and fluid hip-work. The final sequence requires a perfectly timed double spin, culminating in a strong, shared power-pose facing the camera.",
+  "camera_plan": "The video will be shot on a full-frame cinema camera using a 50mm T1.5 prime lens to create a shallow depth of field and cinematic bokeh. Opening shots will be static or on a slow slider for a dramatic, intimate feel. The final shot will utilize a gimbal for a dynamic, 360-degree orbiting motion around the performers to capture the energy of their synchronized dance.",
+  "lyrics": "Wrote our names on the midnight pavement / Chased the dawn, a perfect statement. Saw the world in a golden reflection / Lived the dream with no direction. Found the beat in a city humming / Knew our time was finally coming. Hold the light 'cause it's never fading / This one life is for the making.",
+  "shots": [
+    {
+      "action": "Medium shot of Performer A and Performer B sitting close together on a sun-drenched campus lawn, looking off-camera with a shared, thoughtful gaze.",
+      "emotion": "Nostalgic, contemplative, serene.",
+      "micro_expressions": "A soft, distant focus in their eyes; a slight, almost imperceptible smile on Performer B's lips."
+    },
+    {
+      "action": "Tight close-up on Performer A's face. She turns her head slowly to look at Performer B, a specific memory igniting in her eyes.",
+      "emotion": "Recollection, dawning realization, affection.",
+      "micro_expressions": "A subtle widening of the eyes, a faint intake of breath, the corner of her mouth twitching upwards."
+    },
+    {
+      "action": "Matching tight close-up on Performer B, who feels Performer A's gaze. She meets her eyes and her warm, dimpled smile breaks out fully, acknowledging the shared memory.",
+      "emotion": "Joyful, conspiratorial, warm.",
+      "micro_expressions": "Crinkling at the corners of her eyes, a slight, knowing nod, her dimples deepening."
+    },
+    {
+      "action": "The camera rapidly pulls back as the background instantly transforms from the campus lawn to a vibrant, pulsating nightclub setting. The performers are now standing, revealed in their high-fashion outfits.",
+      "emotion": "Surprise, transformation, empowerment.",
+      "micro_expressions": "A shift from soft smiles to confident, challenging smirks; posture straightens, chins lift."
+    },
+    {
+      "action": "Dynamic full-body shot. The performers execute a powerful, synchronized dance spin in perfect unison as the camera kinetically orbits around them, capturing the flash of sequins and satin against the flashing lights. They end the spin by striking a final, dramatic pose directly into the lens.",
+      "emotion": "Exhilaration, confidence, unity.",
+      "micro_expressions": "Intense, focused eye contact with the camera; lips parted in exertion and excitement; a flash of fierce determination."
+    }
+  ]
+}

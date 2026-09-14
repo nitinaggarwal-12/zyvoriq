@@ -1,0 +1,72 @@
+[
+  {
+    "action": "Wide shot of a Lisbon rooftop garden at golden hour. Character A and B are swaying to the rhythm. Character A looks over her shoulder at the camera.",
+    "emotion": "Infectious energy, joy.",
+    "micro_expressions": "A broad, inviting smile.",
+    "index": 1,
+    "startSec": 0,
+    "endSec": 8,
+    "durationSec": 8,
+    "beats": 16,
+    "singing": true,
+    "sungFraction": 0.81,
+    "lyric": "Golden light on the terracotta tiles, catch your eye and it's taking me miles",
+    "lyricParts": [
+      {
+        "text": "Golden light on the terracotta tiles, catch your eye and it's taking me miles",
+        "start": 0.456,
+        "end": 6.976
+      }
+    ]
+  },
+  {
+    "action": "Medium shot tracking Character A as she dances with Character B. Sunlight bounces off her hair. The background is blurred with bokeh.",
+    "emotion": "Genuine joy, playful interaction.",
+    "micro_expressions": "Eyes crinkle with laughter, head tilts back playfully.",
+    "index": 2,
+    "startSec": 8,
+    "endSec": 16,
+    "durationSec": 8,
+    "beats": 16,
+    "singing": true,
+    "sungFraction": 0.95,
+    "lyric": "There's been melts in the evening glow, hold me close don't ever let me go / Feel the beat, let the music play as the sun fades away",
+    "lyricParts": [
+      {
+        "text": "There's been melts in the evening glow, hold me close don't ever let me go",
+        "start": 8.076,
+        "end": 11.876000000000001
+      },
+      {
+        "text": "Feel the beat, let the music play as the sun fades away",
+        "start": 12.176,
+        "end": 17.076
+      }
+    ]
+  },
+  {
+    "action": "Tight close-up of Character A turning directly to the camera, breaking the fourth wall. She lip-syncs the lyrics. A breeze flips hair across her cheek.",
+    "emotion": "Intimate, confident, flirtatious.",
+    "micro_expressions": "Intense, direct eye lock with the lens; passionate and clear lip articulation.",
+    "index": 3,
+    "startSec": 16,
+    "endSec": 24,
+    "durationSec": 8,
+    "beats": 16,
+    "singing": true,
+    "sungFraction": 0.74,
+    "lyric": "Feel the beat, let the music play as the sun fades away / Golden light on the terracotta tiles, catch your eye and it's taking me miles",
+    "lyricParts": [
+      {
+        "text": "Feel the beat, let the music play as the sun fades away",
+        "start": 12.176,
+        "end": 17.076
+      },
+      {
+        "text": "Golden light on the terracotta tiles, catch your eye and it's taking me miles",
+        "start": 19.176000000000002,
+        "end": 24
+      }
+    ]
+  }
+]

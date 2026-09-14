@@ -84,9 +84,9 @@ export function enrichManifestV2(input: ReelProductionManifest): ReelProductionM
   syncBoundaries(manifest);
   syncPerformance(manifest);
 
-  const actualDurationSec = manifest.audio.actualDurationSec;
-  const alignedWords = manifest.audio.wordTimings;
-  if (actualDurationSec && alignedWords?.length && manifest.audio.timingSource === "actual-alignment" && manifest.audio.alignmentValidation?.passed) {
+  const actualDurationSec = manifest.audio?.actualDurationSec;
+  const alignedWords = manifest.audio?.wordTimings;
+  if (manifest.audio && actualDurationSec && alignedWords?.length && manifest.audio.timingSource === "actual-alignment" && manifest.audio.alignmentValidation?.passed) {
     const compiled = compileCaptionCues(alignedWords);
     manifest.audio.wordTimings = compiled.words;
     manifest.audio.speechMap = {

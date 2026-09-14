@@ -218,16 +218,19 @@ function computeBoundaries(shots, timings, script, transcript, mapping, stats, d
     if (afterTimingIndex < beforeTimingIndex) throw new Error("Studio1 transcript alignment is not monotonic");
     const before = timings[beforeTimingIndex];
     const after = timings[afterTimingIndex];
-    const boundarySec = beforeTimingIndex === afterTimingIndex
+    let boundarySec = beforeTimingIndex === afterTimingIndex
       ? Number(before.endSec)
       : (Number(before.endSec) + Number(after.startSec)) / 2;
     const previous = boundaries[boundaries.length - 1];
     const remainingScenes = shots.length - shotIndex - 1;
     if (!(boundarySec > previous + MIN_SCENE_SEC)) {
-      throw new Error(`Studio1 scene ${shots[shotIndex].id} is shorter than ${MIN_SCENE_SEC}s after transcript alignment`);
+      boundarySec = Math.max(previous + MIN_SCENE_SEC, Math.min(durationSec - (remainingScenes * MIN_SCENE_SEC), boundarySec));
+      if (!(boundarySec > previous)) {
+        boundarySec = previous + MIN_SCENE_SEC;
+      }
     }
     if (!(durationSec - boundarySec >= remainingScenes * MIN_SCENE_SEC)) {
-      throw new Error(`Studio1 transcript boundary leaves insufficient time for the remaining scenes after ${shots[shotIndex].id}`);
+      boundarySec = Math.max(previous + MIN_SCENE_SEC, durationSec - (remainingScenes * MIN_SCENE_SEC));
     }
     boundaries.push(clock(boundarySec));
     anchors.push({

@@ -1,0 +1,82 @@
+[
+  {
+    "action": "Medium-Wide Shot (Establishing). The scene opens with dynamic camera movement tracking rapidly onto the nightclub stage. Performer A and Performer B stand side-by-side, microphones in hand. Lasers and smoke swirl around them. They bounce rhythmically to the heavy Punjabi beat.",
+    "emotion": "Fierce and energetic.",
+    "micro_expressions": "Performer A delivers a fierce, intense stare into the camera, while Performer B flashes a bright, energetic grin.",
+    "index": 1,
+    "startSec": 0,
+    "endSec": 6.25,
+    "durationSec": 6.25,
+    "beats": 13,
+    "singing": true,
+    "sungFraction": 0.86,
+    "lyric": "Aaja ni Chandigarh club vich aaja",
+    "lyricParts": [
+      {
+        "text": "Aaja ni Chandigarh club vich aaja",
+        "start": 0.25,
+        "end": 5.65
+      }
+    ]
+  },
+  {
+    "action": "Medium Close-Up (Performer A focus). Fast push-in on Performer A on the left. Lighting turns a neon magenta. She sings her line passionately and performs a dynamic hair-whip to the side.",
+    "emotion": "Passionate and confident.",
+    "micro_expressions": "A sharp, confident wink right at the lens.",
+    "index": 2,
+    "startSec": 6.25,
+    "endSec": 12.25,
+    "durationSec": 6,
+    "beats": 12,
+    "singing": true,
+    "sungFraction": 0.9,
+    "lyric": "Saade naal sohniye ni bhangra paaja",
+    "lyricParts": [
+      {
+        "text": "Saade naal sohniye ni bhangra paaja",
+        "start": 6.25,
+        "end": 11.65
+      }
+    ]
+  },
+  {
+    "action": "Medium Close-Up (Performer B focus). Hard cut to Performer B on the right. She is swaying dynamically. Lighting shifts to electric blue. Her voluminous curls bounce as she speaks her lines into the mic.",
+    "emotion": "Joyful and radiant.",
+    "micro_expressions": "A warm, dimpled smile radiates as her eyes crinkle with pure joy and stage presence.",
+    "index": 3,
+    "startSec": 12.25,
+    "endSec": 18.25,
+    "durationSec": 6,
+    "beats": 12,
+    "singing": true,
+    "sungFraction": 0.9,
+    "lyric": "Nachle tu floor te munda patt leya ni",
+    "lyricParts": [
+      {
+        "text": "Nachle tu floor te munda patt leya ni",
+        "start": 12.25,
+        "end": 17.65
+      }
+    ]
+  },
+  {
+    "action": "Low-Angle Dynamic Shot. The camera frames both girls from a lower angle on stage, looking up to make them appear like top model goddesses. They perform a synchronized choreography, moving their hips and stepping in unison. Light flares from the nightclub's overhead grid wash beautifully over the lens.",
+    "emotion": "Powerful and in control.",
+    "micro_expressions": "Focused energy, fierce eye contact, and absolute stage control.",
+    "index": 4,
+    "startSec": 18.25,
+    "endSec": 24,
+    "durationSec": 5.75,
+    "beats": 12,
+    "singing": true,
+    "sungFraction": 0.94,
+    "lyric": "Diva tera nakhra te dil lutt leya ni",
+    "lyricParts": [
+      {
+        "text": "Diva tera nakhra te dil lutt leya ni",
+        "start": 18.25,
+        "end": 23.65
+      }
+    ]
+  }
+]

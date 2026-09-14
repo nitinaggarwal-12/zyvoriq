@@ -1,0 +1,31 @@
+{
+  "concept": "A high-energy, visually saturated fashion runway music video titled 'Bosphorus Beat'. The video celebrates modern Turkish glamour through two confident women in a stylized, neon-lit nightclub setting. The aesthetic is a fusion of contemporary high fashion and unapologetic star power, designed for maximum visual impact in a vertical format.",
+  "viral_hook_strategy": "model priors: The video opens with a rapid snap-zoom onto a stylized, glittering evil eye (nazar) charm on Performer A's wrist. As the first beat of the music hits, the camera instantly cuts to a powerful two-shot of both performers striking a dramatic, static pose, creating an immediate 'reveal' and visual jolt that grabs attention within the first second.",
+  "casting_lock": "Performer A, positioned on the left, possesses long, straight jet-black hair and a sharp, defined jawline with high cheekbones. Performer B, positioned on the right, features voluminous, dark wavy curls that frame her face, complemented by a warm, dimpled smile and expressive, almond-shaped eyes.",
+  "wardrobe_and_accessory_lock": "Performer A (left) wears an emerald-green, micro-sequin halter crop top paired with a high-waisted, black knife-pleated faux leather mini skirt. Accessories include oversized silver hoop earrings and a single, thick black leather cuff bracelet. Performer B (right) wears a ruby-red satin corseted crop top with visible boning and a metallic silver, bodycon mini skirt. Accessories include layered delicate gold necklaces and a matching silver chain bracelet.",
+  "choreography_notes": "The choreography is sharp, rhythmic, and centered on confidence. It emphasizes strong, synchronized poses, vogue-inspired hand gestures framing the face, and fluid hip sways. Movements are designed to be easily replicable and highlight the textures of the wardrobe, such as spins that make the pleated and metallic skirts flare. The core focus is on powerful, synchronized movements rather than complex dance steps.",
+  "camera_plan": "Primary camera: Sony FX3 on a DJI RS 3 Pro gimbal for fluid, kinetic motion. Lens plan: A combination of a Sigma 24mm f/1.4 Art lens for immersive wide shots that capture the full outfits and dynamic movement, and a Sony 85mm f/1.8 lens for tight, flattering close-ups on facial expressions and micro-expressions. Lighting will be high-contrast with neon blues and magentas, using a key light with a softbox to ensure the performers pop from the background.",
+  "lyrics": "Chasing stars in the midnight glow / Watch our fire begin to grow. Feel the pulse, the electric sound / We own the night on this holy ground. Golden lights reflect in our eyes / We're living dreams under neon skies. Let the rhythm take full control / A vibrant story for the soul.",
+  "shots": [
+    {
+      "action": "Extreme close-up on Performer A's face. She looks directly into the lens, then executes a slow, deliberate wink as a purple lens flare sweeps across the screen.",
+      "emotion": "Confident, alluring, mysterious.",
+      "micro_expressions": "A slight, knowing smirk forms on one side of her lips just after the wink; a subtle tightening of the corner of her eye."
+    },
+    {
+      "action": "Medium shot of Performer B. She playfully flips her voluminous curls over her shoulder with one hand, laughing directly at the camera.",
+      "emotion": "Joyful, charismatic, playful.",
+      "micro_expressions": "A genuine crinkling at the corners of her eyes as her dimples deepen with her smile; a quick, confident eyebrow flash."
+    },
+    {
+      "action": "Waist-up two-shot. The performers stand back-to-back. On a beat, they simultaneously turn their heads to look over their shoulders at the camera, then pivot their bodies to face forward in a synchronized, sharp movement.",
+      "emotion": "Unified, powerful, in-sync.",
+      "micro_expressions": "Both performers display a focused, intense gaze; a synchronized, subtle chin lift as they face the camera asserts dominance."
+    },
+    {
+      "action": "Dynamic low-angle wide shot. Both performers execute a perfectly synchronized, high-energy spin in opposite directions. The camera, on a gimbal, orbits rapidly around them, capturing the motion blur of the city lights and the way their sequin and metallic skirts flare out, creating a dazzling vortex of light and color that climaxes with the final musical beat.",
+      "emotion": "Exhilarating, electric, climactic.",
+      "micro_expressions": "Faces show expressions of peak exhilaration and focus; lips are slightly parted in exertion and excitement as they complete the spin."
+    }
+  ]
+}

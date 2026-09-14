@@ -1,0 +1,145 @@
+{
+  "generated_at": "2026-09-13T19:30:23.047Z",
+  "topic": "young punjabi college girl in mini skirt and crop top performing on stage in Punjabi Hindi",
+  "genre": "MUSIC_VIDEO",
+  "target_duration_sec": 24,
+  "master_measured": {
+    "durationSec": 24,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "audioCodec": "aac",
+    "sampleRate": 48000,
+    "lufs": -13.7,
+    "truePeakDb": -1.6,
+    "subBassMeanDb": -19.9,
+    "silenceEvents": 0,
+    "cropDetect": "1080:1920:0:0",
+    "crossCutWorstPsnrDb": 12.38,
+    "crossCutOffenders": 0
+  },
+  "master_spec": {
+    "lufs": -14,
+    "truePeakDb": -1,
+    "sampleRate": 48000,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "song_window_start_sec": 0,
+  "vocal_onset_song_sec": 0.824,
+  "vocal_onset_master_sec": 0.824,
+  "audit_frame_timestamps": [
+    2.45,
+    3.23,
+    6.62,
+    9.61,
+    10.56,
+    13.98,
+    17.12,
+    18.08,
+    22.85
+  ],
+  "lyric_lines_master": [
+    {
+      "text": "Aaja ni aaja floor pe dhamaal machade",
+      "start": 0.824,
+      "end": 4.407
+    },
+    {
+      "text": "College di kudiye tu sabko nachade",
+      "start": 8.831,
+      "end": 11.533
+    },
+    {
+      "text": "Thoda Punjabi thoda Hindi mix karke / Billo rani hit tera nakhra dikhade",
+      "start": 16.437,
+      "end": 21.702
+    }
+  ],
+  "omni_http_status": 200,
+  "omni_vision": {
+    "frames": [
+      {
+        "i": 0,
+        "t": 2.45,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Woman with long dark curly hair singing on stage."
+      },
+      {
+        "i": 1,
+        "t": 3.23,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Woman with long dark curly hair singing on stage."
+      },
+      {
+        "i": 2,
+        "t": 6.62,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Woman with long dark curly hair smiling."
+      },
+      {
+        "i": 3,
+        "t": 9.61,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Close-up of a woman with curly hair speaking."
+      },
+      {
+        "i": 4,
+        "t": 10.56,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": false,
+        "subject_desc": "Close-up of a woman with curly hair speaking."
+      },
+      {
+        "i": 5,
+        "t": 13.98,
+        "face_visible": true,
+        "mouth_open": false,
+        "teeth_visible": false,
+        "subject_desc": "Woman with long dark curly hair smiling."
+      },
+      {
+        "i": 6,
+        "t": 17.12,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": false,
+        "subject_desc": "Woman with long dark curly hair singing on stage."
+      },
+      {
+        "i": 7,
+        "t": 18.08,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Woman with long dark curly hair dancing on stage."
+      },
+      {
+        "i": 8,
+        "t": 22.85,
+        "face_visible": true,
+        "mouth_open": false,
+        "teeth_visible": false,
+        "subject_desc": "Woman with long dark curly hair smiling."
+      }
+    ],
+    "identity_continuity": true,
+    "identity_notes": "The subject is the same woman with long, dark, curly hair throughout.",
+    "wardrobe_continuity": true,
+    "wardrobe_desc": "Red ribbed crop tank top and a black pleated miniskirt.",
+    "ai_artifact_severity": "none",
+    "artifact_notes": "No AI-generated artifacts are observable in the provided frames."
+  },
+  "failures": [],
+  "verdict": "PASS"
+}

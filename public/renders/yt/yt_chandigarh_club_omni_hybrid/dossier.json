@@ -1,0 +1,41 @@
+{
+  "concept": "A fast-paced, high-energy YouTube Short capturing the ultimate Chandigarh nightclub vibe. Two elite Punjabi college fashion divas dominate the stage, blending high-fashion aesthetics with dynamic choreography and traditional-meets-modern Punjabi pop energy. The visuals will be ultra-saturated with pulsing neon lighting, laser beams, and heavy bass vibrations felt through dynamic camera movements, perfectly optimized for continuous scrolling on mobile.",
+  "viral_hook_strategy": "To instantly hook scrolling viewers within the first 1.5 seconds, the video will utilize a dynamic vertical whip-pan that stops abruptly on the two performers making intense, direct eye contact with the lens. High-contrast strobe effects, neon pink and laser-cyan lighting, and an explosive, fast-tempo Punjabi beat drop right at the opening frame will maximize viewer retention, leveraging established viewer preferences for high-energy music cues and striking visual symmetry.",
+  "casting_lock": "Two distinct top-model performers standing side-by-side on stage, showcasing absolute facial uniqueness and zero cloning. Performer A (Left): Fierce fashion diva with bone-straight, jet-black hair cascading down her back. Features include a sharp, angular jawline, high cheekbones, intense dark eyes, and a bold, confident expression. Performer B (Right): Vibrant fashion diva with voluminous, dark, wavy curls that bounce with movement. Features include softer facial lines, big expressive eyes, and a warm, genuine dimpled smile that radiates infectious energy.",
+  "wardrobe_and_accessory_lock": "High-fashion, glittering nightclub stage outfits designed to reflect light dynamically under strobes. Performer A (Left): Emerald-green sequin halter crop top that glitters intensely with every movement, paired with a black pleated mini skirt. Accessories include a sleek silver choker, high-gloss black wristbands, and dark, smoky eye makeup. Performer B (Right): Ruby-red satin corseted crop top that provides dynamic texture, paired with a metallic silver mini skirt that reflects the laser lights. Accessories include large statement silver hoop earrings, layered delicate silver necklaces, and bold red lips.",
+  "choreography_notes": "High-energy, synchronized dance steps alternating with fierce, individual 'diva' posing. Dynamic hair-whips timed to the bass drops (sharp movements for Performer A's straight hair, rhythmic bounces for Performer B's curls). Hand gestures mimicking the lyrics—pointing to the crowd, framing their faces, and reaching toward the camera. The performers will lean forward over the edge of the stage, creating depth and directly engaging visual intimacy with the mobile viewer.",
+  "camera_plan": "Framing: Strict 9:16 Vertical ratio for mobile optimization. Lenses: Fast cinematic primes (24mm and 35mm equivalent) to capture wide stage presence while keeping the performers in sharp focus against a beautifully blurred, pulsing nightclub crowd. Camera Movement: Dynamic tracking, slight low-angles to portray the girls as larger-than-life divas, rapid punch-in close-ups for emotional beats, and subtle handheld vibration effects synchronized with the heavy bass hits.",
+  "lyrics": "Aaja ni Chandigarh club vich aaja!\nSaade naal sohniye ni bhangra paaja!\nNachle tu floor te munda patt leya ni!\nDiva tera nakhra te dil lutt leya ni!",
+  "shots": [
+    {
+      "action": "Medium-Wide Shot (Establishing). The scene opens with dynamic camera movement tracking rapidly onto the nightclub stage. Performer A and Performer B stand side-by-side, microphones in hand. Lasers and smoke swirl around them. They bounce rhythmically to the heavy Punjabi beat.",
+      "emotion": "Fierce and energetic.",
+      "micro_expressions": "Performer A delivers a fierce, intense stare into the camera, while Performer B flashes a bright, energetic grin."
+    },
+    {
+      "action": "Medium Close-Up (Performer A focus). Fast push-in on Performer A on the left. Lighting turns a neon magenta. She sings her line passionately and performs a dynamic hair-whip to the side.",
+      "emotion": "Passionate and confident.",
+      "micro_expressions": "A sharp, confident wink right at the lens."
+    },
+    {
+      "action": "Medium Close-Up (Performer B focus). Hard cut to Performer B on the right. She is swaying dynamically. Lighting shifts to electric blue. Her voluminous curls bounce as she speaks her lines into the mic.",
+      "emotion": "Joyful and radiant.",
+      "micro_expressions": "A warm, dimpled smile radiates as her eyes crinkle with pure joy and stage presence."
+    },
+    {
+      "action": "Low-Angle Dynamic Shot. The camera frames both girls from a lower angle on stage, looking up to make them appear like top model goddesses. They perform a synchronized choreography, moving their hips and stepping in unison. Light flares from the nightclub's overhead grid wash beautifully over the lens.",
+      "emotion": "Powerful and in control.",
+      "micro_expressions": "Focused energy, fierce eye contact, and absolute stage control."
+    },
+    {
+      "action": "Tight Two-Shot (Close-Up). An intimate framing of both performers' faces as they lean close together, sharing the frame and singing in unison. Performer A leans her head slightly on Performer B's shoulder while still maintaining her sharp, cool edge.",
+      "emotion": "Intimate with playful chemistry.",
+      "micro_expressions": "Playful competition; Performer B lets out a silent, joyful laugh while Performer A smirks confidently, showing deep chemistry."
+    },
+    {
+      "action": "Final Dynamic Shot (Wide from Crowd). Shot from the perspective of the silhouetted front-row crowd, looking up at the stage. Foreground hands are raised in excitement. Performer A and B stand side-by-side striking their final dramatic poses. Performer A has her hand on her hip, looking statuesque. Performer B extends a hand out to the crowd. Heavy strobes pulse intensely as dynamic graphics flash on the LED screen behind them.",
+      "emotion": "Dramatic and iconic.",
+      "micro_expressions": "Statuesque confidence from Performer A; an engaging, inviting expression from Performer B."
+    }
+  ]
+}

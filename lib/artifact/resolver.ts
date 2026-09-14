@@ -25,7 +25,7 @@ function artifactPayload(production: StoredReelProduction, artifact: ArtifactRef
   if (artifact.kind === "document") {
     if (artifact.role === "master-script") return { text: manifest.masterScript };
     if (artifact.role === "captions") return manifest.captions || null;
-    if (artifact.role === "word-alignment") return manifest.audio.wordTimings || [];
+    if (artifact.role === "word-alignment") return manifest.audio?.wordTimings || [];
   }
   if (artifact.kind === "reel") {
     if (artifact.role === "master") return manifest.outputs?.master || null;
@@ -34,13 +34,13 @@ function artifactPayload(production: StoredReelProduction, artifact: ArtifactRef
   if (artifact.kind === "clip") return manifest.shots.find(shot => shot.id === artifact.sourceKey) || null;
   if (artifact.kind === "audio") {
     if (artifact.role === "narration") return {
-      url: manifest.audio.narrationUrl,
-      durationSec: manifest.audio.actualDurationSec,
-      provider: manifest.audio.provider,
-      model: manifest.audio.model,
-      voice: manifest.audio.voice,
+      url: manifest.audio?.narrationUrl,
+      durationSec: manifest.audio?.actualDurationSec,
+      provider: manifest.audio?.provider,
+      model: manifest.audio?.model,
+      voice: manifest.audio?.voice,
     };
-    if (artifact.role === "music") return { url: manifest.audio.musicUrl, plan: manifest.musicPlan || null };
+    if (artifact.role === "music") return { url: manifest.audio?.musicUrl, plan: manifest.musicPlan || null };
   }
   if (artifact.kind === "image" && artifact.sourceKey?.startsWith("continuity:")) {
     const shotId = artifact.sourceKey.slice("continuity:".length);

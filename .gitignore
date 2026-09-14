@@ -25,6 +25,12 @@ temp/
 !public/assets/video/zyvoriq_mumbai_penthouse_master.mp4
 !public/assets/audio/music/*.mp3
 !public/assets/audio/music/*.wav
+!public/assets/audio/sfx/*.mp3
+.venv/
+**/venv/
+tools/asr/.venv/
+tools/lipsync/LatentSync/
+public/renders/edited/
 public/assets/stills/generated/
 *.checkpoint.json
 *.patch

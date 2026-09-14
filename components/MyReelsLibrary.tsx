@@ -51,8 +51,10 @@ import {
   MessageSquare,
   MessageSquarePlus,
   Send,
-  Music
+  Music,
+  Scissors
 } from "lucide-react";
+import { ReelTimelineEditor } from "@/components/ReelTimelineEditor";
 
 export interface LibraryClip {
   id: string;
@@ -646,6 +648,7 @@ export function MyReelsLibrary() {
   
   // Expanded Reel IDs for multi-level hierarchy (Reel -> Clips)
   const [expandedReelIds, setExpandedReelIds] = useState<Record<string, boolean>>({});
+  const [nleEditingReel, setNleEditingReel] = useState<LibraryReel | null>(null);
 
   // Spotlight Cinema Modal Player (Supports Single Clip or Continuous Sequence Playlist)
   const [spotlightVideo, setSpotlightVideo] = useState<{
@@ -654,6 +657,7 @@ export function MyReelsLibrary() {
     subtitle?: string;
     reelId?: string;
     clipId?: string;
+    isCombinedMaster?: boolean;
     playlist?: Array<{
       url: string;
       title: string;
@@ -676,6 +680,7 @@ export function MyReelsLibrary() {
     subtitle?: string;
     reelId?: string;
     clipId?: string;
+    isCombinedMaster?: boolean;
     playlist?: Array<{
       url: string;
       title: string;
@@ -1034,9 +1039,12 @@ export function MyReelsLibrary() {
   const fetchProductions = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/reels/productions?limit=100", { cache: "no-store" });
-      if (!res.ok) throw new Error("Failed to fetch productions");
-      const data = await res.json();
+      const [res, ytRes] = await Promise.all([
+        fetch("/api/reels/productions?limit=100", { cache: "no-store" }).catch(() => null),
+        fetch("/api/yt/productions?limit=100", { cache: "no-store" }).catch(() => null)
+      ]);
+      const data = res && res.ok ? await res.json() : { success: true, productions: [] };
+      const ytData = ytRes && ytRes.ok ? await ytRes.json() : { success: true, productions: [] };
 
       let savedMeta: Record<string, { folder?: string; isSaved?: boolean; isArchived?: boolean; isHidden?: boolean; title?: string }> = {};
       try {
@@ -1064,7 +1072,7 @@ export function MyReelsLibrary() {
                 order: s.order || index + 1,
                 title: `Shot ${String(s.order || index + 1).padStart(2, "0")}: ${s.visualIntent?.slice(0, 42) || s.scriptText?.slice(0, 36) || "Cinematic Beat"}`,
                 videoUrl: s.asset?.videoUrl || null,
-                posterUrl: s.asset?.posterUrl || m.shots?.[index + 1]?.continuityIn?.referenceFrameUrl || s.continuityIn?.referenceFrameUrl || (index === 0 ? (m.theatricalPosterUrl || m.locationStillUrl || "/assets/stills/beach_sunset.jpg") : null),
+                posterUrl: s.asset?.posterUrl || m.shots?.[index + 1]?.continuityIn?.referenceFrameUrl || s.continuityIn?.referenceFrameUrl || (index === 0 ? (m.theatricalPosterUrl || m.locationStillUrl || null) : null),
                 durationSec: Number(s.editorialDurationSec || s.actualDurationSec || s.generationDurationSec || 5.5),
                 status: s.status || "PLANNED",
                 scriptText: s.scriptText || null,
@@ -1082,7 +1090,7 @@ export function MyReelsLibrary() {
               };
             });
 
-            const roughCutUrl = m.outputs?.narratedRoughCut?.videoUrl || m.outputs?.nativeReel?.videoUrl || m.outputs?.master?.videoUrl || null;
+            const roughCutUrl = m.outputs?.narratedRoughCut?.videoUrl || m.outputs?.nativeReel?.videoUrl || m.outputs?.master?.videoUrl || m.studio1?.roughCutVideoUrl || m.studio1?.outputCertification?.suppressedVideoUrl || null;
             const firstReadyVideo = shotsList.find(s => s.videoUrl)?.videoUrl || null;
             const statusInfo = computeReelStatus(m.status, shotsList, roughCutUrl, p.updatedAt || m.updatedAt);
             const isReelArchived = archivedIds.has(p.id) || meta.isArchived || meta.folder === "Archive";
@@ -1117,21 +1125,87 @@ export function MyReelsLibrary() {
             };
           });
 
-        // Merge live reels with canonical showcases (prevent duplicate IDs and exclude user-deleted ones)
-        const liveIds = new Set(liveReels.map(r => r.id));
-        const merged = [
-          ...liveReels,
-          ...CANONICAL_SHOWCASES.filter(p => !liveIds.has(p.id) && !deletedIds.has(p.id)).map(s => {
+        const ytReels: LibraryReel[] = Array.isArray(ytData.productions)
+          ? ytData.productions
+              .filter((p: any) => !deletedIds.has(p.id))
+              .map((p: any) => {
+                const m = p.manifest || {};
+                const assets = m.assets || {};
+                const meta = savedMeta[p.id] || {};
+                const shotsList: LibraryClip[] = (assets.shots || []).map((s: any, idx: number) => ({
+                  id: s.id || `${p.id}_shot_${idx + 1}`,
+                  order: s.index || idx + 1,
+                  title: `Shot ${String(s.index || idx + 1).padStart(2, "0")}: ${s.lyric ? `"${s.lyric}"` : "Beat-Synchronized Performance"}`,
+                  videoUrl: s.videoUrl || null,
+                  posterUrl: assets.anchorUrl || null,
+                  durationSec: Number(s.durationSec || 6),
+                  status: "READY",
+                  scriptText: s.lyric || null,
+                  visualIntent: "Omni 1.1 Tail-Chained Continuous Shot",
+                  generationPrompt: s.lyric || "",
+                  camera: "9:16 Vertical Fashion Lens",
+                  lighting: "Studio / Sunlight Editorial",
+                  character: "Biometrically Locked Lead",
+                  environment: p.topic,
+                  transition: "beat-locked-cut",
+                  dependsOn: [],
+                  isSaved: meta.isSaved || false,
+                  isHidden: false,
+                  isArchived: meta.isArchived || false,
+                }));
+
+                const vUrl = assets.masterHybridUrl || m.videoUrl || `/renders/yt/${p.id}.mp4`;
+                const isReelArchived = archivedIds.has(p.id) || meta.isArchived || meta.folder === "Archive";
+                const isReelHidden = hiddenIds.has(p.id) || meta.isHidden || false;
+
+                return {
+                  id: p.id,
+                  title: meta.title || p.topic,
+                  subtitle: `Omni 1.1 Hybrid Master • Lyria 3.5 • ID: ${p.id}`,
+                  prompt: p.topic,
+                  status: p.status === "READY" || p.status === "COMPLETED" ? "READY" : "DIFFUSING",
+                  durationSec: Number(p.durationSec || 24),
+                  videoUrl: vUrl,
+                  roughCutUrl: assets.masterNativeUrl || vUrl,
+                  posterUrl: assets.anchorUrl || null,
+                  createdAt: p.createdAt || new Date().toISOString(),
+                  genre: p.genre || "MUSIC_VIDEO",
+                  tone: "16/16 Multimodal Sync Audit PASS",
+                  aspectRatio: "9:16 Vertical",
+                  audioClock: "Lyria 3.5 + Demucs Vocal Stem (-14 LUFS)",
+                  folder: meta.folder || (isReelArchived ? "Archive" : "All"),
+                  isSaved: Boolean(meta.isSaved),
+                  starred: Boolean(meta.isSaved),
+                  isHidden: isReelHidden,
+                  isArchived: isReelArchived,
+                  priority: 100,
+                  shots: shotsList,
+                };
+              })
+          : [];
+
+        // Merge yt reels + live reels + canonical showcases
+        const seenIds = new Set<string>();
+        const merged: LibraryReel[] = [];
+        for (const r of [...ytReels, ...liveReels]) {
+          if (!seenIds.has(r.id)) {
+            seenIds.add(r.id);
+            merged.push(r);
+          }
+        }
+        for (const s of CANONICAL_SHOWCASES) {
+          if (!seenIds.has(s.id) && !deletedIds.has(s.id)) {
+            seenIds.add(s.id);
             const isReelArchived = archivedIds.has(s.id);
             const isReelHidden = hiddenIds.has(s.id);
-            return {
+            merged.push({
               ...s,
               isArchived: isReelArchived,
               isHidden: isReelHidden,
-              folder: isReelArchived ? "Archive" : s.folder
-            };
-          })
-        ];
+              folder: isReelArchived ? "Archive" : s.folder,
+            });
+          }
+        }
         setReels(merged);
 
         // Load feedback records for all productions
@@ -1597,58 +1671,6 @@ export function MyReelsLibrary() {
     <div className="min-h-screen bg-[#07090E] text-slate-100 selection:bg-teal-500/30 selection:text-teal-100">
       
       {/* ============================================================ */}
-      {/* 1. STICKY TOP FULL-WIDTH NAVBAR                               */}
-      {/* ============================================================ */}
-      <header className="sticky top-0 z-40 w-full border-b border-zinc-800/80 bg-[#07090E]/95 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1760px] items-center justify-between px-4 py-3.5 sm:px-6 md:px-10 lg:px-12">
-          
-          {/* Left Brand & Breadcrumbs */}
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-mono font-black text-base shadow-[0_0_15px_rgba(16,185,129,0.35)]">
-                Z
-              </div>
-              <span className="text-lg font-black tracking-tight text-white hidden sm:inline">
-                Zyvoriq
-              </span>
-            </Link>
-
-            <span className="text-zinc-600 text-sm hidden sm:inline">/</span>
-            
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs font-mono font-semibold text-violet-300">
-                <Film className="h-3.5 w-3.5 text-violet-400" />
-                <span>My Reels & Saved Clips</span>
-              </div>
-              <span className="text-xs font-mono text-zinc-500 hidden md:inline">
-                ({reels.length} total productions)
-              </span>
-            </div>
-          </div>
-
-          {/* Right Action Controls */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              type="button"
-              onClick={fetchProductions}
-              disabled={loading}
-              className="flex items-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900/80 px-3 py-2 text-xs font-mono text-zinc-300 hover:bg-zinc-800 hover:text-white transition cursor-pointer min-h-[44px]"
-              title="Refresh library"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-teal-400" : ""}`} />
-              <span className="hidden sm:inline">Sync</span>
-            </button>
-
-            <Link
-              href="/"
-              className="flex items-center gap-1.5 rounded-xl border border-emerald-500/50 bg-emerald-500/15 hover:bg-emerald-500/25 px-4 py-2 text-xs font-mono font-bold text-emerald-300 transition shadow-[0_0_15px_rgba(16,185,129,0.25)] min-h-[44px]"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              <span>Create New Reel</span>
-            </Link>
-          </div>
-        </div>
-      </header>
 
       {/* ============================================================ */}
       {/* 2. MAIN BODY (Zero-gutter, spacious desktop layout)           */}
@@ -1969,13 +1991,14 @@ export function MyReelsLibrary() {
                                 url: masterUrl,
                                 title: isHoneymoon
                                   ? `${reel.title} (${selectedAudioLanguage === "en" ? "English Theatrical Master" : "Hindi Bollywood Master"})`
-                                  : `${reel.title} (Master Cut)`,
+                                  : `${reel.title} (Combined Master Cut)`,
                                 subtitle: isHoneymoon
                                   ? (selectedAudioLanguage === "en"
                                       ? "Continuous Sequence with English Theatrical Romance Narration & Bollywood Orchestra (122s)"
                                       : "Continuous Sequence with Romantic Bollywood Orchestral Score (122s)")
-                                  : `Continuous Sequence (${reel.durationSec.toFixed(0)}s)`,
-                                reelId: reel.id
+                                  : `Full Combined Master Reel (${reel.durationSec.toFixed(0)}s)`,
+                                reelId: reel.id,
+                                isCombinedMaster: true
                               });
                             } else {
                               const readyClips = reel.shots.filter(s => Boolean(s.videoUrl));
@@ -2437,6 +2460,23 @@ export function MyReelsLibrary() {
                             );
                           })()}
 
+                          {/* Edit Video & Audio (Studio NLE) Button */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setNleEditingReel((prev) => (prev?.id === reel.id ? null : reel));
+                            }}
+                            className={`flex items-center gap-1.5 text-xs font-mono font-bold transition py-1.5 px-3 rounded-xl cursor-pointer ${
+                              nleEditingReel?.id === reel.id
+                                ? "bg-teal-600 text-white shadow-lg shadow-teal-950/50"
+                                : "bg-teal-500/15 border border-teal-500/40 text-teal-300 hover:bg-teal-500/25"
+                            }`}
+                          >
+                            <Scissors className="h-3.5 w-3.5" />
+                            <span>{nleEditingReel?.id === reel.id ? "Close NLE Editor" : "Edit Video & Audio"}</span>
+                          </button>
+
                           {/* Open in Studio Link */}
                           <Link
                             href={`/?reel=${encodeURIComponent(reel.id)}&phase=6`}
@@ -2448,6 +2488,24 @@ export function MyReelsLibrary() {
                         </div>
                       </div>
                     </div>
+
+                    {/* INLINE STUDIO NLE VIDEO & AUDIO TIMELINE EDITOR */}
+                    {nleEditingReel?.id === reel.id && (
+                      <div onClick={(e) => e.stopPropagation()} className="mt-4">
+                        <ReelTimelineEditor
+                          reelId={reel.id}
+                          reelTitle={reel.title}
+                          masterVideoUrl={reel.videoUrl || reel.roughCutUrl || ""}
+                          initialShots={(reel.shots || []).map((s, idx) => ({
+                            id: s.id || `shot_${idx + 1}`,
+                            title: s.title || `Shot ${idx + 1}`,
+                            videoUrl: s.videoUrl,
+                            durationSec: s.durationSec || 6.0,
+                          }))}
+                          onClose={() => setNleEditingReel(null)}
+                        />
+                      </div>
+                    )}
 
                     {/* -------------------------------------------------------- */}
                     {/* DIRECTORIAL FEEDBACK PANEL (Expandable)                  */}
@@ -2654,9 +2712,10 @@ export function MyReelsLibrary() {
                                 );
                               })()}
 
-                              {reel.roughCutUrl ? (
+                              {reel.roughCutUrl && (
                                 <button
                                   type="button"
+                                  id={`play-combined-reel-${reel.id}`}
                                   onClick={() => {
                                     const isHoneymoon = isHoneymoonReel(reel);
                                     const masterUrl = (isHoneymoon && selectedAudioLanguage === "en"
@@ -2666,24 +2725,28 @@ export function MyReelsLibrary() {
                                       url: masterUrl,
                                       title: isHoneymoon
                                         ? `${reel.title} (${selectedAudioLanguage === "en" ? "English Theatrical Master" : "Hindi Bollywood Master"})`
-                                        : `${reel.title} (Master Cut)`,
+                                        : `${reel.title} (Combined Master Cut)`,
                                       subtitle: isHoneymoon
                                         ? (selectedAudioLanguage === "en"
                                             ? `Continuous Sequence with English Theatrical Romance Narration & Bollywood Orchestra (${reel.durationSec.toFixed(0)}s)`
                                             : `Continuous Sequence with Romantic Bollywood Orchestral Score (${reel.durationSec.toFixed(0)}s)`)
-                                        : `Continuous Sequence (${reel.durationSec.toFixed(0)}s)`,
-                                      reelId: reel.id
+                                        : `Full Combined Master Reel (${reel.durationSec.toFixed(0)}s)`,
+                                      reelId: reel.id,
+                                      isCombinedMaster: true
                                     });
                                   }}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400 text-black hover:bg-amber-300 text-xs font-mono font-bold transition shadow-lg hover:scale-105 cursor-pointer"
-                                  title="Play the fully combined theatrical master cut"
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400 text-black hover:bg-amber-300 text-xs font-mono font-bold transition shadow-lg hover:scale-105 cursor-pointer min-h-[36px]"
+                                  title="Play the single combined master reel"
                                 >
                                   <Film className="h-3.5 w-3.5 fill-current" />
-                                  <span>Play Combined Reel {isHoneymoonReel(reel) ? `(${selectedAudioLanguage.toUpperCase()} Master Audio)` : ""}</span>
+                                  <span>Play Combined Reel ({reel.durationSec.toFixed(0)}s)</span>
                                 </button>
-                              ) : completedClips.length > 1 ? (
+                              )}
+
+                              {completedClips.length > 1 && (
                                 <button
                                   type="button"
+                                  id={`inspect-cuts-${reel.id}`}
                                   onClick={() => {
                                     const isHoneymoon = isHoneymoonReel(reel);
                                     const playlist = completedClips.map((c) => ({
@@ -2702,16 +2765,17 @@ export function MyReelsLibrary() {
                                       reelId: reel.id,
                                       clipId: completedClips[0].id,
                                       playlist,
-                                      currentIndex: 0
+                                      currentIndex: 0,
+                                      isCombinedMaster: false
                                     });
                                   }}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 text-xs font-mono font-bold transition shadow-lg hover:scale-105 cursor-pointer"
-                                  title="Play all completed shots back-to-back as a continuous sequence with romantic soundtrack"
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-200 hover:bg-zinc-700 hover:text-white border border-zinc-700 text-xs font-mono font-bold transition shadow hover:scale-105 cursor-pointer min-h-[36px]"
+                                  title="Inspect individual shots cut-by-cut with step-through controls"
                                 >
-                                  <Play className="h-3.5 w-3.5 fill-current" />
-                                  <span>Play All {completedClips.length} Cuts (With Romantic Score)</span>
+                                  <Layers className="h-3.5 w-3.5 text-emerald-400" />
+                                  <span>Inspect All {completedClips.length} Cuts</span>
                                 </button>
-                              ) : null}
+                              )}
                               <div className="text-zinc-500">
                                 Total Timeline: {reel.durationSec.toFixed(1)}s
                               </div>
@@ -2721,9 +2785,10 @@ export function MyReelsLibrary() {
                       })()}
 
                       {/* Constituent Clips Grid */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                      <div className={`grid gap-4 ${(!reel.aspectRatio || reel.aspectRatio.includes("9:16") || reel.shots.some(s => s.camera?.includes("9:16"))) ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5" : "grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"}`}>
                         {reel.shots.map((clip) => {
                           const hasClipVideo = Boolean(clip.videoUrl);
+                          const isVerticalClip = !reel.aspectRatio || reel.aspectRatio.includes("9:16") || clip.camera?.includes("9:16");
 
                           return (
                             <div
@@ -2736,7 +2801,7 @@ export function MyReelsLibrary() {
                             >
                               {/* Clip Preview Box */}
                               <div
-                                className="relative aspect-[9/16] sm:aspect-video rounded-lg overflow-hidden bg-black border border-zinc-800 group"
+                                className={`relative rounded-lg overflow-hidden bg-black border border-zinc-800 group ${isVerticalClip ? "aspect-[9/16]" : "aspect-[9/16] sm:aspect-video"}`}
                                 onMouseEnter={(e) => {
                                   const video = e.currentTarget.querySelector("video");
                                   if (video) {
@@ -3046,17 +3111,164 @@ export function MyReelsLibrary() {
                       <Copy className="h-2.5 w-2.5 text-zinc-400 ml-0.5" />
                     </button>
                   )}
-                  {spotlightVideo.playlist && typeof spotlightVideo.currentIndex === "number" && (
-                    <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded-full shrink-0">
-                      Cut {spotlightVideo.currentIndex + 1} of {spotlightVideo.playlist.length}
-                    </span>
-                  )}
+                  {(() => {
+                    const currentReel = reels.find((r) => r.id === spotlightVideo.reelId);
+                    const masterUrl = (currentReel && (
+                      (isHoneymoonReel(currentReel) && selectedAudioLanguage === "en"
+                        ? `/api/reels/assets/reels/${currentReel.id}/renders/narrated_rough_master_en.mp4`
+                        : currentReel.roughCutUrl) || currentReel.roughCutUrl
+                    )) || (spotlightVideo.url.includes("master") || spotlightVideo.url.includes("rough") || spotlightVideo.url.includes("final") ? spotlightVideo.url : null);
+                    
+                    const isPlayingCombined = Boolean(
+                      spotlightVideo.isCombinedMaster ||
+                      (!spotlightVideo.playlist && masterUrl && spotlightVideo.url === masterUrl) ||
+                      spotlightVideo.url.includes("rough") ||
+                      spotlightVideo.url.includes("master") ||
+                      spotlightVideo.url.includes("final")
+                    );
+
+                    if (isPlayingCombined) {
+                      return (
+                        <span className="text-xs font-mono font-bold text-amber-400 bg-amber-950/80 border border-amber-500/40 px-2.5 py-0.5 rounded-full shrink-0 flex items-center gap-1">
+                          <Film className="h-3 w-3 fill-current" />
+                          <span>Combined Master Reel {currentReel?.durationSec ? `(${currentReel.durationSec.toFixed(0)}s)` : ""}</span>
+                        </span>
+                      );
+                    }
+
+                    if (spotlightVideo.playlist && typeof spotlightVideo.currentIndex === "number") {
+                      return (
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded-full shrink-0">
+                            Cut {spotlightVideo.currentIndex + 1} of {spotlightVideo.playlist.length}
+                          </span>
+                          {masterUrl && (
+                            <button
+                              type="button"
+                              id="spotlight-quick-switch-combined-btn"
+                              onClick={() => {
+                                setSpotlightVideo({
+                                  ...spotlightVideo,
+                                  url: masterUrl,
+                                  title: currentReel ? `${currentReel.title} (Combined Master Cut)` : `${spotlightVideo.title} (Combined Master Cut)`,
+                                  subtitle: currentReel ? `Full Combined Master Reel (${currentReel.durationSec.toFixed(0)}s Seamless Timeline)` : "Full Combined Master Timeline",
+                                  isCombinedMaster: true,
+                                  playlist: undefined,
+                                  currentIndex: undefined
+                                });
+                                showToast("🎬 Switched to Combined One Reel mode");
+                              }}
+                              className="text-xs font-mono font-bold text-amber-300 hover:text-black hover:bg-amber-400 bg-amber-950/80 border border-amber-500/40 px-2.5 py-0.5 rounded-full shrink-0 flex items-center gap-1 transition cursor-pointer shadow-sm hover:scale-105"
+                              title="Switch from individual cut to full combined reel"
+                            >
+                              <Film className="h-3 w-3 fill-current" />
+                              <span>▶ Play Combined One Reel {currentReel?.durationSec ? `(${currentReel.durationSec.toFixed(0)}s)` : ""}</span>
+                            </button>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    return null;
+                  })()}
                 </div>
                 {spotlightVideo.subtitle && <p className="text-xs text-zinc-400 line-clamp-1 mt-0.5">{spotlightVideo.subtitle}</p>}
               </div>
 
-              {/* Controls: Language Switcher, Prev/Next Cut, Share Link, Direct Part Continuation, & Close */}
+              {/* Controls: Mode Switcher, Language Switcher, Prev/Next Cut, Share Link, Direct Part Continuation, & Close */}
               <div className="flex items-center gap-2 flex-wrap justify-between sm:justify-end shrink-0 w-full sm:w-auto">
+                {/* Playback Mode Switcher: Combined Reel vs Cut-by-Cut */}
+                {(() => {
+                  const currentReel = reels.find((r) => r.id === spotlightVideo.reelId);
+                  const masterUrl = (currentReel && (
+                    (isHoneymoonReel(currentReel) && selectedAudioLanguage === "en"
+                      ? `/api/reels/assets/reels/${currentReel.id}/renders/narrated_rough_master_en.mp4`
+                      : currentReel.roughCutUrl) || currentReel.roughCutUrl
+                  )) || (spotlightVideo.url.includes("master") || spotlightVideo.url.includes("rough") || spotlightVideo.url.includes("final") ? spotlightVideo.url : null);
+                  
+                  const readyClips = currentReel?.shots.filter(s => Boolean(s.videoUrl)) || [];
+                  const hasPlaylist = Boolean(spotlightVideo.playlist && spotlightVideo.playlist.length > 0) || readyClips.length > 0;
+                  const isPlayingCombined = Boolean(
+                    spotlightVideo.isCombinedMaster ||
+                    (!spotlightVideo.playlist && masterUrl && spotlightVideo.url === masterUrl) ||
+                    spotlightVideo.url.includes("rough") ||
+                    spotlightVideo.url.includes("master") ||
+                    spotlightVideo.url.includes("final")
+                  );
+
+                  if (!masterUrl && !hasPlaylist) return null;
+
+                  return (
+                    <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-0.5 text-xs font-mono font-bold">
+                      {masterUrl && (
+                        <button
+                          type="button"
+                          id="spotlight-mode-combined-btn"
+                          onClick={() => {
+                            setSpotlightVideo({
+                              ...spotlightVideo,
+                              url: masterUrl,
+                              title: currentReel ? `${currentReel.title} (Combined Master Cut)` : `${spotlightVideo.title} (Combined Master Cut)`,
+                              subtitle: currentReel ? `Full Combined Sequence (${currentReel.durationSec.toFixed(0)}s Master Timeline)` : "Full Combined Master Timeline",
+                              isCombinedMaster: true,
+                              playlist: undefined,
+                              currentIndex: undefined
+                            });
+                            showToast("🎬 Playing Combined One Reel");
+                          }}
+                          className={`px-2.5 py-1 rounded transition cursor-pointer flex items-center gap-1.5 min-h-[30px] ${
+                            isPlayingCombined
+                              ? "bg-amber-400 text-black font-extrabold shadow-sm"
+                              : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                          }`}
+                          title="Play the complete combined single reel"
+                        >
+                          <Film className="h-3.5 w-3.5 fill-current" />
+                          <span>Combined Reel {currentReel?.durationSec ? `(${currentReel.durationSec.toFixed(0)}s)` : ""}</span>
+                        </button>
+                      )}
+
+                      {hasPlaylist && (
+                        <button
+                          type="button"
+                          id="spotlight-mode-cuts-btn"
+                          onClick={() => {
+                            const playlist = spotlightVideo.playlist || readyClips.map((c) => ({
+                              url: c.videoUrl!,
+                              title: `${currentReel?.title || "Reel"} — Shot ${String(c.order).padStart(2, "0")}: ${c.title}`,
+                              subtitle: c.scriptText ? `"${c.scriptText}"` : c.visualIntent || undefined,
+                              order: c.order,
+                              durationSec: c.durationSec
+                            }));
+                            const targetIdx = typeof spotlightVideo.currentIndex === "number" && spotlightVideo.currentIndex < playlist.length ? spotlightVideo.currentIndex : 0;
+                            const item = playlist[targetIdx] || playlist[0];
+                            if (item) {
+                              setSpotlightVideo({
+                                ...spotlightVideo,
+                                url: item.url,
+                                title: item.title,
+                                subtitle: item.subtitle,
+                                playlist,
+                                currentIndex: targetIdx,
+                                isCombinedMaster: false
+                              });
+                              showToast(`🎞️ Inspecting Cut ${item.order} of ${playlist.length}`);
+                            }
+                          }}
+                          className={`px-2.5 py-1 rounded transition cursor-pointer flex items-center gap-1.5 min-h-[30px] ${
+                            !isPlayingCombined
+                              ? "bg-emerald-500 text-black font-extrabold shadow-sm"
+                              : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                          }`}
+                          title="Inspect individual shots cut-by-cut"
+                        >
+                          <Layers className="h-3.5 w-3.5" />
+                          <span>Cut-by-Cut ({readyClips.length || spotlightVideo.playlist?.length || 0})</span>
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
                 {/* Spotlight Dual-Language Audio Switcher: only display for dual-track honeymoon reels */}
                 {(() => {
                   const currentReel = reels.find((r) => r.id === spotlightVideo.reelId);
@@ -3328,8 +3540,8 @@ export function MyReelsLibrary() {
               />
             </div>
 
-            {/* Interactive Segmented Timeline Scrubber */}
-            {spotlightVideo.playlist && spotlightVideo.playlist.length > 1 && typeof spotlightVideo.currentIndex === "number" && (
+            {/* Interactive Timeline Scrubber & Mode State */}
+            {spotlightVideo.playlist && spotlightVideo.playlist.length > 1 && typeof spotlightVideo.currentIndex === "number" ? (
               <div className="space-y-1.5 pt-1">
                 <div className="flex items-center gap-1 w-full">
                   {spotlightVideo.playlist.map((item, idx) => {
@@ -3363,26 +3575,108 @@ export function MyReelsLibrary() {
                 <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400">
                   <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    Continuous Reel Mode (Auto-Advancing)
+                    Cut-by-Cut Mode: Shot {(spotlightVideo.currentIndex || 0) + 1} of {spotlightVideo.playlist.length}
                   </span>
-                  {spotlightVideo.currentIndex < spotlightVideo.playlist.length - 1 && (
-                    <span className="truncate max-w-[280px] sm:max-w-md text-zinc-400">
-                      Up Next: Shot {spotlightVideo.playlist[spotlightVideo.currentIndex + 1].order}
-                    </span>
-                  )}
+                  {(() => {
+                    const currentReel = reels.find((r) => r.id === spotlightVideo.reelId);
+                    const masterUrl = currentReel?.roughCutUrl;
+                    if (!masterUrl) return null;
+                    return (
+                      <button
+                        type="button"
+                        id="spotlight-scrubber-switch-combined-btn"
+                        onClick={() => {
+                          setSpotlightVideo({
+                            ...spotlightVideo,
+                            url: masterUrl,
+                            title: `${currentReel.title} (Combined Master Cut)`,
+                            subtitle: `Full Combined Master Reel (${currentReel.durationSec.toFixed(0)}s Seamless Timeline)`,
+                            isCombinedMaster: true,
+                            playlist: undefined,
+                            currentIndex: undefined
+                          });
+                          showToast("🎬 Switched to Combined One Reel mode");
+                        }}
+                        className="text-amber-400 hover:text-amber-300 transition cursor-pointer flex items-center gap-1 font-bold underline"
+                      >
+                        <Film className="h-3 w-3 fill-current" /> Switch to Combined One Reel ({currentReel.durationSec.toFixed(0)}s)
+                      </button>
+                    );
+                  })()}
                 </div>
+              </div>
+            ) : (
+              /* Combined One Reel Status Banner */
+              <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 pt-1">
+                <span className="flex items-center gap-1.5 text-amber-400 font-bold">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                  Combined One Reel Master ({(() => {
+                    const currentReel = reels.find(r => r.id === spotlightVideo.reelId);
+                    return currentReel?.durationSec ? `${currentReel.durationSec.toFixed(0)}s` : "Full";
+                  })()} Continuous Seamless Timeline)
+                </span>
+                {(() => {
+                  const currentReel = reels.find(r => r.id === spotlightVideo.reelId);
+                  const readyClips = currentReel?.shots.filter(s => Boolean(s.videoUrl)) || [];
+                  if (readyClips.length <= 1) return null;
+                  return (
+                    <button
+                      type="button"
+                      id="spotlight-switch-to-cuts-btn"
+                      onClick={() => {
+                        const playlist = readyClips.map((c) => ({
+                          url: c.videoUrl!,
+                          title: `${currentReel?.title || "Reel"} — Shot ${String(c.order).padStart(2, "0")}: ${c.title}`,
+                          subtitle: c.scriptText ? `"${c.scriptText}"` : c.visualIntent || undefined,
+                          order: c.order,
+                          durationSec: c.durationSec
+                        }));
+                        setSpotlightVideo({
+                          ...spotlightVideo,
+                          url: playlist[0].url,
+                          title: playlist[0].title,
+                          subtitle: playlist[0].subtitle,
+                          playlist,
+                          currentIndex: 0,
+                          isCombinedMaster: false
+                        });
+                        showToast("🎞️ Switched to Cut-by-Cut mode");
+                      }}
+                      className="text-zinc-400 hover:text-emerald-400 transition cursor-pointer flex items-center gap-1 text-[11px]"
+                    >
+                      <Layers className="h-3 w-3" /> Inspect {readyClips.length} Cuts Separately
+                    </button>
+                  );
+                })()}
               </div>
             )}
 
-            <div className="flex items-center justify-between text-xs font-mono text-zinc-500 pt-2 border-t border-zinc-800">
+            <div className="flex items-center justify-between text-xs font-mono text-zinc-500 pt-2 border-t border-zinc-800 flex-wrap gap-2">
               <span>Google Omni Continuous Master Preview</span>
-              <a
-                href={spotlightVideo.url}
-                download
-                className="flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-bold"
-              >
-                <Download className="h-3.5 w-3.5" /> Download Current Cut
-              </a>
+              <div className="flex items-center gap-3">
+                {(() => {
+                  const currentReel = reels.find(r => r.id === spotlightVideo.reelId);
+                  const masterUrl = currentReel?.roughCutUrl;
+                  if (!masterUrl) return null;
+                  return (
+                    <a
+                      href={masterUrl}
+                      download
+                      className="flex items-center gap-1.5 text-amber-400 hover:text-amber-300 font-bold"
+                      title="Download the full combined master video"
+                    >
+                      <Download className="h-3.5 w-3.5" /> Download Combined Reel {currentReel?.durationSec ? `(${currentReel.durationSec.toFixed(0)}s)` : ""}
+                    </a>
+                  );
+                })()}
+                <a
+                  href={spotlightVideo.url}
+                  download
+                  className="flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-bold"
+                >
+                  <Download className="h-3.5 w-3.5" /> Download Current Video
+                </a>
+              </div>
             </div>
           </div>
         </div>

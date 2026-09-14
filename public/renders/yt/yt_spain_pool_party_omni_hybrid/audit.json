@@ -1,0 +1,186 @@
+{
+  "generated_at": "2026-09-13T23:13:17.682Z",
+  "topic": "pool party music video in summer in spain calendar shoot by top fashion magazine, girls singing and dancing for audition",
+  "genre": "MUSIC_VIDEO",
+  "target_duration_sec": 24,
+  "master_measured": {
+    "durationSec": 24.033333,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "audioCodec": "aac",
+    "sampleRate": 48000,
+    "lufs": -13.6,
+    "truePeakDb": -1.9,
+    "subBassMeanDb": -22.9,
+    "silenceEvents": 0,
+    "cropDetect": "1080:1920:0:0",
+    "crossCutWorstPsnrDb": 17.41,
+    "crossCutOffenders": 0
+  },
+  "master_spec": {
+    "lufs": -14,
+    "truePeakDb": -1,
+    "sampleRate": 48000,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "song_window_start_sec": 0,
+  "vocal_onset_song_sec": 1.988,
+  "vocal_onset_master_sec": 1.988,
+  "audit_frame_timestamps": [
+    0.99,
+    3.35,
+    5.38,
+    7.02,
+    9.38,
+    10.28,
+    13.03,
+    15.31,
+    16.76,
+    18.28,
+    19.24,
+    20.68,
+    23.07
+  ],
+  "lyric_lines_master": [
+    {
+      "text": "Feel the heat under Spanish skies",
+      "start": 1.988,
+      "end": 5.791
+    },
+    {
+      "text": "Catch the rhythm, let your spirit rise",
+      "start": 8.252,
+      "end": 11.675
+    },
+    {
+      "text": "Diving deep in the turquoise blue",
+      "start": 14.376,
+      "end": 17.438
+    },
+    {
+      "text": "Summer's calling, and I'm calling you",
+      "start": 19.12,
+      "end": 22.102
+    }
+  ],
+  "omni_http_status": 200,
+  "omni_vision": {
+    "frames": [
+      {
+        "i": 0,
+        "t": 0.99,
+        "face_visible": true,
+        "mouth_open": false,
+        "teeth_visible": false,
+        "subject_desc": "Two women in swimsuits stand by a pool."
+      },
+      {
+        "i": 1,
+        "t": 3.35,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women in swimsuits smile with open mouths."
+      },
+      {
+        "i": 2,
+        "t": 5.38,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women in swimsuits smile with open mouths."
+      },
+      {
+        "i": 3,
+        "t": 7.02,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women in swimsuits smile at the camera."
+      },
+      {
+        "i": 4,
+        "t": 9.38,
+        "face_visible": true,
+        "mouth_open": false,
+        "teeth_visible": false,
+        "subject_desc": "Two women in swimsuits look at the camera."
+      },
+      {
+        "i": 5,
+        "t": 10.28,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": false,
+        "subject_desc": "Two women in swimsuits speak to the camera."
+      },
+      {
+        "i": 6,
+        "t": 13.03,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women in swimsuits smile at the camera."
+      },
+      {
+        "i": 7,
+        "t": 15.31,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women in swimsuits smile at the camera."
+      },
+      {
+        "i": 8,
+        "t": 16.76,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": false,
+        "subject_desc": "Two women in swimsuits speak to the camera."
+      },
+      {
+        "i": 9,
+        "t": 18.28,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women in swimsuits smile at the camera."
+      },
+      {
+        "i": 10,
+        "t": 19.24,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women in swimsuits sing with open mouths."
+      },
+      {
+        "i": 11,
+        "t": 20.68,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women in swimsuits sing with open mouths."
+      },
+      {
+        "i": 12,
+        "t": 23.07,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women in swimsuits smile at the camera."
+      }
+    ],
+    "identity_continuity": true,
+    "identity_notes": "The same two women, one blonde and one with curly brown hair, appear throughout.",
+    "wardrobe_continuity": true,
+    "wardrobe_desc": "One woman in a blue swimsuit/robe, one in a pink swimsuit/robe.",
+    "ai_artifact_severity": "none",
+    "artifact_notes": "No AI-generated artifacts are observable in the provided frames."
+  },
+  "failures": [],
+  "verdict": "PASS"
+}

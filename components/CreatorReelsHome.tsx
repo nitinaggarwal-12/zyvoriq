@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   Play,
@@ -40,8 +40,7 @@ import {
   Lock,
   Compass,
   User,
-  MapPin,
-  Menu
+  MapPin
 } from "lucide-react";
 import type { OmniDirectorialTreatment } from "@/lib/reel/elaborateDirector";
 import { getNextPartInfo } from "./MyReelsLibrary";
@@ -49,6 +48,7 @@ import { CharacterLibrary } from "./CharacterLibrary";
 import { LocationLibrary } from "./LocationLibrary";
 import type { LibraryCharacter } from "@/lib/library/characterLibrary";
 import type { LibraryLocation } from "@/lib/library/locationLibrary";
+import { YTStudio } from "./YTStudio";
 
 export const LANGUAGE_OPTIONS = [
   { id: "en", label: "English", desc: "US fast social pacing" },
@@ -197,23 +197,8 @@ export const OMNI_GENRES = [
   { id: "DOCUMENTARY_EXPLAINER", label: "🎙️ Documentary Explainer", desc: "Direct-to-camera presenter, educational breakdown" },
 ];
 
-export const FORMAT_CONFIGS = [
-  { id: "9:16" as const, label: "9:16 Vertical", icon: "📱", badge: "Reels / TikTok", desc: "Full-bleed vertical smartphone immersion" },
-  { id: "16:9" as const, label: "16:9 Landscape", icon: "🖥️", badge: "YouTube UHD", desc: "Cinematic widescreen desktop displays" },
-  { id: "2.39:1" as const, label: "2.39:1 Anamorphic", icon: "🎬", badge: "Cinema Master", desc: "Theatrical anamorphic scope falloff" },
-];
-
-export const DURATION_CONFIGS = [
-  { sec: 15, label: "15s", badge: "Short Hook", desc: "3 takes • Quick viral hook" },
-  { sec: 30, label: "30s", badge: "Standard Reel", desc: "5 takes • Social algorithm pacing" },
-  { sec: 34, label: "34s", badge: "Music Video", desc: "5 takes • Synchronized lip-sync & dance" },
-  { sec: 45, label: "45s", badge: "Extended", desc: "7 takes • Detailed narrative progression" },
-  { sec: 60, label: "60s", badge: "Short Master", desc: "9 takes • Complete 1-minute narrative arc" },
-  { sec: 180, label: "180s", badge: "5-Act Master", desc: "25 takes • 3-minute 5-act theatrical epic" },
-];
-
-export function CreatorReelsHome() {
-  const [activeTab, setActiveTab] = useState<"instagram_tiktok" | "youtube_shorts">("instagram_tiktok");
+export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialTab?: "instagram_tiktok" | "youtube_shorts" | "music_video" } = {}) {
+  const [activeTab, setActiveTab] = useState<"instagram_tiktok" | "youtube_shorts" | "music_video">(initialTab);
   const [showcaseTab, setShowcaseTab] = useState<"instagram_tiktok" | "youtube_shorts">("instagram_tiktok");
   const [activeReelIndex, setActiveReelIndex] = useState(0);
   const [activeCinemaIndex, setActiveCinemaIndex] = useState(0);
@@ -224,28 +209,13 @@ export function CreatorReelsHome() {
   const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
   const [selectedDuration, setSelectedDuration] = useState(30);
   const [selectedAspectRatio, setSelectedAspectRatio] = useState<"9:16" | "16:9" | "2.39:1">("9:16");
-  const [openDropdown, setOpenDropdown] = useState<"format" | "duration" | "genre" | "language" | null>(null);
-
-  // Click outside listener for dropdowns
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      const target = e.target as HTMLElement;
-      if (!target.closest?.(".dropdown-container")) {
-        setOpenDropdown(null);
-      }
-    }
-    if (openDropdown) {
-      document.addEventListener("click", handleClickOutside);
-      return () => document.removeEventListener("click", handleClickOutside);
-    }
-  }, [openDropdown]);
   const [selectedCastSize, setSelectedCastSize] = useState<1 | 2>(1);
   const [leadCharacter, setLeadCharacter] = useState<LibraryCharacter | null>(null);
   const [supportingCharacter, setSupportingCharacter] = useState<LibraryCharacter | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<LibraryLocation | null>(null);
   const [showCharacterLibraryModal, setShowCharacterLibraryModal] = useState(false);
   const [showLocationLibraryModal, setShowLocationLibraryModal] = useState(false);
-  const [showCastAndPlaceDrawer, setShowCastAndPlaceDrawer] = useState(false);
+  const [showCastAndPlaceDrawer, setShowCastAndPlaceDrawer] = useState(true);
   const [castingMode, setCastingMode] = useState<"library" | "omni_auto" | "custom">("omni_auto");
   const [customLeadName, setCustomLeadName] = useState("");
   const [customLeadArchetype, setCustomLeadArchetype] = useState("");
@@ -258,9 +228,6 @@ export function CreatorReelsHome() {
   const [generatedResult, setGeneratedResult] = useState<any | null>(null);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [annualBilling, setAnnualBilling] = useState(false);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [assetsMenuOpen, setAssetsMenuOpen] = useState(false);
-  const [studioMenuOpen, setStudioMenuOpen] = useState(false);
 
   // Directorial Elaboration & Reference Deconstruction State
   const [referenceUrl, setReferenceUrl] = useState("");
@@ -317,10 +284,20 @@ export function CreatorReelsHome() {
   const activeReel = reelsList[activeReelIndex] || FINISHED_REELS[0];
   const activeCinema = CINEMA_FINISHED_REELS[activeCinemaIndex];
 
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
+
   // Hydrate custom or generated reel from URL query params (e.g. ?id=... or ?reel=...)
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab");
+    if (tabParam === "music" || tabParam === "music_video") {
+      setActiveTab("music_video");
+    } else if (tabParam === "reels" || tabParam === "instagram_tiktok") {
+      setActiveTab("instagram_tiktok");
+    }
     const targetId = params.get("id") || params.get("reel");
     if (targetId) {
       fetch(`/api/studio/omni-generate?id=${encodeURIComponent(targetId)}`)
@@ -487,9 +464,16 @@ export function CreatorReelsHome() {
       .catch(() => {});
   }, []);
 
-  const handleTabChange = (tab: "instagram_tiktok" | "youtube_shorts") => {
+  const handleTabChange = (tab: "instagram_tiktok" | "youtube_shorts" | "music_video") => {
     setActiveTab(tab);
-    setShowcaseTab(tab);
+    if (typeof window !== "undefined") {
+      const targetUrl = tab === "music_video" ? "/yt" : "/reels";
+      window.history.pushState({}, "", targetUrl);
+      window.dispatchEvent(new Event("zyvoriq-route-change"));
+    }
+    if (tab !== "music_video") {
+      setShowcaseTab(tab);
+    }
     if (tab === "youtube_shorts") {
       setSelectedAspectRatio("2.39:1");
       setSelectedDuration(180);
@@ -730,828 +714,283 @@ export function CreatorReelsHome() {
 
   return (
     <div className="min-h-screen bg-[#07090E] text-slate-100 flex flex-col font-sans selection:bg-teal-500/30 selection:text-teal-200">
-      {/* 1. STICKY FULL-WIDTH NAVBAR */}
-      <header className="sticky top-0 z-50 w-full bg-[#07090E]/90 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 md:px-12 lg:px-16 h-18 md:h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3 md:gap-4">
-            <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-500 to-cyan-400 p-[1px] shadow-lg shadow-teal-500/20 group-hover:scale-105 transition-transform">
-                <div className="w-full h-full bg-[#07090E] rounded-[11px] flex items-center justify-center">
-                  <Film className="w-5 h-5 text-teal-400" />
-                </div>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xl md:text-2xl font-black tracking-tight text-white flex items-center gap-1.5">
-                  ZYVORIQ
-                  <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded bg-teal-500/10 border border-teal-500/30 text-teal-300">
-                    Creator
-                  </span>
-                </span>
-                <span className="text-[11px] text-slate-400 hidden sm:inline">
-                  Single unbroken takes • Zero character drift
-                </span>
-              </div>
-            </Link>
-          </div>
-
-          {/* CONSOLIDATED DESKTOP NAVIGATION */}
-          <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-sm font-medium text-slate-300">
-            <a href="#showcase" className="hover:text-teal-400 transition-colors py-2">
-              Showcase
-            </a>
-
-            {/* Assets Dropdown (Characters & Sets) */}
-            <div
-              className="relative group"
-              onMouseEnter={() => setAssetsMenuOpen(true)}
-              onMouseLeave={() => setAssetsMenuOpen(false)}
-            >
-              <button
-                type="button"
-                onClick={() => setAssetsMenuOpen(!assetsMenuOpen)}
-                className="flex items-center gap-1.5 hover:text-white transition-colors py-2 group-hover:text-teal-300"
-              >
-                <span>Assets</span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${assetsMenuOpen ? "rotate-180 text-teal-400" : "text-slate-400"}`} />
-              </button>
-
-              <div
-                className={`absolute top-full left-0 pt-2 w-64 transition-all duration-200 z-50 ${
-                  assetsMenuOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-1 pointer-events-none"
-                }`}
-              >
-                <div className="p-2 rounded-2xl bg-[#0C1019]/98 backdrop-blur-2xl border border-white/10 shadow-2xl shadow-black/80 space-y-1">
-                  <Link
-                    href="/characters"
-                    onClick={() => setAssetsMenuOpen(false)}
-                    className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-white/5 transition-all group/item"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-500/20 flex items-center justify-center shrink-0 mt-0.5 group-hover/item:border-teal-400/50">
-                      <Users className="w-4 h-4 text-teal-400" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                        Characters
-                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-300 font-semibold uppercase">DNA</span>
-                      </div>
-                      <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
-                        Biometric face &amp; wardrobe continuity
-                      </div>
-                    </div>
-                  </Link>
-
-                  <Link
-                    href="/locations"
-                    onClick={() => setAssetsMenuOpen(false)}
-                    className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-white/5 transition-all group/item"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5 group-hover/item:border-amber-400/50">
-                      <MapPin className="w-4 h-4 text-amber-400" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                        Locations &amp; Sets
-                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-semibold uppercase">Sets</span>
-                      </div>
-                      <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
-                        Persistent physical sets &amp; environments
-                      </div>
-                    </div>
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            {/* Studio Dropdown (Omni Studio & Long-Form Episodes) */}
-            <div
-              className="relative group"
-              onMouseEnter={() => setStudioMenuOpen(true)}
-              onMouseLeave={() => setStudioMenuOpen(false)}
-            >
-              <button
-                type="button"
-                onClick={() => setStudioMenuOpen(!studioMenuOpen)}
-                className="flex items-center gap-1.5 hover:text-white transition-colors py-2 group-hover:text-teal-300"
-              >
-                <span>Studio</span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${studioMenuOpen ? "rotate-180 text-teal-400" : "text-slate-400"}`} />
-              </button>
-
-              <div
-                className={`absolute top-full left-0 pt-2 w-64 transition-all duration-200 z-50 ${
-                  studioMenuOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-1 pointer-events-none"
-                }`}
-              >
-                <div className="p-2 rounded-2xl bg-[#0C1019]/98 backdrop-blur-2xl border border-white/10 shadow-2xl shadow-black/80 space-y-1">
-                  <Link
-                    href="/studio"
-                    onClick={() => setStudioMenuOpen(false)}
-                    className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-white/5 transition-all group/item"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-500/20 flex items-center justify-center shrink-0 mt-0.5 group-hover/item:border-teal-400/50">
-                      <Clapperboard className="w-4 h-4 text-teal-400" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                        Omni Studio
-                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-300 font-semibold uppercase">11-Phase</span>
-                      </div>
-                      <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
-                        Director treatment &amp; multimodal compiler
-                      </div>
-                    </div>
-                  </Link>
-
-                  <Link
-                    href="/episodes/create"
-                    onClick={() => setStudioMenuOpen(false)}
-                    className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-white/5 transition-all group/item"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0 mt-0.5 group-hover/item:border-cyan-400/50">
-                      <Film className="w-4 h-4 text-cyan-400" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                        Episodes (30m)
-                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 font-semibold uppercase">Series</span>
-                      </div>
-                      <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
-                        Full-length continuous episodic productions
-                      </div>
-                    </div>
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            <a href="#differentiator" className="hover:text-teal-400 transition-colors py-2">
-              Why Unbroken
-            </a>
-
-            <a href="#pricing" className="hover:text-teal-400 transition-colors py-2">
-              Pricing
-            </a>
-          </nav>
-
-          {/* RIGHT ACTION ZONE */}
-          <div className="flex items-center gap-3">
-            <Link
-              href="/my-reels"
-              className="text-xs sm:text-sm font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-xl hover:bg-white/5 transition-colors hidden sm:flex items-center gap-1.5"
-            >
-              <Film className="w-3.5 h-3.5 text-teal-400" />
-              <span>My Reels</span>
-            </Link>
-
-            <a
-              href="#prompt-bar"
-              className="px-4 sm:px-5 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-[#07090E] font-bold text-xs sm:text-sm shadow-lg shadow-teal-500/25 hover:shadow-teal-500/40 transition-all flex items-center gap-1.5 min-h-[44px]"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span>Create Reel</span>
-            </a>
-
-            {/* Mobile menu toggle */}
-            <button
-              type="button"
-              onClick={() => setMobileNavOpen(!mobileNavOpen)}
-              className="md:hidden p-2 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:text-white min-h-[44px] min-w-[44px] flex items-center justify-center"
-              aria-label="Toggle Navigation Menu"
-            >
-              {mobileNavOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
-        </div>
-
-        {/* MOBILE NAVIGATION DRAWER */}
-        {mobileNavOpen && (
-          <div className="md:hidden bg-[#07090E]/98 border-b border-white/10 px-4 py-4 space-y-3 backdrop-blur-2xl animate-in slide-in-from-top-2 duration-200">
-            <div className="grid grid-cols-2 gap-2 pb-2 border-b border-white/5">
-              <a
-                href="#showcase"
-                onClick={() => setMobileNavOpen(false)}
-                className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-white flex items-center gap-2"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-teal-400" />
-                <span>Showcase</span>
-              </a>
-              <Link
-                href="/my-reels"
-                onClick={() => setMobileNavOpen(false)}
-                className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-white flex items-center gap-2"
-              >
-                <Film className="w-3.5 h-3.5 text-teal-400" />
-                <span>My Reels</span>
-              </Link>
-            </div>
-
-            <div className="space-y-1">
-              <div className="text-[10px] uppercase font-bold text-slate-500 px-1 tracking-wider">Creation &amp; Assets</div>
-              <Link
-                href="/characters"
-                onClick={() => setMobileNavOpen(false)}
-                className="flex items-center justify-between p-2 rounded-xl text-xs text-slate-300 hover:text-white hover:bg-white/5"
-              >
-                <span className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-teal-400" />
-                  Characters
-                </span>
-                <span className="text-[9px] px-1.5 py-0.2 rounded bg-teal-500/10 text-teal-300">DNA</span>
-              </Link>
-              <Link
-                href="/locations"
-                onClick={() => setMobileNavOpen(false)}
-                className="flex items-center justify-between p-2 rounded-xl text-xs text-slate-300 hover:text-white hover:bg-white/5"
-              >
-                <span className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-amber-400" />
-                  Locations &amp; Sets
-                </span>
-                <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-300">Sets</span>
-              </Link>
-              <Link
-                href="/studio"
-                onClick={() => setMobileNavOpen(false)}
-                className="flex items-center justify-between p-2 rounded-xl text-xs text-slate-300 hover:text-white hover:bg-white/5"
-              >
-                <span className="flex items-center gap-2">
-                  <Clapperboard className="w-4 h-4 text-teal-400" />
-                  Omni Studio
-                </span>
-                <span className="text-[9px] px-1.5 py-0.2 rounded bg-teal-500/10 text-teal-300">11-Phase</span>
-              </Link>
-              <Link
-                href="/episodes/create"
-                onClick={() => setMobileNavOpen(false)}
-                className="flex items-center justify-between p-2 rounded-xl text-xs text-slate-300 hover:text-white hover:bg-white/5"
-              >
-                <span className="flex items-center gap-2">
-                  <Film className="w-4 h-4 text-cyan-400" />
-                  Episodes (30m)
-                </span>
-                <span className="text-[9px] px-1.5 py-0.2 rounded bg-cyan-500/10 text-cyan-300">Series</span>
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
-              <a
-                href="#differentiator"
-                onClick={() => setMobileNavOpen(false)}
-                className="text-center p-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/5"
-              >
-                Why Unbroken
-              </a>
-              <a
-                href="#pricing"
-                onClick={() => setMobileNavOpen(false)}
-                className="text-center p-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/5"
-              >
-                Pricing
-              </a>
-            </div>
-          </div>
-        )}
-      </header>
-
-      {/* 2. THE FOLD: HERO WITH PLAYING REEL + PROMPT BAR */}
-      <section className="relative pt-2 sm:pt-3 pb-3 md:pb-4 border-b border-white/5 overflow-hidden">
-        {/* Subtle background glow tailored to activeTab */}
+      {/* CONSOLIDATED STUDIO WORKSPACE */}
+      <section className="relative pt-4 pb-6 border-b border-white/5 overflow-hidden">
         <div className={`absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] md:w-[1200px] h-[450px] blur-[140px] pointer-events-none transition-all duration-700 ${
           activeTab === "youtube_shorts"
             ? "bg-gradient-to-tr from-amber-600/15 via-orange-500/10 to-transparent"
+            : activeTab === "music_video"
+            ? "bg-gradient-to-tr from-teal-600/20 via-cyan-500/15 to-emerald-500/10"
             : "bg-gradient-to-tr from-teal-600/15 via-cyan-500/10 to-transparent"
         }`} />
 
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 md:px-12 lg:px-16 relative z-10">
-          {/* MASTHEAD HEADER ZONE: Sleek, compact, condensed, zero scrolling required */}
-          <div className="flex flex-col items-center text-center max-w-4xl mx-auto mb-2 sm:mb-2.5">
-            {/* DUAL FORMAT SELECTOR: TAB 1 (Instagram / TikTok) vs TAB 2 (YouTube Shorts & 180s Cinema) */}
-            <div className="inline-flex p-1 bg-[#0C1019]/90 border border-white/10 rounded-xl mb-1.5 shadow-lg backdrop-blur-xl w-full max-w-md">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 md:px-10 lg:px-12 relative z-10">
+          {/* STUDIO MODE SWITCHER & HEADER */}
+          <div className="flex flex-col items-center text-center max-w-4xl mx-auto mb-4">
+            <div className="flex flex-wrap sm:flex-nowrap p-1 bg-[#0C1019]/90 border border-white/10 rounded-xl mb-3 shadow-lg backdrop-blur-xl w-full max-w-2xl gap-1">
               <button
                 type="button"
                 onClick={() => handleTabChange("instagram_tiktok")}
-                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-h-[36px] ${
+                className={`flex-1 py-2 px-2.5 sm:px-3 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 min-h-[38px] cursor-pointer ${
                   activeTab === "instagram_tiktok"
                     ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-[#07090E] shadow-md shadow-teal-500/30"
                     : "text-slate-400 hover:text-white hover:bg-white/5"
                 }`}
               >
-                <Smartphone className="w-3.5 h-3.5 shrink-0" />
-                <span>Instagram / TikTok</span>
-                <span className={`text-[9px] px-1.5 py-0.5 rounded font-extrabold uppercase ${
+                <Smartphone className="w-4 h-4 shrink-0" />
+                <span>Reels</span>
+                <span className={`hidden sm:inline-block text-[10px] px-2 py-0.5 rounded-full font-extrabold uppercase ${
                   activeTab === "instagram_tiktok" ? "bg-[#07090E]/20 text-[#07090E]" : "bg-white/5 text-slate-400"
                 }`}>
-                  9:16
+                  9:16 Unbroken
                 </span>
               </button>
 
               <button
                 type="button"
-                onClick={() => handleTabChange("youtube_shorts")}
-                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-h-[36px] ${
-                  activeTab === "youtube_shorts"
-                    ? "bg-gradient-to-r from-amber-400 via-orange-500 to-amber-300 text-[#07090E] shadow-md shadow-orange-500/30"
+                onClick={() => handleTabChange("music_video")}
+                className={`flex-1 py-2 px-2.5 sm:px-3 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 min-h-[38px] cursor-pointer ${
+                  activeTab === "music_video"
+                    ? "bg-gradient-to-r from-teal-500 to-cyan-400 text-[#07090E] shadow-md shadow-teal-500/30"
                     : "text-slate-400 hover:text-white hover:bg-white/5"
                 }`}
               >
-                <Clapperboard className="w-3.5 h-3.5 shrink-0" />
-                <span>YouTube / Cinema</span>
-                <span className={`text-[9px] px-1.5 py-0.5 rounded font-extrabold uppercase ${
-                  activeTab === "youtube_shorts" ? "bg-[#07090E]/20 text-[#07090E]" : "bg-white/5 text-slate-400"
+                <Music2 className="w-4 h-4 shrink-0" />
+                <span>Music Video Studio</span>
+                <span className={`hidden sm:inline-block text-[10px] px-2 py-0.5 rounded-full font-extrabold uppercase ${
+                  activeTab === "music_video" ? "bg-[#07090E]/20 text-[#07090E]" : "bg-white/5 text-teal-300"
                 }`}>
-                  180s Master
+                  Omni 1.1 Hybrid
                 </span>
               </button>
+
+              <Link
+                href="/feature-films"
+                className="flex-1 py-2 px-2.5 sm:px-3 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 min-h-[38px] text-amber-300 hover:text-white hover:bg-amber-500/15 border border-transparent hover:border-amber-500/30"
+              >
+                <Clapperboard className="w-4 h-4 shrink-0 text-amber-400" />
+                <span>Feature Films</span>
+                <span className="hidden sm:inline-block text-[10px] px-2 py-0.5 rounded-full font-extrabold uppercase bg-amber-500/20 text-amber-300">
+                  2.39:1 Cinema →
+                </span>
+              </Link>
             </div>
 
-            {/* Live Specification Pill Badge */}
-            {activeTab === "instagram_tiktok" ? (
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/25 text-teal-300 text-[10px] sm:text-[11px] font-semibold mb-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
-                <span>Single Unbroken Take • Zero Character Drift • 9:16 Vertical</span>
-              </div>
-            ) : (
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[10px] sm:text-[11px] font-semibold mb-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                <span>Classical 5-Act Drama • Anamorphic Cinematography • Symphonic Bed (-24.0 LUFS)</span>
-              </div>
-            )}
-
-            {/* Main Headline */}
             {activeTab === "instagram_tiktok" ? (
               <>
-                <h1 className="text-lg sm:text-xl md:text-2xl lg:text-[28px] font-black tracking-tight text-white leading-tight mb-0.5">
-                  Generate 9:16 reels that{" "}
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-white leading-tight mb-1">
+                  Generate 9:16 reels with{" "}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-cyan-300 to-teal-200">
-                    actually keep the same face.
+                    100% biometric facial identity lock.
                   </span>
                 </h1>
-                <p className="text-xs sm:text-sm text-slate-300 leading-normal max-w-2xl">
-                  Other AI tools morph your character on every cut. Zyvoriq extends continuous scenes with 100% biometric facial identity lock.
-                </p>
               </>
-            ) : (
+            ) : activeTab === "youtube_shorts" ? (
               <>
-                <h1 className="text-lg sm:text-xl md:text-2xl lg:text-[28px] font-black tracking-tight text-white leading-tight mb-0.5">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-white leading-tight mb-1">
                   Direct 180s cinema that{" "}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-400 to-amber-200">
                     commands the big screen.
                   </span>
                 </h1>
-                <p className="text-xs sm:text-sm text-slate-300 leading-normal max-w-2xl">
-                  Synthesize 3-minute 30-shot theatrical epics in 5-act narrative arcs, Cooke anamorphic 2.39:1 optics, and -24.0 LUFS symphonic scores.
+              </>
+            ) : (
+              <>
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-white leading-tight mb-1">
+                  Autonomous AI Music Video Production{" "}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-cyan-300 to-emerald-300">
+                    powered by Google Omni 1.1 &amp; Lyria 3.5
+                  </span>
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
+                  Select a verified 24-second master production below or create a new music video with 16-check multimodal sync verification.
                 </p>
               </>
             )}
           </div>
 
-          {/* TWO-COLUMN STUDIO CONSOLE: EQUAL SIZE (50% / 50% split, items-stretch) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 items-stretch">
-            {/* LEFT COLUMN: COMMAND & PROMPT BAR (50% width) */}
-            <div className="flex flex-col h-full">
+          {activeTab === "music_video" ? (
+            <YTStudio embedded={true} />
+          ) : (
+            <>
+              {/* TWO-COLUMN STUDIO CONSOLE: BALANCED EQUAL-SIZED LEFT AND RIGHT CARDS */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-stretch">
+            {/* LEFT COLUMN: COMMAND & PROMPT BAR CARD (6 cols) */}
+            <div className="lg:col-span-6 flex flex-col">
               {/* THE PROMPT BAR CONTAINER */}
               <div
                 id="prompt-bar"
-                className={`w-full h-full bg-[#0E121B] border rounded-2xl md:rounded-3xl p-3 sm:p-4 shadow-2xl shadow-black/60 relative flex flex-col justify-between transition-all ${
+                className={`w-full h-full bg-[#0E121B] border rounded-2xl md:rounded-3xl p-4 sm:p-5 shadow-2xl shadow-black/60 relative transition-all flex flex-col justify-between ${
                   activeTab === "youtube_shorts"
                     ? "border-amber-500/20 focus-within:border-amber-500/50"
                     : "border-white/10 focus-within:border-teal-500/50"
                 }`}
               >
-                {/* STUDIO DYNAMIC CONFIGURATION BAR: 4 CONSOLIDATED DYNAMIC DROPDOWNS */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2 pb-2 border-b border-white/5 relative z-30">
-                  {/* 1. FORMAT DROPDOWN */}
-                  <div className="relative dropdown-container">
-                    <button
-                      type="button"
-                      data-dropdown-trigger="format"
-                      onClick={() => setOpenDropdown(openDropdown === "format" ? null : "format")}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-xl border transition-all flex items-center justify-between gap-1 min-h-[42px] ${
-                        openDropdown === "format"
-                          ? activeTab === "youtube_shorts"
-                            ? "bg-[#141A26] border-amber-400/60 ring-1 ring-amber-400/30"
-                            : "bg-[#141A26] border-teal-400/60 ring-1 ring-teal-400/30"
-                          : "bg-[#090D15] hover:bg-[#101522] border-white/10 hover:border-white/20"
-                      }`}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 leading-none mb-0.5">Format</span>
-                        <span className="block text-xs font-bold text-white truncate flex items-center gap-1">
-                          <span>{selectedAspectRatio === "9:16" ? "📱" : selectedAspectRatio === "16:9" ? "🖥️" : "🎬"}</span>
-                          <span>{selectedAspectRatio === "2.39:1" ? "2.39:1 Scope" : selectedAspectRatio}</span>
-                        </span>
-                      </div>
-                      <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${openDropdown === "format" ? "rotate-180 text-teal-400" : ""}`} />
-                    </button>
-
-                    {openDropdown === "format" && (
-                      <div className="absolute top-full left-0 mt-1.5 z-50 w-64 bg-[#0B0F18]/95 backdrop-blur-2xl border border-white/15 rounded-xl p-2 shadow-2xl shadow-black/90 space-y-1.5 animate-in fade-in duration-150">
-                        {/* Dynamic Recommended Section */}
-                        <div>
-                          <div className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-teal-400 flex items-center justify-between">
-                            <span>⭐ Recommended for {activeTab === "youtube_shorts" ? "Cinema" : "Reels"}</span>
-                            <span className="text-[8px] text-slate-400 font-mono">Smart Pick</span>
-                          </div>
-                          <div className="space-y-0.5 mt-1">
-                            {FORMAT_CONFIGS.filter(f => (activeTab === "youtube_shorts" || selectedDuration >= 60 || ["HISTORICAL_BIOPIC", "CINEMATIC_DRAMA"].includes(selectedGenre)) ? (f.id === "2.39:1" || f.id === "16:9") : (f.id === "9:16" || f.id === "16:9")).map(fmt => (
-                              <button
-                                key={`rec-${fmt.id}`}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedAspectRatio(fmt.id);
-                                  if (fmt.id === "2.39:1" && selectedDuration < 60) {
-                                    setSelectedDuration(180);
-                                  } else if (fmt.id === "9:16" && selectedDuration === 180) {
-                                    setSelectedDuration(30);
-                                  }
-                                  setOpenDropdown(null);
-                                }}
-                                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors ${
-                                  selectedAspectRatio === fmt.id
-                                    ? "bg-teal-500/20 text-teal-200 font-bold border border-teal-500/40"
-                                    : "hover:bg-white/5 text-slate-200"
-                                }`}
-                              >
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <span>{fmt.icon}</span>
-                                  <span className="truncate font-semibold">{fmt.label}</span>
-                                </div>
-                                {selectedAspectRatio === fmt.id && <Check className="w-3.5 h-3.5 text-teal-400 shrink-0" />}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="border-t border-white/10 my-1" />
-
-                        {/* All Options Section */}
-                        <div>
-                          <div className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                            All Formats
-                          </div>
-                          <div className="space-y-0.5 mt-1">
-                            {FORMAT_CONFIGS.map(fmt => (
-                              <button
-                                key={fmt.id}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedAspectRatio(fmt.id);
-                                  if (fmt.id === "2.39:1" && selectedDuration < 60) {
-                                    setSelectedDuration(180);
-                                  } else if (fmt.id === "9:16" && selectedDuration === 180) {
-                                    setSelectedDuration(30);
-                                  }
-                                  setOpenDropdown(null);
-                                }}
-                                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors ${
-                                  selectedAspectRatio === fmt.id
-                                    ? "bg-teal-500/20 text-teal-200 font-bold border border-teal-500/40"
-                                    : "hover:bg-white/5 text-slate-300"
-                                }`}
-                              >
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <span>{fmt.icon}</span>
-                                  <div className="min-w-0">
-                                    <div className="truncate font-semibold">{fmt.label}</div>
-                                    <div className="text-[9px] text-slate-400 truncate">{fmt.desc}</div>
-                                  </div>
-                                </div>
-                                {selectedAspectRatio === fmt.id && <Check className="w-3.5 h-3.5 text-teal-400 shrink-0" />}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
+                {/* Format & Duration in ONE sleek row */}
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-2 border-b border-white/5">
+                  {/* Format selector */}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mr-0.5">Format:</span>
+                    {activeTab === "instagram_tiktok" ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAspectRatio("9:16")}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all min-h-[30px] flex items-center gap-1 ${
+                            selectedAspectRatio === "9:16"
+                              ? "bg-teal-500 text-[#07090E] shadow-sm shadow-teal-500/30"
+                              : "bg-white/5 text-slate-300 hover:bg-white/10"
+                          }`}
+                        >
+                          <span>📱 9:16 Vertical</span>
+                          <span className="text-[10px] opacity-75 font-normal">(Reels)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAspectRatio("16:9")}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all min-h-[30px] ${
+                            selectedAspectRatio === "16:9"
+                              ? "bg-teal-500 text-[#07090E]"
+                              : "bg-white/5 text-slate-400 hover:bg-white/10"
+                          }`}
+                        >
+                          16:9 Landscape
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAspectRatio("2.39:1")}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all min-h-[30px] flex items-center gap-1 ${
+                            selectedAspectRatio === "2.39:1"
+                              ? "bg-amber-400 text-[#07090E] shadow-sm shadow-amber-400/30"
+                              : "bg-white/5 text-slate-300 hover:bg-white/10"
+                          }`}
+                        >
+                          <span>🎬 2.39:1 Anamorphic</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAspectRatio("16:9")}
+                          className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all min-h-[30px] ${
+                            selectedAspectRatio === "16:9"
+                              ? "bg-amber-400 text-[#07090E]"
+                              : "bg-white/5 text-slate-400 hover:bg-white/10"
+                          }`}
+                        >
+                          16:9
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAspectRatio("9:16")}
+                          className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all min-h-[30px] ${
+                            selectedAspectRatio === "9:16"
+                              ? "bg-amber-400 text-[#07090E]"
+                              : "bg-white/5 text-slate-400 hover:bg-white/10"
+                          }`}
+                        >
+                          9:16
+                        </button>
+                      </>
                     )}
                   </div>
 
-                  {/* 2. DURATION DROPDOWN */}
-                  <div className="relative dropdown-container">
-                    <button
-                      type="button"
-                      data-dropdown-trigger="duration"
-                      onClick={() => setOpenDropdown(openDropdown === "duration" ? null : "duration")}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-xl border transition-all flex items-center justify-between gap-1 min-h-[42px] ${
-                        openDropdown === "duration"
-                          ? activeTab === "youtube_shorts"
-                            ? "bg-[#141A26] border-amber-400/60 ring-1 ring-amber-400/30"
-                            : "bg-[#141A26] border-teal-400/60 ring-1 ring-teal-400/30"
-                          : "bg-[#090D15] hover:bg-[#101522] border-white/10 hover:border-white/20"
-                      }`}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 leading-none mb-0.5">Duration</span>
-                        <span className="block text-xs font-bold text-white truncate flex items-center gap-1">
-                          <span>⏱️</span>
-                          <span>{selectedDuration}s</span>
-                          <span className="text-[10px] text-slate-400 font-normal">
-                            {selectedDuration === 30 ? "(Std)" : selectedDuration === 34 ? "(Music)" : selectedDuration === 180 ? "(Master)" : selectedDuration === 60 ? "(Short)" : ""}
-                          </span>
-                        </span>
-                      </div>
-                      <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${openDropdown === "duration" ? "rotate-180 text-teal-400" : ""}`} />
-                    </button>
+                  {/* Duration selector */}
+                  <div className="flex items-center gap-1">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mr-0.5">Duration:</span>
+                    {(activeTab === "instagram_tiktok"
+                      ? [
+                          { sec: 15, shots: 3 },
+                          { sec: 30, shots: 5, label: "Std" },
+                          { sec: 34, shots: 5, label: "34s Music" },
+                          { sec: 45, shots: 7 }
+                        ]
+                      : [
+                          { sec: 60, shots: 9, label: "Short" },
+                          { sec: 180, shots: 25, label: "5-Act Master" }
+                        ]
+                    ).map(d => (
+                      <button
+                        key={d.sec}
+                        type="button"
+                        onClick={() => {
+                          setSelectedDuration(d.sec);
+                          if (d.label?.includes("Music") || d.sec === 34) {
+                            setSelectedGenre("MUSIC_VIDEO");
+                          }
+                        }}
+                        className={`px-2 py-0.5 rounded-md text-xs font-semibold transition-all min-h-[28px] flex items-center gap-1 ${
+                          selectedDuration === d.sec
+                            ? activeTab === "youtube_shorts"
+                              ? "bg-amber-400/20 border border-amber-400/40 text-amber-300 font-bold"
+                              : "bg-teal-500/20 border border-teal-400/40 text-teal-300 font-bold"
+                            : "bg-white/5 text-slate-400 hover:bg-white/10"
+                        }`}
+                      >
+                        <span>{d.sec}s</span>
+                        {d.label && <span className="hidden xl:inline text-[9px] opacity-75">({d.label})</span>}
+                      </button>
+                    ))}
+                    <div className="flex items-center gap-0.5 ml-0.5 bg-white/5 px-1.5 py-0.5 rounded-md border border-white/10 min-h-[28px]">
+                      <input
+                        id="custom-duration-input"
+                        type="number"
+                        min="10"
+                        max="240"
+                        value={selectedDuration}
+                        onChange={(e) => setSelectedDuration(Math.max(10, Math.min(240, Number(e.target.value) || 30)))}
+                        className="w-8 bg-transparent text-xs text-white text-center font-bold focus:outline-none"
+                      />
+                      <span className="text-[9px] text-slate-400">s</span>
+                    </div>
+                  </div>
+                </div>
 
-                    {openDropdown === "duration" && (
-                      <div className="absolute top-full left-0 sm:left-0 mt-1.5 z-50 w-72 bg-[#0B0F18]/95 backdrop-blur-2xl border border-white/15 rounded-xl p-2 shadow-2xl shadow-black/90 space-y-1.5 animate-in fade-in duration-150">
-                        {/* Dynamic Recommended Section */}
-                        <div>
-                          <div className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-teal-400 flex items-center justify-between">
-                            <span>
-                              ⭐ Recommended for {selectedGenre === "MUSIC_VIDEO" ? "Music Video" : activeTab === "youtube_shorts" ? "Cinema" : "Reels"}
-                            </span>
-                            <span className="text-[8px] text-slate-400 font-mono">Smart Pick</span>
-                          </div>
-                          <div className="space-y-0.5 mt-1">
-                            {(selectedGenre === "MUSIC_VIDEO"
-                              ? DURATION_CONFIGS.filter(d => d.sec === 34 || d.sec === 15 || d.sec === 30)
-                              : activeTab === "youtube_shorts" || selectedAspectRatio === "2.39:1" || ["HISTORICAL_BIOPIC", "CINEMATIC_DRAMA"].includes(selectedGenre)
-                              ? DURATION_CONFIGS.filter(d => d.sec === 180 || d.sec === 60)
-                              : DURATION_CONFIGS.filter(d => d.sec === 30 || d.sec === 15 || d.sec === 34)
-                            ).map(d => (
-                              <button
-                                key={`rec-${d.sec}`}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedDuration(d.sec);
-                                  if (d.sec === 34) setSelectedGenre("MUSIC_VIDEO");
-                                  if (d.sec === 180) setSelectedAspectRatio("2.39:1");
-                                  setOpenDropdown(null);
-                                }}
-                                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors ${
-                                  selectedDuration === d.sec
-                                    ? "bg-teal-500/20 text-teal-200 font-bold border border-teal-500/40"
-                                    : "hover:bg-white/5 text-slate-200"
-                                }`}
-                              >
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <span className="font-bold text-teal-300">{d.label}</span>
-                                  {d.badge && (
-                                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-teal-500/15 text-teal-300 font-medium">
-                                      {d.badge}
-                                    </span>
-                                  )}
-                                  <span className="text-[9px] text-slate-400 truncate">{d.desc.split("•")[1] || d.desc}</span>
-                                </div>
-                                {selectedDuration === d.sec && <Check className="w-3.5 h-3.5 text-teal-400 shrink-0" />}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="border-t border-white/10 my-1" />
-
-                        {/* All Durations Section */}
-                        <div>
-                          <div className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                            All Durations
-                          </div>
-                          <div className="grid grid-cols-3 gap-1 mt-1">
-                            {DURATION_CONFIGS.map(d => (
-                              <button
-                                key={d.sec}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedDuration(d.sec);
-                                  if (d.sec === 34) setSelectedGenre("MUSIC_VIDEO");
-                                  if (d.sec === 180) setSelectedAspectRatio("2.39:1");
-                                  setOpenDropdown(null);
-                                }}
-                                className={`px-2 py-1.5 rounded-lg text-xs font-semibold flex flex-col items-center justify-center border transition-all ${
-                                  selectedDuration === d.sec
-                                    ? "bg-teal-500/20 text-teal-200 border-teal-500/40 font-bold"
-                                    : "bg-white/5 hover:bg-white/10 text-slate-300 border-white/5"
-                                }`}
-                              >
-                                <span>{d.sec}s</span>
-                                {d.badge && <span className="text-[8px] text-slate-400 opacity-80">{d.badge.split(" ")[0]}</span>}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Custom Duration Input */}
-                        <div className="pt-2 mt-1 border-t border-white/10 flex items-center justify-between px-1 text-xs">
-                          <span className="text-[10px] text-slate-400 font-medium">Custom duration:</span>
-                          <div className="flex items-center gap-1">
-                            <input
-                              id="custom-duration-input"
-                              type="number"
-                              min="10"
-                              max="240"
-                              value={selectedDuration}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                const val = Math.max(10, Math.min(240, Number(e.target.value) || 30));
-                                setSelectedDuration(val);
-                              }}
-                              className="w-12 bg-black/60 border border-white/20 rounded px-1.5 py-0.5 text-xs text-white text-center font-bold focus:outline-none focus:border-teal-400"
-                            />
-                            <span className="text-[10px] text-slate-400">sec</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                {/* Genre & Language in ONE sleek row */}
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-2 border-b border-white/5">
+                  <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 shrink-0 mr-1">Genre:</span>
+                    {OMNI_GENRES.map(g => (
+                      <button
+                        key={g.id}
+                        type="button"
+                        onClick={() => setSelectedGenre(g.id)}
+                        title={g.desc}
+                        className={`px-2 py-1 rounded-md text-xs font-semibold shrink-0 transition-all min-h-[28px] flex items-center gap-1 ${
+                          selectedGenre === g.id
+                            ? activeTab === "youtube_shorts"
+                              ? "bg-amber-400 text-[#07090E] font-bold shadow-sm"
+                              : "bg-teal-500 text-[#07090E] font-bold shadow-sm"
+                            : "bg-white/5 text-slate-300 hover:bg-white/10"
+                        }`}
+                      >
+                        <span>{g.label}</span>
+                      </button>
+                    ))}
                   </div>
 
-                  {/* 3. GENRE DROPDOWN */}
-                  <div className="relative dropdown-container">
-                    <button
-                      type="button"
-                      data-dropdown-trigger="genre"
-                      onClick={() => setOpenDropdown(openDropdown === "genre" ? null : "genre")}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-xl border transition-all flex items-center justify-between gap-1 min-h-[42px] ${
-                        openDropdown === "genre"
-                          ? activeTab === "youtube_shorts"
-                            ? "bg-[#141A26] border-amber-400/60 ring-1 ring-amber-400/30"
-                            : "bg-[#141A26] border-teal-400/60 ring-1 ring-teal-400/30"
-                          : "bg-[#090D15] hover:bg-[#101522] border-white/10 hover:border-white/20"
-                      }`}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 leading-none mb-0.5">Genre</span>
-                        <span className="block text-xs font-bold text-white truncate">
-                          {OMNI_GENRES.find(g => g.id === selectedGenre)?.label || "✨ Auto-Detect"}
-                        </span>
-                      </div>
-                      <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${openDropdown === "genre" ? "rotate-180 text-teal-400" : ""}`} />
-                    </button>
-
-                    {openDropdown === "genre" && (
-                      <div className="absolute top-full left-0 sm:left-auto sm:right-0 md:left-auto md:right-0 mt-1.5 z-50 w-72 bg-[#0B0F18]/95 backdrop-blur-2xl border border-white/15 rounded-xl p-2 shadow-2xl shadow-black/90 space-y-1.5 animate-in fade-in duration-150">
-                        {/* Dynamic Recommended Section */}
-                        <div>
-                          <div className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-teal-400 flex items-center justify-between">
-                            <span>
-                              ⭐ Recommended for {selectedDuration === 34 ? "34s Music" : activeTab === "youtube_shorts" ? "Cinema Master" : "Viral Reel"}
-                            </span>
-                            <span className="text-[8px] text-slate-400 font-mono">Smart Pick</span>
-                          </div>
-                          <div className="space-y-0.5 mt-1">
-                            {(selectedDuration === 34
-                              ? OMNI_GENRES.filter(g => ["MUSIC_VIDEO", "AUTO", "BOLLYWOOD_ROMANCE"].includes(g.id))
-                              : activeTab === "youtube_shorts" || selectedDuration >= 60 || selectedAspectRatio === "2.39:1"
-                              ? OMNI_GENRES.filter(g => ["HISTORICAL_BIOPIC", "CINEMATIC_DRAMA", "AUTO", "BOLLYWOOD_ROMANCE"].includes(g.id))
-                              : OMNI_GENRES.filter(g => ["AUTO", "MUSIC_VIDEO", "BOLLYWOOD_ROMANCE", "BOLLYWOOD_ACTION"].includes(g.id))
-                            ).map(g => (
-                              <button
-                                key={`rec-${g.id}`}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedGenre(g.id);
-                                  if (g.id === "MUSIC_VIDEO" && selectedDuration !== 34) {
-                                    setSelectedDuration(34);
-                                    if (activeTab === "instagram_tiktok") setSelectedAspectRatio("9:16");
-                                  } else if (["BOLLYWOOD_ROMANCE", "BOLLYWOOD_ACTION"].includes(g.id) && selectedLanguage === "en") {
-                                    setSelectedLanguage("hinglish-roman");
-                                  }
-                                  setOpenDropdown(null);
-                                }}
-                                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors ${
-                                  selectedGenre === g.id
-                                    ? "bg-teal-500/20 text-teal-200 font-bold border border-teal-500/40"
-                                    : "hover:bg-white/5 text-slate-200"
-                                }`}
-                              >
-                                <span className="font-semibold truncate">{g.label}</span>
-                                {selectedGenre === g.id && <Check className="w-3.5 h-3.5 text-teal-400 shrink-0" />}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="border-t border-white/10 my-1" />
-
-                        {/* All Genres Section */}
-                        <div>
-                          <div className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                            All Genres
-                          </div>
-                          <div className="max-h-52 overflow-y-auto space-y-0.5 mt-1 pr-1 scrollbar-thin">
-                            {OMNI_GENRES.map(g => (
-                              <button
-                                key={g.id}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedGenre(g.id);
-                                  if (g.id === "MUSIC_VIDEO" && selectedDuration !== 34) {
-                                    setSelectedDuration(34);
-                                    if (activeTab === "instagram_tiktok") setSelectedAspectRatio("9:16");
-                                  } else if (["BOLLYWOOD_ROMANCE", "BOLLYWOOD_ACTION"].includes(g.id) && selectedLanguage === "en") {
-                                    setSelectedLanguage("hinglish-roman");
-                                  }
-                                  setOpenDropdown(null);
-                                }}
-                                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors ${
-                                  selectedGenre === g.id
-                                    ? "bg-teal-500/20 text-teal-200 font-bold border border-teal-500/40"
-                                    : "hover:bg-white/5 text-slate-300"
-                                }`}
-                              >
-                                <div className="min-w-0 flex-1">
-                                  <div className="font-semibold truncate">{g.label}</div>
-                                  <div className="text-[9px] text-slate-400 truncate">{g.desc}</div>
-                                </div>
-                                {selectedGenre === g.id && <Check className="w-3.5 h-3.5 text-teal-400 shrink-0 ml-1.5" />}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 4. LANGUAGE DROPDOWN */}
-                  <div className="relative dropdown-container">
-                    <button
-                      type="button"
-                      data-dropdown-trigger="language"
-                      onClick={() => setOpenDropdown(openDropdown === "language" ? null : "language")}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-xl border transition-all flex items-center justify-between gap-1 min-h-[42px] ${
-                        openDropdown === "language"
-                          ? activeTab === "youtube_shorts"
-                            ? "bg-[#141A26] border-amber-400/60 ring-1 ring-amber-400/30"
-                            : "bg-[#141A26] border-teal-400/60 ring-1 ring-teal-400/30"
-                          : "bg-[#090D15] hover:bg-[#101522] border-white/10 hover:border-white/20"
-                      }`}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 leading-none mb-0.5">Language</span>
-                        <span className="block text-xs font-bold text-white truncate flex items-center gap-1">
-                          <Languages className="w-3 h-3 text-teal-400 shrink-0" />
-                          <span className="truncate">{LANGUAGE_OPTIONS.find(l => l.id === selectedLanguage)?.label || "English"}</span>
-                        </span>
-                      </div>
-                      <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${openDropdown === "language" ? "rotate-180 text-teal-400" : ""}`} />
-                    </button>
-
-                    {openDropdown === "language" && (
-                      <div className="absolute top-full right-0 left-auto mt-1.5 z-50 w-64 bg-[#0B0F18]/95 backdrop-blur-2xl border border-white/15 rounded-xl p-2 shadow-2xl shadow-black/90 space-y-1.5 animate-in fade-in duration-150">
-                        {/* Dynamic Recommended Section */}
-                        <div>
-                          <div className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-teal-400 flex items-center justify-between">
-                            <span>
-                              ⭐ Recommended for {["BOLLYWOOD_ROMANCE", "BOLLYWOOD_ACTION"].includes(selectedGenre) ? "Bollywood" : "Global"}
-                            </span>
-                            <span className="text-[8px] text-slate-400 font-mono">Smart Pick</span>
-                          </div>
-                          <div className="space-y-0.5 mt-1">
-                            {(["BOLLYWOOD_ROMANCE", "BOLLYWOOD_ACTION"].includes(selectedGenre)
-                              ? LANGUAGE_OPTIONS.filter(l => ["hinglish-roman", "hi-devanagari", "en"].includes(l.id))
-                              : LANGUAGE_OPTIONS.filter(l => ["en", "hinglish-roman"].includes(l.id))
-                            ).map(l => (
-                              <button
-                                key={`rec-${l.id}`}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedLanguage(l.id);
-                                  setOpenDropdown(null);
-                                }}
-                                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors ${
-                                  selectedLanguage === l.id
-                                    ? "bg-teal-500/20 text-teal-200 font-bold border border-teal-500/40"
-                                    : "hover:bg-white/5 text-slate-200"
-                                }`}
-                              >
-                                <span className="font-semibold truncate">{l.label}</span>
-                                {selectedLanguage === l.id && <Check className="w-3.5 h-3.5 text-teal-400 shrink-0" />}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="border-t border-white/10 my-1" />
-
-                        {/* All Options Section */}
-                        <div>
-                          <div className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                            All Languages
-                          </div>
-                          <div className="space-y-0.5 mt-1">
-                            {LANGUAGE_OPTIONS.map(l => (
-                              <button
-                                key={l.id}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedLanguage(l.id);
-                                  setOpenDropdown(null);
-                                }}
-                                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors ${
-                                  selectedLanguage === l.id
-                                    ? "bg-teal-500/20 text-teal-200 font-bold border border-teal-500/40"
-                                    : "hover:bg-white/5 text-slate-300"
-                                }`}
-                              >
-                                <div className="min-w-0 flex-1">
-                                  <div className="font-semibold truncate">{l.label}</div>
-                                  <div className="text-[9px] text-slate-400 truncate">{l.desc}</div>
-                                </div>
-                                {selectedLanguage === l.id && <Check className="w-3.5 h-3.5 text-teal-400 shrink-0" />}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                  <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 shrink-0 flex items-center gap-1 mr-1">
+                      <Languages className="w-3 h-3 text-teal-400" /> Lang:
+                    </span>
+                    {LANGUAGE_OPTIONS.map(l => (
+                      <button
+                        key={l.id}
+                        type="button"
+                        onClick={() => setSelectedLanguage(l.id)}
+                        title={l.desc}
+                        className={`px-2 py-0.5 rounded-md text-xs font-semibold shrink-0 transition-all min-h-[28px] flex items-center gap-1 ${
+                          selectedLanguage === l.id
+                            ? activeTab === "youtube_shorts"
+                              ? "bg-amber-400/20 border border-amber-400/50 text-amber-300 font-bold"
+                              : "bg-teal-500/20 border border-teal-400/50 text-teal-300 font-bold"
+                            : "bg-white/5 text-slate-400 hover:bg-white/10"
+                        }`}
+                      >
+                        <span>{l.label}</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
 
@@ -3024,53 +2463,50 @@ export function CreatorReelsHome() {
 
             </div>
 
-            {/* RIGHT COLUMN: THE LIVE PRODUCTION MONITOR (50% width, matching exact container card) */}
-            <div className="flex flex-col h-full">
-              {/* MATCHING PRODUCTION MONITOR CONTAINER CARD */}
+            {/* RIGHT COLUMN: THE LIVE PRODUCTION MONITOR CARD (6 cols) */}
+            <div className="lg:col-span-6 flex flex-col">
+              {/* THE MATCHING PRODUCTION MONITOR CONTAINER */}
               <div
-                id="monitor-card"
-                className={`w-full h-full bg-[#0E121B] border rounded-2xl md:rounded-3xl p-3 sm:p-4 shadow-2xl shadow-black/60 relative flex flex-col justify-between transition-all ${
+                id="production-monitor"
+                className={`w-full h-full bg-[#0E121B] border rounded-2xl md:rounded-3xl p-4 sm:p-5 shadow-2xl shadow-black/60 relative transition-all flex flex-col justify-between ${
                   activeTab === "youtube_shorts"
-                    ? "border-amber-500/20 hover:border-amber-500/40"
-                    : "border-white/10 hover:border-teal-500/30"
+                    ? "border-amber-500/20"
+                    : "border-white/10"
                 }`}
               >
                 {activeTab === "instagram_tiktok" ? (
-                  /* Instagram / TikTok Mode 1 Monitor Content */
-                  <>
-                    {/* Monitor Card Top Header */}
-                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/5 text-xs">
+                  /* Phone-like 9:16 viewport frame + Sample filmstrip + Continuity lock in sleek matching card */
+                  <div className="flex-1 flex flex-col justify-between gap-3.5">
+                    {/* Card Header matching left card styling */}
+                    <div className="flex items-center justify-between pb-2.5 border-b border-white/5">
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
-                        <span className="font-bold text-white text-xs sm:text-sm tracking-tight flex items-center gap-1.5">
-                          <Smartphone className="w-3.5 h-3.5 text-teal-400" />
+                        <span className="text-xs font-bold uppercase tracking-wider text-teal-300 flex items-center gap-1.5">
+                          <Film className="w-3.5 h-3.5 text-teal-400" />
                           Live Production Monitor
                         </span>
-                        <span className="px-2 py-0.5 rounded-full bg-teal-500/10 border border-teal-400/30 text-teal-300 text-[10px] font-semibold">
-                          9:16 Vertical
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-300 font-bold border border-teal-500/20">
+                          Zero Face Drift
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono">
-                        <span className="px-2 py-0.5 rounded bg-white/5 border border-white/5">
-                          1080×1920 (4K Upscaled)
+                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
+                        <span className="px-2 py-0.5 rounded bg-black/50 border border-white/10 font-mono text-teal-300">
+                          9:16 Vertical
                         </span>
+                        <span className="text-slate-500">•</span>
+                        <span>Tap to preview</span>
                       </div>
                     </div>
 
-                    {/* Monitor Card Body: iPhone 17 Pro Max Flagship Frame + Sample Productions side-by-side */}
-                    <div className="flex flex-col sm:flex-row items-center sm:items-start justify-center gap-3.5 flex-1 py-1">
-                      {/* iPhone 17 Pro Max Flagship Chassis (6.9" display, 19.5:9 ratio, titanium frame, Dynamic Island) */}
-                      <div className="relative w-[230px] sm:w-[245px] md:w-[255px] shrink-0 aspect-[9/19.5] bg-gradient-to-b from-slate-700 via-slate-800 to-slate-900 rounded-[42px] p-2.5 shadow-2xl shadow-teal-500/20 border-[3.5px] border-slate-600/80 ring-1 ring-white/20 flex flex-col justify-between overflow-hidden group">
-                        {/* Dynamic Island pill with camera & sensor */}
-                        <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-24 h-4.5 bg-black rounded-full z-30 pointer-events-none border border-white/10 flex items-center justify-between px-2.5 shadow-md">
-                          <div className="w-2.5 h-2.5 rounded-full bg-[#111622] border border-blue-400/30 flex items-center justify-center">
-                            <div className="w-1 h-1 rounded-full bg-blue-400/80 animate-pulse" />
-                          </div>
-                          <div className="w-2 h-2 rounded-full bg-[#0d1017] border border-white/10" />
-                        </div>
+                    {/* Body: Side-by-side Smartphone & Companion Content */}
+                    <div className="flex-1 flex flex-col sm:flex-row items-center sm:items-stretch justify-center gap-4">
+                      {/* Smartphone Frame (Expanded height ~410px for balanced scaling) */}
+                      <div className="relative w-[210px] sm:w-[225px] shrink-0 aspect-[9/16] bg-black rounded-[28px] p-2 shadow-2xl shadow-teal-500/20 border-2 border-white/15 ring-1 ring-white/10 flex flex-col justify-between overflow-hidden group">
+                        {/* Simulated mobile phone ear notch */}
+                        <div className="absolute top-3 left-1/2 -translate-x-1/2 w-20 h-3 bg-[#07090E] rounded-full z-30 pointer-events-none border border-white/5" />
 
-                        {/* THE 19.5:9 FLAGSHIP VIDEO ELEMENT */}
-                        <div className="relative w-full h-full rounded-[32px] overflow-hidden bg-slate-950">
+                        {/* THE 9:16 VIDEO ELEMENT */}
+                        <div className="relative w-full h-full rounded-[20px] overflow-hidden bg-slate-950">
                           <video
                             ref={videoRef}
                             key={activeReel.videoUrl}
@@ -3085,8 +2521,8 @@ export function CreatorReelsHome() {
                             onClick={togglePlay}
                           />
 
-                          {/* Top Badges Overlay (below Dynamic Island) */}
-                          <div className="absolute top-8 left-2.5 right-2.5 z-20 flex items-center justify-between pointer-events-none">
+                          {/* Top Badges Overlay */}
+                          <div className="absolute top-6 left-2.5 right-2.5 z-20 flex items-center justify-between pointer-events-none">
                             <span className="px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md border border-white/10 text-[9px] font-bold text-white flex items-center gap-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
                               <span>{activeReel.shots} Shots • {activeReel.durationSec}s</span>
@@ -3098,7 +2534,7 @@ export function CreatorReelsHome() {
                           </div>
 
                           {/* Controls overlay: Mute & Play toggles */}
-                          <div className="absolute top-8 right-2.5 z-30 flex flex-col gap-1.5">
+                          <div className="absolute top-6 right-2.5 z-30 flex flex-col gap-1.5">
                             <button
                               type="button"
                               onClick={toggleMute}
@@ -3119,7 +2555,7 @@ export function CreatorReelsHome() {
                           </div>
 
                           {/* Bottom Info Bar inside Reel */}
-                          <div className="absolute bottom-3 inset-x-0 p-2.5 pt-8 bg-gradient-to-t from-black/95 via-black/60 to-transparent z-20 flex flex-col">
+                          <div className="absolute bottom-0 inset-x-0 p-2.5 pt-8 bg-gradient-to-t from-black/95 via-black/60 to-transparent z-20 flex flex-col">
                             <span className="text-[9px] font-bold uppercase tracking-wider text-teal-400">
                               {activeReel.category}
                             </span>
@@ -3135,32 +2571,29 @@ export function CreatorReelsHome() {
                                 <CheckCircle2 className="w-2.5 h-2.5 text-teal-400" />
                                 Single continuous take
                               </span>
-                              <span>9:19.5 Flagship</span>
+                              <span>9:16 Vertical</span>
                             </div>
                           </div>
                         </div>
-
-                        {/* iOS Bottom Home Indicator Bar */}
-                        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-24 h-1 bg-white/40 rounded-full z-30 pointer-events-none shadow-sm" />
                       </div>
 
-                      {/* Companion Side Column: Sample Productions Grid */}
-                      <div className="flex-1 flex flex-col justify-between w-full h-full min-h-0">
+                      {/* Companion Side Column: Sample Productions Grid + Continuity Lock Card */}
+                      <div className="flex-1 flex flex-col justify-between gap-3 w-full max-w-[320px] sm:max-w-none">
                         {/* Switch active reel filmstrip cards */}
                         <div className="space-y-1.5">
                           <div className="flex items-center justify-between px-0.5 text-xs text-slate-400">
-                            <span className="font-bold text-teal-300 uppercase tracking-wider text-[10px] flex items-center gap-1">
-                              <Film className="w-3 h-3" /> Sample Productions
+                            <span className="font-bold text-teal-300 uppercase tracking-wider text-[11px] flex items-center gap-1">
+                              <Film className="w-3.5 h-3.5 text-teal-400" /> Sample Productions
                             </span>
-                            <span className="text-[9px] text-slate-400">Tap to load</span>
+                            <span className="text-[10px] text-slate-400">Tap to load</span>
                           </div>
-                          <div className="grid grid-cols-2 gap-1.5">
+                          <div className="grid grid-cols-2 gap-2">
                             {FINISHED_REELS.map((reel, idx) => (
                               <button
                                 key={reel.id}
                                 type="button"
                                 onClick={() => setActiveReelIndex(idx)}
-                                className={`relative aspect-[16/9] rounded-lg overflow-hidden border-2 transition-all group ${
+                                className={`relative aspect-[16/9] rounded-xl overflow-hidden border-2 transition-all group ${
                                   activeReelIndex === idx
                                     ? "border-teal-400 shadow-md shadow-teal-500/30 scale-[1.02] z-10"
                                     : "border-white/10 opacity-70 hover:opacity-100 hover:border-white/30"
@@ -3169,11 +2602,11 @@ export function CreatorReelsHome() {
                               >
                                 <img src={reel.posterUrl} alt={reel.title} className="w-full h-full object-cover" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                                <div className="absolute bottom-1 inset-x-1 flex items-center justify-between">
-                                  <span className="text-[9px] font-bold text-white truncate text-left">
+                                <div className="absolute bottom-1.5 inset-x-1.5 flex items-center justify-between">
+                                  <span className="text-[10px] font-bold text-white truncate text-left">
                                     {reel.title}
                                   </span>
-                                  <span className="text-[8px] font-mono text-teal-300 shrink-0 bg-black/50 px-1 rounded">
+                                  <span className="text-[8px] font-mono text-teal-300 shrink-0 bg-black/60 px-1 py-0.5 rounded">
                                     {reel.durationSec}s
                                   </span>
                                 </div>
@@ -3182,874 +2615,216 @@ export function CreatorReelsHome() {
                           </div>
                         </div>
 
-                        {/* Active Reel Production Telemetry Strip */}
-                        <div className="mt-2 p-2 rounded-xl bg-[#0A0E17] border border-teal-500/20 flex items-center justify-between text-[10px] text-slate-300">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse shrink-0" />
-                            <span className="font-semibold text-white truncate max-w-[150px]">{activeReel.title}</span>
-                          </div>
-                          <div className="flex items-center gap-1 font-mono text-[9px] text-teal-300 shrink-0">
-                            <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/5">{activeReel.shots} Takes</span>
-                            <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/5">{activeReel.durationSec}s</span>
+                        {/* Continuity Proof Badge Card */}
+                        <div className="w-full p-3 rounded-xl bg-teal-500/5 border border-teal-500/20 text-xs text-slate-300 flex items-start gap-2.5 shadow-sm">
+                          <CheckCircle2 className="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
+                          <div>
+                            <strong className="text-teal-300 block font-semibold text-[11px]">Biometric Continuity Lock:</strong>
+                            <span className="text-slate-300 text-[10px] leading-relaxed block mt-0.5">
+                              {activeReel.continuityProof}
+                            </span>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Monitor Card Bottom Footer */}
-                    <div className="mt-2 pt-2 border-t border-white/5 flex items-center gap-1.5 text-[10px] sm:text-[11px] text-slate-400">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-teal-400 shrink-0" />
-                      <span>
-                        <strong className="text-slate-200">Biometric Identity Continuity Certified.</strong> Facial geometry, bone anchors &amp; physical wardrobe lock 100% across all cuts.
-                      </span>
+                    {/* Card Footer: Matching left card AI disclosure */}
+                    <div className="pt-2.5 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-400">
+                      <div className="flex items-center gap-1.5 text-teal-400">
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span>100% Biometric Facial Lock across all continuous cuts</span>
+                      </div>
+                      <span className="font-mono text-[10px] text-slate-500">SynthID &amp; C2PA Verified</span>
                     </div>
-                  </>
+                  </div>
                 ) : (
-                  /* YouTube / Cinema Mode 2 Monitor Content */
-                  <>
-                    {/* Monitor Card Top Header */}
-                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/5 text-xs">
+                  /* Cinema Master 180s Theatrical Showcase Frame + Scrubber + Score & Acts in Matching Card */
+                  <div className="flex-1 flex flex-col justify-between gap-3.5">
+                    {/* Card Header matching left card styling */}
+                    <div className="flex items-center justify-between pb-2.5 border-b border-white/5">
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                        <span className="font-bold text-white text-xs sm:text-sm tracking-tight flex items-center gap-1.5">
+                        <span className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
                           <Clapperboard className="w-3.5 h-3.5 text-amber-400" />
-                          Cinema Master Monitor
+                          Theatrical Cinema Monitor
                         </span>
-                        <span className="px-2 py-0.5 rounded-full bg-amber-400/15 border border-amber-400/40 text-amber-300 text-[10px] font-semibold">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400/10 text-amber-300 font-bold border border-amber-400/20">
+                          5-Act Master
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
+                        <span className="px-2 py-0.5 rounded bg-black/50 border border-white/10 font-mono text-amber-300">
+                          2.39:1 Anamorphic
+                        </span>
+                        <span className="text-slate-500">•</span>
+                        <span>30 Shots • 180s</span>
+                      </div>
+                    </div>
+
+                    {/* Cinema Master 180s Video Player */}
+                    <div className="relative w-full aspect-[2.39/1] bg-black rounded-xl sm:rounded-2xl p-1.5 shadow-2xl shadow-amber-500/15 border-2 border-amber-500/40 ring-1 ring-amber-500/20 overflow-hidden group">
+                      <video
+                        ref={videoRef}
+                        key={activeCinema.videoUrl}
+                        src={activeCinema.videoUrl}
+                        poster={activeCinema.posterUrl}
+                        playsInline
+                        muted={isMuted}
+                        autoPlay
+                        loop
+                        preload="auto"
+                        className="w-full h-full object-cover select-none cursor-pointer rounded-lg sm:rounded-xl"
+                        onClick={togglePlay}
+                      />
+
+                      {/* Center Cinema Play Button overlay when paused */}
+                      {!isPlaying && (
+                        <button
+                          type="button"
+                          onClick={togglePlay}
+                          className="absolute inset-0 m-auto w-12 h-12 rounded-full bg-amber-400/90 hover:bg-amber-300 text-[#07090E] flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all z-30 cursor-pointer"
+                          aria-label="Play Cinema Master"
+                          title="Play Full Combined Cinema Master Reel"
+                        >
+                          <Play className="w-6 h-6 fill-current translate-x-0.5" />
+                        </button>
+                      )}
+
+                      {/* Top Cinema Overlay Badges */}
+                      <div className="absolute top-2 left-2.5 right-2.5 z-20 flex items-center justify-between pointer-events-none">
+                        <span className="px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md border border-white/15 text-[9px] font-bold text-white flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                          <span>30 Shots • 180s • 5 Classical Acts</span>
+                        </span>
+
+                        <span className="px-1.5 py-0.5 rounded-full bg-amber-400/90 backdrop-blur-md text-[#07090E] text-[8px] font-black uppercase tracking-wider">
                           2.39:1 Anamorphic
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono">
-                        <span className="px-2 py-0.5 rounded bg-white/5 border border-white/5">
-                          30 Takes • 180s Total
-                        </span>
+
+                      {/* Controls overlay: Mute & Play toggles */}
+                      <div className="absolute top-2 right-2.5 z-30 flex gap-1.5">
+                        <button
+                          type="button"
+                          onClick={toggleMute}
+                          className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
+                          title={isMuted ? "Unmute Audio" : "Mute Audio"}
+                        >
+                          {isMuted ? <VolumeX className="w-3.5 h-3.5 text-amber-300" /> : <Volume2 className="w-3.5 h-3.5 text-amber-400" />}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={togglePlay}
+                          className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
+                          title={isPlaying ? "Pause" : "Play"}
+                        >
+                          {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 translate-x-0.5 text-amber-400" />}
+                        </button>
+                      </div>
+
+                      {/* Bottom Info Bar */}
+                      <div className="absolute bottom-0 inset-x-0 p-2 pt-6 bg-gradient-to-t from-black/95 via-black/60 to-transparent z-20 flex flex-col">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400">
+                            {activeCinema.category}
+                          </span>
+                          <span className="text-[9px] text-slate-300 truncate max-w-[260px]">
+                            {activeCinema.subtitle}
+                          </span>
+                        </div>
+                        <h3 className="text-xs sm:text-sm font-bold text-white leading-tight drop-shadow-md truncate">
+                          {activeCinema.title}
+                        </h3>
                       </div>
                     </div>
 
-                    {/* Monitor Card Body: 2.39:1 Player + 5 Acts Scrubber + Side-by-Side Cards */}
-                    <div className="flex flex-col gap-2 flex-1 justify-between py-1">
-                      {/* Widescreen 2.39:1 Video Container */}
-                      <div className="relative w-full aspect-[2.39/1] bg-black rounded-xl sm:rounded-2xl p-1.5 shadow-2xl shadow-amber-500/15 border-2 border-amber-500/40 ring-1 ring-amber-500/20 overflow-hidden group">
-                        <video
-                          ref={videoRef}
-                          key={activeCinema.videoUrl}
-                          src={activeCinema.videoUrl}
-                          poster={activeCinema.posterUrl}
-                          playsInline
-                          muted={isMuted}
-                          autoPlay
-                          loop
-                          preload="auto"
-                          className="w-full h-full object-cover select-none cursor-pointer rounded-lg sm:rounded-xl"
-                          onClick={togglePlay}
-                        />
-
-                        {/* Center Cinema Play Button overlay when paused */}
-                        {!isPlaying && (
+                    {/* 5 ACTS TIME JUMP SCRUBBER */}
+                    <div className="bg-[#0C1019] rounded-xl p-2 border border-amber-500/20 shadow-md flex flex-col gap-1">
+                      <div className="flex items-center justify-between text-xs px-1 text-slate-400 font-medium">
+                        <span className="text-amber-300 font-bold uppercase tracking-wider flex items-center gap-1 text-[10px]">
+                          <Clapperboard className="w-3 h-3 text-amber-400" />
+                          Jump to Act:
+                        </span>
+                        <span className="text-[9px] text-slate-500">Interactive Timeline</span>
+                      </div>
+                      <div className="grid grid-cols-5 gap-1.5">
+                        {[
+                          { act: 1, label: "Marseilles", time: 0, timecode: "0:00" },
+                          { act: 2, label: "Notre-Dame", time: 36, timecode: "0:36" },
+                          { act: 3, label: "Poland", time: 72, timecode: "1:12" },
+                          { act: 4, label: "Tuileries", time: 108, timecode: "1:48" },
+                          { act: 5, label: "St. Helena", time: 144, timecode: "2:24" }
+                        ].map(item => (
                           <button
+                            key={item.act}
                             type="button"
-                            onClick={togglePlay}
-                            className="absolute inset-0 m-auto w-12 h-12 rounded-full bg-amber-400/90 hover:bg-amber-300 text-[#07090E] flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all z-30 cursor-pointer"
-                            aria-label="Play Cinema Master"
-                            title="Play Full Combined Cinema Master Reel"
+                            onClick={() => seekToTime(item.time)}
+                            className="px-1 py-1 rounded-lg bg-white/5 hover:bg-amber-400/20 hover:border-amber-400/40 border border-white/5 text-slate-300 hover:text-amber-200 transition-all text-center flex flex-col items-center min-h-[34px] justify-center"
                           >
-                            <Play className="w-6 h-6 fill-current translate-x-0.5" />
+                            <span className="text-amber-400 font-bold text-[10px]">Act {item.act}</span>
+                            <span className="text-[8px] text-slate-400">{item.timecode}</span>
                           </button>
-                        )}
+                        ))}
+                      </div>
+                    </div>
 
-                        {/* Top Cinema Overlay Badges */}
-                        <div className="absolute top-2 left-2.5 right-2.5 z-20 flex items-center justify-between pointer-events-none">
-                          <span className="px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md border border-white/15 text-[9px] font-bold text-white flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                            <span>30 Shots • 180s • 5 Classical Acts</span>
-                          </span>
-
-                          <span className="px-1.5 py-0.5 rounded-full bg-amber-400/90 backdrop-blur-md text-[#07090E] text-[8px] font-black uppercase tracking-wider">
-                            2.39:1 Anamorphic
-                          </span>
-                        </div>
-
-                        {/* Controls overlay: Mute & Play toggles */}
-                        <div className="absolute top-2 right-2.5 z-30 flex gap-1.5">
-                          <button
-                            type="button"
-                            onClick={toggleMute}
-                            className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
-                            title={isMuted ? "Unmute Audio" : "Mute Audio"}
-                          >
-                            {isMuted ? <VolumeX className="w-3.5 h-3.5 text-amber-300" /> : <Volume2 className="w-3.5 h-3.5 text-amber-400" />}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={togglePlay}
-                            className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
-                            title={isPlaying ? "Pause" : "Play"}
-                          >
-                            {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 translate-x-0.5 text-amber-400" />}
-                          </button>
-                        </div>
-
-                        {/* Bottom Info Bar */}
-                        <div className="absolute bottom-0 inset-x-0 p-2 pt-6 bg-gradient-to-t from-black/95 via-black/60 to-transparent z-20 flex flex-col">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400">
-                              {activeCinema.category}
-                            </span>
-                            <span className="text-[9px] text-slate-300 truncate max-w-[260px]">
-                              {activeCinema.subtitle}
-                            </span>
-                          </div>
-                          <h3 className="text-xs sm:text-sm font-bold text-white leading-tight drop-shadow-md truncate">
-                            {activeCinema.title}
-                          </h3>
+                    {/* Side-by-Side: Score Bed & Classical 5-Act Narrative Arc */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {/* Master Symphonic Score Bed Card */}
+                      <div className="p-2.5 rounded-xl bg-[#0A0E17] border border-amber-500/20 text-xs text-slate-300 flex items-start gap-2 shadow-md">
+                        <Music2 className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                        <div>
+                          <strong className="text-amber-300 block font-semibold text-[10px] uppercase tracking-wider">Master Symphonic Bed (-24.0 LUFS):</strong>
+                          <span className="text-slate-300 text-[10px] block mt-0.5 leading-snug">{activeCinema.scoreTitle}</span>
                         </div>
                       </div>
 
-                      {/* 5 ACTS TIME JUMP SCRUBBER */}
-                      <div className="bg-[#0C1019] rounded-xl p-1.5 border border-amber-500/20 shadow-md flex flex-col gap-1">
-                        <div className="flex items-center justify-between text-xs px-1 text-slate-400 font-medium">
-                          <span className="text-amber-300 font-bold uppercase tracking-wider flex items-center gap-1 text-[10px]">
+                      {/* Classical 5-Act Breakdown */}
+                      <div className="p-2.5 rounded-xl bg-[#080B11] border border-white/10 text-xs shadow-md overflow-hidden">
+                        <div className="flex items-center justify-between text-[10px] text-amber-400 font-bold border-b border-white/5 pb-1 mb-1">
+                          <span className="flex items-center gap-1">
                             <Clapperboard className="w-3 h-3 text-amber-400" />
-                            Jump to Act:
+                            Classical 5-Act Narrative Arc
                           </span>
-                          <span className="text-[9px] text-slate-500">Interactive Timeline</span>
+                          <span className="text-slate-400 font-mono text-[9px]">30 Takes • 180s</span>
                         </div>
-                        <div className="grid grid-cols-5 gap-1">
-                          {[
-                            { act: 1, label: "Marseilles", time: 0, timecode: "0:00" },
-                            { act: 2, label: "Notre-Dame", time: 36, timecode: "0:36" },
-                            { act: 3, label: "Poland", time: 72, timecode: "1:12" },
-                            { act: 4, label: "Tuileries", time: 108, timecode: "1:48" },
-                            { act: 5, label: "St. Helena", time: 144, timecode: "2:24" }
-                          ].map(item => (
-                            <button
-                              key={item.act}
-                              type="button"
-                              onClick={() => seekToTime(item.time)}
-                              className="px-1 py-0.5 rounded-lg bg-white/5 hover:bg-amber-400/20 hover:border-amber-400/40 border border-white/5 text-slate-300 hover:text-amber-200 transition-all text-center flex flex-col items-center min-h-[30px] justify-center"
+                        <div className="space-y-0.5 text-[10px]">
+                          {activeCinema.acts.map((act) => (
+                            <div
+                              key={act.act}
+                              className="flex items-center justify-between gap-1 cursor-pointer hover:text-amber-200 transition-colors py-0.5"
+                              onClick={() => seekToTime(act.act === 1 ? 0 : act.act === 2 ? 36 : act.act === 3 ? 72 : act.act === 4 ? 108 : 144)}
                             >
-                              <span className="text-amber-400 font-bold text-[10px]">Act {item.act}</span>
-                              <span className="text-[8px] text-slate-400">{item.timecode}</span>
-                            </button>
+                              <div className="flex items-center gap-1 truncate">
+                                <span className="font-mono text-amber-400 font-bold shrink-0">A{act.act}:</span>
+                                <strong className="text-white font-medium truncate">{act.title}</strong>
+                              </div>
+                              <span className="text-slate-500 font-mono text-[9px] shrink-0">{act.timecode}</span>
+                            </div>
                           ))}
                         </div>
                       </div>
+                    </div>
 
-                      {/* Side-by-Side: Score Bed & Classical 5-Act Narrative Arc */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {/* Master Symphonic Score Bed Card */}
-                        <div className="p-2 rounded-xl bg-[#0A0E17] border border-amber-500/20 text-xs text-slate-300 flex items-start gap-2 shadow-md">
-                          <Music2 className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                          <div>
-                            <strong className="text-amber-300 block font-semibold text-[10px] uppercase tracking-wider">Master Symphonic Bed (-24.0 LUFS):</strong>
-                            <span className="text-slate-300 text-[10px] block mt-0.5 leading-snug">{activeCinema.scoreTitle}</span>
-                          </div>
-                        </div>
-
-                        {/* Classical 5-Act Breakdown */}
-                        <div className="p-2 rounded-xl bg-[#080B11] border border-white/10 text-xs shadow-md overflow-hidden">
-                          <div className="flex items-center justify-between text-[10px] text-amber-400 font-bold border-b border-white/5 pb-1 mb-1">
-                            <span className="flex items-center gap-1">
-                              <Clapperboard className="w-3 h-3 text-amber-400" />
-                              Classical 5-Act Narrative Arc
-                            </span>
-                            <span className="text-slate-400 font-mono text-[9px]">30 Takes • 180s</span>
-                          </div>
-                          <div className="space-y-0.5 text-[10px]">
-                            {activeCinema.acts.map((act) => (
-                              <div
-                                key={act.act}
-                                className="flex items-center justify-between gap-1 cursor-pointer hover:text-amber-200 transition-colors py-0.5"
-                                onClick={() => seekToTime(act.act === 1 ? 0 : act.act === 2 ? 36 : act.act === 3 ? 72 : act.act === 4 ? 108 : 144)}
-                              >
-                                <div className="flex items-center gap-1 truncate">
-                                  <span className="font-mono text-amber-400 font-bold shrink-0">A{act.act}:</span>
-                                  <strong className="text-white font-medium truncate">{act.title}</strong>
-                                </div>
-                                <span className="text-slate-500 font-mono text-[9px] shrink-0">{act.timecode}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
+                    {/* Card Footer: Matching left card AI disclosure */}
+                    <div className="pt-2.5 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-400">
+                      <div className="flex items-center gap-1.5 text-amber-400">
+                        <Music2 className="w-3.5 h-3.5" />
+                        <span>Orchestral Score (Beethoven Op. 92) EBU R128 Mastered</span>
                       </div>
+                      <span className="font-mono text-[10px] text-slate-500">Cooke Anamorphic 24fps</span>
                     </div>
-
-                    {/* Monitor Card Bottom Footer */}
-                    <div className="mt-2 pt-2 border-t border-white/5 flex items-center gap-1.5 text-[10px] sm:text-[11px] text-slate-400">
-                      <ShieldCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                      <span>
-                        <strong className="text-slate-200">Theatrical Master Certified.</strong> 5-act classical drama, Cooke 2.39:1 anamorphic optics &amp; EBU R128 master acoustic bed.
-                      </span>
-                    </div>
-                  </>
+                  </div>
                 )}
               </div>
             </div>
           </div>
-
-          {/* THREE CREATOR PROMISES ROW (FULL-WIDTH 12 COLS) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-white/5">
-            {activeTab === "instagram_tiktok" ? (
-              <>
-                <div className="p-5 rounded-2xl bg-[#0A0E17]/80 border border-teal-500/20 shadow-lg flex items-start gap-3.5 hover:border-teal-500/40 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center shrink-0 text-teal-400">
-                    <Layers className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-base font-bold text-white">Zero Face Drift</h4>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">Continuous scene extension keeps character facial identity 100% locked across all cuts.</p>
-                  </div>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-[#0A0E17]/80 border border-cyan-500/20 shadow-lg flex items-start gap-3.5 hover:border-cyan-500/40 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center shrink-0 text-cyan-400">
-                    <Clock className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-base font-bold text-white">~7 Minute Turnaround</h4>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">Honest wait times stated upfront. Render in background with immediate completion alerts.</p>
-                  </div>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-[#0A0E17]/80 border border-emerald-500/20 shadow-lg flex items-start gap-3.5 hover:border-emerald-500/40 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-400">
-                    <ShieldCheck className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-base font-bold text-white">Platform-Safe AI</h4>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">Compliant C2PA metadata &amp; SynthID watermarks safeguard account reach on TikTok &amp; IG.</p>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="p-5 rounded-2xl bg-[#0A0E17]/80 border border-amber-500/20 shadow-lg flex items-start gap-3.5 hover:border-amber-500/40 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-400">
-                    <Clapperboard className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-base font-bold text-white">Classical 5-Act Drama</h4>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">Prologue, inciting incident, crisis, climax &amp; resolution structured across 30 unbroken takes.</p>
-                  </div>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-[#0A0E17]/80 border border-orange-500/20 shadow-lg flex items-start gap-3.5 hover:border-orange-500/40 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center shrink-0 text-orange-400">
-                    <Film className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-base font-bold text-white">Cooke Anamorphic 2.39:1</h4>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">Authentic 24fps motion cadence, anamorphic lens falloff, flares &amp; ACES 1.3 color grading.</p>
-                  </div>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-[#0A0E17]/80 border border-yellow-500/20 shadow-lg flex items-start gap-3.5 hover:border-yellow-500/40 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center shrink-0 text-yellow-400">
-                    <Music2 className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-base font-bold text-white">Symphonic -24.0 LUFS</h4>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">Continuous orchestral score (Beethoven Op. 92) mixed to broadcast EBU R128 standards.</p>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* 3. BELOW THE FOLD: FINISHED PRODUCTION OUTPUTS SHOWCASE */}
-      <section id="showcase" className="py-16 md:py-24 border-b border-white/5 bg-[#090D15]">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 md:px-12 lg:px-16">
-          <div className="text-center max-w-3xl mx-auto mb-10 md:mb-12">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-semibold uppercase tracking-wider mb-3">
-              <Film className="w-3.5 h-3.5" />
-              <span>Real Production Outputs</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
-              Finished productions. Ready to broadcast.
-            </h2>
-            <p className="text-base sm:text-lg text-slate-300 mt-3">
-              Every production below was planned, anchored, and synthesized end-to-end as a single unbroken sequence with synchronized audio.
-            </p>
-
-            {/* Showcase tab selector */}
-            <div className="flex items-center justify-center gap-2 mt-6">
-              <button
-                type="button"
-                onClick={() => setShowcaseTab("instagram_tiktok")}
-                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 min-h-[40px] ${
-                  showcaseTab === "instagram_tiktok"
-                    ? "bg-teal-500 text-[#07090E] shadow-md shadow-teal-500/20"
-                    : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
-                }`}
-              >
-                <span>📱 Instagram / TikTok (9:16)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowcaseTab("youtube_shorts")}
-                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 min-h-[40px] ${
-                  showcaseTab === "youtube_shorts"
-                    ? "bg-amber-400 text-[#07090E] shadow-md shadow-amber-400/20"
-                    : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
-                }`}
-              >
-                <span>🎬 YouTube / 180s Cinema (2.39:1)</span>
-              </button>
-            </div>
-          </div>
-
-          {showcaseTab === "instagram_tiktok" ? (
-            /* 4 REELS RESPONSIVE GRID */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-              {FINISHED_REELS.map((reel, index) => {
-                const isSelected = activeReelIndex === index && activeTab === "instagram_tiktok";
-                return (
-                  <div
-                    key={reel.id}
-                    className={`bg-[#0E121B] rounded-2xl border transition-all overflow-hidden flex flex-col group ${
-                      isSelected
-                        ? "border-teal-500 ring-2 ring-teal-500/30 shadow-xl shadow-teal-500/10"
-                        : "border-white/10 hover:border-white/25 hover:shadow-xl"
-                    }`}
-                  >
-                    {/* Reel 9:16 Video Container */}
-                    <div className="relative aspect-[9/16] bg-black overflow-hidden">
-                      <video
-                        src={reel.videoUrl}
-                        poster={reel.posterUrl}
-                        playsInline
-                        muted
-                        loop
-                        autoPlay
-                        preload="auto"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-
-                      {/* Top overlay badges */}
-                      <div className="absolute top-3 inset-x-3 flex items-center justify-between z-10">
-                        <span className="px-2 py-0.5 rounded bg-black/70 backdrop-blur-md text-[10px] font-bold text-white">
-                          {reel.shots} Shots • {reel.durationSec}s
-                        </span>
-                        <span className="px-2 py-0.5 rounded bg-teal-500/90 text-[#07090E] text-[10px] font-black uppercase">
-                          9:16
-                        </span>
-                      </div>
-
-                      {/* Bottom CTA to load into main player */}
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-4">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveTab("instagram_tiktok");
-                            setActiveReelIndex(index);
-                            window.scrollTo({ top: 0, behavior: "smooth" });
-                          }}
-                          className="px-4 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-[#07090E] font-bold text-xs flex items-center gap-1.5 shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all"
-                        >
-                          <Play className="w-4 h-4 fill-current" />
-                          <span>Watch in Main Player</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Reel Metadata */}
-                    <div className="p-4 sm:p-5 flex flex-col flex-grow justify-between">
-                      <div>
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className="text-[11px] font-semibold text-teal-400 uppercase tracking-wide">
-                            {reel.category}
-                          </span>
-                        </div>
-                        <h3 className="text-base font-bold text-white group-hover:text-teal-300 transition-colors">
-                          {reel.title}
-                        </h3>
-                        <p className="text-xs text-slate-400 mt-2 line-clamp-2">
-                          {reel.prompt}
-                        </p>
-                      </div>
-
-                      <div className="mt-4 pt-3 border-t border-white/5 flex flex-col gap-2.5">
-                        <div className="flex items-start gap-1.5 text-[11px] text-slate-300">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-teal-400 shrink-0 mt-0.5" />
-                          <span className="leading-tight">{reel.continuityProof}</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setContinuationParent({
-                              id: reel.id,
-                              title: reel.title,
-                              category: reel.category,
-                              prompt: reel.prompt,
-                              aspectRatio: "9:16",
-                              durationSec: reel.durationSec,
-                              posterUrl: reel.posterUrl,
-                            });
-                            setPromptText(`Act II: Continuation of "${reel.title}". The sequence continues seamlessly with the same character, wardrobe, and visual aesthetic: `);
-                            setActiveTab("instagram_tiktok");
-                            setSelectedAspectRatio("9:16");
-                            setTimeout(() => {
-                              const el = document.getElementById("continuation-active-banner") || document.getElementById("prompt-studio-box");
-                              if (el) el.scrollIntoView({ behavior: "smooth" });
-                            }, 100);
-                          }}
-                          className="w-full py-2 px-3 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 hover:border-teal-400 text-teal-300 hover:text-white font-mono text-xs font-semibold flex items-center justify-center gap-1.5 transition shadow-sm"
-                          title="Direct Part 2 continuation with the exact same character, wardrobe, and theme"
-                        >
-                          <Sparkles className="w-3.5 h-3.5 text-teal-400" />
-                          <span>Direct Part 2 (Continuation)</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            /* 180s CINEMA THEATRICAL MASTER SHOWCASE */
-            <div className="flex flex-col gap-8">
-              {CINEMA_FINISHED_REELS.map(cinema => (
-                <div
-                  key={cinema.id}
-                  className="bg-[#0E121B] rounded-3xl border border-amber-500/30 overflow-hidden shadow-2xl p-6 sm:p-8"
-                >
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                    {/* 16:9 / 2.39:1 Video Container */}
-                    <div className="lg:col-span-7">
-                      <div className="relative aspect-[16/9] bg-black rounded-2xl overflow-hidden border border-white/10 group">
-                        <video
-                          src={cinema.videoUrl}
-                          poster={cinema.posterUrl}
-                          playsInline
-                          muted
-                          loop
-                          autoPlay
-                          preload="auto"
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute top-4 left-4 flex items-center gap-2 z-10">
-                          <span className="px-2.5 py-1 rounded-md bg-black/80 backdrop-blur-md text-xs font-bold text-white">
-                            30 Shots • 180s Master
-                          </span>
-                          <span className="px-2.5 py-1 rounded-md bg-amber-400 text-[#07090E] text-xs font-black uppercase">
-                            2.39:1 Anamorphic
-                          </span>
-                        </div>
-                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActiveTab("youtube_shorts");
-                              window.scrollTo({ top: 0, behavior: "smooth" });
-                            }}
-                            className="px-5 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#07090E] font-black text-sm flex items-center gap-2 shadow-xl transform translate-y-2 group-hover:translate-y-0 transition-all"
-                          >
-                            <Play className="w-5 h-5 fill-current" />
-                            <span>Load in Cinema Director</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Right Info Column */}
-                    <div className="lg:col-span-5 flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="px-2.5 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs font-bold uppercase tracking-wider">
-                            {cinema.category}
-                          </span>
-                          <span className="text-xs text-slate-400">• Classical 5-Act Drama</span>
-                        </div>
-                        <h3 className="text-2xl sm:text-3xl font-black text-white leading-tight">
-                          {cinema.title}
-                        </h3>
-                        <p className="text-sm font-semibold text-amber-300/90 mt-1">
-                          {cinema.subtitle}
-                        </p>
-                        <p className="text-xs sm:text-sm text-slate-300 mt-3 leading-relaxed">
-                          {cinema.prompt}
-                        </p>
-
-                        <div className="mt-4 p-3.5 rounded-xl bg-black/40 border border-white/5 flex items-start gap-3 text-xs">
-                          <Music2 className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                          <div>
-                            <strong className="text-white block font-semibold">Master Symphonic Bed:</strong>
-                            <span className="text-slate-300">{cinema.scoreTitle}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-6 pt-4 border-t border-white/5 flex flex-wrap gap-2">
-                        {cinema.tags.map((tag, tIdx) => (
-                          <span
-                            key={tIdx}
-                            className="px-2.5 py-1 rounded-md bg-white/5 text-slate-300 text-[11px] font-semibold"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 5 Classical Acts Cards Grid */}
-                  <div className="mt-8 pt-6 border-t border-white/10">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-amber-300 mb-4 flex items-center gap-2">
-                      <Clapperboard className="w-4 h-4 text-amber-400" />
-                      <span>5 Classical Acts Dramatic Breakdown:</span>
-                    </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                      {cinema.acts.map((act) => (
-                        <div
-                          key={act.act}
-                          className="p-3.5 rounded-xl bg-black/50 border border-white/5 hover:border-amber-400/30 transition-colors flex flex-col justify-between"
-                        >
-                          <div>
-                            <div className="flex items-center justify-between text-[11px] text-amber-400 font-bold mb-1">
-                              <span>Act {act.act}</span>
-                              <span className="text-slate-400 font-mono text-[10px]">{act.timecode}</span>
-                            </div>
-                            <h5 className="text-xs font-bold text-white leading-snug">
-                              {act.title}
-                            </h5>
-                          </div>
-                          <p className="text-[10px] text-slate-400 mt-2 line-clamp-2">
-                            {act.theme}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+          </>
           )}
+
         </div>
       </section>
-
-      {/* 4. THE CORE DIFFERENTIATOR: SINGLE UNBROKEN TAKE VS STITCHED CLIPS */}
-      <section id="differentiator" className="py-16 md:py-24 border-b border-white/5 bg-[#07090E]">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 md:px-12 lg:px-16">
-          <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-300 text-xs font-semibold uppercase tracking-wider mb-3">
-              <Zap className="w-3.5 h-3.5" />
-              <span>The Zyvoriq Difference</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
-              Why other AI video tools look like disjointed slides.
-            </h2>
-            <p className="text-base sm:text-lg text-slate-300 mt-3">
-              Most generators create random 3-second clips and stitch them into a timeline. When faces morph every cut, viewers scroll away.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            {/* Standard AI Generators */}
-            <div className="bg-[#0B0E17] rounded-3xl p-6 sm:p-8 border border-rose-500/20 shadow-lg">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 font-bold text-lg">
-                  ✕
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">Other AI Video Generators</h3>
-                  <span className="text-xs text-rose-300">Stitched multi-prompt clips</span>
-                </div>
-              </div>
-
-              <ul className="space-y-4 text-sm text-slate-300">
-                <li className="flex items-start gap-3">
-                  <span className="text-rose-400 font-bold mt-0.5">•</span>
-                  <span><strong>Character Face Morphs:</strong> Each cut prompts a brand-new face. Your protagonist looks like 6 different people.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-rose-400 font-bold mt-0.5">•</span>
-                  <span><strong>Jarring Disconnects:</strong> Lighting, wardrobe, and physics violently jump between cuts.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-rose-400 font-bold mt-0.5">•</span>
-                  <span><strong>Hidden Wait Times:</strong> Cryptic 11-phase spinners with zero ETA leave you guessing when renders finish.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-rose-400 font-bold mt-0.5">•</span>
-                  <span><strong>Platform Penalties:</strong> Unlabeled synthetic media gets flagged and throttled by TikTok and Instagram recommendation engines.</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Zyvoriq Unbroken Sequence */}
-            <div className="bg-[#0E1522] rounded-3xl p-6 sm:p-8 border-2 border-teal-500/50 shadow-2xl shadow-teal-500/10 relative">
-              <div className="absolute -top-3.5 right-6 px-3 py-1 rounded-full bg-teal-500 text-[#07090E] font-black text-xs uppercase tracking-wider">
-                Zyvoriq Advantage
-              </div>
-
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-teal-500/20 border border-teal-500/30 flex items-center justify-center text-teal-400 font-bold text-lg">
-                  ✓
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">Zyvoriq Unbroken Scene Extension</h3>
-                  <span className="text-xs text-teal-300">Continuous single-take camera choreography</span>
-                </div>
-              </div>
-
-              <ul className="space-y-4 text-sm text-slate-200">
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-teal-400 shrink-0 mt-0.5" />
-                  <span><strong>100% Biometric Lock:</strong> Shot 1 anchors character DNA. Every subsequent shot extends the same 3D coordinates.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-teal-400 shrink-0 mt-0.5" />
-                  <span><strong>Single Unbroken Take:</strong> Fluid camera motion vectors carry momentum, wind, and fabric across cuts.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-teal-400 shrink-0 mt-0.5" />
-                  <span><strong>Honest ~7-Minute ETA:</strong> Exact queue timing stated upfront. Close the tab and get notified when ready.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-teal-400 shrink-0 mt-0.5" />
-                  <span><strong>Safe to Post:</strong> Built-in C2PA Content Credentials &amp; SynthID watermarks safeguard account reach.</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 5. PRICING SECTION */}
-      <section id="pricing" className="py-16 md:py-24 border-b border-white/5 bg-[#090D15]">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 md:px-12 lg:px-16">
-          <div className="text-center max-w-3xl mx-auto mb-10">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-300 text-xs font-semibold uppercase tracking-wider mb-3">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Simple Transparent Pricing</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
-              Plans built for publishing velocity.
-            </h2>
-            <p className="text-base sm:text-lg text-slate-300 mt-3">
-              Pay for finished, platform-ready reels with zero surprise credit fees.
-            </p>
-
-            {/* Monthly / Annual billing toggle */}
-            <div className="flex items-center justify-center gap-3 mt-6">
-              <span className={`text-xs sm:text-sm font-semibold ${!annualBilling ? "text-white" : "text-slate-400"}`}>
-                Monthly Billing
-              </span>
-              <button
-                type="button"
-                onClick={() => setAnnualBilling(!annualBilling)}
-                className="w-12 h-6 rounded-full bg-white/10 p-1 relative transition-colors focus:outline-none"
-              >
-                <div
-                  className={`w-4 h-4 rounded-full bg-teal-400 transition-transform ${
-                    annualBilling ? "translate-x-6" : "translate-x-0"
-                  }`}
-                />
-              </button>
-              <span className={`text-xs sm:text-sm font-semibold flex items-center gap-1.5 ${annualBilling ? "text-white" : "text-slate-400"}`}>
-                <span>Annual Billing</span>
-                <span className="px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 text-[10px] font-bold">
-                  Save 20%
-                </span>
-              </span>
-            </div>
-          </div>
-
-          {/* 3 PRICING TIERS */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {/* TIER 1: CREATOR */}
-            <div className="bg-[#0E121B] rounded-3xl p-6 sm:p-8 border border-white/10 flex flex-col justify-between">
-              <div>
-                <h3 className="text-xl font-black text-white">Starter Creator</h3>
-                <p className="text-xs text-slate-400 mt-1">For independent creators posting 2–3 viral reels per week.</p>
-                
-                <div className="mt-6 mb-6">
-                  <span className="text-4xl font-black text-white">
-                    ${annualBilling ? "23" : "29"}
-                  </span>
-                  <span className="text-slate-400 text-xs ml-1.5">/ month</span>
-                </div>
-
-                <ul className="space-y-3 text-xs sm:text-sm text-slate-300">
-                  <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-teal-400 shrink-0" />
-                    <span><strong>15 finished 9:16 reels</strong> / mo</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-teal-400 shrink-0" />
-                    <span>Up to 6 shots (~30s) per reel</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-teal-400 shrink-0" />
-                    <span>1080p vertical export</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-teal-400 shrink-0" />
-                    <span>~7 min background rendering</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-teal-400 shrink-0" />
-                    <span>C2PA &amp; SynthID compliance badge</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="mt-8">
-                <a
-                  href="#prompt-bar"
-                  className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs sm:text-sm text-center block transition-colors min-h-[44px] flex items-center justify-center"
-                >
-                  Start with Starter
-                </a>
-              </div>
-            </div>
-
-            {/* TIER 2: PRO PUBLISHER (FEATURED) */}
-            <div className="bg-[#0E1522] rounded-3xl p-6 sm:p-8 border-2 border-teal-500 shadow-2xl shadow-teal-500/20 flex flex-col justify-between relative">
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-teal-500 text-[#07090E] font-black text-xs uppercase tracking-wider">
-                Most Popular
-              </div>
-
-              <div>
-                <h3 className="text-xl font-black text-white">Pro Publisher</h3>
-                <p className="text-xs text-slate-400 mt-1">For serious creators and brand channels posting daily.</p>
-                
-                <div className="mt-6 mb-6">
-                  <span className="text-4xl font-black text-white">
-                    ${annualBilling ? "63" : "79"}
-                  </span>
-                  <span className="text-slate-400 text-xs ml-1.5">/ month</span>
-                </div>
-
-                <ul className="space-y-3 text-xs sm:text-sm text-slate-200">
-                  <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-teal-400 shrink-0" />
-                    <span><strong>50 finished 9:16 reels</strong> / mo</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-teal-400 shrink-0" />
-                    <span>Up to 9 shots (~45s) unbroken takes</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-teal-400 shrink-0" />
-                    <span>720p HD vertical export (720x1280)</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-teal-400 shrink-0" />
-                    <span>Priority fast queue (~5 min render)</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-teal-400 shrink-0" />
-                    <span>Custom facial anchor upload</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-teal-400 shrink-0" />
-                    <span>1-click export to TikTok &amp; Instagram</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="mt-8">
-                <a
-                  href="#prompt-bar"
-                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-[#07090E] font-black text-sm text-center block shadow-lg shadow-teal-500/25 transition-all min-h-[44px] flex items-center justify-center"
-                >
-                  Get Pro Publisher
-                </a>
-              </div>
-            </div>
-
-            {/* TIER 3: AGENCY */}
-            <div className="bg-[#0E121B] rounded-3xl p-6 sm:p-8 border border-white/10 flex flex-col justify-between">
-              <div>
-                <h3 className="text-xl font-black text-white">Agency &amp; Studio</h3>
-                <p className="text-xs text-slate-400 mt-1">For multi-creator agencies and enterprise production houses.</p>
-                
-                <div className="mt-6 mb-6">
-                  <span className="text-4xl font-black text-white">
-                    ${annualBilling ? "159" : "199"}
-                  </span>
-                  <span className="text-slate-400 text-xs ml-1.5">/ month</span>
-                </div>
-
-                <ul className="space-y-3 text-xs sm:text-sm text-slate-300">
-                  <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-teal-400 shrink-0" />
-                    <span><strong>150 finished reels</strong> / mo</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-teal-400 shrink-0" />
-                    <span>Multi-seat collaboration (5 creators)</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-teal-400 shrink-0" />
-                    <span>Custom voice cloning &amp; audio track sync</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-teal-400 shrink-0" />
-                    <span>Dedicated background worker queue</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-teal-400 shrink-0" />
-                    <span>Full commercial rights &amp; API access</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="mt-8">
-                <a
-                  href="#prompt-bar"
-                  className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs sm:text-sm text-center block transition-colors min-h-[44px] flex items-center justify-center"
-                >
-                  Contact Agency Sales
-                </a>
-              </div>
-            </div>
-          </div>
-
-          {/* Trust Strip */}
-          <div className="mt-12 pt-8 border-t border-white/5 flex flex-wrap items-center justify-center gap-8 text-xs text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-teal-400" /> Cancel anytime with 1 click
-            </span>
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-teal-400" /> Full commercial usage rights included
-            </span>
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-teal-400" /> Platform-safe C2PA &amp; SynthID disclosure
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* 6. CLEAN CREATOR FOOTER */}
-      <footer className="py-12 bg-[#05070A] border-t border-white/5 text-xs text-slate-400">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 md:px-12 lg:px-16 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-teal-500/20 flex items-center justify-center text-teal-400 font-bold text-sm">
-              Z
-            </div>
-            <span className="font-bold text-white tracking-tight">ZYVORIQ</span>
-            <span className="text-slate-400">• Single Unbroken Take AI Video Engine</span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-6">
-            <a href="#showcase" className="hover:text-white transition-colors">Showcase</a>
-            <a href="#differentiator" className="hover:text-white transition-colors">Differentiator</a>
-            <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
-            <Link href="/my-reels" className="hover:text-white transition-colors">My Reels</Link>
-            <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
-          </div>
-
-          <div className="text-slate-400 text-center sm:text-right">
-            &copy; {new Date().getFullYear()} Zyvoriq. All rights reserved.
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

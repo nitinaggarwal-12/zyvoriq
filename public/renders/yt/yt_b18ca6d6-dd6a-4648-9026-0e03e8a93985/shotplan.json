@@ -1,0 +1,82 @@
+[
+  {
+    "action": "Medium Shot. Establishing framing of both performers side-by-side. Performer A is on the left, Performer B on the right. They sing Line 1 of the chorus as cinematic backlighting casts a neon glow on their hair.",
+    "emotion": "Intense and warm",
+    "micro_expressions": "Performer A holds a dramatic, focused stare into the lens. Performer B delivers a warm dimpled smile directed slightly off-camera. Both articulate the words clearly.",
+    "index": 1,
+    "startSec": 0,
+    "endSec": 6.25,
+    "durationSec": 6.25,
+    "beats": 13,
+    "singing": true,
+    "sungFraction": 0.86,
+    "lyric": "We burn bright in the neon light",
+    "lyricParts": [
+      {
+        "text": "We burn bright in the neon light",
+        "start": 0.25,
+        "end": 5.65
+      }
+    ]
+  },
+  {
+    "action": "Extreme Close-Up on Performer A. Her sharp features and jet-black hair frame the shot as neon lights cast high-contrast shadows. She delivers Line 2.",
+    "emotion": "Fierce and confident",
+    "micro_expressions": "Her expression shifts from fierce to a slight, confident smirk, maintaining intense eye contact with the viewer.",
+    "index": 2,
+    "startSec": 6.25,
+    "endSec": 12.25,
+    "durationSec": 6,
+    "beats": 13,
+    "singing": true,
+    "sungFraction": 0.9,
+    "lyric": "Dancing through the summer night",
+    "lyricParts": [
+      {
+        "text": "Dancing through the summer night",
+        "start": 6.25,
+        "end": 11.65
+      }
+    ]
+  },
+  {
+    "action": "Close-Up on Performer B. Her voluminous dark wavy curls bounce in frame as she sings Line 3. Light reflects off her ruby-red satin corset.",
+    "emotion": "Radiant and energetic",
+    "micro_expressions": "Her dimpled smile radiates pure summer pop energy.",
+    "index": 3,
+    "startSec": 12.25,
+    "endSec": 18.25,
+    "durationSec": 6,
+    "beats": 13,
+    "singing": true,
+    "sungFraction": 0.9,
+    "lyric": "Feel the beat, we're flying high",
+    "lyricParts": [
+      {
+        "text": "Feel the beat, we're flying high",
+        "start": 12.25,
+        "end": 17.65
+      }
+    ]
+  },
+  {
+    "action": "Wide Shot. Studio lights pulse with the tempo. Both performers execute a synchronized choreography move, swaying their skirts and articulating Line 4 together, leaning toward the camera.",
+    "emotion": "Joyful and competitive",
+    "micro_expressions": "Smiling and laughing in dynamic, friendly competition, displaying genuine joy.",
+    "index": 4,
+    "startSec": 18.25,
+    "endSec": 24,
+    "durationSec": 5.75,
+    "beats": 12,
+    "singing": true,
+    "sungFraction": 0.94,
+    "lyric": "Underneath the emerald sky",
+    "lyricParts": [
+      {
+        "text": "Underneath the emerald sky",
+        "start": 18.25,
+        "end": 23.65
+      }
+    ]
+  }
+]

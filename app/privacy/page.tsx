@@ -3,14 +3,10 @@
 import React from "react";
 import Link from "next/link";
 import { Lock, ShieldCheck, Globe, CheckCircle2 } from "lucide-react";
-import { Navbar } from "@/components/Navbar";
-
 export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-obsidian-950 text-slate-100 flex flex-col font-sans">
-      <Navbar />
-
-      <main className="flex-1 mx-auto w-full max-w-4xl px-6 py-12 space-y-8">
+      <main className="flex-1 mx-auto w-full max-w-[1600px] px-8 md:px-12 py-12 space-y-8">
         <div className="space-y-3 border-b border-slate-800 pb-6">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/30 text-xs font-mono text-teal-400">
             <Lock className="w-3.5 h-3.5" />

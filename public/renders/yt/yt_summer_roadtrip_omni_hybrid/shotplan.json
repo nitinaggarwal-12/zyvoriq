@@ -1,0 +1,76 @@
+[
+  {
+    "action": "Close-up shot. A high-motion handheld opening. Two vibrant, iced summer cocktails clink violently in the foreground, liquid splashing slightly, catching brilliant lens flare from the setting sun. Behind the drinks, the blurred, energetic movement of dancing bodies. Cut directly on the beat.",
+    "emotion": "Ecstatic excitement",
+    "micro_expressions": "Eyes in the background narrowed with ecstatic excitement, wide smiles flashing.",
+    "index": 1,
+    "startSec": 0,
+    "endSec": 5.367,
+    "durationSec": 5.367,
+    "beats": 11,
+    "singing": true,
+    "sungFraction": 0.79,
+    "lyric": "Golden light on the terracotta floor",
+    "lyricParts": [
+      {
+        "text": "Golden light on the terracotta floor",
+        "start": 1.146,
+        "end": 5.367
+      }
+    ]
+  },
+  {
+    "action": "Medium shot of Character A. She spins dynamically in the center of the rooftop garden, her emerald dress swirling. Lush potted monstera plants and hanging vines frame the shot. As she spins, her curly hair whips across the frame. Sunlight flares directly into the camera lens as her rotation completes. Background reveals the endless expanse of Lisbon's iconic terracotta tiled rooftops.",
+    "emotion": "Joyous delight",
+    "micro_expressions": "Pure, joyous laughter; her eyes crinkle with genuine delight, looking directly into the lens.",
+    "index": 2,
+    "startSec": 5.367,
+    "endSec": 8.888,
+    "durationSec": 3.521,
+    "beats": 7,
+    "singing": false,
+    "sungFraction": 0,
+    "lyric": "",
+    "lyricParts": []
+  },
+  {
+    "action": "Wide shot of the rooftop. Character A moves toward the edge of the terrace, looking out over the city as the sun drops behind the distant tiled roofs. She turns back toward the crowd of partygoers, throwing her hands in the air, inviting them to dance. Warm, glowing fairy lights strung across the rooftop begin to stand out against the deepening sky. Bokeh circles fill the vertical frame.",
+    "emotion": "Playful and energetic",
+    "micro_expressions": "Playful winking at a friend, followed by a sudden burst of energetic shouting (inaudible under music).",
+    "index": 3,
+    "startSec": 8.888,
+    "endSec": 15.63,
+    "durationSec": 6.742,
+    "beats": 14,
+    "singing": true,
+    "sungFraction": 0.67,
+    "lyric": "Lisbon smiles, and I'm wanting more",
+    "lyricParts": [
+      {
+        "text": "Lisbon smiles, and I'm wanting more",
+        "start": 8.888,
+        "end": 13.43
+      }
+    ]
+  },
+  {
+    "action": "Extreme close-up on Character A’s face. Framed tightly by green leaves and the soft golden rim light on her hair. She sings the lyrics directly into the camera lens with high energy. The movement of the camera is smooth, tracking her micro-movements as she sways to the beat.",
+    "emotion": "Intense passion",
+    "micro_expressions": "Deep focus and passion; intense, mesmerizing eye contact with the viewer, lips perfectly syncing with the lyrics.",
+    "index": 4,
+    "startSec": 15.63,
+    "endSec": 24,
+    "durationSec": 8.37,
+    "beats": 17,
+    "singing": true,
+    "sungFraction": 0.88,
+    "lyric": "Spin me round as the sun goes down",
+    "lyricParts": [
+      {
+        "text": "Spin me round as the sun goes down",
+        "start": 15.63,
+        "end": 22.992
+      }
+    ]
+  }
+]

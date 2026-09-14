@@ -1,0 +1,41 @@
+{
+  "concept": "A high-octane, visually immersive music video for a Mumbai monsoon anthem. The visual narrative centers on a young woman celebrating dynamic freedom, singing and dancing defiantly in a torrential downpour on a Mumbai rooftop. Contrast is the core aesthetic: dynamic neon lights (hot pink, electric cyan) clashing with the dark, moody monsoon night and gray concrete of the city.",
+  "viral_hook_strategy": "The Freeze-Frame Splash Transition: The video opens with a high-speed, close-up impact shot of a combat boot slamming into a neon-lit puddle. The water freezes in mid-air, morphing into glowing neon droplets, before snapping into real-time as the camera whip-pans up to reveal the artist, instantly hooking visual attention within the first second. The Lens Spray Defiance: A signature move where the artist sweeps her wet hair, spraying rain directly at the camera lens. The droplets smear the neon lights across the screen before clearing, creating a relatable, high-energy interactive feel perfect for shorts remixing.",
+  "casting_lock": "One woman in her early 20s, of South Asian descent. She possesses athletic, fluid physical control and sharp biometric features: striking, large hazel-green eyes that contrast with her deep, warm skin tone. Thick, jet-black, wavy hair that is completely saturated with rain, clinging to her collarbones and dynamic face. Her facial structure is defined by high cheekbones and a strong, expressive jawline, capable of shifting from fierce intensity to pure, ecstatic joy in milliseconds.",
+  "wardrobe_and_accessory_lock": "Wardrobe: An oversized, translucent neon-pink cropped rain windbreaker (worn open over a fitted black sports top), high-waisted black reflective joggers that catch the neon light, and heavy-soled black waterproof combat boots with neon laces. Delicate Accessory: A single, delicate silver chain necklace with a small, shimmering raindrop-shaped pendant resting perfectly in the dip of her collarbone, catching glints of lightning and neon light.",
+  "choreography_notes": "High-energy Street-Jazz fused with elements of fluid Bollywood dance. The movements are sharp, punchy, and make full use of the rooftop environment. The choreography focuses on: Puddle physics: heavy steps that utilize splashing water as visual extensions of her limbs. Head whips and body rolls that send rain droplets flying. An epic, athletic backbend pose in low angle during the song's crescendo. Rhythmic Mudra-inspired hand gestures adapted for modern street dance, signaling local Mumbai pride.",
+  "camera_plan": "Framing: Strict 9:16 vertical orientation optimized for YouTube Shorts. Camera: RED V-RAPTOR XL for high-speed, dynamic range in low-light neon conditions. Lens Plan: Hawk V-Lite Vintage Anamorphic lenses. Anamorphics will squeeze vertical frames uniquely, yielding rich oval bokeh and dramatic, horizontal streak neon lens flares that cut through the pouring vertical rain. Grip: Shot largely on a dynamic handheld gimbal for fast tracking shots, combined with extreme low-angle ground shots to frame the artist against the towering Mumbai skyline and rain-filled sky.",
+  "lyrics": "Monsoon rising, neon in my veins!\nMumbai is bleeding light through the heavy rain!\nHear the thunder roar, but I'm dancing free!\nThis is my city, this is my street!\nWe burn brighter in the dark!\nFeel the storm, this is our anthem!",
+  "shots": [
+    {
+      "action": "Extreme Close-Up. Extreme low angle looking up from a puddle. Reflections of glowing pink 'MUMBAI' neon signs shimmer in dynamic ripples. A heavy combat boot slams down in extreme slow motion.",
+      "emotion": "Impactful anticipation",
+      "micro_expressions": "The water surges up, glowing with reflected light."
+    },
+    {
+      "action": "Medium Shot. Wide-angle dynamic push-in. Character A stands on the rooftop edge, spinning aggressively. Her translucent neon jacket ripples in the wind. Rain pours heavily over her as the camera orbits her quickly. Neon lens flares slice horizontally across her face.",
+      "emotion": "Furious, passionate intensity",
+      "micro_expressions": "Furious, passionate intensity in her hazel eyes, her mouth open as she belts the lyrics, head tilted back."
+    },
+    {
+      "action": "Close-Up Profile. The camera pans with Character A as she does a sharp arm isolation dance move. She whips her wet hair toward the lens, sending a spray of glowing water droplets across the camera frame.",
+      "emotion": "Magnetic confidence",
+      "micro_expressions": "A sudden, magnetic smirk directed straight at the camera, dynamic eyebrow raise conveying absolute confidence."
+    },
+    {
+      "action": "Close-Up (Face). Tight vertical framing focusing on Character A's face. Rain streams down her forehead, over her eyelids, and down her lips as she sings with raw, visceral emotion.",
+      "emotion": "Raw, visceral, uninhibited joy",
+      "micro_expressions": "Deep, passionate intensity; brows furrowed slightly as she belts, then flashing a dazzling smile that radiates uninhibited joy in the storm."
+    },
+    {
+      "action": "Wide Shot (Low Angle). Framing Character A against the epic expanse of the Mumbai skyline, skyscrapers lit with thousands of windows through the thick monsoon rain. She executes a dramatic backbend, her arms thrown wide, embracing the sky.",
+      "emotion": "Pure ecstasy",
+      "micro_expressions": "Pure ecstasy, eyes closed, feeling the rain, mouth moving to the climactic lyrics."
+    },
+    {
+      "action": "Medium Shot (Final Hook). High energy. Character A steps directly toward the camera, pointing at the lens with dynamic rhythm. Rain droplets hit the lens, blurring the background neon lights into giant soft circles of color.",
+      "emotion": "Triumphant and unstoppable",
+      "micro_expressions": "A wink and a breathless, triumphant laugh as she executes the final dance pose, looking unstoppable."
+    }
+  ]
+}

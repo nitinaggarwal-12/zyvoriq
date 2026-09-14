@@ -134,8 +134,15 @@ export async function generateNarrationScriptWithGemini(
   }
 
   const isCinema = targetDurationSec >= 90;
+  const isBollywood = /bollywood|desi|hindi|punjabi|india|anya|maya/i.test(topic + " " + tone + " " + ((intent as any)?.genre || ""));
+  const producerTitle = isBollywood
+    ? "Bollywood's Top Legendary Producer, Master Screenwriter, and Director (the apex cinematic creative behind industry-defining blockbusters)"
+    : isCinema
+    ? "an elite theatrical cinema director and master screenwriter directing an epic 5-Act cinematic short film"
+    : "an elite short-form video director and social reel scriptwriter";
+
   const systemPrompt = isCinema
-    ? `You are an elite theatrical cinema director and master screenwriter directing an epic 5-Act cinematic short film.
+    ? `You are ${producerTitle}.
 Topic: "${topic}"
 Tone: "${tone}"
 Target Duration: ${targetDurationSec} seconds across 5 dramatic acts (${targetShots} continuous visual shots total).
@@ -145,11 +152,11 @@ RULES & HARD BUDGET:
 2. STRICT BUDGET: Each line MUST be between 5 and ${MAX_WORDS_PER_SHOT} words maximum. Never exceed ${MAX_WORDS_PER_SHOT} words per line.
 3. Authentic cinema: write impactful cinematic dialogue and narrative lines worthy of a theatrical masterpiece. Avoid corporate filler, canned clichés, or generic platitudes (NEVER say "Here is what deserves a closer look", "The obvious reaction is only the surface", "Experience the true atmosphere", "Every detail reveals another layer", "Notice the energy moving naturally", "Pure immersion, captured from start to finish", etc.).
 4. Focus directly and immersively on the subject: "${topic}".
-5. If character names or dialogue are implied, format with clean character markers (e.g. "NAPOLEON: ...", "JOSEPHINE: ...").
+5. If character names or dialogue are implied, format with clean character markers (e.g. "ANYA: ...", "MAYA: ...").
 6. Output format: Return a raw JSON array of strings containing exactly ${targetShots} lines:
 ["Line 1", "Line 2", ...]${languageRule}`
-    : `You are an elite short-form video director and social reel scriptwriter.
-Write an authentic, punchy voiceover script for a 9:16 vertical video reel.
+    : `You are ${producerTitle}.
+Write an authentic, punchy voiceover or dialogue script for a 9:16 vertical video reel.
 Topic: "${topic}"
 Tone: "${tone}"
 Target Duration: ${targetDurationSec} seconds.
@@ -169,33 +176,62 @@ RULES & HARD BUDGET:
   let lastError: Error | null = null;
   let rawText = "";
 
-  for (const model of candidateModels) {
-    try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: systemPrompt }] }],
-          generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.7,
-          }
-        })
-      });
-
-      if (!res.ok) {
-        const errorBody = await res.text().catch(() => "");
-        console.warn(`[planner] Script generation with ${model} returned ${res.status}: ${errorBody.slice(0, 200)}`);
-        lastError = new Error(`Gemini API script generation with ${model} failed with status ${res.status}`);
-        continue;
+  // Priority 1: Google Omni 1.1 via Interactions API (Bollywood Top Producer, Writer & Director)
+  try {
+    console.log(`[planner] Invoking Google Omni 1.1 (models/gemini-omni-1.1-flash) via Interactions API...`);
+    const omniRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/interactions?key=${key}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "models/gemini-omni-1.1-flash",
+        input: systemPrompt
+      })
+    });
+    if (omniRes.ok) {
+      const omniData = await omniRes.json();
+      const outputText = omniData.steps?.find((s: any) => s.type === "model_output")?.content?.[0]?.text;
+      if (outputText && outputText.trim().length > 0) {
+        rawText = outputText.trim();
+        console.log(`[planner] Google Omni 1.1 generated script successfully.`);
       }
+    } else {
+      const errBody = await omniRes.text().catch(() => "");
+      console.warn(`[planner] Omni 1.1 returned ${omniRes.status}: ${errBody.slice(0, 160)}`);
+    }
+  } catch (omniErr: any) {
+    console.warn(`[planner] Omni 1.1 call threw: ${omniErr?.message || omniErr}`);
+  }
 
-      const data = await res.json();
-      rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      if (rawText) break;
-    } catch (err: any) {
-      console.warn(`[planner] Script generation with ${model} threw: ${err?.message || err}`);
-      lastError = err instanceof Error ? err : new Error(String(err));
+  // Priority 2: Standard Gemini models via generateContent fallback
+  if (!rawText) {
+    for (const model of candidateModels) {
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: systemPrompt }] }],
+            generationConfig: {
+              responseMimeType: "application/json",
+              temperature: 0.7,
+            }
+          })
+        });
+
+        if (!res.ok) {
+          const errorBody = await res.text().catch(() => "");
+          console.warn(`[planner] Script generation with ${model} returned ${res.status}: ${errorBody.slice(0, 200)}`);
+          lastError = new Error(`Gemini API script generation with ${model} failed with status ${res.status}`);
+          continue;
+        }
+
+        const data = await res.json();
+        rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        if (rawText) break;
+      } catch (err: any) {
+        console.warn(`[planner] Script generation with ${model} threw: ${err?.message || err}`);
+        lastError = err instanceof Error ? err : new Error(String(err));
+      }
     }
   }
 

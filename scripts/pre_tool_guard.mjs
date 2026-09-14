@@ -1,0 +1,1 @@
+../plugins/zyvoriq_guard/scripts/pre_tool_guard.mjs

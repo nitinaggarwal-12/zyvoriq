@@ -37,44 +37,39 @@ export function AppFooter() {
               </span>
             </div>
             <p className="text-slate-400 leading-relaxed text-[11px]">
-              Next-generation autonomous omni-modal creation suite. Proprietary Neural Cinema video, Synthetic Voice Matrix, 7-Day Trend Radar & Original Book Authoring.
+              Autonomous AI Music Video &amp; Cinema Production Studio powered by Google Omni 1.1 Flash Hybrid Mastering &amp; DeepMind Lyria 3.5.
             </p>
             <div className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500/30 bg-teal-500/10 px-2.5 py-1 text-[10px] font-mono font-bold text-teal-300">
               <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
-              C2PA PROVENANCE & SYNTHID VERIFIED
+              C2PA PROVENANCE &amp; SYNTHID VERIFIED
             </div>
           </div>
 
           {/* Col 2: Studio Creation Engines */}
           <div className="space-y-3">
             <h4 className="font-mono font-bold text-xs uppercase tracking-wider text-slate-200">
-              Omni Cinema Suite
+              Omni Studio Suite
             </h4>
             <ul className="space-y-2">
               <li>
-                <a href="/#hero-director" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-teal-400" /> Omni Cinema Director
-                </a>
+                <Link href="/yt" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-teal-400" /> Music Video Studio (Omni 1.1)
+                </Link>
               </li>
               <li>
-                <a href="/#master-showcase" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
-                  <Film className="w-3.5 h-3.5 text-amber-400" /> 180s Master Film Theater
-                </a>
+                <Link href="/feature-films" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
+                  <Film className="w-3.5 h-3.5 text-amber-400" /> 180s Cinema Feature Films
+                </Link>
               </li>
               <li>
-                <a href="/#architecture" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-emerald-400" /> Omni Pre-Flight Architecture
-                </a>
+                <Link href="/characters" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-emerald-400" /> Biometric Character Library
+                </Link>
               </li>
               <li>
-                <a href="/#genres" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
-                  <Award className="w-3.5 h-3.5 text-purple-400" /> Curated Production Suites
-                </a>
-              </li>
-              <li>
-                <a href="/#waitlist" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
-                  <TrendingUp className="w-3.5 h-3.5 text-cyan-400" /> Direct Access Waitlist
-                </a>
+                <Link href="/locations" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-cyan-400" /> Physical Set &amp; Location Lock
+                </Link>
               </li>
             </ul>
           </div>
@@ -82,28 +77,28 @@ export function AppFooter() {
           {/* Col 3: Quality, Trust & Governance */}
           <div className="space-y-3">
             <h4 className="font-mono font-bold text-xs uppercase tracking-wider text-slate-200">
-              Trust & Quality Assurance
+              Library &amp; Quality Audit
             </h4>
             <ul className="space-y-2">
               <li>
-                <a href="/#showcase" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-teal-400" /> Automated Scene Quality Guard
-                </a>
+                <Link href="/my-reels" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-teal-400" /> My Master Library
+                </Link>
               </li>
               <li>
-                <a href="/#showcase" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-emerald-400" /> C2PA &amp; SynthID Platform Safety
-                </a>
+                <Link href="/yt" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> 16/16 Multimodal Sync Audit
+                </Link>
               </li>
               <li>
-                <a href="/#architecture" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
-                  <BarChart3 className="w-3.5 h-3.5 text-amber-400" /> Audio Loudness &amp; Narration Timing
-                </a>
+                <Link href="/yt" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
+                  <BarChart3 className="w-3.5 h-3.5 text-amber-400" /> EBU R128 Audio Loudness Guard
+                </Link>
               </li>
               <li>
-                <a href="/#architecture" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
-                  <Globe className="w-3.5 h-3.5 text-cyan-400" /> Enterprise Google Cloud Pipeline
-                </a>
+                <Link href="/yt" className="hover:text-teal-300 transition-colors flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-purple-400" /> Sequential Tail-Frame Continuity
+                </Link>
               </li>
             </ul>
           </div>

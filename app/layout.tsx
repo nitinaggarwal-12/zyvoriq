@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Navbar } from "@/components/Navbar";
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { AppFooter } from "@/components/AppFooter";
-import { LiveSupportConcierge } from "@/components/LiveSupportConcierge";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
@@ -23,12 +23,12 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <ThemeProvider>
+          <Navbar />
           <div className="flex-1 flex flex-col">
             {children}
           </div>
           <AppFooter />
           <CookieConsentBanner />
-          <LiveSupportConcierge />
         </ThemeProvider>
       </body>
     </html>

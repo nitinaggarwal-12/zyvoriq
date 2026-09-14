@@ -1,0 +1,150 @@
+{
+  "generated_at": "2026-09-14T04:09:00.873Z",
+  "topic": "turkish girls (FASHION_RUNWAY)",
+  "genre": "MUSIC_VIDEO",
+  "target_duration_sec": 24,
+  "master_measured": {
+    "durationSec": 24.033333,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "audioCodec": "aac",
+    "sampleRate": 48000,
+    "lufs": -13.6,
+    "truePeakDb": -1.9,
+    "subBassMeanDb": -19.9,
+    "silenceEvents": 0,
+    "cropDetect": "1080:1920:0:0",
+    "crossCutWorstPsnrDb": 18.02,
+    "crossCutOffenders": 0
+  },
+  "master_spec": {
+    "lufs": -14,
+    "truePeakDb": -1,
+    "sampleRate": 48000,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "song_window_start_sec": 0,
+  "vocal_onset_song_sec": 0.291,
+  "vocal_onset_master_sec": 0.291,
+  "audit_frame_timestamps": [
+    2.38,
+    3.19,
+    10.29,
+    11.19,
+    12.46,
+    14.43,
+    15.42,
+    21.61,
+    22.38
+  ],
+  "lyric_lines_master": [
+    {
+      "text": "Chasing stars in the midnight glow / Watch our fire begin to grow",
+      "start": 0.291,
+      "end": 5.532
+    },
+    {
+      "text": "Feel the pulse, the electric sound / We own the night on this holy ground",
+      "start": 6.373,
+      "end": 11.694
+    },
+    {
+      "text": "Golden lights reflect in our eyes / We're living dreams under neon skies",
+      "start": 13.234,
+      "end": 17.875
+    },
+    {
+      "text": "Let the rhythm take full control / A vibrant story for the soul",
+      "start": 18.816,
+      "end": 23.637
+    }
+  ],
+  "omni_http_status": 200,
+  "omni_vision": {
+    "frames": [
+      {
+        "i": 0,
+        "t": 2.38,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women stand together smiling on a stage."
+      },
+      {
+        "i": 1,
+        "t": 3.19,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": false,
+        "subject_desc": "Two women are singing or talking to each other."
+      },
+      {
+        "i": 2,
+        "t": 10.29,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women sing and gesture towards the camera."
+      },
+      {
+        "i": 3,
+        "t": 11.19,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": false,
+        "subject_desc": "Two women sing with their lips pursed forward."
+      },
+      {
+        "i": 4,
+        "t": 12.46,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women stand side-by-side smiling at camera."
+      },
+      {
+        "i": 5,
+        "t": 14.43,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women on stage, one smiling at other."
+      },
+      {
+        "i": 6,
+        "t": 15.42,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": false,
+        "subject_desc": "Two women sing with their lips pursed forward."
+      },
+      {
+        "i": 7,
+        "t": 21.61,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": false,
+        "subject_desc": "Two women dance on stage, looking slightly down."
+      },
+      {
+        "i": 8,
+        "t": 22.38,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": false,
+        "subject_desc": "Two women sing while looking at the camera."
+      }
+    ],
+    "identity_continuity": true,
+    "identity_notes": "The same two women appear consistently throughout all frames.",
+    "wardrobe_continuity": true,
+    "wardrobe_desc": "Green sequin top/black skirt; red corset top/silver skirt.",
+    "ai_artifact_severity": "none",
+    "artifact_notes": "No AI-generated artifacts are observable in the provided frames."
+  },
+  "failures": [],
+  "verdict": "PASS"
+}

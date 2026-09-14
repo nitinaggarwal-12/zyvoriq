@@ -1,0 +1,41 @@
+{
+  "concept": "A high-octane, atmospheric visualizer in a vertical format, capturing the kinetic energy of a Mumbai monsoon night. A young Indian woman finds freedom dancing on a rooftop, with the aesthetic blending gritty urban realism and a hyper-stylized neon dreamscape of electric blue, magenta, and cyan.",
+  "viral_hook_strategy": "The video uses a seamless audio-visual loop where the final shot transitions perfectly into the opening frame. A high-impact 'Puddle-Drop' transition in the first few seconds hooks viewers, where a combat boot slams into a neon-reflecting puddle. The chorus features specific, easy-to-replicate hand choreography designed to be trendable and recreated by viewers.",
+  "casting_lock": "A young adult Indian woman in her early 20s with deep, expressive warm-brown eyes and thick, shoulder-length wavy black hair. She has a medium-brown skin tone and a highly expressive face capable of shifting from intense focus to a radiant smile. She possesses a high-energy athletic build with fluid, rhythmic movement.",
+  "wardrobe_and_accessory_lock": "A cobalt blue cropped puffer jacket worn open over a fitted black athletic crop top. High-waisted, loose-fit black cargo pants made of water-resistant material. Matte black combat boots with thick treads and glowing neon-cyan laces. A single delicate silver chain necklace with a tiny raindrop pendant.",
+  "choreography_notes": "A high-energy fusion of modern hip-hop and expressive contemporary dance. The choreography utilizes the environment, incorporating puddle splashes, spins that whip rain off her hair, and slides across the wet rooftop. Movements alternate between sharp, isolated ticks and fluid, sweeping motions, all centered for the vertical screen.",
+  "camera_plan": "Strict 9:16 vertical framing. A mix of fast, ultra-wide primes (24mm f/1.4 equivalent) for dynamic low-angle shots and a compression-heavy medium lens (85mm f/1.8 equivalent) for tight, emotional close-ups with bokeh. Camera movements are highly kinetic, using fast tilts, whip-pans, rhythmic zooms, and a smooth gimbal tracking shot orbiting the artist.",
+  "lyrics": "(Upbeat, pulsing electronic pop beat starts)\n\n(Verse)\nCity lights are bleeding through the dark\nMumbai rain is lighting up the spark\nNeon veins are flowing in the street\nI can feel the thunder in my feet\n\n(Chorus)\nSo I dance through the neon rain\nWashing away the pain\nSpinning in the midnight glow\nNever gonna let it go\nYeah, this rhythm's got me feeling free\nUnderneath the stormy canopy\nNeon rain, falling down on me.",
+  "shots": [
+    {
+      "action": "Opens on raindrops splashing in a neon-reflecting puddle. Camera tilts up to reveal the artist standing in the rain, looking into the lens.",
+      "emotion": "Playful, confident.",
+      "micro_expressions": "A playful, confident smirk."
+    },
+    {
+      "action": "She sings, stepping rhythmically toward the camera, executing a sharp shoulder isolation. Neon lights cast blues and magentas on her.",
+      "emotion": "Intense passion.",
+      "micro_expressions": "Eyes locked on the lens, showing intense passion."
+    },
+    {
+      "action": "From a low angle, she executes a fast dance spin, her blue jacket flaring out as water droplets whip off her hair in slow-motion arcs.",
+      "emotion": "Pure, uninhibited joy.",
+      "micro_expressions": "Head tilted back slightly, expression of pure joy."
+    },
+    {
+      "action": "Tight close-up on her face and necklace as rain streaks down. A passing neon sign sweeps magenta light across her eyes.",
+      "emotion": "Fierce determination, empowerment.",
+      "micro_expressions": "Displays fierce determination and empowerment."
+    },
+    {
+      "action": "Camera rapidly circles her as she performs the signature chorus choreography with sharp hand gestures on the wet surface.",
+      "emotion": "High-energy, infectious.",
+      "micro_expressions": "An infectious smile, looking directly at the viewer."
+    },
+    {
+      "action": "She completes a final dance move, pointing at the camera. The camera executes a high-speed whip-spin into the rain, blurring the lights to create a loop.",
+      "emotion": "Breathless, exhilarated.",
+      "micro_expressions": "A breathless, exhilarated smile."
+    }
+  ]
+}

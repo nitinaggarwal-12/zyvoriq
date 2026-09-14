@@ -1,0 +1,177 @@
+{
+  "generated_at": "2026-09-14T03:12:06.685Z",
+  "topic": "girls dancing on stage with their crew member and audience (DANCE_REEL)",
+  "genre": "MUSIC_VIDEO",
+  "target_duration_sec": 24,
+  "master_measured": {
+    "durationSec": 24.033333,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "audioCodec": "aac",
+    "sampleRate": 48000,
+    "lufs": -14.1,
+    "truePeakDb": -1.9,
+    "subBassMeanDb": -24.9,
+    "silenceEvents": 0,
+    "cropDetect": "1080:1920:0:0",
+    "crossCutWorstPsnrDb": 17.1,
+    "crossCutOffenders": 0
+  },
+  "master_spec": {
+    "lufs": -14,
+    "truePeakDb": -1,
+    "sampleRate": 48000,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "song_window_start_sec": 0,
+  "vocal_onset_song_sec": 0.824,
+  "vocal_onset_master_sec": 0.824,
+  "audit_frame_timestamps": [
+    1.67,
+    3.74,
+    6.24,
+    7.82,
+    10.77,
+    12.77,
+    14.26,
+    16.44,
+    18.28,
+    19.33,
+    21.2,
+    23.2
+  ],
+  "lyric_lines_master": [
+    {
+      "text": "Feel the heat tonight, under glowing Spanish skies",
+      "start": 0.824,
+      "end": 5.187
+    },
+    {
+      "text": "Jump into the rhythm, let your crazy spirit rise",
+      "start": 7.289,
+      "end": 11.792
+    },
+    {
+      "text": "Rock the stage with us, let the music set you free",
+      "start": 13.754,
+      "end": 17.397
+    },
+    {
+      "text": "Dance together with the crew, as wild as the sea",
+      "start": 19.158,
+      "end": 22.361
+    }
+  ],
+  "omni_http_status": 200,
+  "omni_vision": {
+    "frames": [
+      {
+        "i": 0,
+        "t": 1.67,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women dancing on a brightly lit runway."
+      },
+      {
+        "i": 1,
+        "t": 3.74,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women singing and dancing on a runway."
+      },
+      {
+        "i": 2,
+        "t": 6.24,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women smiling at the camera on a runway."
+      },
+      {
+        "i": 3,
+        "t": 7.82,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": false,
+        "subject_desc": "Two women singing while walking on a runway."
+      },
+      {
+        "i": 4,
+        "t": 10.77,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": false,
+        "subject_desc": "Two women singing and gesturing on a runway."
+      },
+      {
+        "i": 5,
+        "t": 12.77,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women smiling and walking on a runway."
+      },
+      {
+        "i": 6,
+        "t": 14.26,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women dancing and smiling on a runway."
+      },
+      {
+        "i": 7,
+        "t": 16.44,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women dancing and singing on a runway."
+      },
+      {
+        "i": 8,
+        "t": 18.28,
+        "face_visible": true,
+        "mouth_open": false,
+        "teeth_visible": false,
+        "subject_desc": "Two women smiling with closed mouths on a runway."
+      },
+      {
+        "i": 9,
+        "t": 19.33,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women singing with emotional expressions on a runway."
+      },
+      {
+        "i": 10,
+        "t": 21.2,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women singing with open mouths on a runway."
+      },
+      {
+        "i": 11,
+        "t": 23.2,
+        "face_visible": true,
+        "mouth_open": false,
+        "teeth_visible": false,
+        "subject_desc": "Two women smiling with closed mouths on a runway."
+      }
+    ],
+    "identity_continuity": true,
+    "identity_notes": "The same two women appear consistently throughout all frames.",
+    "wardrobe_continuity": true,
+    "wardrobe_desc": "Green sequin top/black skirt; red top/silver skirt.",
+    "ai_artifact_severity": "none",
+    "artifact_notes": "No visual artifacts are observable in the provided frames."
+  },
+  "failures": [],
+  "verdict": "PASS"
+}

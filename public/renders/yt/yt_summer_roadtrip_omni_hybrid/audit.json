@@ -1,0 +1,145 @@
+{
+  "generated_at": "2026-09-13T18:54:08.064Z",
+  "topic": "summer roadtrip",
+  "genre": "MUSIC_VIDEO",
+  "target_duration_sec": 24,
+  "master_measured": {
+    "durationSec": 24,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "audioCodec": "aac",
+    "sampleRate": 48000,
+    "lufs": -14.2,
+    "truePeakDb": -1.3,
+    "subBassMeanDb": -22.2,
+    "silenceEvents": 0,
+    "cropDetect": "1080:1920:0:0",
+    "crossCutWorstPsnrDb": 16.31,
+    "crossCutOffenders": 0
+  },
+  "master_spec": {
+    "lufs": -14,
+    "truePeakDb": -1,
+    "sampleRate": 48000,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "song_window_start_sec": 0,
+  "vocal_onset_song_sec": 1.033,
+  "vocal_onset_master_sec": 1.033,
+  "audit_frame_timestamps": [
+    2.34,
+    3.05,
+    6.96,
+    10.79,
+    13.03,
+    14.95,
+    16.82,
+    18.3,
+    22.09
+  ],
+  "lyric_lines_master": [
+    {
+      "text": "Golden light on the terracotta floor",
+      "start": 1.033,
+      "end": 3.754
+    },
+    {
+      "text": "Lisbon smiles, and I'm wanting more",
+      "start": 10.176,
+      "end": 13.277
+    },
+    {
+      "text": "Spin me round as the sun goes down",
+      "start": 16.619,
+      "end": 20.18
+    }
+  ],
+  "omni_http_status": 200,
+  "omni_vision": {
+    "frames": [
+      {
+        "i": 0,
+        "t": 2.34,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Woman with curly brown hair and green eyes."
+      },
+      {
+        "i": 1,
+        "t": 3.05,
+        "face_visible": false,
+        "mouth_open": false,
+        "teeth_visible": false,
+        "subject_desc": "Shadows on a brick patio floor."
+      },
+      {
+        "i": 2,
+        "t": 6.96,
+        "face_visible": true,
+        "mouth_open": false,
+        "teeth_visible": false,
+        "subject_desc": "Woman with curly hair spinning on a rooftop."
+      },
+      {
+        "i": 3,
+        "t": 10.79,
+        "face_visible": true,
+        "mouth_open": false,
+        "teeth_visible": false,
+        "subject_desc": "Woman with curly brown hair and green eyes."
+      },
+      {
+        "i": 4,
+        "t": 13.03,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": false,
+        "subject_desc": "Woman with curly brown hair and green eyes."
+      },
+      {
+        "i": 5,
+        "t": 14.95,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Woman with curly brown hair and green eyes."
+      },
+      {
+        "i": 6,
+        "t": 16.82,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Woman with curly brown hair and green eyes."
+      },
+      {
+        "i": 7,
+        "t": 18.3,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Woman with curly brown hair and green eyes."
+      },
+      {
+        "i": 8,
+        "t": 22.09,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Woman with curly brown hair and green eyes."
+      }
+    ],
+    "identity_continuity": true,
+    "identity_notes": "The subject is the same woman throughout all frames where a face is visible.",
+    "wardrobe_continuity": false,
+    "wardrobe_desc": "Green slip dress, denim jacket, silver necklace.",
+    "ai_artifact_severity": "none",
+    "artifact_notes": "The necklace pendant changes from a wavy line to an infinity symbol between frames."
+  },
+  "failures": [],
+  "verdict": "PASS"
+}

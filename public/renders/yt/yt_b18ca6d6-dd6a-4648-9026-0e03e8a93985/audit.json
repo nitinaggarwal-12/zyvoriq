@@ -1,0 +1,186 @@
+{
+  "generated_at": "2026-09-14T01:12:50.592Z",
+  "topic": "Modern pop music video 2 yound model singing dancing in studio",
+  "genre": "CINEMATIC_DRAMA",
+  "target_duration_sec": 24,
+  "master_measured": {
+    "durationSec": 24.033333,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "audioCodec": "aac",
+    "sampleRate": 48000,
+    "lufs": -14,
+    "truePeakDb": -2,
+    "subBassMeanDb": -20.4,
+    "silenceEvents": 0,
+    "cropDetect": "1080:1920:0:0",
+    "crossCutWorstPsnrDb": 18.09,
+    "crossCutOffenders": 0
+  },
+  "master_spec": {
+    "lufs": -14,
+    "truePeakDb": -1,
+    "sampleRate": 48000,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "song_window_start_sec": 0,
+  "vocal_onset_song_sec": 1.981,
+  "vocal_onset_master_sec": 1.981,
+  "audit_frame_timestamps": [
+    0.99,
+    2.85,
+    3.38,
+    6.39,
+    10.06,
+    10.53,
+    12.72,
+    15.02,
+    16.24,
+    18.65,
+    20.49,
+    21.43,
+    23.1
+  ],
+  "lyric_lines_master": [
+    {
+      "text": "We burn bright in the neon light",
+      "start": 1.981,
+      "end": 4.603
+    },
+    {
+      "text": "Dancing through the summer night",
+      "start": 8.186,
+      "end": 11.388
+    },
+    {
+      "text": "Feel the beat, we're flying high",
+      "start": 14.05,
+      "end": 17.293
+    },
+    {
+      "text": "Underneath the emerald sky",
+      "start": 20.015,
+      "end": 22.157
+    }
+  ],
+  "omni_http_status": 200,
+  "omni_vision": {
+    "frames": [
+      {
+        "i": 0,
+        "t": 0.99,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women, one with straight hair, one curly."
+      },
+      {
+        "i": 1,
+        "t": 2.85,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women singing, one with straight hair, one curly."
+      },
+      {
+        "i": 2,
+        "t": 3.38,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women singing, one with straight hair, one curly."
+      },
+      {
+        "i": 3,
+        "t": 6.39,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women smiling, one with straight hair, one curly."
+      },
+      {
+        "i": 4,
+        "t": 10.06,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women singing, one with straight hair, one curly."
+      },
+      {
+        "i": 5,
+        "t": 10.53,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women singing with mouths wide open."
+      },
+      {
+        "i": 6,
+        "t": 12.72,
+        "face_visible": true,
+        "mouth_open": false,
+        "teeth_visible": false,
+        "subject_desc": "Two women posing with closed mouths."
+      },
+      {
+        "i": 7,
+        "t": 15.02,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women singing, one with straight hair, one curly."
+      },
+      {
+        "i": 8,
+        "t": 16.24,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women singing with mouths wide open."
+      },
+      {
+        "i": 9,
+        "t": 18.65,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women smiling, one with straight hair, one curly."
+      },
+      {
+        "i": 10,
+        "t": 20.49,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women singing, one with straight hair, one curly."
+      },
+      {
+        "i": 11,
+        "t": 21.43,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women smiling, one with straight hair, one curly."
+      },
+      {
+        "i": 12,
+        "t": 23.1,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women smiling, one with straight hair, one curly."
+      }
+    ],
+    "identity_continuity": true,
+    "identity_notes": "The same two women appear consistently throughout all frames.",
+    "wardrobe_continuity": true,
+    "wardrobe_desc": "Green sequin top/black skirt; red corset top/silver skirt.",
+    "ai_artifact_severity": "none",
+    "artifact_notes": "No observable AI-generated artifacts are present."
+  },
+  "failures": [],
+  "verdict": "PASS"
+}

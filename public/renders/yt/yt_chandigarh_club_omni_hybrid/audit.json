@@ -1,0 +1,177 @@
+{
+  "generated_at": "2026-09-13T22:41:07.362Z",
+  "topic": "2 hot young fashion diva top model punjabi college girls performing on stage in chandigarh night club",
+  "genre": "MUSIC_VIDEO",
+  "target_duration_sec": 24,
+  "master_measured": {
+    "durationSec": 24.033333,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "audioCodec": "aac",
+    "sampleRate": 48000,
+    "lufs": -13.9,
+    "truePeakDb": -2,
+    "subBassMeanDb": -25.1,
+    "silenceEvents": 0,
+    "cropDetect": "1080:1920:0:0",
+    "crossCutWorstPsnrDb": 23.72,
+    "crossCutOffenders": 0
+  },
+  "master_spec": {
+    "lufs": -14,
+    "truePeakDb": -1,
+    "sampleRate": 48000,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "song_window_start_sec": 0,
+  "vocal_onset_song_sec": 1.552,
+  "vocal_onset_master_sec": 1.552,
+  "audit_frame_timestamps": [
+    0.78,
+    2.94,
+    4.41,
+    6.84,
+    9.33,
+    10.56,
+    13.11,
+    15.88,
+    17.11,
+    20.18,
+    21.29,
+    23.08
+  ],
+  "lyric_lines_master": [
+    {
+      "text": "Aaja ni Chandigarh club vich aaja",
+      "start": 1.552,
+      "end": 5.515
+    },
+    {
+      "text": "Saade naal sohniye ni bhangra paaja",
+      "start": 8.157,
+      "end": 11.499
+    },
+    {
+      "text": "Nachle tu floor te munda patt leya ni",
+      "start": 14.722,
+      "end": 18.044
+    },
+    {
+      "text": "Diva tera nakhra te dil lutt leya ni",
+      "start": 19.125,
+      "end": 22.127
+    }
+  ],
+  "omni_http_status": 200,
+  "omni_vision": {
+    "frames": [
+      {
+        "i": 0,
+        "t": 0.78,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women dancing in a club setting."
+      },
+      {
+        "i": 1,
+        "t": 2.94,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women making faces at the camera."
+      },
+      {
+        "i": 2,
+        "t": 4.41,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women singing or talking to camera."
+      },
+      {
+        "i": 3,
+        "t": 6.84,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women smiling at the camera."
+      },
+      {
+        "i": 4,
+        "t": 9.33,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women singing or talking while dancing."
+      },
+      {
+        "i": 5,
+        "t": 10.56,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women smiling and dancing together."
+      },
+      {
+        "i": 6,
+        "t": 13.11,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women smiling at the camera."
+      },
+      {
+        "i": 7,
+        "t": 15.88,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women talking to each other."
+      },
+      {
+        "i": 8,
+        "t": 17.11,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women laughing or singing joyfully."
+      },
+      {
+        "i": 9,
+        "t": 20.18,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women singing and smiling at camera."
+      },
+      {
+        "i": 10,
+        "t": 21.29,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women smiling at the camera."
+      },
+      {
+        "i": 11,
+        "t": 23.08,
+        "face_visible": true,
+        "mouth_open": false,
+        "teeth_visible": false,
+        "subject_desc": "Two women posing with closed-mouth smiles."
+      }
+    ],
+    "identity_continuity": true,
+    "identity_notes": "The same two women appear consistently throughout the entire video sequence.",
+    "wardrobe_continuity": true,
+    "wardrobe_desc": "Green sequin top and black skirt; red top and silver skirt.",
+    "ai_artifact_severity": "none",
+    "artifact_notes": "No visual evidence of AI generation or manipulation is observable in the provided frames."
+  },
+  "failures": [],
+  "verdict": "PASS"
+}

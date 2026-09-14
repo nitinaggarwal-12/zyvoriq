@@ -1,0 +1,153 @@
+{
+  "generated_at": "2026-09-13T05:20:38.048Z",
+  "topic": "neon rooftop monsoon anthem in Mumbai, a woman singing and dancing in the rain",
+  "genre": "MUSIC_VIDEO",
+  "target_duration_sec": 24,
+  "master_measured": {
+    "durationSec": 24,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "audioCodec": "aac",
+    "sampleRate": 48000,
+    "lufs": -13.6,
+    "truePeakDb": -1.4,
+    "subBassMeanDb": -18.9,
+    "silenceEvents": 0,
+    "cropDetect": "1080:1920:0:0"
+  },
+  "master_spec": {
+    "lufs": -14,
+    "truePeakDb": -1,
+    "sampleRate": 48000,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "song_window_start_sec": 0.048,
+  "vocal_onset_song_sec": 1.91,
+  "vocal_onset_master_sec": 1.8619999999999999,
+  "audit_frame_timestamps": [
+    1,
+    3,
+    5,
+    7,
+    9,
+    11,
+    13,
+    15,
+    17,
+    19,
+    21,
+    23
+  ],
+  "omni_http_status": 200,
+  "omni_vision": {
+    "frames": [
+      {
+        "i": 0,
+        "t": 1,
+        "face_visible": true,
+        "mouth_open": false,
+        "teeth_visible": false,
+        "subject_desc": "Woman standing on wet city street at night."
+      },
+      {
+        "i": 1,
+        "t": 3,
+        "face_visible": true,
+        "mouth_open": false,
+        "teeth_visible": false,
+        "subject_desc": "Close-up of woman looking intensely in rain."
+      },
+      {
+        "i": 2,
+        "t": 5,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Medium shot of woman singing in rain."
+      },
+      {
+        "i": 3,
+        "t": 7,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Woman smiling and posing on city street."
+      },
+      {
+        "i": 4,
+        "t": 9,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Woman dancing dynamically on wet street."
+      },
+      {
+        "i": 5,
+        "t": 11,
+        "face_visible": true,
+        "mouth_open": false,
+        "teeth_visible": false,
+        "subject_desc": "Woman standing with clenched fists on street."
+      },
+      {
+        "i": 6,
+        "t": 13,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Extreme close-up of woman singing intensely."
+      },
+      {
+        "i": 7,
+        "t": 15,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Extreme close-up of woman smiling in rain."
+      },
+      {
+        "i": 8,
+        "t": 17,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Woman dancing with arms spread on street."
+      },
+      {
+        "i": 9,
+        "t": 19,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Woman posing with broad stance on street."
+      },
+      {
+        "i": 10,
+        "t": 21,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Woman dancing actively on wet street."
+      },
+      {
+        "i": 11,
+        "t": 23,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Medium shot of woman smiling and tilting head."
+      }
+    ],
+    "identity_continuity": true,
+    "identity_notes": "The subject maintains consistent facial features, skin tone, and wet dark hair throughout all frames.",
+    "wardrobe_continuity": true,
+    "wardrobe_desc": "Blue cropped jacket, shiny black pants, crescent moon necklace, and black boots.",
+    "ai_artifact_severity": "subtle",
+    "artifact_notes": "Subtle AI hand blur/deformation where hand holds item in Frame 0. Slight rendering inconsistencies on jacket texture."
+  },
+  "failures": [],
+  "verdict": "PASS"
+}

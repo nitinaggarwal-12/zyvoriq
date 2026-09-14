@@ -1,0 +1,41 @@
+{
+  "concept": "A high-octane visual experience capturing the electrifying energy of a modern Punjabi college fest. The narrative centers on a charismatic young woman who commands the stage, fusing traditional Punjabi cultural vibrancy with modern, edgy pop aesthetics. The vibe is unapologetically energetic, youth-centric, and designed for instant visual grab on the vertical mobile screen.",
+  "viral_hook_strategy": "The Instant Point-Grab: Start the short with a direct gaze and finger point at the camera lens, breaking the fourth wall immediately. High-Contrast Aesthetic: Leverage the visual contrast of a traditional college setting with a hyper-modern, bold wardrobe and sharp dynamic lighting shifts. Audio-Visual Sync Locks: Design dynamic choreographic locks (like a sudden freeze or head whip) timed perfectly to massive dhol drum drops to encourage visual looping. The Silhouette Transition: Incorporate a blinding backlit strobe moment that turns the performer into a sharp silhouette before bursting back into dynamic action, optimized for visual re-engagement.",
+  "casting_lock": "Young South Asian woman in her early 20s. She possesses a radiant, warm medium-brown complexion with sharp, highly expressive facial features. Her eyes are large, striking dark brown, radiating confidence. Her hair is waist-length, thick, glossy black, styled in voluminous, bouncing waves. She has a medium, athletic build, moving with fluid, practiced agility and effortless rhythm.",
+  "wardrobe_and_accessory_lock": "Garment 1: Fitted, sleeveless crop top in a bold, vibrant crimson red, accentuating the midriff. Garment 2: High-waisted, pleated black tennis mini skirt that flares dynamically during spins. The fit is snug at the waist and tailored for high-energy dance movement. Footwear: Thick-soled white street sneakers with crimson accents. Accessory: A single, delicate, thin silver anklet resting around her left ankle that glints subtly under the stage lights as she moves.",
+  "choreography_notes": "Bhangra Fusion: Seamlessly blend classic high-energy Bhangra shoulder shrugs, wrist rotations, and high-knee bounces with modern hip-hop hip drops and fluid pop arm locks. Stage Domination: The performer must utilize the entire stage width, incorporating dynamic pivots, spins that flare the skirt, and rhythmic walks directly toward the camera edge. Gestural Performance: Choreography should mirror the lyrics—pointing, dynamic hand bounces, and inviting gestures directed at the camera/audience.",
+  "camera_plan": "Aspect Ratio: 9:16 Vertical (strictly optimized for YouTube Shorts). Primary Camera: Cinematic high-speed camera mounted on a dynamic handheld gimbal for smooth, rapid tracking. Lens A (Hero Lens): 35mm f/1.4 lens for cinematic medium shots, creating a beautiful shallow depth of field, keeping the performer sharp while turning the stage lights and crowd into soft, round bokeh. Lens B: 24mm f/2.8 wider lens for dynamic, low-angle shots to exaggerate scale and energy. Camera Style: Dynamic pushing, pulling, and tracking with fast shutter speeds to capture crisp dance movements with minimal motion blur.",
+  "lyrics": "Aaja ni aaja floor pe dhamaal machade!\nCollege di kudiye tu sabko nachade!\nThoda Punjabi thoda Hindi mix karke,\nBillo rani hit tera nakhra dikhade!",
+  "shots": [
+    {
+      "action": "Extreme Close-Up. Character A looking directly into the camera lens. She points playfully at the camera as bright, saturated stage lights flare in the background. Her lips move as she delivers the first high-energy lyric.",
+      "emotion": "Pure confidence.",
+      "micro_expressions": "A winking smirk forms on her face."
+    },
+    {
+      "action": "Medium Shot. The camera pulls back quickly. Character A performs a dynamic Bhangra-fusion pivot in the center of the stage. Her pleated black mini skirt flares out, and her crop top accentuates her fluid core movements. Background is filled with glowing phone screens from a hyped college crowd.",
+      "emotion": "Ecstatic and joyful.",
+      "micro_expressions": "Radiant, joyful smile."
+    },
+    {
+      "action": "Low-Angle Shot. The camera looks up from the stage floor. Character A stands commanding, hand on her hip, as she delivers the fast-paced second lyric line. Strobe lights pulsate rapidly behind her, creating an intense, energetic atmosphere.",
+      "emotion": "Commanding and intense.",
+      "micro_expressions": "Tilting her head fiercely toward the camera."
+    },
+    {
+      "action": "Eye-level Tracking Shot. The camera pushes inward as Character A walks confidently toward the lens. She moves with a rhythmic, bouncing step, and her long dark hair bounces over her shoulders. Rapid lens flares dance across the frame.",
+      "emotion": "Confident and playful.",
+      "micro_expressions": "Biting her lip playfully."
+    },
+    {
+      "action": "Wide Shot. Framing her entire performance space. Character A hits a peak choreography drop, moving her arms and shoulders in perfect sync with the heavy bass beat. Sweat is glistening on her forehead.",
+      "emotion": "Pure performance energy.",
+      "micro_expressions": "Eyes locked forward, mouth open in a dynamic shout."
+    },
+    {
+      "action": "Extreme Close-Up. The final shot frames Character A from the shoulders up. She looks straight into the camera, blows a quick kiss to the viewers, and the frame fades to black instantly to encourage a loop.",
+      "emotion": "Charming and genuine.",
+      "micro_expressions": "Breaks into a charming, genuine laugh."
+    }
+  ]
+}

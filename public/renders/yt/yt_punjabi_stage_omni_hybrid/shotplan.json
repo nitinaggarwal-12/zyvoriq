@@ -1,0 +1,67 @@
+[
+  {
+    "action": "Extreme Close-Up. Character A looking directly into the camera lens. She points playfully at the camera as bright, saturated stage lights flare in the background. Her lips move as she delivers the first high-energy lyric.",
+    "emotion": "Pure confidence.",
+    "micro_expressions": "A winking smirk forms on her face.",
+    "index": 1,
+    "startSec": 0,
+    "endSec": 6.611,
+    "durationSec": 6.611,
+    "beats": 13,
+    "singing": true,
+    "sungFraction": 0.95,
+    "lyric": "Aaja ni aaja floor pe dhamaal machade",
+    "lyricParts": [
+      {
+        "text": "Aaja ni aaja floor pe dhamaal machade",
+        "start": 0.267,
+        "end": 6.551
+      }
+    ]
+  },
+  {
+    "action": "Medium Shot. The camera pulls back quickly. Character A performs a dynamic Bhangra-fusion pivot in the center of the stage. Her pleated black mini skirt flares out, and her crop top accentuates her fluid core movements. Background is filled with glowing phone screens from a hyped college crowd.",
+    "emotion": "Ecstatic and joyful.",
+    "micro_expressions": "Radiant, joyful smile.",
+    "index": 2,
+    "startSec": 6.611,
+    "endSec": 14.496,
+    "durationSec": 7.885,
+    "beats": 16,
+    "singing": true,
+    "sungFraction": 0.99,
+    "lyric": "College di kudiye tu sabko nachade",
+    "lyricParts": [
+      {
+        "text": "College di kudiye tu sabko nachade",
+        "start": 6.611,
+        "end": 14.416
+      }
+    ]
+  },
+  {
+    "action": "Low-Angle Shot. The camera looks up from the stage floor. Character A stands commanding, hand on her hip, as she delivers the fast-paced second lyric line. Strobe lights pulsate rapidly behind her, creating an intense, energetic atmosphere.",
+    "emotion": "Commanding and intense.",
+    "micro_expressions": "Tilting her head fiercely toward the camera.",
+    "index": 3,
+    "startSec": 14.496,
+    "endSec": 24,
+    "durationSec": 9.504,
+    "beats": 19,
+    "singing": true,
+    "sungFraction": 0.79,
+    "lyric": "Thoda Punjabi thoda Hindi mix karke / Billo rani hit tera nakhra dikhade",
+    "lyricParts": [
+      {
+        "text": "Thoda Punjabi thoda Hindi mix karke",
+        "start": 14.496,
+        "end": 21.06
+      },
+      {
+        "text": "Billo rani hit tera nakhra dikhade",
+        "start": 21.36,
+        "end": 22.301
+      }
+    ]
+  }
+]

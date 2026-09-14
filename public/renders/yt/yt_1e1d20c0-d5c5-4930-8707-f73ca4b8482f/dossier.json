@@ -1,0 +1,41 @@
+{
+  "concept": "A high-energy, visually dynamic vertical music video featuring a woman singing and dancing on a rain-slicked Mumbai rooftop at night. The aesthetic is 'Neon-Noir Monsoon'—fusing the raw emotional power of dynamic rain with the electric, pulsating buzz of neon pinks, blues, and purples reflecting off wet surfaces. The track is an upbeat electronic anthem with heavy bass drops synchronized with lightning and splashes, celebrating resilience and freedom in the heart of the city.",
+  "viral_hook_strategy": "The video opens with a high-impact, low-angle shot of a combat boot slamming into a neon-lit puddle, sending water flying at the camera to stop the scroll. The final lyric seamlessly blends back into the opening beat, creating a perfect auditory loop for repeat views. A high-contrast neon aesthetic against the dark night sky is used for high visual retention, and sharp shifts from fierce intensity to pure, joyful laughter create an emotional rollercoaster.",
+  "casting_lock": "A South Asian woman in her early 20s. She possesses striking, expressive almond-shaped eyes of a deep dark brown color. Her hair is thick, obsidian-black, and long, falling past her shoulders, heavily saturated with rainwater and slicked back at the crown. She has dynamic facial features capable of rapid, intense transitions between fierce, moody concentration and euphoric, beaming smiles.",
+  "wardrobe_and_accessory_lock": "An electric-blue, oversized cropped windbreaker made of water-resistant nylon that catches neon reflections; high-waisted, slick black latex pants that glisten in the rain; and heavy-soled black combat boots. The oversized jacket creates dynamic movement, while the fitted latex pants define her silhouette. A single delicate silver chain necklace with a tiny, shimmering crescent moon pendant rests just above her collarbone.",
+  "choreography_notes": "A fusion of modern hip-hop and expressive Bollywood-inspired rain dance, optimized for the vertical 9:16 frame. Movements extend upward and downward to fill the frame. The dance incorporates sharp heel drops and kicks to splash water artistically, dramatic head turns for whipping hair effects, and intricate hand gestures to frame her face during close-ups.",
+  "camera_plan": "A RED V-RAPTOR XL camera, rigged for vertical 9:16 capture, mounted on a dynamic handheld gimbal for fast, kinetic movement. Master Prime lenses will be used, with heavy use of wide-angles for low-angle depth and fast primes (f/1.4) for extreme close-ups with intense neon bokeh. The visual style includes heavy rain streaks, lens flares from neon signage, and dynamic camera shake synchronized with heavy bass hits.",
+  "lyrics": "(Verse)\nRooftop dynamic, neon in the sky,\nMumbai is burning, and we're gonna fly!\nFeel the monsoon washing away the pain,\nWe are the fire dancing in the rain!\n\n(Chorus)\nDrop the beat, let the thunder roll,\nThis is the rhythm that saves my soul!\nSplashing the neon, lighting the dark,\nMumbai monsoon, we catch the spark!\nYeah, we catch the spark!\n*(Beat loops back)*",
+  "shots": [
+    {
+      "action": "Extreme close-up of Character A’s face. Rain streams down her forehead, over her closed eyelids, and down her cheeks. Intense pink and blue neon light glows off her wet skin.",
+      "emotion": "Intense anticipation.",
+      "micro_expressions": "Her eyes suddenly snap open, flashing a look of fierce determination directly into the lens."
+    },
+    {
+      "action": "The camera pulls back quickly on a handheld gimbal. Character A is center-frame, singing passionately as heavy monsoon rain pours down. She steps back and executes a sharp, rhythmic arm drop, synchronized with a heavy beat.",
+      "emotion": "Powerful, energetic.",
+      "micro_expressions": "Not specified."
+    },
+    {
+      "action": "The camera is placed low to the ground. Character A spins dynamically in the center of the rooftop, her electric-blue jacket billowing. Rain kicks up from her combat boots in bright, backlit splashes. A sudden flash of lightning illuminates the dark sky.",
+      "emotion": "Liberation, pure freedom.",
+      "micro_expressions": "Not specified."
+    },
+    {
+      "action": "Cutting to a tight close-up focused on Character A's mouth and eyes. She sings with raw emotion, her lips moving distinctly to the lyrics as raindrops hit her face.",
+      "emotion": "Raw emotion.",
+      "micro_expressions": "Between lines, she flashes a quick, euphoric smile, her eyes crinkling with genuine joy before snapping back to intense focus."
+    },
+    {
+      "action": "Character A drives forward toward the camera, executing a powerful dance sequence. She kicks a puddle on the rooftop, sending a wave of neon-lit water across the frame. Her dark hair whips across her face.",
+      "emotion": "Defiant, triumphant.",
+      "micro_expressions": "Not specified."
+    },
+    {
+      "action": "The camera orbits slightly to capture her in profile. She stops dancing, tilting her head back to catch the rain. She is breathing heavily, a wide, triumphant smile on her face.",
+      "emotion": "Triumphant, peaceful.",
+      "micro_expressions": "She closes her eyes, a soft, peaceful smile taking over her features as the neon lights softly blur in the background."
+    }
+  ]
+}

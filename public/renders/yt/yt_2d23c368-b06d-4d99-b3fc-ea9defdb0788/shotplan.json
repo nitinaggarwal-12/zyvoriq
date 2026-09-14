@@ -1,0 +1,67 @@
+[
+  {
+    "action": "Opens on raindrops splashing in a neon-reflecting puddle. Camera tilts up to reveal the artist standing in the rain, looking into the lens.",
+    "emotion": "Playful, confident.",
+    "micro_expressions": "A playful, confident smirk.",
+    "index": 1,
+    "startSec": 0,
+    "endSec": 3.776,
+    "durationSec": 3.776,
+    "beats": 5,
+    "singing": true,
+    "sungFraction": 0.53,
+    "lyric": "City lights are bleeding through the dark"
+  },
+  {
+    "action": "She sings, stepping rhythmically toward the camera, executing a sharp shoulder isolation. Neon lights cast blues and magentas on her.",
+    "emotion": "Intense passion.",
+    "micro_expressions": "Eyes locked on the lens, showing intense passion.",
+    "index": 2,
+    "startSec": 3.776,
+    "endSec": 6.776,
+    "durationSec": 3,
+    "beats": 4,
+    "singing": true,
+    "sungFraction": 0.67,
+    "lyric": "Oh, the rain is lighting up the spark"
+  },
+  {
+    "action": "From a low angle, she executes a fast dance spin, her blue jacket flaring out as water droplets whip off her hair in slow-motion arcs.",
+    "emotion": "Pure, uninhibited joy.",
+    "micro_expressions": "Head tilted back slightly, expression of pure joy.",
+    "index": 3,
+    "startSec": 6.776,
+    "endSec": 12.176,
+    "durationSec": 5.4,
+    "beats": 7,
+    "singing": true,
+    "sungFraction": 0.74,
+    "lyric": "Neon veins are flowing in the street / I can feel the thunder in my feet"
+  },
+  {
+    "action": "Tight close-up on her face and necklace as rain streaks down. A passing neon sign sweeps magenta light across her eyes.",
+    "emotion": "Fierce determination, empowerment.",
+    "micro_expressions": "Displays fierce determination and empowerment.",
+    "index": 4,
+    "startSec": 12.176,
+    "endSec": 17.776,
+    "durationSec": 5.6,
+    "beats": 7,
+    "singing": true,
+    "sungFraction": 0.81,
+    "lyric": "So I dance to the neon rain"
+  },
+  {
+    "action": "Camera rapidly circles her as she performs the signature chorus choreography with sharp hand gestures on the wet surface.",
+    "emotion": "High-energy, infectious.",
+    "micro_expressions": "An infectious smile, looking directly at the viewer.",
+    "index": 5,
+    "startSec": 17.776,
+    "endSec": 24,
+    "durationSec": 6.224,
+    "beats": 8,
+    "singing": true,
+    "sungFraction": 0.87,
+    "lyric": "Washing away the pain, spinning in the midnight glow / Never gonna let it go"
+  }
+]

@@ -1,0 +1,271 @@
+{
+  "generated_at": "2026-09-13T07:46:40.755Z",
+  "topic": "Mumbai monsoon rooftop night - a young Indian woman in a blue cropped jacket sings and dances through neon rain",
+  "genre": "MUSIC_VIDEO",
+  "target_duration_sec": 24,
+  "master_measured": {
+    "durationSec": 24,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "audioCodec": "aac",
+    "sampleRate": 48000,
+    "lufs": -12.9,
+    "truePeakDb": -1.8,
+    "subBassMeanDb": -18.8,
+    "silenceEvents": 0,
+    "cropDetect": "1080:1920:0:0"
+  },
+  "master_spec": {
+    "lufs": -14,
+    "truePeakDb": -1,
+    "sampleRate": 48000,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "song_window_start_sec": 0.8226817033477399,
+  "vocal_onset_song_sec": 1.639,
+  "vocal_onset_master_sec": 0.8163182966522601,
+  "audit_frame_timestamps": [
+    0.6,
+    1.8,
+    3,
+    4.2,
+    5.4,
+    6.6,
+    7.8,
+    9,
+    10.2,
+    11.4,
+    12.6,
+    13.8,
+    15,
+    16.2,
+    17.4,
+    18.6,
+    19.8,
+    21,
+    22.2,
+    23.4
+  ],
+  "lyric_lines_master": [
+    {
+      "text": "City lights are bleeding through the dark",
+      "start": 0.8163182966522601,
+      "end": 2.81631829665226
+    },
+    {
+      "text": "Oh, the rain is lighting up the spark",
+      "start": 3.7763182966522604,
+      "end": 5.77631829665226
+    },
+    {
+      "text": "Neon veins are flowing in the street",
+      "start": 6.77631829665226,
+      "end": 8.77631829665226
+    },
+    {
+      "text": "I can feel the thunder in my feet",
+      "start": 9.29631829665226,
+      "end": 11.29631829665226
+    },
+    {
+      "text": "So I dance to the neon rain",
+      "start": 12.17631829665226,
+      "end": 16.696318296652258
+    },
+    {
+      "text": "Washing away the pain, spinning in the midnight glow",
+      "start": 17.77631829665226,
+      "end": 23.01631829665226
+    },
+    {
+      "text": "Never gonna let it go",
+      "start": 23.81631829665226,
+      "end": 24
+    }
+  ],
+  "omni_http_status": 200,
+  "omni_vision": {
+    "frames": [
+      {
+        "i": 0,
+        "t": 0.6,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Dark-skinned woman with dark curly hair."
+      },
+      {
+        "i": 1,
+        "t": 1.8,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Consistent appearance, singing into camera."
+      },
+      {
+        "i": 2,
+        "t": 3,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Static medium shot, singing intensity."
+      },
+      {
+        "i": 3,
+        "t": 4.2,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": false,
+        "subject_desc": "Dynamic movement, mouth open singing."
+      },
+      {
+        "i": 4,
+        "t": 5.4,
+        "face_visible": false,
+        "mouth_open": false,
+        "teeth_visible": false,
+        "subject_desc": "Subject dynamic walking pose, face cut off."
+      },
+      {
+        "i": 5,
+        "t": 6.6,
+        "face_visible": false,
+        "mouth_open": false,
+        "teeth_visible": false,
+        "subject_desc": "Midsection focus, dancing on wet street."
+      },
+      {
+        "i": 6,
+        "t": 7.8,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Facial features shift slightly, identity unstable."
+      },
+      {
+        "i": 7,
+        "t": 9,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Smiling expression, spinning movement."
+      },
+      {
+        "i": 8,
+        "t": 10.2,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Close-up shot, laughing and singing."
+      },
+      {
+        "i": 9,
+        "t": 11.4,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Smiling close-up, warm expression."
+      },
+      {
+        "i": 10,
+        "t": 12.6,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Walking forward, initial face identity returns."
+      },
+      {
+        "i": 11,
+        "t": 13.8,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Dynamic movement, shouting directly at camera."
+      },
+      {
+        "i": 12,
+        "t": 15,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": false,
+        "subject_desc": "Identity shifts with glowing pink/purple eyes."
+      },
+      {
+        "i": 13,
+        "t": 16.2,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Glowing eyes, mouth wide open shouting."
+      },
+      {
+        "i": 14,
+        "t": 17.4,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": false,
+        "subject_desc": "Identity shifts, bright blue eye makeup."
+      },
+      {
+        "i": 15,
+        "t": 18.6,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Consistent blue makeup, movement blur."
+      },
+      {
+        "i": 16,
+        "t": 19.8,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Wide dynamic dance pose, smiling."
+      },
+      {
+        "i": 17,
+        "t": 21,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Walking pose on reflective street."
+      },
+      {
+        "i": 18,
+        "t": 22.2,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": false,
+        "subject_desc": "Movement shot, focused singing expression."
+      },
+      {
+        "i": 19,
+        "t": 23.4,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Final frame dynamic movement smiling."
+      }
+    ],
+    "identity_continuity": false,
+    "identity_notes": "Subject's face undergoes multiple distinct identity shifts (e.g., frames 6, 12, 14), characteristic of AI generation instability.",
+    "wardrobe_continuity": true,
+    "wardrobe_desc": "Blue crop puffer jacket, black sports crop top, black pants, black boots.",
+    "ai_artifact_severity": "obvious",
+    "artifact_notes": "Significant visual defects including flickering/morphing identity, eye shapes changing, unnatural motion blurs, and inconsistent glowing eye makeup effects."
+  },
+  "failures": [
+    {
+      "code": "IDENTITY_DISCONTINUITY",
+      "detail": "Subject's face undergoes multiple distinct identity shifts (e.g., frames 6, 12, 14), characteristic of AI generation instability."
+    },
+    {
+      "code": "VISIBLE_AI_GENERATION",
+      "detail": "Significant visual defects including flickering/morphing identity, eye shapes changing, unnatural motion blurs, and inconsistent glowing eye makeup effects."
+    }
+  ],
+  "verdict": "FAIL"
+}

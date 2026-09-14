@@ -90,13 +90,13 @@ export function buildReelArtifactIndex(manifest: ReelProductionManifest): Artifa
   if (manifest.captions) {
     artifacts.push(ref({ id: scopedArtifactId("document", projectId, "captions"), kind: "document", role: "captions", title: `${projectTitle} · Captions`, parentProjectId: projectId, sourceKey: "captions" }));
   }
-  if (manifest.audio.wordTimings?.length) {
+  if (manifest.audio?.wordTimings?.length) {
     artifacts.push(ref({ id: scopedArtifactId("document", projectId, "word-alignment"), kind: "document", role: "word-alignment", title: `${projectTitle} · Word alignment`, parentProjectId: projectId, sourceKey: "word-alignment" }));
   }
-  if (manifest.audio.narrationUrl) {
+  if (manifest.audio?.narrationUrl) {
     artifacts.push(ref({ id: scopedArtifactId("audio", projectId, "narration"), kind: "audio", role: "narration", title: `${projectTitle} · Narration`, parentProjectId: projectId, sourceKey: "narration", mediaUrl: manifest.audio.narrationUrl }));
   }
-  if (manifest.audio.musicUrl) {
+  if (manifest.audio?.musicUrl) {
     artifacts.push(ref({ id: scopedArtifactId("audio", projectId, "music"), kind: "audio", role: "music", title: `${projectTitle} · Music`, parentProjectId: projectId, sourceKey: "music", mediaUrl: manifest.audio.musicUrl }));
   }
 

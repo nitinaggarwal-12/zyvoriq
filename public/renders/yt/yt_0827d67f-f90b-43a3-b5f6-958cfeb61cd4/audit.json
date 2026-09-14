@@ -1,0 +1,150 @@
+{
+  "generated_at": "2026-09-14T03:36:45.712Z",
+  "topic": "two girls chatting about their college in the college campus",
+  "genre": "CINEMATIC_DRAMA",
+  "target_duration_sec": 24,
+  "master_measured": {
+    "durationSec": 24.033333,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "audioCodec": "aac",
+    "sampleRate": 48000,
+    "lufs": -13.5,
+    "truePeakDb": -2,
+    "subBassMeanDb": -22.9,
+    "silenceEvents": 0,
+    "cropDetect": "1080:1920:0:0",
+    "crossCutWorstPsnrDb": 15.4,
+    "crossCutOffenders": 0
+  },
+  "master_spec": {
+    "lufs": -14,
+    "truePeakDb": -1,
+    "sampleRate": 48000,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "song_window_start_sec": 0,
+  "vocal_onset_song_sec": 1.421,
+  "vocal_onset_master_sec": 1.421,
+  "audit_frame_timestamps": [
+    0.71,
+    3.23,
+    3.91,
+    9.15,
+    9.94,
+    13.84,
+    15.49,
+    20.95,
+    22.39
+  ],
+  "lyric_lines_master": [
+    {
+      "text": "Wrote our names on the midnight pavement / Chased the dawn, a perfect statement",
+      "start": 1.421,
+      "end": 5.925
+    },
+    {
+      "text": "Saw the world in a golden reflection / Lived the dream with no direction",
+      "start": 6.306,
+      "end": 12.272
+    },
+    {
+      "text": "Found the beat in a city humming / Knew our time was finally coming",
+      "start": 13.092,
+      "end": 17.517
+    },
+    {
+      "text": "Hold the light 'cause it's never fading / This one life is for the making",
+      "start": 18.498,
+      "end": 22.662
+    }
+  ],
+  "omni_http_status": 200,
+  "omni_vision": {
+    "frames": [
+      {
+        "i": 0,
+        "t": 0.71,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women stand on a brightly lit stage."
+      },
+      {
+        "i": 1,
+        "t": 3.23,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women stand on stage with mouths open."
+      },
+      {
+        "i": 2,
+        "t": 3.91,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women sing and gesture on stage."
+      },
+      {
+        "i": 3,
+        "t": 9.15,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women dance and smile on stage."
+      },
+      {
+        "i": 4,
+        "t": 9.94,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women dance and sing with open mouths."
+      },
+      {
+        "i": 5,
+        "t": 13.84,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women smile and clap their hands."
+      },
+      {
+        "i": 6,
+        "t": 15.49,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women dance with their arms raised."
+      },
+      {
+        "i": 7,
+        "t": 20.95,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women are singing or talking on stage."
+      },
+      {
+        "i": 8,
+        "t": 22.39,
+        "face_visible": true,
+        "mouth_open": true,
+        "teeth_visible": true,
+        "subject_desc": "Two women smile broadly while looking forward."
+      }
+    ],
+    "identity_continuity": true,
+    "identity_notes": "The same two women appear consistently across all frames.",
+    "wardrobe_continuity": true,
+    "wardrobe_desc": "Green top/black skirt and red top/silver skirt with black boots.",
+    "ai_artifact_severity": "none",
+    "artifact_notes": "No visual artifacts, distortions, or inconsistencies are observed in the frames."
+  },
+  "failures": [],
+  "verdict": "PASS"
+}
