@@ -52,6 +52,13 @@ interface DirectorCustomizationPayload {
       sfxVolume?: number;
       sfxSpeed?: number;
     };
+    surgicalCuts?: Array<{
+      id: string;
+      startSec: number;
+      endSec: number;
+      target: "ripple_both" | "mute_vocal" | "mute_music" | "freeze_video";
+      label?: string;
+    }>;
   };
 }
 
@@ -244,21 +251,55 @@ export async function POST(req: NextRequest) {
     }
 
     const filterParts: string[] = [];
-    // Video stream filter (only if color grading LUT is selected)
+    const surgicalCuts = direction.surgicalCuts || [];
+
+    // Video stream filter (color grading LUT + surgical frame blackouts/freezes)
+    const videoFilterStages: string[] = [];
     if (gradingFilter) {
-      filterParts.push(`[0:v]${gradingFilter}[vout]`);
+      videoFilterStages.push(gradingFilter);
+    }
+    for (const cut of surgicalCuts) {
+      if (cut.target === "ripple_both" || cut.target === "freeze_video") {
+        const s = Math.max(0, Number(cut.startSec) || 0).toFixed(3);
+        const e = Math.max(Number(s) + 0.05, Number(cut.endSec) || 0).toFixed(3);
+        videoFilterStages.push(
+          `drawbox=enable='between(t,${s},${e})':color=black@0.92:t=fill`
+        );
+      }
+    }
+    const hasVideoFilter = videoFilterStages.length > 0;
+    if (hasVideoFilter) {
+      filterParts.push(`[0:v]${videoFilterStages.join(",")}[vout]`);
     }
 
-    // Audio stream mixing
+    // Audio stream mixing + surgical stem mute windows
     const audioMixInputs: string[] = [];
     const atempoVocal = buildAtempoFilter(vocalSpd);
-    const vocalFilterChain = [`volume=${vocalVol.toFixed(2)}`, atempoVocal].filter(Boolean).join(",");
+    const vocalMuteStages = surgicalCuts
+      .filter((c) => c.target === "ripple_both" || c.target === "mute_vocal")
+      .map((c) => {
+        const s = Math.max(0, Number(c.startSec) || 0).toFixed(3);
+        const e = Math.max(Number(s) + 0.05, Number(c.endSec) || 0).toFixed(3);
+        return `volume=enable='between(t,${s},${e})':volume=0`;
+      });
+    const vocalFilterChain = [`volume=${vocalVol.toFixed(2)}`, ...vocalMuteStages, atempoVocal]
+      .filter(Boolean)
+      .join(",");
     filterParts.push(`[0:a]${vocalFilterChain}[a_base]`);
     audioMixInputs.push("[a_base]");
 
     if (musicIdx >= 0) {
       const atempoMusic = buildAtempoFilter(musicSpd);
-      const musicChain = [`volume=${musicVol.toFixed(2)}`, atempoMusic].filter(Boolean).join(",");
+      const musicMuteStages = surgicalCuts
+        .filter((c) => c.target === "ripple_both" || c.target === "mute_music")
+        .map((c) => {
+          const s = Math.max(0, Number(c.startSec) || 0).toFixed(3);
+          const e = Math.max(Number(s) + 0.05, Number(c.endSec) || 0).toFixed(3);
+          return `volume=enable='between(t,${s},${e})':volume=0`;
+        });
+      const musicChain = [`volume=${musicVol.toFixed(2)}`, ...musicMuteStages, atempoMusic]
+        .filter(Boolean)
+        .join(",");
       filterParts.push(`[${musicIdx}:a]${musicChain}[a_music]`);
       audioMixInputs.push("[a_music]");
     }
@@ -280,7 +321,7 @@ export async function POST(req: NextRequest) {
       "-filter_complex",
       filterParts.join(";"),
       "-map",
-      gradingFilter ? "[vout]" : "0:v",
+      hasVideoFilter ? "[vout]" : "0:v",
       "-map",
       "[aout]",
       "-c:v",
