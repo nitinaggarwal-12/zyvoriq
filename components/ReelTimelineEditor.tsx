@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   Undo2,
   Redo2,
@@ -150,6 +150,22 @@ export function ReelTimelineEditor({
   const buildDefaultClips = (): TimelineClipItem[] => {
     const validShots = initialShots.filter((s) => s && (s.videoUrl || (s as any).url));
     if (validShots.length > 0) {
+      const uniqueUrls = new Set(
+        validShots.map((s) =>
+          typeof s.videoUrl === "string"
+            ? s.videoUrl
+            : typeof (s as any).url === "string"
+            ? (s as any).url
+            : masterVideoUrl
+        )
+      );
+      const isSharedMasterFile = uniqueUrls.size === 1;
+      const totalSharedDur = validShots.reduce(
+        (acc, s) => acc + Number(s.durationSec || (s as any).duration || 6.0),
+        0
+      );
+      let cumulativeOffset = 0;
+
       return validShots.map((s, idx) => {
         const dur = Number(s.durationSec || (s as any).duration || 6.0);
         const rawUrl =
@@ -160,13 +176,19 @@ export function ReelTimelineEditor({
             : typeof (s.videoUrl as any)?.url === "string"
             ? (s.videoUrl as any).url
             : masterVideoUrl;
+
+        const trimStart = isSharedMasterFile ? cumulativeOffset : 0;
+        const trimEnd = isSharedMasterFile ? cumulativeOffset + dur : dur;
+        const sourceDur = isSharedMasterFile ? totalSharedDur : dur;
+        cumulativeOffset += dur;
+
         return {
           id: s.id || `shot_${idx + 1}`,
           title: s.title || `Shot ${idx + 1}`,
           videoUrl: rawUrl,
-          sourceDurationSec: dur,
-          trimStartSec: 0,
-          trimEndSec: dur,
+          sourceDurationSec: sourceDur,
+          trimStartSec: trimStart,
+          trimEndSec: trimEnd,
           speed: 1.0,
           enabled: true,
         };
@@ -176,9 +198,9 @@ export function ReelTimelineEditor({
       id: `seg_${idx + 1}`,
       title: `Shot ${idx + 1} (${idx * 6}s–${(idx + 1) * 6}s)`,
       videoUrl: masterVideoUrl,
-      sourceDurationSec: 6.0,
-      trimStartSec: 0,
-      trimEndSec: 6.0,
+      sourceDurationSec: 24.0,
+      trimStartSec: idx * 6.0,
+      trimEndSec: (idx + 1) * 6.0,
       speed: 1.0,
       enabled: true,
     }));
@@ -332,43 +354,148 @@ export function ReelTimelineEditor({
   const [versionTitleInput, setVersionTitleInput] = useState<string>("");
 
   // Live preview & playback states
-  // "shot": preview the selected constituent shot in isolation with frame looping & shot speed
-  // "sequence": preview the rendered master sequence with global speed
-  const [previewMode, setPreviewMode] = useState<"shot" | "sequence">("shot");
+  // "sequence": default live multi-shot sequence mode that stitches and plays all enabled shots together back-to-back
+  // "shot": loop the selected constituent shot in isolation
+  const [previewMode, setPreviewMode] = useState<"shot" | "sequence">("sequence");
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentPlayTime, setCurrentPlayTime] = useState<number>(0);
   const [isAuditioningSFX, setIsAuditioningSFX] = useState<boolean>(false);
   const [isAuditioningMusic, setIsAuditioningMusic] = useState<boolean>(false);
 
-  // Live preview player DOM elements
+  // Live preview player DOM elements & transition refs
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const musicAudioRef = useRef<HTMLAudioElement | null>(null);
   const sfxAudioRef = useRef<HTMLAudioElement | null>(null);
+  const shouldAutoPlayOnSwitchRef = useRef<boolean>(false);
 
   const activeClip = currentState.clips[selectedClipIndex] || currentState.clips[0];
 
-  // Compute effective visual playback speed
-  const effectiveVisualSpeed =
-    previewMode === "shot"
-      ? (activeClip?.speed || 1.0) * (currentState.globalVideoSpeed || 1.0)
-      : currentState.globalVideoSpeed || 1.0;
+  // Build live ordered sequence playlist from all enabled shots
+  const sequencePlaylist = useMemo(() => {
+    let accStart = 0;
+    return currentState.clips
+      .map((clip, originalIndex) => ({ clip, originalIndex }))
+      .filter((item) => item.clip.enabled)
+      .map((item, seqIdx) => {
+        const netDur = Math.max(
+          0.1,
+          (item.clip.trimEndSec - item.clip.trimStartSec) /
+            ((item.clip.speed || 1.0) * (currentState.globalVideoSpeed || 1.0))
+        );
+        const entry = {
+          ...item,
+          seqIdx,
+          netDurationSec: netDur,
+          seqStartTimeSec: accStart,
+          seqEndTimeSec: accStart + netDur,
+        };
+        accStart += netDur;
+        return entry;
+      });
+  }, [currentState.clips, currentState.globalVideoSpeed]);
 
-  // Determine active video source URL
-  const currentVideoSrc =
-    previewMode === "shot"
-      ? activeClip?.videoUrl || masterVideoUrl
-      : activeVersionUrl;
+  const currentSeqItem = useMemo(() => {
+    return (
+      sequencePlaylist.find((item) => item.originalIndex === selectedClipIndex) ||
+      sequencePlaylist[0]
+    );
+  }, [sequencePlaylist, selectedClipIndex]);
+
+  // Compute effective visual playback speed for the active shot
+  const effectiveVisualSpeed =
+    (activeClip?.speed || 1.0) * (currentState.globalVideoSpeed || 1.0);
+
+  // Always load the active clip's video source so edits/cuts/trims play live in real time
+  const currentVideoSrc = activeClip?.videoUrl || masterVideoUrl;
+
+  // Compute live global playhead time across all stitched shots
+  const globalPlayheadSec = useMemo(() => {
+    if (!currentSeqItem || !activeClip) return 0;
+    const elapsedInShot = Math.max(
+      0,
+      Math.min(
+        currentSeqItem.netDurationSec,
+        (currentPlayTime - activeClip.trimStartSec) / effectiveVisualSpeed
+      )
+    );
+    return currentSeqItem.seqStartTimeSec + elapsedInShot;
+  }, [currentSeqItem, activeClip, currentPlayTime, effectiveVisualSpeed]);
+
+  // Advance seamlessly to the next enabled shot in the sequence
+  const advanceToNextSequenceShot = useCallback(() => {
+    if (sequencePlaylist.length === 0) return;
+    const currentPos = sequencePlaylist.findIndex(
+      (item) => item.originalIndex === selectedClipIndex
+    );
+    const nextPos = currentPos >= 0 ? (currentPos + 1) % sequencePlaylist.length : 0;
+    const nextItem = sequencePlaylist[nextPos];
+    if (!nextItem) return;
+
+    shouldAutoPlayOnSwitchRef.current = true;
+    setSelectedClipIndex(nextItem.originalIndex);
+
+    // If the next shot shares the exact same video URL, seek immediately without reloading DOM src
+    if (
+      videoRef.current &&
+      activeClip &&
+      nextItem.clip.videoUrl === activeClip.videoUrl
+    ) {
+      videoRef.current.currentTime = nextItem.clip.trimStartSec;
+      const rate = Math.max(
+        0.25,
+        Math.min(
+          4.0,
+          (nextItem.clip.speed || 1.0) * (currentState.globalVideoSpeed || 1.0)
+        )
+      );
+      try {
+        videoRef.current.playbackRate = rate;
+      } catch {}
+      videoRef.current.play().catch(() => {});
+    }
+  }, [sequencePlaylist, selectedClipIndex, activeClip, currentState.globalVideoSpeed]);
+
+  // Seek to any global timestamp across all 4 stitched shots
+  const handleGlobalSequenceSeek = (targetGlobalSec: number) => {
+    if (sequencePlaylist.length === 0) return;
+    const found =
+      sequencePlaylist.find(
+        (item) =>
+          targetGlobalSec >= item.seqStartTimeSec &&
+          targetGlobalSec <= item.seqEndTimeSec + 0.05
+      ) || sequencePlaylist[sequencePlaylist.length - 1];
+
+    if (!found) return;
+    const offsetInShotSec = Math.max(0, targetGlobalSec - found.seqStartTimeSec);
+    const shotSpeed =
+      (found.clip.speed || 1.0) * (currentState.globalVideoSpeed || 1.0);
+    const targetClipTime = Math.min(
+      found.clip.trimEndSec,
+      found.clip.trimStartSec + offsetInShotSec * shotSpeed
+    );
+
+    if (found.originalIndex !== selectedClipIndex) {
+      shouldAutoPlayOnSwitchRef.current = isPlaying;
+      setSelectedClipIndex(found.originalIndex);
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.currentTime = targetClipTime;
+          setCurrentPlayTime(targetClipTime);
+        }
+      }, 40);
+    } else if (videoRef.current) {
+      videoRef.current.currentTime = targetClipTime;
+      setCurrentPlayTime(targetClipTime);
+    }
+  };
 
   // Real-time synchronization of playback rates, volumes, and audio states
   useEffect(() => {
     if (videoRef.current) {
-      // Direct unclamped playback rate supporting 0.25x to 4.0x
       const rate = Math.max(0.25, Math.min(4.0, effectiveVisualSpeed));
       try {
         videoRef.current.playbackRate = rate;
-      } catch (err) {
-        // Fallback if browser limits
-      }
+      } catch (err) {}
       videoRef.current.volume =
         currentState.vocalMode === "mute" ? 0 : Math.min(1.0, currentState.vocalVolume);
     }
@@ -396,19 +523,57 @@ export function ReelTimelineEditor({
     currentState.sfxSpeed,
   ]);
 
-  // Frame-accurate time update & looping logic
+  // When switching between shots with different MP4 URLs, auto-seek to trimStartSec and resume playback
+  const handleVideoLoadedData = () => {
+    if (!videoRef.current || !activeClip) return;
+    if (
+      videoRef.current.currentTime < activeClip.trimStartSec - 0.05 ||
+      videoRef.current.currentTime >= activeClip.trimEndSec
+    ) {
+      videoRef.current.currentTime = activeClip.trimStartSec;
+      setCurrentPlayTime(activeClip.trimStartSec);
+    }
+    const rate = Math.max(0.25, Math.min(4.0, effectiveVisualSpeed));
+    try {
+      videoRef.current.playbackRate = rate;
+    } catch {}
+    if (shouldAutoPlayOnSwitchRef.current || isPlaying) {
+      shouldAutoPlayOnSwitchRef.current = false;
+      videoRef.current.play().catch(() => {});
+    }
+  };
+
+  // Frame-accurate time update & multi-shot sequence stitching
   const handleTimeUpdate = () => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || !activeClip) return;
     const ct = videoRef.current.currentTime;
     setCurrentPlayTime(ct);
 
-    // In isolated shot preview mode, clamp and loop strictly within trimStartSec and trimEndSec
-    if (previewMode === "shot" && activeClip) {
-      const inSec = activeClip.trimStartSec;
-      const outSec = activeClip.trimEndSec;
-      if (ct < inSec || ct >= outSec) {
+    const inSec = activeClip.trimStartSec;
+    const outSec = activeClip.trimEndSec;
+
+    if (previewMode === "shot") {
+      // Isolated single-shot loop mode
+      if (ct < inSec - 0.1 || ct >= outSec - 0.04) {
+        videoRef.current.currentTime = inSec;
+        if (isPlaying) videoRef.current.play().catch(() => {});
+      }
+    } else {
+      // "sequence" mode (Play All Shots Together): advance to next shot at outSec
+      if (ct >= outSec - 0.05) {
+        advanceToNextSequenceShot();
+      } else if (ct < inSec - 0.15) {
         videoRef.current.currentTime = inSec;
       }
+    }
+  };
+
+  const handleVideoEnded = () => {
+    if (previewMode === "sequence") {
+      advanceToNextSequenceShot();
+    } else if (videoRef.current && activeClip) {
+      videoRef.current.currentTime = activeClip.trimStartSec;
+      videoRef.current.play().catch(() => {});
     }
   };
 
@@ -420,11 +585,9 @@ export function ReelTimelineEditor({
       currentState.musicTrack !== "none" &&
       currentState.musicTrack !== "original_lyria"
     ) {
-      musicAudioRef.current.currentTime = videoRef.current?.currentTime || 0;
       musicAudioRef.current.play().catch(() => {});
     }
     if (sfxAudioRef.current && currentState.sfxTrack !== "none") {
-      sfxAudioRef.current.currentTime = videoRef.current?.currentTime || 0;
       sfxAudioRef.current.play().catch(() => {});
     }
   };
@@ -791,8 +954,22 @@ export function ReelTimelineEditor({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6">
         {/* LEFT 5 COLS: Live Video Preview & Selected Shot Frame Trimmer */}
         <div className="lg:col-span-5 flex flex-col gap-4">
-          {/* Dual Preview Switcher: Shot Preview vs Master Sequence Preview */}
+          {/* Dual Preview Switcher: Play All Shots Together (Default) vs Loop Single Shot */}
           <div className="flex items-center justify-between p-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+            <button
+              type="button"
+              onClick={() => {
+                setPreviewMode("sequence");
+              }}
+              className={`flex-1 py-1.5 px-2 rounded-lg font-bold transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                previewMode === "sequence"
+                  ? "bg-teal-500/20 border border-teal-500/60 text-teal-300 shadow-sm"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <Film className="w-3.5 h-3.5" />
+              <span>Play All {sequencePlaylist.length} Shots Together (Live Sequence)</span>
+            </button>
             <button
               type="button"
               onClick={() => {
@@ -803,44 +980,29 @@ export function ReelTimelineEditor({
               }}
               className={`flex-1 py-1.5 px-2 rounded-lg font-semibold transition cursor-pointer flex items-center justify-center gap-1.5 ${
                 previewMode === "shot"
-                  ? "bg-teal-500/20 border border-teal-500/60 text-teal-300"
+                  ? "bg-amber-500/20 border border-amber-500/60 text-amber-300"
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
               <Eye className="w-3.5 h-3.5" />
-              <span>Isolated Shot #{selectedClipIndex + 1} Preview</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setPreviewMode("sequence");
-                if (videoRef.current) {
-                  videoRef.current.currentTime = 0;
-                }
-              }}
-              className={`flex-1 py-1.5 px-2 rounded-lg font-semibold transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                previewMode === "sequence"
-                  ? "bg-teal-500/20 border border-teal-500/60 text-teal-300"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <Film className="w-3.5 h-3.5" />
-              <span>Full Sequence Preview</span>
+              <span>Loop Shot #{selectedClipIndex + 1} Only</span>
             </button>
           </div>
 
           {/* Interactive Player Viewport with Live Color LUT Filter and Real-Time Speed */}
-          <div className="relative bg-black rounded-xl border border-slate-800 overflow-hidden aspect-[9/16] max-h-[440px] flex items-center justify-center mx-auto w-full group">
+          <div className="relative bg-black rounded-xl border border-slate-800 overflow-hidden aspect-[9/16] max-h-[420px] flex items-center justify-center mx-auto w-full group">
             <video
               ref={videoRef}
-              key={previewMode === "shot" ? `shot_${selectedClipIndex}_${activeClip?.videoUrl}` : `seq_${activeVersionUrl}`}
+              key={`video_${currentVideoSrc}`}
               src={currentVideoSrc}
               controls
               playsInline
               preload="auto"
               style={{ filter: activeColorFilter }}
               className="w-full h-full object-contain transition-all duration-200"
+              onLoadedData={handleVideoLoadedData}
               onTimeUpdate={handleTimeUpdate}
+              onEnded={handleVideoEnded}
               onPlay={handlePlay}
               onPause={handlePause}
             />
@@ -855,22 +1017,142 @@ export function ReelTimelineEditor({
 
             {/* Live Playback Telemetry HUD Overlays */}
             <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 pointer-events-none">
-              <span className="px-2 py-0.5 rounded bg-black/80 border border-teal-500/40 text-[11px] font-mono font-bold text-teal-300 backdrop-blur-md">
-                ⚡ {effectiveVisualSpeed.toFixed(2)}x Visual Speed
+              <span className="px-2 py-0.5 rounded bg-black/85 border border-teal-500/40 text-[11px] font-mono font-bold text-teal-300 backdrop-blur-md">
+                ⚡ Shot #{selectedClipIndex + 1} • {effectiveVisualSpeed.toFixed(2)}x Speed
               </span>
               {currentState.colorGrading !== "none" && (
-                <span className="px-2 py-0.5 rounded bg-black/80 border border-purple-500/40 text-[10px] font-mono font-bold text-purple-300 backdrop-blur-md">
+                <span className="px-2 py-0.5 rounded bg-black/85 border border-purple-500/40 text-[10px] font-mono font-bold text-purple-300 backdrop-blur-md">
                   🎨 {COLOR_GRADING_LUT_MAP[currentState.colorGrading]?.badge}
                 </span>
               )}
             </div>
 
             <div className="absolute bottom-12 right-2.5 flex items-center gap-1.5 pointer-events-none">
-              <span className="px-2 py-0.5 rounded bg-black/80 border border-white/20 text-[10px] font-mono text-slate-300 backdrop-blur-md">
-                {previewMode === "shot"
-                  ? `In: ${activeClip.trimStartSec.toFixed(2)}s → Out: ${activeClip.trimEndSec.toFixed(2)}s`
-                  : `Master Sequence (${totalEditedDurationSec.toFixed(1)}s)`}
+              <span className="px-2 py-0.5 rounded bg-black/85 border border-white/20 text-[10px] font-mono text-slate-200 backdrop-blur-md">
+                {previewMode === "sequence"
+                  ? `Stitched Sequence: ${globalPlayheadSec.toFixed(1)}s / ${totalEditedDurationSec.toFixed(1)}s`
+                  : `Shot Trim: ${activeClip?.trimStartSec.toFixed(2)}s → ${activeClip?.trimEndSec.toFixed(2)}s`}
               </span>
+            </div>
+          </div>
+
+          {/* ── INTERACTIVE 4-SHOT UNIFIED SEQUENCE TIMELINE & SCRUBBER BAR ── */}
+          <div className="p-3.5 rounded-xl bg-slate-950 border border-teal-500/30 space-y-2.5 shadow-lg">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => {
+                  setPreviewMode("sequence");
+                  if (!videoRef.current) return;
+                  if (isPlaying) {
+                    videoRef.current.pause();
+                  } else {
+                    if (
+                      activeClip &&
+                      (videoRef.current.currentTime < activeClip.trimStartSec ||
+                        videoRef.current.currentTime >= activeClip.trimEndSec)
+                    ) {
+                      videoRef.current.currentTime = activeClip.trimStartSec;
+                    }
+                    videoRef.current.play().catch(() => {});
+                  }
+                }}
+                className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-md transition"
+              >
+                {isPlaying ? (
+                  <>
+                    <Pause className="w-3.5 h-3.5 fill-slate-950" />
+                    <span>Pause Sequence</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-3.5 h-3.5 fill-slate-950" />
+                    <span>Play All {sequencePlaylist.length} Shots Together</span>
+                  </>
+                )}
+              </button>
+
+              <div className="text-xs font-mono text-slate-300 flex items-center gap-2">
+                <span className="text-teal-300 font-bold">
+                  {globalPlayheadSec.toFixed(2)}s / {totalEditedDurationSec.toFixed(2)}s
+                </span>
+                <span className="text-slate-500">•</span>
+                <span className="text-slate-400">
+                  Shot #{(currentSeqItem?.seqIdx ?? 0) + 1} of {sequencePlaylist.length}
+                </span>
+              </div>
+            </div>
+
+            {/* Global Sequence Range Scrubber Across All Stitched Shots */}
+            <div className="space-y-1">
+              <input
+                type="range"
+                min={0}
+                max={Math.max(0.1, totalEditedDurationSec)}
+                step={0.04}
+                value={globalPlayheadSec}
+                onChange={(e) => handleGlobalSequenceSeek(parseFloat(e.target.value))}
+                className="w-full accent-teal-400 cursor-pointer h-1.5"
+                title="Scrub across all 4 stitched shots together"
+              />
+            </div>
+
+            {/* Visual Multi-Shot Segment Strip (Click any shot block to jump & edit) */}
+            <div className="flex items-stretch gap-1 w-full h-9 rounded-lg overflow-hidden bg-slate-900 p-1 border border-slate-800">
+              {sequencePlaylist.map((item) => {
+                const isCurrent = item.originalIndex === selectedClipIndex;
+                const widthPct = Math.max(
+                  12,
+                  (item.netDurationSec / Math.max(0.1, totalEditedDurationSec)) * 100
+                );
+                const progressInShotPct = isCurrent
+                  ? Math.min(
+                      100,
+                      Math.max(
+                        0,
+                        ((globalPlayheadSec - item.seqStartTimeSec) /
+                          Math.max(0.1, item.netDurationSec)) *
+                          100
+                      )
+                    )
+                  : 0;
+
+                return (
+                  <button
+                    key={`seq_bar_${item.clip.id}_${item.originalIndex}`}
+                    type="button"
+                    style={{ width: `${widthPct}%` }}
+                    onClick={() => {
+                      shouldAutoPlayOnSwitchRef.current = isPlaying;
+                      setSelectedClipIndex(item.originalIndex);
+                      setTimeout(() => {
+                        if (videoRef.current) {
+                          videoRef.current.currentTime = item.clip.trimStartSec;
+                          setCurrentPlayTime(item.clip.trimStartSec);
+                        }
+                      }, 30);
+                    }}
+                    className={`relative rounded-md overflow-hidden transition cursor-pointer flex flex-col justify-center px-2 text-left border ${
+                      isCurrent
+                        ? "bg-teal-950/90 border-teal-400 text-teal-200 ring-1 ring-teal-400"
+                        : "bg-slate-950/80 border-slate-800 hover:border-slate-600 text-slate-400"
+                    }`}
+                    title={`Click to select & edit ${item.clip.title} (${item.netDurationSec.toFixed(1)}s)`}
+                  >
+                    {/* Live Playhead Progress Fill inside active shot */}
+                    {isCurrent && (
+                      <div
+                        style={{ width: `${progressInShotPct}%` }}
+                        className="absolute inset-y-0 left-0 bg-teal-500/25 pointer-events-none transition-all duration-75"
+                      />
+                    )}
+                    <div className="relative z-10 flex items-center justify-between text-[10px] font-mono font-bold truncate">
+                      <span className="truncate">#{item.seqIdx + 1}</span>
+                      <span>{item.netDurationSec.toFixed(1)}s</span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -968,7 +1250,6 @@ export function ReelTimelineEditor({
                           sourceDurationSec: dur,
                           trimEndSec: Math.min(activeClip.trimEndSec, dur),
                         });
-                        setPreviewMode("shot");
                       }
                     }}
                     className="bg-slate-900 text-teal-300 font-mono text-xs rounded px-2 py-1 border border-slate-700 outline-none w-full max-w-[260px] cursor-pointer"
@@ -1156,8 +1437,14 @@ export function ReelTimelineEditor({
                   <div
                     key={`${clip.id || "clip"}_${idx}`}
                     onClick={() => {
+                      shouldAutoPlayOnSwitchRef.current = isPlaying;
                       setSelectedClipIndex(idx);
-                      setPreviewMode("shot");
+                      setTimeout(() => {
+                        if (videoRef.current) {
+                          videoRef.current.currentTime = clip.trimStartSec;
+                          setCurrentPlayTime(clip.trimStartSec);
+                        }
+                      }, 30);
                     }}
                     className={`p-3 rounded-xl border transition cursor-pointer flex flex-col justify-between ${
                       !clip.enabled
