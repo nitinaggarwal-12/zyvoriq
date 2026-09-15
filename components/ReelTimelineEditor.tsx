@@ -256,13 +256,14 @@ export function ReelTimelineEditor({
   };
 
   const handleResetShot = (idx: number) => {
+    const baseline = buildDefaultClips()[idx];
     pushState((prev) => {
       const copy = [...prev.clips];
       if (copy[idx]) {
         copy[idx] = {
           ...copy[idx],
-          trimStartSec: 0,
-          trimEndSec: copy[idx].sourceDurationSec,
+          trimStartSec: baseline ? baseline.trimStartSec : 0,
+          trimEndSec: baseline ? baseline.trimEndSec : copy[idx].sourceDurationSec,
           speed: 1.0,
           enabled: true,
         };
@@ -399,11 +400,14 @@ export function ReelTimelineEditor({
   const [previewMode, setPreviewMode] = useState<"shot" | "sequence" | "stitched_reel">("sequence");
   const [stitchedReelUrl, setStitchedReelUrl] = useState<string | null>(null);
   const [isStitching, setIsStitching] = useState<boolean>(false);
+  const [transitionStyle, setTransitionStyle] = useState<"cut" | "dissolve" | "flash">("cut");
 
-  // Invalidate cached stitched reel when user edits trims, speeds, or undo/redo
+  // Invalidate cached stitched reel when user edits trims, speeds, transition style, or undo/redo
+  // Also transition previewMode back to "sequence" so scrubbing/trimming never desyncs against a stale stitched MP4
   useEffect(() => {
     setStitchedReelUrl(null);
-  }, [historyIndex]);
+    setPreviewMode((prev) => (prev === "stitched_reel" ? "sequence" : prev));
+  }, [historyIndex, transitionStyle]);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentPlayTime, setCurrentPlayTime] = useState<number>(0);
   const [isAuditioningSFX, setIsAuditioningSFX] = useState<boolean>(false);
@@ -563,27 +567,60 @@ export function ReelTimelineEditor({
     }
   };
 
-  // Real-time synchronization of playback rates, volumes, and audio states
-  // IMPORTANT: Never mute videoRef.current so the embedded Original Lyria Music & Vocals NEVER go away!
+  // ── 5-STEM UP/DOWN AUDIO SPECTRUM BAR CHART & PER-SHOT VOICE ANALYZER ENGINE ──
+  const [songHarmoniesGain, setSongHarmoniesGain] = useState<number>(1.0);
+  const [stemMutes, setStemMutes] = useState<Record<string, boolean>>({
+    speech: false,
+    song: false,
+    music: false,
+    background: false,
+    master: false,
+  });
+  const [stemSolos, setStemSolos] = useState<Record<string, boolean>>({
+    speech: false,
+    song: false,
+    music: false,
+    background: false,
+  });
+
+  // Real-time synchronization of playback rates, volumes, and 5-stem Mute/Solo audio states
+  // IMPORTANT: Never mute videoRef.current unless user explicitly toggles Master Mute / Vocal Mute
   useEffect(() => {
+    const anySolo = Object.values(stemSolos).some(Boolean);
+    const isStemLiveActive = (key: string) => {
+      if (stemMutes.master) return false;
+      if (stemMutes[key]) return false;
+      if (anySolo && !stemSolos[key]) return false;
+      return true;
+    };
+
+    const speechActive = isStemLiveActive("speech") ? 1.0 : 0.0;
+    const songActive = isStemLiveActive("song") ? songHarmoniesGain : 0.0;
+    const musicActive = isStemLiveActive("music") ? 1.0 : 0.0;
+    const bgActive = isStemLiveActive("background") ? 1.0 : 0.0;
+
     if (videoRef.current) {
       const rate = Math.max(0.25, Math.min(4.0, effectiveVisualSpeed));
       try {
         videoRef.current.playbackRate = rate;
       } catch (err) {}
-      videoRef.current.muted = false;
-      videoRef.current.volume =
-        currentState.vocalMode === "mute" ? 0 : Math.min(1.0, currentState.vocalVolume);
+      videoRef.current.muted = Boolean(stemMutes.master);
+      const baseVocalVol = currentState.vocalMode === "mute" ? 0 : currentState.vocalVolume;
+      // Combine active stems so muting/soloing speech, song, or music physically scales live video audio
+      const stemScale = stemMutes.master
+        ? 0
+        : Math.min(1.0, speechActive * 0.45 + Math.min(1.2, songActive) * 0.25 + musicActive * 0.30);
+      videoRef.current.volume = Math.max(0, Math.min(1.0, baseVocalVol * stemScale));
     }
     if (musicAudioRef.current) {
-      musicAudioRef.current.volume = Math.min(1.0, currentState.musicVolume);
+      musicAudioRef.current.volume = Math.max(0, Math.min(1.0, currentState.musicVolume * musicActive));
       const mRate = Math.max(0.25, Math.min(4.0, currentState.musicSpeed || 1.0));
       try {
         musicAudioRef.current.playbackRate = mRate;
       } catch (err) {}
     }
     if (sfxAudioRef.current) {
-      sfxAudioRef.current.volume = Math.min(1.0, currentState.sfxVolume);
+      sfxAudioRef.current.volume = Math.max(0, Math.min(1.0, currentState.sfxVolume * bgActive));
       const sRate = Math.max(0.25, Math.min(4.0, currentState.sfxSpeed || 1.0));
       try {
         sfxAudioRef.current.playbackRate = sRate;
@@ -599,12 +636,15 @@ export function ReelTimelineEditor({
     currentState.musicSpeed,
     currentState.sfxVolume,
     currentState.sfxSpeed,
+    stemMutes,
+    stemSolos,
+    songHarmoniesGain,
   ]);
 
   // When switching between shots with different MP4 URLs, auto-seek to trimStartSec and resume playback
   const handleVideoLoadedData = () => {
     if (!videoRef.current || !activeClip) return;
-    videoRef.current.muted = false;
+    videoRef.current.muted = Boolean(stemMutes.master);
     if (previewMode === "stitched_reel") {
       if (shouldAutoPlayOnSwitchRef.current || isPlaying) {
         shouldAutoPlayOnSwitchRef.current = false;
@@ -681,7 +721,7 @@ export function ReelTimelineEditor({
   const handlePlay = () => {
     setIsPlaying(true);
     if (videoRef.current) {
-      videoRef.current.muted = false;
+      videoRef.current.muted = Boolean(stemMutes.master);
     }
     if (
       musicAudioRef.current &&
@@ -703,27 +743,14 @@ export function ReelTimelineEditor({
 
   // Immediate interactive frame seeking when scrubbing in/out sliders
   const handleSeekFrame = (targetSec: number) => {
+    if (previewMode === "stitched_reel") {
+      setPreviewMode("sequence");
+    }
     if (videoRef.current) {
       videoRef.current.currentTime = targetSec;
       setCurrentPlayTime(targetSec);
     }
   };
-
-  // ── 5-STEM UP/DOWN AUDIO SPECTRUM BAR CHART & PER-SHOT VOICE ANALYZER ENGINE ──
-  const [songHarmoniesGain, setSongHarmoniesGain] = useState<number>(1.0);
-  const [stemMutes, setStemMutes] = useState<Record<string, boolean>>({
-    speech: false,
-    song: false,
-    music: false,
-    background: false,
-    master: false,
-  });
-  const [stemSolos, setStemSolos] = useState<Record<string, boolean>>({
-    speech: false,
-    song: false,
-    music: false,
-    background: false,
-  });
 
   // Per-Shot Voice & Sound Signature Profiles across Shots #1 to #4
   const SHOT_VOICE_SIGNATURES: Array<{
@@ -1042,6 +1069,10 @@ export function ReelTimelineEditor({
           clips: currentState.clips,
           globalVideoSpeed: currentState.globalVideoSpeed,
           colorGrading: currentState.colorGrading,
+          transitionStyle,
+          stemMutes,
+          stemSolos,
+          songHarmoniesGain,
           vocalMode: currentState.vocalMode,
           vocalVolume: currentState.vocalVolume,
           vocalSpeed: currentState.vocalSpeed,
@@ -1063,12 +1094,18 @@ export function ReelTimelineEditor({
       setActiveVersionUrl(data.outputUrl);
       setPreviewMode("stitched_reel");
       setRenderSuccessMsg(
-        `✓ Stitched all ${sequencePlaylist.length} trimmed shots into 1 seamless single-file reel (${data.durationSec}s) with continuous Original Lyria Music! Playing as One Reel.`
+        `✓ Stitched all ${sequencePlaylist.length} trimmed shots into 1 seamless single-file reel (${data.durationSec}s) with ${
+          transitionStyle === "dissolve"
+            ? "Smooth Film Dissolve (0.25s)"
+            : transitionStyle === "flash"
+            ? "Flash Transition (0.18s)"
+            : "Cut-on-Action (Instant)"
+        } + continuous Original Lyria Music! Playing as One Reel.`
       );
       setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.currentTime = 0;
-          videoRef.current.muted = false;
+          videoRef.current.muted = Boolean(stemMutes.master);
           videoRef.current.play().catch(() => {});
         }
       }, 120);
@@ -1095,6 +1132,10 @@ export function ReelTimelineEditor({
           clips: currentState.clips,
           globalVideoSpeed: currentState.globalVideoSpeed,
           colorGrading: currentState.colorGrading,
+          transitionStyle,
+          stemMutes,
+          stemSolos,
+          songHarmoniesGain,
           vocalMode: currentState.vocalMode,
           vocalVolume: currentState.vocalVolume,
           vocalSpeed: currentState.vocalSpeed,
@@ -1445,10 +1486,15 @@ export function ReelTimelineEditor({
               <audio ref={sfxAudioRef} src={currentState.sfxTrack} loop preload="auto" />
             )}
 
+            {/* Defensive DOM anchor to prevent external share-modal.js extension from throwing null addEventListener TypeError */}
+            <div id="share-modal" className="hidden" aria-hidden="true" />
+
             {/* Live Playback Telemetry HUD Overlays */}
             <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 pointer-events-none">
               <span className="px-2 py-0.5 rounded bg-black/85 border border-teal-500/40 text-[11px] font-mono font-bold text-teal-300 backdrop-blur-md">
-                ⚡ Shot #{selectedClipIndex + 1} • {effectiveVisualSpeed.toFixed(2)}x Speed
+                {previewMode === "stitched_reel"
+                  ? `🎬 Stitched Master Reel • Shot #${(currentSeqItem?.seqIdx ?? 0) + 1} of ${sequencePlaylist.length}`
+                  : `⚡ Shot #${selectedClipIndex + 1} • ${effectiveVisualSpeed.toFixed(2)}x Speed`}
               </span>
               {currentState.colorGrading !== "none" && (
                 <span className="px-2 py-0.5 rounded bg-black/85 border border-purple-500/40 text-[10px] font-mono font-bold text-purple-300 backdrop-blur-md">
@@ -1459,8 +1505,8 @@ export function ReelTimelineEditor({
 
             <div className="absolute bottom-12 right-2.5 flex items-center gap-1.5 pointer-events-none">
               <span className="px-2 py-0.5 rounded bg-black/85 border border-white/20 text-[10px] font-mono text-slate-200 backdrop-blur-md">
-                {previewMode === "sequence"
-                  ? `Stitched Sequence: ${globalPlayheadSec.toFixed(1)}s / ${totalEditedDurationSec.toFixed(1)}s`
+                {previewMode === "stitched_reel" || previewMode === "sequence"
+                  ? `Stitched Playhead: ${globalPlayheadSec.toFixed(2)}s / ${totalEditedDurationSec.toFixed(2)}s`
                   : `Shot Trim: ${activeClip?.trimStartSec.toFixed(2)}s → ${activeClip?.trimEndSec.toFixed(2)}s`}
               </span>
             </div>
@@ -1822,6 +1868,24 @@ export function ReelTimelineEditor({
                   </button>
                   <button
                     type="button"
+                    disabled={selectedClipIndex === 0}
+                    onClick={() => handleMoveClip(selectedClipIndex, -1)}
+                    className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-35 text-slate-200 text-xs font-semibold flex items-center gap-1 cursor-pointer transition"
+                    title="Move shot earlier in timeline order"
+                  >
+                    ⬅ Move Left
+                  </button>
+                  <button
+                    type="button"
+                    disabled={selectedClipIndex >= currentState.clips.length - 1}
+                    onClick={() => handleMoveClip(selectedClipIndex, 1)}
+                    className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-35 text-slate-200 text-xs font-semibold flex items-center gap-1 cursor-pointer transition"
+                    title="Move shot later in timeline order"
+                  >
+                    Move Right ➡
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => handleResetShot(selectedClipIndex)}
                     className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-semibold flex items-center gap-1 cursor-pointer transition"
                     title="Reset selected shot trim and speed back to full source duration"
@@ -1943,14 +2007,40 @@ export function ReelTimelineEditor({
                 </div>
               )}
 
-              {/* Frame-accurate In/Out Trimmers + Per-Clip Visual Speed with Interactive Frame Seeking */}
+              {/* Frame-accurate In/Out Trimmers + Per-Clip Visual Speed with Interactive Frame Seeking & -1f/+1f Nudges */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
                 <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-slate-400">Beginning Cut (In-Frame):</span>
-                    <span className="font-mono text-teal-300 font-bold">
-                      {activeClip.trimStartSec.toFixed(2)}s ({Math.round(activeClip.trimStartSec * 24)}f)
-                    </span>
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-slate-400">Beginning Cut (In):</span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const val = Math.max(0, Number((activeClip.trimStartSec - 0.04).toFixed(2)));
+                          updateClip(selectedClipIndex, { trimStartSec: val });
+                          handleSeekFrame(val);
+                        }}
+                        className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-mono text-slate-300 cursor-pointer"
+                        title="Step backward 1 frame (-0.04s)"
+                      >
+                        -1f
+                      </button>
+                      <span className="font-mono text-teal-300 font-bold">
+                        {activeClip.trimStartSec.toFixed(2)}s ({Math.round(activeClip.trimStartSec * 24)}f)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const val = Math.min(activeClip.trimEndSec - 0.2, Number((activeClip.trimStartSec + 0.04).toFixed(2)));
+                          updateClip(selectedClipIndex, { trimStartSec: val });
+                          handleSeekFrame(val);
+                        }}
+                        className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-mono text-slate-300 cursor-pointer"
+                        title="Step forward 1 frame (+0.04s)"
+                      >
+                        +1f
+                      </button>
+                    </div>
                   </div>
                   <input
                     type="range"
@@ -1967,11 +2057,37 @@ export function ReelTimelineEditor({
                   />
                 </div>
                 <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-slate-400">End Cut (Out-Frame):</span>
-                    <span className="font-mono text-teal-300 font-bold">
-                      {activeClip.trimEndSec.toFixed(2)}s ({Math.round(activeClip.trimEndSec * 24)}f)
-                    </span>
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-slate-400">End Cut (Out):</span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const val = Math.max(activeClip.trimStartSec + 0.2, Number((activeClip.trimEndSec - 0.04).toFixed(2)));
+                          updateClip(selectedClipIndex, { trimEndSec: val });
+                          handleSeekFrame(val);
+                        }}
+                        className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-mono text-slate-300 cursor-pointer"
+                        title="Step backward 1 frame (-0.04s)"
+                      >
+                        -1f
+                      </button>
+                      <span className="font-mono text-teal-300 font-bold">
+                        {activeClip.trimEndSec.toFixed(2)}s ({Math.round(activeClip.trimEndSec * 24)}f)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const val = Math.min(activeClip.sourceDurationSec, Number((activeClip.trimEndSec + 0.04).toFixed(2)));
+                          updateClip(selectedClipIndex, { trimEndSec: val });
+                          handleSeekFrame(val);
+                        }}
+                        className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-mono text-slate-300 cursor-pointer"
+                        title="Step forward 1 frame (+0.04s)"
+                      >
+                        +1f
+                      </button>
+                    </div>
                   </div>
                   <input
                     type="range"
@@ -2043,6 +2159,17 @@ export function ReelTimelineEditor({
                       : "🔗 Stitch All 4 to Play as One Reel"}
                   </span>
                 </button>
+
+                <select
+                  value={transitionStyle}
+                  onChange={(e) => setTransitionStyle(e.target.value as any)}
+                  className="bg-slate-950 text-teal-300 font-mono text-xs rounded-lg px-2.5 py-1 border border-teal-500/40 outline-none cursor-pointer"
+                  title="Select visual transition between stitched shots"
+                >
+                  <option value="cut">⚡ Cut-on-Action (Instant 0ms)</option>
+                  <option value="dissolve">✨ Smooth Cross-Dissolve (0.25s xfade)</option>
+                  <option value="flash">🔥 Flash Transition (0.18s xfade)</option>
+                </select>
 
                 <div className="flex items-center gap-2 bg-slate-950 px-3 py-1 rounded-lg border border-slate-800">
                   <Gauge className="w-3.5 h-3.5 text-teal-400" />

@@ -23,6 +23,11 @@ export interface EditorRenderRequest {
   clips: EditorClipInput[];
   globalVideoSpeed?: number; // Global visual speed multiplier (0.25x - 4.0x)
   colorGrading?: string; // "none" | "cyberpunk_neon" | "golden_hour_warm" | "moonlight_noir" | "bollywood_royal" | "vintage_film"
+  transitionStyle?: "cut" | "dissolve" | "flash"; // Visual transition between stitched shots
+  // 5-Stem Up/Down Audio Spectrum Mixer Overrides
+  stemMutes?: Record<string, boolean>;
+  stemSolos?: Record<string, boolean>;
+  songHarmoniesGain?: number;
   // Independent Dialogue / Vocals Track
   vocalMode: "original" | "mute" | "custom";
   vocalUrl?: string;
@@ -116,6 +121,7 @@ export async function POST(req: NextRequest) {
     // 1. PURE VISUAL PIPELINE: Trim each video clip to [trimStartSec, trimEndSec] and apply visual speed ONLY (-an)
     // This guarantees cutting/adding video frames or changing video speed NEVER chops or distorts the continuous music track!
     const trimmedSegments: string[] = [];
+    const segmentDurations: number[] = [];
     let firstValidSourcePath: string | null = null;
 
     for (let i = 0; i < enabledClips.length; i++) {
@@ -143,7 +149,7 @@ export async function POST(req: NextRequest) {
       if (gradingFilter) {
         vfStages.push(gradingFilter);
       }
-      vfStages.push("fps=24");
+      vfStages.push("fps=24,format=yuv420p");
 
       execFileSync("ffmpeg", [
         "-y",
@@ -158,6 +164,8 @@ export async function POST(req: NextRequest) {
         vfStages.join(","),
         "-c:v",
         "libx264",
+        "-pix_fmt",
+        "yuv420p",
         "-preset",
         "ultrafast",
         "-crf",
@@ -169,27 +177,81 @@ export async function POST(req: NextRequest) {
         segPath,
       ]);
       trimmedSegments.push(segPath);
+      segmentDurations.push(Number((dur / effectiveVideoSpeed).toFixed(3)));
     }
 
-    // 2. Concatenate pure visual segments
-    const concatListPath = path.join(workDir, "concat.txt");
-    fs.writeFileSync(
-      concatListPath,
-      trimmedSegments.map((p) => `file '${p.replace(/'/g, "'\\''")}'`).join("\n")
-    );
+    // 2. Concatenate pure visual segments (supports Instant Cut, Smooth Cross-Dissolve xfade, or Flash Cut xfade)
     const concatVideoPath = path.join(workDir, "concat_video.mp4");
-    execFileSync("ffmpeg", [
-      "-y",
-      "-f",
-      "concat",
-      "-safe",
-      "0",
-      "-i",
-      concatListPath,
-      "-c",
-      "copy",
-      concatVideoPath,
-    ]);
+    const transitionStyle = body.transitionStyle || "cut";
+    let xfadeSuccess = false;
+
+    if ((transitionStyle === "dissolve" || transitionStyle === "flash") && trimmedSegments.length > 1) {
+      try {
+        const transType = transitionStyle === "flash" ? "fadewhite" : "fade";
+        const transDur = transitionStyle === "flash" ? 0.18 : 0.25;
+        const xfadeInputs: string[] = [];
+        for (const seg of trimmedSegments) {
+          xfadeInputs.push("-i", seg);
+        }
+        const xfadeFilters: string[] = [];
+        let cumulativeOffset = Math.max(0.1, segmentDurations[0] - transDur);
+        let prevLabel = "[0:v]";
+
+        for (let i = 1; i < trimmedSegments.length; i++) {
+          const isLast = i === trimmedSegments.length - 1;
+          const outLabel = isLast ? "[v_xfade_out]" : `[v_xf_${i}]`;
+          const fmtSuffix = isLast ? ",format=yuv420p" : "";
+          xfadeFilters.push(
+            `${prevLabel}[${i}:v]xfade=transition=${transType}:duration=${transDur.toFixed(2)}:offset=${cumulativeOffset.toFixed(3)}${fmtSuffix}${outLabel}`
+          );
+          prevLabel = outLabel;
+          if (!isLast) {
+            cumulativeOffset = Math.max(cumulativeOffset + 0.1, cumulativeOffset + segmentDurations[i] - transDur);
+          }
+        }
+
+        execFileSync("ffmpeg", [
+          "-y",
+          ...xfadeInputs,
+          "-filter_complex",
+          xfadeFilters.join(";"),
+          "-map",
+          "[v_xfade_out]",
+          "-c:v",
+          "libx264",
+          "-pix_fmt",
+          "yuv420p",
+          "-preset",
+          "ultrafast",
+          "-crf",
+          "22",
+          concatVideoPath,
+        ]);
+        xfadeSuccess = true;
+      } catch (xfErr) {
+        console.warn("[api/reels/editor/render] xfade fallback to concat:", xfErr);
+      }
+    }
+
+    if (!xfadeSuccess) {
+      const concatListPath = path.join(workDir, "concat.txt");
+      fs.writeFileSync(
+        concatListPath,
+        trimmedSegments.map((p) => `file '${p.replace(/'/g, "'\\''")}'`).join("\n")
+      );
+      execFileSync("ffmpeg", [
+        "-y",
+        "-f",
+        "concat",
+        "-safe",
+        "0",
+        "-i",
+        concatListPath,
+        "-c",
+        "copy",
+        concatVideoPath,
+      ]);
+    }
 
     // Measure edited visual timeline duration
     const probeOut = execFileSync("ffprobe", [
@@ -235,6 +297,36 @@ export async function POST(req: NextRequest) {
     const sfxVol = Math.max(0, Number(body.sfxVolume ?? 0.35));
     const sfxSpeed = Math.max(0.25, Math.min(4.0, Number(body.sfxSpeed ?? 1.0)));
 
+    // 5-Stem Spectrum Mixer EQ & Mute/Solo Overrides
+    const stemMutes = body.stemMutes || {};
+    const stemSolos = body.stemSolos || {};
+    const anySolo = Object.values(stemSolos).some(Boolean);
+    const isStemActive = (key: string) => {
+      if (stemMutes.master) return false;
+      if (stemMutes[key]) return false;
+      if (anySolo && !stemSolos[key]) return false;
+      return true;
+    };
+
+    const eqStages: string[] = [];
+    if (!isStemActive("music")) {
+      // Attenuate sub-bass & synth groove frequencies (40Hz - 220Hz)
+      eqStages.push("equalizer=f=90:width_type=h:width=140:g=-18");
+    }
+    if (!isStemActive("speech")) {
+      // Attenuate primary vocal speech formants (450Hz - 2.5kHz)
+      eqStages.push("equalizer=f=1200:width_type=h:width=1400:g=-16");
+    }
+    if (!isStemActive("song") || (body.songHarmoniesGain !== undefined && Math.abs(body.songHarmoniesGain - 1.0) > 0.05)) {
+      const g = !isStemActive("song") ? -16 : Math.round((Number(body.songHarmoniesGain || 1.0) - 1.0) * 12);
+      if (g !== 0) eqStages.push(`equalizer=f=2400:width_type=h:width=1200:g=${g}`);
+    }
+    if (!isStemActive("background")) {
+      // Attenuate high-frequency splash/ambient foley air above 5.5kHz
+      eqStages.push("equalizer=f=7500:width_type=h:width=4000:g=-14");
+    }
+    const stemEqChain = eqStages.length > 0 ? `,${eqStages.join(",")}` : "";
+
     // Resolve Vocal/Dialogue Source
     const vocalSourceFile =
       (body.vocalUrl && resolveLocalFilePath(body.vocalUrl)) ||
@@ -266,19 +358,23 @@ export async function POST(req: NextRequest) {
       musicSourceFile &&
       path.resolve(vocalSourceFile) === path.resolve(musicSourceFile);
 
-    if (isSameMasterAudio) {
+    if (stemMutes.master) {
+      // Master mute explicitly toggled in 5-stem spectrum mixer
+      inputs.push("-f", "lavfi", "-i", `anullsrc=r=48000:cl=stereo:d=${totalDurationSec.toFixed(3)}`);
+      filterParts.push(`[${inputIdx}:a]anull[a_out]`);
+    } else if (isSameMasterAudio) {
       // Single continuous Original Lyria Master Audio stream (100% unaltered music + vocals across all stitched cuts)
       const masterVol = Math.max(vocalVol, musicVol, 1.0);
       inputs.push("-stream_loop", "-1", "-i", vocalSourceFile);
       const atempoMaster = buildAtempoFilter(musicSpeed);
       filterParts.push(
-        `[${inputIdx}:a]${atempoMaster},atrim=0:${totalDurationSec.toFixed(3)},asetpts=PTS-STARTPTS,volume=${masterVol.toFixed(2)}[a_master]`
+        `[${inputIdx}:a]${atempoMaster},atrim=0:${totalDurationSec.toFixed(3)},asetpts=PTS-STARTPTS,volume=${masterVol.toFixed(2)}${stemEqChain}[a_master]`
       );
       mixInputs.push("[a_master]");
       inputIdx++;
     } else {
       // Track A: Dialogue / Vocals Stem (with independent vocalSpeed & vocalVolume)
-      if (vocalSourceFile && vocalVol > 0.01) {
+      if (vocalSourceFile && vocalVol > 0.01 && isStemActive("speech")) {
         inputs.push("-stream_loop", "-1", "-i", vocalSourceFile);
         const atempoVocal = buildAtempoFilter(vocalSpeed);
         filterParts.push(
@@ -289,12 +385,12 @@ export async function POST(req: NextRequest) {
       }
 
       // Track B: Unaltered Continuous Music Bed (with independent musicSpeed & musicVolume)
-      if (musicSourceFile && musicVol > 0.01) {
+      if (musicSourceFile && musicVol > 0.01 && isStemActive("music")) {
         inputs.push("-stream_loop", "-1", "-i", musicSourceFile);
         const mStart = body.musicLockMode === "custom_trim" ? Math.max(0, Number(body.musicTrimStartSec || 0)) : 0;
         const atempoMusic = buildAtempoFilter(musicSpeed);
         filterParts.push(
-          `[${inputIdx}:a]atrim=start=${mStart.toFixed(3)},asetpts=PTS-STARTPTS,${atempoMusic},atrim=0:${totalDurationSec.toFixed(3)},asetpts=PTS-STARTPTS,volume=${musicVol.toFixed(2)}[a_music]`
+          `[${inputIdx}:a]atrim=start=${mStart.toFixed(3)},asetpts=PTS-STARTPTS,${atempoMusic},atrim=0:${totalDurationSec.toFixed(3)},asetpts=PTS-STARTPTS,volume=${musicVol.toFixed(2)}${stemEqChain}[a_music]`
         );
         mixInputs.push("[a_music]");
         inputIdx++;
@@ -302,7 +398,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Track C: Background Sound Effect / Foley (with independent sfxSpeed & sfxVolume)
-    if (sfxSourceFile && sfxVol > 0.01) {
+    if (!stemMutes.master && sfxSourceFile && sfxVol > 0.01 && isStemActive("background")) {
       inputs.push("-stream_loop", "-1", "-i", sfxSourceFile);
       const atempoSfx = buildAtempoFilter(sfxSpeed);
       filterParts.push(
@@ -312,16 +408,19 @@ export async function POST(req: NextRequest) {
       inputIdx++;
     }
 
-    if (mixInputs.length === 0) {
-      // Silent audio track fallback if user muted all 3 tracks
-      inputs.push("-f", "lavfi", "-i", `anullsrc=r=48000:cl=stereo:d=${totalDurationSec.toFixed(3)}`);
-      filterParts.push(`[${inputIdx}:a]anull[a_out]`);
-    } else if (mixInputs.length === 1) {
-      filterParts.push(`${mixInputs[0]}alimiter=limit=0.95[a_out]`);
-    } else {
-      filterParts.push(
-        `${mixInputs.join("")}amix=inputs=${mixInputs.length}:duration=first:dropout_transition=2,alimiter=limit=0.95[a_out]`
-      );
+    if (!stemMutes.master) {
+      if (mixInputs.length === 0) {
+        // Silent audio track fallback if user muted all tracks
+        inputs.push("-f", "lavfi", "-i", `anullsrc=r=48000:cl=stereo:d=${totalDurationSec.toFixed(3)}`);
+        filterParts.push(`[${inputIdx}:a]anull[a_out]`);
+      } else if (mixInputs.length === 1) {
+        filterParts.push(`${mixInputs[0]}alimiter=limit=0.95[a_out]`);
+      } else {
+        // CRITICAL: normalize=0 prevents FFmpeg amix from dividing volume by 1/N (eliminating the -6dB/-9.5dB volume drop bug!)
+        filterParts.push(
+          `${mixInputs.join("")}amix=inputs=${mixInputs.length}:duration=first:dropout_transition=2:normalize=0,alimiter=limit=0.95[a_out]`
+        );
+      }
     }
 
     execFileSync("ffmpeg", [
