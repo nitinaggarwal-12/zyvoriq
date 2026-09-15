@@ -5,6 +5,51 @@ import { useParams, useRouter } from "next/navigation";
 import WorldClassDirectorSuite, { DirectorReelData } from "@/components/WorldClassDirectorSuite";
 import { CANONICAL_SHOWCASES } from "@/components/MyReelsLibrary";
 
+async function verifyAndResolveDirectorAssets(data: DirectorReelData): Promise<DirectorReelData> {
+  try {
+    const urls = new Set<string>();
+    if (data.videoUrl) urls.add(data.videoUrl);
+    if (data.posterUrl) urls.add(data.posterUrl);
+    (data.shots || []).forEach((s) => {
+      if (s.videoUrl) urls.add(s.videoUrl);
+    });
+
+    const res = await fetch("/api/reels/verify-assets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ urls: Array.from(urls) }),
+    });
+
+    if (!res.ok) return data;
+    const json = await res.json();
+    const verified: Record<string, boolean> = json.verified || {};
+    const fallbacks: Record<string, string> = json.fallbacks || {};
+
+    const resolve = (u: string | null | undefined): string | null => {
+      if (!u) return null;
+      if (fallbacks[u]) return fallbacks[u];
+      if (u in verified && !verified[u]) return null;
+      return u;
+    };
+
+    const resolvedShots = (data.shots || []).map((s) => ({
+      ...s,
+      videoUrl: resolve(s.videoUrl),
+    }));
+
+    const resolvedMain = resolve(data.videoUrl) || resolvedShots.find((s) => s.videoUrl)?.videoUrl || null;
+
+    return {
+      ...data,
+      videoUrl: resolvedMain,
+      posterUrl: resolve(data.posterUrl),
+      shots: resolvedShots,
+    };
+  } catch {
+    return data;
+  }
+}
+
 export default function ReelDirectorDedicatedPage() {
   const params = useParams();
   const router = useRouter();
@@ -22,7 +67,7 @@ export default function ReelDirectorDedicatedPage() {
         // 0. Check Canonical Showcases First (Napoleon, Mumbai Penthouse, Coronation, Priya)
         const foundCanonical = CANONICAL_SHOWCASES.find((c) => c.id === reelId);
         if (foundCanonical && !cancelled) {
-          setReel({
+          const candidate: DirectorReelData = {
             id: foundCanonical.id,
             title: foundCanonical.title,
             subtitle: foundCanonical.subtitle || `Master Showcase • ID: ${foundCanonical.id}`,
@@ -41,8 +86,12 @@ export default function ReelDirectorDedicatedPage() {
               scriptText: s.scriptText || "",
               visualIntent: s.visualIntent || "",
             })),
-          });
-          setLoading(false);
+          };
+          const resolved = await verifyAndResolveDirectorAssets(candidate);
+          if (!cancelled) {
+            setReel(resolved);
+            setLoading(false);
+          }
           return;
         }
 
@@ -54,7 +103,7 @@ export default function ReelDirectorDedicatedPage() {
           if (foundYt && !cancelled) {
             const m = foundYt.manifest || {};
             const assets = m.assets || {};
-            setReel({
+            const candidate: DirectorReelData = {
               id: foundYt.id,
               title: foundYt.topic || "Music Video Production",
               subtitle: `Omni 1.1 Hybrid Master • ID: ${foundYt.id}`,
@@ -74,8 +123,12 @@ export default function ReelDirectorDedicatedPage() {
                 visualIntent: s.visual_direction || "",
               })),
               manifest: m,
-            });
-            setLoading(false);
+            };
+            const resolved = await verifyAndResolveDirectorAssets(candidate);
+            if (!cancelled) {
+              setReel(resolved);
+              setLoading(false);
+            }
             return;
           }
         }
@@ -88,7 +141,7 @@ export default function ReelDirectorDedicatedPage() {
           if (foundReel && !cancelled) {
             const m = foundReel.manifest || {};
             const firstShotVideo = (m.shots || []).find((s: any) => s.asset?.videoUrl)?.asset?.videoUrl || null;
-            setReel({
+            const candidate: DirectorReelData = {
               id: foundReel.id,
               title: m.title || foundReel.topic || "Cinema Reel Production",
               subtitle: m.subtitle || "Continuous Sequence",
@@ -114,16 +167,20 @@ export default function ReelDirectorDedicatedPage() {
                 visualIntent: s.visualIntent || "",
               })),
               manifest: m,
-            });
-            setLoading(false);
+            };
+            const resolved = await verifyAndResolveDirectorAssets(candidate);
+            if (!cancelled) {
+              setReel(resolved);
+              setLoading(false);
+            }
             return;
           }
         }
 
-        // 3. Fallback static/curated ID with smart file mapping
+        // 3. Fallback static/curated ID with smart file mapping & verification
         if (!cancelled) {
           const cleanId = reelId.replace(/^reel_/, "");
-          setReel({
+          const candidate: DirectorReelData = {
             id: reelId,
             title: reelId.replace(/_/g, " ").toUpperCase(),
             subtitle: `Master Production • ID: ${reelId}`,
@@ -134,8 +191,12 @@ export default function ReelDirectorDedicatedPage() {
             posterUrl: null,
             durationSec: 24,
             aspectRatio: "9:16 Vertical",
-          });
-          setLoading(false);
+          };
+          const resolved = await verifyAndResolveDirectorAssets(candidate);
+          if (!cancelled) {
+            setReel(resolved);
+            setLoading(false);
+          }
         }
       } catch (err) {
         if (!cancelled) setLoading(false);

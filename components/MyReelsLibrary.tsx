@@ -1183,7 +1183,73 @@ export function MyReelsLibrary() {
             });
           }
         }
-        setReels(merged);
+        // Verify physical asset availability across environments via /api/reels/verify-assets
+        let verifiedMerged = merged;
+        try {
+          const candidateUrls = new Set<string>();
+          merged.forEach((r) => {
+            if (r.videoUrl) candidateUrls.add(r.videoUrl);
+            if (r.roughCutUrl) candidateUrls.add(r.roughCutUrl);
+            if (r.posterUrl) candidateUrls.add(r.posterUrl);
+            (r.shots || []).forEach((s) => {
+              if (s.videoUrl) candidateUrls.add(s.videoUrl);
+              if (s.posterUrl) candidateUrls.add(s.posterUrl);
+            });
+          });
+
+          const verifyRes = await fetch("/api/reels/verify-assets", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ urls: Array.from(candidateUrls) }),
+          }).catch(() => null);
+
+          if (verifyRes && verifyRes.ok) {
+            const verifyData = await verifyRes.json();
+            const verifiedMap: Record<string, boolean> = verifyData.verified || {};
+            const fallbacksMap: Record<string, string> = verifyData.fallbacks || {};
+
+            const resolveUrl = (u: string | null | undefined): string | undefined => {
+              if (!u) return undefined;
+              if (fallbacksMap[u]) return fallbacksMap[u];
+              if (u in verifiedMap && !verifiedMap[u]) return undefined;
+              return u;
+            };
+
+            const canonicalIds = new Set(CANONICAL_SHOWCASES.map((c) => c.id));
+
+            verifiedMerged = merged
+              .map((r) => {
+                const resolvedVideo = resolveUrl(r.videoUrl);
+                const resolvedRough = resolveUrl(r.roughCutUrl);
+                const resolvedPoster = resolveUrl(r.posterUrl);
+                const resolvedShots = (r.shots || []).map((s) => ({
+                  ...s,
+                  videoUrl: resolveUrl(s.videoUrl),
+                  posterUrl: resolveUrl(s.posterUrl),
+                }));
+                const firstShotVideo = resolvedShots.find((s) => s.videoUrl)?.videoUrl || undefined;
+                return {
+                  ...r,
+                  videoUrl: resolvedVideo || resolvedRough || firstShotVideo || undefined,
+                  roughCutUrl: resolvedRough || resolvedVideo || undefined,
+                  posterUrl: resolvedPoster || undefined,
+                  shots: resolvedShots,
+                };
+              })
+              .filter((r) => {
+                // If a Canonical Showcase has zero underlying video files on this environment, hide it completely
+                if (canonicalIds.has(r.id)) {
+                  const hasMedia = Boolean(r.videoUrl || r.roughCutUrl || r.shots.some((s) => s.videoUrl));
+                  return hasMedia;
+                }
+                return true;
+              });
+          }
+        } catch (vErr) {
+          console.warn("Asset verification check skipped:", vErr);
+        }
+
+        setReels(verifiedMerged);
 
         // Load feedback records for all productions
         try {
@@ -1205,8 +1271,8 @@ export function MyReelsLibrary() {
         }
 
         // Auto-expand the first reel by default
-        if (merged.length > 0 && Object.keys(expandedReelIds).length === 0) {
-          setExpandedReelIds({ [merged[0].id]: true });
+        if (verifiedMerged.length > 0 && Object.keys(expandedReelIds).length === 0) {
+          setExpandedReelIds({ [verifiedMerged[0].id]: true });
         }
       }
     } catch (err) {
@@ -2016,7 +2082,8 @@ export function MyReelsLibrary() {
           <div className="space-y-6">
             {filteredReels.map(reel => {
               const isExpanded = Boolean(expandedReelIds[reel.id]);
-              const isReady = reel.status === "READY" || reel.status === "ROUGH_CUT_READY" || Boolean(reel.videoUrl);
+              const hasPlayableMedia = Boolean(reel.roughCutUrl || reel.videoUrl || (reel.shots || []).some(s => Boolean(s.videoUrl)));
+              const isReady = hasPlayableMedia && (reel.status === "READY" || reel.status === "ROUGH_CUT_READY" || Boolean(reel.videoUrl));
 
               return (
                 <div
@@ -2038,6 +2105,7 @@ export function MyReelsLibrary() {
                         {/* Video / Poster Thumbnail Preview */}
                         <div 
                           onClick={() => {
+                            if (!hasPlayableMedia) return;
                             const masterSourceUrl = reel.roughCutUrl || reel.videoUrl;
                             if (masterSourceUrl) {
                               const isHoneymoon = isHoneymoonReel(reel);
@@ -2084,14 +2152,18 @@ export function MyReelsLibrary() {
                               }
                             }
                           }}
-                          className="relative w-full sm:w-44 lg:w-48 aspect-video sm:aspect-[9/16] rounded-xl overflow-hidden bg-black/80 border border-zinc-800 shrink-0 group cursor-pointer shadow-md"
+                          className={`relative w-full sm:w-44 lg:w-48 aspect-video sm:aspect-[9/16] rounded-xl overflow-hidden bg-black/80 border border-zinc-800 shrink-0 group shadow-md ${
+                            hasPlayableMedia ? "cursor-pointer" : "cursor-default"
+                          }`}
                           onMouseEnter={(e) => {
+                            if (!hasPlayableMedia) return;
                             const video = e.currentTarget.querySelector("video");
                             if (video) {
                               try { video.play().catch(() => {}); } catch (_) {}
                             }
                           }}
                           onMouseLeave={(e) => {
+                            if (!hasPlayableMedia) return;
                             const video = e.currentTarget.querySelector("video");
                             if (video) {
                               try { video.pause(); video.currentTime = 0.5; } catch (_) {}
@@ -2135,12 +2207,20 @@ export function MyReelsLibrary() {
                             </div>
                           ) : null}
 
-                          {/* Play Overlay */}
-                          <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 flex items-center justify-center transition">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/90 text-black shadow-lg group-hover:scale-110 transition">
-                              <Play className="h-4 w-4 fill-current ml-0.5" />
+                          {/* Play Overlay (Only visible when physical media exists) */}
+                          {hasPlayableMedia ? (
+                            <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 flex items-center justify-center transition">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/90 text-black shadow-lg group-hover:scale-110 transition">
+                                <Play className="h-4 w-4 fill-current ml-0.5" />
+                              </div>
                             </div>
-                          </div>
+                          ) : (
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-2 text-center">
+                              <span className="px-2.5 py-1 rounded-lg bg-zinc-900/90 border border-zinc-700 text-[10px] font-mono text-zinc-400">
+                                ⏳ No Media Yet
+                              </span>
+                            </div>
+                          )}
 
                           {/* Multi-Select Checkbox Overlay */}
                           <button
@@ -2446,15 +2526,17 @@ export function MyReelsLibrary() {
                             <FolderInput className="h-4 w-4" />
                           </button>
 
-                          {/* 7. Download Reel MP4 */}
-                          <button
-                            type="button"
-                            onClick={(e) => handleDownloadReel(e, reel)}
-                            className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-300 hover:text-emerald-300 hover:bg-zinc-800 transition cursor-pointer min-h-[36px] min-w-[36px]"
-                            title="Download 4K Master MP4"
-                          >
-                            <Download className="h-4 w-4" />
-                          </button>
+                          {/* 7. Download Reel MP4 (Only visible when physical media exists) */}
+                          {hasPlayableMedia && (
+                            <button
+                              type="button"
+                              onClick={(e) => handleDownloadReel(e, reel)}
+                              className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-300 hover:text-emerald-300 hover:bg-zinc-800 transition cursor-pointer min-h-[36px] min-w-[36px]"
+                              title="Download 4K Master MP4"
+                            >
+                              <Download className="h-4 w-4" />
+                            </button>
+                          )}
 
                           {/* 8. Share Reel */}
                           <button
@@ -2517,32 +2599,36 @@ export function MyReelsLibrary() {
                             );
                           })()}
 
-                          {/* Edit Video & Audio (Studio NLE) Button */}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setNleEditingReel((prev) => (prev?.id === reel.id ? null : reel));
-                            }}
-                            className={`flex items-center gap-1.5 text-xs font-mono font-bold transition py-1.5 px-3 rounded-xl cursor-pointer ${
-                              nleEditingReel?.id === reel.id
-                                ? "bg-teal-600 text-white shadow-lg shadow-teal-950/50"
-                                : "bg-teal-500/15 border border-teal-500/40 text-teal-300 hover:bg-teal-500/25"
-                            }`}
-                          >
-                            <Scissors className="h-3.5 w-3.5" />
-                            <span>{nleEditingReel?.id === reel.id ? "Close NLE Editor" : "Edit Video & Audio"}</span>
-                          </button>
+                          {/* Edit Video & Audio (Studio NLE) Button (Only visible when physical media exists) */}
+                          {hasPlayableMedia && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setNleEditingReel((prev) => (prev?.id === reel.id ? null : reel));
+                              }}
+                              className={`flex items-center gap-1.5 text-xs font-mono font-bold transition py-1.5 px-3 rounded-xl cursor-pointer ${
+                                nleEditingReel?.id === reel.id
+                                  ? "bg-teal-600 text-white shadow-lg shadow-teal-950/50"
+                                  : "bg-teal-500/15 border border-teal-500/40 text-teal-300 hover:bg-teal-500/25"
+                              }`}
+                            >
+                              <Scissors className="h-3.5 w-3.5" />
+                              <span>{nleEditingReel?.id === reel.id ? "Close NLE Editor" : "Edit Video & Audio"}</span>
+                            </button>
+                          )}
 
-                          {/* Dedicated Director Suite Page Link */}
-                          <Link
-                            href={`/my-reels/${encodeURIComponent(reel.id)}`}
-                            className="flex items-center gap-1.5 text-xs font-mono text-amber-300 hover:text-amber-200 border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 transition py-1.5 px-3 rounded-xl"
-                            title="Open dedicated full-page Omni 1.1 Director Suite"
-                          >
-                            <Film className="h-3.5 w-3.5 text-amber-400" />
-                            <span>Director Suite</span>
-                          </Link>
+                          {/* Dedicated Director Suite Page Link (Only visible when physical media exists) */}
+                          {hasPlayableMedia && (
+                            <Link
+                              href={`/my-reels/${encodeURIComponent(reel.id)}`}
+                              className="flex items-center gap-1.5 text-xs font-mono text-amber-300 hover:text-amber-200 border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 transition py-1.5 px-3 rounded-xl"
+                              title="Open dedicated full-page Omni 1.1 Director Suite"
+                            >
+                              <Film className="h-3.5 w-3.5 text-amber-400" />
+                              <span>Director Suite</span>
+                            </Link>
+                          )}
 
                           {/* Open in Studio Link */}
                           <Link
