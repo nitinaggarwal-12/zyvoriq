@@ -403,9 +403,11 @@ export function ReelTimelineEditor({
 
   // Live preview player DOM elements & transition refs
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const continuousMasterAudioRef = useRef<HTMLAudioElement | null>(null);
   const musicAudioRef = useRef<HTMLAudioElement | null>(null);
   const sfxAudioRef = useRef<HTMLAudioElement | null>(null);
   const shouldAutoPlayOnSwitchRef = useRef<boolean>(false);
+  const [isCutCrossfading, setIsCutCrossfading] = useState<boolean>(false);
 
   const activeClip = currentState.clips[selectedClipIndex] || currentState.clips[0];
 
@@ -470,6 +472,15 @@ export function ReelTimelineEditor({
     const nextItem = sequencePlaylist[nextPos];
     if (!nextItem) return;
 
+    // Trigger micro 110ms visual crossfade to eliminate hard-cut jump
+    setIsCutCrossfading(true);
+    setTimeout(() => setIsCutCrossfading(false), 110);
+
+    // If wrapping around from Shot #4 back to Shot #1, reset continuous master audio to 0s
+    if (nextPos === 0 && continuousMasterAudioRef.current) {
+      continuousMasterAudioRef.current.currentTime = 0;
+    }
+
     shouldAutoPlayOnSwitchRef.current = true;
     setSelectedClipIndex(nextItem.originalIndex);
 
@@ -513,6 +524,10 @@ export function ReelTimelineEditor({
       found.clip.trimStartSec + offsetInShotSec * shotSpeed
     );
 
+    if (continuousMasterAudioRef.current) {
+      continuousMasterAudioRef.current.currentTime = targetGlobalSec;
+    }
+
     if (found.originalIndex !== selectedClipIndex) {
       shouldAutoPlayOnSwitchRef.current = isPlaying;
       setSelectedClipIndex(found.originalIndex);
@@ -528,15 +543,33 @@ export function ReelTimelineEditor({
     }
   };
 
-  // Real-time synchronization of playback rates, volumes, and audio states
+  // Real-time synchronization of playback rates, volumes, and continuous audio states
   useEffect(() => {
+    const useContinuousMasterAudio =
+      previewMode === "sequence" &&
+      currentState.musicTrack === "original_lyria";
+
     if (videoRef.current) {
       const rate = Math.max(0.25, Math.min(4.0, effectiveVisualSpeed));
       try {
         videoRef.current.playbackRate = rate;
       } catch (err) {}
-      videoRef.current.volume =
+      // When Stitched Combined mode uses the continuous master audio stream, mute video element to eliminate cut pops/silences
+      if (useContinuousMasterAudio) {
+        videoRef.current.muted = true;
+      } else {
+        videoRef.current.muted = false;
+        videoRef.current.volume =
+          currentState.vocalMode === "mute" ? 0 : Math.min(1.0, currentState.vocalVolume);
+      }
+    }
+    if (continuousMasterAudioRef.current) {
+      continuousMasterAudioRef.current.volume =
         currentState.vocalMode === "mute" ? 0 : Math.min(1.0, currentState.vocalVolume);
+      const mRate = Math.max(0.25, Math.min(4.0, currentState.musicSpeed || 1.0));
+      try {
+        continuousMasterAudioRef.current.playbackRate = mRate;
+      } catch (err) {}
     }
     if (musicAudioRef.current) {
       musicAudioRef.current.volume = Math.min(1.0, currentState.musicVolume);
@@ -553,9 +586,11 @@ export function ReelTimelineEditor({
       } catch (err) {}
     }
   }, [
+    previewMode,
     effectiveVisualSpeed,
     currentState.vocalMode,
     currentState.vocalVolume,
+    currentState.musicTrack,
     currentState.musicVolume,
     currentState.musicSpeed,
     currentState.sfxVolume,
@@ -616,9 +651,23 @@ export function ReelTimelineEditor({
     }
   };
 
-  // Sync secondary audio elements on play
+  // Sync secondary audio elements & continuous master audio lock on play
   const handlePlay = () => {
     setIsPlaying(true);
+    if (
+      previewMode === "sequence" &&
+      currentState.musicTrack === "original_lyria" &&
+      continuousMasterAudioRef.current
+    ) {
+      if (
+        Math.abs(
+          continuousMasterAudioRef.current.currentTime - globalPlayheadSec
+        ) > 0.35
+      ) {
+        continuousMasterAudioRef.current.currentTime = globalPlayheadSec;
+      }
+      continuousMasterAudioRef.current.play().catch(() => {});
+    }
     if (
       musicAudioRef.current &&
       currentState.musicTrack !== "none" &&
@@ -633,6 +682,7 @@ export function ReelTimelineEditor({
 
   const handlePause = () => {
     setIsPlaying(false);
+    continuousMasterAudioRef.current?.pause();
     musicAudioRef.current?.pause();
     sfxAudioRef.current?.pause();
   };
@@ -1191,52 +1241,107 @@ export function ReelTimelineEditor({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6">
         {/* LEFT 5 COLS: Live Video Preview & Selected Shot Frame Trimmer */}
         <div className="lg:col-span-5 flex flex-col gap-4">
-          {/* Dual Preview Switcher: Play All Shots Together (Default) vs Loop Single Shot */}
-          <div className="flex items-center justify-between p-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs">
-            <button
-              type="button"
-              onClick={() => {
-                setPreviewMode("sequence");
-              }}
-              className={`flex-1 py-1.5 px-2 rounded-lg font-bold transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                previewMode === "sequence"
-                  ? "bg-teal-500/20 border border-teal-500/60 text-teal-300 shadow-sm"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <Film className="w-3.5 h-3.5" />
-              <span>Play All {sequencePlaylist.length} Shots Together (Live Sequence)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setPreviewMode("shot");
-                if (videoRef.current && activeClip) {
-                  videoRef.current.currentTime = activeClip.trimStartSec;
-                }
-              }}
-              className={`flex-1 py-1.5 px-2 rounded-lg font-semibold transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                previewMode === "shot"
-                  ? "bg-amber-500/20 border border-amber-500/60 text-amber-300"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <Eye className="w-3.5 h-3.5" />
-              <span>Loop Shot #{selectedClipIndex + 1} Only</span>
-            </button>
+          {/* Dual Playback Mode Switcher: Stitched Combined (Seamless Master) vs Individual Shot Review */}
+          <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setPreviewMode("sequence");
+                  if (videoRef.current && isPlaying && continuousMasterAudioRef.current) {
+                    continuousMasterAudioRef.current.currentTime = globalPlayheadSec;
+                    continuousMasterAudioRef.current.play().catch(() => {});
+                  }
+                }}
+                className={`flex-1 py-2 px-3 rounded-lg font-bold transition cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                  previewMode === "sequence"
+                    ? "bg-gradient-to-r from-teal-500/25 to-emerald-500/20 border border-teal-500/70 text-teal-300 shadow-md"
+                    : "bg-slate-900/70 border border-slate-800 text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <Film className="w-3.5 h-3.5 text-teal-400" />
+                  <span>Play Stitched Combined ({sequencePlaylist.length} Shots)</span>
+                </div>
+                <span className="text-[10px] font-normal text-teal-400/80">
+                  ✓ Seamless Transitions • 0ms Silence Gap • Continuous Music
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setPreviewMode("shot");
+                  continuousMasterAudioRef.current?.pause();
+                  if (videoRef.current && activeClip) {
+                    videoRef.current.currentTime = activeClip.trimStartSec;
+                    if (isPlaying) videoRef.current.play().catch(() => {});
+                  }
+                }}
+                className={`flex-1 py-2 px-3 rounded-lg font-bold transition cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                  previewMode === "shot"
+                    ? "bg-gradient-to-r from-amber-500/25 to-orange-500/20 border border-amber-500/70 text-amber-300 shadow-md"
+                    : "bg-slate-900/70 border border-slate-800 text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <Eye className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Play Individual Shot Only</span>
+                </div>
+                <span className="text-[10px] font-normal text-amber-400/80">
+                  Inspect Single Shot #{selectedClipIndex + 1} Head &amp; Tail Trim
+                </span>
+              </button>
+            </div>
+
+            {/* Instant Individual Shot Selector Strip */}
+            <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-900">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                {previewMode === "sequence" ? "Active Sequence Cut:" : "Select Individual Shot:"}
+              </span>
+              <div className="flex items-center gap-1 flex-wrap">
+                {currentState.clips.map((c, idx) => {
+                  const isSel = idx === selectedClipIndex;
+                  return (
+                    <button
+                      key={`mode_shot_btn_${c.id}_${idx}`}
+                      type="button"
+                      onClick={() => {
+                        setSelectedClipIndex(idx);
+                        if (videoRef.current) {
+                          videoRef.current.currentTime = c.trimStartSec;
+                          setCurrentPlayTime(c.trimStartSec);
+                          if (isPlaying) videoRef.current.play().catch(() => {});
+                        }
+                      }}
+                      className={`px-2.5 py-1 rounded text-[11px] font-mono font-bold transition cursor-pointer ${
+                        isSel
+                          ? previewMode === "sequence"
+                            ? "bg-teal-500 text-slate-950 shadow-sm"
+                            : "bg-amber-500 text-slate-950 shadow-sm"
+                          : "bg-slate-900 text-slate-400 hover:text-white border border-slate-800"
+                      }`}
+                    >
+                      Shot #{idx + 1} ({Math.max(0.1, c.trimEndSec - c.trimStartSec).toFixed(1)}s)
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
-          {/* Interactive Player Viewport with Live Color LUT Filter and Real-Time Speed */}
+          {/* Interactive Player Viewport with Live Color LUT Filter and Smooth Cut Crossfading */}
           <div className="relative bg-black rounded-xl border border-slate-800 overflow-hidden aspect-[9/16] max-h-[420px] flex items-center justify-center mx-auto w-full group">
             <video
               ref={videoRef}
-              key={`video_${currentVideoSrc}`}
               src={currentVideoSrc}
               controls
               playsInline
               preload="auto"
               style={{ filter: activeColorFilter }}
-              className="w-full h-full object-contain transition-all duration-200"
+              className={`w-full h-full object-contain transition-opacity duration-150 ${
+                isCutCrossfading ? "opacity-90" : "opacity-100"
+              }`}
               onLoadedData={handleVideoLoadedData}
               onTimeUpdate={handleTimeUpdate}
               onEnded={handleVideoEnded}
@@ -1244,7 +1349,15 @@ export function ReelTimelineEditor({
               onPause={handlePause}
             />
 
-            {/* Audio elements for music and SFX */}
+            {/* Unbroken Continuous Master Audio Stream for Stitched Combined Mode (Zero Silence / Cut Pop Prevention) */}
+            <audio
+              ref={continuousMasterAudioRef}
+              src={activeVersionUrl}
+              loop
+              preload="auto"
+            />
+
+            {/* Audio elements for custom music and SFX */}
             {currentState.musicTrack !== "none" && currentState.musicTrack !== "original_lyria" && (
               <audio ref={musicAudioRef} src={currentState.musicTrack} loop preload="auto" />
             )}
