@@ -965,11 +965,16 @@ export function ZyvoriqLandingHub() {
   const [bakedVideoUrl, setBakedVideoUrl] = useState<string | null>(null);
   const [bakeMessage, setBakeMessage] = useState<string | null>(null);
 
-  // Card video preview mute states
+  // Card video preview mute states & DOM refs for strict single-audio mutual exclusion
   const [mutedCard, setMutedCard] = useState<Record<StudioFormatId, boolean>>({
     reels: true,
     music_video: true,
     feature_films: true,
+  });
+  const cardVideoRefs = useRef<Record<StudioFormatId, HTMLVideoElement | null>>({
+    reels: null,
+    music_video: null,
+    feature_films: null,
   });
 
   // Sandbox main video, isolated vocal stem audio, & separated Lyria instrumental audio refs
@@ -978,6 +983,64 @@ export function ZyvoriqLandingHub() {
   const companionAudioRef = useRef<HTMLAudioElement | null>(null);
   const [sandboxPlaying, setSandboxPlaying] = useState<boolean>(true);
   const [sandboxMuted, setSandboxMuted] = useState<boolean>(true);
+
+  // Enforce DOM-level mute synchronization and global single-audio mutual exclusion
+  useEffect(() => {
+    (["reels", "music_video", "feature_films"] as StudioFormatId[]).forEach((id) => {
+      const el = cardVideoRefs.current[id];
+      if (el) {
+        el.muted = Boolean(mutedCard[id]);
+      }
+    });
+  }, [mutedCard]);
+
+  useEffect(() => {
+    const enforceSingleAudioSource = (e: Event) => {
+      const target = e.target as HTMLMediaElement;
+      if (!target || !(target instanceof HTMLMediaElement)) return;
+      if (!target.muted && !target.paused && target.volume > 0) {
+        document.querySelectorAll("video, audio").forEach((media) => {
+          const m = media as HTMLMediaElement;
+          if (m !== target && !m.muted) {
+            m.muted = true;
+          }
+        });
+      }
+    };
+    document.addEventListener("volumechange", enforceSingleAudioSource, true);
+    document.addEventListener("play", enforceSingleAudioSource, true);
+    return () => {
+      document.removeEventListener("volumechange", enforceSingleAudioSource, true);
+      document.removeEventListener("play", enforceSingleAudioSource, true);
+    };
+  }, []);
+
+  const handleToggleCardMute = useCallback((formatId: StudioFormatId) => {
+    setMutedCard((prev) => {
+      const willUnmute = prev[formatId];
+      if (willUnmute) {
+        // Mute sandbox stems immediately
+        setSandboxMuted(true);
+        if (vocalAudioRef.current) vocalAudioRef.current.muted = true;
+        if (companionAudioRef.current) companionAudioRef.current.muted = true;
+        // Mute all other format cards
+        const nextState: Record<StudioFormatId, boolean> = {
+          reels: formatId !== "reels",
+          music_video: formatId !== "music_video",
+          feature_films: formatId !== "feature_films",
+        };
+        (["reels", "music_video", "feature_films"] as StudioFormatId[]).forEach((id) => {
+          const el = cardVideoRefs.current[id];
+          if (el) el.muted = nextState[id];
+        });
+        return nextState;
+      } else {
+        const el = cardVideoRefs.current[formatId];
+        if (el) el.muted = true;
+        return { ...prev, [formatId]: true };
+      }
+    });
+  }, []);
 
   // Upgrade C: Live HTML5 Canvas Alpha-Matte Foreground Segmentation & Background Replacer
   const [isLiveAlphaMatteEnabled, setIsLiveAlphaMatteEnabled] = useState<boolean>(false);
@@ -1693,6 +1756,14 @@ export function ZyvoriqLandingHub() {
 
   const toggleSandboxMute = () => {
     const next = !sandboxMuted;
+    if (!next) {
+      // Unmuting sandbox -> mute all 3 format cards immediately
+      setMutedCard({ reels: true, music_video: true, feature_films: true });
+      (["reels", "music_video", "feature_films"] as StudioFormatId[]).forEach((id) => {
+        const el = cardVideoRefs.current[id];
+        if (el) el.muted = true;
+      });
+    }
     if (companionAudioRef.current) {
       companionAudioRef.current.muted = next;
       if (!next && sandboxPlaying) companionAudioRef.current.play().catch(() => {});
@@ -2004,6 +2075,10 @@ export function ZyvoriqLandingHub() {
                 <div className="my-4 relative rounded-2xl overflow-hidden bg-black border border-white/10 flex items-center justify-center h-[250px]">
                   <video
                     key={activePreset?.videoUrl || card.heroVideoUrl}
+                    ref={(el) => {
+                      cardVideoRefs.current[card.id] = el;
+                      if (el) el.muted = Boolean(mutedCard[card.id]);
+                    }}
                     src={activePreset?.videoUrl || card.heroVideoUrl}
                     playsInline
                     autoPlay
@@ -2017,12 +2092,13 @@ export function ZyvoriqLandingHub() {
                   {/* Top-right Mute Toggle on Card Video */}
                   <button
                     type="button"
+                    data-testid={`card-mute-btn-${card.id}`}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setMutedCard((prev) => ({ ...prev, [card.id]: !prev[card.id] }));
+                      handleToggleCardMute(card.id);
                     }}
-                    className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all"
-                    title={mutedCard[card.id] ? "Unmute Preview" : "Mute Preview"}
+                    className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all cursor-pointer"
+                    title={mutedCard[card.id] ? "Unmute Preview (mutes other players)" : "Mute Preview"}
                   >
                     {mutedCard[card.id] ? (
                       <VolumeX className="w-4 h-4 text-slate-300" />

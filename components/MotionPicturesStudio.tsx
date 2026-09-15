@@ -44,15 +44,15 @@ export interface EditableReelItem {
 export const DEFAULT_EDITABLE_REELS: EditableReelItem[] = [
   {
     id: "yt_spain_pool_party_master",
-    title: "Spanish Pool Party: Sunlit Reggaeton (4-Shot Master)",
-    genre: "Reggaeton / Latin Pop • 9:16 Social Canvas",
+    title: "Mediterranean Coastal Sunlit Dance (4-Shot Master)",
+    genre: "Coastal Synth-Pop • 9:16 Biometric Lock Canvas",
     videoUrl: "/renders/yt/yt_spain_pool_party_omni_hybrid/master_hybrid.mp4",
     durationSec: 24.0,
     shots: [
-      { id: "shot_1", title: "Shot 1 • Poolside Golden Sun", videoUrl: "/renders/yt/yt_spain_pool_party_omni_hybrid/shot_1.mp4", durationSec: 6.3 },
-      { id: "shot_2", title: "Shot 2 • Sunlit Choreography & Splash", videoUrl: "/renders/yt/yt_spain_pool_party_omni_hybrid/shot_2.mp4", durationSec: 6.0 },
-      { id: "shot_3", title: "Shot 3 • Turquoise Water Reflections", videoUrl: "/renders/yt/yt_spain_pool_party_omni_hybrid/shot_3.mp4", durationSec: 6.0 },
-      { id: "shot_4", title: "Shot 4 • Sunset Fiesta Climax", videoUrl: "/renders/yt/yt_spain_pool_party_omni_hybrid/shot_4.mp4", durationSec: 5.8 },
+      { id: "shot_1", title: "Shot 1 • Coastal Terrace Spin (0–6s)", videoUrl: "/renders/yt/yt_spain_pool_party_omni_hybrid/shot_1.mp4", durationSec: 6.0 },
+      { id: "shot_2", title: "Shot 2 • Sunlit Step Choreography (6–12s)", videoUrl: "/renders/yt/yt_spain_pool_party_omni_hybrid/shot_2.mp4", durationSec: 6.0 },
+      { id: "shot_3", title: "Shot 3 • Sea Breeze Turn & Flare (12–18s)", videoUrl: "/renders/yt/yt_spain_pool_party_omni_hybrid/shot_3.mp4", durationSec: 6.0 },
+      { id: "shot_4", title: "Shot 4 • Golden Horizon Climax (18–24s)", videoUrl: "/renders/yt/yt_spain_pool_party_omni_hybrid/shot_4.mp4", durationSec: 6.0 },
     ],
     versions: [
       { versionNumber: 1, label: "v1 • Original Master", url: "/renders/yt/yt_spain_pool_party_omni_hybrid/master_hybrid.mp4", durationSec: 24.0 },

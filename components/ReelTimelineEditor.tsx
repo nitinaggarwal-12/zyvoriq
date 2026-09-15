@@ -397,17 +397,31 @@ export function ReelTimelineEditor({
   // "stitched_reel": plays the physically stitched single .mp4 master reel (all 4 shots + continuous Lyria music as 1 file)
   // "sequence": live multi-shot sequence mode that stitches and plays all enabled shots together back-to-back
   // "shot": loop the selected constituent shot in isolation
-  const [previewMode, setPreviewMode] = useState<"shot" | "sequence" | "stitched_reel">("sequence");
-  const [stitchedReelUrl, setStitchedReelUrl] = useState<string | null>(null);
+  const [previewMode, setPreviewMode] = useState<"shot" | "sequence" | "stitched_reel">(
+    masterVideoUrl ? "stitched_reel" : "sequence"
+  );
+  const [stitchedReelUrl, setStitchedReelUrl] = useState<string | null>(masterVideoUrl || null);
   const [isStitching, setIsStitching] = useState<boolean>(false);
   const [transitionStyle, setTransitionStyle] = useState<"cut" | "dissolve" | "flash">("cut");
 
-  // Invalidate cached stitched reel when user edits trims, speeds, transition style, or undo/redo
-  // Also transition previewMode back to "sequence" so scrubbing/trimming never desyncs against a stale stitched MP4
+  // When masterVideoUrl prop changes (e.g., selecting a different reel), reset stitched master URL and mode
   useEffect(() => {
-    setStitchedReelUrl(null);
-    setPreviewMode((prev) => (prev === "stitched_reel" ? "sequence" : prev));
-  }, [historyIndex, transitionStyle]);
+    if (masterVideoUrl) {
+      setStitchedReelUrl(masterVideoUrl);
+      setPreviewMode("stitched_reel");
+      setSelectedClipIndex(0);
+    }
+  }, [masterVideoUrl]);
+
+  // Invalidate cached stitched reel ONLY when user edits trims, speeds, transition style, or undo/redo (historyIndex > 0)
+  useEffect(() => {
+    if (historyIndex > 0 || transitionStyle !== "cut") {
+      setStitchedReelUrl(null);
+      setPreviewMode((prev) => (prev === "stitched_reel" ? "sequence" : prev));
+    } else if (masterVideoUrl) {
+      setStitchedReelUrl(masterVideoUrl);
+    }
+  }, [historyIndex, transitionStyle, masterVideoUrl]);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentPlayTime, setCurrentPlayTime] = useState<number>(0);
   const [isAuditioningSFX, setIsAuditioningSFX] = useState<boolean>(false);
@@ -599,12 +613,17 @@ export function ReelTimelineEditor({
     const musicActive = isStemLiveActive("music") ? 1.0 : 0.0;
     const bgActive = isStemLiveActive("background") ? 1.0 : 0.0;
 
+    const isUsingCustomMusicStem =
+      currentState.musicTrack !== "original_lyria" && currentState.musicTrack !== "none";
+    const isMusicCompletelyMuted = currentState.musicTrack === "none";
+
     if (videoRef.current) {
       const rate = Math.max(0.25, Math.min(4.0, effectiveVisualSpeed));
       try {
         videoRef.current.playbackRate = rate;
       } catch (err) {}
-      videoRef.current.muted = Boolean(stemMutes.master);
+      // Mute embedded video audio if master is muted OR if user replaced music with a custom stem / muted music
+      videoRef.current.muted = Boolean(stemMutes.master || isUsingCustomMusicStem || isMusicCompletelyMuted);
       const baseVocalVol = currentState.vocalMode === "mute" ? 0 : currentState.vocalVolume;
       // Combine active stems so muting/soloing speech, song, or music physically scales live video audio
       const stemScale = stemMutes.master
@@ -613,11 +632,21 @@ export function ReelTimelineEditor({
       videoRef.current.volume = Math.max(0, Math.min(1.0, baseVocalVol * stemScale));
     }
     if (musicAudioRef.current) {
-      musicAudioRef.current.volume = Math.max(0, Math.min(1.0, currentState.musicVolume * musicActive));
-      const mRate = Math.max(0.25, Math.min(4.0, currentState.musicSpeed || 1.0));
-      try {
-        musicAudioRef.current.playbackRate = mRate;
-      } catch (err) {}
+      if (!isUsingCustomMusicStem || stemMutes.master) {
+        musicAudioRef.current.volume = 0;
+        musicAudioRef.current.muted = true;
+        musicAudioRef.current.pause();
+      } else {
+        musicAudioRef.current.muted = false;
+        musicAudioRef.current.volume = Math.max(0, Math.min(1.0, currentState.musicVolume * musicActive));
+        const mRate = Math.max(0.25, Math.min(4.0, currentState.musicSpeed || 1.0));
+        try {
+          musicAudioRef.current.playbackRate = mRate;
+        } catch (err) {}
+        if (isPlaying) {
+          musicAudioRef.current.play().catch(() => {});
+        }
+      }
     }
     if (sfxAudioRef.current) {
       sfxAudioRef.current.volume = Math.max(0, Math.min(1.0, currentState.sfxVolume * bgActive));
@@ -646,6 +675,10 @@ export function ReelTimelineEditor({
     if (!videoRef.current || !activeClip) return;
     videoRef.current.muted = Boolean(stemMutes.master);
     if (previewMode === "stitched_reel") {
+      if (videoRef.current.currentTime === 0) {
+        videoRef.current.currentTime = 0.15;
+        setCurrentPlayTime(0.15);
+      }
       if (shouldAutoPlayOnSwitchRef.current || isPlaying) {
         shouldAutoPlayOnSwitchRef.current = false;
         videoRef.current.play().catch(() => {});
@@ -1434,12 +1467,14 @@ export function ReelTimelineEditor({
                         if (previewMode === "stitched_reel" && videoRef.current) {
                           const targetSeq = sequencePlaylist.find((s) => s.originalIndex === idx);
                           if (targetSeq) {
-                            videoRef.current.currentTime = targetSeq.seqStartTimeSec;
-                            setCurrentPlayTime(targetSeq.seqStartTimeSec);
+                            const seekTime = targetSeq.seqStartTimeSec + 0.15;
+                            videoRef.current.currentTime = seekTime;
+                            setCurrentPlayTime(seekTime);
                           }
                         } else if (videoRef.current) {
-                          videoRef.current.currentTime = c.trimStartSec;
-                          setCurrentPlayTime(c.trimStartSec);
+                          const seekTime = c.trimStartSec + 0.15;
+                          videoRef.current.currentTime = seekTime;
+                          setCurrentPlayTime(seekTime);
                           if (isPlaying) videoRef.current.play().catch(() => {});
                         }
                       }}
