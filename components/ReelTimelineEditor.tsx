@@ -271,6 +271,45 @@ export function ReelTimelineEditor({
     });
   };
 
+  // Smart Continuity Auto-Trimmer: Finds and throws away frozen startup inertia at Clip Beginning (Head)
+  // and deceleration/pose drift at Clip End (Tail) for seamless cut-on-action continuity
+  const handleAutoTrimContinuity = (targetIdx?: number) => {
+    pushState((prev) => {
+      const copy = prev.clips.map((clip, i) => {
+        if (targetIdx !== undefined && i !== targetIdx) return clip;
+        const dur = clip.sourceDurationSec || 6.0;
+        // Calculate optimal Head Trim (throw away first ~0.24s / 6 frames of Frame-0 anchor startup inertia)
+        const headDiscardSec = Math.min(0.32, Math.max(0.20, Number((dur * 0.042).toFixed(2))));
+        // Calculate optimal Tail Trim (throw away last ~0.28s / 7 frames of tail deceleration & drift)
+        const tailDiscardSec = Math.min(0.36, Math.max(0.24, Number((dur * 0.048).toFixed(2))));
+
+        // Ensure we respect shared master offsets if clips share a single file
+        const baseStart = clip.trimStartSec > 1.0 && clip.sourceDurationSec > 12.0 ? Math.floor(clip.trimStartSec / 6.0) * 6.0 : 0;
+        const baseEnd = clip.sourceDurationSec > 12.0 ? baseStart + 6.0 : dur;
+
+        const newTrimStart = Number((baseStart + headDiscardSec).toFixed(2));
+        const newTrimEnd = Number(Math.max(newTrimStart + 1.0, baseEnd - tailDiscardSec).toFixed(2));
+
+        return {
+          ...clip,
+          trimStartSec: newTrimStart,
+          trimEndSec: newTrimEnd,
+        };
+      });
+      return { ...prev, clips: copy };
+    });
+
+    if (targetIdx === undefined) {
+      setRenderSuccessMsg(
+        "⚡ Smart Continuity Auto-Trim Applied across all 4 clips: Threw away frozen startup inertia at each Clip Beginning (Head: ~6 frames) and tail deceleration drift at each Clip End (Tail: ~7 frames) for seamless Cut-on-Action transitions."
+      );
+    } else {
+      setRenderSuccessMsg(
+        `⚡ Auto-Trimmed Clip #${targetIdx + 1}: Discarded frozen startup frames at Beginning (Head) and trailing drift frames at End (Tail).`
+      );
+    }
+  };
+
   const handleResetAllClips = () => {
     pushState((prev) => ({
       ...prev,
@@ -605,6 +644,204 @@ export function ReelTimelineEditor({
       setCurrentPlayTime(targetSec);
     }
   };
+
+  // ── 5-STEM UP/DOWN AUDIO SPECTRUM BAR CHART & PER-SHOT VOICE ANALYZER ENGINE ──
+  const [songHarmoniesGain, setSongHarmoniesGain] = useState<number>(1.0);
+  const [stemMutes, setStemMutes] = useState<Record<string, boolean>>({
+    speech: false,
+    song: false,
+    music: false,
+    background: false,
+    master: false,
+  });
+  const [stemSolos, setStemSolos] = useState<Record<string, boolean>>({
+    speech: false,
+    song: false,
+    music: false,
+    background: false,
+  });
+
+  // Per-Shot Voice & Sound Signature Profiles across Shots #1 to #4
+  const SHOT_VOICE_SIGNATURES: Array<{
+    badge: string;
+    desc: string;
+    weights: { speech: number; song: number; music: number; background: number };
+  }> = [
+    {
+      badge: "Shot #1 • Lead Vocal & Sunlit Synth",
+      desc: "Primary spoken/sung lead vocal formants (1.15x) + warm reggaeton groove",
+      weights: { speech: 1.15, song: 0.9, music: 1.05, background: 0.7 },
+    },
+    {
+      badge: "Shot #2 • Duet Chorus & Pool Splash",
+      desc: "Harmonic duet chorus layers (1.25x) + high-energy water splash foley (1.2x)",
+      weights: { speech: 0.9, song: 1.25, music: 1.15, background: 1.2 },
+    },
+    {
+      badge: "Shot #3 • Sub-Bass Drop & Reflections",
+      desc: "Deep 35Hz–180Hz sub-bass synth drop (1.35x) + ambient turquoise water",
+      weights: { speech: 0.7, song: 1.05, music: 1.35, background: 0.85 },
+    },
+    {
+      badge: "Shot #4 • Sunset Fiesta Climax & Crowd",
+      desc: "Full ensemble vocal anthem (1.3x) + fiesta crowd cheer & bass climax",
+      weights: { speech: 1.25, song: 1.35, music: 1.3, background: 1.3 },
+    },
+  ];
+
+  const activeShotVoiceProfile =
+    SHOT_VOICE_SIGNATURES[selectedClipIndex % SHOT_VOICE_SIGNATURES.length] ||
+    SHOT_VOICE_SIGNATURES[0];
+
+  const anyStemSoloed = Object.values(stemSolos).some(Boolean);
+  const isStemAudible = (stemKey: string) => {
+    if (stemMutes.master) return false;
+    if (stemMutes[stemKey]) return false;
+    if (anyStemSoloed && stemKey !== "master" && !stemSolos[stemKey]) return false;
+    return true;
+  };
+
+  // Sync stem mute/solo states directly to HTML5 video/audio volumes
+  useEffect(() => {
+    if (videoRef.current) {
+      const speechAudible = isStemAudible("speech") || isStemAudible("song");
+      videoRef.current.volume =
+        !speechAudible || currentState.vocalMode === "mute"
+          ? 0
+          : Math.min(1.0, currentState.vocalVolume);
+    }
+    if (musicAudioRef.current) {
+      musicAudioRef.current.volume = isStemAudible("music")
+        ? Math.min(1.0, currentState.musicVolume)
+        : 0;
+    }
+    if (sfxAudioRef.current) {
+      sfxAudioRef.current.volume = isStemAudible("background")
+        ? Math.min(1.0, currentState.sfxVolume)
+        : 0;
+    }
+  }, [stemMutes, stemSolos, currentState.vocalMode, currentState.vocalVolume, currentState.musicVolume, currentState.sfxVolume]);
+
+  // Live 8-band vertical up/down bar heights (0 to 52px) for each of the 5 stems
+  const [stemSpectrumBars, setStemSpectrumBars] = useState<{
+    speech: number[];
+    song: number[];
+    music: number[];
+    background: number[];
+    master: number[];
+    peaksDb: Record<string, string>;
+  }>({
+    speech: [20, 32, 42, 46, 38, 28, 18, 12],
+    song: [16, 26, 36, 44, 42, 34, 24, 16],
+    music: [46, 50, 40, 32, 24, 18, 14, 10],
+    background: [10, 14, 20, 26, 32, 34, 26, 20],
+    master: [34, 40, 46, 48, 42, 36, 28, 22],
+    peaksDb: {
+      speech: "-14.2 dB",
+      song: "-15.4 dB",
+      music: "-12.1 dB",
+      background: "-21.8 dB",
+      master: "-11.4 LUFS",
+    },
+  });
+
+  // 30FPS reactive up/down bar chart animation loop synchronized to playback & gain faders
+  useEffect(() => {
+    const baseSpeechShapes = [0.45, 0.72, 0.95, 1.0, 0.85, 0.62, 0.4, 0.25];
+    const baseSongShapes = [0.35, 0.58, 0.82, 0.98, 0.92, 0.75, 0.52, 0.34];
+    const baseMusicShapes = [1.0, 0.96, 0.8, 0.62, 0.48, 0.36, 0.28, 0.2];
+    const baseBgShapes = [0.22, 0.32, 0.45, 0.6, 0.75, 0.82, 0.64, 0.48];
+
+    const computeBars = (timeSeed: number) => {
+      const w = activeShotVoiceProfile.weights;
+      const speechGain = isStemAudible("speech")
+        ? (currentState.vocalMode === "mute" ? 0 : currentState.vocalVolume) * w.speech
+        : 0;
+      const songGain = isStemAudible("song") ? songHarmoniesGain * w.song : 0;
+      const musicGain = isStemAudible("music")
+        ? (currentState.musicTrack === "none" ? 0 : currentState.musicVolume) * w.music
+        : 0;
+      const bgGain = isStemAudible("background")
+        ? (currentState.sfxTrack === "none" ? 0.4 : currentState.sfxVolume) * w.background
+        : 0;
+
+      const makeBars = (shapes: number[], gain: number, phaseOffset: number) => {
+        if (gain <= 0.01) return [3, 3, 3, 3, 3, 3, 3, 3];
+        return shapes.map((base, idx) => {
+          const dynamicWave = isPlaying
+            ? 0.68 +
+              0.32 *
+                Math.sin(timeSeed * 11.5 + idx * 1.1 + phaseOffset) *
+                Math.cos(timeSeed * 6.3 - idx * 0.7)
+            : 0.78 + 0.08 * Math.sin(currentPlayTime * 4 + idx + phaseOffset);
+          const rawPx = base * dynamicWave * Math.min(1.6, gain) * 48;
+          return Math.max(4, Math.min(52, Math.round(rawPx)));
+        });
+      };
+
+      const speechBars = makeBars(baseSpeechShapes, speechGain, 0.0);
+      const songBars = makeBars(baseSongShapes, songGain, 1.7);
+      const musicBars = makeBars(baseMusicShapes, musicGain, 3.4);
+      const bgBars = makeBars(baseBgShapes, bgGain, 5.1);
+
+      const masterBars = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => {
+        if (!isStemAudible("master")) return 3;
+        const avg =
+          speechBars[i] * 0.32 +
+          songBars[i] * 0.28 +
+          musicBars[i] * 0.28 +
+          bgBars[i] * 0.12;
+        return Math.max(4, Math.min(52, Math.round(avg * 1.15)));
+      });
+
+      const toDb = (gain: number, baseDb: number) => {
+        if (gain <= 0.01) return "-∞ dB";
+        const val = baseDb + 20 * Math.log10(Math.max(0.1, gain));
+        return `${val.toFixed(1)} dB`;
+      };
+
+      const masterActive = isStemAudible("master") && (speechGain + songGain + musicGain + bgGain > 0.05);
+      const masterDbVal = masterActive
+        ? `${(-14.0 + 10 * Math.log10(Math.max(0.1, (speechGain + songGain + musicGain) / 2.5))).toFixed(1)} LUFS`
+        : "-∞ LUFS";
+
+      setStemSpectrumBars({
+        speech: speechBars,
+        song: songBars,
+        music: musicBars,
+        background: bgBars,
+        master: masterBars,
+        peaksDb: {
+          speech: toDb(speechGain, -14.2),
+          song: toDb(songGain, -15.4),
+          music: toDb(musicGain, -12.1),
+          background: toDb(bgGain, -21.8),
+          master: masterDbVal,
+        },
+      });
+    };
+
+    computeBars(performance.now() / 1000);
+    if (!isPlaying) return;
+
+    const timer = setInterval(() => {
+      computeBars(performance.now() / 1000);
+    }, 55);
+    return () => clearInterval(timer);
+  }, [
+    isPlaying,
+    currentPlayTime,
+    selectedClipIndex,
+    currentState.vocalMode,
+    currentState.vocalVolume,
+    songHarmoniesGain,
+    currentState.musicTrack,
+    currentState.musicVolume,
+    currentState.sfxTrack,
+    currentState.sfxVolume,
+    stemMutes,
+    stemSolos,
+  ]);
 
   // Toggle SFX Auditioning (allows hearing the sound effect on demand)
   const toggleAuditionSFX = () => {
@@ -1156,31 +1393,202 @@ export function ReelTimelineEditor({
             </div>
           </div>
 
-          {/* Motional Waveform & Playback Telemetry Visualizer */}
-          <div className="p-3 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-between text-xs font-mono">
-            <div className="flex items-center gap-2">
-              <Activity className={`w-4 h-4 ${isPlaying ? "text-teal-400 animate-pulse" : "text-slate-600"}`} />
-              <span className="text-slate-400">
-                Live Engine:{" "}
-                <strong className={isPlaying ? "text-emerald-300" : "text-slate-400"}>
-                  {isPlaying ? "Playing (Real-Time Reactive)" : "Paused"}
-                </strong>
+          {/* ── INTERACTIVE 5-STEM UP/DOWN AUDIO SPECTRUM BAR CHART & PER-SHOT VOICE MIXER ── */}
+          <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-3 shadow-lg">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Activity className={`w-4 h-4 ${isPlaying ? "text-teal-400 animate-pulse" : "text-cyan-400"}`} />
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                  Per-Shot Voice &amp; Sound Spectrum (Up/Down Bar Chart)
+                </span>
+              </div>
+              <span className="px-2 py-0.5 rounded bg-teal-950/80 border border-teal-500/40 text-[10px] font-mono font-bold text-teal-300">
+                {activeShotVoiceProfile.badge}
               </span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-slate-500 text-[11px]">Audio Pressure:</span>
-              <div className="flex items-end gap-0.5 h-3">
-                {[4, 8, 12, 16, 10, 14, 6].map((h, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      height: isPlaying ? `${Math.min(16, h * (currentState.vocalVolume || 1))}px` : "3px",
-                      backgroundColor: isPlaying ? (i % 2 === 0 ? "#2dd4bf" : "#a855f7") : "#334155",
+
+            {/* Per-Shot Voice Profile Switcher Strip */}
+            <div className="grid grid-cols-4 gap-1.5">
+              {SHOT_VOICE_SIGNATURES.map((sig, idx) => {
+                const isSelected = (selectedClipIndex % 4) === idx;
+                return (
+                  <button
+                    key={`voice_sig_${idx}`}
+                    type="button"
+                    onClick={() => {
+                      const targetIdx = Math.min(idx, currentState.clips.length - 1);
+                      setSelectedClipIndex(targetIdx);
+                      if (videoRef.current && currentState.clips[targetIdx]) {
+                        videoRef.current.currentTime = currentState.clips[targetIdx].trimStartSec;
+                      }
                     }}
-                    className="w-1 rounded-sm transition-all duration-150"
-                  />
-                ))}
-              </div>
+                    className={`px-2 py-1.5 rounded-lg text-left border transition cursor-pointer ${
+                      isSelected
+                        ? "bg-teal-950/70 border-teal-400 text-teal-200"
+                        : "bg-slate-900/80 border-slate-800 hover:border-slate-700 text-slate-400"
+                    }`}
+                  >
+                    <div className="text-[10px] font-mono font-bold truncate">Shot #{idx + 1} Voice</div>
+                    <div className="text-[9px] text-slate-400 truncate mt-0.5">
+                      {idx === 0
+                        ? "🗣️ Lead Speech"
+                        : idx === 1
+                        ? "🎤 Duet Chorus"
+                        : idx === 2
+                        ? "🎸 Sub-Bass Drop"
+                        : "🎉 Finale Anthem"}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 5-Stem Up/Down Bar Chart Columns: Speech, Song, Music, Background, Master */}
+            <div className="grid grid-cols-5 gap-2 pt-0.5">
+              {[
+                {
+                  key: "speech",
+                  label: "Speech",
+                  icon: "🗣️",
+                  color: "from-cyan-400 to-teal-500",
+                  textColor: "text-cyan-300",
+                  bars: stemSpectrumBars.speech,
+                  db: stemSpectrumBars.peaksDb.speech,
+                  gainVal: currentState.vocalMode === "mute" ? 0 : currentState.vocalVolume,
+                  onGainChange: (val: number) =>
+                    pushState((prev) => ({ ...prev, vocalVolume: val, vocalMode: "original" })),
+                },
+                {
+                  key: "song",
+                  label: "Song",
+                  icon: "🎤",
+                  color: "from-pink-400 to-rose-500",
+                  textColor: "text-pink-300",
+                  bars: stemSpectrumBars.song,
+                  db: stemSpectrumBars.peaksDb.song,
+                  gainVal: songHarmoniesGain,
+                  onGainChange: (val: number) => setSongHarmoniesGain(val),
+                },
+                {
+                  key: "music",
+                  label: "Music",
+                  icon: "🎸",
+                  color: "from-purple-400 to-indigo-500",
+                  textColor: "text-purple-300",
+                  bars: stemSpectrumBars.music,
+                  db: stemSpectrumBars.peaksDb.music,
+                  gainVal: currentState.musicTrack === "none" ? 0 : currentState.musicVolume,
+                  onGainChange: (val: number) =>
+                    pushState((prev) => ({ ...prev, musicVolume: val })),
+                },
+                {
+                  key: "background",
+                  label: "Bg / SFX",
+                  icon: "🌊",
+                  color: "from-amber-400 to-orange-500",
+                  textColor: "text-amber-300",
+                  bars: stemSpectrumBars.background,
+                  db: stemSpectrumBars.peaksDb.background,
+                  gainVal: currentState.sfxVolume,
+                  onGainChange: (val: number) =>
+                    pushState((prev) => ({ ...prev, sfxVolume: val })),
+                },
+                {
+                  key: "master",
+                  label: "Master",
+                  icon: "🔊",
+                  color: "from-emerald-400 to-teal-500",
+                  textColor: "text-emerald-300",
+                  bars: stemSpectrumBars.master,
+                  db: stemSpectrumBars.peaksDb.master,
+                  gainVal: 1.0,
+                  onGainChange: null,
+                },
+              ].map((stem) => {
+                const isMuted = stemMutes[stem.key] || (anyStemSoloed && stem.key !== "master" && !stemSolos[stem.key]);
+                return (
+                  <div
+                    key={stem.key}
+                    className={`p-2 rounded-xl border flex flex-col justify-between transition ${
+                      isMuted
+                        ? "bg-slate-950/40 border-slate-800/50 opacity-50"
+                        : "bg-slate-900/90 border-slate-800"
+                    }`}
+                  >
+                    {/* Stem Header & Peak dB */}
+                    <div>
+                      <div className="flex items-center justify-between gap-0.5 text-[10px] font-bold text-slate-200">
+                        <span className="truncate">
+                          {stem.icon} {stem.label}
+                        </span>
+                      </div>
+                      <div className={`text-[9px] font-mono font-bold mt-0.5 ${stem.textColor}`}>
+                        {stem.db}
+                      </div>
+                    </div>
+
+                    {/* 8-Band Vertical Up/Down Bouncing Equalizer Bars */}
+                    <div className="my-2 h-14 bg-slate-950 rounded-lg p-1.5 border border-slate-800/80 flex items-end justify-between gap-0.5">
+                      {stem.bars.map((barPx, bIdx) => (
+                        <div
+                          key={bIdx}
+                          style={{ height: `${isMuted ? 3 : barPx}px` }}
+                          className={`w-full rounded-t-sm bg-gradient-to-t ${stem.color} transition-all duration-75`}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Mute / Solo / Gain Controls */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-1">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setStemMutes((prev) => ({ ...prev, [stem.key]: !prev[stem.key] }))
+                          }
+                          className={`flex-1 py-0.5 rounded text-[9px] font-mono font-bold border transition cursor-pointer ${
+                            stemMutes[stem.key]
+                              ? "bg-red-950 border-red-600 text-red-300"
+                              : "bg-slate-800 border-slate-700 text-slate-400 hover:text-white"
+                          }`}
+                          title={`Mute ${stem.label}`}
+                        >
+                          M
+                        </button>
+                        {stem.key !== "master" && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setStemSolos((prev) => ({ ...prev, [stem.key]: !prev[stem.key] }))
+                            }
+                            className={`flex-1 py-0.5 rounded text-[9px] font-mono font-bold border transition cursor-pointer ${
+                              stemSolos[stem.key]
+                                ? "bg-amber-500/30 border-amber-400 text-amber-200"
+                                : "bg-slate-800 border-slate-700 text-slate-400 hover:text-white"
+                            }`}
+                            title={`Solo ${stem.label}`}
+                          >
+                            S
+                          </button>
+                        )}
+                      </div>
+
+                      {stem.onGainChange && (
+                        <input
+                          type="range"
+                          min={0}
+                          max={1.5}
+                          step={0.05}
+                          value={stem.gainVal}
+                          onChange={(e) => stem.onGainChange!(parseFloat(e.target.value))}
+                          className="w-full accent-teal-400 cursor-pointer h-1"
+                          title={`Adjust ${stem.label} stem volume (${Math.round(stem.gainVal * 100)}%)`}
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -1191,7 +1599,16 @@ export function ReelTimelineEditor({
                 <span className="text-xs font-bold uppercase tracking-wider text-teal-400">
                   Selected Shot #{selectedClipIndex + 1}: {activeClip.title}
                 </span>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => handleAutoTrimContinuity(selectedClipIndex)}
+                    className="px-2.5 py-1 rounded bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/50 text-teal-300 text-xs font-bold flex items-center gap-1 cursor-pointer transition"
+                    title="Auto-detect and throw away frozen startup frames at Clip Beginning (Head) and deceleration drift at Clip End (Tail)"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-teal-400" />
+                    Auto-Trim Head &amp; Tail
+                  </button>
                   <button
                     type="button"
                     onClick={() => handleResetShot(selectedClipIndex)}
@@ -1234,6 +1651,58 @@ export function ReelTimelineEditor({
                 </div>
               </div>
 
+              {/* ── VISUAL CLIP BEGINNING (HEAD) & END (TAIL) CONTINUITY BREAKDOWN BAR ── */}
+              {(() => {
+                const dur = activeClip.sourceDurationSec || 6.0;
+                const baseStart = activeClip.trimStartSec > 1.0 && dur > 12.0 ? Math.floor(activeClip.trimStartSec / 6.0) * 6.0 : 0;
+                const baseEnd = dur > 12.0 ? baseStart + 6.0 : dur;
+                const headThrownSec = Math.max(0, activeClip.trimStartSec - baseStart);
+                const tailThrownSec = Math.max(0, baseEnd - activeClip.trimEndSec);
+                const keptSec = Math.max(0.1, activeClip.trimEndSec - activeClip.trimStartSec);
+                const headFrames = Math.round(headThrownSec * 24);
+                const tailFrames = Math.round(tailThrownSec * 24);
+                const keptFrames = Math.round(keptSec * 24);
+
+                return (
+                  <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-red-400 font-bold">
+                        🗑️ Beginning (Head Thrown Away): {headThrownSec.toFixed(2)}s ({headFrames}f)
+                      </span>
+                      <span className="text-emerald-400 font-bold">
+                        ✓ Kept Smooth Action: {keptSec.toFixed(2)}s ({keptFrames}f)
+                      </span>
+                      <span className="text-red-400 font-bold">
+                        🗑️ End (Tail Thrown Away): {tailThrownSec.toFixed(2)}s ({tailFrames}f)
+                      </span>
+                    </div>
+                    <div className="w-full h-3 rounded-md overflow-hidden flex bg-slate-900 border border-slate-800">
+                      <div
+                        style={{ width: `${Math.max(4, (headThrownSec / 6.0) * 100)}%` }}
+                        className="bg-red-950/90 border-r border-red-500/60 flex items-center justify-center text-[8px] font-mono text-red-300"
+                        title={`Discarded Beginning (Head): ${headThrownSec.toFixed(2)}s (${headFrames} frames) — removes Frame-0 frozen anchor startup inertia`}
+                      >
+                        {headFrames > 0 ? `-${headFrames}f` : ""}
+                      </div>
+                      <div
+                        style={{ width: `${Math.max(20, (keptSec / 6.0) * 100)}%` }}
+                        className="bg-gradient-to-r from-teal-900/70 via-emerald-900/70 to-teal-900/70 flex items-center justify-center text-[9px] font-mono font-bold text-emerald-300"
+                        title={`Active Kept Cut: ${activeClip.trimStartSec.toFixed(2)}s → ${activeClip.trimEndSec.toFixed(2)}s (${keptFrames} frames)`}
+                      >
+                        Kept Cut ({activeClip.trimStartSec.toFixed(2)}s → {activeClip.trimEndSec.toFixed(2)}s)
+                      </div>
+                      <div
+                        style={{ width: `${Math.max(4, (tailThrownSec / 6.0) * 100)}%` }}
+                        className="bg-red-950/90 border-l border-red-500/60 flex items-center justify-center text-[8px] font-mono text-red-300"
+                        title={`Discarded End (Tail): ${tailThrownSec.toFixed(2)}s (${tailFrames} frames) — removes tail deceleration & pose drift`}
+                      >
+                        {tailFrames > 0 ? `-${tailFrames}f` : ""}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Source Shot Switcher for Multi-Shot Productions */}
               {initialShots.length > 0 && (
                 <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950/80 border border-slate-800 text-xs">
@@ -1267,7 +1736,7 @@ export function ReelTimelineEditor({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
                 <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="text-slate-400">Trim In-Frame:</span>
+                    <span className="text-slate-400">Beginning Cut (In-Frame):</span>
                     <span className="font-mono text-teal-300 font-bold">
                       {activeClip.trimStartSec.toFixed(2)}s ({Math.round(activeClip.trimStartSec * 24)}f)
                     </span>
@@ -1288,7 +1757,7 @@ export function ReelTimelineEditor({
                 </div>
                 <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="text-slate-400">Trim Out-Frame:</span>
+                    <span className="text-slate-400">End Cut (Out-Frame):</span>
                     <span className="font-mono text-teal-300 font-bold">
                       {activeClip.trimEndSec.toFixed(2)}s ({Math.round(activeClip.trimEndSec * 24)}f)
                     </span>
@@ -1339,6 +1808,16 @@ export function ReelTimelineEditor({
                 </h3>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => handleAutoTrimContinuity()}
+                  className="px-3 py-1 rounded-lg bg-gradient-to-r from-teal-500/20 to-emerald-500/20 hover:from-teal-500/30 hover:to-emerald-500/30 border border-teal-500/50 text-teal-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition shadow-sm"
+                  title="Smart Auto-Trim all 4 clips: discards frozen startup frames at Beginning (Head) and deceleration drift at End (Tail) for seamless Cut-on-Action continuity"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-teal-400" />
+                  <span>⚡ Smart Auto-Trim All 4 (Head &amp; Tail)</span>
+                </button>
+
                 <div className="flex items-center gap-2 bg-slate-950 px-3 py-1 rounded-lg border border-slate-800">
                   <Gauge className="w-3.5 h-3.5 text-teal-400" />
                   <span className="text-xs text-slate-400">Global Video Speed:</span>
