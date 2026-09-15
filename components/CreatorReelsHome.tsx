@@ -299,6 +299,11 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
       setActiveTab("instagram_tiktok");
     }
     const targetId = params.get("id") || params.get("reel");
+    const phaseParam = params.get("phase");
+    if (targetId && phaseParam === "6") {
+      window.location.replace(`/my-reels/${encodeURIComponent(targetId)}`);
+      return;
+    }
     if (targetId) {
       fetch(`/api/studio/omni-generate?id=${encodeURIComponent(targetId)}`)
         .then((res) => (res.ok ? res.json() : null))
@@ -331,6 +336,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
     // Hydrate Part 2 Continuation from ?continueReel= or ?parentReel=
     const continueId = params.get("continueReel") || params.get("parentReel");
     if (continueId) {
+      const nextPartNum = params.get("nextPart") || "2";
       const resolveLocal = FINISHED_REELS.find((r) => r.id === continueId) || CINEMA_FINISHED_REELS.find((r) => r.id === continueId);
       if (resolveLocal) {
         setContinuationParent({
@@ -342,7 +348,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
           durationSec: resolveLocal.durationSec,
           posterUrl: resolveLocal.posterUrl,
         });
-        setPromptText(`Act II: Continuation of "${resolveLocal.title}". The sequence continues seamlessly with the same character, wardrobe, and visual aesthetic: `);
+        setPromptText(`Part ${nextPartNum} Continuation of "${resolveLocal.title}". The sequence continues seamlessly with the exact same character, wardrobe, and visual aesthetic: `);
         if ((resolveLocal as any).aspectRatio === "2.39:1") {
           setActiveTab("youtube_shorts");
           setSelectedAspectRatio("2.39:1");
@@ -355,52 +361,50 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
           if (el) el.scrollIntoView({ behavior: "smooth" });
         }, 300);
       } else {
-        fetch(`/api/reels/productions/${encodeURIComponent(continueId)}`)
-          .then((res) => (res.ok ? res.json() : null))
-          .then((data) => {
-            const prod = data?.production;
-            if (prod) {
-              const m = prod.manifest || {};
-              let cleanTitle = m.topic || (m as any).studio1?.projectTitle || prod.id;
-              if (cleanTitle.length > 50) cleanTitle = cleanTitle.slice(0, 48) + "...";
-              let poster = prod.posterUrl;
-              if (!poster || poster.includes(".railway.internal")) {
-                poster = m.shots?.[1]?.continuityIn?.referenceFrameUrl || m.shots?.[0]?.posterUrl || null;
-              }
-              if (!poster || poster.includes(".railway.internal")) {
-                if (prod.id.includes("5b3c6b72")) poster = "/assets/stills/ren_cyberpunk.png";
-                else if (prod.id.includes("e2e00945")) poster = "/assets/stills/dubai_dance.jpg";
-                else if (prod.id.includes("9f360810") || prod.id.includes("39a1fe18")) poster = "/assets/stills/swiss_alpine.jpg";
-                else if (!prod.id.includes("cf46b686") && (prod.id.includes("d2d144d2") || prod.id.includes("32ffc950"))) poster = "/assets/stills/desert_spiral.jpg";
-                else if (prod.id.includes("5bfb958d") || prod.id.includes("1a8264ca")) poster = "/assets/stills/cosmic_nebula.jpg";
-                else if (prod.id.includes("napoleon")) poster = "/assets/stills/napoleon_hero.png";
-                else if (prod.id.includes("coronation")) poster = "/assets/stills/coronation_hero.png";
-              }
-              const partInfo = getNextPartInfo({ title: cleanTitle, prompt: m.prompt || m.topic });
-              setContinuationParent({
-                id: prod.id,
-                title: cleanTitle,
-                category: m.genre || "Choreography & Style",
-                prompt: m.prompt || m.topic || "",
-                aspectRatio: m.aspectRatio || "9:16",
-                durationSec: m.requestedDurationSec || m.durationSec || 30,
-                posterUrl: poster,
-              });
-              setPromptText(`${partInfo.suggestedTitlePrefix} "${partInfo.baseTitle}". The sequence continues seamlessly with the same character, wardrobe, and visual aesthetic: `);
-              if (m.aspectRatio === "2.39:1") {
-                setActiveTab("youtube_shorts");
-                setSelectedAspectRatio("2.39:1");
-              } else {
-                setActiveTab("instagram_tiktok");
-                setSelectedAspectRatio("9:16");
-              }
-              setTimeout(() => {
-                const el = document.getElementById("directorial-studio") || document.getElementById("prompt-studio-box");
-                if (el) el.scrollIntoView({ behavior: "smooth" });
-              }, 300);
+        // Set immediate synchronous fallback so Part 2 Continuation Banner is visible at 0ms
+        const fallbackCleanTitle = continueId.replace(/^(studio1_|yt_|reel_)/, "").replace(/_/g, " ").toUpperCase();
+        setContinuationParent({
+          id: continueId,
+          title: fallbackCleanTitle,
+          category: "Directorial Continuation",
+          prompt: "",
+          aspectRatio: "9:16",
+          durationSec: 24,
+          posterUrl: undefined,
+        });
+        setPromptText(`Part ${nextPartNum} Continuation of "${fallbackCleanTitle}". The sequence continues seamlessly with the exact same character, wardrobe, and visual aesthetic: `);
+
+        // Fetch full metadata from both Reels & YT production APIs
+        Promise.all([
+          fetch(`/api/reels/productions?limit=100`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+          fetch(`/api/yt/productions?limit=100`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+        ]).then(([reelsData, ytData]) => {
+          const allProds = [...(reelsData?.productions || []), ...(ytData?.productions || [])];
+          const prod = allProds.find((p: any) => p.id === continueId);
+          if (prod) {
+            const m = prod.manifest || {};
+            let cleanTitle = m.title || m.topic || prod.topic || (m as any).studio1?.projectTitle || fallbackCleanTitle;
+            if (cleanTitle.length > 50) cleanTitle = cleanTitle.slice(0, 48) + "...";
+            let poster = prod.posterUrl || m.theatricalPosterUrl || m.assets?.anchorUrl || undefined;
+            if (!poster || poster.includes(".railway.internal")) {
+              poster = m.shots?.[1]?.continuityIn?.referenceFrameUrl || m.shots?.[0]?.posterUrl || undefined;
             }
-          })
-          .catch(() => {});
+            setContinuationParent({
+              id: prod.id,
+              title: cleanTitle,
+              category: prod.genre || m.genre || "Directorial Continuation",
+              prompt: prod.topic || m.prompt || m.topic || "",
+              aspectRatio: m.aspectRatio || "9:16",
+              durationSec: Number(prod.durationSec || m.plannedDurationSec || 24),
+              posterUrl: poster || undefined,
+            });
+            setPromptText(`Part ${nextPartNum} Continuation of "${cleanTitle}". The sequence continues seamlessly with the exact same character, wardrobe, and visual aesthetic: `);
+          }
+          setTimeout(() => {
+            const el = document.getElementById("directorial-studio") || document.getElementById("prompt-studio-box");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          }, 300);
+        });
       }
     }
 

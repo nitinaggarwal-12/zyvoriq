@@ -319,7 +319,7 @@ export function resolveReelPoster(pId: string, m: any, shots: LibraryClip[]): st
   return null;
 }
 
-const CANONICAL_SHOWCASES: LibraryReel[] = [
+export const CANONICAL_SHOWCASES: LibraryReel[] = [
   {
     id: "reel_napoleon_180s_master",
     title: "Napoleon: The Emperor's Heart",
@@ -328,6 +328,7 @@ const CANONICAL_SHOWCASES: LibraryReel[] = [
     status: "READY",
     durationSec: 180.1,
     videoUrl: "/assets/video/napoleon_180s_master.mp4",
+    roughCutUrl: "/assets/video/napoleon_180s_master.mp4",
     posterUrl: "/assets/stills/napoleon_hero.png",
     createdAt: "2026-09-07T05:00:00.000Z",
     genre: "Historical Epic",
@@ -427,6 +428,7 @@ const CANONICAL_SHOWCASES: LibraryReel[] = [
     status: "READY",
     durationSec: 32.0,
     videoUrl: "/assets/video/zyvoriq_mumbai_penthouse_master.mp4",
+    roughCutUrl: "/assets/video/zyvoriq_mumbai_penthouse_master.mp4",
     posterUrl: "/assets/stills/coronation_hero.png",
     createdAt: "2026-09-08T18:00:00.000Z",
     genre: "Family & Drama",
@@ -462,6 +464,7 @@ const CANONICAL_SHOWCASES: LibraryReel[] = [
     status: "READY",
     durationSec: 30.0,
     videoUrl: "/assets/video/coronation_30s_cut.mp4",
+    roughCutUrl: "/assets/video/coronation_30s_cut.mp4",
     posterUrl: "/assets/stills/coronation_hero.png",
     createdAt: "2026-09-07T08:00:00.000Z",
     genre: "Historical Drama",
@@ -497,6 +500,7 @@ const CANONICAL_SHOWCASES: LibraryReel[] = [
     status: "READY",
     durationSec: 60.0,
     videoUrl: "/assets/video/priya_4k_10act_master.mp4",
+    roughCutUrl: "/assets/video/priya_4k_10act_master.mp4",
     posterUrl: "/assets/stills/dubai_dance.jpg",
     createdAt: "2026-09-08T12:00:00.000Z",
     genre: "Music Video",
@@ -561,10 +565,7 @@ const ENGLISH_HONEYMOON_SCRIPTS: Record<number, string> = {
 
 const isHoneymoonReel = (r?: { id?: string; title?: string } | null): boolean => {
   if (!r) return false;
-  return Boolean(
-    r.id?.includes("686e217f") ||
-    (r.title && /honeymoon|amalfi|beach/i.test(r.title))
-  );
+  return Boolean(r.id?.includes("686e217f"));
 };
 
 export function MyReelsLibrary() {
@@ -1241,6 +1242,19 @@ export function MyReelsLibrary() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!loading && typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const targetReel = params.get("reel");
+      if (targetReel) {
+        setTimeout(() => {
+          const el = document.getElementById(`reel-card-${targetReel}`);
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 300);
+      }
+    }
+  }, [loading]);
+
   // Persist reel meta (folder, saved, custom title, archive, hidden)
   const saveReelMeta = (reelId: string, updates: Partial<{ folder: string; isSaved: boolean; isArchived: boolean; isHidden: boolean; title: string }>) => {
     try {
@@ -1694,7 +1708,7 @@ export function MyReelsLibrary() {
             ? () => {
                 setSpotlightVideo(null);
                 const partInfo = getNextPartInfo(currentReel);
-                window.location.href = `/?continueReel=${encodeURIComponent(currentReel.id)}&nextPart=${partInfo.nextPart}`;
+                window.location.href = `/reels?continueReel=${encodeURIComponent(currentReel.id)}&nextPart=${partInfo.nextPart}`;
               }
             : undefined
         }
@@ -1704,6 +1718,13 @@ export function MyReelsLibrary() {
 
   return (
     <div className="min-h-screen bg-[#07090E] text-slate-100 selection:bg-teal-500/30 selection:text-teal-100">
+      <audio
+        ref={bgmAudioRef}
+        src="/assets/audio/bollywood_romantic_bgm.mp3"
+        loop
+        preload="none"
+        className="hidden"
+      />
       
       {/* ============================================================ */}
 
@@ -1972,7 +1993,7 @@ export function MyReelsLibrary() {
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
               <Link
-                href="/"
+                href="/reels"
                 className="rounded-xl bg-emerald-500/20 border border-emerald-500/40 px-4 py-2 text-xs font-mono font-bold text-emerald-300 hover:bg-emerald-500/30 transition min-h-[44px] flex items-center"
               >
                 Open Studio
@@ -2017,11 +2038,12 @@ export function MyReelsLibrary() {
                         {/* Video / Poster Thumbnail Preview */}
                         <div 
                           onClick={() => {
-                            if (reel.roughCutUrl) {
+                            const masterSourceUrl = reel.roughCutUrl || reel.videoUrl;
+                            if (masterSourceUrl) {
                               const isHoneymoon = isHoneymoonReel(reel);
                               const masterUrl = (isHoneymoon && selectedAudioLanguage === "en"
                                 ? `/api/reels/assets/reels/${reel.id}/renders/narrated_rough_master_en.mp4`
-                                : reel.roughCutUrl) || "";
+                                : masterSourceUrl) || "";
                               openSpotlight({
                                 url: masterUrl,
                                 title: isHoneymoon
@@ -2484,7 +2506,7 @@ export function MyReelsLibrary() {
                             const partInfo = getNextPartInfo(reel);
                             return (
                               <Link
-                                href={`/?continueReel=${encodeURIComponent(reel.id)}&nextPart=${partInfo.nextPart}`}
+                                href={`/reels?continueReel=${encodeURIComponent(reel.id)}&nextPart=${partInfo.nextPart}`}
                                 id={`direct-part2-btn-${reel.id}`}
                                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-emerald-500/10 border border-emerald-500/60 hover:border-emerald-400 text-emerald-300 hover:text-white font-mono text-xs font-bold transition shadow-md shadow-emerald-950/40 hover:scale-105 min-h-[36px]"
                                 title={`Direct ${partInfo.buttonText} continuation with the exact same character, setting, and audio theme`}
@@ -2512,9 +2534,19 @@ export function MyReelsLibrary() {
                             <span>{nleEditingReel?.id === reel.id ? "Close NLE Editor" : "Edit Video & Audio"}</span>
                           </button>
 
+                          {/* Dedicated Director Suite Page Link */}
+                          <Link
+                            href={`/my-reels/${encodeURIComponent(reel.id)}`}
+                            className="flex items-center gap-1.5 text-xs font-mono text-amber-300 hover:text-amber-200 border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 transition py-1.5 px-3 rounded-xl"
+                            title="Open dedicated full-page Omni 1.1 Director Suite"
+                          >
+                            <Film className="h-3.5 w-3.5 text-amber-400" />
+                            <span>Director Suite</span>
+                          </Link>
+
                           {/* Open in Studio Link */}
                           <Link
-                            href={`/?reel=${encodeURIComponent(reel.id)}&phase=6`}
+                            href={`/reels?reel=${encodeURIComponent(reel.id)}&phase=6`}
                             className="flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-emerald-300 transition py-1 px-2 rounded-lg hover:bg-zinc-850"
                           >
                             <span>Open in Studio</span>
@@ -2737,7 +2769,7 @@ export function MyReelsLibrary() {
                                 const partInfo = getNextPartInfo(reel);
                                 return (
                                   <Link
-                                    href={`/?continueReel=${encodeURIComponent(reel.id)}&nextPart=${partInfo.nextPart}`}
+                                    href={`/reels?continueReel=${encodeURIComponent(reel.id)}&nextPart=${partInfo.nextPart}`}
                                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/50 hover:bg-emerald-500/30 text-emerald-300 hover:text-white text-xs font-mono font-bold transition shadow-md hover:scale-105 cursor-pointer"
                                     title={`Direct ${partInfo.buttonText} continuation with the exact same character, setting, and audio theme`}
                                   >
@@ -2747,15 +2779,16 @@ export function MyReelsLibrary() {
                                 );
                               })()}
 
-                              {reel.roughCutUrl && (
+                              {(reel.roughCutUrl || reel.videoUrl) && (
                                 <button
                                   type="button"
                                   id={`play-combined-reel-${reel.id}`}
                                   onClick={() => {
+                                    const masterSourceUrl = reel.roughCutUrl || reel.videoUrl;
                                     const isHoneymoon = isHoneymoonReel(reel);
                                     const masterUrl = (isHoneymoon && selectedAudioLanguage === "en"
                                       ? `/api/reels/assets/reels/${reel.id}/renders/narrated_rough_master_en.mp4`
-                                      : reel.roughCutUrl) || "";
+                                      : masterSourceUrl) || "";
                                     openSpotlight({
                                       url: masterUrl,
                                       title: isHoneymoon

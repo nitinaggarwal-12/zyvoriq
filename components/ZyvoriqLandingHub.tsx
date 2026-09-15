@@ -806,6 +806,15 @@ const INITIAL_SNAPSHOT: SandboxSnapshot = {
 };
 
 export function ZyvoriqLandingHub() {
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.search) {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("continueReel") || params.has("reel") || params.has("phase")) {
+        window.location.replace(`/reels${window.location.search}`);
+      }
+    }
+  }, []);
+
   // History stack for Full Undo / Redo
   const [historyStack, setHistoryStack] = useState<SandboxSnapshot[]>([INITIAL_SNAPSHOT]);
   const [historyIndex, setHistoryIndex] = useState<number>(0);
