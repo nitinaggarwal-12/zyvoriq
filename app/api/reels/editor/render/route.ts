@@ -261,27 +261,44 @@ export async function POST(req: NextRequest) {
     const mixInputs: string[] = [];
     let inputIdx = 1;
 
-    // Track A: Dialogue / Vocals Stem (with independent vocalSpeed & vocalVolume)
-    if (vocalSourceFile && vocalVol > 0.01) {
-      inputs.push("-stream_loop", "-1", "-i", vocalSourceFile);
-      const atempoVocal = buildAtempoFilter(vocalSpeed);
-      filterParts.push(
-        `[${inputIdx}:a]${atempoVocal},atrim=0:${totalDurationSec.toFixed(3)},asetpts=PTS-STARTPTS,volume=${vocalVol.toFixed(2)}[a_vocal]`
-      );
-      mixInputs.push("[a_vocal]");
-      inputIdx++;
-    }
+    const isSameMasterAudio =
+      vocalSourceFile &&
+      musicSourceFile &&
+      path.resolve(vocalSourceFile) === path.resolve(musicSourceFile);
 
-    // Track B: Unaltered Continuous Music Bed (with independent musicSpeed & musicVolume)
-    if (musicSourceFile && musicVol > 0.01) {
-      inputs.push("-stream_loop", "-1", "-i", musicSourceFile);
-      const mStart = body.musicLockMode === "custom_trim" ? Math.max(0, Number(body.musicTrimStartSec || 0)) : 0;
-      const atempoMusic = buildAtempoFilter(musicSpeed);
+    if (isSameMasterAudio) {
+      // Single continuous Original Lyria Master Audio stream (100% unaltered music + vocals across all stitched cuts)
+      const masterVol = Math.max(vocalVol, musicVol, 1.0);
+      inputs.push("-stream_loop", "-1", "-i", vocalSourceFile);
+      const atempoMaster = buildAtempoFilter(musicSpeed);
       filterParts.push(
-        `[${inputIdx}:a]atrim=start=${mStart.toFixed(3)},asetpts=PTS-STARTPTS,${atempoMusic},atrim=0:${totalDurationSec.toFixed(3)},asetpts=PTS-STARTPTS,volume=${musicVol.toFixed(2)}[a_music]`
+        `[${inputIdx}:a]${atempoMaster},atrim=0:${totalDurationSec.toFixed(3)},asetpts=PTS-STARTPTS,volume=${masterVol.toFixed(2)}[a_master]`
       );
-      mixInputs.push("[a_music]");
+      mixInputs.push("[a_master]");
       inputIdx++;
+    } else {
+      // Track A: Dialogue / Vocals Stem (with independent vocalSpeed & vocalVolume)
+      if (vocalSourceFile && vocalVol > 0.01) {
+        inputs.push("-stream_loop", "-1", "-i", vocalSourceFile);
+        const atempoVocal = buildAtempoFilter(vocalSpeed);
+        filterParts.push(
+          `[${inputIdx}:a]${atempoVocal},atrim=0:${totalDurationSec.toFixed(3)},asetpts=PTS-STARTPTS,volume=${vocalVol.toFixed(2)}[a_vocal]`
+        );
+        mixInputs.push("[a_vocal]");
+        inputIdx++;
+      }
+
+      // Track B: Unaltered Continuous Music Bed (with independent musicSpeed & musicVolume)
+      if (musicSourceFile && musicVol > 0.01) {
+        inputs.push("-stream_loop", "-1", "-i", musicSourceFile);
+        const mStart = body.musicLockMode === "custom_trim" ? Math.max(0, Number(body.musicTrimStartSec || 0)) : 0;
+        const atempoMusic = buildAtempoFilter(musicSpeed);
+        filterParts.push(
+          `[${inputIdx}:a]atrim=start=${mStart.toFixed(3)},asetpts=PTS-STARTPTS,${atempoMusic},atrim=0:${totalDurationSec.toFixed(3)},asetpts=PTS-STARTPTS,volume=${musicVol.toFixed(2)}[a_music]`
+        );
+        mixInputs.push("[a_music]");
+        inputIdx++;
+      }
     }
 
     // Track C: Background Sound Effect / Foley (with independent sfxSpeed & sfxVolume)

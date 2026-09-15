@@ -393,9 +393,17 @@ export function ReelTimelineEditor({
   const [versionTitleInput, setVersionTitleInput] = useState<string>("");
 
   // Live preview & playback states
-  // "sequence": default live multi-shot sequence mode that stitches and plays all enabled shots together back-to-back
+  // "stitched_reel": plays the physically stitched single .mp4 master reel (all 4 shots + continuous Lyria music as 1 file)
+  // "sequence": live multi-shot sequence mode that stitches and plays all enabled shots together back-to-back
   // "shot": loop the selected constituent shot in isolation
-  const [previewMode, setPreviewMode] = useState<"shot" | "sequence">("sequence");
+  const [previewMode, setPreviewMode] = useState<"shot" | "sequence" | "stitched_reel">("sequence");
+  const [stitchedReelUrl, setStitchedReelUrl] = useState<string | null>(null);
+  const [isStitching, setIsStitching] = useState<boolean>(false);
+
+  // Invalidate cached stitched reel when user edits trims, speeds, or undo/redo
+  useEffect(() => {
+    setStitchedReelUrl(null);
+  }, [historyIndex]);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentPlayTime, setCurrentPlayTime] = useState<number>(0);
   const [isAuditioningSFX, setIsAuditioningSFX] = useState<boolean>(false);
@@ -403,7 +411,6 @@ export function ReelTimelineEditor({
 
   // Live preview player DOM elements & transition refs
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const continuousMasterAudioRef = useRef<HTMLAudioElement | null>(null);
   const musicAudioRef = useRef<HTMLAudioElement | null>(null);
   const sfxAudioRef = useRef<HTMLAudioElement | null>(null);
   const shouldAutoPlayOnSwitchRef = useRef<boolean>(false);
@@ -444,13 +451,21 @@ export function ReelTimelineEditor({
 
   // Compute effective visual playback speed for the active shot
   const effectiveVisualSpeed =
-    (activeClip?.speed || 1.0) * (currentState.globalVideoSpeed || 1.0);
+    previewMode === "stitched_reel"
+      ? 1.0
+      : (activeClip?.speed || 1.0) * (currentState.globalVideoSpeed || 1.0);
 
-  // Always load the active clip's video source so edits/cuts/trims play live in real time
-  const currentVideoSrc = activeClip?.videoUrl || masterVideoUrl;
+  // When playing as One Stitched Reel, load the single stitched .mp4 master; otherwise load active clip
+  const currentVideoSrc =
+    previewMode === "stitched_reel" && stitchedReelUrl
+      ? stitchedReelUrl
+      : activeClip?.videoUrl || masterVideoUrl;
 
   // Compute live global playhead time across all stitched shots
   const globalPlayheadSec = useMemo(() => {
+    if (previewMode === "stitched_reel") {
+      return currentPlayTime;
+    }
     if (!currentSeqItem || !activeClip) return 0;
     const elapsedInShot = Math.max(
       0,
@@ -460,7 +475,7 @@ export function ReelTimelineEditor({
       )
     );
     return currentSeqItem.seqStartTimeSec + elapsedInShot;
-  }, [currentSeqItem, activeClip, currentPlayTime, effectiveVisualSpeed]);
+  }, [previewMode, currentSeqItem, activeClip, currentPlayTime, effectiveVisualSpeed]);
 
   // Advance seamlessly to the next enabled shot in the sequence
   const advanceToNextSequenceShot = useCallback(() => {
@@ -475,11 +490,6 @@ export function ReelTimelineEditor({
     // Trigger micro 110ms visual crossfade to eliminate hard-cut jump
     setIsCutCrossfading(true);
     setTimeout(() => setIsCutCrossfading(false), 110);
-
-    // If wrapping around from Shot #4 back to Shot #1, reset continuous master audio to 0s
-    if (nextPos === 0 && continuousMasterAudioRef.current) {
-      continuousMasterAudioRef.current.currentTime = 0;
-    }
 
     shouldAutoPlayOnSwitchRef.current = true;
     setSelectedClipIndex(nextItem.originalIndex);
@@ -507,6 +517,20 @@ export function ReelTimelineEditor({
 
   // Seek to any global timestamp across all 4 stitched shots
   const handleGlobalSequenceSeek = (targetGlobalSec: number) => {
+    if (previewMode === "stitched_reel" && videoRef.current) {
+      videoRef.current.currentTime = targetGlobalSec;
+      setCurrentPlayTime(targetGlobalSec);
+      const foundIdx = sequencePlaylist.findIndex(
+        (item) =>
+          targetGlobalSec >= item.seqStartTimeSec &&
+          targetGlobalSec <= item.seqEndTimeSec + 0.05
+      );
+      if (foundIdx >= 0) {
+        setSelectedClipIndex(sequencePlaylist[foundIdx].originalIndex);
+      }
+      return;
+    }
+
     if (sequencePlaylist.length === 0) return;
     const found =
       sequencePlaylist.find(
@@ -524,10 +548,6 @@ export function ReelTimelineEditor({
       found.clip.trimStartSec + offsetInShotSec * shotSpeed
     );
 
-    if (continuousMasterAudioRef.current) {
-      continuousMasterAudioRef.current.currentTime = targetGlobalSec;
-    }
-
     if (found.originalIndex !== selectedClipIndex) {
       shouldAutoPlayOnSwitchRef.current = isPlaying;
       setSelectedClipIndex(found.originalIndex);
@@ -543,33 +563,17 @@ export function ReelTimelineEditor({
     }
   };
 
-  // Real-time synchronization of playback rates, volumes, and continuous audio states
+  // Real-time synchronization of playback rates, volumes, and audio states
+  // IMPORTANT: Never mute videoRef.current so the embedded Original Lyria Music & Vocals NEVER go away!
   useEffect(() => {
-    const useContinuousMasterAudio =
-      previewMode === "sequence" &&
-      currentState.musicTrack === "original_lyria";
-
     if (videoRef.current) {
       const rate = Math.max(0.25, Math.min(4.0, effectiveVisualSpeed));
       try {
         videoRef.current.playbackRate = rate;
       } catch (err) {}
-      // When Stitched Combined mode uses the continuous master audio stream, mute video element to eliminate cut pops/silences
-      if (useContinuousMasterAudio) {
-        videoRef.current.muted = true;
-      } else {
-        videoRef.current.muted = false;
-        videoRef.current.volume =
-          currentState.vocalMode === "mute" ? 0 : Math.min(1.0, currentState.vocalVolume);
-      }
-    }
-    if (continuousMasterAudioRef.current) {
-      continuousMasterAudioRef.current.volume =
+      videoRef.current.muted = false;
+      videoRef.current.volume =
         currentState.vocalMode === "mute" ? 0 : Math.min(1.0, currentState.vocalVolume);
-      const mRate = Math.max(0.25, Math.min(4.0, currentState.musicSpeed || 1.0));
-      try {
-        continuousMasterAudioRef.current.playbackRate = mRate;
-      } catch (err) {}
     }
     if (musicAudioRef.current) {
       musicAudioRef.current.volume = Math.min(1.0, currentState.musicVolume);
@@ -600,6 +604,14 @@ export function ReelTimelineEditor({
   // When switching between shots with different MP4 URLs, auto-seek to trimStartSec and resume playback
   const handleVideoLoadedData = () => {
     if (!videoRef.current || !activeClip) return;
+    videoRef.current.muted = false;
+    if (previewMode === "stitched_reel") {
+      if (shouldAutoPlayOnSwitchRef.current || isPlaying) {
+        shouldAutoPlayOnSwitchRef.current = false;
+        videoRef.current.play().catch(() => {});
+      }
+      return;
+    }
     if (
       videoRef.current.currentTime < activeClip.trimStartSec - 0.05 ||
       videoRef.current.currentTime >= activeClip.trimEndSec
@@ -623,6 +635,17 @@ export function ReelTimelineEditor({
     const ct = videoRef.current.currentTime;
     setCurrentPlayTime(ct);
 
+    if (previewMode === "stitched_reel") {
+      // Single-file stitched reel mode: highlight active shot based on global playhead time without seeking
+      const matched = sequencePlaylist.find(
+        (item) => ct >= item.seqStartTimeSec && ct <= item.seqEndTimeSec + 0.08
+      );
+      if (matched && matched.originalIndex !== selectedClipIndex) {
+        setSelectedClipIndex(matched.originalIndex);
+      }
+      return;
+    }
+
     const inSec = activeClip.trimStartSec;
     const outSec = activeClip.trimEndSec;
 
@@ -643,7 +666,10 @@ export function ReelTimelineEditor({
   };
 
   const handleVideoEnded = () => {
-    if (previewMode === "sequence") {
+    if (previewMode === "stitched_reel" && videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(() => {});
+    } else if (previewMode === "sequence") {
       advanceToNextSequenceShot();
     } else if (videoRef.current && activeClip) {
       videoRef.current.currentTime = activeClip.trimStartSec;
@@ -651,22 +677,11 @@ export function ReelTimelineEditor({
     }
   };
 
-  // Sync secondary audio elements & continuous master audio lock on play
+  // Sync secondary audio elements on play
   const handlePlay = () => {
     setIsPlaying(true);
-    if (
-      previewMode === "sequence" &&
-      currentState.musicTrack === "original_lyria" &&
-      continuousMasterAudioRef.current
-    ) {
-      if (
-        Math.abs(
-          continuousMasterAudioRef.current.currentTime - globalPlayheadSec
-        ) > 0.35
-      ) {
-        continuousMasterAudioRef.current.currentTime = globalPlayheadSec;
-      }
-      continuousMasterAudioRef.current.play().catch(() => {});
+    if (videoRef.current) {
+      videoRef.current.muted = false;
     }
     if (
       musicAudioRef.current &&
@@ -682,7 +697,6 @@ export function ReelTimelineEditor({
 
   const handlePause = () => {
     setIsPlaying(false);
-    continuousMasterAudioRef.current?.pause();
     musicAudioRef.current?.pause();
     sfxAudioRef.current?.pause();
   };
@@ -1013,6 +1027,58 @@ export function ReelTimelineEditor({
     setSelectedClipIndex(targetIdx);
   };
 
+  // Physically stitch all 4 trimmed clips into 1 single-file seamless MP4 reel with continuous Original Lyria Music
+  const handleStitchAll4ToPlayAsOneReel = async () => {
+    setIsStitching(true);
+    setRenderErrorMsg(null);
+    setRenderSuccessMsg(null);
+    try {
+      const res = await fetch("/api/reels/editor/render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reelId,
+          title: `Stitched 4-Shot Seamless Master (${totalEditedDurationSec.toFixed(1)}s)`,
+          clips: currentState.clips,
+          globalVideoSpeed: currentState.globalVideoSpeed,
+          colorGrading: currentState.colorGrading,
+          vocalMode: currentState.vocalMode,
+          vocalVolume: currentState.vocalVolume,
+          vocalSpeed: currentState.vocalSpeed,
+          musicTrack: currentState.musicTrack,
+          musicLockMode: "unaltered",
+          musicVolume: currentState.musicVolume,
+          musicSpeed: currentState.musicSpeed,
+          sfxTrack: currentState.sfxTrack,
+          sfxVolume: currentState.sfxVolume,
+          sfxSpeed: currentState.sfxSpeed,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to stitch shots together.");
+      }
+
+      setStitchedReelUrl(data.outputUrl);
+      setActiveVersionUrl(data.outputUrl);
+      setPreviewMode("stitched_reel");
+      setRenderSuccessMsg(
+        `✓ Stitched all ${sequencePlaylist.length} trimmed shots into 1 seamless single-file reel (${data.durationSec}s) with continuous Original Lyria Music! Playing as One Reel.`
+      );
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.currentTime = 0;
+          videoRef.current.muted = false;
+          videoRef.current.play().catch(() => {});
+        }
+      }, 120);
+    } catch (err: any) {
+      setRenderErrorMsg(err?.message || "Failed to stitch reel");
+    } finally {
+      setIsStitching(false);
+    }
+  };
+
   const handleRenderNewVersion = async () => {
     setIsRendering(true);
     setRenderErrorMsg(null);
@@ -1246,25 +1312,37 @@ export function ReelTimelineEditor({
             <div className="flex items-center justify-between gap-2 text-xs">
               <button
                 type="button"
+                disabled={isStitching}
                 onClick={() => {
-                  setPreviewMode("sequence");
-                  if (videoRef.current && isPlaying && continuousMasterAudioRef.current) {
-                    continuousMasterAudioRef.current.currentTime = globalPlayheadSec;
-                    continuousMasterAudioRef.current.play().catch(() => {});
+                  if (stitchedReelUrl) {
+                    setPreviewMode("stitched_reel");
+                    setTimeout(() => {
+                      if (videoRef.current) {
+                        videoRef.current.muted = false;
+                        videoRef.current.currentTime = 0;
+                        videoRef.current.play().catch(() => {});
+                      }
+                    }, 60);
+                  } else {
+                    handleStitchAll4ToPlayAsOneReel();
                   }
                 }}
                 className={`flex-1 py-2 px-3 rounded-lg font-bold transition cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
-                  previewMode === "sequence"
+                  previewMode === "stitched_reel" || previewMode === "sequence"
                     ? "bg-gradient-to-r from-teal-500/25 to-emerald-500/20 border border-teal-500/70 text-teal-300 shadow-md"
                     : "bg-slate-900/70 border border-slate-800 text-slate-400 hover:text-slate-200"
                 }`}
               >
                 <div className="flex items-center gap-1.5">
                   <Film className="w-3.5 h-3.5 text-teal-400" />
-                  <span>Play Stitched Combined ({sequencePlaylist.length} Shots)</span>
+                  <span>
+                    {isStitching
+                      ? "Stitching 4 Shots + Original Lyria Music..."
+                      : `Play Stitched Combined (${sequencePlaylist.length} Shots)`}
+                  </span>
                 </div>
                 <span className="text-[10px] font-normal text-teal-400/80">
-                  ✓ Seamless Transitions • 0ms Silence Gap • Continuous Music
+                  ✓ One Seamless Reel • Original Lyria Music Preserved • 0ms Gap
                 </span>
               </button>
 
@@ -1272,8 +1350,8 @@ export function ReelTimelineEditor({
                 type="button"
                 onClick={() => {
                   setPreviewMode("shot");
-                  continuousMasterAudioRef.current?.pause();
                   if (videoRef.current && activeClip) {
+                    videoRef.current.muted = false;
                     videoRef.current.currentTime = activeClip.trimStartSec;
                     if (isPlaying) videoRef.current.play().catch(() => {});
                   }
@@ -1297,7 +1375,11 @@ export function ReelTimelineEditor({
             {/* Instant Individual Shot Selector Strip */}
             <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-900">
               <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
-                {previewMode === "sequence" ? "Active Sequence Cut:" : "Select Individual Shot:"}
+                {previewMode === "stitched_reel"
+                  ? "Stitched 1-Reel Cut:"
+                  : previewMode === "sequence"
+                  ? "Active Sequence Cut:"
+                  : "Select Individual Shot:"}
               </span>
               <div className="flex items-center gap-1 flex-wrap">
                 {currentState.clips.map((c, idx) => {
@@ -1308,7 +1390,13 @@ export function ReelTimelineEditor({
                       type="button"
                       onClick={() => {
                         setSelectedClipIndex(idx);
-                        if (videoRef.current) {
+                        if (previewMode === "stitched_reel" && videoRef.current) {
+                          const targetSeq = sequencePlaylist.find((s) => s.originalIndex === idx);
+                          if (targetSeq) {
+                            videoRef.current.currentTime = targetSeq.seqStartTimeSec;
+                            setCurrentPlayTime(targetSeq.seqStartTimeSec);
+                          }
+                        } else if (videoRef.current) {
                           videoRef.current.currentTime = c.trimStartSec;
                           setCurrentPlayTime(c.trimStartSec);
                           if (isPlaying) videoRef.current.play().catch(() => {});
@@ -1316,7 +1404,7 @@ export function ReelTimelineEditor({
                       }}
                       className={`px-2.5 py-1 rounded text-[11px] font-mono font-bold transition cursor-pointer ${
                         isSel
-                          ? previewMode === "sequence"
+                          ? previewMode !== "shot"
                             ? "bg-teal-500 text-slate-950 shadow-sm"
                             : "bg-amber-500 text-slate-950 shadow-sm"
                           : "bg-slate-900 text-slate-400 hover:text-white border border-slate-800"
@@ -1347,14 +1435,6 @@ export function ReelTimelineEditor({
               onEnded={handleVideoEnded}
               onPlay={handlePlay}
               onPause={handlePause}
-            />
-
-            {/* Unbroken Continuous Master Audio Stream for Stitched Combined Mode (Zero Silence / Cut Pop Prevention) */}
-            <audio
-              ref={continuousMasterAudioRef}
-              src={activeVersionUrl}
-              loop
-              preload="auto"
             />
 
             {/* Audio elements for custom music and SFX */}
@@ -1391,33 +1471,41 @@ export function ReelTimelineEditor({
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <button
                 type="button"
+                disabled={isStitching}
                 onClick={() => {
-                  setPreviewMode("sequence");
                   if (!videoRef.current) return;
                   if (isPlaying) {
                     videoRef.current.pause();
+                    return;
+                  }
+                  if (stitchedReelUrl) {
+                    setPreviewMode("stitched_reel");
+                    setTimeout(() => {
+                      if (videoRef.current) {
+                        videoRef.current.muted = false;
+                        videoRef.current.play().catch(() => {});
+                      }
+                    }, 50);
                   } else {
-                    if (
-                      activeClip &&
-                      (videoRef.current.currentTime < activeClip.trimStartSec ||
-                        videoRef.current.currentTime >= activeClip.trimEndSec)
-                    ) {
-                      videoRef.current.currentTime = activeClip.trimStartSec;
-                    }
-                    videoRef.current.play().catch(() => {});
+                    handleStitchAll4ToPlayAsOneReel();
                   }
                 }}
                 className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-md transition"
               >
-                {isPlaying ? (
+                {isStitching ? (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5 animate-spin text-slate-950" />
+                    <span>Stitching 4 Shots + Lyria Music...</span>
+                  </>
+                ) : isPlaying && previewMode !== "shot" ? (
                   <>
                     <Pause className="w-3.5 h-3.5 fill-slate-950" />
-                    <span>Pause Sequence</span>
+                    <span>Pause Stitched Reel</span>
                   </>
                 ) : (
                   <>
                     <Play className="w-3.5 h-3.5 fill-slate-950" />
-                    <span>Play All {sequencePlaylist.length} Shots Together</span>
+                    <span>Play All {sequencePlaylist.length} Shots Together (One Reel)</span>
                   </>
                 )}
               </button>
@@ -1724,6 +1812,16 @@ export function ReelTimelineEditor({
                   </button>
                   <button
                     type="button"
+                    disabled={isStitching}
+                    onClick={() => handleStitchAll4ToPlayAsOneReel()}
+                    className="px-2.5 py-1 rounded bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-xs font-black flex items-center gap-1 cursor-pointer transition shadow-sm"
+                    title="Physically stitch all 4 trimmed clips into 1 single-file seamless MP4 reel with continuous Original Lyria Music"
+                  >
+                    <Film className="w-3.5 h-3.5 text-slate-950" />
+                    {isStitching ? "Stitching Reel..." : "🔗 Stitch All 4 to Play as One Reel"}
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => handleResetShot(selectedClipIndex)}
                     className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-semibold flex items-center gap-1 cursor-pointer transition"
                     title="Reset selected shot trim and speed back to full source duration"
@@ -1929,6 +2027,21 @@ export function ReelTimelineEditor({
                 >
                   <Sparkles className="w-3.5 h-3.5 text-teal-400" />
                   <span>⚡ Smart Auto-Trim All 4 (Head &amp; Tail)</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isStitching}
+                  onClick={() => handleStitchAll4ToPlayAsOneReel()}
+                  className="px-3 py-1 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-xs font-black flex items-center gap-1.5 cursor-pointer transition shadow-md"
+                  title="Physically stitch all 4 trimmed clips into 1 single-file seamless MP4 reel with continuous Original Lyria Music"
+                >
+                  <Film className="w-3.5 h-3.5 text-slate-950" />
+                  <span>
+                    {isStitching
+                      ? "Stitching 4 Shots + Lyria Music..."
+                      : "🔗 Stitch All 4 to Play as One Reel"}
+                  </span>
                 </button>
 
                 <div className="flex items-center gap-2 bg-slate-950 px-3 py-1 rounded-lg border border-slate-800">
