@@ -55,6 +55,8 @@ export interface EditorSnapshotState {
   vocalMode: "original" | "mute" | "custom";
   vocalVolume: number; // 0.0 to 1.5 (150%)
   vocalSpeed: number; // Independent dialogue/vocal speed (0.25x - 4.0x)
+  vocalEntrySec?: number; // Timestamp T_vocal (s) where singing vocals drop in (0s = immediate)
+  lipSyncOffsetMs?: number; // Lip-sync phase offset in ms (-500ms to +500ms)
   // Track 3: Music Bed (Unaltered continuous lock by default)
   musicTrack: string;
   musicLockMode: "unaltered" | "custom_trim";
@@ -213,6 +215,8 @@ export function ReelTimelineEditor({
     vocalMode: "original",
     vocalVolume: 1.0,
     vocalSpeed: 1.0,
+    vocalEntrySec: 0,
+    lipSyncOffsetMs: 0,
     musicTrack: "original_lyria",
     musicLockMode: "unaltered",
     musicVolume: 0.65,
@@ -333,6 +337,8 @@ export function ReelTimelineEditor({
       vocalMode: "original",
       vocalVolume: 1.0,
       vocalSpeed: 1.0,
+      vocalEntrySec: 0,
+      lipSyncOffsetMs: 0,
     }));
   };
 
@@ -1109,6 +1115,8 @@ export function ReelTimelineEditor({
           vocalMode: currentState.vocalMode,
           vocalVolume: currentState.vocalVolume,
           vocalSpeed: currentState.vocalSpeed,
+          vocalEntrySec: currentState.vocalEntrySec || 0,
+          lipSyncOffsetMs: currentState.lipSyncOffsetMs || 0,
           musicTrack: currentState.musicTrack,
           musicLockMode: "unaltered",
           musicVolume: currentState.musicVolume,
@@ -1133,7 +1141,7 @@ export function ReelTimelineEditor({
             : transitionStyle === "flash"
             ? "Flash Transition (0.18s)"
             : "Cut-on-Action (Instant)"
-        } + continuous Original Lyria Music! Playing as One Reel.`
+        } + Vocals @ ${(currentState.vocalEntrySec || 0).toFixed(1)}s (${(currentState.lipSyncOffsetMs || 0) >= 0 ? "+" : ""}${currentState.lipSyncOffsetMs || 0}ms Lip-Sync Lock)!`
       );
       setTimeout(() => {
         if (videoRef.current) {
@@ -1172,6 +1180,8 @@ export function ReelTimelineEditor({
           vocalMode: currentState.vocalMode,
           vocalVolume: currentState.vocalVolume,
           vocalSpeed: currentState.vocalSpeed,
+          vocalEntrySec: currentState.vocalEntrySec || 0,
+          lipSyncOffsetMs: currentState.lipSyncOffsetMs || 0,
           musicTrack: currentState.musicTrack,
           musicLockMode: currentState.musicLockMode,
           musicVolume: currentState.musicVolume,
@@ -2506,6 +2516,145 @@ export function ReelTimelineEditor({
                   }
                   className="w-full accent-blue-400 cursor-pointer"
                 />
+              </div>
+            </div>
+
+            {/* ── VOCAL START TIMESTAMP (T_vocal) & LIP-SYNC PHASE MATCHER ── */}
+            <div className="p-3 rounded-xl bg-slate-950/90 border border-blue-500/30 space-y-2.5">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-blue-300">
+                    🎯 Vocal Entry Point (T_vocal) &amp; Lip-Sync Phase Lock
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      pushState((prev) => ({
+                        ...prev,
+                        vocalEntrySec: 0,
+                        lipSyncOffsetMs: 0,
+                      }));
+                      setTimeout(() => handleStitchAll4ToPlayAsOneReel(), 80);
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-blue-500 to-teal-500 hover:from-blue-400 hover:to-teal-400 text-slate-950 text-[11px] font-black cursor-pointer transition shadow-sm"
+                    title="Automatically align Lyria original singing vocals to character mouth visemes and re-stitch master MP4"
+                  >
+                    🎯 Auto-Match Lips to Lyria Vocals
+                  </button>
+                </div>
+              </div>
+
+              {/* Vocal Entry Timestamp (T_vocal) Quick-Select Pills */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                {[
+                  { label: "0.0s Immediate", sec: 0, desc: "Singing from Frame 0" },
+                  { label: "2.0s Beat Intro", sec: 2, desc: "0–2s Beat → 2s+ Vocals" },
+                  { label: "4.0s Full Intro", sec: 4, desc: "0–4s Beat → 4s+ Vocals" },
+                  { label: "6.0s Shot #2", sec: 6, desc: "Shot 1 Dance → Shot 2 Sing" },
+                ].map((preset) => {
+                  const active = Math.abs((currentState.vocalEntrySec || 0) - preset.sec) < 0.1;
+                  return (
+                    <button
+                      key={`nle_vocal_entry_${preset.sec}`}
+                      type="button"
+                      onClick={() => {
+                        pushState((prev) => ({ ...prev, vocalEntrySec: preset.sec }));
+                        if (videoRef.current && preset.sec > 0) {
+                          videoRef.current.currentTime = preset.sec;
+                          setCurrentPlayTime(preset.sec);
+                        }
+                      }}
+                      className={`px-2.5 py-1.5 rounded-lg text-left border transition cursor-pointer ${
+                        active
+                          ? "bg-blue-500/20 border-blue-400 text-blue-200 shadow-sm"
+                          : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                      }`}
+                    >
+                      <div className="text-[11px] font-mono font-bold">{preset.label}</div>
+                      <div className="text-[9px] text-slate-400 truncate">{preset.desc}</div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Dual Sliders: Vocal Start Timestamp (s) & Sub-Frame Lip-Sync Phase Shift (ms) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div className="p-2 rounded-lg bg-slate-900 border border-slate-800">
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-slate-400">Vocal Start Point (T_vocal):</span>
+                    <span className="font-mono text-blue-300 font-bold">
+                      {(currentState.vocalEntrySec || 0).toFixed(1)}s
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={12}
+                    step={0.5}
+                    value={currentState.vocalEntrySec || 0}
+                    onChange={(e) =>
+                      pushState((prev) => ({ ...prev, vocalEntrySec: parseFloat(e.target.value) }))
+                    }
+                    className="w-full accent-blue-400 cursor-pointer"
+                  />
+                  <div className="text-[10px] font-mono text-slate-500 mt-0.5">
+                    0.0s–{(currentState.vocalEntrySec || 0).toFixed(1)}s: Instrumental Intro | {(currentState.vocalEntrySec || 0).toFixed(1)}s+: Singing Vocals
+                  </div>
+                </div>
+
+                <div className="p-2 rounded-lg bg-slate-900 border border-slate-800">
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-slate-400">Lip-Sync Phase Offset:</span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          pushState((prev) => ({
+                            ...prev,
+                            lipSyncOffsetMs: Math.max(-500, (prev.lipSyncOffsetMs || 0) - 20),
+                          }))
+                        }
+                        className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-mono text-slate-300 cursor-pointer"
+                        title="Advance vocal sound by 20ms (-0.5 frame)"
+                      >
+                        -20ms
+                      </button>
+                      <span className="font-mono text-blue-300 font-bold">
+                        {(currentState.lipSyncOffsetMs || 0) >= 0 ? "+" : ""}
+                        {currentState.lipSyncOffsetMs || 0}ms
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          pushState((prev) => ({
+                            ...prev,
+                            lipSyncOffsetMs: Math.min(500, (prev.lipSyncOffsetMs || 0) + 20),
+                          }))
+                        }
+                        className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-mono text-slate-300 cursor-pointer"
+                        title="Delay vocal sound by 20ms (+0.5 frame)"
+                      >
+                        +20ms
+                      </button>
+                    </div>
+                  </div>
+                  <input
+                    type="range"
+                    min={-500}
+                    max={500}
+                    step={10}
+                    value={currentState.lipSyncOffsetMs || 0}
+                    onChange={(e) =>
+                      pushState((prev) => ({ ...prev, lipSyncOffsetMs: parseInt(e.target.value, 10) }))
+                    }
+                    className="w-full accent-blue-400 cursor-pointer"
+                  />
+                  <div className="text-[10px] font-mono text-slate-500 mt-0.5">
+                    Fine-tunes Lyria vocal syllable timing against mouth visemes
+                  </div>
+                </div>
               </div>
             </div>
           </div>

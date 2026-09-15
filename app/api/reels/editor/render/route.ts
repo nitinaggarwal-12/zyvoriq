@@ -33,6 +33,8 @@ export interface EditorRenderRequest {
   vocalUrl?: string;
   vocalVolume: number; // 0.0 to 1.5
   vocalSpeed?: number; // Independent vocal/dialogue speed (0.25x - 4.0x)
+  vocalEntrySec?: number; // Exact timestamp T_vocal (s) where singing vocals drop in (0s = immediate)
+  lipSyncOffsetMs?: number; // Sub-frame lip-sync phase shift in ms (-500ms to +500ms)
   // Independent Music Track (Unaltered across video cuts by default)
   musicTrack: string; // URL or preset path ("original_lyria", "/assets/audio/music/...", "none")
   musicLockMode?: "unaltered" | "custom_trim"; // "unaltered" keeps music continuous even when video frames are cut/added
@@ -358,6 +360,22 @@ export async function POST(req: NextRequest) {
       musicSourceFile &&
       path.resolve(vocalSourceFile) === path.resolve(musicSourceFile);
 
+    const vocalEntrySec = Math.max(0, Number(body.vocalEntrySec || 0));
+    const lipSyncOffsetMs = Math.max(-1000, Math.min(1000, Number(body.lipSyncOffsetMs || 0)));
+
+    // Build lip-sync phase shift filter stage (advance via atrim or delay via adelay)
+    const buildPhaseShiftStage = (offsetMs: number): string => {
+      if (Math.abs(offsetMs) < 5) return "";
+      if (offsetMs > 0) {
+        const ms = Math.round(offsetMs);
+        return `,adelay=${ms}|${ms}`;
+      } else {
+        const trimSec = Math.abs(offsetMs) / 1000;
+        return `,atrim=start=${trimSec.toFixed(3)},asetpts=PTS-STARTPTS`;
+      }
+    };
+    const phaseShiftStage = buildPhaseShiftStage(lipSyncOffsetMs);
+
     if (stemMutes.master) {
       // Master mute explicitly toggled in 5-stem spectrum mixer
       inputs.push("-f", "lavfi", "-i", `anullsrc=r=48000:cl=stereo:d=${totalDurationSec.toFixed(3)}`);
@@ -367,18 +385,27 @@ export async function POST(req: NextRequest) {
       const masterVol = Math.max(vocalVol, musicVol, 1.0);
       inputs.push("-stream_loop", "-1", "-i", vocalSourceFile);
       const atempoMaster = buildAtempoFilter(musicSpeed);
+      // If vocalEntrySec > 0, attenuate vocal formants (450Hz-3kHz) during [0, vocalEntrySec] so instrumental intro plays cleanly before vocals drop
+      const vocalEntryStage =
+        vocalEntrySec > 0.05
+          ? `,equalizer=f=1400:width_type=h:width=1800:g=-18:enable='between(t,0,${vocalEntrySec.toFixed(2)})'`
+          : "";
       filterParts.push(
-        `[${inputIdx}:a]${atempoMaster},atrim=0:${totalDurationSec.toFixed(3)},asetpts=PTS-STARTPTS,volume=${masterVol.toFixed(2)}${stemEqChain}[a_master]`
+        `[${inputIdx}:a]${atempoMaster}${phaseShiftStage},atrim=0:${totalDurationSec.toFixed(3)},asetpts=PTS-STARTPTS,volume=${masterVol.toFixed(2)}${stemEqChain}${vocalEntryStage}[a_master]`
       );
       mixInputs.push("[a_master]");
       inputIdx++;
     } else {
-      // Track A: Dialogue / Vocals Stem (with independent vocalSpeed & vocalVolume)
+      // Track A: Dialogue / Vocals Stem (with independent vocalSpeed, vocalVolume, vocalEntrySec & lipSyncOffsetMs)
       if (vocalSourceFile && vocalVol > 0.01 && isStemActive("speech")) {
         inputs.push("-stream_loop", "-1", "-i", vocalSourceFile);
         const atempoVocal = buildAtempoFilter(vocalSpeed);
+        const vocalGateStage =
+          vocalEntrySec > 0.05
+            ? `,volume=enable='between(t,0,${vocalEntrySec.toFixed(2)})':volume=0`
+            : "";
         filterParts.push(
-          `[${inputIdx}:a]${atempoVocal},atrim=0:${totalDurationSec.toFixed(3)},asetpts=PTS-STARTPTS,volume=${vocalVol.toFixed(2)}[a_vocal]`
+          `[${inputIdx}:a]${atempoVocal}${phaseShiftStage}${vocalGateStage},atrim=0:${totalDurationSec.toFixed(3)},asetpts=PTS-STARTPTS,volume=${vocalVol.toFixed(2)}[a_vocal]`
         );
         mixInputs.push("[a_vocal]");
         inputIdx++;

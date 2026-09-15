@@ -9,6 +9,8 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
   const [genre, setGenre] = useState("MUSIC_VIDEO");
   const [duration, setDuration] = useState(24);
   const [platform, setPlatform] = useState("YouTube Shorts");
+  const [vocalStartSec, setVocalStartSec] = useState<number>(0);
+  const [lipSyncMode, setLipSyncMode] = useState<string>("lyria_master_clock");
   
   const [productionId, setProductionId] = useState<string | null>(null);
   const [autoStartError, setAutoStartError] = useState<string | null>(null);
@@ -125,10 +127,24 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
     setProduction(null);
     
     try {
+      const timingDirective =
+        lipSyncMode === "instrumental_only"
+          ? ` [VOCAL_STRATEGY: Pure instrumental dance performance, mouth closed throughout all ${duration}s, zero singing]`
+          : vocalStartSec > 0
+          ? ` [VOCAL_ENTRY_TIMESTAMP: ${vocalStartSec.toFixed(1)}s — 0.0s to ${vocalStartSec.toFixed(1)}s MUST be pure instrumental beat intro with non-vocal dance choreography and mouth closed; at t=${vocalStartSec.toFixed(1)}s singing vocals drop with strict lip-sync viseme lock to Lyria original music]`
+          : ` [VOCAL_ENTRY_TIMESTAMP: 0.0s — immediate lead vocal singing from Frame 0 with strict lip-sync viseme lock to Lyria original music]`;
+      const enrichedTopic = topic.includes("VOCAL_ENTRY_TIMESTAMP") || topic.includes("VOCAL_STRATEGY") ? topic : `${topic.trim()}${timingDirective}`;
       const res = await fetch("/api/yt/productions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, genre, duration, platform })
+        body: JSON.stringify({
+          topic: enrichedTopic,
+          genre,
+          duration,
+          platform,
+          vocalStartSec,
+          lipSyncMode,
+        }),
       });
       const data = await res.json();
       
@@ -332,6 +348,100 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
                     <option value="YouTube Shorts">YouTube Shorts</option>
                     <option value="TikTok">TikTok</option>
                     <option value="Instagram Reels">Instagram Reels</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* VOCAL START TIMESTAMP (T_vocal) & LYRIA LIP-SYNC TIMING */}
+              <div className="p-3.5 rounded-xl bg-slate-950/90 border border-teal-500/30 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-wider text-teal-300 flex items-center gap-1.5">
+                    <span>🎤 Vocal Entry Point (T_vocal) &amp; Lip-Sync Lock</span>
+                  </label>
+                  <span className="px-2 py-0.5 rounded bg-teal-950 text-teal-300 border border-teal-500/40 font-mono text-[11px] font-bold">
+                    {lipSyncMode === "instrumental_only"
+                      ? "Instrumental Only"
+                      : vocalStartSec === 0
+                      ? "Vocals @ 0.0s (Immediate)"
+                      : `Vocals @ ${vocalStartSec.toFixed(1)}s`}
+                  </span>
+                </div>
+
+                {/* Preset Vocal Start Timestamp Buttons */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  {[
+                    { label: "0.0s Immediate", sec: 0, desc: "Singing from Frame 0" },
+                    { label: "2.0s Beat Intro", sec: 2, desc: "2s Dance → Vocals" },
+                    { label: "4.0s Full Intro", sec: 4, desc: "4s Dance → Vocals" },
+                    { label: "6.0s Shot #2", sec: 6, desc: "Shot 1 Dance → Shot 2 Sing" },
+                  ].map((preset) => {
+                    const active = vocalStartSec === preset.sec && lipSyncMode !== "instrumental_only";
+                    return (
+                      <button
+                        key={`preset_vocal_${preset.sec}`}
+                        type="button"
+                        onClick={() => {
+                          setVocalStartSec(preset.sec);
+                          if (lipSyncMode === "instrumental_only") setLipSyncMode("lyria_master_clock");
+                        }}
+                        className={`px-2.5 py-1.5 rounded-lg text-left border transition cursor-pointer ${
+                          active
+                            ? "bg-teal-500/20 border-teal-400 text-teal-200 shadow-sm"
+                            : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                        }`}
+                      >
+                        <div className="text-[11px] font-mono font-bold">{preset.label}</div>
+                        <div className="text-[9px] text-slate-400 truncate">{preset.desc}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Fine-Tune Vocal Start Slider */}
+                {lipSyncMode !== "instrumental_only" && (
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[11px] font-mono">
+                      <span className="text-slate-400">
+                        0.0s–{vocalStartSec.toFixed(1)}s:{" "}
+                        <strong className="text-amber-300">
+                          {vocalStartSec === 0 ? "No Intro" : "Instrumental Beat (Mouth Closed)"}
+                        </strong>
+                      </span>
+                      <span className="text-teal-300 font-bold">
+                        {vocalStartSec.toFixed(1)}s–{duration}s: Singing Vocals &amp; Lip-Sync
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={Math.max(6, Math.min(12, duration - 4))}
+                      step={0.5}
+                      value={vocalStartSec}
+                      onChange={(e) => setVocalStartSec(parseFloat(e.target.value))}
+                      className="w-full accent-teal-400 cursor-pointer"
+                    />
+                  </div>
+                )}
+
+                {/* Lip-Sync Binding Mode Selector */}
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-400 mb-1">
+                    Audio-Visual Lip-Sync Strategy:
+                  </label>
+                  <select
+                    value={lipSyncMode}
+                    onChange={(e) => setLipSyncMode(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-semibold text-teal-200 focus:outline-none focus:border-teal-500 cursor-pointer"
+                  >
+                    <option value="lyria_master_clock">
+                      🎯 Match Song Sound to Lips — Lyria 3.5 Original Music + Viseme Lock
+                    </option>
+                    <option value="native_veo_vocal">
+                      🎬 Native On-Camera Singing — Direct Veo Live Vocal Articulation
+                    </option>
+                    <option value="instrumental_only">
+                      💃 Instrumental Dance Only — Pure Choreography (Mouth Closed, No Vocals)
+                    </option>
                   </select>
                 </div>
               </div>
