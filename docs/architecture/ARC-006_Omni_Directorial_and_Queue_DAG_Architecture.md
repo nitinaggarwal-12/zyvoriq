@@ -417,4 +417,7 @@ zyvoriq-output/
 | **Dialogue & Language** | Stiff textbook Hindi or robotic English | **Authentic Mumbai Hinglish** with natural cadence |
 | **Audio Quality** | Inconsistent volume, clipping, vocal drift | **-24.0 LUFS EBU R128** broadcast master with clean stems |
 | **Visual Artifacts** | Extra fingers, melting phones, rubber limbs | **Autonomous in-flight re-rolls & surgical viseme healing** |
-| **Delivery Spec** | Single random aspect ratio | **Dual-master (9:16 Reel + 2.39:1 Cinema)** with full UI suite |
+| **Multi-Component Clock Sync** | Un-trimmed 8s Veo buckets causing +90s audio/video drift | **4-Clock Drift Gate (`±50ms` ceiling) with native-audio `trim`/`atrim` & `amix=duration=first`** |
+| **Atmospheric Cast Preconditions** | False `PRECONDITION_FAILED` crashes on non-human `"scene"` takes | **Environmental token sanitization & deterministic cast role-alias mapping** |
+| **Delivery Spec** | Single random aspect ratio | **Dual-master (9:16 Reel + 2.39:1 Cinema)** with full UI suite & proxy parity |
+

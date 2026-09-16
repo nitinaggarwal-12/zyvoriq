@@ -105,3 +105,52 @@ Trigger when benchmarking page speed, server container memory, or API latency.
    - Worker volume disk free > 1000MB.
    - Claim attempt circuit breaker: `attempt < 5` (quarantine at >= 5).
    - Zero deadlock starvation: 30-second background watchdog active.
+
+---
+
+## 6. ⏱️ `multi-component-4-clock-drift-auditor` (4-Clock Drift Gate & Native-Audio Editorial Trimming)
+
+### Purpose & Trigger Conditions
+Trigger when assembling multi-shot reels (`renderRough`), modifying FFmpeg filtergraphs, or auditing playback speed/drift across generated productions.
+
+### Core Rules
+1. **The 4 Production Clocks**:
+   - `T_audio`: Physical duration of the master Lyria soundtrack MP3.
+   - `T_editorial`: Sum of planned `editorialDurationSec` cuts across all shots.
+   - `T_raw_veo`: Sum of raw 8.0s Veo generation buckets (`actualDurationSec`).
+   - `T_rendered`: Physical duration of the final stitched master MP4 (`rough.mp4`).
+2. **Mandatory Native-Audio Editorial Trimming**:
+   - Both silent and **native-audio (`hasNativeAudio`)** FFmpeg assembly paths MUST apply explicit frame-accurate trimming:
+     - Video: `trim=duration=${editorialDurationSec},setpts=PTS-STARTPTS`
+     - Audio: `atrim=duration=${editorialDurationSec},asetpts=PTS-STARTPTS`
+     - Mix: `amix=inputs=2:duration=first:dropout_transition=2`
+3. **Strict `±50ms` Drift Ceiling & Auto-Healing**:
+   - Maximum allowable drift between `T_rendered` and `T_editorial` / `T_audio` is **`±50ms` (`0.05s`)**.
+   - Run `node scripts/audit_and_heal_drift.mjs <productionId>` to detect and auto-heal un-trimmed Veo concatenations (e.g., 128.12s video vs. 34.52s master song).
+
+---
+
+## 7. 🎭 `environmental-cast-sanitization` (Non-Human Shot & Cast Alias Precondition Sanitizer)
+
+### Purpose & Trigger Conditions
+Trigger when compiling directorial treatments (`lib/reel/planner.ts`) or executing shot preconditions in `scripts/reel_worker_v2.mjs`.
+
+### Core Rules
+1. **Environmental Token Sanitization**:
+   - Non-human atmospheric or establishing takes (`"scene"`, `"none"`, `"zero"`, `"environment"`, `"atmospheric"`, `"b_roll"`) MUST be sanitized to `undefined` so they never trip `PRECONDITION_FAILED: Canonical character reference image missing for character scene`.
+2. **Screenplay Role Alias Resolution**:
+   - When a screenplay uses role aliases (`"breaker_kai"`, `"popper_maya"`), the worker MUST deterministically resolve them against the locked Curated Library biometric cast (`m.characters`) by index or name match.
+
+---
+
+## 8. 🔗 `cross-environment-asset-proxy-parity` (Local vs. Cloud Asset Verification Parity)
+
+### Purpose & Trigger Conditions
+Trigger when modifying `/api/reels/verify-assets` or `/my-reels` library media badges.
+
+### Core Rules
+1. **Dual-Storage Verification**:
+   - `/api/reels/verify-assets` MUST check both local disk (`fs.existsSync`) AND `readAsset()` / remote Railway proxy routes (`/api/reels/assets/reels/studio1_*`, `ep_*`, `yt_*`).
+2. **Badge Parity**:
+   - Local development (`localhost:3000/my-reels`) and production MUST maintain 100% badge parity (`✓ VALID MEDIA`, `4K MASTER READY`) without false-negative `NO MEDIA` states on cloud-generated reels.
+
