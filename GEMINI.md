@@ -215,7 +215,7 @@
   - **The 70ms Neural Latency Lock**: Master assembly commands MUST apply calibrated audio delay filtergraph (`-filter_complex "[1:a]adelay=70|70[aout]" -map 0:v:0 -map "[aout]"`) to lock acoustic phoneme onsets to physical mouth aperture visemes down to the exact frame (10/10 multimodal sync score).
   - Any master video assembly lacking calibrated neural adelay or justification (`ADELAY_ZERO_OFFSET_JUSTIFIED`) will be rejected with `FAIL: UNCALIBRATED_NEURAL_AUDIO_LATENCY`.
 
-# 🧭 Mandatory 4-Clock Drift Ceiling, Environmental Cast Sanitization & Asset Proxy Parity Protocol (v5.1.7)
+# 🧭 Mandatory 4-Clock Drift Ceiling, Environmental Cast Sanitization & Asset Proxy Parity Protocol (v5.1.8)
 - **Rule 1 — Environmental & Screenplay Alias Cast ID Sanitization (`environmental_shot_character_id_sanitization`)**:
   - Pre-flight planners (`lib/reel/planner.ts`) and background workers (`scripts/reel_worker_v2.mjs`) MUST sanitize non-human environmental shot tokens (`"scene"`, `"none"`, `"zero"`, `"environment"`, `"atmospheric"`, `"b_roll"`) to `undefined` so atmospheric establishing shots never trip `PRECONDITION_FAILED: Canonical character reference image missing for character scene`.
   - When screenplay treatment uses role aliases (e.g., `"breaker_kai"`, `"popper_maya"`), the worker MUST deterministically resolve them against the locked Curated Library biometric cast (`m.characters`) by index or name match rather than crashing.
@@ -226,8 +226,9 @@
 - **Rule 3 — Cross-Environment Proxied Asset Verification Parity (`cross_environment_asset_verification_parity`)**:
   - Asset verification endpoints (`/api/reels/verify-assets`) MUST inspect both local filesystem paths (`fs.existsSync`) AND `readAsset()` / proxied Railway storage routes (`/api/reels/assets/reels/studio1_*`, `ep_*`, `yt_*`).
   - Local development (`localhost:3000/my-reels`) and Railway production MUST maintain 100% badge parity (`✓ VALID MEDIA`, `4K MASTER READY`) without false-negative `NO MEDIA` states on cloud-generated reels.
-- **Rule 4 — Mandatory Post-Fix Governance Document & Skill Lockstep Synchronization Law (`mandatory_post_fix_governance_doc_sync`)**:
-  - Whenever ANY bug fix, root-cause remediation, or new pipeline invariant is implemented, the agent MUST immediately update all canonical governance and skill documents in lockstep within the same turn (`plugins/zyvoriq_guard/hooks.json`, `~/.gemini/config/hooks.json`, `GEMINI.md`, `skills.md`, `deepmind-video-generation/SKILL.md`, `deepmind-emotional-audio-engine/SKILL.md`, `docs/ops/studio1-full-reel-certification.md`, and `ARC-006`).
-  - Automated verification via `node scripts/guards/gate_governance_doc_sync.mjs` asserts that all canonical files share the exact same version badge (`v5.1.7`) and never drift out of sync.
+- **Rule 4 — Universal Multi-Project Post-Fix Governance Document & Skill Lockstep Synchronization Law (`universal_post_fix_governance_doc_sync`)**:
+  - Across **every project and workspace (`ALL_PROJECTS_UNIVERSAL`)**, whenever ANY bug fix, root-cause remediation, or new pipeline invariant is implemented, the agent MUST immediately update all canonical governance, Markdown (`*.md`), and skill documents (`SKILL.md`, `hooks.json`) in lockstep within the same turn (`~/.gemini/config/rules/universal_post_fix_governance_lockstep_sync.md`, `~/.gemini/config/hooks.json`, `plugins/zyvoriq_guard/hooks.json`, `GEMINI.md`, `skills.md`, `SKILL.md` files, and `docs/**/*.md`).
+  - Automated verification via `node scripts/guards/gate_governance_doc_sync.mjs` asserts that all canonical files share the exact same version badge (`v5.1.8`) and never drift out of sync.
+
 
 

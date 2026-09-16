@@ -1,26 +1,26 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "omni_guard",
-  "version": "5.1.7",
+  "version": "5.1.8",
   "description": "Google Omni 1.1 Universal Multi-Project Quality, Model Selection & Multi-Agent Orchestration Engine (Generative-Source Amendment)",
   "global_governance": {
     "sme_director": "Google Omni 1.1 (End-to-End Subject Matter Expert Director & Chief Orchestrator)",
     "chief_auditor": "Gemini 2.5 Pro (Independent Forensic Quality Auditor & Remediation Gatekeeper)",
-    "mandatory_post_fix_governance_doc_sync": {
+    "universal_post_fix_governance_doc_sync": {
       "enabled": true,
+      "scope": "ALL_PROJECTS_UNIVERSAL",
       "enforce_on_every_root_cause_fix": true,
       "canonical_files": [
-        "plugins/zyvoriq_guard/hooks.json",
         "~/.gemini/config/hooks.json",
-        "GEMINI.md",
-        "skills.md",
-        "~/.gemini/config/skills/deepmind-video-generation/SKILL.md",
-        "~/.gemini/config/skills/deepmind-emotional-audio-engine/SKILL.md",
-        "docs/ops/studio1-full-reel-certification.md",
-        "docs/architecture/ARC-006_Omni_Directorial_and_Queue_DAG_Architecture.md"
+        "~/.gemini/config/rules/universal_post_fix_governance_lockstep_sync.md",
+        "<project_root>/plugins/*/hooks.json",
+        "<project_root>/GEMINI.md",
+        "<project_root>/skills.md",
+        "~/.gemini/config/skills/*/SKILL.md",
+        "<project_root>/docs/**/*.md"
       ],
       "detector": "scripts/guards/gate_governance_doc_sync.mjs",
-      "policy": "Whenever a bug fix, root-cause remediation, or new pipeline invariant is implemented, the agent MUST immediately update all canonical governance and skill documents in lockstep within the same task so no rule ever creeps out of sync."
+      "policy": "UNIVERSAL MULTI-PROJECT LAW: Across every project and workspace, whenever any bug fix, root-cause remediation, or new invariant is implemented, the agent MUST immediately update all relevant .md files (GEMINI.md, skills.md, architecture docs), SKILL.md files, and hooks.json files in lockstep within the same turn so the defect can never recur in any project."
     },
     "unmatched_fallback": {
       "action": "REJECT",
@@ -769,12 +769,12 @@
     ]
   },
   "amendment_log": {
-    "from": "5.1.6",
-    "to": "5.1.7",
-    "reason": "Mandatory Post-Fix Governance Document & Skill Lockstep Synchronization Law",
+    "from": "5.1.7",
+    "to": "5.1.8",
+    "reason": "Universal Multi-Project Post-Fix Governance, Markdown & Skill Lockstep Synchronization Law (ALL_PROJECTS_UNIVERSAL)",
     "changes": [
-      "mandatory_post_fix_governance_doc_sync: codified strict requirement to update all canonical governance & skill files (hooks.json, GEMINI.md, skills.md, SKILL.md files, studio1-full-reel-certification.md, ARC-006) in lockstep after every root-cause fix",
-      "added automated detector scripts/guards/gate_governance_doc_sync.mjs and integrated into post_tool_verifier.mjs to auto-sync ~/.gemini/config/hooks.json and prevent version drift"
+      "universal_post_fix_governance_doc_sync: expanded post-fix synchronization law to apply universally across all projects and workspaces (zyvoriq, PromptCanvas, scorex, NativeSheetX, a2a-enterprise-gateway)",
+      "created global rule ~/.gemini/config/rules/universal_post_fix_governance_lockstep_sync.md so every agent session enforces atomic Code + Governance + Markdown + Skill updates"
     ]
   }
 }
