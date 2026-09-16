@@ -11,6 +11,8 @@ public/assets/reels
 public/assets/characters
 public/assets/video
 public/assets/swarm/veo_act*
+public/assets/swarm/veo_talking_act*
+public/assets/swarm/vo
 *.log
 *.db
 *.db-journal

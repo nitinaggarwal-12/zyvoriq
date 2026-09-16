@@ -85,27 +85,29 @@ export async function POST(req: NextRequest) {
 
       await sharp(Buffer.from(svgCinemaMatte)).png().toFile(hudPngPath);
 
+      const veoTalkingPath = path.join(publicOutDir, `veo_talking_act${i + 1}.mp4`);
       const veoClipPathPublic = path.join(publicOutDir, `veo_act${i + 1}.mp4`);
       const veoClipPathScratch = path.join(process.cwd(), 'scratch', `swarm_veo_act${i + 1}.mp4`);
-      const liveVeoClip = fs.existsSync(veoClipPathPublic)
-        ? veoClipPathPublic
-        : fs.existsSync(veoClipPathScratch)
-          ? veoClipPathScratch
-          : null;
+      const liveVeoClip = fs.existsSync(veoTalkingPath)
+        ? veoTalkingPath
+        : fs.existsSync(veoClipPathPublic)
+          ? veoClipPathPublic
+          : fs.existsSync(veoClipPathScratch)
+            ? veoClipPathScratch
+            : null;
 
       if (liveVeoClip && fs.statSync(liveVeoClip).size > 200_000) {
         // 1. Render 1920x1080 @ 30fps CFR Video with 2.39:1 Theatrical Letterbox Matte
         const ffmpegCmd = `ffmpeg -y -i "${liveVeoClip}" -i "${hudPngPath}" -filter_complex "[0:v]fps=30,scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,eq=contrast=1.06:saturation=1.12,setsar=1[bg];[bg][1:v]overlay=0:0,trim=duration=5.000,setpts=PTS-STARTPTS,fps=30,format=yuv420p[v]" -map "[v]" -r 30 -video_track_timescale 30000 -c:v libx264 -preset fast -crf 18 -an "${shotMp4Path}"`;
         execSync(ffmpegCmd, { stdio: 'pipe' });
 
-        // 2. Extract & Preserve Native Synchronized Veo 3.1 Audio Stream ([0:a]) for this 5.000s shot!
+        // 2. Extract & Preserve Native Synchronized Veo 3.1 Speech + Diegetic Audio Stream ([0:a]) normalized to -14 LUFS!
         try {
           execSync(
-            `ffmpeg -y -i "${liveVeoClip}" -af "aresample=48000,pan=stereo|c0=c0|c1=c1,atrim=duration=5.000,asetpts=PTS-STARTPTS" -ar 48000 -ac 2 "${shotNativeWavPath}"`,
+            `ffmpeg -y -i "${liveVeoClip}" -af "aresample=48000,pan=stereo|c0=c0|c1=c1,loudnorm=I=-14:TP=-1.0:LRA=7,atrim=duration=5.000,asetpts=PTS-STARTPTS" -ar 48000 -ac 2 "${shotNativeWavPath}"`,
             { stdio: 'pipe' }
           );
         } catch {
-          // Fallback silent 5.0s wav if clip has no audio stream
           execSync(
             `ffmpeg -y -f lavfi -i "anullsrc=r=48000:cl=stereo" -t 5.000 -ar 48000 -ac 2 "${shotNativeWavPath}"`,
             { stdio: 'pipe' }
@@ -128,7 +130,7 @@ export async function POST(req: NextRequest) {
       shotNativeAudioFiles.push(shotNativeWavPath);
     }
 
-    // Step 2: Concatenate the 6 Native Veo 3.1 Synchronized Audio Stems into a 30.000s Diegetic Foley Track
+    // Step 2: Concatenate the 6 Native Veo 3.1 Synchronized Speech + Diegetic Audio Stems into a 30.000s Track
     const nativeVeoConcatWav = path.join(scratchDir, 'veo_native_audio_30s.wav');
     const nativeAudioListPath = path.join(scratchDir, 'native_audio_list.txt');
     fs.writeFileSync(
@@ -140,33 +142,24 @@ export async function POST(req: NextRequest) {
       { stdio: 'pipe' }
     );
 
-    // Step 3: Build 30.000s 48kHz 4-Stem Theatrical Master Soundtrack:
-    //   1. Spoken Voiceover Narration / Monologue (-14 LUFS, volume=1.65)
-    //   2. Native Veo 3.1 Synchronized Diegetic Audio (flour, dough, splashing tomatoes, roaring fire, sizzle, volume=0.95)
-    //   3. Google DeepMind Lyria 3.5 D-Minor Symphonic Score (-22 LUFS ducked, volume=0.32)
-    //   4. Wood-Fired Hearth Room Tone (volume=0.12)
+    // Step 3: Build 30.000s 48kHz Theatrical Master Soundtrack:
+    //   - When on-camera talking Veo clips are present, use 100% NATIVE VEO 3.1 SYNCHRONIZED ON-CAMERA SPEECH (-14 LUFS) + Ducked Lyria 3.5 Score (-22 LUFS).
+    //   - ZERO background TTS dubbing over moving lips!
     const audioPath = path.join(scratchDir, 'swarm_master_audio_48k.m4a');
-    const voMasterWav = path.join(
-      process.cwd(),
-      'public/assets/swarm/swarm_voiceover_dialogue_master.wav'
-    );
     const scoreMp3 = path.join(
       process.cwd(),
       'public/assets/stems/lyria_symphonic_score_92bpm.mp3'
     );
-    const sfxMp3 = path.join(
-      process.cwd(),
-      'public/assets/audio/sfx/vinyl_rain_ambiance.mp3'
-    );
+    const hasTalkingClips = fs.existsSync(path.join(publicOutDir, 'veo_talking_act1.mp4'));
 
-    if (fs.existsSync(voMasterWav) && fs.existsSync(scoreMp3) && fs.existsSync(nativeVeoConcatWav)) {
+    if (hasTalkingClips && fs.existsSync(nativeVeoConcatWav) && fs.existsSync(scoreMp3)) {
       execSync(
-        `ffmpeg -y -i "${voMasterWav}" -i "${nativeVeoConcatWav}" -stream_loop -1 -i "${scoreMp3}" -filter_complex "[0:a]volume=1.65,atrim=duration=30.000,asetpts=PTS-STARTPTS[vo];[1:a]volume=0.95,atrim=duration=30.000,asetpts=PTS-STARTPTS[veo_diegetic];[2:a]volume=0.30,atrim=duration=30.000,asetpts=PTS-STARTPTS[sc];[vo][veo_diegetic][sc]amix=inputs=3:duration=first:normalize=0,aresample=48000[a]" -map "[a]" -ar 48000 -ac 2 -c:a aac -b:a 192k "${audioPath}"`,
+        `ffmpeg -y -i "${nativeVeoConcatWav}" -stream_loop -1 -i "${scoreMp3}" -filter_complex "[0:a]volume=1.45,atrim=duration=30.000,asetpts=PTS-STARTPTS[veo_speech];[1:a]volume=0.25,atrim=duration=30.000,asetpts=PTS-STARTPTS[sc];[veo_speech][sc]amix=inputs=2:duration=first:normalize=0,aresample=48000[a]" -map "[a]" -ar 48000 -ac 2 -c:a aac -b:a 192k "${audioPath}"`,
         { stdio: 'pipe' }
       );
-    } else if (fs.existsSync(voMasterWav) && fs.existsSync(scoreMp3)) {
+    } else if (fs.existsSync(nativeVeoConcatWav) && fs.existsSync(scoreMp3)) {
       execSync(
-        `ffmpeg -y -i "${voMasterWav}" -stream_loop -1 -i "${scoreMp3}" -filter_complex "[0:a]volume=1.65,atrim=duration=30.000,asetpts=PTS-STARTPTS[vo];[1:a]volume=0.35,atrim=duration=30.000,asetpts=PTS-STARTPTS[sc];[vo][sc]amix=inputs=2:duration=first:normalize=0,aresample=48000[a]" -map "[a]" -ar 48000 -ac 2 -c:a aac -b:a 192k "${audioPath}"`,
+        `ffmpeg -y -i "${nativeVeoConcatWav}" -stream_loop -1 -i "${scoreMp3}" -filter_complex "[0:a]volume=1.0,atrim=duration=30.000,asetpts=PTS-STARTPTS[veo];[1:a]volume=0.30,atrim=duration=30.000,asetpts=PTS-STARTPTS[sc];[veo][sc]amix=inputs=2:duration=first:normalize=0,aresample=48000[a]" -map "[a]" -ar 48000 -ac 2 -c:a aac -b:a 192k "${audioPath}"`,
         { stdio: 'pipe' }
       );
     } else {
