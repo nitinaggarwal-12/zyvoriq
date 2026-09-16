@@ -1995,6 +1995,23 @@ async function applyNarration(op, result) {
   }
 
   // Precondition Gate: Character sheet anchoring is mandatory when character continuity is required.
+  const ENV_IDS = new Set(["scene", "none", "zero", "environment", "atmospheric", "atmospheric_scene", "b_roll", "b-roll", "null", ""]);
+  const manifestChars = getManifestCharacters(m);
+  for (const s of (m.shots || [])) {
+    const cid = s.continuityIn?.characterId;
+    if (!cid) continue;
+    if (ENV_IDS.has(String(cid).toLowerCase().trim())) {
+      delete s.continuityIn.characterId;
+      if (s.continuityOut) delete s.continuityOut.characterId;
+    } else if (!manifestChars.some(c => c.id === cid) && manifestChars.length > 0) {
+      const mapped = (manifestChars.length > 1 && /2|co_star|secondary|maya|antagonist/i.test(String(cid)))
+        ? manifestChars[1].id
+        : manifestChars[0].id;
+      s.continuityIn.characterId = mapped;
+      if (s.continuityOut) s.continuityOut.characterId = mapped;
+    }
+  }
+
   const onCameraCharIds = new Set((m.shots || []).map(s => s.continuityIn?.characterId).filter(Boolean));
   const requiresCharacters = m.studio1?.presenterContinuity !== false &&
     (onCameraCharIds.size > 0 || m.characters?.some(c => c.id === "character_presenter") || m.continuity?.characters?.some(c => c.id === "character_presenter"));

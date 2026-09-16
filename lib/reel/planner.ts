@@ -595,9 +595,26 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
     const generationDurationSec = chooseGenerationDuration(editorialDurationSec);
 
     const dirShot = dir.shots[i];
-    const onCameraCharId = dirShot ? dirShot.onCameraCharacterId : (dir.genre === "DOCUMENTARY_EXPLAINER" ? "character_presenter" : dir.cast[0]?.id || null);
+    const rawCharId = dirShot ? dirShot.onCameraCharacterId : (dir.genre === "DOCUMENTARY_EXPLAINER" ? "character_presenter" : dir.cast[0]?.id || null);
+    const ENV_SHOT_IDS = new Set(["scene", "none", "zero", "environment", "atmospheric", "atmospheric_scene", "b_roll", "b-roll", "null", ""]);
+    let onCameraCharId: string | null = null;
+    if (rawCharId && !ENV_SHOT_IDS.has(String(rawCharId).toLowerCase().trim())) {
+      const exactMatch = charactersList.find(c => c.id === rawCharId);
+      if (exactMatch) {
+        onCameraCharId = exactMatch.id;
+      } else if (charactersList.length > 0) {
+        const castIdx = dir.cast.findIndex(c => c.id === rawCharId);
+        if (castIdx >= 0 && charactersList[castIdx]) {
+          onCameraCharId = charactersList[castIdx].id;
+        } else if (charactersList.length > 1 && /2|co_star|secondary|maya|antagonist/i.test(String(rawCharId))) {
+          onCameraCharId = charactersList[1].id;
+        } else {
+          onCameraCharId = charactersList[0].id;
+        }
+      }
+    }
     const onCameraChar = onCameraCharId ? charactersList.find(c => c.id === onCameraCharId) : null;
-    const onCameraCast = onCameraCharId ? dir.cast.find(c => c.id === onCameraCharId) : null;
+    const onCameraCast = onCameraCharId ? dir.cast.find(c => c.id === onCameraCharId) || dir.cast[0] : null;
     const eyeline = dirShot?.eyeline || (dir.genre === "DOCUMENTARY_EXPLAINER" ? "camera" : "screen_right");
     const shotGrammar = dirShot?.shotGrammar || "HERO_CLOSE_UP";
     const rawVisualAction = dirShot?.visualAction || `Visual beat for ${beat || topic}`;
