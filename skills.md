@@ -156,7 +156,7 @@ Trigger when modifying `/api/reels/verify-assets` or `/my-reels` library media b
 
 ---
 
-## 9. 🛡️ `governance-doc-lockstep-sync` (Universal Post-Fix Governance Synchronization — v5.1.8)
+## 9. 🛡️ `governance-doc-lockstep-sync` (Universal Post-Fix Governance Synchronization — v5.1.9)
 
 ### Purpose & Trigger Conditions
 Trigger automatically after implementing ANY root-cause bug fix, quality gate remediation, or pipeline invariant update across ANY project (`ALL_PROJECTS_UNIVERSAL`).
@@ -172,7 +172,8 @@ Trigger automatically after implementing ANY root-cause bug fix, quality gate re
      - `~/.gemini/config/skills/deepmind-emotional-audio-engine/SKILL.md`
      - `docs/ops/studio1-full-reel-certification.md` & `docs/architecture/ARC-006_Omni_Directorial_and_Queue_DAG_Architecture.md`
 2. **Automated Lockstep Verification**:
-   - Run `node scripts/guards/gate_governance_doc_sync.mjs` to assert that all canonical files share the exact same version badge (`v5.1.8`) and never fall out of sync.
+   - Run `node scripts/guards/gate_governance_doc_sync.mjs` to assert that all canonical files share the exact same version badge (`v5.1.9`) and never fall out of sync.
+
 
 
 

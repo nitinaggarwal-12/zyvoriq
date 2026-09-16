@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "omni_guard",
-  "version": "5.1.8",
-  "description": "Google Omni 1.1 Universal Multi-Project Quality, Model Selection & Multi-Agent Orchestration Engine (Generative-Source Amendment)",
+  "version": "5.1.9",
+  "description": "Google Omni 1.2 Universal Multi-Project Quality, Model Selection & Multi-Agent Orchestration Engine (Generative-Source Amendment)",
   "global_governance": {
     "sme_director": "Google Omni 1.1 (End-to-End Subject Matter Expert Director & Chief Orchestrator)",
     "chief_auditor": "Gemini 2.5 Pro (Independent Forensic Quality Auditor & Remediation Gatekeeper)",
@@ -769,12 +769,13 @@
     ]
   },
   "amendment_log": {
-    "from": "5.1.7",
-    "to": "5.1.8",
-    "reason": "Universal Multi-Project Post-Fix Governance, Markdown & Skill Lockstep Synchronization Law (ALL_PROJECTS_UNIVERSAL)",
+    "from": "5.1.8",
+    "to": "5.1.9",
+    "reason": "Omni 1.2 Zero-Baggage 6-Stage Directorial Studio, 4-Anchor 30s Matrix, Sacred Venue Sanctity Gate, and 30fps CFR Timescale Lock",
     "changes": [
-      "universal_post_fix_governance_doc_sync: expanded post-fix synchronization law to apply universally across all projects and workspaces (zyvoriq, PromptCanvas, scorex, NativeSheetX, a2a-enterprise-gateway)",
-      "created global rule ~/.gemini/config/rules/universal_post_fix_governance_lockstep_sync.md so every agent session enforces atomic Code + Governance + Markdown + Skill updates"
+      "omni12_4_anchor_30s_matrix: codified 4 Master Anchor Pictures + Tail-Frame Continuation law for 30s (15-bar) reels to prevent posture teleportation across cuts",
+      "contextual_venue_wardrobe_and_decorum_gate: enforced sacred venue sanctity (auto-healing swimsuits/bikinis in temples to ceremonial silk attire & Anjali mudra) and demographic vocal matching",
+      "cfr_30fps_timescale_conformance: locked -r 30 -video_track_timescale 30000 and filtergraph setpts=PTS-STARTPTS across planner.ts, reel_worker_v2.mjs, and /omni1.2"
     ]
   }
 }

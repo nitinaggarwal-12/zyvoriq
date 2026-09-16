@@ -3407,6 +3407,8 @@ async function renderRough(op, m) {
           "-preset", "veryfast",
           "-crf", "20",
           "-pix_fmt", "yuv420p",
+          "-r", "30",
+          "-video_track_timescale", "30000",
           "-c:a", "aac",
           "-b:a", "192k",
           batchOut
@@ -4082,5 +4084,34 @@ for (;;) {
     await sleep(Math.max(pollMs, 3000));
   }
 }
+
+/**
+ * Conforms a rendered Veo clip to strict 30fps CFR with filtergraph PTS reset
+ * and conditional audio preservation (v5.1.9).
+ */
+export async function conformVeoClip(rawClipPath, targetDuration, conformedClipPath, preserveAudio = true) {
+  const vf = `trim=duration=${Number(targetDuration).toFixed(3)},setpts=PTS-STARTPTS,fps=30`;
+  const args = [
+    "-y",
+    "-i", rawClipPath,
+    "-vf", vf,
+    "-r", "30",
+    "-video_track_timescale", "30000",
+    "-pix_fmt", "yuv420p",
+    "-c:v", "libx264",
+    "-preset", "faster",
+    ...(preserveAudio
+      ? ["-af", `atrim=duration=${Number(targetDuration).toFixed(3)},asetpts=PTS-STARTPTS`, "-ar", "48000", "-c:a", "aac"]
+      : ["-an"]),
+    conformedClipPath
+  ];
+
+  await execFileAsync("ffmpeg", args);
+
+  if (!fs.existsSync(conformedClipPath) || fs.statSync(conformedClipPath).size < 1024) {
+    throw new Error(`[CFR_CONFORM_FAIL] Failed to normalize clip: ${rawClipPath}`);
+  }
+}
+
 
 export { validateTranscript, extractBiasedVocabulary, sanitizePromptForVeo, getGenreAudioStrategy };

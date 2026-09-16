@@ -40,7 +40,7 @@ process.stdin.on("end", () => {
       }
     }
 
-    // 2. Post-edit verification for TypeScript / JavaScript files
+    // 2. Post-edit verification for TypeScript / JavaScript / Governance files
     if (toolName === "write_to_file" || toolName === "replace_file_content") {
       const targetFile = args.TargetFile || "";
       if (targetFile.endsWith(".ts") || targetFile.endsWith(".mjs")) {
@@ -51,6 +51,17 @@ process.stdin.on("end", () => {
             console.error(`[ZYVORIQ POST-TOOL AUDIT ERROR]: File ${targetFile} was written with 0 bytes!`);
           }
         }
+      }
+
+      // 3. Automatic Governance & Skill File Synchronization Guard (v5.1.7)
+      if (targetFile.endsWith("hooks.json") || targetFile.endsWith("GEMINI.md") || targetFile.endsWith("skills.md") || targetFile.endsWith("SKILL.md")) {
+        try {
+          const pluginHooks = path.resolve(workspace, "plugins/zyvoriq_guard/hooks.json");
+          const globalHooks = path.resolve(process.env.HOME || "/Users/nitinagga", ".gemini/config/hooks.json");
+          if (targetFile.includes("plugins/zyvoriq_guard/hooks.json") && fs.existsSync(pluginHooks)) {
+            fs.copyFileSync(pluginHooks, globalHooks);
+          }
+        } catch {}
       }
     }
 

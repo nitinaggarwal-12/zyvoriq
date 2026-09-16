@@ -583,6 +583,7 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
   ].filter(Boolean).join(" ");
 
   let cursor = 0;
+  let lastCutawayDirection: "screen_left" | "screen_right" = "screen_right";
   const maxEditorialSec = MAX_SHOT_DURATION_SEC;
   const shots: ReelShot[] = beats.map((beat, i) => {
     const remaining = clock(requestedDurationSec - cursor);
@@ -615,8 +616,17 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
     }
     const onCameraChar = onCameraCharId ? charactersList.find(c => c.id === onCameraCharId) : null;
     const onCameraCast = onCameraCharId ? dir.cast.find(c => c.id === onCameraCharId) || dir.cast[0] : null;
-    const eyeline = dirShot?.eyeline || (dir.genre === "DOCUMENTARY_EXPLAINER" ? "camera" : "screen_right");
     const shotGrammar = dirShot?.shotGrammar || "HERO_CLOSE_UP";
+    // Isolated 180-degree cutaway eyeline alternation (v5.1.9)
+    let eyeline: string;
+    if (dirShot?.eyeline && dirShot.eyeline !== "screen_right") {
+      eyeline = dirShot.eyeline;
+    } else if (dir.genre === "DOCUMENTARY_EXPLAINER" || shotGrammar === "HERO_CLOSE_UP") {
+      eyeline = "camera";
+    } else {
+      lastCutawayDirection = lastCutawayDirection === "screen_left" ? "screen_right" : "screen_left";
+      eyeline = lastCutawayDirection;
+    }
     const rawVisualAction = dirShot?.visualAction || `Visual beat for ${beat || topic}`;
     const cameraMotion = dirShot?.cameraMotion || bible.cameraLanguage;
 
@@ -659,14 +669,20 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
       ? `${onCameraCast.biometricDNA.ageBand}, ${onCameraCast.biometricDNA.facialFeatures}, ${onCameraCast.biometricDNA.hair}`
       : (onCameraChar?.appearance?.face ? `${onCameraChar.appearance.face}, ${onCameraChar.appearance.hair}` : "lead performer with expressive eyes");
 
+    // Sacred Venue & Contextual Wardrobe Sanctity Enforcement (v5.1.9)
+    const validatedWardrobe = resolveContextualVenueWardrobeSanctity(
+      `${topic} ${sceneEnvironment}`,
+      onCameraChar?.wardrobe?.[0] || "Era-appropriate costume"
+    );
+
     const identityLockClause = onCameraCharId
-      ? `IDENTITY LOCK [${onCameraCharId}]: Authoritative canonical reference sheet applies to ${subjectLabel} (${purePhysicalDesc}). Wardrobe: ${onCameraChar?.wardrobe?.[0] || "Era-appropriate costume"}. Eyeline: ${eyeline}. Maintain identical facial features and actor identity.`
+      ? `IDENTITY LOCK [${onCameraCharId}]: Authoritative canonical reference sheet applies to ${subjectLabel} (${purePhysicalDesc}). Wardrobe: ${validatedWardrobe}. Eyeline: ${eyeline}. Maintain identical facial features and actor identity.`
       : "SUBJECT RULE: Pure cinematic action, stunt, environment master, or object focus. NO talking presenters, NO direct-to-camera address.";
 
     const continuityIn: any = {
       character: purePhysicalDesc,
       characterId: onCameraCharId || undefined,
-      wardrobe: onCameraChar?.wardrobe?.[0],
+      wardrobe: validatedWardrobe,
       environment: sceneEnvironment,
       environmentId: sceneId,
       lighting: bible.colorLanguage,
@@ -853,3 +869,163 @@ export async function planReelAsync(input: PlanReelInput): Promise<ReelProductio
   }
   return planReel({ ...input, scriptText }, directorial);
 }
+
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import * as fs from "node:fs";
+import * as path from "node:path";
+
+const execFileAsync = promisify(execFile);
+
+/**
+ * Enforces Contextual Venue & Sacred Wardrobe Sanctity (v5.1.9).
+ * Prevents inappropriate attire (swimsuits, bikinis, clubwear) in sacred/temple/spiritual venues
+ * and locks authentic ceremonial attire.
+ */
+export function resolveContextualVenueWardrobeSanctity(
+  venueContext: string,
+  proposedWardrobe: string
+): string {
+  const lowerVenue = (venueContext || "").toLowerCase();
+  const lowerWardrobe = (proposedWardrobe || "").toLowerCase();
+
+  const isSacredVenue = /\b(temple|sanctum|gurdwara|church|mosque|ashram|shrine|monastery|prayer|mandapam|puja)\b/i.test(lowerVenue);
+  const hasInappropriateSacredAttire = /\b(swimsuit|bikini|monokini|swimwear|trunks|clubwear|lingerie|crop top|mini skirt)\b/i.test(lowerWardrobe);
+
+  if (isSacredVenue && hasInappropriateSacredAttire) {
+    return "Authentic modest ceremonial temple attire (traditional silk saree / kurta-pajama with respectful cultural decorum)";
+  }
+  if (isSacredVenue && (!proposedWardrobe || proposedWardrobe === "Era-appropriate costume")) {
+    return "Traditional ceremonial silk attire appropriate for sacred temple sanctum";
+  }
+  return proposedWardrobe || "Era-appropriate costume";
+}
+
+export interface ShotDefinition {
+  shotIndex: number;
+  role: "A_ROLL" | "B_ROLL" | "C_ROLL";
+  startBar: number;
+  endBar: number;
+  durationSeconds: number;
+  nativeGenSeconds: 5 | 8;
+  anchorMode: "DISCRETE_STILL" | "TAIL_CONTINUATION";
+  anchorStillPath: string;
+  kineticPrompt: string;
+  eyelineVector: "LEFT" | "RIGHT" | "LENS";
+  needsLipSync: boolean;
+}
+
+export interface AcousticMap {
+  bpm: number;
+  downbeats: number[];
+  rmsTiers: ("LOW" | "MID" | "PEAK")[];
+  vocalStemPath: string;
+}
+
+/**
+ * Builds an elastic, decoupled shot schedule strictly aligned to headless Veo 3.1 execution (v5.1.9).
+ * Incorporates fs.existsSync anchor fallback, TAIL_CONTINUATION for consecutive B_ROLL dance bars,
+ * isolated 180-degree cutaway eyeline alternation, and culturally/wardrobially grounded prompts.
+ */
+export function buildDecoupledShotSchedule(
+  acousticMap: AcousticMap,
+  projectDir: string,
+  characterAnchorMap: Map<string, string> = new Map(),
+  sceneContext: { venue: string; attire: string; culture: string; lyricsByBar: string[] } = {
+    venue: "cinematic studio stage",
+    attire: "authentic performance attire",
+    culture: "contemporary",
+    lyricsByBar: []
+  }
+): ShotDefinition[] {
+  const schedule: ShotDefinition[] = [];
+  let lastCutawayDirection: "LEFT" | "RIGHT" = "RIGHT";
+  let prevRole: "A_ROLL" | "B_ROLL" | "C_ROLL" | null = null;
+
+  const validatedAttire = resolveContextualVenueWardrobeSanctity(sceneContext.venue, sceneContext.attire);
+
+  for (let i = 0; i < acousticMap.downbeats.length - 1; i++) {
+    const duration = acousticMap.downbeats[i + 1] - acousticMap.downbeats[i];
+    const energy = acousticMap.rmsTiers[i] || "MID";
+
+    const role: "A_ROLL" | "B_ROLL" | "C_ROLL" =
+      energy === "PEAK" ? "B_ROLL" : energy === "MID" ? "A_ROLL" : "C_ROLL";
+    const nativeGenSeconds: 5 | 8 = duration > 5.0 ? 8 : 5;
+
+    let eyelineVector: "LEFT" | "RIGHT" | "LENS";
+    if (role === "A_ROLL") {
+      eyelineVector = "LENS";
+    } else {
+      lastCutawayDirection = lastCutawayDirection === "LEFT" ? "RIGHT" : "LEFT";
+      eyelineVector = lastCutawayDirection;
+    }
+
+    const anchorMode: "DISCRETE_STILL" | "TAIL_CONTINUATION" =
+      prevRole === role && role === "B_ROLL" ? "TAIL_CONTINUATION" : "DISCRETE_STILL";
+
+    const perShotPlate = path.join(
+      projectDir,
+      "anchors",
+      `shot_${String(i).padStart(2, "0")}_${role.toLowerCase()}_plate.png`
+    );
+    const anchorStillPath = fs.existsSync(perShotPlate)
+      ? perShotPlate
+      : characterAnchorMap.get(role) || characterAnchorMap.get("DEFAULT") || perShotPlate;
+
+    const barLyric = sceneContext.lyricsByBar[i] || "";
+    const kineticPrompt = role === "A_ROLL"
+      ? `Cinematic medium close-up in ${sceneContext.venue}, performer wearing authentic ${validatedAttire}, active rhythmic singing directly to camera${barLyric ? ` enunciating syllable by syllable: "${barLyric}"` : ""}, dynamic jaw and lip articulation, ${sceneContext.culture} aesthetic, energy: ${energy}`
+      : `Dynamic ${sceneContext.culture} choreography in ${sceneContext.venue}, wearing ${validatedAttire}, energy: ${energy}, mouth closed non-vocal dance performance, looking ${eyelineVector.toLowerCase()} of camera frame`;
+
+    schedule.push({
+      shotIndex: i,
+      role,
+      startBar: i,
+      endBar: i + 1,
+      durationSeconds: parseFloat(duration.toFixed(3)),
+      nativeGenSeconds,
+      anchorMode,
+      anchorStillPath,
+      kineticPrompt,
+      eyelineVector,
+      needsLipSync: role === "A_ROLL"
+    });
+
+    prevRole = role;
+  }
+
+  return schedule;
+}
+
+/**
+ * Conforms a rendered clip to strict 30fps Constant Frame Rate (CFR) with filtergraph PTS reset
+ * and optional audio preservation (v5.1.9).
+ */
+export async function conformClipToCFR(
+  rawInputPath: string,
+  targetDurationSeconds: number,
+  outputPath: string,
+  preserveAudio = true
+): Promise<void> {
+  const vf = `trim=duration=${targetDurationSeconds.toFixed(3)},setpts=PTS-STARTPTS,fps=30`;
+  const args = [
+    "-y",
+    "-i", rawInputPath,
+    "-vf", vf,
+    "-video_track_timescale", "30000",
+    "-pix_fmt", "yuv420p",
+    "-c:v", "libx264",
+    "-preset", "veryfast",
+    ...(preserveAudio
+      ? ["-af", `atrim=duration=${targetDurationSeconds.toFixed(3)},asetpts=PTS-STARTPTS`, "-ar", "48000", "-c:a", "aac"]
+      : ["-an"]),
+    outputPath
+  ];
+
+  const { stderr } = await execFileAsync("ffmpeg", args);
+
+  if (!fs.existsSync(outputPath) || fs.statSync(outputPath).size < 1024) {
+    throw new Error(`FFmpeg conformance failed. File missing or empty. Details: ${stderr}`);
+  }
+}
+
