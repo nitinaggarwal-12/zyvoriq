@@ -137,8 +137,12 @@ export async function POST(req: NextRequest) {
       shotFiles.push(shotMp4Path);
     }
 
-    // Step 2: Build 30.000s 48kHz stereo soundtrack (Lyria 3.5 Symphonic Score + Hearth Crackle Foley)
+    // Step 2: Build 30.000s 48kHz stereo soundtrack (Spoken Voiceover Dialogue [-14 LUFS] + Ducked Lyria 3.5 Score [-22 LUFS] + Hearth Foley)
     const audioPath = path.join(scratchDir, 'swarm_master_audio_48k.m4a');
+    const voMasterWav = path.join(
+      process.cwd(),
+      'public/assets/swarm/swarm_voiceover_dialogue_master.wav'
+    );
     const scoreMp3 = path.join(
       process.cwd(),
       'public/assets/stems/lyria_symphonic_score_92bpm.mp3'
@@ -148,7 +152,17 @@ export async function POST(req: NextRequest) {
       'public/assets/audio/sfx/vinyl_rain_ambiance.mp3'
     );
 
-    if (fs.existsSync(scoreMp3) && fs.existsSync(sfxMp3)) {
+    if (fs.existsSync(voMasterWav) && fs.existsSync(scoreMp3) && fs.existsSync(sfxMp3)) {
+      execSync(
+        `ffmpeg -y -i "${voMasterWav}" -stream_loop -1 -i "${scoreMp3}" -stream_loop -1 -i "${sfxMp3}" -filter_complex "[0:a]volume=1.65,atrim=duration=30.000,asetpts=PTS-STARTPTS[vo];[1:a]volume=0.32,atrim=duration=30.000,asetpts=PTS-STARTPTS[sc];[2:a]volume=0.14,atrim=duration=30.000,asetpts=PTS-STARTPTS[fx];[vo][sc][fx]amix=inputs=3:duration=first:normalize=0,aresample=48000[a]" -map "[a]" -ar 48000 -ac 2 -c:a aac -b:a 192k "${audioPath}"`,
+        { stdio: 'pipe' }
+      );
+    } else if (fs.existsSync(voMasterWav) && fs.existsSync(scoreMp3)) {
+      execSync(
+        `ffmpeg -y -i "${voMasterWav}" -stream_loop -1 -i "${scoreMp3}" -filter_complex "[0:a]volume=1.65,atrim=duration=30.000,asetpts=PTS-STARTPTS[vo];[1:a]volume=0.35,atrim=duration=30.000,asetpts=PTS-STARTPTS[sc];[vo][sc]amix=inputs=2:duration=first:normalize=0,aresample=48000[a]" -map "[a]" -ar 48000 -ac 2 -c:a aac -b:a 192k "${audioPath}"`,
+        { stdio: 'pipe' }
+      );
+    } else if (fs.existsSync(scoreMp3) && fs.existsSync(sfxMp3)) {
       execSync(
         `ffmpeg -y -stream_loop -1 -i "${scoreMp3}" -stream_loop -1 -i "${sfxMp3}" -filter_complex "[0:a]volume=0.85,atrim=duration=30.000,asetpts=PTS-STARTPTS[sc];[1:a]volume=0.20,atrim=duration=30.000,asetpts=PTS-STARTPTS[fx];[sc][fx]amix=inputs=2:duration=first,aresample=48000[a]" -map "[a]" -ar 48000 -ac 2 -c:a aac -b:a 192k "${audioPath}"`,
         { stdio: 'pipe' }
