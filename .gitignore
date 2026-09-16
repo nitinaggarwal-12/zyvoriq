@@ -34,6 +34,8 @@ temp/
 !public/assets/video/mv_05_summer_russia_master.mp4
 !public/assets/omni12/*.mp4
 !public/assets/omni12/*.jpg
+!public/assets/swarm/*.mp4
+!public/assets/swarm/*.jpg
 !public/assets/audio/music/*.mp3
 !public/assets/audio/music/*.wav
 !public/assets/audio/sfx/*.mp3
