@@ -157,43 +157,79 @@ export async function POST(req: NextRequest) {
       const segAudioPath = path.join(workDir, `seg_a_${String(i).padStart(2, "0")}.wav`);
 
       const effectiveVideoSpeed = Math.max(0.25, Math.min(4.0, Number(clip.speed || 1.0) * globalVideoSpeed));
-      const outDur = Number((dur / effectiveVideoSpeed).toFixed(3));
+      // Keep full musical bar duration (dur) when video is accelerated (>1.01x) so fast dance/action fills the beat bar
+      const outDur = effectiveVideoSpeed > 1.01 ? dur : Number((dur / effectiveVideoSpeed).toFixed(3));
 
-      const vfStages: string[] = [];
-      if (Math.abs(effectiveVideoSpeed - 1.0) > 0.01) {
-        vfStages.push(`setpts=${(1 / effectiveVideoSpeed).toFixed(4)}*PTS`);
-      }
       const gradingFilter = buildColorGradingFilter(body.colorGrading);
-      if (gradingFilter) {
-        vfStages.push(gradingFilter);
-      }
-      vfStages.push("fps=24,format=yuv420p");
+      const gradingStage = gradingFilter ? `,${gradingFilter}` : "";
 
-      execFileSync("ffmpeg", [
-        "-y",
-        "-ss",
-        String(start),
-        "-t",
-        String(dur),
-        "-i",
-        localSrc,
-        "-an", // Pure visual stream; audio stems are mixed independently below
-        "-vf",
-        vfStages.join(","),
-        "-c:v",
-        "libx264",
-        "-pix_fmt",
-        "yuv420p",
-        "-preset",
-        "ultrafast",
-        "-crf",
-        "22",
-        "-tune",
-        "fastdecode",
-        "-threads",
-        "0",
-        segPath,
-      ]);
+      if (effectiveVideoSpeed > 1.01) {
+        // Accelerate visual motion by effectiveVideoSpeed and seamlessly ping-pong extend to fill full musical bar duration
+        const ptsRatio = (1 / effectiveVideoSpeed).toFixed(4);
+        const filterComplex = `[0:v]setpts=${ptsRatio}*PTS${gradingStage},fps=24,format=yuv420p,split=2[v_fwd][v_rev0];[v_rev0]reverse[v_rev];[v_fwd][v_rev]concat=n=2:v=1:a=0,trim=duration=${outDur.toFixed(3)},setpts=PTS-STARTPTS[v_out]`;
+        execFileSync("ffmpeg", [
+          "-y",
+          "-ss",
+          String(start),
+          "-t",
+          String(dur),
+          "-i",
+          localSrc,
+          "-an",
+          "-filter_complex",
+          filterComplex,
+          "-map",
+          "[v_out]",
+          "-c:v",
+          "libx264",
+          "-pix_fmt",
+          "yuv420p",
+          "-preset",
+          "ultrafast",
+          "-crf",
+          "22",
+          "-tune",
+          "fastdecode",
+          "-threads",
+          "0",
+          segPath,
+        ]);
+      } else {
+        const vfStages: string[] = [];
+        if (Math.abs(effectiveVideoSpeed - 1.0) > 0.01) {
+          vfStages.push(`setpts=${(1 / effectiveVideoSpeed).toFixed(4)}*PTS`);
+        }
+        if (gradingFilter) {
+          vfStages.push(gradingFilter);
+        }
+        vfStages.push("fps=24,format=yuv420p");
+
+        execFileSync("ffmpeg", [
+          "-y",
+          "-ss",
+          String(start),
+          "-t",
+          String(dur),
+          "-i",
+          localSrc,
+          "-an",
+          "-vf",
+          vfStages.join(","),
+          "-c:v",
+          "libx264",
+          "-pix_fmt",
+          "yuv420p",
+          "-preset",
+          "ultrafast",
+          "-crf",
+          "22",
+          "-tune",
+          "fastdecode",
+          "-threads",
+          "0",
+          segPath,
+        ]);
+      }
       trimmedSegments.push(segPath);
       segmentDurations.push(outDur);
 
@@ -566,6 +602,21 @@ export async function POST(req: NextRequest) {
       const masterVol = Math.max(vocalVol, musicVol, 1.0);
       inputs.push("-i", concatClipAudioPath);
       const atempoMaster = buildAtempoFilter(vocalSpeed);
+      filterParts.push(
+        `[${inputIdx}:a]${atempoMaster}${phaseShiftStage},atrim=0:${totalDurationSec.toFixed(3)},asetpts=PTS-STARTPTS,volume=${masterVol.toFixed(2)}${stemEqChain},loudnorm=I=-14:TP=-1.5:LRA=11[a_master]`
+      );
+      mixInputs.push("[a_master]");
+      inputIdx++;
+    } else if (
+      !isUsingCustomMusic &&
+      Math.abs(globalVideoSpeed - musicSpeed) > 0.02 &&
+      reelContinuousLyriaPath
+    ) {
+      // INDEPENDENT VIDEO VS MUSIC SPEED MODE: When video is accelerated/decelerated independently of music,
+      // use pure continuous Lyria Master Song at exact musicSpeed to prevent double-tempo music bleed from shots
+      const masterVol = Math.max(musicVol, 1.0);
+      inputs.push("-stream_loop", "-1", "-i", reelContinuousLyriaPath);
+      const atempoMaster = buildAtempoFilter(musicSpeed);
       filterParts.push(
         `[${inputIdx}:a]${atempoMaster}${phaseShiftStage},atrim=0:${totalDurationSec.toFixed(3)},asetpts=PTS-STARTPTS,volume=${masterVol.toFixed(2)}${stemEqChain},loudnorm=I=-14:TP=-1.5:LRA=11[a_master]`
       );

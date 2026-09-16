@@ -531,10 +531,10 @@ export function ReelTimelineEditor({
     );
   }, [sequencePlaylist, selectedClipIndex]);
 
-  // Compute effective visual playback speed for the active shot
+  // Compute effective visual playback speed for the active shot or stitched reel
   const effectiveVisualSpeed =
     previewMode === "stitched_reel"
-      ? 1.0
+      ? currentState.globalVideoSpeed || 1.0
       : (activeClip?.speed || 1.0) * (currentState.globalVideoSpeed || 1.0);
 
   // When playing as One Stitched Reel, load the single stitched .mp4 master; otherwise load active clip
@@ -775,7 +775,7 @@ export function ReelTimelineEditor({
   };
 
   // Real-time synchronization of playback rates, volumes, and 5-stem Mute/Solo audio states
-  // IMPORTANT: Never mute videoRef.current unless user explicitly toggles Master Mute / Vocal Mute
+  // IMPORTANT: When Video Speed and Music Speed are independent, videoRef plays at effectiveVisualSpeed while musicAudioRef plays at musicSpeed
   useEffect(() => {
     const anySolo = Object.values(stemSolos).some(Boolean);
     const isStemLiveActive = (key: string) => {
@@ -794,16 +794,21 @@ export function ReelTimelineEditor({
     const isUsingCustomMusicStem =
       currentState.musicTrack !== "original_lyria" && currentState.musicTrack !== "none";
     const isMusicCompletelyMuted = currentState.musicTrack === "none";
+    const isIndependentSpeedActive =
+      !isRenderedEditedMaster &&
+      Math.abs(effectiveVisualSpeed - (currentState.musicSpeed || 1.0)) > 0.01 &&
+      currentState.musicTrack !== "none";
+
     const shouldMuteVideo = Boolean(
-      stemMutes.master || (!isRenderedEditedMaster && (isUsingCustomMusicStem || isMusicCompletelyMuted))
+      stemMutes.master ||
+        (!isRenderedEditedMaster && (isUsingCustomMusicStem || isMusicCompletelyMuted || isIndependentSpeedActive))
     );
 
     if (videoRef.current) {
-      const rate = Math.max(0.25, Math.min(4.0, effectiveVisualSpeed));
+      const rate = Math.max(0.25, Math.min(4.0, isRenderedEditedMaster ? 1.0 : effectiveVisualSpeed));
       try {
         videoRef.current.playbackRate = rate;
       } catch (err) {}
-      // Mute embedded video audio if master is muted OR if original video is loaded while a custom music track is selected
       videoRef.current.muted = shouldMuteVideo;
       const baseVocalVol = currentState.vocalMode === "mute" ? 0 : currentState.vocalVolume;
       const stemScale = stemMutes.master
@@ -814,8 +819,7 @@ export function ReelTimelineEditor({
       videoRef.current.volume = Math.max(0, Math.min(1.0, isRenderedEditedMaster ? 1.0 : baseVocalVol * stemScale));
     }
     if (musicAudioRef.current) {
-      // If playing an already-rendered edited master (/renders/edited/...), custom music is ALREADY baked into videoRef!
-      if (isRenderedEditedMaster || !isUsingCustomMusicStem || stemMutes.master) {
+      if (isRenderedEditedMaster || (!isUsingCustomMusicStem && !isIndependentSpeedActive) || stemMutes.master) {
         musicAudioRef.current.volume = 0;
         musicAudioRef.current.muted = true;
         musicAudioRef.current.pause();
@@ -826,7 +830,10 @@ export function ReelTimelineEditor({
         try {
           musicAudioRef.current.playbackRate = mRate;
         } catch (err) {}
-        if (isPlaying) {
+        if (isPlaying && musicAudioRef.current.paused) {
+          if (videoRef.current) {
+            musicAudioRef.current.currentTime = videoRef.current.currentTime % 24.0;
+          }
           musicAudioRef.current.play().catch(() => {});
         }
       }
@@ -846,6 +853,7 @@ export function ReelTimelineEditor({
       }
     }
   }, [
+    isPlaying,
     currentVideoSrc,
     previewMode,
     effectiveVisualSpeed,
@@ -867,15 +875,26 @@ export function ReelTimelineEditor({
     const isUsingCustomMusicStem =
       currentState.musicTrack !== "original_lyria" && currentState.musicTrack !== "none";
     const isMusicCompletelyMuted = currentState.musicTrack === "none";
+    const isIndependentSpeedActive =
+      !isRenderedEditedMaster &&
+      Math.abs(effectiveVisualSpeed - (currentState.musicSpeed || 1.0)) > 0.01 &&
+      currentState.musicTrack !== "none";
     return Boolean(
-      stemMutes.master || (!isRenderedEditedMaster && (isUsingCustomMusicStem || isMusicCompletelyMuted))
+      stemMutes.master ||
+        (!isRenderedEditedMaster && (isUsingCustomMusicStem || isMusicCompletelyMuted || isIndependentSpeedActive))
     );
   };
 
   // When switching between shots with different MP4 URLs, auto-seek to trimStartSec and resume playback
   const handleVideoLoadedData = () => {
     if (!videoRef.current || !activeClip) return;
+    const isRenderedEditedMaster = Boolean(currentVideoSrc && currentVideoSrc.includes("/renders/edited/"));
+    const rate = Math.max(0.25, Math.min(4.0, isRenderedEditedMaster ? 1.0 : effectiveVisualSpeed));
+    try {
+      videoRef.current.playbackRate = rate;
+    } catch {}
     videoRef.current.muted = shouldMuteVideoElement();
+
     if (previewMode === "stitched_reel") {
       if (videoRef.current.currentTime === 0) {
         videoRef.current.currentTime = 0.15;
@@ -894,10 +913,6 @@ export function ReelTimelineEditor({
       videoRef.current.currentTime = activeClip.trimStartSec;
       setCurrentPlayTime(activeClip.trimStartSec);
     }
-    const rate = Math.max(0.25, Math.min(4.0, effectiveVisualSpeed));
-    try {
-      videoRef.current.playbackRate = rate;
-    } catch {}
     if (shouldAutoPlayOnSwitchRef.current || isPlaying) {
       shouldAutoPlayOnSwitchRef.current = false;
       videoRef.current.play().catch(() => {});
@@ -962,17 +977,35 @@ export function ReelTimelineEditor({
   const handlePlay = () => {
     setIsPlaying(true);
     const isRenderedEditedMaster = Boolean(currentVideoSrc && currentVideoSrc.includes("/renders/edited/"));
+    const isUsingCustomMusicStem =
+      currentState.musicTrack !== "original_lyria" && currentState.musicTrack !== "none";
+    const isIndependentSpeedActive =
+      !isRenderedEditedMaster &&
+      Math.abs(effectiveVisualSpeed - (currentState.musicSpeed || 1.0)) > 0.01 &&
+      currentState.musicTrack !== "none";
+
     if (videoRef.current) {
       videoRef.current.muted = shouldMuteVideoElement();
+      const rate = Math.max(0.25, Math.min(4.0, isRenderedEditedMaster ? 1.0 : effectiveVisualSpeed));
+      try {
+        videoRef.current.playbackRate = rate;
+      } catch {}
     }
     if (musicAudioRef.current) {
       if (
         !isRenderedEditedMaster &&
         currentState.musicTrack !== "none" &&
-        currentState.musicTrack !== "original_lyria" &&
+        (isUsingCustomMusicStem || isIndependentSpeedActive) &&
         !stemMutes.master
       ) {
         musicAudioRef.current.muted = false;
+        const mRate = Math.max(0.25, Math.min(4.0, currentState.musicSpeed || 1.0));
+        try {
+          musicAudioRef.current.playbackRate = mRate;
+        } catch {}
+        if (videoRef.current) {
+          musicAudioRef.current.currentTime = videoRef.current.currentTime % 24.0;
+        }
         musicAudioRef.current.play().catch(() => {});
       } else {
         musicAudioRef.current.muted = true;
@@ -1886,9 +1919,18 @@ export function ReelTimelineEditor({
               onPause={handlePause}
             />
 
-            {/* Audio elements for custom music and SFX */}
-            {currentState.musicTrack !== "none" && currentState.musicTrack !== "original_lyria" && (
-              <audio ref={musicAudioRef} src={currentState.musicTrack} loop preload="auto" />
+            {/* Audio elements for independent music speed (Original Lyria song.mp3 or Custom Music) and SFX */}
+            {currentState.musicTrack !== "none" && (
+              <audio
+                ref={musicAudioRef}
+                src={
+                  currentState.musicTrack === "original_lyria"
+                    ? `/renders/yt/${reelId}/song.mp3`
+                    : currentState.musicTrack
+                }
+                loop
+                preload="auto"
+              />
             )}
             {currentState.sfxTrack !== "none" && (
               <audio ref={sfxAudioRef} src={currentState.sfxTrack} loop preload="auto" />
@@ -1898,11 +1940,13 @@ export function ReelTimelineEditor({
             <div id="share-modal" className="hidden" aria-hidden="true" />
 
             {/* Live Playback Telemetry HUD Overlays */}
-            <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 pointer-events-none">
+            <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 flex-wrap pointer-events-none">
               <span className="px-2 py-0.5 rounded bg-black/85 border border-teal-500/40 text-[11px] font-mono font-bold text-teal-300 backdrop-blur-md">
                 {previewMode === "stitched_reel"
-                  ? `🎬 Stitched Master Reel • Shot #${(currentSeqItem?.seqIdx ?? 0) + 1} of ${sequencePlaylist.length}`
-                  : `⚡ Shot #${selectedClipIndex + 1} • ${effectiveVisualSpeed.toFixed(2)}x Speed`}
+                  ? `🎬 Shot #${(currentSeqItem?.seqIdx ?? 0) + 1} of ${sequencePlaylist.length}`
+                  : `⚡ Shot #${selectedClipIndex + 1}`}
+                {" • "}
+                Video: {effectiveVisualSpeed.toFixed(2)}x • Music: {(currentState.musicSpeed || 1.0).toFixed(2)}x
               </span>
               {currentState.colorGrading !== "none" && (
                 <span className="px-2 py-0.5 rounded bg-black/85 border border-purple-500/40 text-[10px] font-mono font-bold text-purple-300 backdrop-blur-md">
@@ -2096,25 +2140,6 @@ export function ReelTimelineEditor({
                   <option value="flash">🔥 Flash Cut (0.18s)</option>
                 </select>
 
-                <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
-                  <Gauge className="w-3.5 h-3.5 text-teal-400" />
-                  <span className="text-[11px] text-slate-400">Speed:</span>
-                  <input
-                    type="range"
-                    min={0.5}
-                    max={2.0}
-                    step={0.05}
-                    value={currentState.globalVideoSpeed}
-                    onChange={(e) =>
-                      pushState((prev) => ({ ...prev, globalVideoSpeed: parseFloat(e.target.value) }))
-                    }
-                    className="w-16 accent-teal-400 cursor-pointer"
-                  />
-                  <span className="text-xs font-mono font-bold text-teal-300">
-                    {currentState.globalVideoSpeed.toFixed(2)}x
-                  </span>
-                </div>
-
                 <button
                   type="button"
                   onClick={handleResetAllClips}
@@ -2124,6 +2149,169 @@ export function ReelTimelineEditor({
                   <RotateCcw className="w-3 h-3 text-amber-400" />
                   <span>Reset</span>
                 </button>
+              </div>
+            </div>
+
+            {/* ── ⚡ INDEPENDENT VIDEO vs. MUSIC SPEED CONTROLLER BANNER ── */}
+            <div className="p-3 rounded-xl bg-slate-950/90 border border-teal-500/40 space-y-2.5">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <Gauge className="w-4 h-4 text-teal-400" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-teal-300">
+                    ⚡ Independent Video vs. Music Speed Controller
+                  </span>
+                  {Math.abs(currentState.globalVideoSpeed - currentState.musicSpeed) > 0.01 && (
+                    <span className="px-2 py-0.5 rounded-full bg-teal-500/20 border border-teal-400/50 text-[10px] font-mono font-bold text-teal-300">
+                      🔓 Decoupled Active (Video {currentState.globalVideoSpeed.toFixed(2)}x • Music {currentState.musicSpeed.toFixed(2)}x)
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] font-semibold text-slate-400 mr-1">Quick Match Presets:</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      pushState((prev) => ({
+                        ...prev,
+                        globalVideoSpeed: 1.25,
+                        musicSpeed: 1.0,
+                      }))
+                    }
+                    className={`px-2 py-1 rounded text-[10px] font-mono font-bold border transition cursor-pointer ${
+                      Math.abs(currentState.globalVideoSpeed - 1.25) < 0.02 && Math.abs(currentState.musicSpeed - 1.0) < 0.02
+                        ? "bg-teal-500 text-slate-950 border-teal-400"
+                        : "bg-slate-900 hover:bg-slate-800 text-teal-300 border-teal-500/40"
+                    }`}
+                    title="Speed up video movement by 25% while keeping music at 1.00x original tempo"
+                  >
+                    ⚡ Video 1.25x • Music 1.00x
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      pushState((prev) => ({
+                        ...prev,
+                        globalVideoSpeed: 1.4,
+                        musicSpeed: 1.0,
+                      }))
+                    }
+                    className={`px-2 py-1 rounded text-[10px] font-mono font-bold border transition cursor-pointer ${
+                      Math.abs(currentState.globalVideoSpeed - 1.4) < 0.02 && Math.abs(currentState.musicSpeed - 1.0) < 0.02
+                        ? "bg-emerald-500 text-slate-950 border-emerald-400"
+                        : "bg-slate-900 hover:bg-slate-800 text-emerald-300 border-emerald-500/40"
+                    }`}
+                    title="High-energy fast action video (1.40x) locked to original 1.00x music tempo"
+                  >
+                    🔥 Fast Video 1.40x • Music 1.00x
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      pushState((prev) => ({
+                        ...prev,
+                        globalVideoSpeed: 1.0,
+                        musicSpeed: 0.88,
+                      }))
+                    }
+                    className={`px-2 py-1 rounded text-[10px] font-mono font-bold border transition cursor-pointer ${
+                      Math.abs(currentState.globalVideoSpeed - 1.0) < 0.02 && Math.abs(currentState.musicSpeed - 0.88) < 0.02
+                        ? "bg-purple-500 text-slate-950 border-purple-400"
+                        : "bg-slate-900 hover:bg-slate-800 text-purple-300 border-purple-500/40"
+                    }`}
+                    title="Keep video at 1.00x while slowing down fast music tempo to 0.88x"
+                  >
+                    🐢 Video 1.00x • Slow Music 0.88x
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      pushState((prev) => ({
+                        ...prev,
+                        globalVideoSpeed: 1.2,
+                        musicSpeed: 0.92,
+                      }))
+                    }
+                    className={`px-2 py-1 rounded text-[10px] font-mono font-bold border transition cursor-pointer ${
+                      Math.abs(currentState.globalVideoSpeed - 1.2) < 0.02 && Math.abs(currentState.musicSpeed - 0.92) < 0.02
+                        ? "bg-amber-500 text-slate-950 border-amber-400"
+                        : "bg-slate-900 hover:bg-slate-800 text-amber-300 border-amber-500/40"
+                    }`}
+                    title="Balanced tempo match: Speed up video to 1.20x and slightly relax music to 0.92x"
+                  >
+                    ⚖️ Balanced (1.20x / 0.92x)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      pushState((prev) => ({
+                        ...prev,
+                        globalVideoSpeed: 1.0,
+                        musicSpeed: 1.0,
+                      }))
+                    }
+                    className="px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-mono cursor-pointer"
+                  >
+                    1.00x Both
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center pt-1">
+                {/* SLIDER 1: INDEPENDENT VIDEO PLAYBACK SPEED */}
+                <div className="md:col-span-5 bg-slate-900/90 px-3 py-2 rounded-lg border border-teal-500/30 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-xs font-bold text-teal-300">🎬 Video Speed:</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0.5}
+                    max={2.5}
+                    step={0.05}
+                    value={currentState.globalVideoSpeed}
+                    onChange={(e) =>
+                      pushState((prev) => ({ ...prev, globalVideoSpeed: parseFloat(e.target.value) }))
+                    }
+                    className="w-full accent-teal-400 cursor-pointer"
+                  />
+                  <span className="text-xs font-mono font-black text-teal-300 shrink-0 w-12 text-right">
+                    {currentState.globalVideoSpeed.toFixed(2)}x
+                  </span>
+                </div>
+
+                {/* SLIDER 2: INDEPENDENT MUSIC TEMPO SPEED */}
+                <div className="md:col-span-5 bg-slate-900/90 px-3 py-2 rounded-lg border border-purple-500/30 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-xs font-bold text-purple-300">🎵 Music Tempo:</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0.5}
+                    max={2.0}
+                    step={0.02}
+                    value={currentState.musicSpeed}
+                    onChange={(e) =>
+                      pushState((prev) => ({ ...prev, musicSpeed: parseFloat(e.target.value) }))
+                    }
+                    className="w-full accent-purple-400 cursor-pointer"
+                  />
+                  <span className="text-xs font-mono font-black text-purple-300 shrink-0 w-12 text-right">
+                    {currentState.musicSpeed.toFixed(2)}x
+                  </span>
+                </div>
+
+                {/* BAKE BUTTON */}
+                <div className="md:col-span-2 flex justify-end">
+                  <button
+                    type="button"
+                    disabled={isStitching}
+                    onClick={() => handleStitchAll4ToPlayAsOneReel()}
+                    className="w-full px-3 py-2 rounded-lg bg-gradient-to-r from-teal-500 to-purple-500 hover:from-teal-400 hover:to-purple-400 text-slate-950 text-xs font-black flex items-center justify-center gap-1 cursor-pointer shadow"
+                    title="Bake independent Video & Music speeds into the stitched MP4 reel"
+                  >
+                    <span>{isStitching ? "Baking..." : "⚡ Bake Speeds"}</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -2210,9 +2398,31 @@ export function ReelTimelineEditor({
 
                       <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
                         <span>
-                          Video In: {clip.trimStartSec.toFixed(1)}s → {clip.trimEndSec.toFixed(1)}s
+                          In: {clip.trimStartSec.toFixed(1)}s → {clip.trimEndSec.toFixed(1)}s
                         </span>
-                        <span className="text-teal-300 font-bold">{(clip.speed || 1).toFixed(2)}x</span>
+                        <span className="text-teal-300 font-bold">
+                          Shot Speed: {((clip.speed || 1) * currentState.globalVideoSpeed).toFixed(2)}x
+                        </span>
+                      </div>
+
+                      {/* PER-SHOT VIDEO SPEED SLIDER */}
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-1.5 bg-slate-900/70 px-2 py-1 rounded border border-slate-800/70"
+                      >
+                        <span className="text-[9px] font-mono text-slate-400 shrink-0">Clip Speed:</span>
+                        <input
+                          type="range"
+                          min={0.5}
+                          max={2.0}
+                          step={0.05}
+                          value={clip.speed || 1.0}
+                          onChange={(e) => updateClip(idx, { speed: parseFloat(e.target.value) })}
+                          className="w-full accent-teal-400 cursor-pointer h-1"
+                        />
+                        <span className="text-[9px] font-mono font-bold text-teal-300 shrink-0">
+                          {(clip.speed || 1.0).toFixed(2)}x
+                        </span>
                       </div>
                     </div>
 
@@ -2489,20 +2699,38 @@ export function ReelTimelineEditor({
                 ))}
               </select>
 
-              <div className="space-y-1">
-                <div className="flex justify-between text-[10px] font-mono">
-                  <span className="text-slate-400">Music Volume:</span>
-                  <span className="text-purple-300 font-bold">{Math.round(currentState.musicVolume * 100)}%</span>
+              <div className="grid grid-cols-2 gap-2.5 pt-0.5">
+                <div className="space-y-1">
+                  <div className="flex justify-between text-[10px] font-mono">
+                    <span className="text-slate-400">Volume:</span>
+                    <span className="text-purple-300 font-bold">{Math.round(currentState.musicVolume * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={1.5}
+                    step={0.05}
+                    value={currentState.musicVolume}
+                    onChange={(e) => pushState((prev) => ({ ...prev, musicVolume: parseFloat(e.target.value) }))}
+                    className="w-full accent-purple-400 cursor-pointer h-1.5"
+                  />
                 </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={1.5}
-                  step={0.05}
-                  value={currentState.musicVolume}
-                  onChange={(e) => pushState((prev) => ({ ...prev, musicVolume: parseFloat(e.target.value) }))}
-                  className="w-full accent-purple-400 cursor-pointer h-1.5"
-                />
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-[10px] font-mono">
+                    <span className="text-slate-400">Tempo:</span>
+                    <span className="text-purple-300 font-bold">{currentState.musicSpeed.toFixed(2)}x</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0.5}
+                    max={2.0}
+                    step={0.02}
+                    value={currentState.musicSpeed}
+                    onChange={(e) => pushState((prev) => ({ ...prev, musicSpeed: parseFloat(e.target.value) }))}
+                    className="w-full accent-purple-400 cursor-pointer h-1.5"
+                  />
+                </div>
               </div>
             </div>
 
