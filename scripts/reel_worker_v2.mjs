@@ -3454,7 +3454,7 @@ async function renderRough(op, m) {
       let filterComplex = "";
       if (hasBgmFile && genre === "MUSIC_VIDEO") {
         concatArgs.push("-i", bgmPath);
-        filterComplex = `[0:a]aresample=48000,highpass=f=200,volume=0.85[clean_vocals];[1:a]aresample=48000,volume=0.45[dhol_bed];[clean_vocals][dhol_bed]amix=inputs=2:dropout_transition=2,loudnorm=I=-24:LRA=7:tp=-2[aout]`;
+        filterComplex = `[0:a]aresample=48000,volume=0.88[clean_vocals];[1:a]aresample=48000,volume=0.45[dhol_bed];[clean_vocals][dhol_bed]amix=inputs=2:duration=first:dropout_transition=2,loudnorm=I=-24:LRA=7:tp=-2[aout]`;
       } else if (hasBgmFile) {
         concatArgs.push("-i", bgmPath);
         filterComplex = `[0:a]aresample=48000,volume=1.00[dialogue];[1:a]aresample=48000,volume=0.20[bgm];[dialogue][bgm]amix=inputs=2:duration=first:dropout_transition=2,loudnorm=I=-24:LRA=7:tp=-2[aout]`;

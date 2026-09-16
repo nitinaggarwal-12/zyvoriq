@@ -75,12 +75,17 @@ async function auditAndHeal(targetProdId) {
     const absDriftMs = Math.abs(driftRenderedVsEditorialMs);
     if (absDriftMs > 50 && roughOp) {
       console.log(`\n⚠️  DETECTED CUMULATIVE RENDER DRIFT: ${absDriftMs}ms (> 50ms threshold)!`);
-      console.log(`⚡ Auto-Healing: Re-queuing ROUGH_CUT (${roughOp.id}) with frame-accurate editorial trim/atrim...`);
+      console.log(`⚡ Auto-Healing: Clearing stale result_json and re-queuing ROUGH_CUT (${roughOp.id}) with frame-accurate editorial trim/atrim...`);
+      m.status = 'ROUGH_CUT_READY';
       await pool.query(
-        "UPDATE reel_operations SET status = 'QUEUED', attempt = 0, last_error = NULL, lease_owner = NULL, lease_expires_at = NULL, updated_at = NOW() WHERE id = $1",
+        'UPDATE reel_productions SET manifest_json = $1, updated_at = NOW() WHERE id = $2',
+        [JSON.stringify(m), prodId]
+      );
+      await pool.query(
+        "UPDATE reel_operations SET status = 'QUEUED', result_json = NULL, attempt = 0, last_error = NULL, lease_owner = NULL, lease_expires_at = NULL, updated_at = NOW() WHERE id = $1",
         [roughOp.id]
       );
-      console.log(`✅ ROUGH_CUT ${roughOp.id} re-queued for zero-drift master assembly!`);
+      console.log(`✅ ROUGH_CUT ${roughOp.id} re-queued for fresh zero-drift master assembly!`);
     } else {
       console.log(`\n✅ DRIFT STATUS: PERFECT LOCK (${absDriftMs}ms <= 50ms budget). Zero drift across all components.`);
     }
