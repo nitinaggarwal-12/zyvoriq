@@ -1,11 +1,27 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "omni_guard",
-  "version": "5.1.6",
+  "version": "5.1.7",
   "description": "Google Omni 1.1 Universal Multi-Project Quality, Model Selection & Multi-Agent Orchestration Engine (Generative-Source Amendment)",
   "global_governance": {
     "sme_director": "Google Omni 1.1 (End-to-End Subject Matter Expert Director & Chief Orchestrator)",
     "chief_auditor": "Gemini 2.5 Pro (Independent Forensic Quality Auditor & Remediation Gatekeeper)",
+    "mandatory_post_fix_governance_doc_sync": {
+      "enabled": true,
+      "enforce_on_every_root_cause_fix": true,
+      "canonical_files": [
+        "plugins/zyvoriq_guard/hooks.json",
+        "~/.gemini/config/hooks.json",
+        "GEMINI.md",
+        "skills.md",
+        "~/.gemini/config/skills/deepmind-video-generation/SKILL.md",
+        "~/.gemini/config/skills/deepmind-emotional-audio-engine/SKILL.md",
+        "docs/ops/studio1-full-reel-certification.md",
+        "docs/architecture/ARC-006_Omni_Directorial_and_Queue_DAG_Architecture.md"
+      ],
+      "detector": "scripts/guards/gate_governance_doc_sync.mjs",
+      "policy": "Whenever a bug fix, root-cause remediation, or new pipeline invariant is implemented, the agent MUST immediately update all canonical governance and skill documents in lockstep within the same task so no rule ever creeps out of sync."
+    },
     "unmatched_fallback": {
       "action": "REJECT",
       "default_auditor": "Gemini 2.5 Pro"
@@ -753,13 +769,12 @@
     ]
   },
   "amendment_log": {
-    "from": "5.1.5",
-    "to": "5.1.6",
-    "reason": "Multi-Component 4-Clock Drift Gate, Environmental Cast ID Sanitization, and Cross-Environment Asset Proxy Parity",
+    "from": "5.1.6",
+    "to": "5.1.7",
+    "reason": "Mandatory Post-Fix Governance Document & Skill Lockstep Synchronization Law",
     "changes": [
-      "environmental_shot_character_id_sanitization: sanitize non-human environmental tokens ('scene', 'none', 'zero', 'b_roll') and auto-map cast aliases to prevent PRECONDITION_FAILED on atmospheric takes",
-      "multi_component_4_clock_drift_gate: mandate native-audio editorial trim/atrim filters, PTS reset, amix duration=first, and max ±50ms drift between rendered MP4 and editorial/master audio clocks (detector: scripts/audit_and_heal_drift.mjs)",
-      "cross_environment_asset_verification_parity: verify-assets endpoint inspects both local fs and readAsset()/proxied Railway storage URLs to prevent false NO MEDIA badges on localhost"
+      "mandatory_post_fix_governance_doc_sync: codified strict requirement to update all canonical governance & skill files (hooks.json, GEMINI.md, skills.md, SKILL.md files, studio1-full-reel-certification.md, ARC-006) in lockstep after every root-cause fix",
+      "added automated detector scripts/guards/gate_governance_doc_sync.mjs and integrated into post_tool_verifier.mjs to auto-sync ~/.gemini/config/hooks.json and prevent version drift"
     ]
   }
 }
