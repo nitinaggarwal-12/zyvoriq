@@ -37,6 +37,16 @@ export interface TimelineClipItem {
   trimEndSec: number;
   speed: number; // Per-clip visual speed (0.25x - 4.0x)
   enabled: boolean;
+  // Shot-level separated audio properties:
+  avLinked?: boolean;
+  audioSource?: "native_shot" | "lyria_slice" | "mute";
+  audioTrimStartSec?: number;
+  audioTrimEndSec?: number;
+  audioSpeed?: number;
+  audioVolume?: number;
+  audioOffsetSec?: number;
+  audioMuted?: boolean;
+  audioSolo?: boolean;
 }
 
 export interface SavedVersionItem {
@@ -194,6 +204,15 @@ export function ReelTimelineEditor({
           trimEndSec: trimEnd,
           speed: 1.0,
           enabled: true,
+          avLinked: false,
+          audioSource: "native_shot",
+          audioTrimStartSec: trimStart,
+          audioTrimEndSec: trimEnd,
+          audioSpeed: 1.0,
+          audioVolume: 1.0,
+          audioOffsetSec: 0,
+          audioMuted: false,
+          audioSolo: false,
         };
       });
     }
@@ -206,6 +225,15 @@ export function ReelTimelineEditor({
       trimEndSec: (idx + 1) * 6.0,
       speed: 1.0,
       enabled: true,
+      avLinked: false,
+      audioSource: "native_shot",
+      audioTrimStartSec: idx * 6.0,
+      audioTrimEndSec: (idx + 1) * 6.0,
+      audioSpeed: 1.0,
+      audioVolume: 1.0,
+      audioOffsetSec: 0,
+      audioMuted: false,
+      audioSolo: false,
     }));
   };
 
@@ -416,7 +444,29 @@ export function ReelTimelineEditor({
   const [shotAutoAdvance, setShotAutoAdvance] = useState<boolean>(true);
   const [stitchedReelUrl, setStitchedReelUrl] = useState<string | null>(masterVideoUrl || null);
   const [isStitching, setIsStitching] = useState<boolean>(false);
-  const [transitionStyle, setTransitionStyle] = useState<"cut" | "dissolve" | "flash">("cut");
+  const [transitionStyle, setTransitionStyle] = useState<"cut" | "dissolve" | "flash">("dissolve");
+  const [auditioningShotIndex, setAuditioningShotIndex] = useState<number | null>(null);
+  const auditionAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const handleToggleAuditionShotAudio = (idx: number) => {
+    if (auditioningShotIndex === idx) {
+      if (auditionAudioRef.current) {
+        auditionAudioRef.current.pause();
+      }
+      setAuditioningShotIndex(null);
+      return;
+    }
+    if (auditionAudioRef.current) {
+      auditionAudioRef.current.pause();
+    }
+    const url = `/api/reels/editor/shot-stream?reelId=${encodeURIComponent(reelId)}&shotIndex=${idx}&stream=audio`;
+    const audio = new Audio(url);
+    auditionAudioRef.current = audio;
+    setAuditioningShotIndex(idx);
+    audio.onended = () => setAuditioningShotIndex(null);
+    audio.onerror = () => setAuditioningShotIndex(null);
+    audio.play().catch(() => setAuditioningShotIndex(null));
+  };
 
   // When masterVideoUrl prop changes (e.g., selecting a different reel), reset stitched master URL and mode
   useEffect(() => {
@@ -429,7 +479,7 @@ export function ReelTimelineEditor({
 
   // Invalidate cached stitched reel ONLY when user edits trims, speeds, transition style, or undo/redo (historyIndex > 0)
   useEffect(() => {
-    if (historyIndex > 0 || transitionStyle !== "cut") {
+    if (historyIndex > 0 || transitionStyle !== "dissolve") {
       setStitchedReelUrl(null);
       setPreviewMode((prev) => (prev === "stitched_reel" ? "sequence" : prev));
     } else if (masterVideoUrl) {
@@ -2458,18 +2508,49 @@ export function ReelTimelineEditor({
                   >
                     <div>
                       <div className="flex items-center justify-between gap-1 text-xs font-bold text-slate-200">
-                        <span className="truncate">
-                          #{idx + 1} {clip.title}
+                        <span className="truncate flex items-center gap-1">
+                          <span>🎬 #{idx + 1}</span>
+                          <span className="truncate">{clip.title}</span>
                         </span>
-                        {!clip.enabled && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-950 text-red-400">Cut</span>
-                        )}
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateClip(idx, { avLinked: !clip.avLinked });
+                            }}
+                            title={
+                              clip.avLinked
+                                ? "A/V Linked: Audio trim & speed follow video. Click to Separate A/V at shot level."
+                                : "A/V Separated: Video & Audio trim/speed/offset are 100% independent for this shot."
+                            }
+                            className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border transition cursor-pointer ${
+                              clip.avLinked
+                                ? "bg-slate-900 border-slate-700 text-slate-400"
+                                : "bg-teal-950/80 border-teal-500/60 text-teal-300"
+                            }`}
+                          >
+                            {clip.avLinked ? "🔗 Linked" : "🔓 A/V Split"}
+                          </button>
+                          {!clip.enabled && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-950 text-red-400">Cut</span>
+                          )}
+                        </div>
                       </div>
                       <div className="mt-1.5 text-[11px] font-mono text-teal-300">
-                        {netDur.toFixed(2)}s ({Math.round(netDur * 24)}f) @ {(clip.speed || 1).toFixed(2)}x
+                        Video: {netDur.toFixed(2)}s ({Math.round(netDur * 24)}f) @ {(clip.speed || 1).toFixed(2)}x
                       </div>
-                      <div className="text-[10px] font-mono text-slate-500">
-                        In: {clip.trimStartSec.toFixed(1)}s → Out: {clip.trimEndSec.toFixed(1)}s
+                      <div className="text-[10px] font-mono text-slate-400 flex items-center justify-between mt-1">
+                        <span>In: {clip.trimStartSec.toFixed(1)}s → Out: {clip.trimEndSec.toFixed(1)}s</span>
+                        <a
+                          href={`/api/reels/editor/shot-stream?reelId=${encodeURIComponent(reelId)}&shotIndex=${idx}&stream=video&download=1`}
+                          onClick={(e) => e.stopPropagation()}
+                          download
+                          title="Download isolated Video-Only (.mp4 with zero audio) for this shot"
+                          className="text-teal-400 hover:text-teal-300 underline font-semibold"
+                        >
+                          ⬇️ Video MP4
+                        </a>
                       </div>
                     </div>
 
@@ -2564,13 +2645,13 @@ export function ReelTimelineEditor({
             </div>
           </div>
 
-          {/* TRACK 2: DIALOGUE / VOCALS STEM (Independent Speed & Volume) */}
-          <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+          {/* TRACK 2: SHOT-LEVEL SEPARATED AUDIO & VOCAL STEMS (Independent Per-Shot Audio Controls) */}
+          <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <Volume2 className="w-4 h-4 text-blue-400" />
                 <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200">
-                  Track 2 • Dialogue &amp; Singing Vocals (Independent Speed &amp; Gain)
+                  Track 2 • Shot-Level Separated Audio &amp; Vocal Stems (4 Cuts Aligned to Video)
                 </h3>
               </div>
               <div className="flex items-center gap-2">
@@ -2597,12 +2678,227 @@ export function ReelTimelineEditor({
                       : "bg-blue-950/60 border border-blue-700 text-blue-300"
                   }`}
                 >
-                  {currentState.vocalMode === "mute" ? "🔇 Dialogues Muted" : "🎤 Dialogues / Vocals Active"}
+                  {currentState.vocalMode === "mute" ? "🔇 All Vocals Muted" : "🎤 Shot Vocals Active"}
                 </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* ── 4-COLUMN SHOT-LEVEL SEPARATED AUDIO CARDS (#1 Audio .. #4 Audio) ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+              {currentState.clips.map((clip, idx) => {
+                const aSource = clip.audioSource || "native_shot";
+                const aMuted = Boolean(clip.audioMuted || aSource === "mute");
+                const aSolo = Boolean(clip.audioSolo);
+                const aVol = clip.audioVolume !== undefined ? clip.audioVolume : 1.0;
+                const aSpeed = clip.audioSpeed !== undefined ? clip.audioSpeed : 1.0;
+                const aOffset = clip.audioOffsetSec !== undefined ? clip.audioOffsetSec : 0.0;
+                const aTrimIn = clip.audioTrimStartSec !== undefined ? clip.audioTrimStartSec : clip.trimStartSec;
+                const aTrimOut = clip.audioTrimEndSec !== undefined ? clip.audioTrimEndSec : clip.trimEndSec;
+                const isAuditioning = auditioningShotIndex === idx;
+
+                return (
+                  <div
+                    key={`shot_audio_card_${clip.id || idx}_${idx}`}
+                    className={`p-3 rounded-xl border transition flex flex-col justify-between space-y-2.5 ${
+                      aMuted
+                        ? "bg-slate-950/40 border-red-900/40 opacity-65"
+                        : aSolo
+                        ? "bg-amber-950/30 border-amber-500/70 shadow-md"
+                        : "bg-slate-950 border-blue-900/50 hover:border-blue-600/60"
+                    }`}
+                  >
+                    {/* Top Row: Shot # Audio Badge + M / S Buttons */}
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-xs font-bold text-blue-300 flex items-center gap-1 truncate">
+                        <span>🔊 #{idx + 1} Audio</span>
+                      </span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => updateClip(idx, { audioMuted: !aMuted })}
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border cursor-pointer transition ${
+                            aMuted
+                              ? "bg-red-600 text-white border-red-500"
+                              : "bg-slate-900 text-slate-400 border-slate-700 hover:text-white"
+                          }`}
+                          title="Mute this shot's audio stem"
+                        >
+                          M
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateClip(idx, { audioSolo: !aSolo })}
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border cursor-pointer transition ${
+                            aSolo
+                              ? "bg-amber-500 text-slate-950 border-amber-400"
+                              : "bg-slate-900 text-slate-400 border-slate-700 hover:text-white"
+                          }`}
+                          title="Solo this shot's audio stem"
+                        >
+                          S
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Audition & Download Separated Audio Stem */}
+                    <div className="flex items-center justify-between gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleAuditionShotAudio(idx)}
+                        className={`px-2 py-1 rounded text-[10px] font-mono font-bold border transition cursor-pointer flex items-center gap-1 ${
+                          isAuditioning
+                            ? "bg-teal-500 text-slate-950 border-teal-400 animate-pulse"
+                            : "bg-blue-950/60 hover:bg-blue-900/70 text-blue-200 border-blue-700/50"
+                        }`}
+                        title="Listen to this shot's isolated audio stem (.wav) without video"
+                      >
+                        <span>{isAuditioning ? "⏸ Stop Audio" : "▶ Audition Stem"}</span>
+                      </button>
+                      <a
+                        href={`/api/reels/editor/shot-stream?reelId=${encodeURIComponent(reelId)}&shotIndex=${idx}&stream=audio&download=1`}
+                        download
+                        title="Download isolated Audio-Only (.wav) for this shot"
+                        className="text-[10px] font-mono font-semibold text-blue-400 hover:text-blue-300 underline"
+                      >
+                        ⬇️ Audio WAV
+                      </a>
+                    </div>
+
+                    {/* Audio Source Selector per Shot */}
+                    <div>
+                      <label className="block text-[10px] font-mono text-slate-400 mb-0.5">Shot Audio Source:</label>
+                      <select
+                        value={aSource}
+                        onChange={(e) => {
+                          const val = e.target.value as any;
+                          updateClip(idx, {
+                            audioSource: val,
+                            audioMuted: val === "mute",
+                          });
+                        }}
+                        className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[11px] font-semibold text-blue-200 focus:outline-none focus:border-blue-500 cursor-pointer"
+                      >
+                        <option value="native_shot">🎤 Native Shot Vocal/Audio</option>
+                        <option value="lyria_slice">🎼 Lyria Master Song Slice</option>
+                        <option value="mute">🔇 Mute Shot Audio</option>
+                      </select>
+                    </div>
+
+                    {/* Independent Audio Trim In/Out (when A/V Split) */}
+                    <div className="text-[10px] font-mono text-slate-400 bg-slate-900/90 p-1.5 rounded border border-slate-800 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span>Audio Trim:</span>
+                        <span className="text-blue-300 font-bold">
+                          {aTrimIn.toFixed(1)}s → {aTrimOut.toFixed(1)}s
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-1">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateClip(idx, {
+                              avLinked: false,
+                              audioTrimStartSec: Math.max(0, Number((aTrimIn - 0.2).toFixed(2))),
+                            })
+                          }
+                          className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
+                          title="Trim Audio In -0.2s earlier"
+                        >
+                          In -0.2s
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateClip(idx, {
+                              avLinked: false,
+                              audioTrimStartSec: Math.min(aTrimOut - 0.5, Number((aTrimIn + 0.2).toFixed(2))),
+                            })
+                          }
+                          className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
+                          title="Trim Audio In +0.2s later"
+                        >
+                          In +0.2s
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateClip(idx, {
+                              avLinked: false,
+                              audioTrimStartSec: clip.trimStartSec,
+                              audioTrimEndSec: clip.trimEndSec,
+                              audioOffsetSec: 0,
+                            })
+                          }
+                          className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 cursor-pointer"
+                          title="Sync audio trim back to video cut"
+                        >
+                          Sync
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Independent Shot Audio Volume / Gain */}
+                    <div className="space-y-0.5">
+                      <div className="flex justify-between text-[10px] font-mono">
+                        <span className="text-slate-400">Shot Gain:</span>
+                        <span className="text-blue-300 font-bold">{Math.round(aVol * 100)}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={2.0}
+                        step={0.05}
+                        value={aVol}
+                        onChange={(e) => updateClip(idx, { audioVolume: parseFloat(e.target.value) })}
+                        className="w-full accent-blue-400 cursor-pointer h-1.5"
+                      />
+                    </div>
+
+                    {/* Independent Shot Audio Speed */}
+                    <div className="space-y-0.5">
+                      <div className="flex justify-between text-[10px] font-mono">
+                        <span className="text-slate-400">Audio Speed:</span>
+                        <span className="text-blue-300 font-bold">{aSpeed.toFixed(2)}x</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0.5}
+                        max={2.0}
+                        step={0.05}
+                        value={aSpeed}
+                        onChange={(e) =>
+                          updateClip(idx, { avLinked: false, audioSpeed: parseFloat(e.target.value) })
+                        }
+                        className="w-full accent-blue-400 cursor-pointer h-1.5"
+                      />
+                    </div>
+
+                    {/* Per-Shot Lip-Sync Audio Offset */}
+                    <div className="space-y-0.5 pt-1 border-t border-slate-800/80">
+                      <div className="flex justify-between text-[10px] font-mono">
+                        <span className="text-slate-400">Lip-Sync Offset:</span>
+                        <span className="text-teal-300 font-bold">
+                          {aOffset >= 0 ? `+${aOffset.toFixed(2)}s` : `${aOffset.toFixed(2)}s`}
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={-1.0}
+                        max={1.0}
+                        step={0.05}
+                        value={aOffset}
+                        onChange={(e) =>
+                          updateClip(idx, { avLinked: false, audioOffsetSec: parseFloat(e.target.value) })
+                        }
+                        className="w-full accent-teal-400 cursor-pointer h-1.5"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-slate-400">Dialogue / Vocal Gain:</span>

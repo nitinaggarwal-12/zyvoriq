@@ -1898,20 +1898,48 @@ for (let i = 0; i < shotPlan.length; i++) {
   scriptLines.push(`echo "  shot ${s.index} cropdetect: \${CROP${s.index}:-none}"`);
   scriptLines.push(`ffmpeg -y -v error -i shots/s${s.index}.mp4 -t ${s.durationSec} -vf "\${CROP${s.index}:+\${CROP${s.index}},}scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1" -an -c:v libx264 -preset slow -crf 17 -pix_fmt yuv420p t_${s.index}.mp4`);
   scriptLines.push(`echo "file 't_${s.index}.mp4'" >> concat.txt`);
-  if (ENGINE === "omni") {
-    const fadeOutStart = Math.max(0, s.durationSec - 0.04).toFixed(3);
-    scriptLines.push(`ffmpeg -y -v error -i shots/s${s.index}.mp4 -t ${s.durationSec} -af "aresample=48000,afade=t=in:st=0:d=0.03,afade=t=out:st=${fadeOutStart}:d=0.04" -ar 48000 -ac 2 a_${s.index}.wav`);
-    scriptLines.push(`echo "file 'a_${s.index}.wav'" >> aconcat.txt`);
-  }
+  const fadeOutStart = Math.max(0, s.durationSec - 0.04).toFixed(3);
+  scriptLines.push(`ffmpeg -y -v error -i shots/s${s.index}.mp4 -t ${s.durationSec} -af "aresample=48000,afade=t=in:st=0:d=0.03,afade=t=out:st=${fadeOutStart}:d=0.04" -ar 48000 -ac 2 a_${s.index}.wav || ffmpeg -y -v error -f lavfi -i anullsrc=r=48000:cl=stereo:d=${s.durationSec} -ar 48000 -ac 2 a_${s.index}.wav`);
+  scriptLines.push(`echo "file 'a_${s.index}.wav'" >> aconcat.txt`);
 }
-scriptLines.push(`ffmpeg -y -v error -f concat -safe 0 -i concat.txt -c copy silent.mp4`);
+
+// Build smooth xfade transition filter across consecutive shots (0.25s cross-dissolve) with concat fallback
+const XFADE_DUR = 0.25;
+if (shotPlan.length > 1 && shotPlan.every((s) => s.durationSec >= 1.5)) {
+  const vInputs = shotPlan.map((s) => `-i t_${s.index}.mp4`).join(" ");
+  let vFilter = "";
+  let offset = 0;
+  let prevTag = "[0:v]";
+  for (let i = 1; i < shotPlan.length; i++) {
+    offset += shotPlan[i - 1].durationSec - XFADE_DUR;
+    const nextTag = i === shotPlan.length - 1 ? "[vout]" : `[vx${i}]`;
+    vFilter += `${prevTag}[${i}:v]xfade=transition=fade:duration=${XFADE_DUR}:offset=${offset.toFixed(3)}${nextTag};`;
+    prevTag = nextTag;
+  }
+  vFilter = vFilter.replace(/;$/, "");
+  scriptLines.push(`ffmpeg -y -v error ${vInputs} -filter_complex "${vFilter}" -map "[vout]" -c:v libx264 -preset slow -crf 17 -pix_fmt yuv420p silent.mp4 || ffmpeg -y -v error -f concat -safe 0 -i concat.txt -c copy silent.mp4`);
+
+  const aInputs = shotPlan.map((s) => `-i a_${s.index}.wav`).join(" ");
+  let aFilter = "";
+  let prevATag = "[0:a]";
+  for (let i = 1; i < shotPlan.length; i++) {
+    const nextATag = i === shotPlan.length - 1 ? "[aout]" : `[ax${i}]`;
+    aFilter += `${prevATag}[${i}:a]acrossfade=d=${XFADE_DUR}:c1=tri:c2=tri${nextATag};`;
+    prevATag = nextATag;
+  }
+  aFilter = aFilter.replace(/;$/, "");
+  scriptLines.push(`ffmpeg -y -v error ${aInputs} -filter_complex "${aFilter}" -map "[aout]" -ar 48000 -ac 2 native_concat.wav || ffmpeg -y -v error -f concat -safe 0 -i aconcat.txt -c copy native_concat.wav`);
+} else {
+  scriptLines.push(`ffmpeg -y -v error -f concat -safe 0 -i concat.txt -c copy silent.mp4`);
+  scriptLines.push(`ffmpeg -y -v error -f concat -safe 0 -i aconcat.txt -c copy native_concat.wav`);
+}
+
 scriptLines.push(`ffmpeg -y -v error -ss ${windowStart} -t ${TARGET_DURATION} -i song.mp3 -c copy song_cut.mp3`);
 scriptLines.push(`ffmpeg -y -v error -i silent.mp4 -i song_cut.mp3 -filter_complex "[1:a]loudnorm=I=-14:TP=-2.0:LRA=11,alimiter=level=0:limit=0.891:attack=5:release=50,aresample=48000[a]" -map 0:v -map "[a]" -t ${TARGET_DURATION} -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p -c:a aac -b:a 192k -movflags +faststart master_lyria.mp4`);
-if (ENGINE === "omni") {
-  scriptLines.push(`ffmpeg -y -v error -f concat -safe 0 -i aconcat.txt -c copy native_concat.wav`);
-  scriptLines.push(`ffmpeg -y -v error -i silent.mp4 -i native_concat.wav -filter_complex "[1:a]loudnorm=I=-14:TP=-2.0:LRA=11,alimiter=level=0:limit=0.891:attack=5:release=50,aresample=48000[a]" -map 0:v -map "[a]" -t ${TARGET_DURATION} -c:v copy -c:a aac -b:a 192k -movflags +faststart master_native.mp4`);
-}
-scriptLines.push(`cp -f master_lyria.mp4 master.mp4`);
+scriptLines.push(`ffmpeg -y -v error -i silent.mp4 -i native_concat.wav -filter_complex "[1:a]loudnorm=I=-14:TP=-2.0:LRA=11,alimiter=level=0:limit=0.891:attack=5:release=50,aresample=48000[a]" -map 0:v -map "[a]" -t ${TARGET_DURATION} -c:v copy -c:a aac -b:a 192k -movflags +faststart master_native.mp4`);
+// Studio Hybrid Master out-of-the-box: combines original shot singing/audio (native_concat.wav) foregrounded + continuous Lyria 3.5 groove (song_cut.mp3) bed
+scriptLines.push(`ffmpeg -y -v error -i silent.mp4 -i native_concat.wav -i song_cut.mp3 -filter_complex "[1:a]volume=1.35[voc];[2:a]volume=0.52[bed];[voc][bed]amix=inputs=2:duration=longest:dropout_transition=0:normalize=0,loudnorm=I=-14:TP=-1.5:LRA=11,aresample=48000[a]" -map 0:v -map "[a]" -t ${TARGET_DURATION} -c:v copy -c:a aac -b:a 192k -movflags +faststart master_hybrid.mp4`);
+scriptLines.push(`cp -f master_hybrid.mp4 master.mp4`);
 scriptLines.push(`ffmpeg -y -v error -i master.mp4 -vf fps=1 frame_%03d.jpg`);
 
 fs.writeFileSync(path.join(WORK, "master.sh"), scriptLines.join("\n"));
@@ -1920,7 +1948,7 @@ const masterLyriaPath = path.join(WORK, "master_lyria.mp4");
 const masterHybridPath = path.join(WORK, "master_hybrid.mp4");
 const masterNativePath = path.join(WORK, "master_native.mp4");
 
-if (fs.existsSync(masterPath) && fs.statSync(masterPath).size > 500000 && (!ENGINE || ENGINE !== "omni" || fs.existsSync(masterHybridPath))) {
+if (fs.existsSync(masterPath) && fs.statSync(masterPath).size > 500000 && fs.existsSync(masterHybridPath)) {
   log(`  Reusing existing master (${AUDIO_SOURCE}) at ${masterPath}`);
 } else {
   const silentLocal = path.join(WORK, "silent.mp4");
@@ -1935,11 +1963,17 @@ if (fs.existsSync(masterPath) && fs.statSync(masterPath).size > 500000 && (!ENGI
     rx(`${RDIR}/master.sh`);
 
     sh(`scp ${SSH_OPTS} -q ${HOST}:${RDIR}/master_lyria.mp4 "${masterLyriaPath}"`);
-    if (ENGINE === "omni") {
-      sh(`scp ${SSH_OPTS} -q ${HOST}:${RDIR}/master_native.mp4 "${masterNativePath}"`);
-      sh(`scp ${SSH_OPTS} -q ${HOST}:${RDIR}/silent.mp4 "${silentLocal}"`);
-      sh(`scp ${SSH_OPTS} -q ${HOST}:${RDIR}/song_cut.mp3 "${songCutLocal}"`);
-      sh(`scp ${SSH_OPTS} -q ${HOST}:${RDIR}/native_concat.wav "${nativeWavLocal}"`);
+    sh(`scp ${SSH_OPTS} -q ${HOST}:${RDIR}/master_native.mp4 "${masterNativePath}"`);
+    sh(`scp ${SSH_OPTS} -q ${HOST}:${RDIR}/master_hybrid.mp4 "${masterHybridPath}"`);
+    sh(`scp ${SSH_OPTS} -q ${HOST}:${RDIR}/silent.mp4 "${silentLocal}"`);
+    sh(`scp ${SSH_OPTS} -q ${HOST}:${RDIR}/song_cut.mp3 "${songCutLocal}"`);
+    sh(`scp ${SSH_OPTS} -q ${HOST}:${RDIR}/native_concat.wav "${nativeWavLocal}"`);
+    for (let i = 0; i < shotPlan.length; i++) {
+      const idx = shotPlan[i].index;
+      try {
+        sh(`scp ${SSH_OPTS} -q ${HOST}:${RDIR}/t_${idx}.mp4 "${path.join(WORK, `t_${idx}.mp4`)}"`);
+        sh(`scp ${SSH_OPTS} -q ${HOST}:${RDIR}/a_${idx}.wav "${path.join(WORK, `a_${idx}.wav`)}"`);
+      } catch {}
     }
   } else {
     log("  Running ffmpeg master locally...");
@@ -1948,38 +1982,12 @@ if (fs.existsSync(masterPath) && fs.statSync(masterPath).size > 500000 && (!ENGI
     execFileSync("bash", [path.join(WORK, "master_local.sh")], { stdio: "inherit" });
   }
 
-  if (ENGINE === "omni") {
-
-    const demucsDir = path.join(WORK, "demucs_stems");
-    const demucsPy = path.resolve("tools/asr/.venv/bin/python");
-    if (fs.existsSync(demucsPy)) {
-      log("  Separating stems via Demucs (Lyria continuous instrumental bed + Omni vocal stem)...");
-      execFileSync(demucsPy, ["-m", "demucs.separate", "-n", "htdemucs", "--two-stems=vocals", "-o", demucsDir, songCutLocal, nativeWavLocal], { stdio: "ignore" });
-      const lyriaBed = path.join(demucsDir, "htdemucs", "song_cut", "no_vocals.wav");
-      const omniVoc = path.join(demucsDir, "htdemucs", "native_concat", "vocals.wav");
-      if (fs.existsSync(lyriaBed) && fs.existsSync(omniVoc)) {
-        execFileSync("ffmpeg", [
-          "-y", "-v", "error",
-          "-i", silentLocal,
-          "-i", lyriaBed,
-          "-i", omniVoc,
-          "-filter_complex", "[1:a]volume=0.85[bed];[2:a]volume=1.35[voc];[bed][voc]amix=inputs=2:duration=first:dropout_transition=0,loudnorm=I=-14:TP=-2.0:LRA=11,alimiter=limit=-1.6dB:level=false,aresample=48000[a]",
-          "-map", "0:v", "-map", "[a]",
-          "-t", String(TARGET_DURATION),
-          "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart",
-          masterHybridPath
-        ]);
-        log(`  Built hybrid master at ${masterHybridPath}`);
-      }
-    }
-
-    if (AUDIO_SOURCE === "hybrid" && fs.existsSync(masterHybridPath)) {
-      fs.copyFileSync(masterHybridPath, masterPath);
-    } else if (AUDIO_SOURCE === "native" && fs.existsSync(masterNativePath)) {
-      fs.copyFileSync(masterNativePath, masterPath);
-    } else {
-      fs.copyFileSync(masterLyriaPath, masterPath);
-    }
+  if (AUDIO_SOURCE === "hybrid" && fs.existsSync(masterHybridPath)) {
+    fs.copyFileSync(masterHybridPath, masterPath);
+  } else if (AUDIO_SOURCE === "native" && fs.existsSync(masterNativePath)) {
+    fs.copyFileSync(masterNativePath, masterPath);
+  } else if (fs.existsSync(masterHybridPath)) {
+    fs.copyFileSync(masterHybridPath, masterPath);
   } else {
     fs.copyFileSync(masterLyriaPath, masterPath);
   }
@@ -2118,6 +2126,8 @@ if (PRODUCTION_ID) {
   for (let i = 0; i < shotPlan.length; i++) {
     const idx = i + 1;
     const sUrl = copyIfPresent(`shots/s${idx}.mp4`, `shot_${idx}.mp4`);
+    const vOnlyUrl = copyIfPresent(`t_${idx}.mp4`, `shot_${idx}_video.mp4`);
+    const aOnlyUrl = copyIfPresent(`a_${idx}.wav`, `shot_${idx}_audio.wav`);
     if (sUrl) {
       shots.push({
         index: idx,
@@ -2126,6 +2136,8 @@ if (PRODUCTION_ID) {
         lyric: shotPlan[i]?.lyric || shotPlan[i]?.vocalDirective || "",
         durationSec: shotPlan[i]?.targetSec || shotPlan[i]?.duration || 6,
         videoUrl: sUrl,
+        videoOnlyUrl: vOnlyUrl || undefined,
+        audioOnlyUrl: aOnlyUrl || undefined,
       });
     }
   }

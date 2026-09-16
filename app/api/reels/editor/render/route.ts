@@ -15,6 +15,16 @@ export interface EditorClipInput {
   trimEndSec: number;
   speed?: number; // Independent visual clip playback speed (0.5x - 2.0x)
   enabled: boolean;
+  // Shot-level separated audio parameters:
+  avLinked?: boolean;
+  audioSource?: "native_shot" | "lyria_slice" | "mute";
+  audioTrimStartSec?: number;
+  audioTrimEndSec?: number;
+  audioSpeed?: number;
+  audioVolume?: number;
+  audioOffsetSec?: number;
+  audioMuted?: boolean;
+  audioSolo?: boolean;
 }
 
 export interface EditorRenderRequest {
@@ -187,40 +197,23 @@ export async function POST(req: NextRequest) {
       trimmedSegments.push(segPath);
       segmentDurations.push(outDur);
 
-      // Extract matching trimmed audio segment from this shot so sequential shot audio is preserved
-      const afStages: string[] = ["aresample=48000"];
-      if (Math.abs(effectiveVideoSpeed - 1.0) > 0.01) {
-        afStages.push(buildAtempoFilter(effectiveVideoSpeed));
-      }
-      const fadeDur = Math.min(0.03, outDur * 0.15);
-      const fadeOutSt = Math.max(0, outDur - fadeDur);
-      afStages.push(`afade=t=in:st=0:d=${fadeDur.toFixed(3)},afade=t=out:st=${fadeOutSt.toFixed(3)}:d=${fadeDur.toFixed(3)}`);
-      try {
-        execFileSync("ffmpeg", [
-          "-y",
-          "-ss",
-          String(start),
-          "-t",
-          String(dur),
-          "-i",
-          localSrc,
-          "-vn",
-          "-af",
-          afStages.join(","),
-          "-ar",
-          "48000",
-          "-ac",
-          "2",
-          segAudioPath,
-        ]);
-        trimmedAudioSegments.push(segAudioPath);
-      } catch {
+      // Extract separated shot-level audio segment (100% independent of video trim/speed when unlinked)
+      const anyShotSolo = enabledClips.some((c) => c.audioSolo);
+      const isShotMuted =
+        clip.audioMuted ||
+        clip.audioSource === "mute" ||
+        (clip.audioVolume !== undefined && clip.audioVolume <= 0.001) ||
+        (anyShotSolo && !clip.audioSolo);
+
+      const cumulativeBeforeSec = segmentDurations.slice(0, -1).reduce((acc, v) => acc + v, 0);
+
+      if (isShotMuted) {
         execFileSync("ffmpeg", [
           "-y",
           "-f",
           "lavfi",
           "-i",
-          `anullsrc=r=48000:cl=stereo:d=${outDur.toFixed(3)}`,
+          `anullsrc=r=48000:cl=stereo:d=${outDur.toFixed(4)}`,
           "-ar",
           "48000",
           "-ac",
@@ -228,12 +221,104 @@ export async function POST(req: NextRequest) {
           segAudioPath,
         ]);
         trimmedAudioSegments.push(segAudioPath);
+      } else {
+        // Resolve audio source file for this shot (native_shot vs lyria_slice)
+        let audioSrcFile = localSrc;
+        if (clip.audioSource === "lyria_slice" && body.reelId) {
+          const lyriaCandidates = [
+            path.join(process.cwd(), "public", "renders", "yt", body.reelId, "song_cut.mp3"),
+            path.join(process.cwd(), "public", "renders", "yt", body.reelId, "song.mp3"),
+            path.join(process.cwd(), "public", "renders", "yt", body.reelId, "master_lyria.mp4"),
+          ];
+          for (const lc of lyriaCandidates) {
+            if (fs.existsSync(lc)) {
+              audioSrcFile = lc;
+              break;
+            }
+          }
+        }
+
+        const isLinked = clip.avLinked === true;
+        let aStart = isLinked
+          ? start
+          : clip.audioTrimStartSec !== undefined
+          ? Math.max(0, Number(clip.audioTrimStartSec))
+          : clip.audioSource === "lyria_slice"
+          ? cumulativeBeforeSec
+          : start;
+        const aEnd = isLinked
+          ? end
+          : clip.audioTrimEndSec !== undefined
+          ? Math.max(aStart + 0.1, Number(clip.audioTrimEndSec))
+          : aStart + dur;
+        const aDur = Math.max(0.1, aEnd - aStart);
+        const aSpeed = isLinked
+          ? effectiveVideoSpeed
+          : Math.max(0.25, Math.min(4.0, Number(clip.audioSpeed ?? 1.0) * Number(body.vocalSpeed ?? 1.0)));
+        const aGain = Math.max(0, Math.min(3.0, Number(clip.audioVolume ?? 1.0)));
+        const aOffset = Number(clip.audioOffsetSec ?? 0);
+
+        if (aOffset < 0) {
+          aStart = Math.max(0, aStart + Math.abs(aOffset));
+        }
+
+        const afStages: string[] = ["aresample=48000"];
+        if (Math.abs(aSpeed - 1.0) > 0.01) {
+          afStages.push(buildAtempoFilter(aSpeed));
+        }
+        if (Math.abs(aGain - 1.0) > 0.01) {
+          afStages.push(`volume=${aGain.toFixed(3)}`);
+        }
+        if (aOffset > 0.005) {
+          const delayMs = Math.round(aOffset * 1000);
+          afStages.push(`adelay=${delayMs}|${delayMs}`);
+        }
+        // Lock separated shot audio duration to exact visual duration outDur so downstream shots stay 100% frame-aligned
+        afStages.push(`apad,atrim=0:${outDur.toFixed(4)}`);
+        const fadeDur = Math.min(0.03, outDur * 0.15);
+        const fadeOutSt = Math.max(0, outDur - fadeDur);
+        afStages.push(`afade=t=in:st=0:d=${fadeDur.toFixed(3)},afade=t=out:st=${fadeOutSt.toFixed(3)}:d=${fadeDur.toFixed(3)}`);
+
+        try {
+          execFileSync("ffmpeg", [
+            "-y",
+            "-ss",
+            String(aStart),
+            "-t",
+            String(aDur),
+            "-i",
+            audioSrcFile,
+            "-vn",
+            "-af",
+            afStages.join(","),
+            "-ar",
+            "48000",
+            "-ac",
+            "2",
+            segAudioPath,
+          ]);
+          trimmedAudioSegments.push(segAudioPath);
+        } catch {
+          execFileSync("ffmpeg", [
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            `anullsrc=r=48000:cl=stereo:d=${outDur.toFixed(4)}`,
+            "-ar",
+            "48000",
+            "-ac",
+            "2",
+            segAudioPath,
+          ]);
+          trimmedAudioSegments.push(segAudioPath);
+        }
       }
     }
 
-    // 2. Concatenate pure visual segments (supports Instant Cut, Smooth Cross-Dissolve xfade, or Flash Cut xfade)
+    // 2. Concatenate pure visual segments (defaults to Smooth Cross-Dissolve xfade out of the box)
     const concatVideoPath = path.join(workDir, "concat_video.mp4");
-    const transitionStyle = body.transitionStyle || "cut";
+    const transitionStyle = body.transitionStyle || "dissolve";
     let xfadeSuccess = false;
 
     if ((transitionStyle === "dissolve" || transitionStyle === "flash") && trimmedSegments.length > 1) {
