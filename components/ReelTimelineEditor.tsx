@@ -62,6 +62,7 @@ export interface EditorSnapshotState {
   musicLockMode: "unaltered" | "custom_trim";
   musicVolume: number; // 0.0 to 1.5
   musicSpeed: number; // Independent music speed (0.25x - 4.0x)
+  lyriaOverlayMode?: "hybrid_lyria_bed" | "pure_lyria_song" | "shot_native_only";
   // Track 4: Background SFX
   sfxTrack: string;
   sfxVolume: number; // 0.0 to 1.0
@@ -221,6 +222,7 @@ export function ReelTimelineEditor({
     musicLockMode: "unaltered",
     musicVolume: 0.65,
     musicSpeed: 1.0,
+    lyriaOverlayMode: "hybrid_lyria_bed",
     sfxTrack: "none",
     sfxVolume: 0.35,
     sfxSpeed: 1.0,
@@ -406,6 +408,7 @@ export function ReelTimelineEditor({
   const [previewMode, setPreviewMode] = useState<"shot" | "sequence" | "stitched_reel">(
     masterVideoUrl ? "stitched_reel" : "sequence"
   );
+  const [shotAutoAdvance, setShotAutoAdvance] = useState<boolean>(true);
   const [stitchedReelUrl, setStitchedReelUrl] = useState<string | null>(masterVideoUrl || null);
   const [isStitching, setIsStitching] = useState<boolean>(false);
   const [transitionStyle, setTransitionStyle] = useState<"cut" | "dissolve" | "flash">("cut");
@@ -867,8 +870,14 @@ export function ReelTimelineEditor({
     const outSec = activeClip.trimEndSec;
 
     if (previewMode === "shot") {
-      // Isolated single-shot loop mode
-      if (ct < inSec - 0.1 || ct >= outSec - 0.04) {
+      if (ct >= outSec - 0.04) {
+        if (shotAutoAdvance) {
+          advanceToNextSequenceShot();
+        } else {
+          videoRef.current.currentTime = inSec;
+          if (isPlaying) videoRef.current.play().catch(() => {});
+        }
+      } else if (ct < inSec - 0.1) {
         videoRef.current.currentTime = inSec;
         if (isPlaying) videoRef.current.play().catch(() => {});
       }
@@ -886,7 +895,7 @@ export function ReelTimelineEditor({
     if (previewMode === "stitched_reel" && videoRef.current) {
       videoRef.current.currentTime = 0;
       videoRef.current.play().catch(() => {});
-    } else if (previewMode === "sequence") {
+    } else if (previewMode === "sequence" || (previewMode === "shot" && shotAutoAdvance)) {
       advanceToNextSequenceShot();
     } else if (videoRef.current && activeClip) {
       videoRef.current.currentTime = activeClip.trimStartSec;
@@ -1250,10 +1259,11 @@ export function ReelTimelineEditor({
   const autoStitchTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Physically stitch all 4 trimmed clips into 1 single-file seamless MP4 reel with continuous Original Lyria Music or Custom Score
-  const handleStitchAll4ToPlayAsOneReel = async (isAutoTriggered = false) => {
+  const handleStitchAll4ToPlayAsOneReel = async (isAutoTriggered = false, overrideOverlayMode?: string) => {
     setIsStitching(true);
     setRenderErrorMsg(null);
     if (!isAutoTriggered) setRenderSuccessMsg(null);
+    const activeOverlayMode = overrideOverlayMode || currentState.lyriaOverlayMode || "hybrid_lyria_bed";
     try {
       const res = await fetch("/api/reels/editor/render", {
         method: "POST",
@@ -1277,6 +1287,7 @@ export function ReelTimelineEditor({
           musicLockMode: "unaltered",
           musicVolume: currentState.musicVolume,
           musicSpeed: currentState.musicSpeed,
+          lyriaOverlayMode: activeOverlayMode,
           sfxTrack: currentState.sfxTrack,
           sfxVolume: currentState.sfxVolume,
           sfxSpeed: currentState.sfxSpeed,
@@ -1302,12 +1313,18 @@ export function ReelTimelineEditor({
       setStitchedReelUrl(data.outputUrl);
       setActiveVersionUrl(data.outputUrl);
       setPreviewMode("stitched_reel");
+      const overlayLabel =
+        activeOverlayMode === "pure_lyria_song"
+          ? "Pure 24s Lyria 3.5 Master Song Overlapped"
+          : activeOverlayMode === "shot_native_only"
+          ? "Pure Sequential Shot Audio (Shot 1→2→3→4)"
+          : "Hybrid Lip-Sync Vocals + Continuous Lyria Bed";
       setRenderSuccessMsg(
         `✓ Auto-Stitched & Playing Combined Reel (${data.durationSec}s) • ${
           currentState.musicTrack === "original_lyria"
-            ? "Original Lyria Music"
+            ? overlayLabel
             : "Custom Music Score Baked (Zero Overlap)"
-        } • Vocals @ ${(currentState.vocalEntrySec || 0).toFixed(1)}s`
+        }`
       );
       setTimeout(() => {
         if (videoRef.current) {
@@ -1375,6 +1392,7 @@ export function ReelTimelineEditor({
           musicLockMode: currentState.musicLockMode,
           musicVolume: currentState.musicVolume,
           musicSpeed: currentState.musicSpeed,
+          lyriaOverlayMode: currentState.lyriaOverlayMode || "hybrid_lyria_bed",
           sfxTrack: currentState.sfxTrack,
           sfxVolume: currentState.sfxVolume,
           sfxSpeed: currentState.sfxSpeed,
@@ -1637,12 +1655,122 @@ export function ReelTimelineEditor({
               >
                 <div className="flex items-center gap-1.5">
                   <Eye className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Play Individual Shot Only</span>
+                  <span>
+                    {shotAutoAdvance
+                      ? "Play Shots Sequentially (1 → 2 → 3 → 4)"
+                      : "Play Individual Shot Only (Loop)"}
+                  </span>
                 </div>
                 <span className="text-[10px] font-normal text-amber-400/80">
-                  Inspect Single Shot #{selectedClipIndex + 1} Head &amp; Tail Trim
+                  {shotAutoAdvance
+                    ? "✓ Auto-Advances Shot 1 → 2 → 3 → 4 with Original Audio"
+                    : `Looping Single Shot #${selectedClipIndex + 1} Head & Tail`}
                 </span>
               </button>
+            </div>
+
+            {/* Shot Progression Toggle & Lyria Master Audio Overlay Selector */}
+            <div className="flex flex-col gap-1.5 pt-1.5 border-t border-slate-900/80">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                  Individual Shot Mode:
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setShotAutoAdvance(true)}
+                    className={`px-2.5 py-1 rounded text-[10px] font-bold transition cursor-pointer ${
+                      shotAutoAdvance
+                        ? "bg-emerald-500/25 border border-emerald-500/70 text-emerald-300"
+                        : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    ▶ Auto-Advance Forward (1 → 2 → 3 → 4)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShotAutoAdvance(false)}
+                    className={`px-2.5 py-1 rounded text-[10px] font-bold transition cursor-pointer ${
+                      !shotAutoAdvance
+                        ? "bg-amber-500/25 border border-amber-500/70 text-amber-300"
+                        : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    🔁 Loop Single Shot (#{selectedClipIndex + 1})
+                  </button>
+                </div>
+              </div>
+
+              {currentState.musicTrack === "original_lyria" && (
+                <div className="flex flex-col gap-1 bg-slate-950/80 border border-teal-500/30 rounded-lg p-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-teal-300 font-bold">
+                      🎼 Overlap Good Lyria Music Over Combined Reel:
+                    </span>
+                    <span className="text-[9px] text-slate-400">
+                      1-Click Re-Stitch &amp; Auto-Play
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                    <button
+                      type="button"
+                      disabled={isStitching}
+                      onClick={() => {
+                        pushState((prev) => ({ ...prev, lyriaOverlayMode: "hybrid_lyria_bed" }));
+                        handleStitchAll4ToPlayAsOneReel(false, "hybrid_lyria_bed");
+                      }}
+                      className={`py-1.5 px-2 rounded text-[10px] font-bold transition cursor-pointer text-left flex flex-col ${
+                        (currentState.lyriaOverlayMode || "hybrid_lyria_bed") === "hybrid_lyria_bed"
+                          ? "bg-teal-500/25 border border-teal-400 text-teal-200 shadow-sm"
+                          : "bg-slate-900/80 border border-slate-800 text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      <span>🥇 Hybrid Lip-Sync + Lyria Bed</span>
+                      <span className="text-[9px] font-normal text-teal-300/80">
+                        Shot Vocals + Continuous Lyria Groove
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={isStitching}
+                      onClick={() => {
+                        pushState((prev) => ({ ...prev, lyriaOverlayMode: "pure_lyria_song" }));
+                        handleStitchAll4ToPlayAsOneReel(false, "pure_lyria_song");
+                      }}
+                      className={`py-1.5 px-2 rounded text-[10px] font-bold transition cursor-pointer text-left flex flex-col ${
+                        currentState.lyriaOverlayMode === "pure_lyria_song"
+                          ? "bg-purple-500/25 border border-purple-400 text-purple-200 shadow-sm"
+                          : "bg-slate-900/80 border border-slate-800 text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      <span>🎼 Overlap Pure 24s Lyria Song</span>
+                      <span className="text-[9px] font-normal text-purple-300/80">
+                        100% Unaltered Lyria Master Song
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={isStitching}
+                      onClick={() => {
+                        pushState((prev) => ({ ...prev, lyriaOverlayMode: "shot_native_only" }));
+                        handleStitchAll4ToPlayAsOneReel(false, "shot_native_only");
+                      }}
+                      className={`py-1.5 px-2 rounded text-[10px] font-bold transition cursor-pointer text-left flex flex-col ${
+                        currentState.lyriaOverlayMode === "shot_native_only"
+                          ? "bg-amber-500/25 border border-amber-400 text-amber-200 shadow-sm"
+                          : "bg-slate-900/80 border border-slate-800 text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      <span>🎤 Pure Sequential Shot Audio</span>
+                      <span className="text-[9px] font-normal text-amber-300/80">
+                        Exact Shot 1→2→3→4 Audio Stitched
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Instant Individual Shot Selector Strip */}

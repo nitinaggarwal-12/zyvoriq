@@ -42,6 +42,7 @@ export interface EditorRenderRequest {
   musicTrimEndSec?: number;
   musicVolume: number; // 0.0 to 1.5
   musicSpeed?: number; // Independent music tempo/playback speed (0.25x - 4.0x)
+  lyriaOverlayMode?: "hybrid_lyria_bed" | "pure_lyria_song" | "shot_native_only" | string;
   // Independent Background Sound Effect (SFX) Track
   sfxTrack: string; // URL or preset path ("none", "/assets/audio/sfx/...", etc.)
   sfxVolume: number; // 0.0 to 1.0
@@ -123,6 +124,7 @@ export async function POST(req: NextRequest) {
     // 1. PURE VISUAL PIPELINE: Trim each video clip to [trimStartSec, trimEndSec] and apply visual speed ONLY (-an)
     // This guarantees cutting/adding video frames or changing video speed NEVER chops or distorts the continuous music track!
     const trimmedSegments: string[] = [];
+    const trimmedAudioSegments: string[] = [];
     const segmentDurations: number[] = [];
     let firstValidSourcePath: string | null = null;
 
@@ -141,8 +143,11 @@ export async function POST(req: NextRequest) {
       const end = Math.max(start + 0.2, Number(clip.trimEndSec || 6));
       const dur = Number((end - start).toFixed(3));
       const segPath = path.join(workDir, `seg_${String(i).padStart(2, "0")}.mp4`);
+      const segAudioPath = path.join(workDir, `seg_a_${String(i).padStart(2, "0")}.wav`);
 
       const effectiveVideoSpeed = Math.max(0.25, Math.min(4.0, Number(clip.speed || 1.0) * globalVideoSpeed));
+      const outDur = Number((dur / effectiveVideoSpeed).toFixed(3));
+
       const vfStages: string[] = [];
       if (Math.abs(effectiveVideoSpeed - 1.0) > 0.01) {
         vfStages.push(`setpts=${(1 / effectiveVideoSpeed).toFixed(4)}*PTS`);
@@ -179,7 +184,50 @@ export async function POST(req: NextRequest) {
         segPath,
       ]);
       trimmedSegments.push(segPath);
-      segmentDurations.push(Number((dur / effectiveVideoSpeed).toFixed(3)));
+      segmentDurations.push(outDur);
+
+      // Extract matching trimmed audio segment from this shot so sequential shot audio is preserved
+      const afStages: string[] = ["aresample=48000"];
+      if (Math.abs(effectiveVideoSpeed - 1.0) > 0.01) {
+        afStages.push(buildAtempoFilter(effectiveVideoSpeed));
+      }
+      const fadeDur = Math.min(0.03, outDur * 0.15);
+      const fadeOutSt = Math.max(0, outDur - fadeDur);
+      afStages.push(`afade=t=in:st=0:d=${fadeDur.toFixed(3)},afade=t=out:st=${fadeOutSt.toFixed(3)}:d=${fadeDur.toFixed(3)}`);
+      try {
+        execFileSync("ffmpeg", [
+          "-y",
+          "-ss",
+          String(start),
+          "-t",
+          String(dur),
+          "-i",
+          localSrc,
+          "-vn",
+          "-af",
+          afStages.join(","),
+          "-ar",
+          "48000",
+          "-ac",
+          "2",
+          segAudioPath,
+        ]);
+        trimmedAudioSegments.push(segAudioPath);
+      } catch {
+        execFileSync("ffmpeg", [
+          "-y",
+          "-f",
+          "lavfi",
+          "-i",
+          `anullsrc=r=48000:cl=stereo:d=${outDur.toFixed(3)}`,
+          "-ar",
+          "48000",
+          "-ac",
+          "2",
+          segAudioPath,
+        ]);
+        trimmedAudioSegments.push(segAudioPath);
+      }
     }
 
     // 2. Concatenate pure visual segments (supports Instant Cut, Smooth Cross-Dissolve xfade, or Flash Cut xfade)
@@ -255,6 +303,28 @@ export async function POST(req: NextRequest) {
       ]);
     }
 
+    // Concatenate sequential shot audio (Shot 1 -> Shot 2 -> Shot 3 -> Shot 4)
+    const concatClipAudioPath = path.join(workDir, "concat_clips_audio.wav");
+    if (trimmedAudioSegments.length > 0) {
+      const aConcatListPath = path.join(workDir, "aconcat.txt");
+      fs.writeFileSync(
+        aConcatListPath,
+        trimmedAudioSegments.map((p) => `file '${p.replace(/'/g, "'\\''")}'`).join("\n")
+      );
+      execFileSync("ffmpeg", [
+        "-y",
+        "-f",
+        "concat",
+        "-safe",
+        "0",
+        "-i",
+        aConcatListPath,
+        "-c",
+        "copy",
+        concatClipAudioPath,
+      ]);
+    }
+
     // Measure edited visual timeline duration
     const probeOut = execFileSync("ffprobe", [
       "-v",
@@ -269,23 +339,35 @@ export async function POST(req: NextRequest) {
       .trim();
     const totalDurationSec = Math.max(1, parseFloat(probeOut) || 12);
 
-    // 3. INDEPENDENT 3-STEM AUDIO MASTERING ENGINE
-    // Discover separated stems (vocals.wav / no_vocals.wav / song.mp3) if available for this reel
+    // 3. INDEPENDENT 3-STEM & LYRIA MASTER AUDIO ENGINE
+    // Discover continuous Lyria master song (song_cut.mp3 / master_lyria.mp4 / song.mp3) & stems
     let reelVocalStemPath: string | null = null;
     let reelMusicStemPath: string | null = null;
+    let reelContinuousLyriaPath: string | null = null;
     if (body.reelId) {
       const candidates = [
         path.join(process.cwd(), "public", "renders", "yt", body.reelId),
         path.join(process.cwd(), "scratch", "yt", body.reelId),
       ];
       for (const dir of candidates) {
-        if (fs.existsSync(path.join(dir, "stems", "htdemucs", "song", "vocals.wav"))) {
-          reelVocalStemPath = path.join(dir, "stems", "htdemucs", "song", "vocals.wav");
+        if (!reelContinuousLyriaPath && fs.existsSync(path.join(dir, "song_cut.mp3"))) {
+          reelContinuousLyriaPath = path.join(dir, "song_cut.mp3");
         }
-        if (fs.existsSync(path.join(dir, "stems", "htdemucs", "song", "no_vocals.wav"))) {
+        if (!reelContinuousLyriaPath && fs.existsSync(path.join(dir, "master_lyria.mp4"))) {
+          reelContinuousLyriaPath = path.join(dir, "master_lyria.mp4");
+        }
+        if (!reelContinuousLyriaPath && fs.existsSync(path.join(dir, "song.mp3"))) {
+          reelContinuousLyriaPath = path.join(dir, "song.mp3");
+        }
+        if (fs.existsSync(path.join(dir, "stems", "htdemucs", "song_cut", "no_vocals.wav"))) {
+          reelMusicStemPath = path.join(dir, "stems", "htdemucs", "song_cut", "no_vocals.wav");
+        } else if (fs.existsSync(path.join(dir, "stems", "htdemucs", "song", "no_vocals.wav"))) {
           reelMusicStemPath = path.join(dir, "stems", "htdemucs", "song", "no_vocals.wav");
-        } else if (fs.existsSync(path.join(dir, "song.mp3"))) {
-          reelMusicStemPath = path.join(dir, "song.mp3");
+        }
+        if (fs.existsSync(path.join(dir, "stems", "htdemucs", "song_cut", "vocals.wav"))) {
+          reelVocalStemPath = path.join(dir, "stems", "htdemucs", "song_cut", "vocals.wav");
+        } else if (fs.existsSync(path.join(dir, "stems", "htdemucs", "song", "vocals.wav"))) {
+          reelVocalStemPath = path.join(dir, "stems", "htdemucs", "song", "vocals.wav");
         }
       }
     }
@@ -329,17 +411,20 @@ export async function POST(req: NextRequest) {
     }
     const stemEqChain = eqStages.length > 0 ? `,${eqStages.join(",")}` : "";
 
-    // Resolve Vocal/Dialogue Source (never fallback to full original video audio when user selected a custom replacement music track)
     const isUsingCustomMusic = Boolean(body.musicTrack && body.musicTrack !== "original_lyria");
+    const lyriaOverlayMode = body.lyriaOverlayMode || "hybrid_lyria_bed";
+
+    // Resolve Vocal/Dialogue Source
     const vocalSourceFile =
       (body.vocalUrl && resolveLocalFilePath(body.vocalUrl)) ||
+      (fs.existsSync(concatClipAudioPath) ? concatClipAudioPath : null) ||
       reelVocalStemPath ||
       (isUsingCustomMusic ? null : firstValidSourcePath);
 
-    // Resolve Music Bed Source (Unaltered continuous stream unless custom_trim specified)
+    // Resolve Music Bed Source
     let musicSourceFile: string | null = null;
     if (body.musicTrack === "original_lyria") {
-      musicSourceFile = reelMusicStemPath || firstValidSourcePath;
+      musicSourceFile = reelContinuousLyriaPath || reelMusicStemPath || concatClipAudioPath || firstValidSourcePath;
     } else if (body.musicTrack && body.musicTrack !== "none") {
       musicSourceFile = resolveLocalFilePath(body.musicTrack);
     }
@@ -355,11 +440,6 @@ export async function POST(req: NextRequest) {
     const filterParts: string[] = [];
     const mixInputs: string[] = [];
     let inputIdx = 1;
-
-    const isSameMasterAudio =
-      vocalSourceFile &&
-      musicSourceFile &&
-      path.resolve(vocalSourceFile) === path.resolve(musicSourceFile);
 
     const vocalEntrySec = Math.max(0, Number(body.vocalEntrySec || 0));
     const lipSyncOffsetMs = Math.max(-1000, Math.min(1000, Number(body.lipSyncOffsetMs || 0)));
@@ -381,24 +461,60 @@ export async function POST(req: NextRequest) {
       // Master mute explicitly toggled in 5-stem spectrum mixer
       inputs.push("-f", "lavfi", "-i", `anullsrc=r=48000:cl=stereo:d=${totalDurationSec.toFixed(3)}`);
       filterParts.push(`[${inputIdx}:a]anull[a_out]`);
-    } else if (isSameMasterAudio) {
-      // Single continuous Original Lyria Master Audio stream (100% unaltered music + vocals across all stitched cuts)
+    } else if (!isUsingCustomMusic && lyriaOverlayMode === "pure_lyria_song" && reelContinuousLyriaPath) {
+      // MODE A: Pure Continuous Google DeepMind Lyria 3.5 Master Song Over Combined Reel (Zero Demucs artifacts, Zero amix loss)
       const masterVol = Math.max(vocalVol, musicVol, 1.0);
-      inputs.push("-stream_loop", "-1", "-i", vocalSourceFile);
+      inputs.push("-stream_loop", "-1", "-i", reelContinuousLyriaPath);
       const atempoMaster = buildAtempoFilter(musicSpeed);
-      // If vocalEntrySec > 0, attenuate vocal formants (450Hz-3kHz) during [0, vocalEntrySec] so instrumental intro plays cleanly before vocals drop
       const vocalEntryStage =
         vocalEntrySec > 0.05
           ? `,equalizer=f=1400:width_type=h:width=1800:g=-18:enable='between(t,0,${vocalEntrySec.toFixed(2)})'`
           : "";
       filterParts.push(
-        `[${inputIdx}:a]${atempoMaster}${phaseShiftStage},atrim=0:${totalDurationSec.toFixed(3)},asetpts=PTS-STARTPTS,volume=${masterVol.toFixed(2)}${stemEqChain}${vocalEntryStage}[a_master]`
+        `[${inputIdx}:a]${atempoMaster}${phaseShiftStage},atrim=0:${totalDurationSec.toFixed(3)},asetpts=PTS-STARTPTS,volume=${masterVol.toFixed(2)}${stemEqChain}${vocalEntryStage},loudnorm=I=-14:TP=-1.5:LRA=11[a_master]`
       );
       mixInputs.push("[a_master]");
       inputIdx++;
+    } else if (!isUsingCustomMusic && lyriaOverlayMode === "shot_native_only" && fs.existsSync(concatClipAudioPath)) {
+      // MODE B: Pure Sequential Shot Audio (Shot 1 -> Shot 2 -> Shot 3 -> Shot 4 exact lip-synced native audio)
+      const masterVol = Math.max(vocalVol, musicVol, 1.0);
+      inputs.push("-i", concatClipAudioPath);
+      const atempoMaster = buildAtempoFilter(vocalSpeed);
+      filterParts.push(
+        `[${inputIdx}:a]${atempoMaster}${phaseShiftStage},atrim=0:${totalDurationSec.toFixed(3)},asetpts=PTS-STARTPTS,volume=${masterVol.toFixed(2)}${stemEqChain},loudnorm=I=-14:TP=-1.5:LRA=11[a_master]`
+      );
+      mixInputs.push("[a_master]");
+      inputIdx++;
+    } else if (
+      !isUsingCustomMusic &&
+      fs.existsSync(concatClipAudioPath) &&
+      reelContinuousLyriaPath &&
+      vocalVol > 0.01 &&
+      isStemActive("speech")
+    ) {
+      // MODE C (Default Hybrid Master): Lip-Synced Sequential Shot Audio + Continuous Lyria Studio Bed with Sidechain Ducking
+      inputs.push("-i", concatClipAudioPath);
+      const shotIdx = inputIdx++;
+      inputs.push("-stream_loop", "-1", "-i", reelContinuousLyriaPath);
+      const bedIdx = inputIdx++;
+
+      const atempoVocal = buildAtempoFilter(vocalSpeed);
+      const atempoMusic = buildAtempoFilter(musicSpeed);
+      const vocalGateStage =
+        vocalEntrySec > 0.05
+          ? `,volume=enable='between(t,0,${vocalEntrySec.toFixed(2)})':volume=0`
+          : "";
+
+      filterParts.push(
+        `[${shotIdx}:a]${atempoVocal}${phaseShiftStage}${vocalGateStage},atrim=0:${totalDurationSec.toFixed(3)},asetpts=PTS-STARTPTS,volume=${vocalVol.toFixed(2)},asplit=2[shot_main][shot_sc]`,
+        `[${bedIdx}:a]${atempoMusic},atrim=0:${totalDurationSec.toFixed(3)},asetpts=PTS-STARTPTS,volume=${(musicVol * 0.85).toFixed(2)}${stemEqChain}[bed_raw]`,
+        `[bed_raw][shot_sc]sidechaincompress=threshold=0.025:ratio=5:attack=15:release=220[bed_ducked]`,
+        `[shot_main][bed_ducked]amix=inputs=2:duration=first:dropout_transition=0:normalize=0,loudnorm=I=-14:TP=-1.5:LRA=11[a_hybrid]`
+      );
+      mixInputs.push("[a_hybrid]");
     } else {
-      // Track A: Dialogue / Vocals Stem (with independent vocalSpeed, vocalVolume, vocalEntrySec & lipSyncOffsetMs)
-      if (vocalSourceFile && vocalVol > 0.01 && isStemActive("speech")) {
+      // Custom Music Track or Independent Stem Mixing Fallback
+      if (vocalSourceFile && vocalVol > 0.01 && isStemActive("speech") && !isUsingCustomMusic) {
         inputs.push("-stream_loop", "-1", "-i", vocalSourceFile);
         const atempoVocal = buildAtempoFilter(vocalSpeed);
         const vocalGateStage =
@@ -412,7 +528,6 @@ export async function POST(req: NextRequest) {
         inputIdx++;
       }
 
-      // Track B: Unaltered Continuous Music Bed (with independent musicSpeed & musicVolume)
       if (musicSourceFile && musicVol > 0.01 && isStemActive("music")) {
         inputs.push("-stream_loop", "-1", "-i", musicSourceFile);
         const mStart = body.musicLockMode === "custom_trim" ? Math.max(0, Number(body.musicTrimStartSec || 0)) : 0;
