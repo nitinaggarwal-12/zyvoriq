@@ -1726,7 +1726,7 @@ export function ReelTimelineEditor({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6">
         {/* LEFT 5 COLS: Live Video Preview & Selected Shot Frame Trimmer */}
         <div className="lg:col-span-5 flex flex-col gap-4">
-          {/* Dual Playback Mode Switcher: Stitched Combined (Seamless Master) vs Individual Shot Review */}
+          {/* Compact Playback Mode Switcher & Lyria Master Audio Overlay Selector */}
           <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
             <div className="flex items-center justify-between gap-2 text-xs">
               <button
@@ -1746,22 +1746,17 @@ export function ReelTimelineEditor({
                     handleStitchAll4ToPlayAsOneReel();
                   }
                 }}
-                className={`flex-1 py-2 px-3 rounded-lg font-bold transition cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                className={`flex-1 py-2 px-3 rounded-lg font-bold transition cursor-pointer flex items-center justify-center gap-1.5 ${
                   previewMode === "stitched_reel" || previewMode === "sequence"
-                    ? "bg-gradient-to-r from-teal-500/25 to-emerald-500/20 border border-teal-500/70 text-teal-300 shadow-md"
+                    ? "bg-gradient-to-r from-teal-500/25 to-emerald-500/20 border border-teal-500/70 text-teal-300 shadow-sm"
                     : "bg-slate-900/70 border border-slate-800 text-slate-400 hover:text-slate-200"
                 }`}
               >
-                <div className="flex items-center gap-1.5">
-                  <Film className="w-3.5 h-3.5 text-teal-400" />
-                  <span>
-                    {isStitching
-                      ? "⚡ Auto-Stitching Combined Reel..."
-                      : `Play Stitched Combined (${sequencePlaylist.length} Shots)`}
-                  </span>
-                </div>
-                <span className="text-[10px] font-normal text-teal-400/80">
-                  ✓ One Seamless Reel • Original or Custom Music Baked • 0ms Gap
+                <Film className="w-3.5 h-3.5 text-teal-400" />
+                <span>
+                  {isStitching
+                    ? "⚡ Stitching..."
+                    : `🎬 Combined Reel (${sequencePlaylist.length} Shots)`}
                 </span>
               </button>
 
@@ -1775,191 +1770,101 @@ export function ReelTimelineEditor({
                     if (isPlaying) videoRef.current.play().catch(() => {});
                   }
                 }}
-                className={`flex-1 py-2 px-3 rounded-lg font-bold transition cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                className={`flex-1 py-2 px-3 rounded-lg font-bold transition cursor-pointer flex items-center justify-center gap-1.5 ${
                   previewMode === "shot"
-                    ? "bg-gradient-to-r from-amber-500/25 to-orange-500/20 border border-amber-500/70 text-amber-300 shadow-md"
+                    ? "bg-gradient-to-r from-amber-500/25 to-orange-500/20 border border-amber-500/70 text-amber-300 shadow-sm"
                     : "bg-slate-900/70 border border-slate-800 text-slate-400 hover:text-slate-200"
                 }`}
               >
-                <div className="flex items-center gap-1.5">
-                  <Eye className="w-3.5 h-3.5 text-amber-400" />
-                  <span>
-                    {shotAutoAdvance
-                      ? "Play Shots Sequentially (1 → 2 → 3 → 4)"
-                      : "Play Individual Shot Only (Loop)"}
-                  </span>
-                </div>
-                <span className="text-[10px] font-normal text-amber-400/80">
-                  {shotAutoAdvance
-                    ? "✓ Auto-Advances Shot 1 → 2 → 3 → 4 with Original Audio"
-                    : `Looping Single Shot #${selectedClipIndex + 1} Head & Tail`}
-                </span>
+                <Eye className="w-3.5 h-3.5 text-amber-400" />
+                <span>👁️ Individual Shots (1 → 4)</span>
               </button>
             </div>
 
-            {/* Shot Progression Toggle & Lyria Master Audio Overlay Selector */}
-            <div className="flex flex-col gap-1.5 pt-1.5 border-t border-slate-900/80">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
-                  Individual Shot Mode:
-                </span>
+            {previewMode === "shot" && (
+              <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-900 text-[10px]">
+                <span className="font-mono text-slate-400">Shot Mode:</span>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
                     onClick={() => setShotAutoAdvance(true)}
-                    className={`px-2.5 py-1 rounded text-[10px] font-bold transition cursor-pointer ${
+                    className={`px-2 py-0.5 rounded font-bold transition cursor-pointer ${
                       shotAutoAdvance
                         ? "bg-emerald-500/25 border border-emerald-500/70 text-emerald-300"
-                        : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200"
+                        : "bg-slate-900 border border-slate-800 text-slate-400"
                     }`}
                   >
-                    ▶ Auto-Advance Forward (1 → 2 → 3 → 4)
+                    ▶ Auto-Advance (1→4)
                   </button>
                   <button
                     type="button"
                     onClick={() => setShotAutoAdvance(false)}
-                    className={`px-2.5 py-1 rounded text-[10px] font-bold transition cursor-pointer ${
+                    className={`px-2 py-0.5 rounded font-bold transition cursor-pointer ${
                       !shotAutoAdvance
                         ? "bg-amber-500/25 border border-amber-500/70 text-amber-300"
-                        : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200"
+                        : "bg-slate-900 border border-slate-800 text-slate-400"
                     }`}
                   >
-                    🔁 Loop Single Shot (#{selectedClipIndex + 1})
+                    🔁 Loop Shot #{selectedClipIndex + 1}
                   </button>
                 </div>
               </div>
+            )}
 
-              {currentState.musicTrack === "original_lyria" && (
-                <div className="flex flex-col gap-1 bg-slate-950/80 border border-teal-500/30 rounded-lg p-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-teal-300 font-bold">
-                      🎼 Overlap Good Lyria Music Over Combined Reel:
-                    </span>
-                    <span className="text-[9px] text-slate-400">
-                      1-Click Re-Stitch &amp; Auto-Play
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-                    <button
-                      type="button"
-                      disabled={isStitching}
-                      onClick={() => {
-                        pushState((prev) => ({ ...prev, lyriaOverlayMode: "hybrid_lyria_bed" }));
-                        handleStitchAll4ToPlayAsOneReel(false, "hybrid_lyria_bed");
-                      }}
-                      className={`py-1.5 px-2 rounded text-[10px] font-bold transition cursor-pointer text-left flex flex-col ${
-                        (currentState.lyriaOverlayMode || "hybrid_lyria_bed") === "hybrid_lyria_bed"
-                          ? "bg-teal-500/25 border border-teal-400 text-teal-200 shadow-sm"
-                          : "bg-slate-900/80 border border-slate-800 text-slate-400 hover:text-slate-200"
-                      }`}
-                    >
-                      <span>🥇 Hybrid Lip-Sync + Lyria Bed</span>
-                      <span className="text-[9px] font-normal text-teal-300/80">
-                        Shot Vocals + Continuous Lyria Groove
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={isStitching}
-                      onClick={() => {
-                        pushState((prev) => ({ ...prev, lyriaOverlayMode: "pure_lyria_song" }));
-                        handleStitchAll4ToPlayAsOneReel(false, "pure_lyria_song");
-                      }}
-                      className={`py-1.5 px-2 rounded text-[10px] font-bold transition cursor-pointer text-left flex flex-col ${
-                        currentState.lyriaOverlayMode === "pure_lyria_song"
-                          ? "bg-purple-500/25 border border-purple-400 text-purple-200 shadow-sm"
-                          : "bg-slate-900/80 border border-slate-800 text-slate-400 hover:text-slate-200"
-                      }`}
-                    >
-                      <span>🎼 Overlap Pure 24s Lyria Song</span>
-                      <span className="text-[9px] font-normal text-purple-300/80">
-                        100% Unaltered Lyria Master Song
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={isStitching}
-                      onClick={() => {
-                        pushState((prev) => ({ ...prev, lyriaOverlayMode: "shot_native_only" }));
-                        handleStitchAll4ToPlayAsOneReel(false, "shot_native_only");
-                      }}
-                      className={`py-1.5 px-2 rounded text-[10px] font-bold transition cursor-pointer text-left flex flex-col ${
-                        currentState.lyriaOverlayMode === "shot_native_only"
-                          ? "bg-amber-500/25 border border-amber-400 text-amber-200 shadow-sm"
-                          : "bg-slate-900/80 border border-slate-800 text-slate-400 hover:text-slate-200"
-                      }`}
-                    >
-                      <span>🎤 Pure Sequential Shot Audio</span>
-                      <span className="text-[9px] font-normal text-amber-300/80">
-                        Exact Shot 1→2→3→4 Audio Stitched
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-            {/* ── ACOUSTIC-VISUAL BPM AUTO-MATCHER & DOWNBEAT LOCK HUD ── */}
-            <div className="p-2.5 rounded-xl bg-gradient-to-r from-slate-950 via-teal-950/30 to-slate-950 border border-teal-500/40 space-y-2 shadow-md">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-teal-400 animate-ping" />
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-teal-300">
-                    ⚡ Auto-Detect &amp; Match Video / Lyria Speed (BPM Beat-Grid Lock)
-                  </span>
-                </div>
-                <span className="px-2 py-0.5 rounded bg-slate-900 border border-teal-500/40 text-[10px] font-mono font-bold text-teal-300">
-                  {isDetectingBpm ? "Analyzing Audio Transient Peaks..." : `${detectedBpm.toFixed(1)} BPM Detected`}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+            {currentState.musicTrack === "original_lyria" && (
+              <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-slate-900">
                 <button
                   type="button"
-                  disabled={isDetectingBpm || isStitching}
-                  onClick={() => handleAutoDetectAndMatchTempo("video_to_music")}
-                  className={`px-3 py-1.5 rounded-lg text-left border transition cursor-pointer flex items-center justify-between ${
-                    tempoSyncMode === "video_to_music"
-                      ? "bg-teal-500/25 border-teal-400 text-teal-200 shadow-sm"
-                      : "bg-slate-900/90 border-slate-800 hover:border-teal-500/50 text-slate-300"
+                  disabled={isStitching}
+                  onClick={() => {
+                    pushState((prev) => ({ ...prev, lyriaOverlayMode: "hybrid_lyria_bed" }));
+                    handleStitchAll4ToPlayAsOneReel(false, "hybrid_lyria_bed");
+                  }}
+                  className={`py-1.5 px-2 rounded text-[10px] font-bold transition cursor-pointer text-center ${
+                    (currentState.lyriaOverlayMode || "hybrid_lyria_bed") === "hybrid_lyria_bed"
+                      ? "bg-teal-500/25 border border-teal-400 text-teal-200"
+                      : "bg-slate-900/80 border border-slate-800 text-slate-400 hover:text-slate-200"
                   }`}
-                  title="Detects exact Lyria BPM and automatically adjusts Video Playback Speed so every shot cut lands on the musical downbeat"
+                  title="Combines original shot vocals with continuous Lyria groove"
                 >
-                  <div>
-                    <div className="text-[11px] font-bold text-teal-300">🎬 Match Video Speed to Lyria BPM</div>
-                    <div className="text-[9px] text-slate-400">Keep Audio 1.00x • Adjust Video Cuts to Downbeats</div>
-                  </div>
-                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-teal-950 text-teal-300">
-                    {currentState.globalVideoSpeed.toFixed(2)}x
-                  </span>
+                  🥇 Hybrid + Lyria
                 </button>
 
                 <button
                   type="button"
-                  disabled={isDetectingBpm || isStitching}
-                  onClick={() => handleAutoDetectAndMatchTempo("music_to_video")}
-                  className={`px-3 py-1.5 rounded-lg text-left border transition cursor-pointer flex items-center justify-between ${
-                    tempoSyncMode === "music_to_video"
-                      ? "bg-purple-500/25 border-purple-400 text-purple-200 shadow-sm"
-                      : "bg-slate-900/90 border-slate-800 hover:border-purple-500/50 text-slate-300"
+                  disabled={isStitching}
+                  onClick={() => {
+                    pushState((prev) => ({ ...prev, lyriaOverlayMode: "pure_lyria_song" }));
+                    handleStitchAll4ToPlayAsOneReel(false, "pure_lyria_song");
+                  }}
+                  className={`py-1.5 px-2 rounded text-[10px] font-bold transition cursor-pointer text-center ${
+                    currentState.lyriaOverlayMode === "pure_lyria_song"
+                      ? "bg-purple-500/25 border border-purple-400 text-purple-200"
+                      : "bg-slate-900/80 border border-slate-800 text-slate-400 hover:text-slate-200"
                   }`}
-                  title="Detects exact Lyria BPM and pitch-preserved time-stretches Music Speed so musical bars match exact 6.0s video shots"
+                  title="100% Unaltered 24s Lyria Master Song"
                 >
-                  <div>
-                    <div className="text-[11px] font-bold text-purple-300">🎵 Match Lyria Tempo to Video Speed</div>
-                    <div className="text-[9px] text-slate-400">Keep Video 1.00x • Stretch Music Bars to Cuts</div>
-                  </div>
-                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-purple-950 text-purple-300">
-                    {currentState.musicSpeed.toFixed(2)}x
-                  </span>
+                  🎼 Pure Lyria Song
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isStitching}
+                  onClick={() => {
+                    pushState((prev) => ({ ...prev, lyriaOverlayMode: "shot_native_only" }));
+                    handleStitchAll4ToPlayAsOneReel(false, "shot_native_only");
+                  }}
+                  className={`py-1.5 px-2 rounded text-[10px] font-bold transition cursor-pointer text-center ${
+                    currentState.lyriaOverlayMode === "shot_native_only"
+                      ? "bg-amber-500/25 border border-amber-400 text-amber-200"
+                      : "bg-slate-900/80 border border-slate-800 text-slate-400 hover:text-slate-200"
+                  }`}
+                  title="Exact Shot 1→2→3→4 Native Audio Stitched"
+                >
+                  🎤 Native Shot Audio
                 </button>
               </div>
-
-              <div className="text-[10px] font-mono text-teal-300/90 bg-slate-950/80 px-2.5 py-1 rounded border border-slate-800/80 truncate">
-                {beatSyncSummary}
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Interactive Player Viewport with Live Color LUT Filter and Smooth Cut Crossfading */}
@@ -2142,227 +2047,29 @@ export function ReelTimelineEditor({
               })}
             </div>
           </div>
-
-          {/* ── INTERACTIVE 5-STEM UP/DOWN AUDIO SPECTRUM BAR CHART & PER-SHOT VOICE MIXER ── */}
-          <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-3 shadow-lg">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-2">
-                <Activity className={`w-4 h-4 ${isPlaying ? "text-teal-400 animate-pulse" : "text-cyan-400"}`} />
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
-                  Per-Shot Voice &amp; Sound Spectrum (Up/Down Bar Chart)
-                </span>
-              </div>
-              <span className="px-2 py-0.5 rounded bg-teal-950/80 border border-teal-500/40 text-[10px] font-mono font-bold text-teal-300">
-                {activeShotVoiceProfile.badge}
-              </span>
-            </div>
-
-            {/* Per-Shot Voice Profile Switcher Strip */}
-            <div className="grid grid-cols-4 gap-1.5">
-              {SHOT_VOICE_SIGNATURES.map((sig, idx) => {
-                const isSelected = (selectedClipIndex % 4) === idx;
-                return (
-                  <button
-                    key={`voice_sig_${idx}`}
-                    type="button"
-                    onClick={() => {
-                      const targetIdx = Math.min(idx, currentState.clips.length - 1);
-                      setSelectedClipIndex(targetIdx);
-                      if (videoRef.current && currentState.clips[targetIdx]) {
-                        videoRef.current.currentTime = currentState.clips[targetIdx].trimStartSec;
-                      }
-                    }}
-                    className={`px-2 py-1.5 rounded-lg text-left border transition cursor-pointer ${
-                      isSelected
-                        ? "bg-teal-950/70 border-teal-400 text-teal-200"
-                        : "bg-slate-900/80 border-slate-800 hover:border-slate-700 text-slate-400"
-                    }`}
-                  >
-                    <div className="text-[10px] font-mono font-bold truncate">Shot #{idx + 1} Voice</div>
-                    <div className="text-[9px] text-slate-400 truncate mt-0.5">
-                      {idx === 0
-                        ? "🗣️ Lead Speech"
-                        : idx === 1
-                        ? "🎤 Duet Chorus"
-                        : idx === 2
-                        ? "🎸 Sub-Bass Drop"
-                        : "🎉 Finale Anthem"}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* 5-Stem Up/Down Bar Chart Columns: Speech, Song, Music, Background, Master */}
-            <div className="grid grid-cols-5 gap-2 pt-0.5">
-              {[
-                {
-                  key: "speech",
-                  label: "Speech",
-                  icon: "🗣️",
-                  color: "from-cyan-400 to-teal-500",
-                  textColor: "text-cyan-300",
-                  bars: stemSpectrumBars.speech,
-                  db: stemSpectrumBars.peaksDb.speech,
-                  gainVal: currentState.vocalMode === "mute" ? 0 : currentState.vocalVolume,
-                  onGainChange: (val: number) =>
-                    pushState((prev) => ({ ...prev, vocalVolume: val, vocalMode: "original" })),
-                },
-                {
-                  key: "song",
-                  label: "Song",
-                  icon: "🎤",
-                  color: "from-pink-400 to-rose-500",
-                  textColor: "text-pink-300",
-                  bars: stemSpectrumBars.song,
-                  db: stemSpectrumBars.peaksDb.song,
-                  gainVal: songHarmoniesGain,
-                  onGainChange: (val: number) => setSongHarmoniesGain(val),
-                },
-                {
-                  key: "music",
-                  label: "Music",
-                  icon: "🎸",
-                  color: "from-purple-400 to-indigo-500",
-                  textColor: "text-purple-300",
-                  bars: stemSpectrumBars.music,
-                  db: stemSpectrumBars.peaksDb.music,
-                  gainVal: currentState.musicTrack === "none" ? 0 : currentState.musicVolume,
-                  onGainChange: (val: number) =>
-                    pushState((prev) => ({ ...prev, musicVolume: val })),
-                },
-                {
-                  key: "background",
-                  label: "Bg / SFX",
-                  icon: "🌊",
-                  color: "from-amber-400 to-orange-500",
-                  textColor: "text-amber-300",
-                  bars: stemSpectrumBars.background,
-                  db: stemSpectrumBars.peaksDb.background,
-                  gainVal: currentState.sfxVolume,
-                  onGainChange: (val: number) =>
-                    pushState((prev) => ({ ...prev, sfxVolume: val })),
-                },
-                {
-                  key: "master",
-                  label: "Master",
-                  icon: "🔊",
-                  color: "from-emerald-400 to-teal-500",
-                  textColor: "text-emerald-300",
-                  bars: stemSpectrumBars.master,
-                  db: stemSpectrumBars.peaksDb.master,
-                  gainVal: 1.0,
-                  onGainChange: null,
-                },
-              ].map((stem) => {
-                const isMuted = stemMutes[stem.key] || (anyStemSoloed && stem.key !== "master" && !stemSolos[stem.key]);
-                return (
-                  <div
-                    key={stem.key}
-                    className={`p-2 rounded-xl border flex flex-col justify-between transition ${
-                      isMuted
-                        ? "bg-slate-950/40 border-slate-800/50 opacity-50"
-                        : "bg-slate-900/90 border-slate-800"
-                    }`}
-                  >
-                    {/* Stem Header & Peak dB */}
-                    <div>
-                      <div className="flex items-center justify-between gap-0.5 text-[10px] font-bold text-slate-200">
-                        <span className="truncate">
-                          {stem.icon} {stem.label}
-                        </span>
-                      </div>
-                      <div className={`text-[9px] font-mono font-bold mt-0.5 ${stem.textColor}`}>
-                        {stem.db}
-                      </div>
-                    </div>
-
-                    {/* 8-Band Vertical Up/Down Bouncing Equalizer Bars */}
-                    <div className="my-2 h-14 bg-slate-950 rounded-lg p-1.5 border border-slate-800/80 flex items-end justify-between gap-0.5">
-                      {stem.bars.map((barPx, bIdx) => (
-                        <div
-                          key={bIdx}
-                          style={{ height: `${isMuted ? 3 : barPx}px` }}
-                          className={`w-full rounded-t-sm bg-gradient-to-t ${stem.color} transition-all duration-75`}
-                        />
-                      ))}
-                    </div>
-
-                    {/* Mute / Solo / Gain Controls */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between gap-1">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setStemMutes((prev) => ({ ...prev, [stem.key]: !prev[stem.key] }))
-                          }
-                          className={`flex-1 py-0.5 rounded text-[9px] font-mono font-bold border transition cursor-pointer ${
-                            stemMutes[stem.key]
-                              ? "bg-red-950 border-red-600 text-red-300"
-                              : "bg-slate-800 border-slate-700 text-slate-400 hover:text-white"
-                          }`}
-                          title={`Mute ${stem.label}`}
-                        >
-                          M
-                        </button>
-                        {stem.key !== "master" && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setStemSolos((prev) => ({ ...prev, [stem.key]: !prev[stem.key] }))
-                            }
-                            className={`flex-1 py-0.5 rounded text-[9px] font-mono font-bold border transition cursor-pointer ${
-                              stemSolos[stem.key]
-                                ? "bg-amber-500/30 border-amber-400 text-amber-200"
-                                : "bg-slate-800 border-slate-700 text-slate-400 hover:text-white"
-                            }`}
-                            title={`Solo ${stem.label}`}
-                          >
-                            S
-                          </button>
-                        )}
-                      </div>
-
-                      {stem.onGainChange && (
-                        <input
-                          type="range"
-                          min={0}
-                          max={1.5}
-                          step={0.05}
-                          value={stem.gainVal}
-                          onChange={(e) => stem.onGainChange!(parseFloat(e.target.value))}
-                          className="w-full accent-teal-400 cursor-pointer h-1"
-                          title={`Adjust ${stem.label} stem volume (${Math.round(stem.gainVal * 100)}%)`}
-                        />
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
         </div>
 
-        {/* RIGHT 7 COLS: 4 Independent Tracks + Cinematic Color Grading */}
+        {/* RIGHT 7 COLS: Consolidated 4-Shot Unified A/V Grid + Master Polish Bar */}
         <div className="lg:col-span-7 flex flex-col gap-4">
-          {/* TRACK 1: VISUAL VIDEO SEQUENCE & GLOBAL VISUAL SPEED */}
+          {/* SECTION 1: UNIFIED SHOT-LEVEL VIDEO + SEPARATED AUDIO GRID (4 COLUMNS) */}
           <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <Film className="w-4 h-4 text-teal-400" />
                 <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200">
-                  Track 1 • Visual Video Frames ({currentState.clips.filter((c) => c.enabled).length} cuts)
+                  Shot-Level Separated Video &amp; Audio Stems ({currentState.clips.filter((c) => c.enabled).length} Shots)
                 </h3>
               </div>
+
               <div className="flex items-center gap-2 flex-wrap">
                 <button
                   type="button"
                   onClick={() => handleAutoTrimContinuity()}
-                  className="px-3 py-1 rounded-lg bg-gradient-to-r from-teal-500/20 to-emerald-500/20 hover:from-teal-500/30 hover:to-emerald-500/30 border border-teal-500/50 text-teal-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition shadow-sm"
-                  title="Smart Auto-Trim all 4 clips: discards frozen startup frames at Beginning (Head) and deceleration drift at End (Tail) for seamless Cut-on-Action continuity"
+                  className="px-2.5 py-1 rounded-lg bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/50 text-teal-300 text-xs font-bold flex items-center gap-1 cursor-pointer transition"
+                  title="Smart Auto-Trim all 4 clips for seamless Cut-on-Action continuity"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-teal-400" />
-                  <span>⚡ Smart Auto-Trim All 4 (Head &amp; Tail)</span>
+                  <span>⚡ Smart Auto-Trim</span>
                 </button>
 
                 <button
@@ -2370,13 +2077,11 @@ export function ReelTimelineEditor({
                   disabled={isStitching}
                   onClick={() => handleStitchAll4ToPlayAsOneReel()}
                   className="px-3 py-1 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-xs font-black flex items-center gap-1.5 cursor-pointer transition shadow-md"
-                  title="Physically stitch all 4 trimmed clips into 1 single-file seamless MP4 reel with continuous Original Lyria Music"
+                  title="Physically stitch all 4 shots into 1 seamless MP4 reel with 0.25s cross-dissolve transitions"
                 >
                   <Film className="w-3.5 h-3.5 text-slate-950" />
                   <span>
-                    {isStitching
-                      ? "Stitching 4 Shots + Lyria Music..."
-                      : "🔗 Stitch All 4 to Play as One Reel"}
+                    {isStitching ? "Stitching Reel..." : "🔗 Stitch All 4 as One Reel"}
                   </span>
                 </button>
 
@@ -2386,108 +2091,62 @@ export function ReelTimelineEditor({
                   className="bg-slate-950 text-teal-300 font-mono text-xs rounded-lg px-2.5 py-1 border border-teal-500/40 outline-none cursor-pointer"
                   title="Select visual transition between stitched shots"
                 >
-                  <option value="cut">⚡ Cut-on-Action (Instant 0ms)</option>
-                  <option value="dissolve">✨ Smooth Cross-Dissolve (0.25s xfade)</option>
-                  <option value="flash">🔥 Flash Transition (0.18s xfade)</option>
+                  <option value="dissolve">✨ Smooth Dissolve (0.25s)</option>
+                  <option value="cut">⚡ Cut-on-Action (0ms)</option>
+                  <option value="flash">🔥 Flash Cut (0.18s)</option>
                 </select>
 
-                <div className="flex items-center gap-2 bg-slate-950 px-3 py-1 rounded-lg border border-slate-800">
+                <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
                   <Gauge className="w-3.5 h-3.5 text-teal-400" />
-                  <span className="text-xs text-slate-400">Global Video Speed:</span>
+                  <span className="text-[11px] text-slate-400">Speed:</span>
                   <input
                     type="range"
-                    min={0.25}
-                    max={4.0}
+                    min={0.5}
+                    max={2.0}
                     step={0.05}
                     value={currentState.globalVideoSpeed}
                     onChange={(e) =>
                       pushState((prev) => ({ ...prev, globalVideoSpeed: parseFloat(e.target.value) }))
                     }
-                    className="w-20 accent-teal-400 cursor-pointer"
+                    className="w-16 accent-teal-400 cursor-pointer"
                   />
-                  <span className="text-xs font-mono font-bold text-teal-300 w-10 text-right">
+                  <span className="text-xs font-mono font-bold text-teal-300">
                     {currentState.globalVideoSpeed.toFixed(2)}x
                   </span>
-                  {currentState.globalVideoSpeed !== 1.0 && (
-                    <button
-                      type="button"
-                      onClick={handleResetGlobalSpeed}
-                      title="Reset global video speed to 1.00x"
-                      className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 transition cursor-pointer"
-                    >
-                      <RotateCcw className="w-3 h-3" />
-                    </button>
-                  )}
                 </div>
-
-                {initialShots.length > 0 && (
-                  <select
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (!val) return;
-                      const s = initialShots.find((item) => (item.videoUrl || (item as any).url) === val);
-                      if (s) {
-                        pushState((prev) => {
-                          const newClip: TimelineClipItem = {
-                            id: `shot_${Date.now().toString().slice(-4)}_${prev.clips.length + 1}`,
-                            title: s.title || `Shot #${prev.clips.length + 1}`,
-                            videoUrl: s.videoUrl || (s as any).url || masterVideoUrl,
-                            sourceDurationSec: Number(s.durationSec || 6.0),
-                            trimStartSec: 0,
-                            trimEndSec: Number(s.durationSec || 6.0),
-                            speed: 1.0,
-                            enabled: true,
-                          };
-                          return { ...prev, clips: [...prev.clips, newClip] };
-                        });
-                        setSelectedClipIndex(currentState.clips.length);
-                      }
-                      e.target.value = "";
-                    }}
-                    defaultValue=""
-                    className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-semibold cursor-pointer outline-none"
-                  >
-                    <option value="" disabled>+ Add Constituent Shot...</option>
-                    {initialShots.map((s, idx) => (
-                      <option key={`add_shot_${s.id || idx}_${idx}`} value={s.videoUrl || (s as any).url} className="bg-slate-900 text-slate-200">
-                        + {s.title || `Shot #${idx + 1}`} ({s.durationSec || 6}s)
-                      </option>
-                    ))}
-                  </select>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => handleDuplicateOrAddClip(currentState.clips.length - 1)}
-                  className="px-3 py-1 rounded-lg bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/40 text-teal-300 text-xs font-semibold flex items-center gap-1 cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Add Frame Cut
-                </button>
 
                 <button
                   type="button"
                   onClick={handleResetAllClips}
                   className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-amber-300 text-xs font-semibold flex items-center gap-1 cursor-pointer transition"
-                  title="Reset all constituent shots back to original timeline cuts"
+                  title="Reset all shots back to original cuts"
                 >
-                  <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-                  Reset Shots
+                  <RotateCcw className="w-3 h-3 text-amber-400" />
+                  <span>Reset</span>
                 </button>
               </div>
             </div>
 
-            {/* Horizontal Shot Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+            {/* ── UNIFIED 4-COLUMN SHOT CARDS (Video Top + Separated Audio Bottom) ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 pt-1">
               {currentState.clips.map((clip, idx) => {
                 const isSelected = idx === selectedClipIndex;
                 const netDur = Math.max(
                   0.2,
                   (clip.trimEndSec - clip.trimStartSec) / ((clip.speed || 1) * (currentState.globalVideoSpeed || 1))
                 );
+                const aSource = clip.audioSource || "native_shot";
+                const aMuted = Boolean(clip.audioMuted || aSource === "mute");
+                const aSolo = Boolean(clip.audioSolo);
+                const aVol = clip.audioVolume !== undefined ? clip.audioVolume : 1.0;
+                const aOffset = clip.audioOffsetSec !== undefined ? clip.audioOffsetSec : 0.0;
+                const aTrimIn = clip.audioTrimStartSec !== undefined ? clip.audioTrimStartSec : clip.trimStartSec;
+                const aTrimOut = clip.audioTrimEndSec !== undefined ? clip.audioTrimEndSec : clip.trimEndSec;
+                const isAuditioning = auditioningShotIndex === idx;
+
                 return (
                   <div
-                    key={`${clip.id || "clip"}_${idx}`}
+                    key={`unified_shot_${clip.id || "clip"}_${idx}`}
                     onClick={() => {
                       shouldAutoPlayOnSwitchRef.current = isPlaying;
                       setSelectedClipIndex(idx);
@@ -2498,63 +2157,233 @@ export function ReelTimelineEditor({
                         }
                       }, 30);
                     }}
-                    className={`p-3 rounded-xl border transition cursor-pointer flex flex-col justify-between ${
+                    className={`p-3 rounded-xl border transition cursor-pointer flex flex-col justify-between space-y-2.5 ${
                       !clip.enabled
                         ? "bg-slate-950/40 border-slate-800/50 opacity-45"
                         : isSelected
-                        ? "bg-teal-950/40 border-teal-500 shadow-md shadow-teal-950/50"
+                        ? "bg-teal-950/35 border-teal-500 shadow-md shadow-teal-950/40"
                         : "bg-slate-950 border-slate-800 hover:border-slate-700"
                     }`}
                   >
-                    <div>
-                      <div className="flex items-center justify-between gap-1 text-xs font-bold text-slate-200">
-                        <span className="truncate flex items-center gap-1">
-                          <span>🎬 #{idx + 1}</span>
+                    {/* 1. VIDEO CUT SECTION */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-xs font-bold text-slate-100 truncate flex items-center gap-1">
+                          <span className="text-teal-400">🎬 #{idx + 1}</span>
                           <span className="truncate">{clip.title}</span>
                         </span>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              updateClip(idx, { avLinked: !clip.avLinked });
-                            }}
-                            title={
-                              clip.avLinked
-                                ? "A/V Linked: Audio trim & speed follow video. Click to Separate A/V at shot level."
-                                : "A/V Separated: Video & Audio trim/speed/offset are 100% independent for this shot."
-                            }
-                            className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border transition cursor-pointer ${
-                              clip.avLinked
-                                ? "bg-slate-900 border-slate-700 text-slate-400"
-                                : "bg-teal-950/80 border-teal-500/60 text-teal-300"
-                            }`}
-                          >
-                            {clip.avLinked ? "🔗 Linked" : "🔓 A/V Split"}
-                          </button>
-                          {!clip.enabled && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-950 text-red-400">Cut</span>
-                          )}
-                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateClip(idx, { avLinked: !clip.avLinked });
+                          }}
+                          title={
+                            clip.avLinked
+                              ? "A/V Linked: Click to Separate Video & Audio for this shot"
+                              : "A/V Separated: Video & Audio trim/offset are independent"
+                          }
+                          className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border transition cursor-pointer shrink-0 ${
+                            clip.avLinked
+                              ? "bg-slate-900 border-slate-700 text-slate-400"
+                              : "bg-teal-950/90 border-teal-500/60 text-teal-300"
+                          }`}
+                        >
+                          {clip.avLinked ? "🔗 Linked" : "🔓 A/V Split"}
+                        </button>
                       </div>
-                      <div className="mt-1.5 text-[11px] font-mono text-teal-300">
-                        Video: {netDur.toFixed(2)}s ({Math.round(netDur * 24)}f) @ {(clip.speed || 1).toFixed(2)}x
-                      </div>
-                      <div className="text-[10px] font-mono text-slate-400 flex items-center justify-between mt-1">
-                        <span>In: {clip.trimStartSec.toFixed(1)}s → Out: {clip.trimEndSec.toFixed(1)}s</span>
+
+                      <div className="flex items-center justify-between text-[10px] font-mono text-teal-300 bg-slate-900/80 px-2 py-1 rounded border border-slate-800/80">
+                        <span>
+                          {netDur.toFixed(2)}s ({Math.round(netDur * 24)}f)
+                        </span>
                         <a
                           href={`/api/reels/editor/shot-stream?reelId=${encodeURIComponent(reelId)}&shotIndex=${idx}&stream=video&download=1`}
                           onClick={(e) => e.stopPropagation()}
                           download
-                          title="Download isolated Video-Only (.mp4 with zero audio) for this shot"
-                          className="text-teal-400 hover:text-teal-300 underline font-semibold"
+                          className="text-teal-400 hover:text-teal-200 underline font-bold"
+                          title="Download isolated Video-Only MP4 for this shot"
                         >
                           ⬇️ Video MP4
                         </a>
                       </div>
+
+                      <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                        <span>
+                          Video In: {clip.trimStartSec.toFixed(1)}s → {clip.trimEndSec.toFixed(1)}s
+                        </span>
+                        <span className="text-teal-300 font-bold">{(clip.speed || 1).toFixed(2)}x</span>
+                      </div>
                     </div>
 
-                    <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                    {/* 2. SEPARATED AUDIO STEM SECTION */}
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className={`p-2 rounded-lg border space-y-2 ${
+                        aMuted
+                          ? "bg-slate-950/60 border-red-900/40"
+                          : aSolo
+                          ? "bg-amber-950/25 border-amber-500/60"
+                          : "bg-slate-900/90 border-blue-900/50"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-[11px] font-bold text-blue-300 flex items-center gap-1">
+                          <span>🔊 Audio Stem</span>
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => updateClip(idx, { audioMuted: !aMuted })}
+                            className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border cursor-pointer ${
+                              aMuted
+                                ? "bg-red-600 text-white border-red-500"
+                                : "bg-slate-950 text-slate-400 border-slate-700 hover:text-white"
+                            }`}
+                            title="Mute this shot's audio stem"
+                          >
+                            M
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateClip(idx, { audioSolo: !aSolo })}
+                            className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border cursor-pointer ${
+                              aSolo
+                                ? "bg-amber-500 text-slate-950 border-amber-400"
+                                : "bg-slate-950 text-slate-400 border-slate-700 hover:text-white"
+                            }`}
+                            title="Solo this shot's audio stem"
+                          >
+                            S
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleAuditionShotAudio(idx)}
+                            className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border cursor-pointer ${
+                              isAuditioning
+                                ? "bg-teal-500 text-slate-950 border-teal-400 animate-pulse"
+                                : "bg-blue-950 text-blue-200 border-blue-700/60 hover:bg-blue-900"
+                            }`}
+                            title="Audition isolated audio stem (.wav)"
+                          >
+                            {isAuditioning ? "⏸" : "▶"}
+                          </button>
+                          <a
+                            href={`/api/reels/editor/shot-stream?reelId=${encodeURIComponent(reelId)}&shotIndex=${idx}&stream=audio&download=1`}
+                            download
+                            className="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-700 text-[9px] font-mono font-bold text-blue-300 hover:text-white"
+                            title="Download isolated Audio WAV for this shot"
+                          >
+                            ⬇️ WAV
+                          </a>
+                        </div>
+                      </div>
+
+                      {/* Audio Source Selector */}
+                      <select
+                        value={aSource}
+                        onChange={(e) => {
+                          const val = e.target.value as any;
+                          updateClip(idx, {
+                            audioSource: val,
+                            audioMuted: val === "mute",
+                          });
+                        }}
+                        className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-[10px] font-semibold text-blue-200 focus:outline-none focus:border-blue-500 cursor-pointer"
+                      >
+                        <option value="native_shot">🎤 Native Shot Vocal/Audio</option>
+                        <option value="lyria_slice">🎼 Lyria Master Song Slice</option>
+                        <option value="mute">🔇 Mute Shot Audio</option>
+                      </select>
+
+                      {/* Audio Trim Controls */}
+                      <div className="flex items-center justify-between text-[9px] font-mono text-slate-400">
+                        <span>
+                          A-Trim: {aTrimIn.toFixed(1)}s→{aTrimOut.toFixed(1)}s
+                        </span>
+                        <div className="flex items-center gap-0.5">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateClip(idx, {
+                                avLinked: false,
+                                audioTrimStartSec: Math.max(0, Number((aTrimIn - 0.2).toFixed(2))),
+                              })
+                            }
+                            className="px-1 py-0.5 rounded bg-slate-950 hover:bg-slate-800 text-slate-300 cursor-pointer"
+                          >
+                            -0.2s
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateClip(idx, {
+                                avLinked: false,
+                                audioTrimStartSec: Math.min(aTrimOut - 0.5, Number((aTrimIn + 0.2).toFixed(2))),
+                              })
+                            }
+                            className="px-1 py-0.5 rounded bg-slate-950 hover:bg-slate-800 text-slate-300 cursor-pointer"
+                          >
+                            +0.2s
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateClip(idx, {
+                                avLinked: false,
+                                audioTrimStartSec: clip.trimStartSec,
+                                audioTrimEndSec: clip.trimEndSec,
+                                audioOffsetSec: 0,
+                              })
+                            }
+                            className="px-1 py-0.5 rounded bg-slate-950 hover:bg-slate-800 text-amber-300 cursor-pointer"
+                          >
+                            Sync
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Shot Audio Gain & Lip-Sync Offset */}
+                      <div className="grid grid-cols-2 gap-2 pt-0.5">
+                        <div>
+                          <div className="flex justify-between text-[9px] font-mono">
+                            <span className="text-slate-400">Gain:</span>
+                            <span className="text-blue-300 font-bold">{Math.round(aVol * 100)}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min={0}
+                            max={2.0}
+                            step={0.05}
+                            value={aVol}
+                            onChange={(e) => updateClip(idx, { audioVolume: parseFloat(e.target.value) })}
+                            className="w-full accent-blue-400 cursor-pointer h-1"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-[9px] font-mono">
+                            <span className="text-slate-400">Offset:</span>
+                            <span className="text-teal-300 font-bold">
+                              {aOffset >= 0 ? `+${aOffset.toFixed(2)}s` : `${aOffset.toFixed(2)}s`}
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min={-1.0}
+                            max={1.0}
+                            step={0.05}
+                            value={aOffset}
+                            onChange={(e) =>
+                              updateClip(idx, { avLinked: false, audioOffsetSec: parseFloat(e.target.value) })
+                            }
+                            className="w-full accent-teal-400 cursor-pointer h-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 3. CARD FOOTER ACTIONS */}
+                    <div className="pt-1.5 border-t border-slate-800/80 flex items-center justify-between">
                       <div className="flex items-center gap-1">
                         <button
                           type="button"
@@ -2563,8 +2392,8 @@ export function ReelTimelineEditor({
                             e.stopPropagation();
                             handleMoveClip(idx, -1);
                           }}
-                          className="p-1 rounded bg-slate-900 hover:bg-slate-800 disabled:opacity-30 text-slate-300 cursor-pointer disabled:cursor-not-allowed"
-                          title="Move Left"
+                          className="p-1 rounded bg-slate-900 hover:bg-slate-800 disabled:opacity-30 text-slate-300 cursor-pointer"
+                          title="Move Shot Left"
                         >
                           <ChevronLeft className="w-3.5 h-3.5" />
                         </button>
@@ -2575,8 +2404,8 @@ export function ReelTimelineEditor({
                             e.stopPropagation();
                             handleMoveClip(idx, 1);
                           }}
-                          className="p-1 rounded bg-slate-900 hover:bg-slate-800 disabled:opacity-30 text-slate-300 cursor-pointer disabled:cursor-not-allowed"
-                          title="Move Right"
+                          className="p-1 rounded bg-slate-900 hover:bg-slate-800 disabled:opacity-30 text-slate-300 cursor-pointer"
+                          title="Move Shot Right"
                         >
                           <ChevronRight className="w-3.5 h-3.5" />
                         </button>
@@ -2586,8 +2415,8 @@ export function ReelTimelineEditor({
                             e.stopPropagation();
                             handleResetShot(idx);
                           }}
-                          className="p-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-amber-300 cursor-pointer transition"
-                          title="Reset shot trim & speed"
+                          className="p-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-amber-300 cursor-pointer"
+                          title="Reset shot trim & audio"
                         >
                           <RotateCcw className="w-3 h-3" />
                         </button>
@@ -2598,9 +2427,9 @@ export function ReelTimelineEditor({
                           e.stopPropagation();
                           updateClip(idx, { enabled: !clip.enabled });
                         }}
-                        className="text-[11px] font-semibold text-slate-400 hover:text-red-400 cursor-pointer"
+                        className="text-[10px] font-semibold text-slate-400 hover:text-red-400 cursor-pointer"
                       >
-                        {clip.enabled ? "Remove" : "Restore"}
+                        {clip.enabled ? "Disable Cut" : "Restore Cut"}
                       </button>
                     </div>
                   </div>
@@ -2609,498 +2438,17 @@ export function ReelTimelineEditor({
             </div>
           </div>
 
-          {/* COLOR GRADING & 35MM LUT CONTROLLER */}
-          <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Palette className="w-4 h-4 text-pink-400 shrink-0" />
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200">
-                Track 5 • 35mm Color Grading LUT:
-              </h3>
-            </div>
-
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <select
-                value={currentState.colorGrading || "none"}
-                onChange={(e) => pushState((prev) => ({ ...prev, colorGrading: e.target.value }))}
-                className="px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs font-bold text-pink-300 focus:outline-none focus:border-pink-500 cursor-pointer min-w-[240px]"
-              >
-                {Object.entries(COLOR_GRADING_LUT_MAP).map(([key, info]) => (
-                  <option key={key} value={key} className="bg-slate-900 text-slate-200">
-                    {info.label} — {info.description}
-                  </option>
-                ))}
-              </select>
-
-              {currentState.colorGrading !== "none" && (
-                <button
-                  type="button"
-                  onClick={handleResetLut}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-pink-300 border border-pink-800/40 transition cursor-pointer"
-                  title="Reset color grading to Natural Rec.709"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>Reset LUT</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* TRACK 2: SHOT-LEVEL SEPARATED AUDIO & VOCAL STEMS (Independent Per-Shot Audio Controls) */}
-          <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-4">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-2">
-                <Volume2 className="w-4 h-4 text-blue-400" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200">
-                  Track 2 • Shot-Level Separated Audio &amp; Vocal Stems (4 Cuts Aligned to Video)
-                </h3>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleResetVocals}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-blue-300 border border-blue-800/40 transition cursor-pointer"
-                  title="Reset vocal stem gain and speed back to 100% and 1.00x"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>Reset Vocals</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    pushState((prev) => ({
-                      ...prev,
-                      vocalMode: prev.vocalMode === "mute" ? "original" : "mute",
-                    }))
-                  }
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                    currentState.vocalMode === "mute"
-                      ? "bg-red-950/70 border border-red-700 text-red-300"
-                      : "bg-blue-950/60 border border-blue-700 text-blue-300"
-                  }`}
-                >
-                  {currentState.vocalMode === "mute" ? "🔇 All Vocals Muted" : "🎤 Shot Vocals Active"}
-                </button>
-              </div>
-            </div>
-
-            {/* ── 4-COLUMN SHOT-LEVEL SEPARATED AUDIO CARDS (#1 Audio .. #4 Audio) ── */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-              {currentState.clips.map((clip, idx) => {
-                const aSource = clip.audioSource || "native_shot";
-                const aMuted = Boolean(clip.audioMuted || aSource === "mute");
-                const aSolo = Boolean(clip.audioSolo);
-                const aVol = clip.audioVolume !== undefined ? clip.audioVolume : 1.0;
-                const aSpeed = clip.audioSpeed !== undefined ? clip.audioSpeed : 1.0;
-                const aOffset = clip.audioOffsetSec !== undefined ? clip.audioOffsetSec : 0.0;
-                const aTrimIn = clip.audioTrimStartSec !== undefined ? clip.audioTrimStartSec : clip.trimStartSec;
-                const aTrimOut = clip.audioTrimEndSec !== undefined ? clip.audioTrimEndSec : clip.trimEndSec;
-                const isAuditioning = auditioningShotIndex === idx;
-
-                return (
-                  <div
-                    key={`shot_audio_card_${clip.id || idx}_${idx}`}
-                    className={`p-3 rounded-xl border transition flex flex-col justify-between space-y-2.5 ${
-                      aMuted
-                        ? "bg-slate-950/40 border-red-900/40 opacity-65"
-                        : aSolo
-                        ? "bg-amber-950/30 border-amber-500/70 shadow-md"
-                        : "bg-slate-950 border-blue-900/50 hover:border-blue-600/60"
-                    }`}
-                  >
-                    {/* Top Row: Shot # Audio Badge + M / S Buttons */}
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-xs font-bold text-blue-300 flex items-center gap-1 truncate">
-                        <span>🔊 #{idx + 1} Audio</span>
-                      </span>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => updateClip(idx, { audioMuted: !aMuted })}
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border cursor-pointer transition ${
-                            aMuted
-                              ? "bg-red-600 text-white border-red-500"
-                              : "bg-slate-900 text-slate-400 border-slate-700 hover:text-white"
-                          }`}
-                          title="Mute this shot's audio stem"
-                        >
-                          M
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => updateClip(idx, { audioSolo: !aSolo })}
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border cursor-pointer transition ${
-                            aSolo
-                              ? "bg-amber-500 text-slate-950 border-amber-400"
-                              : "bg-slate-900 text-slate-400 border-slate-700 hover:text-white"
-                          }`}
-                          title="Solo this shot's audio stem"
-                        >
-                          S
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Audition & Download Separated Audio Stem */}
-                    <div className="flex items-center justify-between gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => handleToggleAuditionShotAudio(idx)}
-                        className={`px-2 py-1 rounded text-[10px] font-mono font-bold border transition cursor-pointer flex items-center gap-1 ${
-                          isAuditioning
-                            ? "bg-teal-500 text-slate-950 border-teal-400 animate-pulse"
-                            : "bg-blue-950/60 hover:bg-blue-900/70 text-blue-200 border-blue-700/50"
-                        }`}
-                        title="Listen to this shot's isolated audio stem (.wav) without video"
-                      >
-                        <span>{isAuditioning ? "⏸ Stop Audio" : "▶ Audition Stem"}</span>
-                      </button>
-                      <a
-                        href={`/api/reels/editor/shot-stream?reelId=${encodeURIComponent(reelId)}&shotIndex=${idx}&stream=audio&download=1`}
-                        download
-                        title="Download isolated Audio-Only (.wav) for this shot"
-                        className="text-[10px] font-mono font-semibold text-blue-400 hover:text-blue-300 underline"
-                      >
-                        ⬇️ Audio WAV
-                      </a>
-                    </div>
-
-                    {/* Audio Source Selector per Shot */}
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-400 mb-0.5">Shot Audio Source:</label>
-                      <select
-                        value={aSource}
-                        onChange={(e) => {
-                          const val = e.target.value as any;
-                          updateClip(idx, {
-                            audioSource: val,
-                            audioMuted: val === "mute",
-                          });
-                        }}
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[11px] font-semibold text-blue-200 focus:outline-none focus:border-blue-500 cursor-pointer"
-                      >
-                        <option value="native_shot">🎤 Native Shot Vocal/Audio</option>
-                        <option value="lyria_slice">🎼 Lyria Master Song Slice</option>
-                        <option value="mute">🔇 Mute Shot Audio</option>
-                      </select>
-                    </div>
-
-                    {/* Independent Audio Trim In/Out (when A/V Split) */}
-                    <div className="text-[10px] font-mono text-slate-400 bg-slate-900/90 p-1.5 rounded border border-slate-800 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span>Audio Trim:</span>
-                        <span className="text-blue-300 font-bold">
-                          {aTrimIn.toFixed(1)}s → {aTrimOut.toFixed(1)}s
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between gap-1">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            updateClip(idx, {
-                              avLinked: false,
-                              audioTrimStartSec: Math.max(0, Number((aTrimIn - 0.2).toFixed(2))),
-                            })
-                          }
-                          className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
-                          title="Trim Audio In -0.2s earlier"
-                        >
-                          In -0.2s
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            updateClip(idx, {
-                              avLinked: false,
-                              audioTrimStartSec: Math.min(aTrimOut - 0.5, Number((aTrimIn + 0.2).toFixed(2))),
-                            })
-                          }
-                          className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
-                          title="Trim Audio In +0.2s later"
-                        >
-                          In +0.2s
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            updateClip(idx, {
-                              avLinked: false,
-                              audioTrimStartSec: clip.trimStartSec,
-                              audioTrimEndSec: clip.trimEndSec,
-                              audioOffsetSec: 0,
-                            })
-                          }
-                          className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 cursor-pointer"
-                          title="Sync audio trim back to video cut"
-                        >
-                          Sync
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Independent Shot Audio Volume / Gain */}
-                    <div className="space-y-0.5">
-                      <div className="flex justify-between text-[10px] font-mono">
-                        <span className="text-slate-400">Shot Gain:</span>
-                        <span className="text-blue-300 font-bold">{Math.round(aVol * 100)}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={0}
-                        max={2.0}
-                        step={0.05}
-                        value={aVol}
-                        onChange={(e) => updateClip(idx, { audioVolume: parseFloat(e.target.value) })}
-                        className="w-full accent-blue-400 cursor-pointer h-1.5"
-                      />
-                    </div>
-
-                    {/* Independent Shot Audio Speed */}
-                    <div className="space-y-0.5">
-                      <div className="flex justify-between text-[10px] font-mono">
-                        <span className="text-slate-400">Audio Speed:</span>
-                        <span className="text-blue-300 font-bold">{aSpeed.toFixed(2)}x</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={0.5}
-                        max={2.0}
-                        step={0.05}
-                        value={aSpeed}
-                        onChange={(e) =>
-                          updateClip(idx, { avLinked: false, audioSpeed: parseFloat(e.target.value) })
-                        }
-                        className="w-full accent-blue-400 cursor-pointer h-1.5"
-                      />
-                    </div>
-
-                    {/* Per-Shot Lip-Sync Audio Offset */}
-                    <div className="space-y-0.5 pt-1 border-t border-slate-800/80">
-                      <div className="flex justify-between text-[10px] font-mono">
-                        <span className="text-slate-400">Lip-Sync Offset:</span>
-                        <span className="text-teal-300 font-bold">
-                          {aOffset >= 0 ? `+${aOffset.toFixed(2)}s` : `${aOffset.toFixed(2)}s`}
-                        </span>
-                      </div>
-                      <input
-                        type="range"
-                        min={-1.0}
-                        max={1.0}
-                        step={0.05}
-                        value={aOffset}
-                        onChange={(e) =>
-                          updateClip(idx, { avLinked: false, audioOffsetSec: parseFloat(e.target.value) })
-                        }
-                        className="w-full accent-teal-400 cursor-pointer h-1.5"
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-400">Dialogue / Vocal Gain:</span>
-                  <span className="font-mono text-blue-300 font-bold">
-                    {currentState.vocalMode === "mute" ? "0%" : `${Math.round(currentState.vocalVolume * 100)}%`}
+          {/* SECTION 2: COMPACT 3-COLUMN MASTER POLISH BAR (Music Bed • Background SFX • 35mm Color LUT) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* COLUMN 1: CONTINUOUS LYRIA MUSIC BED */}
+            <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2.5 flex flex-col justify-between">
+              <div className="flex items-center justify-between gap-1">
+                <div className="flex items-center gap-1.5">
+                  <Music className="w-4 h-4 text-purple-400 shrink-0" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                    Music Bed
                   </span>
                 </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={1.5}
-                  step={0.05}
-                  disabled={currentState.vocalMode === "mute"}
-                  value={currentState.vocalMode === "mute" ? 0 : currentState.vocalVolume}
-                  onChange={(e) =>
-                    pushState((prev) => ({ ...prev, vocalVolume: parseFloat(e.target.value), vocalMode: "original" }))
-                  }
-                  className="w-full accent-blue-400 cursor-pointer"
-                />
-              </div>
-
-              <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-400">Independent Dialogue Speed:</span>
-                  <span className="font-mono text-blue-300 font-bold">{currentState.vocalSpeed.toFixed(2)}x</span>
-                </div>
-                <input
-                  type="range"
-                  min={0.25}
-                  max={4.0}
-                  step={0.05}
-                  disabled={currentState.vocalMode === "mute"}
-                  value={currentState.vocalSpeed}
-                  onChange={(e) =>
-                    pushState((prev) => ({ ...prev, vocalSpeed: parseFloat(e.target.value) }))
-                  }
-                  className="w-full accent-blue-400 cursor-pointer"
-                />
-              </div>
-            </div>
-
-            {/* ── VOCAL START TIMESTAMP (T_vocal) & LIP-SYNC PHASE MATCHER ── */}
-            <div className="p-3 rounded-xl bg-slate-950/90 border border-blue-500/30 space-y-2.5">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-blue-300">
-                    🎯 Vocal Entry Point (T_vocal) &amp; Lip-Sync Phase Lock
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      pushState((prev) => ({
-                        ...prev,
-                        vocalEntrySec: 0,
-                        lipSyncOffsetMs: 0,
-                      }));
-                      setTimeout(() => handleStitchAll4ToPlayAsOneReel(), 80);
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-blue-500 to-teal-500 hover:from-blue-400 hover:to-teal-400 text-slate-950 text-[11px] font-black cursor-pointer transition shadow-sm"
-                    title="Automatically align Lyria original singing vocals to character mouth visemes and re-stitch master MP4"
-                  >
-                    🎯 Auto-Match Lips to Lyria Vocals
-                  </button>
-                </div>
-              </div>
-
-              {/* Vocal Entry Timestamp (T_vocal) Quick-Select Pills */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                {[
-                  { label: "0.0s Immediate", sec: 0, desc: "Singing from Frame 0" },
-                  { label: "2.0s Beat Intro", sec: 2, desc: "0–2s Beat → 2s+ Vocals" },
-                  { label: "4.0s Full Intro", sec: 4, desc: "0–4s Beat → 4s+ Vocals" },
-                  { label: "6.0s Shot #2", sec: 6, desc: "Shot 1 Dance → Shot 2 Sing" },
-                ].map((preset) => {
-                  const active = Math.abs((currentState.vocalEntrySec || 0) - preset.sec) < 0.1;
-                  return (
-                    <button
-                      key={`nle_vocal_entry_${preset.sec}`}
-                      type="button"
-                      onClick={() => {
-                        pushState((prev) => ({ ...prev, vocalEntrySec: preset.sec }));
-                        if (videoRef.current && preset.sec > 0) {
-                          videoRef.current.currentTime = preset.sec;
-                          setCurrentPlayTime(preset.sec);
-                        }
-                      }}
-                      className={`px-2.5 py-1.5 rounded-lg text-left border transition cursor-pointer ${
-                        active
-                          ? "bg-blue-500/20 border-blue-400 text-blue-200 shadow-sm"
-                          : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
-                      }`}
-                    >
-                      <div className="text-[11px] font-mono font-bold">{preset.label}</div>
-                      <div className="text-[9px] text-slate-400 truncate">{preset.desc}</div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Dual Sliders: Vocal Start Timestamp (s) & Sub-Frame Lip-Sync Phase Shift (ms) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <div className="p-2 rounded-lg bg-slate-900 border border-slate-800">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-slate-400">Vocal Start Point (T_vocal):</span>
-                    <span className="font-mono text-blue-300 font-bold">
-                      {(currentState.vocalEntrySec || 0).toFixed(1)}s
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={12}
-                    step={0.5}
-                    value={currentState.vocalEntrySec || 0}
-                    onChange={(e) =>
-                      pushState((prev) => ({ ...prev, vocalEntrySec: parseFloat(e.target.value) }))
-                    }
-                    className="w-full accent-blue-400 cursor-pointer"
-                  />
-                  <div className="text-[10px] font-mono text-slate-500 mt-0.5">
-                    0.0s–{(currentState.vocalEntrySec || 0).toFixed(1)}s: Instrumental Intro | {(currentState.vocalEntrySec || 0).toFixed(1)}s+: Singing Vocals
-                  </div>
-                </div>
-
-                <div className="p-2 rounded-lg bg-slate-900 border border-slate-800">
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-slate-400">Lip-Sync Phase Offset:</span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          pushState((prev) => ({
-                            ...prev,
-                            lipSyncOffsetMs: Math.max(-500, (prev.lipSyncOffsetMs || 0) - 20),
-                          }))
-                        }
-                        className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-mono text-slate-300 cursor-pointer"
-                        title="Advance vocal sound by 20ms (-0.5 frame)"
-                      >
-                        -20ms
-                      </button>
-                      <span className="font-mono text-blue-300 font-bold">
-                        {(currentState.lipSyncOffsetMs || 0) >= 0 ? "+" : ""}
-                        {currentState.lipSyncOffsetMs || 0}ms
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          pushState((prev) => ({
-                            ...prev,
-                            lipSyncOffsetMs: Math.min(500, (prev.lipSyncOffsetMs || 0) + 20),
-                          }))
-                        }
-                        className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-mono text-slate-300 cursor-pointer"
-                        title="Delay vocal sound by 20ms (+0.5 frame)"
-                      >
-                        +20ms
-                      </button>
-                    </div>
-                  </div>
-                  <input
-                    type="range"
-                    min={-500}
-                    max={500}
-                    step={10}
-                    value={currentState.lipSyncOffsetMs || 0}
-                    onChange={(e) =>
-                      pushState((prev) => ({ ...prev, lipSyncOffsetMs: parseInt(e.target.value, 10) }))
-                    }
-                    className="w-full accent-blue-400 cursor-pointer"
-                  />
-                  <div className="text-[10px] font-mono text-slate-500 mt-0.5">
-                    Fine-tunes Lyria vocal syllable timing against mouth visemes
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* TRACK 3: UNALTERED CONTINUOUS MUSIC BED (Independent Speed & Lock Mode) */}
-          <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-2">
-                <Music className="w-4 h-4 text-purple-400" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200">
-                  Track 3 • Continuous Music Bed (Unaltered Across Video Frame Cuts)
-                </h3>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleResetMusic}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-800/40 transition cursor-pointer"
-                  title="Reset music bed to original Lyria master at 65% volume"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>Reset Music</span>
-                </button>
-                {/* Unaltered Music Lock Switch */}
                 <button
                   type="button"
                   onClick={() =>
@@ -3109,60 +2457,42 @@ export function ReelTimelineEditor({
                       musicLockMode: prev.musicLockMode === "unaltered" ? "custom_trim" : "unaltered",
                     }))
                   }
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+                  className={`px-2 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1 transition cursor-pointer ${
                     currentState.musicLockMode === "unaltered"
-                      ? "bg-emerald-950/80 border border-emerald-600/80 text-emerald-300"
+                      ? "bg-emerald-950 border border-emerald-600/80 text-emerald-300"
                       : "bg-slate-800 border border-slate-700 text-slate-300"
                   }`}
-                  title="When Unaltered Lock is ON, cutting or adding video frames will NEVER chop or restart the music bed"
                 >
                   {currentState.musicLockMode === "unaltered" ? (
                     <>
-                      <Lock className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Music Locked Unaltered (Seamless)</span>
+                      <Lock className="w-3 h-3 text-emerald-400" />
+                      <span>Unaltered</span>
                     </>
                   ) : (
                     <>
-                      <Unlock className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Music Trimmed to Cuts</span>
+                      <Unlock className="w-3 h-3 text-amber-400" />
+                      <span>Cut-Synced</span>
                     </>
                   )}
                 </button>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs text-slate-400">Select Music Track:</label>
-                  {currentState.musicTrack !== "none" && currentState.musicTrack !== "original_lyria" && (
-                    <button
-                      type="button"
-                      onClick={toggleAuditionMusic}
-                      className="text-[10px] font-mono text-purple-300 hover:text-white flex items-center gap-1 cursor-pointer"
-                    >
-                      {isAuditioningMusic ? <Pause className="w-3 h-3 text-purple-400" /> : <Play className="w-3 h-3 text-purple-400" />}
-                      <span>{isAuditioningMusic ? "Stop Test" : "Audition (5s)"}</span>
-                    </button>
-                  )}
-                </div>
-                <select
-                  value={currentState.musicTrack}
-                  onChange={(e) => pushState((prev) => ({ ...prev, musicTrack: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-purple-500 cursor-pointer"
-                >
-                  {MUSIC_PRESETS.map((p) => (
-                    <option key={p.value} value={p.value}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <select
+                value={currentState.musicTrack}
+                onChange={(e) => pushState((prev) => ({ ...prev, musicTrack: e.target.value }))}
+                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-purple-500 cursor-pointer"
+              >
+                {MUSIC_PRESETS.map((p) => (
+                  <option key={p.value} value={p.value}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
 
-              <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
-                <div className="flex justify-between text-xs mb-1">
+              <div className="space-y-1">
+                <div className="flex justify-between text-[10px] font-mono">
                   <span className="text-slate-400">Music Volume:</span>
-                  <span className="font-mono text-purple-300 font-bold">{Math.round(currentState.musicVolume * 100)}%</span>
+                  <span className="text-purple-300 font-bold">{Math.round(currentState.musicVolume * 100)}%</span>
                 </div>
                 <input
                   type="range"
@@ -3171,81 +2501,47 @@ export function ReelTimelineEditor({
                   step={0.05}
                   value={currentState.musicVolume}
                   onChange={(e) => pushState((prev) => ({ ...prev, musicVolume: parseFloat(e.target.value) }))}
-                  className="w-full accent-purple-400 cursor-pointer"
-                />
-              </div>
-
-              <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-400">Independent Music Speed:</span>
-                  <span className="font-mono text-purple-300 font-bold">{currentState.musicSpeed.toFixed(2)}x</span>
-                </div>
-                <input
-                  type="range"
-                  min={0.25}
-                  max={4.0}
-                  step={0.05}
-                  value={currentState.musicSpeed}
-                  onChange={(e) => pushState((prev) => ({ ...prev, musicSpeed: parseFloat(e.target.value) }))}
-                  className="w-full accent-purple-400 cursor-pointer"
+                  className="w-full accent-purple-400 cursor-pointer h-1.5"
                 />
               </div>
             </div>
-          </div>
 
-          {/* TRACK 4: BACKGROUND SOUND EFFECT / FOLEY (Independent Speed & Volume) */}
-          <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200">
-                  Track 4 • Background Sound Effect / Foley (Audible &amp; Feelable)
-                </h3>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleResetSfx}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-800/40 transition cursor-pointer"
-                  title="Reset SFX track to None"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>Reset SFX</span>
-                </button>
+            {/* COLUMN 2: BACKGROUND SFX / FOLEY */}
+            <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2.5 flex flex-col justify-between">
+              <div className="flex items-center justify-between gap-1">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                    Background SFX
+                  </span>
+                </div>
                 {currentState.sfxTrack !== "none" && (
                   <button
                     type="button"
                     onClick={toggleAuditionSFX}
-                    className="px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-semibold flex items-center gap-1.5 cursor-pointer hover:bg-amber-500/30"
+                    className="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-semibold cursor-pointer"
                   >
-                    {isAuditioningSFX ? <Pause className="w-3.5 h-3.5 text-amber-400" /> : <Play className="w-3.5 h-3.5 text-amber-400" />}
-                    <span>{isAuditioningSFX ? "Stop Audition" : "🔊 Audition SFX (4s)"}</span>
+                    {isAuditioningSFX ? "⏸ Stop" : "🔊 Test"}
                   </button>
                 )}
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">Select Background SFX:</label>
-                <select
-                  value={currentState.sfxTrack}
-                  onChange={(e) => pushState((prev) => ({ ...prev, sfxTrack: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-amber-500 cursor-pointer"
-                >
-                  {SFX_PRESETS.map((p) => (
-                    <option key={p.value} value={p.value}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <select
+                value={currentState.sfxTrack}
+                onChange={(e) => pushState((prev) => ({ ...prev, sfxTrack: e.target.value }))}
+                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-amber-500 cursor-pointer"
+              >
+                {SFX_PRESETS.map((p) => (
+                  <option key={p.value} value={p.value}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
 
-              <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
-                <div className="flex justify-between text-xs mb-1">
+              <div className="space-y-1">
+                <div className="flex justify-between text-[10px] font-mono">
                   <span className="text-slate-400">SFX Volume:</span>
-                  <span className="font-mono text-amber-300 font-bold">{Math.round(currentState.sfxVolume * 100)}%</span>
+                  <span className="text-amber-300 font-bold">{Math.round(currentState.sfxVolume * 100)}%</span>
                 </div>
                 <input
                   type="range"
@@ -3254,24 +2550,45 @@ export function ReelTimelineEditor({
                   step={0.05}
                   value={currentState.sfxVolume}
                   onChange={(e) => pushState((prev) => ({ ...prev, sfxVolume: parseFloat(e.target.value) }))}
-                  className="w-full accent-amber-400 cursor-pointer"
+                  className="w-full accent-amber-400 cursor-pointer h-1.5"
                 />
               </div>
+            </div>
 
-              <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-400">Independent SFX Speed:</span>
-                  <span className="font-mono text-amber-300 font-bold">{currentState.sfxSpeed.toFixed(2)}x</span>
+            {/* COLUMN 3: 35MM COLOR GRADING LUT */}
+            <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2.5 flex flex-col justify-between">
+              <div className="flex items-center justify-between gap-1">
+                <div className="flex items-center gap-1.5">
+                  <Palette className="w-4 h-4 text-pink-400 shrink-0" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                    Color LUT
+                  </span>
                 </div>
-                <input
-                  type="range"
-                  min={0.25}
-                  max={4.0}
-                  step={0.05}
-                  value={currentState.sfxSpeed}
-                  onChange={(e) => pushState((prev) => ({ ...prev, sfxSpeed: parseFloat(e.target.value) }))}
-                  className="w-full accent-amber-400 cursor-pointer"
-                />
+                {currentState.colorGrading !== "none" && (
+                  <button
+                    type="button"
+                    onClick={handleResetLut}
+                    className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-pink-300 text-[10px] font-semibold cursor-pointer"
+                  >
+                    Reset LUT
+                  </button>
+                )}
+              </div>
+
+              <select
+                value={currentState.colorGrading || "none"}
+                onChange={(e) => pushState((prev) => ({ ...prev, colorGrading: e.target.value }))}
+                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs font-bold text-pink-300 focus:outline-none focus:border-pink-500 cursor-pointer"
+              >
+                {Object.entries(COLOR_GRADING_LUT_MAP).map(([key, info]) => (
+                  <option key={key} value={key} className="bg-slate-900 text-slate-200">
+                    {info.label}
+                  </option>
+                ))}
+              </select>
+
+              <div className="text-[10px] font-mono text-slate-400 truncate">
+                {COLOR_GRADING_LUT_MAP[currentState.colorGrading || "none"]?.description || "Natural Rec.709 Cinema Profile"}
               </div>
             </div>
           </div>
