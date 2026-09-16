@@ -214,3 +214,16 @@
   - When assembling master video conditioned on an external master acoustic clock (Lyria 3.5 master vocal song), muxing audio at $t=0$ without delay causes the sound to arrive ~70ms before character lips physically open, creating the perception that the audio is "faster than the lips."
   - **The 70ms Neural Latency Lock**: Master assembly commands MUST apply calibrated audio delay filtergraph (`-filter_complex "[1:a]adelay=70|70[aout]" -map 0:v:0 -map "[aout]"`) to lock acoustic phoneme onsets to physical mouth aperture visemes down to the exact frame (10/10 multimodal sync score).
   - Any master video assembly lacking calibrated neural adelay or justification (`ADELAY_ZERO_OFFSET_JUSTIFIED`) will be rejected with `FAIL: UNCALIBRATED_NEURAL_AUDIO_LATENCY`.
+
+# 🧭 Mandatory 4-Clock Drift Ceiling, Environmental Cast Sanitization & Asset Proxy Parity Protocol (v5.1.6)
+- **Rule 1 — Environmental & Screenplay Alias Cast ID Sanitization (`environmental_shot_character_id_sanitization`)**:
+  - Pre-flight planners (`lib/reel/planner.ts`) and background workers (`scripts/reel_worker_v2.mjs`) MUST sanitize non-human environmental shot tokens (`"scene"`, `"none"`, `"zero"`, `"environment"`, `"atmospheric"`, `"b_roll"`) to `undefined` so atmospheric establishing shots never trip `PRECONDITION_FAILED: Canonical character reference image missing for character scene`.
+  - When screenplay treatment uses role aliases (e.g., `"breaker_kai"`, `"popper_maya"`), the worker MUST deterministically resolve them against the locked Curated Library biometric cast (`m.characters`) by index or name match rather than crashing.
+- **Rule 2 — 4-Clock Drift Ceiling & Native-Audio Editorial Trimming (`multi_component_4_clock_drift_gate`)**:
+  - Every production maintains 4 distinct clocks: `T_audio` (master Lyria song duration), `T_editorial` (sum of planned `editorialDurationSec` cuts), `T_raw_veo` (sum of un-trimmed 8.0s Veo generation buckets), and `T_rendered` (final stitched MP4 duration).
+  - Both the silent and **native-audio (`hasNativeAudio`)** paths in `renderRough` MUST apply frame-accurate FFmpeg editorial trimming (`trim=duration=${editorialDurationSec},setpts=PTS-STARTPTS` and `atrim=duration=${editorialDurationSec},asetpts=PTS-STARTPTS`) and lock master audio mix length (`amix=inputs=2:duration=first`).
+  - Maximum allowable drift between `T_rendered` and `T_editorial` / `T_audio` is **`±50ms` (`0.05s`)**. Any production where raw 8.0s Veo buckets are concatenated un-trimmed (e.g., 128.12s video vs. 34.52s song) will be flagged and auto-healed by `scripts/audit_and_heal_drift.mjs`.
+- **Rule 3 — Cross-Environment Proxied Asset Verification Parity (`cross_environment_asset_verification_parity`)**:
+  - Asset verification endpoints (`/api/reels/verify-assets`) MUST inspect both local filesystem paths (`fs.existsSync`) AND `readAsset()` / proxied Railway storage routes (`/api/reels/assets/reels/studio1_*`, `ep_*`, `yt_*`).
+  - Local development (`localhost:3000/my-reels`) and Railway production MUST maintain 100% badge parity (`✓ VALID MEDIA`, `4K MASTER READY`) without false-negative `NO MEDIA` states on cloud-generated reels.
+
