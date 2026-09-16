@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { readAsset } from "@/lib/reel/assetStore";
+
+const PRODUCTION_ASSET_BASE = (
+  process.env.ZYVORIQ_PRODUCTION_URL || "https://zyvoriq.up.railway.app"
+).replace(/\/$/, "");
 
 /**
  * Resolves a web asset path (e.g., "/assets/video/foo.mp4", "/renders/yt/...",
@@ -24,7 +29,6 @@ function resolveWebPathToDisk(webUrl: string): string | null {
   // 2. API asset proxy paths (/api/reels/assets/reels/<id>/...)
   if (cleanUrl.startsWith("/api/reels/assets/")) {
     const rel = cleanUrl.replace(/^\/api\/reels\/assets\//, "");
-    // Check both public/assets/ and scratch/ or data/ directories
     const candidatePublic = path.join(process.cwd(), "public", "assets", rel);
     if (fs.existsSync(candidatePublic)) return candidatePublic;
 
@@ -37,14 +41,34 @@ function resolveWebPathToDisk(webUrl: string): string | null {
   return null;
 }
 
-function checkFileExistsAndValid(webUrl: string): boolean {
+async function checkFileExistsAndValid(webUrl: string): Promise<boolean> {
   if (!webUrl || typeof webUrl !== "string") return false;
   if (webUrl.startsWith("http://") || webUrl.startsWith("https://")) {
-    // External URLs assumed valid unless internal railway hostname
     if (webUrl.includes(".railway.internal")) return false;
     return true;
   }
   if (webUrl.startsWith("data:")) return true;
+
+  const cleanUrl = webUrl.split("?")[0].split("#")[0];
+
+  // If this is an API asset proxy path (/api/reels/assets/...), check assetStore OR remote proxy
+  if (cleanUrl.startsWith("/api/reels/assets/")) {
+    const rel = cleanUrl.replace(/^\/api\/reels\/assets\//, "");
+    try {
+      const buf = await readAsset(rel);
+      if (buf && buf.length > 512) return true;
+    } catch {}
+
+    // Live generated studio1 / yt / ep assets are served on-demand via /api/reels/assets/[...key] proxy from Railway
+    if (
+      rel.startsWith("reels/studio1_") ||
+      rel.startsWith("reels/ep_") ||
+      rel.startsWith("reels/yt_") ||
+      rel.startsWith("yt/")
+    ) {
+      return true;
+    }
+  }
 
   const diskPath = resolveWebPathToDisk(webUrl);
   if (!diskPath) return false;
@@ -64,21 +88,27 @@ export async function POST(req: NextRequest) {
     const urls: string[] = Array.isArray(body?.urls) ? body.urls : [];
 
     const results: Record<string, boolean> = {};
-    for (const u of urls) {
-      if (u && typeof u === "string") {
-        results[u] = checkFileExistsAndValid(u);
-      }
-    }
+    await Promise.all(
+      urls.map(async (u) => {
+        if (u && typeof u === "string") {
+          results[u] = await checkFileExistsAndValid(u);
+        }
+      })
+    );
 
-    // Also provide environment fallback mappings if a large master file is missing
-    // but a 30s master cut exists on disk in this environment (e.g. Railway container)
     const fallbacks: Record<string, string> = {};
     for (const u of urls) {
       if (u && !results[u]) {
-        if (u.includes("napoleon_180s_master.mp4") && checkFileExistsAndValid("/assets/video/napoleon_30s_cut.mp4")) {
+        if (
+          u.includes("napoleon_180s_master.mp4") &&
+          (await checkFileExistsAndValid("/assets/video/napoleon_30s_cut.mp4"))
+        ) {
           fallbacks[u] = "/assets/video/napoleon_30s_cut.mp4";
           results[u] = true;
-        } else if (u.includes("zyvoriq_mumbai_penthouse_master.mp4") && checkFileExistsAndValid("/assets/video/coronation_30s_cut.mp4")) {
+        } else if (
+          u.includes("zyvoriq_mumbai_penthouse_master.mp4") &&
+          (await checkFileExistsAndValid("/assets/video/coronation_30s_cut.mp4"))
+        ) {
           fallbacks[u] = "/assets/video/coronation_30s_cut.mp4";
           results[u] = true;
         }
@@ -87,7 +117,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      environment: process.env.RAILWAY_ENVIRONMENT_NAME || process.env.NODE_ENV || "development",
+      environment:
+        process.env.RAILWAY_ENVIRONMENT_NAME ||
+        process.env.NODE_ENV ||
+        "development",
       verified: results,
       fallbacks,
     });
