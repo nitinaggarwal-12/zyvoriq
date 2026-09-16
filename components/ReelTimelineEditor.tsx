@@ -382,9 +382,14 @@ export function ReelTimelineEditor({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [historyIndex, history.length]);
 
-  // Saved Versions State
+  // Saved Versions State (filter out any legacy auto-stitch preview clutter automatically)
   const [versions, setVersions] = useState<SavedVersionItem[]>(() => {
-    if (initialVersions && initialVersions.length > 0) return initialVersions;
+    if (initialVersions && initialVersions.length > 0) {
+      const cleaned = initialVersions.filter(
+        (v) => !String(v?.label || "").startsWith("Stitched 4-Shot Seamless Master")
+      );
+      if (cleaned.length > 0) return cleaned;
+    }
     return [
       {
         versionNumber: 1,
@@ -1271,6 +1276,7 @@ export function ReelTimelineEditor({
         body: JSON.stringify({
           reelId,
           title: `Stitched 4-Shot Seamless Master (${totalEditedDurationSec.toFixed(1)}s)`,
+          saveAsVersion: false,
           clips: currentState.clips,
           globalVideoSpeed: currentState.globalVideoSpeed,
           colorGrading: currentState.colorGrading,
@@ -1296,6 +1302,10 @@ export function ReelTimelineEditor({
       const data = await res.json();
       if (!res.ok || !data.success) {
         throw new Error(data.error || "Failed to stitch shots together.");
+      }
+
+      if (Array.isArray(data.versions) && data.versions.length > 0) {
+        setVersions(data.versions);
       }
 
       // Immediately pause & mute secondary <audio> tags because the rendered MP4 has all audio baked in
@@ -1363,6 +1373,49 @@ export function ReelTimelineEditor({
     songHarmoniesGain,
   ]);
 
+  const handleDeleteVersion = async (ver: SavedVersionItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const res = await fetch("/api/reels/editor/render", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reelId,
+          versionNumber: ver.versionNumber,
+          url: ver.url,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.versions)) {
+        setVersions(data.versions);
+        if (activeVersionUrl === ver.url && data.versions[0]?.url) {
+          setActiveVersionUrl(data.versions[0].url);
+        }
+      }
+    } catch {}
+  };
+
+  const handleClearAllVersions = async () => {
+    try {
+      const res = await fetch("/api/reels/editor/render", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reelId,
+          clearAll: true,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.versions)) {
+        setVersions(data.versions);
+        if (data.versions[0]?.url) {
+          setActiveVersionUrl(data.versions[0].url);
+        }
+        setRenderSuccessMsg("🗑️ Cleared all saved versions back to v1 • Original Master.");
+      }
+    } catch {}
+  };
+
   const handleRenderNewVersion = async () => {
     setIsRendering(true);
     setRenderErrorMsg(null);
@@ -1376,6 +1429,7 @@ export function ReelTimelineEditor({
           title:
             versionTitleInput.trim() ||
             `v${versions.length + 1} • Edited Master (${totalEditedDurationSec.toFixed(1)}s)`,
+          saveAsVersion: true,
           clips: currentState.clips,
           globalVideoSpeed: currentState.globalVideoSpeed,
           colorGrading: currentState.colorGrading,
@@ -1538,24 +1592,48 @@ export function ReelTimelineEditor({
             <Layers className="w-3.5 h-3.5 text-teal-400" />
             Saved Versions ({versions.length}):
           </span>
+          {versions.length > 1 && (
+            <button
+              type="button"
+              onClick={handleClearAllVersions}
+              className="px-2 py-0.5 rounded bg-rose-500/15 hover:bg-rose-500/30 border border-rose-500/50 text-rose-300 text-[10px] font-mono font-bold transition cursor-pointer flex items-center gap-1"
+              title="Delete all saved versions and reset to v1 Original Master"
+            >
+              <span>🗑️ Clear All</span>
+            </button>
+          )}
           {versions.map((ver, vIdx) => {
             const isActive = activeVersionUrl === ver.url;
             return (
-              <button
+              <div
                 key={`ver_${ver.versionNumber ?? vIdx}_${vIdx}`}
-                type="button"
-                onClick={() => {
-                  setActiveVersionUrl(ver.url);
-                  setPreviewMode("sequence");
-                }}
-                className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                className={`pl-3 pr-1.5 py-1 rounded-lg text-xs font-mono font-semibold transition flex items-center gap-1.5 ${
                   isActive
                     ? "bg-teal-500/20 border border-teal-500 text-teal-300"
                     : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"
                 }`}
               >
-                <span>{ver.label}</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveVersionUrl(ver.url);
+                    setPreviewMode("sequence");
+                  }}
+                  className="cursor-pointer hover:underline"
+                >
+                  {ver.label}
+                </button>
+                {versions.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={(e) => handleDeleteVersion(ver, e)}
+                    className="ml-1 px-1 rounded hover:bg-rose-500/30 text-slate-500 hover:text-rose-300 transition cursor-pointer"
+                    title="Delete this version"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             );
           })}
         </div>
@@ -1771,53 +1849,6 @@ export function ReelTimelineEditor({
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* Instant Individual Shot Selector Strip */}
-            <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-900">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
-                {previewMode === "stitched_reel"
-                  ? "Stitched 1-Reel Cut:"
-                  : previewMode === "sequence"
-                  ? "Active Sequence Cut:"
-                  : "Select Individual Shot:"}
-              </span>
-              <div className="flex items-center gap-1 flex-wrap">
-                {currentState.clips.map((c, idx) => {
-                  const isSel = idx === selectedClipIndex;
-                  return (
-                    <button
-                      key={`mode_shot_btn_${c.id}_${idx}`}
-                      type="button"
-                      onClick={() => {
-                        setSelectedClipIndex(idx);
-                        if (previewMode === "stitched_reel" && videoRef.current) {
-                          const targetSeq = sequencePlaylist.find((s) => s.originalIndex === idx);
-                          if (targetSeq) {
-                            const seekTime = targetSeq.seqStartTimeSec + 0.15;
-                            videoRef.current.currentTime = seekTime;
-                            setCurrentPlayTime(seekTime);
-                          }
-                        } else if (videoRef.current) {
-                          const seekTime = c.trimStartSec + 0.15;
-                          videoRef.current.currentTime = seekTime;
-                          setCurrentPlayTime(seekTime);
-                          if (isPlaying) videoRef.current.play().catch(() => {});
-                        }
-                      }}
-                      className={`px-2.5 py-1 rounded text-[11px] font-mono font-bold transition cursor-pointer ${
-                        isSel
-                          ? previewMode !== "shot"
-                            ? "bg-teal-500 text-slate-950 shadow-sm"
-                            : "bg-amber-500 text-slate-950 shadow-sm"
-                          : "bg-slate-900 text-slate-400 hover:text-white border border-slate-800"
-                      }`}
-                    >
-                      Shot #{idx + 1} ({Math.max(0.1, c.trimEndSec - c.trimStartSec).toFixed(1)}s)
-                    </button>
-                  );
-                })}
-              </div>
             </div>
             {/* ── ACOUSTIC-VISUAL BPM AUTO-MATCHER & DOWNBEAT LOCK HUD ── */}
             <div className="p-2.5 rounded-xl bg-gradient-to-r from-slate-950 via-teal-950/30 to-slate-950 border border-teal-500/40 space-y-2 shadow-md">
@@ -2260,289 +2291,6 @@ export function ReelTimelineEditor({
               })}
             </div>
           </div>
-
-          {/* Selected Shot Frame Trimmer & Per-Clip Speed Inspector */}
-          {activeClip && (
-            <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-teal-400">
-                  Selected Shot #{selectedClipIndex + 1}: {activeClip.title}
-                </span>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => handleAutoTrimContinuity(selectedClipIndex)}
-                    className="px-2.5 py-1 rounded bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/50 text-teal-300 text-xs font-bold flex items-center gap-1 cursor-pointer transition"
-                    title="Auto-detect and throw away frozen startup frames at Clip Beginning (Head) and deceleration drift at Clip End (Tail)"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-teal-400" />
-                    Auto-Trim Head &amp; Tail
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isStitching}
-                    onClick={() => handleStitchAll4ToPlayAsOneReel()}
-                    className="px-2.5 py-1 rounded bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-xs font-black flex items-center gap-1 cursor-pointer transition shadow-sm"
-                    title="Physically stitch all 4 trimmed clips into 1 single-file seamless MP4 reel with continuous Original Lyria Music"
-                  >
-                    <Film className="w-3.5 h-3.5 text-slate-950" />
-                    {isStitching ? "Stitching Reel..." : "🔗 Stitch All 4 to Play as One Reel"}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={selectedClipIndex === 0}
-                    onClick={() => handleMoveClip(selectedClipIndex, -1)}
-                    className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-35 text-slate-200 text-xs font-semibold flex items-center gap-1 cursor-pointer transition"
-                    title="Move shot earlier in timeline order"
-                  >
-                    ⬅ Move Left
-                  </button>
-                  <button
-                    type="button"
-                    disabled={selectedClipIndex >= currentState.clips.length - 1}
-                    onClick={() => handleMoveClip(selectedClipIndex, 1)}
-                    className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-35 text-slate-200 text-xs font-semibold flex items-center gap-1 cursor-pointer transition"
-                    title="Move shot later in timeline order"
-                  >
-                    Move Right ➡
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleResetShot(selectedClipIndex)}
-                    className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-semibold flex items-center gap-1 cursor-pointer transition"
-                    title="Reset selected shot trim and speed back to full source duration"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    Reset Shot
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSplitClipAtMidpoint(selectedClipIndex)}
-                    className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1 cursor-pointer"
-                    title="Split shot into two independent clips at midpoint frame"
-                  >
-                    <Scissors className="w-3.5 h-3.5 text-teal-400" />
-                    Split Clip
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDuplicateOrAddClip(selectedClipIndex)}
-                    className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1 cursor-pointer"
-                    title="Insert / add frame segment after this clip"
-                  >
-                    <Plus className="w-3.5 h-3.5 text-emerald-400" />
-                    Add Frame
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => updateClip(selectedClipIndex, { enabled: !activeClip.enabled })}
-                    className={`px-2.5 py-1 rounded text-xs font-semibold flex items-center gap-1 cursor-pointer ${
-                      activeClip.enabled
-                        ? "bg-red-950/60 hover:bg-red-900/70 text-red-300 border border-red-800/60"
-                        : "bg-emerald-950/60 text-emerald-300 border border-emerald-800/60"
-                    }`}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    {activeClip.enabled ? "Remove Shot" : "Restore Shot"}
-                  </button>
-                </div>
-              </div>
-
-              {/* ── VISUAL CLIP BEGINNING (HEAD) & END (TAIL) CONTINUITY BREAKDOWN BAR ── */}
-              {(() => {
-                const dur = activeClip.sourceDurationSec || 6.0;
-                const baseStart = activeClip.trimStartSec > 1.0 && dur > 12.0 ? Math.floor(activeClip.trimStartSec / 6.0) * 6.0 : 0;
-                const baseEnd = dur > 12.0 ? baseStart + 6.0 : dur;
-                const headThrownSec = Math.max(0, activeClip.trimStartSec - baseStart);
-                const tailThrownSec = Math.max(0, baseEnd - activeClip.trimEndSec);
-                const keptSec = Math.max(0.1, activeClip.trimEndSec - activeClip.trimStartSec);
-                const headFrames = Math.round(headThrownSec * 24);
-                const tailFrames = Math.round(tailThrownSec * 24);
-                const keptFrames = Math.round(keptSec * 24);
-
-                return (
-                  <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                    <div className="flex items-center justify-between text-[11px] font-mono">
-                      <span className="text-red-400 font-bold">
-                        🗑️ Beginning (Head Thrown Away): {headThrownSec.toFixed(2)}s ({headFrames}f)
-                      </span>
-                      <span className="text-emerald-400 font-bold">
-                        ✓ Kept Smooth Action: {keptSec.toFixed(2)}s ({keptFrames}f)
-                      </span>
-                      <span className="text-red-400 font-bold">
-                        🗑️ End (Tail Thrown Away): {tailThrownSec.toFixed(2)}s ({tailFrames}f)
-                      </span>
-                    </div>
-                    <div className="w-full h-3 rounded-md overflow-hidden flex bg-slate-900 border border-slate-800">
-                      <div
-                        style={{ width: `${Math.max(4, (headThrownSec / 6.0) * 100)}%` }}
-                        className="bg-red-950/90 border-r border-red-500/60 flex items-center justify-center text-[8px] font-mono text-red-300"
-                        title={`Discarded Beginning (Head): ${headThrownSec.toFixed(2)}s (${headFrames} frames) — removes Frame-0 frozen anchor startup inertia`}
-                      >
-                        {headFrames > 0 ? `-${headFrames}f` : ""}
-                      </div>
-                      <div
-                        style={{ width: `${Math.max(20, (keptSec / 6.0) * 100)}%` }}
-                        className="bg-gradient-to-r from-teal-900/70 via-emerald-900/70 to-teal-900/70 flex items-center justify-center text-[9px] font-mono font-bold text-emerald-300"
-                        title={`Active Kept Cut: ${activeClip.trimStartSec.toFixed(2)}s → ${activeClip.trimEndSec.toFixed(2)}s (${keptFrames} frames)`}
-                      >
-                        Kept Cut ({activeClip.trimStartSec.toFixed(2)}s → {activeClip.trimEndSec.toFixed(2)}s)
-                      </div>
-                      <div
-                        style={{ width: `${Math.max(4, (tailThrownSec / 6.0) * 100)}%` }}
-                        className="bg-red-950/90 border-l border-red-500/60 flex items-center justify-center text-[8px] font-mono text-red-300"
-                        title={`Discarded End (Tail): ${tailThrownSec.toFixed(2)}s (${tailFrames} frames) — removes tail deceleration & pose drift`}
-                      >
-                        {tailFrames > 0 ? `-${tailFrames}f` : ""}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Source Shot Switcher for Multi-Shot Productions */}
-              {initialShots.length > 0 && (
-                <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950/80 border border-slate-800 text-xs">
-                  <span className="text-slate-400 shrink-0 font-medium">Switch Shot Source:</span>
-                  <select
-                    value={activeClip.videoUrl}
-                    onChange={(e) => {
-                      const sel = initialShots.find((s) => (s.videoUrl || (s as any).url) === e.target.value);
-                      if (sel) {
-                        const dur = Number(sel.durationSec || 6.0);
-                        updateClip(selectedClipIndex, {
-                          videoUrl: sel.videoUrl || (sel as any).url,
-                          title: sel.title || activeClip.title,
-                          sourceDurationSec: dur,
-                          trimEndSec: Math.min(activeClip.trimEndSec, dur),
-                        });
-                      }
-                    }}
-                    className="bg-slate-900 text-teal-300 font-mono text-xs rounded px-2 py-1 border border-slate-700 outline-none w-full max-w-[260px] cursor-pointer"
-                  >
-                    {initialShots.map((s, idx) => (
-                      <option key={`init_shot_${s.id || idx}_${idx}`} value={s.videoUrl || (s as any).url}>
-                        {s.title || `Shot #${idx + 1}`} ({s.durationSec || 6}s)
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Frame-accurate In/Out Trimmers + Per-Clip Visual Speed with Interactive Frame Seeking & -1f/+1f Nudges */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
-                <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-slate-400">Beginning Cut (In):</span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const val = Math.max(0, Number((activeClip.trimStartSec - 0.04).toFixed(2)));
-                          updateClip(selectedClipIndex, { trimStartSec: val });
-                          handleSeekFrame(val);
-                        }}
-                        className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-mono text-slate-300 cursor-pointer"
-                        title="Step backward 1 frame (-0.04s)"
-                      >
-                        -1f
-                      </button>
-                      <span className="font-mono text-teal-300 font-bold">
-                        {activeClip.trimStartSec.toFixed(2)}s ({Math.round(activeClip.trimStartSec * 24)}f)
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const val = Math.min(activeClip.trimEndSec - 0.2, Number((activeClip.trimStartSec + 0.04).toFixed(2)));
-                          updateClip(selectedClipIndex, { trimStartSec: val });
-                          handleSeekFrame(val);
-                        }}
-                        className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-mono text-slate-300 cursor-pointer"
-                        title="Step forward 1 frame (+0.04s)"
-                      >
-                        +1f
-                      </button>
-                    </div>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={Math.max(0, activeClip.trimEndSec - 0.2)}
-                    step={0.04}
-                    value={activeClip.trimStartSec}
-                    onChange={(e) => {
-                      const val = parseFloat(e.target.value);
-                      updateClip(selectedClipIndex, { trimStartSec: val });
-                      handleSeekFrame(val);
-                    }}
-                    className="w-full accent-teal-400 cursor-pointer"
-                  />
-                </div>
-                <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-slate-400">End Cut (Out):</span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const val = Math.max(activeClip.trimStartSec + 0.2, Number((activeClip.trimEndSec - 0.04).toFixed(2)));
-                          updateClip(selectedClipIndex, { trimEndSec: val });
-                          handleSeekFrame(val);
-                        }}
-                        className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-mono text-slate-300 cursor-pointer"
-                        title="Step backward 1 frame (-0.04s)"
-                      >
-                        -1f
-                      </button>
-                      <span className="font-mono text-teal-300 font-bold">
-                        {activeClip.trimEndSec.toFixed(2)}s ({Math.round(activeClip.trimEndSec * 24)}f)
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const val = Math.min(activeClip.sourceDurationSec, Number((activeClip.trimEndSec + 0.04).toFixed(2)));
-                          updateClip(selectedClipIndex, { trimEndSec: val });
-                          handleSeekFrame(val);
-                        }}
-                        className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-mono text-slate-300 cursor-pointer"
-                        title="Step forward 1 frame (+0.04s)"
-                      >
-                        +1f
-                      </button>
-                    </div>
-                  </div>
-                  <input
-                    type="range"
-                    min={Math.min(activeClip.sourceDurationSec, activeClip.trimStartSec + 0.2)}
-                    max={activeClip.sourceDurationSec}
-                    step={0.04}
-                    value={activeClip.trimEndSec}
-                    onChange={(e) => {
-                      const val = parseFloat(e.target.value);
-                      updateClip(selectedClipIndex, { trimEndSec: val });
-                      handleSeekFrame(val);
-                    }}
-                    className="w-full accent-teal-400 cursor-pointer"
-                  />
-                </div>
-                <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-slate-400">Shot Visual Speed:</span>
-                    <span className="font-mono text-teal-300 font-bold">{(activeClip.speed || 1).toFixed(2)}x</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0.25}
-                    max={4.0}
-                    step={0.05}
-                    value={activeClip.speed || 1.0}
-                    onChange={(e) => updateClip(selectedClipIndex, { speed: parseFloat(e.target.value) })}
-                    className="w-full accent-teal-400 cursor-pointer"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* RIGHT 7 COLS: 4 Independent Tracks + Cinematic Color Grading */}

@@ -116,6 +116,14 @@ export async function GET(req: NextRequest) {
     }
 
     if (!production) {
+      if (id.startsWith("yt_")) {
+        return NextResponse.json({
+          success: true,
+          isYtProduction: true,
+          productionId: id,
+          scene: null,
+        }, { status: 200 });
+      }
       return NextResponse.json({ success: false, error: `Production ${id} not found` }, { status: 404 });
     }
 

@@ -304,6 +304,10 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
       window.location.replace(`/my-reels/${encodeURIComponent(targetId)}`);
       return;
     }
+    if (targetId && targetId.startsWith("yt_")) {
+      setActiveTab("music_video");
+      return;
+    }
     if (targetId) {
       fetch(`/api/studio/omni-generate?id=${encodeURIComponent(targetId)}`)
         .then((res) => (res.ok ? res.json() : null))

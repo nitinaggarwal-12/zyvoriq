@@ -20,6 +20,7 @@ export interface EditorClipInput {
 export interface EditorRenderRequest {
   reelId: string;
   title?: string;
+  saveAsVersion?: boolean;
   clips: EditorClipInput[];
   globalVideoSpeed?: number; // Global visual speed multiplier (0.25x - 4.0x)
   colorGrading?: string; // "none" | "cyberpunk_neon" | "golden_hour_warm" | "moonlight_noir" | "bollywood_royal" | "vintage_film"
@@ -588,9 +589,14 @@ export async function POST(req: NextRequest) {
       fs.copyFileSync(finalOutputPath, path.join(pubOutDir, finalFileName));
     } catch {}
 
-    // 4. Append as a new non-destructive Version (v2, v3...) in DB record
-    let savedVersionNumber = 2;
+    // 4. Update DB record; ONLY append a permanent saved version when body.saveAsVersion === true
+    let savedVersionNumber = 1;
     let savedVersionsList: any[] = [];
+    const shouldSavePermanentVersion = Boolean(body.saveAsVersion);
+
+    const filterOutAutoStitchClutter = (list: any[]) =>
+      list.filter((v) => !String(v?.label || "").startsWith("Stitched 4-Shot Seamless Master"));
+
     try {
       const db = getDatabase();
       if (db && body.reelId) {
@@ -599,8 +605,8 @@ export async function POST(req: NextRequest) {
           const manifest = JSON.parse(row.manifest_json || "{}");
           if (!manifest.assets) manifest.assets = {};
           const origUrl = manifest.assets.masterHybridUrl || manifest.assets.masterNativeUrl || "/renders/yt/default.mp4";
-          const existingVersions = Array.isArray(manifest.versions) && manifest.versions.length > 0
-            ? manifest.versions
+          const baseList = Array.isArray(manifest.versions) && manifest.versions.length > 0
+            ? filterOutAutoStitchClutter(manifest.versions)
             : [
                 {
                   versionNumber: 1,
@@ -610,19 +616,25 @@ export async function POST(req: NextRequest) {
                   createdAt: new Date(Date.now() - 3600000).toISOString(),
                 },
               ];
-          savedVersionNumber = existingVersions.length + 1;
-          const newVer = {
-            versionNumber: savedVersionNumber,
-            label: body.title || `v${savedVersionNumber} • Studio NLE Edit (${Number(totalDurationSec).toFixed(1)}s)`,
-            url: publicOutputUrl,
-            durationSec: Number(totalDurationSec.toFixed(2)),
-            createdAt: new Date().toISOString(),
-          };
-          existingVersions.push(newVer);
-          manifest.versions = existingVersions;
+
+          if (shouldSavePermanentVersion) {
+            savedVersionNumber = baseList.length + 1;
+            const newVer = {
+              versionNumber: savedVersionNumber,
+              label: body.title || `v${savedVersionNumber} • Studio NLE Edit (${Number(totalDurationSec).toFixed(1)}s)`,
+              url: publicOutputUrl,
+              durationSec: Number(totalDurationSec.toFixed(2)),
+              createdAt: new Date().toISOString(),
+            };
+            baseList.push(newVer);
+          } else {
+            savedVersionNumber = baseList.length;
+          }
+
+          manifest.versions = baseList;
           manifest.editedMasterUrl = publicOutputUrl;
           manifest.assets.editedMasterUrl = publicOutputUrl;
-          savedVersionsList = existingVersions;
+          savedVersionsList = baseList;
 
           db.prepare(`UPDATE yt_productions SET manifest_json = ?, updated_at = datetime('now') WHERE id = ?`).run(
             JSON.stringify(manifest),
@@ -638,8 +650,8 @@ export async function POST(req: NextRequest) {
           const manifest = JSON.parse(pgRes.rows[0].manifest_json || "{}");
           if (!manifest.assets) manifest.assets = {};
           const origUrl = manifest.assets.masterHybridUrl || manifest.assets.masterNativeUrl || "/renders/yt/default.mp4";
-          const existingVersions = Array.isArray(manifest.versions) && manifest.versions.length > 0
-            ? manifest.versions
+          const baseList = Array.isArray(manifest.versions) && manifest.versions.length > 0
+            ? filterOutAutoStitchClutter(manifest.versions)
             : [
                 {
                   versionNumber: 1,
@@ -649,19 +661,23 @@ export async function POST(req: NextRequest) {
                   createdAt: new Date(Date.now() - 3600000).toISOString(),
                 },
               ];
-          const vNum = existingVersions.length + 1;
-          const newVer = {
-            versionNumber: vNum,
-            label: body.title || `v${vNum} • Studio NLE Edit (${Number(totalDurationSec).toFixed(1)}s)`,
-            url: publicOutputUrl,
-            durationSec: Number(totalDurationSec.toFixed(2)),
-            createdAt: new Date().toISOString(),
-          };
-          existingVersions.push(newVer);
-          manifest.versions = existingVersions;
+
+          if (shouldSavePermanentVersion) {
+            const vNum = baseList.length + 1;
+            const newVer = {
+              versionNumber: vNum,
+              label: body.title || `v${vNum} • Studio NLE Edit (${Number(totalDurationSec).toFixed(1)}s)`,
+              url: publicOutputUrl,
+              durationSec: Number(totalDurationSec.toFixed(2)),
+              createdAt: new Date().toISOString(),
+            };
+            baseList.push(newVer);
+          }
+
+          manifest.versions = baseList;
           manifest.editedMasterUrl = publicOutputUrl;
           manifest.assets.editedMasterUrl = publicOutputUrl;
-          if (!savedVersionsList.length) savedVersionsList = existingVersions;
+          if (!savedVersionsList.length) savedVersionsList = baseList;
 
           await pool.query(
             `UPDATE yt_productions SET manifest_json = $1, updated_at = NOW() WHERE id = $2`,
@@ -686,6 +702,84 @@ export async function POST(req: NextRequest) {
     console.error("[api/reels/editor/render] Error:", err);
     return NextResponse.json(
       { success: false, error: err?.message || "Failed to render edited video master." },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { reelId, versionNumber, url, clearAll } = body || {};
+    if (!reelId) {
+      return NextResponse.json({ success: false, error: "Missing reelId" }, { status: 400 });
+    }
+
+    let updatedVersions: any[] = [];
+    const filterVersions = (existing: any[], origUrl: string) => {
+      if (clearAll) {
+        return [
+          {
+            versionNumber: 1,
+            label: "v1 • Original Master",
+            url: origUrl,
+            durationSec: 24,
+            createdAt: new Date().toISOString(),
+          },
+        ];
+      }
+      const filtered = existing.filter((v) => {
+        if (url && v.url === url) return false;
+        if (versionNumber !== undefined && v.versionNumber === versionNumber) return false;
+        if (String(v?.label || "").startsWith("Stitched 4-Shot Seamless Master")) return false;
+        return true;
+      });
+      return filtered.map((v, idx) => ({
+        ...v,
+        versionNumber: idx + 1,
+      }));
+    };
+
+    const db = getDatabase();
+    if (db) {
+      const row = db.prepare(`SELECT manifest_json FROM yt_productions WHERE id = ?`).get(reelId) as any;
+      if (row) {
+        const manifest = JSON.parse(row.manifest_json || "{}");
+        const origUrl = manifest?.assets?.masterHybridUrl || manifest?.assets?.masterNativeUrl || "/renders/yt/default.mp4";
+        const currentList = Array.isArray(manifest.versions) ? manifest.versions : [];
+        updatedVersions = filterVersions(currentList, origUrl);
+        manifest.versions = updatedVersions;
+        db.prepare(`UPDATE yt_productions SET manifest_json = ?, updated_at = datetime('now') WHERE id = ?`).run(
+          JSON.stringify(manifest),
+          reelId
+        );
+      }
+    }
+
+    const pool = getPostgresPool();
+    if (pool) {
+      const pgRes = await pool.query(`SELECT manifest_json FROM yt_productions WHERE id = $1`, [reelId]);
+      if (pgRes.rows.length > 0) {
+        const manifest = JSON.parse(pgRes.rows[0].manifest_json || "{}");
+        const origUrl = manifest?.assets?.masterHybridUrl || manifest?.assets?.masterNativeUrl || "/renders/yt/default.mp4";
+        const currentList = Array.isArray(manifest.versions) ? manifest.versions : [];
+        const pgFiltered = filterVersions(currentList, origUrl);
+        if (!updatedVersions.length) updatedVersions = pgFiltered;
+        manifest.versions = pgFiltered;
+        await pool.query(
+          `UPDATE yt_productions SET manifest_json = $1, updated_at = NOW() WHERE id = $2`,
+          [JSON.stringify(manifest), reelId]
+        );
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      versions: updatedVersions,
+    });
+  } catch (err: any) {
+    return NextResponse.json(
+      { success: false, error: err?.message || "Failed to delete version." },
       { status: 500 }
     );
   }
