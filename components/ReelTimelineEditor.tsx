@@ -619,26 +619,32 @@ export function ReelTimelineEditor({
     const musicActive = isStemLiveActive("music") ? 1.0 : 0.0;
     const bgActive = isStemLiveActive("background") ? 1.0 : 0.0;
 
+    const isRenderedEditedMaster = Boolean(currentVideoSrc && currentVideoSrc.includes("/renders/edited/"));
     const isUsingCustomMusicStem =
       currentState.musicTrack !== "original_lyria" && currentState.musicTrack !== "none";
     const isMusicCompletelyMuted = currentState.musicTrack === "none";
+    const shouldMuteVideo = Boolean(
+      stemMutes.master || (!isRenderedEditedMaster && (isUsingCustomMusicStem || isMusicCompletelyMuted))
+    );
 
     if (videoRef.current) {
       const rate = Math.max(0.25, Math.min(4.0, effectiveVisualSpeed));
       try {
         videoRef.current.playbackRate = rate;
       } catch (err) {}
-      // Mute embedded video audio if master is muted OR if user replaced music with a custom stem / muted music
-      videoRef.current.muted = Boolean(stemMutes.master || isUsingCustomMusicStem || isMusicCompletelyMuted);
+      // Mute embedded video audio if master is muted OR if original video is loaded while a custom music track is selected
+      videoRef.current.muted = shouldMuteVideo;
       const baseVocalVol = currentState.vocalMode === "mute" ? 0 : currentState.vocalVolume;
-      // Combine active stems so muting/soloing speech, song, or music physically scales live video audio
       const stemScale = stemMutes.master
         ? 0
+        : isRenderedEditedMaster
+        ? 1.0
         : Math.min(1.0, speechActive * 0.45 + Math.min(1.2, songActive) * 0.25 + musicActive * 0.30);
-      videoRef.current.volume = Math.max(0, Math.min(1.0, baseVocalVol * stemScale));
+      videoRef.current.volume = Math.max(0, Math.min(1.0, isRenderedEditedMaster ? 1.0 : baseVocalVol * stemScale));
     }
     if (musicAudioRef.current) {
-      if (!isUsingCustomMusicStem || stemMutes.master) {
+      // If playing an already-rendered edited master (/renders/edited/...), custom music is ALREADY baked into videoRef!
+      if (isRenderedEditedMaster || !isUsingCustomMusicStem || stemMutes.master) {
         musicAudioRef.current.volume = 0;
         musicAudioRef.current.muted = true;
         musicAudioRef.current.pause();
@@ -655,13 +661,21 @@ export function ReelTimelineEditor({
       }
     }
     if (sfxAudioRef.current) {
-      sfxAudioRef.current.volume = Math.max(0, Math.min(1.0, currentState.sfxVolume * bgActive));
-      const sRate = Math.max(0.25, Math.min(4.0, currentState.sfxSpeed || 1.0));
-      try {
-        sfxAudioRef.current.playbackRate = sRate;
-      } catch (err) {}
+      if (isRenderedEditedMaster || stemMutes.master || currentState.sfxTrack === "none") {
+        sfxAudioRef.current.volume = 0;
+        sfxAudioRef.current.muted = true;
+        sfxAudioRef.current.pause();
+      } else {
+        sfxAudioRef.current.muted = false;
+        sfxAudioRef.current.volume = Math.max(0, Math.min(1.0, currentState.sfxVolume * bgActive));
+        const sRate = Math.max(0.25, Math.min(4.0, currentState.sfxSpeed || 1.0));
+        try {
+          sfxAudioRef.current.playbackRate = sRate;
+        } catch (err) {}
+      }
     }
   }, [
+    currentVideoSrc,
     previewMode,
     effectiveVisualSpeed,
     currentState.vocalMode,
@@ -676,10 +690,21 @@ export function ReelTimelineEditor({
     songHarmoniesGain,
   ]);
 
+  // Helper to compute whether <video> element audio must be muted
+  const shouldMuteVideoElement = () => {
+    const isRenderedEditedMaster = Boolean(currentVideoSrc && currentVideoSrc.includes("/renders/edited/"));
+    const isUsingCustomMusicStem =
+      currentState.musicTrack !== "original_lyria" && currentState.musicTrack !== "none";
+    const isMusicCompletelyMuted = currentState.musicTrack === "none";
+    return Boolean(
+      stemMutes.master || (!isRenderedEditedMaster && (isUsingCustomMusicStem || isMusicCompletelyMuted))
+    );
+  };
+
   // When switching between shots with different MP4 URLs, auto-seek to trimStartSec and resume playback
   const handleVideoLoadedData = () => {
     if (!videoRef.current || !activeClip) return;
-    videoRef.current.muted = Boolean(stemMutes.master);
+    videoRef.current.muted = shouldMuteVideoElement();
     if (previewMode === "stitched_reel") {
       if (videoRef.current.currentTime === 0) {
         videoRef.current.currentTime = 0.15;
@@ -759,18 +784,32 @@ export function ReelTimelineEditor({
   // Sync secondary audio elements on play
   const handlePlay = () => {
     setIsPlaying(true);
+    const isRenderedEditedMaster = Boolean(currentVideoSrc && currentVideoSrc.includes("/renders/edited/"));
     if (videoRef.current) {
-      videoRef.current.muted = Boolean(stemMutes.master);
+      videoRef.current.muted = shouldMuteVideoElement();
     }
-    if (
-      musicAudioRef.current &&
-      currentState.musicTrack !== "none" &&
-      currentState.musicTrack !== "original_lyria"
-    ) {
-      musicAudioRef.current.play().catch(() => {});
+    if (musicAudioRef.current) {
+      if (
+        !isRenderedEditedMaster &&
+        currentState.musicTrack !== "none" &&
+        currentState.musicTrack !== "original_lyria" &&
+        !stemMutes.master
+      ) {
+        musicAudioRef.current.muted = false;
+        musicAudioRef.current.play().catch(() => {});
+      } else {
+        musicAudioRef.current.muted = true;
+        musicAudioRef.current.pause();
+      }
     }
-    if (sfxAudioRef.current && currentState.sfxTrack !== "none") {
-      sfxAudioRef.current.play().catch(() => {});
+    if (sfxAudioRef.current) {
+      if (!isRenderedEditedMaster && currentState.sfxTrack !== "none" && !stemMutes.master) {
+        sfxAudioRef.current.muted = false;
+        sfxAudioRef.current.play().catch(() => {});
+      } else {
+        sfxAudioRef.current.muted = true;
+        sfxAudioRef.current.pause();
+      }
     }
   };
 
@@ -1093,11 +1132,15 @@ export function ReelTimelineEditor({
     setSelectedClipIndex(targetIdx);
   };
 
-  // Physically stitch all 4 trimmed clips into 1 single-file seamless MP4 reel with continuous Original Lyria Music
-  const handleStitchAll4ToPlayAsOneReel = async () => {
+  // Track whether initial mount has completed so auto-stitch only triggers on user control changes
+  const isInitialMountRef = useRef(true);
+  const autoStitchTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Physically stitch all 4 trimmed clips into 1 single-file seamless MP4 reel with continuous Original Lyria Music or Custom Score
+  const handleStitchAll4ToPlayAsOneReel = async (isAutoTriggered = false) => {
     setIsStitching(true);
     setRenderErrorMsg(null);
-    setRenderSuccessMsg(null);
+    if (!isAutoTriggered) setRenderSuccessMsg(null);
     try {
       const res = await fetch("/api/reels/editor/render", {
         method: "POST",
@@ -1131,17 +1174,27 @@ export function ReelTimelineEditor({
         throw new Error(data.error || "Failed to stitch shots together.");
       }
 
+      // Immediately pause & mute secondary <audio> tags because the rendered MP4 has all audio baked in
+      if (musicAudioRef.current) {
+        musicAudioRef.current.muted = true;
+        musicAudioRef.current.volume = 0;
+        musicAudioRef.current.pause();
+      }
+      if (sfxAudioRef.current) {
+        sfxAudioRef.current.muted = true;
+        sfxAudioRef.current.volume = 0;
+        sfxAudioRef.current.pause();
+      }
+
       setStitchedReelUrl(data.outputUrl);
       setActiveVersionUrl(data.outputUrl);
       setPreviewMode("stitched_reel");
       setRenderSuccessMsg(
-        `✓ Stitched all ${sequencePlaylist.length} trimmed shots into 1 seamless single-file reel (${data.durationSec}s) with ${
-          transitionStyle === "dissolve"
-            ? "Smooth Film Dissolve (0.25s)"
-            : transitionStyle === "flash"
-            ? "Flash Transition (0.18s)"
-            : "Cut-on-Action (Instant)"
-        } + Vocals @ ${(currentState.vocalEntrySec || 0).toFixed(1)}s (${(currentState.lipSyncOffsetMs || 0) >= 0 ? "+" : ""}${currentState.lipSyncOffsetMs || 0}ms Lip-Sync Lock)!`
+        `✓ Auto-Stitched & Playing Combined Reel (${data.durationSec}s) • ${
+          currentState.musicTrack === "original_lyria"
+            ? "Original Lyria Music"
+            : "Custom Music Score Baked (Zero Overlap)"
+        } • Vocals @ ${(currentState.vocalEntrySec || 0).toFixed(1)}s`
       );
       setTimeout(() => {
         if (videoRef.current) {
@@ -1149,13 +1202,36 @@ export function ReelTimelineEditor({
           videoRef.current.muted = Boolean(stemMutes.master);
           videoRef.current.play().catch(() => {});
         }
-      }, 120);
+      }, 100);
     } catch (err: any) {
       setRenderErrorMsg(err?.message || "Failed to stitch reel");
     } finally {
       setIsStitching(false);
     }
   };
+
+  // Automatic debounced re-stitch & autoplay whenever any control changes
+  useEffect(() => {
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
+    }
+    if (autoStitchTimerRef.current) {
+      clearTimeout(autoStitchTimerRef.current);
+    }
+    autoStitchTimerRef.current = setTimeout(() => {
+      handleStitchAll4ToPlayAsOneReel(true);
+    }, 450);
+    return () => {
+      if (autoStitchTimerRef.current) clearTimeout(autoStitchTimerRef.current);
+    };
+  }, [
+    historyIndex,
+    transitionStyle,
+    stemMutes,
+    stemSolos,
+    songHarmoniesGain,
+  ]);
 
   const handleRenderNewVersion = async () => {
     setIsRendering(true);
@@ -1402,7 +1478,7 @@ export function ReelTimelineEditor({
                     setPreviewMode("stitched_reel");
                     setTimeout(() => {
                       if (videoRef.current) {
-                        videoRef.current.muted = false;
+                        videoRef.current.muted = shouldMuteVideoElement();
                         videoRef.current.currentTime = 0;
                         videoRef.current.play().catch(() => {});
                       }
@@ -1421,12 +1497,12 @@ export function ReelTimelineEditor({
                   <Film className="w-3.5 h-3.5 text-teal-400" />
                   <span>
                     {isStitching
-                      ? "Stitching 4 Shots + Original Lyria Music..."
+                      ? "⚡ Auto-Stitching Combined Reel..."
                       : `Play Stitched Combined (${sequencePlaylist.length} Shots)`}
                   </span>
                 </div>
                 <span className="text-[10px] font-normal text-teal-400/80">
-                  ✓ One Seamless Reel • Original Lyria Music Preserved • 0ms Gap
+                  ✓ One Seamless Reel • Original or Custom Music Baked • 0ms Gap
                 </span>
               </button>
 
@@ -1435,7 +1511,7 @@ export function ReelTimelineEditor({
                 onClick={() => {
                   setPreviewMode("shot");
                   if (videoRef.current && activeClip) {
-                    videoRef.current.muted = false;
+                    videoRef.current.muted = shouldMuteVideoElement();
                     videoRef.current.currentTime = activeClip.trimStartSec;
                     if (isPlaying) videoRef.current.play().catch(() => {});
                   }
@@ -1573,7 +1649,7 @@ export function ReelTimelineEditor({
                     setPreviewMode("stitched_reel");
                     setTimeout(() => {
                       if (videoRef.current) {
-                        videoRef.current.muted = false;
+                        videoRef.current.muted = shouldMuteVideoElement();
                         videoRef.current.play().catch(() => {});
                       }
                     }, 50);

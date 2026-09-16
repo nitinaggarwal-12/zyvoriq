@@ -329,11 +329,12 @@ export async function POST(req: NextRequest) {
     }
     const stemEqChain = eqStages.length > 0 ? `,${eqStages.join(",")}` : "";
 
-    // Resolve Vocal/Dialogue Source
+    // Resolve Vocal/Dialogue Source (never fallback to full original video audio when user selected a custom replacement music track)
+    const isUsingCustomMusic = Boolean(body.musicTrack && body.musicTrack !== "original_lyria");
     const vocalSourceFile =
       (body.vocalUrl && resolveLocalFilePath(body.vocalUrl)) ||
       reelVocalStemPath ||
-      firstValidSourcePath;
+      (isUsingCustomMusic ? null : firstValidSourcePath);
 
     // Resolve Music Bed Source (Unaltered continuous stream unless custom_trim specified)
     let musicSourceFile: string | null = null;
