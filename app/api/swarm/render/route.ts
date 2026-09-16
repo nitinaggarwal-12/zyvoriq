@@ -113,13 +113,27 @@ export async function POST(req: NextRequest) {
 
       await sharp(Buffer.from(svgOverlay)).png().toFile(hudPngPath);
 
-      // Render 5.000s (150 frames @ 30fps) widescreen shot with smooth anamorphic dolly zoom + warm volcanic hearth grading
-      const zoomDirection =
-        i % 2 === 0
-          ? 'min(zoom+0.0006,1.12)'
-          : 'if(eq(on,1),1.12,max(zoom-0.0006,1.00))';
-      const ffmpegCmd = `ffmpeg -y -loop 1 -framerate 30 -i "${basePngPath}" -i "${hudPngPath}" -filter_complex "[0:v]zoompan=z='${zoomDirection}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=150:s=1920x1080:fps=30,eq=contrast=1.08:saturation=1.15,noise=alls=4:allf=t+u[bg];[bg][1:v]overlay=0:0,trim=duration=5.000,setpts=PTS-STARTPTS,fps=30,format=yuv420p[v]" -map "[v]" -r 30 -video_track_timescale 30000 -c:v libx264 -preset ultrafast -crf 20 -an "${shotMp4Path}"`;
-      execSync(ffmpegCmd, { stdio: 'pipe' });
+      const veoClipPathPublic = path.join(publicOutDir, `veo_act${i + 1}.mp4`);
+      const veoClipPathScratch = path.join(process.cwd(), 'scratch', `swarm_veo_act${i + 1}.mp4`);
+      const liveVeoClip = fs.existsSync(veoClipPathPublic)
+        ? veoClipPathPublic
+        : fs.existsSync(veoClipPathScratch)
+          ? veoClipPathScratch
+          : null;
+
+      if (liveVeoClip && fs.statSync(liveVeoClip).size > 200_000) {
+        // GENUINE LIVE-ACTION GOOGLE VEO 3.1 VIDEO PIPELINE (1920x1080 @ 30fps CFR)
+        const ffmpegCmd = `ffmpeg -y -i "${liveVeoClip}" -i "${hudPngPath}" -filter_complex "[0:v]fps=30,scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,eq=contrast=1.06:saturation=1.12,setsar=1[bg];[bg][1:v]overlay=0:0,trim=duration=5.000,setpts=PTS-STARTPTS,fps=30,format=yuv420p[v]" -map "[v]" -r 30 -video_track_timescale 30000 -c:v libx264 -preset fast -crf 18 -an "${shotMp4Path}"`;
+        execSync(ffmpegCmd, { stdio: 'pipe' });
+      } else {
+        // Render 5.000s (150 frames @ 30fps) widescreen shot with smooth anamorphic dolly zoom + warm volcanic hearth grading
+        const zoomDirection =
+          i % 2 === 0
+            ? 'min(zoom+0.0006,1.12)'
+            : 'if(eq(on,1),1.12,max(zoom-0.0006,1.00))';
+        const ffmpegCmd = `ffmpeg -y -loop 1 -framerate 30 -i "${basePngPath}" -i "${hudPngPath}" -filter_complex "[0:v]zoompan=z='${zoomDirection}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=150:s=1920x1080:fps=30,eq=contrast=1.08:saturation=1.15,noise=alls=4:allf=t+u[bg];[bg][1:v]overlay=0:0,trim=duration=5.000,setpts=PTS-STARTPTS,fps=30,format=yuv420p[v]" -map "[v]" -r 30 -video_track_timescale 30000 -c:v libx264 -preset ultrafast -crf 20 -an "${shotMp4Path}"`;
+        execSync(ffmpegCmd, { stdio: 'pipe' });
+      }
       shotFiles.push(shotMp4Path);
     }
 
