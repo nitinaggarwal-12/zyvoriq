@@ -226,8 +226,10 @@ export default function Omni12Page() {
                 <video
                   key={renderResult.videoUrl}
                   src={renderResult.videoUrl}
+                  poster="/assets/omni12/omni12_master_poster.jpg"
                   controls
                   autoPlay
+                  loop
                   muted
                   playsInline
                   preload="auto"

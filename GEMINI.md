@@ -215,7 +215,7 @@
   - **The 70ms Neural Latency Lock**: Master assembly commands MUST apply calibrated audio delay filtergraph (`-filter_complex "[1:a]adelay=70|70[aout]" -map 0:v:0 -map "[aout]"`) to lock acoustic phoneme onsets to physical mouth aperture visemes down to the exact frame (10/10 multimodal sync score).
   - Any master video assembly lacking calibrated neural adelay or justification (`ADELAY_ZERO_OFFSET_JUSTIFIED`) will be rejected with `FAIL: UNCALIBRATED_NEURAL_AUDIO_LATENCY`.
 
-# 🧭 Mandatory 4-Clock Drift Ceiling, Environmental Cast Sanitization & Asset Proxy Parity Protocol (v5.1.9)
+# 🧭 Mandatory 4-Clock Drift Ceiling, Environmental Cast Sanitization & Asset Proxy Parity Protocol (v5.2.0)
 - **Rule 1 — Environmental & Screenplay Alias Cast ID Sanitization (`environmental_shot_character_id_sanitization`)**:
   - Pre-flight planners (`lib/reel/planner.ts`) and background workers (`scripts/reel_worker_v2.mjs`) MUST sanitize non-human environmental shot tokens (`"scene"`, `"none"`, `"zero"`, `"environment"`, `"atmospheric"`, `"b_roll"`) to `undefined` so atmospheric establishing shots never trip `PRECONDITION_FAILED: Canonical character reference image missing for character scene`.
   - When screenplay treatment uses role aliases (e.g., `"breaker_kai"`, `"popper_maya"`), the worker MUST deterministically resolve them against the locked Curated Library biometric cast (`m.characters`) by index or name match rather than crashing.
@@ -228,7 +228,7 @@
   - Local development (`localhost:3000/my-reels`) and Railway production MUST maintain 100% badge parity (`✓ VALID MEDIA`, `4K MASTER READY`) without false-negative `NO MEDIA` states on cloud-generated reels.
 - **Rule 4 — Universal Multi-Project Post-Fix Governance Document & Skill Lockstep Synchronization Law (`universal_post_fix_governance_doc_sync`)**:
   - Across **every project and workspace (`ALL_PROJECTS_UNIVERSAL`)**, whenever ANY bug fix, root-cause remediation, or new pipeline invariant is implemented, the agent MUST immediately update all canonical governance, Markdown (`*.md`), and skill documents (`SKILL.md`, `hooks.json`) in lockstep within the same turn.
-- **Rule 5 — Omni 1.2 4-Anchor 30s Matrix, Sacred Venue Sanctity & Netflix 30fps CFR Spec (`omni12_netflix_master_spec` — v5.1.9)**:
+- **Rule 5 — Omni 1.2 4-Anchor 30s Matrix, Sacred Venue Sanctity & Netflix 30fps CFR Spec (`omni12_netflix_master_spec` — v5.2.0)**:
   - For a 30-second (15-bar @ 120 BPM) music video reel, hard camera-angle cuts (`A_ROLL <-> B_ROLL <-> C_ROLL`) seed from **4 Master Anchor Setups (`DISCRETE_STILL`)**, while consecutive dance/vocal bars within the same camera angle chain via **Tail-Frame Continuation (`TAIL_CONTINUATION`)** to prevent posture teleportation (`PSNR < 25 dB`).
   - Sacred venues (`Temple`, `Sanctum`, `Gurdwara`, `Church`) strictly block inappropriate attire (`bikini`, `swimsuit`, `clubwear`) and auto-heal to authentic ceremonial silk attire and reverent *Anjali mudra* postures.
   - All master renders enforce `-r 30 -video_track_timescale 30000`, filtergraph `setpts=PTS-STARTPTS`, 48kHz stereo audio (`-14 LUFS`), and `0.0ms` 4-clock drift.

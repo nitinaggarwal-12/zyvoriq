@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "omni_guard",
-  "version": "5.1.9",
+  "version": "5.2.0",
   "description": "Google Omni 1.2 Universal Multi-Project Quality, Model Selection & Multi-Agent Orchestration Engine (Generative-Source Amendment)",
   "global_governance": {
     "sme_director": "Google Omni 1.1 (End-to-End Subject Matter Expert Director & Chief Orchestrator)",
@@ -770,7 +770,7 @@
   },
   "amendment_log": {
     "from": "5.1.8",
-    "to": "5.1.9",
+    "to": "5.2.0",
     "reason": "Omni 1.2 Zero-Baggage 6-Stage Directorial Studio, 4-Anchor 30s Matrix, Sacred Venue Sanctity Gate, and 30fps CFR Timescale Lock",
     "changes": [
       "omni12_4_anchor_30s_matrix: codified 4 Master Anchor Pictures + Tail-Frame Continuation law for 30s (15-bar) reels to prevent posture teleportation across cuts",
