@@ -3388,10 +3388,12 @@ async function renderRough(op, m) {
         const f = [];
         for (let i = 0; i < batchShots.length; i++) {
           const s = batchShots[i];
-          const shotDur = Number(s.asset?.actualDurationSec || s.editorialDurationSec || s.generationDurationSec || 6.0);
-          const fadeOutStart = Math.max(0.01, shotDur - 0.015);
-          f.push(`[${i}:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30[v${i}]`);
-          f.push(`[${i}:a]aresample=48000,aformat=channel_layouts=stereo,afade=t=in:st=0:d=0.01,afade=t=out:st=${fadeOutStart.toFixed(3)}:d=0.01[a${i}]`);
+          const rawAssetDur = Number(s.asset?.actualDurationSec || s.generationDurationSec || 6.0);
+          const editorialDur = Number(s.editorialDurationSec || s.durationSec || rawAssetDur);
+          const shotDur = Math.max(0.5, Math.min(rawAssetDur, editorialDur));
+          const fadeOutStart = Math.max(0.01, shotDur - 0.02);
+          f.push(`[${i}:v]trim=duration=${shotDur.toFixed(3)},setpts=PTS-STARTPTS,scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30[v${i}]`);
+          f.push(`[${i}:a]atrim=duration=${shotDur.toFixed(3)},asetpts=PTS-STARTPTS,aresample=48000,aformat=channel_layouts=stereo,afade=t=in:st=0:d=0.015,afade=t=out:st=${fadeOutStart.toFixed(3)}:d=0.02[a${i}]`);
         }
         f.push(`${batchShots.map((_, i) => `[v${i}][a${i}]`).join("")}concat=n=${batchShots.length}:v=1:a=1[vcat][acat]`);
         const batchOut = path.join(partsDir, `batch_${String(b).padStart(4, "0")}.mp4`);
