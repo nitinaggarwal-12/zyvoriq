@@ -1,26 +1,42 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import {
+  SWARM_AUDIO_VOICE_SAMPLES,
+  SWARM_BGM_SCORE_SAMPLES,
+} from '@/lib/swarm/engine';
 
 export default function SwarmStudioPage() {
   const [plan, setPlan] = useState<any>(null);
   const [rendering, setRendering] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'screenplay' | 'nanobanana' | 'lyria'>('screenplay');
+
+  // Audio & Background Music Stem Selector State
+  const [selectedVoiceSampleId, setSelectedVoiceSampleId] = useState<string>('native_veo_speech');
+  const [selectedBgmSampleId, setSelectedBgmSampleId] = useState<string>('no_bgm_silent');
+  const [voiceVolume, setVoiceVolume] = useState<number>(1.40);
+  const [bgmVolume, setBgmVolume] = useState<number>(0.0);
+  const [foleyVolume, setFoleyVolume] = useState<number>(0.35);
+  const [previewAudioUrl, setPreviewAudioUrl] = useState<string | null>(null);
+  const audioPreviewRef = useRef<HTMLAudioElement | null>(null);
+
   const [renderResult, setRenderResult] = useState<any>({
     status: 'rendered',
     videoUrl: '/assets/swarm/cathedral_of_crust_master.mp4',
     posterUrl: '/assets/swarm/cathedral_of_crust_poster.jpg',
+    selectedVoiceSample: 'Native Veo 3.1 On-Camera Speech (Lip-Sync)',
+    selectedBgmSample: '🔇 Silence / No Background Music (Pure Dialogue & Foley Only)',
     audit: {
-      fileSizeBytes: 11245000,
+      fileSizeBytes: 22850386,
       driftMs: 0,
       plannedDurationSec: 30.0,
       renderedDurationSec: 30.0,
       rFrameRate: '30/1',
       timeBase: '1/30000',
       audioSampleRate: 48000,
-      resolution: '1920x1080 (16:9 Anamorphic Widescreen)',
-      vocalPolicy: 'STRICT_NON_VOCAL_ACTING (Background Score + Voiceover Narration Only)',
+      resolution: '1920x1080 (2.39:1 Anamorphic Theatrical Cinema Matte)',
+      vocalPolicy: 'ATTIRE-LOCKED VEO 3.1 MASTER • Voice: Native Veo 3.1 Speech | Score: 🔇 Silence / No Background Music',
       nbFrames: 900,
     },
   });
@@ -36,13 +52,40 @@ export default function SwarmStudioPage() {
       .catch(console.error);
   }, []);
 
-  const handleRenderSwarmMaster = async () => {
+  const handlePlayPreview = (url: string) => {
+    if (previewAudioUrl === url && audioPreviewRef.current) {
+      audioPreviewRef.current.pause();
+      setPreviewAudioUrl(null);
+      return;
+    }
+    setPreviewAudioUrl(url);
+    setTimeout(() => {
+      if (audioPreviewRef.current) {
+        audioPreviewRef.current.src = url;
+        audioPreviewRef.current.play().catch(console.error);
+      }
+    }, 50);
+  };
+
+  const handleRenderSwarmMaster = async (
+    overrideBgmId?: string,
+    overrideBgmVol?: number
+  ) => {
     setRendering(true);
+    const targetBgmId = overrideBgmId ?? selectedBgmSampleId;
+    const targetBgmVol = overrideBgmVol !== undefined ? overrideBgmVol : bgmVolume;
     try {
       const res = await fetch('/api/swarm/render', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ presetId: 'cathedral_of_crust' }),
+        body: JSON.stringify({
+          presetId: 'cathedral_of_crust',
+          voiceSampleId: selectedVoiceSampleId,
+          bgmSampleId: targetBgmId,
+          voiceVolume,
+          bgmVolume: targetBgmVol,
+          foleyVolume,
+        }),
       });
       const data = await res.json();
       if (data.status === 'rendered') {
@@ -53,6 +96,12 @@ export default function SwarmStudioPage() {
     } finally {
       setRendering(false);
     }
+  };
+
+  const handleSilenceBgm = async () => {
+    setSelectedBgmSampleId('no_bgm_silent');
+    setBgmVolume(0);
+    await handleRenderSwarmMaster('no_bgm_silent', 0);
   };
 
   return (
@@ -82,8 +131,16 @@ export default function SwarmStudioPage() {
               ← Omni 1.2 Studio
             </Link>
             <button
+              id="btn-silence-bgm-header"
+              onClick={handleSilenceBgm}
+              disabled={rendering}
+              className="px-4 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs md:text-sm font-bold shadow-md transition min-h-[44px] flex items-center gap-1.5"
+            >
+              🔇 Silence Background Music
+            </button>
+            <button
               id="btn-render-swarm-master"
-              onClick={handleRenderSwarmMaster}
+              onClick={() => handleRenderSwarmMaster()}
               disabled={rendering}
               className="px-6 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs md:text-sm font-bold shadow-md transition min-h-[44px] flex items-center gap-2"
             >
@@ -202,14 +259,257 @@ export default function SwarmStudioPage() {
               <div>• 🎬 FFmpeg CFR Master: 1920x1080 @ 30fps, setpts=PTS-STARTPTS, 0.0ms Drift</div>
             </div>
 
-            <div className="pt-1 flex items-center justify-between gap-4">
+            <div className="pt-1 flex flex-wrap items-center justify-between gap-3">
               <a
                 href={renderResult.videoUrl}
                 download="cathedral_of_crust_master.mp4"
-                className="w-full py-3 px-5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs md:text-sm font-bold text-center transition min-h-[44px] flex items-center justify-center gap-2 shadow"
+                className="flex-1 py-3 px-5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs md:text-sm font-bold text-center transition min-h-[44px] flex items-center justify-center gap-2 shadow"
               >
                 ⬇️ Download &ldquo;The Cathedral of Crust&rdquo; Master MP4
               </a>
+              <button
+                id="btn-silence-bgm-player"
+                onClick={handleSilenceBgm}
+                disabled={rendering}
+                className="py-3 px-5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs md:text-sm font-bold text-center transition min-h-[44px] flex items-center justify-center gap-2 shadow"
+              >
+                🔇 Silence Background Music (Pure Dialogue &amp; Foley Only)
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* 🎛️ AUDIO & BACKGROUND MUSIC MASTERING CONSOLE (SELECTABLE SAMPLES & MIXER) */}
+        <section
+          id="swarm-audio-bgm-console"
+          className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-8 space-y-6"
+        >
+          <audio ref={audioPreviewRef} className="hidden" onEnded={() => setPreviewAudioUrl(null)} />
+
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
+            <div>
+              <span className="text-xs font-extrabold uppercase tracking-wider text-amber-600">
+                🎛️ INTERACTIVE AUDIO &amp; BACKGROUND MUSIC STEM SELECTOR
+              </span>
+              <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 mt-0.5">
+                Choose Your Dialogue Stem &amp; Lyria 3.5 Background Music Score (or Silence BGM)
+              </h2>
+              <p className="text-xs md:text-sm text-slate-600 mt-1">
+                Switch between On-Camera Lip-Sync Speech, Cinema Trailer Baritone, or Documentary Storyteller voices, and pair with background music scores or 1-click silence.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                id="btn-silence-bgm-console"
+                onClick={handleSilenceBgm}
+                disabled={rendering}
+                className="px-5 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs md:text-sm font-extrabold shadow-md transition min-h-[44px] flex items-center gap-2"
+              >
+                🔇 1-Click Silence Background Music (No BGM)
+              </button>
+              <button
+                id="btn-remaster-audio-bgm"
+                onClick={() => handleRenderSwarmMaster()}
+                disabled={rendering}
+                className="px-6 py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs md:text-sm font-extrabold shadow-md transition min-h-[44px] flex items-center gap-2"
+              >
+                {rendering
+                  ? '🎬 Mixing Stems & Re-Mastering Movie...'
+                  : '🎬 Remaster Movie with Selected Audio & Music'}
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* COLUMN 1: 4 VOICE & DIALOGUE SAMPLES */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm md:text-base font-extrabold text-slate-900 flex items-center gap-2">
+                  <span>🎙️ Step 1: Select Voice / Dialogue Stem</span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold">
+                    4 Samples Available
+                  </span>
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {SWARM_AUDIO_VOICE_SAMPLES.map((sample) => {
+                  const isSelected = selectedVoiceSampleId === sample.id;
+                  const isPreviewing = previewAudioUrl === sample.previewAudioUrl;
+                  return (
+                    <div
+                      key={sample.id}
+                      onClick={() => setSelectedVoiceSampleId(sample.id)}
+                      className={`cursor-pointer rounded-2xl border p-4 transition flex flex-col justify-between space-y-3 ${
+                        isSelected
+                          ? 'bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-600/20 shadow-sm'
+                          : 'bg-white border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="px-2 py-0.5 rounded bg-slate-900 text-white text-[10px] font-bold">
+                            {sample.badge}
+                          </span>
+                          {isSelected && (
+                            <span className="text-xs font-extrabold text-indigo-600">
+                              ✓ Active Stem
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="text-sm font-extrabold text-slate-900">
+                          {sample.title}
+                        </h4>
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                          {sample.description}
+                        </p>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-slate-500">
+                          {sample.subtitle}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePlayPreview(sample.previewAudioUrl);
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold min-h-[36px] flex items-center gap-1.5"
+                        >
+                          {isPreviewing ? '⏹ Stop' : '🔊 Preview'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* COLUMN 2: 5 BACKGROUND MUSIC SCORE SAMPLES (INCLUDING SILENCE / NO BGM) */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm md:text-base font-extrabold text-slate-900 flex items-center gap-2">
+                  <span>🎼 Step 2: Select Background Music Score (or Silence)</span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 text-xs font-bold">
+                    5 Options (Silence or 4 Scores)
+                  </span>
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {SWARM_BGM_SCORE_SAMPLES.map((bgm) => {
+                  const isSelected = selectedBgmSampleId === bgm.id;
+                  const isPreviewing = previewAudioUrl === bgm.previewAudioUrl;
+                  return (
+                    <div
+                      key={bgm.id}
+                      onClick={() => {
+                        setSelectedBgmSampleId(bgm.id);
+                        if (bgm.id === 'no_bgm_silent') {
+                          setBgmVolume(0);
+                        } else if (bgmVolume === 0) {
+                          setBgmVolume(0.85);
+                        }
+                      }}
+                      className={`cursor-pointer rounded-2xl border p-4 transition flex flex-col justify-between space-y-3 ${
+                        isSelected
+                          ? bgm.id === 'no_bgm_silent'
+                            ? 'bg-rose-50/80 border-rose-600 ring-2 ring-rose-600/20 shadow-sm'
+                            : 'bg-amber-50/70 border-amber-600 ring-2 ring-amber-600/20 shadow-sm'
+                          : 'bg-white border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="px-2 py-0.5 rounded bg-amber-900 text-amber-100 text-[10px] font-bold">
+                            {bgm.bpm} BPM • {bgm.key}
+                          </span>
+                          {isSelected && (
+                            <span className="text-xs font-extrabold text-amber-700">
+                              ✓ Active Score
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="text-sm font-extrabold text-slate-900">
+                          {bgm.title}
+                        </h4>
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                          {bgm.description}
+                        </p>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-slate-500">
+                          {bgm.subtitle}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePlayPreview(bgm.previewAudioUrl);
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold min-h-[36px] flex items-center gap-1.5"
+                        >
+                          {isPreviewing ? '⏹ Stop' : '🎵 Preview'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* VOLUME MIX SLIDERS BAR */}
+          <div className="bg-slate-50 rounded-2xl border border-slate-200 p-4 md:p-5 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-800">
+                <span>🎙️ Dialogue / Speech Level:</span>
+                <span className="font-mono text-indigo-600">{Math.round(voiceVolume * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="1.8"
+                step="0.05"
+                value={voiceVolume}
+                onChange={(e) => setVoiceVolume(parseFloat(e.target.value))}
+                className="w-full accent-indigo-600"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-800">
+                <span>🎼 Background Music Score Level:</span>
+                <span className="font-mono text-amber-600">{Math.round(bgmVolume * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="1.5"
+                step="0.05"
+                value={bgmVolume}
+                onChange={(e) => setBgmVolume(parseFloat(e.target.value))}
+                className="w-full accent-amber-600"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-800">
+                <span>🔥 Kitchen Foley &amp; Hearth Level:</span>
+                <span className="font-mono text-emerald-600">{Math.round(foleyVolume * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="1.0"
+                step="0.05"
+                value={foleyVolume}
+                onChange={(e) => setFoleyVolume(parseFloat(e.target.value))}
+                className="w-full accent-emerald-600"
+              />
             </div>
           </div>
         </section>

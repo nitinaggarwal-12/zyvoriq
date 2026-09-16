@@ -3,7 +3,11 @@ import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
-import { compileSwarmProductionPlan } from '@/lib/swarm/engine';
+import {
+  compileSwarmProductionPlan,
+  SWARM_AUDIO_VOICE_SAMPLES,
+  SWARM_BGM_SCORE_SAMPLES,
+} from '@/lib/swarm/engine';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +24,12 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
     const presetId = body.presetId || 'cathedral_of_crust';
+    const voiceSampleId = body.voiceSampleId || 'native_veo_speech';
+    const bgmSampleId = body.bgmSampleId || 'lyria_cello_92bpm';
+    const voiceVol = typeof body.voiceVolume === 'number' ? body.voiceVolume : 1.35;
+    const bgmVol = typeof body.bgmVolume === 'number' ? body.bgmVolume : 0.85;
+    const foleyVol = typeof body.foleyVolume === 'number' ? body.foleyVolume : 0.35;
+
     const plan = compileSwarmProductionPlan(presetId);
 
     const scratchDir = path.join(process.cwd(), 'scratch', 'swarm_render');
@@ -31,7 +41,7 @@ export async function POST(req: NextRequest) {
     const shotNativeAudioFiles: string[] = [];
 
     // Step 1: Render each of the 6 dramatic 5.000s shots (150 frames @ 30fps CFR = 30.000s total)
-    // Preserving BOTH 100% clean Netflix Theatrical 2.39:1 Cinema Framing AND Native Veo 3.1 Synchronized Audio
+    // Prioritizing 100% Attire-Locked & Tail-Chained Veo 3.1 Clips (veo_locked_act*.mp4)
     for (let i = 0; i < plan.shots.length; i++) {
       const shot = plan.shots[i];
       const shotIdx = String(i + 1).padStart(2, '0');
@@ -57,8 +67,7 @@ export async function POST(req: NextRequest) {
         .png()
         .toFile(basePngPath);
 
-      // Pure Netflix Theatrical 2.39:1 Anamorphic Cinema Letterbox Matte + Subtle Theatrical Subtitles
-      // ZERO ugly developer debug HUD boxes covering the cinematography
+      // Pure Netflix Theatrical 2.39:1 Anamorphic Cinema Letterbox Matte + Clean Theatrical Subtitles
       const svgCinemaMatte = `<svg width="1920" height="1080" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="subShadow" x1="0" y1="0" x2="0" y2="1">
@@ -85,16 +94,20 @@ export async function POST(req: NextRequest) {
 
       await sharp(Buffer.from(svgCinemaMatte)).png().toFile(hudPngPath);
 
+      const veoLockedPath = path.join(publicOutDir, `veo_locked_act${i + 1}.mp4`);
       const veoTalkingPath = path.join(publicOutDir, `veo_talking_act${i + 1}.mp4`);
       const veoClipPathPublic = path.join(publicOutDir, `veo_act${i + 1}.mp4`);
       const veoClipPathScratch = path.join(process.cwd(), 'scratch', `swarm_veo_act${i + 1}.mp4`);
-      const liveVeoClip = fs.existsSync(veoTalkingPath)
-        ? veoTalkingPath
-        : fs.existsSync(veoClipPathPublic)
-          ? veoClipPathPublic
-          : fs.existsSync(veoClipPathScratch)
-            ? veoClipPathScratch
-            : null;
+
+      const liveVeoClip = fs.existsSync(veoLockedPath)
+        ? veoLockedPath
+        : fs.existsSync(veoTalkingPath)
+          ? veoTalkingPath
+          : fs.existsSync(veoClipPathPublic)
+            ? veoClipPathPublic
+            : fs.existsSync(veoClipPathScratch)
+              ? veoClipPathScratch
+              : null;
 
       if (liveVeoClip && fs.statSync(liveVeoClip).size > 200_000) {
         // 1. Render 1920x1080 @ 30fps CFR Video with 2.39:1 Theatrical Letterbox Matte
@@ -142,24 +155,64 @@ export async function POST(req: NextRequest) {
       { stdio: 'pipe' }
     );
 
-    // Step 3: Build 30.000s 48kHz Theatrical Master Soundtrack:
-    //   - When on-camera talking Veo clips are present, use 100% NATIVE VEO 3.1 SYNCHRONIZED ON-CAMERA SPEECH (-14 LUFS) + Ducked Lyria 3.5 Score (-22 LUFS).
-    //   - ZERO background TTS dubbing over moving lips!
-    const audioPath = path.join(scratchDir, 'swarm_master_audio_48k.m4a');
-    const scoreMp3 = path.join(
-      process.cwd(),
-      'public/assets/stems/lyria_symphonic_score_92bpm.mp3'
-    );
-    const hasTalkingClips = fs.existsSync(path.join(publicOutDir, 'veo_talking_act1.mp4'));
+    // Step 3: Select Requested Voice/Dialogue Sample & Background Music Score Sample
+    let selectedVoicePath = nativeVeoConcatWav;
+    let effectiveVoiceVol = voiceVol;
 
-    if (hasTalkingClips && fs.existsSync(nativeVeoConcatWav) && fs.existsSync(scoreMp3)) {
+    if (voiceSampleId === 'charon_baritone_vo') {
+      const p = path.join(process.cwd(), 'public/assets/swarm/swarm_voiceover_dialogue_master.wav');
+      if (fs.existsSync(p)) selectedVoicePath = p;
+    } else if (voiceSampleId === 'fenrir_storyteller_vo') {
+      const p = path.join(process.cwd(), 'public/assets/swarm/swarm_voiceover_fenrir_master.wav');
+      if (fs.existsSync(p)) selectedVoicePath = p;
+    } else if (voiceSampleId === 'pure_cinema_instrumental') {
+      effectiveVoiceVol = 0.0;
+    }
+
+    const bgmSample =
+      SWARM_BGM_SCORE_SAMPLES.find((s) => s.id === bgmSampleId) ||
+      SWARM_BGM_SCORE_SAMPLES[0];
+    const isBgmSilent = bgmSampleId === 'no_bgm_silent' || bgmVol <= 0.01;
+    const effectiveBgmVol = isBgmSilent ? 0.0 : bgmVol;
+
+    let selectedBgmPath = path.join(
+      process.cwd(),
+      'public',
+      bgmSample.previewAudioUrl.replace(/^\//, '')
+    );
+    if (!fs.existsSync(selectedBgmPath)) {
+      selectedBgmPath = path.join(
+        process.cwd(),
+        'public/assets/stems/lyria_symphonic_score_92bpm.mp3'
+      );
+    }
+
+    const sfxMp3 = path.join(
+      process.cwd(),
+      'public/assets/audio/sfx/vinyl_rain_ambiance.mp3'
+    );
+
+    const audioPath = path.join(scratchDir, 'swarm_master_audio_48k.m4a');
+
+    // Mix Selected Voice Stem + Selected Background Music Score (or SILENT if no_bgm_silent) + Hearth Foley
+    if (isBgmSilent && fs.existsSync(selectedVoicePath) && fs.existsSync(sfxMp3)) {
       execSync(
-        `ffmpeg -y -i "${nativeVeoConcatWav}" -stream_loop -1 -i "${scoreMp3}" -filter_complex "[0:a]volume=1.45,atrim=duration=30.000,asetpts=PTS-STARTPTS[veo_speech];[1:a]volume=0.25,atrim=duration=30.000,asetpts=PTS-STARTPTS[sc];[veo_speech][sc]amix=inputs=2:duration=first:normalize=0,aresample=48000[a]" -map "[a]" -ar 48000 -ac 2 -c:a aac -b:a 192k "${audioPath}"`,
+        `ffmpeg -y -i "${selectedVoicePath}" -stream_loop -1 -i "${sfxMp3}" -filter_complex "[0:a]volume=${effectiveVoiceVol},atrim=duration=30.000,asetpts=PTS-STARTPTS[vo];[1:a]volume=${foleyVol * 0.4},atrim=duration=30.000,asetpts=PTS-STARTPTS[fx];[vo][fx]amix=inputs=2:duration=first:normalize=0,aresample=48000[a]" -map "[a]" -ar 48000 -ac 2 -c:a aac -b:a 192k "${audioPath}"`,
         { stdio: 'pipe' }
       );
-    } else if (fs.existsSync(nativeVeoConcatWav) && fs.existsSync(scoreMp3)) {
+    } else if (isBgmSilent && fs.existsSync(selectedVoicePath)) {
       execSync(
-        `ffmpeg -y -i "${nativeVeoConcatWav}" -stream_loop -1 -i "${scoreMp3}" -filter_complex "[0:a]volume=1.0,atrim=duration=30.000,asetpts=PTS-STARTPTS[veo];[1:a]volume=0.30,atrim=duration=30.000,asetpts=PTS-STARTPTS[sc];[veo][sc]amix=inputs=2:duration=first:normalize=0,aresample=48000[a]" -map "[a]" -ar 48000 -ac 2 -c:a aac -b:a 192k "${audioPath}"`,
+        `ffmpeg -y -i "${selectedVoicePath}" -filter_complex "[0:a]volume=${effectiveVoiceVol},atrim=duration=30.000,asetpts=PTS-STARTPTS,aresample=48000[a]" -map "[a]" -ar 48000 -ac 2 -c:a aac -b:a 192k "${audioPath}"`,
+        { stdio: 'pipe' }
+      );
+    } else if (fs.existsSync(selectedVoicePath) && fs.existsSync(selectedBgmPath) && fs.existsSync(sfxMp3)) {
+      execSync(
+        `ffmpeg -y -i "${selectedVoicePath}" -stream_loop -1 -i "${selectedBgmPath}" -stream_loop -1 -i "${sfxMp3}" -filter_complex "[0:a]volume=${effectiveVoiceVol},atrim=duration=30.000,asetpts=PTS-STARTPTS[vo];[1:a]volume=${effectiveBgmVol},atrim=duration=30.000,asetpts=PTS-STARTPTS[bgm];[2:a]volume=${foleyVol * 0.4},atrim=duration=30.000,asetpts=PTS-STARTPTS[fx];[vo][bgm][fx]amix=inputs=3:duration=first:normalize=0,aresample=48000[a]" -map "[a]" -ar 48000 -ac 2 -c:a aac -b:a 192k "${audioPath}"`,
+        { stdio: 'pipe' }
+      );
+    } else if (fs.existsSync(selectedVoicePath) && fs.existsSync(selectedBgmPath)) {
+      execSync(
+        `ffmpeg -y -i "${selectedVoicePath}" -stream_loop -1 -i "${selectedBgmPath}" -filter_complex "[0:a]volume=${effectiveVoiceVol},atrim=duration=30.000,asetpts=PTS-STARTPTS[vo];[1:a]volume=${effectiveBgmVol},atrim=duration=30.000,asetpts=PTS-STARTPTS[bgm];[vo][bgm]amix=inputs=2:duration=first:normalize=0,aresample=48000[a]" -map "[a]" -ar 48000 -ac 2 -c:a aac -b:a 192k "${audioPath}"`,
         { stdio: 'pipe' }
       );
     } else {
@@ -182,9 +235,9 @@ export async function POST(req: NextRequest) {
       { stdio: 'pipe' }
     );
 
-    // Step 5: Extract 16:9 Widescreen Poster Frame from Act 1 (t=2.5s)
+    // Step 5: Extract 16:9 Widescreen Poster Frame from Act 1 (t=2.0s)
     execSync(
-      `ffmpeg -y -ss 00:00:02.500 -i "${masterMp4Path}" -vframes 1 -q:v 2 "${posterJpgPath}"`,
+      `ffmpeg -y -ss 00:00:02.000 -i "${masterMp4Path}" -vframes 1 -q:v 2 "${posterJpgPath}"`,
       { stdio: 'pipe' }
     );
 
@@ -202,11 +255,17 @@ export async function POST(req: NextRequest) {
     const driftMs = Math.round(Math.abs(videoDur - audioDur) * 1000 * 10) / 10;
     const fileSize = parseInt(probeData.format?.size || '0', 10);
 
+    const activeVoiceObj =
+      SWARM_AUDIO_VOICE_SAMPLES.find((s) => s.id === voiceSampleId) ||
+      SWARM_AUDIO_VOICE_SAMPLES[0];
+
     return NextResponse.json({
       status: 'rendered',
       videoUrl: `/assets/swarm/cathedral_of_crust_master.mp4?t=${Date.now()}`,
       posterUrl: `/assets/swarm/cathedral_of_crust_poster.jpg?t=${Date.now()}`,
       fileSizeBytes: fileSize,
+      selectedVoiceSample: activeVoiceObj.title,
+      selectedBgmSample: bgmSample.title,
       audit: {
         fileSizeBytes: fileSize,
         driftMs,
@@ -216,7 +275,7 @@ export async function POST(req: NextRequest) {
         timeBase: videoStream.time_base || '1/30000',
         audioSampleRate: parseInt(audioStream.sample_rate || '48000', 10),
         resolution: '1920x1080 (2.39:1 Anamorphic Theatrical Cinema Matte)',
-        vocalPolicy: '4-STEM THEATRICAL MASTER (Spoken Dialogue + Native Veo 3.1 Synchronized Foley + Lyria 3.5 Score)',
+        vocalPolicy: `ATTIRE-LOCKED VEO 3.1 MASTER • Voice: ${activeVoiceObj.title} | Score: ${bgmSample.title}`,
         nbFrames: parseInt(videoStream.nb_frames || '900', 10),
       },
     });

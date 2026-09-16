@@ -26,8 +26,8 @@ export interface SwarmShotDefinition {
   durationSec: number;
   cameraLens: string;
   cameraMovement: string;
-  eyelineDirection: 'LEFT' | 'RIGHT' | 'DOWN_AT_CRAFT' | 'HORIZON';
-  mouthLockState: 'MOUTH_CLOSED_NON_VOCAL_ACTING';
+  eyelineDirection: 'LEFT' | 'RIGHT' | 'DOWN_AT_CRAFT' | 'HORIZON' | 'DIRECT_TO_LENS';
+  mouthLockState: 'MOUTH_CLOSED_NON_VOCAL_ACTING' | 'ON_CAMERA_NATIVE_VEO_SPEAKING_LIP_SYNC';
   characterName: string;
   characterPortraitUrl: string;
   propFocus: string;
@@ -397,6 +397,117 @@ export const SWARM_PRODUCTION_PRESETS: Record<string, SwarmFilmProductionPlan> =
     },
   },
 };
+
+export interface SwarmAudioVoiceSample {
+  id: string;
+  title: string;
+  subtitle: string;
+  badge: string;
+  description: string;
+  previewAudioUrl: string;
+}
+
+export interface SwarmBgmScoreSample {
+  id: string;
+  title: string;
+  subtitle: string;
+  bpm: number;
+  key: string;
+  description: string;
+  previewAudioUrl: string;
+}
+
+export const SWARM_AUDIO_VOICE_SAMPLES: SwarmAudioVoiceSample[] = [
+  {
+    id: 'native_veo_speech',
+    title: 'Native Veo 3.1 On-Camera Speech (Lip-Sync)',
+    subtitle: 'Gianluigi Moretti Native Live Voice',
+    badge: 'DEFAULT • 100% LIP-SYNC',
+    description:
+      'Gianluigi’s live on-camera speaking voice generated natively alongside the video frames by Google Veo 3.1 (-14.0 LUFS).',
+    previewAudioUrl: '/assets/swarm/swarm_voiceover_dialogue_master.wav',
+  },
+  {
+    id: 'charon_baritone_vo',
+    title: 'Cinema Trailer Baritone (Charon Voice)',
+    subtitle: 'Deep Hollywood Trailer Narration',
+    badge: 'GEMINI TTS • CHARON',
+    description:
+      'Gravelly, authoritative cinema trailer baritone voiceover narration synthesized via Google Gemini 2.5 Flash TTS (-13.5 LUFS).',
+    previewAudioUrl: '/assets/swarm/swarm_voiceover_dialogue_master.wav',
+  },
+  {
+    id: 'fenrir_storyteller_vo',
+    title: 'Warm Artisan Storyteller (Fenrir Voice)',
+    subtitle: 'Intimate Documentary Narration',
+    badge: 'GEMINI TTS • FENRIR',
+    description:
+      'Warm, passionate Neapolitan culinary documentary storyteller voiceover narration with rich vocal formant warmth (-14.0 LUFS).',
+    previewAudioUrl: '/assets/swarm/swarm_voiceover_fenrir_master.wav',
+  },
+  {
+    id: 'pure_cinema_instrumental',
+    title: 'Pure Cinema Foley & Music (Zero Speech)',
+    subtitle: 'Diegetic Kitchen Foley + Full Lyria Score',
+    badge: 'INSTRUMENTAL ONLY',
+    description:
+      'Mutes spoken dialogue to showcase pure Neapolitan kitchen foley (flour, dough, splashing tomatoes, roaring fire) with full orchestral music.',
+    previewAudioUrl: '/assets/stems/lyria_symphonic_score_92bpm.mp3',
+  },
+];
+
+export const SWARM_BGM_SCORE_SAMPLES: SwarmBgmScoreSample[] = [
+  {
+    id: 'no_bgm_silent',
+    title: '🔇 Silence / No Background Music (Pure Dialogue & Foley Only)',
+    subtitle: '100% Unscored Diegetic Kitchen Soundscape',
+    bpm: 0,
+    key: 'Unscored / Pure Cinema',
+    description:
+      'Completely silences all background music scores. Leaves only Gianluigi Moretti’s authentic spoken voice and raw 900°F Neapolitan brick oven foley.',
+    previewAudioUrl: '/assets/swarm/swarm_voiceover_dialogue_master.wav',
+  },
+  {
+    id: 'lyria_cello_92bpm',
+    title: 'Lyria 3.5 Neapolitan Cello & Nylon Guitar',
+    subtitle: 'Solo Stradivarius Cello & Acoustic Guitar',
+    bpm: 92,
+    key: 'D Minor',
+    description:
+      'Reverent, dramatic Neapolitan cello ostinato with delicate nylon acoustic guitar harmonics and chamber string swells.',
+    previewAudioUrl: '/assets/stems/lyria_symphonic_score_92bpm.mp3',
+  },
+  {
+    id: 'lyria_romance_orchestra',
+    title: 'Warm Italian Strings & Woodwind Symphony',
+    subtitle: 'Lush Cinema Romantic Strings & Flute',
+    bpm: 88,
+    key: 'G Major',
+    description:
+      'Sweeping cinematic orchestral strings, warm concert flute, and harp arpeggios evoking classic Italian heritage cinema.',
+    previewAudioUrl: '/assets/audio/music/bollywood_romance_orchestra.mp3',
+  },
+  {
+    id: 'lyria_driving_groove_120bpm',
+    title: 'Modern Culinary Pulse & Deep Groove',
+    subtitle: 'Upbeat Commercial Bass & Percussion',
+    bpm: 120,
+    key: 'A Minor',
+    description:
+      'High-energy modern commercial culinary soundtrack with crisp rhythmic percussion, warm sub-bass, and atmospheric synth chords.',
+    previewAudioUrl: '/assets/stems/lyria_ibiza_house_120bpm.mp3',
+  },
+  {
+    id: 'lyria_epic_cinema_80bpm',
+    title: 'Epic Vesuvian Brass & Gran Cassa Swells',
+    subtitle: 'Theatrical Low Brass & Timpani Impacts',
+    bpm: 80,
+    key: 'C Minor',
+    description:
+      'Monumental theatrical brass swells, deep concert gran cassa impacts, and soaring tension strings for high-drama hearth scenes.',
+    previewAudioUrl: '/assets/stems/master_soundtrack_original.mp3',
+  },
+];
 
 export function compileSwarmProductionPlan(presetId = 'cathedral_of_crust'): SwarmFilmProductionPlan {
   return SWARM_PRODUCTION_PRESETS[presetId] || SWARM_PRODUCTION_PRESETS.cathedral_of_crust;
