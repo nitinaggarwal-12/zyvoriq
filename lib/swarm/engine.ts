@@ -448,11 +448,20 @@ export const SWARM_AUDIO_VOICE_SAMPLES: SwarmAudioVoiceSample[] = [
   {
     id: 'pure_cinema_instrumental',
     title: 'Pure Cinema Foley & Music (Zero Speech)',
-    subtitle: 'Diegetic Kitchen Foley + Full Lyria Score',
+    subtitle: 'Diegetic Kitchen Foley + Music Stem',
     badge: 'INSTRUMENTAL ONLY',
     description:
-      'Mutes spoken dialogue to showcase pure Neapolitan kitchen foley (flour, dough, splashing tomatoes, roaring fire) with full orchestral music.',
+      'Mutes spoken dialogue to showcase pure Neapolitan kitchen foley (flour, dough, splashing tomatoes, roaring fire) with full background music.',
     previewAudioUrl: '/assets/stems/lyria_symphonic_score_92bpm.mp3',
+  },
+  {
+    id: 'custom_uploaded_voice',
+    title: '📁 Upload Custom Song / Vocal Track (MP3/WAV • No Lyria)',
+    subtitle: 'Bring Your Own Singing / Dialogue / Vocal Stem',
+    badge: 'CUSTOM UPLOAD • 100% NON-LYRIA',
+    description:
+      'Upload any custom vocal performance, commercial song track, Suno/Udio singing stem, or recorded dialogue WAV/MP3 directly from disk.',
+    previewAudioUrl: '/assets/swarm/swarm_voiceover_dialogue_master.wav',
   },
 ];
 
@@ -466,6 +475,26 @@ export const SWARM_BGM_SCORE_SAMPLES: SwarmBgmScoreSample[] = [
     description:
       'Completely silences all background music scores. Leaves only Gianluigi Moretti’s authentic spoken voice and raw 900°F Neapolitan brick oven foley.',
     previewAudioUrl: '/assets/swarm/swarm_voiceover_dialogue_master.wav',
+  },
+  {
+    id: 'custom_uploaded_bgm',
+    title: '📁 Upload Custom Song / Soundtrack MP3/WAV (100% Non-Lyria)',
+    subtitle: 'Upload Any Commercial Song, Instrumental, or Custom Stem',
+    bpm: 120,
+    key: 'Custom Audio / Non-Lyria',
+    description:
+      'Bypass Lyria completely: upload your own custom MP3/WAV song, licensed soundtrack, or acoustic guitar stem with automatic sidechain ducking under speech.',
+    previewAudioUrl: '/assets/stems/master_soundtrack_original.mp3',
+  },
+  {
+    id: 'native_veo_diegetic_music',
+    title: '🎸 Native Veo 3.1 Diegetic Room Music & Singing ([0:a])',
+    subtitle: 'Generated Directly Inside Veo 3.1 Multimodal Stream',
+    bpm: 95,
+    key: 'Diegetic Room Acoustics',
+    description:
+      'Uses Google Veo 3.1’s native joint audio-video diffusion stream ([0:a]) to generate room acoustics, diegetic kitchen radio music, and on-camera vocal singing without Lyria.',
+    previewAudioUrl: '/assets/swarm/swarm_voiceover_fenrir_master.wav',
   },
   {
     id: 'lyria_cello_92bpm',

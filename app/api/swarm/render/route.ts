@@ -25,10 +25,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const presetId = body.presetId || 'cathedral_of_crust';
     const voiceSampleId = body.voiceSampleId || 'native_veo_speech';
-    const bgmSampleId = body.bgmSampleId || 'lyria_cello_92bpm';
+    const bgmSampleId = body.bgmSampleId || 'no_bgm_silent';
     const voiceVol = typeof body.voiceVolume === 'number' ? body.voiceVolume : 1.35;
-    const bgmVol = typeof body.bgmVolume === 'number' ? body.bgmVolume : 0.85;
+    const bgmVol = typeof body.bgmVolume === 'number' ? body.bgmVolume : 0.0;
     const foleyVol = typeof body.foleyVolume === 'number' ? body.foleyVolume : 0.35;
+    const customVoiceBase64 = typeof body.customVoiceBase64 === 'string' ? body.customVoiceBase64 : null;
+    const customBgmBase64 = typeof body.customBgmBase64 === 'string' ? body.customBgmBase64 : null;
 
     const plan = compileSwarmProductionPlan(presetId);
 
@@ -159,7 +161,12 @@ export async function POST(req: NextRequest) {
     let selectedVoicePath = nativeVeoConcatWav;
     let effectiveVoiceVol = voiceVol;
 
-    if (voiceSampleId === 'charon_baritone_vo') {
+    if (voiceSampleId === 'custom_uploaded_voice' && customVoiceBase64) {
+      const base64Data = customVoiceBase64.replace(/^data:audio\/[^;]+;base64,/, '');
+      const customVoiceFile = path.join(scratchDir, 'custom_voice_upload.mp3');
+      fs.writeFileSync(customVoiceFile, Buffer.from(base64Data, 'base64'));
+      selectedVoicePath = customVoiceFile;
+    } else if (voiceSampleId === 'charon_baritone_vo') {
       const p = path.join(process.cwd(), 'public/assets/swarm/swarm_voiceover_dialogue_master.wav');
       if (fs.existsSync(p)) selectedVoicePath = p;
     } else if (voiceSampleId === 'fenrir_storyteller_vo') {
@@ -172,7 +179,10 @@ export async function POST(req: NextRequest) {
     const bgmSample =
       SWARM_BGM_SCORE_SAMPLES.find((s) => s.id === bgmSampleId) ||
       SWARM_BGM_SCORE_SAMPLES[0];
-    const isBgmSilent = bgmSampleId === 'no_bgm_silent' || bgmVol <= 0.01;
+    const isBgmSilent =
+      bgmSampleId === 'no_bgm_silent' ||
+      bgmSampleId === 'native_veo_diegetic_music' ||
+      bgmVol <= 0.01;
     const effectiveBgmVol = isBgmSilent ? 0.0 : bgmVol;
 
     let selectedBgmPath = path.join(
@@ -180,7 +190,13 @@ export async function POST(req: NextRequest) {
       'public',
       bgmSample.previewAudioUrl.replace(/^\//, '')
     );
-    if (!fs.existsSync(selectedBgmPath)) {
+
+    if (bgmSampleId === 'custom_uploaded_bgm' && customBgmBase64) {
+      const base64Data = customBgmBase64.replace(/^data:audio\/[^;]+;base64,/, '');
+      const customBgmFile = path.join(scratchDir, 'custom_bgm_upload.mp3');
+      fs.writeFileSync(customBgmFile, Buffer.from(base64Data, 'base64'));
+      selectedBgmPath = customBgmFile;
+    } else if (!fs.existsSync(selectedBgmPath)) {
       selectedBgmPath = path.join(
         process.cwd(),
         'public/assets/stems/lyria_symphonic_score_92bpm.mp3'

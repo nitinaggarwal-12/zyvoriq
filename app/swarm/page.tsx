@@ -18,6 +18,10 @@ export default function SwarmStudioPage() {
   const [voiceVolume, setVoiceVolume] = useState<number>(1.40);
   const [bgmVolume, setBgmVolume] = useState<number>(0.0);
   const [foleyVolume, setFoleyVolume] = useState<number>(0.35);
+  const [customVoiceBase64, setCustomVoiceBase64] = useState<string | null>(null);
+  const [customBgmBase64, setCustomBgmBase64] = useState<string | null>(null);
+  const [customVoiceFileName, setCustomVoiceFileName] = useState<string | null>(null);
+  const [customBgmFileName, setCustomBgmFileName] = useState<string | null>(null);
   const [previewAudioUrl, setPreviewAudioUrl] = useState<string | null>(null);
   const audioPreviewRef = useRef<HTMLAudioElement | null>(null);
 
@@ -67,6 +71,29 @@ export default function SwarmStudioPage() {
     }, 50);
   };
 
+  const handleCustomAudioUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    target: 'voice' | 'bgm'
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      if (target === 'voice') {
+        setCustomVoiceBase64(dataUrl);
+        setCustomVoiceFileName(file.name);
+        setSelectedVoiceSampleId('custom_uploaded_voice');
+      } else {
+        setCustomBgmBase64(dataUrl);
+        setCustomBgmFileName(file.name);
+        setSelectedBgmSampleId('custom_uploaded_bgm');
+        setBgmVolume(0.85);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleRenderSwarmMaster = async (
     overrideBgmId?: string,
     overrideBgmVol?: number
@@ -85,6 +112,8 @@ export default function SwarmStudioPage() {
           voiceVolume,
           bgmVolume: targetBgmVol,
           foleyVolume,
+          customVoiceBase64,
+          customBgmBase64,
         }),
       });
       const data = await res.json();
@@ -366,20 +395,37 @@ export default function SwarmStudioPage() {
                         </p>
                       </div>
 
-                      <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between">
+                      <div className="pt-2 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-2">
                         <span className="text-[11px] font-semibold text-slate-500">
-                          {sample.subtitle}
+                          {sample.id === 'custom_uploaded_voice' && customVoiceFileName
+                            ? `✅ Uploaded: ${customVoiceFileName}`
+                            : sample.subtitle}
                         </span>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePlayPreview(sample.previewAudioUrl);
-                          }}
-                          className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold min-h-[36px] flex items-center gap-1.5"
-                        >
-                          {isPreviewing ? '⏹ Stop' : '🔊 Preview'}
-                        </button>
+                        {sample.id === 'custom_uploaded_voice' ? (
+                          <label
+                            onClick={(e) => e.stopPropagation()}
+                            className="cursor-pointer px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold min-h-[36px] flex items-center gap-1.5"
+                          >
+                            📁 Choose MP3/WAV
+                            <input
+                              type="file"
+                              accept="audio/*"
+                              className="hidden"
+                              onChange={(e) => handleCustomAudioUpload(e, 'voice')}
+                            />
+                          </label>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePlayPreview(sample.previewAudioUrl);
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold min-h-[36px] flex items-center gap-1.5"
+                          >
+                            {isPreviewing ? '⏹ Stop' : '🔊 Preview'}
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -387,13 +433,13 @@ export default function SwarmStudioPage() {
               </div>
             </div>
 
-            {/* COLUMN 2: 5 BACKGROUND MUSIC SCORE SAMPLES (INCLUDING SILENCE / NO BGM) */}
+            {/* COLUMN 2: 7 BACKGROUND MUSIC SCORE SAMPLES (INCLUDING SILENCE & NON-LYRIA UPLOADS) */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm md:text-base font-extrabold text-slate-900 flex items-center gap-2">
-                  <span>🎼 Step 2: Select Background Music Score (or Silence)</span>
+                  <span>🎼 Step 2: Select Background Music / Song (or Non-Lyria Upload)</span>
                   <span className="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 text-xs font-bold">
-                    5 Options (Silence or 4 Scores)
+                    7 Options (Silence, Custom MP3, or Scores)
                   </span>
                 </h3>
               </div>
@@ -407,7 +453,7 @@ export default function SwarmStudioPage() {
                       key={bgm.id}
                       onClick={() => {
                         setSelectedBgmSampleId(bgm.id);
-                        if (bgm.id === 'no_bgm_silent') {
+                        if (bgm.id === 'no_bgm_silent' || bgm.id === 'native_veo_diegetic_music') {
                           setBgmVolume(0);
                         } else if (bgmVolume === 0) {
                           setBgmVolume(0.85);
@@ -428,7 +474,7 @@ export default function SwarmStudioPage() {
                           </span>
                           {isSelected && (
                             <span className="text-xs font-extrabold text-amber-700">
-                              ✓ Active Score
+                              ✓ Active Option
                             </span>
                           )}
                         </div>
@@ -440,20 +486,37 @@ export default function SwarmStudioPage() {
                         </p>
                       </div>
 
-                      <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between">
+                      <div className="pt-2 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-2">
                         <span className="text-[11px] font-semibold text-slate-500">
-                          {bgm.subtitle}
+                          {bgm.id === 'custom_uploaded_bgm' && customBgmFileName
+                            ? `✅ Uploaded: ${customBgmFileName}`
+                            : bgm.subtitle}
                         </span>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePlayPreview(bgm.previewAudioUrl);
-                          }}
-                          className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold min-h-[36px] flex items-center gap-1.5"
-                        >
-                          {isPreviewing ? '⏹ Stop' : '🎵 Preview'}
-                        </button>
+                        {bgm.id === 'custom_uploaded_bgm' ? (
+                          <label
+                            onClick={(e) => e.stopPropagation()}
+                            className="cursor-pointer px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold min-h-[36px] flex items-center gap-1.5"
+                          >
+                            📁 Upload Song MP3/WAV
+                            <input
+                              type="file"
+                              accept="audio/*"
+                              className="hidden"
+                              onChange={(e) => handleCustomAudioUpload(e, 'bgm')}
+                            />
+                          </label>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePlayPreview(bgm.previewAudioUrl);
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold min-h-[36px] flex items-center gap-1.5"
+                          >
+                            {isPreviewing ? '⏹ Stop' : '🎵 Preview'}
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
