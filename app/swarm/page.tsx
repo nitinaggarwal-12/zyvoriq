@@ -577,6 +577,142 @@ export default function SwarmStudioPage() {
           </div>
         </section>
 
+        {/* 💃 CHANDIGARH TO LONDON — 3-TECHNIQUE NON-LYRIA MODERN POP SHOWCASE */}
+        <section
+          id="chandigarh-london-non-lyria-showcase"
+          className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-8 space-y-6"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
+            <div>
+              <span className="text-xs font-extrabold uppercase tracking-wider text-rose-600">
+                💃 100% NON-LYRIA MODERN POP MUSIC VIDEO LAB • CHANDIGARH TO LONDON (124 BPM)
+              </span>
+              <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 mt-0.5">
+                Same Characters (Simran &amp; Kiara) • Same Wardrobe • Same Hindi/Punjabi Song • 3 Non-Lyria Techniques
+              </h2>
+              <p className="text-xs md:text-sm text-slate-600 mt-1">
+                Compare 3 distinct non-Lyria singing &amp; dancing generation techniques side-by-side featuring fair Punjabi top models from Chandigarh outdoors on Tower Bridge in London wearing fitted crop tops and pleated mini short skirts.
+              </p>
+            </div>
+            <span className="px-3.5 py-1.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-extrabold">
+              0% Lyria API • 124 BPM Modern Synth-Pop
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Technique A Card */}
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5 flex flex-col justify-between space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="px-2.5 py-1 rounded bg-sky-900 text-sky-100 text-[11px] font-extrabold">
+                    TECHNIQUE A • NATIVE VEO [0:a]
+                  </span>
+                  <span className="text-xs font-bold text-slate-500">15.0s • 30fps CFR</span>
+                </div>
+                <h3 className="text-base font-extrabold text-slate-900">
+                  Native Veo 3.1 Joint Audio-Video Singing + 124 BPM Modern Pop
+                </h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Veo 3.1 directly synthesizes on-camera lip-sync singing vocals ([0:a]) inside the video diffusion model, layered over our 124 BPM modern synth-pop beat.
+                </p>
+              </div>
+
+              <div className="rounded-xl overflow-hidden bg-black aspect-video border border-slate-300 shadow">
+                <video
+                  src="/assets/swarm/chandigarh_london_tech_A_native_veo.mp4"
+                  poster="/assets/swarm/chandigarh_london_frame_tech_A.jpg"
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              <a
+                href="/assets/swarm/chandigarh_london_tech_A_native_veo.mp4"
+                download="chandigarh_london_tech_A_native_veo.mp4"
+                className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold text-center transition min-h-[44px] flex items-center justify-center gap-2"
+              >
+                ⬇️ Download Technique A MP4
+              </a>
+            </div>
+
+            {/* Technique B Card */}
+            <div className="rounded-2xl border border-indigo-200 bg-indigo-50/40 p-5 flex flex-col justify-between space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="px-2.5 py-1 rounded bg-indigo-900 text-indigo-100 text-[11px] font-extrabold">
+                    TECHNIQUE B • STUDIO VOCAL CLOCK
+                  </span>
+                  <span className="text-xs font-bold text-indigo-600">15.0s • Tail-Chained</span>
+                </div>
+                <h3 className="text-base font-extrabold text-slate-900">
+                  Studio Duet Vocal Master Clock + Sequential Tail-Frame Lock
+                </h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Uses Gemini 2.5 Flash female duet vocals (Kore &amp; Aoede) as the master acoustic clock, with sequential tail-frame chaining locking exact crop tops and short skirts across cuts.
+                </p>
+              </div>
+
+              <div className="rounded-xl overflow-hidden bg-black aspect-video border border-indigo-300 shadow">
+                <video
+                  src="/assets/swarm/chandigarh_london_tech_B_viseme_master.mp4"
+                  poster="/assets/swarm/chandigarh_london_frame_tech_B.jpg"
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              <a
+                href="/assets/swarm/chandigarh_london_tech_B_viseme_master.mp4"
+                download="chandigarh_london_tech_B_viseme_master.mp4"
+                className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold text-center transition min-h-[44px] flex items-center justify-center gap-2"
+              >
+                ⬇️ Download Technique B MP4
+              </a>
+            </div>
+
+            {/* Technique C Card */}
+            <div className="rounded-2xl border border-amber-200 bg-amber-50/40 p-5 flex flex-col justify-between space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="px-2.5 py-1 rounded bg-amber-900 text-amber-100 text-[11px] font-extrabold">
+                    TECHNIQUE C • MULTI-CAM 124 BPM CUTS
+                  </span>
+                  <span className="text-xs font-bold text-amber-700">5 Cuts • A/B Roll</span>
+                </div>
+                <h3 className="text-base font-extrabold text-slate-900">
+                  Multi-Camera 124 BPM Beat-Synced A-Roll / Dance B-Roll Cutaway
+                </h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Alternates between Cam A (Vocal Singing Duet) and Cam B (High-Energy Outdoor London Street Pop Dance Break with mouth-closed choreography) on exact 124 BPM synth drops.
+                </p>
+              </div>
+
+              <div className="rounded-xl overflow-hidden bg-black aspect-video border border-amber-300 shadow">
+                <video
+                  src="/assets/swarm/chandigarh_london_tech_C_multicam_beatcut.mp4"
+                  poster="/assets/swarm/chandigarh_london_frame_tech_C_broll.jpg"
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              <a
+                href="/assets/swarm/chandigarh_london_tech_C_multicam_beatcut.mp4"
+                download="chandigarh_london_tech_C_multicam_beatcut.mp4"
+                className="w-full py-2.5 px-4 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold text-center transition min-h-[44px] flex items-center justify-center gap-2"
+              >
+                ⬇️ Download Technique C MP4
+              </a>
+            </div>
+          </div>
+        </section>
+
         {/* THE 8 HIGH-CODE AGENT SWARM ORCHESTRATION MATRIX */}
         <section className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
