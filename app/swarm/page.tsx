@@ -610,10 +610,10 @@ export default function SwarmStudioPage() {
                   <span className="text-xs font-bold text-slate-500">15.0s • 30fps CFR</span>
                 </div>
                 <h3 className="text-base font-extrabold text-slate-900">
-                  Native Veo 3.1 Joint Audio-Video Singing + 124 BPM Modern Pop
+                  Native Veo 3.1 Singing &amp; Pop Music ([0:a] Direct Passthrough)
                 </h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Veo 3.1 directly synthesizes on-camera lip-sync singing vocals ([0:a]) inside the video diffusion model, layered over our 124 BPM modern synth-pop beat.
+                  Direct 15.0s passthrough of Veo 3.1&apos;s native Hindi/Punjabi female pop singing and upbeat synth-pop music stream ([0:a]) normalized to -14.0 LUFS with zero TTS speech overlap or external BGM collision.
                 </p>
               </div>
 
@@ -642,15 +642,15 @@ export default function SwarmStudioPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="px-2.5 py-1 rounded bg-indigo-900 text-indigo-100 text-[11px] font-extrabold">
-                    TECHNIQUE B • STUDIO VOCAL CLOCK
+                    TECHNIQUE B • CROSSFADED POP MASTER CLOCK
                   </span>
                   <span className="text-xs font-bold text-indigo-600">15.0s • Tail-Chained</span>
                 </div>
                 <h3 className="text-base font-extrabold text-slate-900">
-                  Studio Duet Vocal Master Clock + Sequential Tail-Frame Lock
+                  Crossfaded Studio Pop Singing Master Clock + Tail-Frame Lock
                 </h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Uses Gemini 2.5 Flash female duet vocals (Kore &amp; Aoede) as the master acoustic clock, with sequential tail-frame chaining locking exact crop tops and short skirts across cuts.
+                  Seamlessly crossfaded continuous Hindi/Punjabi singing master clock (acrossfade + 65Hz sub-bass warmth + 3.5kHz vocal presence exciter), with sequential tail-frame chaining locking exact crop tops and short skirts across cuts.
                 </p>
               </div>
 
