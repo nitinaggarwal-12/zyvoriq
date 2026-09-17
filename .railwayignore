@@ -14,7 +14,12 @@ public/assets/swarm/veo_act*
 public/assets/swarm/veo_talking_act*
 public/assets/swarm/veo_locked_act*
 public/assets/swarm/chandigarh_london_pop_shot*
+public/assets/swarm/spain_pool_shot*
+public/assets/swarm/*.wav
 public/assets/swarm/vo
+public/showcase
+public/assets/stills
+public/assets/avatars
 *.log
 *.db
 *.db-journal
