@@ -36,6 +36,8 @@ temp/
 !public/assets/omni12/*.jpg
 !public/assets/swarm/*.mp4
 !public/assets/swarm/*.jpg
+!public/assets/swarm/ghoom_ghoom_commercial_master-Better.mp4
+!public/assets/swarm/ghoom_ghoom_commercial_master_better_thumb.jpg
 !public/assets/audio/music/*.mp3
 !public/assets/audio/music/*.wav
 !public/assets/audio/sfx/*.mp3

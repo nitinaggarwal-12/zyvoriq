@@ -321,6 +321,42 @@ export function resolveReelPoster(pId: string, m: any, shots: LibraryClip[]): st
 
 export const CANONICAL_SHOWCASES: LibraryReel[] = [
   {
+    id: "reel_ghoom_ghoom_commercial_master_better",
+    title: "Ghoom Ghoom / Nachdi Phira — Commercial Master (Better Copy ★)",
+    subtitle: "Gold-Standard 9:16 Bollywood Dance-Pop Master with Precision Lip-Sync & Lyria Vocals",
+    prompt: "High-energy 9:16 commercial Bollywood dance-pop master ('Ghoom ghoom ke nachdi phira / Nachdi phira raat bhar') featuring glamorous South Asian female lead in emerald-green velvet crop top and silver sequin mini-skirt with active open-mouth singing and studio Lyria audio.",
+    status: "READY",
+    durationSec: 14.4,
+    videoUrl: "/assets/swarm/ghoom_ghoom_commercial_master-Better.mp4",
+    roughCutUrl: "/assets/swarm/ghoom_ghoom_commercial_master-Better.mp4",
+    posterUrl: "/assets/swarm/ghoom_ghoom_commercial_master_better_thumb.jpg",
+    createdAt: "2026-09-18T01:39:00.000Z",
+    genre: "Bollywood Dance-Pop (★ Better Master)",
+    tone: "High-energy, glamorous, celebratory",
+    aspectRatio: "9:16 Vertical (1080x1920)",
+    audioClock: "Lyria Commercial Vocal Master (120 BPM D Minor)",
+    folder: "Favorites",
+    isSaved: true,
+    shots: [
+      {
+        id: "shot_ghoom_better_01",
+        order: 1,
+        title: "Nachdi Phira / Ghoom Ghoom Commercial Master (Better Copy)",
+        videoUrl: "/assets/swarm/ghoom_ghoom_commercial_master-Better.mp4",
+        posterUrl: "/assets/swarm/ghoom_ghoom_commercial_master_better_thumb.jpg",
+        durationSec: 14.4,
+        status: "PASSED",
+        scriptText: "Ghoom ghoom ke nachdi phira, chamke sitaara raat da / Nachdi phira raat bhar, dhol baaje te nach le yaara",
+        visualIntent: "Golden-hour runway choreography and active lip-synced vocal performance.",
+        camera: "Steadicam 35mm medium tracking push",
+        lighting: "Golden-hour warm rim light & runway flare",
+        character: "South Asian Female Lead (Emerald velvet crop top & silver sequin mini-skirt)",
+        environment: "Golden-hour luxury tarmac runway",
+        transition: "cut-on-action"
+      }
+    ]
+  },
+  {
     id: "reel_napoleon_180s_master",
     title: "Napoleon: The Emperor's Heart",
     subtitle: "5-Act Imperial Epic & Tragic Romance across Revolutionary France",
