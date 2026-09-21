@@ -9,6 +9,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 ARG CACHEBUST=20260908_1948
 COPY . .
+# Preview-safe: remove broken editor-only symlinks before Next.js scans the tree
+RUN rm -f .cursorrules AGENTS.md
 RUN npm run build
 
 FROM node:22-alpine AS runner
