@@ -1,24 +1,55 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Film, Music2, Clapperboard, Smartphone, Menu, X } from "lucide-react";
+import {
+  ChevronDown,
+  Film,
+  FolderKanban,
+  Images,
+  MapPin,
+  Menu,
+  Music2,
+  Search,
+  Settings2,
+  Sparkles,
+  Users,
+  X,
+} from "lucide-react";
+
+const creatorLinks = [
+  { href: "/reels", label: "Social video", icon: Film },
+  { href: "/yt", label: "Music video", icon: Music2 },
+  { href: "/feature-films", label: "Film", icon: Sparkles },
+  { href: "/motion-pictures", label: "Motion picture", icon: Film },
+];
+
+const assetLinks = [
+  { href: "/characters", label: "Characters", icon: Users },
+  { href: "/locations", label: "Locations", icon: MapPin },
+];
+
+const labLinks = [
+  { href: "/swarm", label: "Swarm Studio" },
+  { href: "/swarm-MUI", label: "M3 Studio" },
+  { href: "/registry", label: "DB Registry" },
+];
 
 export function Navbar() {
   const pathname = usePathname();
   const [livePath, setLivePath] = useState(pathname || "/");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [assetsOpen, setAssetsOpen] = useState(false);
+  const [labsOpen, setLabsOpen] = useState(false);
+  const shellRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setLivePath(pathname || "/");
-  }, [pathname]);
+  useEffect(() => setLivePath(pathname || "/"), [pathname]);
 
   useEffect(() => {
     const syncPath = () => {
-      if (typeof window !== "undefined") {
-        setLivePath(window.location.pathname);
-      }
+      if (typeof window !== "undefined") setLivePath(window.location.pathname);
     };
     window.addEventListener("zyvoriq-route-change", syncPath);
     window.addEventListener("popstate", syncPath);
@@ -28,196 +59,198 @@ export function Navbar() {
     };
   }, []);
 
-  const isReels = livePath === "/" || livePath === "/reels";
-  const isMusicVideo =
+  useEffect(() => {
+    const close = (event: MouseEvent) => {
+      if (shellRef.current && !shellRef.current.contains(event.target as Node)) {
+        setCreateOpen(false);
+        setAssetsOpen(false);
+        setLabsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
+
+  const isCreate =
+    livePath === "/" ||
+    livePath === "/reels" ||
     livePath === "/yt" ||
     livePath === "/studio" ||
-    livePath === "/music-video";
-  const isFeatureFilms = livePath?.startsWith("/feature-films");
-  const isMotionPictures = livePath?.startsWith("/motion-pictures");
-  const isCharacters = livePath?.startsWith("/characters");
-  const isLocations = livePath?.startsWith("/locations");
-  const isLibrary = livePath?.startsWith("/my-reels");
+    livePath === "/music-video" ||
+    livePath?.startsWith("/feature-films") ||
+    livePath?.startsWith("/motion-pictures");
+
+  const isProjects = livePath?.startsWith("/my-reels") || livePath?.startsWith("/library");
+  const isAssets = livePath?.startsWith("/characters") || livePath?.startsWith("/locations");
+
+  const navItem = (active: boolean) =>
+    `zy-nav-item ${active ? "zy-nav-item-active" : ""}`;
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-[#07090E]/95 backdrop-blur-xl border-b border-white/10">
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 md:px-10 lg:px-12 h-16 md:h-18 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-teal-500 to-cyan-400 p-[1px] shadow-md shadow-teal-500/20 group-hover:scale-105 transition-transform">
-              <div className="w-full h-full bg-[#07090E] rounded-[11px] flex items-center justify-center">
-                <Film className="w-4 h-4 text-teal-400" />
-              </div>
-            </div>
-            <span className="text-xl font-black tracking-tight text-white flex items-center gap-2">
-              ZYVORIQ
-              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-teal-500/15 border border-teal-500/40 text-teal-300 whitespace-nowrap">
-                Omni 1.1 Studio
-              </span>
-            </span>
-          </Link>
-        </div>
+    <header className="zy-topbar">
+      <div ref={shellRef} className="zy-topbar-inner">
+        <Link href="/" className="zy-brand" aria-label="Zyvoriq home">
+          <div className="zy-brand-mark">
+            <Film className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <div className="zy-brand-name">ZYVORIQ</div>
+            <div className="zy-brand-tagline">Create beyond reality</div>
+          </div>
+        </Link>
 
-        <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-300">
-          <Link
-            href="/reels"
-            className={`hover:text-teal-400 transition-colors flex items-center gap-1.5 ${
-              isReels ? "text-teal-300 font-bold" : "text-slate-300"
-            }`}
-          >
-            <Smartphone className="w-4 h-4 text-teal-400" />
-            <span>Reels</span>
+        <nav className="hidden lg:flex items-center gap-1">
+          <div className="relative">
+            <button
+              type="button"
+              className={navItem(isCreate)}
+              onClick={() => {
+                setCreateOpen((v) => !v);
+                setAssetsOpen(false);
+                setLabsOpen(false);
+              }}
+              aria-expanded={createOpen}
+            >
+              <Sparkles className="h-4 w-4" />
+              Create
+              <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+            </button>
+            {createOpen && (
+              <div className="zy-menu-panel">
+                <div className="zy-menu-label">Create</div>
+                {creatorLinks.map(({ href, label, icon: Icon }) => (
+                  <Link key={href} href={href} className="zy-menu-item" onClick={() => setCreateOpen(false)}>
+                    <Icon className="h-4 w-4" />
+                    <span>{label}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <Link href="/my-reels" className={navItem(isProjects)}>
+            <FolderKanban className="h-4 w-4" />
+            Projects
           </Link>
-          <Link
-            href="/yt"
-            className={`hover:text-teal-400 transition-colors flex items-center gap-1.5 ${
-              isMusicVideo ? "text-teal-300 font-bold" : "text-slate-300"
-            }`}
-          >
-            <Music2 className="w-4 h-4 text-teal-400" />
-            <span>Music Video Studio</span>
-          </Link>
-          <Link
-            href="/feature-films"
-            className={`hover:text-amber-400 transition-colors flex items-center gap-1.5 ${
-              isFeatureFilms ? "text-amber-300 font-bold" : "text-slate-300"
-            }`}
-          >
-            <Clapperboard className="w-4 h-4 text-amber-400" />
-            <span>Feature Films</span>
-          </Link>
-          <Link
-            href="/motion-pictures"
-            className={`hover:text-amber-400 transition-colors flex items-center gap-1.5 ${
-              isMotionPictures ? "text-amber-300 font-bold" : "text-slate-300"
-            }`}
-          >
-            <Film className="w-4 h-4 text-amber-400" />
-            <span>Motion Pictures</span>
-          </Link>
-          <Link
-            href="/characters"
-            className={`hover:text-teal-400 transition-colors ${
-              isCharacters ? "text-teal-300 font-bold" : "text-slate-300"
-            }`}
-          >
-            Characters
-          </Link>
-          <Link
-            href="/locations"
-            className={`hover:text-amber-400 transition-colors ${
-              isLocations ? "text-amber-300 font-bold" : "text-slate-300"
-            }`}
-          >
-            Locations
-          </Link>
+
+          <div className="relative">
+            <button
+              type="button"
+              className={navItem(isAssets)}
+              onClick={() => {
+                setAssetsOpen((v) => !v);
+                setCreateOpen(false);
+                setLabsOpen(false);
+              }}
+              aria-expanded={assetsOpen}
+            >
+              <Images className="h-4 w-4" />
+              Assets
+              <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+            </button>
+            {assetsOpen && (
+              <div className="zy-menu-panel">
+                <div className="zy-menu-label">Reusable assets</div>
+                {assetLinks.map(({ href, label, icon: Icon }) => (
+                  <Link key={href} href={href} className="zy-menu-item" onClick={() => setAssetsOpen(false)}>
+                    <Icon className="h-4 w-4" />
+                    <span>{label}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         </nav>
 
-        <div className="flex items-center gap-2.5">
-          <Link
-            href="/swarm"
-            className={`text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl border transition-colors min-h-[38px] flex items-center ${
-              livePath === "/swarm"
-                ? "bg-amber-400/20 border-amber-400/50 text-amber-200"
-                : "text-amber-300 hover:text-white bg-white/5 hover:bg-white/10 border-white/10"
-            }`}
-          >
-            🎬 Swarm Studio
-          </Link>
-          <Link
-            href="/swarm-MUI"
-            className={`text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl border transition-colors min-h-[38px] flex items-center ${
-              livePath?.startsWith("/swarm-MUI")
-                ? "bg-sky-400/20 border-sky-400/50 text-sky-200"
-                : "text-sky-300 hover:text-white bg-white/5 hover:bg-white/10 border-white/10"
-            }`}
-          >
-            🎨 M3 Studio
-          </Link>
-          <Link
-            href="/registry"
-            className={`text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl border transition-colors min-h-[38px] flex items-center ${
-              livePath?.startsWith("/registry")
-                ? "bg-emerald-500/20 border-emerald-400/50 text-emerald-200"
-                : "text-emerald-300 hover:text-white bg-white/5 hover:bg-white/10 border-white/10"
-            }`}
-          >
-            🗄️ DB Registry
-          </Link>
-          <Link
-            href="/my-reels"
-            className={`text-xs sm:text-sm font-bold px-4 py-2 rounded-xl border transition-colors min-h-[38px] flex items-center ${
-              isLibrary || livePath?.startsWith("/library")
-                ? "bg-teal-500/20 border-teal-500/40 text-teal-200"
-                : "text-slate-200 hover:text-white bg-white/5 hover:bg-white/10 border-white/10"
-            }`}
-          >
-            My Library
+        <div className="ml-auto hidden md:flex items-center gap-2">
+          <Link href="/my-reels" className="zy-search-pill">
+            <Search className="h-4 w-4" />
+            <span>Search projects & assets</span>
+            <kbd>⌘K</kbd>
           </Link>
 
-          <button
-            type="button"
-            className="md:hidden p-2 rounded-xl text-slate-300 hover:bg-white/10 min-h-[38px] min-w-[38px] flex items-center justify-center"
-            aria-label="Toggle navigation menu"
-            aria-expanded={mobileMenuOpen}
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+          <div className="relative hidden xl:block">
+            <button
+              type="button"
+              className="zy-icon-button"
+              aria-label="Open labs and advanced tools"
+              onClick={() => {
+                setLabsOpen((v) => !v);
+                setCreateOpen(false);
+                setAssetsOpen(false);
+              }}
+            >
+              <Settings2 className="h-4 w-4" />
+            </button>
+            {labsOpen && (
+              <div className="zy-menu-panel right-0 left-auto">
+                <div className="zy-menu-label">Advanced tools</div>
+                {labLinks.map((item) => (
+                  <Link key={item.href} href={item.href} className="zy-menu-item" onClick={() => setLabsOpen(false)}>
+                    <span>{item.label}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <Link href="/reels" className="zy-primary-cta">
+            Create video
+          </Link>
         </div>
+
+        <button
+          type="button"
+          className="zy-icon-button ml-auto lg:hidden"
+          aria-label="Toggle navigation menu"
+          aria-expanded={mobileMenuOpen}
+          onClick={() => setMobileMenuOpen((v) => !v)}
+        >
+          {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-white/10 bg-[#07090E] px-4 py-4 space-y-2">
-          <Link
-            href="/reels"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-teal-300 hover:bg-white/5 min-h-[44px]"
-          >
-            <Smartphone className="w-4 h-4 text-teal-400" />
-            <span>Reels</span>
+        <div className="zy-mobile-menu lg:hidden">
+          <div className="zy-mobile-section-label">Create</div>
+          {creatorLinks.map(({ href, label, icon: Icon }) => (
+            <Link key={href} href={href} className="zy-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+              <Icon className="h-4 w-4" />
+              {label}
+            </Link>
+          ))}
+
+          <div className="zy-mobile-section-label mt-4">Workspace</div>
+          <Link href="/my-reels" className="zy-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+            <FolderKanban className="h-4 w-4" />
+            Projects
           </Link>
-          <Link
-            href="/yt"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-teal-300 hover:bg-white/5 min-h-[44px]"
-          >
-            <Music2 className="w-4 h-4 text-teal-400" />
-            <span>Music Video Studio</span>
-          </Link>
-          <Link
-            href="/feature-films"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/5 min-h-[44px]"
-          >
-            <Clapperboard className="w-4 h-4 text-amber-400" />
-            <span>Feature Films</span>
-          </Link>
-          <Link
-            href="/motion-pictures"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/5 min-h-[44px]"
-          >
-            <Film className="w-4 h-4 text-amber-400" />
-            <span>Motion Pictures</span>
-          </Link>
-          <Link
-            href="/characters"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/5 min-h-[44px]"
-          >
-            <span>Characters</span>
-          </Link>
-          <Link
-            href="/locations"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/5 min-h-[44px]"
-          >
-            <span>Locations</span>
+          {assetLinks.map(({ href, label, icon: Icon }) => (
+            <Link key={href} href={href} className="zy-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+              <Icon className="h-4 w-4" />
+              {label}
+            </Link>
+          ))}
+
+          <details className="mt-3">
+            <summary className="zy-mobile-link cursor-pointer list-none">
+              <Settings2 className="h-4 w-4" />
+              Advanced tools
+            </summary>
+            <div className="pl-7 pt-1">
+              {labLinks.map((item) => (
+                <Link key={item.href} href={item.href} className="zy-mobile-sub-link" onClick={() => setMobileMenuOpen(false)}>
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </details>
+
+          <Link href="/reels" className="zy-primary-cta mt-4 w-full justify-center" onClick={() => setMobileMenuOpen(false)}>
+            Create video
           </Link>
         </div>
       )}
     </header>
   );
 }
-

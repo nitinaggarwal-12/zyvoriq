@@ -215,7 +215,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
   const [selectedLocation, setSelectedLocation] = useState<LibraryLocation | null>(null);
   const [showCharacterLibraryModal, setShowCharacterLibraryModal] = useState(false);
   const [showLocationLibraryModal, setShowLocationLibraryModal] = useState(false);
-  const [showCastAndPlaceDrawer, setShowCastAndPlaceDrawer] = useState(true);
+  const [showCastAndPlaceDrawer, setShowCastAndPlaceDrawer] = useState(false);
   const [castingMode, setCastingMode] = useState<"library" | "omni_auto" | "custom">("omni_auto");
   const [customLeadName, setCustomLeadName] = useState("");
   const [customLeadArchetype, setCustomLeadArchetype] = useState("");
@@ -323,7 +323,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
               videoUrl: s.video || FINISHED_REELS[0].videoUrl,
               posterUrl: s.still || FINISHED_REELS[0].posterUrl,
               prompt: s.prompt || "",
-              continuityProof: `${data.shots?.length || 12}-shot continuous sequence with 100% biometric facial identity lock.`,
+              continuityProof: `${data.shots?.length || 12}-shot continuous sequence with with characters that stay consistent.`,
               tags: ["9:16 Vertical", `${data.shots?.length || 12} Shots`, "Master Reel", "Zero Drift"]
             };
             setReelsList((prev) => [newReel, ...prev.filter((r) => r.id !== s.id)]);
@@ -739,7 +739,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
             {activeTab === "instagram_tiktok" ? (
               <>
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-white leading-tight mb-1">
-                  Generate 9:16 reels with{" "}
+                  Turn an idea into a finished social video{" "}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-cyan-300 to-teal-200">
                     100% biometric facial identity lock.
                   </span>
@@ -748,22 +748,22 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
             ) : activeTab === "youtube_shorts" ? (
               <>
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-white leading-tight mb-1">
-                  Direct 180s cinema that{" "}
+                  Create a cinematic story{" "}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-400 to-amber-200">
-                    commands the big screen.
+                    from prompt to polished sequence.
                   </span>
                 </h1>
               </>
             ) : (
               <>
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-white leading-tight mb-1">
-                  Autonomous AI Music Video Production{" "}
+                  Create a complete music video{" "}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-cyan-300 to-emerald-300">
-                    powered by Google Omni 1.1 &amp; Lyria 3.5
+                    with synchronized visuals, performance, and sound
                   </span>
                 </h1>
                 <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
-                  Select a verified 24-second master production below or create a new music video with 16-check multimodal sync verification.
+                  Describe what you want to make. Zyvoriq handles the creative plan, then lets you refine every detail.
                 </p>
               </>
             )}
@@ -962,7 +962,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                     className="text-[11px] text-slate-400 hover:text-teal-300 flex items-center gap-1 transition-colors py-0.5 px-1.5 rounded-lg hover:bg-white/5"
                   >
                     <Link2 className="w-3 h-3 text-teal-400 shrink-0" />
-                    <span>🔗 YouTube / Reference URL</span>
+                    <span>Add reference</span>
                   </button>
 
                   <button
@@ -971,7 +971,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                     className="text-[11px] text-slate-400 hover:text-teal-300 flex items-center gap-1 transition-colors py-0.5 px-1.5 rounded-lg hover:bg-white/5"
                   >
                     <Sliders className="w-3 h-3 text-teal-400 shrink-0" />
-                    <span>⚙️ Cast & Physical Set Lock</span>
+                    <span>Characters & location</span>
                     {(leadCharacter || selectedLocation) && (
                       <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-teal-500/20 text-teal-300 font-bold">
                         Active
@@ -985,7 +985,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                 {showCastAndPlaceDrawer && (
                   <div className="mb-3 p-3 rounded-xl bg-[#07090E]/80 border border-white/10 space-y-3 animate-in fade-in duration-200">
                     <div className="flex items-center justify-between pb-2 border-b border-white/5">
-                      <span className="text-xs font-bold text-slate-200">Casting & Physical Set Lock</span>
+                      <span className="text-xs font-bold text-slate-200">Characters & location</span>
                       <div className="flex items-center gap-1">
                         <span className="text-[10px] text-slate-400 mr-1">Cast Size:</span>
                         <button
@@ -1022,7 +1022,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                           }`}
                         >
                           <Sparkles className="w-3.5 h-3.5 text-teal-400" />
-                          <span>✨ Omni Auto-Cast (Default)</span>
+                          <span>Auto-select</span>
                         </button>
                         <button
                           type="button"
@@ -1034,7 +1034,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                           }`}
                         >
                           <Users className="w-3.5 h-3.5 text-teal-400" />
-                          <span>📚 Curated Library</span>
+                          <span>Choose from library</span>
                         </button>
                         <button
                           type="button"
