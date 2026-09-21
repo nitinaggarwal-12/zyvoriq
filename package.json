@@ -36,7 +36,12 @@
     "test:sprints": "node scripts/e2e/test_all_sprints.mjs"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@material/web": "^2.5.0",
+    "@mui/icons-material": "^9.4.0",
+    "@mui/material": "^9.4.0",
     "@pixiv/three-vrm": "^3.5.5",
     "@pixiv/three-vrm-materials-mtoon": "^3.5.5",
     "@types/three": "^0.185.4",

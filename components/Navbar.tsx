@@ -115,9 +115,39 @@ export function Navbar() {
 
         <div className="flex items-center gap-2.5">
           <Link
+            href="/swarm"
+            className={`text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl border transition-colors min-h-[38px] flex items-center ${
+              livePath === "/swarm"
+                ? "bg-amber-400/20 border-amber-400/50 text-amber-200"
+                : "text-amber-300 hover:text-white bg-white/5 hover:bg-white/10 border-white/10"
+            }`}
+          >
+            🎬 Swarm Studio
+          </Link>
+          <Link
+            href="/swarm-MUI"
+            className={`text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl border transition-colors min-h-[38px] flex items-center ${
+              livePath?.startsWith("/swarm-MUI")
+                ? "bg-sky-400/20 border-sky-400/50 text-sky-200"
+                : "text-sky-300 hover:text-white bg-white/5 hover:bg-white/10 border-white/10"
+            }`}
+          >
+            🎨 M3 Studio
+          </Link>
+          <Link
+            href="/registry"
+            className={`text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl border transition-colors min-h-[38px] flex items-center ${
+              livePath?.startsWith("/registry")
+                ? "bg-emerald-500/20 border-emerald-400/50 text-emerald-200"
+                : "text-emerald-300 hover:text-white bg-white/5 hover:bg-white/10 border-white/10"
+            }`}
+          >
+            🗄️ DB Registry
+          </Link>
+          <Link
             href="/my-reels"
             className={`text-xs sm:text-sm font-bold px-4 py-2 rounded-xl border transition-colors min-h-[38px] flex items-center ${
-              isLibrary
+              isLibrary || livePath?.startsWith("/library")
                 ? "bg-teal-500/20 border-teal-500/40 text-teal-200"
                 : "text-slate-200 hover:text-white bg-white/5 hover:bg-white/10 border-white/10"
             }`}

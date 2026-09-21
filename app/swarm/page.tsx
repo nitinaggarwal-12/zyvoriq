@@ -1,1160 +1,1917 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import Link from "next/link";
 import {
-  SWARM_AUDIO_VOICE_SAMPLES,
-  SWARM_BGM_SCORE_SAMPLES,
-} from '@/lib/swarm/engine';
+  InlineClipTrimmer,
+  MultiClipSplicerWorkbench,
+  QueuedSpliceSegment,
+} from "@/components/InstantSubClipSplicer";
+import {
+  M3_TONAL_SCHEMES,
+  M3TonalScheme,
+  getM3CssVariables,
+} from "@/lib/m3TonalSchemes";
 
-export default function SwarmStudioPage() {
-  const [plan, setPlan] = useState<any>(null);
-  const [rendering, setRendering] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'screenplay' | 'nanobanana' | 'lyria'>('screenplay');
+interface IndividualReel {
+  id: string;
+  partIndex: 1 | 2;
+  label: string;
+  sublabel: string;
+  rawSeconds: number;
+  src: string;
+}
 
-  // Audio & Background Music Stem Selector State
-  const [selectedVoiceSampleId, setSelectedVoiceSampleId] = useState<string>('native_veo_speech');
-  const [selectedBgmSampleId, setSelectedBgmSampleId] = useState<string>('no_bgm_silent');
-  const [voiceVolume, setVoiceVolume] = useState<number>(1.40);
-  const [bgmVolume, setBgmVolume] = useState<number>(0.0);
-  const [foleyVolume, setFoleyVolume] = useState<number>(0.35);
-  const [customVoiceBase64, setCustomVoiceBase64] = useState<string | null>(null);
-  const [customBgmBase64, setCustomBgmBase64] = useState<string | null>(null);
-  const [customVoiceFileName, setCustomVoiceFileName] = useState<string | null>(null);
-  const [customBgmFileName, setCustomBgmFileName] = useState<string | null>(null);
-  const [previewAudioUrl, setPreviewAudioUrl] = useState<string | null>(null);
-  const audioPreviewRef = useRef<HTMLAudioElement | null>(null);
+interface TrendingIdea {
+  id: string;
+  badge: string;
+  title: string;
+  genre: string;
+  bpm: number;
+  durationSec?: number;
+  tagline: string;
+  act1Wardrobe: string;
+  act1Location: string;
+  act1Prompt: string;
+  act2Wardrobe: string;
+  act2Location: string;
+  act2Prompt: string;
+}
 
-  const [renderResult, setRenderResult] = useState<any>({
-    status: 'rendered',
-    videoUrl: '/assets/swarm/cathedral_of_crust_master.mp4',
-    posterUrl: '/assets/swarm/cathedral_of_crust_poster.jpg',
-    selectedVoiceSample: 'Native Veo 3.1 On-Camera Speech (Lip-Sync)',
-    selectedBgmSample: '🔇 Silence / No Background Music (Pure Dialogue & Foley Only)',
-    audit: {
-      fileSizeBytes: 22850386,
-      driftMs: 0,
-      plannedDurationSec: 30.0,
-      renderedDurationSec: 30.0,
-      rFrameRate: '30/1',
-      timeBase: '1/30000',
-      audioSampleRate: 48000,
-      resolution: '1920x1080 (2.39:1 Anamorphic Theatrical Cinema Matte)',
-      vocalPolicy: 'ATTIRE-LOCKED VEO 3.1 MASTER • Voice: Native Veo 3.1 Speech | Score: 🔇 Silence / No Background Music',
-      nbFrames: 900,
-    },
-  });
+interface SwarmJobResponse {
+  id: string;
+  title: string;
+  status: "queued" | "running" | "completed" | "failed";
+  progress: number;
+  stageLabel: string;
+  act1Src: string;
+  act2Src: string;
+  combinedSrc: string;
+  logs: string[];
+}
 
+const COUNTRIES = [
+  "India",
+  "United States",
+  "United Kingdom",
+  "South Korea",
+  "UAE (Dubai)",
+  "Canada",
+  "Spain",
+  "Brazil",
+  "Japan",
+  "Nigeria",
+  "France",
+  "Australia",
+];
+
+const LANGUAGES = [
+  "Hindi",
+  "Punjabi",
+  "English",
+  "Hinglish (Hindi + English)",
+  "Spanish",
+  "Korean (K-Pop)",
+  "Tamil",
+  "Telugu",
+  "Arabic",
+  "French",
+  "Portuguese",
+];
+
+const CHARACTER_FORMATIONS = [
+  "Lead Heroine + 4 Girls Troupe (5 Performers)",
+  "Romantic Lead Couple + 6 Backup Dancers",
+  "Dual Female Lead Duo + 6 Couture Ensemble",
+  "Solo Pop Superstar Icon + 8 Stage Dancers",
+  "5-Member Global Girl Group Formation",
+  "Lead Male Star + 6 Urban Street Crew",
+  "Royal Palace Classical Ensemble (7 Dancers)",
+];
+
+const EXHAUSTIVE_ATTIRES_ACT1 = [
+  "Sabyasachi Royal Velvet & Zari Couture Lehenga",
+  "Manish Malhotra Sequin Champagne-Gold Saree Gown",
+  "Crimson-Rose Silk Mirror-Work Anarkali Couture",
+  "Pastel Ivory & Emerald Polki Bridal Resort Wear",
+  "Cyber-Couture Holographic Chrome Bodysuit & Cape",
+  "Mediterranean Linen & Gold-Chain Resort Co-ord Set",
+  "High-Street Oversized Bomber & Crystal Cargo Set",
+  "Avant-Garde Sculpted Corset & Silk Palazzo Ensemble",
+  "Traditional Phulkari & Mirror-Embroidered Punjabi Suit",
+  "Parisian Runway Feather-Trimmed Cocktail Mini Dress",
+];
+
+const EXHAUSTIVE_WARDROBES_ACT2 = [
+  "Royal Emerald-Sapphire & Silver Crystal Evening Couture",
+  "Midnight Obsidian Swarovski-Encrusted Cocktail Gown",
+  "Liquid Gold Metallic Draped Goddess Silhouette",
+  "Ruby Red Silk Satin Slit Gown with Diamond Choker",
+  "Electric Cobalt Blue Fringe Stage Performance Suit",
+  "Neon Magenta & Carbon-Fiber Futuristic Clubwear",
+  "Pearl-White Silk Organza Cape Gown with Tiara",
+  "Burgundy Velvet Tuxedo-Dress with Gold Epaulettes",
+  "Iridescent Opal Sequin Mermaid Evening Gown",
+  "Custom Hand-Beaded Indo-Western Dhoti Skirt & Bustier",
+];
+
+const DEMOGRAPHIES = [
+  "Gen-Z Youth (18–24)",
+  "Young Millennials (25–34)",
+  "Global South Asian Diaspora (18–35)",
+  "Affluent Luxury & Fashion Enthusiasts (22–45)",
+  "Teen & College Dance Creators (16–22)",
+  "Pan-India Metro & Tier-1 Audience (18–40)",
+  "Global Pop & Crossover Music Fans (16–35)",
+];
+
+const TARGET_AUDIENCES = [
+  "Dance Challenge & Hook-Step Creators",
+  "Luxury Fashion & Couture Lovers",
+  "Bollywood & Desi Pop Chart Followers",
+  "High-Energy Club & Festival Goers",
+  "Wedding Sangeet & Celebration Curators",
+  "Music Video Visual & Cinematography Buffs",
+  "Global Viral Short-Form Consumers",
+];
+
+const SOCIAL_PLATFORMS = [
+  "Instagram Reels (9:16 • 60s Master)",
+  "YouTube Shorts & 4K Music Video",
+  "TikTok Global Viral Feed (9:16)",
+  "Spotify Canvas & Apple Music Video",
+  "Snapchat Spotlight & Creator Stories",
+  "X (Twitter) & Threads Premiere Cut",
+];
+
+const PIPELINE_STEPS = [
+  { id: 1, label: "Turn 1A (10s)", threshold: 15 },
+  { id: 2, label: "Turn 1B (20s)", threshold: 35 },
+  { id: 3, label: "Face Identity Lock", threshold: 50 },
+  { id: 4, label: "Turn 2A (10s)", threshold: 70 },
+  { id: 5, label: "Turn 2B (20s)", threshold: 90 },
+  { id: 6, label: "60s Master Reel", threshold: 100 },
+];
+
+const INITIAL_TRENDING_IDEAS: TrendingIdea[] = [
+  {
+    id: "idea_bollywood_master_b_v2",
+    badge: "🔥 #1 INDIA • BOLLYWOOD SUPERHIT",
+    title: "Ishq Tera Electric — Sunlit Villa to Twilight Superyacht",
+    genre: "Modern Bollywood Dance-Pop",
+    bpm: 118,
+    durationSec: 60,
+    tagline:
+      "Lead heroine + 4 dancers across a cliffside pool villa (Act I) and a twilight superyacht deck (Act II) with strict face-identity lock.",
+    act1Wardrobe: "Crimson-Rose & Champagne-Gold Couture Lehenga",
+    act1Location: "Sunlit Cliffside Infinity Pool Villa Terrace",
+    act1Prompt:
+      "High-budget 4K Bollywood theatrical music video shot on 35mm anamorphic cinema lens at a sunlit luxury cliffside infinity pool villa terrace. A charismatic 23-year-old Bollywood lead heroine stands center-frame in crimson-rose and champagne-gold couture lehenga singing expressively while 4 coordinated female background dancers in turquoise-gold ensembles perform crisp mudras behind her.",
+    act2Wardrobe: "Royal Emerald-Sapphire & Silver Crystal Evening Couture",
+    act2Location: "Twilight Candlelit Luxury Superyacht Deck",
+    act2Prompt:
+      "MANDATORY FACIAL IDENTITY LOCK: exact same 23-year-old Bollywood lead heroine face identity from Act I, now wearing a royal emerald-sapphire and silver crystal evening couture gown on a candlelit luxury superyacht deck at blue-hour twilight with 4 background dancers.",
+  },
+  {
+    id: "idea_punjabi_monaco_penthouse",
+    badge: "⚡ #2 VIRAL • PUNJABI AFRO-POP",
+    title: "Diamond Koka — Monaco Rooftop Penthouse to Private Jet Tarmac",
+    genre: "Punjabi Afro-Trap Club Anthem",
+    bpm: 106,
+    durationSec: 60,
+    tagline:
+      "Golden-hour Monaco penthouse terrace (Act I) cutting to a rain-slicked midnight private jet runway with supercars (Act II).",
+    act1Wardrobe: "Ivory-Gold Embellished Corset Saree & Oversized Shades",
+    act1Location: "Monaco Marble Penthouse Terrace Overlooking Harbor",
+    act1Prompt:
+      "Ultra-cinematic 4K Punjabi pop music video on a sunlit Monaco marble penthouse terrace overlooking superyachts. Lead female vocalist in an ivory-gold embellished corset saree performs sleek urban choreography with 4 dancers in pastel silk coordinates.",
+    act2Wardrobe: "Midnight Obsidian Swarovski Bodysuit & Velvet Cape",
+    act2Location: "Midnight Private Gulfstream Jet Tarmac & Neon Runway",
+    act2Prompt:
+      "MANDATORY FACIAL IDENTITY LOCK: exact same lead female vocalist face identity from Act I, now dressed in a midnight obsidian Swarovski crystal bodysuit on a rain-slicked private jet tarmac at night flanked by matte-black supercars and 4 dancers.",
+  },
+  {
+    id: "idea_kpop_cyber_seoul",
+    badge: "💎 #3 GLOBAL • K-POP / HYPER-POP",
+    title: "Supernova Crush — Seoul Hologram Atrium to Tokyo Sky-Deck",
+    genre: "High-Octane Electro K-Pop",
+    bpm: 126,
+    durationSec: 60,
+    tagline:
+      "Precision knife-edge formation dance inside a neon Seoul glass atrium (Act I) cutting to a 70th-floor Tokyo helipad at dusk (Act II).",
+    act1Wardrobe: "Holographic Chrome & White Leather Street-Couture",
+    act1Location: "Futuristic Seoul Glass & LED Architectural Atrium",
+    act1Prompt:
+      "High-energy 4K K-pop music video inside a futuristic Seoul glass atrium with volumetric cyan-magenta lighting. Lead center idol and 4 group members in holographic chrome and white leather street-couture execute sharp synchronized choreography.",
+    act2Wardrobe: "Ruby-Red Velvet & Silver Chain Stage Uniform",
+    act2Location: "70th-Floor Tokyo Skyscraper Helipad at Sunset",
+    act2Prompt:
+      "MANDATORY FACIAL IDENTITY LOCK: exact same lead center idol face identity from Act I, now wearing a ruby-red velvet and silver chain stage uniform on a 70th-floor Tokyo skyscraper helipad at sunset with sweeping drone orbits.",
+  },
+];
+
+const DEFAULT_SEGMENTS: IndividualReel[] = [
+  {
+    id: "act1_pool_villa_30s",
+    partIndex: 1,
+    label: "Act I — Sunlit Cliffside Pool Villa (00:00–00:30)",
+    sublabel: "Crimson-Rose & Champagne-Gold Couture • Turn 1A (10s) + Turn 1B (20s)",
+    rawSeconds: 30.0,
+    src: "/assets/swarm/masterB_v2/act1_pool_villa_30s.mp4",
+  },
+  {
+    id: "act2_superyacht_deck_30s",
+    partIndex: 2,
+    label: "Act II — Twilight Superyacht Deck (00:30–01:00)",
+    sublabel: "Royal Emerald-Sapphire Couture • Same Lead Face Identity Anchor",
+    rawSeconds: 30.0,
+    src: "/assets/swarm/masterB_v2/act2_superyacht_deck_30s.mp4",
+  },
+];
+
+function formatSMPTE(sec: number): string {
+  const clamped = Math.max(0, sec);
+  const mins = Math.floor(clamped / 60);
+  const secs = Math.floor(clamped % 60);
+  const frames = Math.floor((clamped % 1) * 24);
+  return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}:${String(
+    frames
+  ).padStart(2, "0")}`;
+}
+
+export default function SwarmStudioM3Page() {
+  // GOOGLE MATERIAL DESIGN 3 (M3) DYNAMIC TONAL COLOR SCHEME STATE
+  const [schemeId, setSchemeId] = useState<string>("sapphire_emerald");
+  const activeScheme: M3TonalScheme = useMemo(
+    () => M3_TONAL_SCHEMES.find((s) => s.id === schemeId) || M3_TONAL_SCHEMES[0],
+    [schemeId]
+  );
+
+  // Clean New Reel Creation Canvas by default; only show Step 3 if launched or editing existing
+  const [hasActiveReelLoaded, setHasActiveReelLoaded] = useState<boolean>(false);
   useEffect(() => {
-    fetch('/api/swarm/orchestrate')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.defaultPlan) {
-          setPlan(data.defaultPlan);
-        }
-      })
-      .catch(console.error);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("edit")) {
+        setHasActiveReelLoaded(true);
+      }
+    }
   }, []);
 
-  const handlePlayPreview = (url: string) => {
-    if (previewAudioUrl === url && audioPreviewRef.current) {
-      audioPreviewRef.current.pause();
-      setPreviewAudioUrl(null);
-      return;
+  // Active Production & Video Sources
+  const [projectTitle, setProjectTitle] = useState<string>(
+    "Ishq Tera Electric — Bollywood 2-Act Superhit"
+  );
+  const [combinedSrc, setCombinedSrc] = useState<string>(
+    "/assets/swarm/masterB_v2/masterB_v2_combined_60s.mp4"
+  );
+  const [segments, setSegments] = useState<IndividualReel[]>(DEFAULT_SEGMENTS);
+
+  // Step 1 Exhaustive Input Parameters
+  const [trendCountry, setTrendCountry] = useState<string>("India");
+  const [trendLanguage, setTrendLanguage] = useState<string>("Hindi");
+  const [trendCharacters, setTrendCharacters] = useState<string>(
+    CHARACTER_FORMATIONS[0]
+  );
+  const [trendDurationSec, setTrendDurationSec] = useState<number>(60);
+  const [trendAttire, setTrendAttire] = useState<string>(EXHAUSTIVE_ATTIRES_ACT1[1]);
+  const [trendWardrobe, setTrendWardrobe] = useState<string>(
+    EXHAUSTIVE_WARDROBES_ACT2[0]
+  );
+  const [trendDemography, setTrendDemography] = useState<string>(DEMOGRAPHIES[2]);
+  const [trendAudience, setTrendAudience] = useState<string>(TARGET_AUDIENCES[0]);
+  const [trendPlatform, setTrendPlatform] = useState<string>(SOCIAL_PLATFORMS[0]);
+
+  const [isGeneratingIdeas, setIsGeneratingIdeas] = useState<boolean>(false);
+  const [trendingIdeas, setTrendingIdeas] = useState<TrendingIdea[]>(
+    INITIAL_TRENDING_IDEAS
+  );
+  const [selectedIdeaId, setSelectedIdeaId] = useState<string>(
+    INITIAL_TRENDING_IDEAS[0].id
+  );
+  const [showScriptEditor, setShowScriptEditor] = useState<boolean>(true);
+  const [showChildReelsDrawer, setShowChildReelsDrawer] = useState<boolean>(false);
+  const [showSplicerStudio, setShowSplicerStudio] = useState<boolean>(false);
+  const [splicerTabIndex, setSplicerTabIndex] = useState<number>(0);
+  const [spliceQueue, setSpliceQueue] = useState<QueuedSpliceSegment[]>([]);
+
+  // Draft Script State
+  const [draftTitle, setDraftTitle] = useState<string>(INITIAL_TRENDING_IDEAS[0].title);
+  const [draftGenre, setDraftGenre] = useState<string>(INITIAL_TRENDING_IDEAS[0].genre);
+  const [draftBpm, setDraftBpm] = useState<number>(INITIAL_TRENDING_IDEAS[0].bpm);
+  const [draftAct1Prompt, setDraftAct1Prompt] = useState<string>(
+    INITIAL_TRENDING_IDEAS[0].act1Prompt
+  );
+  const [draftAct2Prompt, setDraftAct2Prompt] = useState<string>(
+    INITIAL_TRENDING_IDEAS[0].act2Prompt
+  );
+  const [promptsSyncedBadge, setPromptsSyncedBadge] = useState<boolean>(true);
+  const [activeJob, setActiveJob] = useState<SwarmJobResponse | null>(null);
+
+  // Per-Act Speed Multipliers (0.01x steps)
+  const [part1Speed, setPart1Speed] = useState<number>(1.0);
+  const [part2Speed, setPart2Speed] = useState<number>(1.0);
+
+  // QuickTime Pro Transforms & Transport State
+  const [rotationDeg, setRotationDeg] = useState<number>(0);
+  const [flipH, setFlipH] = useState<boolean>(false);
+  const [preservesPitch, setPreservesPitch] = useState<boolean>(true);
+  const [loopPlayback, setLoopPlayback] = useState<boolean>(true);
+  const [selectedActIndex, setSelectedActIndex] = useState<1 | 2>(1);
+
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [combinedTime, setCombinedTime] = useState<number>(0);
+  const [domRate, setDomRate] = useState<number>(1.0);
+
+  // Custom MP4 Export State
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+  const [exportNotice, setExportNotice] = useState<string | null>(null);
+
+  const combinedVideoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Auto-sync top dropdown choices directly into Act I & Act II prompts
+  const syncDropdownsIntoPrompts = useCallback(
+    (overrides?: {
+      country?: string;
+      language?: string;
+      characters?: string;
+      durationSec?: number;
+      attire?: string;
+      wardrobe?: string;
+      demography?: string;
+      audience?: string;
+      platform?: string;
+    }) => {
+      const c = overrides?.country ?? trendCountry;
+      const l = overrides?.language ?? trendLanguage;
+      const ch = overrides?.characters ?? trendCharacters;
+      const dur = overrides?.durationSec ?? trendDurationSec;
+      const att1 = overrides?.attire ?? trendAttire;
+      const wrd2 = overrides?.wardrobe ?? trendWardrobe;
+      const dem = overrides?.demography ?? trendDemography;
+      const aud = overrides?.audience ?? trendAudience;
+      const plat = overrides?.platform ?? trendPlatform;
+
+      const halfDur = Math.round(dur / 2);
+
+      setDraftAct1Prompt(
+        `High-budget 4K ${l} (${c}) theatrical music video shot on 35mm anamorphic cinema lens at a sunlit luxury cliffside infinity pool villa terrace (Act I • ${halfDur}s). Featuring ${ch} wearing ${att1}, singing and performing synchronized high-energy choreography tailored for ${dem} & ${aud} on ${plat}.`
+      );
+      setDraftAct2Prompt(
+        `MANDATORY FACIAL IDENTITY LOCK: exact same lead performer face identity from Act I, now wearing ${wrd2} on a candlelit luxury superyacht deck at blue-hour twilight (Act II • ${halfDur}s) with ${ch}, synchronized vocals, and cinematic camera orbits.`
+      );
+      setPromptsSyncedBadge(true);
+    },
+    [
+      trendCountry,
+      trendLanguage,
+      trendCharacters,
+      trendDurationSec,
+      trendAttire,
+      trendWardrobe,
+      trendDemography,
+      trendAudience,
+      trendPlatform,
+    ]
+  );
+
+  const selectIdeaById = (ideaId: string) => {
+    setSelectedIdeaId(ideaId);
+    const idea = trendingIdeas.find((it) => it.id === ideaId);
+    if (idea) {
+      setDraftTitle(idea.title);
+      setDraftGenre(idea.genre);
+      setDraftBpm(idea.bpm);
+      setDraftAct1Prompt(idea.act1Prompt);
+      setDraftAct2Prompt(idea.act2Prompt);
+      if (idea.durationSec) setTrendDurationSec(idea.durationSec);
+      setPromptsSyncedBadge(true);
+      setShowScriptEditor(true);
     }
-    setPreviewAudioUrl(url);
-    setTimeout(() => {
-      if (audioPreviewRef.current) {
-        audioPreviewRef.current.src = url;
-        audioPreviewRef.current.play().catch(console.error);
-      }
-    }, 50);
   };
 
-  const handleCustomAudioUpload = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    target: 'voice' | 'bgm'
-  ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      if (target === 'voice') {
-        setCustomVoiceBase64(dataUrl);
-        setCustomVoiceFileName(file.name);
-        setSelectedVoiceSampleId('custom_uploaded_voice');
-      } else {
-        setCustomBgmBase64(dataUrl);
-        setCustomBgmFileName(file.name);
-        setSelectedBgmSampleId('custom_uploaded_bgm');
-        setBgmVolume(0.85);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleRenderSwarmMaster = async (
-    overrideBgmId?: string,
-    overrideBgmVol?: number
-  ) => {
-    setRendering(true);
-    const targetBgmId = overrideBgmId ?? selectedBgmSampleId;
-    const targetBgmVol = overrideBgmVol !== undefined ? overrideBgmVol : bgmVolume;
+  async function handleGenerate10TrendingIdeas() {
+    setIsGeneratingIdeas(true);
     try {
-      const res = await fetch('/api/swarm/render', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/swarm/trending-ideas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          presetId: 'cathedral_of_crust',
-          voiceSampleId: selectedVoiceSampleId,
-          bgmSampleId: targetBgmId,
-          voiceVolume,
-          bgmVolume: targetBgmVol,
-          foleyVolume,
-          customVoiceBase64,
-          customBgmBase64,
+          country: trendCountry,
+          language: trendLanguage,
+          characters: trendCharacters,
+          durationSec: trendDurationSec,
+          attire: trendAttire,
+          wardrobe: trendWardrobe,
+          demography: trendDemography,
+          targetAudience: trendAudience,
+          socialPlatform: trendPlatform,
         }),
       });
       const data = await res.json();
-      if (data.status === 'rendered') {
-        setRenderResult(data);
+      if (res.ok && data.ideas?.length) {
+        setTrendingIdeas(data.ideas);
+        const first = data.ideas[0];
+        setSelectedIdeaId(first.id);
+        setDraftTitle(first.title);
+        setDraftGenre(first.genre);
+        setDraftBpm(first.bpm);
+        setDraftAct1Prompt(first.act1Prompt);
+        setDraftAct2Prompt(first.act2Prompt);
+        setPromptsSyncedBadge(true);
+        setShowScriptEditor(true);
       }
-    } catch (err) {
-      console.error(err);
     } finally {
-      setRendering(false);
+      setIsGeneratingIdeas(false);
+    }
+  }
+
+  async function handleCreateJob(e: React.FormEvent) {
+    e.preventDefault();
+    setHasActiveReelLoaded(true);
+    const res = await fetch("/api/swarm/jobs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: draftTitle,
+        genre: draftGenre,
+        bpm: draftBpm,
+        durationSec: trendDurationSec,
+        country: trendCountry,
+        language: trendLanguage,
+        characters: trendCharacters,
+        demography: trendDemography,
+        targetAudience: trendAudience,
+        socialPlatform: trendPlatform,
+        act1Wardrobe: trendAttire,
+        act2Wardrobe: trendWardrobe,
+        act1Prompt: draftAct1Prompt,
+        act2Prompt: draftAct2Prompt,
+      }),
+    });
+    const data = await res.json();
+    if (res.ok && data.job) {
+      setActiveJob(data.job);
+    }
+  }
+
+  useEffect(() => {
+    if (!activeJob || activeJob.status !== "running") return;
+    const timer = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/swarm/jobs?id=${activeJob.id}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.job) {
+          setActiveJob(data.job);
+          if (data.job.status === "completed") {
+            setProjectTitle(data.job.title);
+            setCombinedSrc(data.job.combinedSrc);
+            setSegments([
+              {
+                ...DEFAULT_SEGMENTS[0],
+                src: data.job.act1Src,
+              },
+              {
+                ...DEFAULT_SEGMENTS[1],
+                src: data.job.act2Src,
+              },
+            ]);
+          }
+        }
+      } catch {
+        // ignore transient poll errors
+      }
+    }, 1500);
+    return () => clearInterval(timer);
+  }, [activeJob]);
+
+  const syncPlaybackEngine = useCallback(() => {
+    const v = combinedVideoRef.current;
+    if (!v) return;
+    const t = v.currentTime;
+    const activeRate = t < 30.0 ? part1Speed : part2Speed;
+
+    if (Math.abs(v.playbackRate - activeRate) > 0.001) {
+      v.playbackRate = activeRate;
+      v.defaultPlaybackRate = activeRate;
+    }
+    const anyV = v as HTMLVideoElement & {
+      preservesPitch?: boolean;
+      mozPreservesPitch?: boolean;
+      webkitPreservesPitch?: boolean;
+    };
+    if (anyV.preservesPitch !== preservesPitch) {
+      anyV.preservesPitch = preservesPitch;
+      anyV.mozPreservesPitch = preservesPitch;
+      anyV.webkitPreservesPitch = preservesPitch;
+    }
+    setDomRate(v.playbackRate);
+  }, [part1Speed, part2Speed, preservesPitch]);
+
+  useEffect(() => {
+    let raf: number;
+    const tick = () => {
+      if (combinedVideoRef.current && !combinedVideoRef.current.paused) {
+        setCombinedTime(combinedVideoRef.current.currentTime);
+        syncPlaybackEngine();
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [syncPlaybackEngine]);
+
+  const setP1Speed = (val: number) => {
+    const clamped = Math.min(2.0, Math.max(0.5, Number(val.toFixed(2))));
+    setPart1Speed(clamped);
+    if (combinedVideoRef.current && combinedVideoRef.current.currentTime < 30.0) {
+      combinedVideoRef.current.playbackRate = clamped;
+      setDomRate(clamped);
     }
   };
 
-  const handleSilenceBgm = async () => {
-    setSelectedBgmSampleId('no_bgm_silent');
-    setBgmVolume(0);
-    await handleRenderSwarmMaster('no_bgm_silent', 0);
+  const setP2Speed = (val: number) => {
+    const clamped = Math.min(2.0, Math.max(0.5, Number(val.toFixed(2))));
+    setPart2Speed(clamped);
+    if (combinedVideoRef.current && combinedVideoRef.current.currentTime >= 30.0) {
+      combinedVideoRef.current.playbackRate = clamped;
+      setDomRate(clamped);
+    }
+  };
+
+  const seekCombined = (sec: number, autoPlay = false) => {
+    const v = combinedVideoRef.current;
+    if (!v) return;
+    v.currentTime = Math.min(60, Math.max(0, sec));
+    setCombinedTime(v.currentTime);
+    syncPlaybackEngine();
+    if (autoPlay) {
+      v.play().catch(() => {});
+      setIsPlaying(true);
+    }
+  };
+
+  const togglePlay = () => {
+    const v = combinedVideoRef.current;
+    if (!v) return;
+    if (v.paused) {
+      v.play().catch(() => {});
+      setIsPlaying(true);
+    } else {
+      v.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  const stepFrame = (deltaFrames: number) => {
+    const v = combinedVideoRef.current;
+    if (!v) return;
+    v.pause();
+    setIsPlaying(false);
+    seekCombined(v.currentTime + deltaFrames / 24);
+  };
+
+  const resetAllEdits = () => {
+    setPart1Speed(1.0);
+    setPart2Speed(1.0);
+    setRotationDeg(0);
+    setFlipH(false);
+  };
+
+  async function handleRenderCustomMaster() {
+    setIsExporting(true);
+    setExportNotice(null);
+    try {
+      const res = await fetch("/api/swarm/export-custom", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: projectTitle,
+          act1Src: segments[0].src,
+          act2Src: segments[1].src,
+          part1Speed,
+          part2Speed,
+          part1In: 0,
+          part1Out: 30,
+          part2In: 0,
+          part2Out: 30,
+          rotationDeg,
+          flipH,
+          preservesPitch,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.masterUrl) {
+        setCombinedSrc(data.masterUrl);
+        setExportNotice(`✅ Custom Master Baked & Saved to Library (${data.masterUrl})`);
+      }
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  const p1EffDur = 30.0 / part1Speed;
+  const p2EffDur = 30.0 / part2Speed;
+  const totalEffDur = p1EffDur + p2EffDur;
+  const isInPart1 = combinedTime < 30.0;
+
+  const videoTransform: React.CSSProperties = {
+    transform: `rotate(${rotationDeg}deg) scaleX(${flipH ? -1 : 1})`,
+    transition: "transform 0.25s cubic-bezier(0.2, 0, 0, 1)",
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 w-full max-w-full overflow-x-hidden">
-      {/* Top Dark Shell Header */}
-      <header className="dark w-full bg-[#0B111E] border-b border-slate-800 sticky top-0 z-50">
-        <div className="w-full max-w-[1600px] mx-auto px-6 md:px-12 py-4 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <span className="px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-extrabold tracking-wider uppercase">
-              SWARM • 8-AGENT CREW
+    <main
+      style={{
+        ...getM3CssVariables(activeScheme),
+        backgroundColor: activeScheme.surfaceDim,
+        color: activeScheme.onSurface,
+      }}
+      className="min-h-screen px-4 sm:px-6 lg:px-8 py-5 space-y-5 transition-colors duration-300"
+    >
+      {/* =====================================================================
+          STEP ①: CONCEPT, CAST & TREND INPUTS (GOOGLE M3 TONAL SURFACE CARD)
+         ===================================================================== */}
+      <section
+        style={{
+          backgroundColor: activeScheme.surfaceContainer,
+          borderColor: activeScheme.outlineVariant,
+        }}
+        className="rounded-2xl border p-4 shadow-lg space-y-3.5"
+      >
+        {/* Header with Step ① Pill + Clean Canvas / Edit Existing Toggle + M3 Palette Switcher */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span
+              style={{
+                backgroundColor: activeScheme.primaryContainer,
+                color: activeScheme.onPrimaryContainer,
+              }}
+              className="px-3 py-1 rounded-full font-mono text-xs font-extrabold"
+            >
+              STEP ① • CONCEPT & CAST INPUTS
             </span>
-            <div>
-              <h1 className="text-lg md:text-2xl font-extrabold text-white tracking-tight">
-                Google Cloud Swarm Studio — &ldquo;The Cathedral of Crust&rdquo; 🍕🔥
-              </h1>
-              <p className="text-xs md:text-sm text-slate-400">
-                🧠 Gemini &amp; Omni Orchestration • 🎨 Nano Banana Visual DNA • 🎵 Lyria Dramatic Score • 🎬 Zero Active Singing
-              </p>
-            </div>
+            <span className="text-xs text-slate-400">
+              {hasActiveReelLoaded
+                ? "Editing / Extending Active Reel — or click 'New Reel Creation Mode' to start fresh"
+                : "Clean New Reel Creation Canvas — configure cast, wardrobe & prompt below"}
+            </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Link
-              href="/omni1.2"
-              className="px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs md:text-sm font-semibold transition min-h-[44px] flex items-center"
-            >
-              ← Omni 1.2 Studio
-            </Link>
-            <button
-              id="btn-silence-bgm-header"
-              onClick={handleSilenceBgm}
-              disabled={rendering}
-              className="px-4 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs md:text-sm font-bold shadow-md transition min-h-[44px] flex items-center gap-1.5"
-            >
-              🔇 Silence Background Music
-            </button>
-            <button
-              id="btn-render-swarm-master"
-              onClick={() => handleRenderSwarmMaster()}
-              disabled={rendering}
-              className="px-6 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs md:text-sm font-bold shadow-md transition min-h-[44px] flex items-center gap-2"
-            >
-              {rendering ? '🎬 Orchestrating 8-Agent Render...' : '🚀 Re-Assemble 30s Master Spot'}
-            </button>
+          <div className="flex flex-wrap items-center gap-2.5">
+            {hasActiveReelLoaded ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setHasActiveReelLoaded(false);
+                  setActiveJob(null);
+                }}
+                style={{
+                  borderColor: activeScheme.primary,
+                  color: activeScheme.primary,
+                }}
+                className="px-3.5 py-1.5 rounded-full border text-xs font-bold hover:opacity-90 transition"
+              >
+                ➕ New Reel Creation Mode (Hide Existing Reel)
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setHasActiveReelLoaded(true)}
+                style={{
+                  borderColor: activeScheme.secondary,
+                  color: activeScheme.secondary,
+                }}
+                className="px-3.5 py-1.5 rounded-full border text-xs font-bold hover:opacity-90 transition"
+              >
+                ✏️ Edit / Extend Existing Reel (ZYV-REEL-MBV260S1)
+              </button>
+            )}
+
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-mono text-slate-400">🎨 M3 Palette:</span>
+              <select
+                value={schemeId}
+                onChange={(e) => setSchemeId(e.target.value)}
+                style={{
+                  backgroundColor: activeScheme.surfaceContainerHigh,
+                  borderColor: activeScheme.outlineVariant,
+                  color: activeScheme.onSurface,
+                }}
+                className="px-2.5 py-1.5 rounded-xl border text-xs font-bold"
+              >
+                {M3_TONAL_SCHEMES.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
-      </header>
 
-      {/* Main Spacious Full-Width Light Workspace */}
-      <main className="w-full max-w-[1600px] mx-auto px-6 md:px-12 py-8 space-y-10">
-        {/* HERO SPOT SECTION: Watch "The Cathedral of Crust" Below 👇 */}
-        <section
-          id="swarm-hero-spot-section"
-          className="bg-white rounded-2xl border-2 border-amber-500/80 shadow-xl p-6 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center"
-        >
-          {/* Left 7 Cols: 16:9 Widescreen Cinema Player */}
-          <div className="lg:col-span-7 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-extrabold uppercase tracking-wider">
-                👇 WATCH THE FULL SPOT BELOW • 100% CODE-GENERATED
-              </span>
-              <span className="text-xs font-bold text-emerald-700">
-                ✓ Non-Vocal Dramatic Cinema (Voiceover + Lyria Score)
-              </span>
-            </div>
-
-            <div className="w-full aspect-[16/9] rounded-2xl overflow-hidden bg-slate-950 shadow-2xl border border-slate-800 relative">
-              <video
-                key={renderResult.videoUrl}
-                src={renderResult.videoUrl}
-                poster={renderResult.posterUrl || '/assets/swarm/cathedral_of_crust_poster.jpg'}
-                controls
-                autoPlay
-                loop
-                muted
-                playsInline
-                preload="auto"
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between text-xs text-slate-600 pt-1">
-              <span>
-                <strong>Production Title:</strong> &ldquo;The Cathedral of Crust&rdquo; (Neapolitan Artisan Commercial Spot)
-              </span>
-              <span className="font-mono font-semibold text-slate-800">
-                1920x1080 Widescreen • 30.000s CFR • 900 Frames
-              </span>
-            </div>
+        {/* Responsive 6-Column M3 Grid — Zero Horizontal Scroll Overflow */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+          {/* 1. Country */}
+          <div>
+            <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">
+              Country
+            </label>
+            <select
+              value={trendCountry}
+              onChange={(e) => {
+                setTrendCountry(e.target.value);
+                syncDropdownsIntoPrompts({ country: e.target.value });
+              }}
+              style={{
+                backgroundColor: activeScheme.surfaceContainerLowest,
+                borderColor: activeScheme.outlineVariant,
+              }}
+              className="w-full px-2.5 py-1.5 rounded-xl border text-xs text-white"
+            >
+              {COUNTRIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* Right 5 Cols: Commercial Studio Telemetry & Conformance Ledger */}
-          <div className="lg:col-span-5 space-y-5">
-            <div className="border-b border-slate-100 pb-4">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-amber-600">
-                COMMERCIAL PRODUCTION STUDIO IN CODE
-              </span>
-              <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 mt-1">
-                Why Agent Swarms Replace Cameras &amp; Rented Sets
-              </h2>
-              <p className="text-xs md:text-sm text-slate-600 mt-2 leading-relaxed">
-                No cameras, no physical lighting rigs, no rented Neapolitan brick ovens. Eight specialized high-code agents collaborate synchronously to lock facial geometry, garment flour-dusting, macro food physics, gravelly voiceover narration, and a 92 BPM Lyria orchestral score.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3.5">
-              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
-                <div className="text-xs font-bold text-emerald-800 uppercase">4-Clock Drift</div>
-                <div className="text-2xl font-extrabold text-emerald-700 mt-1">
-                  {renderResult.audit?.driftMs ?? 0} ms
-                </div>
-                <div className="text-[11px] text-emerald-700 mt-0.5">
-                  30.000s Video == 30.000s Audio
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
-                <div className="text-xs font-bold text-amber-900 uppercase">Vocal Policy</div>
-                <div className="text-sm font-extrabold text-amber-900 mt-1">
-                  ✓ Zero Active Singing
-                </div>
-                <div className="text-[11px] text-amber-800 mt-0.5">
-                  Mouth Closed • VO + Score Only
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                <div className="text-xs font-bold text-slate-500 uppercase">Master Frame Rate</div>
-                <div className="text-2xl font-extrabold text-slate-900 mt-1">
-                  {renderResult.audit?.rFrameRate || '30/1'} CFR
-                </div>
-                <div className="text-[11px] text-slate-500 mt-0.5">
-                  Timescale: {renderResult.audit?.timeBase || '1/30000'}
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-200">
-                <div className="text-xs font-bold text-indigo-800 uppercase">Lyria 3.5 Score</div>
-                <div className="text-lg font-extrabold text-indigo-900 mt-1">
-                  92 BPM D-Minor
-                </div>
-                <div className="text-[11px] text-indigo-700 mt-0.5">
-                  Cello Ostinato • -8dB Ducking
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-900 text-slate-200 text-xs font-mono space-y-1.5">
-              <div className="text-amber-400 font-bold">
-                [GOOGLE CLOUD STACK TELEMETRY — 100% CODE EXECUTION]:
-              </div>
-              <div>• 🧠 Gemini 2.5 Pro &amp; Omni: 6-Act Screenplay &amp; Gravelly Voiceover Script</div>
-              <div>• 🎨 Nano Banana Visual DNA: 3 Italian Artisans + 5 Macro Culinary Props</div>
-              <div>• 🎵 DeepMind Lyria 3.5: Original Dramatic Instrumental Score (No Singing)</div>
-              <div>• 🎬 FFmpeg CFR Master: 1920x1080 @ 30fps, setpts=PTS-STARTPTS, 0.0ms Drift</div>
-            </div>
-
-            <div className="pt-1 flex flex-wrap items-center justify-between gap-3">
-              <a
-                href={renderResult.videoUrl}
-                download="cathedral_of_crust_master.mp4"
-                className="flex-1 py-3 px-5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs md:text-sm font-bold text-center transition min-h-[44px] flex items-center justify-center gap-2 shadow"
-              >
-                ⬇️ Download &ldquo;The Cathedral of Crust&rdquo; Master MP4
-              </a>
-              <button
-                id="btn-silence-bgm-player"
-                onClick={handleSilenceBgm}
-                disabled={rendering}
-                className="py-3 px-5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs md:text-sm font-bold text-center transition min-h-[44px] flex items-center justify-center gap-2 shadow"
-              >
-                🔇 Silence Background Music (Pure Dialogue &amp; Foley Only)
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* 🎛️ AUDIO & BACKGROUND MUSIC MASTERING CONSOLE (SELECTABLE SAMPLES & MIXER) */}
-        <section
-          id="swarm-audio-bgm-console"
-          className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-8 space-y-6"
-        >
-          <audio ref={audioPreviewRef} className="hidden" onEnded={() => setPreviewAudioUrl(null)} />
-
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
-            <div>
-              <span className="text-xs font-extrabold uppercase tracking-wider text-amber-600">
-                🎛️ INTERACTIVE AUDIO &amp; BACKGROUND MUSIC STEM SELECTOR
-              </span>
-              <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 mt-0.5">
-                Choose Your Dialogue Stem &amp; Lyria 3.5 Background Music Score (or Silence BGM)
-              </h2>
-              <p className="text-xs md:text-sm text-slate-600 mt-1">
-                Switch between On-Camera Lip-Sync Speech, Cinema Trailer Baritone, or Documentary Storyteller voices, and pair with background music scores or 1-click silence.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                id="btn-silence-bgm-console"
-                onClick={handleSilenceBgm}
-                disabled={rendering}
-                className="px-5 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs md:text-sm font-extrabold shadow-md transition min-h-[44px] flex items-center gap-2"
-              >
-                🔇 1-Click Silence Background Music (No BGM)
-              </button>
-              <button
-                id="btn-remaster-audio-bgm"
-                onClick={() => handleRenderSwarmMaster()}
-                disabled={rendering}
-                className="px-6 py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs md:text-sm font-extrabold shadow-md transition min-h-[44px] flex items-center gap-2"
-              >
-                {rendering
-                  ? '🎬 Mixing Stems & Re-Mastering Movie...'
-                  : '🎬 Remaster Movie with Selected Audio & Music'}
-              </button>
-            </div>
+          {/* 2. Language */}
+          <div>
+            <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">
+              Language
+            </label>
+            <select
+              value={trendLanguage}
+              onChange={(e) => {
+                setTrendLanguage(e.target.value);
+                syncDropdownsIntoPrompts({ language: e.target.value });
+              }}
+              style={{
+                backgroundColor: activeScheme.surfaceContainerLowest,
+                borderColor: activeScheme.outlineVariant,
+              }}
+              className="w-full px-2.5 py-1.5 rounded-xl border text-xs text-white"
+            >
+              {LANGUAGES.map((l) => (
+                <option key={l} value={l}>
+                  {l}
+                </option>
+              ))}
+            </select>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* COLUMN 1: 4 VOICE & DIALOGUE SAMPLES */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm md:text-base font-extrabold text-slate-900 flex items-center gap-2">
-                  <span>🎙️ Step 1: Select Voice / Dialogue Stem</span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold">
-                    4 Samples Available
-                  </span>
-                </h3>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                {SWARM_AUDIO_VOICE_SAMPLES.map((sample) => {
-                  const isSelected = selectedVoiceSampleId === sample.id;
-                  const isPreviewing = previewAudioUrl === sample.previewAudioUrl;
-                  return (
-                    <div
-                      key={sample.id}
-                      onClick={() => setSelectedVoiceSampleId(sample.id)}
-                      className={`cursor-pointer rounded-2xl border p-4 transition flex flex-col justify-between space-y-3 ${
-                        isSelected
-                          ? 'bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-600/20 shadow-sm'
-                          : 'bg-white border-slate-200 hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="px-2 py-0.5 rounded bg-slate-900 text-white text-[10px] font-bold">
-                            {sample.badge}
-                          </span>
-                          {isSelected && (
-                            <span className="text-xs font-extrabold text-indigo-600">
-                              ✓ Active Stem
-                            </span>
-                          )}
-                        </div>
-                        <h4 className="text-sm font-extrabold text-slate-900">
-                          {sample.title}
-                        </h4>
-                        <p className="text-xs text-slate-600 leading-relaxed">
-                          {sample.description}
-                        </p>
-                      </div>
-
-                      <div className="pt-2 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-2">
-                        <span className="text-[11px] font-semibold text-slate-500">
-                          {sample.id === 'custom_uploaded_voice' && customVoiceFileName
-                            ? `✅ Uploaded: ${customVoiceFileName}`
-                            : sample.subtitle}
-                        </span>
-                        {sample.id === 'custom_uploaded_voice' ? (
-                          <label
-                            onClick={(e) => e.stopPropagation()}
-                            className="cursor-pointer px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold min-h-[36px] flex items-center gap-1.5"
-                          >
-                            📁 Choose MP3/WAV
-                            <input
-                              type="file"
-                              accept="audio/*"
-                              className="hidden"
-                              onChange={(e) => handleCustomAudioUpload(e, 'voice')}
-                            />
-                          </label>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePlayPreview(sample.previewAudioUrl);
-                            }}
-                            className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold min-h-[36px] flex items-center gap-1.5"
-                          >
-                            {isPreviewing ? '⏹ Stop' : '🔊 Preview'}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* COLUMN 2: 7 BACKGROUND MUSIC SCORE SAMPLES (INCLUDING SILENCE & NON-LYRIA UPLOADS) */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm md:text-base font-extrabold text-slate-900 flex items-center gap-2">
-                  <span>🎼 Step 2: Select Background Music / Song (or Non-Lyria Upload)</span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 text-xs font-bold">
-                    7 Options (Silence, Custom MP3, or Scores)
-                  </span>
-                </h3>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                {SWARM_BGM_SCORE_SAMPLES.map((bgm) => {
-                  const isSelected = selectedBgmSampleId === bgm.id;
-                  const isPreviewing = previewAudioUrl === bgm.previewAudioUrl;
-                  return (
-                    <div
-                      key={bgm.id}
-                      onClick={() => {
-                        setSelectedBgmSampleId(bgm.id);
-                        if (bgm.id === 'no_bgm_silent' || bgm.id === 'native_veo_diegetic_music') {
-                          setBgmVolume(0);
-                        } else if (bgmVolume === 0) {
-                          setBgmVolume(0.85);
-                        }
-                      }}
-                      className={`cursor-pointer rounded-2xl border p-4 transition flex flex-col justify-between space-y-3 ${
-                        isSelected
-                          ? bgm.id === 'no_bgm_silent'
-                            ? 'bg-rose-50/80 border-rose-600 ring-2 ring-rose-600/20 shadow-sm'
-                            : 'bg-amber-50/70 border-amber-600 ring-2 ring-amber-600/20 shadow-sm'
-                          : 'bg-white border-slate-200 hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="px-2 py-0.5 rounded bg-amber-900 text-amber-100 text-[10px] font-bold">
-                            {bgm.bpm} BPM • {bgm.key}
-                          </span>
-                          {isSelected && (
-                            <span className="text-xs font-extrabold text-amber-700">
-                              ✓ Active Option
-                            </span>
-                          )}
-                        </div>
-                        <h4 className="text-sm font-extrabold text-slate-900">
-                          {bgm.title}
-                        </h4>
-                        <p className="text-xs text-slate-600 leading-relaxed">
-                          {bgm.description}
-                        </p>
-                      </div>
-
-                      <div className="pt-2 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-2">
-                        <span className="text-[11px] font-semibold text-slate-500">
-                          {bgm.id === 'custom_uploaded_bgm' && customBgmFileName
-                            ? `✅ Uploaded: ${customBgmFileName}`
-                            : bgm.subtitle}
-                        </span>
-                        {bgm.id === 'custom_uploaded_bgm' ? (
-                          <label
-                            onClick={(e) => e.stopPropagation()}
-                            className="cursor-pointer px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold min-h-[36px] flex items-center gap-1.5"
-                          >
-                            📁 Upload Song MP3/WAV
-                            <input
-                              type="file"
-                              accept="audio/*"
-                              className="hidden"
-                              onChange={(e) => handleCustomAudioUpload(e, 'bgm')}
-                            />
-                          </label>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePlayPreview(bgm.previewAudioUrl);
-                            }}
-                            className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold min-h-[36px] flex items-center gap-1.5"
-                          >
-                            {isPreviewing ? '⏹ Stop' : '🎵 Preview'}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+          {/* 3. Characters */}
+          <div>
+            <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">
+              Characters / Cast
+            </label>
+            <select
+              value={trendCharacters}
+              onChange={(e) => {
+                setTrendCharacters(e.target.value);
+                syncDropdownsIntoPrompts({ characters: e.target.value });
+              }}
+              style={{
+                backgroundColor: activeScheme.surfaceContainerLowest,
+                borderColor: activeScheme.outlineVariant,
+              }}
+              className="w-full px-2.5 py-1.5 rounded-xl border text-xs text-white"
+            >
+              {CHARACTER_FORMATIONS.map((ch) => (
+                <option key={ch} value={ch}>
+                  {ch}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* VOLUME MIX SLIDERS BAR */}
-          <div className="bg-slate-50 rounded-2xl border border-slate-200 p-4 md:p-5 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-800">
-                <span>🎙️ Dialogue / Speech Level:</span>
-                <span className="font-mono text-indigo-600">{Math.round(voiceVolume * 100)}%</span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="1.8"
-                step="0.05"
-                value={voiceVolume}
-                onChange={(e) => setVoiceVolume(parseFloat(e.target.value))}
-                className="w-full accent-indigo-600"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-800">
-                <span>🎼 Background Music Score Level:</span>
-                <span className="font-mono text-amber-600">{Math.round(bgmVolume * 100)}%</span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="1.5"
-                step="0.05"
-                value={bgmVolume}
-                onChange={(e) => setBgmVolume(parseFloat(e.target.value))}
-                className="w-full accent-amber-600"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-800">
-                <span>🔥 Kitchen Foley &amp; Hearth Level:</span>
-                <span className="font-mono text-emerald-600">{Math.round(foleyVolume * 100)}%</span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="1.0"
-                step="0.05"
-                value={foleyVolume}
-                onChange={(e) => setFoleyVolume(parseFloat(e.target.value))}
-                className="w-full accent-emerald-600"
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* 🇪🇸 IBIZA SPAIN LUXURY SWIMMING POOL — ENGLISH SUMMER POP MUSIC VIDEO SHOWCASE */}
-        <section
-          id="spain-pool-english-pop-showcase"
-          className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-8 space-y-6"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
-            <div>
-              <span className="text-xs font-extrabold uppercase tracking-wider text-sky-600">
-                🇪🇸 IBIZA SPAIN LUXURY SWIMMING POOL • ENGLISH SUMMER POP MUSIC VIDEO LAB (120 BPM)
-              </span>
-              <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 mt-0.5">
-                Top European Fashion Models (Elena &amp; Valentina) Singing &amp; Dancing in Pool with Friends
-              </h2>
-              <p className="text-xs md:text-sm text-slate-600 mt-1">
-                Engineered with strict 1.000x native coupled audio-video lip sync (0.00ms drift), 3 reference-locked 8K Ibiza pool anchors (100% identical Elena on left &amp; Valentina on right), full-spectrum tropical house pop audio (-14.0 LUFS), and 0% Lyria API. Certified 10/10 by Gemini 2.5 Pro Multimodal Audit.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-extrabold">
-                ✓ Lip-Sync Score: 10/10 (0.00ms Drift)
-              </span>
-              <span className="px-3.5 py-1.5 rounded-full bg-sky-50 border border-sky-200 text-sky-700 text-xs font-extrabold">
-                0% Lyria API • 120 BPM English Pop
-              </span>
-            </div>
+          {/* 4. Duration (s) */}
+          <div>
+            <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">
+              Duration (s)
+            </label>
+            <input
+              type="number"
+              min={10}
+              max={180}
+              step={10}
+              value={trendDurationSec}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                setTrendDurationSec(v);
+                syncDropdownsIntoPrompts({ durationSec: v });
+              }}
+              style={{
+                backgroundColor: activeScheme.surfaceContainerLowest,
+                borderColor: activeScheme.outlineVariant,
+                color: activeScheme.primary,
+              }}
+              className="w-full px-2.5 py-1.5 rounded-xl border text-xs font-mono font-bold"
+            />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Master A Card */}
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5 flex flex-col justify-between space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-1 rounded bg-sky-900 text-sky-100 text-[11px] font-extrabold">
-                    MASTER A • 1:1 CONTINUOUS LIP-SYNC LOCK
-                  </span>
-                  <span className="text-xs font-bold text-slate-500">15.0s • 30fps CFR</span>
-                </div>
-                <h3 className="text-base font-extrabold text-slate-900">
-                  Continuous Single-Take English Singing Master (Elena &amp; Valentina)
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Strict 1.000x native speed coupling across Verse (&ldquo;Under the Spanish sun we shine so bright...&rdquo;), Chorus (&ldquo;Crystal water sparkling with all our friends...&rdquo;), and Finale (&ldquo;Hands up high in the Marbella sky...&rdquo;) with synchronized 0.250s xfade &amp; acrossfade transitions.
-                </p>
-              </div>
-
-              <div className="rounded-xl overflow-hidden bg-black aspect-video border border-slate-300 shadow">
-                <video
-                  src="/assets/swarm/spain_pool_english_master_A.mp4"
-                  poster="/assets/swarm/spain_pool_poster_A.jpg"
-                  controls
-                  playsInline
-                  preload="metadata"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-
-              <a
-                href="/assets/swarm/spain_pool_english_master_A.mp4"
-                download="spain_pool_english_master_A.mp4"
-                className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold text-center transition min-h-[44px] flex items-center justify-center gap-2"
-              >
-                ⬇️ Download Spain Pool Master A (Continuous 1:1 Lip-Sync MP4)
-              </a>
-            </div>
-
-            {/* Master B Card */}
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5 flex flex-col justify-between space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-1 rounded bg-amber-900 text-amber-100 text-[11px] font-extrabold">
-                    MASTER B • MULTI-CAM POOL PARTY CUTAWAY
-                  </span>
-                  <span className="text-xs font-bold text-slate-500">15.0s • 30fps CFR</span>
-                </div>
-                <h3 className="text-base font-extrabold text-slate-900">
-                  Multi-Camera Broadcast Edit (Cam A Singing + Cam B Pool Splash B-Roll)
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Locks the continuous 15.0s English summer pop vocal master clock while cutting to Cam B high-energy pool party dance &amp; water splash B-roll across transition bridges (3.50s–5.00s and 8.50s–10.00s) so transitions are 100% invisible.
-                </p>
-              </div>
-
-              <div className="rounded-xl overflow-hidden bg-black aspect-video border border-slate-300 shadow">
-                <video
-                  src="/assets/swarm/spain_pool_english_multicam_B.mp4"
-                  poster="/assets/swarm/spain_pool_poster_B.jpg"
-                  controls
-                  playsInline
-                  preload="metadata"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-
-              <a
-                href="/assets/swarm/spain_pool_english_multicam_B.mp4"
-                download="spain_pool_english_multicam_B.mp4"
-                className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold text-center transition min-h-[44px] flex items-center justify-center gap-2"
-              >
-                ⬇️ Download Spain Pool Master B (Multi-Cam Pool Party Edit MP4)
-              </a>
-            </div>
+          {/* 5. Attire (Act I) */}
+          <div>
+            <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">
+              Attire (Act I)
+            </label>
+            <select
+              value={trendAttire}
+              onChange={(e) => {
+                setTrendAttire(e.target.value);
+                syncDropdownsIntoPrompts({ attire: e.target.value });
+              }}
+              style={{
+                backgroundColor: activeScheme.surfaceContainerLowest,
+                borderColor: activeScheme.outlineVariant,
+              }}
+              className="w-full px-2.5 py-1.5 rounded-xl border text-xs text-white"
+            >
+              {EXHAUSTIVE_ATTIRES_ACT1.map((a) => (
+                <option key={a} value={a}>
+                  {a}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* 3 Reference-Locked 8K Pool Anchors + Audit Contact Sheet */}
-          <div className="pt-2 border-t border-slate-200 space-y-3">
-            <h3 className="text-sm font-extrabold text-slate-900">
-              🔒 Reference-Locked 8K Ibiza Pool Character Anchors (Elena on Left &amp; Valentina on Right) &amp; 6-Frame Forensic Audit
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50 p-2 space-y-1.5">
-                <img
-                  src="/assets/swarm/spain_pool_v2_anchor_1_wide.jpg"
-                  alt="Anchor 1 Wide Pool"
-                  className="w-full aspect-video object-cover rounded-lg"
-                />
-                <p className="text-[11px] font-bold text-slate-700 px-1">
-                  Anchor 1 (0–5s Verse): Wide Ibiza Pool + Friends
-                </p>
-              </div>
-              <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50 p-2 space-y-1.5">
-                <img
-                  src="/assets/swarm/spain_pool_v2_anchor_2_mcu.jpg"
-                  alt="Anchor 2 MCU Pool"
-                  className="w-full aspect-video object-cover rounded-lg"
-                />
-                <p className="text-[11px] font-bold text-slate-700 px-1">
-                  Anchor 2 (5–10s Chorus): Reference-Locked MCU
-                </p>
-              </div>
-              <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50 p-2 space-y-1.5">
-                <img
-                  src="/assets/swarm/spain_pool_v2_anchor_3_finale.jpg"
-                  alt="Anchor 3 Finale Pool"
-                  className="w-full aspect-video object-cover rounded-lg"
-                />
-                <p className="text-[11px] font-bold text-slate-700 px-1">
-                  Anchor 3 (10–15s Finale): Pool Splash Celebration
-                </p>
-              </div>
-              <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50 p-2 space-y-1.5">
-                <img
-                  src="/assets/swarm/spain_pool_master_A_audit_sheet.jpg"
-                  alt="6-Frame Omni Forensic Audit Sheet"
-                  className="w-full aspect-video object-cover rounded-lg"
-                />
-                <p className="text-[11px] font-bold text-emerald-700 px-1">
-                  ✓ 6-Frame Audit Sheet (10/10 Lip-Sync Certified)
-                </p>
-              </div>
-            </div>
+          {/* 6. Wardrobe (Act II) */}
+          <div>
+            <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">
+              Wardrobe (Act II)
+            </label>
+            <select
+              value={trendWardrobe}
+              onChange={(e) => {
+                setTrendWardrobe(e.target.value);
+                syncDropdownsIntoPrompts({ wardrobe: e.target.value });
+              }}
+              style={{
+                backgroundColor: activeScheme.surfaceContainerLowest,
+                borderColor: activeScheme.outlineVariant,
+              }}
+              className="w-full px-2.5 py-1.5 rounded-xl border text-xs text-white"
+            >
+              {EXHAUSTIVE_WARDROBES_ACT2.map((w) => (
+                <option key={w} value={w}>
+                  {w}
+                </option>
+              ))}
+            </select>
           </div>
-        </section>
 
-        {/* 💃 CHANDIGARH TO LONDON — 3-TECHNIQUE NON-LYRIA MODERN POP SHOWCASE */}
-        <section
-          id="chandigarh-london-non-lyria-showcase"
-          className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-8 space-y-6"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
-            <div>
-              <span className="text-xs font-extrabold uppercase tracking-wider text-rose-600">
-                💃 100% NON-LYRIA MODERN POP MUSIC VIDEO LAB • CHANDIGARH TO LONDON (124 BPM)
-              </span>
-              <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 mt-0.5">
-                Same Characters (Simran &amp; Kiara) • Same Wardrobe • Same Hindi/Punjabi Song • 3 Non-Lyria Techniques
-              </h2>
-              <p className="text-xs md:text-sm text-slate-600 mt-1">
-                Compare 3 distinct non-Lyria singing &amp; dancing generation techniques side-by-side featuring fair Punjabi top models from Chandigarh outdoors on Tower Bridge in London wearing fitted crop tops and pleated mini short skirts.
-              </p>
-            </div>
-            <span className="px-3.5 py-1.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-extrabold">
-              0% Lyria API • 124 BPM Modern Synth-Pop
+          {/* 7. Demography */}
+          <div>
+            <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">
+              Demography
+            </label>
+            <select
+              value={trendDemography}
+              onChange={(e) => {
+                setTrendDemography(e.target.value);
+                syncDropdownsIntoPrompts({ demography: e.target.value });
+              }}
+              style={{
+                backgroundColor: activeScheme.surfaceContainerLowest,
+                borderColor: activeScheme.outlineVariant,
+              }}
+              className="w-full px-2.5 py-1.5 rounded-xl border text-xs text-white"
+            >
+              {DEMOGRAPHIES.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 8. Target Audience */}
+          <div>
+            <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">
+              Target Audience
+            </label>
+            <select
+              value={trendAudience}
+              onChange={(e) => {
+                setTrendAudience(e.target.value);
+                syncDropdownsIntoPrompts({ audience: e.target.value });
+              }}
+              style={{
+                backgroundColor: activeScheme.surfaceContainerLowest,
+                borderColor: activeScheme.outlineVariant,
+              }}
+              className="w-full px-2.5 py-1.5 rounded-xl border text-xs text-white"
+            >
+              {TARGET_AUDIENCES.map((ta) => (
+                <option key={ta} value={ta}>
+                  {ta}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 9. Social Platform */}
+          <div>
+            <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">
+              Social Platform
+            </label>
+            <select
+              value={trendPlatform}
+              onChange={(e) => {
+                setTrendPlatform(e.target.value);
+                syncDropdownsIntoPrompts({ platform: e.target.value });
+              }}
+              style={{
+                backgroundColor: activeScheme.surfaceContainerLowest,
+                borderColor: activeScheme.outlineVariant,
+              }}
+              className="w-full px-2.5 py-1.5 rounded-xl border text-xs text-white"
+            >
+              {SOCIAL_PLATFORMS.map((sp) => (
+                <option key={sp} value={sp}>
+                  {sp}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 10. Generate 10 Ideas M3 Filled Button */}
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={handleGenerate10TrendingIdeas}
+              disabled={isGeneratingIdeas}
+              style={{
+                backgroundColor: activeScheme.primary,
+                color: activeScheme.onPrimary,
+              }}
+              className="w-full px-4 py-1.5 rounded-full font-extrabold text-xs shadow transition hover:opacity-90"
+            >
+              {isGeneratingIdeas ? "✨ Generating..." : "✨ Generate 10 Ideas"}
+            </button>
+          </div>
+
+          {/* 11. Generated Ideas Dropdown (Spans 2 columns) */}
+          <div className="col-span-2">
+            <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">
+              Select Trending AI Treatment (1–10)
+            </label>
+            <select
+              value={selectedIdeaId}
+              onChange={(e) => selectIdeaById(e.target.value)}
+              style={{
+                backgroundColor: activeScheme.surfaceContainerHigh,
+                borderColor: activeScheme.outlineVariant,
+                color: activeScheme.onSurface,
+              }}
+              className="w-full px-2.5 py-1.5 rounded-xl border text-xs font-bold"
+            >
+              {trendingIdeas.map((idea, i) => (
+                <option key={idea.id} value={idea.id}>
+                  #{i + 1} • {idea.title} ({idea.bpm} BPM)
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================================
+          STEP ②: DIRECTOR SCRIPT EDITOR & LAUNCH SHOOT (GOOGLE M3 SURFACE)
+         ===================================================================== */}
+      <section
+        style={{
+          backgroundColor: activeScheme.surfaceContainer,
+          borderColor: activeScheme.outlineVariant,
+        }}
+        className="rounded-2xl border p-4 shadow-lg space-y-3.5"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span
+              style={{
+                backgroundColor: activeScheme.secondaryContainer,
+                color: activeScheme.onSecondaryContainer,
+              }}
+              className="px-3 py-1 rounded-full font-mono text-xs font-extrabold"
+            >
+              STEP ② • DIRECTOR SCRIPT & SHOOT
             </span>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Technique A Card */}
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5 flex flex-col justify-between space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-1 rounded bg-sky-900 text-sky-100 text-[11px] font-extrabold">
-                    TECHNIQUE A • NATIVE VEO [0:a]
-                  </span>
-                  <span className="text-xs font-bold text-slate-500">15.0s • 30fps CFR</span>
-                </div>
-                <h3 className="text-base font-extrabold text-slate-900">
-                  Native Veo 3.1 Singing &amp; Pop Music ([0:a] Direct Passthrough)
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Direct 15.0s passthrough of Veo 3.1&apos;s native Hindi/Punjabi female pop singing and upbeat synth-pop music stream ([0:a]) normalized to -14.0 LUFS with zero TTS speech overlap or external BGM collision.
-                </p>
-              </div>
-
-              <div className="rounded-xl overflow-hidden bg-black aspect-video border border-slate-300 shadow">
-                <video
-                  src="/assets/swarm/chandigarh_london_tech_A_native_veo.mp4"
-                  poster="/assets/swarm/chandigarh_london_frame_tech_A.jpg"
-                  controls
-                  playsInline
-                  preload="metadata"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-
-              <a
-                href="/assets/swarm/chandigarh_london_tech_A_native_veo.mp4"
-                download="chandigarh_london_tech_A_native_veo.mp4"
-                className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold text-center transition min-h-[44px] flex items-center justify-center gap-2"
-              >
-                ⬇️ Download Technique A MP4
-              </a>
-            </div>
-
-            {/* Technique B Card */}
-            <div className="rounded-2xl border border-indigo-200 bg-indigo-50/40 p-5 flex flex-col justify-between space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-1 rounded bg-indigo-900 text-indigo-100 text-[11px] font-extrabold">
-                    TECHNIQUE B • CROSSFADED POP MASTER CLOCK
-                  </span>
-                  <span className="text-xs font-bold text-indigo-600">15.0s • Tail-Chained</span>
-                </div>
-                <h3 className="text-base font-extrabold text-slate-900">
-                  Crossfaded Studio Pop Singing Master Clock + Tail-Frame Lock
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Seamlessly crossfaded continuous Hindi/Punjabi singing master clock (acrossfade + 65Hz sub-bass warmth + 3.5kHz vocal presence exciter), with sequential tail-frame chaining locking exact crop tops and short skirts across cuts.
-                </p>
-              </div>
-
-              <div className="rounded-xl overflow-hidden bg-black aspect-video border border-indigo-300 shadow">
-                <video
-                  src="/assets/swarm/chandigarh_london_tech_B_viseme_master.mp4"
-                  poster="/assets/swarm/chandigarh_london_frame_tech_B.jpg"
-                  controls
-                  playsInline
-                  preload="metadata"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-
-              <a
-                href="/assets/swarm/chandigarh_london_tech_B_viseme_master.mp4"
-                download="chandigarh_london_tech_B_viseme_master.mp4"
-                className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold text-center transition min-h-[44px] flex items-center justify-center gap-2"
-              >
-                ⬇️ Download Technique B MP4
-              </a>
-            </div>
-
-            {/* Technique C Card */}
-            <div className="rounded-2xl border border-amber-200 bg-amber-50/40 p-5 flex flex-col justify-between space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-1 rounded bg-amber-900 text-amber-100 text-[11px] font-extrabold">
-                    TECHNIQUE C • MULTI-CAM 124 BPM CUTS
-                  </span>
-                  <span className="text-xs font-bold text-amber-700">5 Cuts • A/B Roll</span>
-                </div>
-                <h3 className="text-base font-extrabold text-slate-900">
-                  Multi-Camera 124 BPM Beat-Synced A-Roll / Dance B-Roll Cutaway
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Alternates between Cam A (Vocal Singing Duet) and Cam B (High-Energy Outdoor London Street Pop Dance Break with mouth-closed choreography) on exact 124 BPM synth drops.
-                </p>
-              </div>
-
-              <div className="rounded-xl overflow-hidden bg-black aspect-video border border-amber-300 shadow">
-                <video
-                  src="/assets/swarm/chandigarh_london_tech_C_multicam_beatcut.mp4"
-                  poster="/assets/swarm/chandigarh_london_frame_tech_C_broll.jpg"
-                  controls
-                  playsInline
-                  preload="metadata"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-
-              <a
-                href="/assets/swarm/chandigarh_london_tech_C_multicam_beatcut.mp4"
-                download="chandigarh_london_tech_C_multicam_beatcut.mp4"
-                className="w-full py-2.5 px-4 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold text-center transition min-h-[44px] flex items-center justify-center gap-2"
-              >
-                ⬇️ Download Technique C MP4
-              </a>
-            </div>
-          </div>
-        </section>
-
-        {/* THE 8 HIGH-CODE AGENT SWARM ORCHESTRATION MATRIX */}
-        <section className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-600">
-                AUTONOMOUS PRODUCTION CREW • 8 SPECIALIZED AGENTS
-              </span>
-              <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 mt-0.5">
-                High-Code Agent Swarm Orchestration Matrix
-              </h2>
-            </div>
-            <span className="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
-              ✓ All 8 Agents Synchronized &amp; Verified
+            <h1 className="text-sm md:text-base font-bold">{draftTitle}</h1>
+            <span
+              style={{
+                backgroundColor: promptsSyncedBadge
+                  ? activeScheme.secondaryContainer
+                  : activeScheme.surfaceContainerHigh,
+                color: promptsSyncedBadge
+                  ? activeScheme.onSecondaryContainer
+                  : activeScheme.onSurface,
+              }}
+              className="px-2.5 py-0.5 rounded-full font-mono text-[11px]"
+            >
+              {promptsSyncedBadge
+                ? "✓ Synced with Top Dropdowns"
+                : "Custom Director Prompt Edits"}
             </span>
+            {!promptsSyncedBadge && (
+              <button
+                type="button"
+                onClick={() => syncDropdownsIntoPrompts()}
+                style={{ borderColor: activeScheme.outlineVariant }}
+                className="px-2.5 py-0.5 rounded-full border text-[11px] hover:bg-white/5"
+              >
+                ↻ Re-Sync from Dropdowns
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowScriptEditor((s) => !s)}
+              className="px-2.5 py-0.5 rounded-full text-[11px] text-slate-300 hover:bg-white/5"
+            >
+              {showScriptEditor ? "▲ Collapse Script" : "▼ Expand Script"}
+            </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {(plan?.agents || []).map((agent: any, index: number) => (
+          {hasActiveReelLoaded && (
+            <a
+              href={combinedSrc}
+              download="Master_B_v2_Director_Cut.mp4"
+              style={{
+                backgroundColor: activeScheme.secondary,
+                color: activeScheme.onSecondary,
+              }}
+              className="px-4 py-1.5 rounded-full font-extrabold text-xs"
+            >
+              ⬇ Export Master MP4
+            </a>
+          )}
+        </div>
+
+        {showScriptEditor && (
+          <form
+            onSubmit={handleCreateJob}
+            style={{ borderColor: activeScheme.outlineVariant }}
+            className="space-y-3 pt-3 border-t"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div
-                key={agent.id}
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition p-5 flex flex-col justify-between space-y-4"
+                style={{
+                  backgroundColor: activeScheme.surfaceContainerLowest,
+                  borderColor: activeScheme.outlineVariant,
+                }}
+                className="rounded-xl border p-3"
               >
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl">{agent.icon}</span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
-                      ✓ {agent.status} ({agent.executionTimeMs}ms)
+                <div
+                  style={{ color: activeScheme.primary }}
+                  className="flex justify-between text-[10px] font-mono mb-1"
+                >
+                  <span>ACT I PROMPT (PART 1 • {Math.round(trendDurationSec / 2)}s)</span>
+                  <span>ATTIRE: {trendAttire}</span>
+                </div>
+                <textarea
+                  rows={3}
+                  value={draftAct1Prompt}
+                  onChange={(e) => {
+                    setDraftAct1Prompt(e.target.value);
+                    setPromptsSyncedBadge(false);
+                  }}
+                  className="w-full bg-transparent text-xs text-slate-100 focus:outline-none leading-relaxed"
+                />
+              </div>
+
+              <div
+                style={{
+                  backgroundColor: activeScheme.surfaceContainerLowest,
+                  borderColor: activeScheme.outlineVariant,
+                }}
+                className="rounded-xl border p-3"
+              >
+                <div
+                  style={{ color: activeScheme.secondary }}
+                  className="flex justify-between text-[10px] font-mono mb-1"
+                >
+                  <span>ACT II PROMPT (PART 2 • SAME LEAD FACE LOCK)</span>
+                  <span>WARDROBE: {trendWardrobe}</span>
+                </div>
+                <textarea
+                  rows={3}
+                  value={draftAct2Prompt}
+                  onChange={(e) => {
+                    setDraftAct2Prompt(e.target.value);
+                    setPromptsSyncedBadge(false);
+                  }}
+                  className="w-full bg-transparent text-xs text-slate-100 focus:outline-none leading-relaxed"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-[11px] text-slate-400">
+                Target: <b className="text-slate-200">{trendDemography}</b> •{" "}
+                <b className="text-slate-200">{trendAudience}</b> on{" "}
+                <b style={{ color: activeScheme.secondary }}>{trendPlatform}</b> (
+                {trendDurationSec}s total)
+              </span>
+              <button
+                type="submit"
+                disabled={activeJob?.status === "running"}
+                style={{
+                  backgroundColor: activeScheme.primary,
+                  color: activeScheme.onPrimary,
+                }}
+                className="px-6 py-2 rounded-full font-extrabold text-xs shadow-lg disabled:opacity-50"
+              >
+                {activeJob?.status === "running"
+                  ? "⚡ Generating Live with Gemini Omni 1.1 Flash..."
+                  : "🎬 Submit & Launch Production Shoot"}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* 6-Stage Visual Production Pipeline Tracker */}
+        {activeJob && (
+          <div
+            style={{
+              backgroundColor: activeScheme.surfaceContainerLowest,
+              borderColor: activeScheme.outlineVariant,
+            }}
+            className="rounded-xl border p-3.5 space-y-3"
+          >
+            <div className="flex justify-between items-center text-xs font-mono">
+              <span className="font-bold">{activeJob.stageLabel}</span>
+              <span
+                style={{ color: activeScheme.secondary }}
+                className="font-bold"
+              >
+                {activeJob.progress}% Complete
+              </span>
+            </div>
+            <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+              <div
+                style={{
+                  width: `${activeJob.progress}%`,
+                  backgroundColor: activeScheme.primary,
+                }}
+                className="h-full transition-all duration-500"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+              {PIPELINE_STEPS.map((st, idx) => {
+                const prevThreshold = idx === 0 ? 0 : PIPELINE_STEPS[idx - 1].threshold;
+                const isDone = activeJob.progress >= st.threshold;
+                const isCurrent =
+                  !isDone &&
+                  activeJob.progress >= prevThreshold &&
+                  activeJob.status === "running";
+                return (
+                  <div
+                    key={st.id}
+                    style={{
+                      backgroundColor: isDone
+                        ? activeScheme.secondaryContainer
+                        : isCurrent
+                        ? activeScheme.primaryContainer
+                        : activeScheme.surfaceContainer,
+                      borderColor: activeScheme.outlineVariant,
+                    }}
+                    className="p-2 rounded-xl border text-[11px] font-mono font-bold flex items-center gap-1.5"
+                  >
+                    <span>{isDone ? "✓" : isCurrent ? "●" : "○"}</span>
+                    <span>
+                      {st.id}. {st.label}
                     </span>
                   </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </section>
 
-                  <div>
-                    <div className="text-xs font-bold text-slate-400 uppercase">
-                      AGENT 0{index + 1}
-                    </div>
-                    <h3 className="text-base font-extrabold text-slate-900">
-                      {agent.name}
-                    </h3>
-                    <p className="text-xs font-semibold text-indigo-600 mt-0.5">
-                      {agent.roleTitle}
-                    </p>
-                  </div>
-
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    {agent.deliverableSummary}
-                  </p>
-                </div>
-
-                <div className="pt-3 border-t border-slate-100 space-y-1.5">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-slate-400 font-semibold">Cloud Engine:</span>
-                    <span className="font-bold text-slate-800">{agent.stackModel}</span>
-                  </div>
-                  <div className="px-2.5 py-1 rounded bg-slate-100 text-slate-700 font-mono text-[11px] truncate">
-                    📄 {agent.technicalArtifact}
-                  </div>
-                </div>
+      {/* =====================================================================
+          STEP ③: ONLY RENDERED WHEN A SHOOT IS LAUNCHED OR EDITING AN EXISTING REEL
+         ===================================================================== */}
+      {hasActiveReelLoaded && (
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
+          {/* LEFT RAIL (3 COLS): CLEAN M3 SPEED & TEMPO RACK */}
+          <aside className="xl:col-span-3 space-y-3">
+            {/* ACT I SPEED CARD */}
+            <div
+              onClick={() => setSelectedActIndex(1)}
+              style={{
+                backgroundColor:
+                  selectedActIndex === 1
+                    ? activeScheme.surfaceContainerHigh
+                    : activeScheme.surfaceContainer,
+                borderColor:
+                  selectedActIndex === 1
+                    ? activeScheme.primary
+                    : activeScheme.outlineVariant,
+              }}
+              className="cursor-pointer rounded-2xl p-4 border transition"
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <span
+                  style={{
+                    backgroundColor: activeScheme.primaryContainer,
+                    color: activeScheme.onPrimaryContainer,
+                  }}
+                  className="text-[11px] font-mono font-bold uppercase px-2.5 py-0.5 rounded-full"
+                >
+                  ACT I • 00:00 → 00:30
+                </span>
+                <span className="font-mono text-xs text-slate-400">
+                  Eff: {p1EffDur.toFixed(2)}s
+                </span>
               </div>
-            ))}
-          </div>
-        </section>
+              <h3 className="text-sm font-bold">Sunlit Cliffside Pool Villa</h3>
+              <p className="text-xs text-slate-400 mt-0.5">{trendAttire}</p>
 
-        {/* TABBED PRODUCTION INSPECTOR */}
-        <section className="space-y-5">
-          <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 pb-3">
-            <button
-              onClick={() => setActiveTab('screenplay')}
-              className={`px-5 py-2.5 rounded-xl font-bold text-xs md:text-sm transition min-h-[44px] ${
-                activeTab === 'screenplay'
-                  ? 'bg-slate-900 text-white shadow'
-                  : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              📝 6-Act Screenplay &amp; Voiceover Schedule (30.0s)
-            </button>
-            <button
-              onClick={() => setActiveTab('nanobanana')}
-              className={`px-5 py-2.5 rounded-xl font-bold text-xs md:text-sm transition min-h-[44px] ${
-                activeTab === 'nanobanana'
-                  ? 'bg-slate-900 text-white shadow'
-                  : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              🎨 Nano Banana Visual DNA: Cast, Wardrobe &amp; Prop Facility
-            </button>
-            <button
-              onClick={() => setActiveTab('lyria')}
-              className={`px-5 py-2.5 rounded-xl font-bold text-xs md:text-sm transition min-h-[44px] ${
-                activeTab === 'lyria'
-                  ? 'bg-slate-900 text-white shadow'
-                  : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              🎼 Lyria 3.5 Instrumental Score &amp; Narration Mix
-            </button>
-          </div>
-
-          {/* TAB 1: SCREENPLAY & VOICEOVER SCHEDULE */}
-          {activeTab === 'screenplay' && (
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-extrabold text-slate-900">
-                    &ldquo;The Cathedral of Crust&rdquo; — 6-Shot Anamorphic Screenplay &amp; Voiceover EDL
-                  </h3>
-                  <p className="text-xs md:text-sm text-slate-500 mt-0.5">
-                    Every shot enforces strict non-vocal dramatic acting (mouth closed) synchronized to gravelly voiceover narration and Lyria cello cues.
-                  </p>
+              <div
+                style={{ borderColor: activeScheme.outlineVariant }}
+                className="mt-3 pt-3 border-t space-y-1.5"
+              >
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium">Part 1 Speed</span>
+                  <div className="flex items-center gap-1 font-mono">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setP1Speed(part1Speed - 0.01);
+                      }}
+                      className="px-2 py-0.5 rounded bg-white/10 hover:bg-white/20"
+                    >
+                      -
+                    </button>
+                    <span
+                      style={{ color: activeScheme.primary }}
+                      className="w-14 text-center font-bold"
+                    >
+                      {part1Speed.toFixed(2)}x
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setP1Speed(part1Speed + 0.01);
+                      }}
+                      className="px-2 py-0.5 rounded bg-white/10 hover:bg-white/20"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
-                <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold">
-                  Total Duration: 30.000s (6 × 5.0s CFR)
+                <input
+                  type="range"
+                  min={0.5}
+                  max={2.0}
+                  step={0.01}
+                  value={part1Speed}
+                  onChange={(e) => setP1Speed(Number(e.target.value))}
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* ACT II SPEED CARD */}
+            <div
+              onClick={() => setSelectedActIndex(2)}
+              style={{
+                backgroundColor:
+                  selectedActIndex === 2
+                    ? activeScheme.surfaceContainerHigh
+                    : activeScheme.surfaceContainer,
+                borderColor:
+                  selectedActIndex === 2
+                    ? activeScheme.secondary
+                    : activeScheme.outlineVariant,
+              }}
+              className="cursor-pointer rounded-2xl p-4 border transition"
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <span
+                  style={{
+                    backgroundColor: activeScheme.secondaryContainer,
+                    color: activeScheme.onSecondaryContainer,
+                  }}
+                  className="text-[11px] font-mono font-bold uppercase px-2.5 py-0.5 rounded-full"
+                >
+                  ACT II • 00:30 → 01:00
+                </span>
+                <span className="font-mono text-xs text-slate-400">
+                  Eff: {p2EffDur.toFixed(2)}s
+                </span>
+              </div>
+              <h3 className="text-sm font-bold">Twilight Luxury Superyacht Deck</h3>
+              <p className="text-xs text-slate-400 mt-0.5">{trendWardrobe}</p>
+
+              <div
+                style={{ borderColor: activeScheme.outlineVariant }}
+                className="mt-3 pt-3 border-t space-y-1.5"
+              >
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium">Part 2 Speed</span>
+                  <div className="flex items-center gap-1 font-mono">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setP2Speed(part2Speed - 0.01);
+                      }}
+                      className="px-2 py-0.5 rounded bg-white/10 hover:bg-white/20"
+                    >
+                      -
+                    </button>
+                    <span
+                      style={{ color: activeScheme.secondary }}
+                      className="w-14 text-center font-bold"
+                    >
+                      {part2Speed.toFixed(2)}x
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setP2Speed(part2Speed + 0.01);
+                      }}
+                      className="px-2 py-0.5 rounded bg-white/10 hover:bg-white/20"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+                <input
+                  type="range"
+                  min={0.5}
+                  max={2.0}
+                  step={0.01}
+                  value={part2Speed}
+                  onChange={(e) => setP2Speed(Number(e.target.value))}
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* DIRECTOR TEMPO & MASTER BAKE CARD */}
+            <div
+              style={{
+                backgroundColor: activeScheme.surfaceContainer,
+                borderColor: activeScheme.outlineVariant,
+              }}
+              className="rounded-2xl border p-4 space-y-2.5"
+            >
+              <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400">
+                Pacing Presets & Custom Master Bake
+              </div>
+              <div className="grid grid-cols-1 gap-1.5">
+                <button
+                  onClick={() => {
+                    setPart1Speed(1.1);
+                    setPart2Speed(0.9);
+                  }}
+                  style={{ borderColor: activeScheme.outlineVariant }}
+                  className="w-full text-left px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border text-xs flex justify-between items-center"
+                >
+                  <span>⚡ Dynamic Contrast Cut</span>
+                  <span className="font-mono">1.10x → 0.90x</span>
+                </button>
+                <button
+                  onClick={resetAllEdits}
+                  style={{ borderColor: activeScheme.outlineVariant }}
+                  className="w-full text-left px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border text-xs flex justify-between items-center"
+                >
+                  <span>🎬 Studio Reference Lock</span>
+                  <span className="font-mono">1.00x → 1.00x</span>
+                </button>
+              </div>
+
+              <button
+                onClick={handleRenderCustomMaster}
+                disabled={isExporting}
+                style={{
+                  backgroundColor: activeScheme.primary,
+                  color: activeScheme.onPrimary,
+                }}
+                className="w-full py-2 rounded-full font-extrabold text-xs shadow-lg transition disabled:opacity-50"
+              >
+                {isExporting
+                  ? "Rendering Broadcast Master..."
+                  : "⚡ Render & Master Custom Cut MP4"}
+              </button>
+              {exportNotice && (
+                <div className="text-[11px] font-mono text-emerald-300">
+                  {exportNotice}
+                </div>
+              )}
+            </div>
+          </aside>
+
+          {/* CENTER STAGE (9 COLS): STEP ③ MAIN COMBINED REEL + UNIFIED SPLICER + CHILD CLIPS */}
+          <section
+            style={{
+              backgroundColor: activeScheme.surfaceContainer,
+              borderColor: activeScheme.outlineVariant,
+            }}
+            className="xl:col-span-9 rounded-2xl border p-4 md:p-5 space-y-4 shadow-2xl"
+          >
+            {/* SMPTE TIMECODE BAR */}
+            <div
+              style={{
+                backgroundColor: activeScheme.surfaceContainerLowest,
+                borderColor: activeScheme.outlineVariant,
+              }}
+              className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 rounded-xl border"
+            >
+              <div className="flex items-center gap-3">
+                <span
+                  style={{
+                    backgroundColor: activeScheme.primaryContainer,
+                    color: activeScheme.onPrimaryContainer,
+                  }}
+                  className="px-2.5 py-0.5 rounded-full font-mono text-xs font-extrabold"
+                >
+                  STEP ③ • MASTER MONITOR
+                </span>
+                <span className="font-mono text-sm md:text-base font-bold tracking-wider">
+                  TC {formatSMPTE(combinedTime)}
                 </span>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 text-slate-500 text-[11px] font-extrabold uppercase tracking-wider border-b border-slate-200">
-                      <th className="py-3.5 px-4">Shot / Act</th>
-                      <th className="py-3.5 px-3">Timecode</th>
-                      <th className="py-3.5 px-3">Anamorphic Lens</th>
-                      <th className="py-3.5 px-3">Cast &amp; Eyeline</th>
-                      <th className="py-3.5 px-4">🎙️ Voiceover Narration Script</th>
-                      <th className="py-3.5 px-4">🥖 Macro Prop &amp; Lyria Score Cue</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 text-xs md:text-sm">
-                    {(plan?.shots || []).map((shot: any) => (
-                      <tr key={shot.shotNumber} className="hover:bg-slate-50/80">
-                        <td className="py-4 px-4 font-bold text-slate-900 whitespace-nowrap">
-                          <div>Shot 0{shot.shotNumber}</div>
-                          <div className="text-[11px] font-semibold text-amber-700 mt-0.5">
-                            {shot.actTitle}
-                          </div>
-                        </td>
-                        <td className="py-4 px-3 font-mono text-xs text-slate-600 whitespace-nowrap">
-                          {shot.startSec.toFixed(1)}s – {shot.endSec.toFixed(1)}s
-                          <div className="text-[10px] text-emerald-700 font-bold">
-                            150 frames @ 30fps
-                          </div>
-                        </td>
-                        <td className="py-4 px-3 text-xs font-semibold text-slate-800">
-                          <div>{shot.cameraLens}</div>
-                          <div className="text-[11px] text-slate-500 mt-0.5">
-                            {shot.cameraMovement}
-                          </div>
-                        </td>
-                        <td className="py-4 px-3 whitespace-nowrap">
-                          <div className="font-bold text-slate-900">{shot.characterName}</div>
-                          <span className="inline-block mt-1 px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[11px] font-bold">
-                            Eyeline: {shot.eyelineDirection}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 max-w-md">
-                          <div className="font-serif italic font-semibold text-slate-900 bg-amber-50/70 p-3 rounded-xl border border-amber-200/70">
-                            &ldquo;{shot.voiceoverLine}&rdquo;
-                          </div>
-                        </td>
-                        <td className="py-4 px-4 max-w-md space-y-1.5 text-xs">
-                          <div>
-                            <span className="font-bold text-slate-700">🥖 Prop Focus:</span>{' '}
-                            <span className="text-slate-600">{shot.propFocus}</span>
-                          </div>
-                          <div>
-                            <span className="font-bold text-indigo-700">🎼 Lyria Cue:</span>{' '}
-                            <span className="text-slate-600">{shot.lyriaScoreCue}</span>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="flex items-center gap-4 text-xs font-mono">
+                <span>
+                  Active Speed: <b>{domRate.toFixed(2)}x</b> (
+                  {(24 * domRate).toFixed(1)} fps)
+                </span>
+                <span>
+                  Total Runtime: <b>{totalEffDur.toFixed(2)}s</b>
+                </span>
               </div>
             </div>
-          )}
 
-          {/* TAB 2: NANO BANANA VISUAL DNA (CAST, WARDROBE, LOCATION, PROPS) */}
-          {activeTab === 'nanobanana' && (
-            <div className="space-y-8">
-              {/* Cast & Wardrobe Row */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-extrabold text-slate-900">
-                  🎭 Casting Direction &amp; 👔 Wardrobe Department (Nano Banana Biometric &amp; Garment UV Locks)
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {(plan?.castList || []).map((c: any) => (
-                    <div
-                      key={c.name}
-                      className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between"
-                    >
-                      <div className="p-5 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold">
-                            BIOMETRIC DNA LOCKED
-                          </span>
-                          <span className="text-xs font-semibold text-slate-500">
-                            {c.demography}
-                          </span>
-                        </div>
-                        <div>
-                          <h4 className="text-lg font-extrabold text-slate-900">{c.name}</h4>
-                          <p className="text-xs font-bold text-amber-700">{c.role}</p>
-                        </div>
-                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 text-xs space-y-1">
-                          <div className="font-bold text-slate-700">👔 Locked Garment UV Swatch:</div>
-                          <p className="text-slate-600 leading-relaxed">{c.wardrobeSpec}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Prop Facility Matrix */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-extrabold text-slate-900">
-                  🥖 Prop Facility Agent — 5 Hyper-Consistent Macro Culinary Prop Sets
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                  {(plan?.propManifest || []).map((prop: any, i: number) => (
-                    <div
-                      key={prop.id}
-                      className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3"
-                    >
-                      <span className="px-2.5 py-0.5 rounded bg-amber-100 text-amber-900 text-xs font-bold">
-                        PROP SET #{i + 1}
-                      </span>
-                      <h4 className="text-sm font-extrabold text-slate-900">{prop.name}</h4>
-                      <p className="text-xs text-slate-600 leading-relaxed">
-                        <strong>Shader:</strong> {prop.materialShader}
-                      </p>
-                      <p className="text-xs text-slate-500 leading-relaxed">
-                        <strong>Macro Detail:</strong> {prop.macroDetail}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 3: LYRIA 3.5 INSTRUMENTAL SCORE & NARRATION MIX */}
-          {activeTab === 'lyria' && (
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8 shadow-sm space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
-                <div>
-                  <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-600">
-                    GOOGLE DEEPMIND LYRIA 3.5 • DRAMATIC FILM SCORING
+            {/* MAIN COMBINED REEL CARD */}
+            <div
+              style={{
+                backgroundColor: activeScheme.surfaceContainerLow,
+                borderColor: activeScheme.outlineVariant,
+              }}
+              className="rounded-2xl border p-4 space-y-3"
+            >
+              <div
+                onClick={() => setShowChildReelsDrawer((prev) => !prev)}
+                style={{ backgroundColor: activeScheme.surfaceContainerHigh }}
+                className="flex flex-wrap items-center justify-between gap-2 cursor-pointer select-none px-3 py-2 rounded-xl transition"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    style={{
+                      backgroundColor: activeScheme.secondaryContainer,
+                      color: activeScheme.onSecondaryContainer,
+                    }}
+                    className="px-2.5 py-0.5 rounded-full font-mono text-[11px] font-bold"
+                  >
+                    ZYV-REEL-MBV260S1
                   </span>
-                  <h3 className="text-xl font-extrabold text-slate-900 mt-1">
-                    Non-Vocal Instrumental Score &amp; Sidechain Voiceover Ducking Architecture
-                  </h3>
+                  <span className="text-xs font-mono uppercase tracking-wider font-bold">
+                    MAIN COMBINED REEL (60.0s MASTER)
+                  </span>
+                  <Link
+                    href="/entity/ZYV-REEL-MBV260S1"
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ color: activeScheme.primary }}
+                    className="text-[11px] font-mono hover:underline"
+                  >
+                    /entity/ZYV-REEL-MBV260S1
+                  </Link>
                 </div>
-                <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
-                  ✓ Zero Phantom Singing Guaranteed
-                </span>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowSplicerStudio((prev) => !prev);
+                    }}
+                    style={{
+                      borderColor: activeScheme.primary,
+                      color: activeScheme.primary,
+                    }}
+                    className="px-3 py-1 rounded-full border font-mono text-xs font-bold"
+                  >
+                    {showSplicerStudio ? "✂️ Hide Trim & Splice" : "✂️ Trim & Splice Studio"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowChildReelsDrawer((prev) => !prev);
+                    }}
+                    style={{
+                      backgroundColor: activeScheme.secondary,
+                      color: activeScheme.onSecondary,
+                    }}
+                    className="px-3.5 py-1 rounded-full font-mono text-xs font-extrabold shadow"
+                  >
+                    {showChildReelsDrawer
+                      ? "▲ Hide Child Reels & Clips (6)"
+                      : "▼ Expand Child Reels & Clips (6)"}
+                  </button>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs md:text-sm">
-                <div className="p-5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-                  <div className="font-extrabold text-slate-900">
-                    1. Strict Instrumental Policy
+              {/* VIDEO PLAYER */}
+              <div className="relative rounded-2xl overflow-hidden bg-black border border-white/15 aspect-[9/16] max-h-[540px] max-w-md mx-auto w-full flex items-center justify-center shadow-inner">
+                <video
+                  key={combinedSrc}
+                  ref={combinedVideoRef}
+                  src={combinedSrc}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
+                  onTimeUpdate={(e) => {
+                    setCombinedTime((e.currentTarget as HTMLVideoElement).currentTime);
+                    syncPlaybackEngine();
+                  }}
+                  style={videoTransform}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+
+              {/* UNIFIED COLLAPSIBLE TRIM & SPLICE STUDIO */}
+              {showSplicerStudio && (
+                <div
+                  style={{
+                    backgroundColor: activeScheme.surfaceContainerLowest,
+                    borderColor: activeScheme.outlineVariant,
+                  }}
+                  className="rounded-xl border p-3.5 space-y-3"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-mono text-xs font-bold">
+                      ✂️ Unified Sub-Clip Trim & Multi-Clip Splicer Studio
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setSplicerTabIndex(0)}
+                        style={{
+                          backgroundColor:
+                            splicerTabIndex === 0
+                              ? activeScheme.primary
+                              : "transparent",
+                          color:
+                            splicerTabIndex === 0
+                              ? activeScheme.onPrimary
+                              : activeScheme.onSurface,
+                        }}
+                        className="px-3 py-1 rounded-full text-xs font-bold"
+                      >
+                        Single Clip Quick Cut
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSplicerTabIndex(1)}
+                        style={{
+                          backgroundColor:
+                            splicerTabIndex === 1
+                              ? activeScheme.primary
+                              : "transparent",
+                          color:
+                            splicerTabIndex === 1
+                              ? activeScheme.onPrimary
+                              : activeScheme.onSurface,
+                        }}
+                        className="px-3 py-1 rounded-full text-xs font-bold"
+                      >
+                        Multi-Clip Splicer Timeline
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-slate-600 leading-relaxed">
-                    Lyria 3.5 generates a 92 BPM D-Minor dramatic score featuring solo Stradivarius cello ostinato, Neapolitan nylon guitar, and chamber strings with <strong>zero singing vocals</strong> so characters never phantom-mouth.
-                  </p>
+
+                  {splicerTabIndex === 0 ? (
+                    <InlineClipTrimmer
+                      clipId="CLP-COMBINED-MASTER"
+                      label="Main Combined Reel (60.0s Master)"
+                      src={combinedSrc}
+                      maxDurationSec={60}
+                      onAddToQueue={(seg) => {
+                        setSpliceQueue((prev) => [...prev, seg]);
+                        setSplicerTabIndex(1);
+                      }}
+                    />
+                  ) : (
+                    <MultiClipSplicerWorkbench
+                      availableSources={[
+                        {
+                          clipId: "CLP-COMBINED-MASTER",
+                          label: "Combined 60.0s Master Reel",
+                          src: combinedSrc,
+                          maxDurationSec: 60,
+                        },
+                        {
+                          clipId: "CLP-ACT01-MASTER30S",
+                          label: "Act I Master Reel (Pool Villa Terrace)",
+                          src: segments[0].src,
+                          maxDurationSec: 30,
+                        },
+                        {
+                          clipId: "CLP-ACT02-MASTER30S",
+                          label: "Act II Master Reel (Superyacht Deck)",
+                          src: segments[1].src,
+                          maxDurationSec: 30,
+                        },
+                        {
+                          clipId: "CLP-TRN01-ACT01-10S",
+                          label: "Child Clip ACT01 • Turn 1A (Root 10.0s)",
+                          src: "/assets/swarm/masterB_v2/act1_turnA_10s.mp4",
+                          maxDurationSec: 10,
+                        },
+                        {
+                          clipId: "CLP-TRN02-ACT02-20S",
+                          label: "Child Clip ACT02 • Turn 1B (Stateful 20.0s)",
+                          src: "/assets/swarm/masterB_v2/act1_turnB_20s.mp4",
+                          maxDurationSec: 20,
+                        },
+                        {
+                          clipId: "CLP-TRN03-ACT03-10S",
+                          label: "Child Clip ACT03 • Turn 2A (Face-Anchored 10.0s)",
+                          src: "/assets/swarm/masterB_v2/act2_turnA_10s.mp4",
+                          maxDurationSec: 10,
+                        },
+                        {
+                          clipId: "CLP-TRN04-ACT04-20S",
+                          label: "Child Clip ACT04 • Turn 2B (Stateful 20.0s)",
+                          src: "/assets/swarm/masterB_v2/act2_turnB_20s.mp4",
+                          maxDurationSec: 20,
+                        },
+                      ]}
+                      queue={spliceQueue}
+                      setQueue={setSpliceQueue}
+                    />
+                  )}
+                </div>
+              )}
+
+              {/* EXPANDED CHILD REELS & CLIPS DRAWER */}
+              {showChildReelsDrawer && (
+                <div
+                  style={{ borderColor: activeScheme.outlineVariant }}
+                  className="pt-4 mt-2 border-t space-y-4"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div
+                      style={{
+                        backgroundColor: activeScheme.surfaceContainerHigh,
+                        borderColor: activeScheme.outlineVariant,
+                      }}
+                      className="rounded-xl border p-3 space-y-2"
+                    >
+                      <div className="flex items-center justify-between text-xs font-mono">
+                        <span className="font-bold">ZYV-CLIP-ACT130S1 • ACT I MASTER (30.0s)</span>
+                        <Link
+                          href="/entity/ZYV-CLIP-ACT130S1"
+                          style={{ color: activeScheme.secondary }}
+                          className="hover:underline text-[11px]"
+                        >
+                          /entity/ZYV-CLIP-ACT130S1
+                        </Link>
+                      </div>
+                      <div className="relative rounded-xl overflow-hidden bg-black aspect-[9/16] max-h-[340px] mx-auto w-full">
+                        <video
+                          src={segments[0].src}
+                          controls
+                          playsInline
+                          preload="metadata"
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <InlineClipTrimmer
+                        clipId="CLP-ACT01-MASTER30S"
+                        label="Act I Master Reel (30.0s)"
+                        src={segments[0].src}
+                        maxDurationSec={30}
+                        onAddToQueue={(seg) => {
+                          setSpliceQueue((prev) => [...prev, seg]);
+                          setShowSplicerStudio(true);
+                          setSplicerTabIndex(1);
+                        }}
+                      />
+                    </div>
+
+                    <div
+                      style={{
+                        backgroundColor: activeScheme.surfaceContainerHigh,
+                        borderColor: activeScheme.outlineVariant,
+                      }}
+                      className="rounded-xl border p-3 space-y-2"
+                    >
+                      <div className="flex items-center justify-between text-xs font-mono">
+                        <span className="font-bold">ZYV-CLIP-ACT230S2 • ACT II MASTER (30.0s)</span>
+                        <Link
+                          href="/entity/ZYV-CLIP-ACT230S2"
+                          style={{ color: activeScheme.secondary }}
+                          className="hover:underline text-[11px]"
+                        >
+                          /entity/ZYV-CLIP-ACT230S2
+                        </Link>
+                      </div>
+                      <div className="relative rounded-xl overflow-hidden bg-black aspect-[9/16] max-h-[340px] mx-auto w-full">
+                        <video
+                          src={segments[1].src}
+                          controls
+                          playsInline
+                          preload="metadata"
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <InlineClipTrimmer
+                        clipId="CLP-ACT02-MASTER30S"
+                        label="Act II Master Reel (30.0s)"
+                        src={segments[1].src}
+                        maxDurationSec={30}
+                        onAddToQueue={(seg) => {
+                          setSpliceQueue((prev) => [...prev, seg]);
+                          setShowSplicerStudio(true);
+                          setSplicerTabIndex(1);
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 4 CHILD TURN CLIPS */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
+                    {[
+                      {
+                        id: "ZYV-CLIP-TRN1A10S",
+                        clipCode: "CLP-TRN01-ACT01",
+                        label: "Turn 1A (Root 10.0s)",
+                        duration: 10,
+                        src: "/assets/swarm/masterB_v2/act1_turnA_10s.mp4",
+                      },
+                      {
+                        id: "ZYV-CLIP-TRN1B20S",
+                        clipCode: "CLP-TRN02-ACT02",
+                        label: "Turn 1B (Stateful 20.0s)",
+                        duration: 20,
+                        src: "/assets/swarm/masterB_v2/act1_turnB_20s.mp4",
+                      },
+                      {
+                        id: "ZYV-CLIP-TRN2A10S",
+                        clipCode: "CLP-TRN03-ACT03",
+                        label: "Turn 2A (Face-Anchored 10.0s)",
+                        duration: 10,
+                        src: "/assets/swarm/masterB_v2/act2_turnA_10s.mp4",
+                      },
+                      {
+                        id: "ZYV-CLIP-TRN2B20s",
+                        clipCode: "CLP-TRN04-ACT04",
+                        label: "Turn 2B (Stateful 20.0s)",
+                        duration: 20,
+                        src: "/assets/swarm/masterB_v2/act2_turnB_20s.mp4",
+                      },
+                    ].map((clip) => (
+                      <div
+                        key={clip.id}
+                        style={{
+                          backgroundColor: activeScheme.surfaceContainerHigh,
+                          borderColor: activeScheme.outlineVariant,
+                        }}
+                        className="rounded-xl border p-2.5 space-y-2"
+                      >
+                        <div className="flex items-center justify-between text-[10px] font-mono">
+                          <span className="font-bold">{clip.id}</span>
+                          <Link
+                            href={`/entity/${clip.id}`}
+                            style={{ color: activeScheme.secondary }}
+                            className="hover:underline"
+                          >
+                            /entity/{clip.id}
+                          </Link>
+                        </div>
+                        <div className="relative rounded-lg overflow-hidden bg-black aspect-[9/16] max-h-[240px] mx-auto w-full">
+                          <video
+                            src={clip.src}
+                            controls
+                            playsInline
+                            preload="metadata"
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                        <InlineClipTrimmer
+                          clipId={clip.clipCode}
+                          label={clip.label}
+                          src={clip.src}
+                          maxDurationSec={clip.duration}
+                          onAddToQueue={(seg) => {
+                            setSpliceQueue((prev) => [...prev, seg]);
+                            setShowSplicerStudio(true);
+                            setSplicerTabIndex(1);
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* QUICKTIME STUDIO TRANSPORT BAR */}
+            <div
+              style={{
+                backgroundColor: activeScheme.surfaceContainerLowest,
+                borderColor: activeScheme.outlineVariant,
+              }}
+              className="rounded-xl border p-3.5 space-y-3"
+            >
+              <input
+                type="range"
+                min={0}
+                max={60}
+                step={0.04}
+                value={combinedTime}
+                onChange={(e) => seekCombined(Number(e.target.value))}
+                className="w-full cursor-pointer"
+              />
+
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => seekCombined(0, true)}
+                    className="px-2.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 font-mono"
+                  >
+                    ⏮ 00:00
+                  </button>
+                  <button
+                    onClick={() => stepFrame(-1)}
+                    className="px-2.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 font-mono"
+                  >
+                    ◀| -1f
+                  </button>
+                  <button
+                    onClick={togglePlay}
+                    style={{
+                      backgroundColor: activeScheme.primary,
+                      color: activeScheme.onPrimary,
+                    }}
+                    className="px-4 py-1.5 rounded-full font-extrabold"
+                  >
+                    {isPlaying ? "⏸ Pause" : "▶ Play Master"}
+                  </button>
+                  <button
+                    onClick={() => stepFrame(1)}
+                    className="px-2.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 font-mono"
+                  >
+                    +1f |▶
+                  </button>
+                  <button
+                    onClick={() => seekCombined(28.0, true)}
+                    className="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 font-mono font-semibold"
+                  >
+                    ▶ Audition 00:30 Cut
+                  </button>
                 </div>
 
-                <div className="p-5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-                  <div className="font-extrabold text-slate-900">
-                    2. Voiceover Sidechain Ducking (-8.0 dB)
-                  </div>
-                  <p className="text-slate-600 leading-relaxed">
-                    The gravelly theatrical narrator is mastered at <strong>-14.0 LUFS</strong> while the Lyria symphonic bed sits at <strong>-22.0 LUFS</strong>, automatically ducking during spoken cadence windows.
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-                  <div className="font-extrabold text-slate-900">
-                    3. Authentic Wood-Fire Hearth Foley
-                  </div>
-                  <p className="text-slate-600 leading-relaxed">
-                    Layered with authentic 900°F oak ember crackle, copper peel sliding resonance, and blistered crust crackle foley preserved across the full 35Hz–20kHz acoustic spectrum.
-                  </p>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setRotationDeg((d) => (d + 90) % 360)}
+                    className="px-2.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10"
+                  >
+                    ↻ Rotate 90°
+                  </button>
+                  <button
+                    onClick={() => setFlipH((f) => !f)}
+                    className="px-2.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10"
+                  >
+                    ↔ Mirror
+                  </button>
+                  <button
+                    onClick={() => setPreservesPitch((p) => !p)}
+                    className="px-2.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10"
+                  >
+                    🎵 Pitch Lock: {preservesPitch ? "ON" : "OFF"}
+                  </button>
+                  <button
+                    onClick={() => setLoopPlayback((l) => !l)}
+                    className="px-2.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10"
+                  >
+                    🔁 Loop: {loopPlayback ? "ON" : "OFF"}
+                  </button>
                 </div>
               </div>
             </div>
-          )}
-        </section>
-      </main>
-    </div>
+          </section>
+        </div>
+      )}
+    </main>
   );
 }

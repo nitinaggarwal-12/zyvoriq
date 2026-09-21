@@ -538,10 +538,19 @@ export function ReelTimelineEditor({
       : (activeClip?.speed || 1.0) * (currentState.globalVideoSpeed || 1.0);
 
   // When playing as One Stitched Reel, load the single stitched .mp4 master; otherwise load active clip
-  const currentVideoSrc =
+  const rawVideoSrc =
     previewMode === "stitched_reel" && stitchedReelUrl
       ? stitchedReelUrl
       : activeClip?.videoUrl || masterVideoUrl;
+
+  const currentVideoSrc = useMemo(() => {
+    if (!rawVideoSrc) return "";
+    if (rawVideoSrc.includes("?v=") || rawVideoSrc.startsWith("blob:") || rawVideoSrc.startsWith("data:")) {
+      return rawVideoSrc;
+    }
+    const sep = rawVideoSrc.includes("?") ? "&" : "?";
+    return `${rawVideoSrc}${sep}v=v9_master`;
+  }, [rawVideoSrc]);
 
   // Compute live global playhead time across all stitched shots
   const globalPlayheadSec = useMemo(() => {

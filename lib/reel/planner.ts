@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import type { BoundaryStrategy, QualityGateId, ReelCreationIntent, ReelProductionManifest, ReelShot, TransitionType } from "./types.ts";
 import { compileDeterministicDirectorialPass, compileOmniDirectorialPass, type OmniDirectorialCompilation, type OmniGenre } from "./omniDirector.ts";
+import { compilePreFlightContinuityManifest } from "./preFlightContinuityCompiler.ts";
 
 export interface PlanReelInput {
   topic: string;
@@ -737,7 +738,9 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
       continuityIn,
       continuityOut,
       transitionOut: transitionFor(i, beats.length),
-      dependsOnShotIds: i === 0 ? [] : [`shot_${String(i).padStart(2, "0")}`],
+      dependsOnShotIds: (i === 0 || sceneId !== (dir.shots[i - 1]?.sceneId || `scene_${String(Math.floor((i - 1) / 4) + 1).padStart(2, "0")}`))
+        ? []
+        : [`shot_${String(i).padStart(2, "0")}`],
       status: "PLANNED",
       qa: { warnings: [], failures: [] }
     };
@@ -776,6 +779,30 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
     lines: [shot.scriptText.trim()],
     position: "lower-third" as const
   }));
+
+  // Pre-Flight Planning Gate: Lock 180-degree axis, posture elevation continuity, solo/two-shot reference hygiene, and canonical scene geography onto every shot BEFORE any Veo API call
+  const charNameMap: Record<string, string> = {};
+  for (const c of charactersList) {
+    charNameMap[c.id] = c.name;
+  }
+  const preFlightContracts = compilePreFlightContinuityManifest(
+    shots.map((s, idx) => ({
+      shotNumber: idx + 1,
+      sceneId: s.sceneId || "scene_1",
+      sceneGeographyDescription: sceneEnvironments[s.sceneId || "scene_1"] || bible.environmentLock,
+      onCameraCharacterIds: s.continuityIn.characterId ? [s.continuityIn.characterId] : charactersList.map(c => c.id),
+      characterNamesMap: charNameMap,
+      dialogueText: s.scriptText,
+      rawVisualPrompt: s.generationPrompt
+    }))
+  );
+  for (let i = 0; i < shots.length; i++) {
+    const contract = preFlightContracts[i];
+    if (contract) {
+      shots[i].generationPrompt = contract.compiledVeoMotionPrompt;
+      (shots[i] as any).preFlightContract = contract;
+    }
+  }
 
   return {
     id: `reel_${crypto.randomUUID()}`,

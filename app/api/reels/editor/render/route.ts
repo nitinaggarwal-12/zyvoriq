@@ -299,6 +299,10 @@ export async function POST(req: NextRequest) {
         }
 
         const afStages: string[] = ["aresample=48000"];
+        if (clip.audioSource !== "lyria_slice") {
+          // Surgical Vocal Pocket EQ Carving: strip low-end mic rumble (<110Hz) and high-end hiss (>6.5kHz)
+          afStages.push("highpass=f=110,lowpass=f=6500");
+        }
         if (Math.abs(aSpeed - 1.0) > 0.01) {
           afStages.push(buildAtempoFilter(aSpeed));
         }
@@ -311,7 +315,7 @@ export async function POST(req: NextRequest) {
         }
         // Lock separated shot audio duration to exact visual duration outDur so downstream shots stay 100% frame-aligned
         afStages.push(`apad,atrim=0:${outDur.toFixed(4)}`);
-        const fadeDur = Math.min(0.03, outDur * 0.15);
+        const fadeDur = Math.min(0.15, outDur * 0.15);
         const fadeOutSt = Math.max(0, outDur - fadeDur);
         afStages.push(`afade=t=in:st=0:d=${fadeDur.toFixed(3)},afade=t=out:st=${fadeOutSt.toFixed(3)}:d=${fadeDur.toFixed(3)}`);
 
@@ -556,7 +560,7 @@ export async function POST(req: NextRequest) {
 
     const finalFileName = `${body.reelId || "reel"}_${editId}.mp4`;
     const finalOutputPath = path.join(outDir, finalFileName);
-    const publicOutputUrl = `/renders/edited/${finalFileName}`;
+    const publicOutputUrl = `/renders/edited/${finalFileName}?v=${Date.now()}`;
 
     const inputs: string[] = ["-i", concatVideoPath];
     const filterParts: string[] = [];
@@ -590,7 +594,7 @@ export async function POST(req: NextRequest) {
       const atempoMaster = buildAtempoFilter(musicSpeed);
       const vocalEntryStage =
         vocalEntrySec > 0.05
-          ? `,equalizer=f=1400:width_type=h:width=1800:g=-18:enable='between(t,0,${vocalEntrySec.toFixed(2)})'`
+          ? `,equalizer=f=1400:width_type=h:width=1800:g=-18:enable='if(isnan(t),0,between(t,0,${vocalEntrySec.toFixed(2)}))'`
           : "";
       filterParts.push(
         `[${inputIdx}:a]${atempoMaster}${phaseShiftStage},atrim=0:${totalDurationSec.toFixed(3)},asetpts=PTS-STARTPTS,volume=${masterVol.toFixed(2)}${stemEqChain}${vocalEntryStage},loudnorm=I=-14:TP=-1.5:LRA=11[a_master]`
@@ -639,7 +643,7 @@ export async function POST(req: NextRequest) {
       const atempoMusic = buildAtempoFilter(musicSpeed);
       const vocalGateStage =
         vocalEntrySec > 0.05
-          ? `,volume=enable='between(t,0,${vocalEntrySec.toFixed(2)})':volume=0`
+          ? `,volume=enable='if(isnan(t),0,between(t,0,${vocalEntrySec.toFixed(2)}))':volume=0`
           : "";
 
       filterParts.push(
@@ -656,7 +660,7 @@ export async function POST(req: NextRequest) {
         const atempoVocal = buildAtempoFilter(vocalSpeed);
         const vocalGateStage =
           vocalEntrySec > 0.05
-            ? `,volume=enable='between(t,0,${vocalEntrySec.toFixed(2)})':volume=0`
+            ? `,volume=enable='if(isnan(t),0,between(t,0,${vocalEntrySec.toFixed(2)}))':volume=0`
             : "";
         filterParts.push(
           `[${inputIdx}:a]${atempoVocal}${phaseShiftStage}${vocalGateStage},atrim=0:${totalDurationSec.toFixed(3)},asetpts=PTS-STARTPTS,volume=${vocalVol.toFixed(2)}[a_vocal]`
