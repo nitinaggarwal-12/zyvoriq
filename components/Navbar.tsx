@@ -10,8 +10,8 @@ const items = [
   { label: "Home", href: "/", icon: Home },
   { label: "Projects", href: "/my-reels", icon: FolderOpen },
   { label: "Assets", href: "/characters", icon: Layers3 },
-  { label: "Publish", href: "/studio", icon: Send },
-  { label: "Analytics", href: "/creator/analytics", icon: BarChart3 },
+  { label: "Studio", href: "/swarm", icon: Send },
+  
 ];
 
 export function Navbar() {
