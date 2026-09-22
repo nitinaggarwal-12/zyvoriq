@@ -10,7 +10,7 @@ export const metadata = {
 
 export default function CharactersPage() {
   return (
-    <div className="min-h-screen bg-[#07090E] text-slate-100 selection:bg-teal-500/30 selection:text-teal-100">
+    <div className="min-h-screen bg-[#F7F8FC] text-slate-900 selection:bg-teal-500/30 selection:text-teal-100">
       {/* 2. HERO HIGHLIGHT BAR */}
       <section className="border-b border-white/5 bg-gradient-to-b from-teal-500/5 via-transparent to-transparent py-8 px-4 sm:px-6 md:px-10 lg:px-12">
         <div className="max-w-[1760px] mx-auto">
@@ -20,10 +20,10 @@ export default function CharactersPage() {
                 <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
                 <span>Zero RAI Poisoning • Veo Likeness Pre-Tested</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white mb-2">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 mb-2">
                 Pre-Validated Character Cast & Wardrobe
               </h1>
-              <p className="text-sm text-slate-400 max-w-3xl leading-relaxed">
+              <p className="text-sm text-slate-500 max-w-3xl leading-relaxed">
                 Every character sheet in this library has undergone empirical pre-flight validation against Google Veo safety filters.
                 Archetype-anchored references eliminate prompt-level celebrity false positives, while bound voice profiles guarantee audio continuity.
               </p>
@@ -31,17 +31,17 @@ export default function CharactersPage() {
 
             {/* Quick Metrics */}
             <div className="flex items-center gap-4 shrink-0">
-              <div className="p-3.5 rounded-2xl bg-[#0C1019] border border-white/10 text-center min-w-[100px]">
+              <div className="p-3.5 rounded-2xl bg-white border border-slate-200 text-center min-w-[100px]">
                 <div className="text-2xl font-mono font-bold text-teal-400">100%</div>
-                <div className="text-[10px] text-slate-400 uppercase font-mono mt-0.5">Veo Validated</div>
+                <div className="text-[10px] text-slate-500 uppercase font-mono mt-0.5">Veo Validated</div>
               </div>
-              <div className="p-3.5 rounded-2xl bg-[#0C1019] border border-white/10 text-center min-w-[100px]">
+              <div className="p-3.5 rounded-2xl bg-white border border-slate-200 text-center min-w-[100px]">
                 <div className="text-2xl font-mono font-bold text-cyan-400">2 Max</div>
-                <div className="text-[10px] text-slate-400 uppercase font-mono mt-0.5">Speaker Limit</div>
+                <div className="text-[10px] text-slate-500 uppercase font-mono mt-0.5">Speaker Limit</div>
               </div>
-              <div className="p-3.5 rounded-2xl bg-[#0C1019] border border-white/10 text-center min-w-[100px]">
+              <div className="p-3.5 rounded-2xl bg-white border border-slate-200 text-center min-w-[100px]">
                 <div className="text-2xl font-mono font-bold text-emerald-400">0.0%</div>
-                <div className="text-[10px] text-slate-400 uppercase font-mono mt-0.5">Likeness Drift</div>
+                <div className="text-[10px] text-slate-500 uppercase font-mono mt-0.5">Likeness Drift</div>
               </div>
             </div>
           </div>
