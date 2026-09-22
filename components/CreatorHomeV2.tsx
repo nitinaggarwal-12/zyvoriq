@@ -67,8 +67,8 @@ export function CreatorHomeV2() {
   return (
     <main className="min-h-screen bg-[#F7F8FC] text-slate-900">
       <section className="mx-auto max-w-[1500px] px-5 pb-16 pt-9 sm:px-8 lg:px-12">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div>
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_520px] lg:items-stretch">
+          <div className="flex flex-col justify-end">
             <p className="text-sm font-semibold text-violet-600">Home</p>
             <h1 className="mt-2 text-4xl font-bold tracking-[-0.045em] sm:text-5xl">
               Your creative workspace
@@ -79,11 +79,20 @@ export function CreatorHomeV2() {
           </div>
           <Link
             href="/create"
-            className="inline-flex items-center justify-center gap-2 self-start rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-violet-700"
+            className="mt-6 inline-flex w-fit items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-violet-700"
           >
             <Plus className="h-4 w-4" />
             New project
           </Link>
+          </div>
+          <div className="relative min-h-72 overflow-hidden rounded-[28px] border border-slate-200 bg-slate-950 shadow-lg">
+            <img src="/assets/stills/mv_02_supernova_velocity_poster.jpg" alt="Cinematic creative work" className="absolute inset-0 h-full w-full object-cover opacity-90" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/10 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">Featured visual</div>
+              <div className="mt-1 text-lg font-semibold">Build from an idea to a finished master</div>
+            </div>
+          </div>
         </div>
 
         <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -162,9 +171,7 @@ export function CreatorHomeV2() {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-slate-500">
-                      <Film className="h-8 w-8" />
-                    </div>
+                    <img src="/assets/stills/mv_01_fuego_y_arena_poster.jpg" alt="" className="h-full w-full object-cover opacity-90" />
                   )}
                 </div>
                 <div className="p-4">
