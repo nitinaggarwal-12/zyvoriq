@@ -5,3 +5,8 @@ node_modules
 *.log
 .env*
 docs
+.agents
+.gemini
+.cursorrules
+AGENTS.md
+public/scratch
