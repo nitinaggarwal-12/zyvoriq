@@ -16,10 +16,10 @@ const formats = [
 ];
 
 const templates = [
-  { title: "Product Ad", subtitle: "Launch a product in seconds", href: "/reels" },
-  { title: "Talking Avatar", subtitle: "Presenter-led social content", href: "/studio/avatars" },
-  { title: "Explainer", subtitle: "Teach a concept clearly", href: "/studio/create" },
-  { title: "Story", subtitle: "Narrative short video", href: "/motion-pictures" },
+  { title: "Product Ad", subtitle: "Launch a product in seconds", href: "/reels", icon: Wand2 },
+  { title: "Talking Avatar", subtitle: "Presenter-led social content", href: "/studio/avatars", icon: Users2 },
+  { title: "Explainer", subtitle: "Teach a concept clearly", href: "/studio/create", icon: BarChart3 },
+  { title: "Story", subtitle: "Narrative short video", href: "/motion-pictures", icon: Clapperboard },
 ];
 
 export function CreatorHomeV2() {
@@ -130,15 +130,18 @@ export function CreatorHomeV2() {
             <Link href="/studio/create" className="text-sm font-semibold text-violet-600">Browse templates</Link>
           </div>
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {templates.map((item, i) => (
+            {templates.map((item) => {
+              const Icon = item.icon;
+              return (
               <Link key={item.title} href={item.href} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-violet-200 hover:shadow-md">
                 <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
-                  {[Wand2, Users2, BarChart3, Clapperboard][i]({ className: "h-5 w-5" })}
+                  <Icon className="h-5 w-5" />
                 </div>
                 <div className="font-semibold text-slate-900">{item.title}</div>
                 <div className="mt-1 text-sm text-slate-500">{item.subtitle}</div>
               </Link>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
