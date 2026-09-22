@@ -30,11 +30,14 @@ interface CharacterOption {
   id: string;
   displayName: string;
   archetype: string;
+  description?: string;
   wardrobe?: Wardrobe[];
 }
 interface LocationOption {
   id: string;
   displayName: string;
+  environmentBlock?: string;
+  establishingUri?: string;
 }
 interface Idea {
   id: string;
@@ -186,13 +189,19 @@ export default function StudioPage() {
     }
     setProjectId(id);
 
-    Promise.all([
+    Promise.allSettled([
       fetch(`/api/projects/${encodeURIComponent(id)}`).then((r) => r.json()),
       fetch("/api/library/characters").then((r) => r.json()),
       fetch("/api/library/locations").then((r) => r.json()),
       fetch("/api/publish/dispatch").then((r) => r.json()),
-    ]).then(([projectData, characterData, locationData, publishData]) => {
+    ]).then(([projectResult, characterResult, locationResult, publishResult]) => {
       if (!alive) return;
+
+      const projectData = projectResult.status === "fulfilled" ? projectResult.value : null;
+      const characterData = characterResult.status === "fulfilled" ? characterResult.value : null;
+      const locationData = locationResult.status === "fulfilled" ? locationResult.value : null;
+      const publishData = publishResult.status === "fulfilled" ? publishResult.value : null;
+
       const project = projectData?.project as Project | undefined;
       if (project) {
         setFormat(project.format || "reel");
@@ -211,12 +220,19 @@ export default function StudioPage() {
         setSelectedWardrobeId(project.selectedWardrobeId || "");
         setSelectedLocationId(project.selectedLocationId || "");
         setSelectedScene2LocationId(project.selectedScene2LocationId || project.selectedLocationId || "");
-        if (project.review) setReview({ ...review, ...project.review });
+        if (project.review) setReview((current) => ({ ...current, ...project.review }));
         if (project.status === "running" || project.combinedSrc) setJob(project);
+      } else {
+        setMessage("This project could not be loaded.");
       }
+
       setCharacters(Array.isArray(characterData?.characters) ? characterData.characters : []);
       setLocations(Array.isArray(locationData?.locations) ? locationData.locations : []);
       if (publishData?.connections) setPublishConnections(publishData.connections);
+
+      if (!Array.isArray(characterData?.characters) || !Array.isArray(locationData?.locations)) {
+        setMessage((current) => current || "Some reusable assets could not be loaded. Prompt-only creation is still available.");
+      }
       setLoaded(true);
     }).catch(() => {
       setMessage("The project could not be loaded.");
@@ -458,8 +474,8 @@ export default function StudioPage() {
               {saveState === "saving" ? "Saving…" : saveState === "error" ? "Autosave needs retry" : "Saved automatically"}
             </p>
           </div>
-          <div className="flex gap-2">
-            <Link href="/assets" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Assets</Link>
+          <div className="text-xs font-medium text-slate-400">
+            Stay in this project — every choice autosaves
           </div>
         </header>
 
@@ -469,17 +485,16 @@ export default function StudioPage() {
               const active = item.id === stage;
               const complete = index < currentStageIndex;
               return (
-                <button
+                <div
                   key={item.id}
-                  type="button"
-                  onClick={() => go(item.id)}
-                  className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold transition ${
-                    active ? "bg-violet-600 text-white" : complete ? "text-emerald-700 hover:bg-emerald-50" : "text-slate-500 hover:bg-slate-50"
+                  aria-current={active ? "step" : undefined}
+                  className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold ${
+                    active ? "bg-violet-600 text-white" : complete ? "bg-emerald-50 text-emerald-700" : "text-slate-400"
                   }`}
                 >
                   {complete ? <Check className="h-3.5 w-3.5" /> : <span className="text-xs">{index + 1}</span>}
                   {item.label}
-                </button>
+                </div>
               );
             })}
           </div>
@@ -584,41 +599,151 @@ export default function StudioPage() {
 
             {stage === "assets" && (
               <div className={card}>
-                <p className="text-xs font-semibold uppercase tracking-wide text-violet-600">3 · Assets</p>
-                <h2 className="mt-2 text-xl font-semibold">Cast and environments</h2>
-                <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                  <label className="rounded-2xl border border-slate-200 p-4">
-                    <span className="inline-flex items-center gap-2 text-sm font-semibold"><UserRound className="h-4 w-4 text-violet-600" /> Person</span>
-                    <select value={selectedCharacterId} onChange={(e) => { setSelectedCharacterId(e.target.value); setSelectedWardrobeId(""); }} className="mt-3 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm">
-                      <option value="">Prompt-only cast</option>
-                      {characters.map((item) => <option key={item.id} value={item.id}>{item.displayName} — {item.archetype}</option>)}
-                    </select>
-                    {wardrobes.length > 0 && (
-                      <select value={selectedWardrobeId} onChange={(e) => setSelectedWardrobeId(e.target.value)} className="mt-2 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm">
-                        {wardrobes.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-                      </select>
-                    )}
-                    <Link href="/assets?tab=people" className="mt-3 inline-block text-xs font-semibold text-violet-600">Manage people & wardrobe</Link>
-                  </label>
-
-                  <label className="rounded-2xl border border-slate-200 p-4">
-                    <span className="inline-flex items-center gap-2 text-sm font-semibold"><MapPin className="h-4 w-4 text-violet-600" /> Scene 1 location</span>
-                    <select value={selectedLocationId} onChange={(e) => setSelectedLocationId(e.target.value)} className="mt-3 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm">
-                      <option value="">Prompt-only location</option>
-                      {locations.map((item) => <option key={item.id} value={item.id}>{item.displayName}</option>)}
-                    </select>
-                  </label>
-
-                  <label className="rounded-2xl border border-slate-200 p-4 sm:col-start-2">
-                    <span className="inline-flex items-center gap-2 text-sm font-semibold"><MapPin className="h-4 w-4 text-violet-600" /> Scene 2 location</span>
-                    <select value={selectedScene2LocationId} onChange={(e) => setSelectedScene2LocationId(e.target.value)} className="mt-3 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm">
-                      <option value="">Same as Scene 1</option>
-                      {locations.map((item) => <option key={item.id} value={item.id}>{item.displayName}</option>)}
-                    </select>
-                    <Link href="/assets?tab=locations" className="mt-3 inline-block text-xs font-semibold text-violet-600">Manage locations</Link>
-                  </label>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-violet-600">3 · Cast & locations</p>
+                    <h2 className="mt-2 text-xl font-semibold">Choose visually — no dropdown hunting</h2>
+                    <p className="mt-1 text-sm text-slate-500">Pick a person, wardrobe, and locations here. Prompt-only options remain available.</p>
+                  </div>
+                  <button onClick={() => go("treatment")} className={primary}>
+                    Continue to direction <ChevronRight className="h-4 w-4" />
+                  </button>
                 </div>
-                <div className="mt-5 flex justify-end"><button onClick={() => go("treatment")} className={primary}>Continue <ChevronRight className="h-4 w-4" /></button></div>
+
+                <div className="mt-6">
+                  <div className="flex items-end justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-900">Cast</h3>
+                      <p className="mt-1 text-xs text-slate-500">Choose one reusable person, or keep the cast prompt-only.</p>
+                    </div>
+                    <span className="text-xs text-slate-400">{characters.length} available</span>
+                  </div>
+
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedCharacterId(""); setSelectedWardrobeId(""); }}
+                      className={`rounded-2xl border p-4 text-left transition ${!selectedCharacterId ? "border-violet-300 bg-violet-50 ring-2 ring-violet-100" : "border-slate-200 bg-white hover:border-violet-200"}`}
+                    >
+                      <div className="flex h-28 items-center justify-center rounded-xl bg-slate-100 text-slate-400"><UserRound className="h-8 w-8" /></div>
+                      <div className="mt-3 text-sm font-semibold">Prompt-only cast</div>
+                      <div className="mt-1 text-xs text-slate-500">Let the treatment define the performer.</div>
+                    </button>
+
+                    {characters.map((item) => {
+                      const wardrobe = item.wardrobe?.find((w) => w.isDefault) || item.wardrobe?.[0];
+                      const image = wardrobe?.sheetUris?.[0];
+                      const selected = selectedCharacterId === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedCharacterId(item.id);
+                            setSelectedWardrobeId(wardrobe?.id || "");
+                          }}
+                          className={`overflow-hidden rounded-2xl border text-left transition hover:-translate-y-0.5 hover:shadow-md ${selected ? "border-violet-300 ring-2 ring-violet-100" : "border-slate-200"}`}
+                        >
+                          <div className="h-28 bg-slate-100">
+                            {image ? <img src={image} alt={item.displayName} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-slate-400"><UserRound className="h-8 w-8" /></div>}
+                          </div>
+                          <div className="p-3.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="truncate text-sm font-semibold">{item.displayName}</div>
+                              {selected && <CheckCircle2 className="h-4 w-4 shrink-0 text-violet-600" />}
+                            </div>
+                            <div className="mt-1 truncate text-xs text-slate-500">{item.archetype}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {selectedCharacter && wardrobes.length > 0 && (
+                    <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Wardrobe</div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {wardrobes.map((wardrobe) => (
+                          <button
+                            key={wardrobe.id}
+                            type="button"
+                            onClick={() => setSelectedWardrobeId(wardrobe.id)}
+                            className={`rounded-xl border px-3.5 py-2 text-xs font-semibold ${selectedWardrobeId === wardrobe.id ? "border-violet-300 bg-violet-600 text-white" : "border-slate-200 bg-white text-slate-600"}`}
+                          >
+                            {wardrobe.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-7 border-t border-slate-200 pt-6">
+                  <h3 className="text-sm font-semibold text-slate-900">Scene 1 location</h3>
+                  <p className="mt-1 text-xs text-slate-500">Choose the opening environment.</p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedLocationId("")}
+                      className={`rounded-2xl border p-4 text-left ${!selectedLocationId ? "border-violet-300 bg-violet-50 ring-2 ring-violet-100" : "border-slate-200"}`}
+                    >
+                      <div className="flex h-24 items-center justify-center rounded-xl bg-slate-100 text-slate-400"><MapPin className="h-7 w-7" /></div>
+                      <div className="mt-3 text-sm font-semibold">Prompt-only</div>
+                    </button>
+                    {locations.map((item) => {
+                      const selected = selectedLocationId === item.id;
+                      return (
+                        <button key={item.id} type="button" onClick={() => setSelectedLocationId(item.id)} className={`overflow-hidden rounded-2xl border text-left transition hover:shadow-md ${selected ? "border-violet-300 ring-2 ring-violet-100" : "border-slate-200"}`}>
+                          <div className="h-24 bg-slate-100">
+                            {item.establishingUri ? <img src={item.establishingUri} alt={item.displayName} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-slate-400"><MapPin className="h-7 w-7" /></div>}
+                          </div>
+                          <div className="p-3.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="truncate text-sm font-semibold">{item.displayName}</div>
+                              {selected && <CheckCircle2 className="h-4 w-4 shrink-0 text-violet-600" />}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="mt-7 border-t border-slate-200 pt-6">
+                  <h3 className="text-sm font-semibold text-slate-900">Scene 2 location</h3>
+                  <p className="mt-1 text-xs text-slate-500">Keep the same environment or choose a payoff location.</p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedScene2LocationId("")}
+                      className={`rounded-2xl border p-4 text-left ${!selectedScene2LocationId ? "border-violet-300 bg-violet-50 ring-2 ring-violet-100" : "border-slate-200"}`}
+                    >
+                      <div className="flex h-24 items-center justify-center rounded-xl bg-slate-100 text-slate-400"><RefreshCw className="h-7 w-7" /></div>
+                      <div className="mt-3 text-sm font-semibold">Same as Scene 1</div>
+                    </button>
+                    {locations.map((item) => {
+                      const selected = selectedScene2LocationId === item.id;
+                      return (
+                        <button key={item.id} type="button" onClick={() => setSelectedScene2LocationId(item.id)} className={`overflow-hidden rounded-2xl border text-left transition hover:shadow-md ${selected ? "border-violet-300 ring-2 ring-violet-100" : "border-slate-200"}`}>
+                          <div className="h-24 bg-slate-100">
+                            {item.establishingUri ? <img src={item.establishingUri} alt={item.displayName} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-slate-400"><MapPin className="h-7 w-7" /></div>}
+                          </div>
+                          <div className="p-3.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="truncate text-sm font-semibold">{item.displayName}</div>
+                              {selected && <CheckCircle2 className="h-4 w-4 shrink-0 text-violet-600" />}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="mt-6 flex items-center justify-between border-t border-slate-200 pt-5">
+                  <button onClick={() => go("format")} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600">Back</button>
+                  <button onClick={() => go("treatment")} className={primary}>Continue to direction <ChevronRight className="h-4 w-4" /></button>
+                </div>
               </div>
             )}
 
