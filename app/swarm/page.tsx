@@ -361,6 +361,10 @@ export default function SwarmStudioM3Page() {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const projectId = params.get("project");
+    const characterId = params.get("character");
+    const locationId = params.get("location");
+    if (characterId) setSelectedCharacterId(characterId);
+    if (locationId) setSelectedLocationId(locationId);
     if (!projectId) return;
 
     fetch(`/api/swarm/jobs?id=${encodeURIComponent(projectId)}`)
@@ -803,7 +807,7 @@ export default function SwarmStudioM3Page() {
                 <p className="text-xs font-semibold uppercase tracking-wide text-violet-600">Cast asset</p>
                 <h3 className="mt-1 text-sm font-semibold text-slate-900">Choose a person from Assets</h3>
               </div>
-              <Link href="/characters" className="text-xs font-semibold text-violet-600 hover:text-violet-700">
+              <Link href="/assets?tab=people" className="text-xs font-semibold text-violet-600 hover:text-violet-700">
                 Browse assets
               </Link>
             </div>
@@ -831,7 +835,7 @@ export default function SwarmStudioM3Page() {
                 <p className="text-xs font-semibold uppercase tracking-wide text-violet-600">Location asset</p>
                 <h3 className="mt-1 text-sm font-semibold text-slate-900">Choose a saved location</h3>
               </div>
-              <Link href="/locations" className="text-xs font-semibold text-violet-600 hover:text-violet-700">
+              <Link href="/assets?tab=locations" className="text-xs font-semibold text-violet-600 hover:text-violet-700">
                 Browse locations
               </Link>
             </div>
