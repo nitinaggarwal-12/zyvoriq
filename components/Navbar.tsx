@@ -9,7 +9,7 @@ import { useTheme } from "@/components/ThemeProvider";
 const items = [
   { label: "Home", href: "/", icon: Home },
   { label: "Projects", href: "/my-reels", icon: FolderOpen },
-  { label: "Assets", href: "/characters", icon: Layers3 },
+  { label: "Assets", href: "/assets", icon: Layers3 },
   { label: "Studio", href: "/swarm", icon: Send },
   
 ];
