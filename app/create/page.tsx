@@ -17,9 +17,9 @@ import {
 } from "lucide-react";
 
 const formats = [
-  { id: "reel", title: "Reel", desc: "60-second vertical social video", icon: Video, supported: true },
-  { id: "music-video", title: "Music Video", desc: "60-second cinematic music-led master", icon: Music2, supported: true },
-  { id: "story-video", title: "Story Video", desc: "60-second narrative visual story", icon: ImageIcon, supported: true },
+  { id: "reel", title: "Reel", desc: "60-second vertical social video", icon: Video, supported: true, image: "/assets/stills/mv_03_summer_usa_poster.jpg" },
+  { id: "music-video", title: "Music Video", desc: "60-second cinematic music-led master", icon: Music2, supported: true, image: "/assets/stills/mv_01_fuego_y_arena_poster.jpg" },
+  { id: "story-video", title: "Story Video", desc: "60-second narrative visual story", icon: ImageIcon, supported: true, image: "/assets/stills/italian_beach_honeymoon_poster.jpg" },
   { id: "short-video", title: "Short Video", desc: "Variable-duration social video", icon: Clapperboard, supported: false },
   { id: "carousel", title: "Carousel", desc: "Multi-page social story", icon: Layers3, supported: false },
   { id: "talking-ai", title: "Talking AI", desc: "Avatar-led video", icon: Users2, supported: false },
@@ -32,25 +32,25 @@ const STARTERS = [
     title: "Luxury launch",
     eyebrow: "Product",
     brief: "Create a cinematic 60-second vertical launch reel for a premium fragrance. Open with an intimate macro product reveal, move into an aspirational lifestyle scene, and finish with a memorable hero shot and elegant call to action.",
-    gradient: "from-rose-200 via-orange-100 to-amber-50",
+    image: "/assets/stills/mv_05_lumiere_damour_poster.jpg",
   },
   {
     title: "Travel story",
     eyebrow: "Lifestyle",
     brief: "Create a visually rich travel story about arriving in Santorini at golden hour. Follow one traveler from the cliffside streets to a sunset terrace, with emotional pacing, natural movement, and a beautiful final wide shot.",
-    gradient: "from-sky-200 via-cyan-100 to-white",
+    image: "/assets/stills/swiss_alpine.jpg",
   },
   {
     title: "Fashion transformation",
     eyebrow: "Style",
     brief: "Create a high-energy fashion transformation reel. Start with a minimal everyday look, use a strong beat-synced transition, and reveal an editorial evening look in a dramatic second location.",
-    gradient: "from-violet-200 via-fuchsia-100 to-rose-50",
+    image: "/assets/stills/mv_02_supernova_velocity_poster.jpg",
   },
   {
     title: "Founder story",
     eyebrow: "Brand",
     brief: "Create an inspiring founder story that opens with the problem, shows the human motivation behind the idea, and ends with the product impact. Keep it authentic, premium, and emotionally grounded.",
-    gradient: "from-emerald-200 via-teal-100 to-white",
+    image: "/assets/avatars/avatar_elena_founder.jpg",
   },
 ];
 
@@ -140,8 +140,10 @@ export default function CreatePage() {
                 onClick={() => setBrief(starter.brief)}
                 className="overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-md"
               >
-                <div className={`aspect-[16/9] bg-gradient-to-br ${starter.gradient} p-4`}>
-                  <span className="rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-600 backdrop-blur">
+                <div className="relative aspect-[16/9] overflow-hidden bg-slate-100">
+                  <img src={starter.image} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/35 to-transparent" />
+                  <span className="absolute left-3 top-3 rounded-full bg-white/85 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-700 backdrop-blur">
                     {starter.eyebrow}
                   </span>
                 </div>
@@ -160,7 +162,7 @@ export default function CreatePage() {
         </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {formats.map(({ id, title, desc, icon: Icon, supported }) => {
+          {formats.map(({ id, title, desc, icon: Icon, supported, image }) => {
             const active = format === id;
             return (
               <button
@@ -175,12 +177,18 @@ export default function CreatePage() {
                 }`}
               >
                 {!supported && <span className="absolute right-3 top-3 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Coming next</span>}
-                <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${
-                  active ? "bg-violet-600 text-white" : "bg-violet-50 text-violet-600"
-                }`}>
-                  <Icon className="h-5 w-5" />
-                </div>
-                <div className="mt-5 font-semibold">{title}</div>
+                {image ? (
+                  <div className="mb-4 aspect-[16/8] overflow-hidden rounded-xl bg-slate-100">
+                    <img src={image} alt="" className="h-full w-full object-cover" />
+                  </div>
+                ) : (
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${
+                    active ? "bg-violet-600 text-white" : "bg-violet-50 text-violet-600"
+                  }`}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                )}
+                <div className="font-semibold">{title}</div>
                 <div className="mt-1 text-sm text-slate-500">{desc}</div>
               </button>
             );
