@@ -97,6 +97,29 @@ const FORMAT_CONFIG: Record<string, { name: string; description: string; platfor
   "story-video": { name: "Story Video", description: "60-second narrative visual story", platform: "YouTube Shorts" },
 };
 
+const STUDIO_STARTERS = [
+  {
+    title: "Luxury product",
+    brief: "Create a cinematic premium product launch with an intimate opening reveal, aspirational lifestyle imagery, and a polished hero finish.",
+    gradient: "from-rose-200 via-orange-100 to-amber-50",
+  },
+  {
+    title: "Travel escape",
+    brief: "Create an emotional travel story that follows one person from arrival through discovery to a beautiful golden-hour payoff.",
+    gradient: "from-sky-200 via-cyan-100 to-white",
+  },
+  {
+    title: "Fashion switch",
+    brief: "Create a beat-synced fashion transformation with a restrained first look and a dramatic editorial reveal in the second scene.",
+    gradient: "from-violet-200 via-fuchsia-100 to-rose-50",
+  },
+  {
+    title: "Founder story",
+    brief: "Create a human founder story that introduces the problem, shows the motivation behind the idea, and ends with the product impact.",
+    gradient: "from-emerald-200 via-teal-100 to-white",
+  },
+];
+
 const COUNTRIES = ["United States", "India", "United Kingdom", "South Korea", "Japan", "Brazil", "France", "Australia"];
 const LANGUAGES = ["English", "Hindi", "Spanish", "Korean", "Japanese", "Portuguese", "French", "Tamil"];
 
@@ -296,6 +319,7 @@ export default function StudioPage() {
         body: JSON.stringify({
           country,
           language,
+          platform,
           socialPlatform: platform,
           durationSec: 60,
           characters: selectedCharacter ? `${selectedCharacter.displayName} — ${selectedCharacter.archetype}` : brief,
@@ -314,6 +338,11 @@ export default function StudioPage() {
     } finally {
       setGeneratingIdeas(false);
     }
+  }
+
+  async function generateFullConcept() {
+    await generateIdeas();
+    go("treatment");
   }
 
   async function startGeneration() {
@@ -462,9 +491,55 @@ export default function StudioPage() {
           <section>
             {stage === "brief" && (
               <div className={card}>
-                <p className="text-xs font-semibold uppercase tracking-wide text-violet-600">1 · Brief</p>
-                <h2 className="mt-2 text-xl font-semibold">Define the outcome</h2>
-                <textarea value={brief} onChange={(e) => setBrief(e.target.value)} className="mt-5 min-h-40 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-100" />
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-violet-600">1 · Brief</p>
+                    <h2 className="mt-2 text-xl font-semibold">What are you trying to create?</h2>
+                    <p className="mt-1 text-sm text-slate-500">Pick an idea below or write one sentence. Zyvoriq can build the scenes for you.</p>
+                  </div>
+                  <button onClick={generateFullConcept} disabled={generatingIdeas} className={primary}>
+                    {generatingIdeas ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    Generate full concept
+                  </button>
+                </div>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  {STUDIO_STARTERS.map((starter) => (
+                    <button
+                      key={starter.title}
+                      type="button"
+                      onClick={() => setBrief(starter.brief)}
+                      className="overflow-hidden rounded-2xl border border-slate-200 bg-white text-left transition hover:border-violet-200 hover:shadow-md"
+                    >
+                      <div className={`aspect-[16/7] bg-gradient-to-br ${starter.gradient}`} />
+                      <div className="p-3.5">
+                        <div className="text-sm font-semibold text-slate-900">{starter.title}</div>
+                        <div className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{starter.brief}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                <textarea
+                  value={brief}
+                  onChange={(e) => setBrief(e.target.value)}
+                  className="mt-5 min-h-36 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+                  placeholder="Example: Launch a premium fragrance with a glamorous cinematic reveal."
+                />
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {["cinematic", "emotional", "luxury", "high energy", "minimal", "viral hook"].map((chip) => (
+                    <button
+                      key={chip}
+                      type="button"
+                      onClick={() => setBrief((current) => current.trim() ? `${current.trim()} Make it ${chip}.` : `Create a ${chip} social video.`)}
+                      className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-violet-200 hover:text-violet-700"
+                    >
+                      + {chip}
+                    </button>
+                  ))}
+                </div>
+
                 {referenceMedia && referenceMedia.length > 0 && (
                   <div className="mt-4">
                     <div className="text-xs font-semibold uppercase text-slate-500">References from Create</div>
@@ -473,7 +548,16 @@ export default function StudioPage() {
                     </div>
                   </div>
                 )}
-                <div className="mt-5 flex justify-end"><button onClick={() => go("format")} className={primary}>Continue <ChevronRight className="h-4 w-4" /></button></div>
+
+                <div className="mt-5 flex flex-wrap justify-end gap-2">
+                  <button onClick={() => go("format")} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700">
+                    Set options manually
+                  </button>
+                  <button onClick={generateFullConcept} disabled={generatingIdeas} className={primary}>
+                    {generatingIdeas ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    Build scenes for me
+                  </button>
+                </div>
               </div>
             )}
 
@@ -551,19 +635,58 @@ export default function StudioPage() {
                   </button>
                 </div>
                 {ideas.length > 0 && (
-                  <div className="mt-5 grid gap-3">
-                    {ideas.slice(0, 3).map((idea) => (
-                      <button key={idea.id} onClick={() => applyIdea(idea)} className={`rounded-2xl border p-4 text-left ${selectedIdeaId === idea.id ? "border-violet-300 bg-violet-50 ring-2 ring-violet-100" : "border-slate-200"}`}>
-                        <div className="font-semibold">{idea.title}</div>
-                        <p className="mt-1 text-sm text-slate-500">{idea.tagline}</p>
-                      </button>
-                    ))}
+                  <div className="mt-5 grid gap-3 lg:grid-cols-3">
+                    {ideas.slice(0, 3).map((idea, index) => {
+                      const gradients = [
+                        "from-violet-300 via-fuchsia-200 to-rose-100",
+                        "from-sky-300 via-cyan-200 to-emerald-100",
+                        "from-amber-300 via-orange-200 to-rose-100",
+                      ];
+                      return (
+                        <button key={idea.id} onClick={() => applyIdea(idea)} className={`overflow-hidden rounded-2xl border text-left transition hover:-translate-y-0.5 hover:shadow-md ${selectedIdeaId === idea.id ? "border-violet-300 ring-2 ring-violet-100" : "border-slate-200"}`}>
+                          <div className={`aspect-[16/8] bg-gradient-to-br ${gradients[index % gradients.length]} p-3`}>
+                            <span className="rounded-full bg-white/80 px-2 py-1 text-[10px] font-semibold uppercase text-slate-600 backdrop-blur">
+                              Treatment {index + 1}
+                            </span>
+                          </div>
+                          <div className="p-4">
+                            <div className="line-clamp-2 font-semibold text-slate-900">{idea.title}</div>
+                            <p className="mt-2 line-clamp-3 text-xs leading-5 text-slate-500">{idea.tagline}</p>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
                 <div className="mt-5 grid gap-4">
                   <input value={title} onChange={(e) => setTitle(e.target.value)} className="h-11 rounded-xl border border-slate-200 px-3 text-sm font-medium" placeholder="Project title" />
-                  <textarea value={act1Prompt} onChange={(e) => setAct1Prompt(e.target.value)} className="min-h-28 rounded-xl border border-slate-200 p-3 text-sm leading-6" placeholder="Scene 1 direction" />
-                  <textarea value={act2Prompt} onChange={(e) => setAct2Prompt(e.target.value)} className="min-h-28 rounded-xl border border-slate-200 p-3 text-sm leading-6" placeholder="Scene 2 direction" />
+
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                      <div className="aspect-[16/7] bg-gradient-to-br from-sky-200 via-violet-100 to-white p-4">
+                        <span className="rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-600">Scene 1 · Hook</span>
+                      </div>
+                      <div className="p-4">
+                        <textarea value={act1Prompt} onChange={(e) => setAct1Prompt(e.target.value)} className="min-h-36 w-full resize-y rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-6" placeholder="Scene 1 will be generated from your brief…" />
+                      </div>
+                    </div>
+
+                    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                      <div className="aspect-[16/7] bg-gradient-to-br from-amber-200 via-rose-100 to-white p-4">
+                        <span className="rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-600">Scene 2 · Payoff</span>
+                      </div>
+                      <div className="p-4">
+                        <textarea value={act2Prompt} onChange={(e) => setAct2Prompt(e.target.value)} className="min-h-36 w-full resize-y rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-6" placeholder="Scene 2 will be generated from your brief…" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <button onClick={generateIdeas} disabled={generatingIdeas} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                      <RefreshCw className="h-4 w-4" /> Regenerate scenes
+                    </button>
+                    <span className="self-center text-xs text-slate-500">You can edit only the parts you care about.</span>
+                  </div>
                 </div>
                 <div className="mt-5 flex justify-end"><button onClick={startGeneration} disabled={generating} className={primary}>{generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Film className="h-4 w-4" />} Start production</button></div>
               </div>
