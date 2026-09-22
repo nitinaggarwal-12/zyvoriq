@@ -788,137 +788,250 @@ export default function StudioPage() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-violet-600">3 · Cast & locations</p>
-                    <h2 className="mt-2 text-xl font-semibold">Choose visually — no dropdown hunting</h2>
-                    <p className="mt-1 text-sm text-slate-500">Pick a person, wardrobe, and locations here. Prompt-only options remain available.</p>
+                    <h2 className="mt-2 text-xl font-semibold">Find the right persona, avatar, or digital twin</h2>
+                    <p className="mt-1 max-w-2xl text-sm text-slate-500">
+                      Filter by audience, persona, expertise, language, region, wardrobe, and environment. Zyvoriq ranks the best matches first.
+                    </p>
                   </div>
                   <button onClick={() => go("treatment")} className={primary}>
                     Continue to direction <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
 
+                <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold text-slate-900">Smart persona filters</div>
+                      <div className="mt-1 text-xs text-slate-500">Filters instantly re-rank the available personas.</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAudienceDemography("All audiences");
+                        setPersonaType("Any persona");
+                        setExpertise("Any expertise");
+                        setCharacterCountryFilter("");
+                        setCharacterLanguageFilter("");
+                        setCharacterGenderFilter("");
+                        setCharacterEraFilter("");
+                        setWardrobeFilter("");
+                      }}
+                      className="text-xs font-semibold text-violet-600"
+                    >
+                      Reset
+                    </button>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <label className="grid gap-1.5 text-xs font-semibold text-slate-600">
+                      Audience
+                      <select value={audienceDemography} onChange={(e) => setAudienceDemography(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-normal">
+                        {DEMOGRAPHIES.map((value) => <option key={value}>{value}</option>)}
+                      </select>
+                    </label>
+                    <label className="grid gap-1.5 text-xs font-semibold text-slate-600">
+                      Persona type
+                      <select value={personaType} onChange={(e) => setPersonaType(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-normal">
+                        {PERSONA_TYPES.map((value) => <option key={value}>{value}</option>)}
+                      </select>
+                    </label>
+                    <label className="grid gap-1.5 text-xs font-semibold text-slate-600">
+                      Expertise
+                      <select value={expertise} onChange={(e) => setExpertise(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-normal">
+                        {EXPERTISE_AREAS.map((value) => <option key={value}>{value}</option>)}
+                      </select>
+                    </label>
+                    <label className="grid gap-1.5 text-xs font-semibold text-slate-600">
+                      Country / market
+                      <select value={characterCountryFilter} onChange={(e) => setCharacterCountryFilter(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-normal">
+                        <option value="">Any country</option>
+                        {characterCountries.map((value) => <option key={value}>{value}</option>)}
+                      </select>
+                    </label>
+                    <label className="grid gap-1.5 text-xs font-semibold text-slate-600">
+                      Language
+                      <select value={characterLanguageFilter} onChange={(e) => setCharacterLanguageFilter(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-normal">
+                        <option value="">Any language</option>
+                        {characterLanguages.map((value) => <option key={value}>{value}</option>)}
+                      </select>
+                    </label>
+                    <label className="grid gap-1.5 text-xs font-semibold text-slate-600">
+                      Gender / presentation
+                      <select value={characterGenderFilter} onChange={(e) => setCharacterGenderFilter(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-normal">
+                        <option value="">Any</option>
+                        {characterGenders.map((value) => <option key={value}>{value}</option>)}
+                      </select>
+                    </label>
+                    <label className="grid gap-1.5 text-xs font-semibold text-slate-600">
+                      Era / look
+                      <select value={characterEraFilter} onChange={(e) => setCharacterEraFilter(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-normal">
+                        <option value="">Any era</option>
+                        {characterEras.map((value) => <option key={value}>{value}</option>)}
+                      </select>
+                    </label>
+                    <label className="grid gap-1.5 text-xs font-semibold text-slate-600">
+                      Wardrobe
+                      <select value={wardrobeFilter} onChange={(e) => setWardrobeFilter(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-normal">
+                        <option value="">Any wardrobe</option>
+                        {wardrobeLabels.map((value) => <option key={value}>{value}</option>)}
+                      </select>
+                    </label>
+                  </div>
+                </div>
+
                 <div className="mt-6">
                   <div className="flex items-end justify-between gap-3">
                     <div>
-                      <h3 className="text-sm font-semibold text-slate-900">Cast</h3>
-                      <p className="mt-1 text-xs text-slate-500">Choose one reusable person, or keep the cast prompt-only.</p>
+                      <h3 className="text-sm font-semibold text-slate-900">Persona / avatar / digital twin</h3>
+                      <p className="mt-1 text-xs text-slate-500">{filteredCharacters.length} match{filteredCharacters.length === 1 ? "" : "es"}.</p>
                     </div>
-                    <span className="text-xs text-slate-400">{characters.length} available</span>
+                    {recommendedCharacter && (
+                      <div className="rounded-full bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700">
+                        Best match: {recommendedCharacter.displayName}
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     <button
                       type="button"
                       onClick={() => { setSelectedCharacterId(""); setSelectedWardrobeId(""); }}
-                      className={`rounded-2xl border p-4 text-left transition ${!selectedCharacterId ? "border-violet-300 bg-violet-50 ring-2 ring-violet-100" : "border-slate-200 bg-white hover:border-violet-200"}`}
+                      className={`rounded-2xl border p-4 text-left ${!selectedCharacterId ? "border-violet-300 bg-violet-50 ring-2 ring-violet-100" : "border-slate-200"}`}
                     >
-                      <div className="flex h-28 items-center justify-center rounded-xl bg-slate-100 text-slate-400"><UserRound className="h-8 w-8" /></div>
-                      <div className="mt-3 text-sm font-semibold">Prompt-only cast</div>
-                      <div className="mt-1 text-xs text-slate-500">Let the treatment define the performer.</div>
+                      <div className="flex h-32 items-center justify-center rounded-xl bg-slate-100 text-slate-400"><UserRound className="h-9 w-9" /></div>
+                      <div className="mt-3 text-sm font-semibold">Prompt-generated persona</div>
+                      <div className="mt-1 text-xs text-slate-500">Create a new performer from the brief.</div>
                     </button>
 
-                    {characters.map((item) => {
-                      const wardrobe = item.wardrobe?.find((w) => w.isDefault) || item.wardrobe?.[0];
-                      const image = wardrobe?.sheetUris?.[0];
+                    {filteredCharacters.map(({ item }, index) => {
+                      const defaultWardrobe = item.wardrobe?.find((w) => w.isDefault) || item.wardrobe?.[0];
+                      const preferredWardrobe = wardrobeFilter ? item.wardrobe?.find((w) => w.label === wardrobeFilter) : defaultWardrobe;
+                      const image = preferredWardrobe?.sheetUris?.[0] || defaultWardrobe?.sheetUris?.[0];
                       const selected = selectedCharacterId === item.id;
+                      const isBest = index === 0;
                       return (
                         <button
                           key={item.id}
                           type="button"
                           onClick={() => {
                             setSelectedCharacterId(item.id);
-                            setSelectedWardrobeId(wardrobe?.id || "");
+                            setSelectedWardrobeId(preferredWardrobe?.id || defaultWardrobe?.id || "");
                           }}
-                          className={`overflow-hidden rounded-2xl border text-left transition hover:-translate-y-0.5 hover:shadow-md ${selected ? "border-violet-300 ring-2 ring-violet-100" : "border-slate-200"}`}
+                          className={`relative overflow-hidden rounded-2xl border bg-white text-left transition hover:-translate-y-0.5 hover:shadow-md ${selected ? "border-violet-300 ring-2 ring-violet-100" : "border-slate-200"}`}
                         >
-                          <div className="h-28 bg-slate-100">
-                            {image ? <img src={image} alt={item.displayName} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-slate-400"><UserRound className="h-8 w-8" /></div>}
+                          {isBest && <span className="absolute left-3 top-3 z-10 rounded-full bg-violet-600 px-2.5 py-1 text-[10px] font-semibold uppercase text-white">Best match</span>}
+                          <div className="h-32 bg-slate-100">
+                            {image ? <img src={image} alt={item.displayName} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-slate-400"><UserRound className="h-9 w-9" /></div>}
                           </div>
                           <div className="p-3.5">
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="truncate text-sm font-semibold">{item.displayName}</div>
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <div className="truncate text-sm font-semibold">{item.displayName}</div>
+                                <div className="mt-1 truncate text-xs text-slate-500">{item.archetype}</div>
+                              </div>
                               {selected && <CheckCircle2 className="h-4 w-4 shrink-0 text-violet-600" />}
                             </div>
-                            <div className="mt-1 truncate text-xs text-slate-500">{item.archetype}</div>
+                            <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] text-slate-500">
+                              {item.country && <span className="rounded-full bg-slate-100 px-2 py-1">{item.country}</span>}
+                              {item.language && <span className="rounded-full bg-slate-100 px-2 py-1">{item.language}</span>}
+                              {item.gender && <span className="rounded-full bg-slate-100 px-2 py-1">{item.gender}</span>}
+                            </div>
                           </div>
                         </button>
                       );
                     })}
                   </div>
 
+                  {filteredCharacters.length === 0 && (
+                    <div className="mt-3 rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center">
+                      <p className="text-sm font-semibold text-slate-700">No saved persona matches every filter.</p>
+                      <p className="mt-1 text-xs text-slate-500">Reset one or more filters, or use a prompt-generated persona.</p>
+                    </div>
+                  )}
+
                   {selectedCharacter && wardrobes.length > 0 && (
                     <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Wardrobe</div>
+                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Wardrobe for {selectedCharacter.displayName}</div>
                       <div className="mt-3 flex flex-wrap gap-2">
-                        {wardrobes.map((wardrobe) => (
-                          <button
-                            key={wardrobe.id}
-                            type="button"
-                            onClick={() => setSelectedWardrobeId(wardrobe.id)}
-                            className={`rounded-xl border px-3.5 py-2 text-xs font-semibold ${selectedWardrobeId === wardrobe.id ? "border-violet-300 bg-violet-600 text-white" : "border-slate-200 bg-white text-slate-600"}`}
-                          >
-                            {wardrobe.label}
-                          </button>
-                        ))}
+                        {wardrobes
+                          .filter((wardrobe) => !wardrobeFilter || wardrobe.label === wardrobeFilter)
+                          .map((wardrobe) => (
+                            <button
+                              key={wardrobe.id}
+                              type="button"
+                              onClick={() => setSelectedWardrobeId(wardrobe.id)}
+                              className={`rounded-xl border px-3.5 py-2 text-xs font-semibold ${selectedWardrobeId === wardrobe.id ? "border-violet-300 bg-violet-600 text-white" : "border-slate-200 bg-white text-slate-600"}`}
+                            >
+                              {wardrobe.label}
+                            </button>
+                          ))}
                       </div>
                     </div>
                   )}
                 </div>
 
                 <div className="mt-7 border-t border-slate-200 pt-6">
-                  <h3 className="text-sm font-semibold text-slate-900">Scene 1 location</h3>
-                  <p className="mt-1 text-xs text-slate-500">Choose the opening environment.</p>
+                  <div className="flex flex-wrap items-end justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-900">Location filters</h3>
+                      <p className="mt-1 text-xs text-slate-500">Use the same filtered library for both scenes.</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <select value={locationEraFilter} onChange={(e) => setLocationEraFilter(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs">
+                        <option value="">Any era</option>
+                        {locationEras.map((value) => <option key={value}>{value}</option>)}
+                      </select>
+                      <select value={locationTimeFilter} onChange={(e) => setLocationTimeFilter(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs">
+                        <option value="">Any time</option>
+                        {locationTimes.map((value) => <option key={value}>{value}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <h4 className="mt-5 text-xs font-semibold uppercase tracking-wide text-slate-500">Scene 1</h4>
                   <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedLocationId("")}
-                      className={`rounded-2xl border p-4 text-left ${!selectedLocationId ? "border-violet-300 bg-violet-50 ring-2 ring-violet-100" : "border-slate-200"}`}
-                    >
+                    <button type="button" onClick={() => setSelectedLocationId("")} className={`rounded-2xl border p-4 text-left ${!selectedLocationId ? "border-violet-300 bg-violet-50 ring-2 ring-violet-100" : "border-slate-200"}`}>
                       <div className="flex h-24 items-center justify-center rounded-xl bg-slate-100 text-slate-400"><MapPin className="h-7 w-7" /></div>
-                      <div className="mt-3 text-sm font-semibold">Prompt-only</div>
+                      <div className="mt-3 text-sm font-semibold">Prompt-generated location</div>
                     </button>
-                    {locations.map((item) => {
+                    {filteredLocations.map((item) => {
                       const selected = selectedLocationId === item.id;
                       return (
-                        <button key={item.id} type="button" onClick={() => setSelectedLocationId(item.id)} className={`overflow-hidden rounded-2xl border text-left transition hover:shadow-md ${selected ? "border-violet-300 ring-2 ring-violet-100" : "border-slate-200"}`}>
+                        <button key={item.id} type="button" onClick={() => setSelectedLocationId(item.id)} className={`overflow-hidden rounded-2xl border text-left ${selected ? "border-violet-300 ring-2 ring-violet-100" : "border-slate-200"}`}>
                           <div className="h-24 bg-slate-100">
                             {item.establishingUri ? <img src={item.establishingUri} alt={item.displayName} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-slate-400"><MapPin className="h-7 w-7" /></div>}
                           </div>
                           <div className="p-3.5">
                             <div className="flex items-center justify-between gap-2">
                               <div className="truncate text-sm font-semibold">{item.displayName}</div>
-                              {selected && <CheckCircle2 className="h-4 w-4 shrink-0 text-violet-600" />}
+                              {selected && <CheckCircle2 className="h-4 w-4 text-violet-600" />}
                             </div>
+                            <div className="mt-1 text-[10px] text-slate-500">{[item.era, item.timeOfDay].filter(Boolean).join(" · ")}</div>
                           </div>
                         </button>
                       );
                     })}
                   </div>
-                </div>
 
-                <div className="mt-7 border-t border-slate-200 pt-6">
-                  <h3 className="text-sm font-semibold text-slate-900">Scene 2 location</h3>
-                  <p className="mt-1 text-xs text-slate-500">Keep the same environment or choose a payoff location.</p>
+                  <h4 className="mt-5 text-xs font-semibold uppercase tracking-wide text-slate-500">Scene 2</h4>
                   <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedScene2LocationId("")}
-                      className={`rounded-2xl border p-4 text-left ${!selectedScene2LocationId ? "border-violet-300 bg-violet-50 ring-2 ring-violet-100" : "border-slate-200"}`}
-                    >
+                    <button type="button" onClick={() => setSelectedScene2LocationId("")} className={`rounded-2xl border p-4 text-left ${!selectedScene2LocationId ? "border-violet-300 bg-violet-50 ring-2 ring-violet-100" : "border-slate-200"}`}>
                       <div className="flex h-24 items-center justify-center rounded-xl bg-slate-100 text-slate-400"><RefreshCw className="h-7 w-7" /></div>
                       <div className="mt-3 text-sm font-semibold">Same as Scene 1</div>
                     </button>
-                    {locations.map((item) => {
+                    {filteredLocations.map((item) => {
                       const selected = selectedScene2LocationId === item.id;
                       return (
-                        <button key={item.id} type="button" onClick={() => setSelectedScene2LocationId(item.id)} className={`overflow-hidden rounded-2xl border text-left transition hover:shadow-md ${selected ? "border-violet-300 ring-2 ring-violet-100" : "border-slate-200"}`}>
+                        <button key={item.id} type="button" onClick={() => setSelectedScene2LocationId(item.id)} className={`overflow-hidden rounded-2xl border text-left ${selected ? "border-violet-300 ring-2 ring-violet-100" : "border-slate-200"}`}>
                           <div className="h-24 bg-slate-100">
                             {item.establishingUri ? <img src={item.establishingUri} alt={item.displayName} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-slate-400"><MapPin className="h-7 w-7" /></div>}
                           </div>
                           <div className="p-3.5">
                             <div className="flex items-center justify-between gap-2">
                               <div className="truncate text-sm font-semibold">{item.displayName}</div>
-                              {selected && <CheckCircle2 className="h-4 w-4 shrink-0 text-violet-600" />}
+                              {selected && <CheckCircle2 className="h-4 w-4 text-violet-600" />}
                             </div>
+                            <div className="mt-1 text-[10px] text-slate-500">{[item.era, item.timeOfDay].filter(Boolean).join(" · ")}</div>
                           </div>
                         </button>
                       );
