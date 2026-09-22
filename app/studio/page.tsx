@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function StudioPage() {
   return (
-    <main id="top" className="min-h-screen bg-[#07090E] text-slate-100 selection:bg-teal-500/30 selection:text-teal-100">
+    <main id="top" className="min-h-screen bg-[#F7F8FC] text-slate-900 selection:bg-teal-500/30 selection:text-teal-100">
       <YTStudio embedded={false} />
     </main>
   );
