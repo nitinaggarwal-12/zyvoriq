@@ -12,6 +12,7 @@ import {
   Music2,
   Sparkles,
   Upload,
+  Users2,
   Video,
 } from "lucide-react";
 
