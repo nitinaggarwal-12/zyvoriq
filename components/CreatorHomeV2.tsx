@@ -1,148 +1,223 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  ArrowRight, BarChart3, Clapperboard, FolderOpen, ImageIcon, Layers3,
-  Mic2, Music2, Plus, Search, Sparkles, Upload, Users2, Video, Wand2
+  ArrowRight,
+  Clock3,
+  Film,
+  FolderOpen,
+  Layers3,
+  MapPin,
+  Plus,
+  Sparkles,
+  UserRound,
 } from "lucide-react";
 
-const formats = [
-  { label: "Reel", href: "/swarm", icon: Video, hint: "Short-form" },
-  { label: "Video", href: "/swarm", icon: Clapperboard, hint: "Cinematic" },
-  { label: "Carousel", href: "/swarm", icon: Layers3, hint: "Multi-slide" },
-  { label: "Podcast", href: "/swarm", icon: Mic2, hint: "Audio + video" },
-  { label: "Music video", href: "/swarm", icon: Music2, hint: "Music-led" },
-  { label: "Film", href: "/swarm", icon: ImageIcon, hint: "Long-form" },
-];
-
-const templates = [
-  { title: "Product Ad", subtitle: "Launch a product in seconds", href: "/swarm", icon: Wand2 },
-  { title: "Talking Avatar", subtitle: "Presenter-led social content", href: "/swarm", icon: Users2 },
-  { title: "Explainer", subtitle: "Teach a concept clearly", href: "/swarm", icon: BarChart3 },
-  { title: "Story", subtitle: "Narrative short video", href: "/swarm", icon: Clapperboard },
-];
+interface Project {
+  id: string;
+  title?: string;
+  titleDraft?: string;
+  format?: string;
+  stage?: string;
+  status?: string;
+  updatedAt?: string;
+  createdAt?: string;
+  combinedSrc?: string;
+  progress?: number;
+}
 
 export function CreatorHomeV2() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [peopleCount, setPeopleCount] = useState(0);
+  const [locationCount, setLocationCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/projects?limit=8").then((r) => r.json()),
+      fetch("/api/library/characters").then((r) => r.json()),
+      fetch("/api/library/locations").then((r) => r.json()),
+    ])
+      .then(([projectData, peopleData, locationData]) => {
+        setProjects(Array.isArray(projectData?.projects) ? projectData.projects : []);
+        setPeopleCount(Array.isArray(peopleData?.characters) ? peopleData.characters.length : 0);
+        setLocationCount(Array.isArray(locationData?.locations) ? locationData.locations.length : 0);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const recent = useMemo(
+    () =>
+      [...projects]
+        .sort(
+          (a, b) =>
+            Date.parse(b.updatedAt || b.createdAt || "0") -
+            Date.parse(a.updatedAt || a.createdAt || "0")
+        )
+        .slice(0, 4),
+    [projects]
+  );
+
+  const running = projects.filter((project) => project.status === "running").length;
+  const ready = projects.filter(
+    (project) => project.status === "completed" || project.status === "published"
+  ).length;
+
   return (
-    <main className="min-h-screen bg-[#f7f8fb] text-[#17181c]">
-      <section className="mx-auto max-w-[1500px] px-5 pb-16 pt-10 sm:px-8 lg:px-12">
-        <div className="mb-10 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+    <main className="min-h-screen bg-[#F7F8FC] text-slate-900">
+      <section className="mx-auto max-w-[1500px] px-5 pb-16 pt-9 sm:px-8 lg:px-12">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="mb-2 text-sm font-semibold text-violet-600">Creator workspace</p>
-            <h1 className="max-w-4xl text-4xl font-bold tracking-[-0.04em] text-[#121319] sm:text-5xl">
-              What do you want to create?
+            <p className="text-sm font-semibold text-violet-600">Home</p>
+            <h1 className="mt-2 text-4xl font-bold tracking-[-0.045em] sm:text-5xl">
+              Your creative workspace
             </h1>
-            <p className="mt-3 max-w-2xl text-base text-slate-500">
-              Turn an idea into video, audio, images, stories and social content with Zyvoriq.
+            <p className="mt-3 max-w-2xl text-base leading-7 text-slate-500">
+              Continue active work, manage reusable assets, or start a new project.
+            </p>
+          </div>
+          <Link
+            href="/create"
+            className="inline-flex items-center justify-center gap-2 self-start rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-violet-700"
+          >
+            <Plus className="h-4 w-4" />
+            New project
+          </Link>
+        </div>
+
+        <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            { label: "Projects", value: projects.length, icon: FolderOpen, href: "/my-reels" },
+            { label: "In production", value: running, icon: Sparkles, href: "/my-reels" },
+            { label: "Ready", value: ready, icon: Film, href: "/my-reels" },
+            { label: "Reusable assets", value: peopleCount + locationCount, icon: Layers3, href: "/assets" },
+          ].map(({ label, value, icon: Icon, href }) => (
+            <Link
+              key={label}
+              href={href}
+              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-md"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <ArrowRight className="h-4 w-4 text-slate-300" />
+              </div>
+              <div className="mt-5 text-3xl font-bold tracking-tight">
+                {loading ? "—" : value}
+              </div>
+              <div className="mt-1 text-sm text-slate-500">{label}</div>
+            </Link>
+          ))}
+        </div>
+
+        <div className="mt-12 flex items-end justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold tracking-tight">Continue working</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Reopen exactly where you left off.
             </p>
           </div>
           <Link
             href="/my-reels"
-            className="inline-flex items-center gap-2 self-start rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:shadow-md"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-violet-600 hover:text-violet-700"
           >
-            <FolderOpen className="h-4 w-4" />
-            Projects
+            All projects <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
 
-        <div className="rounded-[28px] border border-violet-100 bg-white p-3 shadow-[0_22px_70px_-35px_rgba(76,29,149,.28)] sm:p-4">
-          <div className="rounded-[22px] border border-slate-200 bg-[#fbfbfd] p-4 sm:p-5">
-            <textarea
-              aria-label="Describe what you want to create"
-              placeholder="Describe your idea… e.g. Create a cinematic 30-second launch reel for a luxury perfume in Santorini"
-              className="min-h-28 w-full resize-none border-0 bg-transparent text-base leading-7 text-slate-800 outline-none placeholder:text-slate-400"
-            />
-            <div className="flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-wrap gap-2">
-                <button className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
-                  <Plus className="h-4 w-4" /> Add reference
-                </button>
-                <button className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
-                  <Upload className="h-4 w-4" /> Upload media
-                </button>
-              </div>
+        {loading ? (
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="h-64 animate-pulse rounded-2xl border border-slate-200 bg-white" />
+            ))}
+          </div>
+        ) : recent.length === 0 ? (
+          <div className="mt-5 rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
+            <FolderOpen className="mx-auto h-8 w-8 text-violet-500" />
+            <h3 className="mt-4 font-semibold">No projects yet</h3>
+            <p className="mt-1 text-sm text-slate-500">
+              Start a project and it will appear here automatically.
+            </p>
+            <Link href="/create" className="mt-5 inline-flex rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white">
+              Create first project
+            </Link>
+          </div>
+        ) : (
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {recent.map((project) => (
               <Link
-                href="/create"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700"
+                key={project.id}
+                href={`/swarm?project=${encodeURIComponent(project.id)}`}
+                className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
               >
-                Generate <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          {formats.map(({ label, href, icon: Icon, hint }) => (
-            <Link
-              key={label}
-              href={href}
-              className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-lg"
-            >
-              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600 transition group-hover:bg-violet-100">
-                <Icon className="h-5 w-5" />
-              </div>
-              <div className="text-sm font-semibold text-slate-900">{label}</div>
-              <div className="mt-1 text-xs text-slate-400">{hint}</div>
-            </Link>
-          ))}
-        </div>
-
-        <div className="mt-12 flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold tracking-tight text-slate-900">Continue creating</h2>
-            <p className="mt-1 text-sm text-slate-500">Pick up where you left off.</p>
-          </div>
-          <Link href="/my-reels" className="inline-flex items-center gap-1 text-sm font-semibold text-violet-600 hover:text-violet-700">
-            View all <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {[
-            ["Summer Campaign", "Reel · Draft", "from-amber-100 via-orange-50 to-white"],
-            ["AI Explained", "Video · Rendering", "from-violet-100 via-indigo-50 to-white"],
-            ["Jaipur Story", "Story · Draft", "from-rose-100 via-orange-50 to-white"],
-            ["Product Launch", "Ad · Ready", "from-cyan-100 via-sky-50 to-white"],
-          ].map(([title, meta, gradient], index) => (
-            <Link key={title} href={index === 0 ? "/my-reels" : "/studio"} className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
-              <div className={`aspect-[16/9] bg-gradient-to-br ${gradient} p-5`}>
-                <div className="flex h-full items-end justify-between">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/80 text-violet-600 shadow-sm backdrop-blur">
-                    <Sparkles className="h-5 w-5" />
+                <div className="aspect-video bg-slate-950">
+                  {project.combinedSrc ? (
+                    <video
+                      src={project.combinedSrc}
+                      preload="metadata"
+                      muted
+                      playsInline
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-slate-500">
+                      <Film className="h-8 w-8" />
+                    </div>
+                  )}
+                </div>
+                <div className="p-4">
+                  <div className="truncate font-semibold">
+                    {project.titleDraft || project.title || "Untitled project"}
                   </div>
-                  <span className="rounded-lg bg-white/80 px-2 py-1 text-[11px] font-semibold text-slate-600 backdrop-blur">00:{30 + index * 5}</span>
+                  <div className="mt-1 text-sm capitalize text-slate-500">
+                    {project.format || "reel"} · {project.stage || "brief"}
+                  </div>
+                  <div className="mt-3 flex items-center gap-1.5 text-xs text-slate-400">
+                    <Clock3 className="h-3.5 w-3.5" />
+                    {project.updatedAt
+                      ? new Date(project.updatedAt).toLocaleString()
+                      : "Saved project"}
+                  </div>
                 </div>
-              </div>
-              <div className="p-4">
-                <div className="font-semibold text-slate-900">{title}</div>
-                <div className="mt-1 text-sm text-slate-500">{meta}</div>
-              </div>
-            </Link>
-          ))}
-        </div>
-
-        <div className="mt-12">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold tracking-tight text-slate-900">Start with a template</h2>
-              <p className="mt-1 text-sm text-slate-500">Use a proven structure and make it yours.</p>
-            </div>
-            <Link href="/studio/create" className="text-sm font-semibold text-violet-600">Browse templates</Link>
-          </div>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {templates.map((item) => {
-              const Icon = item.icon;
-              return (
-              <Link key={item.title} href={item.href} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-violet-200 hover:shadow-md">
-                <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
-                  <Icon className="h-5 w-5" />
-                </div>
-                <div className="font-semibold text-slate-900">{item.title}</div>
-                <div className="mt-1 text-sm text-slate-500">{item.subtitle}</div>
               </Link>
-              );
-            })}
+            ))}
           </div>
+        )}
+
+        <div className="mt-12 grid gap-4 lg:grid-cols-2">
+          <Link
+            href="/assets?tab=people"
+            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-violet-200 hover:shadow-md"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50 text-violet-600">
+                <UserRound className="h-5 w-5" />
+              </div>
+              <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-violet-600" />
+            </div>
+            <h3 className="mt-5 text-lg font-semibold">People</h3>
+            <p className="mt-1 text-sm text-slate-500">
+              {peopleCount} reusable cast {peopleCount === 1 ? "asset" : "assets"} with wardrobe and references.
+            </p>
+          </Link>
+
+          <Link
+            href="/assets?tab=locations"
+            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-violet-200 hover:shadow-md"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50 text-violet-600">
+                <MapPin className="h-5 w-5" />
+              </div>
+              <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-violet-600" />
+            </div>
+            <h3 className="mt-5 text-lg font-semibold">Locations</h3>
+            <p className="mt-1 text-sm text-slate-500">
+              {locationCount} reusable {locationCount === 1 ? "environment" : "environments"} ready for scenes.
+            </p>
+          </Link>
         </div>
       </section>
     </main>
