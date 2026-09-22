@@ -17,14 +17,14 @@ import {
 } from "lucide-react";
 
 const formats = [
-  { id: "reel", title: "Reel", desc: "Short-form vertical video", icon: Video },
-  { id: "short-video", title: "Short Video", desc: "Social-first video", icon: Clapperboard },
-  { id: "carousel", title: "Carousel", desc: "Multi-page social story", icon: Layers3 },
-  { id: "talking-ai", title: "Talking AI", desc: "Avatar-led video", icon: Users2 },
-  { id: "podcast", title: "Podcast", desc: "Audio or video podcast", icon: Mic2 },
-  { id: "music-video", title: "Music Video", desc: "Music-led cinematic video", icon: Music2 },
-  { id: "story", title: "Story", desc: "Narrative visual storytelling", icon: ImageIcon },
-  { id: "film", title: "Film", desc: "Long-form cinematic project", icon: Sparkles },
+  { id: "reel", title: "Reel", desc: "60-second vertical social video", icon: Video, supported: true },
+  { id: "music-video", title: "Music Video", desc: "60-second cinematic music-led master", icon: Music2, supported: true },
+  { id: "story-video", title: "Story Video", desc: "60-second narrative visual story", icon: ImageIcon, supported: true },
+  { id: "short-video", title: "Short Video", desc: "Variable-duration social video", icon: Clapperboard, supported: false },
+  { id: "carousel", title: "Carousel", desc: "Multi-page social story", icon: Layers3, supported: false },
+  { id: "talking-ai", title: "Talking AI", desc: "Avatar-led video", icon: Users2, supported: false },
+  { id: "podcast", title: "Podcast", desc: "Audio or video podcast", icon: Mic2, supported: false },
+  { id: "film", title: "Film", desc: "Long-form cinematic project", icon: Sparkles, supported: false },
 ];
 
 interface ReferenceMedia {
@@ -99,17 +99,21 @@ export default function CreatePage() {
         </p>
 
         <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {formats.map(({ id, title, desc, icon: Icon }) => {
+          {formats.map(({ id, title, desc, icon: Icon, supported }) => {
             const active = format === id;
             return (
               <button
                 key={id}
                 type="button"
-                onClick={() => setFormat(id)}
-                className={`group rounded-2xl border p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg ${
+                disabled={!supported}
+                onClick={() => supported && setFormat(id)}
+                className={`group relative rounded-2xl border p-5 text-left shadow-sm transition ${
+                  supported ? "hover:-translate-y-0.5 hover:shadow-lg" : "cursor-not-allowed opacity-55"
+                } ${
                   active ? "border-violet-300 bg-violet-50 ring-2 ring-violet-100" : "border-slate-200 bg-white hover:border-violet-200"
                 }`}
               >
+                {!supported && <span className="absolute right-3 top-3 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Coming next</span>}
                 <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${
                   active ? "bg-violet-600 text-white" : "bg-violet-50 text-violet-600"
                 }`}>
