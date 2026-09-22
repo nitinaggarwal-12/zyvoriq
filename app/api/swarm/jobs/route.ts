@@ -5,7 +5,7 @@ import { execFileSync } from "node:child_process";
 import { appendLibraryAssets, type LibraryAssetItem } from "@/lib/swarm-library";
 import { characterLibrary } from "@/lib/library/characterLibrary";
 import { locationLibrary } from "@/lib/library/locationLibrary";
-import { loadProjectState, persistProjectState } from "@/lib/project-store";
+import { createProjectVersion, loadProjectState, persistProjectState } from "@/lib/project-store";
 
 export const runtime = "nodejs";
 
@@ -29,6 +29,15 @@ interface SwarmGenerationJob {
   selectedCharacterName?: string;
   selectedLocationId?: string;
   selectedLocationName?: string;
+  format?: string;
+  stage?: string;
+  brief?: string;
+  country?: string;
+  language?: string;
+  platform?: string;
+  referenceMedia?: Array<{ name: string; type: string; size: number; dataUrl?: string }>;
+  selectedWardrobeId?: string;
+  selectedScene2LocationId?: string;
   status: "queued" | "running" | "completed" | "error";
   stageIndex: number;
   stageLabel: string;
@@ -527,6 +536,7 @@ async function runRealOmniPipeline(job: SwarmGenerationJob) {
       },
     ];
     job.status = "completed";
+    job.stage = "edit";
     log(
       `✅ COMPLETED! Brand-new 60.0s Combined Master + Part 1 + Part 2 loaded into player & saved to /library.`,
       "Stage 6/6 • ✅ Complete! Brand-new 60.0s Master Reel is live in the player below.",
@@ -653,7 +663,8 @@ async function runRealOmniPipeline(job: SwarmGenerationJob) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const id = `job_${Date.now()}`;
+    const requestedProjectId = body.projectId ? String(body.projectId) : "";
+    const id = requestedProjectId || `project_${Date.now()}`;
 
     const selectedCharacterId = body.selectedCharacterId
       ? String(body.selectedCharacterId)
@@ -678,6 +689,15 @@ export async function POST(req: NextRequest) {
 
     const contextPrefix = [characterContext, locationContext].filter(Boolean).join(" ");
 
+    if (requestedProjectId) {
+      try {
+        const existing = await loadProjectState(requestedProjectId);
+        if (existing) await createProjectVersion(requestedProjectId, existing);
+      } catch (err) {
+        console.warn("[project-store] Could not snapshot project before generation:", err);
+      }
+    }
+
     const job: SwarmGenerationJob = {
       id,
       title: String(body.title || "Custom Omni 1.1 Flash Master Reel"),
@@ -689,6 +709,15 @@ export async function POST(req: NextRequest) {
       selectedCharacterName: selectedCharacter?.displayName,
       selectedLocationId: selectedLocation?.id,
       selectedLocationName: selectedLocation?.displayName,
+      format: String(body.format || "reel"),
+      stage: "generate",
+      brief: String(body.brief || ""),
+      country: String(body.country || ""),
+      language: String(body.language || ""),
+      platform: String(body.socialPlatform || body.platform || ""),
+      referenceMedia: Array.isArray(body.referenceMedia) ? body.referenceMedia : [],
+      selectedWardrobeId: body.selectedWardrobeId ? String(body.selectedWardrobeId) : "",
+      selectedScene2LocationId: body.selectedScene2LocationId ? String(body.selectedScene2LocationId) : "",
       status: "running",
       stageIndex: 0,
       stageLabel: "Stage 1/6 • Launching live models/gemini-omni-1.1-flash generation...",
