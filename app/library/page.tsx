@@ -1,3 +1,5 @@
-import UnifiedSwarmLibraryPage from "../my-reels/page";
+import { redirect } from "next/navigation";
 
-export default UnifiedSwarmLibraryPage;
+export default function LibraryRedirect() {
+  redirect("/my-reels");
+}
