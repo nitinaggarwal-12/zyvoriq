@@ -356,11 +356,6 @@ export default function StudioPage() {
     }
   }
 
-  async function generateFullConcept() {
-    await generateIdeas();
-    go("treatment");
-  }
-
   async function startGeneration() {
     if (!act1Prompt.trim() || !act2Prompt.trim()) {
       setMessage("Create or edit the treatment before generation.");
@@ -512,10 +507,9 @@ export default function StudioPage() {
                     <h2 className="mt-2 text-xl font-semibold">What are you trying to create?</h2>
                     <p className="mt-1 text-sm text-slate-500">Pick an idea below or write one sentence. Zyvoriq can build the scenes for you.</p>
                   </div>
-                  <button onClick={generateFullConcept} disabled={generatingIdeas} className={primary}>
-                    {generatingIdeas ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    Generate full concept
-                  </button>
+                  <span className="rounded-full bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700">
+                    Step 1 of 8
+                  </span>
                 </div>
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -564,13 +558,9 @@ export default function StudioPage() {
                   </div>
                 )}
 
-                <div className="mt-5 flex flex-wrap justify-end gap-2">
-                  <button onClick={() => go("format")} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700">
-                    Set options manually
-                  </button>
-                  <button onClick={generateFullConcept} disabled={generatingIdeas} className={primary}>
-                    {generatingIdeas ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    Build scenes for me
+                <div className="mt-5 flex justify-end">
+                  <button onClick={() => go("format")} className={primary}>
+                    Continue to format <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
               </div>
