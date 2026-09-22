@@ -652,7 +652,7 @@ export default function SwarmStudioM3Page() {
             >
               STEP ① • CONCEPT & CAST INPUTS
             </span>
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-slate-500">
               {hasActiveReelLoaded
                 ? "Editing / Extending Active Reel — or click 'New Reel Creation Mode' to start fresh"
                 : "Clean New Reel Creation Canvas — configure cast, wardrobe & prompt below"}
@@ -690,7 +690,7 @@ export default function SwarmStudioM3Page() {
             )}
 
             <div className="flex items-center gap-1.5">
-              <span className="text-[11px] font-mono text-slate-400">🎨 M3 Palette:</span>
+              <span className="text-[11px] font-mono text-slate-500">🎨 M3 Palette:</span>
               <select
                 value={schemeId}
                 onChange={(e) => setSchemeId(e.target.value)}
@@ -715,7 +715,7 @@ export default function SwarmStudioM3Page() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
           {/* 1. Country */}
           <div>
-            <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">
+            <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
               Country
             </label>
             <select
@@ -740,7 +740,7 @@ export default function SwarmStudioM3Page() {
 
           {/* 2. Language */}
           <div>
-            <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">
+            <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
               Language
             </label>
             <select
@@ -765,7 +765,7 @@ export default function SwarmStudioM3Page() {
 
           {/* 3. Characters */}
           <div>
-            <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">
+            <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
               Characters / Cast
             </label>
             <select
@@ -790,7 +790,7 @@ export default function SwarmStudioM3Page() {
 
           {/* 4. Duration (s) */}
           <div>
-            <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">
+            <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
               Duration (s)
             </label>
             <input
@@ -815,7 +815,7 @@ export default function SwarmStudioM3Page() {
 
           {/* 5. Attire (Act I) */}
           <div>
-            <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">
+            <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
               Attire (Act I)
             </label>
             <select
@@ -840,7 +840,7 @@ export default function SwarmStudioM3Page() {
 
           {/* 6. Wardrobe (Act II) */}
           <div>
-            <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">
+            <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
               Wardrobe (Act II)
             </label>
             <select
@@ -865,7 +865,7 @@ export default function SwarmStudioM3Page() {
 
           {/* 7. Demography */}
           <div>
-            <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">
+            <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
               Demography
             </label>
             <select
@@ -890,7 +890,7 @@ export default function SwarmStudioM3Page() {
 
           {/* 8. Target Audience */}
           <div>
-            <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">
+            <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
               Target Audience
             </label>
             <select
@@ -915,7 +915,7 @@ export default function SwarmStudioM3Page() {
 
           {/* 9. Social Platform */}
           <div>
-            <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">
+            <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
               Social Platform
             </label>
             <select
@@ -956,7 +956,7 @@ export default function SwarmStudioM3Page() {
 
           {/* 11. Generated Ideas Dropdown (Spans 2 columns) */}
           <div className="col-span-2">
-            <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">
+            <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
               Select Trending AI Treatment (1–10)
             </label>
             <select
@@ -1029,7 +1029,7 @@ export default function SwarmStudioM3Page() {
             <button
               type="button"
               onClick={() => setShowScriptEditor((s) => !s)}
-              className="px-2.5 py-0.5 rounded-full text-[11px] text-slate-300 hover:bg-white/5"
+              className="px-2.5 py-0.5 rounded-full text-[11px] text-slate-700 hover:bg-white/5"
             >
               {showScriptEditor ? "▲ Collapse Script" : "▼ Expand Script"}
             </button>
@@ -1078,7 +1078,7 @@ export default function SwarmStudioM3Page() {
                     setDraftAct1Prompt(e.target.value);
                     setPromptsSyncedBadge(false);
                   }}
-                  className="w-full bg-transparent text-xs text-slate-100 focus:outline-none leading-relaxed"
+                  className="w-full bg-transparent text-xs text-slate-900 focus:outline-none leading-relaxed"
                 />
               </div>
 
@@ -1103,15 +1103,15 @@ export default function SwarmStudioM3Page() {
                     setDraftAct2Prompt(e.target.value);
                     setPromptsSyncedBadge(false);
                   }}
-                  className="w-full bg-transparent text-xs text-slate-100 focus:outline-none leading-relaxed"
+                  className="w-full bg-transparent text-xs text-slate-900 focus:outline-none leading-relaxed"
                 />
               </div>
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-[11px] text-slate-400">
-                Target: <b className="text-slate-200">{trendDemography}</b> •{" "}
-                <b className="text-slate-200">{trendAudience}</b> on{" "}
+              <span className="text-[11px] text-slate-500">
+                Target: <b className="text-slate-800">{trendDemography}</b> •{" "}
+                <b className="text-slate-800">{trendAudience}</b> on{" "}
                 <b style={{ color: activeScheme.secondary }}>{trendPlatform}</b> (
                 {trendDurationSec}s total)
               </span>
@@ -1225,12 +1225,12 @@ export default function SwarmStudioM3Page() {
                 >
                   ACT I • 00:00 → 00:30
                 </span>
-                <span className="font-mono text-xs text-slate-400">
+                <span className="font-mono text-xs text-slate-500">
                   Eff: {p1EffDur.toFixed(2)}s
                 </span>
               </div>
               <h3 className="text-sm font-bold">Sunlit Cliffside Pool Villa</h3>
-              <p className="text-xs text-slate-400 mt-0.5">{trendAttire}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{trendAttire}</p>
 
               <div
                 style={{ borderColor: activeScheme.outlineVariant }}
@@ -1305,12 +1305,12 @@ export default function SwarmStudioM3Page() {
                 >
                   ACT II • 00:30 → 01:00
                 </span>
-                <span className="font-mono text-xs text-slate-400">
+                <span className="font-mono text-xs text-slate-500">
                   Eff: {p2EffDur.toFixed(2)}s
                 </span>
               </div>
               <h3 className="text-sm font-bold">Twilight Luxury Superyacht Deck</h3>
-              <p className="text-xs text-slate-400 mt-0.5">{trendWardrobe}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{trendWardrobe}</p>
 
               <div
                 style={{ borderColor: activeScheme.outlineVariant }}
@@ -1368,7 +1368,7 @@ export default function SwarmStudioM3Page() {
               }}
               className="rounded-2xl border p-4 space-y-2.5"
             >
-              <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400">
+              <div className="text-[11px] font-mono uppercase tracking-wider text-slate-500">
                 Pacing Presets & Custom Master Bake
               </div>
               <div className="grid grid-cols-1 gap-1.5">
@@ -1528,7 +1528,7 @@ export default function SwarmStudioM3Page() {
               </div>
 
               {/* VIDEO PLAYER */}
-              <div className="relative rounded-2xl overflow-hidden bg-black border border-white/15 aspect-[9/16] max-h-[540px] max-w-md mx-auto w-full flex items-center justify-center shadow-inner">
+              <div className="relative rounded-2xl overflow-hidden bg-black border border-slate-200 aspect-[9/16] max-h-[540px] max-w-md mx-auto w-full flex items-center justify-center shadow-inner">
                 <video
                   key={combinedSrc}
                   ref={combinedVideoRef}
