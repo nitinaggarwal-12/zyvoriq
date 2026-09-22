@@ -452,7 +452,7 @@ function formatSMPTE(sec: number): string {
 
 export default function SwarmMuiStudioPage() {
   // M3 Dynamic Tonal Palette State
-  const [schemeId, setSchemeId] = useState<string>("sapphire_emerald");
+  const [schemeId, setSchemeId] = useState<string>("daylight_studio");
   const activeScheme = useMemo(
     () => M3_TONAL_SCHEMES.find((s) => s.id === schemeId) || M3_TONAL_SCHEMES[0],
     [schemeId]
