@@ -5,7 +5,7 @@ import { execFileSync } from "node:child_process";
 import { appendLibraryAssets, type LibraryAssetItem } from "@/lib/swarm-library";
 import { characterLibrary } from "@/lib/library/characterLibrary";
 import { locationLibrary } from "@/lib/library/locationLibrary";
-import { createProjectVersion, loadProjectState, persistProjectState } from "@/lib/project-store";
+import { createProjectVersion, loadProjectState, persistProjectMedia, persistProjectState } from "@/lib/project-store";
 
 export const runtime = "nodejs";
 
@@ -581,6 +581,20 @@ async function runRealOmniPipeline(job: SwarmGenerationJob) {
     ];
     job.status = "completed";
     job.stage = "edit";
+
+    try {
+      await Promise.all([
+        persistProjectMedia(job.id, "act1.mp4", "video/mp4", fs.readFileSync(act1MasterPath)),
+        persistProjectMedia(job.id, "act2.mp4", "video/mp4", fs.readFileSync(act2MasterPath)),
+        persistProjectMedia(job.id, "master.mp4", "video/mp4", fs.readFileSync(combinedMasterPath)),
+      ]);
+      job.part1Src = `/api/project-media/${encodeURIComponent(job.id)}/act1.mp4`;
+      job.part2Src = `/api/project-media/${encodeURIComponent(job.id)}/act2.mp4`;
+      job.combinedSrc = `/api/project-media/${encodeURIComponent(job.id)}/master.mp4`;
+      saveJobState(job);
+    } catch (err) {
+      console.warn("[project-media] Durable media persistence failed; local generated files remain available:", err);
+    }
     log(
       `✅ COMPLETED! Brand-new 60.0s Combined Master + Part 1 + Part 2 loaded into player & saved to /library.`,
       "Stage 6/6 • ✅ Complete! Brand-new 60.0s Master Reel is live in the player below.",
