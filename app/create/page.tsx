@@ -4,14 +4,14 @@ import Link from "next/link";
 import { ArrowRight, Clapperboard, ImageIcon, Layers3, Mic2, Music2, Sparkles, Upload, Users2, Video } from "lucide-react";
 
 const formats = [
-  { title: "Reel", desc: "Short-form vertical video", href: "/reels", icon: Video },
-  { title: "Short Video", desc: "Social-first video", href: "/reels", icon: Clapperboard },
-  { title: "Carousel", desc: "Multi-page social story", href: "/studio/create/carousel", icon: Layers3 },
-  { title: "Talking AI", desc: "Avatar-led video", href: "/studio/avatars", icon: Users2 },
-  { title: "Podcast", desc: "Audio or video podcast", href: "/studio/create", icon: Mic2 },
-  { title: "Music Video", desc: "Music-led cinematic video", href: "/music-video", icon: Music2 },
-  { title: "Story", desc: "Narrative visual storytelling", href: "/motion-pictures", icon: ImageIcon },
-  { title: "Film", desc: "Long-form cinematic project", href: "/feature-films", icon: Sparkles },
+  { title: "Reel", desc: "Short-form vertical video", href: "/swarm", icon: Video },
+  { title: "Short Video", desc: "Social-first video", href: "/swarm", icon: Clapperboard },
+  { title: "Carousel", desc: "Multi-page social story", href: "/swarm", icon: Layers3 },
+  { title: "Talking AI", desc: "Avatar-led video", href: "/swarm", icon: Users2 },
+  { title: "Podcast", desc: "Audio or video podcast", href: "/swarm", icon: Mic2 },
+  { title: "Music Video", desc: "Music-led cinematic video", href: "/swarm", icon: Music2 },
+  { title: "Story", desc: "Narrative visual storytelling", href: "/swarm", icon: ImageIcon },
+  { title: "Film", desc: "Long-form cinematic project", href: "/swarm", icon: Sparkles },
 ];
 
 export default function CreatePage() {
@@ -51,7 +51,7 @@ export default function CreatePage() {
                 <Users2 className="h-4 w-4" /> Add person
               </button>
             </div>
-            <Link href="/reels" className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-700">
+            <Link href="/swarm" className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-700">
               Continue <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
