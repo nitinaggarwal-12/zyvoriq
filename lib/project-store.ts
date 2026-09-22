@@ -51,6 +51,17 @@ async function ensureTables() {
         PRIMARY KEY (project_id, name)
       );
 
+      CREATE TABLE IF NOT EXISTS zyvoriq_support_tickets (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        category TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        message TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'open',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+
       CREATE INDEX IF NOT EXISTS idx_zyvoriq_project_versions_project
         ON zyvoriq_project_versions(project_id, version DESC);
     `).then(() => undefined);
@@ -182,4 +193,24 @@ export async function loadProjectMedia(projectId: string, name: string) {
     contentType: String(row.content_type || "application/octet-stream"),
     bytes: Buffer.from(row.bytes),
   };
+}
+
+
+export async function createSupportTicket(input: {
+  name: string;
+  email: string;
+  category: string;
+  subject: string;
+  message: string;
+}) {
+  const p = getPool();
+  if (!p) throw new Error("Support storage is not configured");
+  await ensureTables();
+  const id = `ZYV-${Date.now().toString(36).toUpperCase()}`;
+  await p.query(
+    `INSERT INTO zyvoriq_support_tickets (id, name, email, category, subject, message)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [id, input.name, input.email, input.category, input.subject, input.message]
+  );
+  return { id, status: "open" as const };
 }
