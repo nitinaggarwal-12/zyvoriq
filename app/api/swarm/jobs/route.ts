@@ -3,10 +3,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { appendLibraryAssets, type LibraryAssetItem } from "@/lib/swarm-library";
+import { characterLibrary } from "@/lib/library/characterLibrary";
+import { locationLibrary } from "@/lib/library/locationLibrary";
 
 export const runtime = "nodejs";
 
-export interface JobStageFile {
+interface JobStageFile {
   id: string;
   partIndex: 1 | 2;
   label: string;
@@ -15,13 +17,17 @@ export interface JobStageFile {
   src: string;
 }
 
-export interface SwarmGenerationJob {
+interface SwarmGenerationJob {
   id: string;
   title: string;
   genre: string;
   bpm: number;
   act1Prompt: string;
   act2Prompt: string;
+  selectedCharacterId?: string;
+  selectedCharacterName?: string;
+  selectedLocationId?: string;
+  selectedLocationName?: string;
   status: "queued" | "running" | "completed" | "error";
   stageIndex: number;
   stageLabel: string;
@@ -644,13 +650,41 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const id = `job_${Date.now()}`;
+
+    const selectedCharacterId = body.selectedCharacterId
+      ? String(body.selectedCharacterId)
+      : "";
+    const selectedLocationId = body.selectedLocationId
+      ? String(body.selectedLocationId)
+      : "";
+
+    const selectedCharacter = selectedCharacterId
+      ? await characterLibrary.get(selectedCharacterId)
+      : null;
+    const selectedLocation = selectedLocationId
+      ? await locationLibrary.get(selectedLocationId)
+      : null;
+
+    const characterContext = selectedCharacter
+      ? `CAST LOCK: Use ${selectedCharacter.displayName} (${selectedCharacter.archetype}) as the primary performer. ${selectedCharacter.description}. Voice profile: ${selectedCharacter.defaultVoiceId || "default"}.`
+      : "";
+    const locationContext = selectedLocation
+      ? `LOCATION LOCK: Use ${selectedLocation.displayName}. Preserve this environment consistently: ${selectedLocation.environmentBlock}`
+      : "";
+
+    const contextPrefix = [characterContext, locationContext].filter(Boolean).join(" ");
+
     const job: SwarmGenerationJob = {
       id,
       title: String(body.title || "Custom Omni 1.1 Flash Master Reel"),
       genre: String(body.genre || "Bollywood Hindi Pop"),
       bpm: Number(body.bpm || 122),
-      act1Prompt: String(body.act1Prompt || ""),
-      act2Prompt: String(body.act2Prompt || ""),
+      act1Prompt: `${contextPrefix ? contextPrefix + " " : ""}${String(body.act1Prompt || "")}`,
+      act2Prompt: `${contextPrefix ? contextPrefix + " " : ""}${String(body.act2Prompt || "")}`,
+      selectedCharacterId: selectedCharacter?.id,
+      selectedCharacterName: selectedCharacter?.displayName,
+      selectedLocationId: selectedLocation?.id,
+      selectedLocationName: selectedLocation?.displayName,
       status: "running",
       stageIndex: 0,
       stageLabel: "Stage 1/6 • Launching live models/gemini-omni-1.1-flash generation...",
@@ -671,7 +705,6 @@ export async function POST(req: NextRequest) {
 
     saveJobState(job);
 
-    // Fire background async worker (non-blocking HTTP response)
     runRealOmniPipeline(job).catch(() => {});
 
     return NextResponse.json({ ok: true, job });
