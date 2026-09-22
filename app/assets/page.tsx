@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Edit3,
   MapPin,
@@ -60,6 +61,7 @@ const emptyLocation = {
 };
 
 export default function AssetsPage() {
+  const router = useRouter();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [tab, setTab] = useState<"people" | "locations">("people");
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -193,6 +195,26 @@ export default function AssetsPage() {
     await load();
   }
 
+  async function startProjectWithAsset(kind: "character" | "location", id: string) {
+    setMessage("");
+    try {
+      const payload =
+        kind === "character"
+          ? { format: "reel", stage: "assets", status: "draft", selectedCharacterId: id, title: "Untitled Reel" }
+          : { format: "reel", stage: "assets", status: "draft", selectedLocationId: id, selectedScene2LocationId: id, title: "Untitled Reel" };
+      const response = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (!response.ok || !data?.project?.id) throw new Error(data?.error || "Could not create project");
+      router.push(`/swarm?project=${encodeURIComponent(data.project.id)}`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not start project.");
+    }
+  }
+
   async function readWardrobeFile(file: File) {
     if (file.size > 5 * 1024 * 1024) {
       setMessage("Reference images are limited to 5 MB each.");
@@ -218,8 +240,8 @@ export default function AssetsPage() {
               Build identity and environment assets once, then reuse them directly in every Studio project.
             </p>
           </div>
-          <Link href="/swarm" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-            Back to Studio
+          <Link href="/my-reels" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+            View projects
           </Link>
         </div>
 
@@ -302,7 +324,7 @@ export default function AssetsPage() {
                         </div>
                         <p className="mt-3 line-clamp-2 text-xs leading-5 text-slate-500">{character.description}</p>
                         <div className="mt-4 flex flex-wrap gap-2">
-                          <Link href={`/swarm?character=${encodeURIComponent(character.id)}`} className="rounded-xl bg-violet-600 px-3 py-2 text-xs font-semibold text-white">Use in Studio</Link>
+                          <button onClick={() => startProjectWithAsset("character", character.id)} className="rounded-xl bg-violet-600 px-3 py-2 text-xs font-semibold text-white">Start project</button>
                           <button onClick={() => { setEditingCharacter(character.id); setCharacterForm({ ...emptyCharacter, ...character }); }} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600"><Edit3 className="mr-1 inline h-3.5 w-3.5" />Edit</button>
                           <button onClick={() => setWardrobeTarget(character)} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600"><Upload className="mr-1 inline h-3.5 w-3.5" />Wardrobe</button>
                           <button onClick={() => remove("character", character.id)} className="rounded-xl border border-slate-200 px-2.5 py-2 text-rose-600"><Trash2 className="h-3.5 w-3.5" /></button>
@@ -323,7 +345,7 @@ export default function AssetsPage() {
                       <h2 className="font-semibold">{location.displayName}</h2>
                       <p className="mt-2 line-clamp-3 text-xs leading-5 text-slate-500">{location.environmentBlock}</p>
                       <div className="mt-4 flex flex-wrap gap-2">
-                        <Link href={`/swarm?location=${encodeURIComponent(location.id)}`} className="rounded-xl bg-violet-600 px-3 py-2 text-xs font-semibold text-white">Use in Studio</Link>
+                        <button onClick={() => startProjectWithAsset("location", location.id)} className="rounded-xl bg-violet-600 px-3 py-2 text-xs font-semibold text-white">Start project</button>
                         <button onClick={() => { setEditingLocation(location.id); setLocationForm({ ...emptyLocation, ...location }); }} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600"><Edit3 className="mr-1 inline h-3.5 w-3.5" />Edit</button>
                         <button onClick={() => remove("location", location.id)} className="rounded-xl border border-slate-200 px-2.5 py-2 text-rose-600"><Trash2 className="h-3.5 w-3.5" /></button>
                       </div>
