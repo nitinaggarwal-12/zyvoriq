@@ -1,12 +1,8 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  InlineClipTrimmer,
-  MultiClipSplicerWorkbench,
-  QueuedSpliceSegment,
-} from "@/components/InstantSubClipSplicer";
+import { Clock3, Film, FolderOpen, Play, Plus, Search, SlidersHorizontal } from "lucide-react";
 
 interface LibraryAssetItem {
   id: string;
@@ -14,442 +10,169 @@ interface LibraryAssetItem {
   projectTitle: string;
   title: string;
   subtitle: string;
-  assetType:
-    | "combined_master"
-    | "act_master"
-    | "turn_segment"
-    | "baked_custom"
-    | "face_anchor";
+  assetType: "combined_master" | "act_master" | "turn_segment" | "baked_custom" | "face_anchor";
   genre: string;
   durationSec: number;
-  frames: number;
-  fps: string;
-  audioSpec: string;
-  partIndex?: 1 | 2;
-  speedMultiplier?: number;
-  wardrobe: string;
-  location: string;
-  promptSummary: string;
   src: string;
   createdAt: string;
 }
 
-interface ParentProjectGroup {
-  projectId: string;
-  mainReel: LibraryAssetItem;
-  childActReels: LibraryAssetItem[];
-  childClips: LibraryAssetItem[];
-  allChildren: LibraryAssetItem[];
+interface ProjectCard {
+  id: string;
+  title: string;
+  genre: string;
+  createdAt: string;
+  master?: LibraryAssetItem;
+  assets: LibraryAssetItem[];
 }
 
-function mapAssetToEntityId(assetId: string): string {
-  const map: Record<string, string> = {
-    masterB_v2_combined_60s: "ZYV-REEL-MBV260S1",
-    masterB_v2_act1_30s: "ZYV-CLIP-ACT130S1",
-    masterB_v2_act2_30s: "ZYV-CLIP-ACT230S2",
-    masterB_v2_act1_turnA_10s: "ZYV-CLIP-TRN1A10S",
-    masterB_v2_act1_turnB_20s: "ZYV-CLIP-TRN1B20S",
-    masterB_v2_act2_turnA_10s: "ZYV-CLIP-TRN2A10S",
-    masterB_v2_act2_turnB_20s: "ZYV-CLIP-TRN2B20s",
-    masterB_v2_face_identity_anchor: "ZYV-CAST-HEROFACE",
-  };
-  if (map[assetId]) return map[assetId];
-  const clean = assetId.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-  let hash = 0;
-  for (let i = 0; i < assetId.length; i++) {
-    hash = (hash * 31 + assetId.charCodeAt(i)) >>> 0;
-  }
-  const tag = hash.toString(36).toUpperCase().padStart(4, "0").slice(-4);
-  return `ZYV-CLIP-${clean.slice(0, 4)}${tag}`;
-}
-
-export default function UnifiedSwarmLibraryPage() {
+export default function ProjectsPage() {
   const [items, setItems] = useState<LibraryAssetItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [expandedProjectIds, setExpandedProjectIds] = useState<Record<string, boolean>>({});
-  const [spliceQueue, setSpliceQueue] = useState<QueuedSpliceSegment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     fetch("/api/swarm/library")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.items) setItems(data.items);
-      })
+      .then((r) => r.json())
+      .then((data) => setItems(Array.isArray(data?.items) ? data.items : []))
+      .catch(() => setItems([]))
       .finally(() => setLoading(false));
   }, []);
 
-  // Group all assets under their parent Combined Reel
-  const groupedProjects = useMemo<ParentProjectGroup[]>(() => {
-    const groupsMap = new Map<string, LibraryAssetItem[]>();
-    for (const item of items) {
-      const pid = item.projectId || "proj_master_b_v2";
-      if (!groupsMap.has(pid)) groupsMap.set(pid, []);
-      groupsMap.get(pid)!.push(item);
-    }
+  const projects = useMemo<ProjectCard[]>(() => {
+    const grouped = new Map<string, LibraryAssetItem[]>();
+    items.forEach((item) => {
+      const id = item.projectId || "untitled";
+      grouped.set(id, [...(grouped.get(id) || []), item]);
+    });
 
-    const result: ParentProjectGroup[] = [];
-    for (const [projectId, list] of groupsMap.entries()) {
-      const mainReel =
-        list.find((a) => a.assetType === "combined_master") || list[0];
-      const children = list.filter((a) => a.id !== mainReel.id);
-      const childActReels = children.filter((a) => a.assetType === "act_master");
-      const childClips = children.filter((a) => a.assetType !== "act_master");
-
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const combinedText = list
-          .map((x) => `${x.title} ${x.promptSummary} ${x.wardrobe} ${x.location} ${mapAssetToEntityId(x.id)}`)
-          .join(" ")
-          .toLowerCase();
-        if (!combinedText.includes(q)) continue;
-      }
-
-      result.push({
-        projectId,
-        mainReel,
-        childActReels,
-        childClips,
-        allChildren: children,
-      });
-    }
-    return result;
-  }, [items, searchQuery]);
-
-  const toggleProjectExpand = (projectId: string) => {
-    setExpandedProjectIds((prev) => ({
-      ...prev,
-      [projectId]: !prev[projectId],
-    }));
-  };
+    return Array.from(grouped.entries())
+      .map(([id, assets]) => {
+        const master = assets.find((a) => a.assetType === "combined_master") || assets[0];
+        return {
+          id,
+          title: master?.projectTitle || master?.title || "Untitled project",
+          genre: master?.genre || "Video",
+          createdAt: master?.createdAt || "",
+          master,
+          assets,
+        };
+      })
+      .filter((project) => {
+        const q = query.trim().toLowerCase();
+        if (!q) return true;
+        return `${project.title} ${project.genre}`.toLowerCase().includes(q);
+      })
+      .sort((a, b) => Date.parse(b.createdAt || "0") - Date.parse(a.createdAt || "0"));
+  }, [items, query]);
 
   return (
-    <main className="min-h-screen bg-[#F7F8FC] text-slate-900 w-full px-4 md:px-6 py-6">
-      <div className="w-full space-y-5">
-        {/* Top Header */}
-        <header className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200">
+    <main className="min-h-screen bg-[#F7F8FC] text-slate-900">
+      <div className="mx-auto max-w-[1500px] px-5 py-8 sm:px-8 lg:px-10">
+        <div className="flex flex-col gap-5 border-b border-slate-200 pb-7 md:flex-row md:items-end md:justify-between">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-400/40 font-mono text-xs font-bold text-emerald-300">
-                ZYV-PAGE-LIBRY002
-              </span>
-              <span className="text-xs font-mono text-amber-300">
-                HIERARCHICAL REEL LIBRARY • CLICK MAIN REEL TO EXPAND CHILD REELS & CLIPS
-              </span>
-            </div>
-            <h1 className="text-xl md:text-2xl font-bold text-slate-900">
-              My Swarm Reels Library ({groupedProjects.length} Main Reels • {items.length} Total Objects)
-            </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              By default only the Main Combined Reel + Prompt & Inputs are shown. Click any Combined Reel card to expand all its child Act Reels & Clips.
+            <p className="text-sm font-semibold text-violet-600">Projects</p>
+            <h1 className="mt-1 text-3xl font-bold tracking-[-0.04em] sm:text-4xl">Your creative work</h1>
+            <p className="mt-2 max-w-2xl text-sm text-slate-500 sm:text-base">
+              Pick up where you left off, review finished videos, or start something new.
             </p>
           </div>
+          <Link
+            href="/swarm"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700"
+          >
+            <Plus className="h-4 w-4" />
+            New project
+          </Link>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full sm:max-w-md">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="🔍 Search ID, prompt, wardrobe, location..."
-              className="w-64 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 font-mono"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search projects"
+              className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
             />
-            <Link
-              href="/registry"
-              className="px-3.5 py-2 rounded-xl bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/40 font-mono text-xs font-bold text-amber-200"
-            >
-              🗄️ SQLite DB Registry (/registry)
-            </Link>
-            <Link
-              href="/swarm"
-              className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs"
-            >
-              🎬 Open Director Studio (/swarm)
-            </Link>
           </div>
-        </header>
+          <div className="inline-flex items-center gap-2 text-sm text-slate-500">
+            <SlidersHorizontal className="h-4 w-4" />
+            {projects.length} {projects.length === 1 ? "project" : "projects"}
+          </div>
+        </div>
 
-        {/* Hierarchical Parent Combined Reels List */}
         {loading ? (
-          <div className="py-16 text-center font-mono text-sm text-slate-500">
-            Loading Hierarchical Swarm Reels...
+          <div className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-[360px] animate-pulse rounded-2xl border border-slate-200 bg-white" />
+            ))}
+          </div>
+        ) : projects.length === 0 ? (
+          <div className="mt-10 rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-50 text-violet-600">
+              <FolderOpen className="h-6 w-6" />
+            </div>
+            <h2 className="mt-4 text-lg font-semibold">No projects yet</h2>
+            <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
+              Create your first video and it will appear here automatically.
+            </p>
+            <Link href="/swarm" className="mt-5 inline-flex rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white">
+              Create a project
+            </Link>
           </div>
         ) : (
-          <div className="space-y-6">
-            {groupedProjects.map((group) => {
-              const { mainReel, allChildren } = group;
-              const isExpanded = Boolean(expandedProjectIds[group.projectId]);
-              const mainEntityId = mapAssetToEntityId(mainReel.id);
-              const mainCanonicalUrl = `/entity/${mainEntityId}`;
-
-              return (
-                <section
-                  key={group.projectId}
-                  className="rounded-2xl bg-white border border-slate-200 overflow-hidden shadow-2xl transition"
-                >
-                  {/* =========================================================
-                      DEFAULT VISIBLE CARD: MAIN COMBINED REEL + PROMPT & INPUTS
-                     ========================================================= */}
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-5 items-start">
-                    {/* Left Column (4 cols): Main Combined Reel Player */}
-                    <div className="lg:col-span-4">
-                      <div className="relative rounded-xl overflow-hidden bg-black border border-slate-200 aspect-[9/16] max-h-[440px] w-full flex items-center justify-center">
-                        <video
-                          src={mainReel.src}
-                          controls
-                          playsInline
-                          preload="metadata"
-                          className="w-full h-full object-contain"
-                        />
-                        <Link
-                          href={mainCanonicalUrl}
-                          className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg bg-black/85 border border-emerald-400/50 font-mono text-[10px] font-bold text-emerald-300"
-                        >
-                          {mainEntityId}
-                        </Link>
-                        <span className="pointer-events-none absolute top-2.5 right-2.5 px-2 py-1 rounded-lg bg-black/85 border border-slate-200 font-mono text-[10px] text-amber-300">
-                          {mainReel.durationSec.toFixed(1)}s • {mainReel.frames}f
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Right Column (8 cols): Prompt, Inputs, Metadata & Expand Trigger */}
-                    <div className="lg:col-span-8 flex flex-col justify-between space-y-4">
-                      <div className="space-y-3">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className="px-2.5 py-0.5 rounded bg-amber-400/15 border border-amber-400/30 font-mono text-xs font-bold text-amber-300">
-                              MAIN COMBINED REEL
-                            </span>
-                            <span className="font-mono text-xs text-emerald-300">
-                              {mainReel.genre} • {mainReel.fps} • {mainReel.audioSpec}
-                            </span>
-                          </div>
-                          <Link
-                            href={mainCanonicalUrl}
-                            className="font-mono text-xs text-sky-300 hover:underline"
-                          >
-                            Unique URL: {mainCanonicalUrl} →
-                          </Link>
-                        </div>
-
-                        <h2 className="text-lg md:text-xl font-bold text-slate-900">
-                          {mainReel.title}
-                        </h2>
-                        <p className="text-xs text-slate-700">{mainReel.subtitle}</p>
-
-                        {/* Prompt & Input Parameters Card */}
-                        <div className="rounded-xl bg-black/55 border border-slate-200 p-4 space-y-2.5 text-xs">
-                          <div className="font-mono text-[11px] uppercase tracking-wider text-amber-300 font-bold">
-                            Prompt & Input Parameters
-                          </div>
-                          <p className="text-slate-800 leading-relaxed">
-                            {mainReel.promptSummary}
-                          </p>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-200 text-[11px]">
-                            <div>
-                              <span className="text-slate-500">Wardrobe / Attire: </span>
-                              <span className="text-amber-200 font-medium">
-                                {mainReel.wardrobe}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-slate-500">Shooting Locations: </span>
-                              <span className="text-emerald-200 font-medium">
-                                {mainReel.location}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Primary Action Bar + CLICK TO EXPAND CHILD REELS & CLIPS */}
-                      <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-200">
-                        <button
-                          type="button"
-                          onClick={() => toggleProjectExpand(group.projectId)}
-                          className={`px-4 py-2.5 rounded-xl font-extrabold text-xs transition flex items-center gap-2 border ${
-                            isExpanded
-                              ? "bg-amber-400 text-slate-950 border-amber-300 shadow-lg"
-                              : "bg-emerald-500/20 hover:bg-emerald-500/30 border-emerald-400/50 text-emerald-200"
-                          }`}
-                        >
-                          <span>
-                            {isExpanded
-                              ? `▲ Hide Child Reels & Clips (${allChildren.length})`
-                              : `▼ Click to Expand Child Reels & Clips (${allChildren.length} items)`}
-                          </span>
-                        </button>
-
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Link
-                            href={`/swarm?edit=${mainEntityId}`}
-                            className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-semibold text-slate-900"
-                          >
-                            🎬 Edit in Studio (/swarm)
-                          </Link>
-                          <Link
-                            href={`/swarm-MUI?edit=${mainEntityId}`}
-                            className="px-3.5 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/40 text-xs font-semibold text-sky-200"
-                          >
-                            🎨 Edit in M3 Studio (/swarm-MUI)
-                          </Link>
-                          <a
-                            href={mainReel.src}
-                            download={`${mainEntityId}.mp4`}
-                            className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs"
-                          >
-                            ⬇ Download Main MP4
-                          </a>
-                        </div>
-                      </div>
-
-                      {/* INSTANT SUB-CLIP TRIMMER FOR MAIN COMBINED REEL */}
-                      <InlineClipTrimmer
-                        clipId={mainEntityId}
-                        label={mainReel.title}
-                        src={mainReel.src}
-                        maxDurationSec={mainReel.durationSec || 60}
-                        onAddToQueue={(seg) => setSpliceQueue((prev) => [...prev, seg])}
-                      />
-                    </div>
-                  </div>
-
-                  {/* MULTI-CLIP & CHILD-CLIP CUSTOM REEL SPLICER WORKBENCH */}
-                  <div className="px-5 pb-4">
-                    <MultiClipSplicerWorkbench
-                      availableSources={[
-                        {
-                          clipId: mainEntityId,
-                          label: mainReel.title,
-                          src: mainReel.src,
-                          maxDurationSec: mainReel.durationSec || 60,
-                        },
-                        ...allChildren
-                          .filter(
-                            (c) =>
-                              c.assetType !== "face_anchor" && !c.src.endsWith(".jpg")
-                          )
-                          .map((c) => ({
-                            clipId: mapAssetToEntityId(c.id),
-                            label: c.title,
-                            src: c.src,
-                            maxDurationSec: c.durationSec || 10,
-                          })),
-                      ]}
-                      queue={spliceQueue}
-                      setQueue={setSpliceQueue}
-                    />
-                  </div>
-
-                  {/* =========================================================
-                      EXPANDABLE DRAWER: ALL CHILD REELS (30s) & CLIPS (10s/20s)
-                     ========================================================= */}
-                  {isExpanded && (
-                    <div className="border-t border-slate-200 bg-black/50 p-5 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-xs uppercase tracking-wider text-emerald-300 font-bold">
-                          ↳ Constituent Child Act Reels & Clips ({allChildren.length} Objects under {mainEntityId})
-                        </span>
-                        <span className="font-mono text-[11px] text-slate-500">
-                          Every child clip has its own unique Alphanumeric ID, Canonical URL & Instant Sub-Clip Splicer
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {allChildren.map((child) => {
-                          const childEntityId = mapAssetToEntityId(child.id);
-                          const childUrl = `/entity/${childEntityId}`;
-                          const isImg =
-                            child.assetType === "face_anchor" ||
-                            child.src.endsWith(".jpg");
-
-                          return (
-                            <article
-                              key={child.id}
-                              className="rounded-xl bg-white border border-slate-200 overflow-hidden flex flex-col justify-between"
-                            >
-                              <div>
-                                <div className="relative aspect-[9/14] max-h-[290px] bg-black flex items-center justify-center">
-                                  {isImg ? (
-                                    <img
-                                      src={child.src}
-                                      alt={child.title}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  ) : (
-                                    <video
-                                      src={child.src}
-                                      controls
-                                      playsInline
-                                      preload="metadata"
-                                      className="w-full h-full object-contain"
-                                    />
-                                  )}
-                                  <Link
-                                    href={childUrl}
-                                    className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/85 border border-emerald-400/40 font-mono text-[10px] font-bold text-emerald-300"
-                                  >
-                                    {childEntityId}
-                                  </Link>
-                                  <span className="pointer-events-none absolute top-2 right-2 px-2 py-0.5 rounded bg-black/85 border border-slate-200 font-mono text-[10px] text-amber-300">
-                                    {child.durationSec > 0
-                                      ? `${child.durationSec.toFixed(1)}s • ${child.frames}f`
-                                      : "Keyframe"}
-                                  </span>
-                                </div>
-
-                                <div className="p-3 space-y-1">
-                                  <div className="text-xs font-bold text-slate-900 truncate">
-                                    {child.title}
-                                  </div>
-                                  <div className="text-[11px] text-slate-500 line-clamp-2">
-                                    {child.subtitle}
-                                  </div>
-                                  <div className="pt-1 font-mono text-[10px] text-sky-300 truncate">
-                                    <Link href={childUrl} className="hover:underline">
-                                      {childUrl}
-                                    </Link>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="px-3 pb-3 pt-1 space-y-2">
-                                {!isImg && (
-                                  <InlineClipTrimmer
-                                    clipId={childEntityId}
-                                    label={child.title}
-                                    src={child.src}
-                                    maxDurationSec={child.durationSec || 10}
-                                    onAddToQueue={(seg) =>
-                                      setSpliceQueue((prev) => [...prev, seg])
-                                    }
-                                  />
-                                )}
-                                <div className="flex items-center justify-between gap-2">
-                                  <Link
-                                    href={childUrl}
-                                    className="flex-1 text-center py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-slate-200 font-mono text-[11px] text-emerald-300"
-                                  >
-                                    Inspect ID →
-                                  </Link>
-                                  <a
-                                    href={child.src}
-                                    download={`${childEntityId}${isImg ? ".jpg" : ".mp4"}`}
-                                    className="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-slate-900"
-                                  >
-                                    ⬇
-                                  </a>
-                                </div>
-                              </div>
-                            </article>
-                          );
-                        })}
-                      </div>
-                    </div>
+          <div className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {projects.map((project) => (
+              <article key={project.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
+                <div className="relative aspect-video bg-slate-950">
+                  {project.master?.src ? (
+                    <video src={project.master.src} preload="metadata" className="h-full w-full object-cover" muted playsInline />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-slate-400"><Film className="h-8 w-8" /></div>
                   )}
-                </section>
-              );
-            })}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+                  <Link
+                    href={project.master?.src || "/swarm"}
+                    className="absolute bottom-3 left-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow"
+                  >
+                    <Play className="h-4 w-4 fill-current" />
+                  </Link>
+                </div>
+
+                <div className="p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <h2 className="truncate text-base font-semibold text-slate-900">{project.title}</h2>
+                      <p className="mt-1 truncate text-sm text-slate-500">{project.genre}</p>
+                    </div>
+                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">Ready</span>
+                  </div>
+
+                  <div className="mt-4 flex items-center gap-4 text-xs text-slate-500">
+                    <span className="inline-flex items-center gap-1.5"><Film className="h-3.5 w-3.5" />{project.assets.length} assets</span>
+                    <span className="inline-flex items-center gap-1.5"><Clock3 className="h-3.5 w-3.5" />{project.master?.durationSec || 60}s</span>
+                  </div>
+
+                  <div className="mt-5 flex gap-2">
+                    <Link
+                      href={`/swarm?project=${encodeURIComponent(project.id)}`}
+                      className="flex-1 rounded-xl bg-violet-600 px-3 py-2.5 text-center text-sm font-semibold text-white hover:bg-violet-700"
+                    >
+                      Open studio
+                    </Link>
+                    {project.master?.src && (
+                      <a
+                        href={project.master.src}
+                        className="rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        Preview
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </article>
+            ))}
           </div>
         )}
       </div>
