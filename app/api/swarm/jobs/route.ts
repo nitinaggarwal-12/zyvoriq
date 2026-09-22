@@ -38,6 +38,7 @@ interface SwarmGenerationJob {
   referenceMedia?: Array<{ name: string; type: string; size: number; dataUrl?: string }>;
   selectedWardrobeId?: string;
   selectedScene2LocationId?: string;
+  selectedCharacterReference?: { data: string; mimeType: string };
   status: "queued" | "running" | "completed" | "error";
   stageIndex: number;
   stageLabel: string;
@@ -206,6 +207,39 @@ function lockExactDuration(rawPath: string, outPath: string, seconds: number) {
   );
 }
 
+async function resolveReferenceImage(uri?: string): Promise<{ data: string; mimeType: string } | null> {
+  if (!uri) return null;
+  try {
+    if (uri.startsWith("data:")) {
+      const match = uri.match(/^data:([^;]+);base64,(.+)$/);
+      if (!match) return null;
+      return { mimeType: match[1], data: match[2] };
+    }
+    if (uri.startsWith("/")) {
+      const absolute = path.join(process.cwd(), "public", uri.replace(/^\/+/, ""));
+      if (!fs.existsSync(absolute)) return null;
+      const ext = path.extname(absolute).toLowerCase();
+      const mimeType =
+        ext === ".png" ? "image/png" :
+        ext === ".webp" ? "image/webp" :
+        "image/jpeg";
+      return { mimeType, data: fs.readFileSync(absolute).toString("base64") };
+    }
+    if (/^https?:\/\//i.test(uri)) {
+      const res = await fetch(uri);
+      if (!res.ok) return null;
+      const bytes = Buffer.from(await res.arrayBuffer());
+      return {
+        mimeType: res.headers.get("content-type") || "image/jpeg",
+        data: bytes.toString("base64"),
+      };
+    }
+  } catch (err) {
+    console.warn("[swarm] Could not resolve character reference image:", err);
+  }
+  return null;
+}
+
 async function runRealOmniPipeline(job: SwarmGenerationJob) {
   const apiKey = resolveApiKey();
   const jobDir = getJobDir(job.id);
@@ -240,10 +274,20 @@ async function runRealOmniPipeline(job: SwarmGenerationJob) {
       apiKey,
       {
         input: [
+          ...(job.selectedCharacterReference
+            ? [{
+                type: "image",
+                data: job.selectedCharacterReference.data,
+                mime_type: job.selectedCharacterReference.mimeType,
+              }]
+            : []),
           {
             type: "text",
             text:
               `Generate a 10.0-second 9:16 vertical 24fps opening scene (0s to 10s). ` +
+              (job.selectedCharacterReference
+                ? "Use the supplied character reference as a strict visual identity and wardrobe anchor. "
+                : "") +
               `${job.act1Prompt}`,
           },
         ],
@@ -672,6 +716,12 @@ export async function POST(req: NextRequest) {
     const selectedLocationId = body.selectedLocationId
       ? String(body.selectedLocationId)
       : "";
+    const selectedScene2LocationId = body.selectedScene2LocationId
+      ? String(body.selectedScene2LocationId)
+      : selectedLocationId;
+    const selectedWardrobeId = body.selectedWardrobeId
+      ? String(body.selectedWardrobeId)
+      : "";
 
     const selectedCharacter = selectedCharacterId
       ? await characterLibrary.get(selectedCharacterId)
@@ -679,15 +729,32 @@ export async function POST(req: NextRequest) {
     const selectedLocation = selectedLocationId
       ? await locationLibrary.get(selectedLocationId)
       : null;
+    const selectedScene2Location = selectedScene2LocationId
+      ? await locationLibrary.get(selectedScene2LocationId)
+      : null;
+
+    const selectedWardrobe = selectedCharacter
+      ? selectedCharacter.wardrobe.find((variant) => variant.id === selectedWardrobeId) ||
+        selectedCharacter.wardrobe.find((variant) => variant.isDefault) ||
+        selectedCharacter.wardrobe[0]
+      : undefined;
+    const characterReference = await resolveReferenceImage(selectedWardrobe?.sheetUris?.[0]);
 
     const characterContext = selectedCharacter
       ? `CAST LOCK: Use ${selectedCharacter.displayName} (${selectedCharacter.archetype}) as the primary performer. ${selectedCharacter.description}. Voice profile: ${selectedCharacter.defaultVoiceId || "default"}.`
       : "";
-    const locationContext = selectedLocation
-      ? `LOCATION LOCK: Use ${selectedLocation.displayName}. Preserve this environment consistently: ${selectedLocation.environmentBlock}`
+    const wardrobeContext = selectedWardrobe
+      ? `WARDROBE LOCK: Preserve wardrobe variant "${selectedWardrobe.label}" consistently within the scene.`
+      : "";
+    const act1LocationContext = selectedLocation
+      ? `SCENE 1 LOCATION LOCK: Use ${selectedLocation.displayName}. Preserve this environment: ${selectedLocation.environmentBlock}`
+      : "";
+    const act2LocationContext = selectedScene2Location
+      ? `SCENE 2 LOCATION LOCK: Use ${selectedScene2Location.displayName}. Preserve this environment: ${selectedScene2Location.environmentBlock}`
       : "";
 
-    const contextPrefix = [characterContext, locationContext].filter(Boolean).join(" ");
+    const act1Context = [characterContext, wardrobeContext, act1LocationContext].filter(Boolean).join(" ");
+    const act2Context = [characterContext, wardrobeContext, act2LocationContext].filter(Boolean).join(" ");
 
     if (requestedProjectId) {
       try {
@@ -703,8 +770,8 @@ export async function POST(req: NextRequest) {
       title: String(body.title || "Custom Omni 1.1 Flash Master Reel"),
       genre: String(body.genre || "Bollywood Hindi Pop"),
       bpm: Number(body.bpm || 122),
-      act1Prompt: `${contextPrefix ? contextPrefix + " " : ""}${String(body.act1Prompt || "")}`,
-      act2Prompt: `${contextPrefix ? contextPrefix + " " : ""}${String(body.act2Prompt || "")}`,
+      act1Prompt: `${act1Context ? act1Context + " " : ""}${String(body.act1Prompt || "")}`,
+      act2Prompt: `${act2Context ? act2Context + " " : ""}${String(body.act2Prompt || "")}`,
       selectedCharacterId: selectedCharacter?.id,
       selectedCharacterName: selectedCharacter?.displayName,
       selectedLocationId: selectedLocation?.id,
@@ -716,8 +783,9 @@ export async function POST(req: NextRequest) {
       language: String(body.language || ""),
       platform: String(body.socialPlatform || body.platform || ""),
       referenceMedia: Array.isArray(body.referenceMedia) ? body.referenceMedia : [],
-      selectedWardrobeId: body.selectedWardrobeId ? String(body.selectedWardrobeId) : "",
-      selectedScene2LocationId: body.selectedScene2LocationId ? String(body.selectedScene2LocationId) : "",
+      selectedWardrobeId: selectedWardrobe?.id || selectedWardrobeId,
+      selectedScene2LocationId: selectedScene2Location?.id || selectedScene2LocationId,
+      selectedCharacterReference: characterReference || undefined,
       status: "running",
       stageIndex: 0,
       stageLabel: "Stage 1/6 • Launching live models/gemini-omni-1.1-flash generation...",
