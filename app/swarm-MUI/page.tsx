@@ -1233,7 +1233,7 @@ export default function SwarmMuiStudioPage() {
                   fontSize: 11,
                 }}
               />
-              <Typography variant="subtitle1" fontWeight={800}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
                 {projectTitle}
               </Typography>
               <Chip
@@ -1367,7 +1367,7 @@ export default function SwarmMuiStudioPage() {
                 direction="row"
                 sx={{ justifyContent: "space-between", alignItems: "center", mb: 1.2 }}
               >
-                <Typography variant="caption" fontFamily="monospace" fontWeight={800}>
+                <Typography variant="caption" sx={{ fontWeight: 800, fontFamily: "monospace" }}>
                   {activeJob.stageLabel}
                 </Typography>
                 <Chip
@@ -1426,7 +1426,7 @@ export default function SwarmMuiStudioPage() {
                       ) : (
                         <RadioButtonUnchecked sx={{ fontSize: 15, color: "#64748B" }} />
                       )}
-                      <Typography variant="caption" fontFamily="monospace" fontWeight={700}>
+                      <Typography variant="caption" sx={{ fontWeight: 700, fontFamily: "monospace" }}>
                         {st.id}. {st.label}
                       </Typography>
                     </Paper>
@@ -1480,11 +1480,11 @@ export default function SwarmMuiStudioPage() {
                       fontWeight: 800,
                     }}
                   />
-                  <Typography variant="caption" fontFamily="monospace">
+                  <Typography variant="caption" sx={{ fontFamily: "monospace" }}>
                     Eff: {p1EffDur.toFixed(2)}s
                   </Typography>
                 </Stack>
-                <Typography variant="subtitle2" fontWeight={800} sx={{ mt: 1 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, mt: 1 }}>
                   Sunlit Cliffside Pool Villa
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
@@ -1499,7 +1499,7 @@ export default function SwarmMuiStudioPage() {
                   direction="row"
                   sx={{ justifyContent: "space-between", alignItems: "center" }}
                 >
-                  <Typography variant="caption" fontWeight={700}>
+                  <Typography variant="caption" sx={{ fontWeight: 700 }}>
                     Part 1 Speed Multiplier
                   </Typography>
                   <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
@@ -1570,11 +1570,11 @@ export default function SwarmMuiStudioPage() {
                       fontWeight: 800,
                     }}
                   />
-                  <Typography variant="caption" fontFamily="monospace">
+                  <Typography variant="caption" sx={{ fontFamily: "monospace" }}>
                     Eff: {p2EffDur.toFixed(2)}s
                   </Typography>
                 </Stack>
-                <Typography variant="subtitle2" fontWeight={800} sx={{ mt: 1 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, mt: 1 }}>
                   Twilight Luxury Superyacht Deck
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
@@ -1589,7 +1589,7 @@ export default function SwarmMuiStudioPage() {
                   direction="row"
                   sx={{ justifyContent: "space-between", alignItems: "center" }}
                 >
-                  <Typography variant="caption" fontWeight={700}>
+                  <Typography variant="caption" sx={{ fontWeight: 700 }}>
                     Part 2 Speed Multiplier
                   </Typography>
                   <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
@@ -1643,9 +1643,7 @@ export default function SwarmMuiStudioPage() {
               <CardContent>
                 <Typography
                   variant="caption"
-                  fontFamily="monospace"
-                  fontWeight={800}
-                  sx={{ display: "block", mb: 1.5 }}
+                  sx={{ fontWeight: 800, fontFamily: "monospace", display: "block", mb: 1.5 }}
                 >
                   DIRECTOR TEMPO PRESETS & MASTER BAKE
                 </Typography>
@@ -1731,7 +1729,7 @@ export default function SwarmMuiStudioPage() {
                   color="primary"
                   sx={{ fontFamily: "monospace", fontWeight: 800 }}
                 />
-                <Typography variant="subtitle2" fontFamily="monospace" fontWeight={800}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, fontFamily: "monospace" }}>
                   TC {formatSMPTE(combinedTime)}
                 </Typography>
                 <Chip
@@ -1743,11 +1741,11 @@ export default function SwarmMuiStudioPage() {
               </Stack>
 
               <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-                <Typography variant="caption" fontFamily="monospace">
+                <Typography variant="caption" sx={{ fontFamily: "monospace" }}>
                   Active Speed: <b>{domRate.toFixed(2)}x</b> ({(24 * domRate).toFixed(1)}{" "}
                   fps)
                 </Typography>
-                <Typography variant="caption" fontFamily="monospace">
+                <Typography variant="caption" sx={{ fontFamily: "monospace" }}>
                   Total Runtime: <b>{totalEffDur.toFixed(2)}s</b>
                 </Typography>
               </Stack>
@@ -1792,7 +1790,7 @@ export default function SwarmMuiStudioPage() {
                       color="secondary"
                       sx={{ fontFamily: "monospace", fontWeight: 800 }}
                     />
-                    <Typography variant="subtitle2" fontWeight={800}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
                       MAIN COMBINED REEL (60.0s MASTER)
                     </Typography>
                     <Typography
@@ -1893,7 +1891,7 @@ export default function SwarmMuiStudioPage() {
                       mb: 1.5,
                     }}
                   >
-                    <Typography variant="subtitle2" fontWeight={800}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
                       ✂️ Unified Sub-Clip Trim & Multi-Clip Splicer Studio
                     </Typography>
                     <Tabs
@@ -1982,9 +1980,7 @@ export default function SwarmMuiStudioPage() {
                 >
                   <Typography
                     variant="subtitle2"
-                    fontFamily="monospace"
-                    fontWeight={800}
-                    sx={{ mb: 2, color: activeScheme.primary }}
+                    sx={{ fontWeight: 800, fontFamily: "monospace", mb: 2, color: activeScheme.primary }}
                   >
                     ↳ EXPANDED CHILD REELS (30s ACTS) & NATIVE TURN CLIPS (10s / 20s)
                   </Typography>
@@ -2038,8 +2034,7 @@ export default function SwarmMuiStudioPage() {
                             component={Link}
                             href={`/entity/${act.entityId}`}
                             variant="caption"
-                            fontFamily="monospace"
-                            sx={{ color: activeScheme.secondary }}
+                            sx={{ fontFamily: "monospace", color: activeScheme.secondary }}
                           >
                             /entity/{act.entityId}
                           </Typography>
@@ -2146,8 +2141,7 @@ export default function SwarmMuiStudioPage() {
                             component={Link}
                             href={`/entity/${clip.id}`}
                             variant="caption"
-                            fontFamily="monospace"
-                            sx={{ color: activeScheme.secondary, fontSize: 10 }}
+                            sx={{ fontFamily: "monospace", color: activeScheme.secondary, fontSize: 10 }}
                           >
                             /entity/{clip.id}
                           </Typography>
