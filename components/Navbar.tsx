@@ -2,15 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, FolderOpen, Home, Layers3, Menu, Plus, Send, X } from "lucide-react";
+import { FolderOpen, Home, Layers3, Menu, Plus, X } from "lucide-react";
 import { useState } from "react";
 
 const items = [
   { label: "Home", href: "/", icon: Home },
   { label: "Projects", href: "/my-reels", icon: FolderOpen },
   { label: "Assets", href: "/assets", icon: Layers3 },
-  { label: "Studio", href: "/swarm", icon: Send },
-  
 ];
 
 export function Navbar() {
