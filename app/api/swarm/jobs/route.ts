@@ -139,7 +139,9 @@ async function callOmniInteractions(
           await new Promise((r) => setTimeout(r, waitSec * 1000));
           continue;
         }
-        throw new Error(`[${label}] HTTP ${res.status}: ${rawText.slice(0, 600)}`);
+        const error = new Error(`[${label}] HTTP ${res.status}: ${rawText.slice(0, 600)}`) as Error & { retryable?: boolean };
+        error.retryable = false;
+        throw error;
       }
 
       const json = JSON.parse(rawText);
@@ -158,9 +160,12 @@ async function callOmniInteractions(
       const interactionId = String(json.id || json.name || "");
       return { interactionId, videoBase64: latestVideo.data };
     } catch (err) {
+      if ((err as Error & { retryable?: boolean })?.retryable === false) {
+        throw err;
+      }
       if (attempt < MAX_RETRIES) {
         const waitSec = Math.min(15 * attempt, 90);
-        onRetry?.(attempt, MAX_RETRIES, waitSec, 429);
+        onRetry?.(attempt, MAX_RETRIES, waitSec, 0);
         await new Promise((r) => setTimeout(r, waitSec * 1000));
         continue;
       }
@@ -384,8 +389,15 @@ async function runRealOmniPipeline(job: SwarmGenerationJob) {
     fs.writeFileSync(turn1CRawPath, Buffer.from(turn1C.videoBase64, "base64"));
     lockExactDuration(turn1CRawPath, act1MasterPath, 30);
 
-    job.part1Src = `${publicPrefix}/act1_30s.mp4?t=${Date.now()}`;
-    job.combinedSrc = job.part1Src;
+    try {
+      await persistProjectMedia(job.id, "act1.mp4", "video/mp4", fs.readFileSync(act1MasterPath));
+      job.part1Src = `/api/project-media/${encodeURIComponent(job.id)}/act1.mp4`;
+      job.combinedSrc = job.part1Src;
+    } catch (err) {
+      console.warn("[project-media] Could not persist Act I preview; using local fallback:", err);
+      job.part1Src = `${publicPrefix}/act1_30s.mp4?t=${Date.now()}`;
+      job.combinedSrc = job.part1Src;
+    }
     job.segments = [
       {
         id: "part1_30s",
@@ -397,18 +409,30 @@ async function runRealOmniPipeline(job: SwarmGenerationJob) {
       },
     ];
 
-    // Extract Lead Character Identity Anchor at t=1.50s of Act I
+    // Extract a single identity anchor frame from Act I. Use update=1 so ffmpeg
+    // treats the target as one image rather than an image-sequence filename.
     const faceAnchorPath = path.join(jobDir, "face_identity_anchor.jpg");
-    execFileSync(
-      "ffmpeg",
-      ["-y", "-ss", "1.50", "-i", act1MasterPath, "-frames:v", "1", "-q:v", "2", faceAnchorPath],
-      { stdio: "inherit" }
-    );
-    const faceAnchorBase64 = fs.readFileSync(faceAnchorPath).toString("base64");
+    try {
+      execFileSync(
+        "ffmpeg",
+        ["-y", "-ss", "1.50", "-i", act1MasterPath, "-frames:v", "1", "-update", "1", "-q:v", "2", faceAnchorPath],
+        { stdio: "pipe" }
+      );
+    } catch (err) {
+      console.warn("[swarm] Face anchor extraction failed; continuing Act II without extracted anchor:", err);
+    }
+
+    const faceAnchorBase64 = fs.existsSync(faceAnchorPath)
+      ? fs.readFileSync(faceAnchorPath).toString("base64")
+      : "";
 
     log(
-      `Act I full 30.0s Master locked & lead face identity extracted! Starting Act II Turn 2A...`,
-      "Stage 4/6 • Generating Act II Turn 2A (00:30–00:40, Same Face Lock) via models/gemini-omni-1.1-flash...",
+      faceAnchorBase64
+        ? "Act I full 30.0s Master locked & lead face identity extracted. Starting Act II Turn 2A..."
+        : "Act I full 30.0s Master locked. Starting Act II Turn 2A without extracted face anchor...",
+      faceAnchorBase64
+        ? "Stage 4/6 • Generating Act II Turn 2A (00:30–00:40, Same Face Lock) via models/gemini-omni-1.1-flash..."
+        : "Stage 4/6 • Generating Act II Turn 2A (00:30–00:40) via models/gemini-omni-1.1-flash...",
       62
     );
 
@@ -419,17 +443,34 @@ async function runRealOmniPipeline(job: SwarmGenerationJob) {
       apiKey,
       {
         input: [
-          { type: "image", data: faceAnchorBase64, mime_type: "image/jpeg" },
+          ...(faceAnchorBase64
+            ? [{ type: "image", data: faceAnchorBase64, mime_type: "image/jpeg" }]
+            : job.selectedCharacterReference
+              ? [{
+                  type: "image",
+                  data: job.selectedCharacterReference.data,
+                  mime_type: job.selectedCharacterReference.mimeType,
+                }]
+              : []),
           {
             type: "text",
             text:
               `Generate a 10.0-second 9:16 vertical 24fps second-half opening scene (0s to 10s). ` +
-              `CRITICAL IDENTITY LOCK: Feature the EXACT SAME lead performer face & identity from the reference image. ` +
+              ((faceAnchorBase64 || job.selectedCharacterReference)
+                ? `CRITICAL IDENTITY LOCK: Preserve the exact same lead performer identity from the supplied reference image. `
+                : `Preserve the same lead performer identity established in Act I. `) +
               `${job.act2Prompt}`,
           },
         ],
       },
-      "ACT2_TURN_2A"
+      "ACT2_TURN_2A",
+      (attempt, max, waitSec, status) => {
+        log(
+          `Act II retry ${attempt}/${max}${status ? ` (HTTP ${status})` : ""}; retrying in ${waitSec}s...`,
+          `Stage 4/6 • Retrying Act II in ${waitSec}s...`,
+          62
+        );
+      }
     );
 
     const turn2ARawPath = path.join(jobDir, "act2_turnA_10s_raw.mp4");
