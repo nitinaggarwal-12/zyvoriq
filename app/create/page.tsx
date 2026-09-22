@@ -27,6 +27,33 @@ const formats = [
   { id: "film", title: "Film", desc: "Long-form cinematic project", icon: Sparkles, supported: false },
 ];
 
+const STARTERS = [
+  {
+    title: "Luxury launch",
+    eyebrow: "Product",
+    brief: "Create a cinematic 60-second vertical launch reel for a premium fragrance. Open with an intimate macro product reveal, move into an aspirational lifestyle scene, and finish with a memorable hero shot and elegant call to action.",
+    gradient: "from-rose-200 via-orange-100 to-amber-50",
+  },
+  {
+    title: "Travel story",
+    eyebrow: "Lifestyle",
+    brief: "Create a visually rich travel story about arriving in Santorini at golden hour. Follow one traveler from the cliffside streets to a sunset terrace, with emotional pacing, natural movement, and a beautiful final wide shot.",
+    gradient: "from-sky-200 via-cyan-100 to-white",
+  },
+  {
+    title: "Fashion transformation",
+    eyebrow: "Style",
+    brief: "Create a high-energy fashion transformation reel. Start with a minimal everyday look, use a strong beat-synced transition, and reveal an editorial evening look in a dramatic second location.",
+    gradient: "from-violet-200 via-fuchsia-100 to-rose-50",
+  },
+  {
+    title: "Founder story",
+    eyebrow: "Brand",
+    brief: "Create an inspiring founder story that opens with the problem, shows the human motivation behind the idea, and ends with the product impact. Keep it authentic, premium, and emotionally grounded.",
+    gradient: "from-emerald-200 via-teal-100 to-white",
+  },
+];
+
 interface ReferenceMedia {
   name: string;
   type: string;
@@ -98,7 +125,41 @@ export default function CreatePage() {
           Choose an output, describe the outcome, and add references. Zyvoriq keeps this as one project from brief through publishing.
         </p>
 
-        <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-8">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold">Start with an idea</h2>
+              <p className="mt-1 text-sm text-slate-500">Pick a visual starter and change anything later.</p>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {STARTERS.map((starter) => (
+              <button
+                key={starter.title}
+                type="button"
+                onClick={() => setBrief(starter.brief)}
+                className="overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-md"
+              >
+                <div className={`aspect-[16/9] bg-gradient-to-br ${starter.gradient} p-4`}>
+                  <span className="rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-600 backdrop-blur">
+                    {starter.eyebrow}
+                  </span>
+                </div>
+                <div className="p-4">
+                  <div className="font-semibold text-slate-900">{starter.title}</div>
+                  <div className="mt-1 text-xs text-slate-500">Use this brief</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-10">
+          <h2 className="text-lg font-semibold">Choose an output</h2>
+          <p className="mt-1 text-sm text-slate-500">Production-backed formats are ready now.</p>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {formats.map(({ id, title, desc, icon: Icon, supported }) => {
             const active = format === id;
             return (
@@ -127,7 +188,19 @@ export default function CreatePage() {
         </div>
 
         <div className="mt-10 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
-          <label className="text-sm font-semibold text-slate-700">Creative brief</label>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <label className="text-sm font-semibold text-slate-700">Creative brief</label>
+              <p className="mt-1 text-xs text-slate-500">A sentence is enough. Studio can generate the treatment and scenes.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setBrief(STARTERS[Math.floor(Math.random() * STARTERS.length)].brief)}
+              className="inline-flex items-center gap-2 rounded-xl bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-700 hover:bg-violet-100"
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Surprise me
+            </button>
+          </div>
           <textarea
             value={brief}
             onChange={(e) => setBrief(e.target.value)}
