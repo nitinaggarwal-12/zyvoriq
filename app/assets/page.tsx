@@ -232,7 +232,7 @@ export default function AssetsPage() {
   return (
     <main className="min-h-screen bg-[#F7F8FC] text-slate-900">
       <div className="mx-auto max-w-[1500px] px-5 py-8 sm:px-8 lg:px-10">
-        <div className="flex flex-col gap-5 border-b border-slate-200 pb-7 lg:flex-row lg:items-end lg:justify-between">
+        <div className="grid gap-5 border-b border-slate-200 pb-7 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-stretch">
           <div>
             <p className="text-sm font-semibold text-violet-600">Assets</p>
             <h1 className="mt-1 text-3xl font-bold tracking-[-0.04em] sm:text-4xl">Reusable people and locations</h1>
@@ -240,9 +240,13 @@ export default function AssetsPage() {
               Build identity and environment assets once, then reuse them directly in every Studio project.
             </p>
           </div>
-          <Link href="/my-reels" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-            View projects
-          </Link>
+          <div className="relative min-h-44 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+            <img src={tab === "people" ? "/assets/avatars/avatar_keynote_gesture.jpg" : "/assets/stills/beach_sunset.jpg"} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/55 to-transparent" />
+            <Link href="/my-reels" className="absolute bottom-4 right-4 rounded-xl bg-white/90 px-4 py-2 text-sm font-semibold text-slate-800 backdrop-blur hover:bg-white">
+              View projects
+            </Link>
+          </div>
         </div>
 
         <div className="mt-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -315,7 +319,7 @@ export default function AssetsPage() {
                   return (
                     <article key={character.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                       <div className="aspect-[4/3] bg-slate-100">
-                        {image ? <img src={image} alt={character.displayName} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-slate-400"><UserRound className="h-10 w-10" /></div>}
+                        {image ? <img src={image} alt={character.displayName} className="h-full w-full object-cover" /> : <img src="/assets/avatars/avatar_executive_gravitas.jpg" alt="" className="h-full w-full object-cover opacity-90" />}
                       </div>
                       <div className="p-4">
                         <div className="flex items-start justify-between gap-3">
@@ -339,7 +343,7 @@ export default function AssetsPage() {
                 {filteredLocations.map((location) => (
                   <article key={location.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <div className="aspect-[4/3] bg-slate-100">
-                      {location.establishingUri ? <img src={location.establishingUri} alt={location.displayName} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-slate-400"><MapPin className="h-10 w-10" /></div>}
+                      {location.establishingUri ? <img src={location.establishingUri} alt={location.displayName} className="h-full w-full object-cover" /> : <img src="/assets/stills/swiss_alpine.jpg" alt="" className="h-full w-full object-cover opacity-90" />}
                     </div>
                     <div className="p-4">
                       <h2 className="font-semibold">{location.displayName}</h2>
