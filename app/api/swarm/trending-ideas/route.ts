@@ -171,7 +171,7 @@ export async function POST(req: NextRequest) {
     const targetAudience = String(
       body.targetAudience || "Viral Dance Challenge & Pop Music Fans"
     );
-    const platform = String(body.platform || "Instagram Reels (9:16 Viral)");
+    const platform = String(body.platform || body.socialPlatform || "Instagram Reels (9:16 Viral)");
 
     const halfDur = Math.round(durationSec / 2);
     const scenePack = COUNTRY_SCENES[country] || COUNTRY_SCENES["India"];
