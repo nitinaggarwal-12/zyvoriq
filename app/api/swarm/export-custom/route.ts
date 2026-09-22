@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { appendLibraryAssets } from "../library/route";
+import { appendLibraryAssets } from "@/lib/swarm-library";
 
 export const runtime = "nodejs";
 
