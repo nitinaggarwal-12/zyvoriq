@@ -4,7 +4,7 @@ import path from "node:path";
 
 export const runtime = "nodejs";
 
-export interface LibraryAssetItem {
+interface LibraryAssetItem {
   id: string;
   projectId: string;
   projectTitle: string;
@@ -198,7 +198,7 @@ function getManifestPath(): string {
   return path.join(process.cwd(), "public/assets/swarm/library_manifest.json");
 }
 
-export function loadLibraryAssets(): LibraryAssetItem[] {
+function loadLibraryAssets(): LibraryAssetItem[] {
   const manifestPath = getManifestPath();
   if (!fs.existsSync(manifestPath)) {
     fs.mkdirSync(path.dirname(manifestPath), { recursive: true });
@@ -213,7 +213,7 @@ export function loadLibraryAssets(): LibraryAssetItem[] {
   }
 }
 
-export function appendLibraryAssets(newItems: LibraryAssetItem[]): LibraryAssetItem[] {
+function appendLibraryAssets(newItems: LibraryAssetItem[]): LibraryAssetItem[] {
   const existing = loadLibraryAssets();
   const map = new Map<string, LibraryAssetItem>();
   for (const item of [...newItems, ...existing]) {
