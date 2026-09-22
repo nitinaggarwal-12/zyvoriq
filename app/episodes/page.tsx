@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
-export default function EpisodesPage() {
-  redirect("/yt");
+
+export default function LegacyStudioRedirect() {
+  redirect("/swarm");
 }
