@@ -12,7 +12,6 @@ import {
   Music2,
   Sparkles,
   Upload,
-  Users2,
   Video,
 } from "lucide-react";
 
@@ -246,13 +245,9 @@ export default function CreatePage() {
               >
                 <Upload className="h-4 w-4" /> Add reference
               </button>
-              <button
-                type="button"
-                onClick={() => router.push("/assets?tab=people")}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-              >
-                <Users2 className="h-4 w-4" /> Manage people
-              </button>
+              <span className="inline-flex items-center rounded-xl bg-slate-50 px-3.5 py-2 text-xs font-medium text-slate-500">
+                Cast and locations are chosen inside Studio
+              </span>
             </div>
             <button
               type="button"
