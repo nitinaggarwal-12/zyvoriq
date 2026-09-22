@@ -13,7 +13,7 @@ import {
   Loader2,
   MapPin,
   RefreshCw,
-  Send
+  Send,
   Sparkles,
   UserRound,
 } from "lucide-react";
