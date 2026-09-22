@@ -95,18 +95,18 @@ export class OmnichannelPublisher {
           };
         }
       } catch (err) {
-        console.warn("Live LinkedIn API dispatch failed, using verified mock response", err);
+        console.warn("Live LinkedIn API dispatch failed", err);
       }
     }
 
     return {
       channel: "linkedin",
-      status: "PUBLISHED",
-      externalPostId: postId,
-      externalUrl: postUrl,
+      status: "FAILED",
+      externalPostId: "",
+      externalUrl: "",
       c2paManifestHash: manifest.signature.signature_bytes,
       publishedAt,
-      metadata: { format: "PDF Carousel + Long-form Authority Post" },
+      metadata: { error: "LinkedIn did not confirm publication." },
     };
   }
 
@@ -151,18 +151,18 @@ export class OmnichannelPublisher {
           };
         }
       } catch (err) {
-        console.warn("Live YouTube API dispatch failed, using verified mock response", err);
+        console.warn("Live YouTube API dispatch failed", err);
       }
     }
 
     return {
       channel: "youtube",
-      status: "PUBLISHED",
-      externalPostId: videoId,
-      externalUrl,
+      status: "FAILED",
+      externalPostId: "",
+      externalUrl: "",
       c2paManifestHash: manifest.signature.signature_bytes,
       publishedAt,
-      metadata: { resolution: "1080p 60fps HDR 9:16 Shorts" },
+      metadata: { error: "YouTube did not confirm publication." },
     };
   }
 
@@ -201,18 +201,18 @@ export class OmnichannelPublisher {
           };
         }
       } catch (err) {
-        console.warn("Live X API dispatch failed, using verified mock response", err);
+        console.warn("Live X API dispatch failed", err);
       }
     }
 
     return {
       channel: "x",
-      status: "PUBLISHED",
-      externalPostId: tweetId,
-      externalUrl,
+      status: "FAILED",
+      externalPostId: "",
+      externalUrl: "",
       c2paManifestHash: manifest.signature.signature_bytes,
       publishedAt,
-      metadata: { threadCount: 3 },
+      metadata: { error: "X did not confirm publication." },
     };
   }
 
