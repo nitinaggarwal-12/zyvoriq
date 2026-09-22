@@ -1,5 +1,5 @@
-import LegacySwarmStudio from "@/components/LegacySwarmStudio";
+import { redirect } from "next/navigation";
 
-export default function AdvancedStudioPage() {
-  return <LegacySwarmStudio />;
+export default function AdvancedLegacyRedirect() {
+  redirect("/my-reels");
 }
