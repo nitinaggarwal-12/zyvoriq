@@ -194,13 +194,13 @@ export default function FeatureFilmsStudio() {
   };
 
   return (
-    <div className="min-h-screen bg-[#07090E] text-slate-100 flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-200">
+    <div className="min-h-screen bg-[#F7F8FC] text-slate-900 flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-200">
       {/* PAGE TITLE BAR */}
-      <div className="w-full border-b border-white/10 bg-[#07090E]">
+      <div className="w-full border-b border-slate-200 bg-[#F7F8FC]">
         <div className="max-w-[1600px] mx-auto px-6 md:px-12 py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-yellow-400 p-[1px] shadow-lg shadow-amber-500/20 shrink-0">
-              <div className="w-full h-full bg-[#07090E] rounded-[11px] flex items-center justify-center">
+              <div className="w-full h-full bg-[#F7F8FC] rounded-[11px] flex items-center justify-center">
                 <Clapperboard className="w-5 h-5 text-amber-400" />
               </div>
             </div>
@@ -213,7 +213,7 @@ export default function FeatureFilmsStudio() {
                   2.39:1 Anamorphic • 180s Master
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Classical 5-Act Narrative Architecture • 30 Continuous Takes • Symphonic -24.0 LUFS Score
               </p>
             </div>
@@ -236,7 +236,7 @@ export default function FeatureFilmsStudio() {
       <div className="max-w-[1600px] w-full mx-auto px-6 md:px-12 py-8 space-y-8">
         {/* TOP CINEMA TELEMETRY RIBBON */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="p-4 rounded-2xl bg-[#0C1019] border border-amber-500/20 flex flex-col justify-between">
+          <div className="p-4 rounded-2xl bg-white border border-amber-500/20 flex flex-col justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
               <Film className="w-3.5 h-3.5" />
               Theatrical Aspect Ratio
@@ -245,12 +245,12 @@ export default function FeatureFilmsStudio() {
               <span className="text-2xl md:text-3xl font-black text-white">2.39:1</span>
               <span className="text-xs font-bold text-amber-300">Scope</span>
             </div>
-            <span className="text-[11px] text-slate-400 mt-1">
+            <span className="text-[11px] text-slate-500 mt-1">
               Cooke Anamorphic /i Full Frame Optics
             </span>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[#0C1019] border border-amber-500/20 flex flex-col justify-between">
+          <div className="p-4 rounded-2xl bg-white border border-amber-500/20 flex flex-col justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5" />
               Dramatic Arc Structure
@@ -259,12 +259,12 @@ export default function FeatureFilmsStudio() {
               <span className="text-2xl md:text-3xl font-black text-white">5 Acts</span>
               <span className="text-xs font-bold text-amber-300">30 Takes</span>
             </div>
-            <span className="text-[11px] text-slate-400 mt-1">
+            <span className="text-[11px] text-slate-500 mt-1">
               180 Seconds Unbroken Narrative Continuity
             </span>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[#0C1019] border border-amber-500/20 flex flex-col justify-between">
+          <div className="p-4 rounded-2xl bg-white border border-amber-500/20 flex flex-col justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
               <Music2 className="w-3.5 h-3.5" />
               Symphonic Audio Standard
@@ -273,12 +273,12 @@ export default function FeatureFilmsStudio() {
               <span className="text-2xl md:text-3xl font-black text-white">-24.0 LUFS</span>
               <span className="text-xs font-bold text-emerald-400">EBU R128</span>
             </div>
-            <span className="text-[11px] text-slate-400 mt-1">
+            <span className="text-[11px] text-slate-500 mt-1">
               Beethoven Op. 92 Broadcast Orchestral Bed
             </span>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[#0C1019] border border-amber-500/20 flex flex-col justify-between">
+          <div className="p-4 rounded-2xl bg-white border border-amber-500/20 flex flex-col justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5" />
               Biometric Character Lock
@@ -286,7 +286,7 @@ export default function FeatureFilmsStudio() {
             <div className="mt-2 flex items-baseline gap-2">
               <span className="text-2xl md:text-3xl font-black text-emerald-400">100% Locked</span>
             </div>
-            <span className="text-[11px] text-slate-400 mt-1">
+            <span className="text-[11px] text-slate-500 mt-1">
               Zero Facial Drift Across All 30 Camera Setups
             </span>
           </div>
@@ -296,8 +296,8 @@ export default function FeatureFilmsStudio() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* LEFT 7 COLS: 2.39:1 ANAMORPHIC SCREENING ROOM */}
           <div className="lg:col-span-7 space-y-5">
-            <div className="p-6 rounded-3xl bg-[#0C1019] border border-amber-500/25 shadow-2xl space-y-4">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+            <div className="p-6 rounded-3xl bg-white border border-amber-500/25 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-3">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
                   <h2 className="text-sm font-black uppercase tracking-wider text-white">
@@ -326,10 +326,10 @@ export default function FeatureFilmsStudio() {
 
                 {/* Anamorphic HUD Overlay */}
                 <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none font-mono text-[11px]">
-                  <span className="px-2.5 py-1 rounded bg-black/70 border border-white/15 text-amber-300 font-bold">
+                  <span className="px-2.5 py-1 rounded bg-black/70 border border-slate-200 text-amber-300 font-bold">
                     {activeFilm.acts[selectedActIndex]?.title}
                   </span>
-                  <span className="px-2.5 py-1 rounded bg-black/70 border border-white/15 text-slate-300">
+                  <span className="px-2.5 py-1 rounded bg-black/70 border border-slate-200 text-slate-700">
                     {activeFilm.acts[selectedActIndex]?.lens}
                   </span>
                 </div>
@@ -359,20 +359,20 @@ export default function FeatureFilmsStudio() {
                   <button
                     type="button"
                     onClick={() => setIsMuted(!isMuted)}
-                    className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 cursor-pointer"
+                    className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-slate-200 text-slate-700 cursor-pointer"
                   >
                     {isMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-amber-400" />}
                   </button>
                 </div>
 
-                <span className="text-xs font-mono text-slate-400">
+                <span className="text-xs font-mono text-slate-500">
                   {activeFilm.audioSpec}
                 </span>
               </div>
             </div>
 
             {/* CLASSICAL 5-ACT DRAMATIC TIMELINE */}
-            <div className="p-6 rounded-3xl bg-[#0C1019] border border-white/10 space-y-4">
+            <div className="p-6 rounded-3xl bg-white border border-slate-200 space-y-4">
               <h3 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
                 <Clapperboard className="w-4 h-4 text-amber-400" />
                 Classical 5-Act Dramatic Breakdown (Click Act to Seek)
@@ -388,7 +388,7 @@ export default function FeatureFilmsStudio() {
                       className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                         isSelected
                           ? "bg-amber-500/15 border-amber-400 shadow-lg shadow-amber-500/10"
-                          : "bg-[#07090E] border-white/10 hover:border-white/25"
+                          : "bg-[#F7F8FC] border-slate-200 hover:border-white/25"
                       }`}
                     >
                       <div className="space-y-1">
@@ -397,14 +397,14 @@ export default function FeatureFilmsStudio() {
                             ACT {act.act}
                           </span>
                           <span className="text-sm font-bold text-white">{act.title}</span>
-                          <span className="text-xs font-mono text-slate-400">({act.timecode})</span>
+                          <span className="text-xs font-mono text-slate-500">({act.timecode})</span>
                         </div>
-                        <p className="text-xs text-slate-300 leading-relaxed">{act.description}</p>
+                        <p className="text-xs text-slate-700 leading-relaxed">{act.description}</p>
                       </div>
 
                       <div className="text-right shrink-0 font-mono text-[11px] text-amber-300/90">
                         <div>{act.lens}</div>
-                        <div className="text-slate-400 text-[10px]">{act.lighting}</div>
+                        <div className="text-slate-500 text-[10px]">{act.lighting}</div>
                       </div>
                     </div>
                   );
@@ -415,51 +415,51 @@ export default function FeatureFilmsStudio() {
 
           {/* RIGHT 5 COLS: FEATURE FILM SCREENPLAY & ANAMORPHIC DIRECTOR CONSOLE */}
           <div className="lg:col-span-5 space-y-6">
-            <div className="p-6 rounded-3xl bg-[#0C1019] border border-amber-500/25 shadow-2xl space-y-5">
+            <div className="p-6 rounded-3xl bg-white border border-amber-500/25 shadow-2xl space-y-5">
               <div>
                 <h2 className="text-base font-black uppercase tracking-wider text-white flex items-center gap-2">
                   <Wand2 className="w-4 h-4 text-amber-400" />
                   Direct New 180s Feature Film Master
                 </h2>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-slate-500 mt-1">
                   Synthesizes a 3-minute, 30-shot theatrical feature film structured across 5 classical dramatic acts.
                 </p>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1.5">
+                  <label className="text-xs font-bold text-slate-700 block mb-1.5">
                     Feature Film Title & Logline:
                   </label>
                   <input
                     type="text"
                     value={titlePrompt}
                     onChange={(e) => setTitlePrompt(e.target.value)}
-                    className="w-full p-3 rounded-xl bg-[#07090E] border border-white/15 text-xs font-bold text-white focus:outline-none focus:border-amber-400"
+                    className="w-full p-3 rounded-xl bg-[#F7F8FC] border border-slate-200 text-xs font-bold text-white focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1.5">
+                  <label className="text-xs font-bold text-slate-700 block mb-1.5">
                     5-Act Dramatic Treatment & Visual Direction:
                   </label>
                   <textarea
                     rows={5}
                     value={screenplayPrompt}
                     onChange={(e) => setScreenplayPrompt(e.target.value)}
-                    className="w-full p-3 rounded-xl bg-[#07090E] border border-white/15 text-xs text-slate-200 focus:outline-none focus:border-amber-400 leading-relaxed"
+                    className="w-full p-3 rounded-xl bg-[#F7F8FC] border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-amber-400 leading-relaxed"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-slate-300 block mb-1">
+                    <label className="text-xs font-bold text-slate-700 block mb-1">
                       Optics & Anamorphic Glass:
                     </label>
                     <select
                       value={selectedLensPackage}
                       onChange={(e) => setSelectedLensPackage(e.target.value)}
-                      className="w-full p-2.5 rounded-xl bg-[#07090E] border border-white/15 text-xs text-amber-300 font-semibold"
+                      className="w-full p-2.5 rounded-xl bg-[#F7F8FC] border border-slate-200 text-xs text-amber-300 font-semibold"
                     >
                       <option>Cooke Anamorphic /i Full Frame Plus (2.39:1)</option>
                       <option>ARRI Master Anamorphic Flare Set (2.39:1)</option>
@@ -468,13 +468,13 @@ export default function FeatureFilmsStudio() {
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-slate-300 block mb-1">
+                    <label className="text-xs font-bold text-slate-700 block mb-1">
                       Color Science & Print Stock:
                     </label>
                     <select
                       value={selectedColorScience}
                       onChange={(e) => setSelectedColorScience(e.target.value)}
-                      className="w-full p-2.5 rounded-xl bg-[#07090E] border border-white/15 text-xs text-cyan-300 font-semibold"
+                      className="w-full p-2.5 rounded-xl bg-[#F7F8FC] border border-slate-200 text-xs text-cyan-300 font-semibold"
                     >
                       <option>ACES 1.3 Kodak 2383 Print Emulation</option>
                       <option>Bleach Bypass High-Contrast Silver</option>
@@ -500,7 +500,7 @@ export default function FeatureFilmsStudio() {
                       </a>
                       <Link
                         href="/motion-pictures?reelId=napoleon_180s_master"
-                        className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/20 text-white font-bold text-xs flex items-center gap-1.5 transition"
+                        className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-slate-300 text-white font-bold text-xs flex items-center gap-1.5 transition"
                       >
                         <Sliders className="w-3.5 h-3.5 text-amber-400" />
                         <span>Open in Multi-Track NLE</span>
