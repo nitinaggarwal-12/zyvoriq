@@ -1,53 +1,23 @@
-"use client";
+import { LegalPageShell, LegalSection } from "@/components/LegalPageShell";
 
-import React from "react";
-import Link from "next/link";
-import { Lock, ShieldCheck, Globe, CheckCircle2 } from "lucide-react";
-export default function PrivacyPolicyPage() {
+export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-obsidian-950 text-slate-100 flex flex-col font-sans">
-      <main className="flex-1 mx-auto w-full max-w-[1600px] px-8 md:px-12 py-12 space-y-8">
-        <div className="space-y-3 border-b border-slate-800 pb-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/30 text-xs font-mono text-teal-400">
-            <Lock className="w-3.5 h-3.5" />
-            GDPR, CCPA & BIOMETRIC PRIVACY
-          </div>
-          <h1 className="text-3xl font-extrabold text-white font-mono">Privacy Policy & Biometric Data Disclaimer</h1>
-          <p className="text-xs text-slate-400 font-mono">Last Updated: September 2026 · Zyvoriq Engine Core</p>
-        </div>
-
-        <div className="prose prose-invert max-w-none text-slate-300 text-sm leading-relaxed space-y-6">
-          
-          <section className="space-y-3">
-            <h2 className="text-lg font-bold text-white font-mono">1. Zero Biometric Storage (BIPA & GDPR Article 9)</h2>
-            <p>
-              Zyvoriq does not collect, scan, or retain biometric facial geometry or voiceprints from private end-users. All 3D character avatars and voice profiles featured in our library are synthetic procedural rigs or contracted professional cast assets.
-            </p>
-          </section>
-
-          <section className="space-y-3">
-            <h2 className="text-lg font-bold text-white font-mono">2. Enterprise Cloud Privacy &amp; Data Processing</h2>
-            <p>
-              Your production briefs, private scripts, and custom media assets are processed on enterprise-grade infrastructure without being sold to third-party data brokers or used to train public foundation models without explicit organizational consent.
-            </p>
-          </section>
-
-          <section className="space-y-3">
-            <h2 className="text-lg font-bold text-white font-mono">3. Cookie Policy & Local Storage</h2>
-            <p>
-              We utilize essential technical session cookies and browser LocalStorage (`zyvoriq_cookie_consent`, API key vaults) strictly to maintain your authenticated creator session and editor preferences.
-            </p>
-          </section>
-
-          <section className="space-y-3">
-            <h2 className="text-lg font-bold text-white font-mono">4. Rights Under GDPR & CCPA</h2>
-            <p>
-              You have the right to request export or complete deletion of your production history and media vaults at any time by contacting privacy@zyvoriq.ai.
-            </p>
-          </section>
-
-        </div>
-      </main>
-    </div>
+    <LegalPageShell eyebrow="Privacy" title="Privacy Policy" updated="September 2026">
+      <LegalSection title="Information you provide">
+        <p>Zyvoriq may store project briefs, generated project state, uploaded reference media, reusable people and location assets, publishing settings, and support requests that you choose to provide.</p>
+      </LegalSection>
+      <LegalSection title="How information is used">
+        <p>Information is used to provide project creation, generation, editing, asset reuse, support, and publishing functionality. Connected third-party services may process information when you explicitly use those integrations.</p>
+      </LegalSection>
+      <LegalSection title="Reference media and identity assets">
+        <p>If you upload images, voice-related metadata, or other identity references, you are responsible for having the rights and permissions needed to use them. Zyvoriq uses saved references to support continuity and generation inside your projects.</p>
+      </LegalSection>
+      <LegalSection title="Storage and deletion">
+        <p>Project and asset data may be retained in the application database until it is deleted or retention rules require removal. Product-level export and deletion controls should be used where available; support can be contacted for requests that are not yet self-service.</p>
+      </LegalSection>
+      <LegalSection title="Third-party services">
+        <p>Publishing and model providers have their own terms and privacy practices. Zyvoriq only enables a publishing channel when the required connection is configured.</p>
+      </LegalSection>
+    </LegalPageShell>
   );
 }
