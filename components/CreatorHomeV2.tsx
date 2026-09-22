@@ -76,14 +76,13 @@ export function CreatorHomeV2() {
             <p className="mt-3 max-w-2xl text-base leading-7 text-slate-500">
               Continue active work, manage reusable assets, or start a new project.
             </p>
-          </div>
-          <Link
-            href="/create"
-            className="mt-6 inline-flex w-fit items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-violet-700"
-          >
-            <Plus className="h-4 w-4" />
-            New project
-          </Link>
+            <Link
+              href="/create"
+              className="mt-6 inline-flex w-fit items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-violet-700"
+            >
+              <Plus className="h-4 w-4" />
+              New project
+            </Link>
           </div>
           <div className="relative min-h-72 overflow-hidden rounded-[28px] border border-slate-200 bg-slate-950 shadow-lg">
             <img src="/assets/stills/mv_02_supernova_velocity_poster.jpg" alt="Cinematic creative work" className="absolute inset-0 h-full w-full object-cover opacity-90" />
