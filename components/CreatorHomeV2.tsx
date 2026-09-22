@@ -7,19 +7,19 @@ import {
 } from "lucide-react";
 
 const formats = [
-  { label: "Reel", href: "/reels", icon: Video, hint: "Short-form" },
-  { label: "Video", href: "/studio", icon: Clapperboard, hint: "Cinematic" },
-  { label: "Carousel", href: "/studio/create/carousel", icon: Layers3, hint: "Multi-slide" },
-  { label: "Podcast", href: "/studio/create", icon: Mic2, hint: "Audio + video" },
-  { label: "Music video", href: "/music-video", icon: Music2, hint: "Music-led" },
-  { label: "Film", href: "/feature-films", icon: ImageIcon, hint: "Long-form" },
+  { label: "Reel", href: "/swarm", icon: Video, hint: "Short-form" },
+  { label: "Video", href: "/swarm", icon: Clapperboard, hint: "Cinematic" },
+  { label: "Carousel", href: "/swarm", icon: Layers3, hint: "Multi-slide" },
+  { label: "Podcast", href: "/swarm", icon: Mic2, hint: "Audio + video" },
+  { label: "Music video", href: "/swarm", icon: Music2, hint: "Music-led" },
+  { label: "Film", href: "/swarm", icon: ImageIcon, hint: "Long-form" },
 ];
 
 const templates = [
-  { title: "Product Ad", subtitle: "Launch a product in seconds", href: "/reels", icon: Wand2 },
-  { title: "Talking Avatar", subtitle: "Presenter-led social content", href: "/studio/avatars", icon: Users2 },
-  { title: "Explainer", subtitle: "Teach a concept clearly", href: "/studio/create", icon: BarChart3 },
-  { title: "Story", subtitle: "Narrative short video", href: "/motion-pictures", icon: Clapperboard },
+  { title: "Product Ad", subtitle: "Launch a product in seconds", href: "/swarm", icon: Wand2 },
+  { title: "Talking Avatar", subtitle: "Presenter-led social content", href: "/swarm", icon: Users2 },
+  { title: "Explainer", subtitle: "Teach a concept clearly", href: "/swarm", icon: BarChart3 },
+  { title: "Story", subtitle: "Narrative short video", href: "/swarm", icon: Clapperboard },
 ];
 
 export function CreatorHomeV2() {
