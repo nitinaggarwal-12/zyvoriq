@@ -13,8 +13,7 @@ import {
   Loader2,
   MapPin,
   RefreshCw,
-  Send,
-  SlidersHorizontal,
+  Send
   Sparkles,
   UserRound,
 } from "lucide-react";
@@ -432,9 +431,6 @@ export default function StudioPage() {
           </div>
           <div className="flex gap-2">
             <Link href="/assets" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Assets</Link>
-            <Link href="/swarm/advanced" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-              <SlidersHorizontal className="h-4 w-4" /> Advanced
-            </Link>
           </div>
         </header>
 
@@ -590,7 +586,6 @@ export default function StudioPage() {
                 <p className="mt-2 text-sm text-slate-500">Review the output, regenerate a new version from the treatment, or open precision controls.</p>
                 <div className="mt-5 flex flex-wrap gap-2">
                   <button onClick={() => go("treatment")} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700"><RefreshCw className="h-4 w-4" /> New version</button>
-                  <Link href="/swarm/advanced" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700"><SlidersHorizontal className="h-4 w-4" /> Precision editor</Link>
                   <button onClick={() => go("review")} className={primary}>Review <ChevronRight className="h-4 w-4" /></button>
                 </div>
               </div>
