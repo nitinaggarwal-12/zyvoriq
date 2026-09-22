@@ -5,6 +5,7 @@ import { execFileSync } from "node:child_process";
 import { appendLibraryAssets, type LibraryAssetItem } from "@/lib/swarm-library";
 import { characterLibrary } from "@/lib/library/characterLibrary";
 import { locationLibrary } from "@/lib/library/locationLibrary";
+import { loadProjectState, persistProjectState } from "@/lib/project-store";
 
 export const runtime = "nodejs";
 
@@ -73,6 +74,9 @@ function saveJobState(job: SwarmGenerationJob) {
   const dir = getJobDir(job.id);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(getJobStatePath(job.id), JSON.stringify(job, null, 2), "utf8");
+  persistProjectState(job.id, job, { status: job.status, title: job.title }).catch((err) => {
+    console.warn("[project-store] Postgres persistence failed; filesystem fallback retained:", err);
+  });
 }
 
 function loadJobState(jobId: string): SwarmGenerationJob | null {
@@ -720,7 +724,14 @@ export async function GET(req: NextRequest) {
   if (!id) {
     return NextResponse.json({ ok: false, error: "Missing job id" }, { status: 400 });
   }
-  const job = loadJobState(id);
+  let job = loadJobState(id);
+  if (!job) {
+    try {
+      job = await loadProjectState<SwarmGenerationJob>(id);
+    } catch (err) {
+      console.warn("[project-store] Postgres read failed; filesystem lookup already attempted:", err);
+    }
+  }
   if (!job) {
     return NextResponse.json({ ok: false, error: `Job ${id} not found` }, { status: 404 });
   }
