@@ -42,6 +42,15 @@ async function ensureTables() {
       CREATE INDEX IF NOT EXISTS idx_zyvoriq_projects_updated_at
         ON zyvoriq_projects(updated_at DESC);
 
+      CREATE TABLE IF NOT EXISTS zyvoriq_project_media (
+        project_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        content_type TEXT NOT NULL,
+        bytes BYTEA NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (project_id, name)
+      );
+
       CREATE INDEX IF NOT EXISTS idx_zyvoriq_project_versions_project
         ON zyvoriq_project_versions(project_id, version DESC);
     `).then(() => undefined);
@@ -135,4 +144,42 @@ export async function deleteProjectState(id: string) {
   await p.query("DELETE FROM zyvoriq_project_versions WHERE project_id = $1", [id]);
   await p.query("DELETE FROM zyvoriq_projects WHERE id = $1", [id]);
   return true;
+}
+
+
+export async function persistProjectMedia(
+  projectId: string,
+  name: string,
+  contentType: string,
+  bytes: Buffer
+) {
+  const p = getPool();
+  if (!p) return false;
+  await ensureTables();
+  await p.query(
+    `INSERT INTO zyvoriq_project_media (project_id, name, content_type, bytes, created_at)
+     VALUES ($1, $2, $3, $4, NOW())
+     ON CONFLICT (project_id, name) DO UPDATE SET
+       content_type = EXCLUDED.content_type,
+       bytes = EXCLUDED.bytes,
+       created_at = NOW()`,
+    [projectId, name, contentType, bytes]
+  );
+  return true;
+}
+
+export async function loadProjectMedia(projectId: string, name: string) {
+  const p = getPool();
+  if (!p) return null;
+  await ensureTables();
+  const result = await p.query(
+    "SELECT content_type, bytes FROM zyvoriq_project_media WHERE project_id = $1 AND name = $2 LIMIT 1",
+    [projectId, name]
+  );
+  const row = result.rows[0];
+  if (!row) return null;
+  return {
+    contentType: String(row.content_type || "application/octet-stream"),
+    bytes: Buffer.from(row.bytes),
+  };
 }
