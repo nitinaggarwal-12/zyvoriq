@@ -42,12 +42,19 @@ export default function ContactPage() {
   return (
     <main className="min-h-screen bg-[#F7F8FC] text-slate-900">
       <div className="mx-auto max-w-4xl px-5 py-10 sm:px-8">
-        <div className="border-b border-slate-200 pb-7">
-          <p className="text-sm font-semibold text-violet-600">Support</p>
-          <h1 className="mt-2 text-4xl font-bold tracking-[-0.04em]">How can we help?</h1>
-          <p className="mt-3 max-w-2xl text-base leading-7 text-slate-500">
-            Send a product, account, legal, or technical request. Your submission is stored as a real support ticket.
-          </p>
+        <div className="grid gap-5 border-b border-slate-200 pb-7 md:grid-cols-[minmax(0,1fr)_280px] md:items-stretch">
+          <div className="flex flex-col justify-end">
+            <p className="text-sm font-semibold text-violet-600">Support</p>
+            <h1 className="mt-2 text-4xl font-bold tracking-[-0.04em]">How can we help?</h1>
+            <p className="mt-3 max-w-2xl text-base leading-7 text-slate-500">
+              Send a product, account, legal, or technical request. Your submission is stored as a real support ticket.
+            </p>
+          </div>
+          <div className="relative min-h-44 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+            <img src="/assets/avatars/avatar_fireside_journey.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 to-transparent" />
+            <div className="absolute bottom-4 left-4 text-sm font-semibold text-white">We’ll help you get unstuck.</div>
+          </div>
         </div>
 
         <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
