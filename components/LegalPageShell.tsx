@@ -19,10 +19,16 @@ export function LegalPageShell({
         <Link href="/" className="inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-900">
           <ArrowLeft className="h-4 w-4" /> Home
         </Link>
-        <div className="mt-6 border-b border-slate-200 pb-7">
-          <p className="text-sm font-semibold text-violet-600">{eyebrow}</p>
-          <h1 className="mt-2 text-4xl font-bold tracking-[-0.04em]">{title}</h1>
-          <p className="mt-2 text-sm text-slate-500">Last updated: {updated}</p>
+        <div className="mt-6 grid gap-5 border-b border-slate-200 pb-7 md:grid-cols-[minmax(0,1fr)_220px] md:items-stretch">
+          <div className="flex flex-col justify-end">
+            <p className="text-sm font-semibold text-violet-600">{eyebrow}</p>
+            <h1 className="mt-2 text-4xl font-bold tracking-[-0.04em]">{title}</h1>
+            <p className="mt-2 text-sm text-slate-500">Last updated: {updated}</p>
+          </div>
+          <div className="relative min-h-32 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+            <img src="/assets/stills/cosmic_nebula.jpg" alt="" className="absolute inset-0 h-full w-full object-cover opacity-80" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 to-transparent" />
+          </div>
         </div>
         <div className="mt-8 space-y-8 text-sm leading-7 text-slate-600">
           {children}
