@@ -31,6 +31,12 @@ interface CharacterOption {
   displayName: string;
   archetype: string;
   description?: string;
+  gender?: string;
+  era?: string;
+  country?: string;
+  region?: string;
+  language?: string;
+  category?: string;
   wardrobe?: Wardrobe[];
 }
 interface LocationOption {
@@ -38,6 +44,8 @@ interface LocationOption {
   displayName: string;
   environmentBlock?: string;
   establishingUri?: string;
+  era?: string;
+  timeOfDay?: string;
 }
 interface Idea {
   id: string;
@@ -64,6 +72,16 @@ interface Project {
   selectedWardrobeId?: string;
   selectedLocationId?: string;
   selectedScene2LocationId?: string;
+  audienceDemography?: string;
+  personaType?: string;
+  expertise?: string;
+  characterCountryFilter?: string;
+  characterLanguageFilter?: string;
+  characterGenderFilter?: string;
+  characterEraFilter?: string;
+  wardrobeFilter?: string;
+  locationEraFilter?: string;
+  locationTimeFilter?: string;
   genre?: string;
   bpm?: number;
   act1Prompt?: string;
@@ -125,6 +143,98 @@ const STUDIO_STARTERS = [
 
 const COUNTRIES = ["United States", "India", "United Kingdom", "South Korea", "Japan", "Brazil", "France", "Australia"];
 const LANGUAGES = ["English", "Hindi", "Spanish", "Korean", "Japanese", "Portuguese", "French", "Tamil"];
+const DEMOGRAPHIES = [
+  "All audiences",
+  "Gen Z (18–24)",
+  "Young professionals (25–34)",
+  "Adults (35–44)",
+  "Established professionals (45–54)",
+  "55+",
+  "Parents & families",
+];
+
+const PERSONA_TYPES = [
+  "Any persona",
+  "Creator / Influencer",
+  "Founder / Executive",
+  "Subject-matter expert",
+  "Educator / Coach",
+  "Healthcare professional",
+  "Athlete / Fitness",
+  "Actor / Performer",
+  "Musician / Artist",
+  "Lifestyle model",
+];
+
+const EXPERTISE_AREAS = [
+  "Any expertise",
+  "Technology & AI",
+  "Healthcare & Life Sciences",
+  "Business & Leadership",
+  "Finance",
+  "Fashion & Beauty",
+  "Fitness & Wellness",
+  "Travel & Hospitality",
+  "Food & Culinary",
+  "Education",
+  "Music & Entertainment",
+  "Consumer Products",
+];
+
+function normalize(value?: string) {
+  return (value || "").trim().toLowerCase();
+}
+
+function personaMatchText(character: CharacterOption) {
+  return normalize([
+    character.displayName,
+    character.archetype,
+    character.description,
+    character.category,
+    character.country,
+    character.region,
+    character.language,
+    character.gender,
+    character.era,
+  ].filter(Boolean).join(" "));
+}
+
+function matchesPersonaType(character: CharacterOption, personaType: string) {
+  if (!personaType || personaType === "Any persona") return true;
+  const text = personaMatchText(character);
+  const rules: Record<string, string[]> = {
+    "Creator / Influencer": ["creator", "influencer", "content", "social", "lifestyle"],
+    "Founder / Executive": ["founder", "executive", "ceo", "leader", "entrepreneur", "business"],
+    "Subject-matter expert": ["expert", "specialist", "scientist", "architect", "engineer", "analyst", "consultant"],
+    "Educator / Coach": ["educator", "teacher", "coach", "mentor", "trainer"],
+    "Healthcare professional": ["doctor", "physician", "nurse", "clinician", "medical", "healthcare", "pharma"],
+    "Athlete / Fitness": ["athlete", "fitness", "trainer", "yoga", "runner", "sport"],
+    "Actor / Performer": ["actor", "actress", "performer", "cinema", "model"],
+    "Musician / Artist": ["musician", "singer", "artist", "dj", "composer", "music"],
+    "Lifestyle model": ["model", "fashion", "lifestyle", "beauty"],
+  };
+  return (rules[personaType] || []).some((token) => text.includes(token));
+}
+
+function matchesExpertise(character: CharacterOption, expertise: string) {
+  if (!expertise || expertise === "Any expertise") return true;
+  const text = personaMatchText(character);
+  const rules: Record<string, string[]> = {
+    "Technology & AI": ["technology", "tech", "ai", "software", "engineer", "architect", "developer", "data"],
+    "Healthcare & Life Sciences": ["health", "medical", "doctor", "physician", "pharma", "biotech", "science", "clinical"],
+    "Business & Leadership": ["business", "leader", "executive", "founder", "ceo", "strategy", "entrepreneur"],
+    "Finance": ["finance", "bank", "invest", "wealth", "account", "econom"],
+    "Fashion & Beauty": ["fashion", "beauty", "style", "makeup", "model", "luxury"],
+    "Fitness & Wellness": ["fitness", "wellness", "yoga", "trainer", "athlete", "health"],
+    "Travel & Hospitality": ["travel", "hotel", "hospitality", "tour", "destination"],
+    "Food & Culinary": ["food", "chef", "culinary", "restaurant", "cooking"],
+    "Education": ["education", "teacher", "educator", "coach", "mentor", "professor"],
+    "Music & Entertainment": ["music", "singer", "artist", "actor", "performer", "entertainment"],
+    "Consumer Products": ["product", "brand", "retail", "consumer", "commerce"],
+  };
+  return (rules[expertise] || []).some((token) => text.includes(token));
+}
+
 
 export default function StudioPage() {
   const [projectId, setProjectId] = useState("");
@@ -147,6 +257,16 @@ export default function StudioPage() {
   const [selectedWardrobeId, setSelectedWardrobeId] = useState("");
   const [selectedLocationId, setSelectedLocationId] = useState("");
   const [selectedScene2LocationId, setSelectedScene2LocationId] = useState("");
+  const [audienceDemography, setAudienceDemography] = useState("All audiences");
+  const [personaType, setPersonaType] = useState("Any persona");
+  const [expertise, setExpertise] = useState("Any expertise");
+  const [characterCountryFilter, setCharacterCountryFilter] = useState("");
+  const [characterLanguageFilter, setCharacterLanguageFilter] = useState("");
+  const [characterGenderFilter, setCharacterGenderFilter] = useState("");
+  const [characterEraFilter, setCharacterEraFilter] = useState("");
+  const [wardrobeFilter, setWardrobeFilter] = useState("");
+  const [locationEraFilter, setLocationEraFilter] = useState("");
+  const [locationTimeFilter, setLocationTimeFilter] = useState("");
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [selectedIdeaId, setSelectedIdeaId] = useState("");
   const [job, setJob] = useState<Project | null>(null);
@@ -178,6 +298,48 @@ export default function StudioPage() {
   const masterSrc = job?.combinedSrc;
   const allReviewed = Object.values(review).every(Boolean);
   const currentStageIndex = STAGES.findIndex((item) => item.id === stage);
+  const characterCountries = useMemo(() => Array.from(new Set(characters.map((item) => item.country).filter(Boolean) as string[])).sort(), [characters]);
+  const characterLanguages = useMemo(() => Array.from(new Set(characters.map((item) => item.language).filter(Boolean) as string[])).sort(), [characters]);
+  const characterGenders = useMemo(() => Array.from(new Set(characters.map((item) => item.gender).filter(Boolean) as string[])).sort(), [characters]);
+  const characterEras = useMemo(() => Array.from(new Set(characters.map((item) => item.era).filter(Boolean) as string[])).sort(), [characters]);
+  const wardrobeLabels = useMemo(() => Array.from(new Set(characters.flatMap((item) => item.wardrobe || []).map((item) => item.label).filter(Boolean))).sort(), [characters]);
+  const locationEras = useMemo(() => Array.from(new Set(locations.map((item) => item.era).filter(Boolean) as string[])).sort(), [locations]);
+  const locationTimes = useMemo(() => Array.from(new Set(locations.map((item) => item.timeOfDay).filter(Boolean) as string[])).sort(), [locations]);
+
+  const filteredCharacters = useMemo(() => {
+    const ranked = characters
+      .filter((item) => !characterCountryFilter || item.country === characterCountryFilter)
+      .filter((item) => !characterLanguageFilter || item.language === characterLanguageFilter)
+      .filter((item) => !characterGenderFilter || item.gender === characterGenderFilter)
+      .filter((item) => !characterEraFilter || item.era === characterEraFilter)
+      .filter((item) => !wardrobeFilter || (item.wardrobe || []).some((w) => w.label === wardrobeFilter))
+      .filter((item) => matchesPersonaType(item, personaType))
+      .filter((item) => matchesExpertise(item, expertise))
+      .map((item) => {
+        let score = 0;
+        if (characterCountryFilter && item.country === characterCountryFilter) score += 4;
+        if (characterLanguageFilter && item.language === characterLanguageFilter) score += 4;
+        if (characterGenderFilter && item.gender === characterGenderFilter) score += 2;
+        if (characterEraFilter && item.era === characterEraFilter) score += 2;
+        if (wardrobeFilter && (item.wardrobe || []).some((w) => w.label === wardrobeFilter)) score += 3;
+        if (personaType !== "Any persona" && matchesPersonaType(item, personaType)) score += 5;
+        if (expertise !== "Any expertise" && matchesExpertise(item, expertise)) score += 5;
+        if ((item.wardrobe || []).some((w) => (w.sheetUris || []).length > 0)) score += 2;
+        return { item, score };
+      })
+      .sort((a, b) => b.score - a.score || a.item.displayName.localeCompare(b.item.displayName));
+    return ranked;
+  }, [characters, characterCountryFilter, characterLanguageFilter, characterGenderFilter, characterEraFilter, wardrobeFilter, personaType, expertise]);
+
+  const filteredLocations = useMemo(
+    () => locations
+      .filter((item) => !locationEraFilter || item.era === locationEraFilter)
+      .filter((item) => !locationTimeFilter || item.timeOfDay === locationTimeFilter),
+    [locations, locationEraFilter, locationTimeFilter]
+  );
+
+  const recommendedCharacter = filteredCharacters[0]?.item;
+
 
   useEffect(() => {
     let alive = true;
@@ -220,6 +382,16 @@ export default function StudioPage() {
         setSelectedWardrobeId(project.selectedWardrobeId || "");
         setSelectedLocationId(project.selectedLocationId || "");
         setSelectedScene2LocationId(project.selectedScene2LocationId || project.selectedLocationId || "");
+        setAudienceDemography(project.audienceDemography || "All audiences");
+        setPersonaType(project.personaType || "Any persona");
+        setExpertise(project.expertise || "Any expertise");
+        setCharacterCountryFilter(project.characterCountryFilter || "");
+        setCharacterLanguageFilter(project.characterLanguageFilter || "");
+        setCharacterGenderFilter(project.characterGenderFilter || "");
+        setCharacterEraFilter(project.characterEraFilter || "");
+        setWardrobeFilter(project.wardrobeFilter || "");
+        setLocationEraFilter(project.locationEraFilter || "");
+        setLocationTimeFilter(project.locationTimeFilter || "");
         if (project.review) setReview((current) => ({ ...current, ...project.review }));
         if (project.status === "running" || project.combinedSrc) setJob(project);
       } else {
@@ -266,6 +438,16 @@ export default function StudioPage() {
             selectedWardrobeId,
             selectedLocationId,
             selectedScene2LocationId,
+            audienceDemography,
+            personaType,
+            expertise,
+            characterCountryFilter,
+            characterLanguageFilter,
+            characterGenderFilter,
+            characterEraFilter,
+            wardrobeFilter,
+            locationEraFilter,
+            locationTimeFilter,
             genre,
             bpm,
             act1Prompt,
@@ -283,7 +465,9 @@ export default function StudioPage() {
   }, [
     loaded, projectId, title, format, stage, brief, country, language, platform,
     referenceMedia, selectedCharacterId, selectedWardrobeId, selectedLocationId,
-    selectedScene2LocationId, genre, bpm, act1Prompt, act2Prompt, review, job?.status
+    selectedScene2LocationId, audienceDemography, personaType, expertise, characterCountryFilter,
+    characterLanguageFilter, characterGenderFilter, characterEraFilter, wardrobeFilter,
+    locationEraFilter, locationTimeFilter, genre, bpm, act1Prompt, act2Prompt, review, job?.status
   ]);
 
   useEffect(() => {
@@ -310,6 +494,15 @@ export default function StudioPage() {
     const first = wardrobes.find((item) => item.isDefault) || wardrobes[0];
     if (first) setSelectedWardrobeId(first.id);
   }, [selectedCharacterId, selectedWardrobeId, wardrobes]);
+
+  useEffect(() => {
+    if (stage !== "assets" || filteredCharacters.length === 0) return;
+    if (selectedCharacterId && filteredCharacters.some(({ item }) => item.id === selectedCharacterId)) return;
+    const best = filteredCharacters[0].item;
+    const defaultWardrobe = best.wardrobe?.find((w) => w.isDefault) || best.wardrobe?.[0];
+    setSelectedCharacterId(best.id);
+    setSelectedWardrobeId(defaultWardrobe?.id || "");
+  }, [stage, filteredCharacters, selectedCharacterId]);
 
   function go(next: Stage) {
     setStage(next);
@@ -341,7 +534,7 @@ export default function StudioPage() {
           characters: selectedCharacter ? `${selectedCharacter.displayName} — ${selectedCharacter.archetype}` : brief,
           attire: wardrobes.find((w) => w.id === selectedWardrobeId)?.label || "Concept-appropriate wardrobe",
           wardrobe: wardrobes.find((w) => w.id === selectedWardrobeId)?.label || "Identity-consistent second look",
-          demography: "Global creator audience",
+          demography: audienceDemography,
           targetAudience: brief,
         }),
       });
@@ -383,6 +576,9 @@ export default function StudioPage() {
           selectedWardrobeId,
           selectedLocationId,
           selectedScene2LocationId,
+          audienceDemography,
+          personaType,
+          expertise,
           act1Prompt,
           act2Prompt,
         }),
