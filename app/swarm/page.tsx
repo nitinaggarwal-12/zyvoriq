@@ -122,22 +122,22 @@ const STUDIO_STARTERS = [
   {
     title: "Luxury product",
     brief: "Create a cinematic premium product launch with an intimate opening reveal, aspirational lifestyle imagery, and a polished hero finish.",
-    gradient: "from-rose-200 via-orange-100 to-amber-50",
+    image: "/assets/stills/mv_05_lumiere_damour_poster.jpg",
   },
   {
     title: "Travel escape",
     brief: "Create an emotional travel story that follows one person from arrival through discovery to a beautiful golden-hour payoff.",
-    gradient: "from-sky-200 via-cyan-100 to-white",
+    image: "/assets/stills/swiss_alpine.jpg",
   },
   {
     title: "Fashion switch",
     brief: "Create a beat-synced fashion transformation with a restrained first look and a dramatic editorial reveal in the second scene.",
-    gradient: "from-violet-200 via-fuchsia-100 to-rose-50",
+    image: "/assets/stills/mv_02_supernova_velocity_poster.jpg",
   },
   {
     title: "Founder story",
     brief: "Create a human founder story that introduces the problem, shows the motivation behind the idea, and ends with the product impact.",
-    gradient: "from-emerald-200 via-teal-100 to-white",
+    image: "/assets/avatars/avatar_elena_founder.jpg",
   },
 ];
 
@@ -716,7 +716,9 @@ export default function StudioPage() {
                       onClick={() => setBrief(starter.brief)}
                       className="overflow-hidden rounded-2xl border border-slate-200 bg-white text-left transition hover:border-violet-200 hover:shadow-md"
                     >
-                      <div className={`aspect-[16/7] bg-gradient-to-br ${starter.gradient}`} />
+                      <div className="aspect-[16/7] overflow-hidden bg-slate-100">
+                        <img src={starter.image} alt="" className="h-full w-full object-cover" />
+                      </div>
                       <div className="p-3.5">
                         <div className="text-sm font-semibold text-slate-900">{starter.title}</div>
                         <div className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{starter.brief}</div>
@@ -1061,15 +1063,17 @@ export default function StudioPage() {
                 {ideas.length > 0 && (
                   <div className="mt-5 grid gap-3 lg:grid-cols-3">
                     {ideas.slice(0, 3).map((idea, index) => {
-                      const gradients = [
-                        "from-violet-300 via-fuchsia-200 to-rose-100",
-                        "from-sky-300 via-cyan-200 to-emerald-100",
-                        "from-amber-300 via-orange-200 to-rose-100",
+                      const treatmentImages = [
+                        "/assets/stills/mv_04_nachle_dholna_poster.jpg",
+                        "/assets/swarm/spain_pool_poster_A.jpg",
+                        "/assets/stills/mv_03_lagos_midnight_sun_poster.jpg",
                       ];
                       return (
                         <button key={idea.id} onClick={() => applyIdea(idea)} className={`overflow-hidden rounded-2xl border text-left transition hover:-translate-y-0.5 hover:shadow-md ${selectedIdeaId === idea.id ? "border-violet-300 ring-2 ring-violet-100" : "border-slate-200"}`}>
-                          <div className={`aspect-[16/8] bg-gradient-to-br ${gradients[index % gradients.length]} p-3`}>
-                            <span className="rounded-full bg-white/80 px-2 py-1 text-[10px] font-semibold uppercase text-slate-600 backdrop-blur">
+                          <div className="relative aspect-[16/8] overflow-hidden bg-slate-100">
+                            <img src={treatmentImages[index % treatmentImages.length]} alt="" className="h-full w-full object-cover" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/30 to-transparent" />
+                            <span className="absolute left-3 top-3 rounded-full bg-white/85 px-2 py-1 text-[10px] font-semibold uppercase text-slate-700 backdrop-blur">
                               Treatment {index + 1}
                             </span>
                           </div>
@@ -1087,8 +1091,9 @@ export default function StudioPage() {
 
                   <div className="grid gap-4 lg:grid-cols-2">
                     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                      <div className="aspect-[16/7] bg-gradient-to-br from-sky-200 via-violet-100 to-white p-4">
-                        <span className="rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-600">Scene 1 · Hook</span>
+                      <div className="relative aspect-[16/7] overflow-hidden bg-slate-100">
+                        <img src="/assets/video/studio1_e2e00945_shot_01.jpg" alt="" className="h-full w-full object-cover" />
+                        <span className="absolute left-3 top-3 rounded-full bg-white/85 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-700 backdrop-blur">Scene 1 · Hook</span>
                       </div>
                       <div className="p-4">
                         <textarea value={act1Prompt} onChange={(e) => setAct1Prompt(e.target.value)} className="min-h-36 w-full resize-y rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-6" placeholder="Scene 1 will be generated from your brief…" />
@@ -1096,8 +1101,9 @@ export default function StudioPage() {
                     </div>
 
                     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                      <div className="aspect-[16/7] bg-gradient-to-br from-amber-200 via-rose-100 to-white p-4">
-                        <span className="rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-600">Scene 2 · Payoff</span>
+                      <div className="relative aspect-[16/7] overflow-hidden bg-slate-100">
+                        <img src="/assets/video/studio1_e2e00945_shot_03.jpg" alt="" className="h-full w-full object-cover" />
+                        <span className="absolute left-3 top-3 rounded-full bg-white/85 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-700 backdrop-blur">Scene 2 · Payoff</span>
                       </div>
                       <div className="p-4">
                         <textarea value={act2Prompt} onChange={(e) => setAct2Prompt(e.target.value)} className="min-h-36 w-full resize-y rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-6" placeholder="Scene 2 will be generated from your brief…" />
@@ -1191,7 +1197,15 @@ export default function StudioPage() {
                 <div className="mt-1 truncate font-semibold">{title}</div>
               </div>
               <div className="aspect-video bg-slate-950">
-                {masterSrc ? <video src={masterSrc} controls playsInline className="h-full w-full object-contain" /> : <div className="flex h-full flex-col items-center justify-center gap-2 text-slate-400"><Film className="h-9 w-9" /><span className="text-sm">Preview appears after generation</span></div>}
+                {masterSrc ? <video src={masterSrc} controls playsInline className="h-full w-full object-contain" /> : (
+                  <div className="relative h-full">
+                    <img src="/assets/omni12/omni12_master_poster.jpg" alt="" className="h-full w-full object-cover opacity-70" />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-950/45 text-white">
+                      <Film className="h-9 w-9" />
+                      <span className="text-sm font-medium">Preview appears after generation</span>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="p-4 text-sm text-slate-500">
                 <div className="flex justify-between"><span>Format</span><strong className="text-slate-800">{FORMAT_CONFIG[format]?.name || format}</strong></div>
