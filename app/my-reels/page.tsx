@@ -98,7 +98,13 @@ export default function ProjectsPage() {
                     {project.combinedSrc ? (
                       <video src={project.combinedSrc} preload="metadata" muted playsInline className="h-full w-full object-cover" />
                     ) : (
-                      <div className="flex h-full items-center justify-center text-slate-500"><Film className="h-9 w-9" /></div>
+                      <img src={
+                        project.format === "music-video"
+                          ? "/assets/stills/mv_01_fuego_y_arena_poster.jpg"
+                          : project.format === "story-video"
+                            ? "/assets/stills/italian_beach_honeymoon_poster.jpg"
+                            : "/assets/stills/mv_03_summer_usa_poster.jpg"
+                      } alt="" className="h-full w-full object-cover opacity-90" />
                     )}
                   </div>
                   <div className="p-5">
