@@ -6,9 +6,9 @@ import { AppFooter } from "@/components/AppFooter";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
-  title: "Zyvoriq — Directed by Google Omni | Autonomous 4K Cinema Intelligence",
+  title: "Zyvoriq — AI Creative Studio",
   description:
-    "Next-generation text-to-video creation engine powered by Google Omni and Veo 3.1. Pre-flight prompt compilation, 4K camera diffusion, authentic acoustic scores, and real-time vision quality gates.",
+    "Create, direct, edit and publish video, audio, images and social content with Zyvoriq.",
 };
 
 export default function RootLayout({
@@ -17,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark scroll-smooth" data-scroll-behavior="smooth" suppressHydrationWarning>
+    <html lang="en" className="light scroll-smooth" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -52,7 +52,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className="bg-obsidian-950 dark:bg-obsidian-950 text-slate-900 dark:text-slate-100 antialiased min-h-screen flex flex-col selection:bg-teal-500/30 selection:text-teal-900 dark:selection:text-teal-100 transition-colors duration-200"
+        className="bg-[#f7f8fb] text-slate-900 dark:bg-obsidian-950 dark:text-slate-100 antialiased min-h-screen flex flex-col selection:bg-violet-200 selection:text-violet-950 dark:selection:bg-violet-500/30 dark:selection:text-violet-100 transition-colors duration-200"
         suppressHydrationWarning
       >
         <ThemeProvider>
