@@ -41,13 +41,38 @@ interface TrendingIdea {
 interface SwarmJobResponse {
   id: string;
   title: string;
-  status: "queued" | "running" | "completed" | "failed";
+  genre?: string;
+  bpm?: number;
+  act1Prompt?: string;
+  act2Prompt?: string;
+  selectedCharacterId?: string;
+  selectedCharacterName?: string;
+  selectedLocationId?: string;
+  selectedLocationName?: string;
+  status: "queued" | "running" | "completed" | "error";
   progress: number;
   stageLabel: string;
-  act1Src: string;
-  act2Src: string;
+  part1Src?: string;
+  part2Src?: string;
+  act1Src?: string;
+  act2Src?: string;
   combinedSrc: string;
   logs: string[];
+}
+
+interface CharacterOption {
+  id: string;
+  displayName: string;
+  archetype: string;
+  country?: string;
+  validationStatus?: string;
+}
+
+interface LocationOption {
+  id: string;
+  displayName: string;
+  era?: string;
+  timeOfDay?: string;
 }
 
 const COUNTRIES = [
@@ -241,7 +266,7 @@ function formatSMPTE(sec: number): string {
 
 export default function SwarmStudioM3Page() {
   // GOOGLE MATERIAL DESIGN 3 (M3) DYNAMIC TONAL COLOR SCHEME STATE
-  const [schemeId, setSchemeId] = useState<string>("sapphire_emerald");
+  const [schemeId, setSchemeId] = useState<string>("daylight_studio");
   const activeScheme: M3TonalScheme = useMemo(
     () => M3_TONAL_SCHEMES.find((s) => s.id === schemeId) || M3_TONAL_SCHEMES[0],
     [schemeId]
@@ -307,6 +332,64 @@ export default function SwarmStudioM3Page() {
   );
   const [promptsSyncedBadge, setPromptsSyncedBadge] = useState<boolean>(true);
   const [activeJob, setActiveJob] = useState<SwarmJobResponse | null>(null);
+  const [availableCharacters, setAvailableCharacters] = useState<CharacterOption[]>([]);
+  const [availableLocations, setAvailableLocations] = useState<LocationOption[]>([]);
+  const [selectedCharacterId, setSelectedCharacterId] = useState<string>("");
+  const [selectedLocationId, setSelectedLocationId] = useState<string>("");
+  const [assetLoading, setAssetLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    let alive = true;
+    Promise.all([
+      fetch("/api/library/characters").then((r) => (r.ok ? r.json() : { characters: [] })),
+      fetch("/api/library/locations").then((r) => (r.ok ? r.json() : { locations: [] })),
+    ])
+      .then(([charData, locationData]) => {
+        if (!alive) return;
+        setAvailableCharacters(Array.isArray(charData?.characters) ? charData.characters : []);
+        setAvailableLocations(Array.isArray(locationData?.locations) ? locationData.locations : []);
+      })
+      .finally(() => {
+        if (alive) setAssetLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const projectId = params.get("project");
+    if (!projectId) return;
+
+    fetch(`/api/swarm/jobs?id=${encodeURIComponent(projectId)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        const job = data?.job as SwarmJobResponse | undefined;
+        if (!job) return;
+        setActiveJob(job);
+        setHasActiveReelLoaded(true);
+        setProjectTitle(job.title);
+        setDraftTitle(job.title);
+        if (job.genre) setDraftGenre(job.genre);
+        if (typeof job.bpm === "number") setDraftBpm(job.bpm);
+        if (job.act1Prompt) setDraftAct1Prompt(job.act1Prompt);
+        if (job.act2Prompt) setDraftAct2Prompt(job.act2Prompt);
+        if (job.selectedCharacterId) setSelectedCharacterId(job.selectedCharacterId);
+        if (job.selectedLocationId) setSelectedLocationId(job.selectedLocationId);
+        if (job.combinedSrc) setCombinedSrc(job.combinedSrc);
+        const p1 = job.act1Src || job.part1Src;
+        const p2 = job.act2Src || job.part2Src;
+        if (p1 && p2) {
+          setSegments([
+            { ...DEFAULT_SEGMENTS[0], src: p1 },
+            { ...DEFAULT_SEGMENTS[1], src: p2 },
+          ]);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Per-Act Speed Multipliers (0.01x steps)
   const [part1Speed, setPart1Speed] = useState<number>(1.0);
@@ -445,6 +528,8 @@ export default function SwarmStudioM3Page() {
         socialPlatform: trendPlatform,
         act1Wardrobe: trendAttire,
         act2Wardrobe: trendWardrobe,
+        selectedCharacterId,
+        selectedLocationId,
         act1Prompt: draftAct1Prompt,
         act2Prompt: draftAct2Prompt,
       }),
@@ -708,6 +793,64 @@ export default function SwarmStudioM3Page() {
                 ))}
               </select>
             </div>
+          </div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-violet-600">Cast asset</p>
+                <h3 className="mt-1 text-sm font-semibold text-slate-900">Choose a person from Assets</h3>
+              </div>
+              <Link href="/characters" className="text-xs font-semibold text-violet-600 hover:text-violet-700">
+                Browse assets
+              </Link>
+            </div>
+            <select
+              value={selectedCharacterId}
+              onChange={(e) => setSelectedCharacterId(e.target.value)}
+              disabled={assetLoading}
+              className="mt-3 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+            >
+              <option value="">No saved character — use prompt cast</option>
+              {availableCharacters.map((character) => (
+                <option key={character.id} value={character.id}>
+                  {character.displayName} • {character.archetype}
+                </option>
+              ))}
+            </select>
+            <p className="mt-2 text-xs text-slate-500">
+              The selected character is persisted with this project and injected into Omni 1.1 generation.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-violet-600">Location asset</p>
+                <h3 className="mt-1 text-sm font-semibold text-slate-900">Choose a saved location</h3>
+              </div>
+              <Link href="/locations" className="text-xs font-semibold text-violet-600 hover:text-violet-700">
+                Browse locations
+              </Link>
+            </div>
+            <select
+              value={selectedLocationId}
+              onChange={(e) => setSelectedLocationId(e.target.value)}
+              disabled={assetLoading}
+              className="mt-3 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+            >
+              <option value="">No saved location — use prompt location</option>
+              {availableLocations.map((location) => (
+                <option key={location.id} value={location.id}>
+                  {location.displayName}
+                </option>
+              ))}
+            </select>
+            <p className="mt-2 text-xs text-slate-500">
+              The selected environment is persisted with the project and used consistently in both acts.
+            </p>
           </div>
         </div>
 
