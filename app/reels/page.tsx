@@ -1,14 +1,5 @@
-import { CreatorReelsHome } from "@/components/CreatorReelsHome";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Zyvoriq Reels — 9:16 Unbroken AI Reels with 100% Biometric Identity Lock",
-  description: "Generate unbroken 9:16 vertical reels with 100% character face lock and zero identity drift.",
-};
-
-export default function ReelsPage() {
-  return (
-    <main id="top" className="min-h-screen bg-[#F7F8FC] text-slate-900 selection:bg-teal-500/30 selection:text-teal-100">
-      <CreatorReelsHome initialTab="instagram_tiktok" />
-    </main>
-  );
+export default function LegacyStudioRedirect() {
+  redirect("/swarm");
 }
