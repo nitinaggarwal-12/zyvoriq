@@ -6,7 +6,7 @@ import path from "node:path";
 
 export const runtime = "nodejs";
 
-export interface StudioEntityRecord {
+interface StudioEntityRecord {
   id: string;
   entity_type:
     | "page"
@@ -430,7 +430,7 @@ conn.close()
   return JSON.parse(out);
 }
 
-export function generateEntityId(entityType: string): string {
+function generateEntityId(entityType: string): string {
   const prefixMap: Record<string, string> = {
     page: "PAGE",
     reel: "REEL",
