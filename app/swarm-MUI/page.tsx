@@ -1798,8 +1798,11 @@ export default function SwarmMuiStudioPage() {
                       href="/entity/ZYV-REEL-MBV260S1"
                       onClick={(e) => e.stopPropagation()}
                       variant="caption"
-                      fontFamily="monospace"
-                      sx={{ color: activeScheme.primary, textDecoration: "underline" }}
+                      sx={{
+                        fontFamily: "monospace",
+                        color: activeScheme.primary,
+                        textDecoration: "underline",
+                      }}
                     >
                       /entity/ZYV-REEL-MBV260S1
                     </Typography>
