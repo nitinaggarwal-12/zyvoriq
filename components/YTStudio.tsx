@@ -244,8 +244,8 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
         {!embedded && (
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-slate-100">YT Studio</h1>
-              <p className="mt-2 text-slate-400 text-sm md:text-base max-w-2xl">
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-slate-900">YT Studio</h1>
+              <p className="mt-2 text-slate-500 text-sm md:text-base max-w-2xl">
                 Directorial pipeline for autonomous YouTube Shorts and TikToks powered by Google Omni 1.1 Flash Hybrid Mastering.
               </p>
             </div>
@@ -253,8 +253,8 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
         )}
 
         {recentProductions.length > 0 && (
-          <div className={`${embedded ? "" : "pt-6 border-t border-slate-800/80"}`}>
-            <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
+          <div className={`${embedded ? "" : "pt-6 border-t border-slate-200/80"}`}>
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
               Master Productions Library ({recentProductions.length})
             </div>
             <div className="flex flex-wrap gap-2.5">
@@ -268,14 +268,14 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
                     className={`max-w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2.5 border cursor-pointer ${
                       active
                         ? "bg-teal-950/80 border-teal-500 text-teal-200 shadow-lg shadow-teal-950/50"
-                        : "bg-slate-900/90 border-slate-800 text-slate-300 hover:border-slate-700 hover:bg-slate-800/60"
+                        : "bg-white/90 border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50/60"
                     }`}
                   >
                     <span className={`w-2 h-2 shrink-0 rounded-full ${
                       isReady ? "bg-emerald-400" : p.status === "RUNNING" ? "bg-blue-400 animate-ping" : "bg-amber-400"
                     }`} />
                     <span className="truncate max-w-[210px] sm:max-w-[340px]">{p.topic}</span>
-                    <span className="text-xs px-2 py-0.5 rounded bg-slate-950/80 text-slate-400 font-mono shrink-0">
+                    <span className="text-xs px-2 py-0.5 rounded bg-[#F7F8FC]/80 text-slate-500 font-mono shrink-0">
                       {p.durationSec}s
                     </span>
                   </button>
@@ -287,12 +287,12 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
       </div>
       
       {showEditor && collapseTopWhenEditing ? (
-        <div className="p-4 rounded-xl bg-slate-900/95 border border-teal-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+        <div className="p-4 rounded-xl bg-white/95 border border-teal-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
           <div className="flex items-center gap-3 flex-wrap">
             <span className="px-2.5 py-1 rounded-full bg-teal-500/20 border border-teal-500/40 text-teal-300 text-xs font-mono font-bold">
               ✂️ Studio NLE Mode Active
             </span>
-            <span className="text-sm font-bold text-slate-100 truncate max-w-[320px] md:max-w-[520px]">
+            <span className="text-sm font-bold text-slate-900 truncate max-w-[320px] md:max-w-[520px]">
               {production?.topic || topic || "Active Music Video Production"}
             </span>
             <span className="px-2 py-0.5 rounded bg-emerald-950 border border-emerald-700 text-emerald-300 text-xs font-mono font-semibold">
@@ -303,7 +303,7 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
             <button
               type="button"
               onClick={() => setCollapseTopWhenEditing(false)}
-              className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition cursor-pointer flex items-center gap-1.5"
+              className="px-3.5 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-300 text-xs font-semibold transition cursor-pointer flex items-center gap-1.5"
             >
               <span>▼</span> Show Creation Form &amp; Pipeline Logs
             </button>
@@ -316,7 +316,7 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
               <button
                 type="button"
                 onClick={() => setCollapseTopWhenEditing(true)}
-                className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-teal-300 border border-teal-500/40 text-xs font-semibold transition cursor-pointer flex items-center gap-1.5"
+                className="px-3.5 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-teal-300 border border-teal-500/40 text-xs font-semibold transition cursor-pointer flex items-center gap-1.5"
               >
                 <span>▲</span> Collapse Creation Form &amp; Duplicate Top Player
               </button>
@@ -326,8 +326,8 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
         
             {/* Left Column: Create Production Form + Live Audit Scorecard */}
             <div className="flex flex-col space-y-6">
-              <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl">
-                <h2 className="text-xl font-bold mb-5 text-slate-100">Create Production</h2>
+              <div className="p-6 bg-white border border-slate-200 rounded-xl">
+                <h2 className="text-xl font-bold mb-5 text-slate-900">Create Production</h2>
             
             {autoStartError && (
               <div className="mb-5 p-4 bg-red-950 border border-red-900 rounded-lg text-red-400 text-sm">
@@ -340,22 +340,22 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1.5">Topic &amp; Creative Description</label>
+                <label className="block text-sm font-medium text-slate-500 mb-1.5">Topic &amp; Creative Description</label>
                 <textarea
                   rows={2}
                   value={topic}
                   onChange={e => setTopic(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-base text-slate-200 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-base text-slate-800 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
                   placeholder="e.g. Modern pop music video singing dancing 3 models in summer pool party calendar shoot"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1.5">Genre</label>
+                <label className="block text-sm font-medium text-slate-500 mb-1.5">Genre</label>
                 <select
                   value={genre}
                   onChange={e => setGenre(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-base text-slate-200 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-base text-slate-800 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-teal-500"
                 >
                   <option value="MUSIC_VIDEO">MUSIC_VIDEO — Pop / Dance Music Video</option>
                   <option value="DANCE_REEL">DANCE_REEL — High-Energy Choreography</option>
@@ -368,20 +368,20 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-1.5">Duration (s)</label>
+                  <label className="block text-sm font-medium text-slate-500 mb-1.5">Duration (s)</label>
                   <input
                     type="number"
                     value={duration}
                     onChange={e => setDuration(Number(e.target.value))}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-base text-slate-200 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-base text-slate-800 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-1.5">Platform</label>
+                  <label className="block text-sm font-medium text-slate-500 mb-1.5">Platform</label>
                   <select
                     value={platform}
                     onChange={e => setPlatform(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-base text-slate-200 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-base text-slate-800 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-teal-500"
                   >
                     <option value="YouTube Shorts">YouTube Shorts</option>
                     <option value="TikTok">TikTok</option>
@@ -391,7 +391,7 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
               </div>
 
               {/* VOCAL START TIMESTAMP (T_vocal) & LYRIA LIP-SYNC TIMING */}
-              <div className="p-3.5 rounded-xl bg-slate-950/90 border border-teal-500/30 space-y-3">
+              <div className="p-3.5 rounded-xl bg-[#F7F8FC]/90 border border-teal-500/30 space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold uppercase tracking-wider text-teal-300 flex items-center gap-1.5">
                     <span>🎤 Vocal Entry Point (T_vocal) &amp; Lip-Sync Lock</span>
@@ -425,11 +425,11 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
                         className={`px-2.5 py-1.5 rounded-lg text-left border transition cursor-pointer ${
                           active
                             ? "bg-teal-500/20 border-teal-400 text-teal-200 shadow-sm"
-                            : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                            : "bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-800"
                         }`}
                       >
                         <div className="text-[11px] font-mono font-bold">{preset.label}</div>
-                        <div className="text-[9px] text-slate-400 truncate">{preset.desc}</div>
+                        <div className="text-[9px] text-slate-500 truncate">{preset.desc}</div>
                       </button>
                     );
                   })}
@@ -439,7 +439,7 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
                 {lipSyncMode !== "instrumental_only" && (
                   <div className="space-y-1">
                     <div className="flex justify-between text-[11px] font-mono">
-                      <span className="text-slate-400">
+                      <span className="text-slate-500">
                         0.0s–{vocalStartSec.toFixed(1)}s:{" "}
                         <strong className="text-amber-300">
                           {vocalStartSec === 0 ? "No Intro" : "Instrumental Beat (Mouth Closed)"}
@@ -463,13 +463,13 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
 
                 {/* Lip-Sync Binding Mode Selector */}
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-400 mb-1">
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1">
                     Audio-Visual Lip-Sync Strategy:
                   </label>
                   <select
                     value={lipSyncMode}
                     onChange={(e) => setLipSyncMode(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-semibold text-teal-200 focus:outline-none focus:border-teal-500 cursor-pointer"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold text-teal-200 focus:outline-none focus:border-teal-500 cursor-pointer"
                   >
                     <option value="lyria_master_clock">
                       🎯 Match Song Sound to Lips — Lyria 3.5 Original Music + Viseme Lock
@@ -495,34 +495,34 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
           </div>
 
           {/* Stage 7 Audit Scorecard Card */}
-          <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl">
+          <div className="p-6 bg-white border border-slate-200 rounded-xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-slate-100">Stage 7 Audit Scorecard</h3>
+              <h3 className="text-lg font-bold text-slate-900">Stage 7 Audit Scorecard</h3>
               <span className="text-xs font-bold uppercase px-2.5 py-1 rounded-full bg-emerald-950 border border-emerald-700 text-emerald-300">
                 16/16 PASS
               </span>
             </div>
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="p-3 rounded-lg bg-slate-950 border border-slate-800/80">
-                <div className="text-slate-400">Duration &amp; FPS</div>
-                <div className="text-sm font-bold text-slate-100 mt-0.5 font-mono">
+              <div className="p-3 rounded-lg bg-[#F7F8FC] border border-slate-200/80">
+                <div className="text-slate-500">Duration &amp; FPS</div>
+                <div className="text-sm font-bold text-slate-900 mt-0.5 font-mono">
                   {measured?.durationSec ? `${Number(measured.durationSec).toFixed(2)}s` : "24.03s"} • 30 FPS
                 </div>
               </div>
-              <div className="p-3 rounded-lg bg-slate-950 border border-slate-800/80">
-                <div className="text-slate-400">Loudness &amp; Peak</div>
+              <div className="p-3 rounded-lg bg-[#F7F8FC] border border-slate-200/80">
+                <div className="text-slate-500">Loudness &amp; Peak</div>
                 <div className="text-sm font-bold text-emerald-400 mt-0.5 font-mono">
                   {measured?.lufs ?? "-13.6"} LUFS / {measured?.truePeakDb ?? "-1.9"} dBTP
                 </div>
               </div>
-              <div className="p-3 rounded-lg bg-slate-950 border border-slate-800/80">
-                <div className="text-slate-400">Identity &amp; Wardrobe</div>
+              <div className="p-3 rounded-lg bg-[#F7F8FC] border border-slate-200/80">
+                <div className="text-slate-500">Identity &amp; Wardrobe</div>
                 <div className="text-sm font-bold text-teal-300 mt-0.5">
                   100% Biometric Lock
                 </div>
               </div>
-              <div className="p-3 rounded-lg bg-slate-950 border border-slate-800/80">
-                <div className="text-slate-400">Vocal Coincidence</div>
+              <div className="p-3 rounded-lg bg-[#F7F8FC] border border-slate-200/80">
+                <div className="text-slate-500">Vocal Coincidence</div>
                 <div className="text-sm font-bold text-emerald-400 mt-0.5">
                   4/4 Sung Lines Synced
                 </div>
@@ -533,15 +533,15 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
 
         {/* Middle Column: Pipeline Stages */}
         <div className="flex flex-col">
-          <div className="p-6 md:p-8 bg-slate-900 border border-slate-800 rounded-xl flex-grow">
-            <h2 className="text-2xl font-bold mb-3 text-slate-100 flex items-center justify-between">
+          <div className="p-6 md:p-8 bg-white border border-slate-200 rounded-xl flex-grow">
+            <h2 className="text-2xl font-bold mb-3 text-slate-900 flex items-center justify-between">
               <span>Pipeline Status</span>
               {production?.status && (
                 <span className={`text-sm px-3 py-1 rounded-full ${
                   production.status === 'COMPLETED' || production.status === 'READY' ? 'bg-emerald-900 text-emerald-300' :
                   production.status === 'RUNNING' ? 'bg-blue-900 text-blue-300 animate-pulse' :
                   production.status === 'FAILED' || production.status === 'AUDIT_FAILED' ? 'bg-red-900 text-red-300' :
-                  'bg-slate-800 text-slate-300'
+                  'bg-slate-50 text-slate-700'
                 }`}>
                   {production.status}
                 </span>
@@ -549,9 +549,9 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
             </h2>
 
             {(production?.id || productionId) && (
-              <div className="mb-5 flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-950/90 border border-slate-800 text-xs font-mono">
+              <div className="mb-5 flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-[#F7F8FC]/90 border border-slate-200 text-xs font-mono">
                 <div className="flex items-center gap-2 break-all">
-                  <span className="text-slate-400 shrink-0">REEL ID:</span>
+                  <span className="text-slate-500 shrink-0">REEL ID:</span>
                   <span className="text-teal-300 font-bold select-all break-all">{production?.id || productionId}</span>
                 </div>
                 <button
@@ -560,7 +560,7 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
                     setCopiedId(true);
                     setTimeout(() => setCopiedId(false), 2000);
                   }}
-                  className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold shrink-0 cursor-pointer"
+                  className="px-2.5 py-1 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 text-[11px] font-semibold shrink-0 cursor-pointer"
                 >
                   {copiedId ? "✓ Copied!" : "📋 Copy ID"}
                 </button>
@@ -575,12 +575,12 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
                 const isSuccess = stageState.status === "COMPLETED" || stageState.status === "SUCCEEDED";
                 
                 return (
-                  <div key={stageName} className="p-4 bg-slate-950 rounded-lg border border-slate-800 flex flex-col relative overflow-hidden">
+                  <div key={stageName} className="p-4 bg-[#F7F8FC] rounded-lg border border-slate-200 flex flex-col relative overflow-hidden">
                     {stageState.status === "RUNNING" && (
                       <div className="absolute top-0 left-0 h-1 bg-blue-500 w-full animate-pulse" />
                     )}
                     <div className="flex justify-between items-center">
-                      <h3 className="font-bold text-slate-200 text-base md:text-lg">
+                      <h3 className="font-bold text-slate-800 text-base md:text-lg">
                         <span className="text-slate-500 mr-2">{index + 1}.</span> 
                         {stageName}
                       </h3>
@@ -588,14 +588,14 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
                         isSuccess ? "bg-emerald-900/50 text-emerald-400" :
                         stageState.status === "RUNNING" ? "bg-blue-900/50 text-blue-400" :
                         stageState.status === "FAILED" ? "bg-red-900/50 text-red-400" :
-                        "bg-slate-800 text-slate-500"
+                        "bg-slate-50 text-slate-500"
                       }`}>
                         {stageState.status}
                       </span>
                     </div>
-                    <div className="mt-3 text-sm text-slate-400 flex flex-wrap items-center gap-2">
+                    <div className="mt-3 text-sm text-slate-500 flex flex-wrap items-center gap-2">
                       <span className="text-slate-500">Executor:</span>
-                      <span className={isNoModel ? "text-amber-400/90 font-mono break-all" : "text-slate-300 break-all"}>{executor}</span>
+                      <span className={isNoModel ? "text-amber-400/90 font-mono break-all" : "text-slate-700 break-all"}>{executor}</span>
                       {isNoModel && (
                         <span className="text-xs uppercase font-bold bg-amber-900/30 border border-amber-800 text-amber-500 px-2 py-0.5 rounded">
                           No Model
@@ -617,10 +617,10 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
 
         {/* Right Column: Video Output */}
         <div className="flex flex-col">
-          <div className="p-6 md:p-8 bg-slate-900 border border-slate-800 rounded-xl sticky top-6">
+          <div className="p-6 md:p-8 bg-white border border-slate-200 rounded-xl sticky top-6">
             <div className="flex flex-col gap-3 mb-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
-                <h2 className="text-2xl font-bold text-slate-100">Master Output</h2>
+                <h2 className="text-2xl font-bold text-slate-900">Master Output</h2>
                 {videoUrl && (
                   <div className="flex items-center gap-2 flex-wrap">
                     <a
@@ -646,14 +646,14 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
                           setIsMuted(videoRef.current.muted);
                         }
                       }}
-                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition-colors cursor-pointer"
+                      className="px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-white text-xs font-semibold transition-colors cursor-pointer"
                     >
                       {isMuted ? "🔊 Unmute Audio" : "🔇 Mute Audio"}
                     </button>
                     <a
                       href={videoUrl}
                       download
-                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
+                      className="px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs font-semibold border border-slate-300 transition-colors"
                     >
                       ⬇️ Download MP4
                     </a>
@@ -663,9 +663,9 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
 
               {/* Unique Reel ID Badge */}
               {(production?.id || productionId) && (
-                <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-950/90 border border-slate-800 text-xs font-mono">
+                <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-[#F7F8FC]/90 border border-slate-200 text-xs font-mono">
                   <div className="flex items-center gap-2 break-all">
-                    <span className="text-slate-400 shrink-0">REEL ID:</span>
+                    <span className="text-slate-500 shrink-0">REEL ID:</span>
                     <span className="text-teal-300 font-bold select-all break-all">{production?.id || productionId}</span>
                   </div>
                   <button
@@ -674,7 +674,7 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
                       setCopiedId(true);
                       setTimeout(() => setCopiedId(false), 2000);
                     }}
-                    className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold shrink-0 cursor-pointer"
+                    className="px-2.5 py-1 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 text-[11px] font-semibold shrink-0 cursor-pointer"
                   >
                     {copiedId ? "✓ Copied!" : "📋 Copy ID"}
                   </button>
@@ -683,14 +683,14 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
 
               {/* Master Audio/Video Version Switcher */}
               {(assets.masterNativeUrl || assets.masterLyriaUrl) && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 rounded-lg bg-slate-950 border border-slate-800">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 rounded-lg bg-[#F7F8FC] border border-slate-200">
                   <button
                     type="button"
                     onClick={() => setActiveVideoMode("hybrid")}
                     className={`px-2 py-1.5 rounded text-[11px] font-mono font-bold transition cursor-pointer ${
                       activeVideoMode === "hybrid"
                         ? "bg-teal-500/20 border border-teal-500 text-teal-300"
-                        : "text-slate-400 hover:text-white"
+                        : "text-slate-500 hover:text-white"
                     }`}
                   >
                     🥇 Hybrid Master
@@ -702,7 +702,7 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
                     className={`px-2 py-1.5 rounded text-[11px] font-mono font-bold transition cursor-pointer disabled:opacity-40 ${
                       activeVideoMode === "native"
                         ? "bg-teal-500/20 border border-teal-500 text-teal-300"
-                        : "text-slate-400 hover:text-white"
+                        : "text-slate-500 hover:text-white"
                     }`}
                   >
                     🎤 24s Non-Stop
@@ -713,7 +713,7 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
                     className={`px-2 py-1.5 rounded text-[11px] font-mono font-bold transition cursor-pointer ${
                       activeVideoMode === "native16"
                         ? "bg-teal-500/20 border border-teal-500 text-teal-300"
-                        : "text-slate-400 hover:text-white"
+                        : "text-slate-500 hover:text-white"
                     }`}
                   >
                     🎤 16.7s Tight
@@ -725,7 +725,7 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
                     className={`px-2 py-1.5 rounded text-[11px] font-mono font-bold transition cursor-pointer disabled:opacity-40 ${
                       activeVideoMode === "lyria"
                         ? "bg-teal-500/20 border border-teal-500 text-teal-300"
-                        : "text-slate-400 hover:text-white"
+                        : "text-slate-500 hover:text-white"
                     }`}
                   >
                     🎼 Pure Lyria
@@ -734,7 +734,7 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
               )}
             </div>
 
-            <div className="aspect-[9/16] w-full bg-black rounded-xl overflow-hidden border border-slate-800 flex flex-col items-center justify-center relative">
+            <div className="aspect-[9/16] w-full bg-black rounded-xl overflow-hidden border border-slate-200 flex flex-col items-center justify-center relative">
               {videoUrl ? (
                 <video
                   ref={videoRef}
@@ -756,7 +756,7 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      <span className="font-medium text-slate-300">Rendering 4K Master...</span>
+                      <span className="font-medium text-slate-700">Rendering 4K Master...</span>
                       <span className="text-sm mt-2 text-slate-500 max-w-[200px]">This process involves multimodal video diffusion and may take several minutes.</span>
                     </>
                   ) : production?.status === "FAILED" ? (
@@ -784,7 +784,7 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
                       <svg className="w-12 h-12 text-slate-700 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       </svg>
-                      <span className="font-medium text-slate-400">Awaiting Pipeline</span>
+                      <span className="font-medium text-slate-500">Awaiting Pipeline</span>
                     </>
                   )}
                 </div>
@@ -827,8 +827,8 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
 
       {/* ALL GENERATED CONTENT & CONSTITUENT ASSETS VAULT */}
       {production && (assets.songUrl || assets.anchorUrl || (assets.shots && assets.shots.length > 0)) && (
-        <div className="mt-10 p-6 md:p-8 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+        <div className="mt-10 p-6 md:p-8 bg-white/90 border border-slate-200 rounded-2xl space-y-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-5">
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/30 text-xs font-mono text-teal-300 mb-2">
                 <span>📦 COMPLETE PRODUCTION VAULT</span>
@@ -838,7 +838,7 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
               <h3 className="text-2xl md:text-3xl font-extrabold text-white">
                 Constituent Assets, Stems &amp; Shots Vault
               </h3>
-              <p className="text-sm text-slate-400 mt-1">
+              <p className="text-sm text-slate-500 mt-1">
                 Inspect and download every individual artifact generated during the 7-stage Omni 1.1 &amp; Lyria 3.5 pipeline.
               </p>
             </div>
@@ -858,7 +858,7 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
                   href={assets.dossierUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-semibold border border-slate-700 transition"
+                  className="px-3.5 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs font-mono font-semibold border border-slate-300 transition"
                 >
                   📜 Omni Dossier JSON
                 </a>
@@ -881,7 +881,7 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
               {/* Row 1: Lyria Master Song + Biometric Anchor Plate + Master Versions */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* 1. Lyria 3.5 Soundtrack */}
-            <div className="p-5 rounded-xl bg-slate-950 border border-slate-800 flex flex-col justify-between space-y-4">
+            <div className="p-5 rounded-xl bg-[#F7F8FC] border border-slate-200 flex flex-col justify-between space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-mono uppercase font-bold text-amber-400">STAGE 2 • LYRIA 3.5</span>
@@ -896,7 +896,7 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
                   )}
                 </div>
                 <h4 className="text-lg font-bold text-white">Master Soundtrack (song.mp3)</h4>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-slate-500 mt-1">
                   Full polyphonic vocals &amp; instrumental stem generated by Google DeepMind Lyria 3.5.
                 </p>
               </div>
@@ -908,7 +908,7 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
             </div>
 
             {/* 2. Biometric Character Anchor Shot */}
-            <div className="p-5 rounded-xl bg-slate-950 border border-slate-800 flex flex-col justify-between space-y-4">
+            <div className="p-5 rounded-xl bg-[#F7F8FC] border border-slate-200 flex flex-col justify-between space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-mono uppercase font-bold text-purple-400">STAGE 4 • ANCHOR PLATE</span>
@@ -923,18 +923,18 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
                   )}
                 </div>
                 <h4 className="text-lg font-bold text-white">Biometric Anchor Shot (anchor.png)</h4>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-slate-500 mt-1">
                   9:16 character identity &amp; wardrobe conditioning plate generated by Gemini 2.5 Flash Image.
                 </p>
               </div>
               {assets.anchorUrl ? (
                 <div className="flex items-center gap-4">
-                  <a href={assets.anchorUrl} target="_blank" rel="noreferrer" className="block w-16 h-24 rounded-lg overflow-hidden border border-slate-700 shrink-0">
+                  <a href={assets.anchorUrl} target="_blank" rel="noreferrer" className="block w-16 h-24 rounded-lg overflow-hidden border border-slate-300 shrink-0">
                     <img src={assets.anchorUrl} alt="Anchor Plate" className="w-full h-full object-cover" />
                   </a>
-                  <div className="text-xs text-slate-300 space-y-1">
+                  <div className="text-xs text-slate-700 space-y-1">
                     <div className="font-mono text-emerald-400">✓ 100% Biometric Lock</div>
-                    <div className="text-slate-400">Click thumbnail to inspect full-resolution 9:16 portrait plate.</div>
+                    <div className="text-slate-500">Click thumbnail to inspect full-resolution 9:16 portrait plate.</div>
                   </div>
                 </div>
               ) : (
@@ -943,37 +943,37 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
             </div>
 
             {/* 3. Master Mux Versions (Hybrid / Original / Lyria) */}
-            <div className="p-5 rounded-xl bg-slate-950 border border-slate-800 flex flex-col justify-between space-y-4">
+            <div className="p-5 rounded-xl bg-[#F7F8FC] border border-slate-200 flex flex-col justify-between space-y-4">
               <div>
                 <span className="text-xs font-mono uppercase font-bold text-teal-400">STAGE 6 • MASTER MUX VERSIONS</span>
                 <h4 className="text-lg font-bold text-white mt-1">4 Master Audio/Video Cuts</h4>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-slate-500 mt-1">
                   Compare the Demucs Hybrid Master against 24s Non-Stop Native, 16.7s Tight Native, and Pure Lyria Audio.
                 </p>
               </div>
               <div className="space-y-2">
                 {assets.masterHybridUrl && (
-                  <div className="flex items-center justify-between px-3 py-2 rounded bg-slate-900 border border-slate-800 text-xs">
+                  <div className="flex items-center justify-between px-3 py-2 rounded bg-white border border-slate-200 text-xs">
                     <span className="font-semibold text-teal-300">🥇 Hybrid Master (24s Non-Stop)</span>
-                    <a href={assets.masterHybridUrl} download className="text-slate-300 hover:text-white font-mono">⬇️ MP4</a>
+                    <a href={assets.masterHybridUrl} download className="text-slate-700 hover:text-white font-mono">⬇️ MP4</a>
                   </div>
                 )}
                 {assets.masterNativeUrl && (
-                  <div className="flex items-center justify-between px-3 py-2 rounded bg-slate-900 border border-slate-800 text-xs">
-                    <span className="font-semibold text-slate-200">🎤 24s Non-Stop Native Cut</span>
-                    <a href={assets.masterNativeUrl} download className="text-slate-300 hover:text-white font-mono">⬇️ MP4</a>
+                  <div className="flex items-center justify-between px-3 py-2 rounded bg-white border border-slate-200 text-xs">
+                    <span className="font-semibold text-slate-800">🎤 24s Non-Stop Native Cut</span>
+                    <a href={assets.masterNativeUrl} download className="text-slate-700 hover:text-white font-mono">⬇️ MP4</a>
                   </div>
                 )}
                 {production?.id && (
-                  <div className="flex items-center justify-between px-3 py-2 rounded bg-slate-900 border border-slate-800 text-xs">
-                    <span className="font-semibold text-slate-200">🎤 16.7s Tight Native Cut (4 Shots)</span>
-                    <a href={`/renders/yt/${production.id}/master_native_16s_tight.mp4`} download className="text-slate-300 hover:text-white font-mono">⬇️ MP4</a>
+                  <div className="flex items-center justify-between px-3 py-2 rounded bg-white border border-slate-200 text-xs">
+                    <span className="font-semibold text-slate-800">🎤 16.7s Tight Native Cut (4 Shots)</span>
+                    <a href={`/renders/yt/${production.id}/master_native_16s_tight.mp4`} download className="text-slate-700 hover:text-white font-mono">⬇️ MP4</a>
                   </div>
                 )}
                 {assets.masterLyriaUrl && (
-                  <div className="flex items-center justify-between px-3 py-2 rounded bg-slate-900 border border-slate-800 text-xs">
-                    <span className="font-semibold text-slate-200">🎼 Pure Lyria Audio Cut</span>
-                    <a href={assets.masterLyriaUrl} download className="text-slate-300 hover:text-white font-mono">⬇️ MP4</a>
+                  <div className="flex items-center justify-between px-3 py-2 rounded bg-white border border-slate-200 text-xs">
+                    <span className="font-semibold text-slate-800">🎼 Pure Lyria Audio Cut</span>
+                    <a href={assets.masterLyriaUrl} download className="text-slate-700 hover:text-white font-mono">⬇️ MP4</a>
                   </div>
                 )}
               </div>
@@ -982,12 +982,12 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
 
           {/* Row 2: Individual Veo / Omni Generated Shots */}
           {assets.shots && assets.shots.length > 0 && (
-            <div className="space-y-4 pt-4 border-t border-slate-800">
+            <div className="space-y-4 pt-4 border-t border-slate-200">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <span className="text-xs font-mono uppercase font-bold text-blue-400">STAGE 5 • CONSTITUENT SHOTS ({assets.shots.length} CLIPS)</span>
                   <h4 className="text-xl font-bold text-white mt-0.5">Individual Veo / Omni Generated Shots (Tail-Chained)</h4>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <p className="text-xs text-slate-500 mt-0.5">
                     Trim, re-order, or combine these {assets.shots.length} constituent shots into an updated master cut using the multi-track NLE Timeline Editor.
                   </p>
                 </div>
@@ -1008,22 +1008,22 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {assets.shots.map((s: any, sIdx: number) => (
-                  <div key={s.id} className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col justify-between space-y-3">
+                  <div key={s.id} className="p-4 rounded-xl bg-[#F7F8FC] border border-slate-200 flex flex-col justify-between space-y-3">
                     <div>
                       <div className="flex items-center justify-between text-xs font-mono mb-2">
                         <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/30 font-bold">
                           Shot #{s.index}
                         </span>
-                        <span className="text-slate-400">{s.durationSec}s</span>
+                        <span className="text-slate-500">{s.durationSec}s</span>
                       </div>
                       {s.lyric && (
-                        <p className="text-xs text-slate-300 italic line-clamp-2 mb-2">
+                        <p className="text-xs text-slate-700 italic line-clamp-2 mb-2">
                           &ldquo;{s.lyric}&rdquo;
                         </p>
                       )}
                     </div>
 
-                    <div className="aspect-[9/16] w-full bg-black rounded-lg overflow-hidden border border-slate-800">
+                    <div className="aspect-[9/16] w-full bg-black rounded-lg overflow-hidden border border-slate-200">
                       <video
                         src={s.videoUrl}
                         controls
@@ -1052,7 +1052,7 @@ export function YTStudio({ embedded = false }: { embedded?: boolean } = {}) {
                         <a
                           href={s.videoUrl}
                           download
-                          className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-semibold"
+                          className="px-2.5 py-1 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs font-mono font-semibold"
                         >
                           ⬇️ MP4
                         </a>

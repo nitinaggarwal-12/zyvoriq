@@ -493,9 +493,9 @@ export default function MotionPicturesStudio() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#07090E] text-slate-100 selection:bg-amber-500/30 selection:text-amber-200">
+    <div className="w-full min-h-screen bg-[#F7F8FC] text-slate-900 selection:bg-amber-500/30 selection:text-amber-200">
       {/* ── COMPACT WORKSTATION CONTROL BAR (DROPDOWN-FIRST, ZERO FLUFF) ── */}
-      <section id="post-generation-studio" className="w-full py-4 border-b border-white/10 bg-[#0B111E] sticky top-0 z-40 shadow-xl">
+      <section id="post-generation-studio" className="w-full py-4 border-b border-slate-200 bg-white sticky top-0 z-40 shadow-xl">
         <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 md:px-10 lg:px-12 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-teal-500/15 border border-teal-500/40 flex items-center justify-center text-teal-400 shrink-0">
@@ -510,7 +510,7 @@ export default function MotionPicturesStudio() {
                   ZERO RE-RENDER
                 </span>
               </div>
-              <p className="text-xs text-slate-400 font-mono">
+              <p className="text-xs text-slate-500 font-mono">
                 Sub-frame deterministic trim • 0.25x–4.0x speed • Tri-stem acoustic DSP • 35mm LUTs
               </p>
             </div>
@@ -519,7 +519,7 @@ export default function MotionPicturesStudio() {
           {/* Active Reel Dropdown & Import Trigger */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
-              <label className="text-xs font-mono font-bold text-slate-400 uppercase whitespace-nowrap">
+              <label className="text-xs font-mono font-bold text-slate-500 uppercase whitespace-nowrap">
                 Active Reel:
               </label>
               <select
@@ -531,7 +531,7 @@ export default function MotionPicturesStudio() {
                     setSelectedReelId(e.target.value);
                   }
                 }}
-                className="px-3.5 py-2 rounded-xl bg-slate-900/95 border border-teal-500/40 text-xs font-bold text-white focus:outline-none focus:border-teal-400 cursor-pointer min-w-[260px] sm:min-w-[340px] shadow-inner"
+                className="px-3.5 py-2 rounded-xl bg-white/95 border border-teal-500/40 text-xs font-bold text-white focus:outline-none focus:border-teal-400 cursor-pointer min-w-[260px] sm:min-w-[340px] shadow-inner"
               >
                 {editableReels.map((reel) => (
                   <option key={reel.id} value={reel.id}>
@@ -555,7 +555,7 @@ export default function MotionPicturesStudio() {
       </section>
 
       {/* ── MAIN NLE TIMELINE & MULTI-STEM WORKSTATION ── */}
-      <section className="w-full py-6 bg-[#06080E]">
+      <section className="w-full py-6 bg-[#F7F8FC]">
         <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 md:px-10 lg:px-12">
           <ReelTimelineEditor
             key={activeSelectedReel.id}
@@ -580,16 +580,16 @@ export default function MotionPicturesStudio() {
       {/* ── IMPORT ANY REEL MODAL (LIBRARY, REEL ID, VIDEO URL, OR UPLOAD) ── */}
       {isImportModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-          <div className="bg-[#0B111E] border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto">
             {/* Modal Header */}
-            <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-[#F7F8FC]/80">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-400">
                   <FolderInput className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-white">Import Any Reel into Motion Pictures Studio</h3>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Load any previously generated production, external MP4 URL, or upload a video file for component editing.
                   </p>
                 </div>
@@ -597,21 +597,21 @@ export default function MotionPicturesStudio() {
               <button
                 type="button"
                 onClick={() => setIsImportModalOpen(false)}
-                className="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+                className="p-2 rounded-lg bg-white hover:bg-slate-50 text-slate-500 hover:text-white transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Modal Tabs */}
-            <div className="flex items-center border-b border-slate-800 bg-slate-950/40 px-6 pt-3 gap-2 flex-wrap">
+            <div className="flex items-center border-b border-slate-200 bg-[#F7F8FC]/40 px-6 pt-3 gap-2 flex-wrap">
               <button
                 type="button"
                 onClick={() => setImportTab("library")}
                 className={`pb-3 px-3 text-xs font-bold font-mono transition cursor-pointer border-b-2 flex items-center gap-2 ${
                   importTab === "library"
                     ? "border-teal-500 text-teal-300"
-                    : "border-transparent text-slate-400 hover:text-slate-200"
+                    : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
               >
                 <Layers className="w-4 h-4" />
@@ -623,7 +623,7 @@ export default function MotionPicturesStudio() {
                 className={`pb-3 px-3 text-xs font-bold font-mono transition cursor-pointer border-b-2 flex items-center gap-2 ${
                   importTab === "url"
                     ? "border-teal-500 text-teal-300"
-                    : "border-transparent text-slate-400 hover:text-slate-200"
+                    : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
               >
                 <Sliders className="w-4 h-4" />
@@ -635,7 +635,7 @@ export default function MotionPicturesStudio() {
                 className={`pb-3 px-3 text-xs font-bold font-mono transition cursor-pointer border-b-2 flex items-center gap-2 ${
                   importTab === "upload"
                     ? "border-teal-500 text-teal-300"
-                    : "border-transparent text-slate-400 hover:text-slate-200"
+                    : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
               >
                 <Upload className="w-4 h-4" />
@@ -655,7 +655,7 @@ export default function MotionPicturesStudio() {
                       value={librarySearchQuery}
                       onChange={(e) => setLibrarySearchQuery(e.target.value)}
                       placeholder="Search reels by title, topic, or Reel ID..."
-                      className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-teal-500"
+                      className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-[#F7F8FC] border border-slate-200 text-xs text-slate-800 placeholder:text-slate-500 focus:outline-none focus:border-teal-500"
                     />
                   </div>
 
@@ -685,7 +685,7 @@ export default function MotionPicturesStudio() {
                           return (
                             <div
                               key={p.id}
-                              className="p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-teal-500/50 transition flex flex-col justify-between space-y-3 group"
+                              className="p-4 rounded-xl bg-[#F7F8FC] border border-slate-200 hover:border-teal-500/50 transition flex flex-col justify-between space-y-3 group"
                             >
                               <div>
                                 <div className="flex items-center justify-between text-[11px] font-mono mb-1">
@@ -700,8 +700,8 @@ export default function MotionPicturesStudio() {
                                 </div>
                               </div>
 
-                              <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
-                                <span className="text-[11px] font-mono text-slate-400">
+                              <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between">
+                                <span className="text-[11px] font-mono text-slate-500">
                                   Duration: {Number(p.manifest?.durationSec || 24.0).toFixed(1)}s
                                 </span>
                                 <button
@@ -724,7 +724,7 @@ export default function MotionPicturesStudio() {
               {/* TAB 2: IMPORT BY REEL ID OR MP4 URL */}
               {importTab === "url" && (
                 <div className="space-y-4">
-                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+                  <div className="p-4 rounded-xl bg-[#F7F8FC] border border-slate-200 space-y-3">
                     <label className="block text-xs font-bold uppercase tracking-wider text-teal-400">
                       Option A: Paste Existing Reel ID
                     </label>
@@ -733,14 +733,14 @@ export default function MotionPicturesStudio() {
                       value={importedReelIdInput}
                       onChange={(e) => setImportedReelIdInput(e.target.value)}
                       placeholder="e.g. yt_a8d79bfc-20a4-4bc6-85f9-495b858c5603 or studio1_..."
-                      className="w-full px-3 py-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-teal-500 font-mono"
+                      className="w-full px-3 py-2.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-800 placeholder:text-slate-500 focus:outline-none focus:border-teal-500 font-mono"
                     />
                     <p className="text-[11px] text-slate-500">
                       Fetches the production manifest, Lyria stems, character locks, and all constituent shots.
                     </p>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+                  <div className="p-4 rounded-xl bg-[#F7F8FC] border border-slate-200 space-y-3">
                     <label className="block text-xs font-bold uppercase tracking-wider text-purple-400">
                       Option B: Paste Video URL or Local Path
                     </label>
@@ -749,25 +749,25 @@ export default function MotionPicturesStudio() {
                       value={importedVideoUrlInput}
                       onChange={(e) => setImportedVideoUrlInput(e.target.value)}
                       placeholder="e.g. /assets/video/mv_01_summer_asia_master.mp4 or https://..."
-                      className="w-full px-3 py-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-purple-500 font-mono"
+                      className="w-full px-3 py-2.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-800 placeholder:text-slate-500 focus:outline-none focus:border-purple-500 font-mono"
                     />
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                       <div>
-                        <label className="block text-xs text-slate-400 mb-1">Custom Title (Optional):</label>
+                        <label className="block text-xs text-slate-500 mb-1">Custom Title (Optional):</label>
                         <input
                           type="text"
                           value={importedReelTitleInput}
                           onChange={(e) => setImportedReelTitleInput(e.target.value)}
                           placeholder="e.g. Custom Theatrical Master Cut"
-                          className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-purple-500"
+                          className="w-full px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs text-slate-800 placeholder:text-slate-500 focus:outline-none focus:border-purple-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs text-slate-400 mb-1">Constituent Shot Slices:</label>
+                        <label className="block text-xs text-slate-500 mb-1">Constituent Shot Slices:</label>
                         <select
                           value={importedNumShots}
                           onChange={(e) => setImportedNumShots(parseInt(e.target.value, 10))}
-                          className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-purple-500 cursor-pointer"
+                          className="w-full px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-purple-500 cursor-pointer"
                         >
                           <option value={2}>2 Shots (Two 12s cuts)</option>
                           <option value={3}>3 Shots (Three 8s cuts)</option>
@@ -801,13 +801,13 @@ export default function MotionPicturesStudio() {
               {/* TAB 3: UPLOAD LOCAL FILE */}
               {importTab === "upload" && (
                 <div className="space-y-4">
-                  <div className="p-8 rounded-2xl border-2 border-dashed border-slate-800 hover:border-teal-500/60 bg-slate-950/60 text-center flex flex-col items-center justify-center space-y-3 transition">
+                  <div className="p-8 rounded-2xl border-2 border-dashed border-slate-200 hover:border-teal-500/60 bg-[#F7F8FC]/60 text-center flex flex-col items-center justify-center space-y-3 transition">
                     <div className="p-3 rounded-2xl bg-teal-500/10 text-teal-400">
                       <Upload className="w-8 h-8" />
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-white">Select Any MP4 / MOV Video from Computer</h4>
-                      <p className="text-xs text-slate-400 mt-1">
+                      <p className="text-xs text-slate-500 mt-1">
                         Instant browser blob ingest with zero network latency. Auto-partitions into 4 editable constituent shots.
                       </p>
                     </div>

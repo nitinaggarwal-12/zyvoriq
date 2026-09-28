@@ -1,4 +1,4 @@
-"use client";
+import { redirect } from "next/navigation";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";

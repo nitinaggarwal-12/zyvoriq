@@ -721,7 +721,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
   };
 
   return (
-    <div className="min-h-screen bg-[#07090E] text-slate-100 flex flex-col font-sans selection:bg-teal-500/30 selection:text-teal-200">
+    <div className="min-h-screen bg-[#F7F8FC] text-slate-900 flex flex-col font-sans selection:bg-teal-500/30 selection:text-teal-200">
       {/* CONSOLIDATED STUDIO WORKSPACE */}
       <section className="relative pt-4 pb-6 border-b border-white/5 overflow-hidden">
         <div className={`absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] md:w-[1200px] h-[450px] blur-[140px] pointer-events-none transition-all duration-700 ${
@@ -762,7 +762,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                     powered by Google Omni 1.1 &amp; Lyria 3.5
                   </span>
                 </h1>
-                <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
+                <p className="text-xs sm:text-sm text-slate-700 max-w-2xl">
                   Select a verified 24-second master production below or create a new music video with 16-check multimodal sync verification.
                 </p>
               </>
@@ -780,17 +780,17 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
               {/* THE PROMPT BAR CONTAINER */}
               <div
                 id="prompt-bar"
-                className={`w-full h-full bg-[#0E121B] border rounded-2xl md:rounded-3xl p-4 sm:p-5 shadow-2xl shadow-black/60 relative transition-all flex flex-col justify-between ${
+                className={`w-full h-full bg-white border rounded-2xl md:rounded-3xl p-4 sm:p-5 shadow-2xl shadow-black/60 relative transition-all flex flex-col justify-between ${
                   activeTab === "youtube_shorts"
                     ? "border-amber-500/20 focus-within:border-amber-500/50"
-                    : "border-white/10 focus-within:border-teal-500/50"
+                    : "border-slate-200 focus-within:border-teal-500/50"
                 }`}
               >
                 {/* Format & Duration in ONE sleek row */}
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-2 border-b border-white/5">
                   {/* Format selector */}
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mr-0.5">Format:</span>
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mr-0.5">Format:</span>
                     {activeTab === "instagram_tiktok" ? (
                       <>
                         <button
@@ -799,7 +799,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                           className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all min-h-[30px] flex items-center gap-1 ${
                             selectedAspectRatio === "9:16"
                               ? "bg-teal-500 text-[#07090E] shadow-sm shadow-teal-500/30"
-                              : "bg-white/5 text-slate-300 hover:bg-white/10"
+                              : "bg-white/5 text-slate-700 hover:bg-white/10"
                           }`}
                         >
                           <span>📱 9:16 Vertical</span>
@@ -811,7 +811,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                           className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all min-h-[30px] ${
                             selectedAspectRatio === "16:9"
                               ? "bg-teal-500 text-[#07090E]"
-                              : "bg-white/5 text-slate-400 hover:bg-white/10"
+                              : "bg-white/5 text-slate-500 hover:bg-white/10"
                           }`}
                         >
                           16:9 Landscape
@@ -825,7 +825,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                           className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all min-h-[30px] flex items-center gap-1 ${
                             selectedAspectRatio === "2.39:1"
                               ? "bg-amber-400 text-[#07090E] shadow-sm shadow-amber-400/30"
-                              : "bg-white/5 text-slate-300 hover:bg-white/10"
+                              : "bg-white/5 text-slate-700 hover:bg-white/10"
                           }`}
                         >
                           <span>🎬 2.39:1 Anamorphic</span>
@@ -836,7 +836,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                           className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all min-h-[30px] ${
                             selectedAspectRatio === "16:9"
                               ? "bg-amber-400 text-[#07090E]"
-                              : "bg-white/5 text-slate-400 hover:bg-white/10"
+                              : "bg-white/5 text-slate-500 hover:bg-white/10"
                           }`}
                         >
                           16:9
@@ -847,7 +847,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                           className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all min-h-[30px] ${
                             selectedAspectRatio === "9:16"
                               ? "bg-amber-400 text-[#07090E]"
-                              : "bg-white/5 text-slate-400 hover:bg-white/10"
+                              : "bg-white/5 text-slate-500 hover:bg-white/10"
                           }`}
                         >
                           9:16
@@ -858,7 +858,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
 
                   {/* Duration selector */}
                   <div className="flex items-center gap-1">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mr-0.5">Duration:</span>
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mr-0.5">Duration:</span>
                     {(activeTab === "instagram_tiktok"
                       ? [
                           { sec: 15, shots: 3 },
@@ -885,14 +885,14 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                             ? activeTab === "youtube_shorts"
                               ? "bg-amber-400/20 border border-amber-400/40 text-amber-300 font-bold"
                               : "bg-teal-500/20 border border-teal-400/40 text-teal-300 font-bold"
-                            : "bg-white/5 text-slate-400 hover:bg-white/10"
+                            : "bg-white/5 text-slate-500 hover:bg-white/10"
                         }`}
                       >
                         <span>{d.sec}s</span>
                         {d.label && <span className="hidden xl:inline text-[9px] opacity-75">({d.label})</span>}
                       </button>
                     ))}
-                    <div className="flex items-center gap-0.5 ml-0.5 bg-white/5 px-1.5 py-0.5 rounded-md border border-white/10 min-h-[28px]">
+                    <div className="flex items-center gap-0.5 ml-0.5 bg-white/5 px-1.5 py-0.5 rounded-md border border-slate-200 min-h-[28px]">
                       <input
                         id="custom-duration-input"
                         type="number"
@@ -902,7 +902,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                         onChange={(e) => setSelectedDuration(Math.max(10, Math.min(240, Number(e.target.value) || 30)))}
                         className="w-8 bg-transparent text-xs text-white text-center font-bold focus:outline-none"
                       />
-                      <span className="text-[9px] text-slate-400">s</span>
+                      <span className="text-[9px] text-slate-500">s</span>
                     </div>
                   </div>
                 </div>
@@ -910,7 +910,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                 {/* Genre & Language in ONE sleek row */}
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-2 border-b border-white/5">
                   <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 shrink-0 mr-1">Genre:</span>
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 shrink-0 mr-1">Genre:</span>
                     {OMNI_GENRES.map(g => (
                       <button
                         key={g.id}
@@ -922,7 +922,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                             ? activeTab === "youtube_shorts"
                               ? "bg-amber-400 text-[#07090E] font-bold shadow-sm"
                               : "bg-teal-500 text-[#07090E] font-bold shadow-sm"
-                            : "bg-white/5 text-slate-300 hover:bg-white/10"
+                            : "bg-white/5 text-slate-700 hover:bg-white/10"
                         }`}
                       >
                         <span>{g.label}</span>
@@ -931,7 +931,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                   </div>
 
                   <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 shrink-0 flex items-center gap-1 mr-1">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 shrink-0 flex items-center gap-1 mr-1">
                       <Languages className="w-3 h-3 text-teal-400" /> Lang:
                     </span>
                     {LANGUAGE_OPTIONS.map(l => (
@@ -945,7 +945,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                             ? activeTab === "youtube_shorts"
                               ? "bg-amber-400/20 border border-amber-400/50 text-amber-300 font-bold"
                               : "bg-teal-500/20 border border-teal-400/50 text-teal-300 font-bold"
-                            : "bg-white/5 text-slate-400 hover:bg-white/10"
+                            : "bg-white/5 text-slate-500 hover:bg-white/10"
                         }`}
                       >
                         <span>{l.label}</span>
@@ -959,7 +959,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                   <button
                     type="button"
                     onClick={() => setShowRefInput(!showRefInput)}
-                    className="text-[11px] text-slate-400 hover:text-teal-300 flex items-center gap-1 transition-colors py-0.5 px-1.5 rounded-lg hover:bg-white/5"
+                    className="text-[11px] text-slate-500 hover:text-teal-300 flex items-center gap-1 transition-colors py-0.5 px-1.5 rounded-lg hover:bg-white/5"
                   >
                     <Link2 className="w-3 h-3 text-teal-400 shrink-0" />
                     <span>🔗 YouTube / Reference URL</span>
@@ -968,7 +968,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                   <button
                     type="button"
                     onClick={() => setShowCastAndPlaceDrawer(!showCastAndPlaceDrawer)}
-                    className="text-[11px] text-slate-400 hover:text-teal-300 flex items-center gap-1 transition-colors py-0.5 px-1.5 rounded-lg hover:bg-white/5"
+                    className="text-[11px] text-slate-500 hover:text-teal-300 flex items-center gap-1 transition-colors py-0.5 px-1.5 rounded-lg hover:bg-white/5"
                   >
                     <Sliders className="w-3 h-3 text-teal-400 shrink-0" />
                     <span>⚙️ Cast & Physical Set Lock</span>
@@ -983,16 +983,16 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
 
                 {/* Optional Cast & Place Selection Drawer */}
                 {showCastAndPlaceDrawer && (
-                  <div className="mb-3 p-3 rounded-xl bg-[#07090E]/80 border border-white/10 space-y-3 animate-in fade-in duration-200">
+                  <div className="mb-3 p-3 rounded-xl bg-[#F7F8FC]/80 border border-slate-200 space-y-3 animate-in fade-in duration-200">
                     <div className="flex items-center justify-between pb-2 border-b border-white/5">
-                      <span className="text-xs font-bold text-slate-200">Casting & Physical Set Lock</span>
+                      <span className="text-xs font-bold text-slate-800">Casting & Physical Set Lock</span>
                       <div className="flex items-center gap-1">
-                        <span className="text-[10px] text-slate-400 mr-1">Cast Size:</span>
+                        <span className="text-[10px] text-slate-500 mr-1">Cast Size:</span>
                         <button
                           type="button"
                           onClick={() => setSelectedCastSize(1)}
                           className={`px-2 py-0.5 rounded text-xs ${
-                            selectedCastSize === 1 ? "bg-teal-500/20 text-teal-300 font-bold border border-teal-500/40" : "bg-white/5 text-slate-400"
+                            selectedCastSize === 1 ? "bg-teal-500/20 text-teal-300 font-bold border border-teal-500/40" : "bg-white/5 text-slate-500"
                           }`}
                         >
                           Solo Lead
@@ -1001,7 +1001,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                           type="button"
                           onClick={() => setSelectedCastSize(2)}
                           className={`px-2 py-0.5 rounded text-xs ${
-                            selectedCastSize === 2 ? "bg-teal-500/20 text-teal-300 font-bold border border-teal-500/40" : "bg-white/5 text-slate-400"
+                            selectedCastSize === 2 ? "bg-teal-500/20 text-teal-300 font-bold border border-teal-500/40" : "bg-white/5 text-slate-500"
                           }`}
                         >
                           Dialogue Duo
@@ -1018,7 +1018,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                           className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
                             castingMode === "omni_auto"
                               ? "bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold shadow-sm"
-                              : "text-slate-400 hover:text-white"
+                              : "text-slate-500 hover:text-white"
                           }`}
                         >
                           <Sparkles className="w-3.5 h-3.5 text-teal-400" />
@@ -1030,7 +1030,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                           className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
                             castingMode === "library"
                               ? "bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold shadow-sm"
-                              : "text-slate-400 hover:text-white"
+                              : "text-slate-500 hover:text-white"
                           }`}
                         >
                           <Users className="w-3.5 h-3.5 text-teal-400" />
@@ -1042,7 +1042,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                           className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
                             castingMode === "custom"
                               ? "bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold shadow-sm"
-                              : "text-slate-400 hover:text-white"
+                              : "text-slate-500 hover:text-white"
                           }`}
                         >
                           <Sliders className="w-3.5 h-3.5 text-teal-400" />
@@ -1057,7 +1057,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                             <ShieldCheck className="w-4 h-4 text-teal-400" />
                             <span className="text-xs font-bold text-teal-300">Autonomous Pre-Flight Cast & Physical Set Synthesis</span>
                           </div>
-                          <p className="text-xs text-slate-300 leading-relaxed">
+                          <p className="text-xs text-slate-700 leading-relaxed">
                             Zero friction. You are not forced to choose existing personas or locations. Omni will automatically analyze your prompt, determine the optimal genre, character archetypes, facial biometric anchors, and physical sets in advance with guaranteed cross-shot continuity.
                           </p>
                           <div className="flex items-center gap-3 text-[11px] text-teal-400/90 pt-1 flex-wrap">
@@ -1070,27 +1070,27 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
 
                       {/* MODE 3: Custom Details */}
                       {castingMode === "custom" && (
-                        <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 space-y-3">
+                        <div className="p-3.5 rounded-xl bg-black/40 border border-slate-200 space-y-3">
                           <div className="flex items-center justify-between pb-2 border-b border-white/5">
                             <span className="text-xs font-bold text-teal-400 flex items-center gap-1.5">
                               <Sliders className="w-3.5 h-3.5" /> Custom Performer & Set Specification
                             </span>
-                            <span className="text-[10px] text-slate-400">Omni validates & anchors in advance</span>
+                            <span className="text-[10px] text-slate-500">Omni validates & anchors in advance</span>
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
-                              <label className="text-[11px] font-medium text-slate-300 block mb-1">Performer Name</label>
+                              <label className="text-[11px] font-medium text-slate-700 block mb-1">Performer Name</label>
                               <input
                                 type="text"
                                 value={customLeadName}
                                 onChange={(e) => setCustomLeadName(e.target.value)}
                                 placeholder="e.g. Astrid Vane, Det. Frederik, Maya Lin"
-                                className="w-full bg-[#0C1019] border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-500/50"
+                                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-500/50"
                               />
                             </div>
                             <div>
-                              <label className="text-[11px] font-medium text-slate-300 block mb-1">Gender / Voice Profile</label>
+                              <label className="text-[11px] font-medium text-slate-700 block mb-1">Gender / Voice Profile</label>
                               <div className="flex items-center gap-2">
                                 {(["female", "male", "non-binary"] as const).map(g => (
                                   <button
@@ -1100,7 +1100,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                     className={`flex-1 py-2 px-2 rounded-lg text-xs font-medium border capitalize transition-all ${
                                       customLeadGender === g
                                         ? "bg-teal-500/20 text-teal-200 border-teal-500/50 font-bold"
-                                        : "bg-[#0C1019] text-slate-400 border-white/10 hover:text-white"
+                                        : "bg-white text-slate-500 border-slate-200 hover:text-white"
                                     }`}
                                   >
                                     {g}
@@ -1111,47 +1111,47 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                           </div>
 
                           <div>
-                            <label className="text-[11px] font-medium text-slate-300 block mb-1">Appearance & Biometric Archetype</label>
+                            <label className="text-[11px] font-medium text-slate-700 block mb-1">Appearance & Biometric Archetype</label>
                             <input
                               type="text"
                               value={customLeadArchetype}
                               onChange={(e) => setCustomLeadArchetype(e.target.value)}
                               placeholder="e.g. 28yo Danish architect, intense blue eyes, structured jawline, short blonde hair"
-                              className="w-full bg-[#0C1019] border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-500/50"
+                              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-500/50"
                             />
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
-                              <label className="text-[11px] font-medium text-slate-300 block mb-1">Wardrobe / Costume Style</label>
+                              <label className="text-[11px] font-medium text-slate-700 block mb-1">Wardrobe / Costume Style</label>
                               <input
                                 type="text"
                                 value={customLeadWardrobe}
                                 onChange={(e) => setCustomLeadWardrobe(e.target.value)}
                                 placeholder="e.g. Charcoal wool coat, black turtleneck"
-                                className="w-full bg-[#0C1019] border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-500/50"
+                                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-500/50"
                               />
                             </div>
                             <div>
-                              <label className="text-[11px] font-medium text-slate-300 block mb-1">Reference Portrait URL (Optional)</label>
+                              <label className="text-[11px] font-medium text-slate-700 block mb-1">Reference Portrait URL (Optional)</label>
                               <input
                                 type="text"
                                 value={customLeadImageUri}
                                 onChange={(e) => setCustomLeadImageUri(e.target.value)}
                                 placeholder="https://... or /assets/... (optional reference photo)"
-                                className="w-full bg-[#0C1019] border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-500/50"
+                                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-500/50"
                               />
                             </div>
                           </div>
 
                           <div>
-                            <label className="text-[11px] font-medium text-slate-300 block mb-1">Custom Physical Set / Location Environment</label>
+                            <label className="text-[11px] font-medium text-slate-700 block mb-1">Custom Physical Set / Location Environment</label>
                             <input
                               type="text"
                               value={customLocationDesc}
                               onChange={(e) => setCustomLocationDesc(e.target.value)}
                               placeholder="e.g. Glass-walled penthouse overlooking Copenhagen harbour at sunset with rain on glass"
-                              className="w-full bg-[#0C1019] border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-500/50"
+                              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-500/50"
                             />
                           </div>
                         </div>
@@ -1167,7 +1167,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                               {leadCharacter ? (
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-2.5">
-                                    <div className="w-11 h-11 rounded-lg bg-[#0C1019] overflow-hidden border border-white/10 shrink-0">
+                                    <div className="w-11 h-11 rounded-lg bg-white overflow-hidden border border-slate-200 shrink-0">
                                       <img
                                         src={
                                           (leadCharacter.wardrobe?.find(w => w.isDefault)?.sheetUris[0]) ||
@@ -1181,13 +1181,13 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                     <div>
                                       <div className="text-[10px] uppercase font-bold text-teal-400">Lead Performer</div>
                                       <div className="text-xs font-bold text-white">{leadCharacter.displayName}</div>
-                                      <div className="text-[10px] text-slate-400 truncate max-w-[130px]">{leadCharacter.archetype}</div>
+                                      <div className="text-[10px] text-slate-500 truncate max-w-[130px]">{leadCharacter.archetype}</div>
                                     </div>
                                   </div>
                                   <button
                                     type="button"
                                     onClick={() => setShowCharacterLibraryModal(true)}
-                                    className="px-2.5 py-1 text-xs rounded-lg bg-white/5 hover:bg-white/10 text-slate-300"
+                                    className="px-2.5 py-1 text-xs rounded-lg bg-white/5 hover:bg-white/10 text-slate-700"
                                   >
                                     Change
                                   </button>
@@ -1202,7 +1202,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                       <div>
                                         <div className="text-[10px] uppercase font-bold text-teal-400">Lead Performer</div>
                                         <div className="text-xs font-bold text-white">Select from 78 Personas</div>
-                                        <div className="text-[10px] text-slate-400">Denmark, France, UK, US, India...</div>
+                                        <div className="text-[10px] text-slate-500">Denmark, France, UK, US, India...</div>
                                       </div>
                                     </div>
                                     <button
@@ -1214,7 +1214,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                     </button>
                                   </div>
                                   <div className="flex items-center gap-1.5 flex-wrap pt-1.5 border-t border-white/5">
-                                    <span className="text-[9px] text-slate-400">Quick pick:</span>
+                                    <span className="text-[9px] text-slate-500">Quick pick:</span>
                                     <button
                                       type="button"
                                       onClick={() => {
@@ -1222,7 +1222,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                           .then(res => res.json())
                                           .then(data => data?.character && setLeadCharacter(data.character));
                                       }}
-                                      className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5 flex items-center gap-1"
+                                      className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/5 hover:bg-white/10 text-slate-700 border border-white/5 flex items-center gap-1"
                                     >
                                       <span>🇩🇰</span> Freja (Denmark)
                                     </button>
@@ -1233,7 +1233,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                           .then(res => res.json())
                                           .then(data => data?.character && setLeadCharacter(data.character));
                                       }}
-                                      className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5 flex items-center gap-1"
+                                      className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/5 hover:bg-white/10 text-slate-700 border border-white/5 flex items-center gap-1"
                                     >
                                       <span>🇩🇰</span> Mikkel (Denmark)
                                     </button>
@@ -1244,7 +1244,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                           .then(res => res.json())
                                           .then(data => data?.character && setLeadCharacter(data.character));
                                       }}
-                                      className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5 flex items-center gap-1"
+                                      className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/5 hover:bg-white/10 text-slate-700 border border-white/5 flex items-center gap-1"
                                     >
                                       <span>🇫🇷</span> Camille (France)
                                     </button>
@@ -1279,7 +1279,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                             className={`px-1.5 py-0.5 rounded text-[9px] font-medium border transition-colors flex items-center gap-1 ${
                                               isCurrent
                                                 ? "bg-teal-500/20 text-teal-200 border-teal-500/50 font-bold"
-                                                : "bg-white/5 text-slate-400 border-white/5 hover:text-white"
+                                                : "bg-white/5 text-slate-500 border-white/5 hover:text-white"
                                             }`}
                                           >
                                             <span>{icon}</span>
@@ -1299,7 +1299,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                 {supportingCharacter ? (
                                   <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2.5">
-                                      <div className="w-11 h-11 rounded-lg bg-[#0C1019] overflow-hidden border border-white/10 shrink-0">
+                                      <div className="w-11 h-11 rounded-lg bg-white overflow-hidden border border-slate-200 shrink-0">
                                         <img
                                           src={
                                             (supportingCharacter.wardrobe?.find(w => w.isDefault)?.sheetUris[0]) ||
@@ -1313,13 +1313,13 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                       <div>
                                         <div className="text-[10px] uppercase font-bold text-cyan-400">Co-Star (Actor 2)</div>
                                         <div className="text-xs font-bold text-white">{supportingCharacter.displayName}</div>
-                                        <div className="text-[10px] text-slate-400 truncate max-w-[130px]">{supportingCharacter.archetype}</div>
+                                        <div className="text-[10px] text-slate-500 truncate max-w-[130px]">{supportingCharacter.archetype}</div>
                                       </div>
                                     </div>
                                     <button
                                       type="button"
                                       onClick={() => setShowCharacterLibraryModal(true)}
-                                      className="px-2.5 py-1 text-xs rounded-lg bg-white/5 hover:bg-white/10 text-slate-300"
+                                      className="px-2.5 py-1 text-xs rounded-lg bg-white/5 hover:bg-white/10 text-slate-700"
                                     >
                                       Change
                                     </button>
@@ -1334,7 +1334,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                         <div>
                                           <div className="text-[10px] uppercase font-bold text-cyan-400">Co-Star (Actor 2)</div>
                                           <div className="text-xs font-bold text-white">Select Co-Star</div>
-                                          <div className="text-[10px] text-slate-400">Choose 2nd character</div>
+                                          <div className="text-[10px] text-slate-500">Choose 2nd character</div>
                                         </div>
                                       </div>
                                       <button
@@ -1346,7 +1346,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                       </button>
                                     </div>
                                     <div className="flex items-center gap-1.5 flex-wrap pt-1.5 border-t border-white/5">
-                                      <span className="text-[9px] text-slate-400">Quick pick:</span>
+                                      <span className="text-[9px] text-slate-500">Quick pick:</span>
                                       <button
                                         type="button"
                                         onClick={() => {
@@ -1354,7 +1354,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                             .then(res => res.json())
                                             .then(data => data?.character && setSupportingCharacter(data.character));
                                         }}
-                                        className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5 flex items-center gap-1"
+                                        className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/5 hover:bg-white/10 text-slate-700 border border-white/5 flex items-center gap-1"
                                       >
                                         <span>🇩🇰</span> Mikkel (Denmark)
                                       </button>
@@ -1365,7 +1365,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                             .then(res => res.json())
                                             .then(data => data?.character && setSupportingCharacter(data.character));
                                         }}
-                                        className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5 flex items-center gap-1"
+                                        className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/5 hover:bg-white/10 text-slate-700 border border-white/5 flex items-center gap-1"
                                       >
                                         <span>🇩🇰</span> Freja (Denmark)
                                       </button>
@@ -1400,7 +1400,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                               className={`px-1.5 py-0.5 rounded text-[9px] font-medium border transition-colors flex items-center gap-1 ${
                                                 isCurrent
                                                   ? "bg-cyan-500/20 text-cyan-200 border-cyan-500/50 font-bold"
-                                                  : "bg-white/5 text-slate-400 border-white/5 hover:text-white"
+                                                  : "bg-white/5 text-slate-500 border-white/5 hover:text-white"
                                               }`}
                                             >
                                               <span>{icon}</span>
@@ -1430,7 +1430,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                           {/* Location Slot */}
                           <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between gap-3">
                             <div className="flex items-center gap-3">
-                              <div className="w-14 h-10 rounded-lg bg-[#0C1019] overflow-hidden border border-white/10 shrink-0">
+                              <div className="w-14 h-10 rounded-lg bg-white overflow-hidden border border-slate-200 shrink-0">
                                 <img
                                   src={selectedLocation?.establishingUri || "/assets/stills/beach_sunset.jpg"}
                                   alt="Location"
@@ -1442,7 +1442,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                 <div className="text-xs font-bold text-white">
                                   {selectedLocation ? selectedLocation.displayName : "Auto-Match Scene to Prompt (Default)"}
                                 </div>
-                                <div className="text-[10px] text-slate-400 truncate max-w-[280px]">
+                                <div className="text-[10px] text-slate-500 truncate max-w-[280px]">
                                   {selectedLocation
                                     ? `"${selectedLocation.environmentBlock}"`
                                     : "Physical set will be dynamically created to match your prompt (e.g. beach, gym, pool, office)"}
@@ -1463,7 +1463,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                               <button
                                 type="button"
                                 onClick={() => setShowLocationLibraryModal(true)}
-                                className="px-2.5 py-1 text-xs rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors"
+                                className="px-2.5 py-1 text-xs rounded-lg bg-white/5 hover:bg-white/10 text-slate-700 transition-colors"
                               >
                                 {selectedLocation ? "Change Set" : "Lock Set"}
                               </button>
@@ -1477,12 +1477,12 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
 
                 {/* Reference Video / YouTube Input when expanded */}
                 {(showRefInput || referenceUrl) && (
-                  <div className="mb-2 p-2.5 bg-[#080B11] border border-teal-500/30 rounded-xl space-y-2 animate-in fade-in duration-200">
+                  <div className="mb-2 p-2.5 bg-slate-50 border border-teal-500/30 rounded-xl space-y-2 animate-in fade-in duration-200">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-semibold text-teal-300 flex items-center gap-1.5">
                         <Link2 className="w-3.5 h-3.5 text-teal-400 shrink-0" />
                         <span>Reference Video / Public YouTube URL</span>
-                        <span className="text-[10px] text-slate-400 font-normal hidden sm:inline">(Deconstructs cinematography, lighting &amp; audio)</span>
+                        <span className="text-[10px] text-slate-500 font-normal hidden sm:inline">(Deconstructs cinematography, lighting &amp; audio)</span>
                       </label>
                       <button
                         type="button"
@@ -1490,7 +1490,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                           setReferenceUrl("");
                           setShowRefInput(false);
                         }}
-                        className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-white/10"
+                        className="text-slate-500 hover:text-white p-1 rounded-md hover:bg-white/10"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -1501,7 +1501,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                         value={referenceUrl}
                         onChange={(e) => setReferenceUrl(e.target.value)}
                         placeholder="Paste YouTube URL (e.g. https://www.youtube.com/watch?v=... or https://youtu.be/...)"
-                        className="flex-1 bg-[#05070A] border border-white/10 rounded-lg px-3 py-1.5 text-base md:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-400 min-h-[38px]"
+                        className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-base md:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-400 min-h-[38px]"
                       />
                       {referenceUrl && (
                         <button
@@ -1550,14 +1550,14 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                             <Lock className="w-2.5 h-2.5 text-emerald-400" />
                             Biometric DNA & Scene Continuity Locked
                           </span>
-                          <span className="text-[10px] font-mono text-slate-400">
+                          <span className="text-[10px] font-mono text-slate-500">
                             Parent: {continuationParent.id.slice(0, 16)}
                           </span>
                         </div>
                         <h4 className="text-sm font-semibold text-white truncate">
                           Directing Sequel to: <span className="text-teal-300">{continuationParent.title}</span>
                         </h4>
-                        <p className="text-xs text-slate-300/80 mt-0.5 line-clamp-2">
+                        <p className="text-xs text-slate-700/80 mt-0.5 line-clamp-2">
                           All character facial anchors, wardrobe, visual style, and audio profile from Part 1 are locked. Type your continuation scene action or plot twist below.
                         </p>
                       </div>
@@ -1568,7 +1568,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                         setContinuationParent(null);
                         setPromptText("");
                       }}
-                      className="px-2.5 py-1 text-xs text-slate-400 hover:text-white rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 shrink-0 transition flex items-center gap-1"
+                      className="px-2.5 py-1 text-xs text-slate-500 hover:text-white rounded-lg bg-white/5 hover:bg-white/10 border border-slate-200 shrink-0 transition flex items-center gap-1"
                       title="Exit continuation mode and direct a fresh standalone reel"
                     >
                       <X className="w-3 h-3" />
@@ -1588,7 +1588,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                         ? "Describe your 180s cinematic story (e.g., Napoleon Bonaparte 5-act romance, from Marseilles youth to Notre-Dame coronation and solitary exile, Beethoven Op. 92 Allegretto, anamorphic 2.39:1...)"
                         : "Describe your scene or action (e.g., A street dancer performing in neon-lit Shinjuku at midnight, continuous camera push-in, synthwave bass drop...)"
                     }
-                    className="w-full bg-[#080B11] border border-white/5 rounded-xl p-3.5 sm:p-4 text-base md:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-400/50 resize-none"
+                    className="w-full bg-slate-50 border border-white/5 rounded-xl p-3.5 sm:p-4 text-base md:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-400/50 resize-none"
                   />
                 </div>
 
@@ -1603,7 +1603,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                     <Sparkles className="w-3 h-3 text-emerald-400" />
                     <span>Direct Sequel from Library...</span>
                   </button>
-                  <span className="text-slate-400 shrink-0 text-[11px] font-medium">Try starter:</span>
+                  <span className="text-slate-500 shrink-0 text-[11px] font-medium">Try starter:</span>
                   {(activeTab === "instagram_tiktok"
                     ? [
                         "Cyberpunk street dance in neon rain, bass drop at 0:15",
@@ -1623,7 +1623,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                       key={idx}
                       type="button"
                       onClick={() => handleSelectStarterPrompt(preset)}
-                      className={`shrink-0 px-2.5 py-1 rounded-full bg-white/5 border border-white/5 text-slate-300 text-[11px] transition-colors truncate max-w-[260px] ${
+                      className={`shrink-0 px-2.5 py-1 rounded-full bg-white/5 border border-white/5 text-slate-700 text-[11px] transition-colors truncate max-w-[260px] ${
                         activeTab === "youtube_shorts"
                           ? "hover:bg-amber-500/10 hover:border-amber-500/30"
                           : "hover:bg-teal-500/10 hover:border-teal-500/30"
@@ -1637,8 +1637,8 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                 {/* Modal to pick any reel from library to continue */}
                 {showContinuationModal && (
                   <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-                    <div className="bg-[#0D111A] border border-white/10 rounded-2xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl flex flex-col max-h-[85vh]">
-                      <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                    <div className="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl flex flex-col max-h-[85vh]">
+                      <div className="flex items-center justify-between pb-3 border-b border-slate-200">
                         <div className="flex items-center gap-2">
                           <Sparkles className="w-5 h-5 text-teal-400" />
                           <h3 className="text-base font-bold text-white">Select a Reel to Direct Part 2</h3>
@@ -1646,13 +1646,13 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                         <button
                           type="button"
                           onClick={() => setShowContinuationModal(false)}
-                          className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white"
+                          className="p-1 rounded-lg hover:bg-white/10 text-slate-500 hover:text-white"
                         >
                           <X className="w-5 h-5" />
                         </button>
                       </div>
 
-                      <p className="text-xs text-slate-400 mt-2 mb-4">
+                      <p className="text-xs text-slate-500 mt-2 mb-4">
                         Choose any generated reel from your library. Omni Director will preserve the character's facial structure, wardrobe, and world continuity for the sequel.
                       </p>
 
@@ -1689,7 +1689,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                     onError={(e) => {
                                       (e.currentTarget as HTMLElement).style.display = "none";
                                     }}
-                                    className="w-10 h-14 rounded-lg object-cover border border-white/10 shrink-0"
+                                    className="w-10 h-14 rounded-lg object-cover border border-slate-200 shrink-0"
                                   />
                                 ) : (
                                   <div className="w-10 h-14 rounded-lg bg-teal-950/40 border border-teal-500/30 flex items-center justify-center shrink-0">
@@ -1700,7 +1700,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                   <h4 className="text-xs font-semibold text-white group-hover:text-teal-300 transition truncate">
                                     {title}
                                   </h4>
-                                  <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono mt-0.5">
+                                  <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono mt-0.5">
                                     <span>ID: {p.id.slice(0, 12)}</span>
                                     <span>•</span>
                                     <span>{m.genre || "Reel"}</span>
@@ -1751,12 +1751,12 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                             className="p-3 rounded-xl bg-white/[0.03] border border-white/5 hover:border-teal-500/40 hover:bg-teal-500/5 transition flex items-center justify-between gap-3 group"
                           >
                             <div className="flex items-center gap-3 min-w-0">
-                              <img src={reel.posterUrl} alt={reel.title} className="w-10 h-14 rounded-lg object-cover border border-white/10 shrink-0" />
+                              <img src={reel.posterUrl} alt={reel.title} className="w-10 h-14 rounded-lg object-cover border border-slate-200 shrink-0" />
                               <div className="min-w-0">
                                 <h4 className="text-xs font-semibold text-white group-hover:text-teal-300 transition truncate">
                                   {reel.title}
                                 </h4>
-                                <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono mt-0.5">
+                                <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono mt-0.5">
                                   <span>{reel.category}</span>
                                   <span>•</span>
                                   <span>{reel.shots} Shots</span>
@@ -1806,8 +1806,8 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                 {/* Modal to pick character from library */}
                 {showCharacterLibraryModal && (
                   <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
-                    <div className="bg-[#0D111A] border border-white/10 rounded-2xl max-w-5xl w-full p-4 sm:p-6 shadow-2xl flex flex-col max-h-[90vh]">
-                      <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                    <div className="bg-white border border-slate-200 rounded-2xl max-w-5xl w-full p-4 sm:p-6 shadow-2xl flex flex-col max-h-[90vh]">
+                      <div className="flex items-center justify-between pb-3 border-b border-slate-200">
                         <div className="flex items-center gap-2">
                           <Users className="w-5 h-5 text-teal-400" />
                           <h3 className="text-base font-bold text-white">Cast from Character Library</h3>
@@ -1818,7 +1818,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                         <button
                           type="button"
                           onClick={() => setShowCharacterLibraryModal(false)}
-                          className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition"
+                          className="p-1 rounded-lg hover:bg-white/10 text-slate-500 hover:text-white transition"
                         >
                           <X className="w-5 h-5" />
                         </button>
@@ -1846,8 +1846,8 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                 {/* Modal to pick physical set from location library */}
                 {showLocationLibraryModal && (
                   <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
-                    <div className="bg-[#0D111A] border border-white/10 rounded-2xl max-w-5xl w-full p-4 sm:p-6 shadow-2xl flex flex-col max-h-[90vh]">
-                      <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                    <div className="bg-white border border-slate-200 rounded-2xl max-w-5xl w-full p-4 sm:p-6 shadow-2xl flex flex-col max-h-[90vh]">
+                      <div className="flex items-center justify-between pb-3 border-b border-slate-200">
                         <div className="flex items-center gap-2">
                           <Compass className="w-5 h-5 text-amber-400" />
                           <h3 className="text-base font-bold text-white">Lock Physical Set from Location Library</h3>
@@ -1858,7 +1858,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                         <button
                           type="button"
                           onClick={() => setShowLocationLibraryModal(false)}
-                          className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition"
+                          className="p-1 rounded-lg hover:bg-white/10 text-slate-500 hover:text-white transition"
                         >
                           <X className="w-5 h-5" />
                         </button>
@@ -1947,7 +1947,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                   </div>
 
                   {/* STATED WAIT: HONEST TIME IN PLAIN ENGLISH */}
-                  <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-slate-300 bg-white/5 px-2.5 py-1.5 rounded-xl border border-white/5">
+                  <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-slate-700 bg-white/5 px-2.5 py-1.5 rounded-xl border border-white/5">
                     <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                     <div>
                       <span className="font-bold text-white">
@@ -1955,7 +1955,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                           ? "~12–15m for 30-shot master."
                           : "~7m for 6-shot reel."}
                       </span>
-                      <span className="text-slate-400 block text-[10px]">
+                      <span className="text-slate-500 block text-[10px]">
                         {activeTab === "youtube_shorts"
                           ? "5 acts & Beethoven score in background."
                           : "Renders in background; notify when ready."}
@@ -1986,21 +1986,21 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                 )}
 
                 {/* PLATFORM SAFETY GUARANTEE (C2PA + SYNTHID REFRAMED) */}
-                <div className="mt-2 pt-2 border-t border-white/5 flex items-center gap-1.5 text-[10px] sm:text-[11px] text-slate-400">
+                <div className="mt-2 pt-2 border-t border-white/5 flex items-center gap-1.5 text-[10px] sm:text-[11px] text-slate-500">
                   <ShieldCheck className="w-3.5 h-3.5 text-teal-400 shrink-0" />
                   <span>
-                    <strong className="text-slate-200">Labeled as AI, so platforms won&apos;t penalize you.</strong> Verified C2PA Content Credentials &amp; SynthID watermarks satisfy disclosure rules without reach throttling.
+                    <strong className="text-slate-800">Labeled as AI, so platforms won&apos;t penalize you.</strong> Verified C2PA Content Credentials &amp; SynthID watermarks satisfy disclosure rules without reach throttling.
                   </span>
                 </div>
               </div>
 
               {/* OMNI DIRECTOR'S TREATMENT DOSSIER CARD */}
               {treatment && (
-                <div className="mt-6 w-full bg-[#0B0F19] border border-teal-500/40 rounded-2xl md:rounded-3xl p-5 sm:p-7 shadow-2xl relative overflow-hidden">
+                <div className="mt-6 w-full bg-slate-50 border border-teal-500/40 rounded-2xl md:rounded-3xl p-5 sm:p-7 shadow-2xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-96 h-96 bg-teal-500/5 rounded-full blur-3xl pointer-events-none" />
 
                   {/* Header */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10 relative z-10">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 relative z-10">
                     <div>
                       <div className="flex flex-wrap items-center gap-2 mb-2">
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-teal-500/20 border border-teal-400/40 text-teal-300 text-[11px] font-bold uppercase tracking-wider">
@@ -2010,17 +2010,17 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                         <span className="px-2 py-0.5 rounded bg-amber-400/20 border border-amber-400/30 text-amber-300 text-[11px] font-semibold">
                           Awaiting Approval
                         </span>
-                        <span className="px-2 py-0.5 rounded bg-white/5 text-slate-300 text-[11px]">
+                        <span className="px-2 py-0.5 rounded bg-white/5 text-slate-700 text-[11px]">
                           {treatment.targetDurationSec}s • {treatment.shots.length} Takes • {treatment.aspectRatio}
                         </span>
-                        <span className="px-2 py-0.5 rounded bg-white/5 text-slate-300 text-[11px]">
+                        <span className="px-2 py-0.5 rounded bg-white/5 text-slate-700 text-[11px]">
                           {treatment.language}
                         </span>
                       </div>
                       <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
                         {treatment.title}
                       </h2>
-                      <p className="text-xs sm:text-sm text-slate-300 mt-1 italic max-w-3xl">
+                      <p className="text-xs sm:text-sm text-slate-700 mt-1 italic max-w-3xl">
                         &ldquo;{treatment.logline}&rdquo;
                       </p>
                     </div>
@@ -2028,7 +2028,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                     <button
                       type="button"
                       onClick={() => setTreatment(null)}
-                      className="self-start sm:self-center px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white text-xs flex items-center gap-1.5 transition-colors"
+                      className="self-start sm:self-center px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-500 hover:text-white text-xs flex items-center gap-1.5 transition-colors"
                       title="Dismiss treatment"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -2046,21 +2046,21 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                           <span className="text-white font-medium">{treatment.referenceAnalyzed.detectedTitle || treatment.referenceAnalyzed.url}</span>
                         </div>
                       </div>
-                      <span className="text-slate-400 text-[11px] sm:text-right">
-                        Aesthetic: <span className="text-slate-200">{treatment.referenceAnalyzed.detectedAesthetic}</span>
+                      <span className="text-slate-500 text-[11px] sm:text-right">
+                        Aesthetic: <span className="text-slate-800">{treatment.referenceAnalyzed.detectedAesthetic}</span>
                       </span>
                     </div>
                   )}
 
                   {/* Dossier Tabs */}
-                  <div className="flex items-center gap-2 border-b border-white/10 mt-5 pb-2 overflow-x-auto scrollbar-none">
+                  <div className="flex items-center gap-2 border-b border-slate-200 mt-5 pb-2 overflow-x-auto scrollbar-none">
                     <button
                       type="button"
                       onClick={() => setTreatmentTab("screenplay")}
                       className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 min-h-[40px] shrink-0 ${
                         treatmentTab === "screenplay"
                           ? "bg-teal-500 text-[#07090E] shadow-sm shadow-teal-500/30"
-                          : "text-slate-400 hover:text-white hover:bg-white/5"
+                          : "text-slate-500 hover:text-white hover:bg-white/5"
                       }`}
                     >
                       <Film className="w-3.5 h-3.5" />
@@ -2073,7 +2073,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                       className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 min-h-[40px] shrink-0 ${
                         treatmentTab === "cast"
                           ? "bg-teal-500 text-[#07090E] shadow-sm shadow-teal-500/30"
-                          : "text-slate-400 hover:text-white hover:bg-white/5"
+                          : "text-slate-500 hover:text-white hover:bg-white/5"
                       }`}
                     >
                       <Users className="w-3.5 h-3.5" />
@@ -2086,7 +2086,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                       className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 min-h-[40px] shrink-0 ${
                         treatmentTab === "score"
                           ? "bg-teal-500 text-[#07090E] shadow-sm shadow-teal-500/30"
-                          : "text-slate-400 hover:text-white hover:bg-white/5"
+                          : "text-slate-500 hover:text-white hover:bg-white/5"
                       }`}
                     >
                       <Music2 className="w-3.5 h-3.5" />
@@ -2103,7 +2103,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                         return (
                           <div
                             key={shot.shotNumber}
-                            className="p-4 rounded-xl bg-[#070A11] border border-white/5 hover:border-teal-500/30 transition-all"
+                            className="p-4 rounded-xl bg-slate-50 border border-white/5 hover:border-teal-500/30 transition-all"
                           >
                             <div
                               className="flex flex-wrap items-center justify-between gap-2 cursor-pointer select-none"
@@ -2125,19 +2125,19 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                 <span className="text-xs font-semibold text-white">
                                   {shot.onCameraCharacters.join(" & ") || "Atmospheric Scene"}
                                 </span>
-                                <span className="text-[11px] text-slate-400 hidden sm:inline">
+                                <span className="text-[11px] text-slate-500 hidden sm:inline">
                                   • {shot.cameraAndOptics.framing} ({shot.cameraAndOptics.lens})
                                 </span>
                               </div>
 
                               <div className="flex items-center gap-2">
-                                <span className="text-[11px] text-slate-400 font-mono">
+                                <span className="text-[11px] text-slate-500 font-mono">
                                   {wordCount > 0 ? `${wordCount}w • budget safe` : "Visual take"}
                                 </span>
                                 {isExpanded ? (
-                                  <ChevronUp className="w-4 h-4 text-slate-400" />
+                                  <ChevronUp className="w-4 h-4 text-slate-500" />
                                 ) : (
-                                  <ChevronDown className="w-4 h-4 text-slate-400" />
+                                  <ChevronDown className="w-4 h-4 text-slate-500" />
                                 )}
                               </div>
                             </div>
@@ -2150,9 +2150,9 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                   <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/5">
                                     <div className="flex items-center justify-between text-[11px] text-teal-300 font-semibold mb-1">
                                       <span>💬 Dialogue / Lyric</span>
-                                      <span className="text-[10px] text-slate-400">Speaker: {shot.speaker || "None"}</span>
+                                      <span className="text-[10px] text-slate-500">Speaker: {shot.speaker || "None"}</span>
                                     </div>
-                                    <p className="text-slate-200 italic font-serif text-sm">
+                                    <p className="text-slate-800 italic font-serif text-sm">
                                       &ldquo;{shot.dialogueOrLyric || "(Instrumental beat / ambient foley)"}&rdquo;
                                     </p>
                                   </div>
@@ -2161,7 +2161,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                     <span className="text-[11px] text-cyan-300 font-semibold block mb-1">
                                       👁️ Facial Micro-Expression &amp; Eyeline
                                     </span>
-                                    <p className="text-slate-300">{shot.facialExpression}</p>
+                                    <p className="text-slate-700">{shot.facialExpression}</p>
                                   </div>
                                 </div>
 
@@ -2171,7 +2171,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                     <span className="text-[11px] text-amber-300 font-semibold block mb-1">
                                       💃 Body Language &amp; Choreography
                                     </span>
-                                    <p className="text-slate-300">
+                                    <p className="text-slate-700">
                                       {shot.bodyLanguage} • {shot.choreography}
                                     </p>
                                   </div>
@@ -2180,10 +2180,10 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                     <span className="text-[11px] text-violet-300 font-semibold block mb-1">
                                       📐 Spatial Blocking &amp; Camera Motion
                                     </span>
-                                    <p className="text-slate-300">
+                                    <p className="text-slate-700">
                                       {shot.spatialBlocking.depthPlanes} | Proximity: {shot.spatialBlocking.proximity} | Contact: {shot.spatialBlocking.contactPoints}
                                     </p>
-                                    <p className="text-slate-400 text-[11px] mt-1">
+                                    <p className="text-slate-500 text-[11px] mt-1">
                                       Camera Motion: {shot.cameraAndOptics.cameraMotion}
                                     </p>
                                   </div>
@@ -2202,7 +2202,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                       {treatment.cast.map(c => (
                         <div
                           key={c.id}
-                          className="p-4 rounded-xl bg-[#070A11] border border-white/5 space-y-3 text-xs"
+                          className="p-4 rounded-xl bg-slate-50 border border-white/5 space-y-3 text-xs"
                         >
                           <div className="flex items-center justify-between pb-2 border-b border-white/5">
                             <div>
@@ -2215,9 +2215,9 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                           </div>
 
                           <div>
-                            <span className="text-[11px] text-slate-400 block font-medium mb-0.5">Biometric Archetype:</span>
-                            <p className="text-slate-200">{c.archetypeSafeDescription}</p>
-                            <div className="mt-1 text-[11px] text-slate-400">
+                            <span className="text-[11px] text-slate-500 block font-medium mb-0.5">Biometric Archetype:</span>
+                            <p className="text-slate-800">{c.archetypeSafeDescription}</p>
+                            <div className="mt-1 text-[11px] text-slate-500">
                               {c.biometricDNA.ageBand} • {c.biometricDNA.hair} • {c.biometricDNA.facialFeatures}
                             </div>
                           </div>
@@ -2225,14 +2225,14 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                           <div className="pt-2 border-t border-white/5 space-y-1.5">
                             <span className="text-[11px] text-amber-300 font-semibold block">Wardrobe Progression:</span>
                             <div className="space-y-1 text-[11px]">
-                              <div className="text-slate-300">
-                                <strong className="text-slate-400">Act 1–2:</strong> {c.wardrobeProgression.act1_2.costume} ({c.wardrobeProgression.act1_2.accessories})
+                              <div className="text-slate-700">
+                                <strong className="text-slate-500">Act 1–2:</strong> {c.wardrobeProgression.act1_2.costume} ({c.wardrobeProgression.act1_2.accessories})
                               </div>
-                              <div className="text-slate-300">
-                                <strong className="text-slate-400">Act 3–4:</strong> {c.wardrobeProgression.act3_4.costume} ({c.wardrobeProgression.act3_4.accessories})
+                              <div className="text-slate-700">
+                                <strong className="text-slate-500">Act 3–4:</strong> {c.wardrobeProgression.act3_4.costume} ({c.wardrobeProgression.act3_4.accessories})
                               </div>
-                              <div className="text-slate-300">
-                                <strong className="text-slate-400">Act 5:</strong> {c.wardrobeProgression.act5.costume} ({c.wardrobeProgression.act5.accessories})
+                              <div className="text-slate-700">
+                                <strong className="text-slate-500">Act 5:</strong> {c.wardrobeProgression.act5.costume} ({c.wardrobeProgression.act5.accessories})
                               </div>
                             </div>
                           </div>
@@ -2245,7 +2245,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                   {treatmentTab === "score" && (
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                       {/* Acoustic Score */}
-                      <div className="p-4 rounded-xl bg-[#070A11] border border-white/5 space-y-3">
+                      <div className="p-4 rounded-xl bg-slate-50 border border-white/5 space-y-3">
                         <div className="flex items-center gap-2 pb-2 border-b border-white/5">
                           <Music2 className="w-4 h-4 text-amber-400" />
                           <span className="text-sm font-bold text-white">Acoustic Score Bed</span>
@@ -2256,28 +2256,28 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
 
                         <div className="grid grid-cols-2 gap-2 text-[11px]">
                           <div>
-                            <span className="text-slate-400 block">Genre / Mood:</span>
+                            <span className="text-slate-500 block">Genre / Mood:</span>
                             <span className="text-white font-medium">{treatment.musicScore.genre}</span>
                           </div>
                           <div>
-                            <span className="text-slate-400 block">Tempo &amp; Key:</span>
+                            <span className="text-slate-500 block">Tempo &amp; Key:</span>
                             <span className="text-white font-medium">{treatment.musicScore.bpm} BPM • {treatment.musicScore.key} ({treatment.musicScore.meter})</span>
                           </div>
                         </div>
 
                         <div>
-                          <span className="text-slate-400 block text-[11px]">Lead Instruments:</span>
-                          <span className="text-slate-200">{treatment.musicScore.instruments.join(", ")}</span>
+                          <span className="text-slate-500 block text-[11px]">Lead Instruments:</span>
+                          <span className="text-slate-800">{treatment.musicScore.instruments.join(", ")}</span>
                         </div>
 
                         <div>
-                          <span className="text-slate-400 block text-[11px]">Vocal Profile:</span>
-                          <span className="text-slate-200">{treatment.musicScore.vocalProfile}</span>
+                          <span className="text-slate-500 block text-[11px]">Vocal Profile:</span>
+                          <span className="text-slate-800">{treatment.musicScore.vocalProfile}</span>
                         </div>
                       </div>
 
                       {/* Color Script */}
-                      <div className="p-4 rounded-xl bg-[#070A11] border border-white/5 space-y-3">
+                      <div className="p-4 rounded-xl bg-slate-50 border border-white/5 space-y-3">
                         <div className="flex items-center gap-2 pb-2 border-b border-white/5">
                           <Palette className="w-4 h-4 text-teal-400" />
                           <span className="text-sm font-bold text-white">Directorial Color Script</span>
@@ -2286,15 +2286,15 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                         <div className="space-y-2 text-[11px]">
                           <div>
                             <strong className="text-teal-300 block">Act 1–2 (Exposition / Rise):</strong>
-                            <p className="text-slate-300">{treatment.colorScript.act1_2}</p>
+                            <p className="text-slate-700">{treatment.colorScript.act1_2}</p>
                           </div>
                           <div>
                             <strong className="text-amber-300 block">Act 3–4 (Climax / Dramatic Stakes):</strong>
-                            <p className="text-slate-300">{treatment.colorScript.act3_4}</p>
+                            <p className="text-slate-700">{treatment.colorScript.act3_4}</p>
                           </div>
                           <div>
                             <strong className="text-cyan-300 block">Act 5 (Resolution / Grand Finale):</strong>
-                            <p className="text-slate-300">{treatment.colorScript.act5}</p>
+                            <p className="text-slate-700">{treatment.colorScript.act5}</p>
                           </div>
                         </div>
                       </div>
@@ -2302,8 +2302,8 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                   )}
 
                   {/* Conversational Tweak with Omni Box */}
-                  <div className="mt-5 p-4 rounded-xl bg-[#080C14] border border-white/10">
-                    <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 mb-2">
+                  <div className="mt-5 p-4 rounded-xl bg-white border border-slate-200">
+                    <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5 mb-2">
                       <MessageSquare className="w-3.5 h-3.5 text-teal-400" />
                       <span>Want Omni to adjust any character, costume, choreography, or dialogue?</span>
                     </label>
@@ -2318,7 +2318,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                           }
                         }}
                         placeholder="e.g. 'Make dance choreography higher energy in Shot 2', 'Change heroine saree to ruby red chiffon', 'More close-up yearning eyelines'..."
-                        className="flex-1 bg-[#05070A] border border-white/10 rounded-lg px-3 py-2 text-base md:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-400 min-h-[44px]"
+                        className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-base md:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-400 min-h-[44px]"
                       />
                       <button
                         type="button"
@@ -2337,7 +2337,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                   </div>
 
                   {/* Primary Approval CTA */}
-                  <div className="mt-5 pt-4 border-t border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                  <div className="mt-5 pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                     <button
                       type="button"
                       onClick={() => handleGenerate(treatment)}
@@ -2358,7 +2358,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                       )}
                     </button>
 
-                    <span className="text-xs text-slate-400 text-center sm:text-right">
+                    <span className="text-xs text-slate-500 text-center sm:text-right">
                       Omni will direct all {treatment.shots.length} takes with 100% actor &amp; costume continuity.
                     </span>
                   </div>
@@ -2387,7 +2387,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
               )}
 
               {generatedResult && (
-                <div className="mt-4 p-5 rounded-2xl bg-[#0E1522] border border-teal-500/40 shadow-xl text-xs sm:text-sm">
+                <div className="mt-4 p-5 rounded-2xl bg-slate-50 border border-teal-500/40 shadow-xl text-xs sm:text-sm">
                   <div className="flex items-center justify-between gap-2 mb-3">
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="w-5 h-5 text-teal-400 shrink-0" />
@@ -2398,7 +2398,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                     </span>
                   </div>
 
-                  <p className="text-slate-300 mb-3">
+                  <p className="text-slate-700 mb-3">
                     {generatedResult.message || "Your production is now queued in the background video diffusion worker."}
                   </p>
 
@@ -2413,7 +2413,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                     <button
                       type="button"
                       onClick={() => setGeneratedResult(null)}
-                      className="px-3.5 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold transition-colors"
+                      className="px-3.5 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-700 text-xs font-semibold transition-colors"
                     >
                       Create Another
                     </button>
@@ -2428,10 +2428,10 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
               {/* THE MATCHING PRODUCTION MONITOR CONTAINER */}
               <div
                 id="production-monitor"
-                className={`w-full h-full bg-[#0E121B] border rounded-2xl md:rounded-3xl p-4 sm:p-5 shadow-2xl shadow-black/60 relative transition-all flex flex-col justify-between ${
+                className={`w-full h-full bg-white border rounded-2xl md:rounded-3xl p-4 sm:p-5 shadow-2xl shadow-black/60 relative transition-all flex flex-col justify-between ${
                   activeTab === "youtube_shorts"
                     ? "border-amber-500/20"
-                    : "border-white/10"
+                    : "border-slate-200"
                 }`}
               >
                 {activeTab === "instagram_tiktok" ? (
@@ -2449,8 +2449,8 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                           Zero Face Drift
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-                        <span className="px-2 py-0.5 rounded bg-black/50 border border-white/10 font-mono text-teal-300">
+                      <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                        <span className="px-2 py-0.5 rounded bg-black/50 border border-slate-200 font-mono text-teal-300">
                           9:16 Vertical
                         </span>
                         <span className="text-slate-500">•</span>
@@ -2461,9 +2461,9 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                     {/* Body: Side-by-side Smartphone & Companion Content */}
                     <div className="flex flex-col sm:flex-row items-center sm:items-start justify-center gap-5">
                       {/* Smartphone Frame (Locked to true 9:16 aspect ratio: 236px x 420px, never vertically stretched) */}
-                      <div className="relative w-[220px] sm:w-[236px] h-[391px] sm:h-[420px] shrink-0 aspect-[9/16] self-start bg-black rounded-[28px] p-2 shadow-2xl shadow-teal-500/20 border-2 border-white/15 ring-1 ring-white/10 flex flex-col justify-between overflow-hidden group">
+                      <div className="relative w-[220px] sm:w-[236px] h-[391px] sm:h-[420px] shrink-0 aspect-[9/16] self-start bg-black rounded-[28px] p-2 shadow-2xl shadow-teal-500/20 border-2 border-slate-200 ring-1 ring-white/10 flex flex-col justify-between overflow-hidden group">
                         {/* Simulated mobile phone ear notch */}
-                        <div className="absolute top-3 left-1/2 -translate-x-1/2 w-20 h-3 bg-[#07090E] rounded-full z-30 pointer-events-none border border-white/5" />
+                        <div className="absolute top-3 left-1/2 -translate-x-1/2 w-20 h-3 bg-[#F7F8FC] rounded-full z-30 pointer-events-none border border-white/5" />
 
                         {/* THE 9:16 VIDEO ELEMENT */}
                         <div className="relative w-full h-full rounded-[20px] overflow-hidden bg-slate-950">
@@ -2483,7 +2483,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
 
                           {/* Top Badges Overlay */}
                           <div className="absolute top-6 left-2.5 right-2.5 z-20 flex items-center justify-between pointer-events-none">
-                            <span className="px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md border border-white/10 text-[9px] font-bold text-white flex items-center gap-1">
+                            <span className="px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md border border-slate-200 text-[9px] font-bold text-white flex items-center gap-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
                               <span>{activeReel.shots} Shots • {activeReel.durationSec}s</span>
                             </span>
@@ -2498,7 +2498,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                             <button
                               type="button"
                               onClick={toggleMute}
-                              className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
+                              className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-slate-300 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
                               title={isMuted ? "Unmute Audio" : "Mute Audio"}
                             >
                               {isMuted ? <VolumeX className="w-3.5 h-3.5 text-amber-300" /> : <Volume2 className="w-3.5 h-3.5 text-teal-400" />}
@@ -2507,7 +2507,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                             <button
                               type="button"
                               onClick={togglePlay}
-                              className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
+                              className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-slate-300 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
                               title={isPlaying ? "Pause" : "Play"}
                             >
                               {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 translate-x-0.5 text-teal-400" />}
@@ -2522,11 +2522,11 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                             <h3 className="text-xs font-bold text-white leading-tight drop-shadow-md truncate">
                               {activeReel.title}
                             </h3>
-                            <p className="text-[9px] text-slate-300 mt-0.5 line-clamp-1 leading-snug">
+                            <p className="text-[9px] text-slate-700 mt-0.5 line-clamp-1 leading-snug">
                               {activeReel.prompt}
                             </p>
 
-                            <div className="mt-1.5 pt-1.5 border-t border-white/10 flex items-center justify-between text-[8px] text-slate-400">
+                            <div className="mt-1.5 pt-1.5 border-t border-slate-200 flex items-center justify-between text-[8px] text-slate-500">
                               <span className="flex items-center gap-0.5 text-teal-300 font-medium">
                                 <CheckCircle2 className="w-2.5 h-2.5 text-teal-400" />
                                 Single continuous take
@@ -2541,11 +2541,11 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                       <div className="flex-1 flex flex-col justify-between sm:h-[420px] gap-3 w-full max-w-[320px] sm:max-w-none">
                         {/* Switch active reel filmstrip cards */}
                         <div className="space-y-2">
-                          <div className="flex items-center justify-between px-0.5 text-xs text-slate-400">
+                          <div className="flex items-center justify-between px-0.5 text-xs text-slate-500">
                             <span className="font-bold text-teal-300 uppercase tracking-wider text-[11px] flex items-center gap-1">
                               <Film className="w-3.5 h-3.5 text-teal-400" /> Sample Productions
                             </span>
-                            <span className="text-[10px] text-slate-400">Tap to load</span>
+                            <span className="text-[10px] text-slate-500">Tap to load</span>
                           </div>
                           <div className="grid grid-cols-2 gap-2.5">
                             {FINISHED_REELS.map((reel, idx) => (
@@ -2556,7 +2556,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                                 className={`relative aspect-[16/9] rounded-xl overflow-hidden border-2 transition-all group ${
                                   activeReelIndex === idx
                                     ? "border-teal-400 shadow-md shadow-teal-500/30 scale-[1.02] z-10"
-                                    : "border-white/10 opacity-70 hover:opacity-100 hover:border-white/30"
+                                    : "border-slate-200 opacity-70 hover:opacity-100 hover:border-white/30"
                                 }`}
                                 title={reel.title}
                               >
@@ -2576,11 +2576,11 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                         </div>
 
                         {/* Continuity Proof Badge Card */}
-                        <div className="w-full p-3.5 rounded-xl bg-teal-500/5 border border-teal-500/20 text-xs text-slate-300 flex items-start gap-2.5 shadow-sm">
+                        <div className="w-full p-3.5 rounded-xl bg-teal-500/5 border border-teal-500/20 text-xs text-slate-700 flex items-start gap-2.5 shadow-sm">
                           <CheckCircle2 className="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
                           <div>
                             <strong className="text-teal-300 block font-semibold text-[11px]">Biometric Continuity Lock:</strong>
-                            <span className="text-slate-300 text-[10px] leading-relaxed block mt-0.5">
+                            <span className="text-slate-700 text-[10px] leading-relaxed block mt-0.5">
                               {activeReel.continuityProof}
                             </span>
                           </div>
@@ -2591,24 +2591,24 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                     {/* Lower Production Telemetry & Pipeline Spec Deck (Balances card height when left-side Casting panel is expanded) */}
                     <div className="grid grid-cols-3 gap-2.5 pt-2">
                       <div className="p-2.5 rounded-xl bg-white/[0.02] border border-white/5 flex flex-col justify-between">
-                        <span className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Acoustic Clock</span>
+                        <span className="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">Acoustic Clock</span>
                         <span className="text-xs font-bold text-teal-300 mt-0.5">Lyria 3.5 Master</span>
-                        <span className="text-[10px] text-slate-400 mt-0.5">-14.0 LUFS Polyphonic</span>
+                        <span className="text-[10px] text-slate-500 mt-0.5">-14.0 LUFS Polyphonic</span>
                       </div>
                       <div className="p-2.5 rounded-xl bg-white/[0.02] border border-white/5 flex flex-col justify-between">
-                        <span className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Visual Continuity</span>
+                        <span className="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">Visual Continuity</span>
                         <span className="text-xs font-bold text-teal-300 mt-0.5">Tail-Frame Chain</span>
-                        <span className="text-[10px] text-slate-400 mt-0.5">Cut PSNR &lt; 25.0 dB</span>
+                        <span className="text-[10px] text-slate-500 mt-0.5">Cut PSNR &lt; 25.0 dB</span>
                       </div>
                       <div className="p-2.5 rounded-xl bg-white/[0.02] border border-white/5 flex flex-col justify-between">
-                        <span className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Director Engine</span>
+                        <span className="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">Director Engine</span>
                         <span className="text-xs font-bold text-teal-300 mt-0.5">Omni 1.1 Pre-Flight</span>
-                        <span className="text-[10px] text-slate-400 mt-0.5">Zero Phantom Mouthing</span>
+                        <span className="text-[10px] text-slate-500 mt-0.5">Zero Phantom Mouthing</span>
                       </div>
                     </div>
 
                     {/* Card Footer: Matching left card AI disclosure */}
-                    <div className="pt-2.5 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-400">
+                    <div className="pt-2.5 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-500">
                       <div className="flex items-center gap-1.5 text-teal-400">
                         <ShieldCheck className="w-3.5 h-3.5" />
                         <span>100% Biometric Facial Lock across all continuous cuts</span>
@@ -2631,8 +2631,8 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                           5-Act Master
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-                        <span className="px-2 py-0.5 rounded bg-black/50 border border-white/10 font-mono text-amber-300">
+                      <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                        <span className="px-2 py-0.5 rounded bg-black/50 border border-slate-200 font-mono text-amber-300">
                           2.39:1 Anamorphic
                         </span>
                         <span className="text-slate-500">•</span>
@@ -2671,7 +2671,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
 
                       {/* Top Cinema Overlay Badges */}
                       <div className="absolute top-2 left-2.5 right-2.5 z-20 flex items-center justify-between pointer-events-none">
-                        <span className="px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md border border-white/15 text-[9px] font-bold text-white flex items-center gap-1">
+                        <span className="px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md border border-slate-200 text-[9px] font-bold text-white flex items-center gap-1">
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                           <span>30 Shots • 180s • 5 Classical Acts</span>
                         </span>
@@ -2686,7 +2686,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                         <button
                           type="button"
                           onClick={toggleMute}
-                          className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
+                          className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-slate-300 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
                           title={isMuted ? "Unmute Audio" : "Mute Audio"}
                         >
                           {isMuted ? <VolumeX className="w-3.5 h-3.5 text-amber-300" /> : <Volume2 className="w-3.5 h-3.5 text-amber-400" />}
@@ -2695,7 +2695,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                         <button
                           type="button"
                           onClick={togglePlay}
-                          className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
+                          className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-slate-300 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg min-h-[28px]"
                           title={isPlaying ? "Pause" : "Play"}
                         >
                           {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 translate-x-0.5 text-amber-400" />}
@@ -2708,7 +2708,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                           <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400">
                             {activeCinema.category}
                           </span>
-                          <span className="text-[9px] text-slate-300 truncate max-w-[260px]">
+                          <span className="text-[9px] text-slate-700 truncate max-w-[260px]">
                             {activeCinema.subtitle}
                           </span>
                         </div>
@@ -2719,8 +2719,8 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                     </div>
 
                     {/* 5 ACTS TIME JUMP SCRUBBER */}
-                    <div className="bg-[#0C1019] rounded-xl p-2 border border-amber-500/20 shadow-md flex flex-col gap-1">
-                      <div className="flex items-center justify-between text-xs px-1 text-slate-400 font-medium">
+                    <div className="bg-white rounded-xl p-2 border border-amber-500/20 shadow-md flex flex-col gap-1">
+                      <div className="flex items-center justify-between text-xs px-1 text-slate-500 font-medium">
                         <span className="text-amber-300 font-bold uppercase tracking-wider flex items-center gap-1 text-[10px]">
                           <Clapperboard className="w-3 h-3 text-amber-400" />
                           Jump to Act:
@@ -2739,10 +2739,10 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                             key={item.act}
                             type="button"
                             onClick={() => seekToTime(item.time)}
-                            className="px-1 py-1 rounded-lg bg-white/5 hover:bg-amber-400/20 hover:border-amber-400/40 border border-white/5 text-slate-300 hover:text-amber-200 transition-all text-center flex flex-col items-center min-h-[34px] justify-center"
+                            className="px-1 py-1 rounded-lg bg-white/5 hover:bg-amber-400/20 hover:border-amber-400/40 border border-white/5 text-slate-700 hover:text-amber-200 transition-all text-center flex flex-col items-center min-h-[34px] justify-center"
                           >
                             <span className="text-amber-400 font-bold text-[10px]">Act {item.act}</span>
-                            <span className="text-[8px] text-slate-400">{item.timecode}</span>
+                            <span className="text-[8px] text-slate-500">{item.timecode}</span>
                           </button>
                         ))}
                       </div>
@@ -2751,22 +2751,22 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                     {/* Side-by-Side: Score Bed & Classical 5-Act Narrative Arc */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       {/* Master Symphonic Score Bed Card */}
-                      <div className="p-2.5 rounded-xl bg-[#0A0E17] border border-amber-500/20 text-xs text-slate-300 flex items-start gap-2 shadow-md">
+                      <div className="p-2.5 rounded-xl bg-slate-50 border border-amber-500/20 text-xs text-slate-700 flex items-start gap-2 shadow-md">
                         <Music2 className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
                         <div>
                           <strong className="text-amber-300 block font-semibold text-[10px] uppercase tracking-wider">Master Symphonic Bed (-24.0 LUFS):</strong>
-                          <span className="text-slate-300 text-[10px] block mt-0.5 leading-snug">{activeCinema.scoreTitle}</span>
+                          <span className="text-slate-700 text-[10px] block mt-0.5 leading-snug">{activeCinema.scoreTitle}</span>
                         </div>
                       </div>
 
                       {/* Classical 5-Act Breakdown */}
-                      <div className="p-2.5 rounded-xl bg-[#080B11] border border-white/10 text-xs shadow-md overflow-hidden">
+                      <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs shadow-md overflow-hidden">
                         <div className="flex items-center justify-between text-[10px] text-amber-400 font-bold border-b border-white/5 pb-1 mb-1">
                           <span className="flex items-center gap-1">
                             <Clapperboard className="w-3 h-3 text-amber-400" />
                             Classical 5-Act Narrative Arc
                           </span>
-                          <span className="text-slate-400 font-mono text-[9px]">30 Takes • 180s</span>
+                          <span className="text-slate-500 font-mono text-[9px]">30 Takes • 180s</span>
                         </div>
                         <div className="space-y-0.5 text-[10px]">
                           {activeCinema.acts.map((act) => (
@@ -2787,7 +2787,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                     </div>
 
                     {/* Card Footer: Matching left card AI disclosure */}
-                    <div className="pt-2.5 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-400">
+                    <div className="pt-2.5 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-500">
                       <div className="flex items-center gap-1.5 text-amber-400">
                         <Music2 className="w-3.5 h-3.5" />
                         <span>Orchestral Score (Beethoven Op. 92) EBU R128 Mastered</span>

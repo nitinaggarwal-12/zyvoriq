@@ -22,9 +22,7 @@ import {
   Plane,
   GraduationCap,
   Stethoscope,
-  Moon,
   Key,
-  Sun,
   PanelLeftClose,
   PanelLeftOpen,
   Grid3X3,
@@ -36,7 +34,6 @@ import {
   Clapperboard
 } from "lucide-react";
 import { ApiKeyModal } from "@/components/ApiKeyModal";
-import { useTheme } from "@/components/ThemeProvider";
 
 interface StudioSidebarProps {
   children?: React.ReactNode;
@@ -47,7 +44,6 @@ interface StudioSidebarProps {
 export function StudioSidebar({ children, currentPath, hideHeader = false }: StudioSidebarProps) {
   const routerPath = usePathname();
   const pathname = currentPath || routerPath;
-  const { resolvedTheme, toggleTheme } = useTheme();
 
   // Desktop collapsed state initialized from localStorage
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -213,22 +209,6 @@ export function StudioSidebar({ children, currentPath, hideHeader = false }: Stu
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
               </div>
             )}
-          </button>
-
-          <button
-            type="button"
-            onClick={toggleTheme}
-            title={isCollapsed ? "Toggle Theme" : undefined}
-            className={`flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs text-slate-400 hover:text-white hover:bg-white/[0.04] transition ${
-              isCollapsed ? "justify-center px-0" : ""
-            }`}
-          >
-            {resolvedTheme === "dark" ? (
-              <Sun className="h-4 w-4 shrink-0 text-amber-400" />
-            ) : (
-              <Moon className="h-4 w-4 shrink-0 text-indigo-400" />
-            )}
-            {!isCollapsed && <span className="text-[11px]">Theme: {resolvedTheme === "dark" ? "Cinema" : "Daylight"}</span>}
           </button>
         </div>
       </aside>
