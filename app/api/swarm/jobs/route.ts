@@ -6,7 +6,7 @@ import { appendLibraryAssets, LibraryAssetItem } from "@/lib/swarm/libraryStore"
 
 export const runtime = "nodejs";
 
-interface JobStageFile {
+export interface JobStageFile {
   id: string;
   partIndex: 1 | 2;
   label: string;
@@ -92,9 +92,6 @@ function saveJobState(job: SwarmGenerationJob) {
   const dir = getJobDir(job.id);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(getJobStatePath(job.id), JSON.stringify(job, null, 2), "utf8");
-  persistProjectState(job.id, job, { status: job.status, title: job.title }).catch((err) => {
-    console.warn("[project-store] Postgres persistence failed; filesystem fallback retained:", err);
-  });
 }
 
 function loadJobState(jobId: string): SwarmGenerationJob | null {
@@ -1277,21 +1274,6 @@ async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string)
       },
     ];
     job.status = "completed";
-    job.stage = "edit";
-
-    try {
-      await Promise.all([
-        persistProjectMedia(job.id, "act1.mp4", "video/mp4", fs.readFileSync(act1MasterPath)),
-        persistProjectMedia(job.id, "act2.mp4", "video/mp4", fs.readFileSync(act2MasterPath)),
-        persistProjectMedia(job.id, "master.mp4", "video/mp4", fs.readFileSync(combinedMasterPath)),
-      ]);
-      job.part1Src = `/api/project-media/${encodeURIComponent(job.id)}/act1.mp4`;
-      job.part2Src = `/api/project-media/${encodeURIComponent(job.id)}/act2.mp4`;
-      job.combinedSrc = `/api/project-media/${encodeURIComponent(job.id)}/master.mp4`;
-      saveJobState(job);
-    } catch (err) {
-      console.warn("[project-media] Durable media persistence failed; local generated files remain available:", err);
-    }
     log(
       `✅ COMPLETED (${engineBadge})! Brand-new 60.0s Combined Master + Part 1 + Part 2 loaded into player & saved to /library.`,
       `Stage 6/6 • ✅ Complete (${engineBadge})! 60.0s Master Reel is live in the player below.`,

@@ -1,2 +1,1 @@
-# Zyvoriq repository rules
-# Keep builds self-contained; do not reference machine-local absolute paths.
+/Users/nitinagga/.gemini/config/AGENTS.md
