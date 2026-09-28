@@ -430,7 +430,7 @@ conn.close()
   return JSON.parse(out);
 }
 
-export function generateEntityId(entityType: string): string {
+function generateEntityId(entityType: string): string {
   const prefixMap: Record<string, string> = {
     page: "PAGE",
     reel: "REEL",
