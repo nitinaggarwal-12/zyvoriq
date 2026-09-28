@@ -118,9 +118,14 @@ export function analyzeAudioSignal(filePath) {
  */
 export function scanGeneratorScriptsForForbiddenShortcuts(workspace) {
   const issues = [];
-  const candidateScripts = [
-    path.join(workspace, "scripts", "build_jf6_70scene_real_veo_motion_picture.mjs")
-  ];
+  const scriptsDir = path.join(workspace, "scripts");
+  const candidateScripts = fs.existsSync(scriptsDir)
+    ? fs
+        .readdirSync(scriptsDir)
+        .filter((f) => f.endsWith(".mjs"))
+        .map((f) => path.join(scriptsDir, f))
+    : [];
+
   for (const scriptPath of candidateScripts) {
     if (!fs.existsSync(scriptPath)) continue;
     const src = fs.readFileSync(scriptPath, "utf-8");
@@ -134,6 +139,10 @@ export function scanGeneratorScriptsForForbiddenShortcuts(workspace) {
     }
     if (/lowpass=f=3800/.test(src)) {
       issues.push(`FORBIDDEN_AUDIO_SHORTCUT [${rel}]: brickwall 'lowpass=f=3800' filter destroys 3.8kHz-20kHz spectrum`);
+    }
+    // Ban variable or non-1.0x setpts speed multipliers on active Paris/Master video builders
+    if (/paris_caucasian_60s/.test(src) && /setpts\s*=\s*PTS\s*\//.test(src)) {
+      issues.push(`FORBIDDEN_VARIABLE_PLAYBACK_SPEED [${rel}]: variable 'setpts=PTS/speedFactor' speed warping violates strict_1x_native_playback_speed`);
     }
     const bannedPromptTerms = [
       { re: /horizontal glitch bands/i, label: "glitch bands" },
@@ -162,7 +171,7 @@ export function auditVideoMp4(filePath, workspace) {
   const metrics = {};
   const executedChecks = {};
 
-  // Check 1: Container & CFR frame count
+  // Check 1: Container & CFR frame count + Native 1.0x Frame Cadence Audit
   try {
     const raw = execSync(
       `"${FFPROBE}" -v error -select_streams v:0 -count_frames -show_entries stream=width,height,r_frame_rate,avg_frame_rate,nb_read_frames,duration,color_space -of json "${filePath}"`,
@@ -183,6 +192,33 @@ export function auditVideoMp4(filePath, workspace) {
     if (metrics.nb_read_frames === 0 || metrics.duration <= 0) {
       issues.push(`Invalid or empty video stream: frames=${metrics.nb_read_frames}, duration=${metrics.duration}`);
     }
+
+    // Real frame-by-frame cadence & duplicate-frame inspection (detects 24->30fps pulldown judder & EOF freeze frames)
+    const fpsParts = metrics.r_frame_rate.split("/").map(Number);
+    const fps = fpsParts.length === 2 && fpsParts[1] > 0 ? fpsParts[0] / fpsParts[1] : 24;
+    const rawLuma = execSync(
+      `"${FFMPEG}" -v error -i "${filePath}" -vf "scale=64:36,format=gray" -f rawvideo pipe:1`,
+      { maxBuffer: 25 * 1024 * 1024, timeout: 120000 }
+    );
+    const fb = 64 * 36;
+    const totalF = Math.floor(rawLuma.length / fb);
+    let duplicateOrFrozenFrames = 0;
+    for (let f = 1; f < totalF; f++) {
+      let diff = 0;
+      const offA = (f - 1) * fb;
+      const offB = f * fb;
+      for (let i = 0; i < fb; i++) diff += Math.abs(rawLuma[offB + i] - rawLuma[offA + i]);
+      const meanDiff = diff / fb;
+      if (meanDiff < 0.08) duplicateOrFrozenFrames++;
+    }
+    metrics.duplicate_or_frozen_frames = duplicateOrFrozenFrames;
+    metrics.fps_numeric = Number(fps.toFixed(3));
+    if (duplicateOrFrozenFrames > Math.max(2, Math.floor(totalF * 0.01))) {
+      issues.push(
+        `UNEVEN_FRAME_PLAYBACK_CADENCE: detected ${duplicateOrFrozenFrames}/${totalF} duplicated/frozen frames (caused by non-integer 24->30fps decimation or EOF freeze)`
+      );
+    }
+
     executedChecks["exact_cfr_frame_count"] = true;
     executedChecks["strict_1x_native_playback_speed"] = true;
   } catch (e) {

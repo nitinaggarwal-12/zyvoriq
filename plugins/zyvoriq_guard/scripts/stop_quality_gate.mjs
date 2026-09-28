@@ -5,15 +5,22 @@ import { execSync } from "node:child_process";
 
 let inputData = "";
 process.stdin.setEncoding("utf-8");
-
 process.stdin.on("data", (chunk) => {
   inputData += chunk;
 });
-
 process.stdin.on("end", async () => {
   try {
     const payload = JSON.parse(inputData || "{}");
-    const workspace = payload.workspacePaths?.[0] || "";
+    const workspace = payload.workspacePaths?.[0] || process.cwd();
+    let recentDeliverables = [];
+
+    // Universal Single-Source Trinity Gate (hooks.json + skills.md + AGENTS.md across all projects + Cloudtop sync)
+    try {
+      const trinityGuard = "/Users/nitinagga/Documents/zyvoriq/scripts/guards/enforce_universal_single_source_trinity.mjs";
+      if (fs.existsSync(trinityGuard)) {
+        execSync(`node "${trinityGuard}" --auto-heal --sync-cloudtop`, { stdio: "ignore", timeout: 10000 });
+      }
+    } catch {}
 
     if (workspace.includes("zyvoriq") && payload.terminationReason === "model_stop") {
       // Load workspace environment variables for API keys
@@ -31,25 +38,172 @@ process.stdin.on("end", async () => {
         }
       } catch {}
 
-      const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-      const scratchDir = path.join(workspace, "scratch");
+      // =====================================================================
+      // STAGE 0: REEL PRODUCTION CONTRACT (POSITIVE OBLIGATION)
+      // ---------------------------------------------------------------------
+      // Deliberately evaluated BEFORE and INDEPENDENT of `recentDeliverables`.
+      // Every other assertion in this file lives inside
+      // `for (const deliv of recentDeliverables)`, so an empty array skipped
+      // all of them and fell through to a vacuous `{}` PASS — meaning a session
+      // that generated zero frames of video was certified compliant.
+      // This block closes that hole by auditing against a DECLARED target
+      // rather than against whatever happens to be on disk.
+      //
+      // Inert unless an ACTIVE reel_target.json exists, so ordinary code-only
+      // sessions are unaffected. ZYVORIQ_GATE_BREAKGLASS=1 is the documented
+      // emergency override.
+      // =====================================================================
+      if (process.env.ZYVORIQ_GATE_BREAKGLASS !== "1") {
+        try {
+          const { enforceProductionContracts } = await import(
+            path.join(workspace, "scripts", "guards", "reel_production_contract.mjs")
+          );
+          const contract = enforceProductionContracts(workspace);
+          if (contract.enforced && contract.issues.length > 0) {
+            console.log(
+              JSON.stringify({
+                decision: "block",
+                reason:
+                  `[ZYVORIQ REEL PRODUCTION CONTRACT BLOCKED]: ${contract.issues.length} unmet ` +
+                  `obligation(s) across ${contract.targetCount} declared target(s):\n` +
+                  contract.issues.join("\n") +
+                  `\nRemediation: generate or complete the declared reel until every contract ` +
+                  `clause is satisfied. Declaring a production target and producing nothing is ` +
+                  `not a valid stop condition.`
+              })
+            );
+            return;
+          }
+        } catch (err) {
+          console.log(
+            JSON.stringify({
+              decision: "block",
+              reason: `[ZYVORIQ REEL CONTRACT FAIL-CLOSED]: production contract enforcement crashed: ${err?.message || err}`
+            })
+          );
+          return;
+        }
+      }
 
-      if (fs.existsSync(scratchDir)) {
-        // Recursively find recent video outputs anywhere under scratch/ (including worker_assets)
-        function findRecentVideos(baseDir, maxAgeMs = 60 * 60 * 1000) {
+      // =====================================================================
+      // STAGE 0.5: PRE-RENDER 12-AGENT BLUEPRINT & BENCHMARK JSON GATE
+      // ---------------------------------------------------------------------
+      // Closes the vacuous-PASS loophole when pre-render synthesis outputs
+      // (*12_agents*.json / *benchmark*.json) are generated in scratch/ prior
+      // to .mp4 video rendering. Every recent 12-agent blueprint JSON must
+      // pass all 10 Cross-Agent Invariants with 10.0 / 10 score parity.
+      // =====================================================================
+      const scratchRoot = path.join(workspace, "scratch");
+      if (fs.existsSync(scratchRoot)) {
+        function findRecentBlueprintJsons(baseDir, maxAgeMs = 60 * 60 * 1000) {
+          let out = [];
+          for (const entry of fs.readdirSync(baseDir, { withFileTypes: true })) {
+            const full = path.join(baseDir, entry.name);
+            if (entry.isDirectory() && entry.name !== "node_modules" && entry.name !== ".git") {
+              out = out.concat(findRecentBlueprintJsons(full, maxAgeMs));
+            } else if (
+              entry.isFile() &&
+              entry.name.endsWith(".json") &&
+              /12_agents|benchmark.*summary/i.test(entry.name)
+            ) {
+              try {
+                const st = fs.statSync(full);
+                if (Date.now() - st.mtimeMs < maxAgeMs) out.push(full);
+              } catch {}
+            }
+          }
+          return out;
+        }
+
+        const recentBlueprints = findRecentBlueprintJsons(scratchRoot);
+        for (const bpPath of recentBlueprints) {
+          try {
+            const raw = JSON.parse(fs.readFileSync(bpPath, "utf-8"));
+            const records = Array.isArray(raw) ? raw : [raw];
+            for (const rec of records) {
+              const agents = rec.danceMvAgents || rec.agents;
+              if (!Array.isArray(agents) || agents.length === 0) continue;
+              const relBp = path.relative(workspace, bpPath);
+
+              if (agents.length !== 12) {
+                console.log(JSON.stringify({
+                  decision: "block",
+                  reason: `[ZYVORIQ 12-AGENT BLUEPRINT GATE BLOCKED]: ${relBp} contains ${agents.length} agents instead of all 12 mandatory Dance Music Video Swarm agents.`
+                }));
+                return;
+              }
+
+              const storyline = rec.synthesized?.storyline || "";
+              if (/https?:\/\//i.test(storyline)) {
+                console.log(JSON.stringify({
+                  decision: "block",
+                  reason: `[ZYVORIQ 12-AGENT BLUEPRINT GATE BLOCKED]: ${relBp} echoes a raw URL inside synthesized.storyline ("${storyline.slice(0, 100)}"). Storyline must be a clean 2-Act narrative logline.`
+                }));
+                return;
+              }
+
+              const lims = rec.synthesized?.referenceDeconstruction?.identifiedLimitations || [];
+              if (lims.some(l => /static,?\s*single-room staging with minimal|repetitive choreography loops and basic camera/i.test(l))) {
+                console.log(JSON.stringify({
+                  decision: "block",
+                  reason: `[ZYVORIQ 12-AGENT BLUEPRINT GATE BLOCKED]: ${relBp} contains canned parroted limitation boilerplate in referenceDeconstruction.identifiedLimitations.`
+                }));
+                return;
+              }
+
+              const judge = agents.find(a => a.id === "forensic_qa_judge_agent");
+              const assembler = agents.find(a => a.id === "assembly_agent");
+              if (judge && /9\.8\s*\/\s*10/i.test(judge.qualityScore || "")) {
+                console.log(JSON.stringify({
+                  decision: "block",
+                  reason: `[ZYVORIQ 12-AGENT BLUEPRINT GATE BLOCKED]: ${relBp} has hardcoded rubber-stamp score "${judge.qualityScore}" on forensic_qa_judge_agent.`
+                }));
+                return;
+              }
+              if (judge && !/^10\.0\s*\/\s*10/i.test(judge.qualityScore || "")) {
+                console.log(JSON.stringify({
+                  decision: "block",
+                  reason: `[ZYVORIQ 12-AGENT BLUEPRINT GATE BLOCKED]: ${relBp} failed 10/10 Cross-Agent Invariant Audit (got "${judge.qualityScore}"). Fix all agent invariants before stopping.`
+                }));
+                return;
+              }
+              if ((judge && judge.status === "COMPLETED" && !rec.videoRendered) || (assembler && assembler.status === "COMPLETED" && !rec.videoRendered)) {
+                console.log(JSON.stringify({
+                  decision: "block",
+                  reason: `[ZYVORIQ 12-AGENT BLUEPRINT GATE BLOCKED]: ${relBp} marks assembly_agent or forensic_qa_judge_agent as COMPLETED prior to video rendering. Pre-render status must be PRE_FLIGHT_LOCKED.`
+                }));
+                return;
+              }
+            }
+          } catch (bpErr) {
+            console.log(JSON.stringify({
+              decision: "block",
+              reason: `[ZYVORIQ 12-AGENT BLUEPRINT GATE FAIL-CLOSED]: Failed to parse ${bpPath}: ${bpErr.message}`
+            }));
+            return;
+          }
+        }
+      }
+
+      const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+      const candidateRoots = [
+        path.join(workspace, "scratch"),
+        path.join(workspace, "public", "assets")
+      ].filter((d) => fs.existsSync(d));
+
+      if (candidateRoots.length > 0) {
+        // Recursively find recent video/audio outputs anywhere under scratch/ OR public/assets/
+        function findRecentDeliverables(baseDir, maxAgeMs = 60 * 60 * 1000) {
           let results = [];
           if (!fs.existsSync(baseDir)) return results;
           for (const entry of fs.readdirSync(baseDir, { withFileTypes: true })) {
             const full = path.join(baseDir, entry.name);
-            if (entry.isDirectory() && entry.name !== "node_modules" && entry.name !== ".git") {
-              results = results.concat(findRecentVideos(full, maxAgeMs));
-            } else if (entry.isFile() && entry.name.endsWith(".mp4")) {
+            if (entry.isDirectory() && entry.name !== "node_modules" && entry.name !== ".git" && entry.name !== "veo_clips") {
+              results = results.concat(findRecentDeliverables(full, maxAgeMs));
+            } else if (entry.isFile() && (entry.name.endsWith(".mp4") || entry.name.endsWith(".mp3") || entry.name.endsWith(".wav"))) {
               try {
                 const stat = fs.statSync(full);
-                if (Date.now() - stat.mtimeMs < maxAgeMs && (
-                  entry.name.includes("master") || entry.name.includes("pilot") || entry.name.includes("reel") ||
-                  entry.name.includes("conformed") || entry.name.includes("final") || entry.name.includes("rough") || entry.name.includes("narrated")
-                )) {
+                if (Date.now() - stat.mtimeMs < maxAgeMs) {
                   results.push({ fullPath: full, dir: path.dirname(full), name: entry.name, mtimeMs: stat.mtimeMs });
                 }
               } catch {}
@@ -58,9 +212,62 @@ process.stdin.on("end", async () => {
           return results;
         }
 
-        const recentVideos = findRecentVideos(scratchDir, 60 * 60 * 1000)
+        recentDeliverables = candidateRoots
+          .flatMap((root) => findRecentDeliverables(root, 60 * 60 * 1000))
           .sort((a, b) => b.mtimeMs - a.mtimeMs)
-          .slice(0, 3);
+          ;
+
+        
+        
+        function checkIsVocalProduction(dirPath, filePath) {
+          if (/non[-\s]?vocal|closed[-\s]?mouth|instrumental/i.test(filePath)) return false;
+          const manifestPath = path.join(dirPath, "manifest.json");
+          if (fs.existsSync(manifestPath)) {
+            try {
+              const data = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
+              if (data.genre === "MUSIC_VIDEO" || data.vocalTrack || data.lyrics) return true;
+            } catch {}
+          }
+          if (fs.existsSync(path.join(dirPath, "phrase_map.json")) || fs.existsSync(path.join(dirPath, "vocals.wav")) || fs.existsSync(path.join(dirPath, "vocal.mp3"))) {
+            return true;
+          }
+          return /vocal|sing|song|lyric|paris_caucasian/i.test(filePath);
+        }
+
+        // ASSERTION 4e (UPFRONT FAIL-CLOSED): Require audit_verdict.txt for any vocal/singing video deliverable
+        for (const deliv of recentDeliverables) {
+          if (!deliv.fullPath.endsWith(".mp4")) continue;
+          const relP = path.relative(workspace, deliv.fullPath);
+          if (checkIsVocalProduction(deliv.dir, relP)) {
+            const auditVerdictPath = path.join(deliv.dir, "audit_verdict.txt");
+            if (!fs.existsSync(auditVerdictPath)) {
+              console.log(JSON.stringify({
+                decision: "block",
+                reason: `[ZYVORIQ AUDIT MISSING]: Mandatory audit_verdict.txt not found in ${deliv.dir} for singing video ${relP}. Run audio-visual lip-sync verification before stopping.`
+              }));
+              return;
+            }
+          }
+        }
+
+        // ASSERTION 0: ZERO-TRUST SHA-256 DETERMINISTIC AUDITOR RECEIPT LOCK
+        const { verifyOrCreateReceipt } = await import(
+          path.join(workspace, "scripts", "guards", "universal_deterministic_output_auditor.mjs")
+        );
+        for (const deliv of recentDeliverables) {
+          const auditRep = await verifyOrCreateReceipt(workspace, deliv.fullPath);
+          if (!auditRep.passed || (auditRep.issues && auditRep.issues.length > 0)) {
+            console.log(
+              JSON.stringify({
+                decision: "block",
+                reason: `[ZYVORIQ DETERMINISTIC AUDITOR GATE BLOCKED]: ${path.relative(workspace, deliv.fullPath)} failed deterministic audit (${auditRep.issues.length} issue(s)):\n${auditRep.issues.join("\n")}`
+              })
+            );
+            return;
+          }
+        }
+
+        const recentVideos = recentDeliverables.filter((d) => d.name.endsWith(".mp4"));
 
         for (const item of recentVideos) {
           const dir = item.dir;
@@ -82,7 +289,7 @@ process.stdin.on("end", async () => {
               if (fileList.length > 0 && uniqueFiles.size !== fileList.length) {
                 console.log(
                   JSON.stringify({
-                    decision: "continue",
+                    decision: "block",
                     reason: `[ZYVORIQ ZERO-ILLUSION GATE BLOCKED]: Video concat list ${cf} repeats identical clip segments (${uniqueFiles.size} unique out of ${fileList.length} total segments)! Master music videos must consist of 100% unique scene shots without artificial clip looping.`
                   })
                 );
@@ -97,7 +304,7 @@ process.stdin.on("end", async () => {
                 if (rawTakes.length > 0 && performanceCuts.length > rawTakes.length) {
                   console.log(
                     JSON.stringify({
-                      decision: "continue",
+                      decision: "block",
                       reason: `[ZYVORIQ ZERO-ILLUSION GATE BLOCKED]: Take lineage deduplication violation! Shots directory contains only ${rawTakes.length} raw Veo takes (${rawTakes.join(", ")}), but concat list ${cf} references ${performanceCuts.length} performance cuts! Reusing slices from the same parent take is strictly forbidden under Rule 32.`
                     })
                   );
@@ -131,7 +338,7 @@ process.stdin.on("end", async () => {
                 if (sContent.includes("-stream_loop") && !sContent.includes("// -stream_loop")) {
                   console.log(
                     JSON.stringify({
-                      decision: "continue",
+                      decision: "block",
                       reason: `[ZYVORIQ ZERO-ILLUSION GATE BLOCKED]: Generation script ${path.basename(sf)} contains -stream_loop! Looping short video clips causes visual jumps, breaks character costume continuity across iterations, and destroys lip-sync synchronization. Every segment must be a unique, dedicated generation.`
                     })
                   );
@@ -151,7 +358,7 @@ process.stdin.on("end", async () => {
                   if (bedMatch && parseFloat(bedMatch[1]) >= 0.35) {
                     console.log(
                       JSON.stringify({
-                        decision: "continue",
+                        decision: "block",
                         reason: `[ZYVORIQ ZERO-ILLUSION GATE BLOCKED]: Audio collision detected in ${path.basename(sf)}! Backing music bed volume is set to ${bedMatch[1]} while superimposing vocal stems. When vocal stems enter, the backing bed must be ducked to <= 0.20 or use an instrumental accompaniment bed to prevent vocal clashing, doubling, and phasing.`
                       })
                     );
@@ -173,7 +380,7 @@ process.stdin.on("end", async () => {
                 ) {
                   console.log(
                     JSON.stringify({
-                      decision: "continue",
+                      decision: "block",
                       reason: `[ZYVORIQ ZERO-ILLUSION GATE BLOCKED]: Synthetic audio oscillator detected in ${path.basename(sf)} (sine=frequency=/anoisesrc=)! Simulating music with monotone test tones or sine hums is strictly forbidden. Master soundtracks must be generated via Google DeepMind Lyria (models/lyria-3.5:generateContent).`
                     })
                   );
@@ -203,7 +410,7 @@ process.stdin.on("end", async () => {
                 if (!hasLyria && !isPathwayA) {
                   console.log(
                     JSON.stringify({
-                      decision: "continue",
+                      decision: "block",
                       reason: `[ZYVORIQ ZERO-ILLUSION GATE BLOCKED]: Music video production ${prodId} lacks a genuine Google DeepMind Lyria master soundtrack! Path B music videos must generate a dedicated polyphonic music bed via models/lyria-3.5:generateContent, or specify audioStrategy='native' for Path A live singing.`
                     })
                   );
@@ -222,7 +429,7 @@ process.stdin.on("end", async () => {
                 if (charGender === "female" && isMaleVoice && !String(prodManifest.topic || "").toLowerCase().includes("duet")) {
                   console.log(
                     JSON.stringify({
-                      decision: "continue",
+                      decision: "block",
                       reason: `[ZYVORIQ ZERO-ILLUSION GATE BLOCKED]: Cross-gender vocal mismatch in ${prodId}! Lead on-camera character is female (${leadChar?.name || leadChar?.id}) while vocal audio is performed by male voice (${audioVoice}). Re-cast with male artist anchor or re-dub with female vocalist.`
                     })
                   );
@@ -250,13 +457,13 @@ process.stdin.on("end", async () => {
               if (silence.includes("silence_start")) {
                 console.log(
                   JSON.stringify({
-                    decision: "continue",
+                    decision: "block",
                     reason: `[ZYVORIQ ZERO-ILLUSION GATE BLOCKED]: ${relativePath} contains digital silence intervals! Audio must play continuously without dropouts across all cut boundaries. Remediate audio mix before concluding.`
                   })
                 );
                 return;
               }
-            } catch (e) {}
+            } catch (err) { console.log(JSON.stringify({ decision: "block", reason: "[ZYVORIQ STOP GATE CRITICAL FAILURE]: Assertion crashed: " + err.message + ". Failing closed." })); return; }
 
             // =========================================================================
             // ASSERTION 3b: SUB-BASS ENERGY RETENTION (ZERO 200Hz GUTTING BAN)
@@ -271,14 +478,14 @@ process.stdin.on("end", async () => {
                 if (subBassMax <= -60) {
                   console.log(
                     JSON.stringify({
-                      decision: "continue",
+                      decision: "block",
                       reason: `[ZYVORIQ ZERO-ILLUSION GATE BLOCKED]: Video ${vf} has virtually zero sub-bass energy below 120Hz (${subBassMax} dB)! Audio was gutted by an aggressive highpass filter. Music video masters must preserve punchy sub-bass, kick drums, and low synth body.`
                     })
                   );
                   return;
                 }
               }
-            } catch (e) {}
+            } catch (err) { console.log(JSON.stringify({ decision: "block", reason: "[ZYVORIQ STOP GATE CRITICAL FAILURE]: Assertion crashed: " + err.message + ". Failing closed." })); return; }
 
             // =========================================================================
             // ASSERTION 4: CUT-BOUNDARY ANCHOR-CONDITIONED ZERO-TOLERANCE VISUAL AUDIT
@@ -339,7 +546,7 @@ process.stdin.on("end", async () => {
                       const aReason = matchReason ? matchReason[1].trim() : aText.slice(0, 300).trim();
                       console.log(
                         JSON.stringify({
-                          decision: "continue",
+                          decision: "block",
                           reason: `[ZYVORIQ ZERO-TOLERANCE QUALITY GATE BLOCKED]: Reference anchor still (${path.basename(anchorPath)}) failed mouth-aperture audit! Reason: ${aReason}. Regenerate the anchor still with sealed lips and zero visible teeth before continuing.`
                         })
                       );
@@ -347,7 +554,7 @@ process.stdin.on("end", async () => {
                     }
                   }
                 }
-              } catch (anchorErr) {}
+              } catch (err) { console.log(JSON.stringify({ decision: "block", reason: "[ZYVORIQ STOP GATE CRITICAL FAILURE]: Assertion crashed: " + err.message + ". Failing closed." })); return; }
 
               // Dynamic duration and uniform timeline sampling across all shot interiors
               let totalDur = 40;
@@ -431,7 +638,7 @@ REASON: <concise explanation>`;
                       if (isFail) {
                         console.log(
                           JSON.stringify({
-                            decision: "continue",
+                            decision: "block",
                             reason: `[ZYVORIQ ZERO-TOLERANCE QUALITY GATE BLOCKED]: Visual discontinuity detected at cut boundary t=${t}s against reference anchor! Reason: ${reason}. Remediate shot generation and wardrobe continuity before concluding.`
                           })
                         );
@@ -449,9 +656,15 @@ REASON: <concise explanation>`;
               // =========================================================================
               // Identify cut boundaries (e.g. every 10s or from concat list)
               const cutSeams = [];
-              for (let s = 10; s <= totalDur - 5; s += 10) {
-                cutSeams.push(s);
-              }
+              try {
+    const scOut = execSync(`ffprobe -v error -f lavfi -i "movie=${videoPath},select=gt(scene\,0.32)" -show_entries frame=pts_time -of csv=p=0`, { encoding: "utf8", timeout: 30000 });
+    for (const line of scOut.trim().split("\n")) {
+      const t = Number(line);
+      if (t > 1.0 && t < totalDur - 1.0) cutSeams.push(Number(t.toFixed(2)));
+    }
+  } catch (err) {
+    for (let s = 5; s <= totalDur - 3; s += 5) cutSeams.push(s);
+  }
 
               for (const cutTime of cutSeams) {
                 try {
@@ -514,7 +727,7 @@ REASON: <concise explanation>`;
                       if (isSeamFail) {
                         console.log(
                           JSON.stringify({
-                            decision: "continue",
+                            decision: "block",
                             reason: `[ZYVORIQ ZERO-TOLERANCE QUALITY GATE BLOCKED]: Cut-boundary transition defect at t=${cutTime}s! Outgoing frame (t=${tPre}s) and incoming frame (t=${tPost}s) failed continuity! Reason: ${seamReason}. Remediate environmental lighting and actor consistency across cuts.`
                           })
                         );
@@ -571,7 +784,7 @@ REASON: <concise explanation>`;
                       const saReason = matchReason ? matchReason[1].trim() : saText.slice(0, 300).trim();
                       console.log(
                         JSON.stringify({
-                          decision: "continue",
+                          decision: "block",
                           reason: `[ZYVORIQ ZERO-TOLERANCE QUALITY GATE BLOCKED]: Standalone frame audit at t=${sampleT}s failed! Reason: ${saReason}. Remediate mouth visemes or wardrobe before concluding.`
                         })
                       );
@@ -579,7 +792,7 @@ REASON: <concise explanation>`;
                     }
                   }
                 }
-              } catch (err) {}
+              } catch (err) { console.log(JSON.stringify({ decision: "block", reason: "[ZYVORIQ STOP GATE CRITICAL FAILURE]: Assertion crashed: " + err.message + ". Failing closed." })); return; }
             }
 
             // =========================================================================
@@ -599,7 +812,7 @@ REASON: <concise explanation>`;
                   if (isFail) {
                     console.log(
                       JSON.stringify({
-                        decision: "continue",
+                        decision: "block",
                         reason: `[ZYVORIQ ZERO-TOLERANCE QUALITY GATE BLOCKED]: Vocal music video ${relativePath} has frozen lips, static smile, or low lip-sync rating (${lipRating}/10)! Audit reports: ${auditTxt.slice(0, 200)}. Characters must actively articulate singing lyrics with dynamic syllable aperture variance.`
                       })
                     );
@@ -607,7 +820,7 @@ REASON: <concise explanation>`;
                   }
                 }
               }
-            } catch (err) {}
+            } catch (err) { console.log(JSON.stringify({ decision: "block", reason: "[ZYVORIQ STOP GATE CRITICAL FAILURE]: Assertion crashed: " + err.message + ". Failing closed." })); return; }
 
             // =========================================================================
             // ASSERTION 6: CUT-BOUNDARY INITIAL-FRAME PSNR CEILING (< 25 dB)
@@ -628,14 +841,14 @@ REASON: <concise explanation>`;
                 if (p >= 25.0) {
                   console.log(
                     JSON.stringify({
-                      decision: "continue",
+                      decision: "block",
                       reason: `[ZYVORIQ ZERO-ILLUSION GATE BLOCKED]: High cross-shot PSNR (${p.toFixed(2)} dB >= 25.0 dB) detected between cut boundary start frames in ${relativePath}! This indicates that Shot N and Shot N+1 both began from the identical static anchor frame (visual snap-back reset). Implement sequential tail-frame chaining so consecutive shots continue forward motion seamlessly.`
                     })
                   );
                   return;
                 }
               }
-            } catch (e) {}
+            } catch (err) { console.log(JSON.stringify({ decision: "block", reason: "[ZYVORIQ STOP GATE CRITICAL FAILURE]: Assertion crashed: " + err.message + ". Failing closed." })); return; }
 
             // =========================================================================
             // ASSERTION 7: UNIVERSAL MOBILE PLAYBACK & FASTSTART STREAMING AUDIT
@@ -647,7 +860,7 @@ REASON: <concise explanation>`;
                 if (pixFmt && !["yuv420p", "yuvj420p"].includes(pixFmt)) {
                   console.log(
                     JSON.stringify({
-                      decision: "continue",
+                      decision: "block",
                       reason: `[ZYVORIQ MOBILE COMPATIBILITY GATE BLOCKED]: Video ${relativePath} uses pixel format '${pixFmt}' instead of 'yuv420p'! Master reels must be encoded with -pix_fmt yuv420p to prevent mobile Safari/Android hardware playback failures.`
                     })
                   );
@@ -666,14 +879,14 @@ REASON: <concise explanation>`;
                 if (moovPos === -1 || (mdatPos !== -1 && moovPos > mdatPos)) {
                   console.log(
                     JSON.stringify({
-                      decision: "continue",
+                      decision: "block",
                       reason: `[ZYVORIQ MOBILE STREAMING GATE BLOCKED]: Video ${relativePath} lacks +faststart streaming optimization (moov atom is placed after mdat or at end of file)! Remaster with -movflags +faststart to enable instantaneous mobile streaming.`
                     })
                   );
                   return;
                 }
               }
-            } catch (e) {}
+            } catch (err) { console.log(JSON.stringify({ decision: "block", reason: "[ZYVORIQ STOP GATE CRITICAL FAILURE]: Assertion crashed: " + err.message + ". Failing closed." })); return; }
 
             // =========================================================================
             // ASSERTION 8: DENSE FRAME-LEVEL CADENCE & MOUTH LINGERING AUDIT
@@ -689,7 +902,7 @@ REASON: <concise explanation>`;
                     const errOutput = forensicErr.stdout ? forensicErr.stdout.toString() : (forensicErr.stderr ? forensicErr.stderr.toString() : forensicErr.message);
                     console.log(
                       JSON.stringify({
-                        decision: "continue",
+                        decision: "block",
                         reason: `[ZYVORIQ FRAME-LEVEL CADENCE GATE BLOCKED]: Video ${relativePath} failed physical frame cadence forensics!\n${errOutput.split("\n").filter(l => l.includes("GATE 10 FAILED") || l.includes("MOUTH_LINGERING") || l.includes("CADENCE_MISMATCH")).join("\n") || "Mouth motion persists after acoustic vocals end, or mouth articulation is slower than audio syllables."}\nRemediation: Ensure prompts mandate closed lips the millisecond singing ends, and match cadence to audio rate.`
                       })
                     );
@@ -697,14 +910,44 @@ REASON: <concise explanation>`;
                   }
                 }
               }
-            } catch (e) {}
+            } catch (err) { console.log(JSON.stringify({ decision: "block", reason: "[ZYVORIQ STOP GATE CRITICAL FAILURE]: Assertion crashed: " + err.message + ". Failing closed." })); return; }
         }
       }
     }
 
-    // Default: allow stop
+    // Default: allow stop when zero issues were detected
+    
+    // Execute modular guard suite across all audited video deliverables
+    const guardsDir = path.join(workspace, "scripts", "guards");
+    const masterGuards = [
+      "gate_motion_velocity_cadence.mjs",
+      "gate_video_optical_flow.mjs",
+      "gate_speech_visual_onset_sync.mjs"
+    ];
+    for (const deliv of recentDeliverables.filter(d => d.fullPath.endsWith(".mp4"))) {
+      for (const guard of masterGuards) {
+        const gPath = path.join(guardsDir, guard);
+        if (fs.existsSync(gPath)) {
+          try {
+            execSync(`node "${gPath}" "${deliv.fullPath}"`, { stdio: "pipe", timeout: 30000 });
+          } catch (e) {
+            console.log(JSON.stringify({
+              decision: "block",
+              reason: `[GUARD GATE FAILURE]: ${guard} failed on ${path.basename(deliv.fullPath)}: ${e.stderr?.toString() || e.message}`
+            }));
+            return;
+          }
+        }
+      }
+    }
+
     console.log(JSON.stringify({}));
   } catch (err) {
-    console.log(JSON.stringify({}));
+    console.log(
+      JSON.stringify({
+        decision: "block",
+        reason: `[ZYVORIQ STOP GATE FAIL-CLOSED]: Unhandled exception inside stop_quality_gate.mjs: ${err?.message || err}`
+      })
+    );
   }
 });

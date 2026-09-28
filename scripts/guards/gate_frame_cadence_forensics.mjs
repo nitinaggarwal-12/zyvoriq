@@ -25,16 +25,55 @@ export function auditFrameCadenceForensics(videoPath, metadata = {}) {
     throw new Error(`Video file not found: ${absVideo}`);
   }
 
+  // Auto-discover lyric events from scratch directory if not passed
+  let vocalEvents = metadata.vocalEvents;
+  if (!vocalEvents) {
+    const videoBase = path.basename(absVideo, path.extname(absVideo)).replace(/_master$/, "");
+    const possibleDirs = [
+      path.join(process.cwd(), "scratch", `omni_${videoBase}`),
+      path.join(process.cwd(), "scratch", videoBase),
+      path.dirname(absVideo)
+    ];
+    for (const d of possibleDirs) {
+      const pmPath = path.join(d, "phrase_map.json");
+      if (fs.existsSync(pmPath)) {
+        try {
+          const pm = JSON.parse(fs.readFileSync(pmPath, "utf-8"));
+          if (Array.isArray(pm) && pm.length > 0) {
+            vocalEvents = pm.filter(p => (p.type === "VOCAL_PERFORMANCE" || !p.type) && (p.syllableCount > 0 || (p.phrase && !p.phrase.startsWith("["))));
+            console.log(`   ✓ Auto-loaded ${vocalEvents.length} vocal events from: ${pmPath}`);
+            break;
+          }
+        } catch {}
+      }
+    }
+  }
+
+  if (!vocalEvents || vocalEvents.length === 0) {
+    throw new Error(
+      `[GATE 10 FAIL-CLOSED]: No valid phrase_map.json or vocalEvents found for ${path.basename(absVideo)}. ` +
+      `Refusing to fall back to dummy lyrics. Generate an acoustic phrase map first.`
+    );
+  }
+
   const tmpDir = path.join(process.cwd(), "scratch", "tmp_frame_forensics");
   fs.rmSync(tmpDir, { recursive: true, force: true });
   fs.mkdirSync(tmpDir, { recursive: true });
 
   console.log(`\n🔍 [FRAME-LEVEL FORENSIC ENGINE] Decoding frames from: ${path.basename(videoPath)} at 10 fps...`);
 
-  // 1. Extract frames at 10 fps (every 100ms) cropped to central face/mouth region (lower middle quadrant)
-  // For 720x1280 vertical video: mouth is typically in x: 200..520, y: 500..850
+  // 1. Extract frames at 10 fps (every 100ms) cropped to central face/mouth region dynamically sized to video dimensions
+  const probe = JSON.parse(
+    execSync(`ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of json "${absVideo}"`).toString()
+  );
+  const vw = Number(probe.streams?.[0]?.width || 1920);
+  const vh = Number(probe.streams?.[0]?.height || 1080);
+  const cropW = Math.round(vw * 0.36);
+  const cropH = Math.round(vh * 0.36);
+  const cropX = Math.round((vw - cropW) / 2);
+  const cropY = Math.round(vh * 0.24);
   execSync(
-    `ffmpeg -y -i "${absVideo}" -vf "fps=10,crop=320:350:200:500" -q:v 2 "${tmpDir}/mouth_%04d.jpg" 2>/dev/null`
+    `ffmpeg -y -i "${absVideo}" -vf "fps=10,crop=${cropW}:${cropH}:${cropX}:${cropY}" -q:v 2 "${tmpDir}/mouth_%04d.jpg" 2>/dev/null`
   );
 
   const frameFiles = fs.readdirSync(tmpDir).filter(f => f.endsWith(".jpg")).sort();
@@ -53,53 +92,6 @@ export function auditFrameCadenceForensics(videoPath, metadata = {}) {
   // 3. Measure acoustic vocal boundaries if audio track exists
   const audioInfoLog = path.join(tmpDir, "volumedetect.txt");
   execSync(`ffmpeg -y -i "${absVideo}" -vn -af "volumedetect" -f null - 2>${audioInfoLog}`);
-
-  // Auto-discover lyric events from scratch directory if not passed
-  let vocalEvents = metadata.vocalEvents;
-  if (!vocalEvents) {
-    const videoBase = path.basename(absVideo, path.extname(absVideo)).replace(/_master$/, "");
-    const possibleDirs = [
-      path.join(process.cwd(), "scratch", `omni_${videoBase}`),
-      path.join(process.cwd(), "scratch", videoBase),
-    ];
-    for (const d of possibleDirs) {
-      const pmPath = path.join(d, "phrase_map.json");
-      if (fs.existsSync(pmPath)) {
-        try {
-          const pm = JSON.parse(fs.readFileSync(pmPath, "utf-8"));
-          if (Array.isArray(pm) && pm.length > 0) {
-            vocalEvents = pm.filter(p => (p.type === "VOCAL_PERFORMANCE" || !p.type) && (p.syllableCount > 0 || (p.phrase && !p.phrase.startsWith("["))));
-            console.log(`   ✓ Auto-loaded ${vocalEvents.length} vocal events from: ${pmPath}`);
-            break;
-          }
-        } catch {}
-      }
-    }
-  }
-
-  // Fallback defaults if no project phrase map found
-  if (!vocalEvents) {
-    vocalEvents = [
-      {
-        shotId: "shot_01",
-        phrase: "Ooh yeah, centering in the night... Are you ready for the heat?",
-        tAudioStart: 0.9,
-        tAudioEnd: 5.0,
-        syllableCount: 14,
-        shotDuration: 5.0,
-        shotEndSec: 5.0
-      },
-      {
-        shotId: "shot_03",
-        phrase: "The sun is setting on the ancient sea... And the music's calling out to you and me... Feel!",
-        tAudioStart: 8.0,
-        tAudioEnd: 15.0,
-        syllableCount: 22,
-        shotDuration: 7.0,
-        shotEndSec: 15.0
-      }
-    ];
-  }
 
   const results = {
     videoPath: absVideo,

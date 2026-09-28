@@ -42,10 +42,8 @@ const SYNTH_OSC = new RegExp(["sine=freq", "uency=|anoise", "src="].join(""), "i
 const NO_AUDIO_FLAG = new RegExp("(?:^|[\\s\"'`])-" + "an(?:[\\s\"'`]|$)");
 
 let inputData = "";
-process.stdin.setEncoding("utf-8");
-process.stdin.on("data", c => { inputData += c; });
-
-process.stdin.on("end", () => {
+function runGuard(rawInput) {
+  inputData = rawInput;
   let decision = "allow";
   let reason = "";
 
@@ -150,8 +148,7 @@ process.stdin.on("end", () => {
 
     const isDoc = /\.(md|txt)$/i.test(effectiveTarget);
     const isGuardSource =
-      /zyvoriq_guard|scripts\/guards\/|hooks\.json|promptVerifier/i.test(effectiveTarget) ||
-      /ZYVORIQ PRE-TOOL GUARD|ZYVORIQ RULES ENGINE|GUARD INSTALLER|GUARD SELF-TEST|GUARD INSTALLER \/ DRIFT DETECTOR/.test(writeContent + cmd);
+      /zyvoriq_guard|scripts\/guards\/|hooks\.json|promptVerifier/i.test(effectiveTarget);
     const exempt = isDoc || isGuardSource;
 
     // Negation-awareness: a prompt saying "not singing" / "no mouthing words" / "no laughter"
@@ -170,12 +167,14 @@ process.stdin.on("end", () => {
     // Veo's native track, then Lyria was muxed on top => rubber-dub desync.
     // ==================================================================
     if (!exempt && on("ban_native_audio_stripping_on_singing_shots")) {
-      const stripsAudio = NO_AUDIO_FLAG.test(surface);
+      const stripsViaFlag = NO_AUDIO_FLAG.test(surface);
+      const stripsViaMap = /-map\s+0:v(?::\d+)?\s+-map\s+1:a/i.test(surface) && !/-map\s+0:a/i.test(surface);
+      const stripsAudio = stripsViaFlag || stripsViaMap;
       const mentionsSinging = /\bsing(?:s|ing|er)?\b|\blip\s?sync\b|\bvocal(?:s|ist)?\b|\blyric/i.test(deNegated);
-      const isMusicContext = /lyria|music video|\bmv \d|master soundtrack|musicvideo/i.test(surfaceNorm);
-      const acknowledged = /NO SINGING IN SHOT|ZERO NATIVE AUDIO JUSTIFIED|PATH_B_LYRIA_MASTER_JUSTIFIED|PATH_B_JUSTIFIED|LYRIA_MASTER_SOUNDTRACK_JUSTIFIED/i.test(surfaceNorm);
+      const isMusicContext = /lyria|music video|\bmv \d|master soundtrack|musicvideo|\.(?:mp3|wav|m4a)\b/i.test(surfaceNorm);
+      const acknowledged = /ZERO_NATIVE_AUDIO_CONFIRMED_INSTRUMENTAL_ONLY/i.test(surface);
 
-      if (stripsAudio && mentionsSinging && isMusicContext && !acknowledged && !hasMouthClosedLock) {
+      if (((stripsViaFlag && mentionsSinging && isMusicContext) || (stripsViaMap && isMusicContext)) && !acknowledged) {
         decision = "deny";
         reason =
           "[ZYVORIQ LIP-SYNC GATE - RULE 6 VIOLATION]: This operation strips ALL native audio from clips whose " +
@@ -623,7 +622,7 @@ process.stdin.on("end", () => {
     // explicit --force regeneration flag.
     // ==================================================================
     if (decision === "allow" && !exempt && on("ban_unvalidated_cached_take_reuse")) {
-      const isMvScript = /produce_.*_mv|produce_.*_music_video|produce_.*_vocal/i.test(effectiveTarget || surface);
+      const isMvScript = /\.(?:mjs|js|ts)$/i.test(effectiveTarget || "") || /ffmpeg|generateVeo|generateLyria|music_video|\bmv\b/i.test(surface);
       const hasBlindCacheReuse = /existsSync\(shot\d/i.test(surface) && !/--force|forceRegen|TAKE_AUDIT_VERIFIED/i.test(surface);
       const isDirectAssemblyFromStaleTake =
         /ffmpeg.*-i.*scratch\/.*shot_\d+.*master/i.test(surface) &&
@@ -647,7 +646,7 @@ process.stdin.on("end", () => {
     // or when concat lists reuse the same parent take under different names.
     // ==================================================================
     if (decision === "allow" && !exempt && on("ban_concat_source_take_deduplication")) {
-      const isMvScript = /produce_.*_mv|produce_.*_music_video|produce_.*_vocal/i.test(effectiveTarget || surface);
+      const isMvScript = /\.(?:mjs|js|ts)$/i.test(effectiveTarget || "") || /ffmpeg|generateVeo|generateLyria|music_video|\bmv\b/i.test(surface);
       const shot1Slices = (surface.match(/-i\s+["']?(?:\${shot1File}|shot_01\.mp4|\bshot1File\b)["']?[^\n\r]*?(?:shot_\d+_cut|Trimmed)/g) || []).length;
       const shot2Slices = (surface.match(/-i\s+["']?(?:\${shot2File}|shot_02\.mp4|\bshot2File\b)["']?[^\n\r]*?(?:shot_\d+_cut|Trimmed)/g) || []).length;
       const shot3Slices = (surface.match(/-i\s+["']?(?:\${shot3File}|shot_03\.mp4|\bshot3File\b)["']?[^\n\r]*?(?:shot_\d+_cut|Trimmed)/g) || []).length;
@@ -673,7 +672,7 @@ process.stdin.on("end", () => {
     // assumed lyrics causes severe syllable mismatch and phantom mouthing.
     // ==================================================================
     if (decision === "allow" && !exempt && on("require_preflight_audio_groundtruth_transcription")) {
-      const isMvScript = /produce_.*_mv|produce_.*_music_video|produce_.*_vocal/i.test(effectiveTarget || surface);
+      const isMvScript = /\.(?:mjs|js|ts)$/i.test(effectiveTarget || "") || /ffmpeg|generateVeo|generateLyria|music_video|\bmv\b/i.test(surface);
       const generatesAudio = /generateLyriaAudio|master_vocal_song/i.test(surface);
       const hasSingingPrompts = /sings directly to camera|singing performance/i.test(surface);
       const transcribesAudio = /transcribeAudio|gemini-2\.5-flash.*transcribe|acousticPhraseMap|groundTruthLyrics|transcription/i.test(surface);
@@ -780,19 +779,69 @@ process.stdin.on("end", () => {
       }
     }
 
+
+    // ==================================================================
+    // RULE 38 - BAN SETPTS SPEED WARPING (STRICT 1.000x NATIVE CADENCE)
+    // ==================================================================
+    if (decision === "allow" && !exempt && on("require_strict_1x_playback_speed_no_setpts_distortion")) {
+      const unquoted = surface.replace(/["'`]/g, "");
+      const hasSetptsWarp = /setpts\s*=\s*PTS\s*[\/\*]\s*(?!1(?:\.0+)?(?![\d.]))/i.test(unquoted) ||
+                            /setpts\s*=\s*(?!(?:1(?:\.0+)?\*)?PTS\b)[^,\n;]+PTS/i.test(unquoted);
+      if (hasSetptsWarp) {
+        decision = "deny";
+        reason = "[ZYVORIQ SPEED GATE - RULE 38 VIOLATION]: Detected non-1.0x setpts playback speed warping! " +
+                 "Veo clips natively render at 24 fps. Accelerating or decelerating takes via setpts creates " +
+                 "unnatural physical motion and causes vocal lip-sync desynchronization. " +
+                 "Every take must be cut to cadence without altering native 1.000x playback speed.";
+      }
+    }
+
+    // ==================================================================
+    // RULE 39 - 12-AGENT PRE-RENDER BLUEPRINT ANTI-HARDCODING & INVARIANT GATE
+    // Blocks rubber-stamped "9.8 / 10" scores, raw URL storyline echoes,
+    // 5-persona cast truncation (dropping female_harmony), and canned
+    // limitation boilerplates in swarm synthesis / engine files.
+    // ==================================================================
+    if (decision === "allow" && !exempt && isWriteOrEdit && on("require_12_agent_10_of_10_cross_invariant_audit")) {
+      const isSwarmTarget = /lib\/swarm\/engine\.ts|synthesize-from-prompt\/route\.ts|app\/swarm-MUI\/page\.tsx/i.test(effectiveTarget);
+      if (isSwarmTarget) {
+        const rubberStamp98 = /qualityScore:\s*["'`]9\.8\s*\/\s*10["'`]/i.test(writeContent);
+        const rawUrlStoryline = /storyline:\s*rawPrompt\b/i.test(writeContent);
+        const truncatedCast5 = /\bcastCount:\s*5\b/i.test(writeContent);
+        const cannedLimitation = /Static,\s*single-room staging with minimal architectural depth/i.test(writeContent);
+
+        if (rubberStamp98 || rawUrlStoryline || truncatedCast5 || cannedLimitation) {
+          decision = "deny";
+          reason =
+            "[ZYVORIQ 12-AGENT BLUEPRINT GUARD - RULE 39 VIOLATION]: Detected hardcoded pre-render bypass in " +
+            effectiveTarget + "!\n\n" +
+            (rubberStamp98 ? "  - Hardcoded 'qualityScore: \"9.8 / 10\"' rubber-stamp detected (must compute dynamically via audit12AgentBlueprintConsistency).\n" : "") +
+            (rawUrlStoryline ? "  - Raw URL echo 'storyline: rawPrompt' detected (must pass clean synthesized.storyline).\n" : "") +
+            (truncatedCast5 ? "  - Truncated 'castCount: 5' detected (must lock all 6 personas including female_harmony).\n" : "") +
+            (cannedLimitation ? "  - Canned limitation boilerplate detected in systemPrompt.\n" : "") +
+            "\nAll 12 agents must be dynamically audited against the 10 Cross-Agent Invariants.";
+        }
+      }
+    }
+
     const out = { decision };
     if (reason) out.reason = reason;
     console.log(JSON.stringify(out));
   } catch (err) {
     // FAIL-CLOSED on media pipelines. Previously this silently allowed everything.
     const risky = /ffmpeg|veo|lyria/i.test(inputData || "");
-    if (risky) {
-      console.log(JSON.stringify({
-        decision: "deny",
-        reason: "[ZYVORIQ GUARD FAIL-CLOSED]: The guard threw \"" + err.message + "\" while inspecting a media/generation operation. Refusing to fail open on an unverified media pipeline. Fix the guard, then retry."
-      }));
-    } else {
-      console.log(JSON.stringify({ decision: "allow" }));
-    }
+    console.log(JSON.stringify({
+      decision: "deny",
+      reason: "[ZYVORIQ GUARD FAIL-CLOSED]: The guard threw \"" + err.message + "\" during inspection. Refusing to fail open."
+    }));
   }
-});
+}
+
+if (process.argv[2] && process.argv[2].trim().startsWith("{")) {
+  runGuard(process.argv[2]);
+} else {
+  let buf = "";
+  process.stdin.setEncoding("utf-8");
+  process.stdin.on("data", c => { buf += c; });
+  process.stdin.on("end", () => runGuard(buf));
+}

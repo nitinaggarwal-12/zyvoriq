@@ -38,6 +38,10 @@
   "exclude": [
     "node_modules",
     "qa",
-    "scripts"
+    "scripts",
+    "scratch",
+    "public/scratch",
+    "skills",
+    ".agents"
   ]
 }

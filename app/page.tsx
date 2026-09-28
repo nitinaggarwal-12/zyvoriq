@@ -1,11 +1,11 @@
-import { ZyvoriqLandingHub } from "@/components/ZyvoriqLandingHub";
+import SwarmMUIPage from "./swarm-MUI/page";
 
 export const metadata = {
-  title: "Zyvoriq — Omni 1.1 Cinema Hub | Reels, Music Video & Feature Film Studios",
+  title: "Zyvoriq Studio — Google Stitch 4-Step Guided AI 60s Video Studio",
   description:
-    "Explore interactive sandbox controls for 9:16 Viral Reels, DeepMind Lyria 3.5 Music Videos, and 2.39:1 Anamorphic Feature Films—or enter the full production studios.",
+    "Unified 4-Step Guided AI Video Studio powered by Gemini Omni 1.1 Flash: Step 1 Story & Music -> Step 2 Cast, Faces & Outfits -> Step 3 Edit & Save 6-Shot Storyboard -> Step 4 Render & Download 60s MP4.",
 };
 
 export default function Home() {
-  return <ZyvoriqLandingHub />;
+  return <SwarmMUIPage />;
 }
