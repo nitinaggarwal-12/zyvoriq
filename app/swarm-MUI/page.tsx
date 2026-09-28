@@ -28,6 +28,7 @@ import {
 import {
   getDanceMusicVideoAgents,
   SwarmAgentStatus,
+  IndependentJudgeReceipt,
 } from "@/lib/swarm/engine";
 import { StudioWorkflowMode } from "@/components/LeftIconRail";
 import {
@@ -181,6 +182,7 @@ export default function SwarmMUIPage() {
     sonicInnovation: string;
     choreographyAndCameraUpgrade: string;
     innovationScore: string;
+    judgeReceipt?: IndependentJudgeReceipt;
   }>({
     sourceType: "original_prompt",
     youtubeMetadata: null,
@@ -205,6 +207,230 @@ export default function SwarmMUIPage() {
   const promptDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const synthAbortRef = React.useRef<AbortController | null>(null);
   const synthReqSeqRef = React.useRef<number>(0);
+  const [referenceYouTubeUrl, setReferenceYouTubeUrl] = useState<string>("");
+  const referenceYouTubeUrlRef = React.useRef<string>("");
+  const lastSynthesizedPromptKeyRef = React.useRef<string>("");
+
+  const extractYouTubeUrlFromText = useCallback((text: string): string | null => {
+    const matches = text.match(/https?:\/\/[^\s"'<>]+/gi) || [];
+    for (const u of matches) {
+      if (/(?:youtube\.com|youtu\.be)/i.test(u)) {
+        return u;
+      }
+    }
+    const bareMatch = text.match(
+      /(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?[^\s"'<>]+|shorts\/[A-Za-z0-9_-]{11}|embed\/[A-Za-z0-9_-]{11})|youtu\.be\/[A-Za-z0-9_-]{11})/i
+    );
+    if (bareMatch?.[0]) {
+      return `https://${bareMatch[0]}`;
+    }
+    return null;
+  }, []);
+
+  const applySynthesizedAssets = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (syn: any, overrides?: Record<string, string | undefined>, goToStep2 = false, effVocalIdFallback?: string, effLangIdFallback?: string) => {
+      setTitle(syn.title);
+      setStoryline(syn.storyline);
+      if (typeof syn.compiledConceptDirective === "string" && syn.compiledConceptDirective) {
+        setCompiledConceptDirective(syn.compiledConceptDirective);
+      }
+      if (syn.creativeElevation) {
+        setCreativeElevation(syn.creativeElevation);
+        if (syn.creativeElevation.youtubeMetadata?.url) {
+          referenceYouTubeUrlRef.current = syn.creativeElevation.youtubeMetadata.url;
+          setReferenceYouTubeUrl(syn.creativeElevation.youtubeMetadata.url);
+        }
+      }
+      if (typeof syn.bpm === "number") {
+        setBpm(syn.bpm);
+      }
+      if (typeof syn.musicalKey === "string" && syn.musicalKey) {
+        setMusicalKey(syn.musicalKey);
+      }
+      setLyrics(syn.lyrics);
+
+      // Update Language, Genre, Vocal, Location, Region, Demography, Lighting & 8-Dimension Specs
+      if (syn.recommendedLanguageId && !overrides?.languageId) {
+        setLanguageId(syn.recommendedLanguageId);
+      }
+      if (syn.recommendedGenreId && !overrides?.genreId) {
+        setGenreId(syn.recommendedGenreId);
+      }
+      if (syn.recommendedCountryId && !overrides?.countryId) {
+        setCountryId(syn.recommendedCountryId);
+      }
+      if (syn.recommendedRegionId && !overrides?.regionId) {
+        setRegionId(syn.recommendedRegionId);
+      }
+      if (syn.recommendedDemographyId && !overrides?.demographyId) {
+        setDemographyId(syn.recommendedDemographyId);
+      }
+      if (syn.recommendedLightingId) {
+        setLightingId(syn.recommendedLightingId);
+      }
+      if (syn.recommendedVocalId && !overrides?.vocalId) {
+        setVocalId(syn.recommendedVocalId);
+      }
+      if (syn.backgroundEnvironment) {
+        setBackgroundEnvironment(syn.backgroundEnvironment);
+      }
+      if (syn.humanEmotions) {
+        setHumanEmotions(syn.humanEmotions);
+      }
+      if (Array.isArray(syn.shotEmotions) && syn.shotEmotions.length > 0) {
+        setShotEmotions(syn.shotEmotions);
+      }
+      if (syn.voiceType) {
+        setVoiceType(syn.voiceType);
+      }
+      if (syn.choreography) {
+        setChoreography(syn.choreography);
+      }
+      if (Array.isArray(syn.shotChoreography) && syn.shotChoreography.length > 0) {
+        setShotChoreography(syn.shotChoreography);
+      }
+      if (Array.isArray(syn.shotLightingAndOptics) && syn.shotLightingAndOptics.length > 0) {
+        setShotLightingAndOptics(syn.shotLightingAndOptics);
+      }
+      if (typeof syn.figureGroundContrastSpec === "string" && syn.figureGroundContrastSpec) {
+        setFigureGroundContrastSpec(syn.figureGroundContrastSpec);
+      }
+      if (typeof syn.instrumentAndStagePropsSpec === "string" && syn.instrumentAndStagePropsSpec) {
+        setInstrumentAndStagePropsSpec(syn.instrumentAndStagePropsSpec);
+      }
+
+      // 1. Prepend newly synthesized Wardrobes into wardrobeCatalog & select them
+      const newW = syn.wardrobes;
+      const addedWardrobes = [
+        newW.womenAct1,
+        newW.womenAct2,
+        newW.menAct1,
+        newW.menAct2,
+        newW.supporting,
+        newW.background,
+        newW.audience,
+      ];
+      setWardrobeCatalog((prev) => [...addedWardrobes, ...prev]);
+      setAccessoriesCatalog((prev) => [newW.accessory, ...prev]);
+      setVenuesCatalog((prev) => [newW.venue, ...prev]);
+
+      setWomenAct1Id(newW.womenAct1.id);
+      setWomenAct2Id(newW.womenAct2.id);
+      setMenAct1Id(newW.menAct1.id);
+      setMenAct2Id(newW.menAct2.id);
+      setSupportingWardrobeId(newW.supporting.id);
+      setBackgroundWardrobeId(newW.background.id);
+      setAudienceWardrobeId(newW.audience.id);
+      setAccessoryId(newW.accessory.id);
+      setVenueId(newW.venue.id);
+
+      // 2. Prepend newly synthesized 5-Tier Personas into personasCatalog & select them
+      const p = syn.personas;
+      const addedPersonas = [
+        {
+          ...p.female_lead,
+          defaultAct1WardrobeId: newW.womenAct1.id,
+          defaultAct2WardrobeId: newW.womenAct2.id,
+          defaultAccessoryId: newW.accessory.id,
+        },
+        ...(p.female_harmony
+          ? [
+              {
+                ...p.female_harmony,
+                defaultAct1WardrobeId: newW.womenAct1.id,
+                defaultAct2WardrobeId: newW.womenAct2.id,
+                defaultAccessoryId: newW.accessory.id,
+              },
+            ]
+          : []),
+        {
+          ...p.male_lead,
+          defaultAct1WardrobeId: newW.menAct1.id,
+          defaultAct2WardrobeId: newW.menAct2.id,
+          defaultAccessoryId: newW.accessory.id,
+        },
+        {
+          ...p.supporting,
+          defaultAct1WardrobeId: newW.supporting.id,
+          defaultAct2WardrobeId: newW.supporting.id,
+          defaultAccessoryId: newW.accessory.id,
+        },
+        {
+          ...p.background,
+          defaultAct1WardrobeId: newW.background.id,
+          defaultAct2WardrobeId: newW.background.id,
+          defaultAccessoryId: newW.accessory.id,
+        },
+        {
+          ...p.audience,
+          defaultAct1WardrobeId: newW.audience.id,
+          defaultAct2WardrobeId: newW.audience.id,
+          defaultAccessoryId: newW.accessory.id,
+        },
+      ];
+      setPersonasCatalog((prev) => [...addedPersonas, ...prev]);
+
+      const nextSelectedIds: Record<PersonaCategory, string[]> =
+        syn.recommendedSelectedIds || {
+          female_lead: [p.female_lead.id],
+          male_lead: [p.male_lead.id],
+          supporting: [p.supporting.id],
+          background: [p.background.id],
+          audience: [p.audience.id],
+        };
+      setSelectedPersonaIds(nextSelectedIds);
+
+      const persistedPrompt =
+        referenceYouTubeUrlRef.current || syn.creativeElevation?.youtubeMetadata?.url
+          ? `${referenceYouTubeUrlRef.current || syn.creativeElevation.youtubeMetadata.url} — ${syn.storyline}`
+          : syn.storyline;
+
+      // Save dynamic catalog & selections to localStorage so /personas and page reloads display them immediately
+      try {
+        localStorage.setItem(
+          "zyvoriq_dynamic_catalog_v1",
+          JSON.stringify({
+            personas: addedPersonas,
+            wardrobes: addedWardrobes,
+            accessory: newW.accessory,
+            selectedIds: nextSelectedIds,
+          })
+        );
+        localStorage.setItem("zyvoriq_last_prompt_v1", persistedPrompt);
+        localStorage.setItem("zyvoriq_last_synthesized_payload_v1", JSON.stringify(syn));
+      } catch {
+        // ignore
+      }
+
+      const finalVocId = syn.recommendedVocalId || effVocalIdFallback || vocalId;
+      const finalLangObj = getById(
+        LANGUAGES_CATALOG,
+        syn.recommendedLanguageId || effLangIdFallback || languageId
+      );
+      const leadSummary =
+        finalVocId === "voc_female_solo" || finalVocId === "voc_girl_group"
+          ? `${p.female_lead.name} + ${p.female_harmony?.name || p.supporting.name}`
+          : finalVocId === "voc_male_solo" || finalVocId === "voc_boy_band"
+          ? `${p.male_lead.name} + ${p.supporting.name}`
+          : `${p.female_lead.name} & ${p.male_lead.name}`;
+
+      // Clear stale pre-existing video URL and custom shot overrides so Master Player & Storyboard reflect the newly synthesized prompt
+      customShotsRef.current = null;
+      setActiveVideoUrl("");
+      setRenderStageLabel("");
+      setRenderLogs([]);
+
+      setStatusBanner(
+        `✨ Synthesized all 8 dimensions: Personas (${leadSummary}), Locations, Act I/II Wardrobes, Background Scenery, Human Emotions, Voice Type, Choreography & ${finalLangObj.label.split("(")[0].trim()} Lyrics!`
+      );
+      if (goToStep2) {
+        setCreateStep(2);
+        setCanvasTab("ensemble");
+      }
+    },
+    [vocalId, languageId]
+  );
 
   // Dynamic Prompt-to-Lyrics, Characters & Wardrobe Synthesizer (Calls /api/swarm/synthesize-from-prompt)
   const synthesizeFromNewPrompt = useCallback(
@@ -223,6 +449,34 @@ export default function SwarmMUIPage() {
         contentTypeId?: string;
       }
     ) => {
+      const rawCandidate =
+        customPromptText !== undefined ? customPromptText : storyline;
+      const detectedYt = extractYouTubeUrlFromText(rawCandidate);
+      if (detectedYt) {
+        referenceYouTubeUrlRef.current = detectedYt;
+        setReferenceYouTubeUrl(detectedYt);
+      }
+
+      const promptToUse =
+        !detectedYt && referenceYouTubeUrlRef.current
+          ? `${referenceYouTubeUrlRef.current} ${rawCandidate}`.trim()
+          : rawCandidate;
+
+      // If user clicked "Go to Step 02" and the exact same prompt/YouTube URL was already synthesized, transition immediately without redundant API overwrite
+      if (
+        goToStep2 &&
+        !overrides &&
+        !isSynthesizingPrompt &&
+        lastSynthesizedPromptKeyRef.current &&
+        (lastSynthesizedPromptKeyRef.current === promptToUse ||
+          (referenceYouTubeUrlRef.current &&
+            lastSynthesizedPromptKeyRef.current.includes(referenceYouTubeUrlRef.current)))
+      ) {
+        setCreateStep(2);
+        setCanvasTab("ensemble");
+        return;
+      }
+
       if (synthAbortRef.current) {
         synthAbortRef.current.abort();
       }
@@ -232,8 +486,6 @@ export default function SwarmMUIPage() {
 
       setIsSynthesizingPrompt(true);
       try {
-        const promptToUse =
-          customPromptText !== undefined ? customPromptText : storyline;
         const effCountryId = overrides?.countryId ?? countryId;
         const effRegionId = overrides?.regionId ?? regionId;
         const effLangId = overrides?.languageId ?? languageId;
@@ -283,194 +535,10 @@ export default function SwarmMUIPage() {
         if (reqId !== synthReqSeqRef.current) return;
         if (data?.ok && data.synthesized) {
           const syn = data.synthesized;
-          setTitle(syn.title);
-          setStoryline(syn.storyline);
-          if (typeof syn.compiledConceptDirective === "string" && syn.compiledConceptDirective) {
-            setCompiledConceptDirective(syn.compiledConceptDirective);
-          }
-          if (syn.creativeElevation) {
-            setCreativeElevation(syn.creativeElevation);
-          }
-          if (typeof syn.bpm === "number") {
-            setBpm(syn.bpm);
-          }
-          if (typeof syn.musicalKey === "string" && syn.musicalKey) {
-            setMusicalKey(syn.musicalKey);
-          }
-          setLyrics(syn.lyrics);
-
-          // Update Language, Genre, Vocal, Location, Region, Demography, Lighting & 8-Dimension Specs
-          if (syn.recommendedLanguageId && !overrides?.languageId) {
-            setLanguageId(syn.recommendedLanguageId);
-          }
-          if (syn.recommendedGenreId && !overrides?.genreId) {
-            setGenreId(syn.recommendedGenreId);
-          }
-          if (syn.recommendedCountryId && !overrides?.countryId) {
-            setCountryId(syn.recommendedCountryId);
-          }
-          if (syn.recommendedRegionId && !overrides?.regionId) {
-            setRegionId(syn.recommendedRegionId);
-          }
-          if (syn.recommendedDemographyId && !overrides?.demographyId) {
-            setDemographyId(syn.recommendedDemographyId);
-          }
-          if (syn.recommendedLightingId) {
-            setLightingId(syn.recommendedLightingId);
-          }
-          if (syn.recommendedVocalId && !overrides?.vocalId) {
-            setVocalId(syn.recommendedVocalId);
-          }
-          if (syn.backgroundEnvironment) {
-            setBackgroundEnvironment(syn.backgroundEnvironment);
-          }
-          if (syn.humanEmotions) {
-            setHumanEmotions(syn.humanEmotions);
-          }
-          if (Array.isArray(syn.shotEmotions) && syn.shotEmotions.length > 0) {
-            setShotEmotions(syn.shotEmotions);
-          }
-          if (syn.voiceType) {
-            setVoiceType(syn.voiceType);
-          }
-          if (syn.choreography) {
-            setChoreography(syn.choreography);
-          }
-          if (Array.isArray(syn.shotChoreography) && syn.shotChoreography.length > 0) {
-            setShotChoreography(syn.shotChoreography);
-          }
-          if (Array.isArray(syn.shotLightingAndOptics) && syn.shotLightingAndOptics.length > 0) {
-            setShotLightingAndOptics(syn.shotLightingAndOptics);
-          }
-          if (typeof syn.figureGroundContrastSpec === "string" && syn.figureGroundContrastSpec) {
-            setFigureGroundContrastSpec(syn.figureGroundContrastSpec);
-          }
-          if (typeof syn.instrumentAndStagePropsSpec === "string" && syn.instrumentAndStagePropsSpec) {
-            setInstrumentAndStagePropsSpec(syn.instrumentAndStagePropsSpec);
-          }
-
-          // 1. Prepend newly synthesized Wardrobes into wardrobeCatalog & select them
-          const newW = syn.wardrobes;
-          const addedWardrobes = [
-            newW.womenAct1,
-            newW.womenAct2,
-            newW.menAct1,
-            newW.menAct2,
-            newW.supporting,
-            newW.background,
-            newW.audience,
-          ];
-          setWardrobeCatalog((prev) => [...addedWardrobes, ...prev]);
-          setAccessoriesCatalog((prev) => [newW.accessory, ...prev]);
-          setVenuesCatalog((prev) => [newW.venue, ...prev]);
-
-          setWomenAct1Id(newW.womenAct1.id);
-          setWomenAct2Id(newW.womenAct2.id);
-          setMenAct1Id(newW.menAct1.id);
-          setMenAct2Id(newW.menAct2.id);
-          setSupportingWardrobeId(newW.supporting.id);
-          setBackgroundWardrobeId(newW.background.id);
-          setAudienceWardrobeId(newW.audience.id);
-          setAccessoryId(newW.accessory.id);
-          setVenueId(newW.venue.id);
-
-          // 2. Prepend newly synthesized 5-Tier Personas into personasCatalog & select them
-          const p = syn.personas;
-          const addedPersonas = [
-            {
-              ...p.female_lead,
-              defaultAct1WardrobeId: newW.womenAct1.id,
-              defaultAct2WardrobeId: newW.womenAct2.id,
-              defaultAccessoryId: newW.accessory.id,
-            },
-            ...(p.female_harmony
-              ? [
-                  {
-                    ...p.female_harmony,
-                    defaultAct1WardrobeId: newW.womenAct1.id,
-                    defaultAct2WardrobeId: newW.womenAct2.id,
-                    defaultAccessoryId: newW.accessory.id,
-                  },
-                ]
-              : []),
-            {
-              ...p.male_lead,
-              defaultAct1WardrobeId: newW.menAct1.id,
-              defaultAct2WardrobeId: newW.menAct2.id,
-              defaultAccessoryId: newW.accessory.id,
-            },
-            {
-              ...p.supporting,
-              defaultAct1WardrobeId: newW.supporting.id,
-              defaultAct2WardrobeId: newW.supporting.id,
-              defaultAccessoryId: newW.accessory.id,
-            },
-            {
-              ...p.background,
-              defaultAct1WardrobeId: newW.background.id,
-              defaultAct2WardrobeId: newW.background.id,
-              defaultAccessoryId: newW.accessory.id,
-            },
-            {
-              ...p.audience,
-              defaultAct1WardrobeId: newW.audience.id,
-              defaultAct2WardrobeId: newW.audience.id,
-              defaultAccessoryId: newW.accessory.id,
-            },
-          ];
-          setPersonasCatalog((prev) => [...addedPersonas, ...prev]);
-
-          const nextSelectedIds: Record<PersonaCategory, string[]> =
-            syn.recommendedSelectedIds || {
-              female_lead: [p.female_lead.id],
-              male_lead: [p.male_lead.id],
-              supporting: [p.supporting.id],
-              background: [p.background.id],
-              audience: [p.audience.id],
-            };
-          setSelectedPersonaIds(nextSelectedIds);
-
-          // Save dynamic catalog & selections to localStorage so /personas also displays them
-          try {
-            localStorage.setItem(
-              "zyvoriq_dynamic_catalog_v1",
-              JSON.stringify({
-                personas: addedPersonas,
-                wardrobes: addedWardrobes,
-                accessory: newW.accessory,
-                selectedIds: nextSelectedIds,
-              })
-            );
-            localStorage.setItem("zyvoriq_last_prompt_v1", syn.storyline);
-          } catch {
-            // ignore
-          }
-
-          const finalVocId = syn.recommendedVocalId || effVocalId;
-          const finalLangObj = getById(
-            LANGUAGES_CATALOG,
-            syn.recommendedLanguageId || effLangId
-          );
-          const leadSummary =
-            finalVocId === "voc_female_solo" || finalVocId === "voc_girl_group"
-              ? `${p.female_lead.name} + ${p.female_harmony?.name || p.supporting.name}`
-              : finalVocId === "voc_male_solo" || finalVocId === "voc_boy_band"
-              ? `${p.male_lead.name} + ${p.supporting.name}`
-              : `${p.female_lead.name} & ${p.male_lead.name}`;
-
-          // Clear stale pre-existing video URL and custom shot overrides so Master Player & Storyboard reflect the newly synthesized prompt
-          customShotsRef.current = null;
-          setActiveVideoUrl("");
-          setRenderStageLabel("");
-          setRenderLogs([]);
-
-          setStatusBanner(
-            `✨ Synthesized all 8 dimensions: Personas (${leadSummary}), Locations, Act I/II Wardrobes, Background Scenery, Human Emotions, Voice Type, Choreography & ${finalLangObj.label.split("(")[0].trim()} Lyrics!`
-          );
-          if (goToStep2) {
-            setCreateStep(2);
-            setCanvasTab("ensemble");
-          }
+          lastSynthesizedPromptKeyRef.current = `${
+            referenceYouTubeUrlRef.current || syn.creativeElevation?.youtubeMetadata?.url || ""
+          } ${syn.storyline}`.trim();
+          applySynthesizedAssets(syn, overrides, goToStep2, effVocalId, effLangId);
         }
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") return;
@@ -482,6 +550,9 @@ export default function SwarmMUIPage() {
     },
     [
       storyline,
+      isSynthesizingPrompt,
+      extractYouTubeUrlFromText,
+      applySynthesizedAssets,
       countryId,
       regionId,
       languageId,
@@ -594,11 +665,34 @@ export default function SwarmMUIPage() {
         // ignore
       }
 
-      // Restore & synthesize active prompt on mount if saved in localStorage, and attach to any live/recent render job
+      // Restore cached synthesized payload immediately on mount (zero network delay), or synthesize saved prompt
+      const savedPayloadRaw = localStorage.getItem("zyvoriq_last_synthesized_payload_v1");
       const savedPrompt = localStorage.getItem("zyvoriq_last_prompt_v1");
+      let hydratedFromCache = false;
+      if (savedPayloadRaw) {
+        try {
+          const parsedSyn = JSON.parse(savedPayloadRaw);
+          if (parsedSyn && parsedSyn.title && parsedSyn.personas && parsedSyn.wardrobes) {
+            if (savedPrompt) {
+              const ytInSaved = extractYouTubeUrlFromText(savedPrompt);
+              if (ytInSaved) {
+                referenceYouTubeUrlRef.current = ytInSaved;
+                setReferenceYouTubeUrl(ytInSaved);
+              }
+            }
+            applySynthesizedAssets(parsedSyn, undefined, false);
+            lastSynthesizedPromptKeyRef.current = `${
+              referenceYouTubeUrlRef.current || parsedSyn.creativeElevation?.youtubeMetadata?.url || ""
+            } ${parsedSyn.storyline}`.trim();
+            hydratedFromCache = true;
+          }
+        } catch {
+          // fallback to network synthesis
+        }
+      }
       let cancelled = false;
       (async () => {
-        if (savedPrompt && savedPrompt.trim().length > 0) {
+        if (!hydratedFromCache && savedPrompt && savedPrompt.trim().length > 0) {
           await synthesizeFromNewPrompt(savedPrompt, false);
         }
         try {
@@ -731,11 +825,11 @@ export default function SwarmMUIPage() {
       vocalId === "voc_male_solo" || vocalId === "voc_boy_band";
 
     const primaryLead = isMaleOnlyVocal && malePersona ? malePersona : femPersona;
-    const counterLead =
-      femPersona2 ||
-      (isMaleOnlyVocal ? femPersona : malePersona) ||
-      supPersona ||
-      primaryLead;
+    const shot2Lead =
+      !isFemaleOnlyVocal && malePersona && malePersona.id !== primaryLead?.id
+        ? malePersona
+        : femPersona2 || malePersona || supPersona || primaryLead;
+    const harmonyPartner = femPersona2 || shot2Lead;
 
     const count = durationObj.shotsCount || 6;
     const secPerShot = Math.round(durationObj.seconds / count);
@@ -753,45 +847,62 @@ export default function SwarmMUIPage() {
       const act1Summary = `${wAct1.label} • ${mAct1.label}`;
       const act2Summary = `${wAct2.label} • ${mAct2.label}`;
 
-      // Distribute the 6 shots across all 5 selected Cast Tiers so every persona & scene anchor is represented
+      // Distribute the 6 shots across all 6 selected Cast Personas so every vocal assignment & scene anchor is 100% matched
       const shotSlot = idx % 6;
       let subjectClause = "";
       let previewPhotoUrl = primaryLead?.photoUrl || "/assets/characters/ananya_roy_in.jpg";
 
       if (shotSlot === 0) {
-        // Shot 01 (Act I Opening Hook): Primary Lead Heroine/Hero
+        // Shot 01 (Act I Opening Hook — Female Lead / Primary Lead)
         const leadW = primaryLead?.category === "male_lead" ? mAct1.promptSpec : wAct1.promptSpec;
         subjectClause = `${primaryLead?.name} (${primaryLead?.facialSpec}) wearing ${leadW}`;
         previewPhotoUrl = primaryLead?.photoUrl || previewPhotoUrl;
       } else if (shotSlot === 1) {
-        // Shot 02 (Act I Counter-Lead / Confrontation): Male Lead / Antagonist or Co-Star + Primary Lead
+        // Shot 02 (Act I Male Lead / Counter-Lead Confrontation)
         const counterW =
-          counterLead?.category === "male_lead" ? mAct1.promptSpec : wAct1.promptSpec;
+          shot2Lead?.category === "male_lead" ? mAct1.promptSpec : wAct1.promptSpec;
         const leadW = primaryLead?.category === "male_lead" ? mAct1.promptSpec : wAct1.promptSpec;
-        subjectClause = `${counterLead?.name} (${counterLead?.facialSpec}) wearing ${counterW} in dramatic interplay with ${primaryLead?.name} (${leadW})`;
-        previewPhotoUrl = counterLead?.photoUrl || previewPhotoUrl;
+        subjectClause = `${shot2Lead?.name} (${shot2Lead?.facialSpec}) wearing ${counterW} in dramatic interplay with ${primaryLead?.name} (${leadW})`;
+        previewPhotoUrl = shot2Lead?.photoUrl || previewPhotoUrl;
       } else if (shotSlot === 2) {
-        // Shot 03 (Act I Supporting Musicians & Ensemble Build): Primary Lead + Supporting Troupe
-        const leadW = primaryLead?.category === "male_lead" ? mAct1.promptSpec : wAct1.promptSpec;
-        subjectClause = `${primaryLead?.name} (${leadW}) surrounded by ${supPersona?.name} (${supW.promptSpec})`;
-        previewPhotoUrl = supPersona?.photoUrl || primaryLead?.photoUrl || previewPhotoUrl;
+        // Shot 03 (Act I Female Co-Lead & Supporting Musicians Pre-Chorus Build)
+        const coLead = femPersona2 || primaryLead;
+        const coLeadW = coLead?.category === "male_lead" ? mAct1.promptSpec : wAct1.promptSpec;
+        subjectClause = `${coLead?.name} (${coLead?.facialSpec}) wearing ${coLeadW} & ${primaryLead?.name} surrounded by ${supPersona?.name} (${supW.promptSpec})`;
+        previewPhotoUrl = femPersona2?.photoUrl || supPersona?.photoUrl || previewPhotoUrl;
       } else if (shotSlot === 3) {
-        // Shot 04 (Act II Couture Transformation & Dance Crew Drop): Primary Lead Act II + Background Dancers
+        // Shot 04 (Act II Couture Transformation & 8-Dancer Crew Drop)
         const leadW2 = primaryLead?.category === "male_lead" ? mAct2.promptSpec : wAct2.promptSpec;
-        subjectClause = `${primaryLead?.name} transformed into Act II ${leadW2} flanked by ${bgPersona?.name} (${bgW.promptSpec})`;
+        const malePartnerClause =
+          malePersona && malePersona.id !== primaryLead?.id
+            ? ` & ${malePersona.name} (${mAct2.promptSpec})`
+            : "";
+        subjectClause = `${primaryLead?.name} (${leadW2})${malePartnerClause} transformed into Act II Couture flanked by ${bgPersona?.name} (${bgW.promptSpec})`;
         previewPhotoUrl = bgPersona?.photoUrl || primaryLead?.photoUrl || previewPhotoUrl;
       } else if (shotSlot === 4) {
-        // Shot 05 (Act II Intimate 85mm High-Note Face-Off): Primary Lead vs. Counter-Lead in Act II Couture
+        // Shot 05 (Act II Intimate 85mm High-Note Harmony Bridge + Live Musicians)
         const leadW2 = primaryLead?.category === "male_lead" ? mAct2.promptSpec : wAct2.promptSpec;
-        const counterW2 =
-          counterLead?.category === "male_lead" ? mAct2.promptSpec : wAct2.promptSpec;
-        subjectClause = `${primaryLead?.name} (${primaryLead?.facialSpec}) wearing ${leadW2} in intense close-up face-off with ${counterLead?.name} (${counterW2})`;
+        const partnerW2 =
+          harmonyPartner?.category === "male_lead" ? mAct2.promptSpec : wAct2.promptSpec;
+        subjectClause = `${primaryLead?.name} (${primaryLead?.facialSpec}) wearing ${leadW2} in intense 85mm close-up harmony with ${harmonyPartner?.name} (${partnerW2}) & ${supPersona?.name} (${supW.promptSpec})`;
         previewPhotoUrl =
-          femPersona2?.photoUrl || primaryLead?.photoUrl || previewPhotoUrl;
+          supPersona?.photoUrl || femPersona2?.photoUrl || primaryLead?.photoUrl || previewPhotoUrl;
       } else {
-        // Shot 06 (Act II Grand Finale Full 5-Tier Cast & Crowd Reveal)
+        // Shot 06 (Act II Grand Finale Full 6-Persona Cast & VIP Crowd Reveal)
         const leadW2 = primaryLead?.category === "male_lead" ? mAct2.promptSpec : wAct2.promptSpec;
-        subjectClause = `Full 5-Tier Ensemble — ${primaryLead?.name} (${leadW2}), ${counterLead?.name}, ${supPersona?.name} (${supW.promptSpec}), ${bgPersona?.name} (${bgW.promptSpec}) & ${audPersona?.name} (${audW.promptSpec})`;
+        const ensembleNames = [
+          `${primaryLead?.name} (${leadW2})`,
+          malePersona && malePersona.id !== primaryLead?.id
+            ? `${malePersona.name} (${mAct2.promptSpec})`
+            : null,
+          femPersona2 ? `${femPersona2.name} (${wAct2.promptSpec})` : null,
+          supPersona ? `${supPersona.name} (${supW.promptSpec})` : null,
+          bgPersona ? `${bgPersona.name} (${bgW.promptSpec})` : null,
+          audPersona ? `${audPersona.name} (${audW.promptSpec})` : null,
+        ]
+          .filter(Boolean)
+          .join(", ");
+        subjectClause = `Full 6-Persona Ensemble — ${ensembleNames}`;
         previewPhotoUrl = audPersona?.photoUrl || primaryLead?.photoUrl || previewPhotoUrl;
       }
 
@@ -1443,6 +1554,7 @@ export default function SwarmMUIPage() {
       shotEmotions,
       voiceType,
       lyrics,
+      judgeReceipt: creativeElevation.judgeReceipt,
     });
   }, [
     title,
@@ -1718,7 +1830,10 @@ export default function SwarmMUIPage() {
                       <button
                         type="button"
                         disabled={isSynthesizingPrompt}
-                        onClick={() => synthesizeFromNewPrompt(storyline, false)}
+                        onClick={() => {
+                          lastSynthesizedPromptKeyRef.current = "";
+                          synthesizeFromNewPrompt(storyline, false);
+                        }}
                         className="px-2.5 py-1 rounded-md bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-400/40 text-indigo-200 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
                       >
                         <Sparkles className="w-3 h-3" />
@@ -1729,12 +1844,45 @@ export default function SwarmMUIPage() {
                         </span>
                       </button>
                     </div>
+                    {(referenceYouTubeUrl || creativeElevation.youtubeMetadata?.url) && (
+                      <div className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-indigo-950/50 border border-indigo-500/40 text-[11px]">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="px-1.5 py-0.5 rounded bg-indigo-500/30 text-indigo-200 font-semibold shrink-0">
+                            Active YouTube Reference Locked
+                          </span>
+                          <span className="text-indigo-100 font-mono truncate">
+                            {referenceYouTubeUrl || creativeElevation.youtubeMetadata?.url}
+                          </span>
+                          {creativeElevation.youtubeMetadata?.videoId && (
+                            <span className="text-emerald-300 font-semibold shrink-0">
+                              (v={creativeElevation.youtubeMetadata.videoId})
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            referenceYouTubeUrlRef.current = "";
+                            setReferenceYouTubeUrl("");
+                            lastSynthesizedPromptKeyRef.current = "";
+                          }}
+                          className="text-[10px] text-zinc-400 hover:text-white px-2 py-0.5 rounded bg-white/[0.06] shrink-0 cursor-pointer"
+                        >
+                          ✕ Clear Reference
+                        </button>
+                      </div>
+                    )}
                     <textarea
                       rows={2}
                       value={storyline}
                       onChange={(e) => {
                         const nextVal = e.target.value;
                         setStoryline(nextVal);
+                        const detectedYt = extractYouTubeUrlFromText(nextVal);
+                        if (detectedYt) {
+                          referenceYouTubeUrlRef.current = detectedYt;
+                          setReferenceYouTubeUrl(detectedYt);
+                        }
                         if (promptDebounceRef.current) {
                           clearTimeout(promptDebounceRef.current);
                         }
@@ -1829,6 +1977,22 @@ export default function SwarmMUIPage() {
                         {creativeElevation.choreographyAndCameraUpgrade}
                       </div>
                     </div>
+
+                    {creativeElevation.judgeReceipt && (
+                      <div className="px-3 py-2 rounded-lg bg-emerald-950/30 border border-emerald-500/30 text-[10px] space-y-1">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="font-semibold text-emerald-300">
+                            ⚖️ Cross-Model Independent LLM-as-a-Judge Certified (Zero Self-Preference Bias)
+                          </span>
+                          <span className="text-zinc-300 font-mono text-[9.5px]">
+                            Generator: <strong className="text-indigo-300">{creativeElevation.judgeReceipt.generatorModel}</strong> ({creativeElevation.judgeReceipt.generatorLatencyMs}ms) → Judge: <strong className="text-emerald-300">{creativeElevation.judgeReceipt.judgeModel}</strong> ({creativeElevation.judgeReceipt.judgeLatencyMs}ms)
+                          </span>
+                        </div>
+                        <div className="text-zinc-300 leading-snug">
+                          {creativeElevation.judgeReceipt.verdictSummary}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -107,6 +107,7 @@ export const REGIONS_CATALOG: CatalogOption[] = [
 
 export const COUNTRIES_CATALOG: CatalogOption[] = [
   { id: "cnt_spain", regionId: "reg_mediterranean", label: "Spain — Marbella, Ibiza & Seville", promptSpec: "Sunlit Marbella infinity pool club transitioning to Seville candlelit courtyard" },
+  { id: "cnt_india_mumbai", regionId: "reg_south_asia", label: "India — Mumbai VIP Nightclub & Retro-Glam Studio Stage", promptSpec: "Glamorous Mumbai underground VIP retro-glam nightclub with crimson velvet booths, mirror-work dance floor & high-voltage concert stage" },
   { id: "cnt_india_chanderi", regionId: "reg_south_asia", label: "India — Chanderi Nighttime Street-Festival Stage & Mumbai", promptSpec: "Nighttime fairy-lit Chanderi town open-air street & rustic stone courtyard stage with hanging lanterns and festive Bollywood party atmosphere" },
   { id: "cnt_india_royal", regionId: "reg_south_asia", label: "India — Udaipur Palace, Goa & Mumbai", promptSpec: "Udaipur Lake Pichola sandstone palace & Mumbai Worli rooftop helipad" },
   { id: "cnt_india_haveli", regionId: "reg_south_asia", label: "India — Ancient Torchlit Haveli, Rajasthan & Temple Sanctum", promptSpec: "Ancient carved stone Indian haveli courtyard, torchlit temple pillars & misty moonlit sanctum arena" },
@@ -128,7 +129,7 @@ export const COUNTRIES_CATALOG: CatalogOption[] = [
 export const LANGUAGES_CATALOG: CatalogOption[] = [
   { id: "lang_english", label: "English (Global Pop, Synthwave & R&B)", promptSpec: "English Billboard dance-pop vocals with crisp studio articulation" },
   { id: "lang_punjabi", label: "Punjabi (Bhangra, Urban Desi & Folk-Trap)", promptSpec: "Authentic Punjabi vocals with dholak, tumbi & modern sub-bass groove" },
-  { id: "lang_hindi", label: "Hindi (Bollywood Royal Anthem & Indipop)", promptSpec: "Expressive Hindi playback vocals with lush orchestral & electronic production" },
+  { id: "lang_hindi", label: "Hindi (Bollywood Glam, Club & Cinema)", promptSpec: "Expressive Hindi playback vocals with lush orchestral, dhol-brass & electronic club production" },
   { id: "lang_spanish", label: "Spanish (Reggaeton, Latin Pop & Flamenco Fusion)", promptSpec: "Passionate Spanish vocals with Mediterranean acoustic guitar & dembow beat" },
   { id: "lang_punjabi_english", label: "Punjabi + English (Bilingual Global Crossover)", promptSpec: "Seamless bilingual Punjabi hook and English verse duet trade-offs" },
   { id: "lang_hindi_punjabi", label: "Hindi + Punjabi (Sangeet & Celebration Crossover)", promptSpec: "Festive Hindi-Punjabi wedding & club celebration anthem" },
@@ -218,6 +219,7 @@ export const VENUES_CATALOG: CatalogOption[] = [
 
 export const LIGHTING_CATALOG: CatalogOption[] = [
   { id: "lit_golden_to_midnight", label: "Golden Sunlight (Act I) → Midnight Neon & Fireworks (Act II)", promptSpec: "Warm golden hour sunbeams transitioning to midnight neon & fireworks" },
+  { id: "lit_club_amber_to_neon_lasers", label: "Retro-Glam Club Amber & Chandeliers (Act I) → Multi-Spectrum Laser & Strobe Arena (Act II)", promptSpec: "Warm indoor club amber key lights, crystal chandelier reflections & stage haze in Act I transitioning to multi-spectrum concert lasers, cyan-magenta strobes & volumetric beams in Act II" },
   { id: "lit_fairylight_party", label: "Nighttime Fairy-Lights & Lanterns (Act I) → Neon Party Spotlights & Sparklers (Act II)", promptSpec: "Warm overhead canopy of glowing nighttime street fairy-lights, paper lanterns & stage haze transitioning to vibrant amber-magenta concert spotlights & golden sparkler fountains" },
   { id: "lit_palace_to_chandeliers", label: "Warm Daylight & Marigolds (Act I) → Crystal Chandeliers (Act II)", promptSpec: "Natural palace sunlight transitioning to warm crystal chandeliers & floating diyas" },
   { id: "lit_torchlit_haveli", label: "Flickering Mashaal Fire-Torches & Mist (Act I) → Moonlit Brazier Sanctum (Act II)", promptSpec: "Dramatic chiaroscuro brass mashaal torchlight & ground mist transitioning to full-moon silver rim-lighting & roaring fire braziers" },
