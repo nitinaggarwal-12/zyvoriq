@@ -1,0 +1,477 @@
+[
+  {
+    "word": "10",
+    "startSec": 1.1,
+    "endSec": 1.8
+  },
+  {
+    "word": "billion",
+    "startSec": 1.8,
+    "endSec": 2.4
+  },
+  {
+    "word": "lives",
+    "startSec": 2.4,
+    "endSec": 2.9
+  },
+  {
+    "word": "on",
+    "startSec": 2.9,
+    "endSec": 3.1
+  },
+  {
+    "word": "the",
+    "startSec": 3.1,
+    "endSec": 3.2
+  },
+  {
+    "word": "ledger,",
+    "startSec": 3.2,
+    "endSec": 3.6
+  },
+  {
+    "word": "Sophia.",
+    "startSec": 3.7,
+    "endSec": 4
+  },
+  {
+    "word": "And",
+    "startSec": 5.5,
+    "endSec": 5.6
+  },
+  {
+    "word": "the",
+    "startSec": 5.6,
+    "endSec": 5.6
+  },
+  {
+    "word": "rain",
+    "startSec": 5.6,
+    "endSec": 6
+  },
+  {
+    "word": "in",
+    "startSec": 6,
+    "endSec": 6.1
+  },
+  {
+    "word": "Milan",
+    "startSec": 6.1,
+    "endSec": 6.6
+  },
+  {
+    "word": "never",
+    "startSec": 6.6,
+    "endSec": 7
+  },
+  {
+    "word": "washes",
+    "startSec": 7.1,
+    "endSec": 7.4
+  },
+  {
+    "word": "the",
+    "startSec": 7.4,
+    "endSec": 7.6
+  },
+  {
+    "word": "ink",
+    "startSec": 7.6,
+    "endSec": 7.8
+  },
+  {
+    "word": "away.",
+    "startSec": 7.8,
+    "endSec": 8
+  },
+  {
+    "word": "Every",
+    "startSec": 11.4,
+    "endSec": 11.8
+  },
+  {
+    "word": "child",
+    "startSec": 11.8,
+    "endSec": 12.3
+  },
+  {
+    "word": "in",
+    "startSec": 12.3,
+    "endSec": 12.4
+  },
+  {
+    "word": "this",
+    "startSec": 12.4,
+    "endSec": 12.7
+  },
+  {
+    "word": "room",
+    "startSec": 12.7,
+    "endSec": 12.9
+  },
+  {
+    "word": "is",
+    "startSec": 12.9,
+    "endSec": 13.1
+  },
+  {
+    "word": "a",
+    "startSec": 13.1,
+    "endSec": 13.2
+  },
+  {
+    "word": "real",
+    "startSec": 13.2,
+    "endSec": 13.6
+  },
+  {
+    "word": "human",
+    "startSec": 13.6,
+    "endSec": 13.9
+  },
+  {
+    "word": "soul,",
+    "startSec": 13.9,
+    "endSec": 14.5
+  },
+  {
+    "word": "inspector.",
+    "startSec": 14.6,
+    "endSec": 15.1
+  },
+  {
+    "word": "Not",
+    "startSec": 15.9,
+    "endSec": 16
+  },
+  {
+    "word": "a",
+    "startSec": 16,
+    "endSec": 16
+  },
+  {
+    "word": "number",
+    "startSec": 16,
+    "endSec": 16.4
+  },
+  {
+    "word": "on",
+    "startSec": 16.4,
+    "endSec": 16.5
+  },
+  {
+    "word": "a",
+    "startSec": 16.5,
+    "endSec": 16.6
+  },
+  {
+    "word": "brass",
+    "startSec": 16.6,
+    "endSec": 17
+  },
+  {
+    "word": "plate.",
+    "startSec": 17,
+    "endSec": 17.4
+  },
+  {
+    "word": "One",
+    "startSec": 19.3,
+    "endSec": 19.7
+  },
+  {
+    "word": "signature",
+    "startSec": 19.7,
+    "endSec": 20.5
+  },
+  {
+    "word": "is",
+    "startSec": 20.5,
+    "endSec": 20.8
+  },
+  {
+    "word": "all",
+    "startSec": 20.8,
+    "endSec": 21.2
+  },
+  {
+    "word": "it",
+    "startSec": 21.2,
+    "endSec": 21.4
+  },
+  {
+    "word": "takes,",
+    "startSec": 21.4,
+    "endSec": 21.8
+  },
+  {
+    "word": "Mateo.",
+    "startSec": 21.8,
+    "endSec": 22.4
+  },
+  {
+    "word": "Tonight",
+    "startSec": 23.4,
+    "endSec": 23.9
+  },
+  {
+    "word": "we",
+    "startSec": 23.9,
+    "endSec": 24.1
+  },
+  {
+    "word": "choose",
+    "startSec": 24.1,
+    "endSec": 24.5
+  },
+  {
+    "word": "humanity",
+    "startSec": 24.5,
+    "endSec": 25.5
+  },
+  {
+    "word": "over",
+    "startSec": 25.9,
+    "endSec": 26
+  },
+  {
+    "word": "the",
+    "startSec": 26,
+    "endSec": 26.2
+  },
+  {
+    "word": "census",
+    "startSec": 26.2,
+    "endSec": 26.7
+  },
+  {
+    "word": "law.",
+    "startSec": 26.7,
+    "endSec": 27
+  },
+  {
+    "word": "I",
+    "startSec": 29,
+    "endSec": 29.1
+  },
+  {
+    "word": "am",
+    "startSec": 29.1,
+    "endSec": 29.3
+  },
+  {
+    "word": "unpinning",
+    "startSec": 29.4,
+    "endSec": 30
+  },
+  {
+    "word": "my",
+    "startSec": 30,
+    "endSec": 30.2
+  },
+  {
+    "word": "badge.",
+    "startSec": 30.2,
+    "endSec": 30.7
+  },
+  {
+    "word": "Take",
+    "startSec": 32,
+    "endSec": 32.3
+  },
+  {
+    "word": "my",
+    "startSec": 32.3,
+    "endSec": 32.4
+  },
+  {
+    "word": "place",
+    "startSec": 32.4,
+    "endSec": 32.8
+  },
+  {
+    "word": "on",
+    "startSec": 32.8,
+    "endSec": 33
+  },
+  {
+    "word": "the",
+    "startSec": 33,
+    "endSec": 33.1
+  },
+  {
+    "word": "register,",
+    "startSec": 33.1,
+    "endSec": 33.6
+  },
+  {
+    "word": "Elena,",
+    "startSec": 33.6,
+    "endSec": 34
+  },
+  {
+    "word": "and",
+    "startSec": 34.6,
+    "endSec": 34.8
+  },
+  {
+    "word": "let",
+    "startSec": 34.8,
+    "endSec": 35
+  },
+  {
+    "word": "your",
+    "startSec": 35,
+    "endSec": 35.1
+  },
+  {
+    "word": "family",
+    "startSec": 35.1,
+    "endSec": 35.6
+  },
+  {
+    "word": "live",
+    "startSec": 35.6,
+    "endSec": 36.1
+  },
+  {
+    "word": "free.",
+    "startSec": 36.2,
+    "endSec": 36.6
+  },
+  {
+    "word": "History",
+    "startSec": 38.9,
+    "endSec": 39.6
+  },
+  {
+    "word": "will",
+    "startSec": 40,
+    "endSec": 40.2
+  },
+  {
+    "word": "remember",
+    "startSec": 40.2,
+    "endSec": 41
+  },
+  {
+    "word": "the",
+    "startSec": 41.1,
+    "endSec": 41.3
+  },
+  {
+    "word": "courage",
+    "startSec": 41.3,
+    "endSec": 41.8
+  },
+  {
+    "word": "spoken",
+    "startSec": 41.8,
+    "endSec": 42.3
+  },
+  {
+    "word": "inside",
+    "startSec": 42.3,
+    "endSec": 42.8
+  },
+  {
+    "word": "these",
+    "startSec": 42.8,
+    "endSec": 42.9
+  },
+  {
+    "word": "apartment",
+    "startSec": 42.9,
+    "endSec": 43.4
+  },
+  {
+    "word": "walls",
+    "startSec": 43.4,
+    "endSec": 43.8
+  },
+  {
+    "word": "tonight.",
+    "startSec": 43.8,
+    "endSec": 44.2
+  },
+  {
+    "word": "Walk",
+    "startSec": 48.4,
+    "endSec": 48.7
+  },
+  {
+    "word": "out",
+    "startSec": 48.7,
+    "endSec": 48.9
+  },
+  {
+    "word": "into",
+    "startSec": 48.9,
+    "endSec": 49.1
+  },
+  {
+    "word": "the",
+    "startSec": 49.1,
+    "endSec": 49.2
+  },
+  {
+    "word": "morning",
+    "startSec": 49.2,
+    "endSec": 49.7
+  },
+  {
+    "word": "rain,",
+    "startSec": 49.7,
+    "endSec": 50
+  },
+  {
+    "word": "Mateo.",
+    "startSec": 50,
+    "endSec": 50.6
+  },
+  {
+    "word": "The",
+    "startSec": 51.3,
+    "endSec": 51.4
+  },
+  {
+    "word": "courtyard",
+    "startSec": 51.4,
+    "endSec": 52
+  },
+  {
+    "word": "stands",
+    "startSec": 52,
+    "endSec": 52.6
+  },
+  {
+    "word": "with",
+    "startSec": 52.6,
+    "endSec": 52.8
+  },
+  {
+    "word": "you,",
+    "startSec": 52.8,
+    "endSec": 53.1
+  },
+  {
+    "word": "unregistered",
+    "startSec": 53.2,
+    "endSec": 54.2
+  },
+  {
+    "word": "and",
+    "startSec": 54.3,
+    "endSec": 54.5
+  },
+  {
+    "word": "finally",
+    "startSec": 54.5,
+    "endSec": 55.1
+  },
+  {
+    "word": "free.",
+    "startSec": 55.4,
+    "endSec": 55.8
+  }
+]

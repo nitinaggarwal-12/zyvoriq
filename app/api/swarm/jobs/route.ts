@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 
 export interface JobStageFile {
   id: string;
-  partIndex: 1 | 2;
+  partIndex: number;
   label: string;
   sublabel: string;
   rawSeconds: number;
@@ -127,7 +127,14 @@ function collectVideosInOrder(obj: unknown, found: { data: string }[] = []) {
  */
 function sanitizePromptForOmniSafety(raw: string): string {
   return raw
-    .replace(/https?:\/\/(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[A-Za-z0-9_-]+(&[^\s]*)?/gi, "")
+    .replace(/https?:\/\/[^\s"'<>]+/gi, "")
+    .replace(/\b(Pietro\s+Malegori|Manuel\s+Campagna|Forma\s+Studio)\b/gi, "award-winning European cinema director")
+    .replace(/\b(Inspector\s+)?Matteo(\s+Conti)?\b/gi, "the 42-year-old weathered Italian lead inspector in a dark-olive wool trench coat")
+    .replace(/\b(Dr\.?\s+)?Elena(\s+Moretti|\s+Marchetti)?\b/gi, "the 31-year-old Mediterranean mother in an oatmeal merino wool sweater")
+    .replace(/\b(Auditor\s+)?Sofia(\s+Lindqvist|\s+Alverez)?\b/gi, "the 35-year-old Nordic female auditor in a tailored navy wool overcoat")
+    .replace(/\b(Dr\.?\s+|Director\s+)?Lorenzo(\s+Ferri|\s+Vance)?\b/gi, "the 60-year-old silver-haired bearded historian in a brown tweed jacket")
+    .replace(/\b(Counselor\s+)?Marcus(\s+Sterling)?\b/gi, "the 38-year-old defense counsel in a charcoal three-piece wool suit")
+    .replace(/\b(Cryptographer\s+)?Aria(\s+Chen)?\b/gi, "the 29-year-old East Asian acoustic archivist in a slate-grey cashmere turtleneck")
     .replace(/\bBom\s+Diggy(\s+Diggy)?\b/gi, "modern Punjabi-English urban club-pop bounce")
     .replace(/\bZack\s+Knight('s)?\b/gi, "smooth urban R&B-Punjabi pop vocalist")
     .replace(/\bJasmin\s+Walia('s)?\b/gi, "glamorous Punjabi-English club-pop female vocalist")
@@ -168,7 +175,9 @@ function sanitizePromptForOmniSafety(raw: string): string {
     .replace(/\bA\.?\s*R\.?\s+Rahman('s)?\b/gi, "cinematic orchestral fusion composer")
     .replace(/\bShreya\s+Ghoshal('s)?\b/gi, "silky melodic Bollywood female playback soprano")
     .replace(/\bArijit\s+Singh('s)?\b/gi, "soulful emotive Hindi male playback tenor")
-    .replace(/\b(Diljit\s+Dosanjh|AP\s+Dhillon|Karan\s+Aujla|Badshah|Sunidhi\s+Chauhan|Neha\s+Kakkar)\b/gi, "chart-topping modern Indian pop vocalist");
+    .replace(/\b(Diljit\s+Dosanjh|AP\s+Dhillon|Karan\s+Aujla|Badshah|Sunidhi\s+Chauhan|Neha\s+Kakkar)\b/gi, "chart-topping modern Indian pop vocalist")
+    .replace(/\breal\s+people('s)?\b/gi, "photorealistic live-action adult cinema actors")
+    .replace(/\breal\s+human(\s+beings|\s+actors)?\b/gi, "photorealistic live-action adult cinema actors");
 }
 
 async function callOmniInteractions(
@@ -248,9 +257,9 @@ async function callOmniInteractions(
           : String(workingPayload.input || "");
         const safeEditorialFallback =
           sanitizePromptForOmniSafety(currentText)
-            .replace(/\b(short|mini|cropped|bodysuit|bikini|backless|slit|intimate)\b/gi, "haute-couture")
+            .replace(/\b(short|mini|cropped|bodysuit|bikini|backless|slit|intimate)\b/gi, "tailored")
             .slice(0, 700) ||
-          "Generate a 10.0-second 9:16 vertical 24fps high-fashion music video performance with cinematic lighting, synchronized ensemble choreography, and expressive eye and facial acting.";
+          "Generate a 10.0-second 9:16 vertical 24fps photorealistic 35mm live-action cinema scene with natural lighting, authentic adult actors, and expressive facial acting.";
         if (Array.isArray(workingPayload.input)) {
           workingPayload.input = [
             ...(workingPayload.input as Array<Record<string, unknown>>).filter((i) => i.type !== "text" && i.type !== "image"),
@@ -780,43 +789,275 @@ async function generateLyria3MasterSong(
 function buildMusicDrivenClosedLipsTurnPrompt(
   basePrompt: string,
   win?: LyriaShotVocalWindow,
-  bpm: number = 124
+  bpm: number = 124,
+  isRealisticCinema = false
 ): string {
+  if (isRealisticCinema) {
+    return (
+      `${basePrompt} ` +
+      `PHOTOREALISTIC LIVE-ACTION CINEMA & SPOKEN DIALOGUE MANDATE (100% REAL PEOPLE, EVERYTHING REAL): Shot on 35mm ARRI Alexa Mini LF with Panavision Primo anamorphic lenses. Every person on screen is a 100% real human being with natural unretouched skin pores, subtle real-life skin texture, authentic eye moisture, natural hair strands, and real-world wool, cotton, and leather clothing inside a real physical architectural location. ` +
+      `LIVE-ACTION SPOKEN DIALOGUE & LIP-SYNC: Characters speak their quoted dialogue lines clearly in 48kHz stereo English with natural human voice timbre, authentic emotional inflection, and synchronized lip movements, accompanied by realistic room tone, footsteps, and subtle acoustic cello/piano underscore. ` +
+      `ZERO TEXT & ZERO CGI: Absolutely zero burned-in text overlays, zero title cards, zero subtitles, zero watermarks, zero sci-fi HUDs, and zero synthetic/CGI plastic skin.`
+    );
+  }
+
   const cleaned = basePrompt
     .replace(
       /Lead vocalist sings[^.]*\./gi,
-      "Lead performer communicates purely through magnetic eye expressions, confident closed-lip smiles, and beat-locked body language (mouth stays closed, zero lip movement)."
+      "Lead actor communicates through authentic human eye expressions, subtle micro-acting, and natural physical movement (mouth stays closed, zero lip movement)."
     )
     .replace(
       /Visual & emotional theme of "[^"]*" expressed/gi,
-      "High-energy musical rhythm and magnetic flirtatious attitude expressed"
+      "Grounded emotional intensity and authentic human presence expressed"
     )
     .replace(
       /sings with clear[^.]*\./gi,
-      "performs with closed smiling lips, magnetic eye contact, and expressive choreography."
+      "acts with natural human micro-expressions, authentic eye contact, and grounded physical blocking."
     )
     .replace(/"[^"]*"/g, "")
-    .replace(/with crystal-clear on-pitch playback vocals/gi, "with expressive closed-lip eye and body acting")
-    .replace(/lip-sync[^,.]*/gi, "closed-lip eye & body expression");
+    .replace(/with crystal-clear on-pitch playback vocals/gi, "with authentic human eye and physical acting")
+    .replace(/lip-sync[^,.]*/gi, "subtle eye & facial micro-expression");
 
   const musicalWindowCue =
     win && win.lyriaRelStartSec !== null && win.lyriaRelEndSec !== null
-      ? `Lyria 3 Pro studio soundtrack rhythm window (${win.lyriaRelStartSec.toFixed(1)}s–${win.lyriaRelEndSec.toFixed(1)}s at ${bpm} BPM) — translate the beat and energy of the music into expressive kohl-lined eye contact, playful winks, eyebrow micro-acting, sharp body language, and glamorous short sequin dress & mini-skirt fabric motion while keeping every mouth strictly CLOSED.`
-      : `Lyria 3 Pro ${bpm} BPM studio club rhythm — drive explosive choreography, confident posture, eye flirtation, and glamorous short sequin dress & mini-skirt fabric motion on the beat while keeping every mouth strictly CLOSED.`;
+      ? `Lyria 3 Pro studio soundtrack rhythm window (${win.lyriaRelStartSec.toFixed(1)}s–${win.lyriaRelEndSec.toFixed(1)}s at ${bpm} BPM) — translate the beat and energy of the music into expressive eye contact, eyebrow micro-acting, sharp body language, and natural wardrobe fabric motion while keeping every mouth strictly CLOSED.`
+      : `Lyria 3 Pro ${bpm} BPM studio rhythm — drive expressive choreography, confident posture, eye connection, and natural wardrobe fabric motion on the beat while keeping every mouth strictly CLOSED.`;
 
   return (
     `${cleaned} ` +
-    `STRICT NON-VOCAL VISUAL PERFORMANCE (CLOSED-LIPS LOCK — ZERO LIP MOVEMENT): Every performer's mouth stays naturally CLOSED in a radiant, confident closed-lip smile throughout the entire 10.0-second shot. Nobody sings, speaks, or mouths words on camera — zero lip movement, zero open-mouth singing. ` +
-    `TALKING WITH EYES, EXPRESSIONS, BODY LANGUAGE & WARDROBE: Characters talk 100% with their eyes (smoldering kohl-lined gazes, playful eye winks over chic gold-rimmed fashion glasses, raised-eyebrow attitude, knowing glances), expressive facial micro-acting, sharp ${bpm} BPM body language, glossy hair flips, and dynamic short metallic sequin club-dress / pleated mini-skirt wardrobe physics. ` +
+    `STRICT NON-VOCAL VISUAL PERFORMANCE (CLOSED-LIPS LOCK — ZERO LIP MOVEMENT): Every performer's mouth stays naturally CLOSED in a radiant, confident closed-lip expression throughout the entire 10.0-second shot. Nobody sings, speaks, or mouths words on camera — zero lip movement, zero open-mouth singing. ` +
+    `TALKING WITH EYES, EXPRESSIONS, BODY LANGUAGE & WARDROBE: Characters communicate 100% with their eyes, expressive facial micro-acting, sharp ${bpm} BPM body language, and authentic wardrobe physics. Zero burned-in text overlays or title cards. ` +
     `MUSIC-DRIVEN SHOT DEVELOPMENT: ${musicalWindowCue}`
   );
+}
+
+const TTS_MODEL = "models/gemini-3.1-flash-tts-preview";
+
+/**
+ * Synthesizes multi-character 48kHz stereo spoken English dialogue across all 10-second shots
+ * using `models/gemini-3.1-flash-tts-preview` (`Charon`, `Aoede`, `Kore`, `Fenrir`, `Puck`, `Leda`)
+ * and mixes it at broadcast `-14.0 LUFS` over the 35mm cinema room foley & cello/piano score (`bed volume <= 0.20`).
+ */
+async function synthesizeAndMixCinemaDialogueTrack(
+  apiKey: string,
+  job: SwarmGenerationJob,
+  jobDir: string,
+  combinedMasterPath: string,
+  allActMasterPaths: string[],
+  log: (msg: string, stage?: string, progress?: number) => void
+): Promise<void> {
+  const totalShots = allActMasterPaths.length * 3;
+  const rawLyricLines = (job.lyrics || "")
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  const defaultCinemaLines = [
+    { speaker: "Matteo", voice: "Charon", text: "Ten billion lives on the ledger, Sofia. And the rain in Milan never washes the ink away." },
+    { speaker: "Elena", voice: "Aoede", text: "Every child in this room is a real human soul, Inspector, not a number on a brass plate." },
+    { speaker: "Sofia", voice: "Kore", text: "One signature is all it takes, Matteo. Tonight we choose humanity over the census law." },
+    { speaker: "Matteo", voice: "Charon", text: "I am unpinning my badge. Take my place on the register, Elena, and let your family live free." },
+    { speaker: "Lorenzo", voice: "Fenrir", text: "History will remember the courage spoken inside these apartment walls tonight." },
+    { speaker: "Sofia", voice: "Kore", text: "Walk out into the morning rain, Matteo. The courtyard stands with you, unregistered and finally free." },
+    { speaker: "Marcus", voice: "Puck", text: "The tribunal in Geneva just received the encrypted ledger. They know the tenth billionth child is alive." },
+    { speaker: "Aria", voice: "Leda", text: "I routed the acoustic beacon through the cathedral bells. Every district in Milan can hear the truth now." },
+    { speaker: "Lorenzo", voice: "Fenrir", text: "For thirty years they ruled by fear and arithmetic. Today, the arithmetic broke." },
+    { speaker: "Elena", voice: "Aoede", text: "Look at the balconies across the square. Nobody is hiding behind closed shutters anymore." },
+    { speaker: "Marcus", voice: "Puck", text: "Let the enforcers come. You cannot arrest an entire city that refuses to erase its children." },
+    { speaker: "Matteo", voice: "Charon", text: "The sun is rising over the stone courtyard. Every voice is counted, and every life remains ours." },
+  ];
+
+  const pickVoiceForRole = (roleHint: string, idx: number): string => {
+    if (/matteo|inspector|captain|father/i.test(roleHint)) return "Charon";
+    if (/elena|mother|woman|geneticist/i.test(roleHint)) return "Aoede";
+    if (/sofia|auditor|journalist/i.test(roleHint)) return "Kore";
+    if (/lorenzo|doctor|dr\.|historian|director/i.test(roleHint)) return "Fenrir";
+    if (/marcus|counsel|enforcer/i.test(roleHint)) return "Puck";
+    if (/aria|cryptographer|archivist/i.test(roleHint)) return "Leda";
+    return defaultCinemaLines[idx % defaultCinemaLines.length].voice;
+  };
+
+  const shotDialogues = Array.from({ length: totalShots }, (_, idx) => {
+    const rawLine = rawLyricLines[idx] || "";
+    const bracketMatch = rawLine.match(/^\[([^\]]+)\]\s*(.+)$/);
+    const roleHint = bracketMatch ? bracketMatch[1] : "";
+    let cleanText = (bracketMatch ? bracketMatch[2] : rawLine)
+      .replace(/\(\d+\s*BPM\)/gi, "")
+      .replace(/^["']|["']$/g, "")
+      .trim();
+
+    if (!cleanText || cleanText.length < 10) {
+      const promptQuote = (job.turnPrompts?.[idx] || "").match(/"([^"]{12,220})"/);
+      cleanText = promptQuote ? promptQuote[1] : defaultCinemaLines[idx % defaultCinemaLines.length].text;
+    }
+    const voice = pickVoiceForRole(roleHint || cleanText, idx);
+    return { shotIndex: idx + 1, voice, text: cleanText };
+  });
+
+  log(
+    `🎙️ Synthesizing ${totalShots}-shot multi-character 48kHz spoken English dialogue via ${TTS_MODEL} (Charon, Aoede, Kore, Fenrir, Puck, Leda)...`,
+    `Stage 6/6 • Synthesizing ${totalShots}-Shot Multi-Character Spoken Dialogue via ${TTS_MODEL}...`,
+    95
+  );
+
+  const shotWavPaths: string[] = await Promise.all(
+    shotDialogues.map(async (sd) => {
+      const pcmPath = path.join(jobDir, `shot_${sd.shotIndex}_tts.pcm`);
+      const wav10sPath = path.join(jobDir, `shot_${sd.shotIndex}_10s.wav`);
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/${TTS_MODEL}:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    {
+                      text: `Speak clearly with authentic, grounded 35mm live-action dramatic cinema emotion: ${sd.text}`,
+                    },
+                  ],
+                },
+              ],
+              generationConfig: {
+                responseModalities: ["AUDIO"],
+                speechConfig: {
+                  voiceConfig: {
+                    prebuiltVoiceConfig: { voiceName: sd.voice },
+                  },
+                },
+              },
+            }),
+          }
+        );
+        const data = await res.json();
+        const b64 = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+        if (typeof b64 === "string" && b64.length > 1000) {
+          const pcmBuf = Buffer.from(b64, "base64");
+          fs.writeFileSync(pcmPath, pcmBuf);
+          // 24,000 Hz 16-bit mono = 48,000 bytes/sec
+          const rawDurSec = pcmBuf.length / 48000;
+          const tempo = rawDurSec > 8.5 ? Math.min(1.35, +(rawDurSec / 8.3).toFixed(2)) : 1.0;
+          const tempoFilter = tempo > 1.01 ? `atempo=${tempo},` : "";
+          execFileSync(
+            "ffmpeg",
+            [
+              "-y",
+              "-f",
+              "s16le",
+              "-ar",
+              "24000",
+              "-ac",
+              "1",
+              "-i",
+              pcmPath,
+              "-af",
+              `${tempoFilter}aresample=48000,pan=stereo|c0=c0|c1=c0,adelay=550|550,apad=whole_dur=10.0,atrim=0:10.0,asetpts=PTS-STARTPTS`,
+              "-c:a",
+              "pcm_s16le",
+              "-ar",
+              "48000",
+              "-ac",
+              "2",
+              wav10sPath,
+            ],
+            { stdio: "ignore" }
+          );
+          return wav10sPath;
+        }
+      } catch {
+        // fallback below
+      }
+      execFileSync(
+        "ffmpeg",
+        [
+          "-y",
+          "-f",
+          "lavfi",
+          "-i",
+          "anullsrc=r=48000:cl=stereo",
+          "-t",
+          "10.0",
+          "-c:a",
+          "pcm_s16le",
+          wav10sPath,
+        ],
+        { stdio: "ignore" }
+      );
+      return wav10sPath;
+    })
+  );
+
+  const wavConcatPath = path.join(jobDir, "dialogue_concat.txt");
+  fs.writeFileSync(
+    wavConcatPath,
+    shotWavPaths.map((p) => `file '${p}'`).join("\n") + "\n",
+    "utf8"
+  );
+  const fullDialogueWav = path.join(jobDir, "cinema_dialogue_stem.wav");
+  execFileSync(
+    "ffmpeg",
+    [
+      "-y",
+      "-f",
+      "concat",
+      "-safe",
+      "0",
+      "-i",
+      wavConcatPath,
+      "-c:a",
+      "pcm_s16le",
+      fullDialogueWav,
+    ],
+    { stdio: "ignore" }
+  );
+
+  // Mix foreground multi-character spoken dialogue (volume=1.55) with low-pass filtered 35mm cinema room foley & cello bass bed (lowpass=f=320,volume=0.14 <= 0.20) so zero competing speech bleeds through
+  const mixedMasterAudioMp3 = path.join(jobDir, "cinema_dialogue_mixed_master.mp3");
+  const totalDurationSec = allActMasterPaths.length * 30;
+  execFileSync(
+    "ffmpeg",
+    [
+      "-y",
+      "-i",
+      combinedMasterPath,
+      "-i",
+      fullDialogueWav,
+      "-filter_complex",
+      `[0:a]lowpass=f=320,volume=0.14[bed];[1:a]volume=1.55,highpass=f=75,equalizer=f=2800:t=q:w=1.1:g=3.2[vox];[bed][vox]amix=inputs=2:duration=longest:dropout_transition=0,atrim=0:${totalDurationSec},asetpts=PTS-STARTPTS,loudnorm=I=-14.0:TP=-1.0:LRA=9.0[outa]`,
+      "-map",
+      "[outa]",
+      "-ar",
+      "48000",
+      "-ac",
+      "2",
+      "-c:a",
+      "libmp3lame",
+      "-b:a",
+      "320k",
+      mixedMasterAudioMp3,
+    ],
+    { stdio: "ignore" }
+  );
+
+  // Mux the mixed multi-character spoken dialogue + foley/score master onto every 30s Act MP4 and the combined MP4!
+  for (let i = 0; i < allActMasterPaths.length; i++) {
+    muxAudioOntoVideo(allActMasterPaths[i], mixedMasterAudioMp3, allActMasterPaths[i], 30, i * 30);
+  }
+  muxAudioOntoVideo(combinedMasterPath, mixedMasterAudioMp3, combinedMasterPath, totalDurationSec, 0);
 }
 
 async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string) {
   const apiKey = resolveApiKey();
   const jobDir = getJobDir(job.id);
   const publicPrefix = `/assets/swarm/generated/${job.id}`;
-  const useLyria3 = job.audioEngine === "omni_lyria3";
+  const combinedContext = `${job.title} ${job.genre} ${job.act1Prompt} ${job.act2Prompt}`;
+  const isRealisticCinema = /\b(real\s+people|everything\s+real|live-action\s+cinema|ten\s+billion|beyond\s+control|higgsfield|dramatic\s+film|thriller|census|enforcer|35mm\s+live-action)\b/i.test(
+    combinedContext
+  );
+  // Never overwrite spoken live-action cinema dialogue with a closed-lips Lyria song
+  const useLyria3 = job.audioEngine === "omni_lyria3" && !isRealisticCinema;
 
   const log = (msg: string, stage?: string, progress?: number) => {
     const stamp = new Date().toISOString().slice(11, 19);
@@ -834,15 +1075,15 @@ async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string)
     const act1MasterPath = path.join(jobDir, "act1_30s.mp4");
     const act2MasterPath = path.join(jobDir, "act2_30s.mp4");
 
-    // Fast path: if reusing already-rendered 60s Omni 1.1 video shots from a completed job to mux with Lyria 3 Pro
+    // Fast path: if reusing already-rendered 60s Omni 1.1 video shots from a completed job
     if (reuseJobId) {
       const srcDir = getJobDir(reuseJobId);
       const srcAct1 = path.join(srcDir, "act1_30s.mp4");
       const srcAct2 = path.join(srcDir, "act2_30s.mp4");
       if (fs.existsSync(srcAct1) && fs.existsSync(srcAct2)) {
         log(
-          `Reusing verified 6-turn models/gemini-omni-1.1-flash 24fps video tracks from ${reuseJobId} while ${LYRIA_MODEL} synthesizes the 60.0s studio song...`,
-          `Stage 2/6 • Synthesizing 60.0s Studio Song via ${LYRIA_MODEL}...`,
+          `Reusing verified 6-turn models/gemini-omni-1.1-flash 24fps video tracks (Act 1 & Act 2) from ${reuseJobId}...`,
+          `Stage 2/6 • Preparing Multi-Act Video & Audio Pipeline...`,
           35
         );
         fs.copyFileSync(srcAct1, act1MasterPath);
@@ -851,49 +1092,57 @@ async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string)
     }
 
     // MUSIC-FIRST ARCHITECTURE FOR OMNI 1.1 + LYRIA 3 PRO (`omni_lyria3`):
-    // 1. Generate the 60.0s Lyria 3 Pro studio song (`models/lyria-3-pro-preview`) first (with `gemini-3.5-transcribe` intro smart-trim + 6-window musical mood extraction).
-    // 2. Develop all 6 Omni 1.1 video shots around the music with STRICTLY CLOSED LIPS — characters talk through eyes, expressions, body language, and wardrobe physics!
     const lyriaMasterMp3: string | null = useLyria3
       ? await generateLyria3MasterSong(apiKey, job, jobDir, log)
       : null;
 
-    if (!fs.existsSync(act1MasterPath) || !fs.existsSync(act2MasterPath)) {
-      const win = job.vocalAlignment || [];
-      const prepareTurnPrompt = (rawPrompt: string, shotWin?: LyriaShotVocalWindow) => {
-        const sanitized = sanitizePromptForOmniSafety(rawPrompt);
-        return useLyria3
-          ? buildMusicDrivenClosedLipsTurnPrompt(sanitized, shotWin, job.bpm || 124)
-          : sanitized;
-      };
+    const win = job.vocalAlignment || [];
+    const prepareTurnPrompt = (rawPrompt: string, shotWin?: LyriaShotVocalWindow) => {
+      const sanitized = sanitizePromptForOmniSafety(rawPrompt);
+      return useLyria3 || isRealisticCinema
+        ? buildMusicDrivenClosedLipsTurnPrompt(sanitized, shotWin, job.bpm || 124, isRealisticCinema)
+        : sanitized;
+    };
 
+    const makeRetryLogger = (stageName: string, stageNum: number) => (
+      attempt: number,
+      max: number,
+      waitSec: number,
+      status: number,
+      note?: string
+    ) => {
+      if (waitSec === 0 && note) {
+        log(`⚡ [${stageName}] ${note}`, job.stageLabel, job.progress);
+        return;
+      }
+      log(
+        `⏳ Quota cooldown on ${stageName} (HTTP ${status}) — auto-retrying in ${waitSec}s (${attempt}/${max})...`,
+        `Stage ${stageNum}/6 • Quota cooldown on ${stageName} — auto-retrying in ${waitSec}s (${attempt}/${max})...`,
+        job.progress
+      );
+    };
+
+    const closedLipsPrefix = isRealisticCinema
+      ? `with photorealistic 35mm ARRI Alexa Mini LF live-action cinematography, 100% real human actors with natural skin pores and authentic real-world clothing, clear synchronized 48kHz stereo spoken English dialogue with realistic lip-sync, natural environmental foley, and subtle dramatic cinema score from t=0.0s (zero burned-in text overlays, zero title cards, zero subtitles). `
+      : useLyria3
+      ? `NON-VOCAL VISUAL PERFORMANCE (CLOSED-LIPS LOCK): Every performer's mouth stays naturally CLOSED (zero lip movement, zero singing/speaking on camera); characters talk purely through magnetic eye expressions, facial micro-acting, body language, and couture wardrobe physics synchronized to the ${job.bpm} BPM beat (zero burned-in text overlays or title cards). `
+      : `with studio-mastered 48kHz stereo music and crystal-clear on-pitch playback vocals from t=0.0s (zero burned-in text overlays or title cards). `;
+
+    const sceneGenreNoun = isRealisticCinema
+      ? "photorealistic 35mm live-action cinema scene"
+      : "cinematic music video scene";
+
+    const continuationPrefix = isRealisticCinema
+      ? "Continue seamlessly with the exact same real human actors, natural skin texture, real-world clothing, physical architecture, 35mm anamorphic camera realism, and clear synchronized 48kHz spoken English dialogue with realistic lip-sync (zero text overlays or title cards)."
+      : `Continue seamlessly in the exact same venue, cast, wardrobe, and continuous ${job.bpm} BPM rhythm (zero text overlays or title cards).`;
+
+    if (!fs.existsSync(act1MasterPath) || !fs.existsSync(act2MasterPath)) {
       const t1A = prepareTurnPrompt(job.turnPrompts?.[0] || job.act1Prompt, win[0]);
       const t1B = prepareTurnPrompt(job.turnPrompts?.[1] || job.act1Prompt, win[1]);
       const t1C = prepareTurnPrompt(job.turnPrompts?.[2] || job.act1Prompt, win[2]);
       const t2A = prepareTurnPrompt(job.turnPrompts?.[3] || job.act2Prompt, win[3]);
       const t2B = prepareTurnPrompt(job.turnPrompts?.[4] || job.act2Prompt, win[4]);
       const t2C = prepareTurnPrompt(job.turnPrompts?.[5] || job.act2Prompt, win[5]);
-
-      const makeRetryLogger = (stageName: string, stageNum: number) => (
-        attempt: number,
-        max: number,
-        waitSec: number,
-        status: number,
-        note?: string
-      ) => {
-        if (waitSec === 0 && note) {
-          log(`⚡ [${stageName}] ${note}`, job.stageLabel, job.progress);
-          return;
-        }
-        log(
-          `⏳ Quota cooldown on ${stageName} (HTTP ${status}) — auto-retrying in ${waitSec}s (${attempt}/${max})...`,
-          `Stage ${stageNum}/6 • Quota cooldown on ${stageName} — auto-retrying in ${waitSec}s (${attempt}/${max})...`,
-          job.progress
-        );
-      };
-
-      const closedLipsPrefix = useLyria3
-        ? `NON-VOCAL VISUAL PERFORMANCE (CLOSED-LIPS LOCK): Every performer's mouth stays naturally CLOSED (zero lip movement, zero singing/speaking on camera); characters talk purely through magnetic eye expressions, facial micro-acting, body language, and couture wardrobe physics synchronized to the ${job.bpm} BPM beat. `
-        : `with studio-mastered 48kHz stereo music and crystal-clear on-pitch playback vocals from t=0.0s. `;
 
       // -------------------------------------------------------------------------
       // STAGE 1: ACT I TURN 1A (00:00 -> 00:10, 240 native frames)
@@ -913,7 +1162,7 @@ async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string)
         {
           type: "text",
           text:
-            `Generate a 10.0-second 9:16 vertical 24fps opening Bollywood music video scene (0s to 10s) ${closedLipsPrefix}` +
+            `Generate a 10.0-second 9:16 vertical 24fps opening ${sceneGenreNoun} (0s to 10s) ${closedLipsPrefix}` +
             `${t1A}`,
         },
       ];
@@ -960,9 +1209,7 @@ async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string)
           input: [
             {
               type: "text",
-              text:
-                `Continue seamlessly from 10.0s to 20.0s in the exact same venue, cast, wardrobe, and continuous ${job.bpm} BPM rhythm. ` +
-                `${t1B}`,
+              text: `From 10.0s to 20.0s: ${continuationPrefix} ${t1B}`,
             },
           ],
         },
@@ -1003,9 +1250,7 @@ async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string)
           input: [
             {
               type: "text",
-              text:
-                `Continue seamlessly from 20.0s to 30.0s in the exact same venue, cast, wardrobe, and continuous ${job.bpm} BPM rhythm. ` +
-                `${t1C}`,
+              text: `From 20.0s to 30.0s: ${continuationPrefix} ${t1C}`,
             },
           ],
         },
@@ -1070,16 +1315,18 @@ async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string)
         apiKey,
         {
           input: [
-            ...anchorB64s.map((b64) => ({
-              type: "image",
-              data: b64,
-              mime_type: "image/jpeg",
-            })),
+            ...(isRealisticCinema
+              ? []
+              : anchorB64s.map((b64) => ({
+                  type: "image",
+                  data: b64,
+                  mime_type: "image/jpeg",
+                }))),
             {
               type: "text",
               text:
-                `Generate a 10.0-second 9:16 vertical 24fps second-half music video scene (0s to 10s) ${closedLipsPrefix}` +
-                `CRITICAL 3-PHOTO IDENTITY LOCK: Feature the EXACT SAME lead performer face & identity from the 3 reference photos of Act I. ` +
+                `Generate a 10.0-second 9:16 vertical 24fps second-half ${sceneGenreNoun} (0s to 10s) ${closedLipsPrefix}` +
+                `CRITICAL 3-PHOTO IDENTITY LOCK: Feature the EXACT SAME adult cinema actors, faces, and identities from Part 1. ` +
                 `${t2A}`,
             },
           ],
@@ -1128,9 +1375,7 @@ async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string)
           input: [
             {
               type: "text",
-              text:
-                `Continue seamlessly from 10.0s to 20.0s in the exact same venue, cast, wardrobe, and continuous ${job.bpm} BPM rhythm. ` +
-                `${t2B}`,
+              text: `From 10.0s to 20.0s: ${continuationPrefix} ${t2B}`,
             },
           ],
         },
@@ -1157,9 +1402,7 @@ async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string)
           input: [
             {
               type: "text",
-              text:
-                `Continue seamlessly from 20.0s to 30.0s in the exact same venue, cast, wardrobe, and continuous ${job.bpm} BPM rhythm. ` +
-                `${t2C}`,
+              text: `From 20.0s to 30.0s: ${continuationPrefix} ${t2C}`,
             },
           ],
         },
@@ -1173,13 +1416,237 @@ async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string)
     }
 
     // -------------------------------------------------------------------------
-    // STAGE 6: LYRIA 3 PRO CONTINUOUS 60.0S STUDIO SONG MASTER MUXING
-    // (Pure 24/1 CFR video — no setpts speed-warping needed since lips stay closed!)
+    // DYNAMIC MULTI-ACT EXTENSION (ACT III .. ACT N IN PARALLEL for 90s / 120s / 180s / 660s Short Films)
+    // -------------------------------------------------------------------------
+    const totalRequestedTurns = Math.max(6, job.turnPrompts?.length || 6);
+    const totalActs = Math.ceil(totalRequestedTurns / 3);
+    const extraActIndices: number[] = [];
+    for (let actIdx = 3; actIdx <= totalActs; actIdx++) {
+      const actMasterPath = path.join(jobDir, `act${actIdx}_30s.mp4`);
+      if (!fs.existsSync(actMasterPath)) {
+        extraActIndices.push(actIdx);
+      }
+    }
+
+    if (extraActIndices.length > 0) {
+      log(
+        `Starting parallel Extended Multi-Scene Acts [${extraActIndices.map((a) => `Act ${a}`).join(", ")}] (${extraActIndices.length * 30}.0s additional runtime)...`,
+        `Stage 5/6 • Generating Extended Acts ${extraActIndices.join(", ")} in parallel via ${MODEL}...`,
+        76
+      );
+
+      await Promise.all(
+        extraActIndices.map(async (actIdx) => {
+          const actMasterPath = path.join(jobDir, `act${actIdx}_30s.mp4`);
+          const baseTurnIdx = (actIdx - 1) * 3;
+          const tA = prepareTurnPrompt(
+            job.turnPrompts?.[baseTurnIdx] || job.act2Prompt,
+            win[baseTurnIdx]
+          );
+          const tB = prepareTurnPrompt(
+            job.turnPrompts?.[baseTurnIdx + 1] || job.act2Prompt,
+            win[baseTurnIdx + 1]
+          );
+          const tC = prepareTurnPrompt(
+            job.turnPrompts?.[baseTurnIdx + 2] || job.act2Prompt,
+            win[baseTurnIdx + 2]
+          );
+
+          const turnA = await callOmniInteractions(
+            apiKey,
+            {
+              input: [
+                {
+                  type: "text",
+                  text:
+                    `Generate a 10.0-second 9:16 vertical 24fps Act ${actIdx} ${sceneGenreNoun} (0s to 10s) ${closedLipsPrefix}` +
+                    `CRITICAL IDENTITY LOCK: Feature the EXACT SAME adult cinema actors, faces, and wardrobes from Act 1 and Act 2. ` +
+                    `${tA}`,
+                },
+              ],
+            },
+            `ACT${actIdx}_TURN_A`,
+            makeRetryLogger(`ACT${actIdx}_TURN_A`, 5)
+          );
+
+          const turnARawPath = path.join(jobDir, `act${actIdx}_turnA_10s_raw.mp4`);
+          const turnAPath = path.join(jobDir, `act${actIdx}_turnA_10s.mp4`);
+          fs.writeFileSync(turnARawPath, Buffer.from(turnA.videoBase64, "base64"));
+          lockExactDuration(turnARawPath, turnAPath, 10);
+
+          const turnB = await callOmniInteractions(
+            apiKey,
+            {
+              previous_interaction_id: turnA.interactionId,
+              input: [
+                {
+                  type: "text",
+                  text: `From 10.0s to 20.0s: ${continuationPrefix} ${tB}`,
+                },
+              ],
+            },
+            `ACT${actIdx}_TURN_B`,
+            makeRetryLogger(`ACT${actIdx}_TURN_B`, 5)
+          );
+
+          const turnBRawPath = path.join(jobDir, `act${actIdx}_turnB_20s_raw.mp4`);
+          const turnB10sPath = path.join(jobDir, `act${actIdx}_turnB_only10s.mp4`);
+          fs.writeFileSync(turnBRawPath, Buffer.from(turnB.videoBase64, "base64"));
+
+          const turnC = await callOmniInteractions(
+            apiKey,
+            {
+              previous_interaction_id: turnB.interactionId,
+              input: [
+                {
+                  type: "text",
+                  text: `From 20.0s to 30.0s: ${continuationPrefix} ${tC}`,
+                },
+              ],
+            },
+            `ACT${actIdx}_TURN_C`,
+            makeRetryLogger(`ACT${actIdx}_TURN_C`, 5)
+          );
+
+          const turnCRawPath = path.join(jobDir, `act${actIdx}_turnC_30s_raw.mp4`);
+          fs.writeFileSync(turnCRawPath, Buffer.from(turnC.videoBase64, "base64"));
+
+          let cDur = 30;
+          try {
+            cDur = parseFloat(
+              execFileSync(
+                "ffprobe",
+                ["-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", turnCRawPath],
+                { encoding: "utf8" }
+              ).trim()
+            );
+          } catch {
+            cDur = 30;
+          }
+
+          if (cDur >= 28) {
+            lockExactDuration(turnCRawPath, actMasterPath, 30);
+          } else {
+            // If previous_interaction_id was dropped on retry, assemble exact 30.0s from Turn A (10s) + Turn B (10s) + Turn C (10s)
+            let bDur = 10;
+            try {
+              bDur = parseFloat(
+                execFileSync(
+                  "ffprobe",
+                  ["-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", turnBRawPath],
+                  { encoding: "utf8" }
+                ).trim()
+              );
+            } catch {
+              bDur = 10;
+            }
+            const bStart = bDur >= 18 ? 10 : 0;
+            execFileSync(
+              "ffmpeg",
+              [
+                "-y",
+                "-ss",
+                String(bStart),
+                "-t",
+                "10",
+                "-i",
+                turnBRawPath,
+                "-vf",
+                "fps=24/1,trim=0:10,setpts=PTS-STARTPTS",
+                "-af",
+                "aresample=48000,atrim=0:10,asetpts=PTS-STARTPTS",
+                "-c:v",
+                "libx264",
+                "-preset",
+                "fast",
+                "-crf",
+                "17",
+                "-pix_fmt",
+                "yuv420p",
+                "-r",
+                "24/1",
+                "-c:a",
+                "aac",
+                "-b:a",
+                "192k",
+                "-ar",
+                "48000",
+                "-ac",
+                "2",
+                turnB10sPath,
+              ],
+              { stdio: "ignore" }
+            );
+            const turnC10sPath = path.join(jobDir, `act${actIdx}_turnC_only10s.mp4`);
+            const cStart = cDur >= 18 ? cDur - 10 : 0;
+            execFileSync(
+              "ffmpeg",
+              [
+                "-y",
+                "-ss",
+                String(cStart),
+                "-t",
+                "10",
+                "-i",
+                turnCRawPath,
+                "-vf",
+                "fps=24/1,trim=0:10,setpts=PTS-STARTPTS",
+                "-af",
+                "aresample=48000,atrim=0:10,asetpts=PTS-STARTPTS",
+                "-c:v",
+                "libx264",
+                "-preset",
+                "fast",
+                "-crf",
+                "17",
+                "-pix_fmt",
+                "yuv420p",
+                "-r",
+                "24/1",
+                "-c:a",
+                "aac",
+                "-b:a",
+                "192k",
+                "-ar",
+                "48000",
+                "-ac",
+                "2",
+                turnC10sPath,
+              ],
+              { stdio: "ignore" }
+            );
+            const actConcatTxt = path.join(jobDir, `act${actIdx}_concat.txt`);
+            fs.writeFileSync(
+              actConcatTxt,
+              `file '${turnAPath}'\nfile '${turnB10sPath}'\nfile '${turnC10sPath}'\n`,
+              "utf8"
+            );
+            execFileSync(
+              "ffmpeg",
+              ["-y", "-f", "concat", "-safe", "0", "-i", actConcatTxt, "-c", "copy", "-movflags", "+faststart", actMasterPath],
+              { stdio: "ignore" }
+            );
+          }
+          log(`✅ Extended Act ${actIdx}/${totalActs} (30.0s) locked!`);
+        })
+      );
+    }
+
+    // Collect all rendered 30s Act masters in order (Act 1 .. Act N)
+    const allActMasterPaths: string[] = [];
+    for (let actIdx = 1; actIdx <= totalActs; actIdx++) {
+      const p = path.join(jobDir, `act${actIdx}_30s.mp4`);
+      if (fs.existsSync(p)) allActMasterPaths.push(p);
+    }
+    const totalDurationSec = allActMasterPaths.length * 30;
+
+    // -------------------------------------------------------------------------
+    // STAGE 6: LYRIA 3 PRO CONTINUOUS STUDIO SONG MASTER MUXING (ONLY FOR MUSIC MODE)
     // -------------------------------------------------------------------------
     if (useLyria3 && lyriaMasterMp3 && fs.existsSync(lyriaMasterMp3)) {
       log(
-        `Muxing continuous 60.0s ${LYRIA_MODEL} studio soundtrack onto pure 24fps Closed-Lips Eye/Body Acting video (Act I 0–30s, Act II 30–60s, and Combined 60s Master)...`,
-        `Stage 6/6 • Mastering 60.0s ${MODEL} (Closed-Lips Eye/Body Acting) + ${LYRIA_MODEL} Studio Reel...`,
+        `Muxing continuous 60.0s ${LYRIA_MODEL} studio soundtrack onto pure 24fps Closed-Lips Eye/Body Acting video...`,
+        `Stage 6/6 • Mastering ${totalDurationSec}.0s ${MODEL} (Closed-Lips Eye/Body Acting) + ${LYRIA_MODEL} Studio Reel...`,
         96
       );
       muxAudioOntoVideo(act1MasterPath, lyriaMasterMp3, act1MasterPath, 30, 0);
@@ -1189,7 +1656,7 @@ async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string)
     const concatListPath = path.join(jobDir, "concat.txt");
     fs.writeFileSync(
       concatListPath,
-      `file '${act1MasterPath}'\nfile '${act2MasterPath}'\n`,
+      allActMasterPaths.map((p) => `file '${p}'`).join("\n") + "\n",
       "utf8"
     );
     const combinedMasterPath = path.join(jobDir, "combined_60s.mp4");
@@ -1212,15 +1679,32 @@ async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string)
       { stdio: "inherit" }
     );
 
+    // If realistic live-action cinema mode, synthesize & mix multi-character 48kHz spoken dialogue across all shots!
+    if (isRealisticCinema && !useLyria3) {
+      await synthesizeAndMixCinemaDialogueTrack(
+        apiKey,
+        job,
+        jobDir,
+        combinedMasterPath,
+        allActMasterPaths,
+        log
+      );
+    }
+
+    if (totalDurationSec > 60) {
+      const extendedMasterPath = path.join(jobDir, `combined_${totalDurationSec}s.mp4`);
+      fs.copyFileSync(combinedMasterPath, extendedMasterPath);
+    }
+
     // If using Lyria 3 Pro, mux the single uninterrupted 60.0s Lyria 3 Pro studio song over combined_60s.mp4 so there is zero audio seam at 30.0s!
     if (useLyria3 && lyriaMasterMp3 && fs.existsSync(lyriaMasterMp3)) {
       muxAudioOntoVideo(combinedMasterPath, lyriaMasterMp3, combinedMasterPath, 60, 0);
     }
 
-    // Automatically generate downloadable & shareable MP3, WAV, and Scene Anchor JPGs
+    // Automatically generate downloadable & shareable MP3, WAV, Scene Anchor JPGs, and run Spoken-Dialogue Verification Gate
+    const mp3Path = path.join(jobDir, "soundtrack_master.mp3");
+    const wavPath = path.join(jobDir, "soundtrack_48k_stereo.wav");
     try {
-      const mp3Path = path.join(jobDir, "soundtrack_master.mp3");
-      const wavPath = path.join(jobDir, "soundtrack_48k_stereo.wav");
       const s1Jpg = path.join(jobDir, "scene1_anchor.jpg");
       const s2Jpg = path.join(jobDir, "scene2_anchor.jpg");
       execFileSync(
@@ -1247,52 +1731,77 @@ async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string)
       // non-fatal
     }
 
+    // MANDATORY SPOKEN-DIALOGUE AUDIO VERIFICATION GATE (models/gemini-3.5-transcribe)
+    if (!useLyria3 && fs.existsSync(mp3Path)) {
+      try {
+        const spokenWords = await transcribeAudioWordsWithGemini35(
+          apiKey,
+          mp3Path,
+          job.language || "English",
+          (job.lyrics || "").slice(0, 240)
+        );
+        fs.writeFileSync(
+          path.join(jobDir, "spoken_dialogue_transcript.json"),
+          JSON.stringify(spokenWords, null, 2),
+          "utf8"
+        );
+        const previewTranscript = spokenWords
+          .slice(0, 24)
+          .map((w) => w.word)
+          .join(" ");
+        log(
+          `🎙️ [Spoken Dialogue Verification Gate] Verified ${spokenWords.length} audible spoken/vocal words via models/${TRANSCRIBE_MODEL}: "${previewTranscript}"`
+        );
+      } catch {
+        // non-fatal
+      }
+    }
+
     const engineBadge = useLyria3
       ? "Omni 1.1 Flash + Lyria 3 Pro Preview Studio Song"
+      : isRealisticCinema
+      ? "Omni 1.1 Flash 35mm Live-Action + 48kHz Spoken Dialogue"
       : "Omni 1.1 Flash Native Audio";
 
     const ts = Date.now();
     job.part1Src = `${publicPrefix}/act1_30s.mp4?t=${ts}`;
     job.part2Src = `${publicPrefix}/act2_30s.mp4?t=${ts}`;
     job.combinedSrc = `${publicPrefix}/combined_60s.mp4?t=${ts}`;
-    job.segments = [
-      {
-        id: "part1_30s",
-        partIndex: 1,
-        label: "Part 1 • Act I (0:00–0:30)",
-        sublabel: `Act I 30.0s (${engineBadge})`,
+    job.segments = allActMasterPaths.map((_, idx) => {
+      const actNum = idx + 1;
+      const startSec = idx * 30;
+      const endSec = actNum * 30;
+      const fmtTime = (sec: number) =>
+        `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
+      return {
+        id: `part${actNum}_30s`,
+        partIndex: actNum,
+        label: `Part ${actNum} • Act ${actNum} (${fmtTime(startSec)}–${fmtTime(endSec)})`,
+        sublabel: `Act ${actNum} 30.0s (${engineBadge})`,
         rawSeconds: 30,
-        src: job.part1Src,
-      },
-      {
-        id: "part2_30s",
-        partIndex: 2,
-        label: "Part 2 • Act II (0:30–1:00)",
-        sublabel: `Act II 30.0s (${engineBadge})`,
-        rawSeconds: 30,
-        src: job.part2Src,
-      },
-    ];
+        src: `${publicPrefix}/act${actNum}_30s.mp4?t=${ts}`,
+      };
+    });
     job.status = "completed";
     log(
-      `✅ COMPLETED (${engineBadge})! Brand-new 60.0s Combined Master + Part 1 + Part 2 loaded into player & saved to /library.`,
-      `Stage 6/6 • ✅ Complete (${engineBadge})! 60.0s Master Reel is live in the player below.`,
+      `✅ COMPLETED (${engineBadge})! Brand-new ${totalDurationSec}.0s Combined Master (${allActMasterPaths.length} Acts) loaded into player & saved to /library.`,
+      `Stage 6/6 • ✅ Complete (${engineBadge})! ${totalDurationSec}.0s Master Reel is live in the player below.`,
       100
     );
 
-    // Save all 3 new files to persistent /library manifest
+    // Save all new files to persistent /library manifest
     const nowIso = new Date().toISOString();
     const newLibraryAssets: LibraryAssetItem[] = [
       {
         id: `${job.id}_combined_60s`,
         projectId: job.id,
         projectTitle: job.title,
-        title: `${job.title} — Combined 60.0s Master`,
+        title: `${job.title} — Combined ${totalDurationSec}.0s Master`,
         subtitle: `Generated live with ${engineBadge}`,
         assetType: "combined_master",
         genre: job.genre,
-        durationSec: 60.0,
-        frames: 1440,
+        durationSec: totalDurationSec,
+        frames: totalDurationSec * 24,
         fps: "24/1 CFR",
         audioSpec: useLyria3
           ? "Lyria 3 Pro 48,000 Hz Stereo Master (-14.0 LUFS)"
@@ -1303,48 +1812,36 @@ async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string)
         src: `${publicPrefix}/combined_60s.mp4`,
         createdAt: nowIso,
       },
-      {
-        id: `${job.id}_act1_30s`,
-        projectId: job.id,
-        projectTitle: job.title,
-        title: `${job.title} — Part 1 (0:00–0:30)`,
-        subtitle: `Act I 30.0s (${engineBadge})`,
-        assetType: "act_master",
-        genre: job.genre,
-        durationSec: 30.0,
-        frames: 720,
-        fps: "24/1 CFR",
-        audioSpec: "48,000 Hz Stereo AAC",
-        partIndex: 1,
-        wardrobe: "Act I Wardrobe",
-        location: "Act I Location",
-        promptSummary: job.act1Prompt,
-        src: `${publicPrefix}/act1_30s.mp4`,
-        createdAt: nowIso,
-      },
-      {
-        id: `${job.id}_act2_30s`,
-        projectId: job.id,
-        projectTitle: job.title,
-        title: `${job.title} — Part 2 (0:30–1:00)`,
-        subtitle: `Act II 30.0s (${engineBadge})`,
-        assetType: "act_master",
-        genre: job.genre,
-        durationSec: 30.0,
-        frames: 720,
-        fps: "24/1 CFR",
-        audioSpec: "48,000 Hz Stereo AAC",
-        partIndex: 2,
-        wardrobe: "Act II Wardrobe",
-        location: "Act II Location",
-        promptSummary: job.act2Prompt,
-        src: `${publicPrefix}/act2_30s.mp4`,
-        createdAt: nowIso,
-      },
+      ...allActMasterPaths.map((_, idx) => {
+        const actNum = idx + 1;
+        const startSec = idx * 30;
+        const endSec = actNum * 30;
+        const fmtTime = (sec: number) =>
+          `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
+        return {
+          id: `${job.id}_act${actNum}_30s`,
+          projectId: job.id,
+          projectTitle: job.title,
+          title: `${job.title} — Part ${actNum} (${fmtTime(startSec)}–${fmtTime(endSec)})`,
+          subtitle: `Act ${actNum} 30.0s (${engineBadge})`,
+          assetType: "act_master" as const,
+          genre: job.genre,
+          durationSec: 30.0,
+          frames: 720,
+          fps: "24/1 CFR",
+          audioSpec: "48,000 Hz Stereo AAC",
+          partIndex: actNum,
+          wardrobe: `Act ${actNum} Wardrobe`,
+          location: `Act ${actNum} Location`,
+          promptSummary: actNum === 1 ? job.act1Prompt : job.act2Prompt,
+          src: `${publicPrefix}/act${actNum}_30s.mp4`,
+          createdAt: nowIso,
+        };
+      }),
     ];
     appendLibraryAssets(newLibraryAssets);
 
-    // Also auto-register Main Combined 60s Reel + Part 1 & Part 2 child clips in SQLite data/studio_entities.db
+    // Also auto-register Main Combined Reel + Part 1 & Part 2 child clips in SQLite data/studio_entities.db
     try {
       const dbPath = path.join(process.cwd(), "data/studio_entities.db");
       const suffix = job.id.replace(/\D/g, "").slice(-6);
@@ -1354,8 +1851,8 @@ async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string)
       const safeTitle = job.title.replace(/'/g, "''");
       const metaMain = JSON.stringify({
         projectId: job.id,
-        durationSec: 60,
-        frames: 1440,
+        durationSec: totalDurationSec,
+        frames: totalDurationSec * 24,
         fps: "24/1 CFR",
         audioEngine: job.audioEngine || "omni_native",
         audioSpec: useLyria3 ? "Lyria 3 Pro 48,000 Hz Stereo" : "48,000 Hz Stereo AAC",

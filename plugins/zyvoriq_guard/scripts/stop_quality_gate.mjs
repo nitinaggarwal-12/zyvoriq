@@ -823,6 +823,38 @@ REASON: <concise explanation>`;
             } catch (err) { console.log(JSON.stringify({ decision: "block", reason: "[ZYVORIQ STOP GATE CRITICAL FAILURE]: Assertion crashed: " + err.message + ". Failing closed." })); return; }
 
             // =========================================================================
+            // ASSERTION 4f: MANDATORY SPOKEN DIALOGUE TRANSCRIPT VERIFICATION FOR LIVE-ACTION CINEMA
+            // =========================================================================
+            try {
+              const jobJsonPath = path.join(dir, "job.json");
+              if (fs.existsSync(jobJsonPath) && vf.startsWith("combined_")) {
+                const jobMeta = JSON.parse(fs.readFileSync(jobJsonPath, "utf-8"));
+                const isCinemaJob =
+                  jobMeta &&
+                  jobMeta.status === "completed" &&
+                  Number(jobMeta.createdAt || 0) > 1790656000000 &&
+                  /\b(real\s+people|everything\s+real|live-action\s+cinema|ten\s+billion|beyond\s+control|higgsfield|dramatic\s+film|thriller|35mm\s+live-action)\b/i.test(
+                    `${jobMeta.title || ""} ${jobMeta.genre || ""} ${jobMeta.act1Prompt || ""}`
+                  );
+                if (isCinemaJob) {
+                  const transcriptPath = path.join(dir, "spoken_dialogue_transcript.json");
+                  const spokenWords = fs.existsSync(transcriptPath)
+                    ? JSON.parse(fs.readFileSync(transcriptPath, "utf-8"))
+                    : [];
+                  if (!Array.isArray(spokenWords) || spokenWords.length < 6) {
+                    console.log(
+                      JSON.stringify({
+                        decision: "block",
+                        reason: `[ZYVORIQ SPOKEN DIALOGUE GATE BLOCKED]: Live-action cinema job ${path.basename(dir)} (${relativePath}) has ${Array.isArray(spokenWords) ? spokenWords.length : 0} verified spoken words in spoken_dialogue_transcript.json (minimum 6 required)! Dramatic cinema reels must include audible 48kHz spoken character dialogue with lip-sync verified by models/gemini-3.5-transcribe.`
+                      })
+                    );
+                    return;
+                  }
+                }
+              }
+            } catch (err) { console.log(JSON.stringify({ decision: "block", reason: "[ZYVORIQ STOP GATE CRITICAL FAILURE]: Assertion 4f crashed: " + err.message + ". Failing closed." })); return; }
+
+            // =========================================================================
             // ASSERTION 6: CUT-BOUNDARY INITIAL-FRAME PSNR CEILING (< 25 dB)
             // (Verifies sequential tail-frame chaining and bans identical anchor resets)
             // =========================================================================

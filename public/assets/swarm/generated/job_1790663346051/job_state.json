@@ -1,0 +1,82 @@
+{
+  "id": "job_1790663346051",
+  "title": "The Ten Billionth Pulse — Beyond Control (12-Scene Spoken-Dialogue Director's Cut)",
+  "genre": "Photorealistic 35mm Live-Action Cinema — 6-Character Spoken Dialogue, Cello-Piano Score & Rain Foley (92 BPM D Minor)",
+  "bpm": 92,
+  "audioEngine": "omni_native",
+  "lyrics": "[Shot 01 • Inspector Matteo Conti] Ten billion lives on the ledger, Sofia. And the rain in Milan never washes the ink away.\n[Shot 02 • Elena Moretti] Every child in this room is a real human soul, Inspector, not a number on a brass plate.\n[Shot 03 • Auditor Sofia Lindqvist] One signature is all it takes, Matteo. Tonight we choose humanity over the census law.\n[Shot 04 • Inspector Matteo Conti] I am unpinning my badge. Take my place on the register, Elena, and let your family live free.\n[Shot 05 • Dr. Lorenzo Ferri] History will remember the courage spoken inside these apartment walls tonight.\n[Shot 06 • Auditor Sofia Lindqvist] Walk out into the morning rain, Matteo. The courtyard stands with you, unregistered and finally free.\n[Shot 07 • Counselor Marcus Sterling] The tribunal in Geneva just received the encrypted ledger. They know the tenth billionth child is alive.\n[Shot 08 • Cryptographer Aria Chen] I routed the acoustic beacon through the cathedral bells. Every district in Milan can hear the truth now.\n[Shot 09 • Dr. Lorenzo Ferri] For thirty years they ruled by fear and arithmetic. Today, the arithmetic broke.\n[Shot 10 • Elena Moretti] Look at the balconies across the square. Nobody is hiding behind closed shutters anymore.\n[Shot 11 • Counselor Marcus Sterling] Let the enforcers come. You cannot arrest an entire city that refuses to erase its children.\n[Shot 12 • Inspector Matteo Conti] The sun is rising over the stone courtyard. Every voice is counted, and every life remains ours.",
+  "voiceType": "6-Character 48,000 Hz Stereo Spoken English Dialogue (Charon, Aoede, Kore, Fenrir, Puck, Leda) + 35mm Room Foley & Cello Score",
+  "language": "English",
+  "act1Prompt": "Photorealistic 35mm live-action cinema shot on ARRI Alexa Mini LF with Panavision Primo anamorphic lenses in Milan. 100% authentic adult cinema actors with natural unretouched skin pores, real wool and cotton coats, and real architectural interiors.",
+  "act2Prompt": "Photorealistic 35mm live-action cinema multi-act dramatic continuation shot on ARRI Alexa Mini LF in Milan and Geneva. Inside the tribunal archive, cathedral bell tower acoustic relay room, and rain-washed stone piazza at dawn, the 6 adult protagonists speak clear synchronized English dialogue with natural lip-sync as the city stands in solidarity.",
+  "turnPrompts": [
+    "Photorealistic 35mm live-action cinema shot on ARRI Alexa Mini LF with 35mm Panavision Primo lens at T1.8 inside a dimly lit Milanese brutalist corridor with crimson-red plaster walls. The 42-year-old weathered Italian lead inspector in a dark-olive wool trench coat walks beside the 35-year-old Nordic female auditor in a tailored navy wool overcoat and speaks clearly on camera with natural lip-sync: \"Ten billion lives on the ledger, and the rain in Milan never washes the ink away.\"",
+    "50mm Panavision Primo lens at T1.8 inside a warm 3200K tungsten-lit Milanese apartment study with a glowing glass koi aquarium. The 31-year-old Mediterranean mother in an oatmeal merino wool sweater stands beside the 60-year-old silver-haired bearded historian in a brown tweed jacket and speaks clearly on camera with natural lip-sync: \"Every child in this room is a real human soul, Inspector, not a number on a brass plate.\"",
+    "85mm Panavision portrait lens at T1.5 shallow depth-of-field close-up on authentic adult faces with natural skin pores. The 35-year-old Nordic female auditor in a navy wool overcoat looks at the lead inspector and speaks clearly on camera with natural lip-sync: \"One signature is all it takes. Tonight we choose humanity over the census law.\"",
+    "35mm Panavision Primo lens at T2.0 dolly push-in across the oak table. The 42-year-old weathered Italian lead inspector unpins his brass badge, presses the green approval stamp onto the family ledger, and speaks clearly on camera with natural lip-sync: \"I am unpinning my badge. Take my place on the register, and let your family live free.\"",
+    "50mm Panavision Primo lens at T1.8 intimate handheld framing inside the apartment study. The 60-year-old silver-haired bearded historian in a brown tweed jacket places a warm hand on the inspector shoulder and speaks clearly on camera with natural lip-sync: \"History will remember the courage spoken inside these apartment walls tonight.\"",
+    "24mm Wide Panavision anamorphic crane shot in a rain-washed Milanese stone apartment courtyard at 5400K dawn. The 35-year-old Nordic female auditor stands on the stone colonnade beside the mother and historian and speaks clearly on camera with natural lip-sync: \"Walk out into the morning rain. The courtyard stands with you, unregistered and finally free.\"",
+    "35mm Panavision Primo lens at T1.8 inside a wood-paneled European municipal tribunal chamber with tall rain-streaked arched windows and brass desk lamps. The 38-year-old defense counsel in a charcoal three-piece wool suit stands before a mahogany table holding a leather dossier beside the 42-year-old weathered Italian inspector in his olive wool trench coat and speaks clearly on camera with natural lip-sync: \"The tribunal in Geneva just received the encrypted ledger. They know the tenth billionth child is alive.\"",
+    "50mm Panavision Primo lens at T1.8 inside a historic stone clock-tower acoustic relay room with warm tungsten vacuum-tube meters and copper wiring. The 29-year-old East Asian acoustic archivist in a slate-grey cashmere turtleneck adjusts a brass rotary dial beside the 35-year-old Nordic female auditor in her navy wool coat and speaks clearly on camera with natural lip-sync: \"I routed the acoustic beacon through the cathedral bells. Every district in Milan can hear the truth now.\"",
+    "85mm Panavision portrait lens at T1.5 inside a vaulted stone municipal archive lined with leather-bound census volumes. The 60-year-old silver-haired bearded historian in a brown tweed jacket closes a heavy registry book and speaks clearly on camera with natural lip-sync: \"For thirty years they ruled by fear and arithmetic. Today, the arithmetic broke.\"",
+    "35mm Panavision Primo lens at T2.0 tracking shot along a rain-washed Milanese stone balcony overlooking a wide cobbled piazza at sunrise. The 31-year-old Mediterranean mother in an oatmeal merino wool sweater looks across the open square as adult neighbors open their wooden shutters and speaks clearly on camera with natural lip-sync: \"Look at the balconies across the square. Nobody is hiding behind closed shutters anymore.\"",
+    "50mm Panavision Primo lens at T1.8 at the wrought-iron entrance gates of the stone piazza in cool morning light. The 38-year-old defense counsel in a charcoal three-piece wool suit stands shoulder to shoulder with the 42-year-old Italian inspector and the 29-year-old East Asian archivist and speaks clearly on camera with natural lip-sync: \"Let the enforcers come. You cannot arrest an entire city that refuses to erase its children.\"",
+    "24mm Wide Panavision anamorphic crane finale across the sunlit Milanese stone piazza as golden 5600K morning light breaks through the clouds over wet cobblestones. All six adult protagonists in wool coats and sweaters stand together in the open square surrounded by quiet, dignified citizens as the 42-year-old Italian lead inspector speaks clearly on camera with natural lip-sync: \"The sun is rising over the stone courtyard. Every voice is counted, and every life remains ours.\""
+  ],
+  "leadPhotoUrl": "/assets/characters/gianluigi_moretti.jpg",
+  "status": "completed",
+  "stageIndex": 0,
+  "stageLabel": "Stage 6/6 • ✅ Complete (Omni 1.1 Flash 35mm Live-Action + 48kHz Spoken Dialogue)! 120.0s Master Reel is live in the player below.",
+  "progress": 100,
+  "createdAt": 1790663346051,
+  "updatedAt": 1790663636155,
+  "logs": [
+    "[06:29:06] Launched live models/gemini-omni-1.1-flash (Native Audio) job (job_1790663346051)",
+    "[06:29:06] Reusing verified 6-turn models/gemini-omni-1.1-flash 24fps video tracks (Act 1 & Act 2) from job_1790654474523...",
+    "[06:29:06] Starting parallel Extended Multi-Scene Acts [Act 3, Act 4] (60.0s additional runtime)...",
+    "[06:30:59] ⚡ [ACT3_TURN_B] softened fashion-editorial continuation prompt for safety compliance",
+    "[06:32:07] ⚡ [ACT3_TURN_B] softened fashion-editorial continuation prompt for safety compliance",
+    "[06:32:51] ✅ Extended Act 4/4 (30.0s) locked!",
+    "[06:33:32] ✅ Extended Act 3/4 (30.0s) locked!",
+    "[06:33:32] 🎙️ Synthesizing 12-shot multi-character 48kHz spoken English dialogue via models/gemini-3.1-flash-tts-preview (Charon, Aoede, Kore, Fenrir, Puck, Leda)...",
+    "[06:33:56] 🎙️ [Spoken Dialogue Verification Gate] Verified 199 audible spoken/vocal words via models/gemini-3.5-transcribe: \"10 billion lives on the ledger, Sophia. And the rain in Milan never washes the ink away. Every child in this room is a\"",
+    "[06:33:56] ✅ COMPLETED (Omni 1.1 Flash 35mm Live-Action + 48kHz Spoken Dialogue)! Brand-new 120.0s Combined Master (4 Acts) loaded into player & saved to /library."
+  ],
+  "combinedSrc": "/assets/swarm/generated/job_1790663346051/combined_60s.mp4?t=1790663636155",
+  "part1Src": "/assets/swarm/generated/job_1790663346051/act1_30s.mp4?t=1790663636155",
+  "part2Src": "/assets/swarm/generated/job_1790663346051/act2_30s.mp4?t=1790663636155",
+  "segments": [
+    {
+      "id": "part1_30s",
+      "partIndex": 1,
+      "label": "Part 1 • Act 1 (0:00–0:30)",
+      "sublabel": "Act 1 30.0s (Omni 1.1 Flash 35mm Live-Action + 48kHz Spoken Dialogue)",
+      "rawSeconds": 30,
+      "src": "/assets/swarm/generated/job_1790663346051/act1_30s.mp4?t=1790663636155"
+    },
+    {
+      "id": "part2_30s",
+      "partIndex": 2,
+      "label": "Part 2 • Act 2 (0:30–1:00)",
+      "sublabel": "Act 2 30.0s (Omni 1.1 Flash 35mm Live-Action + 48kHz Spoken Dialogue)",
+      "rawSeconds": 30,
+      "src": "/assets/swarm/generated/job_1790663346051/act2_30s.mp4?t=1790663636155"
+    },
+    {
+      "id": "part3_30s",
+      "partIndex": 3,
+      "label": "Part 3 • Act 3 (1:00–1:30)",
+      "sublabel": "Act 3 30.0s (Omni 1.1 Flash 35mm Live-Action + 48kHz Spoken Dialogue)",
+      "rawSeconds": 30,
+      "src": "/assets/swarm/generated/job_1790663346051/act3_30s.mp4?t=1790663636155"
+    },
+    {
+      "id": "part4_30s",
+      "partIndex": 4,
+      "label": "Part 4 • Act 4 (1:30–2:00)",
+      "sublabel": "Act 4 30.0s (Omni 1.1 Flash 35mm Live-Action + 48kHz Spoken Dialogue)",
+      "rawSeconds": 30,
+      "src": "/assets/swarm/generated/job_1790663346051/act4_30s.mp4?t=1790663636155"
+    }
+  ]
+}

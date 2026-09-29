@@ -10,6 +10,8 @@ import {
   ACCESSORIES_CATALOG,
   getWardrobeForCategory,
   getById,
+  dedupeById,
+  dedupeSelectedPersonaIds,
 } from "@/lib/studioCatalog";
 import {
   Check,
@@ -34,6 +36,7 @@ export default function PersonasAndWardrobePage() {
   const [activeTab, setActiveTab] = useState<PersonaCategory>("female_lead");
   const [personas, setPersonas] = useState<PersonaDefinition[]>(PERSONAS_CATALOG);
   const [wardrobes, setWardrobes] = useState(WARDROBE_CATALOG);
+  const [accessories, setAccessories] = useState(ACCESSORIES_CATALOG);
 
   // Selected Persona IDs per Category (Exact IDs, Zero Regex)
   const [selectedIds, setSelectedIds] = useState<Record<PersonaCategory, string[]>>({
@@ -79,16 +82,10 @@ export default function PersonasAndWardrobePage() {
       if (dynRaw) {
         const dynParsed = JSON.parse(dynRaw);
         if (Array.isArray(dynParsed.personas) && dynParsed.personas.length > 0) {
-          setPersonas((prev) => {
-            const existingIds = new Set(prev.map((p) => p.id));
-            const added = dynParsed.personas.filter(
-              (p: PersonaDefinition) => !existingIds.has(p.id)
-            );
-            return [...added, ...prev];
-          });
+          setPersonas((prev) => dedupeById([...dynParsed.personas, ...prev]));
           setWardrobeMap((prev) => {
             const next = { ...prev };
-            for (const p of dynParsed.personas as PersonaDefinition[]) {
+            for (const p of dedupeById(dynParsed.personas as PersonaDefinition[])) {
               if (!next[p.id]) {
                 next[p.id] = {
                   act1Id: p.defaultAct1WardrobeId,
@@ -101,16 +98,13 @@ export default function PersonasAndWardrobePage() {
           });
         }
         if (Array.isArray(dynParsed.wardrobes) && dynParsed.wardrobes.length > 0) {
-          setWardrobes((prev) => {
-            const existingIds = new Set(prev.map((w) => w.id));
-            const added = dynParsed.wardrobes.filter(
-              (w: (typeof WARDROBE_CATALOG)[number]) => !existingIds.has(w.id)
-            );
-            return [...added, ...prev];
-          });
+          setWardrobes((prev) => dedupeById([...dynParsed.wardrobes, ...prev]));
+        }
+        if (dynParsed.accessory && typeof dynParsed.accessory.id === "string") {
+          setAccessories((prev) => dedupeById([dynParsed.accessory, ...prev]));
         }
         if (dynParsed.selectedIds) {
-          setSelectedIds(dynParsed.selectedIds);
+          setSelectedIds((prev) => dedupeSelectedPersonaIds(dynParsed.selectedIds, prev));
         }
       }
 
@@ -118,15 +112,11 @@ export default function PersonasAndWardrobePage() {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed.customPersonas) && parsed.customPersonas.length > 0) {
-          setPersonas((prev) => {
-            const existingIds = new Set(prev.map((p) => p.id));
-            const added = parsed.customPersonas.filter(
-              (p: PersonaDefinition) => !existingIds.has(p.id)
-            );
-            return [...added, ...prev];
-          });
+          setPersonas((prev) => dedupeById([...parsed.customPersonas, ...prev]));
         }
-        if (parsed.selectedIds) setSelectedIds(parsed.selectedIds);
+        if (parsed.selectedIds) {
+          setSelectedIds((prev) => dedupeSelectedPersonaIds(parsed.selectedIds, prev));
+        }
         if (parsed.wardrobeMap) {
           setWardrobeMap((prev) => ({ ...prev, ...parsed.wardrobeMap }));
         }
@@ -143,13 +133,16 @@ export default function PersonasAndWardrobePage() {
     nextWardrobeMap: Record<string, { act1Id: string; act2Id: string; accessoryId: string }>
   ) => {
     try {
-      const customPersonas = nextPersonas.filter(
+      const cleanPersonas = dedupeById(nextPersonas);
+      const cleanWardrobes = dedupeById(nextWardrobes);
+      const cleanSelectedIds = dedupeSelectedPersonaIds(nextSelectedIds);
+      const customPersonas = cleanPersonas.filter(
         (p) => !PERSONAS_CATALOG.some((base) => base.id === p.id)
       );
       localStorage.setItem(
         "zyvoriq_cast_matrix_v1",
         JSON.stringify({
-          selectedIds: nextSelectedIds,
+          selectedIds: cleanSelectedIds,
           wardrobeMap: nextWardrobeMap,
           customPersonas,
           savedAt: new Date().toISOString(),
@@ -162,9 +155,9 @@ export default function PersonasAndWardrobePage() {
         "zyvoriq_dynamic_catalog_v1",
         JSON.stringify({
           ...existingDyn,
-          personas: nextPersonas,
-          wardrobes: nextWardrobes,
-          selectedIds: nextSelectedIds,
+          personas: cleanPersonas,
+          wardrobes: cleanWardrobes,
+          selectedIds: cleanSelectedIds,
         })
       );
     } catch {
@@ -178,7 +171,7 @@ export default function PersonasAndWardrobePage() {
       const exists = list.includes(id);
       const nextList = exists
         ? list.filter((item) => item !== id)
-        : [...list, id];
+        : Array.from(new Set([...list, id]));
       const nextSelected = { ...prev, [cat]: nextList };
       persistCastAndCatalogToStorage(personas, wardrobes, nextSelected, wardrobeMap);
       return nextSelected;
@@ -263,22 +256,22 @@ export default function PersonasAndWardrobePage() {
         ),
         defaultAct1WardrobeId: defaultAct1,
         defaultAct2WardrobeId: defaultAct2,
-        defaultAccessoryId: ACCESSORIES_CATALOG[0].id,
+        defaultAccessoryId: accessories[0]?.id || ACCESSORIES_CATALOG[0].id,
       };
 
-      const nextPersonas = [created, ...personas];
+      const nextPersonas = dedupeById([created, ...personas]);
       const nextWardrobeMap = {
         ...wardrobeMap,
         [id]: {
           act1Id: defaultAct1,
           act2Id: defaultAct2,
-          accessoryId: ACCESSORIES_CATALOG[0].id,
+          accessoryId: accessories[0]?.id || ACCESSORIES_CATALOG[0].id,
         },
       };
-      const nextSelectedIds = {
+      const nextSelectedIds = dedupeSelectedPersonaIds({
         ...selectedIds,
         [activeTab]: [id, ...(selectedIds[activeTab] || [])],
-      };
+      });
 
       setPersonas(nextPersonas);
       setWardrobeMap(nextWardrobeMap);
@@ -306,20 +299,26 @@ export default function PersonasAndWardrobePage() {
     router.push("/?workflow=create");
   };
 
-  const activeCategoryPersonas = personas.filter(
-    (p) => p.category === activeTab
+  const activeCategoryPersonas = dedupeById(
+    personas.filter((p) => p.category === activeTab)
   );
-  const act1WardrobeList = wardrobes.filter(
-    (w) => w.category === activeTab && (w.act === 1 || w.act === "both")
+  const act1WardrobeList = dedupeById(
+    wardrobes.filter(
+      (w) => w.category === activeTab && (w.act === 1 || w.act === "both")
+    )
   );
-  const act2WardrobeList = wardrobes.filter(
-    (w) => w.category === activeTab && (w.act === 2 || w.act === "both")
+  const act2WardrobeList = dedupeById(
+    wardrobes.filter(
+      (w) => w.category === activeTab && (w.act === 2 || w.act === "both")
+    )
   );
 
-  const allSelectedPersonas = CATEGORY_TABS.flatMap((t) =>
-    (selectedIds[t.id] || [])
-      .map((id) => personas.find((p) => p.id === id))
-      .filter((p): p is PersonaDefinition => Boolean(p))
+  const allSelectedPersonas = dedupeById(
+    CATEGORY_TABS.flatMap((t) =>
+      (selectedIds[t.id] || [])
+        .map((id) => personas.find((p) => p.id === id))
+        .filter((p): p is PersonaDefinition => Boolean(p))
+    )
   );
 
   const selectCls =
@@ -595,7 +594,7 @@ export default function PersonasAndWardrobePage() {
                         }
                         className={selectCls}
                       >
-                        {ACCESSORIES_CATALOG.map((acc) => (
+                        {dedupeById(accessories).map((acc) => (
                           <option key={acc.id} value={acc.id}>
                             {acc.label}
                           </option>
@@ -621,9 +620,11 @@ export default function PersonasAndWardrobePage() {
 
             <div className="space-y-2.5 max-h-[540px] overflow-y-auto pr-1">
               {CATEGORY_TABS.map((tier) => {
-                const chosen = (selectedIds[tier.id] || [])
-                  .map((id) => personas.find((p) => p.id === id))
-                  .filter((p): p is PersonaDefinition => Boolean(p));
+                const chosen = dedupeById(
+                  (selectedIds[tier.id] || [])
+                    .map((id) => personas.find((p) => p.id === id))
+                    .filter((p): p is PersonaDefinition => Boolean(p))
+                );
 
                 return (
                   <div

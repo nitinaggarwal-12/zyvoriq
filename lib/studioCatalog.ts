@@ -113,6 +113,7 @@ export const COUNTRIES_CATALOG: CatalogOption[] = [
   { id: "cnt_india_haveli", regionId: "reg_south_asia", label: "India — Ancient Torchlit Haveli, Rajasthan & Temple Sanctum", promptSpec: "Ancient carved stone Indian haveli courtyard, torchlit temple pillars & misty moonlit sanctum arena" },
   { id: "cnt_india_punjab", regionId: "reg_south_asia", label: "India — Chandigarh & Amritsar Heritage", promptSpec: "Luxury Chandigarh modernist farmhouse & illuminated heritage haveli courtyard" },
   { id: "cnt_usa", regionId: "reg_north_america", label: "USA — Miami South Beach & Beverly Hills", promptSpec: "Biscayne Bay superyacht deck & Beverly Hills glass infinity mansion" },
+  { id: "cnt_italy_milan_cinema", regionId: "reg_mediterranean", label: "Italy — Milan Brutalist Corridor, Tungsten Study & Dawn Courtyard", promptSpec: "35mm live-action Milanese brutalist residential corridor with crimson plaster walls, warm 3200K tungsten apartment study with glass koi aquarium, and 5400K rain-washed stone courtyard at dawn" },
   { id: "cnt_italy", regionId: "reg_mediterranean", label: "Italy — Positano Cliffside & Capri Sea Grotto", promptSpec: "Positano lemon pergola terrace & candlelit Capri turquoise sea cave" },
   { id: "cnt_uae", regionId: "reg_middle_east", label: "UAE — Dubai Burj Helipad & Desert Oasis", promptSpec: "Burj Al Arab sky helipad & starlit Arabian desert fire-pit amphitheater" },
   { id: "cnt_south_korea", regionId: "reg_east_asia", label: "South Korea — Seoul Han River & Gangnam", promptSpec: "Seoul floating LED glass stage & Gangnam penthouse sky lounge" },
@@ -127,6 +128,7 @@ export const COUNTRIES_CATALOG: CatalogOption[] = [
 ];
 
 export const LANGUAGES_CATALOG: CatalogOption[] = [
+  { id: "lang_english_cinema", label: "English (35mm Live-Action Cinema Dialogue, Foley & Orchestral Score)", promptSpec: "48,000 Hz live-action cinema production sound, natural room foley, rain ambiance & solo cello-piano orchestral score" },
   { id: "lang_english", label: "English (Global Pop, Synthwave & R&B)", promptSpec: "English Billboard dance-pop vocals with crisp studio articulation" },
   { id: "lang_punjabi", label: "Punjabi (Bhangra, Urban Desi & Folk-Trap)", promptSpec: "Authentic Punjabi vocals with dholak, tumbi & modern sub-bass groove" },
   { id: "lang_hindi", label: "Hindi (Bollywood Glam, Club & Cinema)", promptSpec: "Expressive Hindi playback vocals with lush orchestral, dhol-brass & electronic club production" },
@@ -141,6 +143,7 @@ export const LANGUAGES_CATALOG: CatalogOption[] = [
 ];
 
 export const DEMOGRAPHIES_CATALOG: CatalogOption[] = [
+  { id: "demo_cinema_realism", label: "35mm Live-Action European Cinema • Authentic Adult Ensemble (Ages 31–60)", promptSpec: "Photorealistic 35mm live-action adult cinema actors with natural unretouched skin pores, fine lines, and nuanced human micro-expressions" },
   { id: "demo_genz_festival", label: "Gen-Z (18–24) • Viral Dance, College & Festival", promptSpec: "High-energy 18-24 youth cast, kinetic choreography & festival vibrancy" },
   { id: "demo_millennial_luxury", label: "Millennials (25–34) • Jet-Set Luxury, Yacht & Resort", promptSpec: "Sophisticated 25-34 international supermodel cast, resort & superyacht glamour" },
   { id: "demo_wedding_sangeet", label: "Family & Royal Wedding • Sangeet, Bridal & Heritage", promptSpec: "Multi-generational royal wedding celebration with bride, groom & family entourage" },
@@ -158,6 +161,7 @@ export const PLATFORMS_CATALOG: CatalogOption[] = [
 ];
 
 export const CONTENT_TYPES_CATALOG: CatalogOption[] = [
+  { id: "ctype_cinema_film", label: "35mm Live-Action Dramatic Narrative Short Film (ARRI Alexa Mini LF)", promptSpec: "Photorealistic 35mm live-action cinema storytelling shot on ARRI Alexa Mini LF with Panavision Primo anamorphic lenses, natural production sound & zero CGI" },
   { id: "ctype_music_video", label: "Music Video & Synchronized Choreography", promptSpec: "Full lip-synced musical performance with beat-matched ensemble dance" },
   { id: "ctype_wardrobe_transition", label: "Couture Wardrobe Transformation (Act I → Act II)", promptSpec: "Dramatic mid-reel outfit & venue transformation preserving exact facial identity" },
   { id: "ctype_luxury_travel", label: "Luxury Destination, Poolside & Superyacht Reel", promptSpec: "Cinematic lifestyle showcase across iconic architectural landmarks" },
@@ -170,10 +174,13 @@ export const DURATIONS_CATALOG: DurationOption[] = [
   { id: "dur_30s", seconds: 30, shotsCount: 3, label: "30 Seconds (3 Shots • Single-Act Reel)" },
   { id: "dur_60s", seconds: 60, shotsCount: 6, label: "60 Seconds (6 Shots • Full Act I + Act II Master)" },
   { id: "dur_90s", seconds: 90, shotsCount: 9, label: "90 Seconds (9 Shots • Extended Three-Act Cut)" },
-  { id: "dur_120s", seconds: 120, shotsCount: 12, label: "120 Seconds (12 Shots • Complete Music Video)" },
+  { id: "dur_120s", seconds: 120, shotsCount: 12, label: "120 Seconds (12 Shots • Complete 2-Minute Film / Music Video)" },
+  { id: "dur_180s", seconds: 180, shotsCount: 18, label: "180 Seconds (3 Minutes • 18-Shot Multi-Scene Short Film)" },
+  { id: "dur_660s", seconds: 660, shotsCount: 16, label: "11 Minutes / 660 Seconds (16-Scene Featurette • Surpasses Higgsfield CONTROL 10:19)" },
 ];
 
 export const GENRES_CATALOG: CatalogOption[] = [
+  { id: "gen_cinema_thriller", label: "Photorealistic 35mm Live-Action Cinema Score — Atmospheric Cello, Piano & Rain Foley (92 BPM)", promptSpec: "92 BPM atmospheric D-minor live-action cinema score with solo cello, felted piano, rain foley & natural room acoustics" },
   { id: "gen_dance_pop", label: "Billboard Dance-Pop & Synthwave (124 BPM)", promptSpec: "124 BPM dance-pop synthwave" },
   { id: "gen_punjabi_bhangra", label: "Punjabi Bhangra & Urban Desi Club (128 BPM)", promptSpec: "128 BPM Punjabi dholak & sub-bass club anthem" },
   { id: "gen_bollywood_glam_party", label: "Bollywood Glam Dance & Dhol-Bass Party Anthem (124 BPM)", promptSpec: "124 BPM high-energy Bollywood item-pop & street-dhol party anthem with punchy folk shehnai-synth brass hook, live dhol-tasha percussion, handclaps & deep electronic sub-bass drop" },
@@ -210,6 +217,7 @@ export const AUDIO_ENGINES_CATALOG: CatalogOption[] = [
 ];
 
 export const VENUES_CATALOG: CatalogOption[] = [
+  { id: "ven_milan_brutalist_courtyard", label: "Milan Crimson Brutalist Corridor & Koi Study → Rain-Washed Stone Courtyard at Dawn", promptSpec: "Dimly lit Milanese crimson-red brutalist corridor and warm 3200K tungsten apartment study with glowing glass koi aquarium in Act I (0:00–0:30), transitioning to a 5400K rain-washed Milanese stone courtyard at dawn in Act II (0:30–1:00)" },
   { id: "ven_pool_to_courtyard", label: "Marble Infinity Pool Deck → Torchlit Palace Courtyard", promptSpec: "Sunlit marble infinity pool deck in Act I (0:00–0:30), candlelit & torchlit Andalusian palace courtyard in Act II (0:30–1:00)" },
   { id: "ven_palace_to_yacht", label: "Royal Sandstone Palace → Twilight Superyacht Helipad", promptSpec: "Royal sandstone palace in Act I (0:00–0:30), luxury superyacht deck at twilight in Act II (0:30–1:00)" },
   { id: "ven_penthouse_to_club", label: "Glass Sky-Penthouse → Underground Laser VIP Arena", promptSpec: "Panoramic glass penthouse in Act I (0:00–0:30), neon laser VIP club in Act II (0:30–1:00)" },
@@ -218,6 +226,7 @@ export const VENUES_CATALOG: CatalogOption[] = [
 ];
 
 export const LIGHTING_CATALOG: CatalogOption[] = [
+  { id: "lit_tungsten_to_dawn", label: "3200K Tungsten & Koi Aquarium Amber (Act I) → 5400K Rain-Washed Overcast Dawn (Act II)", promptSpec: "Intimate 3200K warm tungsten table lamps and amber koi aquarium reflections in Act I transitioning to 5400K natural overcast dawn daylight on wet cobblestones in Act II" },
   { id: "lit_golden_to_midnight", label: "Golden Sunlight (Act I) → Midnight Neon & Fireworks (Act II)", promptSpec: "Warm golden hour sunbeams transitioning to midnight neon & fireworks" },
   { id: "lit_club_amber_to_neon_lasers", label: "Retro-Glam Club Amber & Chandeliers (Act I) → Multi-Spectrum Laser & Strobe Arena (Act II)", promptSpec: "Warm indoor club amber key lights, crystal chandelier reflections & stage haze in Act I transitioning to multi-spectrum concert lasers, cyan-magenta strobes & volumetric beams in Act II" },
   { id: "lit_fairylight_party", label: "Nighttime Fairy-Lights & Lanterns (Act I) → Neon Party Spotlights & Sparklers (Act II)", promptSpec: "Warm overhead canopy of glowing nighttime street fairy-lights, paper lanterns & stage haze transitioning to vibrant amber-magenta concert spotlights & golden sparkler fountains" },
@@ -242,6 +251,7 @@ export const CAMERA_MOVES_CATALOG: CatalogOption[] = [
 
 export const WARDROBE_CATALOG: WardrobeItem[] = [
   // ---- FEMALE LEADS: ACT I ----
+  { id: "w_f1_merino_cardigan", category: "female_lead", act: 1, group: "Live-Action Cinema Realism", label: "Oatmeal-Beige Merino Wool Knit Sweater & Charcoal Linen Skirt", promptSpec: "Natural unretouched oatmeal-beige merino wool knit sweater with visible yarn weave over a charcoal linen skirt" },
   { id: "w_f1_sabyasachi_crimson", category: "female_lead", act: 1, group: "South Asian Couture", label: "Royal Heritage Crimson & Gold Zardosi Bridal Lehenga", promptSpec: "Royal heritage crimson silk lehenga with heavy gold zardosi embroidery and sheer dupatta" },
   { id: "w_f1_manish_ivory", category: "female_lead", act: 1, group: "South Asian Couture", label: "Designer Ivory & Silver Chikankari Crystal Lehenga", promptSpec: "Couture ivory organza lehenga encrusted with silver crystals and chikankari threadwork" },
   { id: "w_f1_punjabi_phulkari", category: "female_lead", act: 1, group: "South Asian Couture", label: "Punjabi Rani-Pink Phulkari Patiala Suit & Paranda", promptSpec: "Vibrant rani-pink Punjabi Patiala salwar suit with gold phulkari embroidery and paranda braid" },
@@ -257,6 +267,7 @@ export const WARDROBE_CATALOG: WardrobeItem[] = [
   { id: "w_f1_milan_powersuit", category: "female_lead", act: 1, group: "Editorial Luxury", label: "Milanese CEO Tailored Ivory Double-Breasted Power Suit", promptSpec: "Sharp tailored ivory silk double-breasted blazer and wide-leg trousers with gold heels" },
 
   // ---- FEMALE LEADS: ACT II FINALE ----
+  { id: "w_f2_dawn_trench", category: "female_lead", act: 2, group: "Live-Action Cinema Realism", label: "Rain-Dampened Camel Wool Overcoat & Oatmeal Merino Knit", promptSpec: "Tailored camel wool overcoat worn over oatmeal-beige merino wool knit sweater in the morning rain" },
   { id: "w_f2_versace_chainmail", category: "female_lead", act: 2, group: "High-Glamour Finale", label: "Liquid-Gold Metallic Chainmail Backless Evening Gown", promptSpec: "Floor-length liquid-gold metallic chainmail couture gown with draped open back" },
   { id: "w_f2_emerald_ballgown", category: "female_lead", act: 2, group: "High-Glamour Finale", label: "Emerald Silk Couture Ballgown with High Slit & Tiara", promptSpec: "Regal emerald satin ballgown with crystal bodice, thigh-high slit and diamond tiara" },
   { id: "w_f2_sapphire_swarovski", category: "female_lead", act: 2, group: "High-Glamour Finale", label: "Midnight Sapphire Crystal Bodysuit & Feather Cape", promptSpec: "Sparkling midnight-sapphire crystal bodysuit with sweeping ostrich-feather cape" },
@@ -265,6 +276,7 @@ export const WARDROBE_CATALOG: WardrobeItem[] = [
   { id: "w_f2_cyber_fiberoptic", category: "female_lead", act: 2, group: "Futuristic Couture", label: "Cyber Fiber-Optic Illuminated Couture Evening Gown", promptSpec: "Sculpted architectural gown woven with glowing luminous fiber-optic threads" },
 
   // ---- MALE LEADS: ACT I ----
+  { id: "w_m1_olive_trench", category: "male_lead", act: 1, group: "Live-Action Cinema Realism", label: "Rain-Dampened Dark-Olive Wool Trench Coat & Brass Census Lapel Pin", promptSpec: "Weathered rain-dampened dark-olive wool trench coat over a charcoal cotton shirt with a brass Census Inspector lapel pin" },
   { id: "w_m1_ivory_bandhgala", category: "male_lead", act: 1, group: "South Asian Royal", label: "Royal Ivory & Gold Hand-Embroidered Bandhgala Suit", promptSpec: "Bespoke ivory silk Jodhpuri bandhgala jacket with gold threadwork and tailored trousers" },
   { id: "w_m1_punjabi_kurta_nehru", category: "male_lead", act: 1, group: "South Asian Royal", label: "Punjabi Black Silk Kurta & Gold Velvet Nehru Jacket", promptSpec: "Jet-black silk kurta pajama paired with gold-embroidered velvet Nehru jacket and mojari" },
   { id: "w_m1_emerald_sherwani", category: "male_lead", act: 1, group: "South Asian Royal", label: "Royal Heritage Emerald Velvet Sherwani & Pearl Mala", promptSpec: "Regal emerald velvet sherwani with layered pearl necklace and silk safa turban" },
@@ -274,23 +286,27 @@ export const WARDROBE_CATALOG: WardrobeItem[] = [
   { id: "w_m1_savile_row", category: "male_lead", act: 1, group: "Editorial Luxury", label: "Savile Row Charcoal Double-Breasted Pinstripe Suit", promptSpec: "Bespoke charcoal pinstripe double-breasted suit with silk pocket square" },
 
   // ---- MALE LEADS: ACT II FINALE ----
+  { id: "w_m2_unbadged_coat", category: "male_lead", act: 2, group: "Live-Action Cinema Realism", label: "Unbadged Dark-Olive Wool Trench Coat (Badge Removed in Defiance)", promptSpec: "Buttoned dark-olive wool trench coat with the brass lapel pin removed, wet from morning courtyard rain" },
   { id: "w_m2_midnight_tuxedo", category: "male_lead", act: 2, group: "Black-Tie Finale", label: "Midnight-Velvet Tuxedo with Crystal Lapels", promptSpec: "Custom midnight-blue velvet dinner jacket with Swarovski crystal lapels and black silk shirt" },
   { id: "w_m2_gold_sherwani", category: "male_lead", act: 2, group: "South Asian Finale", label: "Metallic Gold Brocade Royal Reception Sherwani", promptSpec: "Handwoven metallic gold brocade sherwani with emerald brooch" },
   { id: "w_m2_monaco_white_tux", category: "male_lead", act: 2, group: "Black-Tie Finale", label: "All-White Monaco Superyacht Dinner Tuxedo", promptSpec: "Sharp all-white shawl-lapel dinner tuxedo with gold chronograph watch" },
   { id: "w_m2_crimson_velvet", category: "male_lead", act: 2, group: "Black-Tie Finale", label: "Crimson Velvet Double-Breasted Headliner Suit", promptSpec: "Deep crimson velvet double-breasted stage suit with gold chain detailing" },
 
   // ---- SUPPORTING CAST WARDROBE (ACT I -> ACT II EVOLUTION) ----
+  { id: "w_sup_tweed_scholar", category: "supporting", act: "both", group: "Live-Action Cinema Realism", label: "Herringbone Brown Tweed Scholar Jacket & Wire-Rimmed Glasses", promptSpec: "Act I: Lived-in brown herringbone tweed jacket over cream Oxford shirt & wire-rimmed glasses → Act II: Tweed jacket with wool scarf on the dawn courtyard balcony" },
   { id: "w_sup_chrome_dj", category: "supporting", act: "both", group: "Supporting Stage", label: "Supporting Musicians Act I Linen/Chrome → Act II Illuminated Stage Ensemble", promptSpec: "Act I: Tailored white resort linen & brushed-silver stage vest with live acoustic guitar/cajón straps → Act II: Reflective silver-chrome DJ & horn-section jacket with LED visor and gold-piped cuffs" },
   { id: "w_sup_gold_musician", category: "supporting", act: "both", group: "Supporting Stage", label: "Virtuoso Musicians Act I Silk → Act II Gold-Brocade Finale Attire", promptSpec: "Act I: Tailored charcoal silk musician attire with brass horn & percussion harnesses → Act II: Jet-black velvet & metallic gold-brocade concert ensemble" },
   { id: "w_sup_bridesmaid_pastel", category: "supporting", act: "both", group: "Supporting Stage", label: "Coordinated Pastel Rose (Act I) → Champagne Mirror-Work (Act II) Ensemble", promptSpec: "Act I: Coordinated pastel rose-gold silk lehengas and bandhgalas → Act II: Shimmering champagne mirror-work finale ensembles" },
 
   // ---- BACKGROUND PERFORMERS WARDROBE (ACT I -> ACT II EVOLUTION) ----
+  { id: "w_bg_census_marshals", category: "background", act: "both", group: "Live-Action Cinema Realism", label: "Tailored Navy & Slate Wool Overcoats with Leather Census Ledgers", promptSpec: "Act I: Tailored navy and slate-grey heavy wool overcoats holding leather-bound registry ledgers → Act II: Overcoats lowered at their sides in quiet courtyard solidarity" },
   { id: "w_bg_monochrome_black", category: "background", act: "both", group: "Choreography Uniform", label: "8-Dancer Crew Act I Matte Street-Couture → Act II Chrome-Harness Uniform", promptSpec: "Act I: Coordinated matte-black technical streetwear dance uniform → Act II: High-contrast obsidian & reflective silver-harness V-formation finale uniform" },
   { id: "w_bg_bhangra_gold", category: "background", act: "both", group: "Choreography Uniform", label: "8-Dancer Bhangra Crew Act I Crimson → Act II Gold Zari Troupe Attire", promptSpec: "Act I: Vibrant crimson Punjabi bhangra vests, lungis, and pagris → Act II: Royal metallic-gold zari & mirror-work finale bhangra uniform" },
   { id: "w_bg_white_riviera", category: "background", act: "both", group: "Choreography Uniform", label: "8-Dancer Mediterranean Crew Act I White Silk → Act II Gold-Trimmed Midnight Ensemble", promptSpec: "Act I: Synchronized all-white flowing silk and linen resort choreography outfits → Act II: Midnight-navy & liquid-gold trimmed V-formation finale dancewear" },
   { id: "w_bg_flamenco_red", category: "background", act: "both", group: "Choreography Uniform", label: "8-Dancer Seville Crew Act I Scarlet → Act II Black-Gold Flamenco Troupe", promptSpec: "Act I: Coordinated scarlet ruffled flamenco performance attire → Act II: High-contrast obsidian & gold-embroidered midnight flamenco finale attire" },
 
   // ---- AUDIENCE & CROWD WARDROBE (ACT I -> ACT II EVOLUTION) ----
+  { id: "w_aud_milan_neighbors", category: "audience", act: "both", group: "Live-Action Cinema Realism", label: "Everyday Milanese Wool Coats, Cashmere Scarves & Knit Cardigans", promptSpec: "Act I: Quiet apartment building residents in lived-in wool cardigans and cotton shirts → Act II: Neighbors in everyday wool overcoats and scarves standing on stone balconies at dawn" },
   { id: "w_aud_yacht_glam", category: "audience", act: "both", group: "Crowd Dress Code", label: "VIP Entourage Act I Pool Club Linen → Act II Midnight Gala Dress Code", promptSpec: "Act I: Chic Mediterranean VIP crowd in sunlit silk resort dresses, linen suits and sunglasses → Act II: Torchlit midnight cocktail gowns, velvet dinner jackets and golden sparklers" },
   { id: "w_aud_sangeet_royal", category: "audience", act: "both", group: "Crowd Dress Code", label: "Royal Sangeet Crowd Act I Pastel Silk → Act II Jewel-Tone Finale Attire", promptSpec: "Act I: Festive courtyard audience in pastel silk sarees and kurtas → Act II: Grand reception jewel-toned Banarasi silk lehengas and embroidered sherwanis" },
   { id: "w_aud_black_tie_gala", category: "audience", act: "both", group: "Crowd Dress Code", label: "VIP Gala Crowd Act I Cocktail → Act II Met-Gala Black-Tie Ballgowns", promptSpec: "Act I: Upscale architectural lounge guests in tailored cocktail attire → Act II: Full Met-Gala black-tie tuxedos and crystal evening ballgowns" },
@@ -298,6 +314,7 @@ export const WARDROBE_CATALOG: WardrobeItem[] = [
 ];
 
 export const ACCESSORIES_CATALOG: AccessoryItem[] = [
+  { id: "acc_brass_ledger", label: "Leather-Bound Census Ledger + Brass Lapel Pin + Steel Ink Stamp", promptSpec: "Weathered leather-bound paper registry ledger, brass lapel badge, fountain pen and heavy steel ink hand-stamp" },
   { id: "acc_gold_stilettos_waves", label: "Gold Stilettos + Hollywood Waves + Diamond Chandeliers", promptSpec: "Strappy gold metallic stilettos, glossy waves and diamond chandelier earrings" },
   { id: "acc_tiara_crystal_heels", label: "Diamond Tiara + Sleek High Ponytail + Crystal Heels", promptSpec: "Royal diamond tiara, sleek high ponytail and Swarovski crystal heels" },
   { id: "acc_punjabi_juttis_jhumka", label: "Punjabi Paranda Braid + Kundan Jhumkas + Gold Juttis", promptSpec: "Traditional paranda tassel braid, heavy kundan jhumka earrings and embroidered juttis" },
@@ -311,6 +328,30 @@ export const ACCESSORIES_CATALOG: AccessoryItem[] = [
 
 export const PERSONAS_CATALOG: PersonaDefinition[] = [
   // ---- 1. FEMALE LEADS ----
+  {
+    id: "p_fem_elena_moretti",
+    category: "female_lead",
+    name: "Elena Moretti",
+    roleTitle: "Lead Dramatic Actress (Mother & Architect)",
+    ethnicity: "Italian / Mediterranean",
+    facialSpec: "31yo Mediterranean woman with authentic unretouched skin pores, tear-glistened dark brown eyes, natural forehead lines, chestnut hair tied loosely back",
+    photoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn1C.jpg",
+    defaultAct1WardrobeId: "w_f1_merino_cardigan",
+    defaultAct2WardrobeId: "w_f2_dawn_trench",
+    defaultAccessoryId: "acc_brass_ledger",
+  },
+  {
+    id: "p_fem_sofia_lindqvist",
+    category: "female_lead",
+    name: "Auditor Sofia Lindqvist",
+    roleTitle: "Co-Lead Dramatic Actress (Senior Census Auditor)",
+    ethnicity: "Nordic / European",
+    facialSpec: "35yo Nordic-European woman with natural skin freckles, pale blue-grey eyes, blonde hair in a low bun, conflicted compassionate expression",
+    photoUrl: "/assets/characters/freja_moller_dk.jpg",
+    defaultAct1WardrobeId: "w_f1_merino_cardigan",
+    defaultAct2WardrobeId: "w_f2_dawn_trench",
+    defaultAccessoryId: "acc_brass_ledger",
+  },
   {
     id: "p_fem_ananya",
     category: "female_lead",
@@ -386,6 +427,18 @@ export const PERSONAS_CATALOG: PersonaDefinition[] = [
 
   // ---- 2. MALE LEADS ----
   {
+    id: "p_male_matteo_conti",
+    category: "male_lead",
+    name: "Inspector Matteo Conti",
+    roleTitle: "Lead Dramatic Actor (Senior Census Inspector)",
+    ethnicity: "Italian / European",
+    facialSpec: "42yo weathered Italian-European man with natural skin pores, three-day salt-and-pepper beard, deep expressive hazel eyes, stoic moral gravity",
+    photoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn1A.jpg",
+    defaultAct1WardrobeId: "w_m1_olive_trench",
+    defaultAct2WardrobeId: "w_m2_unbadged_coat",
+    defaultAccessoryId: "acc_brass_ledger",
+  },
+  {
     id: "p_male_aarav",
     category: "male_lead",
     name: "Aarav Kapoor",
@@ -436,6 +489,18 @@ export const PERSONAS_CATALOG: PersonaDefinition[] = [
 
   // ---- 3. SUPPORTING CAST ----
   {
+    id: "p_sup_lorenzo_ferri",
+    category: "supporting",
+    name: "Dr. Lorenzo Ferri",
+    roleTitle: "Supporting Character Actor (Family Patriarch & Historian)",
+    ethnicity: "Italian / European",
+    facialSpec: "60yo silver-haired bearded Italian scholar with wire-rimmed glasses, weathered skin texture, dignified paternal warmth",
+    photoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn2B.jpg",
+    defaultAct1WardrobeId: "w_sup_tweed_scholar",
+    defaultAct2WardrobeId: "w_sup_tweed_scholar",
+    defaultAccessoryId: "acc_brass_ledger",
+  },
+  {
     id: "p_sup_dj_aria",
     category: "supporting",
     name: "DJ Aria Vance",
@@ -474,6 +539,18 @@ export const PERSONAS_CATALOG: PersonaDefinition[] = [
 
   // ---- 4. BACKGROUND PERFORMERS ----
   {
+    id: "p_bg_census_marshals",
+    category: "background",
+    name: "4 Municipal Registry Marshals",
+    roleTitle: "Supporting Ministry Escort Ensemble",
+    ethnicity: "European Ensemble",
+    facialSpec: "4 realistic adult municipal officers in heavy wool overcoats who witness Matteo's act of conscience and stand down in quiet solidarity",
+    photoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn2A.jpg",
+    defaultAct1WardrobeId: "w_bg_census_marshals",
+    defaultAct2WardrobeId: "w_bg_census_marshals",
+    defaultAccessoryId: "acc_brass_ledger",
+  },
+  {
     id: "p_bg_hiphop_8",
     category: "background",
     name: "8 Synchronized Tour Dancers",
@@ -511,6 +588,18 @@ export const PERSONAS_CATALOG: PersonaDefinition[] = [
   },
 
   // ---- 5. AUDIENCE & CROWD PERSONAS ----
+  {
+    id: "p_aud_milan_neighbors",
+    category: "audience",
+    name: "12 Milanese Courtyard Residents",
+    roleTitle: "Apartment Balcony & Courtyard Witnesses",
+    ethnicity: "Italian / European Multi-Generational",
+    facialSpec: "12 authentic adult neighborhood residents in everyday wool coats standing along the stone balconies in silent solidarity at dawn",
+    photoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn2C.jpg",
+    defaultAct1WardrobeId: "w_aud_milan_neighbors",
+    defaultAct2WardrobeId: "w_aud_milan_neighbors",
+    defaultAccessoryId: "acc_brass_ledger",
+  },
   {
     id: "p_aud_yacht_vip",
     category: "audience",
@@ -554,6 +643,107 @@ export const PERSONAS_CATALOG: PersonaDefinition[] = [
 // ============================================================================
 
 export const INITIAL_REELS_REPOSITORY: StudioReelRecord[] = [
+  {
+    id: "reel_ten_billionth_pulse_60s",
+    title: "The Ten Billionth Pulse — Beyond Control (60s 35mm Live-Action Master)",
+    status: "published",
+    progress: 100,
+    videoUrl: "/assets/swarm/generated/job_1790654474523/combined_60s.mp4",
+    durationId: "dur_60s",
+    countryId: "cnt_italy_milan_cinema",
+    regionId: "reg_mediterranean",
+    languageId: "lang_english_cinema",
+    demographyId: "demo_cinema_realism",
+    platformId: "plat_yt_music",
+    contentTypeId: "ctype_cinema_film",
+    genreId: "gen_cinema_thriller",
+    vocalId: "voc_duet",
+    venueId: "ven_milan_brutalist_courtyard",
+    lightingId: "lit_tungsten_to_dawn",
+    selectedPersonaIds: {
+      female_lead: ["p_fem_elena_moretti", "p_fem_sofia_lindqvist"],
+      male_lead: ["p_male_matteo_conti"],
+      supporting: ["p_sup_lorenzo_ferri"],
+      background: ["p_bg_census_marshals"],
+      audience: ["p_aud_milan_neighbors"],
+    },
+    wardrobeOverrides: {},
+    shots: [
+      {
+        shotId: "shot_1",
+        shotNumber: 1,
+        timecode: "0:00–0:10",
+        act: 1,
+        cameraMoveId: "cam_push_in",
+        actionPrompt:
+          "35mm Panavision Primo T1.8 low-angle tracking shot inside a dimly lit Milanese crimson-red brutalist corridor with rain-streaked clerestory glass. Inspector Matteo Conti (42, weathered Italian man with salt-and-pepper beard in damp dark-olive wool trench coat) walks beside Auditor Sofia Lindqvist (35, navy wool overcoat, leather census ledger) and pauses with his hand against the crimson plaster wall before knocking.",
+        wardrobeSummary: "Rain-Dampened Dark-Olive Wool Trench Coat • Tailored Navy Wool Overcoat",
+        lyricLine: "[Shot 01 • Inspector Matteo Conti] Ten billion lives on the ledger, and the rain never washes the ink away (92 BPM)",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn1A.jpg",
+      },
+      {
+        shotId: "shot_2",
+        shotNumber: 2,
+        timecode: "0:10–0:20",
+        act: 1,
+        cameraMoveId: "cam_dolly_track",
+        actionPrompt:
+          "50mm Panavision Primo T1.8 Steadicam tracking inside a warm 3200K tungsten-lit Milanese apartment study with a glowing glass koi aquarium. Inspector Matteo Conti opens the leather-bound census ledger on the oak table across from Elena Moretti (31, oatmeal merino wool knit sweater) and Dr. Lorenzo Ferri (60, herringbone tweed jacket).",
+        wardrobeSummary: "Oatmeal-Beige Merino Wool Knit Sweater • Dark-Olive Wool Trench Coat",
+        lyricLine: "[Shot 02 • Elena Moretti] Every life in this room is real, not a number on a brass plate",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn1B.jpg",
+      },
+      {
+        shotId: "shot_3",
+        shotNumber: 3,
+        timecode: "0:20–0:30",
+        act: 1,
+        cameraMoveId: "cam_closeup_85mm",
+        actionPrompt:
+          "85mm Panavision portrait lens @ T1.5 shallow depth-of-field close-up on Elena Moretti's authentic unretouched face with natural skin pores, forehead lines, and tear-glistened dark brown eyes as she looks directly at Inspector Matteo Conti in quiet moral courage.",
+        wardrobeSummary: "Oatmeal-Beige Merino Wool Knit Sweater • Unretouched 35mm Portrait Realism",
+        lyricLine: "[Shot 03 • Auditor Sofia Lindqvist] One second is all it takes to choose humanity over the law",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn1C.jpg",
+      },
+      {
+        shotId: "shot_4",
+        shotNumber: 4,
+        timecode: "0:30–0:40",
+        act: 2,
+        cameraMoveId: "cam_push_in",
+        actionPrompt:
+          "35mm Panavision Primo @ T2.0 dolly push-in across the oak table: Inspector Matteo Conti unpins his brass Census Officer badge, places it onto the wooden table, and stamps green approval onto Elena Moretti's family ledger while Auditor Sofia Lindqvist watches in silent solidarity.",
+        wardrobeSummary: "Unbadged Dark-Olive Wool Trench Coat • Brass Census Badge on Oak Table",
+        lyricLine: "[Shot 04 • Matteo Conti & Elena Moretti] Take my place on the register, let a new dawn begin",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn2A.jpg",
+      },
+      {
+        shotId: "shot_5",
+        shotNumber: 5,
+        timecode: "0:40–0:50",
+        act: 2,
+        cameraMoveId: "cam_closeup_85mm",
+        actionPrompt:
+          "50mm Panavision Primo @ T1.8 handheld cinema framing inside the study as Dr. Lorenzo Ferri sits at the oak table in quiet reverence and Inspector Matteo Conti buttons his dark-olive wool trench coat, turning toward the door as cool 5400K dawn light filters through the sheer curtains.",
+        wardrobeSummary: "Herringbone Brown Tweed Scholar Jacket • Unbadged Dark-Olive Wool Coat",
+        lyricLine: "[Shot 05 • Dr. Lorenzo Ferri & Ensemble] Unspoken courage echoes through the quiet apartment walls",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn2B.jpg",
+      },
+      {
+        shotId: "shot_6",
+        shotNumber: 6,
+        timecode: "0:50–1:00",
+        act: 2,
+        cameraMoveId: "cam_drone_finale",
+        actionPrompt:
+          "24mm Wide Panavision anamorphic crane pull-back in a rain-washed Milanese cobblestone courtyard at 5400K dawn: Matteo Conti walks out toward the wrought-iron street gates as a free man while Elena Moretti, Sofia Lindqvist, Dr. Lorenzo Ferri, and neighborhood residents watch from the upper stone balcony in silent solidarity.",
+        wardrobeSummary: "Full 6-Persona Realistic Cinema Ensemble in Rain-Washed Dawn Courtyard",
+        lyricLine: "[Shot 06 • Full Courtyard Ensemble] Walking out into the morning rain, unregistered and finally free",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn2C.jpg",
+      },
+    ],
+    updatedAt: "2026-09-29 04:08",
+  },
   {
     id: "reel_spain_girls_60s",
     title: "Spain Marbella Golden Hour to Midnight Fiesta (60s Master)",
@@ -645,6 +835,40 @@ export function getById<T extends { id: string }>(list: T[], id: string): T {
   return list.find((item) => item.id === id) || list[0];
 }
 
+export function dedupeById<T extends { id: string }>(items: T[]): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const item of items) {
+    if (!item || typeof item.id !== "string") continue;
+    if (!seen.has(item.id)) {
+      seen.add(item.id);
+      out.push(item);
+    }
+  }
+  return out;
+}
+
+export function dedupeSelectedPersonaIds(
+  map: Partial<Record<PersonaCategory, string[]>> | undefined | null,
+  fallback?: Record<PersonaCategory, string[]>
+): Record<PersonaCategory, string[]> {
+  const categories: PersonaCategory[] = [
+    "female_lead",
+    "male_lead",
+    "supporting",
+    "background",
+    "audience",
+  ];
+  const out = {} as Record<PersonaCategory, string[]>;
+  for (const cat of categories) {
+    const raw = Array.isArray(map?.[cat]) ? map![cat]! : fallback?.[cat] || [];
+    out[cat] = Array.from(
+      new Set(raw.filter((id): id is string => typeof id === "string" && id.length > 0))
+    );
+  }
+  return out;
+}
+
 export function getWardrobeForCategory(
   category: PersonaCategory,
   act?: 1 | 2
@@ -655,3 +879,4 @@ export function getWardrobeForCategory(
       (act === undefined || w.act === act || w.act === "both")
   );
 }
+

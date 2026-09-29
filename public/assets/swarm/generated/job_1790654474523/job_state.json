@@ -1,0 +1,58 @@
+{
+  "id": "job_1790654474523",
+  "title": "The Ten Billionth Pulse — Beyond Control",
+  "genre": "Photorealistic 35mm Live-Action Cinema Score — Atmospheric Cello, Piano & Rain Foley (92 BPM D Minor)",
+  "bpm": 92,
+  "audioEngine": "omni_native",
+  "lyrics": "[Shot 01 • Inspector Matteo Conti] Ten billion lives on the ledger, and the rain never washes the ink away (92 BPM)\n[Shot 02 • Elena Moretti] Every life in this room is real, not a number on a brass plate\n[Shot 03 • Auditor Sofia Lindqvist] One second is all it takes to choose humanity over the law\n[Shot 04 • Matteo Conti & Elena Moretti] Take my place on the register, let a new dawn begin\n[Shot 05 • Dr. Lorenzo Ferri & Ensemble] Unspoken courage echoes through the quiet apartment walls\n[Shot 06 • Full Courtyard Ensemble] Walking out into the morning rain, unregistered and finally free",
+  "voiceType": "48,000 Hz Live-Action Cinema Production Sound, Natural Room Foley & Solo Cello-Piano Score",
+  "language": "English (Live-Action Cinema Dialogue & Score)",
+  "act1Prompt": "Photorealistic 35mm live-action cinema shot on ARRI Alexa Mini LF with Panavision Primo anamorphic lenses in Milan. 100% authentic adult cinema actors with natural unretouched skin pores, real wool and cotton coats, and real architectural interiors. Inspector Matteo Conti (42, weathered Italian man with salt-and-pepper beard in damp dark-olive wool trench coat) and Auditor Sofia Lindqvist (35, Nordic woman in navy wool overcoat) walk down a textured crimson-red brutalist corridor and enter a warm tungsten-lit apartment study with a glowing glass koi aquarium where Elena Moretti (31, Mediterranean woman in oatmeal merino knit sweater) and Dr. Lorenzo Ferri (60, silver-haired scholar in tweed jacket) await the final census audit.",
+  "act2Prompt": "Photorealistic 35mm live-action cinema finale shot on ARRI Alexa Mini LF. Inside the Milanese apartment study, Inspector Matteo Conti unpins his brass Officer badge, stamps green authorization onto Elena Moretti family ledger while Auditor Sofia Lindqvist lowers her pen in silent complicity, and Matteo walks out into the rain-washed stone courtyard at 5400K dawn surrounded by Elena, Sofia, Dr. Ferri, and adult neighborhood residents standing on the balconies in quiet solidarity.",
+  "turnPrompts": [
+    "Photorealistic 35mm live-action cinema shot on ARRI Alexa Mini LF with 35mm Panavision Primo lens at T1.8. Inside a real, dimly lit Milanese brutalist residential corridor with textured crimson-red plaster walls, rain-streaked clerestory glass windows, and wet terrazzo stone floors. Matteo Conti (42-year-old weathered Italian-European man with natural skin pores, three-day salt-and-pepper beard, deep expressive hazel eyes, wearing a damp dark-olive wool trench coat over a charcoal cotton shirt and brass lapel pin) walks slowly beside Sofia Lindqvist (35-year-old Nordic-European woman with natural freckles, blonde hair in a low bun, wearing a tailored navy wool overcoat, holding a leather-bound census ledger). Matteo stops by a heavy wooden apartment door, rests his weathered hand against the crimson plaster wall, and exhales with quiet moral gravity. Natural 48kHz stereo sound of rain tapping on glass, leather footsteps on stone, and deep atmospheric cello notes.",
+    "50mm Panavision Primo lens at T1.8, smooth Steadicam tracking movement inside a warm, lived-in Milanese apartment study lit by 3200K tungsten table lamps and the soft amber glow of a real glass aquarium containing swimming orange koi fish. Matteo Conti (42, olive wool coat, salt-and-pepper beard) and Sofia Lindqvist (35, navy wool coat) stand across an oak table from Elena Moretti (31-year-old Mediterranean woman with natural unretouched skin texture, tear-glistened dark brown eyes, chestnut hair tied loosely back, wearing an oatmeal-beige merino wool knit sweater) and Dr. Lorenzo Ferri (60-year-old silver-haired bearded historian with wire-rimmed glasses in a brown tweed jacket). Matteo opens the brass-bound census ledger on the wooden table as all four adult actors exchange tense, deeply human glances. Natural room acoustics, subtle rain outside, and soft cello-piano tension.",
+    "85mm Panavision portrait lens at T1.5, shallow depth of field rack-focus close-up on authentic adult human faces with natural skin pores, fine lines, and genuine eye moisture. Elena Moretti (31, oatmeal knit sweater) looks directly into the eyes of Matteo Conti (42, bearded, olive wool coat) with quiet, dignified courage and places her hand gently beside the open paper registry ledger on the wooden table. Matteo looks from the glowing koi fish tank to Elena eyes; his jaw softens as he makes a life-altering decision to defy the census cap. Intimate breathing, quiet ticking wall clock, and swelling emotional strings.",
+    "35mm Panavision Primo lens at T2.0, dynamic dolly push-in across the oak table inside the apartment study. Matteo Conti (42, salt-and-pepper beard, olive wool coat) unpins his brass Census Officer badge from his lapel, sets it down on the wooden table, takes the heavy steel hand-stamp, and firmly presses an inked green approval seal onto Elena Moretti family registration page. Beside him, Sofia Lindqvist (35, navy wool coat) watches in stunned silence, then slowly lowers her fountain pen and nods in quiet solidarity while Dr. Lorenzo Ferri (60, tweed jacket) watches with profound respect. Crisp physical foley of the brass badge and stamp hitting paper with emotional orchestral strings.",
+    "50mm Panavision Primo lens at T1.8, intimate handheld cinema framing. Elena Moretti (31, oatmeal merino sweater) presses her hand to her chest as tears of relief glisten in her dark brown eyes, and she clasps Matteo Conti weathered hands across the table in silent gratitude. Dr. Lorenzo Ferri places a warm hand on Matteo shoulder. Matteo offers a gentle, stoic nod, buttons his dark-olive wool trench coat, and turns toward the apartment hallway door as cool 5400K dawn light filters through the rain-wet windows. Rich acoustic cello and piano chord progression.",
+    "24mm Wide Panavision anamorphic crane pull-back in a real, expansive Milanese stone apartment courtyard at dawn under 5400K natural overcast daylight and glistening wet cobblestones. Matteo Conti (42, olive wool coat, salt-and-pepper beard) walks out into the open courtyard toward the iron street gates, breathing in the cool morning air as a free man. Along the stone colonnade and upper apartment balconies, Elena Moretti, Sofia Lindqvist, Dr. Lorenzo Ferri, and a dozen adult neighborhood residents in everyday wool coats stand watching him in quiet, dignified solidarity. Soaring, cathartic live orchestral cello and piano finale with natural morning rain ambiance."
+  ],
+  "leadPhotoUrl": "/assets/characters/gianluigi_moretti.jpg",
+  "status": "completed",
+  "stageIndex": 0,
+  "stageLabel": "Stage 6/6 • ✅ Complete (Omni 1.1 Flash Native Audio)! 60.0s Master Reel is live in the player below.",
+  "progress": 100,
+  "createdAt": 1790654474523,
+  "updatedAt": 1790654928408,
+  "logs": [
+    "[04:01:14] Launched live models/gemini-omni-1.1-flash (Native Audio) job (job_1790654474523)",
+    "[04:01:14] Calling models/gemini-omni-1.1-flash for Act I Turn 1A (00:00–00:10)... Prompt: \"Photorealistic 35mm live-action cinema shot on ARRI Alexa Mini LF with 35mm Panavision Pri...\"",
+    "[04:01:52] Act I Turn 1A ready (v1_ChdMVGk3YXNUTkNMTDQtOFlQeEplYjBBZxIXTFRpN2FzVE5DTEw0LThZUHhKZWIwQWc) — live preview loaded into player!",
+    "[04:03:17] Act I Turn 1B ready (v1_ChdMVGk3YXNUTkNMTDQtOFlQeEplYjBBZxIXZ0RpN2F1YUNMWlMzc09JUHByNmY0UUk) — player updated to 20.0s!",
+    "[04:04:58] Act I full 30.0s Master locked & 3 biometric/wardrobe anchor photos (t=2.0s, 5.0s, 8.5s) extracted! Starting Act II Turn 2A...",
+    "[04:05:37] Act II Turn 2A ready (v1_Chc2amk3YXRUNkpLdlotOFlQMV9IQWlRSRIXNmppN2F0VDZKS3ZaLThZUDFfSEFpUUk) — extending Act II to 20.0s...",
+    "[04:06:54] Act II Turn 2B (20.0s) complete (v1_Chc2amk3YXRUNkpLdlotOFlQMV9IQWlRSRIXV1RtN2FzNzZQTnZ4anJFUG5Ocmc2QWs) — generating final Turn 2C (30.0s)...",
+    "[04:08:48] ✅ COMPLETED (Omni 1.1 Flash Native Audio)! Brand-new 60.0s Combined Master + Part 1 + Part 2 loaded into player & saved to /library."
+  ],
+  "combinedSrc": "/assets/swarm/generated/job_1790654474523/combined_60s.mp4?t=1790654928408",
+  "part1Src": "/assets/swarm/generated/job_1790654474523/act1_30s.mp4?t=1790654928408",
+  "part2Src": "/assets/swarm/generated/job_1790654474523/act2_30s.mp4?t=1790654928408",
+  "segments": [
+    {
+      "id": "part1_30s",
+      "partIndex": 1,
+      "label": "Part 1 • Act I (0:00–0:30)",
+      "sublabel": "Act I 30.0s (Omni 1.1 Flash Native Audio)",
+      "rawSeconds": 30,
+      "src": "/assets/swarm/generated/job_1790654474523/act1_30s.mp4?t=1790654928408"
+    },
+    {
+      "id": "part2_30s",
+      "partIndex": 2,
+      "label": "Part 2 • Act II (0:30–1:00)",
+      "sublabel": "Act II 30.0s (Omni 1.1 Flash Native Audio)",
+      "rawSeconds": 30,
+      "src": "/assets/swarm/generated/job_1790654474523/act2_30s.mp4?t=1790654928408"
+    }
+  ]
+}

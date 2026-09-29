@@ -18,7 +18,7 @@ export interface LibraryAssetItem {
   frames: number;
   fps: string;
   audioSpec: string;
-  partIndex?: 1 | 2;
+  partIndex?: number;
   speedMultiplier?: number;
   wardrobe: string;
   location: string;

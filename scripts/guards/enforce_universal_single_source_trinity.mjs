@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * UNIVERSAL SINGLE-SOURCE TRINITY ENFORCER & AUTO-HEALER (v6.1.0)
+ * UNIVERSAL SINGLE-SOURCE TRINITY ENFORCER & AUTO-HEALER (v6.2.0)
  * ===============================================================
  * Enforces 100% single-inode symlink identity across all universal governance pillars:
  *   1. ~/.gemini/config/hooks.json                             (all project/plugin hooks.json -> symlink, including root hooks.json)
  *   2. ~/.gemini/config/skills.md                              (all project skills.md -> symlink)
- *   3. ~/.gemini/config/skills.json                            (all project skills.json + .datacloud_skills_manifest -> symlink, with live 51-skill SHA-256 sync)
+ *   3. ~/.gemini/config/skills.json                            (all project skills.json + .datacloud_skills_manifest -> symlink, with live 52-skill SHA-256 sync)
  *   4. ~/.gemini/config/AGENTS.md                              (all project AGENTS.md / GEMINI.md / CLAUDE.md -> symlink)
  *   5. ~/.gemini/config/plugins/zyvoriq_guard/plugin.json      (workspace plugins/zyvoriq_guard/plugin.json -> symlink)
  *   6. /Users/nitinagga/Documents/zyvoriq/lib/rules_engine.mjs (plugin lib/rules_engine.mjs copies -> symlink)
- *   7. ~/.gemini/config/skills                                 (workspace skills/ & .agents/skills -> directory symlink)
+ *   7. ~/.gemini/config/skills                                 (workspace skills/ & .agents/skills -> directory symlink, safely merging local skills first)
  *
  * Also automatically purges any stale shadow backup or static garbage files
  * (*.shadow_backup, *~origin_main, *.bak*, ZYVORIQ_COMPLETE_CONSOLIDATED_CONFIG.md, ZYVORIQ_MD_AND_HOOKS_FORENSIC_AUDIT.md).
@@ -26,6 +26,7 @@ import { execSync } from "node:child_process";
 
 const HOME = os.homedir();
 const ZYVORIQ_ROOT = path.join(HOME, "Documents", "zyvoriq");
+const CUSTOMER_TRACKER_ROOT = path.join(HOME, "Documents", "customer-tracker");
 const AUTO_HEAL = process.argv.includes("--auto-heal") || !process.argv.includes("--verify-only");
 const SYNC_CLOUDTOP = process.argv.includes("--sync-cloudtop");
 
@@ -222,6 +223,18 @@ function enforceDirSymlinks(name, canonicalDir, targetDirs) {
       offenders.push(p);
       continue;
     }
+    // Safely preserve any local skill folders into canonicalDir before replacing directory with symlink
+    if (st && !isLink && st.isDirectory()) {
+      try {
+        for (const sub of fs.readdirSync(p, { withFileTypes: true })) {
+          const subPath = path.join(p, sub.name);
+          const destPath = path.join(canonicalDir, sub.name);
+          if (sub.isDirectory() && !fs.existsSync(destPath)) {
+            fs.cpSync(subPath, destPath, { recursive: true });
+          }
+        }
+      } catch {}
+    }
     if (st) fs.rmSync(p, { recursive: true, force: true });
     fs.mkdirSync(path.dirname(p), { recursive: true });
     fs.symlinkSync(canonicalDir, p);
@@ -247,17 +260,24 @@ function main() {
     path.join(ZYVORIQ_ROOT, "hooks.json"),
     path.join(ZYVORIQ_ROOT, ".agents", "hooks.json"),
     path.join(ZYVORIQ_ROOT, "plugins", "zyvoriq_guard", "hooks.json"),
+    path.join(CUSTOMER_TRACKER_ROOT, "hooks.json"),
+    path.join(CUSTOMER_TRACKER_ROOT, ".agents", "hooks.json"),
+    path.join(CUSTOMER_TRACKER_ROOT, ".gemini", "hooks.json"),
     ...walk(path.join(HOME, "Documents"), (n, full) => n === "hooks.json" && !EXEMPT_HOOKS.some(rx => rx.test(full))),
     ...walk(path.join(HOME, ".gemini", "config", "plugins"), (n, full) => n === "hooks.json" && !EXEMPT_HOOKS.some(rx => rx.test(full)))
   ];
 
   const skillsPaths = [
     path.join(ZYVORIQ_ROOT, "skills.md"),
+    path.join(CUSTOMER_TRACKER_ROOT, "skills.md"),
+    path.join(CUSTOMER_TRACKER_ROOT, ".agents", "skills.md"),
     ...walk(path.join(HOME, "Documents"), (n, full) => n.toLowerCase() === "skills.md" && !EXEMPT_SKILLS.some(rx => rx.test(full)))
   ];
 
   const skillsJsonPaths = [
     path.join(ZYVORIQ_ROOT, "skills.json"),
+    path.join(CUSTOMER_TRACKER_ROOT, "skills.json"),
+    path.join(CUSTOMER_TRACKER_ROOT, ".agents", "skills.json"),
     path.join(CANONICAL_SKILLS_DIR, ".datacloud_skills_manifest"),
     ...walk(path.join(HOME, "Documents"), (n) => n.toLowerCase() === "skills.json")
   ];
@@ -267,6 +287,10 @@ function main() {
     path.join(ZYVORIQ_ROOT, "GEMINI.md"),
     path.join(ZYVORIQ_ROOT, "CLAUDE.md"),
     path.join(ZYVORIQ_ROOT, ".agents", "AGENTS.md"),
+    path.join(CUSTOMER_TRACKER_ROOT, "AGENTS.md"),
+    path.join(CUSTOMER_TRACKER_ROOT, "GEMINI.md"),
+    path.join(CUSTOMER_TRACKER_ROOT, "CLAUDE.md"),
+    path.join(CUSTOMER_TRACKER_ROOT, ".agents", "AGENTS.md"),
     ...walk(path.join(HOME, "Documents"), (n) => GOV_NAMES.has(n.toLowerCase()))
   ];
 

@@ -824,6 +824,53 @@ function runGuard(rawInput) {
       }
     }
 
+    // ==================================================================
+    // RULE 40A - BAN STATIC read_url_content ON CLIENT-RENDERED VIDEO SPAs
+    // Root cause of misreading Higgsfield CONTROL (10:19 / 619s, 15 scenes)
+    // as a 26s clip: read_url_content does not execute JavaScript and misses
+    // client-rendered HLS players and API manifests.
+    // ==================================================================
+    if (decision === "allow" && !exempt && on("ban_static_read_url_on_video_platforms")) {
+      const urlArg = String(args.Url || args.url || "");
+      const isVideoPlatformUrl = /higgsfield\.ai|vimeo\.com\/\d+|tiktok\.com\/@|instagram\.com\/(?:reel|p)\//i.test(urlArg);
+      if (toolName === "read_url_content" && isVideoPlatformUrl) {
+        decision = "deny";
+        reason =
+          "[ZYVORIQ VIDEO URL PRE-FLIGHT GUARD - RULE 40A VIOLATION]: Calling static read_url_content on a client-rendered video SPA (" +
+          urlArg + ") is strictly forbidden!\n\n" +
+          "read_url_content does not execute JavaScript and returns an empty 0:00 shell on platforms like Higgsfield, causing severe duration and scene-count hallucinations.\n\n" +
+          "Remediation: Inspect the live rendered DOM using headless Chrome (executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome') and run `ffprobe` on the extracted HLS (.m3u8) / .mp4 stream first to verify exact duration, resolution, scene count, and audio tracks.";
+      }
+    }
+
+    // ==================================================================
+    // RULE 40B - BAN SPOKEN DIALOGUE STRIPPING & 6-SHOT TRUNCATION IN CINEMA MODE
+    // Root cause of silent/ambient 60s cinema output: stripping quoted lines
+    // (.replace(/"[^"]*"/g, "")) before checking isRealisticCinema, routing
+    // cinema mode through omni_lyria3 closed-lips lock, or slicing shots.slice(0, 6).
+    // ==================================================================
+    if (decision === "allow" && !exempt && isWriteOrEdit && on("ban_dialogue_stripping_in_cinema_mode")) {
+      if (/app\/swarm-MUI\/page\.tsx/i.test(effectiveTarget)) {
+        const slicesTo6 = /shots\.slice\(\s*0\s*,\s*6\s*\)\.map/i.test(writeContent);
+        if (slicesTo6) {
+          decision = "deny";
+          reason =
+            "[ZYVORIQ MULTI-SCENE DURATION GUARD - RULE 40B VIOLATION]: Detected `shots.slice(0, 6).map` in app/swarm-MUI/page.tsx!\n\n" +
+            "Hard-capping turnPrompts to 6 shots (60s) truncates multi-scene short films (90s, 120s, 180s, 660s). Pass all configured `shots.map(...)` so `/api/swarm/jobs` renders all acts.";
+        }
+      }
+      if (/app\/api\/swarm\/jobs\/route\.ts/i.test(effectiveTarget)) {
+        const stripsQuotesBeforeCinemaCheck =
+          /\.replace\(\s*\/"\[\\^"\]\*"\/g[\s\S]{0,400}if\s*\(\s*isRealisticCinema\s*\)/i.test(writeContent);
+        if (stripsQuotesBeforeCinemaCheck) {
+          decision = "deny";
+          reason =
+            "[ZYVORIQ SPOKEN DIALOGUE GUARD - RULE 40B VIOLATION]: Detected `.replace(/\"[^\"]*\"/g, \"\")` executing BEFORE `if (isRealisticCinema)` in app/api/swarm/jobs/route.ts!\n\n" +
+            "Stripping quoted strings deletes character spoken dialogue lines in live-action cinema mode. Always return the preserved spoken-dialogue prompt inside `if (isRealisticCinema)` BEFORE stripping quotes for non-vocal music mode.";
+        }
+      }
+    }
+
     const out = { decision };
     if (reason) out.reason = reason;
     console.log(JSON.stringify(out));
