@@ -64,29 +64,30 @@ export default function SwarmMUIPage() {
   const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
 
   // ==========================================================================
-  // 2. STRUCTURED SELECTION STATE BY EXACT ID (ZERO REGEX)
+  // 2. STRUCTURED SELECTION STATE DERIVED FROM CATALOG MASTER (ZERO HARDCODING)
   // ==========================================================================
-  const [title, setTitle] = useState<string>("The Ten Billionth Pulse — Beyond Control");
+  const defaultMasterReel = INITIAL_REELS_REPOSITORY[0];
+  const [title, setTitle] = useState<string>(defaultMasterReel.title);
   const [storyline, setStoryline] = useState<string>(
-    "Photorealistic 35mm live-action dramatic short film set in a rain-slicked Milanese apartment block and central stone courtyard as the global population ledger approaches 9,999,999,999. Act I (0:00–0:30): Senior Census Inspector Matteo Conti and Junior Auditor Sofia Lindqvist arrive at Apartment 4B, where expectant mother Elena Moretti and retired demographer Dr. Lorenzo Ferri protect an unregistered life behind a glowing glass koi aquarium. Act II (0:30–1:00): Confronted with Elena's unwavering human gaze and the quiet courage of the courtyard neighbors, Matteo removes his brass inspector badge, leaves the ledger unsealed, and walks out into the 5400K rain-washed Milanese dawn."
+    "Photorealistic 35mm live-action 4-Act (120.0s, 12-Shot) dramatic short film set in a rain-slicked Milanese apartment block and central stone courtyard as the global population ledger approaches 9,999,999,999. Act I (0:00–0:30): Senior Census Inspector Matteo Conti and Junior Auditor Sofia Lindqvist arrive at Apartment 4B, where expectant mother Elena Moretti and retired demographer Dr. Lorenzo Ferri protect an unregistered life behind a glowing glass koi aquarium. Act II (0:30–1:00): Confronted with Elena's unwavering human gaze, Matteo unpins his brass badge and defies the census law. Act III (1:00–1:30): Constitutional Counsel Marcus Sterling and Cryptographer Aria Chen broadcast the unsealed ledger across Milan's cathedral network. Act IV (1:30–2:00): At 5400K dawn, the entire courtyard stands united in the morning rain, unregistered and free."
   );
   const [compiledConceptDirective, setCompiledConceptDirective] = useState<string>(
-    "Photorealistic 2-Act 35mm live-action cinema short film (\"The Ten Billionth Pulse — Beyond Control\", 60.0s @ 24/1 CFR) shot on ARRI Alexa Mini LF with Panavision Primo 35mm/50mm/85mm prime lenses and Kodak Vision3 500T film grain in Milan, Italy. Surpasses Pietro Malegori's CONTROL (26s animated short) with 100% real human cast across 5 tiers, real architectural apartments and courtyards, natural unretouched skin textures, and an acoustic cello + solo piano score at 92 BPM in D Minor."
+    `Photorealistic 4-Act 35mm live-action cinema short film ("${defaultMasterReel.title}", 120.0s @ 24/1 CFR) shot on ARRI Alexa Mini LF with Panavision Primo 35mm/50mm/85mm prime lenses and Kodak Vision3 500T film grain in Milan, Italy, featuring 6 distinct spoken-dialogue characters (Charon, Aoede, Kore, Fenrir, Puck, Leda) and an acoustic cello + solo piano score at 92 BPM in D Minor.`
   );
-  const [countryId, setCountryId] = useState<string>("cnt_italy_milan_cinema");
-  const [regionId, setRegionId] = useState<string>("reg_europe");
-  const [languageId, setLanguageId] = useState<string>("lang_english_cinema");
-  const [demographyId, setDemographyId] = useState<string>("demo_cinema_realism");
-  const [platformId, setPlatformId] = useState<string>("plat_ig_reels");
-  const [contentTypeId, setContentTypeId] = useState<string>("ctype_cinema_film");
-  const [durationId, setDurationId] = useState<string>("dur_60s");
-  const [genreId, setGenreId] = useState<string>("gen_cinema_thriller");
-  const [vocalId, setVocalId] = useState<string>("voc_duet");
+  const [countryId, setCountryId] = useState<string>(defaultMasterReel.countryId);
+  const [regionId, setRegionId] = useState<string>(defaultMasterReel.regionId);
+  const [languageId, setLanguageId] = useState<string>(defaultMasterReel.languageId);
+  const [demographyId, setDemographyId] = useState<string>(defaultMasterReel.demographyId);
+  const [platformId, setPlatformId] = useState<string>(defaultMasterReel.platformId);
+  const [contentTypeId, setContentTypeId] = useState<string>(defaultMasterReel.contentTypeId);
+  const [durationId, setDurationId] = useState<string>(defaultMasterReel.durationId);
+  const [genreId, setGenreId] = useState<string>(defaultMasterReel.genreId);
+  const [vocalId, setVocalId] = useState<string>(defaultMasterReel.vocalId);
   const [audioEngineId, setAudioEngineId] = useState<"omni_lyria3" | "omni_native">("omni_native");
-  const [venueId, setVenueId] = useState<string>("ven_milan_brutalist_courtyard");
-  const [lightingId, setLightingId] = useState<string>("lit_tungsten_to_dawn");
+  const [venueId, setVenueId] = useState<string>(defaultMasterReel.venueId);
+  const [lightingId, setLightingId] = useState<string>(defaultMasterReel.lightingId);
   const [lyrics, setLyrics] = useState<string>(
-    "[Shot 01 • Female Lead (Elena Moretti)] Nine billion heartbeats counting down behind a locked wooden door (92 BPM)\n[Shot 02 • Male Lead (Inspector Matteo Conti)] Every name inside this ledger carries weight I cannot ignore\n[Shot 03 • Female Co-Lead (Auditor Sofia Lindqvist)] Through the glass the golden water ripples in the quiet night\n[Shot 04 • Duet (Elena Moretti & Inspector Matteo Conti)] Lay the brass upon the table — let a human life breathe free\n[Shot 05 • Harmony Bridge (Elena Moretti & Sofia Lindqvist)] No decree can measure mercy when two honest eyes have met\n[Shot 06 • Full Ensemble] Morning rain upon the courtyard washes every shadow clean"
+    defaultMasterReel.shots.map((s) => s.lyricLine).join("\n")
   );
 
   // Dynamic Catalog States (Automatically expanded whenever user enters a new prompt!)
@@ -100,71 +101,64 @@ export default function SwarmMUIPage() {
     useState< typeof VENUES_CATALOG >(VENUES_CATALOG);
   const [isSynthesizingPrompt, setIsSynthesizingPrompt] = useState<boolean>(false);
 
-  // Selected Persona IDs across all 5 categories (6 total personas including Female Lead + Co-Lead Harmony)
+  // Selected Persona IDs across all 5 categories
   const [selectedPersonaIds, setSelectedPersonaIds] = useState<
     Record<PersonaCategory, string[]>
-  >({
-    female_lead: ["p_fem_elena_moretti", "p_fem_sofia_lindqvist"],
-    male_lead: ["p_male_matteo_conti"],
-    supporting: ["p_sup_lorenzo_ferri"],
-    background: ["p_bg_census_marshals"],
-    audience: ["p_aud_milan_neighbors"],
-  });
+  >(defaultMasterReel.selectedPersonaIds);
 
-  // Wardrobe IDs (Act I, Act II, Accessories)
-  const [womenAct1Id, setWomenAct1Id] = useState<string>("w_f1_merino_cardigan");
-  const [womenAct2Id, setWomenAct2Id] = useState<string>("w_f2_dawn_trench");
-  const [menAct1Id, setMenAct1Id] = useState<string>("w_m1_olive_trench");
-  const [menAct2Id, setMenAct2Id] = useState<string>("w_m2_unbadged_coat");
-  const [supportingWardrobeId, setSupportingWardrobeId] = useState<string>("w_sup_tweed_scholar");
-  const [backgroundWardrobeId, setBackgroundWardrobeId] = useState<string>("w_bg_census_marshals");
-  const [audienceWardrobeId, setAudienceWardrobeId] = useState<string>("w_aud_milan_neighbors");
-  const [accessoryId, setAccessoryId] = useState<string>("acc_brass_ledger");
+  const defaultFemPersona = getById(PERSONAS_CATALOG, defaultMasterReel.selectedPersonaIds.female_lead[0]);
+  const defaultMalePersona = getById(PERSONAS_CATALOG, defaultMasterReel.selectedPersonaIds.male_lead[0]);
+  const defaultSupPersona = getById(PERSONAS_CATALOG, defaultMasterReel.selectedPersonaIds.supporting[0]);
+  const defaultBgPersona = getById(PERSONAS_CATALOG, defaultMasterReel.selectedPersonaIds.background[0]);
+  const defaultAudPersona = getById(PERSONAS_CATALOG, defaultMasterReel.selectedPersonaIds.audience[0]);
+
+  // Wardrobe IDs (Act I, Act II, Accessories) derived from defaultMasterReel personas
+  const [womenAct1Id, setWomenAct1Id] = useState<string>(defaultFemPersona.defaultAct1WardrobeId);
+  const [womenAct2Id, setWomenAct2Id] = useState<string>(defaultFemPersona.defaultAct2WardrobeId);
+  const [menAct1Id, setMenAct1Id] = useState<string>(defaultMalePersona.defaultAct1WardrobeId);
+  const [menAct2Id, setMenAct2Id] = useState<string>(defaultMalePersona.defaultAct2WardrobeId);
+  const [supportingWardrobeId, setSupportingWardrobeId] = useState<string>(defaultSupPersona.defaultAct1WardrobeId);
+  const [backgroundWardrobeId, setBackgroundWardrobeId] = useState<string>(defaultBgPersona.defaultAct1WardrobeId);
+  const [audienceWardrobeId, setAudienceWardrobeId] = useState<string>(defaultAudPersona.defaultAct1WardrobeId);
+  const [accessoryId, setAccessoryId] = useState<string>(defaultFemPersona.defaultAccessoryId);
   const [bpm, setBpm] = useState<number>(92);
   const [musicalKey, setMusicalKey] = useState<string>("D Minor");
 
   // Additional Synthesized Dimensions (Background Scenery, Human Emotions, Voice Type, Choreography, Optics, Contrast, Instruments)
   const [backgroundEnvironment, setBackgroundEnvironment] = useState<string>(
-    "Act I (0:00–0:30): Claustrophobic crimson-and-slate brutalist apartment corridor leading into Apartment 4B's warm 3200K tungsten study with floor-to-ceiling bookshelves, rain-streaked glass windows, and a softly glowing glass koi fish tank → Act II (0:30–1:00): Heavy apartment doors opening onto an expansive rain-washed 19th-century Milanese stone courtyard at 5400K break of dawn with wet cobblestone reflections and upper wrought-iron balconies"
+    getById(VENUES_CATALOG, defaultMasterReel.venueId)?.promptSpec || ""
   );
   const [humanEmotions, setHumanEmotions] = useState<string>(
-    "Act I: Quiet maternal resolve, moral conflict, natural micro-expressions, subtle breathing, and unblinking eye contact across the oak table → Act II: Cathartic moral awakening, quiet solidarity, relieved tears in natural skin pores, and dignified collective resilience"
+    "Act I–II: Quiet maternal resolve, moral conflict, natural micro-expressions, and unblinking eye contact across the oak table → Act III–IV: Encrypted broadcast defiance, cathartic moral awakening, and dignified collective resilience in the dawn rain"
   );
-  const [shotEmotions, setShotEmotions] = useState<string[]>([
-    "Shot 01 (Corridor Approach): Somber bureaucratic weight on Matteo Conti's weathered face & cautious empathy in Sofia Lindqvist's eyes",
-    "Shot 02 (Table Confrontation): Unwavering maternal dignity on Elena Moretti's face opposite Matteo's conflicted hesitation",
-    "Shot 03 (85mm Close-Up): Tear-glistened hazel eyes & subtle breath micro-tremors as Elena protects her unborn child",
-    "Shot 04 (00:30 Moral Turn): Quiet resolve as Matteo unpins his brass Census Officer badge and places it on the oak table",
-    "Shot 05 (85mm Dual Focus Pull): Wordless gratitude between Elena, Sofia, and Dr. Ferri in warm tungsten-to-dawn cross-light",
-    "Shot 06 (Courtyard Dawn Finale): Quiet dignity and relief across all 6 cast members in the rain-washed Milanese courtyard",
-  ]);
+  const [shotEmotions, setShotEmotions] = useState<string[]>(
+    defaultMasterReel.shots.map(
+      (s) => `Shot ${String(s.shotNumber).padStart(2, "0")} (${s.timecode}): ${s.actionPrompt.slice(0, 110)}`
+    )
+  );
   const [voiceType, setVoiceType] = useState<string>(
-    "48,000 Hz European Cinema Acoustic Score (Solo Stradivarius Cello, Felt Piano, Rain Foley & Intimate Cinematic Vocal Theme at 92 BPM in D Minor; -14.0 LUFS EBU R128)"
+    "48,000 Hz 6-Voice Spoken Dialogue & European Cinema Score (Charon, Aoede, Kore, Fenrir, Puck, Leda + Solo Stradivarius Cello & Felt Piano at 92 BPM in D Minor; -14.0 LUFS EBU R128)"
   );
   const [choreography, setChoreography] = useState<string>(
-    "Act I: Measured live-action dramatic blocking along the crimson apartment corridor, deliberate step-in across the threshold, and tense seated confrontation around the oak table → Act II: Crucial 00:30 physical gesture placing the brass badge onto the oak table, standing in unison, and walking out into the open rain-washed stone courtyard at dawn"
+    "Act I–II: Measured live-action dramatic blocking along the crimson apartment corridor, oak-table confrontation, and 00:30 badge surrender → Act III–IV: Geneva tribunal broadcast, cathedral acoustic relay, and dawn courtyard assembly"
   );
-  const [shotChoreography, setShotChoreography] = useState<string[]>([
-    "[0:00–0:10 • Corridor Tracking] Inspector Matteo Conti & Auditor Sofia Lindqvist walk slowly down the crimson-walled corridor and pause at Apartment 4B • 35mm Panavision Primo low-angle Steadicam push-in",
-    "[0:10–0:20 • Study Table Orbit] Matteo opens the leather census ledger on the oak table beside the glowing koi aquarium while Elena Moretti stands firm • 50mm Panavision Primo 180-degree dolly arc",
-    "[0:20–0:30 • Intimate Observation] Elena rests her hand over her merino wool cardigan while Sofia exchanges a conflicted glance with Dr. Ferri • 85mm Primo Prime @ T1.4 shallow-DOF rack focus",
-    "[0:30–0:40 • The 00:30 Moral Turn] Matteo unpins his brass Census Officer badge, sets it on the oak table, and closes the ledger without signing • 35mm Primo track dolly reveal as dawn light enters",
-    "[0:40–0:50 • Silent Solidarity] Sofia closes her tablet, Dr. Ferri nods in quiet respect, and Elena exhales in relief • 85mm Primo Prime @ T1.5 dual focus pull",
-    "[0:50–1:00 • Courtyard Dawn Release] Matteo walks out into the wet cobblestone Milanese courtyard at dawn while Elena, Sofia, Dr. Ferri, and neighbors watch from the balcony • 24mm Techno-crane pull-back",
-  ]);
-  const [shotLightingAndOptics, setShotLightingAndOptics] = useState<string[]>([
-    "Shot 01 (0:00–0:10): 35mm Panavision Primo Prime @ T2.0, slow Steadicam corridor push-in, 3200K crimson-amber practical wall sconces + 4800K rain window rim (4:1 contrast ratio)",
-    "Shot 02 (0:10–0:20): 50mm Panavision Primo Prime @ T1.8, 180° dolly orbit around oak table, 3200K tungsten desk lamp + cyan-amber aquarium caustics (4:1 contrast ratio)",
-    "Shot 03 (0:20–0:30): 85mm Panavision Primo Portrait @ T1.4, shallow-DOF rack focus on real skin pores & hazel eyes, 3400K soft practical key (5:1 contrast ratio)",
-    "Shot 04 (0:30–0:40): 35mm Panavision Primo Prime @ T2.0, track dolly reveal of brass badge on oak table, 3200K tungsten shifting to 5400K cool dawn daylight (5:1 contrast ratio)",
-    "Shot 05 (0:40–0:50): 85mm Panavision Primo Portrait @ T1.5, intimate dual focus pull, 5400K soft window key + 3200K warm back-fill (5:1 contrast ratio)",
-    "Shot 06 (0:50–1:00): 24mm Wide Panavision Primo @ T2.8, sweeping Techno-crane pull-back across wet cobblestone courtyard, 5400K overcast dawn sky + wet specular reflections (4:1 contrast ratio)",
-  ]);
+  const [shotChoreography, setShotChoreography] = useState<string[]>(
+    defaultMasterReel.shots.map(
+      (s) => `[${s.timecode} • Act ${s.act}] ${s.actionPrompt}`
+    )
+  );
+  const [shotLightingAndOptics, setShotLightingAndOptics] = useState<string[]>(
+    defaultMasterReel.shots.map((s, idx) => {
+      const cam = getById(CAMERA_MOVES_CATALOG, s.cameraMoveId);
+      const kelvin = idx < 6 ? "3200K warm tungsten practicals (4:1 contrast ratio)" : "5400K overcast dawn daylight + wet stone reflections (5:1 contrast ratio)";
+      return `Shot ${String(s.shotNumber).padStart(2, "0")} (${s.timecode}): 35mm Panavision Primo Prime @ T1.8, ${cam.label} (${cam.promptSpec}), ${kelvin}`;
+    })
+  );
   const [figureGroundContrastSpec, setFigureGroundContrastSpec] = useState<string>(
-    "Enforces >= 4.0:1 figure-ground luminance & chromatic separation: Act I oatmeal merino wool and dark olive wool trench separate cleanly against crimson corridor walls and warm oak bookshelves, while Act II camel/charcoal wool coats stand out with 5400K dawn rim light against slate-grey courtyard stone."
+    "Enforces >= 4.0:1 figure-ground luminance & chromatic separation across all 12 shots: oatmeal merino wool and dark olive wool trench separate cleanly against crimson corridor walls and warm oak bookshelves, while dawn coats stand out with 5400K rim light against slate-grey courtyard stone."
   );
   const [instrumentAndStagePropsSpec, setInstrumentAndStagePropsSpec] = useState<string>(
-    "Tactile real-world cinema props: embossed leather population ledger, solid brass Census Officer lapel badge, antique brass balance scale, illuminated glass koi aquarium with real swimming orange koi fish, rain-streaked wooden window frames, and wet cobblestone courtyard puddles."
+    getById(ACCESSORIES_CATALOG, defaultFemPersona.defaultAccessoryId)?.promptSpec || ""
   );
   const [creativeElevation, setCreativeElevation] = useState<{
     sourceType: "youtube_reference" | "original_prompt";
@@ -186,44 +180,31 @@ export default function SwarmMUIPage() {
     innovationScore: string;
     judgeReceipt?: IndependentJudgeReceipt;
   }>({
-    sourceType: "youtube_reference",
-    youtubeMetadata: {
-      videoId: "higgsfield_control",
-      url: "https://higgsfield.ai/@pietromalegori/projects/control?from=%2Fcontests%2Fhiggsfield-global-film-festival%3Ftab%3Dsubmissions",
-      title: "CONTROL — Higgsfield Global Film Festival Entry",
-      channelName: "Pietro Malegori (@pietromalegori)",
-      descriptionSnippet:
-        "Dystopian short film set in a world where global population has reached 9,999,999,999 and the government enforces a strict birth control decree.",
-      keywords: ["CONTROL", "Pietro Malegori", "Higgsfield Global Film Festival", "9,999,999,999", "Population Control", "35mm Live-Action Cinema"],
-      thumbnailUrl: "/assets/swarm/generated/job_1790654474523/preview_turn1A.jpg",
-    },
+    sourceType: "original_prompt",
+    youtubeMetadata: null,
     deconstructedCore:
-      "Deconstructs Pietro Malegori's 26-second animated short 'CONTROL' (set at global population 9,999,999,999 under a strict birth decree) and re-imagines it as a 100% photorealistic 60.0-second 35mm live-action European cinema drama with real human actors, natural skin pores, and tactile architectural locations.",
+      "Constructs a 120.0-second (4-Act, 12-Shot) 35mm live-action European cinema drama set at global population 9,999,999,999 with 6 distinct spoken-dialogue characters, real human skin textures, and tactile architectural locations.",
     identifiedLimitations: [
-      "Reference 'CONTROL' by Pietro Malegori is only 26 seconds long (fragmented micro-teaser) and relies on stylized CGI/cartoon 3D character rendering instead of photorealistic live-action human actors",
-      "Reference lacks a complete 2-act dramatic character arc, offering disconnected montage vignettes (corridor, fish tank, red silhouette) without interpersonal resolution or a 00:30 moral turning point",
-      "Reference uses a static single-note ambient drone rather than an evolving 60.0s 48,000 Hz acoustic cello & piano cinematic score locked to 6 progressive 35mm/50mm/85mm Panavision camera setups",
+      "Conventional short-form AI reels are limited to 26–60 seconds of silent or music-only montage without spoken character dialogue",
+      "Standard 2-act clips lack a 4-act dramatic structure capable of developing institutional conflict, personal sacrifice, whistleblowing, and collective liberation",
+      "Typical productions reuse a single voice or ambient drone instead of mixing 6 distinct character voices (Charon, Aoede, Kore, Fenrir, Puck, Leda) over a 48kHz acoustic cello & piano score",
     ],
     surpassStrategy:
-      "Surpasses 'CONTROL' across Cast (6 photorealistic adult European actors with natural skin pores, subtle wrinkles, and real wool/tweed/cotton tailoring), Story (complete 2-act moral drama where Census Inspector Matteo Conti defies the decree at 00:30 to protect Elena Moretti's unborn child), and Duration (full 60.0-second, 1,440-frame, 6-turn continuous master at 24/1 CFR).",
+      "Delivers a complete 120.0-second (2,880-frame @ 24/1 CFR) 4-Act Director's Cut across 6 photorealistic characters with 12 bespoke spoken-dialogue turns mastered at -14.0 LUFS.",
     act1ToAct2Twist:
-      "At 00:30 (Shot 04), instead of enforcing the 9,999,999,999 population decree, Senior Inspector Matteo Conti unpins his brass Census Officer badge, places it on the oak table beside the glowing koi aquarium, and leads the family out into the 5400K rain-washed Milanese courtyard at dawn.",
+      "Inspector Matteo Conti unpins his brass Census Officer badge in Act II, triggering Counsel Marcus Sterling and Cryptographer Aria Chen's city-wide tribunal broadcast in Act III and the rain-washed Milanese courtyard liberation in Act IV.",
     sonicInnovation:
-      "92 BPM (D Minor) 48,000 Hz stereo European cinema score featuring solo acoustic cello, felt piano chords, tactile rain foley, and an intimate cinematic vocal theme mastered to -14.0 LUFS.",
+      "92 BPM (D Minor) 48,000 Hz stereo 6-voice spoken-dialogue stem mixed over solo acoustic cello, felt piano chords, and tactile rain foley (-14.0 LUFS).",
     choreographyAndCameraUpgrade:
-      "6-shot live-action Panavision Primo progression: 35mm T2.0 Steadicam corridor push-in (Shot 01), 50mm T1.8 180° oak-table dolly orbit (Shot 02), 85mm T1.4 shallow-DOF close-up on Elena's eyes (Shot 03), 35mm T2.0 badge-surrender dolly reveal (Shot 04), 85mm T1.5 dual focus pull (Shot 05), and 24mm T2.8 Techno-crane courtyard dawn pull-back (Shot 06).",
-    innovationScore: "10.0 / 10 • Verified Photorealistic 35mm Live-Action Surpass Master",
+      "12-shot live-action Panavision Primo progression across 4 acts (0:00–2:00) combining 35mm Steadicam corridor tracking, 50mm 180° oak-table orbits, 85mm T1.4 close-ups, and 24mm Techno-crane courtyard pull-backs.",
+    innovationScore: "10.0 / 10 • Verified 120.0s 4-Act Spoken-Dialogue Director's Cut",
   });
 
   const promptDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const synthAbortRef = React.useRef<AbortController | null>(null);
   const synthReqSeqRef = React.useRef<number>(0);
-  const [referenceYouTubeUrl, setReferenceYouTubeUrl] = useState<string>(
-    "https://higgsfield.ai/@pietromalegori/projects/control?from=%2Fcontests%2Fhiggsfield-global-film-festival%3Ftab%3Dsubmissions"
-  );
-  const referenceYouTubeUrlRef = React.useRef<string>(
-    "https://higgsfield.ai/@pietromalegori/projects/control?from=%2Fcontests%2Fhiggsfield-global-film-festival%3Ftab%3Dsubmissions"
-  );
+  const [referenceYouTubeUrl, setReferenceYouTubeUrl] = useState<string>("");
+  const referenceYouTubeUrlRef = React.useRef<string>("");
   const lastSynthesizedPromptKeyRef = React.useRef<string>("");
 
   const extractYouTubeUrlFromText = useCallback((text: string): string | null => {
@@ -431,29 +412,11 @@ export default function SwarmMUIPage() {
           ? `${p.male_lead.name} + ${p.supporting.name}`
           : `${p.female_lead.name} & ${p.male_lead.name}`;
 
-      const isControlMaster =
-        syn.creativeElevation?.youtubeMetadata?.videoId === "higgsfield_control" ||
-        /Ten Billionth Pulse/i.test(String(syn.title || ""));
-
-      if (isControlMaster) {
-        customShotsRef.current = INITIAL_REELS_REPOSITORY[0]?.shots || null;
-        if (INITIAL_REELS_REPOSITORY[0]?.shots) {
-          setShots(INITIAL_REELS_REPOSITORY[0].shots);
-        }
-        setSelectedReelId("reel_ten_billionth_pulse_60s");
-        setActiveVideoUrl("/assets/swarm/generated/job_1790654474523/combined_60s.mp4");
-        setRenderProgress(100);
-        setRenderStageLabel(
-          "Completed • 60.0s Photorealistic 35mm Live-Action Cinema Master Ready (6 Turns • 1,440 Frames @ 24/1 CFR)"
-        );
-        setRenderLogs([]);
-      } else {
-        // Clear stale pre-existing video URL and custom shot overrides so Master Player & Storyboard reflect the newly synthesized prompt
-        customShotsRef.current = null;
-        setActiveVideoUrl("");
-        setRenderStageLabel("");
-        setRenderLogs([]);
-      }
+      // Clear stale pre-existing video URL and custom shot overrides so Master Player & Storyboard reflect the newly synthesized prompt
+      customShotsRef.current = null;
+      setActiveVideoUrl("");
+      setRenderStageLabel("");
+      setRenderLogs([]);
 
       setStatusBanner(
         `✨ Synthesized all 8 dimensions: Personas (${leadSummary}), Locations, Act I/II Wardrobes, Background Scenery, Human Emotions, Voice Type, Choreography & ${finalLangObj.label.split("(")[0].trim()} Lyrics!`
@@ -603,10 +566,10 @@ export default function SwarmMUIPage() {
   // 3. PERSISTENT REELS REPOSITORY & DRAFTS STATE
   // ==========================================================================
   const [reels, setReels] = useState<StudioReelRecord[]>(INITIAL_REELS_REPOSITORY);
-  const [selectedReelId, setSelectedReelId] = useState<string>("reel_ten_billionth_pulse_60s");
+  const [selectedReelId, setSelectedReelId] = useState<string>(defaultMasterReel.id);
   const [wipFilter, setWipFilter] = useState<"all" | "wip" | "draft" | "failed">("all");
   const customShotsRef = React.useRef<ShotSpec[] | null>(
-    INITIAL_REELS_REPOSITORY[0]?.shots || null
+    defaultMasterReel.shots || null
   );
 
   const persistReelsToStorage = useCallback((nextReels: StudioReelRecord[]) => {
@@ -621,16 +584,16 @@ export default function SwarmMUIPage() {
 
   // Storyboard & Rendering State
   const [shots, setShots] = useState<ShotSpec[]>(
-    INITIAL_REELS_REPOSITORY[0]?.shots || []
+    defaultMasterReel.shots || []
   );
   const [isRendering, setIsRendering] = useState<boolean>(false);
   const [renderProgress, setRenderProgress] = useState<number>(100);
   const [renderStageLabel, setRenderStageLabel] = useState<string>(
-    "Completed • 60.0s Photorealistic 35mm Live-Action Cinema Master Ready (6 Turns • 1,440 Frames @ 24/1 CFR)"
+    defaultMasterReel.updatedAt
   );
   const [renderLogs, setRenderLogs] = useState<string[]>([]);
   const [activeVideoUrl, setActiveVideoUrl] = useState<string>(
-    "/assets/swarm/generated/job_1790654474523/combined_60s.mp4"
+    defaultMasterReel.videoUrl
   );
 
   // ==========================================================================
@@ -867,45 +830,47 @@ export default function SwarmMUIPage() {
 
     const count = durationObj.shotsCount || 6;
     const secPerShot = Math.round(durationObj.seconds / count);
+    const totalActs = Math.max(1, Math.ceil(count / 3));
+    const fmtSec = (sec: number) =>
+      `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
 
     return Array.from({ length: count }, (_, idx) => {
       const isAct1 = idx < Math.ceil(count / 2);
+      const actNum = Math.min(totalActs, Math.floor(idx / 3) + 1);
       const startSec = idx * secPerShot;
       const endSec = (idx + 1) * secPerShot;
-      const timecode = `0:${String(startSec).padStart(2, "0")}–0:${String(
-        endSec
-      ).padStart(2, "0")}`;
+      const timecode = `${fmtSec(startSec)}–${fmtSec(endSec)}`;
       const camObj =
         CAMERA_MOVES_CATALOG[idx % CAMERA_MOVES_CATALOG.length];
 
       const act1Summary = `${wAct1.label} • ${mAct1.label}`;
       const act2Summary = `${wAct2.label} • ${mAct2.label}`;
 
-      // Distribute the 6 shots across all 6 selected Cast Personas so every vocal assignment & scene anchor is 100% matched
+      // Distribute the shots across all 6 selected Cast Personas so every vocal assignment & scene anchor is 100% matched
       const shotSlot = idx % 6;
       let subjectClause = "";
       let previewPhotoUrl = primaryLead?.photoUrl || "/assets/characters/ananya_roy_in.jpg";
 
       if (shotSlot === 0) {
-        // Shot 01 (Act I Opening Hook — Female Lead / Primary Lead)
+        // Opening Hook — Female Lead / Primary Lead
         const leadW = primaryLead?.category === "male_lead" ? mAct1.promptSpec : wAct1.promptSpec;
         subjectClause = `${primaryLead?.name} (${primaryLead?.facialSpec}) wearing ${leadW}`;
         previewPhotoUrl = primaryLead?.photoUrl || previewPhotoUrl;
       } else if (shotSlot === 1) {
-        // Shot 02 (Act I Male Lead / Counter-Lead Confrontation)
+        // Male Lead / Counter-Lead Confrontation
         const counterW =
           shot2Lead?.category === "male_lead" ? mAct1.promptSpec : wAct1.promptSpec;
         const leadW = primaryLead?.category === "male_lead" ? mAct1.promptSpec : wAct1.promptSpec;
         subjectClause = `${shot2Lead?.name} (${shot2Lead?.facialSpec}) wearing ${counterW} in dramatic interplay with ${primaryLead?.name} (${leadW})`;
         previewPhotoUrl = shot2Lead?.photoUrl || previewPhotoUrl;
       } else if (shotSlot === 2) {
-        // Shot 03 (Act I Female Co-Lead & Supporting Musicians Pre-Chorus Build)
+        // Female Co-Lead & Supporting Cast Build
         const coLead = femPersona2 || primaryLead;
         const coLeadW = coLead?.category === "male_lead" ? mAct1.promptSpec : wAct1.promptSpec;
         subjectClause = `${coLead?.name} (${coLead?.facialSpec}) wearing ${coLeadW} & ${primaryLead?.name} surrounded by ${supPersona?.name} (${supW.promptSpec})`;
         previewPhotoUrl = femPersona2?.photoUrl || supPersona?.photoUrl || previewPhotoUrl;
       } else if (shotSlot === 3) {
-        // Shot 04 (Act II Couture Transformation & 8-Dancer Crew Drop)
+        // Couture Transformation & Ensemble Drop
         const leadW2 = primaryLead?.category === "male_lead" ? mAct2.promptSpec : wAct2.promptSpec;
         const malePartnerClause =
           malePersona && malePersona.id !== primaryLead?.id
@@ -914,7 +879,7 @@ export default function SwarmMUIPage() {
         subjectClause = `${primaryLead?.name} (${leadW2})${malePartnerClause} transformed into Act II Couture flanked by ${bgPersona?.name} (${bgW.promptSpec})`;
         previewPhotoUrl = bgPersona?.photoUrl || primaryLead?.photoUrl || previewPhotoUrl;
       } else if (shotSlot === 4) {
-        // Shot 05 (Act II Intimate 85mm High-Note Harmony Bridge + Live Musicians)
+        // Intimate 85mm Close-Up Bridge + Supporting Cast
         const leadW2 = primaryLead?.category === "male_lead" ? mAct2.promptSpec : wAct2.promptSpec;
         const partnerW2 =
           harmonyPartner?.category === "male_lead" ? mAct2.promptSpec : wAct2.promptSpec;
@@ -922,7 +887,7 @@ export default function SwarmMUIPage() {
         previewPhotoUrl =
           supPersona?.photoUrl || femPersona2?.photoUrl || primaryLead?.photoUrl || previewPhotoUrl;
       } else {
-        // Shot 06 (Act II Grand Finale Full 6-Persona Cast & VIP Crowd Reveal)
+        // Grand Finale Full 6-Persona Cast & Crowd Reveal
         const leadW2 = primaryLead?.category === "male_lead" ? mAct2.promptSpec : wAct2.promptSpec;
         const ensembleNames = [
           `${primaryLead?.name} (${leadW2})`,
@@ -951,7 +916,7 @@ export default function SwarmMUIPage() {
         shotId: `shot_${idx + 1}`,
         shotNumber: idx + 1,
         timecode,
-        act: isAct1 ? 1 : 2,
+        act: actNum,
         cameraMoveId: camObj.id,
         actionPrompt: `${subjectClause} at ${venueObj.label} (${countryObj.label}) • Emotion: ${shotEmotionCue} • Choreography: ${shotChoreoCue} • Camera: ${camObj.promptSpec} • Lighting: ${lightObj.promptSpec}`,
         wardrobeSummary: isAct1 ? act1Summary : act2Summary,
@@ -1037,7 +1002,13 @@ export default function SwarmMUIPage() {
 
     const act1WardrobeBlock = `  • Female Lead (Act I 0:00–0:30): ${fmtSpec(wAct1)}\n  • Male Lead / Antagonist (Act I 0:00–0:30): ${fmtSpec(mAct1)}\n  • Backup Choreography (Act I): ${fmtSpec(bgW)}`;
 
-    const act2WardrobeBlock = `  • Female Lead (Act II 0:30–1:00): ${fmtSpec(wAct2)}\n  • Male Lead / Antagonist (Act II 0:30–1:00): ${fmtSpec(mAct2)}\n  • Supporting Stage / Musicians: ${fmtSpec(supW)}`;
+    const endTimecodeLabel =
+      durationObj.seconds >= 120
+        ? `${Math.floor(durationObj.seconds / 60)}:${String(durationObj.seconds % 60).padStart(2, "0")}`
+        : durationObj.seconds === 90
+          ? "1:30"
+          : "1:00";
+    const act2WardrobeBlock = `  • Female Lead (Act II+ 0:30–${endTimecodeLabel}): ${fmtSpec(wAct2)}\n  • Male Lead / Antagonist (Act II+ 0:30–${endTimecodeLabel}): ${fmtSpec(mAct2)}\n  • Supporting Stage / Musicians: ${fmtSpec(supW)}`;
 
     const audioEngineObj = getById(AUDIO_ENGINES_CATALOG, audioEngineId);
     const isLyriaMode = audioEngineId === "omni_lyria3";
@@ -1045,13 +1016,15 @@ export default function SwarmMUIPage() {
     const shotLines = shots
       .map((s, idx) => {
         const camObj = getById(CAMERA_MOVES_CATALOG, s.cameraMoveId);
-        const turnTag = s.act === 1 ? `Turn 1.${s.shotNumber} (Act I)` : `Turn 2.${s.shotNumber} (Act II)`;
+        const romanAct = ["I", "II", "III", "IV", "V", "VI"][Math.max(0, (s.act || 1) - 1)] || String(s.act);
+        const turnTag = `Turn ${s.act}.${s.shotNumber} (Act ${romanAct})`;
+        const shotNumPadded = String(s.shotNumber).padStart(2, "0");
         const emo = shotEmotions[idx % Math.max(1, shotEmotions.length)] || "";
         const cho = shotChoreography[idx % Math.max(1, shotChoreography.length)] || "";
         const opt = shotLightingAndOptics[idx % Math.max(1, shotLightingAndOptics.length)] || camObj.promptSpec;
         return isLyriaMode
-          ? `  • Shot 0${s.shotNumber} [${s.timecode} • ${turnTag}]:\n    - Camera, Optics & Kelvin Rig: ${camObj.label} (${opt})\n    - Dual-Mode Viseme & Gaze Acting: Active vocalist executes beat-locked open-mouth phoneme articulation (r >= 0.72) while non-singing dancers/ensemble maintain 100% closed-lips eye-acting (RMS <= 0.015) — (${emo})\n    - 8-Count Choreography & Blocking: ${cho}\n    - Visual & Wardrobe Direction: ${s.actionPrompt}\n    - Lyria 3 Pro Vocal & Lyrical Line (${bpm} BPM • ${musicalKey}): "${s.lyricLine}"`
-          : `  • Shot 0${s.shotNumber} [${s.timecode} • ${turnTag}]:\n    - Camera, Optics & Kelvin Rig: ${camObj.label} (${opt})\n    - Human Emotion & Viseme Expression: ${emo}\n    - 8-Count Choreography & Blocking: ${cho}\n    - Visual & Wardrobe Direction: ${s.actionPrompt}\n    - Native 48kHz Vocal & Lip-Sync Line (${bpm} BPM • ${musicalKey}): "${s.lyricLine}"`;
+          ? `  • Shot ${shotNumPadded} [${s.timecode} • ${turnTag}]:\n    - Camera, Optics & Kelvin Rig: ${camObj.label} (${opt})\n    - Dual-Mode Viseme & Gaze Acting: Active vocalist executes beat-locked open-mouth phoneme articulation (r >= 0.72) while non-singing dancers/ensemble maintain 100% closed-lips eye-acting (RMS <= 0.015) — (${emo})\n    - 8-Count Choreography & Blocking: ${cho}\n    - Visual & Wardrobe Direction: ${s.actionPrompt}\n    - Lyria 3 Pro Vocal & Lyrical Line (${bpm} BPM • ${musicalKey}): "${s.lyricLine}"`
+          : `  • Shot ${shotNumPadded} [${s.timecode} • ${turnTag}]:\n    - Camera, Optics & Kelvin Rig: ${camObj.label} (${opt})\n    - Human Emotion & Viseme Expression: ${emo}\n    - 8-Count Choreography & Blocking: ${cho}\n    - Visual & Wardrobe Direction: ${s.actionPrompt}\n    - Native 48kHz Vocal & Lip-Sync Line (${bpm} BPM • ${musicalKey}): "${s.lyricLine}"`;
       })
       .join("\n\n");
 
@@ -1086,7 +1059,7 @@ export default function SwarmMUIPage() {
       `  • Creative Surpass Strategy (${creativeElevation.innovationScore}): ${creativeElevation.surpassStrategy}`,
       `  • Act I -> Act II 00:30 Twist: ${creativeElevation.act1ToAct2Twist}`,
       `  • Sonic & Harmonic Innovation: ${creativeElevation.sonicInnovation}`,
-      `  • 6-Shot Kinetic Choreography & Camera Upgrade: ${creativeElevation.choreographyAndCameraUpgrade}`,
+      `  • ${shots.length}-Shot Kinetic Choreography & Camera Upgrade: ${creativeElevation.choreographyAndCameraUpgrade}`,
       ``,
       `[2. MUSICAL SCORE, VOICE TYPE, BPM & VOCAL HARMONY SPEC (48,000 Hz STEREO)]`,
       `  • Audio & Music Synthesis Engine: ${fmtSpec(audioEngineObj)}`,
@@ -1095,15 +1068,15 @@ export default function SwarmMUIPage() {
       `  • Voice Type & Vocal Timbre: ${voiceType}`,
       `  • Language & Phonetics: ${fmtSpec(langObj)}`,
       isLyriaMode
-        ? `  • Dual-Mode Active Vocalist Viseme & Non-Singing Closed-Lips Law: Continuous 60.0s 48,000 Hz studio vocal & instrumental song generated via models/lyria-3-pro-preview (-14.0 LUFS EBU R128 @ ${bpm} BPM in ${musicalKey}). Active lead/co-lead vocalists execute beat-locked open-mouth phoneme articulation (r >= 0.72), while non-singing backup dancers, musicians, and crowd maintain 100% closed-lips Nayan-Abhinaya eye-acting (RMS <= 0.015).`
+        ? `  • Dual-Mode Active Vocalist Viseme & Non-Singing Closed-Lips Law: Continuous ${durationObj.seconds}.0s 48,000 Hz studio vocal & instrumental song generated via models/lyria-3-pro-preview (-14.0 LUFS EBU R128 @ ${bpm} BPM in ${musicalKey}). Active lead/co-lead vocalists execute beat-locked open-mouth phoneme articulation (r >= 0.72), while non-singing backup dancers, musicians, and crowd maintain 100% closed-lips Nayan-Abhinaya eye-acting (RMS <= 0.015).`
         : `  • Lip-Sync & Acoustic Law: Continuous upbeat musical score and natural expressive lip-sync articulation from t=0.00s to final frame.`,
       ``,
-      `[3. 6-PERSONA CAST ACROSS 5 TIERS, HUMAN EMOTIONS & 8-COUNT CHOREOGRAPHY BIBLE]`,
+      `[3. ENSEMBLE CAST ACROSS 5 TIERS, HUMAN EMOTIONS & 8-COUNT CHOREOGRAPHY BIBLE]`,
       castLines,
       `  • Human Emotions & Facial Expression Arc: ${humanEmotions}`,
       `  • Choreography & Dance Formation Blocking: ${choreography}`,
       ``,
-      `[4. LOCATIONS, BACKGROUND SCENERY & ACT I -> ACT II WARDROBE TRANSFORMATION]`,
+      `[4. LOCATIONS, BACKGROUND SCENERY & ACT I -> ACT II+ WARDROBE TRANSFORMATION]`,
       `  • Country & Destination: ${fmtSpec(countryObj)}`,
       `  • Venue Architecture: ${fmtSpec(venueObj)}`,
       `  • Background Scenery & Atmospheric FX: ${backgroundEnvironment}`,
@@ -1205,12 +1178,13 @@ export default function SwarmMUIPage() {
 
   // Execute Full Live Render via models/gemini-omni-1.1-flash (+ optional models/lyria-3-pro-preview) (/api/swarm/jobs)
   const executeEndToEndRender = async (modeLabel: string) => {
+    const activeDurationSec = getById(DURATIONS_CATALOG, durationId).seconds;
     setIsRendering(true);
     setRenderProgress(5);
     setRenderStageLabel(
       audioEngineId === "omni_lyria3"
-        ? "Stage 1/6 • Synthesizing 60.0s Lyria 3 Pro studio song & developing closed-lips eye/body shots..."
-        : "Stage 1/6 • Launching live models/gemini-omni-1.1-flash generation (Act I Turn 1A: 00:00–00:10)..."
+        ? `Stage 1/${shots.length} • Synthesizing ${activeDurationSec}.0s Lyria 3 Pro studio song & developing closed-lips eye/body shots...`
+        : `Stage 1/${shots.length} • Launching live models/gemini-omni-1.1-flash generation (Act I Turn 1A: 00:00–00:10)...`
     );
     setRenderLogs([]);
     setActiveVideoUrl("");
@@ -1433,7 +1407,7 @@ export default function SwarmMUIPage() {
           });
           setSelectedReelId(completedReel.id);
           setStatusBanner(
-            `✅ ${modeLabel} Complete! Brand-new 60.0s Master Reel is live in Master Player and persisted to Published Reels.`
+            `✅ ${modeLabel} Complete! Brand-new ${activeDurationSec}.0s Master Reel is live in Master Player and persisted to Published Reels.`
           );
         } else if (j.status === "error") {
           finished = true;
@@ -1681,8 +1655,8 @@ export default function SwarmMUIPage() {
         return {
           currentLabel: "4-Step Studio • Step 02 of 04 (Cast & Wardrobe)",
           nextText:
-            "Review prompt-generated personas & outfits (or add custom personas in /personas), then compile 6 shots.",
-          actionLabel: "Next: 03. Storyboard (6 Shots) →",
+            `Review prompt-generated personas & outfits (or add custom personas in /personas), then compile ${shots.length} shots.`,
+          actionLabel: `Next: 03. Storyboard (${shots.length} Shots) →`,
           onAction: () => {
             customShotsRef.current = null;
             setShots(compileStructuredShots());
@@ -1706,7 +1680,7 @@ export default function SwarmMUIPage() {
       return {
         currentLabel: "4-Step Studio • Step 04 of 04 (Render Master)",
         nextText:
-          "Click Render to synthesize your 60.0s 9:16 MP4 Master Reel via Gemini Omni 1.1 Flash + Lyria 3 Pro.",
+          `Click Render to synthesize your ${getById(DURATIONS_CATALOG, durationId).seconds}.0s 9:16 MP4 Master Reel via Gemini Omni 1.1 Flash + Lyria 3 Pro.`,
         actionLabel: "Open Published Reels Library →",
         onAction: () => switchWorkflow("published"),
       };
@@ -1847,7 +1821,7 @@ export default function SwarmMUIPage() {
                 {[
                   { s: 1, label: "01. Story & Audio" },
                   { s: 2, label: "02. Cast & Wardrobe" },
-                  { s: 3, label: "03. Storyboard (6)" },
+                  { s: 3, label: `03. Storyboard (${shots.length})` },
                   { s: 4, label: "04. Render & Export" },
                 ].map((item) => (
                   <button
@@ -2029,7 +2003,7 @@ export default function SwarmMUIPage() {
                         {creativeElevation.sonicInnovation}
                       </div>
                       <div className="px-2.5 py-1.5 rounded bg-[#09090b] border border-white/[0.05] text-zinc-300">
-                        <span className="font-semibold text-emerald-300">6-Shot Kinetic &amp; Camera Upgrade:</span>{" "}
+                        <span className="font-semibold text-emerald-300">{shots.length}-Shot Kinetic &amp; Camera Upgrade:</span>{" "}
                         {creativeElevation.choreographyAndCameraUpgrade}
                       </div>
                     </div>
@@ -3072,7 +3046,7 @@ export default function SwarmMUIPage() {
 
                 <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-[#0e0e12] p-3 space-y-1.5">
                   <span className="text-[10px] text-zinc-400 uppercase font-semibold">
-                    Act II Finale Wardrobe (0:30–1:00)
+                    Act II+ Finale Wardrobe (0:30–{getById(DURATIONS_CATALOG, durationId).seconds >= 120 ? "2:00" : getById(DURATIONS_CATALOG, durationId).seconds === 90 ? "1:30" : "1:00"})
                   </span>
                   <p className="text-xs text-white font-medium truncate">
                     {vocalId === "voc_male_solo" || vocalId === "voc_boy_band"
@@ -3364,7 +3338,7 @@ export default function SwarmMUIPage() {
                     disabled={isRendering}
                     onClick={() => {
                       setCreateStep(4);
-                      executeEndToEndRender("60s Master");
+                      executeEndToEndRender(`${getById(DURATIONS_CATALOG, durationId).seconds}s Master`);
                     }}
                     className="w-full py-2.5 px-4 rounded-lg bg-white hover:bg-zinc-200 disabled:opacity-50 text-zinc-950 font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer"
                   >
@@ -3372,7 +3346,7 @@ export default function SwarmMUIPage() {
                     <span>
                       {isRendering
                         ? `Rendering New Video (${renderProgress}%)...`
-                        : "Render New 60s Master Video Now (Gemini Omni 1.1 Flash)"}
+                        : `Render New ${getById(DURATIONS_CATALOG, durationId).seconds}s Master Video Now (Gemini Omni 1.1 Flash)`}
                     </span>
                   </button>
                 </div>

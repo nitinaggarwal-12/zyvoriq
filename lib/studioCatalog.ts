@@ -58,7 +58,7 @@ export interface ShotSpec {
   shotId: string;
   shotNumber: number;
   timecode: string;
-  act: 1 | 2;
+  act: number;
   cameraMoveId: string;
   actionPrompt: string;
   wardrobeSummary: string;
@@ -353,6 +353,18 @@ export const PERSONAS_CATALOG: PersonaDefinition[] = [
     defaultAccessoryId: "acc_brass_ledger",
   },
   {
+    id: "p_fem_aria_chen",
+    category: "female_lead",
+    name: "Cryptographer Aria Chen",
+    roleTitle: "Co-Lead Dramatic Actress (Cathedral Acoustic Archivist)",
+    ethnicity: "East Asian / European",
+    facialSpec: "29yo East Asian acoustic archivist in a slate-grey cashmere turtleneck with natural skin pores, focused dark eyes, and understated intensity",
+    photoUrl: "/assets/characters/aoi_takahashi_jp.jpg",
+    defaultAct1WardrobeId: "w_f1_merino_cardigan",
+    defaultAct2WardrobeId: "w_f2_dawn_trench",
+    defaultAccessoryId: "acc_brass_ledger",
+  },
+  {
     id: "p_fem_ananya",
     category: "female_lead",
     name: "Ananya Roy",
@@ -435,6 +447,18 @@ export const PERSONAS_CATALOG: PersonaDefinition[] = [
     facialSpec: "42yo weathered Italian-European man with natural skin pores, three-day salt-and-pepper beard, deep expressive hazel eyes, stoic moral gravity",
     photoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn1A.jpg",
     defaultAct1WardrobeId: "w_m1_olive_trench",
+    defaultAct2WardrobeId: "w_m2_unbadged_coat",
+    defaultAccessoryId: "acc_brass_ledger",
+  },
+  {
+    id: "p_male_marcus_sterling",
+    category: "male_lead",
+    name: "Counselor Marcus Sterling",
+    roleTitle: "Co-Lead Dramatic Actor (Geneva Tribunal Counsel)",
+    ethnicity: "Alpine / European",
+    facialSpec: "38yo European defense counsel in a tailored charcoal three-piece wool suit with natural skin pores, silver-streaked dark hair, and resolute gaze",
+    photoUrl: "/assets/characters/mathias_alder_ch.jpg",
+    defaultAct1WardrobeId: "w_m1_savile_row",
     defaultAct2WardrobeId: "w_m2_unbadged_coat",
     defaultAccessoryId: "acc_brass_ledger",
   },
@@ -643,6 +667,179 @@ export const PERSONAS_CATALOG: PersonaDefinition[] = [
 // ============================================================================
 
 export const INITIAL_REELS_REPOSITORY: StudioReelRecord[] = [
+  {
+    id: "reel_ten_billionth_pulse_120s",
+    title: "The Ten Billionth Pulse — Beyond Control (120s 4-Act Spoken-Dialogue Director's Cut)",
+    status: "published",
+    progress: 100,
+    videoUrl: "/assets/swarm/generated/job_1790663346051/combined_120s.mp4",
+    durationId: "dur_120s",
+    countryId: "cnt_italy_milan_cinema",
+    regionId: "reg_mediterranean",
+    languageId: "lang_english_cinema",
+    demographyId: "demo_cinema_realism",
+    platformId: "plat_yt_music",
+    contentTypeId: "ctype_cinema_film",
+    genreId: "gen_cinema_thriller",
+    vocalId: "voc_duet",
+    venueId: "ven_milan_brutalist_courtyard",
+    lightingId: "lit_tungsten_to_dawn",
+    selectedPersonaIds: {
+      female_lead: ["p_fem_elena_moretti", "p_fem_sofia_lindqvist", "p_fem_aria_chen"],
+      male_lead: ["p_male_matteo_conti", "p_male_marcus_sterling"],
+      supporting: ["p_sup_lorenzo_ferri"],
+      background: ["p_bg_census_marshals"],
+      audience: ["p_aud_milan_neighbors"],
+    },
+    wardrobeOverrides: {},
+    shots: [
+      {
+        shotId: "shot_1",
+        shotNumber: 1,
+        timecode: "0:00–0:10",
+        act: 1,
+        cameraMoveId: "cam_push_in",
+        actionPrompt:
+          "35mm Panavision Primo T1.8 low-angle tracking shot inside a dimly lit Milanese crimson-red brutalist corridor with rain-streaked clerestory glass. Inspector Matteo Conti walks beside Auditor Sofia Lindqvist and speaks on camera with natural lip-sync.",
+        wardrobeSummary: "Rain-Dampened Dark-Olive Wool Trench Coat • Tailored Navy Wool Overcoat",
+        lyricLine: "[Shot 01 • Inspector Matteo Conti] Ten billion lives on the ledger, Sofia. And the rain in Milan never washes the ink away. (92 BPM)",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn1A.jpg",
+      },
+      {
+        shotId: "shot_2",
+        shotNumber: 2,
+        timecode: "0:10–0:20",
+        act: 1,
+        cameraMoveId: "cam_dolly_track",
+        actionPrompt:
+          "50mm Panavision Primo T1.8 Steadicam tracking inside a warm 3200K tungsten-lit Milanese apartment study with a glowing glass koi aquarium as Elena Moretti speaks across the oak table.",
+        wardrobeSummary: "Oatmeal-Beige Merino Wool Knit Sweater • Dark-Olive Wool Trench Coat",
+        lyricLine: "[Shot 02 • Elena Moretti] Every child in this room is a real human soul, Inspector, not a number on a brass plate.",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn1B.jpg",
+      },
+      {
+        shotId: "shot_3",
+        shotNumber: 3,
+        timecode: "0:20–0:30",
+        act: 1,
+        cameraMoveId: "cam_closeup_85mm",
+        actionPrompt:
+          "85mm Panavision portrait lens @ T1.5 shallow depth-of-field close-up on authentic adult faces with natural skin pores as Auditor Sofia Lindqvist speaks to Inspector Matteo Conti.",
+        wardrobeSummary: "Tailored Navy Wool Overcoat • Unretouched 35mm Portrait Realism",
+        lyricLine: "[Shot 03 • Auditor Sofia Lindqvist] One signature is all it takes, Matteo. Tonight we choose humanity over the census law.",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn1C.jpg",
+      },
+      {
+        shotId: "shot_4",
+        shotNumber: 4,
+        timecode: "0:30–0:40",
+        act: 2,
+        cameraMoveId: "cam_push_in",
+        actionPrompt:
+          "35mm Panavision Primo @ T2.0 dolly push-in across the oak table: Inspector Matteo Conti unpins his brass Census Officer badge, stamps green approval onto Elena Moretti's family ledger, and speaks on camera.",
+        wardrobeSummary: "Unbadged Dark-Olive Wool Trench Coat • Brass Census Badge on Oak Table",
+        lyricLine: "[Shot 04 • Inspector Matteo Conti] I am unpinning my badge. Take my place on the register, Elena, and let your family live free.",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn2A.jpg",
+      },
+      {
+        shotId: "shot_5",
+        shotNumber: 5,
+        timecode: "0:40–0:50",
+        act: 2,
+        cameraMoveId: "cam_closeup_85mm",
+        actionPrompt:
+          "50mm Panavision Primo @ T1.8 intimate handheld framing inside the apartment study as Dr. Lorenzo Ferri places a warm hand on the inspector's shoulder and speaks.",
+        wardrobeSummary: "Herringbone Brown Tweed Scholar Jacket • Unbadged Dark-Olive Wool Coat",
+        lyricLine: "[Shot 05 • Dr. Lorenzo Ferri] History will remember the courage spoken inside these apartment walls tonight.",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn2B.jpg",
+      },
+      {
+        shotId: "shot_6",
+        shotNumber: 6,
+        timecode: "0:50–1:00",
+        act: 2,
+        cameraMoveId: "cam_drone_finale",
+        actionPrompt:
+          "24mm Wide Panavision anamorphic crane pull-back in a rain-washed Milanese cobblestone courtyard at 5400K dawn as Auditor Sofia Lindqvist speaks from the stone colonnade.",
+        wardrobeSummary: "Full 6-Persona Realistic Cinema Ensemble in Rain-Washed Dawn Courtyard",
+        lyricLine: "[Shot 06 • Auditor Sofia Lindqvist] Walk out into the morning rain, Matteo. The courtyard stands with you, unregistered and finally free.",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn2C.jpg",
+      },
+      {
+        shotId: "shot_7",
+        shotNumber: 7,
+        timecode: "1:00–1:10",
+        act: 3,
+        cameraMoveId: "cam_push_in",
+        actionPrompt:
+          "35mm Panavision Primo @ T1.8 inside a wood-paneled European municipal tribunal chamber with tall rain-streaked arched windows as Counselor Marcus Sterling holds the encrypted dossier.",
+        wardrobeSummary: "Charcoal Three-Piece Savile Row Wool Suit • Olive Wool Trench Coat",
+        lyricLine: "[Shot 07 • Counselor Marcus Sterling] The tribunal in Geneva just received the encrypted ledger. They know the tenth billionth child is alive.",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790663346051/scene1_anchor.jpg",
+      },
+      {
+        shotId: "shot_8",
+        shotNumber: 8,
+        timecode: "1:10–1:20",
+        act: 3,
+        cameraMoveId: "cam_dolly_track",
+        actionPrompt:
+          "50mm Panavision Primo @ T1.8 inside a historic stone clock-tower acoustic relay room with warm tungsten vacuum-tube meters as Cryptographer Aria Chen routes the acoustic beacon.",
+        wardrobeSummary: "Slate-Grey Cashmere Turtleneck • Tailored Navy Wool Overcoat",
+        lyricLine: "[Shot 08 • Cryptographer Aria Chen] I routed the acoustic beacon through the cathedral bells. Every district in Milan can hear the truth now.",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790663346051/scene2_anchor.jpg",
+      },
+      {
+        shotId: "shot_9",
+        shotNumber: 9,
+        timecode: "1:20–1:30",
+        act: 3,
+        cameraMoveId: "cam_closeup_85mm",
+        actionPrompt:
+          "85mm Panavision portrait lens @ T1.5 inside a vaulted stone municipal archive lined with leather-bound census volumes as Dr. Lorenzo Ferri closes the heavy registry book.",
+        wardrobeSummary: "Herringbone Brown Tweed Scholar Jacket • Wire-Rimmed Glasses",
+        lyricLine: "[Shot 09 • Dr. Lorenzo Ferri] For thirty years they ruled by fear and arithmetic. Today, the arithmetic broke.",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn2B.jpg",
+      },
+      {
+        shotId: "shot_10",
+        shotNumber: 10,
+        timecode: "1:30–1:40",
+        act: 4,
+        cameraMoveId: "cam_dolly_track",
+        actionPrompt:
+          "35mm Panavision Primo @ T2.0 tracking shot along a rain-washed Milanese stone balcony overlooking a wide cobbled piazza at sunrise as Elena Moretti watches neighbors open their shutters.",
+        wardrobeSummary: "Rain-Dampened Camel Wool Overcoat & Oatmeal Merino Knit",
+        lyricLine: "[Shot 10 • Elena Moretti] Look at the balconies across the square. Nobody is hiding behind closed shutters anymore.",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn1C.jpg",
+      },
+      {
+        shotId: "shot_11",
+        shotNumber: 11,
+        timecode: "1:40–1:50",
+        act: 4,
+        cameraMoveId: "cam_closeup_85mm",
+        actionPrompt:
+          "50mm Panavision Primo @ T1.8 at the wrought-iron entrance gates of the stone piazza in cool morning light as Counselor Marcus Sterling stands shoulder-to-shoulder with Matteo Conti and Aria Chen.",
+        wardrobeSummary: "Charcoal Three-Piece Wool Suit • Unbadged Olive Wool Trench Coat",
+        lyricLine: "[Shot 11 • Counselor Marcus Sterling] Let the enforcers come. You cannot arrest an entire city that refuses to erase its children.",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn2A.jpg",
+      },
+      {
+        shotId: "shot_12",
+        shotNumber: 12,
+        timecode: "1:50–2:00",
+        act: 4,
+        cameraMoveId: "cam_drone_finale",
+        actionPrompt:
+          "24mm Wide Panavision anamorphic crane finale across the sunlit Milanese stone piazza as golden 5600K morning light breaks over wet cobblestones and all six protagonists stand with the citizens.",
+        wardrobeSummary: "Full 6-Character Spoken-Dialogue Ensemble in Sunlit Milanese Piazza",
+        lyricLine: "[Shot 12 • Inspector Matteo Conti] The sun is rising over the stone courtyard. Every voice is counted, and every life remains ours.",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn2C.jpg",
+      },
+    ],
+    updatedAt: "2026-09-29 06:34",
+  },
   {
     id: "reel_ten_billionth_pulse_60s",
     title: "The Ten Billionth Pulse — Beyond Control (60s 35mm Live-Action Master)",

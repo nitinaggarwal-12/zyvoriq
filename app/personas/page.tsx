@@ -8,6 +8,7 @@ import {
   PERSONAS_CATALOG,
   WARDROBE_CATALOG,
   ACCESSORIES_CATALOG,
+  INITIAL_REELS_REPOSITORY,
   getWardrobeForCategory,
   getById,
   dedupeById,
@@ -38,13 +39,16 @@ export default function PersonasAndWardrobePage() {
   const [wardrobes, setWardrobes] = useState(WARDROBE_CATALOG);
   const [accessories, setAccessories] = useState(ACCESSORIES_CATALOG);
 
-  // Selected Persona IDs per Category (Exact IDs, Zero Regex)
-  const [selectedIds, setSelectedIds] = useState<Record<PersonaCategory, string[]>>({
-    female_lead: ["p_fem_ananya"],
-    male_lead: ["p_male_aarav"],
-    supporting: ["p_sup_dj_aria"],
-    background: ["p_bg_hiphop_8"],
-    audience: ["p_aud_yacht_vip"],
+  // Selected Persona IDs per Category (Derived dynamically from INITIAL_REELS_REPOSITORY[0])
+  const [selectedIds, setSelectedIds] = useState<Record<PersonaCategory, string[]>>(() => {
+    const defaultReel = INITIAL_REELS_REPOSITORY[0];
+    return {
+      female_lead: defaultReel?.selectedPersonaIds?.female_lead || ["p_fem_elena_moretti"],
+      male_lead: defaultReel?.selectedPersonaIds?.male_lead || ["p_male_matteo_conti"],
+      supporting: defaultReel?.selectedPersonaIds?.supporting || ["p_sup_lorenzo_ferri"],
+      background: defaultReel?.selectedPersonaIds?.background || ["p_bg_milan_neighbors"],
+      audience: defaultReel?.selectedPersonaIds?.audience || ["p_aud_census_tribunal"],
+    };
   });
 
   // Per-Persona Wardrobe & Accessory Selection by Exact Wardrobe ID
@@ -251,8 +255,8 @@ export default function PersonasAndWardrobePage() {
         photoUrl: String(
           avatar.photoUrl ||
             (activeTab === "male_lead"
-              ? "/assets/characters/arjun_rathore.jpg"
-              : "/assets/characters/elena_rostova.jpg")
+              ? "/assets/characters/aarav_kapoor_in.jpg"
+              : "/assets/characters/ananya_roy_in.jpg")
         ),
         defaultAct1WardrobeId: defaultAct1,
         defaultAct2WardrobeId: defaultAct2,
@@ -565,7 +569,7 @@ export default function PersonasAndWardrobePage() {
                     {(activeTab === "female_lead" || activeTab === "male_lead") && (
                       <div>
                         <label className="block text-[10px] font-medium text-zinc-400 mb-0.5">
-                          Act II Finale Wardrobe (0:30–1:00)
+                          Act II+ Finale Wardrobe (0:30–Finale)
                         </label>
                         <select
                           value={wState.act2Id}

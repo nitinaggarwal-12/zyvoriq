@@ -42,7 +42,7 @@
     "[06:33:56] 🎙️ [Spoken Dialogue Verification Gate] Verified 199 audible spoken/vocal words via models/gemini-3.5-transcribe: \"10 billion lives on the ledger, Sophia. And the rain in Milan never washes the ink away. Every child in this room is a\"",
     "[06:33:56] ✅ COMPLETED (Omni 1.1 Flash 35mm Live-Action + 48kHz Spoken Dialogue)! Brand-new 120.0s Combined Master (4 Acts) loaded into player & saved to /library."
   ],
-  "combinedSrc": "/assets/swarm/generated/job_1790663346051/combined_60s.mp4?t=1790663636155",
+  "combinedSrc": "/assets/swarm/generated/job_1790663346051/combined_120s.mp4?t=1790663636155",
   "part1Src": "/assets/swarm/generated/job_1790663346051/act1_30s.mp4?t=1790663636155",
   "part2Src": "/assets/swarm/generated/job_1790663346051/act2_30s.mp4?t=1790663636155",
   "segments": [

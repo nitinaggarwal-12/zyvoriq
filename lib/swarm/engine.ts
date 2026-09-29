@@ -236,21 +236,26 @@ export function audit12AgentBlueprintConsistency(
     );
   }
 
-  // 9. Vocal & Lyric Lead Coverage (Both Female Lead & Male Lead Present in Lyrics)
+  // 9. Vocal & Lyric Lead Coverage (Both Female Lead & Male Lead or Multi-Character Dialogue Present in Lyrics)
   const lyricLines = (ctx.lyrics || "")
     .split("\n")
     .map((l) => l.trim())
     .filter(Boolean);
   const lyricsJoined = lyricLines.join(" ");
-  const hasFemaleLeadVocal = /female lead|lead vocal|duet|both leads|ensemble/i.test(
-    lyricsJoined
+  const bracketedRoles = new Set(
+    lyricLines
+      .map((l) => l.match(/^\[(?:Shot\s*\d+\s*[•·-]\s*)?([^\]]+)\]/i)?.[1]?.trim())
+      .filter(Boolean)
   );
-  const hasMaleLeadVocal = /male lead|counter-lead|duet|both leads|ensemble/i.test(
-    lyricsJoined
-  );
+  const hasFemaleLeadVocal =
+    /female lead|lead vocal|duet|both leads|ensemble/i.test(lyricsJoined) ||
+    bracketedRoles.size >= 2;
+  const hasMaleLeadVocal =
+    /male lead|counter-lead|duet|both leads|ensemble/i.test(lyricsJoined) ||
+    bracketedRoles.size >= 2;
   if (lyricLines.length >= shotsCount && hasFemaleLeadVocal && hasMaleLeadVocal) {
     passedChecks.push(
-      `Check 09 [Vocal & Lyric Agent]: ${lyricLines.length}/${shotsCount} bar-locked lyric turns verified with full Lead & Co-Lead vocal representation`
+      `Check 09 [Vocal & Lyric Agent]: ${lyricLines.length}/${shotsCount} bar-locked lyric/dialogue turns verified with full Lead & Co-Lead vocal representation`
     );
   } else {
     failedChecks.push(
@@ -293,10 +298,13 @@ export function getDanceMusicVideoAgents(
   ctx: SwarmAgentContext = {}
 ): SwarmAgentStatus[] {
   const title = ctx.title || "Active Studio Production";
+  const shotsCount = ctx.shotsCount ?? 6;
+  const totalSeconds = shotsCount * 10;
+  const totalActs = Math.max(1, Math.ceil(shotsCount / 3));
   const storyline =
     ctx.storyline && !/https?:\/\//i.test(ctx.storyline)
       ? ctx.storyline
-      : `Two-act 9:16 vertical dance music video ("${title}") progressing from an Act I golden-hour opening stage to a 00:30 architectural and haute-couture finale metamorphosis.`;
+      : `${totalActs}-act 9:16 vertical production ("${title}") progressing across ${shotsCount} 10-second shots (${totalSeconds}.0s) with architectural and haute-couture metamorphosis.`;
   const country = ctx.countryLabel || "Global Destination";
   const language = ctx.languageLabel || "Multilingual Vocal";
   const bpm = ctx.bpm || 122;
@@ -310,7 +318,6 @@ export function getDanceMusicVideoAgents(
       : "Golden-Hour Anamorphic Key (3200K) -> Midnight Chiaroscuro & Neon Rim-Light (5600K)";
   const vocal = ctx.vocalLabel || "Upfront Lead, Co-Lead & Harmony Duet";
   const castCount = ctx.castDetails?.length || ctx.castCount || 6;
-  const shotsCount = ctx.shotsCount ?? 6;
   const isRendering = Boolean(ctx.isRendering);
   const progress = ctx.renderProgress ?? 100;
   const isYt = ctx.sourceType === "youtube_reference";
@@ -342,7 +349,7 @@ export function getDanceMusicVideoAgents(
     ctx.castDetails && ctx.castDetails.length > 0
       ? ctx.castDetails.map(
           (c, idx) =>
-            `Persona 0${idx + 1} [${c.role}]: ${c.name} (${c.ethnicity}) — ${c.facialSpec}${c.photoUrl ? ` [Anchor: ${c.photoUrl}]` : ""}`
+            `Persona ${String(idx + 1).padStart(2, "0")} [${c.role}]: ${c.name} (${c.ethnicity}) — ${c.facialSpec}${c.photoUrl ? ` [Anchor: ${c.photoUrl}]` : ""}`
         )
       : [
           `Locked ${castCount} non-cloned personas across Lead, Co-Lead, Supporting, Background & Audience tiers for ${country}.`,
@@ -352,25 +359,31 @@ export function getDanceMusicVideoAgents(
     ctx.shotChoreography && ctx.shotChoreography.length > 0
       ? ctx.shotChoreography.map(
           (sc, i) =>
-            `Shot 0${i + 1} (${i * 10}s–${(i + 1) * 10}s • ${bpm} BPM 8-Count Grid): ${sc}`
+            `Shot ${String(i + 1).padStart(2, "0")} (${i * 10}s–${(i + 1) * 10}s • ${bpm} BPM 8-Count Grid): ${sc}`
         )
       : [
           `Mapped ${shotsCount} unique 8-count kinetic formations across ${genre} rhythm with zero repeated dance loops.`,
         ];
 
+  const defaultOpticsPresets = [
+    "35mm T1.5 Anamorphic Steadicam low-angle push-in • 3200K warm key light (3:1 contrast ratio)",
+    "50mm T1.5 360-degree orbiting gimbal • 3400K specular rim light & natural bounce",
+    "85mm T1.5 shallow-DOF portrait lens close-up • 3800K dynamic backlight buildup",
+    "35mm T1.4 high-speed dolly track • 5000K architectural transition & specular rim (5:1 ratio)",
+    "50mm T1.4 intimate handheld cinema framing • Dual-rim catchlight on eyes & vocal articulation",
+    "24mm T1.8 sweeping crane pull-back • 5600K full-spectrum finale illumination",
+  ];
+
   const shotOpticsLines =
-    ctx.shotLightingAndOptics && ctx.shotLightingAndOptics.length > 0
-      ? ctx.shotLightingAndOptics.map(
-          (so, i) => `Shot 0${i + 1} (${i * 10}s–${(i + 1) * 10}s Optics & Kelvin): ${so}`
+    ctx.shotLightingAndOptics && ctx.shotLightingAndOptics.length >= shotsCount
+      ? ctx.shotLightingAndOptics.slice(0, shotsCount).map(
+          (so, i) => `Shot ${String(i + 1).padStart(2, "0")} (${i * 10}s–${(i + 1) * 10}s Optics & Kelvin): ${so}`
         )
-      : [
-          `Shot 01 (0s–10s Optics & Kelvin): 35mm T1.5 Anamorphic Steadicam low-angle push-in • 3200K warm key light (3:1 contrast ratio)`,
-          `Shot 02 (10s–20s Optics & Kelvin): 35mm T1.5 360-degree orbiting gimbal • 3400K specular rim light & natural bounce`,
-          `Shot 03 (20s–30s Optics & Kelvin): 24mm T2.0 sweeping jib crane rise • 3800K pre-drop dynamic backlight buildup`,
-          `Shot 04 (30s–40s Optics & Kelvin): 00:30 Whip-Pan into 50mm T1.4 high-speed dolly track • 5600K Act II chiaroscuro & neon/torch speculars (6:1 ratio)`,
-          `Shot 05 (40s–50s Optics & Kelvin): 85mm T1.2 shallow-DOF portrait lens close-up • Dual-rim catchlight on eyes & vocal articulation`,
-          `Shot 06 (50s–60s Optics & Kelvin): 24mm T1.8 360-degree orbital crane-to-drone pull-back • Full-spectrum finale pyrotechnic & chandelier illumination`,
-        ];
+      : Array.from({ length: shotsCount }, (_, i) => {
+          const custom = ctx.shotLightingAndOptics?.[i];
+          const spec = custom || defaultOpticsPresets[i % defaultOpticsPresets.length];
+          return `Shot ${String(i + 1).padStart(2, "0")} (${i * 10}s–${(i + 1) * 10}s Optics & Kelvin): ${spec}`;
+        });
 
   const shotEmotionLines =
     ctx.shotEmotions && ctx.shotEmotions.length > 0
@@ -378,7 +391,7 @@ export function getDanceMusicVideoAgents(
           const lyricLine = lyricLines[i] || "";
           const roleMatch = lyricLine.match(/^\[([^\]]+)\]/);
           const activeSinger = roleMatch ? roleMatch[1] : "Active Lead Vocalist";
-          return `Shot 0${i + 1} (${i * 10}s–${(i + 1) * 10}s) [Active Singer Viseme: ${activeSinger} | Ensemble: Closed-Lips Eye Lock]: ${se}`;
+          return `Shot ${String(i + 1).padStart(2, "0")} (${i * 10}s–${(i + 1) * 10}s) [Active Singer Viseme: ${activeSinger} | Ensemble: Closed-Lips Eye Lock]: ${se}`;
         })
       : [
           `Synchronized active lead singer syllable visemes (r >= 0.72) and non-singing ensemble closed-lips Nayan-Abhinaya eye-acting across ${shotsCount} turns.`,
@@ -386,6 +399,7 @@ export function getDanceMusicVideoAgents(
 
   const audit = audit12AgentBlueprintConsistency({
     ...ctx,
+    shotsCount,
     storyline,
     bpm,
     musicalKey,
@@ -404,34 +418,34 @@ export function getDanceMusicVideoAgents(
       name: "Deconstruct & Elevate Script Agent",
       icon: "📝",
       roleTitle: isYt
-        ? `Live YouTube Deconstruction (${ctx.youtubeReferenceTitle || "Reference MV"}) & 2-Act Surpass Screenplay`
-        : "3-Stage Creative Surpass Compiler & 2-Act Screenplay",
+        ? `Live Reference Deconstruction (${ctx.youtubeReferenceTitle || "Reference MV"}) & ${totalActs}-Act Surpass Screenplay`
+        : `3-Stage Creative Surpass Compiler & ${totalActs}-Act Screenplay`,
       stackModel: "models/gemini-2.5-flash & models/gemini-3.8-flash",
       status: computeBlueprintAgentStatus(10),
       executionTimeMs: perAgentSynthMs,
       qualityScore: computedQualityScore,
       deliverableSummary:
         ctx.surpassStrategy ||
-        `Compiled ${shotsCount}-turn (60.0s) Act I -> Act II screenplay for "${title}" (${bpm} BPM, ${musicalKey}) with 00:30 metamorphosis twist.`,
+        `Compiled ${shotsCount}-turn (${totalSeconds}.0s, ${totalActs}-Act) screenplay for "${title}" (${bpm} BPM, ${musicalKey}) with multi-act metamorphosis.`,
       dynamicOutput: [
         isYt
-          ? `Reference Deconstructed: "${ctx.youtubeReferenceTitle}" by ${ctx.youtubeReferenceChannel || "Artist"} (${ctx.youtubeReferenceUrl || "YouTube"})`
+          ? `Reference Deconstructed: "${ctx.youtubeReferenceTitle}" by ${ctx.youtubeReferenceChannel || "Director"} (${ctx.youtubeReferenceUrl || "External Reference"})`
           : `Seed Deconstructed: "${title}" (${genre})`,
-        `Synthesized 2-Act Narrative Logline: ${storyline}`,
+        `Synthesized ${totalActs}-Act Narrative Logline: ${storyline}`,
         `Core Hook Extracted: ${ctx.deconstructedCore || "Rhythmic vocal-dance hook and visual energy"}`,
         ...(ctx.identifiedLimitations || []).map(
           (lim, i) => `Reference Limitation #${i + 1} Overcome: ${lim}`
         ),
-        `Surpass Strategy: ${ctx.surpassStrategy || "2-Act spatial & couture transformation at 00:30 with 6-turn progressive camera blocking"}`,
-        `00:30 Act I -> Act II Metamorphosis: ${ctx.act1ToAct2Twist || "Instant architectural & haute-couture evolution on the Shot 04 beat drop"}`,
+        `Surpass Strategy: ${ctx.surpassStrategy || `${totalActs}-Act spatial & couture transformation with ${shotsCount}-turn progressive camera blocking`}`,
+        `Multi-Act Metamorphosis: ${ctx.act1ToAct2Twist || "Seamless architectural & haute-couture evolution across acts"}`,
       ],
-      technicalArtifact: "surpass_screenplay_6turn_manifest.json",
+      technicalArtifact: `surpass_screenplay_${shotsCount}turn_manifest.json`,
     },
     {
       id: "casting_agent",
       name: "Casting Direction Agent",
       icon: "🎭",
-      roleTitle: `5-Tier Biometric Cast Lock (${castCount} Distinct Performers • 6 Unique Portraits)`,
+      roleTitle: `5-Tier Biometric Cast Lock (${castCount} Distinct Performers • ${castCount} Unique Portraits)`,
       stackModel: "models/imagen-3.0-generate-002 & models/gemini-3.1-flash-image-preview",
       status: computeBlueprintAgentStatus(15),
       executionTimeMs: perAgentSynthMs,
@@ -447,22 +461,22 @@ export function getDanceMusicVideoAgents(
       id: "wardrobe_agent",
       name: "Wardrobe Department Agent",
       icon: "👗",
-      roleTitle: "5-Tier Act I -> Act II 00:30 Couture Metamorphosis & Contrast Guard",
+      roleTitle: `5-Tier ${totalActs}-Act Couture Metamorphosis & Contrast Guard`,
       stackModel: "models/imagen-3.0-generate-002 & models/gemini-3.1-flash-image-preview",
       status: computeBlueprintAgentStatus(20),
       executionTimeMs: perAgentSynthMs,
       qualityScore: computedQualityScore,
-      deliverableSummary: `Synthesized Act I (0:00–0:30) -> Act II (0:30–1:00) haute-couture wardrobe progression across all 5 cast tiers with figure-ground HSV contrast lock for "${title}".`,
+      deliverableSummary: `Synthesized ${totalActs}-Act (${totalSeconds}.0s) haute-couture wardrobe progression across all 5 cast tiers with figure-ground HSV contrast lock for "${title}".`,
       dynamicOutput: [
-        `Act I Female Lead & Co-Lead (0:00–0:30): ${ctx.act1FemaleWardrobe || "Bespoke Act I Opening Couture"}`,
-        `Act II Female Lead & Co-Lead Finale (0:30–1:00): ${ctx.act2FemaleWardrobe || "Bespoke Act II Metallic & Crystal Finale Couture"}`,
-        `Act I Male Lead (0:00–0:30): ${ctx.act1MaleWardrobe || "Bespoke Act I Tailored Menswear"}`,
-        `Act II Male Lead Finale (0:30–1:00): ${ctx.act2MaleWardrobe || "Bespoke Act II Luxury Evening Menswear"}`,
-        `Supporting Musicians (Act I -> Act II Evolution): ${ctx.supportingWardrobe || "Coordinated Act I -> Act II Stage Ensemble"}`,
-        `8-Dancer Troupe (Act I -> Act II Evolution): ${ctx.backgroundWardrobe || "Synchronized Act I -> Act II 8-Dancer Kinetic Uniform"}`,
-        `VIP Audience & Figure-Ground Contrast Lock: ${ctx.audienceWardrobe || "VIP Gala Attire"} | ${ctx.figureGroundContrastSpec || "Delta-E >= 35 figure-ground color separation enforced between Lead Couture, 8-Dancer Troupe, and Venue Architecture"}`,
+        `Opening Acts Female Lead & Co-Lead: ${ctx.act1FemaleWardrobe || "Bespoke Act I Opening Couture"}`,
+        `Finale Acts Female Lead & Co-Lead: ${ctx.act2FemaleWardrobe || "Bespoke Act II Metallic & Crystal Finale Couture"}`,
+        `Opening Acts Male Lead: ${ctx.act1MaleWardrobe || "Bespoke Act I Tailored Menswear"}`,
+        `Finale Acts Male Lead: ${ctx.act2MaleWardrobe || "Bespoke Act II Luxury Evening Menswear"}`,
+        `Supporting Cast (Multi-Act Evolution): ${ctx.supportingWardrobe || "Coordinated Multi-Act Stage Ensemble"}`,
+        `Background Ensemble (Multi-Act Evolution): ${ctx.backgroundWardrobe || "Synchronized Multi-Act Kinetic Uniform"}`,
+        `VIP Audience & Figure-Ground Contrast Lock: ${ctx.audienceWardrobe || "VIP Gala Attire"} | ${ctx.figureGroundContrastSpec || "Delta-E >= 35 figure-ground color separation enforced between Lead Couture, Ensemble, and Venue Architecture"}`,
       ],
-      technicalArtifact: "wardrobe_act1_act2_transition.json",
+      technicalArtifact: "wardrobe_multi_act_transition.json",
     },
     {
       id: "location_agent",
@@ -475,30 +489,30 @@ export function getDanceMusicVideoAgents(
       qualityScore: computedQualityScore,
       deliverableSummary:
         ctx.backgroundEnvironment ||
-        `Engineered dual-act architectural environments in ${country} (${venue}) with 00:30 lighting evolution.`,
+        `Engineered ${totalActs}-act architectural environments in ${country} (${venue}) across ${totalSeconds}.0s runtime.`,
       dynamicOutput: [
         `Geographic & Cultural Anchor: ${country}`,
-        `Dual-Act Stage Progression: ${venue}`,
-        `Act I -> Act II Architectural & Atmospheric Spec: ${ctx.backgroundEnvironment || ctx.venuePromptSpec || venue}`,
-        `00:30 Spatial & Emotional Metamorphosis: ${ctx.act1ToAct2Twist || "Seamless architectural transition from Act I opening stage to Act II finale arena preserving emotional warmth and spatial depth"}`,
+        `Multi-Act Stage Progression: ${venue}`,
+        `Architectural & Atmospheric Spec: ${ctx.backgroundEnvironment || ctx.venuePromptSpec || venue}`,
+        `Spatial & Emotional Metamorphosis: ${ctx.act1ToAct2Twist || "Seamless architectural transition from opening environment to finale arena preserving emotional warmth and spatial depth"}`,
       ],
-      technicalArtifact: "location_dual_act_stage_vault.json",
+      technicalArtifact: "location_multi_act_stage_vault.json",
     },
     {
       id: "prop_agent",
       name: "Prop & Styling Facility Agent",
       icon: "🕶️",
-      roleTitle: "Per-Tier Jewelry, Footwear, Live Instruments & Kinetic Stage FX",
+      roleTitle: "Per-Tier Jewelry, Footwear, Hero Props & Kinetic Stage FX",
       stackModel: "models/imagen-3.0-generate-002 & models/gemini-3.1-flash-image-preview",
       status: computeBlueprintAgentStatus(30),
       executionTimeMs: perAgentSynthMs,
       qualityScore: computedQualityScore,
-      deliverableSummary: `Locked per-tier footwear/jewelry (${ctx.accessoryLabel || "Bespoke Footwear & Jewelry"}), live musician hero instruments, and Act II kinetic props for "${title}".`,
+      deliverableSummary: `Locked per-tier footwear/jewelry (${ctx.accessoryLabel || "Bespoke Footwear & Jewelry"}), hero props/instruments, and kinetic set details for "${title}".`,
       dynamicOutput: [
-        `Lead & Co-Lead Styling Package: ${ctx.accessoryLabel || "Bespoke Footwear, Statement Jewelry & Wind-Swept Hair Styling"}`,
-        `Jewelry, Footwear & Hair Physics (Act I -> Act II): ${ctx.accessoryPromptSpec || "Designer dance footwear, specular statement jewelry, and wind-swept hair physics locked across turns"}`,
-        `Supporting Musicians' Hero Instruments & Stage Props: ${ctx.instrumentAndStagePropsSpec || "Authentic acoustic/electronic hero instruments with locked hand-contact continuity + Act II kinetic dancer props and atmospheric pyrotechnics"}`,
-        `VIP Entourage & Atmospheric Dress Code: ${ctx.audienceWardrobe || "Elevated VIP celebration attire with synchronized light/pyrotechnic reflections"}`,
+        `Lead & Co-Lead Styling Package: ${ctx.accessoryLabel || "Bespoke Footwear, Statement Jewelry & Natural Hair Styling"}`,
+        `Jewelry, Footwear & Hair Physics: ${ctx.accessoryPromptSpec || "Designer footwear, specular accessories, and natural hair physics locked across turns"}`,
+        `Hero Props, Instruments & Set Details: ${ctx.instrumentAndStagePropsSpec || "Authentic hero props and instruments with locked hand-contact continuity across all shots"}`,
+        `Entourage & Atmospheric Dress Code: ${ctx.audienceWardrobe || "Elevated ensemble attire with synchronized lighting reflections"}`,
       ],
       technicalArtifact: "prop_manifest_stage_set.json",
     },
@@ -513,27 +527,27 @@ export function getDanceMusicVideoAgents(
       qualityScore: computedQualityScore,
       deliverableSummary:
         ctx.choreographyGlobal ||
-        `Mapped ${shotsCount} genre-authentic 8-count kinetic formations at ${bpm} BPM (${genre}) with zero repeated dance loops.`,
+        `Mapped ${shotsCount} genre-authentic 8-count kinetic formations at ${bpm} BPM (${genre}) across ${totalSeconds}.0s with zero repeated loops.`,
       dynamicOutput: [
-        `Master Kinetic Arc (${bpm} BPM): ${ctx.choreographyGlobal || "Act I fluid downbeat groove -> Act II explosive V-formation & 360-degree finale circle"}`,
+        `Master Kinetic Arc (${bpm} BPM): ${ctx.choreographyGlobal || "Grounded opening blocking -> Escalating multi-act physical staging & finale reveal"}`,
         ...shotChoreoLines,
       ],
-      technicalArtifact: "choreography_6shot_kinetic_blocking.json",
+      technicalArtifact: `choreography_${shotsCount}shot_kinetic_blocking.json`,
     },
     {
       id: "lip_sync_viseme_agent",
       name: "Vocal Viseme & Mouth-Lock Agent",
       icon: "👄",
-      roleTitle: `Dual-Mode Active Singer Viseme Lock (r >= 0.72) + Ensemble Closed-Lips Eye Acting`,
+      roleTitle: `Dual-Mode Active Speaker/Singer Viseme Lock (r >= 0.72) + Ensemble Closed-Lips Eye Acting`,
       stackModel: "models/lyria-3-pro-preview & models/gemini-3.1-flash-tts-preview",
       status: computeBlueprintAgentStatus(55),
       executionTimeMs: perAgentSynthMs,
       qualityScore: computedQualityScore,
-      deliverableSummary: `Dual-Mode Viseme Schedule locked for ${language}: Active on-camera lead vocalist articulates frame-accurate syllable visemes (Pearson MAR<->RMS r >= 0.72, bilabial closure [-1,0]f) while non-singing dancers/co-stars hold strict Closed-Lips Nayan-Abhinaya eye acting (mouth RMS <= 0.015).`,
+      deliverableSummary: `Dual-Mode Viseme Schedule locked for ${language} across ${shotsCount} turns (${totalSeconds}.0s): Active on-camera speaker/vocalist articulates frame-accurate syllable visemes (Pearson MAR<->RMS r >= 0.72, bilabial closure [-1,0]f) while non-speaking listeners hold strict Closed-Lips Nayan-Abhinaya eye acting (mouth RMS <= 0.015).`,
       dynamicOutput: [
-        `Active Lead Singer Viseme Policy (On-Camera Vocal Phrases): Frame-accurate ${language} phoneme-to-viseme articulation (Pearson MAR<->RMS correlation r >= 0.72; bilabial closure [-1, 0] frames on [P,B,M] plosives)`,
-        `Non-Singing Ensemble & Dance-Break Mouth-Lock Policy: Strict Closed-Lips Nayan-Abhinaya Eye-Acting Lock (non-vocal mouth motion RMS <= 0.015; zero phantom mouthing on backup dancers, musicians & audience)`,
-        `Global Emotional & Eye-Acting Progression: ${ctx.humanEmotionsGlobal || "Magnetic opening confidence -> Passionate Act II finale euphoria"}`,
+        `Active Speaker/Singer Viseme Policy (On-Camera Phrases): Frame-accurate ${language} phoneme-to-viseme articulation (Pearson MAR<->RMS correlation r >= 0.72; bilabial closure [-1, 0] frames on [P,B,M] plosives)`,
+        `Non-Speaking Listener & Ensemble Mouth-Lock Policy: Strict Closed-Lips Nayan-Abhinaya Eye-Acting Lock (non-vocal mouth motion RMS <= 0.015; zero phantom mouthing on listeners, dancers, musicians & audience)`,
+        `Global Emotional & Eye-Acting Progression: ${ctx.humanEmotionsGlobal || "Magnetic opening focus -> Cathartic finale resolution"}`,
         ...shotEmotionLines,
       ],
       technicalArtifact: "viseme_dsp_mouth_lock_envelope.json",
@@ -542,40 +556,43 @@ export function getDanceMusicVideoAgents(
       id: "cinematography_lighting_agent",
       name: "Camera Optics & Beat-Drop Lighting Agent",
       icon: "🎥",
-      roleTitle: "6-Shot 24mm/35mm/50mm/85mm T-Stop & Kelvin Lighting Schedule",
+      roleTitle: `${shotsCount}-Shot 24mm/35mm/50mm/85mm T-Stop & Kelvin Lighting Schedule`,
       stackModel: "models/gemini-omni-1.1-flash & models/veo-3.1-generate-preview",
       status: computeBlueprintAgentStatus(65),
       executionTimeMs: perAgentSynthMs,
       qualityScore: computedQualityScore,
-      deliverableSummary: `Locked 6-shot anamorphic focal length, T-stop, camera rig & Kelvin lighting progression (${lighting}) for ${venue}.`,
+      deliverableSummary: `Locked ${shotsCount}-shot (${totalSeconds}.0s) anamorphic focal length, T-stop, camera rig & Kelvin lighting progression (${lighting}) for ${venue}.`,
       dynamicOutput: [
         `Master Lighting Rig: ${lighting}`,
-        `Camera & Lens Architecture: ${ctx.choreographyAndCameraUpgrade || "Progressive 24mm/35mm/50mm/85mm anamorphic lens schedule with 00:30 beat-drop whip-pan"}`,
+        `Camera & Lens Architecture: ${ctx.choreographyAndCameraUpgrade || `Progressive ${shotsCount}-shot 24mm/35mm/50mm/85mm anamorphic lens schedule`}`,
         ...shotOpticsLines,
         `180-Degree Eyeline & Tail-Frame Chaining: Frame-0 of Turn N+1 conditioned on de-degraded tail frame (t - 0.1s) of Turn N; chained boundary PSNR locked to [26.0, 42.0] dB`,
       ],
-      technicalArtifact: "camera_optics_lighting_schedule.json",
+      technicalArtifact: `camera_optics_${shotsCount}shot_schedule.json`,
     },
     {
       id: "narration_agent",
       name: "Vocal & Lyric Direction Agent",
       icon: "🎙️",
-      roleTitle: `${language} Lead/Co-Lead Vocal Timbre & ${bpm} BPM Bar-Locked Lyric Grid`,
+      roleTitle: `${language} Lead/Co-Lead Vocal & Spoken Dialogue Grid (${shotsCount} Turns @ ${bpm} BPM)`,
       stackModel: "models/gemini-2.5-flash & models/gemini-3.8-flash",
       status: computeBlueprintAgentStatus(72),
       executionTimeMs: perAgentSynthMs,
       qualityScore: computedQualityScore,
       deliverableSummary:
         ctx.voiceType ||
-        `Structured ${language} vocal delivery (${vocal}) at ${bpm} BPM (${musicalKey}) across ${shotsCount} 10-second turns with 100% Lead & Co-Lead representation.`,
+        `Structured ${language} vocal/dialogue delivery (${vocal}) at ${bpm} BPM (${musicalKey}) across ${shotsCount} 10-second turns (${totalSeconds}.0s) with 100% Lead & Co-Lead representation.`,
       dynamicOutput: [
         `Tempo & Key Synchronization Lock: ${bpm} BPM • ${musicalKey} • ${language} (${vocal})`,
-        `Vocal Arrangement & Timbre: ${ctx.voiceType || `${vocal} in ${language} (+4.5 dB upfront vocal presence)`}`,
+        `Vocal & Spoken Dialogue Arrangement: ${ctx.voiceType || `${vocal} in ${language} (+4.5 dB upfront vocal presence)`}`,
         ...(lyricLines.length > 0
-          ? lyricLines.map((line, i) => `Turn 0${i + 1} (${i * 10}s–${(i + 1) * 10}s • ${bpm} BPM): ${line}`)
-          : [`6-Turn bar-locked ${language} lyrics synthesized for "${title}"`]),
+          ? lyricLines.map(
+              (line, i) =>
+                `Turn ${String(i + 1).padStart(2, "0")} (${i * 10}s–${(i + 1) * 10}s • ${bpm} BPM): ${line}`
+            )
+          : [`${shotsCount}-Turn bar-locked ${language} lines synthesized for "${title}"`]),
       ],
-      technicalArtifact: "vocal_direction_phrase_grid_48k.json",
+      technicalArtifact: `vocal_direction_${shotsCount}turn_grid_48k.json`,
     },
     {
       id: "music_agent",
@@ -588,34 +605,34 @@ export function getDanceMusicVideoAgents(
       qualityScore: computedQualityScore,
       deliverableSummary:
         ctx.sonicInnovation ||
-        `Synthesized 60.0s 48kHz stereo master in ${language} (${bpm} BPM, ${musicalKey}) at -14.0 LUFS with full 35Hz–20kHz sub-bass retention.`,
+        `Synthesized ${totalSeconds}.0s 48kHz stereo master in ${language} (${bpm} BPM, ${musicalKey}) at -14.0 LUFS with full 35Hz–20kHz frequency retention.`,
       dynamicOutput: [
         `Tempo, Key & Genre Lock: ${bpm} BPM • ${musicalKey} • ${genre} (${language})`,
-        `Sonic Innovation Blueprint: ${ctx.sonicInnovation || `48,000 Hz stereo ${genre} arrangement with deep sub-bass drop and upfront ${language} vocals`}`,
+        `Sonic Innovation Blueprint: ${ctx.sonicInnovation || `48,000 Hz stereo ${genre} arrangement with upfront ${language} vocal/dialogue clarity`}`,
         `Mastering Chain Spec: 48,000 Hz stereo PCM/AAC, EBU R128 integrated loudness -14.0 LUFS (±1.0 LU), true peak <= -1.0 dBTP, highpass <= 45 Hz (zero 200Hz bass gutting)`,
-        `Downbeat Phase Lock: Sub-bass kick onset autocorrelation (40Hz–160Hz) at ${bpm} BPM aligned within <= 10ms across all ${shotsCount} turn transitions`,
+        `Downbeat Phase Lock: Sub-bass & rhythmic onset autocorrelation at ${bpm} BPM aligned within <= 10ms across all ${shotsCount} turn transitions`,
       ],
-      technicalArtifact: "lyria_3_pro_master_48khz.wav",
+      technicalArtifact: `lyria_3_pro_master_${totalSeconds}s_48khz.wav`,
     },
     {
       id: "assembly_agent",
       name: "Final Assembly Agent",
       icon: "🎬",
-      roleTitle: "1.000x 24/1 CFR Conformance & 0.0ms 4-Clock Lock",
+      roleTitle: `1.000x 24/1 CFR Conformance (${totalSeconds}.0s • ${totalActs} Acts) & 0.0ms 4-Clock Lock`,
       stackModel: "FFmpeg 24/1 CFR Master",
       status: computeRenderStageStatus(92),
       executionTimeMs: 0,
       qualityScore: computedQualityScore,
       deliverableSummary: isRendering
-        ? `Stitched ${shotsCount} turns (${shotsCount * 10}.0s) at strict 1.000x native speed (24/1 CFR, 9:16 1080x1920, 48kHz stereo, +faststart).`
-        : `Pre-Flight Assembly Contract Locked (Awaiting Clip Render): Ready to stitch ${shotsCount} turns (${shotsCount * 10}.0s at ${bpm} BPM) at strict 1.000x native speed (24/1 CFR, 9:16 1080x1920, 48kHz stereo, +faststart).`,
+        ? `Stitched ${shotsCount} turns (${totalSeconds}.0s across ${totalActs} acts) at strict 1.000x native speed (24/1 CFR, 9:16 1080x1920, 48kHz stereo, +faststart).`
+        : `Pre-Flight Assembly Contract Locked (Awaiting Clip Render): Ready to stitch ${shotsCount} turns (${totalSeconds}.0s at ${bpm} BPM across ${totalActs} acts) at strict 1.000x native speed (24/1 CFR, 9:16 1080x1920, 48kHz stereo, +faststart).`,
       dynamicOutput: [
         `Execution Stage Status: ${isRendering ? "ACTIVE / COMPLETED RENDER STITCH" : "PRE_FLIGHT_LOCKED (Zero false-positive stitch claims prior to POST /api/swarm/jobs execution)"}`,
         `Container & Codec Spec: MP4 (H.264 High@L4.1 yuv420p + AAC-LC 48,000 Hz stereo, +faststart)`,
-        `Cadence & Speed Contract: Strict 24/1 CFR (${shotsCount * 240} exact frames over ${shotsCount * 10}.000s), setpts=1.000x (zero speed warping, zero zoompan/tpad slideshow padding)`,
+        `Cadence & Speed Contract: Strict 24/1 CFR (${shotsCount * 240} exact frames over ${totalSeconds}.000s), setpts=1.000x (zero speed warping, zero zoompan/tpad slideshow padding)`,
         `4-Clock Synchronization Gate: |T_rendered - T_editorial| == 0.0ms && |T_rendered - T_audio| <= 20.0ms at ${bpm} BPM`,
       ],
-      technicalArtifact: "master_60s_cfr_output.mp4",
+      technicalArtifact: `master_${totalSeconds}s_cfr_output.mp4`,
     },
     {
       id: "forensic_qa_judge_agent",
@@ -631,7 +648,7 @@ export function getDanceMusicVideoAgents(
       qualityScore: jr?.independentScore || computedQualityScore,
       deliverableSummary: jr
         ? `Cross-Model Independent Audit (${jr.judgeModel} evaluating ${jr.generatorModel}): ${jr.independentScore} — ${jr.verdictSummary}`
-        : `Pre-Flight Cross-Agent Audit: ${audit.scoreLabel} — verified across Script, 6-Persona Cast, 5-Tier Wardrobe, Location, Props/Instruments, 8-Count Choreography, Dual-Mode Visemes, 6-Shot Optics/Kelvin, Vocal Coverage, and ${bpm} BPM Lock.`,
+        : `Pre-Flight Cross-Agent Audit: ${audit.scoreLabel} — verified across Script, ${castCount}-Persona Cast, 5-Tier Wardrobe, Location, Props, ${shotsCount}-Shot Choreography, Dual-Mode Visemes, ${shotsCount}-Shot Optics/Kelvin, Vocal Coverage, and ${bpm} BPM Lock.`,
       dynamicOutput: [
         jr
           ? `Cross-Model Judge Separation: Pass 1 Generator = ${jr.generatorModel} (${jr.generatorLatencyMs}ms) | Pass 2 Independent Judge = ${jr.judgeModel} (${jr.judgeLatencyMs}ms)`

@@ -121,61 +121,42 @@ function collectVideosInOrder(obj: unknown, found: { data: string }[] = []) {
 }
 
 /**
- * Sanitizes real celebrity, actor, singer, composer, and designer names from prompts
+ * Sanitizes URLs, real-person likeness triggers, and wardrobe/safety terms from prompts
  * before sending to POST /v1beta/interactions so Google's safety gate never blocks
  * with `HTTP 400 content_blocked: Sorry, we can't create videos with real people's names or likenesses`.
  */
 function sanitizePromptForOmniSafety(raw: string): string {
   return raw
     .replace(/https?:\/\/[^\s"'<>]+/gi, "")
-    .replace(/\b(Pietro\s+Malegori|Manuel\s+Campagna|Forma\s+Studio)\b/gi, "award-winning European cinema director")
-    .replace(/\b(Inspector\s+)?Matteo(\s+Conti)?\b/gi, "the 42-year-old weathered Italian lead inspector in a dark-olive wool trench coat")
-    .replace(/\b(Dr\.?\s+)?Elena(\s+Moretti|\s+Marchetti)?\b/gi, "the 31-year-old Mediterranean mother in an oatmeal merino wool sweater")
-    .replace(/\b(Auditor\s+)?Sofia(\s+Lindqvist|\s+Alverez)?\b/gi, "the 35-year-old Nordic female auditor in a tailored navy wool overcoat")
-    .replace(/\b(Dr\.?\s+|Director\s+)?Lorenzo(\s+Ferri|\s+Vance)?\b/gi, "the 60-year-old silver-haired bearded historian in a brown tweed jacket")
-    .replace(/\b(Counselor\s+)?Marcus(\s+Sterling)?\b/gi, "the 38-year-old defense counsel in a charcoal three-piece wool suit")
-    .replace(/\b(Cryptographer\s+)?Aria(\s+Chen)?\b/gi, "the 29-year-old East Asian acoustic archivist in a slate-grey cashmere turtleneck")
-    .replace(/\bBom\s+Diggy(\s+Diggy)?\b/gi, "modern Punjabi-English urban club-pop bounce")
-    .replace(/\bZack\s+Knight('s)?\b/gi, "smooth urban R&B-Punjabi pop vocalist")
-    .replace(/\bJasmin\s+Walia('s)?\b/gi, "glamorous Punjabi-English club-pop female vocalist")
-    .replace(/\bSakshi\s+Malik('s)?\b/gi, "tall fair glamorous model with chic gold-rimmed glasses and playful eye-wink expression")
-    .replace(/\b(Kartik\s+Aaryan|Sunny\s+Singh|Nushrratt\s+Bharuccha)('s)?\b/gi, "stylish young urban VIP club protagonist")
-    .replace(/\bSonu\s+Ke\s+Titu\s+Ki\s+Sweety\b/gi, "glamorous modern Indian youth party anthem")
+    // Replace titled First + Last proper names with descriptive role titles so real-person likeness filters do not false-positive
+    .replace(
+      /\b(Inspector|Dr\.?|Doctor|Auditor|Counselor|Cryptographer|Director|Captain|Professor|Detective)\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\b/g,
+      (_, title: string) => `the lead ${title.replace(/\.$/, "").toLowerCase()}`
+    )
+    // Replace possessive First + Last proper names ("Name Surname's") with generic performer reference
+    .replace(/\b[A-Z][a-z]{2,}\s+[A-Z][a-z]{2,}'s\b/g, "the lead performer's")
+    // Normalize wardrobe & age descriptors for Omni safety compliance
     .replace(/\bcollege\s+girls\b/gi, "21-year-old adult fashion models and dancers")
     .replace(/\bcollege\b/gi, "urban fashion")
-    .replace(/\bshort\s+clothes\b/gi, "glamorous shimmering metallic sequin modern club dresses and chic high-fashion skirts")
+    .replace(
+      /\bshort\s+clothes\b/gi,
+      "glamorous shimmering metallic sequin modern club dresses and chic high-fashion skirts"
+    )
     .replace(/\b(micro-pleated\s+)?mini[\s-]skirts?\b/gi, "chic high-fashion modern club skirts")
-    .replace(/\b(mini\s+club\s+dresses|mini[\s-]dress(es)?|bodycon\s+mini(\s+club)?\s+dress(es)?)\b/gi, "shimmering metallic sequin modern club dresses")
-    .replace(/\bcropped\s+(sequin\s+|metallic\s+)?(tops?|two-piece\s+co-ords?)\b/gi, "chic metallic sequin club tops")
-    .replace(/\b(waist(\/hip)?\s+(and\s+hip\s+)?isolations|hip\s+locks)\b/gi, "high-energy modern dance-pop footwork and rhythmic groove")
+    .replace(
+      /\b(mini\s+club\s+dresses|mini[\s-]dress(es)?|bodycon\s+mini(\s+club)?\s+dress(es)?)\b/gi,
+      "shimmering metallic sequin modern club dresses"
+    )
+    .replace(
+      /\bcropped\s+(sequin\s+|metallic\s+)?(tops?|two-piece\s+co-ords?)\b/gi,
+      "chic metallic sequin club tops"
+    )
+    .replace(
+      /\b(waist(\/hip)?\s+(and\s+hip\s+)?isolations|hip\s+locks)\b/gi,
+      "high-energy modern dance-pop footwork and rhythmic groove"
+    )
     .replace(/\b(eye-flirt|flirtatious)\b/gi, "magnetic expressive")
     .replace(/\bsultry\b/gi, "charismatic")
-    .replace(/\bNora\s+Fatehi('s)?\b/gi, "glamorous Bollywood item-dance lead heroine")
-    .replace(/\bNora\s+Verma\b/gi, "Glamorous Bollywood Lead Dancer")
-    .replace(/\bNora\b/gi, "the lead dancer")
-    .replace(/\bRajkummar\s+Rao('s)?\b/gi, "charismatic small-town festive male co-star")
-    .replace(/\bRajkummar\b/gi, "festive male co-star")
-    .replace(/\bVicky\s+Rao\b/gi, "Charismatic Festive Male Co-Star")
-    .replace(/\bVicky\b/gi, "the male co-star")
-    .replace(/\bShraddha\s+Kapoor('s)?\b/gi, "mysterious Bollywood lead heroine")
-    .replace(/\bAastha\s+Gill('s)?\b/gi, "sassy modern Hindi husky-pop female playback vocalist")
-    .replace(/\bDivya\s+Kumar('s)?\b/gi, "energetic rustic-pop male playback hype vocalist")
-    .replace(/\bSachin[\s–—-]+Jigar('s)?\b/gi, "contemporary Bollywood dhol-brass dance music duo")
-    .replace(/\bDJ\s+Sachin\b/gi, "Live Dhol-Brass DJ Producer")
-    .replace(/\bMadhuri\s+Dixit('s)?\b/gi, "classic 90s Bollywood expressive dance heroine")
-    .replace(/\bMadhuri\b/gi, "classic 90s Bollywood lead heroine")
-    .replace(/\bSridevi('s)?\b/gi, "legendary Bollywood classical serpent-dance heroine")
-    .replace(/\bAmrish\s+Puri('s)?\b/gi, "veteran saffron-robed sapera master")
-    .replace(/\bIla\s+Arun('s)?\b/gi, "earthy Rajasthani folk-pop female playback vocalist")
-    .replace(/\bAlka\s+Yagnik('s)?\b/gi, "melodic high-soprano Bollywood female playback vocalist")
-    .replace(/\bKavita\s+Krishnamurthy('s)?\b/gi, "expressive classical Bollywood female playback vocalist")
-    .replace(/\bLaxmikant[\s–—-]+Pyarelal('s)?\b/gi, "classic Bollywood dholak-orchestra ensemble")
-    .replace(/\bSabyasachi\b/gi, "Royal Heritage Zardosi Couture")
-    .replace(/\bManish\s+Malhotra\b/gi, "High-Glam Crystal Couture")
-    .replace(/\bA\.?\s*R\.?\s+Rahman('s)?\b/gi, "cinematic orchestral fusion composer")
-    .replace(/\bShreya\s+Ghoshal('s)?\b/gi, "silky melodic Bollywood female playback soprano")
-    .replace(/\bArijit\s+Singh('s)?\b/gi, "soulful emotive Hindi male playback tenor")
-    .replace(/\b(Diljit\s+Dosanjh|AP\s+Dhillon|Karan\s+Aujla|Badshah|Sunidhi\s+Chauhan|Neha\s+Kakkar)\b/gi, "chart-topping modern Indian pop vocalist")
     .replace(/\breal\s+people('s)?\b/gi, "photorealistic live-action adult cinema actors")
     .replace(/\breal\s+human(\s+beings|\s+actors)?\b/gi, "photorealistic live-action adult cinema actors");
 }
@@ -852,30 +833,60 @@ async function synthesizeAndMixCinemaDialogueTrack(
     .map((l) => l.trim())
     .filter(Boolean);
 
-  const defaultCinemaLines = [
-    { speaker: "Matteo", voice: "Charon", text: "Ten billion lives on the ledger, Sofia. And the rain in Milan never washes the ink away." },
-    { speaker: "Elena", voice: "Aoede", text: "Every child in this room is a real human soul, Inspector, not a number on a brass plate." },
-    { speaker: "Sofia", voice: "Kore", text: "One signature is all it takes, Matteo. Tonight we choose humanity over the census law." },
-    { speaker: "Matteo", voice: "Charon", text: "I am unpinning my badge. Take my place on the register, Elena, and let your family live free." },
-    { speaker: "Lorenzo", voice: "Fenrir", text: "History will remember the courage spoken inside these apartment walls tonight." },
-    { speaker: "Sofia", voice: "Kore", text: "Walk out into the morning rain, Matteo. The courtyard stands with you, unregistered and finally free." },
-    { speaker: "Marcus", voice: "Puck", text: "The tribunal in Geneva just received the encrypted ledger. They know the tenth billionth child is alive." },
-    { speaker: "Aria", voice: "Leda", text: "I routed the acoustic beacon through the cathedral bells. Every district in Milan can hear the truth now." },
-    { speaker: "Lorenzo", voice: "Fenrir", text: "For thirty years they ruled by fear and arithmetic. Today, the arithmetic broke." },
-    { speaker: "Elena", voice: "Aoede", text: "Look at the balconies across the square. Nobody is hiding behind closed shutters anymore." },
-    { speaker: "Marcus", voice: "Puck", text: "Let the enforcers come. You cannot arrest an entire city that refuses to erase its children." },
-    { speaker: "Matteo", voice: "Charon", text: "The sun is rising over the stone courtyard. Every voice is counted, and every life remains ours." },
-  ];
+  const VOICE_ROTATION = ["Charon", "Aoede", "Kore", "Fenrir", "Puck", "Leda"];
 
   const pickVoiceForRole = (roleHint: string, idx: number): string => {
-    if (/matteo|inspector|captain|father/i.test(roleHint)) return "Charon";
-    if (/elena|mother|woman|geneticist/i.test(roleHint)) return "Aoede";
-    if (/sofia|auditor|journalist/i.test(roleHint)) return "Kore";
-    if (/lorenzo|doctor|dr\.|historian|director/i.test(roleHint)) return "Fenrir";
-    if (/marcus|counsel|enforcer/i.test(roleHint)) return "Puck";
-    if (/aria|cryptographer|archivist/i.test(roleHint)) return "Leda";
-    return defaultCinemaLines[idx % defaultCinemaLines.length].voice;
+    if (/inspector|captain|male\s*lead|baritone|father|protagonist|commander/i.test(roleHint)) return "Charon";
+    if (/female\s*lead|mother|woman|geneticist|soprano|heroine/i.test(roleHint)) return "Aoede";
+    if (/co-lead|auditor|journalist|mezzo|partner|harmony/i.test(roleHint)) return "Kore";
+    if (/doctor|dr\.|historian|director|elder|scholar|supporting|mentor/i.test(roleHint)) return "Fenrir";
+    if (/counsel|enforcer|counter|tenor|operative|tribunal/i.test(roleHint)) return "Puck";
+    if (/cryptographer|archivist|engineer|alto|specialist/i.test(roleHint)) return "Leda";
+    return VOICE_ROTATION[idx % VOICE_ROTATION.length];
   };
+
+  // If fewer than totalShots dialogue lines exist in job.lyrics or job.turnPrompts, dynamically synthesize bespoke lines via Gemini 2.5 Flash
+  let dynamicFallbackLines: string[] = [];
+  const hasAllExplicitLines = Array.from({ length: totalShots }, (_, idx) => {
+    const rawLine = rawLyricLines[idx] || "";
+    const promptQuote = (job.turnPrompts?.[idx] || "").match(/"([^"]{12,220})"/);
+    return rawLine.length >= 12 || Boolean(promptQuote);
+  }).every(Boolean);
+
+  if (!hasAllExplicitLines) {
+    try {
+      const synthRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: "user",
+                parts: [
+                  {
+                    text: `Write exactly ${totalShots} dramatic spoken cinema dialogue lines (12 to 22 words per line, one line per 10-second shot) for the film "${job.title}" (${job.genre}).\nAct I Context: ${job.act1Prompt.slice(0, 400)}\nAct II Context: ${job.act2Prompt.slice(0, 400)}\nReturn ONLY a JSON array of ${totalShots} strings.`,
+                  },
+                ],
+              },
+            ],
+            generationConfig: { responseMimeType: "application/json", temperature: 0.4 },
+          }),
+        }
+      );
+      if (synthRes.ok) {
+        const synthJson = await synthRes.json();
+        const rawArrText = synthJson?.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+        const parsedArr = JSON.parse(rawArrText);
+        if (Array.isArray(parsedArr)) {
+          dynamicFallbackLines = parsedArr.map((x: unknown) => String(x || "").trim()).filter(Boolean);
+        }
+      }
+    } catch {
+      // fallback to job context below
+    }
+  }
 
   const shotDialogues = Array.from({ length: totalShots }, (_, idx) => {
     const rawLine = rawLyricLines[idx] || "";
@@ -888,7 +899,10 @@ async function synthesizeAndMixCinemaDialogueTrack(
 
     if (!cleanText || cleanText.length < 10) {
       const promptQuote = (job.turnPrompts?.[idx] || "").match(/"([^"]{12,220})"/);
-      cleanText = promptQuote ? promptQuote[1] : defaultCinemaLines[idx % defaultCinemaLines.length].text;
+      cleanText =
+        promptQuote?.[1] ||
+        dynamicFallbackLines[idx] ||
+        `In this moment of ${job.title}, every choice we make echoes across the entire city.`;
     }
     const voice = pickVoiceForRole(roleHint || cleanText, idx);
     return { shotIndex: idx + 1, voice, text: cleanText };
@@ -1659,7 +1673,8 @@ async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string)
       allActMasterPaths.map((p) => `file '${p}'`).join("\n") + "\n",
       "utf8"
     );
-    const combinedMasterPath = path.join(jobDir, "combined_60s.mp4");
+    const combinedFileName = `combined_${totalDurationSec}s.mp4`;
+    const combinedMasterPath = path.join(jobDir, combinedFileName);
     execFileSync(
       "ffmpeg",
       [
@@ -1691,14 +1706,19 @@ async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string)
       );
     }
 
-    if (totalDurationSec > 60) {
-      const extendedMasterPath = path.join(jobDir, `combined_${totalDurationSec}s.mp4`);
-      fs.copyFileSync(combinedMasterPath, extendedMasterPath);
+    // If using Lyria 3 Pro, mux the single uninterrupted studio song over combinedMasterPath so there is zero audio seam!
+    if (useLyria3 && lyriaMasterMp3 && fs.existsSync(lyriaMasterMp3)) {
+      muxAudioOntoVideo(combinedMasterPath, lyriaMasterMp3, combinedMasterPath, totalDurationSec, 0);
     }
 
-    // If using Lyria 3 Pro, mux the single uninterrupted 60.0s Lyria 3 Pro studio song over combined_60s.mp4 so there is zero audio seam at 30.0s!
-    if (useLyria3 && lyriaMasterMp3 && fs.existsSync(lyriaMasterMp3)) {
-      muxAudioOntoVideo(combinedMasterPath, lyriaMasterMp3, combinedMasterPath, 60, 0);
+    // Maintain combined_60s.mp4 alias alongside combined_${totalDurationSec}s.mp4 for legacy callers
+    if (totalDurationSec !== 60) {
+      const legacy60sPath = path.join(jobDir, "combined_60s.mp4");
+      try {
+        fs.copyFileSync(combinedMasterPath, legacy60sPath);
+      } catch {
+        // non-fatal
+      }
     }
 
     // Automatically generate downloadable & shareable MP3, WAV, Scene Anchor JPGs, and run Spoken-Dialogue Verification Gate
@@ -1766,7 +1786,7 @@ async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string)
     const ts = Date.now();
     job.part1Src = `${publicPrefix}/act1_30s.mp4?t=${ts}`;
     job.part2Src = `${publicPrefix}/act2_30s.mp4?t=${ts}`;
-    job.combinedSrc = `${publicPrefix}/combined_60s.mp4?t=${ts}`;
+    job.combinedSrc = `${publicPrefix}/${combinedFileName}?t=${ts}`;
     job.segments = allActMasterPaths.map((_, idx) => {
       const actNum = idx + 1;
       const startSec = idx * 30;
@@ -1793,7 +1813,7 @@ async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string)
     const nowIso = new Date().toISOString();
     const newLibraryAssets: LibraryAssetItem[] = [
       {
-        id: `${job.id}_combined_60s`,
+        id: `${job.id}_combined_${totalDurationSec}s`,
         projectId: job.id,
         projectTitle: job.title,
         title: `${job.title} — Combined ${totalDurationSec}.0s Master`,
@@ -1809,7 +1829,7 @@ async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string)
         wardrobe: "Custom Prompt Wardrobe",
         location: "Custom Prompt Location",
         promptSummary: `${job.act1Prompt} // ${job.act2Prompt}`,
-        src: `${publicPrefix}/combined_60s.mp4`,
+        src: `${publicPrefix}/${combinedFileName}`,
         createdAt: nowIso,
       },
       ...allActMasterPaths.map((_, idx) => {
@@ -1841,13 +1861,11 @@ async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string)
     ];
     appendLibraryAssets(newLibraryAssets);
 
-    // Also auto-register Main Combined Reel + Part 1 & Part 2 child clips in SQLite data/studio_entities.db
+    // Also auto-register Main Combined Reel + all Act child clips in SQLite data/studio_entities.db
     try {
       const dbPath = path.join(process.cwd(), "data/studio_entities.db");
       const suffix = job.id.replace(/\D/g, "").slice(-6);
       const reelId = `ZYV-REEL-J${suffix}`;
-      const clip1Id = `ZYV-CLIP-J${suffix}P1`;
-      const clip2Id = `ZYV-CLIP-J${suffix}P2`;
       const safeTitle = job.title.replace(/'/g, "''");
       const metaMain = JSON.stringify({
         projectId: job.id,
@@ -1859,34 +1877,33 @@ async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string)
         genre: job.genre,
         assetType: "combined_master",
       }).replace(/'/g, "''");
-      const metaP1 = JSON.stringify({
-        projectId: job.id,
-        durationSec: 30,
-        frames: 720,
-        fps: "24/1 CFR",
-        audioEngine: job.audioEngine || "omni_native",
-        audioSpec: "48,000 Hz Stereo AAC",
-        genre: job.genre,
-        partIndex: 1,
-        assetType: "act_master",
-      }).replace(/'/g, "''");
-      const metaP2 = JSON.stringify({
-        projectId: job.id,
-        durationSec: 30,
-        frames: 720,
-        fps: "24/1 CFR",
-        audioEngine: job.audioEngine || "omni_native",
-        audioSpec: "48,000 Hz Stereo AAC",
-        genre: job.genre,
-        partIndex: 2,
-        assetType: "act_master",
-      }).replace(/'/g, "''");
-      const sql = `
-        INSERT OR REPLACE INTO studio_entities (id, entity_type, slug, canonical_url, title, subtitle, parent_id, media_src, metadata_json, created_at) VALUES
-        ('${reelId}', 'reel', 'reel-${job.id}', '/entity/${reelId}', '${safeTitle} — Combined 60.0s Master', '${engineBadge}', NULL, '${publicPrefix}/combined_60s.mp4', '${metaMain}', '${nowIso}'),
-        ('${clip1Id}', 'clip', 'clip-${job.id}-p1', '/entity/${clip1Id}', 'Part 1 • Act I (0:00–0:30)', 'Act I 30.0s (${engineBadge})', '${reelId}', '${publicPrefix}/act1_30s.mp4', '${metaP1}', '${nowIso}'),
-        ('${clip2Id}', 'clip', 'clip-${job.id}-p2', '/entity/${clip2Id}', 'Part 2 • Act II (0:30–1:00)', 'Act II 30.0s (${engineBadge})', '${reelId}', '${publicPrefix}/act2_30s.mp4', '${metaP2}', '${nowIso}');
-      `;
+
+      const fmtTime = (sec: number) =>
+        `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
+
+      const valueRows = [
+        `('${reelId}', 'reel', 'reel-${job.id}', '/entity/${reelId}', '${safeTitle} — Combined ${totalDurationSec}.0s Master', '${engineBadge}', NULL, '${publicPrefix}/${combinedFileName}', '${metaMain}', '${nowIso}')`,
+        ...allActMasterPaths.map((_, idx) => {
+          const actNum = idx + 1;
+          const clipId = `ZYV-CLIP-J${suffix}P${actNum}`;
+          const startSec = idx * 30;
+          const endSec = actNum * 30;
+          const metaClip = JSON.stringify({
+            projectId: job.id,
+            durationSec: 30,
+            frames: 720,
+            fps: "24/1 CFR",
+            audioEngine: job.audioEngine || "omni_native",
+            audioSpec: "48,000 Hz Stereo AAC",
+            genre: job.genre,
+            partIndex: actNum,
+            assetType: "act_master",
+          }).replace(/'/g, "''");
+          return `('${clipId}', 'clip', 'clip-${job.id}-p${actNum}', '/entity/${clipId}', 'Part ${actNum} • Act ${actNum} (${fmtTime(startSec)}–${fmtTime(endSec)})', 'Act ${actNum} 30.0s (${engineBadge})', '${reelId}', '${publicPrefix}/act${actNum}_30s.mp4', '${metaClip}', '${nowIso}')`;
+        }),
+      ];
+
+      const sql = `INSERT OR REPLACE INTO studio_entities (id, entity_type, slug, canonical_url, title, subtitle, parent_id, media_src, metadata_json, created_at) VALUES\n${valueRows.join(",\n")};`;
       execFileSync("sqlite3", [dbPath, sql], { stdio: "inherit" });
     } catch {
       // non-fatal if sqlite3 CLI unavailable

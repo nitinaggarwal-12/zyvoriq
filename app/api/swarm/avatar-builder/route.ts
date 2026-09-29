@@ -44,7 +44,7 @@ function selectBestPortraitFromPool(
   promptText: string,
   name: string
 ): string {
-  if (portraits.length === 0) return "/assets/characters/elena_rostova.jpg";
+  if (portraits.length === 0) return "/assets/characters/ananya_roy_in.jpg";
 
   const maleHints = [
     "arjun",

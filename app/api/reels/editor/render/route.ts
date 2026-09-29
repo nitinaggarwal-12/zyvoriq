@@ -744,7 +744,7 @@ export async function POST(req: NextRequest) {
         if (row) {
           const manifest = JSON.parse(row.manifest_json || "{}");
           if (!manifest.assets) manifest.assets = {};
-          const origUrl = manifest.assets.masterHybridUrl || manifest.assets.masterNativeUrl || "/renders/yt/default.mp4";
+          const origUrl = manifest.assets.masterHybridUrl || manifest.assets.masterNativeUrl || "/assets/swarm/generated/job_1790663346051/combined_120s.mp4";
           const baseList = Array.isArray(manifest.versions) && manifest.versions.length > 0
             ? filterOutAutoStitchClutter(manifest.versions)
             : [
@@ -789,7 +789,7 @@ export async function POST(req: NextRequest) {
         if (pgRes.rows.length > 0) {
           const manifest = JSON.parse(pgRes.rows[0].manifest_json || "{}");
           if (!manifest.assets) manifest.assets = {};
-          const origUrl = manifest.assets.masterHybridUrl || manifest.assets.masterNativeUrl || "/renders/yt/default.mp4";
+          const origUrl = manifest.assets.masterHybridUrl || manifest.assets.masterNativeUrl || "/assets/swarm/generated/job_1790663346051/combined_120s.mp4";
           const baseList = Array.isArray(manifest.versions) && manifest.versions.length > 0
             ? filterOutAutoStitchClutter(manifest.versions)
             : [
@@ -885,7 +885,7 @@ export async function DELETE(req: NextRequest) {
       const row = db.prepare(`SELECT manifest_json FROM yt_productions WHERE id = ?`).get(reelId) as any;
       if (row) {
         const manifest = JSON.parse(row.manifest_json || "{}");
-        const origUrl = manifest?.assets?.masterHybridUrl || manifest?.assets?.masterNativeUrl || "/renders/yt/default.mp4";
+        const origUrl = manifest?.assets?.masterHybridUrl || manifest?.assets?.masterNativeUrl || "/assets/swarm/generated/job_1790663346051/combined_120s.mp4";
         const currentList = Array.isArray(manifest.versions) ? manifest.versions : [];
         updatedVersions = filterVersions(currentList, origUrl);
         manifest.versions = updatedVersions;
@@ -901,7 +901,7 @@ export async function DELETE(req: NextRequest) {
       const pgRes = await pool.query(`SELECT manifest_json FROM yt_productions WHERE id = $1`, [reelId]);
       if (pgRes.rows.length > 0) {
         const manifest = JSON.parse(pgRes.rows[0].manifest_json || "{}");
-        const origUrl = manifest?.assets?.masterHybridUrl || manifest?.assets?.masterNativeUrl || "/renders/yt/default.mp4";
+        const origUrl = manifest?.assets?.masterHybridUrl || manifest?.assets?.masterNativeUrl || "/assets/swarm/generated/job_1790663346051/combined_120s.mp4";
         const currentList = Array.isArray(manifest.versions) ? manifest.versions : [];
         const pgFiltered = filterVersions(currentList, origUrl);
         if (!updatedVersions.length) updatedVersions = pgFiltered;

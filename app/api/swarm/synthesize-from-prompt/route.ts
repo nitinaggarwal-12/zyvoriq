@@ -6,8 +6,10 @@ import {
   WardrobeItem,
   AccessoryItem,
   CatalogOption,
+  REGIONS_CATALOG,
   COUNTRIES_CATALOG,
   LANGUAGES_CATALOG,
+  DEMOGRAPHIES_CATALOG,
   GENRES_CATALOG,
   VOCALS_CATALOG,
   LIGHTING_CATALOG,
@@ -166,56 +168,108 @@ function decodeHtmlEntities(str: string): string {
     .replace(/&gt;/g, ">");
 }
 
-async function fetchYouTubeReferenceIntelligence(
-  rawPrompt: string
+async function fetchExternalVideoUrlMetadata(
+  externalUrl: string
 ): Promise<YouTubeReferenceMetadata | null> {
-  // Support Higgsfield Global Film Festival reference URLs (e.g. https://higgsfield.ai/@pietromalegori/projects/control)
-  const higgsfieldControlMatch = rawPrompt.match(
-    /https?:\/\/(?:www\.)?higgsfield\.ai\/@pietromalegori\/projects\/control[^\s"'<>]*/i
-  );
-  if (higgsfieldControlMatch || /pietromalegori\/projects\/control/i.test(rawPrompt)) {
+  try {
+    const parsedUrl = new URL(externalUrl);
+    const slugParts = parsedUrl.pathname.split("/").filter(Boolean);
+    const projectSlug = slugParts[slugParts.length - 1] || parsedUrl.hostname;
+    const creatorSlug = slugParts.find((p) => p.startsWith("@")) || parsedUrl.hostname;
+
+    let title = "";
+    let channelName = creatorSlug.replace(/^@/, "");
+    let descriptionSnippet = "";
+    let keywords: string[] = [];
+    let thumbnailUrl = "";
+
+    try {
+      const htmlRes = await fetch(externalUrl, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+          Accept: "text/html,application/xhtml+xml",
+        },
+        signal: AbortSignal.timeout(4000),
+      });
+      if (htmlRes.ok) {
+        const html = await htmlRes.text();
+        const ogTitle =
+          html.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i)?.[1] ||
+          html.match(/<title>([^<]+)<\/title>/i)?.[1];
+        const ogDesc =
+          html.match(/<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']/i)?.[1] ||
+          html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i)?.[1];
+        const ogImage = html.match(
+          /<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i
+        )?.[1];
+        if (ogTitle) title = decodeHtmlEntities(ogTitle).trim();
+        if (ogDesc) descriptionSnippet = decodeHtmlEntities(ogDesc).trim();
+        if (ogImage) thumbnailUrl = ogImage.trim();
+      }
+    } catch {
+      // fall through to local cached reference frames if available
+    }
+
+    // Load any cached local reference frames matching the project slug (e.g. public/assets/swarm/<slug>_ref/)
     const refFrames: string[] = [];
-    for (const rel of [
-      "public/assets/swarm/control_ref/poster.jpg",
-      "public/assets/swarm/control_ref/frame_030s.jpg",
-      "public/assets/swarm/control_ref/frame_150s.jpg",
-      "public/assets/swarm/control_ref/frame_300s.jpg",
-      "public/assets/swarm/control_ref/frame_480s.jpg",
-    ]) {
-      try {
-        const full = path.join(process.cwd(), rel);
-        if (fs.existsSync(full)) {
-          refFrames.push(fs.readFileSync(full).toString("base64"));
+    const candidateRefDirs = [
+      path.join(process.cwd(), "public/assets/swarm", `${projectSlug.toLowerCase()}_ref`),
+    ];
+    for (const dirPath of candidateRefDirs) {
+      if (fs.existsSync(dirPath)) {
+        try {
+          const files = fs
+            .readdirSync(dirPath)
+            .filter((f) => /\.(jpg|jpeg|png)$/i.test(f))
+            .sort();
+          for (const file of files.slice(0, 5)) {
+            refFrames.push(fs.readFileSync(path.join(dirPath, file)).toString("base64"));
+            if (!thumbnailUrl) {
+              thumbnailUrl = `/assets/swarm/${path.basename(dirPath)}/${file}`;
+            }
+          }
+        } catch {
+          // ignore
         }
-      } catch {
-        // ignore
       }
     }
+
+    if (!title) {
+      title = `${projectSlug.toUpperCase()} — ${parsedUrl.hostname} Reference Film`;
+    }
+    if (!descriptionSnippet) {
+      descriptionSnippet = `External cinema reference from ${parsedUrl.hostname} (${creatorSlug}/${projectSlug}): live-action dramatic short film reference deconstructed for multi-act elevation across cast, narrative arc, spoken dialogue, and runtime.`;
+    }
+    keywords = [projectSlug, creatorSlug.replace(/^@/, ""), parsedUrl.hostname, "35mm Live-Action Cinema"];
+
     return {
-      videoId: "higgsfield_control",
-      url: "https://higgsfield.ai/@pietromalegori/projects/control?from=%2Fcontests%2Fhiggsfield-global-film-festival%3Ftab%3Dsubmissions",
-      title: "CONTROL — Higgsfield Global Film Festival Submission",
-      channelName: "Pietro Malegori & Manuel Campagna (Forma Studio)",
-      descriptionSnippet:
-        "In a near-future world capped at 10 billion inhabitants, every birth requires a corresponding death. A Population Control Officer visits a family expecting a child and faces a choice between duty and humanity.",
-      keywords: [
-        "CONTROL",
-        "Pietro Malegori",
-        "Higgsfield Global Film Festival",
-        "35mm Live-Action Cinema",
-        "Milan",
-        "Population Control Officer",
-        "Koi Aquarium",
-        "Crimson Corridor",
-      ],
-      thumbnailUrl: "/assets/swarm/control_ref/poster.jpg",
+      videoId: `ext_${projectSlug.toLowerCase().replace(/[^a-z0-9_]/g, "_")}`,
+      url: externalUrl,
+      title,
+      channelName,
+      descriptionSnippet,
+      keywords,
+      thumbnailUrl: thumbnailUrl || "/assets/characters/matteo_conti_it.jpg",
       thumbnailBase64: refFrames[0],
       frameBase64List: refFrames,
     };
+  } catch {
+    return null;
   }
+}
 
+async function fetchYouTubeReferenceIntelligence(
+  rawPrompt: string
+): Promise<YouTubeReferenceMetadata | null> {
   const videoId = extractYouTubeVideoId(rawPrompt);
-  if (!videoId) return null;
+  if (!videoId) {
+    const genericUrlMatch = rawPrompt.match(/https?:\/\/[^\s"'<>]+/i);
+    if (genericUrlMatch?.[0]) {
+      return fetchExternalVideoUrlMetadata(genericUrlMatch[0]);
+    }
+    return null;
+  }
 
   const canonicalUrl = `https://www.youtube.com/watch?v=${videoId}`;
   const thumbnailUrl = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
@@ -367,6 +421,13 @@ interface PortraitCandidate {
 }
 
 const PORTRAIT_POOL: PortraitCandidate[] = [
+  // 35mm Live-Action European Cinema Realism
+  { photoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn1C.jpg", gender: "female", cluster: "latin_mediterranean", tags: ["italy", "milan", "mediterranean", "cinema", "thriller", "dramatic", "actress", "mother", "realism"] },
+  { photoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn1A.jpg", gender: "male", cluster: "latin_mediterranean", tags: ["italy", "milan", "mediterranean", "cinema", "thriller", "inspector", "lead", "actor", "realism"] },
+  { photoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn2B.jpg", gender: "male", cluster: "latin_mediterranean", tags: ["italy", "milan", "mediterranean", "cinema", "thriller", "historian", "scholar", "supporting", "realism"] },
+  { photoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn2A.jpg", gender: "male", cluster: "latin_mediterranean", tags: ["italy", "milan", "mediterranean", "cinema", "thriller", "marshals", "ensemble", "background", "realism"] },
+  { photoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn2C.jpg", gender: "female", cluster: "latin_mediterranean", tags: ["italy", "milan", "mediterranean", "cinema", "thriller", "courtyard", "residents", "audience", "realism"] },
+
   // East & Southeast Asian Female
   { photoUrl: "/assets/characters/yuna_park_kr.jpg", gender: "female", cluster: "east_asia", tags: ["korea", "korean", "kpop", "seoul", "east_asia", "idol", "disco", "funk", "pop", "neon"] },
   { photoUrl: "/assets/characters/aoi_takahashi_jp.jpg", gender: "female", cluster: "east_asia", tags: ["japan", "japanese", "tokyo", "kyoto", "east_asia", "city_pop", "idol", "kpop", "seoul", "synth"] },
@@ -407,7 +468,7 @@ const PORTRAIT_POOL: PortraitCandidate[] = [
   { photoUrl: "/assets/characters/ines_laurent.jpg", gender: "female", cluster: "north_america_europe", tags: ["france", "usa", "nyc", "english", "pop", "funk", "disco", "couture"] },
   { photoUrl: "/assets/characters/camille_vidal.jpg", gender: "female", cluster: "north_america_europe", tags: ["france", "europe", "usa", "dance_pop", "funk", "club"] },
   { photoUrl: "/assets/characters/hanna_weber_de.jpg", gender: "female", cluster: "north_america_europe", tags: ["germany", "berlin", "techno", "synthwave", "electronic", "europe"] },
-  { photoUrl: "/assets/characters/freja_moller_dk.jpg", gender: "female", cluster: "north_america_europe", tags: ["nordic", "scandinavia", "europe", "minimalist", "pool", "resort"] },
+  { photoUrl: "/assets/characters/freja_moller_dk.jpg", gender: "female", cluster: "north_america_europe", tags: ["nordic", "scandinavia", "europe", "minimalist", "pool", "resort", "cinema", "auditor", "harmony"] },
   { photoUrl: "/assets/characters/celine_brun_ch.jpg", gender: "female", cluster: "north_america_europe", tags: ["switzerland", "alps", "luxury", "europe", "chalet"] },
   { photoUrl: "/assets/characters/elena_ionescu_ro.jpg", gender: "female", cluster: "north_america_europe", tags: ["eastern_europe", "dance_pop", "euro_club", "vocal"] },
   { photoUrl: "/assets/characters/daria_morozova_ru.jpg", gender: "female", cluster: "north_america_europe", tags: ["high_fashion", "ballet", "winter", "avant_garde"] },
@@ -415,7 +476,7 @@ const PORTRAIT_POOL: PortraitCandidate[] = [
   // North America & Europe Male
   { photoUrl: "/assets/characters/jordan_cole_us.jpg", gender: "male", cluster: "north_america_europe", tags: ["usa", "miami", "la", "nyc", "harlem", "north_america", "english", "hiphop", "rnb", "funk", "soul", "brass", "boogie"] },
   { photoUrl: "/assets/characters/kaelen_vance_party.jpg", gender: "male", cluster: "north_america_europe", tags: ["usa", "nyc", "europe", "dj", "producer", "nightlife", "club", "funk", "disco"] },
-  { photoUrl: "/assets/characters/oliver_wright_uk.jpg", gender: "male", cluster: "north_america_europe", tags: ["uk", "london", "western_europe", "savile_row", "pop", "funk", "mark_ronson"] },
+  { photoUrl: "/assets/characters/oliver_wright_uk.jpg", gender: "male", cluster: "north_america_europe", tags: ["uk", "london", "western_europe", "savile_row", "pop", "funk", "tailored"] },
   { photoUrl: "/assets/characters/julien_moreau_fr.jpg", gender: "male", cluster: "north_america_europe", tags: ["france", "paris", "cannes", "western_europe", "french", "electro", "disco", "funk"] },
   { photoUrl: "/assets/characters/lukas_schmidt_de.jpg", gender: "male", cluster: "north_america_europe", tags: ["germany", "berlin", "synth", "techno", "electronic"] },
   { photoUrl: "/assets/characters/mathias_alder_ch.jpg", gender: "male", cluster: "north_america_europe", tags: ["switzerland", "alps", "luxury", "vip"] },
@@ -431,8 +492,8 @@ const PORTRAIT_POOL: PortraitCandidate[] = [
   { photoUrl: "/assets/characters/kerem_yildiz_tr.jpg", gender: "male", cluster: "middle_east_africa", tags: ["middle_east", "dubai", "uae", "arabic", "mediterranean", "luxury"] },
 
   // South Asian Female & Male (including Bollywood Glam Club / Party & Royal / Folk)
-  { photoUrl: "/assets/characters/bollywood_glam_dancer_lead.jpg", gender: "female", cluster: "south_asia", tags: ["india", "south_asia", "hindi", "bollywood", "glam", "party", "club", "nora", "marjaavaan", "zindagani", "disco", "dancer", "sequin", "lead"] },
-  { photoUrl: "/assets/characters/chandigarh_club_pop_lead.jpg", gender: "female", cluster: "south_asia", tags: ["india", "south_asia", "hindi", "punjabi", "bollywood", "glam", "party", "club", "neha", "kakkar", "vocalist", "pop", "harmony"] },
+  { photoUrl: "/assets/characters/bollywood_glam_dancer_lead.jpg", gender: "female", cluster: "south_asia", tags: ["india", "south_asia", "hindi", "bollywood", "glam", "party", "club", "disco", "dancer", "sequin", "lead"] },
+  { photoUrl: "/assets/characters/chandigarh_club_pop_lead.jpg", gender: "female", cluster: "south_asia", tags: ["india", "south_asia", "hindi", "punjabi", "bollywood", "glam", "party", "club", "vocalist", "pop", "harmony"] },
   { photoUrl: "/assets/characters/devika_varma_party.jpg", gender: "female", cluster: "south_asia", tags: ["india", "south_asia", "hindi", "bollywood", "party", "club", "modern", "glamour", "crowd", "vip", "audience", "celebration"] },
   { photoUrl: "/assets/characters/ananya_roy_in.jpg", gender: "female", cluster: "south_asia", tags: ["india", "south_asia", "hindi", "royal", "bollywood", "glamour", "palace"] },
   { photoUrl: "/assets/characters/harleen_kaur_pb.jpg", gender: "female", cluster: "south_asia", tags: ["india", "punjab", "punjabi", "chandigarh", "south_asia", "bhangra"] },
@@ -441,7 +502,7 @@ const PORTRAIT_POOL: PortraitCandidate[] = [
   { photoUrl: "/assets/characters/debjani_sen_wb.jpg", gender: "female", cluster: "south_asia", tags: ["india", "south_asia", "editorial", "heritage", "artistic"] },
   { photoUrl: "/assets/characters/anwita_gowda_ka.jpg", gender: "female", cluster: "south_asia", tags: ["india", "south_asia", "modern", "youth", "festival"] },
   { photoUrl: "/assets/characters/arya_menon_kl.jpg", gender: "female", cluster: "south_asia", tags: ["india", "south_asia", "coastal", "graceful"] },
-  { photoUrl: "/assets/characters/bollywood_party_male_costar.jpg", gender: "male", cluster: "south_asia", tags: ["india", "south_asia", "hindi", "bollywood", "glam", "party", "club", "marjaavaan", "zindagani", "costar", "lead", "disco"] },
+  { photoUrl: "/assets/characters/bollywood_party_male_costar.jpg", gender: "male", cluster: "south_asia", tags: ["india", "south_asia", "hindi", "bollywood", "glam", "party", "club", "costar", "lead", "disco"] },
   { photoUrl: "/assets/characters/bollywood_dhol_dj_troupe.jpg", gender: "male", cluster: "south_asia", tags: ["india", "south_asia", "hindi", "bollywood", "glam", "party", "club", "musician", "percussion", "dhol", "dj", "synth", "horns", "supporting"] },
   { photoUrl: "/assets/characters/bollywood_glam_dance_crew.jpg", gender: "male", cluster: "south_asia", tags: ["india", "south_asia", "hindi", "bollywood", "glam", "party", "club", "dancer", "crew", "formation", "background", "disco"] },
   { photoUrl: "/assets/characters/aarav_kapoor_in.jpg", gender: "male", cluster: "south_asia", tags: ["india", "south_asia", "hindi", "royal", "bollywood", "lead"] },
@@ -461,7 +522,7 @@ function inferTargetCluster(contextLower: string, regionId: string, countryId: s
     countryId === "cnt_japan" ||
     langId === "lang_korean" ||
     langId === "lang_japanese" ||
-    /\b(korea|korean|k-pop|kpop|seoul|bts|dynamite|tokyo|japan)\b/i.test(contextLower)
+    /\b(korea|korean|k-pop|kpop|seoul|tokyo|japan)\b/i.test(contextLower)
   ) {
     return "east_asia";
   }
@@ -471,10 +532,10 @@ function inferTargetCluster(contextLower: string, regionId: string, countryId: s
     countryId === "cnt_spain" ||
     countryId === "cnt_mexico" ||
     countryId === "cnt_brazil" ||
-    countryId === "cnt_italy" ||
+    countryId.startsWith("cnt_italy") ||
     langId === "lang_spanish" ||
     langId === "lang_portuguese" ||
-    /\b(spanish|reggaeton|despacito|fonsi|puerto rico|san juan|latin|mexico|spain|brazil)\b/i.test(contextLower)
+    /\b(spanish|reggaeton|puerto rico|san juan|latin|mexico|spain|brazil|italy|milan|mediterranean)\b/i.test(contextLower)
   ) {
     return "latin_mediterranean";
   }
@@ -483,7 +544,7 @@ function inferTargetCluster(contextLower: string, regionId: string, countryId: s
     countryId.startsWith("cnt_india") ||
     langId.includes("hindi") ||
     langId.includes("punjabi") ||
-    /\b(india|bollywood|punjabi|bhangra|hindi|haveli|chanderi|marjaavaan|zindagani|nora|neha|tanishk|t-series)\b/i.test(contextLower)
+    /\b(india|bollywood|punjabi|bhangra|hindi|haveli|chanderi|mumbai|udaipur)\b/i.test(contextLower)
   ) {
     return "south_asia";
   }
@@ -564,12 +625,12 @@ function selectPortraitsForContext(
   };
 
   return {
-    femaleLeadUrl: pickBestForSlot("female", `${personaHints?.female_lead || ""} lead dancer star sequin`, hash % 7),
-    femaleHarmonyUrl: pickBestForSlot("female", `${personaHints?.female_harmony || ""} vocalist harmony pop`, (hash + 2) % 7),
-    maleLeadUrl: pickBestForSlot("male", `${personaHints?.male_lead || ""} costar lead`, hash % 7),
-    supportingUrl: pickBestForSlot("male", `${personaHints?.supporting || ""} musician percussion dhol dj horns troupe`, (hash + 3) % 7),
-    backgroundUrl: pickBestForSlot("male", `${personaHints?.background || ""} dancer crew formation disco`, (hash + 5) % 7),
-    audienceUrl: pickBestForSlot("female", `${personaHints?.audience || ""} crowd vip audience celebration`, (hash + 4) % 7),
+    femaleLeadUrl: pickBestForSlot("female", `${personaHints?.female_lead || ""} lead dancer star sequin actress`, hash % 7),
+    femaleHarmonyUrl: pickBestForSlot("female", `${personaHints?.female_harmony || ""} vocalist harmony pop auditor`, (hash + 2) % 7),
+    maleLeadUrl: pickBestForSlot("male", `${personaHints?.male_lead || ""} costar lead inspector actor`, hash % 7),
+    supportingUrl: pickBestForSlot("male", `${personaHints?.supporting || ""} musician percussion dhol dj horns troupe historian scholar`, (hash + 3) % 7),
+    backgroundUrl: pickBestForSlot("male", `${personaHints?.background || ""} dancer crew formation disco marshals`, (hash + 5) % 7),
+    audienceUrl: pickBestForSlot("female", `${personaHints?.audience || ""} crowd vip audience celebration residents`, (hash + 4) % 7),
   };
 }
 
@@ -585,23 +646,39 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const rawPrompt = String(body.prompt || "").trim();
     const isDropdownOverride = Boolean(body.isDropdownOverride);
-    const countryId = String(body.countryId || "cnt_spain");
-    const countryLabel = String(body.countryLabel || "Spain — Marbella, Ibiza & Seville");
-    const regionId = String(body.regionId || "reg_mediterranean");
-    const languageId = String(body.languageId || "lang_spanish");
-    const languageLabel = String(body.languageLabel || "Spanish");
-    const genreId = String(body.genreId || "gen_spanish_latin");
-    const genreLabel = String(body.genreLabel || "120 BPM Spanish Reggaeton & Pop");
-    const vocalId = String(body.vocalId || "voc_duet");
-    const vocalLabel = String(body.vocalLabel || "Male + Female Duet");
-    const demographyId = String(body.demographyId || "demo_millennial_luxury");
+    const defaultCountry = COUNTRIES_CATALOG[0];
+    const defaultRegion = REGIONS_CATALOG[0];
+    const defaultLang = LANGUAGES_CATALOG[0];
+    const defaultGenre = GENRES_CATALOG[0];
+    const defaultVocal = VOCALS_CATALOG[0];
+    const defaultDemography = DEMOGRAPHIES_CATALOG[0];
+
+    const countryId = String(body.countryId || defaultCountry.id);
+    const countryLabel = String(body.countryLabel || defaultCountry.label);
+    const regionId = String(body.regionId || defaultCountry.regionId || defaultRegion.id);
+    const languageId = String(body.languageId || defaultLang.id);
+    const languageLabel = String(body.languageLabel || defaultLang.label);
+    const genreId = String(body.genreId || defaultGenre.id);
+    const genreLabel = String(body.genreLabel || defaultGenre.label);
+    const vocalId = String(body.vocalId || defaultVocal.id);
+    const vocalLabel = String(body.vocalLabel || defaultVocal.label);
+    const demographyId = String(body.demographyId || defaultDemography.id);
     const durationSeconds = Number(body.durationSeconds || 60);
-    const shotsCount = Number(body.shotsCount || 6);
+    const shotsCount = Number(body.shotsCount || Math.max(2, Math.round(durationSeconds / 10)));
+    const totalActs = Math.max(1, Math.ceil(shotsCount / 3));
+
+    const validLanguageIdsList = LANGUAGES_CATALOG.map((c) => `"${c.id}"`).join(", ");
+    const validGenreIdsList = GENRES_CATALOG.map((c) => `"${c.id}"`).join(", ");
+    const validVocalIdsList = VOCALS_CATALOG.map((c) => `"${c.id}"`).join(", ");
+    const validCountryIdsList = COUNTRIES_CATALOG.map((c) => `"${c.id}" (${c.label})`).join(", ");
+    const validRegionIdsList = REGIONS_CATALOG.map((c) => `"${c.id}"`).join(", ");
+    const validDemographyIdsList = DEMOGRAPHIES_CATALOG.map((c) => `"${c.id}"`).join(", ");
+    const validLightingIdsList = LIGHTING_CATALOG.map((c) => `"${c.id}" (${c.label})`).join(", ");
 
     const apiKey = resolveApiKey();
     const stamp = Date.now();
 
-    // Step 1: Live YouTube URL Detection & Reference Deconstruction (if any YouTube link is in the prompt)
+    // Step 1: Live YouTube / External Reference URL Detection & Deconstruction
     const ytRef = await fetchYouTubeReferenceIntelligence(rawPrompt);
 
     // Clean prompt text without raw URL for display & concept synthesis
@@ -611,45 +688,45 @@ export async function POST(req: NextRequest) {
     const effectiveConceptSeed =
       promptWithoutUrls ||
       (ytRef
-        ? `Elevated 2-Act Dance Music Video directly anchored to and surpassing "${ytRef.title}" (${ytRef.channelName})`
+        ? `Elevated ${totalActs}-Act (${durationSeconds}s, ${shotsCount}-Shot) Production directly anchored to and surpassing "${ytRef.title}" (${ytRef.channelName})`
         : "Sunlit Mediterranean infinity pool celebration transitioning into a torchlit midnight couture fiesta");
 
     // Step 2: Build the 3-Stage "Deconstruct -> Elevate -> Surpass" Gemini System Prompt (Zero Canned Examples)
-    const systemPrompt = `You are the Executive Creative Director, Chief Choreographer, Haute Couture Stylist, Director of Photography, and Hit Songwriter for Zyvoriq Autonomous AI Dance Music Video Studio.
+    const systemPrompt = `You are the Executive Creative Director, Chief Choreographer, Haute Couture Stylist, Director of Photography, and Hit Songwriter for Zyvoriq Autonomous AI Studio.
 
-CRITICAL CREATIVE MANDATE — ANCHOR DIRECTLY TO THE USER'S YOUTUBE URL / PROMPT DNA, THEN ELEVATE IT TO 10/10 ACROSS ALL 12 AGENT DIMENSIONS:
+CRITICAL CREATIVE MANDATE — ANCHOR DIRECTLY TO THE USER'S REFERENCE URL / PROMPT DNA, THEN ELEVATE IT TO 10/10 ACROSS ALL 12 AGENT DIMENSIONS:
 1. Execute the 3-Stage "DECONSTRUCT -> ELEVATE -> SURPASS" protocol:
-   - STAGE A (FAITHFUL VISUAL, SONIC & STAGING DECONSTRUCTION OF THE ACTUAL YOUTUBE VIDEO / PROMPT):
-     • Inspect the attached YouTube video frame thumbnails (start, middle, and climax frames) and the full YouTube metadata (Title, Channel, Description, Keywords).
-     • Identify the video's EXACT real-world visual setting (e.g., if the reference video is set in a glamorous retro-glam VIP nightclub / discotheque lounge with neon lighting, champagne towers, crystal-sequin club couture, and backup dancers, you MUST anchor Act I directly in that exact glamorous nightclub/discotheque world—NEVER drift to an unrelated desert palace or random setting!).
-     • Identify its exact language, musical sub-genre, tempo (BPM), harmonic key, vocal dynamic (e.g., female lead + male vocal duet / party anthem), and signature dance style.
-     • Diagnose 3 SPECIFIC production or creative limitations of the actual reference video (cite actual staging, camera, lighting, or choreography bottlenecks specific to that video—NEVER use generic canned phrases like "static single-room staging", "repetitive choreography loops", or "flat uniform lighting").
+   - STAGE A (FAITHFUL VISUAL, SONIC & STAGING DECONSTRUCTION OF THE ACTUAL VIDEO / PROMPT):
+     • Inspect the attached video frame thumbnails and the full reference metadata (Title, Channel, Description, Keywords).
+     • Identify the video's EXACT real-world visual setting (e.g., if the reference is a 35mm live-action dramatic short film or an indoor VIP nightclub lounge, anchor Act I directly in that exact world—NEVER drift to an unrelated setting!).
+     • Identify its exact language, musical/cinematic sub-genre, tempo (BPM), harmonic key, vocal/dialogue dynamic, and physical staging style.
+     • Diagnose 3 SPECIFIC production or creative limitations of the actual reference video (cite actual staging, camera, lighting, cast size, or narrative bottlenecks specific to that video—NEVER use generic canned phrases like "static single-room staging", "repetitive choreography loops", or "flat uniform lighting").
    - STAGE B (ELEVATE & SURPASS WITHIN THE SAME WORLD ACROSS ALL 12 AGENT DIMENSIONS):
-     1. [Script & Narrative Logline ("storyline")]: Write a vivid, self-contained 2-Act narrative logline (2 sentences, ZERO raw http/https URLs) that stays 100% faithful to the reference video's world in Act I (0:00–0:30) and elevates that same world into a breathtaking architectural & lighting climax in Act II (0:30–1:00).
-     2. [2-Act Spatial & Architectural Metamorphosis at 00:30]: Design Act I to honor the iconic visual setting seen in the YouTube reference thumbnails, and design Act II (at 00:30) as a jaw-dropping architectural, kinetic, and lighting expansion of that exact venue while keeping 100% facial identity continuity across all 6 cast personas.
-     3. [Sonic, Harmonic & Exact BPM/Key Lock ("bpm", "musicalKey")]: Specify the exact integer "bpm" (e.g. 124 BPM for high-energy Bollywood Glam Club / Disco Party Anthems, 96 BPM for Reggaeton, 114 BPM for K-Pop Disco, 116 BPM for Brass-Funk) and exact "musicalKey" (e.g. "C# Minor", "B Minor", "F# Minor") locked identically across both the Lyrics Agent and Music Agent. Write 6 100% original, catchy sung lyric lines in the exact language and vibe of the reference song where Line 1 explicitly includes "(<bpm> BPM)" and the 6 lines explicitly distribute vocal tags across "[Female Lead]", "[Male Lead]", and "[Female Co-Lead]" / "[Duet]" so every vocal lead sings!
-     4. [Genre-Authentic 6-Shot 8-Count Choreography ("shotChoreography")]: Tailor the 6-shot kinetic progression specifically to the reference video's actual dance style (e.g. high-voltage Bollywood club jazz-funk waist/hip isolations, sharp hair flips, duo hook-step chemistry, and 8-dancer synchronized floor formations). Every single shot MUST include explicit 8-count choreography phrasing ("[Counts 1-4: ... | Counts 5-8: ...]") and camera blocking.
-     5. [6-Shot Anamorphic Optics, T-Stop & Kelvin Lighting Schedule ("shotLightingAndOptics")]: Provide 6 shot-specific cinematography specs detailing exact lens focal length (24mm/35mm/50mm/85mm anamorphic), aperture T-stop (T1.5–T2.8), camera rig (Steadicam, 360° gimbal, Techno-crane, low-mode dolly, aerial drone), color temperature in Kelvin, and key-to-fill contrast ratio.
-     6. [5-Tier Biometric Cast & Full Act I -> Act II Couture Evolution + Figure-Ground Separation]: Anchor Act I Female Lead and Male Lead wardrobes directly to the iconic silhouettes seen in the YouTube reference thumbnails (e.g., dazzling silver/white crystal-sequin high-slit club mini-couture & metallic stiletto boots in Act I evolving into liquid-platinum & ruby-prism mirror-work finale couture in Act II). All 5 cast tiers (Female Lead + Co-Lead, Male Lead, Supporting Musicians, 8-Dancer Background Crew, VIP Audience) MUST have explicit Act I -> Act II wardrobe evolution ("Act I: ... -> Act II: ...") AND explicit color/luminance contrast separation ("figureGroundContrastSpec") against the Act I and Act II background walls.
-     7. [Per-Tier Props & Live Musician Instruments ("instrumentAndStagePropsSpec")]: Specify exact hand/stage instruments for the supporting musicians and interactive stage props matching the reference video's setting across Act I and Act II.
-   - STAGE C (SAFETY & ORIGINALITY): Never output real celebrity/actor/singer names in "compiledConceptDirective", character names, or wardrobe specs so downstream video generation models never trigger likeness blocks. Always invent original character names and original lyrics in the same language and style.
+     1. [Script & Narrative Logline ("storyline")]: Write a vivid, self-contained ${totalActs}-Act narrative logline (2 sentences, ZERO raw http/https URLs) that stays 100% faithful to the reference world in the opening acts and elevates that same world into a breathtaking architectural & emotional climax across ${durationSeconds}s (${shotsCount} shots).
+     2. [Multi-Act Spatial & Architectural Metamorphosis]: Design Act I to honor the iconic visual setting of the reference, and design subsequent acts as a dramatic architectural, kinetic, and lighting expansion of that exact world while keeping 100% facial identity continuity across all 6 cast personas.
+     3. [Sonic, Harmonic & Exact BPM/Key Lock ("bpm", "musicalKey")]: Specify the exact integer "bpm" (75–175 BPM) and exact "musicalKey" (e.g. "D Minor", "C# Minor", "B Minor", "F# Minor") locked identically across both the Vocal/Dialogue Agent and Music Agent. Write ${shotsCount} 100% original sung lyric or spoken character dialogue lines in the exact language and vibe of the reference where Line 1 explicitly includes "(<bpm> BPM)" and the ${shotsCount} lines explicitly distribute vocal/character tags across "[Female Lead]", "[Male Lead]", and "[Female Co-Lead]" / "[Duet]" so every lead participates!
+     4. [Genre-Authentic ${shotsCount}-Shot 8-Count Blocking ("shotChoreography")]: Tailor the ${shotsCount}-shot kinetic progression specifically to the reference's style (choreography or dramatic live-action cinema blocking). Every single shot MUST include explicit 8-count phrasing ("[Counts 1-4: ... | Counts 5-8: ...]") and camera blocking.
+     5. [${shotsCount}-Shot Anamorphic Optics, T-Stop & Kelvin Lighting Schedule ("shotLightingAndOptics")]: Provide ${shotsCount} shot-specific cinematography specs detailing exact lens focal length (24mm/35mm/50mm/85mm anamorphic), aperture T-stop (T1.5–T2.8), camera rig, color temperature in Kelvin, and key-to-fill contrast ratio.
+     6. [5-Tier Biometric Cast & Full Multi-Act Couture Evolution + Figure-Ground Separation]: All 5 cast tiers (Female Lead + Co-Lead, Male Lead, Supporting Cast, Background Ensemble, Audience) MUST have explicit Act I -> Act II wardrobe evolution ("Act I: ... -> Act II: ...") AND explicit color/luminance contrast separation ("figureGroundContrastSpec").
+     7. [Per-Tier Props & Hero Instruments ("instrumentAndStagePropsSpec")]: Specify exact hand/stage props or instruments matching the reference setting.
+   - STAGE C (SAFETY & ORIGINALITY): Never output real celebrity/actor/singer names in "compiledConceptDirective", character names, or wardrobe specs so downstream video generation models never trigger likeness blocks. Always invent original character names and original lyrics/dialogue in the same language and style.
 
 USER INPUT & CONTEXT:
 - Raw User Prompt: "${rawPrompt}"
 - Clean Concept Seed: "${effectiveConceptSeed}"
 ${
   ytRef
-    ? `- LIVE YOUTUBE REFERENCE DETECTED (MUST ANCHOR DIRECTLY TO THIS VIDEO'S SETTING, WARDROBE STYLE, LANGUAGE & GROOVE):
+    ? `- LIVE VIDEO REFERENCE DETECTED (MUST ANCHOR DIRECTLY TO THIS VIDEO'S SETTING, WARDROBE STYLE, LANGUAGE & TONE):
   • Video URL: ${ytRef.url} (Video ID: ${ytRef.videoId})
   • Reference Title: "${ytRef.title}"
-  • Channel / Label: "${ytRef.channelName}"
+  • Channel / Creator: "${ytRef.channelName}"
   • Full Video Description: "${ytRef.descriptionSnippet}"
   • Video Keywords: "${ytRef.keywords.join(", ")}"
-  • Attached Visual Frames: ${ytRef.frameBase64List?.length || (ytRef.thumbnailBase64 ? 1 : 0)} frame thumbnails from "${ytRef.title}" are attached to this prompt. Inspect the actual wardrobe, lighting, stage environment, and dance formations in these frames and make sure Act I directly reflects this exact aesthetic before elevating it in Act II!`
-    : `- Source Type: Original Creative Prompt (no external YouTube URL provided). Deconstruct the raw idea and elevate it into an award-winning 60-second 2-Act Dance Music Video.`
+  • Attached Visual Frames: ${ytRef.frameBase64List?.length || (ytRef.thumbnailBase64 ? 1 : 0)} frame thumbnails from "${ytRef.title}" are attached to this prompt.`
+    : `- Source Type: Original Creative Prompt (no external URL provided). Deconstruct the raw idea and elevate it into an award-winning ${durationSeconds}-second (${shotsCount}-shot, ${totalActs}-Act) production.`
 }
 - User explicitly overrode a dropdown manually: ${isDropdownOverride}
-- Duration: ${durationSeconds}s (${shotsCount} shots across Act I [0:00–0:30] and Act II [0:30–1:00])
+- Duration: ${durationSeconds}s (${shotsCount} shots across ${totalActs} acts)
 ${
   isDropdownOverride
     ? `- MANUAL DROPDOWN OVERRIDE ACTIVE (MUST HONOR THESE EXACT SELECTIONS):
@@ -659,37 +736,37 @@ ${
   • Genre & BPM: ${genreLabel} (${genreId})
   • Vocal Arrangement: ${vocalLabel} (${vocalId})
   • Demography: ${demographyId}`
-    : `- AUTO-INFER ALL CATALOG IDs FROM THE PROMPT / YOUTUBE REFERENCE:
-  • Infer the most authentic Country ID, Region ID, Language ID, Genre ID, Vocal ID, Demography ID, and Lighting ID directly from the user's prompt and/or YouTube reference, and write all lyrics in that inferred language!`
+    : `- AUTO-INFER ALL CATALOG IDs FROM THE PROMPT / VIDEO REFERENCE:
+  • Infer the most authentic Country ID, Region ID, Language ID, Genre ID, Vocal ID, Demography ID, and Lighting ID directly from the user's prompt and/or video reference!`
 }
 
 VALID CATALOG IDs TO RECOMMEND (ZERO ASSUMPTIONS — MATCH EXACT VENUE & LIGHTING):
-- Valid Language IDs: "lang_english", "lang_punjabi", "lang_hindi", "lang_spanish", "lang_punjabi_english", "lang_hindi_punjabi", "lang_korean", "lang_arabic", "lang_french", "lang_japanese", "lang_portuguese"
-- Valid Genre IDs: "gen_dance_pop", "gen_punjabi_bhangra", "gen_bollywood_glam_party", "gen_bollywood_royal", "gen_bollywood_folk_classical", "gen_spanish_latin", "gen_kpop_idol", "gen_arabic_club", "gen_afrobeats", "gen_french_disco"
-- Valid Vocal IDs: "voc_duet", "voc_female_solo", "voc_male_solo", "voc_girl_group", "voc_boy_band"
-- Valid Country IDs: "cnt_spain", "cnt_india_mumbai" (use for Indian indoor VIP nightclubs, lounges & retro-glam studio stages), "cnt_india_chanderi" (use ONLY for outdoor small-town street-festival stages), "cnt_india_royal" (use for Udaipur palaces & Goa resorts), "cnt_india_haveli" (use for ancient torchlit havelis/temples), "cnt_india_punjab", "cnt_usa", "cnt_italy", "cnt_uae", "cnt_south_korea", "cnt_japan", "cnt_france", "cnt_uk", "cnt_greece", "cnt_switzerland", "cnt_nigeria", "cnt_brazil", "cnt_mexico"
-- Valid Region IDs: "reg_south_asia", "reg_mediterranean", "reg_north_america", "reg_middle_east", "reg_east_asia", "reg_western_europe", "reg_west_africa", "reg_latin_america"
-- Valid Demography IDs: "demo_genz_festival", "demo_millennial_luxury", "demo_wedding_sangeet", "demo_bollywood_classic", "demo_high_fashion", "demo_club_nightlife"
-- Valid Lighting IDs: "lit_club_amber_to_neon_lasers" (MUST use for indoor nightclubs, bars, lounges & retro-glam dance floors — NEVER use "lit_golden_to_midnight" for an indoor club!), "lit_golden_to_midnight" (use ONLY for outdoor daytime/sunset scenes transitioning to night), "lit_fairylight_party" (use for outdoor street fairy-lights), "lit_palace_to_chandeliers", "lit_torchlit_haveli", "lit_coastal_to_lasers", "lit_anamorphic_cinema"
+- Valid Language IDs: ${validLanguageIdsList}
+- Valid Genre IDs: ${validGenreIdsList}
+- Valid Vocal IDs: ${validVocalIdsList}
+- Valid Country IDs: ${validCountryIdsList}
+- Valid Region IDs: ${validRegionIdsList}
+- Valid Demography IDs: ${validDemographyIdsList}
+- Valid Lighting IDs: ${validLightingIdsList}
 
-Return STRICTLY valid JSON (no markdown fences) matching this exact schema (generate 100% bespoke content for every field — NEVER copy placeholder descriptions):
+Return STRICTLY valid JSON (no markdown fences) matching this exact schema with ${shotsCount} entries for "lyricsLines", "shotEmotions", "shotChoreography", and "shotLightingAndOptics" (generate 100% bespoke content for every field — NEVER copy placeholder descriptions):
 {
   "title": "Evocative, original 4-8 word production title",
-  "storyline": "Vivid 2-sentence 2-Act narrative logline (ZERO URLs) describing the dramatic journey from Act I (0:00-0:30) to Act II (0:30-1:00)",
-  "compiledConceptDirective": "Rich 2-3 sentence production-safe director's concept statement describing the elevated 2-Act visual story, BPM, venue metamorphosis, couture styling, and kinetic choreography (zero real celebrity names)",
-  "bpm": 124,
-  "musicalKey": "Exact musical key tonic + mode only (e.g. C# Minor, B Minor, F# Minor, G Minor)",
+  "storyline": "Vivid 2-sentence narrative logline (ZERO URLs) describing the dramatic journey across ${durationSeconds}s (${shotsCount} shots)",
+  "compiledConceptDirective": "Rich 2-3 sentence production-safe director's concept statement describing the elevated visual story, BPM, venue metamorphosis, styling, and blocking (zero real celebrity names)",
+  "bpm": 120,
+  "musicalKey": "Exact musical key tonic + mode only (e.g. D Minor, C# Minor, B Minor, F# Minor)",
   "creativeElevation": {
-    "deconstructedCore": "1-2 sentences analyzing the specific visual staging, emotional pulse, and rhythmic hook of the user's prompt or YouTube reference",
+    "deconstructedCore": "1-2 sentences analyzing the specific visual staging, emotional pulse, and hook of the user's prompt or reference video",
     "identifiedLimitations": [
       "Specific visual/staging limitation 1 of the reference video or sub-genre (never use generic canned phrases)",
-      "Specific choreographic/camera limitation 2 of the reference video or sub-genre",
+      "Specific choreographic/camera/narrative limitation 2 of the reference video or sub-genre",
       "Specific lighting/wardrobe/sonic limitation 3 of the reference video or sub-genre"
     ],
-    "surpassStrategy": "1-2 sentences explaining how this new Zyvoriq blueprint creatively surpasses the reference across staging, camera optics, 5-tier couture, and 48kHz sound",
-    "act1ToAct2Twist": "Specific 00:30 architectural, lighting, and haute-couture metamorphosis from Act I to Act II",
-    "sonicInnovation": "Specific 48kHz musical, harmonic, percussion, and sub-bass innovation locked to the exact BPM and musicalKey",
-    "choreographyAndCameraUpgrade": "Specific 6-shot 8-count kinetic dance progression and 35mm/85mm anamorphic camera rig evolution"
+    "surpassStrategy": "1-2 sentences explaining how this new Zyvoriq blueprint creatively surpasses the reference across cast, story, duration (${durationSeconds}s), camera optics, and 48kHz sound",
+    "act1ToAct2Twist": "Specific architectural, lighting, and narrative/couture metamorphosis across acts",
+    "sonicInnovation": "Specific 48kHz musical, spoken-dialogue, harmonic, or foley innovation locked to the exact BPM and musicalKey",
+    "choreographyAndCameraUpgrade": "Specific ${shotsCount}-shot 8-count kinetic/blocking progression and 35mm/50mm/85mm/24mm anamorphic camera rig evolution"
   },
   "recommendedLanguageId": "one of the valid Language IDs",
   "recommendedGenreId": "one of the valid Genre IDs",
@@ -699,64 +776,64 @@ Return STRICTLY valid JSON (no markdown fences) matching this exact schema (gene
   "recommendedDemographyId": "one of the valid Demography IDs",
   "recommendedLightingId": "one of the valid Lighting IDs",
   "lyricsLines": [
-    "[Shot 01 • Female Lead] Original catchy sung lyric line 1 in target language (<bpm> BPM)",
-    "[Shot 02 • Male Lead] Original catchy sung lyric line 2 in target language",
-    "[Shot 03 • Female Co-Lead] Original pre-chorus harmony hook line 3 in target language",
-    "[Shot 04 • Duet (Female Lead & Male Lead)] Original explosive Act II drop chorus line 4 in target language",
-    "[Shot 05 • Female Lead & Co-Lead] Original high-note bridge line 5 in target language",
-    "[Shot 06 • Full Vocal Ensemble] Original grand finale anthem line 6 in target language"
+    "[Shot 01 • Female Lead] Original sung lyric or spoken character dialogue line 1 in target language (<bpm> BPM)",
+    "[Shot 02 • Male Lead] Original sung lyric or spoken character dialogue line 2 in target language",
+    "[Shot 03 • Female Co-Lead] Original line 3 in target language",
+    "[Shot 04 • Duet (Female Lead & Male Lead)] Original Act II line 4 in target language",
+    "[Shot 05 • Female Lead & Co-Lead] Original bridge line 5 in target language",
+    "[Shot 06 • Full Vocal Ensemble] Original finale line 6 in target language (include ${shotsCount} total lines if shotsCount > 6)"
   ],
-  "backgroundEnvironment": "Detailed Act I (0:00–0:30) -> Act II (0:30–1:00) architectural setting, props, and atmospheric FX progression",
-  "humanEmotions": "Detailed Act I -> Act II facial micro-expression, eye contact (Nayan-Abhinaya), active vocalist phoneme sync, and non-singing closed-lips ensemble gaze arc",
+  "backgroundEnvironment": "Detailed Act I -> Act II architectural setting, props, and atmospheric FX progression",
+  "humanEmotions": "Detailed Act I -> Act II facial micro-expression, eye contact, active speaker/singer phoneme sync, and non-speaking closed-lips ensemble gaze arc",
   "shotEmotions": [
-    "Shot 1 specific facial expression, active singer viseme cue & eye-acting",
+    "Shot 1 specific facial expression, active speaker/singer viseme cue & eye-acting",
     "Shot 2 specific facial expression, counter-lead viseme cue & duo chemistry",
-    "Shot 3 specific facial expression, co-lead harmony cue & ensemble anticipation",
-    "Shot 4 specific facial expression, Act II transformation poise & duet power",
-    "Shot 5 specific 85mm close-up micro-expression, sustained high-note viseme & gaze",
-    "Shot 6 specific triumphant grand finale euphoria & 360-degree crowd connection"
+    "Shot 3 specific facial expression, co-lead cue & ensemble anticipation",
+    "Shot 4 specific facial expression, Act II transformation poise",
+    "Shot 5 specific 85mm close-up micro-expression & gaze",
+    "Shot 6 specific finale resolution & ensemble connection (include ${shotsCount} total entries)"
   ],
-  "voiceType": "Detailed 48,000 Hz studio vocal timbre, vocal range, mic presence, and 3-part lead/co-lead/male-lead harmony arrangement locked to the exact BPM and musicalKey",
-  "choreography": "Detailed Act I -> Act II genre-authentic kinetic dance style, body isolations, and formation geometry progression",
+  "voiceType": "Detailed 48,000 Hz studio vocal or spoken-dialogue timbre, mic presence, and arrangement locked to the exact BPM and musicalKey",
+  "choreography": "Detailed Act I -> Act II genre-authentic kinetic dance or live-action cinema blocking progression",
   "shotChoreography": [
-    "Shot 1 [Counts 1-4: specific opening footwork & isolation | Counts 5-8: camera-locked groove] + camera blocking",
-    "Shot 2 [Counts 1-4: duo partner interplay | Counts 5-8: synchronized turn & dip] + camera blocking",
-    "Shot 3 [Counts 1-4: 8-dancer geometric formation build | Counts 5-8: pre-drop freeze & ripple] + camera blocking",
-    "Shot 4 [Counts 1-4: explosive Act II beat-drop hit | Counts 5-8: high-velocity V-formation travel] + camera blocking",
-    "Shot 5 [Counts 1-4: intimate vocal face-off isolations | Counts 5-8: background ensemble wave] + camera blocking",
-    "Shot 6 [Counts 1-4: 360-degree full 6-persona finale sync | Counts 5-8: signature apex pose] + camera blocking"
+    "Shot 1 [Counts 1-4: specific opening movement | Counts 5-8: camera-locked blocking] + camera rig",
+    "Shot 2 [Counts 1-4: duo partner interplay | Counts 5-8: synchronized turn] + camera rig",
+    "Shot 3 [Counts 1-4: ensemble build | Counts 5-8: pre-transition beat] + camera rig",
+    "Shot 4 [Counts 1-4: Act II transformation hit | Counts 5-8: dynamic travel] + camera rig",
+    "Shot 5 [Counts 1-4: intimate close-up interaction | Counts 5-8: ensemble response] + camera rig",
+    "Shot 6 [Counts 1-4: full 6-persona finale blocking | Counts 5-8: signature apex pose] + camera rig (include ${shotsCount} total entries)"
   ],
   "shotLightingAndOptics": [
-    "Write bespoke Shot 01 (0:00-0:10) optics & lighting specific to the Act I venue: include exact focal length (e.g. 35mm Anamorphic), aperture T-stop (e.g. T1.8), camera rig movement, exact Kelvin color temperature (e.g. 3200K), contrast ratio, and specific Act I practical fixtures",
-    "Write bespoke Shot 02 (0:10-0:20) optics & lighting specific to the Act I duo interplay: include exact focal length (e.g. 50mm Anamorphic), T-stop, 360° gimbal/dolly movement, exact Kelvin color temperature, contrast ratio, and rim lighting",
-    "Write bespoke Shot 03 (0:20-0:30) optics & lighting specific to the Act I pre-drop build: include exact focal length (e.g. 24mm Wide Anamorphic), T-stop, crane/jib movement, exact Kelvin color temperature, contrast ratio, and pre-drop lighting pulse",
-    "Write bespoke Shot 04 (0:30-0:40) optics & lighting specific to the 00:30 Act II venue transformation: include exact focal length (e.g. 35mm Anamorphic), T-stop, high-speed dolly/whip-pan reveal, exact Kelvin color temperature (e.g. 5600K), contrast ratio, and Act II laser/chandelier/pyro lighting",
-    "Write bespoke Shot 05 (0:40-0:50) optics & lighting specific to the Act II 85mm close-up bridge: include 85mm Portrait Anamorphic, T-stop, dual focus pull, exact Kelvin key/edge color temperatures, and contrast ratio",
-    "Write bespoke Shot 06 (0:50-1:00) optics & lighting specific to the Act II grand finale: include 24mm Wide Anamorphic, T-stop, 360° Techno-crane & FPV drone pull-back, exact Kelvin color temperature (e.g. 5400K), contrast ratio, and finale volumetric beams"
+    "Bespoke Shot 01 optics & lighting: exact focal length (e.g. 35mm Anamorphic), T-stop (e.g. T1.8), camera rig, Kelvin color temperature (e.g. 3200K), and contrast ratio",
+    "Bespoke Shot 02 optics & lighting: exact focal length (e.g. 50mm Anamorphic), T-stop, camera rig, Kelvin color temperature, and contrast ratio",
+    "Bespoke Shot 03 optics & lighting: exact focal length (e.g. 85mm Anamorphic), T-stop, camera rig, Kelvin color temperature, and contrast ratio",
+    "Bespoke Shot 04 optics & lighting: exact focal length (e.g. 35mm Anamorphic), T-stop, camera rig, Kelvin color temperature, and contrast ratio",
+    "Bespoke Shot 05 optics & lighting: exact focal length (e.g. 50mm Anamorphic), T-stop, camera rig, Kelvin color temperature, and contrast ratio",
+    "Bespoke Shot 06 optics & lighting: exact focal length (e.g. 24mm Wide Anamorphic), T-stop, camera rig, Kelvin color temperature (e.g. 5400K), and contrast ratio (include ${shotsCount} total entries)"
   ],
   "figureGroundContrastSpec": "Explicit color & luminance separation rule ensuring Act I and Act II costumes contrast sharply (>= 3.5:1 luminance ratio) against the architectural background palette",
-  "instrumentAndStagePropsSpec": "Explicit per-tier stage instruments for Supporting Musicians (exact drums/horns/strings/synths), hand/stage kinetic props, and Act I -> Act II interactive set elements",
+  "instrumentAndStagePropsSpec": "Explicit per-tier hero props or stage instruments and Act I -> Act II interactive set elements",
   "venue": {
     "label": "Act I Venue Title → Act II Venue Title",
-    "promptSpec": "Detailed architectural description of Act I (0:00-0:30) venue transforming into Act II (0:30-1:00) venue"
+    "promptSpec": "Detailed architectural description of Act I venue transforming into Act II venue"
   },
   "personas": {
-    "female_lead": { "name": "Original First & Last Name", "roleTitle": "Lead Vocalist & Star Dancer", "ethnicity": "Cultural/Regional Heritage", "facialSpec": "Age, distinct facial bone structure, eyes, skin tone, hair, and signature expression" },
-    "female_harmony": { "name": "Original First & Last Name", "roleTitle": "Co-Lead Vocalist & Harmony Partner", "ethnicity": "Cultural/Regional Heritage", "facialSpec": "Age, distinct contrasting facial bone structure, hair, and expression" },
-    "male_lead": { "name": "Original First & Last Name", "roleTitle": "Male Lead Vocalist & Counter-Lead Star", "ethnicity": "Cultural/Regional Heritage", "facialSpec": "Age, distinct facial structure, jawline, hair/grooming, and expression" },
-    "supporting": { "name": "Supporting Ensemble Name", "roleTitle": "Live Instrumentalists & Rhythm Section", "ethnicity": "Cultural/Regional Heritage", "facialSpec": "Distinctive stage presence, specific live instruments played, and styling" },
-    "background": { "name": "Dance Crew Name", "roleTitle": "8 Synchronized Kinetic Dancers", "ethnicity": "Cultural/Regional Heritage", "facialSpec": "Athletic synchronized dance formation with 8 distinct non-cloned individual faces" },
-    "audience": { "name": "VIP Crowd Name", "roleTitle": "Interactive Atmos & VIP Entourage", "ethnicity": "Cultural/Regional & International Mix", "facialSpec": "Expressive celebratory crowd reacting to the performance with zero face cloning" }
+    "female_lead": { "name": "Original First & Last Name", "roleTitle": "Lead Actress / Vocalist", "ethnicity": "Cultural/Regional Heritage", "facialSpec": "Age, distinct facial bone structure, eyes, skin pores/tone, hair, and signature expression" },
+    "female_harmony": { "name": "Original First & Last Name", "roleTitle": "Co-Lead Actress / Vocalist", "ethnicity": "Cultural/Regional Heritage", "facialSpec": "Age, distinct contrasting facial bone structure, hair, and expression" },
+    "male_lead": { "name": "Original First & Last Name", "roleTitle": "Male Lead Actor / Vocalist", "ethnicity": "Cultural/Regional Heritage", "facialSpec": "Age, distinct facial structure, jawline, hair/grooming, and expression" },
+    "supporting": { "name": "Supporting Character / Ensemble Name", "roleTitle": "Supporting Character Actor / Live Instrumentalists", "ethnicity": "Cultural/Regional Heritage", "facialSpec": "Distinctive presence, specific props/instruments, and styling" },
+    "background": { "name": "Background Ensemble Name", "roleTitle": "Synchronized Ensemble / Escort Crew", "ethnicity": "Cultural/Regional Heritage", "facialSpec": "Distinct non-cloned individual faces and coordinated physical blocking" },
+    "audience": { "name": "Audience / Witnesses Name", "roleTitle": "Interactive Crowd / Courtyard Witnesses", "ethnicity": "Cultural/Regional & International Mix", "facialSpec": "Authentic surrounding crowd reacting with zero face cloning" }
   },
   "wardrobes": {
-    "womenAct1": { "group": "Couture Category", "label": "Female Lead & Co-Lead Act I Outfit Title", "promptSpec": "Detailed Act I fabric, cut, embroidery, movement physics, and complementary Co-Lead styling" },
-    "womenAct2": { "group": "Finale Couture Category", "label": "Female Lead & Co-Lead Act II Finale Outfit Title", "promptSpec": "Detailed transformative Act II couture fabric, metallic/crystal speculars, silhouette, and complementary Co-Lead finale styling" },
+    "womenAct1": { "group": "Wardrobe Category", "label": "Female Lead & Co-Lead Act I Outfit Title", "promptSpec": "Detailed Act I fabric, cut, texture, and complementary Co-Lead styling" },
+    "womenAct2": { "group": "Finale Wardrobe Category", "label": "Female Lead & Co-Lead Act II Finale Outfit Title", "promptSpec": "Detailed transformative Act II fabric, silhouette, and complementary Co-Lead finale styling" },
     "menAct1": { "group": "Menswear Category", "label": "Male Lead Act I Outfit Title", "promptSpec": "Detailed Act I menswear tailoring, fabric, color contrast, and details" },
-    "menAct2": { "group": "Finale Menswear Category", "label": "Male Lead Act II Finale Outfit Title", "promptSpec": "Detailed Act II finale menswear tailoring and luxury specular finish" },
-    "supporting": { "group": "Stage Ensemble", "label": "Supporting Musicians Act I -> Act II Wardrobe", "promptSpec": "Act I: [detailed Act I musician attire] -> Act II: [detailed Act II illuminated/metallic stage attire]" },
-    "background": { "group": "Dance Troupe", "label": "8-Dancer Crew Act I -> Act II Uniform", "promptSpec": "Act I: [detailed Act I kinetic dancewear] -> Act II: [detailed Act II high-contrast reflective finale uniform]" },
-    "audience": { "group": "VIP Crowd", "label": "VIP Crowd Act I -> Act II Dress Code", "promptSpec": "Act I: [detailed Act I daytime/sunset resort or lounge attire] -> Act II: [detailed Act II midnight gala/festival attire]" },
-    "accessory": { "label": "Footwear, Jewelry, Hair & Stage Instruments Title", "promptSpec": "Detailed dance footwear, statement jewelry, hair styling, and live musician stage instruments" }
+    "menAct2": { "group": "Finale Menswear Category", "label": "Male Lead Act II Finale Outfit Title", "promptSpec": "Detailed Act II finale menswear tailoring and finish" },
+    "supporting": { "group": "Supporting Ensemble", "label": "Supporting Cast Act I -> Act II Wardrobe", "promptSpec": "Act I: [detailed Act I attire] -> Act II: [detailed Act II attire]" },
+    "background": { "group": "Background Crew", "label": "Background Crew Act I -> Act II Uniform", "promptSpec": "Act I: [detailed Act I uniform] -> Act II: [detailed Act II finale uniform]" },
+    "audience": { "group": "Audience Dress Code", "label": "Audience Act I -> Act II Dress Code", "promptSpec": "Act I: [detailed Act I attire] -> Act II: [detailed Act II attire]" },
+    "accessory": { "label": "Footwear, Jewelry, Hair & Hero Props Title", "promptSpec": "Detailed footwear, accessories, hair styling, and hero props/instruments" }
   }
 }`;
 
@@ -765,10 +842,6 @@ Return STRICTLY valid JSON (no markdown fences) matching this exact schema (gene
     let generatorModelUsed = "models/gemini-2.5-flash";
     let generatorLatencyMs = 0;
 
-    const isHiggsfieldControlRef =
-      ytRef?.videoId === "higgsfield_control" ||
-      /pietromalegori|ten billionth pulse|beyond control/i.test(rawPrompt);
-
     const framesToAttach =
       ytRef?.frameBase64List && ytRef.frameBase64List.length > 0
         ? ytRef.frameBase64List
@@ -776,185 +849,7 @@ Return STRICTLY valid JSON (no markdown fences) matching this exact schema (gene
         ? [ytRef.thumbnailBase64]
         : [];
 
-    if (isHiggsfieldControlRef && !isDropdownOverride) {
-      generatorModelUsed = "models/gemini-2.5-flash";
-      generatorLatencyMs = 420;
-      parsed = {
-        title: "The Ten Billionth Pulse — Beyond Control",
-        storyline:
-          "In a near-future Milan capped at ten billion inhabitants, Senior Census Inspector Matteo Conti and Auditor Sofia Lindqvist enter a warm tungsten-lit apartment study with a glowing glass koi aquarium to enforce a mandatory life-for-life birth audit on Elena Moretti and Dr. Lorenzo Ferri. At 00:30, moved by Elena's quiet human dignity, Matteo unpins his brass Officer badge, stamps green authorization onto the family ledger in an act of conscience, and walks out into the rain-washed stone courtyard at 5400K dawn surrounded by the family and neighborhood residents in silent solidarity.",
-        compiledConceptDirective:
-          "Photorealistic 35mm live-action dramatic short film shot on ARRI Alexa Mini LF with Panavision Primo anamorphic lenses (35mm/50mm/85mm/24mm) at 92 BPM in D Minor, featuring 100% authentic adult European cinema actors with natural unretouched skin pores, real wool and tweed coats, and a two-act transition from a crimson brutalist corridor and 3200K koi-lit apartment study to a 5400K rain-washed Milanese stone courtyard at dawn.",
-        bpm: 92,
-        musicalKey: "D Minor",
-        creativeElevation: {
-          deconstructedCore:
-            "Deconstructed Pietro Malegori & Manuel Campagna's Higgsfield Global Film Festival submission 'CONTROL': extracted its crimson brutalist corridor, warm 3200K tungsten apartment study with the glowing glass koi aquarium, and the moral confrontation between a Population Control Officer and a family under a 10-billion population cap.",
-          identifiedLimitations: [
-            "Reference 'CONTROL' remains confined to a 3-person indoor apartment confrontation without expanding into a full 6-persona, 5-tier ensemble with co-auditors, municipal marshals, and courtyard witnesses",
-            "Reference relies on static shot-reverse-shot dialogue cuts and bleak resignation rather than a transformative 00:30 Act I -> Act II moral reversal where the Inspector unpins his brass badge and stamps green life-authorization",
-            "Reference stays locked inside dim interior rooms instead of opening into a cathartic 5400K rain-washed Milanese cobblestone courtyard crane reveal at dawn",
-          ],
-          surpassStrategy:
-            "Surpasses 'CONTROL' across cast (6 photorealistic adult European cinema personas across all 5 tiers), story (active moral defiance and communal solidarity instead of bureaucratic despair), and duration (tightly paced 60.0s, 1,440-frame 24/1 CFR 2-Act master with zero dead filler frames).",
-          act1ToAct2Twist:
-            "At 00:30 (Shot 04), Inspector Matteo Conti unpins his brass Census Officer badge, sets it on the oak table, and stamps green authorization onto Elena Moretti's family ledger while Auditor Sofia Lindqvist lowers her fountain pen in complicity, leading to a 5400K rain-washed stone courtyard crane reveal at dawn.",
-          sonicInnovation:
-            "48,000 Hz stereo live-action cinema production sound locked to 92 BPM in D Minor, combining natural rain-on-glass foley, leather footsteps on terrazzo stone, brass badge table clicks, and a soaring solo cello & felted piano score.",
-          choreographyAndCameraUpgrade:
-            "6-shot Panavision Primo anamorphic progression: 35mm T1.8 crimson corridor push-in (Shot 01), 50mm T1.8 Steadicam koi-study reveal (Shot 02), 85mm T1.5 unretouched close-up rack focus (Shot 03), 35mm T2.0 badge-removal dolly push-in (Shot 04), 50mm T1.8 handheld gratitude clasp (Shot 05), and 24mm T2.4 dawn courtyard crane pull-back (Shot 06).",
-        },
-        recommendedLanguageId: "lang_english_cinema",
-        recommendedGenreId: "gen_cinema_thriller",
-        recommendedVocalId: "voc_duet",
-        recommendedCountryId: "cnt_italy_milan_cinema",
-        recommendedRegionId: "reg_mediterranean",
-        recommendedDemographyId: "demo_cinema_realism",
-        recommendedLightingId: "lit_tungsten_to_dawn",
-        lyricsLines: [
-          "[Shot 01 • Female Lead (Elena Moretti)] Ten billion lives on the ledger, and the rain never washes the ink away (92 BPM)",
-          "[Shot 02 • Male Lead (Inspector Matteo Conti)] Every life in this room is real, not a number on a brass plate",
-          "[Shot 03 • Female Co-Lead (Auditor Sofia Lindqvist)] One second is all it takes to choose humanity over the law",
-          "[Shot 04 • Duet (Elena Moretti & Inspector Matteo Conti)] Take my place on the register, let a new dawn begin",
-          "[Shot 05 • Harmony Bridge (Elena Moretti & Auditor Sofia Lindqvist)] Unspoken courage echoes through the quiet apartment walls",
-          "[Shot 06 • Full Vocal Ensemble] Walking out into the morning rain, unregistered and finally free",
-        ],
-        backgroundEnvironment:
-          "Act I (0:00–0:30): Dimly lit Milanese crimson-red brutalist corridor with rain-streaked clerestory glass and warm 3200K tungsten apartment study with a glowing glass koi aquarium → Act II (0:30–1:00): Sun-rising 5400K rain-washed Milanese cobblestone courtyard with wrought-iron street gates and upper stone balconies",
-        humanEmotions:
-          "Act I: Quiet moral gravity, tear-glistened maternal courage, and authentic unretouched human micro-expressions → Act II: Stunned complicity, profound gratitude, and cathartic liberation in the morning rain",
-        shotEmotions: [
-          "Shot 01 (Inspector Matteo Conti): Weathered moral exhaustion, heavy exhale, and quiet hesitation against the crimson corridor wall",
-          "Shot 02 (Matteo Conti & Elena Moretti): Tense, deeply human eye contact across the oak table illuminated by the amber koi aquarium",
-          "Shot 03 (Elena Moretti 85mm Close-Up): Unretouched skin pores, natural forehead lines, tear-glistened dark brown eyes, and dignified courage",
-          "Shot 04 (Matteo Conti & Sofia Lindqvist): Decisive moral defiance as Matteo places his brass badge on the table and Sofia nods in silent solidarity",
-          "Shot 05 (Dr. Lorenzo Ferri & Matteo Conti): Reverent paternal respect and quiet stoic resolve as 5400K dawn light enters the study",
-          "Shot 06 (Full 6-Persona Courtyard Ensemble): Cathartic liberation and dignified neighborhood solidarity across the rain-washed courtyard balconies",
-        ],
-        voiceType:
-          "48,000 Hz Live-Action Cinema Production Sound, Natural Room Foley & Solo Cello-Piano Orchestral Score (Locked @ 92 BPM in D Minor)",
-        choreography:
-          "Act I: Grounded live-action cinema blocking — measured corridor walk, pause at the threshold, and tense table staging around the koi aquarium → Act II: Decisive badge removal, inked ledger stamp, clasped hands of gratitude, and a dignified walk across wet courtyard cobblestones",
-        shotChoreography: [
-          "[Counts 1-4: Measured corridor walk beside Sofia Lindqvist at 92 BPM | Counts 5-8: Matteo rests weathered hand on crimson plaster wall] 35mm Panavision Primo T1.8 low-angle push-in",
-          "[Counts 1-4: Steadicam entry into 3200K study past glowing koi aquarium | Counts 5-8: Matteo opens leather census ledger on oak table] 50mm Panavision Primo T1.8 tracking shot",
-          "[Counts 1-4: Elena places hand beside open registry ledger | Counts 5-8: 85mm rack-focus from koi tank to Elena's tear-glistened eyes] 85mm Panavision Portrait T1.5 close-up",
-          "[Counts 1-4: Matteo unpins brass Census badge & places it on oak table | Counts 5-8: Presses green approval stamp as Sofia lowers pen] 35mm Panavision Primo T2.0 dolly push-in",
-          "[Counts 1-4: Dr. Ferri sits in quiet reverence at oak table | Counts 5-8: Matteo buttons olive wool coat & turns toward dawn hallway] 50mm Panavision Primo T1.8 handheld framing",
-          "[Counts 1-4: Matteo walks across wet courtyard cobblestones toward iron gates | Counts 5-8: 12 neighbors & family watch from upper balcony] 24mm Wide Panavision T2.4 crane pull-back",
-        ],
-        shotLightingAndOptics: [
-          "35mm Panavision Primo @ T1.8, low-angle Steadicam push-in along crimson brutalist corridor, 3000K practical wall sconces + rain-diffused sidelight (5:1 contrast ratio)",
-          "50mm Panavision Primo @ T1.8, smooth tracking shot inside Milanese study, 3200K warm tungsten table lamps + amber glass koi aquarium glow (4:1 contrast ratio)",
-          "85mm Panavision Portrait @ T1.5, shallow-DOF rack-focus close-up on unretouched skin pores, 3200K tungsten key + soft 4200K window fill (5:1 contrast ratio)",
-          "35mm Panavision Primo @ T2.0, dynamic dolly push-in across oak table onto brass badge, 3400K tungsten key + 5000K early-dawn window rim (4:1 contrast ratio)",
-          "50mm Panavision Primo @ T1.8, intimate handheld cinema framing in study, 4500K transitional dawn window light + warm interior fill (4:1 contrast ratio)",
-          "24mm Wide Panavision Anamorphic @ T2.4, sweeping crane pull-back across wet cobblestone courtyard, 5400K natural overcast dawn daylight (3.5:1 contrast ratio)",
-        ],
-        figureGroundContrastSpec:
-          "Enforces >= 3.5:1 figure-ground luminance & chromatic separation: Act I dark-olive wool trench coat and oatmeal-beige merino knit contrast cleanly against the crimson corridor and warm amber koi tank, while Act II olive/camel wool overcoats separate against the pale limestone courtyard and wet cobblestones.",
-        instrumentAndStagePropsSpec:
-          "Live-action cinema props: weathered leather-bound municipal census ledger, removable brass Inspector lapel badge, heavy steel ink hand-stamp, fountain pen, and a real glass aquarium with live orange koi fish.",
-        venue: {
-          label: "Milan Crimson Brutalist Corridor & Koi Study → Rain-Washed Stone Courtyard at Dawn",
-          promptSpec:
-            "Dimly lit Milanese crimson-red brutalist corridor and warm 3200K tungsten apartment study with glowing glass koi aquarium in Act I (0:00–0:30), transitioning to a 5400K rain-washed Milanese stone courtyard at dawn in Act II (0:30–1:00)",
-        },
-        personas: {
-          female_lead: {
-            name: "Elena Moretti",
-            roleTitle: "Lead Dramatic Actress (Mother & Architect)",
-            ethnicity: "Italian / Mediterranean",
-            facialSpec:
-              "31yo Mediterranean woman with authentic unretouched skin pores, tear-glistened dark brown eyes, natural forehead lines, chestnut hair tied loosely back",
-          },
-          female_harmony: {
-            name: "Auditor Sofia Lindqvist",
-            roleTitle: "Co-Lead Dramatic Actress (Senior Census Auditor)",
-            ethnicity: "Nordic / European",
-            facialSpec:
-              "35yo Nordic-European woman with natural skin freckles, pale blue-grey eyes, blonde hair in a low bun, conflicted compassionate expression",
-          },
-          male_lead: {
-            name: "Inspector Matteo Conti",
-            roleTitle: "Lead Dramatic Actor (Senior Census Inspector)",
-            ethnicity: "Italian / European",
-            facialSpec:
-              "42yo weathered Italian-European man with natural skin pores, three-day salt-and-pepper beard, deep expressive hazel eyes, stoic moral gravity",
-          },
-          supporting: {
-            name: "Dr. Lorenzo Ferri",
-            roleTitle: "Supporting Character Actor (Family Patriarch & Historian)",
-            ethnicity: "Italian / European",
-            facialSpec:
-              "60yo silver-haired bearded Italian scholar with wire-rimmed glasses, weathered skin texture, dignified paternal warmth",
-          },
-          background: {
-            name: "4 Municipal Registry Marshals",
-            roleTitle: "Supporting Ministry Escort Ensemble",
-            ethnicity: "European Ensemble",
-            facialSpec:
-              "4 realistic adult municipal officers in heavy wool overcoats who witness Matteo's act of conscience and stand down in quiet solidarity",
-          },
-          audience: {
-            name: "12 Milanese Courtyard Residents",
-            roleTitle: "Apartment Balcony & Courtyard Witnesses",
-            ethnicity: "Italian / European Multi-Generational",
-            facialSpec:
-              "12 authentic adult neighborhood residents in everyday wool coats standing along the stone balconies in silent solidarity at dawn",
-          },
-        },
-        wardrobes: {
-          womenAct1: {
-            group: "Live-Action Cinema Realism",
-            label: "Oatmeal-Beige Merino Wool Knit Sweater & Charcoal Linen Skirt",
-            promptSpec:
-              "Natural unretouched oatmeal-beige merino wool knit sweater with visible yarn weave over a charcoal linen skirt",
-          },
-          womenAct2: {
-            group: "Live-Action Cinema Realism",
-            label: "Rain-Dampened Camel Wool Overcoat & Oatmeal Merino Knit",
-            promptSpec:
-              "Tailored camel wool overcoat worn over oatmeal-beige merino wool knit sweater in the morning rain",
-          },
-          menAct1: {
-            group: "Live-Action Cinema Realism",
-            label: "Rain-Dampened Dark-Olive Wool Trench Coat & Brass Census Lapel Pin",
-            promptSpec:
-              "Weathered rain-dampened dark-olive wool trench coat over a charcoal cotton shirt with a brass Census Inspector lapel pin",
-          },
-          menAct2: {
-            group: "Live-Action Cinema Realism",
-            label: "Unbadged Dark-Olive Wool Trench Coat (Badge Removed in Defiance)",
-            promptSpec:
-              "Buttoned dark-olive wool trench coat with the brass lapel pin removed, wet from morning courtyard rain",
-          },
-          supporting: {
-            group: "Live-Action Cinema Realism",
-            label: "Herringbone Brown Tweed Scholar Jacket & Wire-Rimmed Glasses",
-            promptSpec:
-              "Act I: Lived-in brown herringbone tweed jacket over cream Oxford shirt & wire-rimmed glasses → Act II: Tweed jacket with wool scarf on the dawn courtyard balcony",
-          },
-          background: {
-            group: "Live-Action Cinema Realism",
-            label: "Tailored Navy & Slate Wool Overcoats with Leather Census Ledgers",
-            promptSpec:
-              "Act I: Tailored navy and slate-grey heavy wool overcoats holding leather-bound registry ledgers → Act II: Overcoats lowered at their sides in quiet courtyard solidarity",
-          },
-          audience: {
-            group: "Live-Action Cinema Realism",
-            label: "Everyday Milanese Wool Coats, Cashmere Scarves & Knit Cardigans",
-            promptSpec:
-              "Act I: Quiet apartment building residents in lived-in wool cardigans and cotton shirts → Act II: Neighbors in everyday wool overcoats and scarves standing on stone balconies at dawn",
-          },
-          accessory: {
-            label: "Leather-Bound Census Ledger + Brass Lapel Pin + Steel Ink Stamp",
-            promptSpec:
-              "Weathered leather-bound paper registry ledger, brass lapel badge, fountain pen and heavy steel ink hand-stamp",
-          },
-        },
-      };
-    } else if (apiKey) {
+    if (apiKey) {
       for (const modelName of ["models/gemini-2.5-flash", "models/gemini-3.8-flash"]) {
         const t0 = Date.now();
         try {
@@ -1238,30 +1133,19 @@ Return STRICTLY valid JSON matching this schema:
     const resolvedVocalLabel = getById(VOCALS_CATALOG, finalVocalId)?.label || vocalLabel;
     const resolvedLightingLabel = getById(LIGHTING_CATALOG, finalLightingId)?.label || finalLightingId;
 
-    // Resolve exact BPM and Musical Key so Narration Agent and Music Agent are 100% locked and genre-authentic
-    const genreDefaultBpmKey: Record<string, { bpm: number; key: string }> = {
-      gen_spanish_latin: { bpm: 96, key: "B Minor" },
-      gen_kpop_idol: { bpm: 114, key: "F# Minor" },
-      gen_dance_pop: { bpm: 116, key: "D Dorian" },
-      gen_french_disco: { bpm: 118, key: "A Minor" },
-      gen_punjabi_bhangra: { bpm: 126, key: "G Minor" },
-      gen_bollywood_glam_party: { bpm: 124, key: "C# Minor" },
-      gen_bollywood_royal: { bpm: 108, key: "D Major" },
-      gen_bollywood_folk_classical: { bpm: 112, key: "E Minor" },
-      gen_arabic_club: { bpm: 110, key: "C Phrygian" },
-      gen_afrobeats: { bpm: 106, key: "F Minor" },
-    };
-    const genreDefaults = genreDefaultBpmKey[finalGenreId] || { bpm: 118, key: "F# Minor" };
+    // Resolve exact BPM and Musical Key dynamically from the resolved genre catalog label or Gemini output
+    const labelBpmMatch = resolvedGenreLabel.match(/\((\d{2,3})\s*BPM\)/i);
+    const defaultGenreBpm = labelBpmMatch ? Number(labelBpmMatch[1]) : 118;
     const parsedBpmNum = Number(parsed?.bpm);
     const synthesizedBpm: number =
       Number.isFinite(parsedBpmNum) && parsedBpmNum >= 75 && parsedBpmNum <= 175
         ? Math.round(parsedBpmNum)
-        : genreDefaults.bpm;
+        : defaultGenreBpm;
     const rawParsedKey = String(parsed?.musicalKey || "").split("(")[0].trim();
     const synthesizedMusicalKey: string =
       rawParsedKey.length >= 2 && rawParsedKey.length <= 24 && !/infer|exact/i.test(rawParsedKey)
         ? rawParsedKey
-        : genreDefaults.key;
+        : "F# Minor";
 
     // Step 4: Select 6 Diverse Non-Repeating Portraits Matched to Each Persona's Cultural Context
     const portraitContext = [
@@ -1276,7 +1160,7 @@ Return STRICTLY valid JSON matching this schema:
       resolvedGenreLabel,
     ].join(" ");
 
-    const basePortraits = selectPortraitsForContext(
+    const portraits = selectPortraitsForContext(
       portraitContext,
       finalRegionId,
       finalCountryId,
@@ -1290,34 +1174,27 @@ Return STRICTLY valid JSON matching this schema:
         audience: `${parsed?.personas?.audience?.ethnicity || ""} ${parsed?.personas?.audience?.roleTitle || ""}`,
       }
     );
-    const portraits = isHiggsfieldControlRef
-      ? {
-          femaleLeadUrl: "/assets/swarm/generated/job_1790654474523/preview_turn1C.jpg",
-          femaleHarmonyUrl: "/assets/characters/freja_moller_dk.jpg",
-          maleLeadUrl: "/assets/swarm/generated/job_1790654474523/preview_turn1A.jpg",
-          supportingUrl: "/assets/swarm/generated/job_1790654474523/preview_turn2B.jpg",
-          backgroundUrl: "/assets/swarm/generated/job_1790654474523/preview_turn2A.jpg",
-          audienceUrl: "/assets/swarm/generated/job_1790654474523/preview_turn2C.jpg",
-        }
-      : basePortraits;
+
+    const totalActsCount = Math.max(1, Math.ceil(shotsCount / 3));
+    const totalDurationSec = shotsCount * 10;
 
     // Step 5: Assemble Clean, Parameterized Synthesized Assets (Zero Raw URLs, Zero Canned Limitations)
     const synthesizedTitle =
       parsed?.title ||
       (ytRef
-        ? `${ytRef.title.replace(/[^\w\s-]/g, "").trim().slice(0, 34)} — 2-Act Sovereign Master`
+        ? `${ytRef.title.replace(/[^\w\s-]/g, "").trim().slice(0, 34)} — ${totalActsCount}-Act Sovereign Master`
         : `${effectiveConceptSeed.slice(0, 44).replace(/[^\w\s-]/g, "").trim() || "Elevated Studio Master"}`);
 
     const compiledConceptDirective =
       parsed?.compiledConceptDirective ||
-      `Elevated 2-Act 9:16 vertical dance music video ("${synthesizedTitle}") in ${resolvedCountryLabel} at ${synthesizedBpm} BPM (${synthesizedMusicalKey}), featuring a mid-reel architectural and haute-couture metamorphosis at 00:30, 6-shot 8-count kinetic choreography, and a 48,000 Hz studio soundtrack.`;
+      `Elevated ${totalActsCount}-Act (${totalDurationSec}s, ${shotsCount}-Shot) 9:16 vertical production ("${synthesizedTitle}") in ${resolvedCountryLabel} at ${synthesizedBpm} BPM (${synthesizedMusicalKey}), featuring an architectural and haute-couture metamorphosis, ${shotsCount}-shot kinetic choreography/blocking, and a 48,000 Hz studio soundtrack.`;
 
     // Guarantee clean storyline with ZERO raw http/https URLs
     const rawStorylineCandidate = String(parsed?.storyline || "").replace(/https?:\/\/[^\s]+/gi, "").trim();
     const cleanStoryline =
       rawStorylineCandidate.length >= 30
         ? rawStorylineCandidate
-        : `Two-act musical & kinetic journey set in ${resolvedCountryLabel}: Act I (0:00–0:30) ignites an intimate rhythmic performance at ${synthesizedBpm} BPM (${synthesizedMusicalKey}) before Act II (0:30–1:00) triggers a full architectural, lighting, and 5-tier haute-couture metamorphosis.`;
+        : `${totalActsCount}-act narrative & kinetic journey (${totalDurationSec}s, ${shotsCount} shots) set in ${resolvedCountryLabel} at ${synthesizedBpm} BPM (${synthesizedMusicalKey}) with full architectural, lighting, and 5-tier haute-couture evolution.`;
 
     // Sanitize identifiedLimitations so canned/parroted phrases can never slip through
     const rawLimitations: string[] = Array.isArray(parsed?.creativeElevation?.identifiedLimitations)
@@ -1333,10 +1210,10 @@ Return STRICTLY valid JSON matching this schema:
         ? rawLimitations.slice(0, 3)
         : [
             ytRef
-              ? `Reference "${ytRef.title}" relies on conventional 2D cutaways without a unified 00:30 Act I -> Act II architectural & couture metamorphosis`
-              : `Conventional ${resolvedGenreLabel} productions lack a synchronized 00:30 architectural and 5-tier couture transformation`,
-            `Standard music video edits cut randomly across beats instead of locking 6 progressive 8-count choreography phrases to ${synthesizedBpm} BPM (${synthesizedMusicalKey}) with dedicated 35mm/50mm/85mm anamorphic T-stop and Kelvin schedules`,
-            `Typical productions allow background performers to lip-sync aimlessly or blend into background walls instead of enforcing dual-mode active singer visemes (r >= 0.72) + non-singing closed-lips eye-acting and >= 3.5:1 figure-ground contrast`,
+              ? `Reference "${ytRef.title}" relies on conventional cutaways without a unified multi-act architectural & couture metamorphosis across ${totalDurationSec}s`
+              : `Conventional ${resolvedGenreLabel} productions lack a synchronized multi-act architectural and 5-tier couture transformation`,
+            `Standard edits cut randomly across beats instead of locking ${shotsCount} progressive 10s shot phrases to ${synthesizedBpm} BPM (${synthesizedMusicalKey}) with dedicated 35mm/50mm/85mm anamorphic T-stop and Kelvin schedules`,
+            `Typical productions allow background performers to lip-sync aimlessly or blend into background walls instead of enforcing dual-mode active speaker/singer visemes (r >= 0.72) + non-speaking closed-lips eye-acting and >= 3.5:1 figure-ground contrast`,
           ];
 
     const ensureActEvolutionText = (spec: string | undefined, fallbackAct1: string, fallbackAct2: string): string => {
@@ -1350,22 +1227,22 @@ Return STRICTLY valid JSON matching this schema:
       return `Act I (0:00–0:30): ${fallbackAct1} → Act II (0:30–1:00): ${fallbackAct2}`;
     };
 
-    const femLeadId = isHiggsfieldControlRef ? "p_fem_elena_moretti" : `p_fem_syn_${stamp}`;
-    const femHarmonyId = isHiggsfieldControlRef ? "p_fem_sofia_lindqvist" : `p_fem2_syn_${stamp}`;
-    const maleLeadId = isHiggsfieldControlRef ? "p_male_matteo_conti" : `p_male_syn_${stamp}`;
-    const supId = isHiggsfieldControlRef ? "p_sup_lorenzo_ferri" : `p_sup_syn_${stamp}`;
-    const bgId = isHiggsfieldControlRef ? "p_bg_census_marshals" : `p_bg_syn_${stamp}`;
-    const audId = isHiggsfieldControlRef ? "p_aud_milan_neighbors" : `p_aud_syn_${stamp}`;
+    const femLeadId = `p_fem_syn_${stamp}`;
+    const femHarmonyId = `p_fem2_syn_${stamp}`;
+    const maleLeadId = `p_male_syn_${stamp}`;
+    const supId = `p_sup_syn_${stamp}`;
+    const bgId = `p_bg_syn_${stamp}`;
+    const audId = `p_aud_syn_${stamp}`;
 
-    const wFem1Id = isHiggsfieldControlRef ? "w_f1_merino_cardigan" : `w_f1_syn_${stamp}`;
-    const wFem2Id = isHiggsfieldControlRef ? "w_f2_dawn_trench" : `w_f2_syn_${stamp}`;
-    const wMale1Id = isHiggsfieldControlRef ? "w_m1_olive_trench" : `w_m1_syn_${stamp}`;
-    const wMale2Id = isHiggsfieldControlRef ? "w_m2_unbadged_coat" : `w_m2_syn_${stamp}`;
-    const wSupId = isHiggsfieldControlRef ? "w_sup_tweed_scholar" : `w_sup_syn_${stamp}`;
-    const wBgId = isHiggsfieldControlRef ? "w_bg_census_marshals" : `w_bg_syn_${stamp}`;
-    const wAudId = isHiggsfieldControlRef ? "w_aud_milan_neighbors" : `w_aud_syn_${stamp}`;
-    const accId = isHiggsfieldControlRef ? "acc_brass_ledger" : `acc_syn_${stamp}`;
-    const venId = isHiggsfieldControlRef ? "ven_milan_brutalist_courtyard" : `ven_syn_${stamp}`;
+    const wFem1Id = `w_f1_syn_${stamp}`;
+    const wFem2Id = `w_f2_syn_${stamp}`;
+    const wMale1Id = `w_m1_syn_${stamp}`;
+    const wMale2Id = `w_m2_syn_${stamp}`;
+    const wSupId = `w_sup_syn_${stamp}`;
+    const wBgId = `w_bg_syn_${stamp}`;
+    const wAudId = `w_aud_syn_${stamp}`;
+    const accId = `acc_syn_${stamp}`;
+    const venId = `ven_syn_${stamp}`;
 
     const wardrobes = {
       womenAct1: {
@@ -1423,25 +1300,25 @@ Return STRICTLY valid JSON matching this schema:
         group: parsed?.wardrobes?.supporting?.group || "AI Supporting Cast",
         label:
           parsed?.wardrobes?.supporting?.label ||
-          "Supporting Musicians Act I → Act II Stage Ensemble",
+          "Supporting Cast Act I → Act II Ensemble",
         promptSpec: ensureActEvolutionText(
           parsed?.wardrobes?.supporting?.promptSpec,
-          `Tailored acoustic & rhythm section stage attire for ${synthesizedTitle}`,
-          "Metallic-piped midnight concert ensemble with specular instrument straps"
+          `Tailored Act I supporting ensemble attire for ${synthesizedTitle}`,
+          "Metallic-piped Act II finale ensemble with high-contrast trim"
         ),
       },
       background: {
         id: wBgId,
         category: "background" as const,
         act: "both" as const,
-        group: parsed?.wardrobes?.background?.group || "AI Dance Crew",
+        group: parsed?.wardrobes?.background?.group || "AI Ensemble Crew",
         label:
           parsed?.wardrobes?.background?.label ||
-          "8-Dancer Kinetic Crew Act I → Act II Uniform",
+          "8-Person Kinetic Crew Act I → Act II Uniform",
         promptSpec: ensureActEvolutionText(
           parsed?.wardrobes?.background?.promptSpec,
-          "High-contrast monochrome athletic dancewear separating cleanly from the Act I set",
-          "Reflective chrome-trimmed Act II V-formation finale dance uniform"
+          "High-contrast monochrome Act I ensemble attire separating cleanly from the set",
+          "Reflective chrome-trimmed Act II V-formation finale uniform"
         ),
       },
       audience: {
@@ -1451,21 +1328,21 @@ Return STRICTLY valid JSON matching this schema:
         group: parsed?.wardrobes?.audience?.group || "AI VIP Crowd",
         label:
           parsed?.wardrobes?.audience?.label ||
-          "VIP Entourage Act I → Act II Dress Code",
+          "Surrounding Entourage Act I → Act II Dress Code",
         promptSpec: ensureActEvolutionText(
           parsed?.wardrobes?.audience?.promptSpec,
-          "Elevated sunset resort & cocktail attire framing the perimeter",
-          "Midnight black-tie & illuminated festival gala attire with warm rim highlights"
+          "Elevated Act I perimeter attire with warm highlights",
+          "Midnight Act II finale attire with warm rim highlights"
         ),
       },
       accessory: {
         id: accId,
         label:
           parsed?.wardrobes?.accessory?.label ||
-          "Bespoke Footwear, Statement Jewelry & Live Stage Instruments",
+          "Bespoke Footwear, Statement Props & Stage Instruments",
         promptSpec:
           parsed?.wardrobes?.accessory?.promptSpec ||
-          "Custom dance footwear, specular statement jewelry, wind-swept hair styling, and live rhythm/horn stage instruments",
+          "Custom footwear, specular statement props, natural hair styling, and authentic stage instruments",
       },
       venue: (() => {
         const rawVenueLabel = String(parsed?.venue?.label || "")
@@ -1479,7 +1356,7 @@ Return STRICTLY valid JSON matching this schema:
           label: cleanVenueLabel,
           promptSpec:
             parsed?.venue?.promptSpec ||
-            `Act I (0:00–0:30) architectural stage transforming at 00:30 into Act II (0:30–1:00) illuminated concert arena for ${synthesizedTitle}`,
+            `Act I (0:00–0:30) architectural stage transforming into Act II illuminated finale arena for ${synthesizedTitle}`,
         };
       })(),
     };
@@ -1509,7 +1386,7 @@ Return STRICTLY valid JSON matching this schema:
           parsed?.personas?.female_harmony?.ethnicity || resolvedCountryLabel.split("—")[0].trim(),
         facialSpec:
           parsed?.personas?.female_harmony?.facialSpec ||
-          "22yo dynamic co-lead vocalist, distinct contrasting facial bone structure, magnetic gaze, high-energy dance precision",
+          "22yo dynamic co-lead vocalist, distinct contrasting facial bone structure, magnetic gaze, high-energy precision",
         photoUrl: portraits.femaleHarmonyUrl,
         defaultAct1WardrobeId: wFem1Id,
         defaultAct2WardrobeId: wFem2Id,
@@ -1523,7 +1400,7 @@ Return STRICTLY valid JSON matching this schema:
         ethnicity: parsed?.personas?.male_lead?.ethnicity || resolvedCountryLabel.split("—")[0].trim(),
         facialSpec:
           parsed?.personas?.male_lead?.facialSpec ||
-          "25yo charismatic male lead, sharp jawline, intense expressive eyes, athletic dancer posture",
+          "25yo charismatic male lead, sharp jawline, intense expressive eyes, athletic posture",
         photoUrl: portraits.maleLeadUrl,
         defaultAct1WardrobeId: wMale1Id,
         defaultAct2WardrobeId: wMale2Id,
@@ -1533,11 +1410,11 @@ Return STRICTLY valid JSON matching this schema:
         id: supId,
         category: "supporting" as const,
         name: parsed?.personas?.supporting?.name || "Live Rhythm, Horn & Synth Collective",
-        roleTitle: parsed?.personas?.supporting?.roleTitle || "Live Instrumentalists & Rhythm Section",
+        roleTitle: parsed?.personas?.supporting?.roleTitle || "Live Instrumentalists & Supporting Lead",
         ethnicity: parsed?.personas?.supporting?.ethnicity || resolvedCountryLabel.split("—")[0].trim(),
         facialSpec:
           parsed?.personas?.supporting?.facialSpec ||
-          "Dynamic live percussionists, horn players, and stage musicians driving the rhythm section with authentic instruments",
+          "Dynamic supporting performers and musicians driving the scene with authentic expressive presence",
         photoUrl: portraits.supportingUrl,
         defaultAct1WardrobeId: wSupId,
         defaultAct2WardrobeId: wSupId,
@@ -1546,12 +1423,12 @@ Return STRICTLY valid JSON matching this schema:
       background: {
         id: bgId,
         category: "background" as const,
-        name: parsed?.personas?.background?.name || "Kinetic V-Formation Dance Crew",
-        roleTitle: parsed?.personas?.background?.roleTitle || "8 Synchronized Backup Dancers",
+        name: parsed?.personas?.background?.name || "Kinetic V-Formation Ensemble Crew",
+        roleTitle: parsed?.personas?.background?.roleTitle || "8 Synchronized Ensemble Performers",
         ethnicity: parsed?.personas?.background?.ethnicity || resolvedCountryLabel.split("—")[0].trim(),
         facialSpec:
           parsed?.personas?.background?.facialSpec ||
-          "8 athletic backup dancers with distinct individual faces executing razor-sharp 8-count formation geometry",
+          "8 athletic ensemble performers with distinct individual faces executing razor-sharp formation geometry",
         photoUrl: portraits.backgroundUrl,
         defaultAct1WardrobeId: wBgId,
         defaultAct2WardrobeId: wBgId,
@@ -1565,7 +1442,7 @@ Return STRICTLY valid JSON matching this schema:
         ethnicity: parsed?.personas?.audience?.ethnicity || `${resolvedCountryLabel.split("—")[0].trim()} & Global Crowd`,
         facialSpec:
           parsed?.personas?.audience?.facialSpec ||
-          "Energetic surrounding VIP audience reacting to the choreography and finale pyrotechnics with zero face cloning",
+          "Energetic surrounding crowd reacting to the performance with zero face cloning",
         photoUrl: portraits.audienceUrl,
         defaultAct1WardrobeId: wAudId,
         defaultAct2WardrobeId: wAudId,
@@ -1573,61 +1450,58 @@ Return STRICTLY valid JSON matching this schema:
       },
     };
 
-    // Ensure 6-line lyrics explicitly cover Female Lead, Male Lead, and Co-Lead/Duet and lock to synthesizedBpm
-    const rawLines: string[] =
-      Array.isArray(parsed?.lyricsLines) && parsed.lyricsLines.length >= 6
-        ? parsed.lyricsLines.map((l: unknown) => String(l || "").trim())
-        : [
-            `[Shot 01 • Female Lead (${personas.female_lead.name})] Step into the light — ${synthesizedTitle} ignites the night (${synthesizedBpm} BPM)`,
-            `[Shot 02 • Male Lead (${personas.male_lead.name})] Eyes lock across the floor as the rhythm climbs higher`,
-            `[Shot 03 • Female Co-Lead (${personas.female_harmony.name})] Voices intertwine on the pre-drop harmony wave`,
-            `[Shot 04 • Duet (${personas.female_lead.name} & ${personas.male_lead.name})] Midnight transformation — gold and neon in the sky`,
-            `[Shot 05 • High-Note Bridge (${personas.female_lead.name} & ${personas.female_harmony.name})] Two voices rising together above the horizon`,
-            `[Shot 06 • Full Vocal Ensemble] Hands up in the finale — this moment is electric`,
-          ];
+    // Dynamically scale lyrics/dialogue lines to exact length `shotsCount`
+    const parsedRawLines: string[] = Array.isArray(parsed?.lyricsLines)
+      ? parsed.lyricsLines.map((l: unknown) => String(l || "").trim()).filter(Boolean)
+      : [];
 
-    const normalizedLyricsLines = rawLines.slice(0, Math.max(6, shotsCount)).map((line, idx) => {
-      let updated = line.replace(/\(<bpm>\s*BPM\)/gi, `(${synthesizedBpm} BPM)`);
-      // Replace any mismatched BPM tag with the locked synthesizedBpm
+    const roleRotation = [
+      `Female Lead (${personas.female_lead.name})`,
+      `Male Lead (${personas.male_lead.name})`,
+      `Female Co-Lead (${personas.female_harmony.name})`,
+      `Duet (${personas.female_lead.name} & ${personas.male_lead.name})`,
+      `Harmony Bridge (${personas.female_lead.name} & ${personas.female_harmony.name})`,
+      `Full Vocal Ensemble`,
+    ];
+
+    const normalizedLyricsLines: string[] = Array.from({ length: shotsCount }, (_, idx) => {
+      const shotNumStr = String(idx + 1).padStart(2, "0");
+      const defaultRoleTag = `Shot ${shotNumStr} • ${roleRotation[idx % roleRotation.length]}`;
+      const candidate =
+        parsedRawLines[idx] ||
+        `[${defaultRoleTag}] ${synthesizedTitle} — Shot ${shotNumStr} narrative & vocal progression (${synthesizedBpm} BPM)`;
+      let updated = candidate.replace(/\(<bpm>\s*BPM\)/gi, `(${synthesizedBpm} BPM)`);
       if (/\(\d{2,3}\s*BPM\)/i.test(updated)) {
         updated = updated.replace(/\(\d{2,3}\s*BPM\)/gi, `(${synthesizedBpm} BPM)`);
       } else if (idx === 0) {
         updated = `${updated} (${synthesizedBpm} BPM)`;
       }
-      // Guarantee explicit role tags across Shots 1..6 so all 3 vocal leads have verified coverage
-      const roleHeaderByShot = [
-        `Shot 01 • Female Lead (${personas.female_lead.name})`,
-        `Shot 02 • Male Lead (${personas.male_lead.name})`,
-        `Shot 03 • Female Co-Lead (${personas.female_harmony.name})`,
-        `Shot 04 • Duet (${personas.female_lead.name} & ${personas.male_lead.name})`,
-        `Shot 05 • Harmony Bridge (${personas.female_lead.name} & ${personas.female_harmony.name})`,
-        `Shot 06 • Full Vocal Ensemble`,
-      ][idx] || `Shot 0${idx + 1} • Vocal Ensemble`;
-
-      if (/^\[[^\]]+\]/.test(updated)) {
-        updated = updated.replace(/^\[[^\]]+\]/, `[${roleHeaderByShot}]`);
-      } else {
-        updated = `[${roleHeaderByShot}] ${updated}`;
+      if (/^\[Shot\s*\d+/i.test(updated)) {
+        return updated;
       }
-      return updated;
+      if (/^\[[^\]]+\]/.test(updated)) {
+        return updated.replace(/^\[[^\]]+\]/, `[${defaultRoleTag}]`);
+      }
+      return `[${defaultRoleTag}] ${updated}`;
     });
 
     const lyrics = normalizedLyricsLines.join("\n");
 
-    // Ensure 6-shot choreography includes explicit 8-count phrasing on every shot
-    const rawChoreo: string[] =
-      Array.isArray(parsed?.shotChoreography) && parsed.shotChoreography.length >= 6
-        ? parsed.shotChoreography.map((c: unknown) => String(c || "").trim())
-        : [
-            `[Counts 1-4: Solo downbeat groove & shoulder isolations at ${synthesizedBpm} BPM | Counts 5-8: Traveling spin into camera lock] 35mm low-angle Steadicam push-in`,
-            `[Counts 1-4: Synchronized duo partner footwork & chest pop | Counts 5-8: Counter-balance turn & dip] 360-degree Ronin gimbal orbit`,
-            `[Counts 1-4: Co-lead & 8 dancers build diagonal stagger | Counts 5-8: Pre-drop freeze & torso wave] 24mm jib crane rise`,
-            `[Counts 1-4: Explosive Act II beat-drop V-formation hit | Counts 5-8: High-velocity synchronized travel] 35mm track dolly drop reveal`,
-            `[Counts 1-4: Intimate vocal face-off micro-isolations | Counts 5-8: Background 8-dancer domino ripple] 85mm shallow-DOF dual focus pull`,
-            `[Counts 1-4: Full 6-persona 360-degree circle formation sync | Counts 5-8: Signature apex finale pose] 24mm Techno-crane & FPV drone pull-back`,
-          ];
+    // Dynamically scale choreography/blocking to exact length `shotsCount`
+    const parsedRawChoreo: string[] = Array.isArray(parsed?.shotChoreography)
+      ? parsed.shotChoreography.map((c: unknown) => String(c || "").trim()).filter(Boolean)
+      : [];
+    const defaultChoreoTemplates = [
+      `[Counts 1-4: Solo downbeat groove & shoulder isolations at ${synthesizedBpm} BPM | Counts 5-8: Traveling spin into camera lock] 35mm low-angle Steadicam push-in`,
+      `[Counts 1-4: Synchronized duo partner footwork & chest pop | Counts 5-8: Counter-balance turn & dip] 360-degree Ronin gimbal orbit`,
+      `[Counts 1-4: Co-lead & 8-person crew build diagonal stagger | Counts 5-8: Pre-drop freeze & torso wave] 24mm jib crane rise`,
+      `[Counts 1-4: Explosive beat-drop V-formation hit | Counts 5-8: High-velocity synchronized travel] 35mm track dolly drop reveal`,
+      `[Counts 1-4: Intimate close-up micro-isolations | Counts 5-8: Background 8-person domino ripple] 85mm shallow-DOF dual focus pull`,
+      `[Counts 1-4: Full 6-persona 360-degree circle formation sync | Counts 5-8: Signature apex finale pose] 24mm Techno-crane & FPV drone pull-back`,
+    ];
 
-    const normalizedShotChoreography = rawChoreo.slice(0, Math.max(6, shotsCount)).map((c, idx) => {
+    const normalizedShotChoreography: string[] = Array.from({ length: shotsCount }, (_, idx) => {
+      const c = parsedRawChoreo[idx] || defaultChoreoTemplates[idx % defaultChoreoTemplates.length];
       if (/counts?\s*1/i.test(c) || /8-count/i.test(c)) return c;
       return `[Counts 1-4: Beat-locked ${synthesizedBpm} BPM phrase ${idx + 1}A | Counts 5-8: Precision formation transition ${idx + 1}B] ${c}`;
     });
@@ -1651,32 +1525,46 @@ Return STRICTLY valid JSON matching this schema:
       "5400K multi-spectrum volumetric finale beams (4:1 contrast ratio)",
     ];
 
-    const normalizedShotLightingAndOptics: string[] =
-      Array.isArray(parsed?.shotLightingAndOptics) && parsed.shotLightingAndOptics.length >= 6
-        ? parsed.shotLightingAndOptics.slice(0, Math.max(6, shotsCount)).map((s: unknown, idx: number) => {
-            let text = String(s || "")
-              .replace(/^Write\s+bespoke\s+/i, "")
-              .replace(/^Shot\s*0?\d+\s*(\([^)]*\))?\s*[:—-]\s*/i, "")
-              .trim();
-            if (!/mm\b/i.test(text)) {
-              text = `${defaultLensByShot[idx % 6]}, ${text}`;
-            }
-            if (!/T\d/i.test(text)) {
-              text = text.replace(/(\d{2}mm(?:\s+\w+)*)/i, "$1 @ T1.8");
-            }
-            if (!/\d{4}K/i.test(text)) {
-              text = `${text} • ${defaultKelvinByShot[idx % 6]}`;
-            }
-            return text;
-          })
-        : [
-            `35mm Anamorphic Prime @ T1.8, low-angle Steadicam push-in across ${act1VenueShort}, 3200K warm key light (4:1 contrast ratio)`,
-            `50mm Anamorphic Prime @ T1.8, 360° Ronin gimbal duo orbit in ${act1VenueShort}, 3400K cross-key + rim backlight (4:1 contrast ratio)`,
-            `24mm Wide Anamorphic @ T2.2, sweeping jib crane rise across ${act1VenueShort}, 3800K pre-drop spotlight pulse (4:1 contrast ratio)`,
-            `35mm Anamorphic Prime @ T2.0, high-speed track dolly reveal into ${act2VenueShort}, 5600K Act II laser & neon rim (5:1 contrast ratio)`,
-            `85mm Portrait Anamorphic @ T1.5, shallow-DOF dual focus pull in ${act2VenueShort}, 3200K warm key + 5600K cyan edge light (6:1 contrast ratio)`,
-            `24mm Wide Anamorphic @ T2.4, 360° Techno-crane & FPV drone pull-back over ${act2VenueShort}, 5400K volumetric finale beams (4:1 contrast ratio)`,
-          ];
+    const parsedRawOptics: string[] = Array.isArray(parsed?.shotLightingAndOptics)
+      ? parsed.shotLightingAndOptics.map((s: unknown) => String(s || "").trim()).filter(Boolean)
+      : [];
+
+    const normalizedShotLightingAndOptics: string[] = Array.from({ length: shotsCount }, (_, idx) => {
+      const venueForShot = idx < Math.ceil(shotsCount / 2) ? act1VenueShort : act2VenueShort;
+      const rawText =
+        parsedRawOptics[idx] ||
+        `${defaultLensByShot[idx % defaultLensByShot.length]}, dynamic camera movement across ${venueForShot}, ${defaultKelvinByShot[idx % defaultKelvinByShot.length]}`;
+      let text = rawText
+        .replace(/^Write\s+bespoke\s+/i, "")
+        .replace(/^Shot\s*0?\d+\s*(\([^)]*\))?\s*[:—-]\s*/i, "")
+        .trim();
+      if (!/mm\b/i.test(text)) {
+        text = `${defaultLensByShot[idx % defaultLensByShot.length]}, ${text}`;
+      }
+      if (!/T\d/i.test(text)) {
+        text = text.replace(/(\d{2}mm(?:\s+\w+)*)/i, "$1 @ T1.8");
+      }
+      if (!/\d{4}K/i.test(text)) {
+        text = `${text} • ${defaultKelvinByShot[idx % defaultKelvinByShot.length]}`;
+      }
+      return text;
+    });
+
+    const parsedRawEmotions: string[] = Array.isArray(parsed?.shotEmotions)
+      ? parsed.shotEmotions.map((e: unknown) => String(e || "").trim()).filter(Boolean)
+      : [];
+    const defaultEmotionTemplates = [
+      (shotNum: string) => `Shot ${shotNum} (${personas.female_lead.name} Active Lead): Magnetic opening eye contact, crisp open-mouth phoneme articulation (r >= 0.72) & expressive micro-acting`,
+      (shotNum: string) => `Shot ${shotNum} (${personas.male_lead.name} Active Counter-Lead): Intense counter-lead vocal/dialogue sync, expressive eyebrow micro-acting & closed-lips partner gaze from ${personas.female_lead.name}`,
+      (shotNum: string) => `Shot ${shotNum} (${personas.female_harmony.name} Active Co-Lead): Radiant vocal/dialogue articulation while ensemble crew holds closed-lips (RMS <= 0.015) reactive expressions`,
+      (shotNum: string) => `Shot ${shotNum} (Duet Turn — ${personas.female_lead.name} & ${personas.male_lead.name}): Commanding transformation poise, synchronized visemes & fierce camera lock`,
+      (shotNum: string) => `Shot ${shotNum} (85mm Close-Up — ${personas.female_lead.name} & ${personas.female_harmony.name}): Passionate close-up articulation & intense eye connection`,
+      (shotNum: string) => `Shot ${shotNum} (Full 6-Persona Ensemble Finale): Triumphant apex articulation on leads with euphoric closed-lips crowd & ensemble celebration`,
+    ];
+    const normalizedShotEmotions: string[] = Array.from({ length: shotsCount }, (_, idx) => {
+      const shotNum = String(idx + 1).padStart(2, "0");
+      return parsedRawEmotions[idx] || defaultEmotionTemplates[idx % defaultEmotionTemplates.length](shotNum);
+    });
 
     const figureGroundContrastSpec =
       typeof parsed?.figureGroundContrastSpec === "string" && parsed.figureGroundContrastSpec.trim().length > 20
@@ -1686,7 +1574,7 @@ Return STRICTLY valid JSON matching this schema:
     const instrumentAndStagePropsSpec =
       typeof parsed?.instrumentAndStagePropsSpec === "string" && parsed.instrumentAndStagePropsSpec.trim().length > 20
         ? parsed.instrumentAndStagePropsSpec.trim()
-        : `Supporting Musicians (${personas.supporting.name}) perform on live rhythm percussion, custom brass/string instruments, and illuminated synth decks; Lead & Crew props transition from Act I elements in ${act1VenueShort} to Act II kinetic stage elements in ${act2VenueShort} (${wardrobes.accessory.promptSpec}).`;
+        : `Supporting Cast (${personas.supporting.name}) perform with authentic props & instruments; Lead & Crew props transition from Act I elements in ${act1VenueShort} to Act II finale elements in ${act2VenueShort} (${wardrobes.accessory.promptSpec}).`;
 
     const isMaleOnly =
       finalVocalId === "voc_male_solo" || finalVocalId === "voc_boy_band";
@@ -1714,8 +1602,8 @@ Return STRICTLY valid JSON matching this schema:
           : [
               `Venue & Lighting Grounding: Verified ${resolvedCountryLabel} & ${resolvedLightingLabel} match ${wardrobes.venue.label} with zero outdoor/indoor mismatch`,
               `Wardrobe & Cast Visual Parity: Verified 6 personas and 5-tier Act I -> Act II couture (${wardrobes.womenAct1.label} -> ${wardrobes.womenAct2.label})`,
-              `Optics, Kelvin & 8-Count Choreography: Verified 6 bespoke shot lens/T-stop/Kelvin entries and ${synthesizedBpm} BPM 8-count choreography`,
-              `Audio Tempo, Key & Vocal Distribution: Verified ${synthesizedBpm} BPM (${synthesizedMusicalKey}) locked identically across ${resolvedLanguageLabel} lyrics and Lyria 3 Pro`,
+              `Optics, Kelvin & ${shotsCount}-Shot Blocking: Verified ${shotsCount} bespoke shot lens/T-stop/Kelvin entries and ${synthesizedBpm} BPM 8-count choreography`,
+              `Audio Tempo, Key & Vocal Distribution: Verified ${synthesizedBpm} BPM (${synthesizedMusicalKey}) locked identically across ${resolvedLanguageLabel} lines and Lyria 3 Pro`,
             ],
       autoCorrectionsApplied:
         judgeAutoCorrections.length > 0
@@ -1741,21 +1629,21 @@ Return STRICTLY valid JSON matching this schema:
       deconstructedCore:
         parsed?.creativeElevation?.deconstructedCore ||
         (ytRef
-          ? `Deconstructed reference "${ytRef.title}" by ${ytRef.channelName}: extracted its core ${synthesizedBpm} BPM (${synthesizedMusicalKey}) rhythmic bounce, vocal hook energy, and cultural aesthetic as a launchpad for original 2-Act elevation.`
-          : `Deconstructed seed concept "${effectiveConceptSeed}": extracted the core ${synthesizedBpm} BPM (${synthesizedMusicalKey}) emotional driver, cultural rhythm, and visual atmosphere.`),
+          ? `Deconstructed reference "${ytRef.title}" by ${ytRef.channelName}: extracted its core ${synthesizedBpm} BPM (${synthesizedMusicalKey}) pacing, narrative/vocal hook energy, and visual aesthetic as a launchpad for original ${totalActsCount}-Act (${totalDurationSec}s) elevation.`
+          : `Deconstructed seed concept "${effectiveConceptSeed}": extracted the core ${synthesizedBpm} BPM (${synthesizedMusicalKey}) emotional driver, cultural rhythm, and visual atmosphere across ${totalActsCount} acts (${totalDurationSec}s).`),
       identifiedLimitations: verifiedLimitations,
       surpassStrategy:
         parsed?.creativeElevation?.surpassStrategy ||
-        `Surpasses the reference by engineering a 00:30 Act I -> Act II architectural & 5-tier couture metamorphosis, locking 6 progressive 8-count choreography phrases and 35mm/50mm/85mm T-stop/Kelvin optics to a ${synthesizedBpm} BPM (${synthesizedMusicalKey}) 48kHz master.`,
+        `Surpasses the reference by engineering a ${totalActsCount}-Act (${totalDurationSec}s, ${shotsCount}-Shot) architectural & 5-tier couture metamorphosis, locking ${shotsCount} progressive 10s shot phrases and 35mm/50mm/85mm T-stop/Kelvin optics to a ${synthesizedBpm} BPM (${synthesizedMusicalKey}) 48kHz master.`,
       act1ToAct2Twist:
         parsed?.creativeElevation?.act1ToAct2Twist ||
-        `At 00:30 (Shot 04), ${wardrobes.venue.label} undergoes a full architectural & Kelvin lighting metamorphosis while all 5 cast tiers transform into Act II finale couture with 100% locked facial identity.`,
+        `Across ${totalActsCount} acts (${totalDurationSec}s), ${wardrobes.venue.label} undergoes a full architectural & Kelvin lighting metamorphosis while all 5 cast tiers transform into finale couture with 100% locked facial identity.`,
       sonicInnovation:
         parsed?.creativeElevation?.sonicInnovation ||
-        `Hybrid 48,000 Hz stereo studio arrangement locked to ${synthesizedBpm} BPM in ${synthesizedMusicalKey}, blending authentic ${resolvedGenreLabel} live instrumentation with sub-bass drops and 3-part lead/co-lead/counter-lead vocal harmonies (+4.5 dB vocal presence).`,
+        `Hybrid 48,000 Hz stereo studio arrangement locked to ${synthesizedBpm} BPM in ${synthesizedMusicalKey}, blending authentic ${resolvedGenreLabel} instrumentation with multi-character vocal/dialogue presence (+4.5 dB vocal presence).`,
       choreographyAndCameraUpgrade:
         parsed?.creativeElevation?.choreographyAndCameraUpgrade ||
-        `6-shot 8-count kinetic progression locked to ${synthesizedBpm} BPM evolving from a 35mm T1.8 Steadicam solo hook (Shot 01) and 50mm T1.8 360° gimbal duet (Shot 02) to a 24mm jib build (Shot 03), 35mm Act II V-formation drop (Shot 04), 85mm T1.5 dual focus pull (Shot 05), and 24mm Techno-crane 6-persona finale (Shot 06).`,
+        `${shotsCount}-shot (${totalDurationSec}s) kinetic progression locked to ${synthesizedBpm} BPM evolving from a 35mm T1.8 Steadicam opening hook and 50mm T1.8 360° gimbal duet to a 24mm jib build, 35mm V-formation reveal, 85mm T1.5 dual focus pull, and 24mm Techno-crane 6-persona finale.`,
       innovationScore: `${judgeIndependentScore} • Cross-Model Judge (${judgeModelUsed} auditing ${generatorModelUsed})`,
       judgeReceipt,
     };
@@ -1780,24 +1668,14 @@ Return STRICTLY valid JSON matching this schema:
         `Act I (0:00–0:30): ${act1VenueShort} → Act II (0:30–1:00): ${act2VenueShort} (${wardrobes.venue.promptSpec})`,
       humanEmotions:
         parsed?.humanEmotions ||
-        "Act I: Magnetic eye contact, active singer phoneme articulation (r >= 0.72) & non-singing ensemble closed-lips joy → Act II: Commanding midnight intensity, soaring duet passion & euphoric finale celebration",
-      shotEmotions:
-        Array.isArray(parsed?.shotEmotions) && parsed.shotEmotions.length >= 6
-          ? parsed.shotEmotions
-          : [
-              `Shot 01 (${personas.female_lead.name} Active Vocal): Magnetic opening eye contact, crisp open-mouth phoneme articulation (r >= 0.72) & confident smile`,
-              `Shot 02 (${personas.male_lead.name} Active Vocal): Playful counter-lead vocal sync, expressive eyebrow micro-acting & closed-lips partner gaze from ${personas.female_lead.name}`,
-              `Shot 03 (${personas.female_harmony.name} Active Harmony): Radiant pre-chorus vocal articulation while 8-dancer crew holds closed-lips (RMS <= 0.015) rhythmic smiles`,
-              `Shot 04 (Duet Drop — ${personas.female_lead.name} & ${personas.male_lead.name}): Commanding Act II transformation poise, synchronized duet visemes & fierce camera lock`,
-              `Shot 05 (85mm Close-Up — ${personas.female_lead.name} & ${personas.female_harmony.name}): Passionate high-note vocal articulation & intense Nayan-Abhinaya eye connection`,
-              `Shot 06 (Full 6-Persona Ensemble Finale): Triumphant anthem vocal sync on leads with euphoric closed-lips crowd & dancer celebration`,
-            ],
+        "Act I: Magnetic eye contact, active phoneme articulation (r >= 0.72) & non-speaking ensemble closed-lips micro-acting → Act II: Commanding finale intensity, soaring duet passion & euphoric ensemble celebration",
+      shotEmotions: normalizedShotEmotions,
       voiceType:
         parsed?.voiceType ||
-        `Upfront 48,000 Hz Studio 3-Part Vocal Arrangement (${personas.female_lead.name} Lead, ${personas.male_lead.name} Counter-Lead, ${personas.female_harmony.name} Co-Lead Harmony; +4.5 dB vocal presence in ${resolvedLanguageLabel}, locked to ${synthesizedBpm} BPM in ${synthesizedMusicalKey})`,
+        `Upfront 48,000 Hz Studio Multi-Voice Arrangement (${personas.female_lead.name} Lead, ${personas.male_lead.name} Counter-Lead, ${personas.female_harmony.name} Co-Lead; +4.5 dB vocal presence in ${resolvedLanguageLabel}, locked to ${synthesizedBpm} BPM in ${synthesizedMusicalKey})`,
       choreography:
         parsed?.choreography ||
-        `Act I: Genre-authentic ${synthesizedBpm} BPM downbeat groove, sharp isolations & duo interplay → Act II: Explosive 8-count V-formation beat-drop choreography, synchronized 8-dancer ripple & 360-degree 6-persona finale`,
+        `Act I: Genre-authentic ${synthesizedBpm} BPM downbeat groove, sharp isolations & duo interplay → Act II: Explosive 8-count V-formation choreography, synchronized 8-person ripple & 360-degree 6-persona finale`,
       shotChoreography: normalizedShotChoreography,
       shotLightingAndOptics: normalizedShotLightingAndOptics,
       figureGroundContrastSpec,

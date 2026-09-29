@@ -42,7 +42,7 @@ export const DEFAULT_CONNECTED_ACCOUNTS: SocialAccount[] = [
     platform: "instagram_reels",
     name: "Instagram Reels",
     handle: "@zyvoriq.creator",
-    avatarUrl: "/assets/personas/elena_avatar.png",
+    avatarUrl: "/assets/avatars/avatar_elena_founder.jpg",
     connected: true,
     audienceSize: "142.8K followers"
   },
@@ -50,7 +50,7 @@ export const DEFAULT_CONNECTED_ACCOUNTS: SocialAccount[] = [
     platform: "tiktok",
     name: "TikTok",
     handle: "@zyvoriq_official",
-    avatarUrl: "/assets/personas/marcus_avatar.png",
+    avatarUrl: "/assets/characters/mathias_alder_ch.jpg",
     connected: true,
     audienceSize: "318.5K followers"
   },
@@ -58,7 +58,7 @@ export const DEFAULT_CONNECTED_ACCOUNTS: SocialAccount[] = [
     platform: "youtube_shorts",
     name: "YouTube Shorts",
     handle: "Zyvoriq Media",
-    avatarUrl: "/assets/personas/kai_avatar.png",
+    avatarUrl: "/assets/characters/kenji_sato_jp.jpg",
     connected: true,
     audienceSize: "89.2K subscribers"
   },
@@ -66,7 +66,7 @@ export const DEFAULT_CONNECTED_ACCOUNTS: SocialAccount[] = [
     platform: "linkedin_video",
     name: "LinkedIn Video",
     handle: "Elena Vance (Founder)",
-    avatarUrl: "/assets/personas/elena_avatar.png",
+    avatarUrl: "/assets/avatars/avatar_elena_founder.jpg",
     connected: true,
     audienceSize: "45.1K connections"
   }

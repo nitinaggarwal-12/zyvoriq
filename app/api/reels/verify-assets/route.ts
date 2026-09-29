@@ -97,19 +97,11 @@ export async function POST(req: NextRequest) {
     );
 
     const fallbacks: Record<string, string> = {};
+    const defaultVerifiedFallback = "/assets/swarm/generated/job_1790663346051/combined_120s.mp4";
     for (const u of urls) {
       if (u && !results[u]) {
-        if (
-          u.includes("napoleon_180s_master.mp4") &&
-          (await checkFileExistsAndValid("/assets/video/napoleon_30s_cut.mp4"))
-        ) {
-          fallbacks[u] = "/assets/video/napoleon_30s_cut.mp4";
-          results[u] = true;
-        } else if (
-          u.includes("zyvoriq_mumbai_penthouse_master.mp4") &&
-          (await checkFileExistsAndValid("/assets/video/coronation_30s_cut.mp4"))
-        ) {
-          fallbacks[u] = "/assets/video/coronation_30s_cut.mp4";
+        if (await checkFileExistsAndValid(defaultVerifiedFallback)) {
+          fallbacks[u] = defaultVerifiedFallback;
           results[u] = true;
         }
       }

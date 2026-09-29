@@ -32,7 +32,59 @@ function getManifestPath(): string {
 }
 
 function discoverVerifiedMastersOnDisk(): LibraryAssetItem[] {
+  const dynamicJobs: LibraryAssetItem[] = [];
+  const genRoot = path.join(process.cwd(), "public/assets/swarm/generated");
+  if (fs.existsSync(genRoot)) {
+    try {
+      const entries = fs
+        .readdirSync(genRoot, { withFileTypes: true })
+        .filter((d) => d.isDirectory() && d.name.startsWith("job_"))
+        .sort((a, b) => b.name.localeCompare(a.name));
+      for (const dir of entries) {
+        const statePath = path.join(genRoot, dir.name, "job_state.json");
+        if (!fs.existsSync(statePath)) continue;
+        try {
+          const state = JSON.parse(fs.readFileSync(statePath, "utf8"));
+          if (state.status !== "completed" || !state.combinedSrc) continue;
+          const cleanSrc = String(state.combinedSrc).split("?")[0];
+          const absVideo = path.join(process.cwd(), "public", cleanSrc.replace(/^\//, ""));
+          if (!fs.existsSync(absVideo)) continue;
+          const segCount = Array.isArray(state.segments) && state.segments.length > 0 ? state.segments.length : 2;
+          const durationSec = segCount * 30;
+          const preferredFile = path.join(genRoot, dir.name, `combined_${durationSec}s.mp4`);
+          const resolvedSrc = fs.existsSync(preferredFile)
+            ? `/assets/swarm/generated/${dir.name}/combined_${durationSec}s.mp4`
+            : cleanSrc;
+          dynamicJobs.push({
+            id: `${dir.name}_combined`,
+            projectId: dir.name,
+            projectTitle: state.title || `Studio Master (${dir.name})`,
+            title: `${state.title || dir.name} — Combined ${durationSec}.0s Master`,
+            subtitle: `${segCount}-Act Multi-Scene Master (${durationSec}.0s • 24/1 CFR)`,
+            assetType: "combined_master",
+            genre: state.genre || "Studio Production",
+            durationSec,
+            frames: durationSec * 24,
+            fps: "24/1 CFR",
+            audioSpec: "48,000 Hz Stereo AAC (-14.0 LUFS)",
+            speedMultiplier: 1.0,
+            wardrobe: "Multi-Act Character Wardrobe Progression",
+            location: "Multi-Act Studio Set Progression",
+            promptSummary: state.act1Prompt || state.title || "Multi-Act 24/1 CFR Studio Master",
+            src: resolvedSrc,
+            createdAt: new Date(state.updatedAt || state.createdAt || Date.now()).toISOString(),
+          });
+        } catch {
+          // ignore malformed job_state.json
+        }
+      }
+    } catch {
+      // ignore directory scan errors
+    }
+  }
+
   const candidates: LibraryAssetItem[] = [
+    ...dynamicJobs,
     {
       id: "reel_spain_girls_60s",
       projectId: "proj_spain_marbella_60s",
@@ -111,14 +163,23 @@ export function loadLibraryAssets(): LibraryAssetItem[] {
   }
   try {
     const parsed = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-    if (!Array.isArray(parsed) || parsed.length === 0) return verifiedDefaults;
+    const rawArray = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray(parsed?.items)
+        ? parsed.items
+        : [];
     // Filter out any stale entry whose video file does not exist on disk
-    const valid = parsed.filter((item: LibraryAssetItem) => {
+    const valid = rawArray.filter((item: LibraryAssetItem) => {
       if (!item || typeof item.src !== "string") return false;
       const cleanRel = item.src.replace(/^\//, "").split("?")[0];
       return fs.existsSync(path.join(process.cwd(), "public", cleanRel));
     });
-    return valid.length > 0 ? valid : verifiedDefaults;
+    const mergedMap = new Map<string, LibraryAssetItem>();
+    for (const item of [...verifiedDefaults, ...valid]) {
+      mergedMap.set(item.id, item);
+    }
+    const merged = Array.from(mergedMap.values());
+    return merged.length > 0 ? merged : verifiedDefaults;
   } catch {
     return verifiedDefaults;
   }
