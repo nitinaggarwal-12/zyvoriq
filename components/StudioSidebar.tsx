@@ -74,45 +74,19 @@ export function StudioSidebar({ children, currentPath, hideHeader = false }: Stu
   };
 
   const CORE_STUDIO_LINKS = [
-    { name: "Cinema Originals", href: "/studio/cinema", icon: Clapperboard, badge: "Originals" },
-    { name: "Quality Audit", href: "/studio/cinema/audit", icon: ShieldCheck, badge: "Triage" },
-    { name: "Cinema Timeline", href: "/studio", icon: Layers, badge: "Editor" },
-    { name: "Content Inspector", href: "/studio/inspector", icon: Film, badge: "QA" },
-    { name: "Creation Hub", href: "/studio/create", icon: Sparkles, badge: "14 Suites" },
-    { name: "Director Swarm", href: "/director", icon: Terminal, badge: "DAG" },
-    { name: "Avatars & 3D Cast", href: "/studio/avatars", icon: Users },
-    { name: "Original Books", href: "/studio/books", icon: BookOpen },
-    { name: "7-Day Trend Radar", href: "/studio/trend-radar", icon: TrendingUp },
-    { name: "Media Library", href: "/studio/library", icon: Film },
-    { name: "Creator Analytics", href: "/creator/analytics", icon: Trophy }
+    { name: "4-Step Studio", href: "/?workflow=create", icon: Sparkles, badge: "Studio" },
+    { name: "Published Reels", href: "/?workflow=published", icon: CheckCircle2, badge: "Masters" },
+    { name: "Drafts & Render Jobs", href: "/?workflow=wip", icon: Layers, badge: "Queue" },
+    { name: "Personas & Wardrobe", href: "/personas", icon: Users, badge: "5-Tier Cast" }
   ];
 
   const isLinkActive = (href: string) => {
-    if (href === "/studio") {
-      return pathname === "/studio" || pathname.startsWith("/studio/production");
-    }
-    if (href === "/studio/cinema") {
-      return pathname === "/studio/cinema";
-    }
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
   const currentSectionTitle = () => {
-    if (pathname.includes("/studio/cinema/audit")) return "Director's Quality Audit";
-    if (pathname.includes("/studio/cinema")) return "Cinema Originals";
-    if (pathname.includes("/director")) return "Director Swarm";
-    if (pathname.includes("/trend-radar")) return "7-Day Trend Radar";
-    if (pathname.includes("/creator/analytics")) return "Creator Growth";
-    if (pathname.includes("/create/carousel")) return "B2B Carousels";
-    if (pathname.includes("/create/ugc")) return "E-Com UGC Ads";
-    if (pathname.includes("/create/animation")) return "Kids & Animation";
-    if (pathname.includes("/create/comics")) return "Anime & Manga";
-    if (pathname.includes("/create/reel")) return "Viral Reels";
-    if (pathname === "/studio/create") return "Creation Hub";
-    if (pathname === "/studio") return "Studio Cinema";
-    if (pathname.includes("/studio/avatars")) return "Avatars & Cast";
-    if (pathname.includes("/studio/library")) return "Media Library";
-    return "Studio Hub";
+    if (pathname.includes("/personas")) return "Personas & Wardrobe Library";
+    return "Zyvoriq 4-Step Studio";
   };
 
   return (
@@ -278,12 +252,12 @@ export function StudioSidebar({ children, currentPath, hideHeader = false }: Stu
               </div>
 
               <Link
-                href="/director"
+                href="/?workflow=create"
                 className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-teal-400 to-emerald-500 px-3.5 py-1.5 text-xs font-black text-slate-950 shadow-md shadow-teal-500/20 hover:from-teal-300 hover:to-emerald-400 active:scale-95 transition"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">LAUNCH SWARM</span>
-                <span className="sm:hidden">Swarm</span>
+                <span className="hidden sm:inline">LAUNCH STUDIO</span>
+                <span className="sm:hidden">Studio</span>
               </Link>
             </div>
           </header>
@@ -296,60 +270,54 @@ export function StudioSidebar({ children, currentPath, hideHeader = false }: Stu
       {/* 3. NATIVE MOBILE BOTTOM TAB BAR (iOS / Android Navigation) */}
       <nav className="fixed bottom-0 inset-x-0 z-40 md:hidden border-t border-slate-800/90 bg-obsidian-950/95 backdrop-blur-2xl pb-[env(safe-area-inset-bottom)] shadow-2xl">
         <div className="grid grid-cols-5 h-16 items-center px-1">
-          {/* Tab 1: Cinema */}
+          {/* Tab 1: Studio */}
           <Link
-            href="/studio"
+            href="/?workflow=create"
             className={`flex flex-col items-center justify-center gap-1 h-full py-1 text-center transition-all ${
-              pathname === "/studio" ? "text-teal-400 font-bold" : "text-slate-400 hover:text-slate-200"
+              pathname === "/" ? "text-teal-400 font-bold" : "text-slate-400 hover:text-slate-200"
             }`}
           >
-            <Layers className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight">Cinema</span>
+            <Sparkles className="w-5 h-5" />
+            <span className="text-[10px] tracking-tight">Studio</span>
           </Link>
 
-          {/* Tab 2: Create (Hero Tab) */}
+          {/* Tab 2: Published Reels */}
           <Link
-            href="/studio/create"
-            className={`flex flex-col items-center justify-center gap-1 h-full py-1 text-center transition-all ${
-              pathname === "/studio/create" ? "text-teal-400 font-bold" : "text-slate-400 hover:text-slate-200"
-            }`}
+            href="/?workflow=published"
+            className="flex flex-col items-center justify-center gap-1 h-full py-1 text-center transition-all text-slate-400 hover:text-slate-200"
           >
-            <div className={`p-1 rounded-xl ${pathname === "/studio/create" ? "bg-teal-500/20 text-teal-300" : ""}`}>
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <span className="text-[10px] tracking-tight">Create</span>
+            <CheckCircle2 className="w-5 h-5" />
+            <span className="text-[10px] tracking-tight">Reels</span>
           </Link>
 
-          {/* Tab 3: Avatars & 3D Cast */}
+          {/* Tab 3: Personas & Wardrobe */}
           <Link
-            href="/studio/avatars"
+            href="/personas"
             className={`flex flex-col items-center justify-center gap-1 h-full py-1 text-center transition-all ${
-              pathname.includes("/avatars") ? "text-teal-400 font-bold" : "text-slate-400 hover:text-slate-200"
+              pathname.includes("/personas") ? "text-teal-400 font-bold" : "text-slate-400 hover:text-slate-200"
             }`}
           >
             <Users className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight">Avatars</span>
+            <span className="text-[10px] tracking-tight">Personas</span>
           </Link>
 
-          {/* Tab 4: Media Library */}
+          {/* Tab 4: Drafts & Jobs */}
           <Link
-            href="/studio/library"
-            className={`flex flex-col items-center justify-center gap-1 h-full py-1 text-center transition-all ${
-              pathname.includes("/library") ? "text-teal-400 font-bold" : "text-slate-400 hover:text-slate-200"
-            }`}
+            href="/?workflow=wip"
+            className="flex flex-col items-center justify-center gap-1 h-full py-1 text-center transition-all text-slate-400 hover:text-slate-200"
           >
-            <Film className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight">Library</span>
+            <Layers className="w-5 h-5" />
+            <span className="text-[10px] tracking-tight">Drafts</span>
           </Link>
 
-          {/* Tab 5: 14-Persona Sheet Trigger */}
+          {/* Tab 5: Menu Trigger */}
           <button
             type="button"
             onClick={() => setMobileSheetOpen(true)}
             className="flex flex-col items-center justify-center gap-1 h-full py-1 text-center text-amber-400 hover:text-amber-300 transition-all"
           >
             <Grid3X3 className="w-5 h-5" />
-            <span className="text-[10px] font-bold tracking-tight">14 Personas</span>
+            <span className="text-[10px] font-bold tracking-tight">Menu</span>
           </button>
         </div>
       </nav>
@@ -375,7 +343,7 @@ export function StudioSidebar({ children, currentPath, hideHeader = false }: Stu
                   <Grid3X3 className="w-4 h-4" />
                 </div>
                 <h3 className="text-sm font-black text-white font-mono uppercase tracking-wider">
-                  14-Persona Studio Suite
+                  Zyvoriq Studio Navigation
                 </h3>
               </div>
               <button
@@ -417,33 +385,6 @@ export function StudioSidebar({ children, currentPath, hideHeader = false }: Stu
                     </Link>
                   );
                 })}
-              </div>
-
-              {/* Additional Studio Actions */}
-              <div className="pt-3 border-t border-slate-800/80 space-y-2">
-                <Link
-                  href="/studio/books"
-                  onClick={() => setMobileSheetOpen(false)}
-                  className="flex items-center justify-between p-3 rounded-xl border border-white/10 bg-white/[0.02] text-xs text-slate-300"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <BookOpen className="w-4 h-4 text-emerald-400" />
-                    <span>Original Book Studio</span>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-500" />
-                </Link>
-
-                <Link
-                  href="/studio/trend-radar"
-                  onClick={() => setMobileSheetOpen(false)}
-                  className="flex items-center justify-between p-3 rounded-xl border border-white/10 bg-white/[0.02] text-xs text-slate-300"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <TrendingUp className="w-4 h-4 text-sky-400" />
-                    <span>7-Day Trend Radar</span>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-500" />
-                </Link>
               </div>
             </div>
           </div>

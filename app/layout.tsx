@@ -4,8 +4,9 @@ import { LeftIconRail } from "@/components/LeftIconRail";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
-  title: "Stitch Studio — 60s AI Cinema",
-  description: "Minimalist 4-step AI video studio powered by Gemini Omni 1.1 Flash.",
+  title: "Zyvoriq Studio — Multi-Act AI Cinema & Ensemble Video Studio",
+  description:
+    "4-Step Guided Multi-Act AI Cinema & Music Video Production Studio (30s / 60s / 90s / 120s) powered by Gemini Omni 1.1 Flash.",
 };
 
 export default function RootLayout({
@@ -22,7 +23,7 @@ export default function RootLayout({
         <ThemeProvider>
           <LeftIconRail />
           <div
-            style={{ paddingLeft: "var(--left-nav-width, 200px)" }}
+            style={{ paddingLeft: "var(--left-nav-width, 216px)" }}
             className="min-h-screen w-full max-w-none flex flex-col transition-all duration-200"
           >
             <main className="flex-1 w-full max-w-none">{children}</main>

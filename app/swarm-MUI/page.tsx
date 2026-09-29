@@ -46,6 +46,7 @@ import {
   Clock,
   CheckCircle2,
   Bookmark,
+  Trash2,
 } from "lucide-react";
 
 export default function SwarmMUIPage() {
@@ -246,7 +247,10 @@ export default function SwarmMUIPage() {
       }
       setLyrics(syn.lyrics);
 
-      // Update Language, Genre, Vocal, Location, Region, Demography, Lighting & 8-Dimension Specs
+      // Update Duration, Language, Genre, Vocal, Location, Region, Demography, Lighting & 8-Dimension Specs
+      if (syn.recommendedDurationId && !overrides?.durationId) {
+        setDurationId(syn.recommendedDurationId);
+      }
       if (syn.recommendedLanguageId && !overrides?.languageId) {
         setLanguageId(syn.recommendedLanguageId);
       }
@@ -384,6 +388,7 @@ export default function SwarmMUIPage() {
 
       // Save dynamic catalog & selections to localStorage so /personas and page reloads display them immediately
       try {
+        const nowIso = new Date().toISOString();
         localStorage.setItem(
           "zyvoriq_dynamic_catalog_v1",
           JSON.stringify({
@@ -392,10 +397,14 @@ export default function SwarmMUIPage() {
             accessory: newW.accessory,
             venue: newW.venue,
             selectedIds: nextSelectedIds,
+            savedAt: nowIso,
           })
         );
         localStorage.setItem("zyvoriq_last_prompt_v1", persistedPrompt);
-        localStorage.setItem("zyvoriq_last_synthesized_payload_v1", JSON.stringify(syn));
+        localStorage.setItem(
+          "zyvoriq_last_synthesized_payload_v1",
+          JSON.stringify({ ...syn, _savedAt: nowIso })
+        );
       } catch {
         // ignore
       }
@@ -614,25 +623,55 @@ export default function SwarmMUIPage() {
         );
       }
 
-      // Restore persistent reels & user-saved drafts from localStorage
+      // Restore persistent reels & user-saved drafts from localStorage (merged with INITIAL_REELS_REPOSITORY)
       try {
         const savedReelsRaw = localStorage.getItem("zyvoriq_reels_repo_v2");
         if (savedReelsRaw) {
           const parsedReels = JSON.parse(savedReelsRaw);
           if (Array.isArray(parsedReels) && parsedReels.length > 0) {
-            setReels(dedupeById(parsedReels));
+            setReels(dedupeById([...parsedReels, ...INITIAL_REELS_REPOSITORY]));
           }
         }
       } catch {
         // ignore
       }
 
-      // Sync custom personas & wardrobe selections made in /personas
+      // 1. Restore cached synthesized payload immediately on mount (zero network delay)
+      const savedPayloadRaw = localStorage.getItem("zyvoriq_last_synthesized_payload_v1");
+      const savedPrompt = localStorage.getItem("zyvoriq_last_prompt_v1");
+      let hydratedFromCache = false;
+      let synSavedTime = 0;
+      if (savedPayloadRaw) {
+        try {
+          const parsedSyn = JSON.parse(savedPayloadRaw);
+          if (parsedSyn && parsedSyn.title && parsedSyn.personas && parsedSyn.wardrobes) {
+            synSavedTime = parsedSyn._savedAt ? new Date(parsedSyn._savedAt).getTime() : 0;
+            if (savedPrompt) {
+              const ytInSaved = extractYouTubeUrlFromText(savedPrompt);
+              if (ytInSaved) {
+                referenceYouTubeUrlRef.current = ytInSaved;
+                setReferenceYouTubeUrl(ytInSaved);
+              }
+            }
+            applySynthesizedAssets(parsedSyn, undefined, false);
+            lastSynthesizedPromptKeyRef.current = `${
+              referenceYouTubeUrlRef.current || parsedSyn.creativeElevation?.youtubeMetadata?.url || ""
+            } ${parsedSyn.storyline}`.trim();
+            hydratedFromCache = true;
+          }
+        } catch {
+          // fallback to network synthesis
+        }
+      }
+
+      // 2. Sync custom personas & wardrobe selections made in /personas AFTER synthesized payload hydration
       try {
+        let mergedPersonasPool = [...PERSONAS_CATALOG];
         const dynRaw = localStorage.getItem("zyvoriq_dynamic_catalog_v1");
         if (dynRaw) {
           const dynParsed = JSON.parse(dynRaw);
           if (Array.isArray(dynParsed.personas) && dynParsed.personas.length > 0) {
+            mergedPersonasPool = dedupeById([...dynParsed.personas, ...mergedPersonasPool]);
             setPersonasCatalog((prev) => dedupeById([...dynParsed.personas, ...prev]));
           }
           if (Array.isArray(dynParsed.wardrobes) && dynParsed.wardrobes.length > 0) {
@@ -650,40 +689,71 @@ export default function SwarmMUIPage() {
         if (savedMatrix) {
           const parsed = JSON.parse(savedMatrix);
           if (Array.isArray(parsed.customPersonas) && parsed.customPersonas.length > 0) {
+            mergedPersonasPool = dedupeById([...parsed.customPersonas, ...mergedPersonasPool]);
             setPersonasCatalog((prev) => dedupeById([...parsed.customPersonas, ...prev]));
           }
-          if (parsed.selectedIds) {
-            setSelectedPersonaIds((prev) => dedupeSelectedPersonaIds(parsed.selectedIds, prev));
+          const matrixSavedTime = parsed.savedAt ? new Date(parsed.savedAt).getTime() : 0;
+          const fromPersonas = params.get("from") === "personas";
+          if (fromPersonas || !hydratedFromCache || matrixSavedTime >= synSavedTime) {
+            if (parsed.selectedIds) {
+              const cleanSel = dedupeSelectedPersonaIds(parsed.selectedIds);
+              setSelectedPersonaIds((prev) => dedupeSelectedPersonaIds(parsed.selectedIds, prev));
+
+              const wMap: Record<string, { act1Id: string; act2Id: string; accessoryId: string }> =
+                parsed.wardrobeMap || {};
+              const femId = cleanSel.female_lead?.[0];
+              const maleId = cleanSel.male_lead?.[0];
+              const supId = cleanSel.supporting?.[0];
+              const bgId = cleanSel.background?.[0];
+              const audId = cleanSel.audience?.[0];
+
+              const femP = mergedPersonasPool.find((p) => p.id === femId);
+              const maleP = mergedPersonasPool.find((p) => p.id === maleId);
+              const supP = mergedPersonasPool.find((p) => p.id === supId);
+              const bgP = mergedPersonasPool.find((p) => p.id === bgId);
+              const audP = mergedPersonasPool.find((p) => p.id === audId);
+
+              if (femId && (wMap[femId]?.act1Id || femP?.defaultAct1WardrobeId)) {
+                setWomenAct1Id(wMap[femId]?.act1Id || femP!.defaultAct1WardrobeId);
+              }
+              if (femId && (wMap[femId]?.act2Id || femP?.defaultAct2WardrobeId)) {
+                setWomenAct2Id(wMap[femId]?.act2Id || femP!.defaultAct2WardrobeId);
+              }
+              if (maleId && (wMap[maleId]?.act1Id || maleP?.defaultAct1WardrobeId)) {
+                setMenAct1Id(wMap[maleId]?.act1Id || maleP!.defaultAct1WardrobeId);
+              }
+              if (maleId && (wMap[maleId]?.act2Id || maleP?.defaultAct2WardrobeId)) {
+                setMenAct2Id(wMap[maleId]?.act2Id || maleP!.defaultAct2WardrobeId);
+              }
+              if (supId && (wMap[supId]?.act1Id || supP?.defaultAct1WardrobeId)) {
+                setSupportingWardrobeId(wMap[supId]?.act1Id || supP!.defaultAct1WardrobeId);
+              }
+              if (bgId && (wMap[bgId]?.act1Id || bgP?.defaultAct1WardrobeId)) {
+                setBackgroundWardrobeId(wMap[bgId]?.act1Id || bgP!.defaultAct1WardrobeId);
+              }
+              if (audId && (wMap[audId]?.act1Id || audP?.defaultAct1WardrobeId)) {
+                setAudienceWardrobeId(wMap[audId]?.act1Id || audP!.defaultAct1WardrobeId);
+              }
+              const accCandidate =
+                (femId && wMap[femId]?.accessoryId) ||
+                (maleId && wMap[maleId]?.accessoryId) ||
+                femP?.defaultAccessoryId ||
+                maleP?.defaultAccessoryId;
+              if (accCandidate) {
+                setAccessoryId(accCandidate);
+              }
+              customShotsRef.current = null;
+            }
+            if (fromPersonas) {
+              setCreateStep(2);
+              setStatusBanner(
+                "✓ Locked Cast & Per-Character Wardrobes synced from Personas & Wardrobe Library!"
+              );
+            }
           }
         }
       } catch {
         // ignore
-      }
-
-      // Restore cached synthesized payload immediately on mount (zero network delay), or synthesize saved prompt
-      const savedPayloadRaw = localStorage.getItem("zyvoriq_last_synthesized_payload_v1");
-      const savedPrompt = localStorage.getItem("zyvoriq_last_prompt_v1");
-      let hydratedFromCache = false;
-      if (savedPayloadRaw) {
-        try {
-          const parsedSyn = JSON.parse(savedPayloadRaw);
-          if (parsedSyn && parsedSyn.title && parsedSyn.personas && parsedSyn.wardrobes) {
-            if (savedPrompt) {
-              const ytInSaved = extractYouTubeUrlFromText(savedPrompt);
-              if (ytInSaved) {
-                referenceYouTubeUrlRef.current = ytInSaved;
-                setReferenceYouTubeUrl(ytInSaved);
-              }
-            }
-            applySynthesizedAssets(parsedSyn, undefined, false);
-            lastSynthesizedPromptKeyRef.current = `${
-              referenceYouTubeUrlRef.current || parsedSyn.creativeElevation?.youtubeMetadata?.url || ""
-            } ${parsedSyn.storyline}`.trim();
-            hydratedFromCache = true;
-          }
-        } catch {
-          // fallback to network synthesis
-        }
       }
       let cancelled = false;
       (async () => {
@@ -1142,11 +1212,35 @@ export default function SwarmMUIPage() {
   // 6. END-TO-END WORKFLOW HANDLERS
   // ==========================================================================
 
+  const buildActiveWardrobeOverrides = (): Record<
+    string,
+    { act1Id: string; act2Id: string; accessoryId: string }
+  > => {
+    const map: Record<string, { act1Id: string; act2Id: string; accessoryId: string }> = {};
+    for (const id of selectedPersonaIds.female_lead || []) {
+      map[id] = { act1Id: womenAct1Id, act2Id: womenAct2Id, accessoryId };
+    }
+    for (const id of selectedPersonaIds.male_lead || []) {
+      map[id] = { act1Id: menAct1Id, act2Id: menAct2Id, accessoryId };
+    }
+    for (const id of selectedPersonaIds.supporting || []) {
+      map[id] = { act1Id: supportingWardrobeId, act2Id: supportingWardrobeId, accessoryId };
+    }
+    for (const id of selectedPersonaIds.background || []) {
+      map[id] = { act1Id: backgroundWardrobeId, act2Id: backgroundWardrobeId, accessoryId };
+    }
+    for (const id of selectedPersonaIds.audience || []) {
+      map[id] = { act1Id: audienceWardrobeId, act2Id: audienceWardrobeId, accessoryId };
+    }
+    return map;
+  };
+
   // Save Project as Persistent Draft in Drafts & Render Jobs Repository
   const handleSaveDraft = () => {
+    const cleanTitle = title.replace(/\s*\(Saved Draft\)|\s*\(Failed Render\)/gi, "");
     const newDraft: StudioReelRecord = {
       id: `draft_${Date.now()}`,
-      title: `${title} (Saved Draft)`,
+      title: `${cleanTitle} (Saved Draft)`,
       status: "draft",
       progress: 50,
       videoUrl: activeVideoUrl,
@@ -1161,8 +1255,12 @@ export default function SwarmMUIPage() {
       vocalId,
       venueId,
       lightingId,
+      audioEngineId,
+      storyline,
+      lyrics,
+      customMasterPromptOverride,
       selectedPersonaIds,
-      wardrobeOverrides: {},
+      wardrobeOverrides: buildActiveWardrobeOverrides(),
       shots,
       updatedAt: "Saved Just Now • Ready to Resume",
     };
@@ -1172,8 +1270,17 @@ export default function SwarmMUIPage() {
       return next;
     });
     setStatusBanner(
-      "✓ Draft saved to persistent storage ('Drafts & Render Jobs'). You can resume it at any time."
+      "✓ Draft saved to persistent storage ('Drafts & Render Jobs') with full Cast, Wardrobe, Storyline & Lyrics."
     );
+  };
+
+  const handleDeleteReel = (reelId: string) => {
+    setReels((prev) => {
+      const next = prev.filter((r) => r.id !== reelId);
+      persistReelsToStorage(next);
+      return next;
+    });
+    setStatusBanner("✓ Removed item from Drafts & Render Jobs.");
   };
 
   // Execute Full Live Render via models/gemini-omni-1.1-flash (+ optional models/lyria-3-pro-preview) (/api/swarm/jobs)
@@ -1214,9 +1321,12 @@ export default function SwarmMUIPage() {
       };
 
       const act1Shots = shots.filter((s) => s.act === 1);
-      const act2Shots = shots.filter((s) => s.act === 2);
+      const act2Shots = shots.filter((s) => s.act !== 1);
 
-      const safeConceptForRender = compiledConceptDirective || storyline;
+      const userCustomPromptNote = customMasterPromptOverride.trim()
+        ? ` Director Master Prompt Override: ${customMasterPromptOverride.trim().slice(0, 600)}.`
+        : "";
+      const safeConceptForRender = `${compiledConceptDirective || storyline}${userCustomPromptNote}`;
 
       const isLyriaMode = audioEngineId === "omni_lyria3";
       const isCinemaMode =
@@ -1235,6 +1345,7 @@ export default function SwarmMUIPage() {
         if (isCinemaMode) {
           return [
             `Photorealistic 35mm Live-Action Cinema Concept: ${safeConceptForRender}.`,
+            `Shot Action (${s.timecode}): ${s.actionPrompt}.`,
             `Venue & Atmosphere (${s.timecode}): ${countryObj.label} — ${venueObj.promptSpec || venueObj.label}. ${backgroundEnvironment} (${lightObj.promptSpec || lightObj.label}).`,
             `Real Adult Human Cast & Tailoring: ${activePersonasList
               .slice(0, 3)
@@ -1249,6 +1360,7 @@ export default function SwarmMUIPage() {
         if (isLyriaMode) {
           return [
             `Concept: ${safeConceptForRender}.`,
+            `Shot Action (${s.timecode}): ${s.actionPrompt}.`,
             `Venue & Atmosphere (${s.timecode}): ${countryObj.label} — ${venueObj.promptSpec || venueObj.label}. ${backgroundEnvironment} (${lightObj.promptSpec || lightObj.label}).`,
             `Cast & Couture Wardrobe: ${activePersonasList
               .slice(0, 3)
@@ -1262,6 +1374,7 @@ export default function SwarmMUIPage() {
 
         return [
           `Concept: ${safeConceptForRender}.`,
+          `Shot Action (${s.timecode}): ${s.actionPrompt}.`,
           `Venue & Atmosphere (${s.timecode}): ${countryObj.label} — ${venueObj.promptSpec || venueObj.label}. ${backgroundEnvironment} (${lightObj.promptSpec || lightObj.label}).`,
           `Cast & Wardrobe: ${activePersonasList
             .slice(0, 3)
@@ -1333,7 +1446,7 @@ export default function SwarmMUIPage() {
         body: JSON.stringify({
           title,
           genre: genreObj.promptSpec || genreObj.label,
-          bpm: Number(genreObj.promptSpec?.match(/(\d+)\s*BPM/i)?.[1]) || 124,
+          bpm: Number(genreObj.promptSpec?.match(/(\d+)\s*BPM/i)?.[1]) || bpm || 124,
           audioEngine: isCinemaMode ? "omni_native" : audioEngineId,
           lyrics,
           voiceType,
@@ -1379,7 +1492,7 @@ export default function SwarmMUIPage() {
 
           const completedReel: StudioReelRecord = {
             id: `reel_${Date.now()}`,
-            title: `${title} (${modeLabel})`,
+            title: title.includes(modeLabel) ? title : `${title} (${modeLabel})`,
             status: "published",
             progress: 100,
             videoUrl: finalUrl,
@@ -1394,8 +1507,12 @@ export default function SwarmMUIPage() {
             vocalId,
             venueId,
             lightingId,
+            audioEngineId,
+            storyline,
+            lyrics,
+            customMasterPromptOverride,
             selectedPersonaIds,
-            wardrobeOverrides: {},
+            wardrobeOverrides: buildActiveWardrobeOverrides(),
             shots,
             updatedAt: "Published Just Now • 100% Complete",
           };
@@ -1429,8 +1546,12 @@ export default function SwarmMUIPage() {
             vocalId,
             venueId,
             lightingId,
+            audioEngineId,
+            storyline,
+            lyrics,
+            customMasterPromptOverride,
             selectedPersonaIds,
-            wardrobeOverrides: {},
+            wardrobeOverrides: buildActiveWardrobeOverrides(),
             shots,
             updatedAt: "Failed Just Now • Ready to Retry",
           };
@@ -1450,13 +1571,22 @@ export default function SwarmMUIPage() {
     }
   };
 
-  // Load any Published Reel or Saved Draft directly into the 4-Step Studio (preserving custom edited shots)
+  // Load any Published Reel or Saved Draft directly into the 4-Step Studio (restoring 100% of studio state)
   const loadReelIntoWorkflow = (
     reel: StudioReelRecord,
     targetStep: 1 | 2 | 3 | 4 = 3
   ) => {
+    const cleanTitle = reel.title.replace(/\s*\(Saved Draft\)|\s*\(Failed Render\)/gi, "");
+    const durObj = getById(DURATIONS_CATALOG, reel.durationId);
+    const countryObj = getById(COUNTRIES_CATALOG, reel.countryId);
+    const genreObj = getById(GENRES_CATALOG, reel.genreId);
+    const langObj = getById(LANGUAGES_CATALOG, reel.languageId);
+    const vocalObj = getById(VOCALS_CATALOG, reel.vocalId);
+    const venueObj = getById(venuesCatalog, reel.venueId);
+    const lightObj = getById(LIGHTING_CATALOG, reel.lightingId);
+
     setSelectedReelId(reel.id);
-    setTitle(reel.title.replace(/\s*\(Saved Draft\)|\s*\(Failed Render\)/gi, ""));
+    setTitle(cleanTitle);
     setCountryId(reel.countryId);
     setRegionId(reel.regionId);
     setLanguageId(reel.languageId);
@@ -1470,6 +1600,143 @@ export default function SwarmMUIPage() {
     setLightingId(reel.lightingId);
     setSelectedPersonaIds(reel.selectedPersonaIds);
     setActiveVideoUrl(reel.videoUrl);
+    setAudioEngineId(
+      (reel.audioEngineId as "omni_lyria3" | "omni_native") || "omni_native"
+    );
+    setCustomMasterPromptOverride(reel.customMasterPromptOverride || "");
+
+    // Restore Wardrobe & Accessory IDs from reel.wardrobeOverrides or the loaded reel's primary personas
+    const femId = reel.selectedPersonaIds.female_lead?.[0];
+    const maleId = reel.selectedPersonaIds.male_lead?.[0];
+    const supId = reel.selectedPersonaIds.supporting?.[0];
+    const bgId = reel.selectedPersonaIds.background?.[0];
+    const audId = reel.selectedPersonaIds.audience?.[0];
+
+    const femP = personasCatalog.find((p) => p.id === femId);
+    const maleP = personasCatalog.find((p) => p.id === maleId);
+    const supP = personasCatalog.find((p) => p.id === supId);
+    const bgP = personasCatalog.find((p) => p.id === bgId);
+    const audP = personasCatalog.find((p) => p.id === audId);
+
+    const wOverrides = reel.wardrobeOverrides || {};
+    const nextWAct1 =
+      (femId && wOverrides[femId]?.act1Id) ||
+      femP?.defaultAct1WardrobeId ||
+      womenAct1Id;
+    const nextWAct2 =
+      (femId && wOverrides[femId]?.act2Id) ||
+      femP?.defaultAct2WardrobeId ||
+      womenAct2Id;
+    const nextMAct1 =
+      (maleId && wOverrides[maleId]?.act1Id) ||
+      maleP?.defaultAct1WardrobeId ||
+      menAct1Id;
+    const nextMAct2 =
+      (maleId && wOverrides[maleId]?.act2Id) ||
+      maleP?.defaultAct2WardrobeId ||
+      menAct2Id;
+    const nextSupW =
+      (supId && wOverrides[supId]?.act1Id) ||
+      supP?.defaultAct1WardrobeId ||
+      supportingWardrobeId;
+    const nextBgW =
+      (bgId && wOverrides[bgId]?.act1Id) ||
+      bgP?.defaultAct1WardrobeId ||
+      backgroundWardrobeId;
+    const nextAudW =
+      (audId && wOverrides[audId]?.act1Id) ||
+      audP?.defaultAct1WardrobeId ||
+      audienceWardrobeId;
+    const nextAcc =
+      (femId && wOverrides[femId]?.accessoryId) ||
+      (maleId && wOverrides[maleId]?.accessoryId) ||
+      femP?.defaultAccessoryId ||
+      maleP?.defaultAccessoryId ||
+      accessoryId;
+
+    setWomenAct1Id(nextWAct1);
+    setWomenAct2Id(nextWAct2);
+    setMenAct1Id(nextMAct1);
+    setMenAct2Id(nextMAct2);
+    setSupportingWardrobeId(nextSupW);
+    setBackgroundWardrobeId(nextBgW);
+    setAudienceWardrobeId(nextAudW);
+    setAccessoryId(nextAcc);
+
+    const parsedBpm =
+      Number(genreObj.promptSpec?.match(/(\d+)\s*BPM/i)?.[1]) ||
+      (reel.contentTypeId === "ctype_cinema_film" ? 92 : 124);
+    setBpm(parsedBpm);
+
+    // Restore Lyrics, Storyline, 8-Dimension Specs & Creative Elevation Blueprint
+    const leadNames = [femP?.name, maleP?.name, supP?.name]
+      .filter(Boolean)
+      .join(", ");
+    const resolvedStoryline =
+      reel.storyline ||
+      `${cleanTitle} — ${durObj.seconds}-second ${genreObj.label} production set in ${countryObj.label} (${venueObj.label}) featuring ${leadNames || "Lead Ensemble"} in ${langObj.label} (${lightObj.label}).`;
+    setStoryline(resolvedStoryline);
+    setCompiledConceptDirective(resolvedStoryline);
+
+    const resolvedLyrics =
+      reel.lyrics ||
+      (reel.shots && reel.shots.length > 0
+        ? reel.shots.map((s) => s.lyricLine).join("\n")
+        : Array.from({ length: durObj.shotsCount }, (_, i) => {
+            const shotNum = String(i + 1).padStart(2, "0");
+            const speaker =
+              i % 2 === 0
+                ? femP?.name || maleP?.name || "Lead Vocal"
+                : maleP?.name || femP?.name || supP?.name || "Ensemble Vocal";
+            return `[Shot ${shotNum} • ${speaker}] ${cleanTitle} — ${genreObj.label} vocal hook ${i + 1} in ${langObj.label} (${parsedBpm} BPM)`;
+          }).join("\n"));
+    setLyrics(resolvedLyrics);
+
+    setBackgroundEnvironment(
+      `${countryObj.promptSpec} • ${venueObj.promptSpec} • ${lightObj.promptSpec}`
+    );
+    setVoiceType(
+      `${vocalObj.promptSpec} in ${langObj.label} (${genreObj.promptSpec})`
+    );
+    setHumanEmotions(
+      reel.contentTypeId === "ctype_cinema_film"
+        ? "Intimate dramatic realism, unretouched facial micro-expressions, and magnetic eye contact"
+        : "Radiant joy, magnetic chemistry, expressive eye contact, and celebratory stage charisma"
+    );
+    setChoreography(
+      reel.contentTypeId === "ctype_cinema_film"
+        ? "Deliberate 35mm Steadicam blocking, dramatic staging, and natural lip-synced dialogue"
+        : `High-energy ${genreObj.label} formation choreography synchronized to ${venueObj.label}`
+    );
+
+    setCreativeElevation((prev) => ({
+      ...prev,
+      sourceType: "original_prompt",
+      youtubeMetadata: null,
+      deconstructedCore: `${cleanTitle} — ${genreObj.label} set across ${venueObj.label} in ${countryObj.label} featuring ${leadNames || "5-Tier Studio Cast"}.`,
+      surpassStrategy: `Elevates ${cleanTitle} into a ${durObj.seconds}-second (${durObj.shotsCount}-shot) 24/1 CFR production with locked character biometrics, Act I→Act II wardrobe transition, and 48,000 Hz stereo audio in ${langObj.label}.`,
+      act1ToAct2Twist: `Multi-Act Transition across ${venueObj.label} (${lightObj.label}) with wardrobe shift from ${getById(wardrobeCatalog, nextWAct1).label} to ${getById(wardrobeCatalog, nextWAct2).label}.`,
+      sonicInnovation: `48,000 Hz stereo ${vocalObj.label} in ${langObj.label} (${genreObj.label} @ ${parsedBpm} BPM, -14.0 LUFS)`,
+      choreographyAndCameraUpgrade: `${durObj.shotsCount}-Shot Panavision camera progression across ${venueObj.label}`,
+      innovationScore: `99.6 / 100 (${durObj.seconds}s Studio Master Loaded)`,
+    }));
+
+    try {
+      const nowIso = new Date().toISOString();
+      const existingDynRaw = localStorage.getItem("zyvoriq_dynamic_catalog_v1");
+      const existingDyn = existingDynRaw ? JSON.parse(existingDynRaw) : {};
+      localStorage.setItem(
+        "zyvoriq_dynamic_catalog_v1",
+        JSON.stringify({
+          ...existingDyn,
+          selectedIds: reel.selectedPersonaIds,
+          savedAt: nowIso,
+        })
+      );
+    } catch {
+      // ignore
+    }
+
     if (reel.shots && reel.shots.length > 0) {
       customShotsRef.current = reel.shots;
       setShots(reel.shots);
@@ -1479,6 +1746,9 @@ export default function SwarmMUIPage() {
     setWorkflow("create");
     setCreateStep(targetStep);
     setCanvasTab(targetStep === 4 ? "video" : targetStep === 3 ? "shots" : "ensemble");
+    setStatusBanner(
+      `✓ Loaded "${cleanTitle}" (${durObj.seconds}s • ${durObj.shotsCount} shots) into the 4-Step Studio with full Cast, Wardrobe & Storyboard!`
+    );
     if (typeof window !== "undefined") {
       window.dispatchEvent(
         new CustomEvent("zyvoriq-workflow-changed", { detail: { mode: "create" } })
@@ -2041,6 +2311,7 @@ export default function SwarmMUIPage() {
                         value={durationId}
                         onChange={(e) => {
                           const nextDur = e.target.value;
+                          customShotsRef.current = null;
                           setDurationId(nextDur);
                           synthesizeFromNewPrompt(storyline, false, {
                             durationId: nextDur,
@@ -2061,6 +2332,7 @@ export default function SwarmMUIPage() {
                         value={genreId}
                         onChange={(e) => {
                           const nextGenre = e.target.value;
+                          customShotsRef.current = null;
                           setGenreId(nextGenre);
                           synthesizeFromNewPrompt(storyline, false, {
                             genreId: nextGenre,
@@ -2081,6 +2353,7 @@ export default function SwarmMUIPage() {
                         value={languageId}
                         onChange={(e) => {
                           const nextLang = e.target.value;
+                          customShotsRef.current = null;
                           setLanguageId(nextLang);
                           synthesizeFromNewPrompt(storyline, false, {
                             languageId: nextLang,
@@ -2095,6 +2368,74 @@ export default function SwarmMUIPage() {
                         ))}
                       </select>
                     </div>
+                    <div>
+                      <label className={labelCls}>Content Format &amp; Production Type</label>
+                      <select
+                        value={contentTypeId}
+                        onChange={(e) => {
+                          customShotsRef.current = null;
+                          setContentTypeId(e.target.value);
+                        }}
+                        className={inputCls}
+                      >
+                        {CONTENT_TYPES_CATALOG.map((ct) => (
+                          <option key={ct.id} value={ct.id}>
+                            {ct.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelCls}>Target Platform &amp; Aspect Ratio</label>
+                      <select
+                        value={platformId}
+                        onChange={(e) => {
+                          customShotsRef.current = null;
+                          setPlatformId(e.target.value);
+                        }}
+                        className={inputCls}
+                      >
+                        {PLATFORMS_CATALOG.map((pl) => (
+                          <option key={pl.id} value={pl.id}>
+                            {pl.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelCls}>Cultural Region &amp; Market</label>
+                      <select
+                        value={regionId}
+                        onChange={(e) => {
+                          customShotsRef.current = null;
+                          setRegionId(e.target.value);
+                        }}
+                        className={inputCls}
+                      >
+                        {REGIONS_CATALOG.map((rg) => (
+                          <option key={rg.id} value={rg.id}>
+                            {rg.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelCls}>Target Audience Demography</label>
+                      <select
+                        value={demographyId}
+                        onChange={(e) => {
+                          customShotsRef.current = null;
+                          setDemographyId(e.target.value);
+                        }}
+                        className={inputCls}
+                      >
+                        {DEMOGRAPHIES_CATALOG.map((dm) => (
+                          <option key={dm.id} value={dm.id}>
+                            {dm.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -2105,6 +2446,7 @@ export default function SwarmMUIPage() {
                           value={vocalId}
                           onChange={(e) => {
                             const nextVocal = e.target.value;
+                            customShotsRef.current = null;
                             setVocalId(nextVocal);
                             synthesizeFromNewPrompt(storyline, false, {
                               vocalId: nextVocal,
@@ -2145,7 +2487,10 @@ export default function SwarmMUIPage() {
                       <textarea
                         rows={5}
                         value={lyrics}
-                        onChange={(e) => setLyrics(e.target.value)}
+                        onChange={(e) => {
+                          customShotsRef.current = null;
+                          setLyrics(e.target.value);
+                        }}
                         className={inputCls}
                       />
                     </div>
@@ -2219,17 +2564,25 @@ export default function SwarmMUIPage() {
                       const tierPersonas = dedupeById(
                         personasCatalog.filter((p) => p.category === tier.id)
                       );
-                      const currentId =
-                        selectedPersonaIds[tier.id]?.[0] || tierPersonas[0]?.id;
+                      const tierIds = selectedPersonaIds[tier.id] || [];
+                      const currentId = tierIds[0] || tierPersonas[0]?.id;
                       const currentObj = getById(tierPersonas, currentId);
+                      const extraCoLeadsCount = Math.max(0, tierIds.length - 1);
 
                       return (
                         <div
                           key={tier.id}
                           className="p-2 rounded-lg bg-[#121217] border border-white/[0.07] space-y-1.5"
                         >
-                          <div className="text-[10px] font-semibold text-zinc-400 uppercase">
-                            {tier.label}
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-[10px] font-semibold text-zinc-400 uppercase truncate">
+                              {tier.label}
+                            </span>
+                            {extraCoLeadsCount > 0 && (
+                              <span className="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[9px] font-semibold shrink-0">
+                                +{extraCoLeadsCount} Co-Lead{extraCoLeadsCount > 1 ? "s" : ""}
+                              </span>
+                            )}
                           </div>
                           <img
                             src={currentObj.photoUrl}
@@ -2238,12 +2591,48 @@ export default function SwarmMUIPage() {
                           />
                           <select
                             value={currentId}
-                            onChange={(e) =>
-                              setSelectedPersonaIds((prev) => ({
-                                ...prev,
-                                [tier.id]: [e.target.value],
-                              }))
-                            }
+                            onChange={(e) => {
+                              const nextId = e.target.value;
+                              customShotsRef.current = null;
+                              const chosenPersona = tierPersonas.find((p) => p.id === nextId);
+                              setSelectedPersonaIds((prev) => {
+                                const existingCoLeads = (prev[tier.id] || [])
+                                  .slice(1)
+                                  .filter((id) => id !== nextId);
+                                return {
+                                  ...prev,
+                                  [tier.id]: [nextId, ...existingCoLeads],
+                                };
+                              });
+                              if (chosenPersona) {
+                                if (tier.id === "female_lead") {
+                                  if (chosenPersona.defaultAct1WardrobeId)
+                                    setWomenAct1Id(chosenPersona.defaultAct1WardrobeId);
+                                  if (chosenPersona.defaultAct2WardrobeId)
+                                    setWomenAct2Id(chosenPersona.defaultAct2WardrobeId);
+                                } else if (tier.id === "male_lead") {
+                                  if (chosenPersona.defaultAct1WardrobeId)
+                                    setMenAct1Id(chosenPersona.defaultAct1WardrobeId);
+                                  if (chosenPersona.defaultAct2WardrobeId)
+                                    setMenAct2Id(chosenPersona.defaultAct2WardrobeId);
+                                } else if (
+                                  tier.id === "supporting" &&
+                                  chosenPersona.defaultAct1WardrobeId
+                                ) {
+                                  setSupportingWardrobeId(chosenPersona.defaultAct1WardrobeId);
+                                } else if (
+                                  tier.id === "background" &&
+                                  chosenPersona.defaultAct1WardrobeId
+                                ) {
+                                  setBackgroundWardrobeId(chosenPersona.defaultAct1WardrobeId);
+                                } else if (
+                                  tier.id === "audience" &&
+                                  chosenPersona.defaultAct1WardrobeId
+                                ) {
+                                  setAudienceWardrobeId(chosenPersona.defaultAct1WardrobeId);
+                                }
+                              }
+                            }}
                             className="w-full rounded bg-zinc-900 border border-white/[0.08] px-1.5 py-1 text-[11px] text-white outline-none"
                           >
                             {tierPersonas.map((tp) => (
@@ -2263,7 +2652,10 @@ export default function SwarmMUIPage() {
                       <label className={labelCls}>Female Lead — Act I Wardrobe</label>
                       <select
                         value={womenAct1Id}
-                        onChange={(e) => setWomenAct1Id(e.target.value)}
+                        onChange={(e) => {
+                          customShotsRef.current = null;
+                          setWomenAct1Id(e.target.value);
+                        }}
                         className={inputCls}
                       >
                         {getDynamicWardrobeForCategory("female_lead", 1).map((w) => (
@@ -2277,7 +2669,10 @@ export default function SwarmMUIPage() {
                       <label className={labelCls}>Female Lead — Act II Finale Wardrobe</label>
                       <select
                         value={womenAct2Id}
-                        onChange={(e) => setWomenAct2Id(e.target.value)}
+                        onChange={(e) => {
+                          customShotsRef.current = null;
+                          setWomenAct2Id(e.target.value);
+                        }}
                         className={inputCls}
                       >
                         {getDynamicWardrobeForCategory("female_lead", 2).map((w) => (
@@ -2291,7 +2686,10 @@ export default function SwarmMUIPage() {
                       <label className={labelCls}>Male Lead — Act I Wardrobe</label>
                       <select
                         value={menAct1Id}
-                        onChange={(e) => setMenAct1Id(e.target.value)}
+                        onChange={(e) => {
+                          customShotsRef.current = null;
+                          setMenAct1Id(e.target.value);
+                        }}
                         className={inputCls}
                       >
                         {getDynamicWardrobeForCategory("male_lead", 1).map((w) => (
@@ -2305,7 +2703,10 @@ export default function SwarmMUIPage() {
                       <label className={labelCls}>Male Lead — Act II Finale Wardrobe</label>
                       <select
                         value={menAct2Id}
-                        onChange={(e) => setMenAct2Id(e.target.value)}
+                        onChange={(e) => {
+                          customShotsRef.current = null;
+                          setMenAct2Id(e.target.value);
+                        }}
                         className={inputCls}
                       >
                         {getDynamicWardrobeForCategory("male_lead", 2).map((w) => (
@@ -2319,7 +2720,10 @@ export default function SwarmMUIPage() {
                       <label className={labelCls}>Supporting Cast Wardrobe</label>
                       <select
                         value={supportingWardrobeId}
-                        onChange={(e) => setSupportingWardrobeId(e.target.value)}
+                        onChange={(e) => {
+                          customShotsRef.current = null;
+                          setSupportingWardrobeId(e.target.value);
+                        }}
                         className={inputCls}
                       >
                         {getDynamicWardrobeForCategory("supporting").map((w) => (
@@ -2333,7 +2737,10 @@ export default function SwarmMUIPage() {
                       <label className={labelCls}>Background Performers Uniform</label>
                       <select
                         value={backgroundWardrobeId}
-                        onChange={(e) => setBackgroundWardrobeId(e.target.value)}
+                        onChange={(e) => {
+                          customShotsRef.current = null;
+                          setBackgroundWardrobeId(e.target.value);
+                        }}
                         className={inputCls}
                       >
                         {getDynamicWardrobeForCategory("background").map((w) => (
@@ -2347,7 +2754,10 @@ export default function SwarmMUIPage() {
                       <label className={labelCls}>Audience &amp; Crowd Dress Code</label>
                       <select
                         value={audienceWardrobeId}
-                        onChange={(e) => setAudienceWardrobeId(e.target.value)}
+                        onChange={(e) => {
+                          customShotsRef.current = null;
+                          setAudienceWardrobeId(e.target.value);
+                        }}
                         className={inputCls}
                       >
                         {getDynamicWardrobeForCategory("audience").map((w) => (
@@ -2361,7 +2771,10 @@ export default function SwarmMUIPage() {
                       <label className={labelCls}>Footwear, Hair &amp; Accessories</label>
                       <select
                         value={accessoryId}
-                        onChange={(e) => setAccessoryId(e.target.value)}
+                        onChange={(e) => {
+                          customShotsRef.current = null;
+                          setAccessoryId(e.target.value);
+                        }}
                         className={inputCls}
                       >
                         {dedupeById(accessoriesCatalog).map((a) => (
@@ -2375,7 +2788,10 @@ export default function SwarmMUIPage() {
                       <label className={labelCls}>Country &amp; Destination</label>
                       <select
                         value={countryId}
-                        onChange={(e) => setCountryId(e.target.value)}
+                        onChange={(e) => {
+                          customShotsRef.current = null;
+                          setCountryId(e.target.value);
+                        }}
                         className={inputCls}
                       >
                         {COUNTRIES_CATALOG.map((c) => (
@@ -2389,7 +2805,10 @@ export default function SwarmMUIPage() {
                       <label className={labelCls}>Venue Architecture (Locations)</label>
                       <select
                         value={venueId}
-                        onChange={(e) => setVenueId(e.target.value)}
+                        onChange={(e) => {
+                          customShotsRef.current = null;
+                          setVenueId(e.target.value);
+                        }}
                         className={inputCls}
                       >
                         {dedupeById(venuesCatalog).map((v) => (
@@ -2399,12 +2818,32 @@ export default function SwarmMUIPage() {
                         ))}
                       </select>
                     </div>
+                    <div className="sm:col-span-2">
+                      <label className={labelCls}>Lighting &amp; Color Grade (Cinematography)</label>
+                      <select
+                        value={lightingId}
+                        onChange={(e) => {
+                          customShotsRef.current = null;
+                          setLightingId(e.target.value);
+                        }}
+                        className={inputCls}
+                      >
+                        {LIGHTING_CATALOG.map((l) => (
+                          <option key={l.id} value={l.id}>
+                            {l.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                     <div>
                       <label className={labelCls}>Voice Type &amp; Vocal Timbre (Auto-Synthesized)</label>
                       <input
                         type="text"
                         value={voiceType}
-                        onChange={(e) => setVoiceType(e.target.value)}
+                        onChange={(e) => {
+                          customShotsRef.current = null;
+                          setVoiceType(e.target.value);
+                        }}
                         className={inputCls}
                       />
                     </div>
@@ -2413,7 +2852,10 @@ export default function SwarmMUIPage() {
                       <input
                         type="text"
                         value={humanEmotions}
-                        onChange={(e) => setHumanEmotions(e.target.value)}
+                        onChange={(e) => {
+                          customShotsRef.current = null;
+                          setHumanEmotions(e.target.value);
+                        }}
                         className={inputCls}
                       />
                     </div>
@@ -2422,7 +2864,10 @@ export default function SwarmMUIPage() {
                       <input
                         type="text"
                         value={choreography}
-                        onChange={(e) => setChoreography(e.target.value)}
+                        onChange={(e) => {
+                          customShotsRef.current = null;
+                          setChoreography(e.target.value);
+                        }}
                         className={inputCls}
                       />
                     </div>
@@ -2431,7 +2876,10 @@ export default function SwarmMUIPage() {
                       <input
                         type="text"
                         value={backgroundEnvironment}
-                        onChange={(e) => setBackgroundEnvironment(e.target.value)}
+                        onChange={(e) => {
+                          customShotsRef.current = null;
+                          setBackgroundEnvironment(e.target.value);
+                        }}
                         className={inputCls}
                       />
                     </div>
@@ -2492,8 +2940,9 @@ export default function SwarmMUIPage() {
                         type="button"
                         onClick={() => {
                           customShotsRef.current = null;
-                          setShots(compileStructuredShots());
-                          setStatusBanner("✓ Re-compiled all 6 storyboard shots from current Cast & Wardrobe.");
+                          const recompiled = compileStructuredShots();
+                          setShots(recompiled);
+                          setStatusBanner(`✓ Re-compiled all ${recompiled.length} storyboard shots from current Cast & Wardrobe.`);
                         }}
                         className="px-2.5 py-1 rounded bg-white/[0.08] hover:bg-white/[0.14] text-zinc-200 text-xs font-medium flex items-center gap-1 cursor-pointer"
                       >
@@ -2525,7 +2974,7 @@ export default function SwarmMUIPage() {
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs font-semibold text-white">
-                            Shot 0{s.shotNumber} ({s.timecode}) • Act {s.act}
+                            Shot {String(s.shotNumber).padStart(2, "0")} ({s.timecode}) • Act {s.act}
                           </span>
                           <select
                             value={s.cameraMoveId}
@@ -2696,16 +3145,20 @@ export default function SwarmMUIPage() {
                     <button
                       type="button"
                       disabled={isRendering}
-                      onClick={() => executeEndToEndRender("60s Master")}
+                      onClick={() =>
+                        executeEndToEndRender(
+                          `${getById(DURATIONS_CATALOG, durationId).seconds}s Master`
+                        )
+                      }
                       className="flex-1 py-3 px-5 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <Play className="w-4 h-4 fill-zinc-950" />
                       <span>
                         {isRendering
-                          ? `Rendering Master (${renderProgress}%)...`
+                          ? `Rendering ${getById(DURATIONS_CATALOG, durationId).seconds}s Master (${renderProgress}%)...`
                           : audioEngineId === "omni_lyria3"
-                          ? "Render Master Video Now (Omni 1.1 + Lyria-3-pro-preview)"
-                          : "Render Master Video Now (Omni 1.1 Only)"}
+                          ? `Render ${getById(DURATIONS_CATALOG, durationId).seconds}s Master Video Now (Omni 1.1 + Lyria-3-pro-preview)`
+                          : `Render ${getById(DURATIONS_CATALOG, durationId).seconds}s Master Video Now (Omni 1.1 Only)`}
                       </span>
                     </button>
 
@@ -2927,7 +3380,16 @@ export default function SwarmMUIPage() {
                             />
                           </div>
 
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteReel(reel.id)}
+                              title="Delete Draft or Job"
+                              className="px-2.5 py-1.5 rounded bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 text-xs font-medium flex items-center gap-1 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Delete</span>
+                            </button>
                             <button
                               type="button"
                               onClick={() => loadReelIntoWorkflow(reel, 3)}
@@ -2991,7 +3453,7 @@ export default function SwarmMUIPage() {
               <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-[#0e0e12]">
                 <div className="px-3.5 py-2 border-b border-white/[0.06] flex items-center justify-between">
                   <span className="text-xs font-semibold text-white">
-                    Ensemble Stage (Lead, Supporting, Background &amp; Audience)
+                    Ensemble Stage ({activePersonasList.length} Active Cast — Lead, Supporting, Background &amp; Audience)
                   </span>
                   <button
                     type="button"
@@ -3002,8 +3464,8 @@ export default function SwarmMUIPage() {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 p-2 bg-zinc-950">
-                  {activePersonasList.slice(0, 5).map((p) => (
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 p-2 bg-zinc-950 max-h-[380px] overflow-y-auto">
+                  {activePersonasList.map((p) => (
                     <div
                       key={p.id}
                       className="relative rounded-lg overflow-hidden aspect-[3/4] bg-zinc-900 border border-white/[0.06]"
@@ -3090,10 +3552,10 @@ export default function SwarmMUIPage() {
             </div>
           )}
 
-          {/* MONITOR 2: 6-SHOT VISUAL GRID */}
+          {/* MONITOR 2: MULTI-SHOT VISUAL GRID (6, 9, OR 12 SHOTS) */}
           {canvasTab === "shots" && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-              {shots.slice(0, 6).map((s) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-[620px] overflow-y-auto pr-1">
+              {shots.map((s) => (
                 <div
                   key={s.shotId}
                   className="rounded-xl overflow-hidden border border-white/[0.08] bg-[#0e0e12]"
@@ -3105,7 +3567,7 @@ export default function SwarmMUIPage() {
                       className="w-full h-full object-cover object-[center_22%]"
                     />
                     <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-black/75 text-[10px] font-semibold text-white">
-                      0{s.shotNumber} • {s.timecode}
+                      {String(s.shotNumber).padStart(2, "0")} • {s.timecode}
                     </span>
                   </div>
                   <div className="p-2 space-y-0.5">
@@ -3314,9 +3776,9 @@ export default function SwarmMUIPage() {
                     </div>
                   </div>
 
-                  {/* 6-Shot Storyboard Preview Strip */}
+                  {/* Multi-Shot Storyboard Preview Strip */}
                   <div className="w-full grid grid-cols-6 gap-1.5 px-1">
-                    {shots.slice(0, 6).map((s) => (
+                    {shots.map((s) => (
                       <div
                         key={s.shotNumber}
                         className="rounded overflow-hidden border border-white/10 bg-zinc-900 flex flex-col"
@@ -3327,7 +3789,7 @@ export default function SwarmMUIPage() {
                           className="w-full h-12 object-cover"
                         />
                         <span className="text-[9px] text-center text-zinc-300 py-0.5 font-mono">
-                          S0{s.shotNumber}
+                          S{String(s.shotNumber).padStart(2, "0")}
                         </span>
                       </div>
                     ))}

@@ -84,6 +84,10 @@ export interface StudioReelRecord {
   vocalId: string;
   venueId: string;
   lightingId: string;
+  audioEngineId?: string;
+  storyline?: string;
+  lyrics?: string;
+  customMasterPromptOverride?: string;
   selectedPersonaIds: Record<PersonaCategory, string[]>;
   wardrobeOverrides: Record<string, { act1Id: string; act2Id: string; accessoryId: string }>;
   shots: ShotSpec[];

@@ -34,11 +34,24 @@ export function LeftIconRail() {
     return () => window.removeEventListener("zyvoriq-workflow-changed", handleSync);
   }, []);
 
+  useEffect(() => {
+    if (typeof window !== "undefined" && (pathname === "/" || pathname === "/swarm-MUI")) {
+      const params = new URLSearchParams(window.location.search);
+      const wf = params.get("workflow");
+      if (wf === "create" || wf === "published" || wf === "wip") {
+        setActiveMode(wf);
+      }
+    }
+  }, [pathname]);
+
   const triggerWorkflow = (mode: StudioWorkflowMode) => {
     setActiveMode(mode);
     if (pathname !== "/" && pathname !== "/swarm-MUI") {
       router.push(`/?workflow=${mode}`);
     } else {
+      const url = new URL(window.location.href);
+      url.searchParams.set("workflow", mode);
+      window.history.replaceState({}, "", url.toString());
       window.dispatchEvent(
         new CustomEvent("zyvoriq-set-workflow", { detail: { mode } })
       );

@@ -22,6 +22,7 @@ import {
   Link as LinkIcon,
   ArrowRight,
   Users,
+  Trash2,
 } from "lucide-react";
 
 const CATEGORY_TABS: { id: PersonaCategory; label: string }[] = [
@@ -79,12 +80,15 @@ export default function PersonasAndWardrobePage() {
   const [uploadedDataUri, setUploadedDataUri] = useState<string>("");
   const [isBuildingPersona, setIsBuildingPersona] = useState<boolean>(false);
 
-  // Load saved cast state and dynamic prompt-synthesized catalog if present
+  // Load saved cast state and dynamic prompt-synthesized catalog if present (timestamp-aware)
   useEffect(() => {
     try {
       const dynRaw = localStorage.getItem("zyvoriq_dynamic_catalog_v1");
-      if (dynRaw) {
-        const dynParsed = JSON.parse(dynRaw);
+      const rawMatrix = localStorage.getItem("zyvoriq_cast_matrix_v1");
+      const dynParsed = dynRaw ? JSON.parse(dynRaw) : null;
+      const matrixParsed = rawMatrix ? JSON.parse(rawMatrix) : null;
+
+      if (dynParsed) {
         if (Array.isArray(dynParsed.personas) && dynParsed.personas.length > 0) {
           setPersonas((prev) => dedupeById([...dynParsed.personas, ...prev]));
           setWardrobeMap((prev) => {
@@ -107,22 +111,28 @@ export default function PersonasAndWardrobePage() {
         if (dynParsed.accessory && typeof dynParsed.accessory.id === "string") {
           setAccessories((prev) => dedupeById([dynParsed.accessory, ...prev]));
         }
+      }
+
+      if (matrixParsed && Array.isArray(matrixParsed.customPersonas) && matrixParsed.customPersonas.length > 0) {
+        setPersonas((prev) => dedupeById([...matrixParsed.customPersonas, ...prev]));
+      }
+
+      const dynTime = dynParsed?.savedAt ? new Date(dynParsed.savedAt).getTime() : 0;
+      const matrixTime = matrixParsed?.savedAt ? new Date(matrixParsed.savedAt).getTime() : 0;
+
+      if (matrixParsed && matrixTime >= dynTime) {
+        if (matrixParsed.selectedIds) {
+          setSelectedIds((prev) => dedupeSelectedPersonaIds(matrixParsed.selectedIds, prev));
+        }
+        if (matrixParsed.wardrobeMap) {
+          setWardrobeMap((prev) => ({ ...prev, ...matrixParsed.wardrobeMap }));
+        }
+      } else if (dynParsed) {
         if (dynParsed.selectedIds) {
           setSelectedIds((prev) => dedupeSelectedPersonaIds(dynParsed.selectedIds, prev));
         }
-      }
-
-      const raw = localStorage.getItem("zyvoriq_cast_matrix_v1");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed.customPersonas) && parsed.customPersonas.length > 0) {
-          setPersonas((prev) => dedupeById([...parsed.customPersonas, ...prev]));
-        }
-        if (parsed.selectedIds) {
-          setSelectedIds((prev) => dedupeSelectedPersonaIds(parsed.selectedIds, prev));
-        }
-        if (parsed.wardrobeMap) {
-          setWardrobeMap((prev) => ({ ...prev, ...parsed.wardrobeMap }));
+        if (dynParsed.wardrobeMap) {
+          setWardrobeMap((prev) => ({ ...prev, ...dynParsed.wardrobeMap }));
         }
       }
     } catch {
@@ -137,6 +147,7 @@ export default function PersonasAndWardrobePage() {
     nextWardrobeMap: Record<string, { act1Id: string; act2Id: string; accessoryId: string }>
   ) => {
     try {
+      const nowIso = new Date().toISOString();
       const cleanPersonas = dedupeById(nextPersonas);
       const cleanWardrobes = dedupeById(nextWardrobes);
       const cleanSelectedIds = dedupeSelectedPersonaIds(nextSelectedIds);
@@ -149,7 +160,7 @@ export default function PersonasAndWardrobePage() {
           selectedIds: cleanSelectedIds,
           wardrobeMap: nextWardrobeMap,
           customPersonas,
-          savedAt: new Date().toISOString(),
+          savedAt: nowIso,
         })
       );
 
@@ -162,6 +173,8 @@ export default function PersonasAndWardrobePage() {
           personas: cleanPersonas,
           wardrobes: cleanWardrobes,
           selectedIds: cleanSelectedIds,
+          wardrobeMap: nextWardrobeMap,
+          savedAt: nowIso,
         })
       );
     } catch {
@@ -182,19 +195,34 @@ export default function PersonasAndWardrobePage() {
     });
   };
 
+  const deleteCustomPersona = (cat: PersonaCategory, id: string) => {
+    const nextPersonas = personas.filter((p) => p.id !== id);
+    const nextSelected: Record<PersonaCategory, string[]> = {
+      ...selectedIds,
+      [cat]: (selectedIds[cat] || []).filter((item) => item !== id),
+    };
+    const nextWardrobeMap = { ...wardrobeMap };
+    delete nextWardrobeMap[id];
+    setPersonas(nextPersonas);
+    setSelectedIds(nextSelected);
+    setWardrobeMap(nextWardrobeMap);
+    persistCastAndCatalogToStorage(nextPersonas, wardrobes, nextSelected, nextWardrobeMap);
+  };
+
   const updateWardrobe = (
     personaId: string,
     field: "act1Id" | "act2Id" | "accessoryId",
     valueId: string
   ) => {
     setWardrobeMap((prev) => {
+      const personaObj = personas.find((p) => p.id === personaId);
       const nextMap = {
         ...prev,
         [personaId]: {
           ...(prev[personaId] || {
-            act1Id: "w_f1_sabyasachi_crimson",
-            act2Id: "w_f2_versace_chainmail",
-            accessoryId: "acc_gold_stilettos_waves",
+            act1Id: personaObj?.defaultAct1WardrobeId || WARDROBE_CATALOG[0].id,
+            act2Id: personaObj?.defaultAct2WardrobeId || WARDROBE_CATALOG[1]?.id || WARDROBE_CATALOG[0].id,
+            accessoryId: personaObj?.defaultAccessoryId || ACCESSORIES_CATALOG[0].id,
           }),
           [field]: valueId,
         },
@@ -219,7 +247,7 @@ export default function PersonasAndWardrobePage() {
     try {
       const act1Options = getWardrobeForCategory(activeTab, 1);
       const act2Options = getWardrobeForCategory(activeTab, 2);
-      const defaultAct1 = act1Options[0]?.id || "w_f1_sabyasachi_crimson";
+      const defaultAct1 = act1Options[0]?.id || WARDROBE_CATALOG[0].id;
       const defaultAct2 = act2Options[0]?.id || defaultAct1;
 
       const res = await fetch("/api/swarm/avatar-builder", {
@@ -300,7 +328,7 @@ export default function PersonasAndWardrobePage() {
 
   const applyToStudio = () => {
     persistCastAndCatalogToStorage(personas, wardrobes, selectedIds, wardrobeMap);
-    router.push("/?workflow=create");
+    router.push("/?workflow=create&from=personas");
   };
 
   const activeCategoryPersonas = dedupeById(
@@ -435,7 +463,7 @@ export default function PersonasAndWardrobePage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
                 <input
                   type="text"
                   value={newName}
@@ -450,7 +478,7 @@ export default function PersonasAndWardrobePage() {
                   placeholder="Role Title"
                   className="sm:col-span-3 rounded-lg bg-zinc-900 border border-white/[0.08] px-2.5 py-1.5 text-xs text-white outline-none"
                 />
-                <div className="sm:col-span-4">
+                <div className="sm:col-span-4 flex items-center gap-2">
                   {builderMode === "prompt" && (
                     <input
                       type="text"
@@ -461,21 +489,39 @@ export default function PersonasAndWardrobePage() {
                     />
                   )}
                   {builderMode === "upload" && (
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleUploadFile}
-                      className="w-full text-xs text-zinc-300 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-zinc-800 file:text-white"
-                    />
+                    <>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleUploadFile}
+                        className="w-full text-xs text-zinc-300 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-zinc-800 file:text-white"
+                      />
+                      {uploadedDataUri && (
+                        <img
+                          src={uploadedDataUri}
+                          alt="Uploaded preview"
+                          className="w-8 h-8 rounded object-cover border border-white/20 shrink-0"
+                        />
+                      )}
+                    </>
                   )}
                   {builderMode === "url" && (
-                    <input
-                      type="url"
-                      value={newPhotoUrl}
-                      onChange={(e) => setNewPhotoUrl(e.target.value)}
-                      placeholder="https://example.com/photo.jpg"
-                      className="w-full rounded-lg bg-zinc-900 border border-white/[0.08] px-2.5 py-1.5 text-xs text-white outline-none"
-                    />
+                    <>
+                      <input
+                        type="url"
+                        value={newPhotoUrl}
+                        onChange={(e) => setNewPhotoUrl(e.target.value)}
+                        placeholder="https://example.com/photo.jpg"
+                        className="w-full rounded-lg bg-zinc-900 border border-white/[0.08] px-2.5 py-1.5 text-xs text-white outline-none"
+                      />
+                      {newPhotoUrl.trim() && (
+                        <img
+                          src={newPhotoUrl.trim()}
+                          alt="URL preview"
+                          className="w-8 h-8 rounded object-cover border border-white/20 shrink-0"
+                        />
+                      )}
+                    </>
                   )}
                 </div>
                 <button
@@ -496,6 +542,9 @@ export default function PersonasAndWardrobePage() {
               const isSelected = (selectedIds[activeTab] || []).includes(
                 persona.id
               );
+              const isCustomPersona = !PERSONAS_CATALOG.some(
+                (base) => base.id === persona.id
+              );
               const wState = wardrobeMap[persona.id] || {
                 act1Id: persona.defaultAct1WardrobeId,
                 act2Id: persona.defaultAct2WardrobeId,
@@ -511,7 +560,7 @@ export default function PersonasAndWardrobePage() {
                       : "bg-[#0d0d11] border-white/[0.07] hover:border-white/20"
                   }`}
                 >
-                  {/* Top Row: Portrait + Identity + Select Button */}
+                  {/* Top Row: Portrait + Identity + Select / Delete Buttons */}
                   <div className="flex items-start gap-3">
                     <img
                       src={persona.photoUrl}
@@ -523,18 +572,30 @@ export default function PersonasAndWardrobePage() {
                         <h3 className="text-sm font-semibold text-white truncate">
                           {persona.name}
                         </h3>
-                        <button
-                          type="button"
-                          onClick={() => togglePersona(activeTab, persona.id)}
-                          className={`px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
-                            isSelected
-                              ? "bg-white text-zinc-950"
-                              : "bg-white/[0.08] text-zinc-300 hover:text-white"
-                          }`}
-                        >
-                          {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
-                          <span>{isSelected ? "Selected" : "Select"}</span>
-                        </button>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {isCustomPersona && (
+                            <button
+                              type="button"
+                              onClick={() => deleteCustomPersona(activeTab, persona.id)}
+                              title="Delete Custom Persona"
+                              className="p-1.5 rounded-md bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 cursor-pointer transition-colors"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => togglePersona(activeTab, persona.id)}
+                            className={`px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
+                              isSelected
+                                ? "bg-white text-zinc-950"
+                                : "bg-white/[0.08] text-zinc-300 hover:text-white"
+                            }`}
+                          >
+                            {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                            <span>{isSelected ? "Selected" : "Select"}</span>
+                          </button>
+                        </div>
                       </div>
                       <p className="text-xs text-zinc-400 truncate">
                         {persona.roleTitle} • {persona.ethnicity}
@@ -549,7 +610,7 @@ export default function PersonasAndWardrobePage() {
                   <div className="space-y-2 pt-2 border-t border-white/[0.06]">
                     <div>
                       <label className="block text-[10px] font-medium text-zinc-400 mb-0.5">
-                        Act I Wardrobe (0:00–0:30)
+                        Act I Opening Wardrobe
                       </label>
                       <select
                         value={wState.act1Id}
@@ -566,10 +627,10 @@ export default function PersonasAndWardrobePage() {
                       </select>
                     </div>
 
-                    {(activeTab === "female_lead" || activeTab === "male_lead") && (
+                    {act2WardrobeList.length > 0 && (
                       <div>
                         <label className="block text-[10px] font-medium text-zinc-400 mb-0.5">
-                          Act II+ Finale Wardrobe (0:30–Finale)
+                          Act II+ Progression / Finale Wardrobe
                         </label>
                         <select
                           value={wState.act2Id}
