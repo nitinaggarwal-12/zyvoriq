@@ -23,14 +23,22 @@ import {
 
 export const runtime = "nodejs";
 
-function resolveApiKey(): string {
-  if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY;
+function resolveApiKey(overrideKey?: string): string {
+  if (overrideKey && overrideKey.trim()) return overrideKey.trim();
+  const envKey =
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+    process.env.GOOGLE_GENAI_API_KEY ||
+    process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
+    process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+  if (envKey && envKey.trim()) return envKey.trim();
   for (const file of [".env.local", ".env"]) {
     try {
       const envPath = path.join(process.cwd(), file);
       if (fs.existsSync(envPath)) {
         const content = fs.readFileSync(envPath, "utf8");
-        const match = content.match(/GEMINI_API_KEY\s*=\s*([^\r\n#]+)/);
+        const match = content.match(/(?:GEMINI_API_KEY|GOOGLE_API_KEY)\s*=\s*([^\r\n#]+)/);
         if (match && match[1]) return match[1].trim().replace(/^["']|["']$/g, "");
       }
     } catch {
@@ -675,7 +683,9 @@ export async function POST(req: NextRequest) {
     const validDemographyIdsList = DEMOGRAPHIES_CATALOG.map((c) => `"${c.id}"`).join(", ");
     const validLightingIdsList = LIGHTING_CATALOG.map((c) => `"${c.id}" (${c.label})`).join(", ");
 
-    const apiKey = resolveApiKey();
+    const apiKey = resolveApiKey(
+      typeof body.apiKey === "string" ? body.apiKey : undefined
+    );
     const stamp = Date.now();
 
     // Step 1: Live YouTube / External Reference URL Detection & Deconstruction

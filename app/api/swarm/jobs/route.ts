@@ -62,14 +62,22 @@ const MODEL = "models/gemini-omni-1.1-flash";
 const LYRIA_MODEL = "models/lyria-3-pro-preview";
 const TRANSCRIBE_MODEL = "gemini-3.5-transcribe";
 
-function resolveApiKey(): string {
-  if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY;
+function resolveApiKey(overrideKey?: string): string {
+  if (overrideKey && overrideKey.trim()) return overrideKey.trim();
+  const envKey =
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+    process.env.GOOGLE_GENAI_API_KEY ||
+    process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
+    process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+  if (envKey && envKey.trim()) return envKey.trim();
   for (const file of [".env.local", ".env"]) {
     try {
       const envPath = path.join(process.cwd(), file);
       if (fs.existsSync(envPath)) {
         const content = fs.readFileSync(envPath, "utf8");
-        const match = content.match(/GEMINI_API_KEY\s*=\s*([^\r\n#]+)/);
+        const match = content.match(/(?:GEMINI_API_KEY|GOOGLE_API_KEY)\s*=\s*([^\r\n#]+)/);
         if (match && match[1]) return match[1].trim().replace(/^["']|["']$/g, "");
       }
     } catch {
@@ -1062,8 +1070,12 @@ async function synthesizeAndMixCinemaDialogueTrack(
   muxAudioOntoVideo(combinedMasterPath, mixedMasterAudioMp3, combinedMasterPath, totalDurationSec, 0);
 }
 
-async function runRealOmniPipeline(job: SwarmGenerationJob, reuseJobId?: string) {
-  const apiKey = resolveApiKey();
+async function runRealOmniPipeline(
+  job: SwarmGenerationJob,
+  reuseJobId?: string,
+  clientApiKey?: string
+) {
+  const apiKey = resolveApiKey(clientApiKey);
   const jobDir = getJobDir(job.id);
   const publicPrefix = `/assets/swarm/generated/${job.id}`;
   const combinedContext = `${job.title} ${job.genre} ${job.act1Prompt} ${job.act2Prompt}`;
@@ -1967,8 +1979,13 @@ export async function POST(req: NextRequest) {
 
     saveJobState(job);
 
+    const clientApiKey =
+      typeof body.apiKey === "string" && body.apiKey.trim()
+        ? body.apiKey.trim()
+        : undefined;
+
     // Fire background async worker (non-blocking HTTP response)
-    runRealOmniPipeline(job, reuseJobId).catch(() => {});
+    runRealOmniPipeline(job, reuseJobId, clientApiKey).catch(() => {});
 
     return NextResponse.json({ ok: true, job });
   } catch (err: unknown) {
