@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "ADK_ORCAS_1.0",
+  "stage": "1_storyline",
+  "agent": "content_gen_agent (Orchestrator with Loop)",
+  "jobId": "job_1790793528334",
+  "title": "Crimson Echoes: Midnight Groove — Option 1 [ADK+ORCAS Clone: Keyframe-Critic + Lyria 3 Pro]",
+  "genre": "128 BPM Art-Deco Speakeasy Jazz-Funk, Syncopated Slap-Bass & Brass Groove (B Minor)",
+  "bpm": 128,
+  "language": "English (Global Pop, Synthwave & R&B)",
+  "audioEngine": "omni_lyria3",
+  "act1NarrativeSummary": "Concept: This Zyvoriq production elevates the classic 1930s Art-Deco jazz-funk aesthetic with a razor-sharp 128 BPM, B Minor sonic landscape, featuring a dynamic 60-second narrative arc. We begin in an intimate, chiaroscuro speakeasy, evolving into a vast, rain-slicked city plaza. The styling emphasizes ivory chalk-stripe suits and feathered headpieces, complemented by 6-shot anamorphic cinematography and precise 8-count geometric choreography, ensuring a visually and sonically arresting experience.. Setting & Venue (Act I): USA — Crimson Velvet Speakeasy → Azure Dawn Plaza. Act I: An intimate",
+  "act2NarrativeSummary": "Concept Finale (Act II): This Zyvoriq production elevates the classic 1930s Art-Deco jazz-funk aesthetic with a razor-sharp 128 BPM, B Minor sonic landscape, featuring a dynamic 60-second narrative arc. We begin in an intimate, chiaroscuro speakeasy, evolving into a vast, rain-slicked city plaza. The styling emphasizes ivory chalk-stripe suits and feathered headpieces, complemented by 6-shot anamorphic cinematography and precise 8-count geometric choreography, ensuring a visually and sonically arresting experience.. Setting & Venue (Act II): USA — Crimson Velvet Speakeasy → Azure Dawn Plaza. A",
+  "generatedAt": "2026-09-30T18:47:10.164Z"
+}

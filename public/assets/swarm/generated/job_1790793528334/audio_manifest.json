@@ -1,0 +1,64 @@
+{
+  "schemaVersion": "ADK_ORCAS_1.0",
+  "stage": "audio_manifest",
+  "agent": "audio_agent (Lyria 3 Pro & Native 48kHz Vocal Mixer)",
+  "jobId": "job_1790793528334",
+  "audioEngine": "omni_lyria3",
+  "sampleRateHz": 48000,
+  "channels": "stereo (2.0)",
+  "targetLoudnessLufs": -14,
+  "soundtrackMp3Src": "/assets/swarm/generated/job_1790793528334/lyria3_master_60s.mp3",
+  "soundtrackWavSrc": "/assets/swarm/generated/job_1790793528334/soundtrack_48k_stereo.wav",
+  "vocalAlignmentWindows": [
+    {
+      "shotNumber": 1,
+      "windowStartSec": 0,
+      "windowEndSec": 10,
+      "lyriaRelStartSec": 0.8,
+      "lyriaRelEndSec": 9.9,
+      "transcribedWords": "128 BPM. Can you feel the pulse? Shadows dance,"
+    },
+    {
+      "shotNumber": 2,
+      "windowStartSec": 10,
+      "windowEndSec": 20,
+      "lyriaRelStartSec": 0.6,
+      "lyriaRelEndSec": 10,
+      "transcribedWords": "secrets kept in this velvet lined escape. One coin, one choice."
+    },
+    {
+      "shotNumber": 3,
+      "windowStartSec": 20,
+      "windowEndSec": 30,
+      "lyriaRelStartSec": 8.5,
+      "lyriaRelEndSec": 9.9,
+      "transcribedWords": "City of wet,"
+    },
+    {
+      "shotNumber": 4,
+      "windowStartSec": 30,
+      "windowEndSec": 40,
+      "lyriaRelStartSec": 0.6,
+      "lyriaRelEndSec": 10,
+      "transcribedWords": "rain kissed streets. Our moment takes flight. Gravity a"
+    },
+    {
+      "shotNumber": 5,
+      "windowStartSec": 40,
+      "windowEndSec": 50,
+      "lyriaRelStartSec": 0,
+      "lyriaRelEndSec": 9.7,
+      "transcribedWords": "whisper now as we defy the dawn light. Tonight in motion."
+    },
+    {
+      "shotNumber": 6,
+      "windowStartSec": 50,
+      "windowEndSec": 60,
+      "lyriaRelStartSec": 0.5,
+      "lyriaRelEndSec": 7.2,
+      "transcribedWords": "A new day born, our legacy drawn. One coin, one choice. Tonight I come to ignite."
+    }
+  ],
+  "verifiedTranscribedWordsCount": 0,
+  "generatedAt": "2026-09-30T18:47:10.164Z"
+}

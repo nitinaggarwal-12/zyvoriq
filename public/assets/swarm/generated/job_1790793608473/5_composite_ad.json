@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "ADK_ORCAS_1.0",
+  "stage": "5_composite_ad",
+  "agent": "content_gen_agent.combine_assets(winning_video, audio_manifest)",
+  "jobId": "job_1790793608473",
+  "title": "Crimson Echoes: Midnight Groove — Option 2 [ADK+ORCAS Clone: Keyframe-Critic + Omni Native Audio]",
+  "audioEngine": "omni_native",
+  "winningVideoMasterSrc": "/assets/swarm/generated/job_1790793608473/combined_60s.mp4",
+  "act1MasterSrc": "/assets/swarm/generated/job_1790793608473/act1_30s.mp4",
+  "act2MasterSrc": "/assets/swarm/generated/job_1790793608473/act2_30s.mp4",
+  "manifests": {
+    "storyline": "/assets/swarm/generated/job_1790793608473/1_storyline.json",
+    "rulebook": "/assets/swarm/generated/job_1790793608473/rulebook_manifest.json",
+    "screenplay": "/assets/swarm/generated/job_1790793608473/screenplay_manifest.json",
+    "keyframe": "/assets/swarm/generated/job_1790793608473/keyframe_manifest.json",
+    "audio": "/assets/swarm/generated/job_1790793608473/audio_manifest.json"
+  },
+  "completedAt": "2026-09-30T18:48:02.033Z"
+}

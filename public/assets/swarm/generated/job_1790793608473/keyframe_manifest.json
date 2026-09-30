@@ -1,0 +1,44 @@
+{
+  "framework": "Google ADK + ORCAS LoopSubAgent (Zyvoriq v3.5.0)",
+  "generatorModel": "models/gemini-3.1-flash-image-preview",
+  "criticModel": "models/gemini-2.5-flash",
+  "act1KeyframeSrc": "/assets/swarm/generated/job_1790793608473/act1_keyframe_verified.jpg",
+  "act2KeyframeSrc": "/assets/swarm/generated/job_1790793608473/act2_keyframe_verified.jpg",
+  "act1Critique": {
+    "iteration": 1,
+    "overallScore": 9.3,
+    "contrastScore": 8.5,
+    "wardrobeScore": 9.5,
+    "framingScore": 9,
+    "zeroTextOverlayScore": 10,
+    "verdict": "APPROVED",
+    "strengths": [
+      "Successfully captures the '1930s Art-Deco jazz-funk aesthetic' and 'intimate, chiaroscuro speakeasy' setting.",
+      "Excellent period-accurate wardrobe, featuring a chalk-stripe suit and a feathered headpiece on a background character.",
+      "Dynamic and cinematic 9:16 framing, highlighting the male lead's action and facial clarity.",
+      "Effective use of chiaroscuro lighting to create mood and depth, consistent with the prompt.",
+      "Male lead's pose suggests precise choreography, aligning with the 'sharp revers' action.",
+      "Absence of any text overlays, watermarks, or subtitles."
+    ],
+    "refinedPromptRecommendations": "To ensure precise color matching, consider clarifying if 'ivory' in 'ivory chalk-stripe suits' refers to the main suit fabric color or specifically to the color of the chalk stripes on a potentially darker suit, given the chiaroscuro setting."
+  },
+  "act2Critique": {
+    "iteration": 1,
+    "overallScore": 9.7,
+    "contrastScore": 9.5,
+    "wardrobeScore": 9.8,
+    "framingScore": 9.5,
+    "zeroTextOverlayScore": 10,
+    "verdict": "APPROVED",
+    "strengths": [
+      "Excellent figure-ground contrast between the light-colored wardrobe and the dark, rain-slicked city plaza background.",
+      "Highly accurate and detailed 1930s Art-Deco wardrobe, featuring ivory chalk-stripe suits and feathered headpieces as specified.",
+      "The 'vast, rain-slicked city plaza' environment is perfectly realized, contributing strongly to the desired aesthetic.",
+      "The choreography is clearly geometric and dynamic, with the main leads captured mid-jump, aligning with the 'precise 8-count geometric choreography' and 'Act II begins with Male Lead' action.",
+      "Cinematic 9:16 staging with good facial clarity for the main subjects and surrounding dancers.",
+      "No burned-in text, subtitles, or watermarks."
+    ],
+    "refinedPromptRecommendations": "The keyframe strongly delivers on all aspects of the prompt. No significant refinements are needed for this specific shot."
+  },
+  "generatedAt": "2026-09-30T18:39:30.414Z"
+}

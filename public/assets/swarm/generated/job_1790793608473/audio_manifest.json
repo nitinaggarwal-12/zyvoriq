@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "ADK_ORCAS_1.0",
+  "stage": "audio_manifest",
+  "agent": "audio_agent (Lyria 3 Pro & Native 48kHz Vocal Mixer)",
+  "jobId": "job_1790793608473",
+  "audioEngine": "omni_native",
+  "sampleRateHz": 48000,
+  "channels": "stereo (2.0)",
+  "targetLoudnessLufs": -14,
+  "soundtrackMp3Src": "/assets/swarm/generated/job_1790793608473/soundtrack_master.mp3",
+  "soundtrackWavSrc": "/assets/swarm/generated/job_1790793608473/soundtrack_48k_stereo.wav",
+  "vocalAlignmentWindows": [],
+  "verifiedTranscribedWordsCount": 70,
+  "generatedAt": "2026-09-30T18:48:02.033Z"
+}

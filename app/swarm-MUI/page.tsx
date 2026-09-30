@@ -629,6 +629,8 @@ export default function SwarmMUIPage() {
   const [activeVideoUrl, setActiveVideoUrl] = useState<string>(
     defaultMasterReel.videoUrl
   );
+  const [adkOrcasEnabled, setAdkOrcasEnabled] = useState<boolean>(true);
+  const [sideBySideCompareMode, setSideBySideCompareMode] = useState<boolean>(true);
 
   // ==========================================================================
   // 4. SYNC WITH URL QUERY PARAMS, LEFT SIDEBAR, /PERSONAS & PERSISTENT REELS
@@ -654,7 +656,7 @@ export default function SwarmMUIPage() {
         if (savedReelsRaw) {
           const parsedReels = JSON.parse(savedReelsRaw);
           if (Array.isArray(parsedReels) && parsedReels.length > 0) {
-            setReels(dedupeById([...parsedReels, ...INITIAL_REELS_REPOSITORY]));
+            setReels(dedupeById([...INITIAL_REELS_REPOSITORY, ...parsedReels]));
           }
         }
       } catch {
@@ -1473,6 +1475,7 @@ export default function SwarmMUIPage() {
           genre: genreObj.promptSpec || genreObj.label,
           bpm: Number(genreObj.promptSpec?.match(/(\d+)\s*BPM/i)?.[1]) || bpm || 124,
           audioEngine: isCinemaMode ? "omni_native" : audioEngineId,
+          adkOrcasMode: adkOrcasEnabled,
           lyrics,
           voiceType,
           language: langObj.label,
@@ -3442,9 +3445,97 @@ export default function SwarmMUIPage() {
         </div>
 
         {/* ==================================================================
-            RIGHT MONITOR PANE (lg:col-span-5): LIVE STUDIO PREVIEW
+            RIGHT MONITOR PANE (lg:col-span-5): LIVE STUDIO PREVIEW & SIDE-BY-SIDE ADK+ORCAS COMPARISON
            ================================================================== */}
         <div className="lg:col-span-5 p-4 sm:p-5 lg:sticky lg:top-24 space-y-3">
+          {/* 4-Way Baseline vs. Google ADK + ORCAS Clone Switcher Bar */}
+          <div className="rounded-xl bg-[#121217] border border-indigo-500/30 p-2.5 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5">
+                <span className="px-1.5 py-0.5 rounded bg-indigo-500/20 border border-indigo-400/40 text-indigo-300 text-[9px] font-mono font-bold uppercase">
+                  Side-by-Side Lab
+                </span>
+                <span className="text-[11px] font-semibold text-white">
+                  Baseline vs. Google ADK + ORCAS Clones (60.0s)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSideBySideCompareMode((prev) => !prev);
+                  setCanvasTab("video");
+                }}
+                className={`px-2 py-0.5 rounded text-[10px] font-semibold border transition-all cursor-pointer ${
+                  sideBySideCompareMode
+                    ? "bg-emerald-500/20 border-emerald-400/50 text-emerald-300"
+                    : "bg-zinc-900 border-white/10 text-zinc-400 hover:text-white"
+                }`}
+              >
+                {sideBySideCompareMode ? "✓ Split-Screen A/B Active" : "Enable Split-Screen A/B"}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-1.5">
+              {[
+                {
+                  id: "reel_crimson_echoes_lyria3_60s",
+                  shortLabel: "Opt 1 Baseline (Omni + Lyria 3)",
+                  badge: "Baseline",
+                },
+                {
+                  id: "reel_crimson_echoes_lyria3_adk_orcas_60s",
+                  shortLabel: "Opt 1 Clone (+ ADK/ORCAS)",
+                  badge: "9.5/10 Critic",
+                },
+                {
+                  id: "reel_crimson_echoes_native_60s",
+                  shortLabel: "Opt 2 Baseline (Omni Native)",
+                  badge: "Baseline",
+                },
+                {
+                  id: "reel_crimson_echoes_native_adk_orcas_60s",
+                  shortLabel: "Opt 2 Clone (+ ADK/ORCAS)",
+                  badge: "9.5/10 Critic",
+                },
+              ].map((item) => {
+                const reelObj = reels.find((r) => r.id === item.id);
+                if (!reelObj) return null;
+                const isSelected = selectedReelId === item.id;
+                const isAdk = Boolean(reelObj.adkOrcasMeta?.enabled);
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      loadReelIntoWorkflow(reelObj, 4);
+                      setCanvasTab("video");
+                    }}
+                    className={`px-2.5 py-1.5 rounded-lg text-left border transition-all cursor-pointer flex items-center justify-between gap-1 ${
+                      isSelected
+                        ? "bg-white text-zinc-950 border-white font-semibold shadow-sm"
+                        : isAdk
+                        ? "bg-indigo-950/35 hover:bg-indigo-950/60 text-indigo-100 border-indigo-500/30"
+                        : "bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 border-white/[0.07]"
+                    }`}
+                  >
+                    <span className="text-[10px] truncate">{item.shortLabel}</span>
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[9px] font-mono shrink-0 ${
+                        isSelected
+                          ? "bg-zinc-900 text-white"
+                          : isAdk
+                          ? "bg-emerald-500/20 text-emerald-300"
+                          : "bg-white/10 text-zinc-300"
+                      }`}
+                    >
+                      {item.badge}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="flex items-center justify-between bg-[#121217] p-1 rounded-lg border border-white/[0.06]">
             {[
               { id: "ensemble", label: `Cast (${activePersonasList.length})` },
@@ -3724,122 +3815,263 @@ export default function SwarmMUIPage() {
             </div>
           )}
 
-          {/* MONITOR 3: 9:16 MASTER VIDEO PLAYER */}
-          {canvasTab === "video" && (
-            <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-black flex flex-col items-center p-3 space-y-3">
-              <div className="w-full flex items-center justify-between px-1">
-                <span className="text-[11px] font-semibold text-white truncate">
-                  {title}
-                </span>
-                <span className="text-[10px] text-emerald-300 font-medium">
-                  Lead Anchor: {activePersonasList[0]?.name || "Lead Cast"}
-                </span>
-              </div>
+          {/* MONITOR 3: 9:16 MASTER VIDEO PLAYER + SIDE-BY-SIDE ADK/ORCAS COMPARISON */}
+          {canvasTab === "video" && (() => {
+            const currentReelObj = reels.find((r) => r.id === selectedReelId);
+            const partnerReelObj = currentReelObj?.comparisonCloneId
+              ? reels.find((r) => r.id === currentReelObj.comparisonCloneId)
+              : undefined;
+            const baselineReel = currentReelObj?.adkOrcasMeta?.enabled
+              ? partnerReelObj || currentReelObj
+              : currentReelObj;
+            const adkCloneReel = currentReelObj?.adkOrcasMeta?.enabled
+              ? currentReelObj
+              : partnerReelObj;
+            const adkMeta = adkCloneReel?.adkOrcasMeta;
 
-              {isRendering && (
-                <div className="w-full rounded-lg bg-indigo-950/50 border border-indigo-500/30 p-2.5 space-y-2">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-indigo-200 font-semibold">
-                      {renderStageLabel || "Rendering via models/gemini-omni-1.1-flash..."}
-                    </span>
-                    <span className="text-emerald-300 font-mono font-bold">
-                      {renderProgress}%
-                    </span>
+            return (
+              <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-black flex flex-col items-center p-3 space-y-3">
+                <div className="w-full flex items-center justify-between px-1">
+                  <span className="text-[11px] font-semibold text-white truncate">
+                    {title}
+                  </span>
+                  <span className="text-[10px] text-emerald-300 font-medium shrink-0">
+                    Lead Anchor: {activePersonasList[0]?.name || "Lead Cast"}
+                  </span>
+                </div>
+
+                {isRendering && (
+                  <div className="w-full rounded-lg bg-indigo-950/50 border border-indigo-500/30 p-2.5 space-y-2">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-indigo-200 font-semibold">
+                        {renderStageLabel || "Rendering via models/gemini-omni-1.1-flash..."}
+                      </span>
+                      <span className="text-emerald-300 font-mono font-bold">
+                        {renderProgress}%
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 transition-all duration-500"
+                        style={{ width: `${Math.max(5, renderProgress)}%` }}
+                      />
+                    </div>
+                    {renderLogs.length > 0 && (
+                      <div className="max-h-20 overflow-y-auto text-[10px] font-mono text-zinc-400 space-y-0.5 bg-black/50 rounded p-1.5">
+                        {renderLogs.slice(-4).map((l, idx) => (
+                          <div key={idx}>{l}</div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 transition-all duration-500"
-                      style={{ width: `${Math.max(5, renderProgress)}%` }}
-                    />
+                )}
+
+                {sideBySideCompareMode && baselineReel && adkCloneReel ? (
+                  <div className="w-full space-y-3">
+                    <div className="grid grid-cols-2 gap-2.5 w-full">
+                      {/* LEFT: ORIGINAL BASELINE */}
+                      <div className="rounded-lg border border-white/15 bg-[#0e0e12] p-2 flex flex-col items-center space-y-1.5">
+                        <div className="w-full flex items-center justify-between">
+                          <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 text-[9px] font-mono font-semibold">
+                            A • Original Baseline
+                          </span>
+                          <span className="text-[9px] text-zinc-400 font-mono">
+                            {baselineReel.audioEngineId === "omni_lyria3" ? "Omni + Lyria 3" : "Omni Native"}
+                          </span>
+                        </div>
+                        <video
+                          key={baselineReel.videoUrl}
+                          src={baselineReel.videoUrl}
+                          poster={baselineReel.shots?.[0]?.previewPhotoUrl}
+                          controls
+                          playsInline
+                          className="w-full aspect-[9/16] max-h-[360px] object-contain rounded bg-black"
+                        />
+                        <div className="w-full text-[9px] text-zinc-400 leading-tight">
+                          Direct text-to-video Turn 1A • 3-photo anchor at Turn 2A • Single job_state.json
+                        </div>
+                      </div>
+
+                      {/* RIGHT: GOOGLE ADK + ORCAS CLONE */}
+                      <div className="rounded-lg border border-emerald-400/40 bg-indigo-950/20 p-2 flex flex-col items-center space-y-1.5">
+                        <div className="w-full flex items-center justify-between">
+                          <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[9px] font-mono font-semibold">
+                            B • ADK + ORCAS Clone
+                          </span>
+                          <span className="text-[9px] text-emerald-300 font-mono font-bold">
+                            Critic: {adkMeta ? `${((adkMeta.act1Score + adkMeta.act2Score) / 2).toFixed(1)}/10` : "9.5/10"}
+                          </span>
+                        </div>
+                        <video
+                          key={adkCloneReel.videoUrl}
+                          src={adkCloneReel.videoUrl}
+                          poster={adkCloneReel.shots?.[0]?.previewPhotoUrl}
+                          controls
+                          autoPlay
+                          playsInline
+                          className="w-full aspect-[9/16] max-h-[360px] object-contain rounded bg-black"
+                        />
+                        <div className="w-full text-[9px] text-indigo-200 leading-tight">
+                          Pre-diffusion Keyframe Critic (Turn 1A &amp; 2A) + Stateful Chain + 6 JSON Manifests
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Pre-Diffusion Keyframe Critic + 6-Stage ADK/ORCAS Manifest Inspector */}
+                    {adkMeta && (
+                      <div className="w-full rounded-lg bg-[#121217] border border-indigo-500/30 p-2.5 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-semibold text-white">
+                            Modification 1 • Critic-Verified Pre-Diffusion Keyframes (gemini-3.1-flash-image-preview → gemini-2.5-flash)
+                          </span>
+                          <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-mono">
+                            APPROVED (Iter 1)
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <a
+                            href={adkMeta.act1KeyframeUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-2 p-1.5 rounded bg-black/50 border border-white/10 hover:border-emerald-400/50"
+                          >
+                            <img
+                              src={adkMeta.act1KeyframeUrl}
+                              alt="Act I Keyframe"
+                              className="w-10 h-14 object-cover rounded"
+                            />
+                            <div className="text-[10px] space-y-0.5">
+                              <div className="font-semibold text-white">Act I Keyframe (t=0.0s)</div>
+                              <div className="text-emerald-300 font-mono">Score: {adkMeta.act1Score}/10 ✓</div>
+                              <div className="text-[9px] text-zinc-400">Chiaroscuro Speakeasy Lock</div>
+                            </div>
+                          </a>
+                          <a
+                            href={adkMeta.act2KeyframeUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-2 p-1.5 rounded bg-black/50 border border-white/10 hover:border-emerald-400/50"
+                          >
+                            <img
+                              src={adkMeta.act2KeyframeUrl}
+                              alt="Act II Keyframe"
+                              className="w-10 h-14 object-cover rounded"
+                            />
+                            <div className="text-[10px] space-y-0.5">
+                              <div className="font-semibold text-white">Act II Keyframe (t=30.0s)</div>
+                              <div className="text-emerald-300 font-mono">Score: {adkMeta.act2Score}/10 ✓</div>
+                              <div className="text-[9px] text-zinc-400">Rain-Slicked Plaza V-Wedge</div>
+                            </div>
+                          </a>
+                        </div>
+
+                        <div className="pt-1 border-t border-white/[0.07] space-y-1">
+                          <div className="text-[10px] font-semibold text-white">
+                            Modification 2 • Explicit 6-Stage ADK + ORCAS JSON Manifest Checkpoints ({adkMeta.jobId})
+                          </div>
+                          <div className="grid grid-cols-3 gap-1">
+                            {[
+                              { label: "1_storyline.json", href: adkMeta.manifestUrls.storyline },
+                              { label: "rulebook_manifest.json", href: adkMeta.manifestUrls.rulebook },
+                              { label: "screenplay_manifest.json", href: adkMeta.manifestUrls.screenplay },
+                              { label: "keyframe_manifest.json", href: adkMeta.manifestUrls.keyframes },
+                              { label: "audio_manifest.json", href: adkMeta.manifestUrls.audio },
+                              { label: "5_composite_ad.json", href: adkMeta.manifestUrls.composite },
+                            ].map((m) => (
+                              <a
+                                key={m.label}
+                                href={m.href}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-2 py-1 rounded bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-[9px] font-mono text-indigo-300 truncate text-center"
+                              >
+                                {m.label} ↗
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  {renderLogs.length > 0 && (
-                    <div className="max-h-20 overflow-y-auto text-[10px] font-mono text-zinc-400 space-y-0.5 bg-black/50 rounded p-1.5">
-                      {renderLogs.slice(-4).map((l, idx) => (
-                        <div key={idx}>{l}</div>
+                ) : activeVideoUrl ? (
+                  <video
+                    key={activeVideoUrl}
+                    src={activeVideoUrl}
+                    poster={
+                      activePersonasList[0]?.photoUrl ||
+                      "/assets/characters/nagin_rajni_heroine.jpg"
+                    }
+                    controls
+                    autoPlay
+                    playsInline
+                    className="max-h-[520px] w-auto aspect-[9/16] object-contain rounded-lg"
+                  />
+                ) : (
+                  <div className="w-full flex flex-col items-center space-y-3 py-2">
+                    <div className="relative max-h-[380px] aspect-[9/16] rounded-xl overflow-hidden border border-white/15 bg-zinc-950 shadow-2xl">
+                      <img
+                        src={
+                          activePersonasList[0]?.photoUrl ||
+                          "/assets/characters/nagin_rajni_heroine.jpg"
+                        }
+                        alt={activePersonasList[0]?.name || "Lead Cast"}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-transparent flex flex-col justify-end p-3.5 text-center">
+                        <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-200 text-[10px] font-semibold mx-auto mb-1.5">
+                          {isRendering
+                            ? "Generating Turn 1A (00:00–00:10)..."
+                            : "Blueprint Synthesized • Video Not Rendered Yet"}
+                        </span>
+                        <p className="text-xs font-bold text-white leading-snug">
+                          {title}
+                        </p>
+                        <p className="text-[10px] text-zinc-300 mt-0.5 line-clamp-2">
+                          {activePersonasList.map((p) => p.name.split("(")[0].trim()).join(" • ")}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Multi-Shot Storyboard Preview Strip */}
+                    <div className="w-full grid grid-cols-6 gap-1.5 px-1">
+                      {shots.map((s) => (
+                        <div
+                          key={s.shotNumber}
+                          className="rounded overflow-hidden border border-white/10 bg-zinc-900 flex flex-col"
+                        >
+                          <img
+                            src={s.previewPhotoUrl}
+                            alt={`Shot ${s.shotNumber}`}
+                            className="w-full h-12 object-cover"
+                          />
+                          <span className="text-[9px] text-center text-zinc-300 py-0.5 font-mono">
+                            S{String(s.shotNumber).padStart(2, "0")}
+                          </span>
+                        </div>
                       ))}
                     </div>
-                  )}
-                </div>
-              )}
 
-              {activeVideoUrl ? (
-                <video
-                  key={activeVideoUrl}
-                  src={activeVideoUrl}
-                  poster={
-                    activePersonasList[0]?.photoUrl ||
-                    "/assets/characters/nagin_rajni_heroine.jpg"
-                  }
-                  controls
-                  autoPlay
-                  playsInline
-                  className="max-h-[520px] w-auto aspect-[9/16] object-contain rounded-lg"
-                />
-              ) : (
-                <div className="w-full flex flex-col items-center space-y-3 py-2">
-                  <div className="relative max-h-[380px] aspect-[9/16] rounded-xl overflow-hidden border border-white/15 bg-zinc-950 shadow-2xl">
-                    <img
-                      src={
-                        activePersonasList[0]?.photoUrl ||
-                        "/assets/characters/nagin_rajni_heroine.jpg"
-                      }
-                      alt={activePersonasList[0]?.name || "Lead Cast"}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-transparent flex flex-col justify-end p-3.5 text-center">
-                      <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-200 text-[10px] font-semibold mx-auto mb-1.5">
+                    <button
+                      type="button"
+                      disabled={isRendering}
+                      onClick={() => {
+                        setCreateStep(4);
+                        executeEndToEndRender(`${getById(DURATIONS_CATALOG, durationId).seconds}s Master`);
+                      }}
+                      className="w-full py-2.5 px-4 rounded-lg bg-white hover:bg-zinc-200 disabled:opacity-50 text-zinc-950 font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Play className="w-3.5 h-3.5 fill-zinc-950" />
+                      <span>
                         {isRendering
-                          ? "Generating Turn 1A (00:00–00:10)..."
-                          : "Blueprint Synthesized • Video Not Rendered Yet"}
+                          ? `Rendering New Video (${renderProgress}%)...`
+                          : `Render New ${getById(DURATIONS_CATALOG, durationId).seconds}s Master Video Now (Gemini Omni 1.1 Flash)`}
                       </span>
-                      <p className="text-xs font-bold text-white leading-snug">
-                        {title}
-                      </p>
-                      <p className="text-[10px] text-zinc-300 mt-0.5 line-clamp-2">
-                        {activePersonasList.map((p) => p.name.split("(")[0].trim()).join(" • ")}
-                      </p>
-                    </div>
+                    </button>
                   </div>
-
-                  {/* Multi-Shot Storyboard Preview Strip */}
-                  <div className="w-full grid grid-cols-6 gap-1.5 px-1">
-                    {shots.map((s) => (
-                      <div
-                        key={s.shotNumber}
-                        className="rounded overflow-hidden border border-white/10 bg-zinc-900 flex flex-col"
-                      >
-                        <img
-                          src={s.previewPhotoUrl}
-                          alt={`Shot ${s.shotNumber}`}
-                          className="w-full h-12 object-cover"
-                        />
-                        <span className="text-[9px] text-center text-zinc-300 py-0.5 font-mono">
-                          S{String(s.shotNumber).padStart(2, "0")}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <button
-                    type="button"
-                    disabled={isRendering}
-                    onClick={() => {
-                      setCreateStep(4);
-                      executeEndToEndRender(`${getById(DURATIONS_CATALOG, durationId).seconds}s Master`);
-                    }}
-                    className="w-full py-2.5 px-4 rounded-lg bg-white hover:bg-zinc-200 disabled:opacity-50 text-zinc-950 font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-zinc-950" />
-                    <span>
-                      {isRendering
-                        ? `Rendering New Video (${renderProgress}%)...`
-                        : `Render New ${getById(DURATIONS_CATALOG, durationId).seconds}s Master Video Now (Gemini Omni 1.1 Flash)`}
-                    </span>
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>

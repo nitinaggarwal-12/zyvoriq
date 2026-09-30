@@ -66,6 +66,24 @@ export interface ShotSpec {
   previewPhotoUrl: string;
 }
 
+export interface AdkOrcasMeta {
+  enabled: boolean;
+  jobId: string;
+  baselineReelId: string;
+  act1KeyframeUrl: string;
+  act2KeyframeUrl: string;
+  act1Score: number;
+  act2Score: number;
+  manifestUrls: {
+    storyline: string;
+    rulebook: string;
+    screenplay: string;
+    keyframes: string;
+    audio: string;
+    composite: string;
+  };
+}
+
 export interface StudioReelRecord {
   id: string;
   title: string;
@@ -85,6 +103,8 @@ export interface StudioReelRecord {
   venueId: string;
   lightingId: string;
   audioEngineId?: string;
+  comparisonCloneId?: string;
+  adkOrcasMeta?: AdkOrcasMeta;
   storyline?: string;
   lyrics?: string;
   customMasterPromptOverride?: string;
@@ -754,7 +774,7 @@ export const PERSONAS_CATALOG: PersonaDefinition[] = [
 export const INITIAL_REELS_REPOSITORY: StudioReelRecord[] = [
   {
     id: "reel_crimson_echoes_lyria3_60s",
-    title: "Crimson Echoes, Ivory Dreams — Art-Deco Speakeasy Groove (Option 1: Omni 1.1 + Lyria 3 Pro 60s)",
+    title: "Crimson Echoes, Ivory Dreams — Art-Deco Speakeasy Groove (Option 1 Baseline: Omni 1.1 + Lyria 3 Pro 60s)",
     status: "published",
     progress: 100,
     videoUrl: "/assets/swarm/generated/job_1790786861133/combined_60s.mp4",
@@ -770,8 +790,9 @@ export const INITIAL_REELS_REPOSITORY: StudioReelRecord[] = [
     venueId: "ven_art_deco_speakeasy",
     lightingId: "lit_tungsten_to_dawn",
     audioEngineId: "omni_lyria3",
+    comparisonCloneId: "reel_crimson_echoes_lyria3_adk_orcas_60s",
     storyline:
-      "Original 128 BPM B-Minor 1930s Art-Deco speakeasy jazz-funk & syncopated slap-bass dance reel (Option 1: Closed-Lips Eye/Body Acting + Continuous 60.0s Lyria 3 Pro Studio Song). Act I opens in The Crimson Velvet speakeasy with chiaroscuro venetian-blind shadow slashes, a coin-toss vintage jukebox ignition, and razor-sharp solo/duet footwork; Act II erupts onto the rain-slicked Azure Dawn metropolitan plaza with an 8-dancer V-wedge lock-step and 45-degree anti-gravity forward lean finale.",
+      "Original 128 BPM B-Minor 1930s Art-Deco speakeasy jazz-funk & syncopated slap-bass dance reel (Option 1 Baseline: Closed-Lips Eye/Body Acting + Continuous 60.0s Lyria 3 Pro Studio Song). Act I opens in The Crimson Velvet speakeasy with chiaroscuro venetian-blind shadow slashes, a coin-toss vintage jukebox ignition, and razor-sharp solo/duet footwork; Act II erupts onto the rain-slicked Azure Dawn metropolitan plaza with an 8-dancer V-wedge lock-step and 45-degree anti-gravity forward lean finale.",
     lyrics:
       "[Shot 01 • Female Lead] 'The rhythm calls, 128 BPM, can you feel the pulse?' (128 BPM)\n[Shot 02 • Male Lead] 'Shadows dance, secrets kept, in this velvet-lined escape.'\n[Shot 03 • Female Co-Lead] 'One coin, one choice, the night's about to ignite.'\n[Shot 04 • Duet (Female Lead & Male Lead)] 'City awakes, rain-kissed streets, our moment takes flight.'\n[Shot 05 • Female Lead & Co-Lead] 'Gravity's a whisper now, as we defy the dawn.'\n[Shot 06 • Full Vocal Ensemble] 'United in motion, a new day born, our legacy drawn!'",
     selectedPersonaIds: {
@@ -867,11 +888,146 @@ export const INITIAL_REELS_REPOSITORY: StudioReelRecord[] = [
         previewPhotoUrl: "/assets/swarm/generated/job_1790786861133/preview_turn2C.jpg",
       },
     ],
-    updatedAt: "Just now • Option 1: Omni 1.1 Flash + Lyria 3 Pro Preview 60.0s Studio Song (-14.0 LUFS)",
+    updatedAt: "Baseline Option 1 • Omni 1.1 Flash + Lyria 3 Pro Preview 60.0s Studio Song (-14.0 LUFS)",
+  },
+  {
+    id: "reel_crimson_echoes_lyria3_adk_orcas_60s",
+    title: "Crimson Echoes, Ivory Dreams — Option 1 [ADK + ORCAS Clone: Keyframe-Critic (9.5/10) + Lyria 3 Pro 60s]",
+    status: "published",
+    progress: 100,
+    videoUrl: "/assets/swarm/generated/job_1790793528334/combined_60s.mp4",
+    durationId: "dur_60s",
+    countryId: "cnt_usa",
+    regionId: "reg_north_america",
+    languageId: "lang_english",
+    demographyId: "demo_north_american",
+    platformId: "plat_yt_shorts",
+    contentTypeId: "ctype_music_video",
+    genreId: "gen_art_deco_jazz_funk",
+    vocalId: "voc_duet",
+    venueId: "ven_art_deco_speakeasy",
+    lightingId: "lit_tungsten_to_dawn",
+    audioEngineId: "omni_lyria3",
+    comparisonCloneId: "reel_crimson_echoes_lyria3_60s",
+    adkOrcasMeta: {
+      enabled: true,
+      jobId: "job_1790793528334",
+      baselineReelId: "reel_crimson_echoes_lyria3_60s",
+      act1KeyframeUrl: "/assets/swarm/generated/job_1790793528334/act1_keyframe_verified.jpg",
+      act2KeyframeUrl: "/assets/swarm/generated/job_1790793528334/act2_keyframe_verified.jpg",
+      act1Score: 9.3,
+      act2Score: 9.7,
+      manifestUrls: {
+        storyline: "/assets/swarm/generated/job_1790793528334/1_storyline.json",
+        rulebook: "/assets/swarm/generated/job_1790793528334/rulebook_manifest.json",
+        screenplay: "/assets/swarm/generated/job_1790793528334/screenplay_manifest.json",
+        keyframes: "/assets/swarm/generated/job_1790793528334/keyframe_manifest.json",
+        audio: "/assets/swarm/generated/job_1790793528334/audio_manifest.json",
+        composite: "/assets/swarm/generated/job_1790793528334/5_composite_ad.json",
+      },
+    },
+    storyline:
+      "Google ADK + ORCAS Hybrid Clone of Option 1 (Omni 1.1 + Lyria 3 Pro 60s). Adds (1) Pre-Diffusion Keyframe Critic LoopSubAgent via models/gemini-3.1-flash-image-preview + models/gemini-2.5-flash (Act I Keyframe 9.3/10 APPROVED, Act II Keyframe 9.7/10 APPROVED) conditioning Turn 1A and Turn 2A at t=0.0s and t=30.0s before stateful previous_interaction_id chaining, and (2) 6-Stage Auditable JSON Checkpoints (1_storyline.json, rulebook_manifest.json, screenplay_manifest.json, keyframe_manifest.json, audio_manifest.json, 5_composite_ad.json) with 100% identical Lyria 3 Pro studio soundtrack for apples-to-apples side-by-side comparison.",
+    lyrics:
+      "[Shot 01 • Female Lead] 'The rhythm calls, 128 BPM, can you feel the pulse?' (128 BPM)\n[Shot 02 • Male Lead] 'Shadows dance, secrets kept, in this velvet-lined escape.'\n[Shot 03 • Female Co-Lead] 'One coin, one choice, the night's about to ignite.'\n[Shot 04 • Duet (Female Lead & Male Lead)] 'City awakes, rain-kissed streets, our moment takes flight.'\n[Shot 05 • Female Lead & Co-Lead] 'Gravity's a whisper now, as we defy the dawn.'\n[Shot 06 • Full Vocal Ensemble] 'United in motion, a new day born, our legacy drawn!'",
+    selectedPersonaIds: {
+      female_lead: ["p_fem_elara_vance", "p_fem_seraphina_dubois"],
+      male_lead: ["p_male_julian_thorne"],
+      supporting: ["p_sup_syncopated_eight"],
+      background: ["p_bg_shadow_dancers"],
+      audience: ["p_aud_speakeasy_patrons"],
+    },
+    wardrobeOverrides: {
+      p_male_julian_thorne: {
+        act1Id: "w_m1_ivory_chalkstripe_fedora",
+        act2Id: "w_m2_steel_grey_tuxedo",
+        accessoryId: "acc_twotone_spats_fedora",
+      },
+      p_fem_elara_vance: {
+        act1Id: "w_f1_emerald_siren_gown",
+        act2Id: "w_f2_silver_streamline_jumpsuit",
+        accessoryId: "acc_twotone_spats_fedora",
+      },
+    },
+    shots: [
+      {
+        shotId: "shot_1",
+        shotNumber: 1,
+        timecode: "0:00–0:10",
+        act: 1,
+        cameraMoveId: "cam_push_in",
+        actionPrompt:
+          "[ADK+ORCAS Keyframe-Conditioned 9.3/10] 35mm Anamorphic T1.8 Steadicam push-in animated directly from critic-verified Act I keyframe inside The Crimson Velvet Art-Deco speakeasy as the Male Lead in an ivory chalk-stripe suit and tilted white fedora glides toward the glowing vintage jukebox.",
+        wardrobeSummary: "Ivory Chalk-Stripe Suit & Tilted White Fedora • Two-Tone Spats (Critic Score: 9.5/10)",
+        lyricLine: "[Shot 01 • Female Lead] 'The rhythm calls, 128 BPM, can you feel the pulse?' (128 BPM)",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790793528334/preview_turn1A.jpg",
+      },
+      {
+        shotId: "shot_2",
+        shotNumber: 2,
+        timecode: "0:10–0:20",
+        act: 1,
+        cameraMoveId: "cam_dolly_track",
+        actionPrompt:
+          "[Stateful previous_interaction_id Chain] 50mm Anamorphic T1.5 lateral tracking shot past crimson velvet banquettes as the Female Lead in an emerald bias-cut silk gown emerges from the shadows into mirrored jazz-funk duet footwork.",
+        wardrobeSummary: "Emerald Silk Bias-Cut Siren Gown • Ivory Chalk-Stripe Suit & White Fedora",
+        lyricLine: "[Shot 02 • Male Lead] 'Shadows dance, secrets kept, in this velvet-lined escape.'",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790793528334/preview_turn1B.jpg",
+      },
+      {
+        shotId: "shot_3",
+        shotNumber: 3,
+        timecode: "0:20–0:30",
+        act: 1,
+        cameraMoveId: "cam_crane_sweep",
+        actionPrompt:
+          "[Stateful previous_interaction_id Chain] 85mm Anamorphic T2.0 crane rise under warm amber speakeasy spotlights as the Female Co-Lead and brass-backed jazz ensemble form a tight V-formation on the 8-count snare rimshot.",
+        wardrobeSummary: "Emerald Silk Gown • Sapphire Beaded Flapper Dress • Ivory Chalk-Stripe Suit",
+        lyricLine: "[Shot 03 • Female Co-Lead] 'One coin, one choice, the night's about to ignite.'",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790793528334/preview_turn1C.jpg",
+      },
+      {
+        shotId: "shot_4",
+        shotNumber: 4,
+        timecode: "0:30–0:40",
+        act: 2,
+        cameraMoveId: "cam_orbit_360",
+        actionPrompt:
+          "[ADK+ORCAS Keyframe-Conditioned 9.7/10] 35mm Anamorphic T2.8 sweeping orbit conditioned on critic-verified Act II plaza keyframe + Act I biometric anchor as the leads transition to the rain-slicked Azure Dawn Art-Deco plaza.",
+        wardrobeSummary: "Steel-Grey Modernist Tuxedo • Silver Metallic Jumpsuit (Critic Score: 9.8/10)",
+        lyricLine: "[Shot 04 • Duet (Female Lead & Male Lead)] 'City awakes, rain-kissed streets, our moment takes flight.'",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790793528334/preview_turn2A.jpg",
+      },
+      {
+        shotId: "shot_5",
+        shotNumber: 5,
+        timecode: "0:40–0:50",
+        act: 2,
+        cameraMoveId: "cam_closeup_85mm",
+        actionPrompt:
+          "[Stateful previous_interaction_id Chain] 50mm Anamorphic T1.5 gimbal close-up on the wet reflective granite stage as the Female Lead in silver metallic jumpsuit and Co-Lead in crisp white double-breasted suit execute synchronized footwork.",
+        wardrobeSummary: "Silver Metallic Streamline Jumpsuit • Crisp White Double-Breasted Suit",
+        lyricLine: "[Shot 05 • Female Lead & Co-Lead] 'Gravity's a whisper now, as we defy the dawn.'",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790793528334/preview_turn2B.jpg",
+      },
+      {
+        shotId: "shot_6",
+        shotNumber: 6,
+        timecode: "0:50–1:00",
+        act: 2,
+        cameraMoveId: "cam_drone_finale",
+        actionPrompt:
+          "[Stateful previous_interaction_id Chain] 24mm Wide Anamorphic T2.8 pullback across the towering Art-Deco plaza as the 8-dancer ensemble converges on the circular brass-inlay stage for the dawn apex tableau.",
+        wardrobeSummary: "Steel-Grey Modernist Tuxedo • Silver Metallic Jumpsuit • Two-Tone Spats",
+        lyricLine: "[Shot 06 • Full Vocal Ensemble] 'United in motion, a new day born, our legacy drawn!'",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790793528334/preview_turn2C.jpg",
+      },
+    ],
+    updatedAt: "ADK + ORCAS Clone 1 • Keyframe Critic (9.3 & 9.7/10) + Lyria 3 Pro 60.0s + 6 JSON Manifests",
   },
   {
     id: "reel_crimson_echoes_native_60s",
-    title: "Crimson Echoes, Ivory Dreams — Art-Deco Speakeasy Groove (Option 2: Omni 1.1 Native Vocal Lip-Sync 60s)",
+    title: "Crimson Echoes, Ivory Dreams — Art-Deco Speakeasy Groove (Option 2 Baseline: Omni 1.1 Native Vocal Lip-Sync 60s)",
     status: "published",
     progress: 100,
     videoUrl: "/assets/swarm/generated/job_1790787479662/combined_60s.mp4",
@@ -887,8 +1043,9 @@ export const INITIAL_REELS_REPOSITORY: StudioReelRecord[] = [
     venueId: "ven_art_deco_speakeasy",
     lightingId: "lit_tungsten_to_dawn",
     audioEngineId: "omni_native",
+    comparisonCloneId: "reel_crimson_echoes_native_adk_orcas_60s",
     storyline:
-      "Original 128 BPM B-Minor 1930s Art-Deco speakeasy jazz-funk & syncopated slap-bass dance reel (Option 2: Single-Model Omni 1.1 Native Video + Synchronized On-Camera Vocal Lip-Sync). Verified 54 audible sung/spoken words via models/gemini-3.5-transcribe across 6 anamorphic shots from The Crimson Velvet speakeasy to the rain-slicked Azure Dawn metropolitan plaza.",
+      "Original 128 BPM B-Minor 1930s Art-Deco speakeasy jazz-funk & syncopated slap-bass dance reel (Option 2 Baseline: Single-Model Omni 1.1 Native Video + Synchronized On-Camera Vocal Lip-Sync). Verified 54 audible sung/spoken words via models/gemini-3.5-transcribe across 6 anamorphic shots from The Crimson Velvet speakeasy to the rain-slicked Azure Dawn metropolitan plaza.",
     lyrics:
       "[Shot 01 • Female Lead] 'The rhythm calls, 128 BPM, can you feel the pulse?' (128 BPM)\n[Shot 02 • Male Lead] 'Shadows dance, secrets kept, in this velvet-lined escape.'\n[Shot 03 • Female Co-Lead] 'One coin, one choice, the night's about to ignite.'\n[Shot 04 • Duet (Female Lead & Male Lead)] 'City awakes, rain-kissed streets, our moment takes flight.'\n[Shot 05 • Female Lead & Co-Lead] 'Gravity's a whisper now, as we defy the dawn.'\n[Shot 06 • Full Vocal Ensemble] 'United in motion, a new day born, our legacy drawn!'",
     selectedPersonaIds: {
@@ -984,7 +1141,142 @@ export const INITIAL_REELS_REPOSITORY: StudioReelRecord[] = [
         previewPhotoUrl: "/assets/swarm/generated/job_1790787479662/preview_turn2C.jpg",
       },
     ],
-    updatedAt: "Just now • Option 2: Omni 1.1 Flash Native 48kHz Vocal Lip-Sync (54 Verified Sung Words)",
+    updatedAt: "Baseline Option 2 • Omni 1.1 Flash Native 48kHz Vocal Lip-Sync (54 Verified Sung Words)",
+  },
+  {
+    id: "reel_crimson_echoes_native_adk_orcas_60s",
+    title: "Crimson Echoes, Ivory Dreams — Option 2 [ADK + ORCAS Clone: Keyframe-Critic (9.5/10) + Omni Native Lip-Sync 60s]",
+    status: "published",
+    progress: 100,
+    videoUrl: "/assets/swarm/generated/job_1790793608473/combined_60s.mp4",
+    durationId: "dur_60s",
+    countryId: "cnt_usa",
+    regionId: "reg_north_america",
+    languageId: "lang_english",
+    demographyId: "demo_north_american",
+    platformId: "plat_yt_shorts",
+    contentTypeId: "ctype_music_video",
+    genreId: "gen_art_deco_jazz_funk",
+    vocalId: "voc_duet",
+    venueId: "ven_art_deco_speakeasy",
+    lightingId: "lit_tungsten_to_dawn",
+    audioEngineId: "omni_native",
+    comparisonCloneId: "reel_crimson_echoes_native_60s",
+    adkOrcasMeta: {
+      enabled: true,
+      jobId: "job_1790793608473",
+      baselineReelId: "reel_crimson_echoes_native_60s",
+      act1KeyframeUrl: "/assets/swarm/generated/job_1790793608473/act1_keyframe_verified.jpg",
+      act2KeyframeUrl: "/assets/swarm/generated/job_1790793608473/act2_keyframe_verified.jpg",
+      act1Score: 9.3,
+      act2Score: 9.7,
+      manifestUrls: {
+        storyline: "/assets/swarm/generated/job_1790793608473/1_storyline.json",
+        rulebook: "/assets/swarm/generated/job_1790793608473/rulebook_manifest.json",
+        screenplay: "/assets/swarm/generated/job_1790793608473/screenplay_manifest.json",
+        keyframes: "/assets/swarm/generated/job_1790793608473/keyframe_manifest.json",
+        audio: "/assets/swarm/generated/job_1790793608473/audio_manifest.json",
+        composite: "/assets/swarm/generated/job_1790793608473/5_composite_ad.json",
+      },
+    },
+    storyline:
+      "Google ADK + ORCAS Hybrid Clone of Option 2 (Omni 1.1 Native Vocal Lip-Sync 60s). Uses the exact same critic-approved opening keyframes (act1_keyframe_verified.jpg 9.3/10 & act2_keyframe_verified.jpg 9.7/10) to lock figure-ground contrast and 1930s Art-Deco speakeasy/plaza geometry from frame 0 while generating native 48kHz on-camera vocal lip-sync verified via models/gemini-3.5-transcribe and exporting all 6 ADK/ORCAS JSON stage manifests.",
+    lyrics:
+      "[Shot 01 • Female Lead] 'The rhythm calls, 128 BPM, can you feel the pulse?' (128 BPM)\n[Shot 02 • Male Lead] 'Shadows dance, secrets kept, in this velvet-lined escape.'\n[Shot 03 • Female Co-Lead] 'One coin, one choice, the night's about to ignite.'\n[Shot 04 • Duet (Female Lead & Male Lead)] 'City awakes, rain-kissed streets, our moment takes flight.'\n[Shot 05 • Female Lead & Co-Lead] 'Gravity's a whisper now, as we defy the dawn.'\n[Shot 06 • Full Vocal Ensemble] 'United in motion, a new day born, our legacy drawn!'",
+    selectedPersonaIds: {
+      female_lead: ["p_fem_elara_vance", "p_fem_seraphina_dubois"],
+      male_lead: ["p_male_julian_thorne"],
+      supporting: ["p_sup_syncopated_eight"],
+      background: ["p_bg_shadow_dancers"],
+      audience: ["p_aud_speakeasy_patrons"],
+    },
+    wardrobeOverrides: {
+      p_male_julian_thorne: {
+        act1Id: "w_m1_ivory_chalkstripe_fedora",
+        act2Id: "w_m2_steel_grey_tuxedo",
+        accessoryId: "acc_twotone_spats_fedora",
+      },
+      p_fem_elara_vance: {
+        act1Id: "w_f1_emerald_siren_gown",
+        act2Id: "w_f2_silver_streamline_jumpsuit",
+        accessoryId: "acc_twotone_spats_fedora",
+      },
+    },
+    shots: [
+      {
+        shotId: "shot_1",
+        shotNumber: 1,
+        timecode: "0:00–0:10",
+        act: 1,
+        cameraMoveId: "cam_push_in",
+        actionPrompt:
+          "[ADK+ORCAS Keyframe-Conditioned 9.3/10] 35mm Anamorphic T1.8 Steadicam push-in animated directly from critic-verified Act I keyframe inside The Crimson Velvet speakeasy as the Female Lead in an emerald silk gown sings on camera beside the Male Lead in his ivory chalk-stripe suit and white fedora.",
+        wardrobeSummary: "Ivory Chalk-Stripe Double-Breasted Suit & Tilted White Fedora • Emerald Silk Gown",
+        lyricLine: "[Shot 01 • Female Lead] 'The rhythm calls, 128 BPM, can you feel the pulse?' (128 BPM)",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790793608473/preview_turn1A.jpg",
+      },
+      {
+        shotId: "shot_2",
+        shotNumber: 2,
+        timecode: "0:10–0:20",
+        act: 1,
+        cameraMoveId: "cam_dolly_track",
+        actionPrompt:
+          "[Stateful previous_interaction_id Chain] 50mm Anamorphic T1.5 tracking shot beside the glowing vintage jukebox as the Male Lead and Female Lead trade synchronized duet vocals and jazz-funk partner spins.",
+        wardrobeSummary: "Ivory Chalk-Stripe Suit & White Fedora • Emerald Silk Bias-Cut Siren Gown",
+        lyricLine: "[Shot 02 • Male Lead] 'Shadows dance, secrets kept, in this velvet-lined escape.'",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790793608473/preview_turn1B.jpg",
+      },
+      {
+        shotId: "shot_3",
+        shotNumber: 3,
+        timecode: "0:20–0:30",
+        act: 1,
+        cameraMoveId: "cam_crane_rise",
+        actionPrompt:
+          "[Stateful previous_interaction_id Chain] 85mm Anamorphic T2.0 crane shot over the speakeasy floor under 'The Crimson Velvet' neon sign as the Female Co-Lead in a sapphire beaded flapper dress sings on camera.",
+        wardrobeSummary: "Sapphire Beaded Flapper Dress • Ivory Chalk-Stripe Suit • Two-Tone Spats",
+        lyricLine: "[Shot 03 • Female Co-Lead] 'One coin, one choice, the night's about to ignite.'",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790793608473/preview_turn1C.jpg",
+      },
+      {
+        shotId: "shot_4",
+        shotNumber: 4,
+        timecode: "0:30–0:40",
+        act: 2,
+        cameraMoveId: "cam_drone_orbit",
+        actionPrompt:
+          "[ADK+ORCAS Keyframe-Conditioned 9.7/10] 35mm Anamorphic T2.8 sweeping shot animated directly from critic-verified Act II plaza keyframe as the Male Lead in a steel-grey tuxedo and Female Lead in a silver metallic jumpsuit sing their duet on the circular rain-slicked plaza stage.",
+        wardrobeSummary: "Steel-Grey Modernist Peak-Lapel Tuxedo • Silver Metallic Streamline Jumpsuit",
+        lyricLine: "[Shot 04 • Duet (Female Lead & Male Lead)] 'City awakes, rain-kissed streets, our moment takes flight.'",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790793608473/preview_turn2A.jpg",
+      },
+      {
+        shotId: "shot_5",
+        shotNumber: 5,
+        timecode: "0:40–0:50",
+        act: 2,
+        cameraMoveId: "cam_closeup_85mm",
+        actionPrompt:
+          "[Stateful previous_interaction_id Chain] 50mm Anamorphic T1.5 gimbal close-up on the wet granite plaza as the Female Lead and Co-Lead deliver harmonized vocals on camera with crisp lip-sync.",
+        wardrobeSummary: "Silver Metallic Streamline Jumpsuit • Crisp White Double-Breasted Suit",
+        lyricLine: "[Shot 05 • Female Lead & Co-Lead] 'Gravity's a whisper now, as we defy the dawn.'",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790793608473/preview_turn2B.jpg",
+      },
+      {
+        shotId: "shot_6",
+        shotNumber: 6,
+        timecode: "0:50–1:00",
+        act: 2,
+        cameraMoveId: "cam_crane_rise",
+        actionPrompt:
+          "[Stateful previous_interaction_id Chain] 24mm Wide Anamorphic T2.8 pullback across the rain-slicked Art-Deco plaza as the full ensemble in ivory chalk-stripe suits and silver jumpsuit sings the final chorus hook in V-wedge formation.",
+        wardrobeSummary: "Steel-Grey Modernist Tuxedo • Silver Metallic Jumpsuit • Two-Tone Spats",
+        lyricLine: "[Shot 06 • Full Vocal Ensemble] 'United in motion, a new day born, our legacy drawn!'",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790793608473/preview_turn2C.jpg",
+      },
+    ],
+    updatedAt: "ADK + ORCAS Clone 2 • Keyframe Critic (9.3 & 9.7/10) + Omni Native Lip-Sync + 6 JSON Manifests",
   },
   {
     id: "reel_ten_billionth_pulse_120s",
