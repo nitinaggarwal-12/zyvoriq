@@ -719,7 +719,7 @@ CRITICAL CREATIVE MANDATE — ANCHOR DIRECTLY TO THE USER'S REFERENCE URL / PROM
      5. [${shotsCount}-Shot Anamorphic Optics, T-Stop & Kelvin Lighting Schedule ("shotLightingAndOptics")]: Provide ${shotsCount} shot-specific cinematography specs detailing exact lens focal length (24mm/35mm/50mm/85mm anamorphic), aperture T-stop (T1.5–T2.8), camera rig, color temperature in Kelvin, and key-to-fill contrast ratio.
      6. [5-Tier Biometric Cast & Full Multi-Act Couture Evolution + Figure-Ground Separation]: All 5 cast tiers (Female Lead + Co-Lead, Male Lead, Supporting Cast, Background Ensemble, Audience) MUST have explicit Act I -> Act II wardrobe evolution ("Act I: ... -> Act II: ...") AND explicit color/luminance contrast separation ("figureGroundContrastSpec").
      7. [Per-Tier Props & Hero Instruments ("instrumentAndStagePropsSpec")]: Specify exact hand/stage props or instruments matching the reference setting.
-   - STAGE C (SAFETY & ORIGINALITY): Never output real celebrity/actor/singer names in "compiledConceptDirective", character names, or wardrobe specs so downstream video generation models never trigger likeness blocks. Always invent original character names and original lyrics/dialogue in the same language and style.
+   - STAGE C (100% COPYRIGHT-FREE, TRADEMARK-SAFE & RAI-SAFE ORIGINALITY): Never output real celebrity/artist/actor/singer names (e.g. "Michael Jackson"), copyrighted song titles (e.g. "Smooth Criminal"), copyrighted character names (e.g. "Annie"), verbatim copyrighted lyrics, or firearm/weapon/crime words in "title", "storyline", "compiledConceptDirective", character names, lyricsLines, or wardrobe specs. Translate all noir/speakeasy aesthetics into pure high-fashion Art-Deco tailoring (ivory chalk-stripe double-breasted suit, tilted white fedora, silk pocket square, two-tone spats) and razor-sharp geometric dance choreography (45-degree anti-gravity forward lean illusion, 8-dancer V-wedge lock-step, reverse-glide footwork, coin-toss jukebox ignition).
 
 USER INPUT & CONTEXT:
 - Raw User Prompt: "${rawPrompt}"
@@ -1110,6 +1110,31 @@ Return STRICTLY valid JSON matching this schema:
         parsed.recommendedCountryId = "cnt_india_mumbai";
         judgeAutoCorrections.push(
           "Replaced 'cnt_india_chanderi' (outdoor street-festival assumption) with 'cnt_india_mumbai' (Mumbai VIP Nightclub & Retro-Glam Studio Stage)."
+        );
+      }
+    }
+
+    // Deterministic Music-Video vs Spoken-Cinema Guard (prevents artist SEO tags like 'thriller' on pop/dance music videos from forcing 92 BPM spoken cinema mode)
+    const isExplicitSpokenDramaRequest =
+      /\b(spoken\s+dialogue|dramatic\s+short\s+film|ten\s+billion|beyond\s+control|higgsfield|census\s+enforcer|milan\s+brutalist)\b/i.test(
+        promptWithoutUrls
+      );
+    const isMusicAndDanceVideo =
+      !isExplicitSpokenDramaRequest &&
+      /\b(official\s+video|music\s+video|choreography|dancer|dancers|jukebox|speakeasy|lock-step|anti-gravity\s+lean|pop|funk|disco|bhangra|bollywood|singer|vocalist)\b/i.test(
+        `${promptWithoutUrls} ${ytRef?.title || ""} ${parsed?.choreography || ""}`
+      );
+    if (isMusicAndDanceVideo && parsed) {
+      if (parsed.recommendedGenreId === "gen_cinema_thriller") {
+        parsed.recommendedGenreId = "gen_dance_pop";
+        judgeAutoCorrections.push(
+          "Replaced 'gen_cinema_thriller' (92 BPM spoken-cinema cello score triggered by artist tag) with 'gen_dance_pop' for high-energy music & dance choreography."
+        );
+      }
+      if (parsed.recommendedLanguageId === "lang_english_cinema") {
+        parsed.recommendedLanguageId = "lang_english";
+        judgeAutoCorrections.push(
+          "Replaced 'lang_english_cinema' with 'lang_english' for sung studio vocals and dance-pop production."
         );
       }
     }

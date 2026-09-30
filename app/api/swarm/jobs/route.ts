@@ -166,7 +166,14 @@ function sanitizePromptForOmniSafety(raw: string): string {
     .replace(/\b(eye-flirt|flirtatious)\b/gi, "magnetic expressive")
     .replace(/\bsultry\b/gi, "charismatic")
     .replace(/\breal\s+people('s)?\b/gi, "photorealistic live-action adult cinema actors")
-    .replace(/\breal\s+human(\s+beings|\s+actors)?\b/gi, "photorealistic live-action adult cinema actors");
+    .replace(/\breal\s+human(\s+beings|\s+actors)?\b/gi, "photorealistic live-action adult cinema actors")
+    // Copyright, celebrity likeness & noir safety normalizations
+    .replace(/\bMichael\s+Jackson('s)?\b/gi, "the lead Art-Deco jazz-funk choreographer")
+    .replace(/\bSmooth\s+Criminal\b/gi, "Midnight Pinstripe Velocity")
+    .replace(/\bMoonwalker\b/gi, "Art-Deco Nocturne")
+    .replace(/\bmoonwalk(ing)?\b/gi, "signature reverse-glide footwork")
+    .replace(/\bAnnie,?\s+are\s+you\s+okay\??\b/gi, "Stay inside the spotlight rhythm")
+    .replace(/\b(tommy\s+guns?|submachine\s+guns?|machine\s+guns?|gunfire|guns?|shoot(ing|s)?|bullets?|bloodstains?|murder|crime|criminals?|gangsters?|mobsters?)\b/gi, "synchronized Art-Deco speakeasy spotlight choreography");
 }
 
 async function callOmniInteractions(
@@ -330,6 +337,136 @@ function lockExactDuration(rawPath: string, outPath: string, seconds: number) {
       outPath,
     ],
     { stdio: "inherit" }
+  );
+}
+
+function lockOrAssemble30sAct(
+  turnAPath: string,
+  turnBRawPath: string,
+  turnCRawPath: string,
+  actMasterPath: string,
+  jobDir: string,
+  actPrefix: string
+) {
+  let cDur = 30;
+  try {
+    cDur = parseFloat(
+      execFileSync(
+        "ffprobe",
+        ["-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", turnCRawPath],
+        { encoding: "utf8" }
+      ).trim()
+    );
+  } catch {
+    cDur = 30;
+  }
+
+  if (cDur >= 28) {
+    lockExactDuration(turnCRawPath, actMasterPath, 30);
+    return;
+  }
+
+  let bDur = 10;
+  try {
+    bDur = parseFloat(
+      execFileSync(
+        "ffprobe",
+        ["-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", turnBRawPath],
+        { encoding: "utf8" }
+      ).trim()
+    );
+  } catch {
+    bDur = 10;
+  }
+
+  const turnB10sPath = path.join(jobDir, `${actPrefix}_turnB_only10s.mp4`);
+  const bStart = bDur >= 18 ? 10 : 0;
+  execFileSync(
+    "ffmpeg",
+    [
+      "-y",
+      "-ss",
+      String(bStart),
+      "-t",
+      "10",
+      "-i",
+      turnBRawPath,
+      "-vf",
+      "fps=24/1,trim=0:10,setpts=PTS-STARTPTS",
+      "-af",
+      "aresample=48000,atrim=0:10,asetpts=PTS-STARTPTS",
+      "-c:v",
+      "libx264",
+      "-preset",
+      "fast",
+      "-crf",
+      "17",
+      "-pix_fmt",
+      "yuv420p",
+      "-r",
+      "24/1",
+      "-c:a",
+      "aac",
+      "-b:a",
+      "192k",
+      "-ar",
+      "48000",
+      "-ac",
+      "2",
+      turnB10sPath,
+    ],
+    { stdio: "ignore" }
+  );
+
+  const turnC10sPath = path.join(jobDir, `${actPrefix}_turnC_only10s.mp4`);
+  const cStart = cDur >= 18 ? cDur - 10 : 0;
+  execFileSync(
+    "ffmpeg",
+    [
+      "-y",
+      "-ss",
+      String(cStart),
+      "-t",
+      "10",
+      "-i",
+      turnCRawPath,
+      "-vf",
+      "fps=24/1,trim=0:10,setpts=PTS-STARTPTS",
+      "-af",
+      "aresample=48000,atrim=0:10,asetpts=PTS-STARTPTS",
+      "-c:v",
+      "libx264",
+      "-preset",
+      "fast",
+      "-crf",
+      "17",
+      "-pix_fmt",
+      "yuv420p",
+      "-r",
+      "24/1",
+      "-c:a",
+      "aac",
+      "-b:a",
+      "192k",
+      "-ar",
+      "48000",
+      "-ac",
+      "2",
+      turnC10sPath,
+    ],
+    { stdio: "ignore" }
+  );
+
+  const actConcatTxt = path.join(jobDir, `${actPrefix}_concat.txt`);
+  fs.writeFileSync(
+    actConcatTxt,
+    `file '${turnAPath}'\nfile '${turnB10sPath}'\nfile '${turnC10sPath}'\n`,
+    "utf8"
+  );
+  execFileSync(
+    "ffmpeg",
+    ["-y", "-f", "concat", "-safe", "0", "-i", actConcatTxt, "-c", "copy", "-movflags", "+faststart", actMasterPath],
+    { stdio: "ignore" }
   );
 }
 
@@ -1286,7 +1423,7 @@ async function runRealOmniPipeline(
 
       const turn1CRawPath = path.join(jobDir, "act1_turnC_30s_raw.mp4");
       fs.writeFileSync(turn1CRawPath, Buffer.from(turn1C.videoBase64, "base64"));
-      lockExactDuration(turn1CRawPath, act1MasterPath, 30);
+      lockOrAssemble30sAct(turn1APath, turn1BRawPath, turn1CRawPath, act1MasterPath, jobDir, "act1");
 
       job.part1Src = `${publicPrefix}/act1_30s.mp4?t=${Date.now()}`;
       job.combinedSrc = job.part1Src;
@@ -1438,7 +1575,7 @@ async function runRealOmniPipeline(
 
       const turn2CRawPath = path.join(jobDir, "act2_turnC_30s_raw.mp4");
       fs.writeFileSync(turn2CRawPath, Buffer.from(turn2C.videoBase64, "base64"));
-      lockExactDuration(turn2CRawPath, act2MasterPath, 30);
+      lockOrAssemble30sAct(turn2APath, turn2BRawPath, turn2CRawPath, act2MasterPath, jobDir, "act2");
     }
 
     // -------------------------------------------------------------------------

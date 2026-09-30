@@ -147,6 +147,7 @@ export const LANGUAGES_CATALOG: CatalogOption[] = [
 ];
 
 export const DEMOGRAPHIES_CATALOG: CatalogOption[] = [
+  { id: "demo_north_american", label: "North American & Global Pop • 1930s Art-Deco Speakeasy & Precision Dance Ensemble (Ages 24–36)", promptSpec: "Charismatic 24–36 North American & international vocal and precision jazz-funk dance ensemble in tailored 1930s Art-Deco couture" },
   { id: "demo_cinema_realism", label: "35mm Live-Action European Cinema • Authentic Adult Ensemble (Ages 31–60)", promptSpec: "Photorealistic 35mm live-action adult cinema actors with natural unretouched skin pores, fine lines, and nuanced human micro-expressions" },
   { id: "demo_genz_festival", label: "Gen-Z (18–24) • Viral Dance, College & Festival", promptSpec: "High-energy 18-24 youth cast, kinetic choreography & festival vibrancy" },
   { id: "demo_millennial_luxury", label: "Millennials (25–34) • Jet-Set Luxury, Yacht & Resort", promptSpec: "Sophisticated 25-34 international supermodel cast, resort & superyacht glamour" },
@@ -184,6 +185,7 @@ export const DURATIONS_CATALOG: DurationOption[] = [
 ];
 
 export const GENRES_CATALOG: CatalogOption[] = [
+  { id: "gen_art_deco_jazz_funk", label: "128 BPM Art-Deco Speakeasy Jazz-Funk, Syncopated Slap-Bass & Brass Groove (B Minor)", promptSpec: "128 BPM 1930s Art-Deco speakeasy jazz-funk and syncopated slap-bass dance-pop anthem in B Minor with punchy brass section stabs, crisp snare rimshots, and infectious 8-count groove" },
   { id: "gen_cinema_thriller", label: "Photorealistic 35mm Live-Action Cinema Score — Atmospheric Cello, Piano & Rain Foley (92 BPM)", promptSpec: "92 BPM atmospheric D-minor live-action cinema score with solo cello, felted piano, rain foley & natural room acoustics" },
   { id: "gen_dance_pop", label: "Billboard Dance-Pop & Synthwave (124 BPM)", promptSpec: "124 BPM dance-pop synthwave" },
   { id: "gen_punjabi_bhangra", label: "Punjabi Bhangra & Urban Desi Club (128 BPM)", promptSpec: "128 BPM Punjabi dholak & sub-bass club anthem" },
@@ -221,6 +223,7 @@ export const AUDIO_ENGINES_CATALOG: CatalogOption[] = [
 ];
 
 export const VENUES_CATALOG: CatalogOption[] = [
+  { id: "ven_art_deco_speakeasy", label: "Crimson Velvet 1930s Art-Deco Speakeasy & Jukebox → Azure Dawn Rain-Slicked Plaza", promptSpec: "Clandestine 1930s Art-Deco speakeasy with mahogany bar, crimson velvet banquettes, venetian-blind chiaroscuro shadow slashes, and vintage coin-operated jukebox in Act I (0:00–0:30), transforming into a grand rain-slicked Art-Deco metropolitan plaza at pre-dawn in Act II (0:30–1:00)" },
   { id: "ven_milan_brutalist_courtyard", label: "Milan Crimson Brutalist Corridor & Koi Study → Rain-Washed Stone Courtyard at Dawn", promptSpec: "Dimly lit Milanese crimson-red brutalist corridor and warm 3200K tungsten apartment study with glowing glass koi aquarium in Act I (0:00–0:30), transitioning to a 5400K rain-washed Milanese stone courtyard at dawn in Act II (0:30–1:00)" },
   { id: "ven_pool_to_courtyard", label: "Marble Infinity Pool Deck → Torchlit Palace Courtyard", promptSpec: "Sunlit marble infinity pool deck in Act I (0:00–0:30), candlelit & torchlit Andalusian palace courtyard in Act II (0:30–1:00)" },
   { id: "ven_palace_to_yacht", label: "Royal Sandstone Palace → Twilight Superyacht Helipad", promptSpec: "Royal sandstone palace in Act I (0:00–0:30), luxury superyacht deck at twilight in Act II (0:30–1:00)" },
@@ -255,6 +258,7 @@ export const CAMERA_MOVES_CATALOG: CatalogOption[] = [
 
 export const WARDROBE_CATALOG: WardrobeItem[] = [
   // ---- FEMALE LEADS: ACT I ----
+  { id: "w_f1_emerald_siren_gown", category: "female_lead", act: 1, group: "Art-Deco Speakeasy Glamour", label: "Emerald Siren Bias-Cut Silk Gown & Sapphire Feathered Flapper", promptSpec: "Floor-length emerald green silk bias-cut gown with Art-Deco geometric earrings paired with a sapphire blue feathered flapper dress and long opera gloves" },
   { id: "w_f1_merino_cardigan", category: "female_lead", act: 1, group: "Live-Action Cinema Realism", label: "Oatmeal-Beige Merino Wool Knit Sweater & Charcoal Linen Skirt", promptSpec: "Natural unretouched oatmeal-beige merino wool knit sweater with visible yarn weave over a charcoal linen skirt" },
   { id: "w_f1_sabyasachi_crimson", category: "female_lead", act: 1, group: "South Asian Couture", label: "Royal Heritage Crimson & Gold Zardosi Bridal Lehenga", promptSpec: "Royal heritage crimson silk lehenga with heavy gold zardosi embroidery and sheer dupatta" },
   { id: "w_f1_manish_ivory", category: "female_lead", act: 1, group: "South Asian Couture", label: "Designer Ivory & Silver Chikankari Crystal Lehenga", promptSpec: "Couture ivory organza lehenga encrusted with silver crystals and chikankari threadwork" },
@@ -271,6 +275,7 @@ export const WARDROBE_CATALOG: WardrobeItem[] = [
   { id: "w_f1_milan_powersuit", category: "female_lead", act: 1, group: "Editorial Luxury", label: "Milanese CEO Tailored Ivory Double-Breasted Power Suit", promptSpec: "Sharp tailored ivory silk double-breasted blazer and wide-leg trousers with gold heels" },
 
   // ---- FEMALE LEADS: ACT II FINALE ----
+  { id: "w_f2_silver_streamline_jumpsuit", category: "female_lead", act: 2, group: "Art-Deco Metropolitan Finale", label: "Silver Streamline Lamé Jumpsuit & White Architectural Suit", promptSpec: "Custom-tailored silver metallic lamé jumpsuit with streamlined wide palazzo legs and dramatic cape overlay paired with a crisp white double-breasted architectural suit" },
   { id: "w_f2_dawn_trench", category: "female_lead", act: 2, group: "Live-Action Cinema Realism", label: "Rain-Dampened Camel Wool Overcoat & Oatmeal Merino Knit", promptSpec: "Tailored camel wool overcoat worn over oatmeal-beige merino wool knit sweater in the morning rain" },
   { id: "w_f2_versace_chainmail", category: "female_lead", act: 2, group: "High-Glamour Finale", label: "Liquid-Gold Metallic Chainmail Backless Evening Gown", promptSpec: "Floor-length liquid-gold metallic chainmail couture gown with draped open back" },
   { id: "w_f2_emerald_ballgown", category: "female_lead", act: 2, group: "High-Glamour Finale", label: "Emerald Silk Couture Ballgown with High Slit & Tiara", promptSpec: "Regal emerald satin ballgown with crystal bodice, thigh-high slit and diamond tiara" },
@@ -280,6 +285,7 @@ export const WARDROBE_CATALOG: WardrobeItem[] = [
   { id: "w_f2_cyber_fiberoptic", category: "female_lead", act: 2, group: "Futuristic Couture", label: "Cyber Fiber-Optic Illuminated Couture Evening Gown", promptSpec: "Sculpted architectural gown woven with glowing luminous fiber-optic threads" },
 
   // ---- MALE LEADS: ACT I ----
+  { id: "w_m1_ivory_chalkstripe_fedora", category: "male_lead", act: 1, group: "Art-Deco Speakeasy Dandy", label: "Ivory Chalk-Stripe Double-Breasted Suit, Royal-Blue Pocket Square & Tilted White Fedora", promptSpec: "Razor-sharp ivory chalk-stripe double-breasted suit, royal-blue silk pocket square, light blue dress shirt, cream silk tie, and tilted white fedora" },
   { id: "w_m1_olive_trench", category: "male_lead", act: 1, group: "Live-Action Cinema Realism", label: "Rain-Dampened Dark-Olive Wool Trench Coat & Brass Census Lapel Pin", promptSpec: "Weathered rain-dampened dark-olive wool trench coat over a charcoal cotton shirt with a brass Census Inspector lapel pin" },
   { id: "w_m1_ivory_bandhgala", category: "male_lead", act: 1, group: "South Asian Royal", label: "Royal Ivory & Gold Hand-Embroidered Bandhgala Suit", promptSpec: "Bespoke ivory silk Jodhpuri bandhgala jacket with gold threadwork and tailored trousers" },
   { id: "w_m1_punjabi_kurta_nehru", category: "male_lead", act: 1, group: "South Asian Royal", label: "Punjabi Black Silk Kurta & Gold Velvet Nehru Jacket", promptSpec: "Jet-black silk kurta pajama paired with gold-embroidered velvet Nehru jacket and mojari" },
@@ -290,6 +296,7 @@ export const WARDROBE_CATALOG: WardrobeItem[] = [
   { id: "w_m1_savile_row", category: "male_lead", act: 1, group: "Editorial Luxury", label: "Savile Row Charcoal Double-Breasted Pinstripe Suit", promptSpec: "Bespoke charcoal pinstripe double-breasted suit with silk pocket square" },
 
   // ---- MALE LEADS: ACT II FINALE ----
+  { id: "w_m2_steel_grey_tuxedo", category: "male_lead", act: 2, group: "Art-Deco Metropolitan Finale", label: "Steel Grey Modernist Tuxedo & Two-Tone Spats", promptSpec: "Tailored steel grey modernist tuxedo with sharp peak lapels, black silk shirt, sleek black tie, and two-tone black-and-white leather spats" },
   { id: "w_m2_unbadged_coat", category: "male_lead", act: 2, group: "Live-Action Cinema Realism", label: "Unbadged Dark-Olive Wool Trench Coat (Badge Removed in Defiance)", promptSpec: "Buttoned dark-olive wool trench coat with the brass lapel pin removed, wet from morning courtyard rain" },
   { id: "w_m2_midnight_tuxedo", category: "male_lead", act: 2, group: "Black-Tie Finale", label: "Midnight-Velvet Tuxedo with Crystal Lapels", promptSpec: "Custom midnight-blue velvet dinner jacket with Swarovski crystal lapels and black silk shirt" },
   { id: "w_m2_gold_sherwani", category: "male_lead", act: 2, group: "South Asian Finale", label: "Metallic Gold Brocade Royal Reception Sherwani", promptSpec: "Handwoven metallic gold brocade sherwani with emerald brooch" },
@@ -318,6 +325,7 @@ export const WARDROBE_CATALOG: WardrobeItem[] = [
 ];
 
 export const ACCESSORIES_CATALOG: AccessoryItem[] = [
+  { id: "acc_twotone_spats_fedora", label: "Two-Tone Black & White Spats + Tilted White Fedora + Vintage Silver Coin", promptSpec: "Two-tone black-and-white leather dance spats, tilted white fedora with black band, vintage silver jukebox coin, and Art-Deco pearl choker" },
   { id: "acc_brass_ledger", label: "Leather-Bound Census Ledger + Brass Lapel Pin + Steel Ink Stamp", promptSpec: "Weathered leather-bound paper registry ledger, brass lapel badge, fountain pen and heavy steel ink hand-stamp" },
   { id: "acc_gold_stilettos_waves", label: "Gold Stilettos + Hollywood Waves + Diamond Chandeliers", promptSpec: "Strappy gold metallic stilettos, glossy waves and diamond chandelier earrings" },
   { id: "acc_tiara_crystal_heels", label: "Diamond Tiara + Sleek High Ponytail + Crystal Heels", promptSpec: "Royal diamond tiara, sleek high ponytail and Swarovski crystal heels" },
@@ -664,6 +672,79 @@ export const PERSONAS_CATALOG: PersonaDefinition[] = [
     defaultAct2WardrobeId: "w_aud_festival_neon",
     defaultAccessoryId: "acc_cyber_chrome",
   },
+  // ---- 6. ART-DECO SPEAKEASY & METROPOLITAN PLAZA ENSEMBLE (CRIMSON ECHOES) ----
+  {
+    id: "p_fem_elara_vance",
+    category: "female_lead",
+    name: "Elara Vance",
+    roleTitle: "Lead Actress / Mezzo-Soprano Vocalist (Speakeasy Siren)",
+    ethnicity: "North American / Mediterranean",
+    facialSpec: "Late 20s lead vocalist with sculpted cheekbones, piercing hazel eyes, smooth olive skin, dark wavy 1930s finger-wave bob, and magnetic expression",
+    photoUrl: "/assets/swarm/generated/job_1790786861133/preview_turn1B.jpg",
+    defaultAct1WardrobeId: "w_f1_emerald_siren_gown",
+    defaultAct2WardrobeId: "w_f2_silver_streamline_jumpsuit",
+    defaultAccessoryId: "acc_twotone_spats_fedora",
+  },
+  {
+    id: "p_fem_seraphina_dubois",
+    category: "female_lead",
+    name: "Seraphina Dubois",
+    roleTitle: "Co-Lead Actress / Soprano Vocalist (Jazz-Funk Co-Star)",
+    ethnicity: "Creole / North American",
+    facialSpec: "Early 30s co-lead vocalist with high cheekbones, luminous dark skin, feathered Art-Deco headpiece over short curls, and expressive gaze",
+    photoUrl: "/assets/swarm/generated/job_1790786861133/preview_turn1C.jpg",
+    defaultAct1WardrobeId: "w_f1_emerald_siren_gown",
+    defaultAct2WardrobeId: "w_f2_silver_streamline_jumpsuit",
+    defaultAccessoryId: "acc_twotone_spats_fedora",
+  },
+  {
+    id: "p_male_julian_thorne",
+    category: "male_lead",
+    name: "Julian Thorne",
+    roleTitle: "Male Lead Actor / Baritone Vocalist & Precision Dancer",
+    ethnicity: "North American",
+    facialSpec: "Mid 30s male lead with sharp jawline, intense dark eyes, impeccably groomed side-parted hair under a tilted white fedora, and charismatic swagger",
+    photoUrl: "/assets/swarm/generated/job_1790787479662/face_identity_anchor.jpg",
+    defaultAct1WardrobeId: "w_m1_ivory_chalkstripe_fedora",
+    defaultAct2WardrobeId: "w_m2_steel_grey_tuxedo",
+    defaultAccessoryId: "acc_twotone_spats_fedora",
+  },
+  {
+    id: "p_sup_syncopated_eight",
+    category: "supporting",
+    name: "The Syncopated Eight (Live Brass & Slap-Bass Band)",
+    roleTitle: "Supporting 1930s Speakeasy Brass, Upright Slap-Bass & Percussion Section",
+    ethnicity: "Multi-Ethnic Jazz Ensemble",
+    facialSpec: "Virtuoso 1930s speakeasy saxophone, trumpet, trombone, upright slap-bass, and snare rimshot musicians performing on the mahogany stage",
+    photoUrl: "/assets/swarm/generated/job_1790786861133/preview_turn2A.jpg",
+    defaultAct1WardrobeId: "w_sup_gold_musician",
+    defaultAct2WardrobeId: "w_sup_gold_musician",
+    defaultAccessoryId: "acc_twotone_spats_fedora",
+  },
+  {
+    id: "p_bg_shadow_dancers",
+    category: "background",
+    name: "The Shadow Dancers (8-Dancer V-Wedge Troupe)",
+    roleTitle: "Precision 8-Count Jazz-Funk & 45° Forward-Lean Ensemble",
+    ethnicity: "Global Dance Troupe",
+    facialSpec: "8 distinct male and female Art-Deco dancers executing synchronized V-wedge lock-step footwork and the 45-degree anti-gravity forward lean illusion",
+    photoUrl: "/assets/swarm/generated/job_1790786861133/preview_turn2B.jpg",
+    defaultAct1WardrobeId: "w_bg_monochrome_black",
+    defaultAct2WardrobeId: "w_bg_monochrome_black",
+    defaultAccessoryId: "acc_twotone_spats_fedora",
+  },
+  {
+    id: "p_aud_speakeasy_patrons",
+    category: "audience",
+    name: "Crimson Velvet Speakeasy VIPs & Plaza Witnesses",
+    roleTitle: "1930s Speakeasy Banquette Guests & Metropolitan Crowd",
+    ethnicity: "International Cosmopolitan",
+    facialSpec: "Stylish 1930s speakeasy patrons along crimson velvet booths and rain-slicked plaza onlookers reacting to the jukebox coin-toss and dance finale",
+    photoUrl: "/assets/swarm/generated/job_1790786861133/preview_turn2C.jpg",
+    defaultAct1WardrobeId: "w_aud_black_tie_gala",
+    defaultAct2WardrobeId: "w_aud_black_tie_gala",
+    defaultAccessoryId: "acc_twotone_spats_fedora",
+  },
 ];
 
 // ============================================================================
@@ -671,6 +752,240 @@ export const PERSONAS_CATALOG: PersonaDefinition[] = [
 // ============================================================================
 
 export const INITIAL_REELS_REPOSITORY: StudioReelRecord[] = [
+  {
+    id: "reel_crimson_echoes_lyria3_60s",
+    title: "Crimson Echoes, Ivory Dreams — Art-Deco Speakeasy Groove (Option 1: Omni 1.1 + Lyria 3 Pro 60s)",
+    status: "published",
+    progress: 100,
+    videoUrl: "/assets/swarm/generated/job_1790786861133/combined_60s.mp4",
+    durationId: "dur_60s",
+    countryId: "cnt_usa",
+    regionId: "reg_north_america",
+    languageId: "lang_english",
+    demographyId: "demo_north_american",
+    platformId: "plat_yt_shorts",
+    contentTypeId: "ctype_music_video",
+    genreId: "gen_art_deco_jazz_funk",
+    vocalId: "voc_duet",
+    venueId: "ven_art_deco_speakeasy",
+    lightingId: "lit_tungsten_to_dawn",
+    audioEngineId: "omni_lyria3",
+    storyline:
+      "Original 128 BPM B-Minor 1930s Art-Deco speakeasy jazz-funk & syncopated slap-bass dance reel (Option 1: Closed-Lips Eye/Body Acting + Continuous 60.0s Lyria 3 Pro Studio Song). Act I opens in The Crimson Velvet speakeasy with chiaroscuro venetian-blind shadow slashes, a coin-toss vintage jukebox ignition, and razor-sharp solo/duet footwork; Act II erupts onto the rain-slicked Azure Dawn metropolitan plaza with an 8-dancer V-wedge lock-step and 45-degree anti-gravity forward lean finale.",
+    lyrics:
+      "[Shot 01 • Female Lead] 'The rhythm calls, 128 BPM, can you feel the pulse?' (128 BPM)\n[Shot 02 • Male Lead] 'Shadows dance, secrets kept, in this velvet-lined escape.'\n[Shot 03 • Female Co-Lead] 'One coin, one choice, the night's about to ignite.'\n[Shot 04 • Duet (Female Lead & Male Lead)] 'City awakes, rain-kissed streets, our moment takes flight.'\n[Shot 05 • Female Lead & Co-Lead] 'Gravity's a whisper now, as we defy the dawn.'\n[Shot 06 • Full Vocal Ensemble] 'United in motion, a new day born, our legacy drawn!'",
+    selectedPersonaIds: {
+      female_lead: ["p_fem_elara_vance", "p_fem_seraphina_dubois"],
+      male_lead: ["p_male_julian_thorne"],
+      supporting: ["p_sup_syncopated_eight"],
+      background: ["p_bg_shadow_dancers"],
+      audience: ["p_aud_speakeasy_patrons"],
+    },
+    wardrobeOverrides: {
+      p_male_julian_thorne: {
+        act1Id: "w_m1_ivory_chalkstripe_fedora",
+        act2Id: "w_m2_steel_grey_tuxedo",
+        accessoryId: "acc_twotone_spats_fedora",
+      },
+      p_fem_elara_vance: {
+        act1Id: "w_f1_emerald_siren_gown",
+        act2Id: "w_f2_silver_streamline_jumpsuit",
+        accessoryId: "acc_twotone_spats_fedora",
+      },
+    },
+    shots: [
+      {
+        shotId: "shot_1",
+        shotNumber: 1,
+        timecode: "0:00–0:10",
+        act: 1,
+        cameraMoveId: "cam_push_in",
+        actionPrompt:
+          "35mm Anamorphic T1.8 Steadicam push-in inside The Crimson Velvet Art-Deco speakeasy with 3200K chiaroscuro venetian-blind shadow slashes as the Male Lead in an ivory chalk-stripe double-breasted suit and tilted white fedora executes reverse-glide footwork and a sharp coin-toss into the glowing vintage jukebox.",
+        wardrobeSummary: "Ivory Chalk-Stripe Double-Breasted Suit & Tilted White Fedora • Two-Tone Spats",
+        lyricLine: "[Shot 01 • Female Lead] 'The rhythm calls, 128 BPM, can you feel the pulse?' (128 BPM)",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790786861133/preview_turn1A.jpg",
+      },
+      {
+        shotId: "shot_2",
+        shotNumber: 2,
+        timecode: "0:10–0:20",
+        act: 1,
+        cameraMoveId: "cam_dolly_track",
+        actionPrompt:
+          "50mm Anamorphic T1.5 lateral tracking shot past crimson velvet banquettes and polished mahogany bar as the Female Lead in an emerald bias-cut silk gown emerges from the shadows with a 360-degree spin into mirrored jazz-funk footwork.",
+        wardrobeSummary: "Emerald Silk Bias-Cut Siren Gown • Ivory Chalk-Stripe Suit & White Fedora",
+        lyricLine: "[Shot 02 • Male Lead] 'Shadows dance, secrets kept, in this velvet-lined escape.'",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790786861133/preview_turn1B.jpg",
+      },
+      {
+        shotId: "shot_3",
+        shotNumber: 3,
+        timecode: "0:20–0:30",
+        act: 1,
+        cameraMoveId: "cam_crane_sweep",
+        actionPrompt:
+          "85mm Anamorphic T2.0 crane rise under warm amber speakeasy spotlights as the Female Co-Lead and brass-backed jazz ensemble form a tight semi-circle, pivoting on the 8-count snare rimshot.",
+        wardrobeSummary: "Emerald Silk Gown • Sapphire Beaded Flapper Dress • Ivory Chalk-Stripe Suit",
+        lyricLine: "[Shot 03 • Female Co-Lead] 'One coin, one choice, the night's about to ignite.'",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790786861133/preview_turn1C.jpg",
+      },
+      {
+        shotId: "shot_4",
+        shotNumber: 4,
+        timecode: "0:30–0:40",
+        act: 2,
+        cameraMoveId: "cam_orbit_360",
+        actionPrompt:
+          "35mm Anamorphic T2.8 sweeping drone orbit across the rain-slicked Azure Dawn Art-Deco metropolitan plaza at pre-dawn as the Male Lead in a steel-grey modernist tuxedo and Female Lead in a silver metallic jumpsuit lead an 8-dancer V-wedge lock-step.",
+        wardrobeSummary: "Steel-Grey Modernist Peak-Lapel Tuxedo • Silver Metallic Streamline Jumpsuit",
+        lyricLine: "[Shot 04 • Duet (Female Lead & Male Lead)] 'City awakes, rain-kissed streets, our moment takes flight.'",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790786861133/preview_turn2A.jpg",
+      },
+      {
+        shotId: "shot_5",
+        shotNumber: 5,
+        timecode: "0:40–0:50",
+        act: 2,
+        cameraMoveId: "cam_closeup_85mm",
+        actionPrompt:
+          "50mm Anamorphic T1.5 gimbal close-up on the wet reflective granite stage as the Female Lead and Co-Lead execute rapid-fire synchronized footwork and sharp geometric arm isolations under cool 4500K pre-dawn key light.",
+        wardrobeSummary: "Silver Metallic Streamline Jumpsuit • Crisp White Double-Breasted Suit",
+        lyricLine: "[Shot 05 • Female Lead & Co-Lead] 'Gravity's a whisper now, as we defy the dawn.'",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790786861133/preview_turn2B.jpg",
+      },
+      {
+        shotId: "shot_6",
+        shotNumber: 6,
+        timecode: "0:50–1:00",
+        act: 2,
+        cameraMoveId: "cam_drone_finale",
+        actionPrompt:
+          "24mm Wide Anamorphic T2.8 Technocrane pullback across the towering Art-Deco plaza as the entire 8-dancer ensemble converges into a synchronized 45-degree anti-gravity forward lean illusion and holds the triumphant dawn apex tableau.",
+        wardrobeSummary: "Steel-Grey Modernist Tuxedo • Silver Metallic Jumpsuit • Two-Tone Spats",
+        lyricLine: "[Shot 06 • Full Vocal Ensemble] 'United in motion, a new day born, our legacy drawn!'",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790786861133/preview_turn2C.jpg",
+      },
+    ],
+    updatedAt: "Just now • Option 1: Omni 1.1 Flash + Lyria 3 Pro Preview 60.0s Studio Song (-14.0 LUFS)",
+  },
+  {
+    id: "reel_crimson_echoes_native_60s",
+    title: "Crimson Echoes, Ivory Dreams — Art-Deco Speakeasy Groove (Option 2: Omni 1.1 Native Vocal Lip-Sync 60s)",
+    status: "published",
+    progress: 100,
+    videoUrl: "/assets/swarm/generated/job_1790787479662/combined_60s.mp4",
+    durationId: "dur_60s",
+    countryId: "cnt_usa",
+    regionId: "reg_north_america",
+    languageId: "lang_english",
+    demographyId: "demo_north_american",
+    platformId: "plat_yt_shorts",
+    contentTypeId: "ctype_music_video",
+    genreId: "gen_art_deco_jazz_funk",
+    vocalId: "voc_duet",
+    venueId: "ven_art_deco_speakeasy",
+    lightingId: "lit_tungsten_to_dawn",
+    audioEngineId: "omni_native",
+    storyline:
+      "Original 128 BPM B-Minor 1930s Art-Deco speakeasy jazz-funk & syncopated slap-bass dance reel (Option 2: Single-Model Omni 1.1 Native Video + Synchronized On-Camera Vocal Lip-Sync). Verified 54 audible sung/spoken words via models/gemini-3.5-transcribe across 6 anamorphic shots from The Crimson Velvet speakeasy to the rain-slicked Azure Dawn metropolitan plaza.",
+    lyrics:
+      "[Shot 01 • Female Lead] 'The rhythm calls, 128 BPM, can you feel the pulse?' (128 BPM)\n[Shot 02 • Male Lead] 'Shadows dance, secrets kept, in this velvet-lined escape.'\n[Shot 03 • Female Co-Lead] 'One coin, one choice, the night's about to ignite.'\n[Shot 04 • Duet (Female Lead & Male Lead)] 'City awakes, rain-kissed streets, our moment takes flight.'\n[Shot 05 • Female Lead & Co-Lead] 'Gravity's a whisper now, as we defy the dawn.'\n[Shot 06 • Full Vocal Ensemble] 'United in motion, a new day born, our legacy drawn!'",
+    selectedPersonaIds: {
+      female_lead: ["p_fem_elara_vance", "p_fem_seraphina_dubois"],
+      male_lead: ["p_male_julian_thorne"],
+      supporting: ["p_sup_syncopated_eight"],
+      background: ["p_bg_shadow_dancers"],
+      audience: ["p_aud_speakeasy_patrons"],
+    },
+    wardrobeOverrides: {
+      p_male_julian_thorne: {
+        act1Id: "w_m1_ivory_chalkstripe_fedora",
+        act2Id: "w_m2_steel_grey_tuxedo",
+        accessoryId: "acc_twotone_spats_fedora",
+      },
+      p_fem_elara_vance: {
+        act1Id: "w_f1_emerald_siren_gown",
+        act2Id: "w_f2_silver_streamline_jumpsuit",
+        accessoryId: "acc_twotone_spats_fedora",
+      },
+    },
+    shots: [
+      {
+        shotId: "shot_1",
+        shotNumber: 1,
+        timecode: "0:00–0:10",
+        act: 1,
+        cameraMoveId: "cam_push_in",
+        actionPrompt:
+          "35mm Anamorphic T1.8 Steadicam push-in inside The Crimson Velvet Art-Deco speakeasy with chiaroscuro venetian-blind shadow slashes as the Male Lead executes reverse-glide footwork and a coin-toss jukebox ignition while the Female Lead sings on camera with native lip-sync.",
+        wardrobeSummary: "Ivory Chalk-Stripe Double-Breasted Suit & Tilted White Fedora • Emerald Silk Gown",
+        lyricLine: "[Shot 01 • Female Lead] 'The rhythm calls, 128 BPM, can you feel the pulse?' (128 BPM)",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790787479662/preview_turn1A.jpg",
+      },
+      {
+        shotId: "shot_2",
+        shotNumber: 2,
+        timecode: "0:10–0:20",
+        act: 1,
+        cameraMoveId: "cam_dolly_track",
+        actionPrompt:
+          "50mm Anamorphic T1.5 tracking shot across the mahogany bar and crimson velvet booths as the Female Lead spins out of the shadows and the Male Lead sings with rich baritone lip-sync.",
+        wardrobeSummary: "Ivory Chalk-Stripe Suit & White Fedora • Emerald Silk Bias-Cut Siren Gown",
+        lyricLine: "[Shot 02 • Male Lead] 'Shadows dance, secrets kept, in this velvet-lined escape.'",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790787479662/preview_turn1B.jpg",
+      },
+      {
+        shotId: "shot_3",
+        shotNumber: 3,
+        timecode: "0:20–0:30",
+        act: 1,
+        cameraMoveId: "cam_crane_rise",
+        actionPrompt:
+          "85mm Anamorphic T2.0 crane shot ascending over the speakeasy floor as the Female Co-Lead sings on camera backed by The Syncopated Eight brass section and synchronized shoulder shimmies.",
+        wardrobeSummary: "Sapphire Beaded Flapper Dress • Ivory Chalk-Stripe Suit • Two-Tone Spats",
+        lyricLine: "[Shot 03 • Female Co-Lead] 'One coin, one choice, the night's about to ignite.'",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790787479662/preview_turn1C.jpg",
+      },
+      {
+        shotId: "shot_4",
+        shotNumber: 4,
+        timecode: "0:30–0:40",
+        act: 2,
+        cameraMoveId: "cam_drone_orbit",
+        actionPrompt:
+          "35mm Anamorphic T2.8 sweeping drone shot over the rain-slicked Azure Dawn Art-Deco plaza as the Male Lead and Female Lead sing their duet in unison while leading the 8-dancer V-wedge lock-step.",
+        wardrobeSummary: "Steel-Grey Modernist Peak-Lapel Tuxedo • Silver Metallic Streamline Jumpsuit",
+        lyricLine: "[Shot 04 • Duet (Female Lead & Male Lead)] 'City awakes, rain-kissed streets, our moment takes flight.'",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790787479662/preview_turn2A.jpg",
+      },
+      {
+        shotId: "shot_5",
+        shotNumber: 5,
+        timecode: "0:40–0:50",
+        act: 2,
+        cameraMoveId: "cam_closeup_85mm",
+        actionPrompt:
+          "50mm Anamorphic T1.5 gimbal close-up on the wet granite plaza as the Female Lead and Co-Lead deliver harmonized vocals on camera amidst rapid-fire tap footwork.",
+        wardrobeSummary: "Silver Metallic Streamline Jumpsuit • Crisp White Double-Breasted Suit",
+        lyricLine: "[Shot 05 • Female Lead & Co-Lead] 'Gravity's a whisper now, as we defy the dawn.'",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790787479662/preview_turn2B.jpg",
+      },
+      {
+        shotId: "shot_6",
+        shotNumber: 6,
+        timecode: "0:50–1:00",
+        act: 2,
+        cameraMoveId: "cam_crane_rise",
+        actionPrompt:
+          "24mm Wide Anamorphic T2.8 Technocrane pullback across the rain-slicked plaza as the full ensemble executes the 45-degree anti-gravity forward lean illusion while singing the final chorus hook.",
+        wardrobeSummary: "Steel-Grey Modernist Tuxedo • Silver Metallic Jumpsuit • Two-Tone Spats",
+        lyricLine: "[Shot 06 • Full Vocal Ensemble] 'United in motion, a new day born, our legacy drawn!'",
+        previewPhotoUrl: "/assets/swarm/generated/job_1790787479662/preview_turn2C.jpg",
+      },
+    ],
+    updatedAt: "Just now • Option 2: Omni 1.1 Flash Native 48kHz Vocal Lip-Sync (54 Verified Sung Words)",
+  },
   {
     id: "reel_ten_billionth_pulse_120s",
     title: "The Ten Billionth Pulse — Beyond Control (120s 4-Act Spoken-Dialogue Director's Cut)",

@@ -70,10 +70,12 @@ export default function SwarmMUIPage() {
   const defaultMasterReel = INITIAL_REELS_REPOSITORY[0];
   const [title, setTitle] = useState<string>(defaultMasterReel.title);
   const [storyline, setStoryline] = useState<string>(
-    "Photorealistic 35mm live-action 4-Act (120.0s, 12-Shot) dramatic short film set in a rain-slicked Milanese apartment block and central stone courtyard as the global population ledger approaches 9,999,999,999. Act I (0:00–0:30): Senior Census Inspector Matteo Conti and Junior Auditor Sofia Lindqvist arrive at Apartment 4B, where expectant mother Elena Moretti and retired demographer Dr. Lorenzo Ferri protect an unregistered life behind a glowing glass koi aquarium. Act II (0:30–1:00): Confronted with Elena's unwavering human gaze, Matteo unpins his brass badge and defies the census law. Act III (1:00–1:30): Constitutional Counsel Marcus Sterling and Cryptographer Aria Chen broadcast the unsealed ledger across Milan's cathedral network. Act IV (1:30–2:00): At 5400K dawn, the entire courtyard stands united in the morning rain, unregistered and free."
+    defaultMasterReel.storyline ||
+      "Original 128 BPM B-Minor 1930s Art-Deco speakeasy jazz-funk & syncopated slap-bass dance reel (Option 1: Closed-Lips Eye/Body Acting + Continuous 60.0s Lyria 3 Pro Studio Song). Act I opens in The Crimson Velvet speakeasy with chiaroscuro venetian-blind shadow slashes, a coin-toss vintage jukebox ignition, and razor-sharp solo/duet footwork; Act II erupts onto the rain-slicked Azure Dawn metropolitan plaza with an 8-dancer V-wedge lock-step and 45-degree anti-gravity forward lean finale."
   );
   const [compiledConceptDirective, setCompiledConceptDirective] = useState<string>(
-    `Photorealistic 4-Act 35mm live-action cinema short film ("${defaultMasterReel.title}", 120.0s @ 24/1 CFR) shot on ARRI Alexa Mini LF with Panavision Primo 35mm/50mm/85mm prime lenses and Kodak Vision3 500T film grain in Milan, Italy, featuring 6 distinct spoken-dialogue characters (Charon, Aoede, Kore, Fenrir, Puck, Leda) and an acoustic cello + solo piano score at 92 BPM in D Minor.`
+    defaultMasterReel.storyline ||
+      `Photorealistic 2-Act 35mm Anamorphic music video ("${defaultMasterReel.title}", 60.0s @ 24/1 CFR) set in The Crimson Velvet 1930s Art-Deco speakeasy and rain-slicked Azure Dawn metropolitan plaza at 128 BPM in B Minor.`
   );
   const [countryId, setCountryId] = useState<string>(defaultMasterReel.countryId);
   const [regionId, setRegionId] = useState<string>(defaultMasterReel.regionId);
@@ -84,11 +86,13 @@ export default function SwarmMUIPage() {
   const [durationId, setDurationId] = useState<string>(defaultMasterReel.durationId);
   const [genreId, setGenreId] = useState<string>(defaultMasterReel.genreId);
   const [vocalId, setVocalId] = useState<string>(defaultMasterReel.vocalId);
-  const [audioEngineId, setAudioEngineId] = useState<"omni_lyria3" | "omni_native">("omni_native");
+  const [audioEngineId, setAudioEngineId] = useState<"omni_lyria3" | "omni_native">(
+    (defaultMasterReel.audioEngineId as "omni_lyria3" | "omni_native") || "omni_lyria3"
+  );
   const [venueId, setVenueId] = useState<string>(defaultMasterReel.venueId);
   const [lightingId, setLightingId] = useState<string>(defaultMasterReel.lightingId);
   const [lyrics, setLyrics] = useState<string>(
-    defaultMasterReel.shots.map((s) => s.lyricLine).join("\n")
+    defaultMasterReel.lyrics || defaultMasterReel.shots.map((s) => s.lyricLine).join("\n")
   );
 
   // Dynamic Catalog States (Automatically expanded whenever user enters a new prompt!)
@@ -112,25 +116,37 @@ export default function SwarmMUIPage() {
   const defaultSupPersona = getById(PERSONAS_CATALOG, defaultMasterReel.selectedPersonaIds.supporting[0]);
   const defaultBgPersona = getById(PERSONAS_CATALOG, defaultMasterReel.selectedPersonaIds.background[0]);
   const defaultAudPersona = getById(PERSONAS_CATALOG, defaultMasterReel.selectedPersonaIds.audience[0]);
+  const defaultFemOverride = defaultMasterReel.wardrobeOverrides?.[defaultFemPersona.id];
+  const defaultMaleOverride = defaultMasterReel.wardrobeOverrides?.[defaultMalePersona.id];
 
   // Wardrobe IDs (Act I, Act II, Accessories) derived from defaultMasterReel personas
-  const [womenAct1Id, setWomenAct1Id] = useState<string>(defaultFemPersona.defaultAct1WardrobeId);
-  const [womenAct2Id, setWomenAct2Id] = useState<string>(defaultFemPersona.defaultAct2WardrobeId);
-  const [menAct1Id, setMenAct1Id] = useState<string>(defaultMalePersona.defaultAct1WardrobeId);
-  const [menAct2Id, setMenAct2Id] = useState<string>(defaultMalePersona.defaultAct2WardrobeId);
+  const [womenAct1Id, setWomenAct1Id] = useState<string>(
+    defaultFemOverride?.act1Id || defaultFemPersona.defaultAct1WardrobeId
+  );
+  const [womenAct2Id, setWomenAct2Id] = useState<string>(
+    defaultFemOverride?.act2Id || defaultFemPersona.defaultAct2WardrobeId
+  );
+  const [menAct1Id, setMenAct1Id] = useState<string>(
+    defaultMaleOverride?.act1Id || defaultMalePersona.defaultAct1WardrobeId
+  );
+  const [menAct2Id, setMenAct2Id] = useState<string>(
+    defaultMaleOverride?.act2Id || defaultMalePersona.defaultAct2WardrobeId
+  );
   const [supportingWardrobeId, setSupportingWardrobeId] = useState<string>(defaultSupPersona.defaultAct1WardrobeId);
   const [backgroundWardrobeId, setBackgroundWardrobeId] = useState<string>(defaultBgPersona.defaultAct1WardrobeId);
   const [audienceWardrobeId, setAudienceWardrobeId] = useState<string>(defaultAudPersona.defaultAct1WardrobeId);
-  const [accessoryId, setAccessoryId] = useState<string>(defaultFemPersona.defaultAccessoryId);
-  const [bpm, setBpm] = useState<number>(92);
-  const [musicalKey, setMusicalKey] = useState<string>("D Minor");
+  const [accessoryId, setAccessoryId] = useState<string>(
+    defaultMaleOverride?.accessoryId || defaultFemOverride?.accessoryId || defaultFemPersona.defaultAccessoryId
+  );
+  const [bpm, setBpm] = useState<number>(128);
+  const [musicalKey, setMusicalKey] = useState<string>("B Minor");
 
   // Additional Synthesized Dimensions (Background Scenery, Human Emotions, Voice Type, Choreography, Optics, Contrast, Instruments)
   const [backgroundEnvironment, setBackgroundEnvironment] = useState<string>(
     getById(VENUES_CATALOG, defaultMasterReel.venueId)?.promptSpec || ""
   );
   const [humanEmotions, setHumanEmotions] = useState<string>(
-    "Act I–II: Quiet maternal resolve, moral conflict, natural micro-expressions, and unblinking eye contact across the oak table → Act III–IV: Encrypted broadcast defiance, cathartic moral awakening, and dignified collective resilience in the dawn rain"
+    "Act I: Intrigue, playful challenge, confident swagger, and sharp fedora-brim eye contact under chiaroscuro venetian-blind shadows → Act II: Determined resolve, exhilaration, synchronized V-wedge power, and collective triumph on the rain-slicked plaza"
   );
   const [shotEmotions, setShotEmotions] = useState<string[]>(
     defaultMasterReel.shots.map(
@@ -138,10 +154,10 @@ export default function SwarmMUIPage() {
     )
   );
   const [voiceType, setVoiceType] = useState<string>(
-    "48,000 Hz 6-Voice Spoken Dialogue & European Cinema Score (Charon, Aoede, Kore, Fenrir, Puck, Leda + Solo Stradivarius Cello & Felt Piano at 92 BPM in D Minor; -14.0 LUFS EBU R128)"
+    "Rich, resonant baritone for Male Lead with slight room plate reverb; sultry, smoky mezzo-soprano for Female Lead; bright soprano for Female Co-Lead — 48,000 Hz stereo studio quality synchronized to 128 BPM B Minor jazz-funk (-14.0 LUFS EBU R128)"
   );
   const [choreography, setChoreography] = useState<string>(
-    "Act I–II: Measured live-action dramatic blocking along the crimson apartment corridor, oak-table confrontation, and 00:30 badge surrender → Act III–IV: Geneva tribunal broadcast, cathedral acoustic relay, and dawn courtyard assembly"
+    "Act I: Razor-sharp solo & partner jazz-funk footwork with reverse-glide isolation and coin-toss jukebox ignition → Act II: 8-dancer V-wedge lock-step, rapid-fire tap syncopation, and 45-degree anti-gravity forward lean illusion on the wet plaza"
   );
   const [shotChoreography, setShotChoreography] = useState<string[]>(
     defaultMasterReel.shots.map(
@@ -151,15 +167,15 @@ export default function SwarmMUIPage() {
   const [shotLightingAndOptics, setShotLightingAndOptics] = useState<string[]>(
     defaultMasterReel.shots.map((s, idx) => {
       const cam = getById(CAMERA_MOVES_CATALOG, s.cameraMoveId);
-      const kelvin = idx < 6 ? "3200K warm tungsten practicals (4:1 contrast ratio)" : "5400K overcast dawn daylight + wet stone reflections (5:1 contrast ratio)";
-      return `Shot ${String(s.shotNumber).padStart(2, "0")} (${s.timecode}): 35mm Panavision Primo Prime @ T1.8, ${cam.label} (${cam.promptSpec}), ${kelvin}`;
+      const kelvin = idx < 3 ? "3200K warm speakeasy tungsten + chiaroscuro venetian-blind shadow slashes (4:1 contrast ratio)" : "4500K–5400K pre-dawn wet granite reflections & rim spotlights (3:1 contrast ratio)";
+      return `Shot ${String(s.shotNumber).padStart(2, "0")} (${s.timecode}): 35mm/50mm/85mm Panavision Anamorphic Prime @ T1.8, ${cam.label} (${cam.promptSpec}), ${kelvin}`;
     })
   );
   const [figureGroundContrastSpec, setFigureGroundContrastSpec] = useState<string>(
-    "Enforces >= 4.0:1 figure-ground luminance & chromatic separation across all 12 shots: oatmeal merino wool and dark olive wool trench separate cleanly against crimson corridor walls and warm oak bookshelves, while dawn coats stand out with 5400K rim light against slate-grey courtyard stone."
+    "Enforces >= 4.0:1 figure-ground luminance & chromatic separation across all 6 shots: high-luminance ivory chalk-stripe wool, white fedora, and emerald bias-cut silk pop cleanly against dark mahogany and crimson velvet in Act I, while silver metallic lamé and steel-grey peak-lapel tailoring separate sharply from wet obsidian granite in Act II."
   );
   const [instrumentAndStagePropsSpec, setInstrumentAndStagePropsSpec] = useState<string>(
-    getById(ACCESSORIES_CATALOG, defaultFemPersona.defaultAccessoryId)?.promptSpec || ""
+    getById(ACCESSORIES_CATALOG, defaultMaleOverride?.accessoryId || defaultFemPersona.defaultAccessoryId)?.promptSpec || ""
   );
   const [creativeElevation, setCreativeElevation] = useState<{
     sourceType: "youtube_reference" | "original_prompt";
@@ -181,24 +197,33 @@ export default function SwarmMUIPage() {
     innovationScore: string;
     judgeReceipt?: IndependentJudgeReceipt;
   }>({
-    sourceType: "original_prompt",
-    youtubeMetadata: null,
+    sourceType: "youtube_reference",
+    youtubeMetadata: {
+      videoId: "h_D3VFfhvs4",
+      url: "https://www.youtube.com/watch?v=h_D3VFfhvs4",
+      title: "Crimson Echoes, Ivory Dreams — 1930s Art-Deco Speakeasy Groove (Original Copyright-Safe Elevation)",
+      channelName: "Zyvoriq Autonomous 12-Agent Studio",
+      descriptionSnippet:
+        "Original 128 BPM B-Minor Art-Deco speakeasy jazz-funk & syncopated slap-bass dance production available in both Option 1 (Omni 1.1 + Lyria 3 Pro 60s Studio Song) and Option 2 (Omni 1.1 Native Vocal Lip-Sync).",
+      keywords: ["Art-Deco Speakeasy", "128 BPM Jazz-Funk", "Ivory Chalk-Stripe Suit", "Anti-Gravity Lean", "Jukebox Coin Toss"],
+      thumbnailUrl: "/assets/swarm/generated/job_1790786861133/preview_turn1A.jpg",
+    },
     deconstructedCore:
-      "Constructs a 120.0-second (4-Act, 12-Shot) 35mm live-action European cinema drama set at global population 9,999,999,999 with 6 distinct spoken-dialogue characters, real human skin textures, and tactile architectural locations.",
+      "Deconstructs the iconic 1930s noir nightclub aesthetic, syncopated bassline, coin-toss jukebox ignition, and geometric ensemble choreography into a 100% original, copyright-safe 60.0s 2-Act Art-Deco Jazz-Funk production in B Minor at 128 BPM.",
     identifiedLimitations: [
-      "Conventional short-form AI reels are limited to 26–60 seconds of silent or music-only montage without spoken character dialogue",
-      "Standard 2-act clips lack a 4-act dramatic structure capable of developing institutional conflict, personal sacrifice, whistleblowing, and collective liberation",
-      "Typical productions reuse a single voice or ambient drone instead of mixing 6 distinct character voices (Charon, Aoede, Kore, Fenrir, Puck, Leda) over a 48kHz acoustic cello & piano score",
+      "Legacy 4:3 SD/HD source footage lacks modern 9:16 vertical anamorphic framing and 48,000 Hz EBU R128 (-14.0 LUFS) studio stem separation",
+      "Single-room nightclub staging remains confined indoors without an architectural Act I → Act II spatial transformation",
+      "Standard AI video generators cannot simultaneously offer both a Closed-Lips Nayan-Abhinaya + Lyria 3 Pro studio song master (Option 1) and a single-model native lip-sync vocal master (Option 2)",
     ],
     surpassStrategy:
-      "Delivers a complete 120.0-second (2,880-frame @ 24/1 CFR) 4-Act Director's Cut across 6 photorealistic characters with 12 bespoke spoken-dialogue turns mastered at -14.0 LUFS.",
+      "Renders both Option 1 (Omni 1.1 + Lyria 3 Pro continuous 60.0s studio song with closed-lips eye/body acting) and Option 2 (Omni 1.1 native 48kHz on-camera vocal lip-sync with 54 verified sung words) across 6 Panavision Anamorphic shots.",
     act1ToAct2Twist:
-      "Inspector Matteo Conti unpins his brass Census Officer badge in Act II, triggering Counsel Marcus Sterling and Cryptographer Aria Chen's city-wide tribunal broadcast in Act III and the rain-washed Milanese courtyard liberation in Act IV.",
+      "At 00:30, the vintage jukebox coin-toss inside The Crimson Velvet speakeasy shatters the indoor shadows and launches the 8-dancer ensemble onto the rain-slicked Azure Dawn metropolitan plaza for a V-wedge lock-step and 45-degree forward lean finale.",
     sonicInnovation:
-      "92 BPM (D Minor) 48,000 Hz stereo 6-voice spoken-dialogue stem mixed over solo acoustic cello, felt piano chords, and tactile rain foley (-14.0 LUFS).",
+      "128 BPM (B Minor) syncopated slap-bass, punchy 1930s brass section stabs, crisp snare rimshots, and male baritone + female mezzo-soprano duet vocals mastered at -14.0 LUFS.",
     choreographyAndCameraUpgrade:
-      "12-shot live-action Panavision Primo progression across 4 acts (0:00–2:00) combining 35mm Steadicam corridor tracking, 50mm 180° oak-table orbits, 85mm T1.4 close-ups, and 24mm Techno-crane courtyard pull-backs.",
-    innovationScore: "10.0 / 10 • Verified 120.0s 4-Act Spoken-Dialogue Director's Cut",
+      "6-shot Panavision Anamorphic progression (35mm T1.8 Steadicam push-in, 50mm lateral tracking, 85mm crane rise, 35mm sweeping drone orbit, 50mm gimbal close-up, and 24mm Technocrane pullback).",
+    innovationScore: "9.9 / 10 • Dual-Engine 60.0s Art-Deco Speakeasy Master (Option 1 + Option 2)",
   });
 
   const promptDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
