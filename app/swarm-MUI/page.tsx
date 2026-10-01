@@ -1,4079 +1,3215 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import {
-  PersonaCategory,
-  PERSONAS_CATALOG,
-  WARDROBE_CATALOG,
-  ACCESSORIES_CATALOG,
-  COUNTRIES_CATALOG,
-  REGIONS_CATALOG,
-  LANGUAGES_CATALOG,
-  DEMOGRAPHIES_CATALOG,
-  PLATFORMS_CATALOG,
-  CONTENT_TYPES_CATALOG,
-  DURATIONS_CATALOG,
-  GENRES_CATALOG,
-  VOCALS_CATALOG,
-  AUDIO_ENGINES_CATALOG,
-  VENUES_CATALOG,
-  LIGHTING_CATALOG,
-  CAMERA_MOVES_CATALOG,
-  INITIAL_REELS_REPOSITORY,
-  StudioReelRecord,
-  ShotSpec,
-  getById,
-  dedupeById,
-  dedupeSelectedPersonaIds,
-} from "@/lib/studioCatalog";
-import {
-  getDanceMusicVideoAgents,
-  SwarmAgentStatus,
-  IndependentJudgeReceipt,
-} from "@/lib/swarm/engine";
-import { StudioWorkflowMode } from "@/components/LeftIconRail";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import Link from "next/link";
 import {
   Sparkles,
-  Play,
-  Download,
-  ArrowRight,
-  ArrowLeft,
-  Check,
-  Users,
-  RefreshCw,
-  AlertTriangle,
-  Clock,
   CheckCircle2,
-  Bookmark,
-  Trash2,
+  AlertCircle,
+  Undo2,
+  Redo2,
+  HelpCircle,
+  Sun,
+  Moon,
+  Send,
+  FolderOpen,
+  Palette,
+  LayoutTemplate,
+  PlusCircle,
+  Volume2,
+  Eye,
+  Calendar,
+  Download,
+  Copy,
+  ChevronDown,
+  ChevronUp,
+  Film,
+  ExternalLink,
+  Maximize2,
+  Minimize2,
+  Subtitles,
 } from "lucide-react";
+import {
+  StudioButton,
+  StudioInput,
+  StudioSelect,
+  StudioChip,
+  StudioTooltip,
+  StudioTabs,
+  StudioDialog,
+  StudioSheet,
+  StudioToast,
+} from "@/components/studio-ux/Primitives";
+import {
+  SelectionToolbar,
+  DiffView,
+  CheckItemCard,
+  VariationGrid,
+  VideoTimelineEditor,
+  QuickActionType,
+  PendingDiffSuggestion,
+  ContentCheckIssue,
+  PostVariation,
+  VideoSegmentSpec,
+} from "@/components/studio-ux/Patterns";
 
-export default function SwarmMUIPage() {
-  const router = useRouter();
+// ============================================================================
+// TYPES & PLATFORM RULES (Phase 1 & Phase 3 + Netflix Cinema Upgrades)
+// ============================================================================
+type PlatformId = "reels_9_16" | "youtube_16_9" | "carousel_4_5" | "linkedin_1_1";
 
-  // ==========================================================================
-  // 1. ACTIVE WORKFLOW & SUB-STEP STATE (ZERO AMBIGUITY)
-  // ==========================================================================
-  const [workflow, setWorkflow] = useState<StudioWorkflowMode>("create");
-  const [createStep, setCreateStep] = useState<1 | 2 | 3 | 4>(1);
-  const [canvasTab, setCanvasTab] = useState<
-    "ensemble" | "shots" | "prompt" | "agents" | "video"
-  >("ensemble");
-  const [statusBanner, setStatusBanner] = useState<string>("");
-  const [customMasterPromptOverride, setCustomMasterPromptOverride] = useState<string>("");
-  const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
+interface PlatformSpec {
+  id: PlatformId;
+  shortcut: string;
+  label: string;
+  shortName: string;
+  aspectRatioCss: string;
+  aspectBadge: string;
+  charLimit: number;
+  foldChars: number;
+  maxHashtags: number;
+}
 
-  // ==========================================================================
-  // 2. STRUCTURED SELECTION STATE DERIVED FROM CATALOG MASTER (ZERO HARDCODING)
-  // ==========================================================================
-  const defaultMasterReel = INITIAL_REELS_REPOSITORY[0];
-  const [title, setTitle] = useState<string>(defaultMasterReel.title);
-  const [storyline, setStoryline] = useState<string>(
-    defaultMasterReel.storyline ||
-      "Original 128 BPM B-Minor 1930s Art-Deco speakeasy jazz-funk & syncopated slap-bass dance reel (Option 1: Closed-Lips Eye/Body Acting + Continuous 60.0s Lyria 3 Pro Studio Song). Act I opens in The Crimson Velvet speakeasy with chiaroscuro venetian-blind shadow slashes, a coin-toss vintage jukebox ignition, and razor-sharp solo/duet footwork; Act II erupts onto the rain-slicked Azure Dawn metropolitan plaza with an 8-dancer V-wedge lock-step and 45-degree anti-gravity forward lean finale."
-  );
-  const [compiledConceptDirective, setCompiledConceptDirective] = useState<string>(
-    defaultMasterReel.storyline ||
-      `Photorealistic 2-Act 35mm Anamorphic music video ("${defaultMasterReel.title}", 60.0s @ 24/1 CFR) set in The Crimson Velvet 1930s Art-Deco speakeasy and rain-slicked Azure Dawn metropolitan plaza at 128 BPM in B Minor.`
-  );
-  const [countryId, setCountryId] = useState<string>(defaultMasterReel.countryId);
-  const [regionId, setRegionId] = useState<string>(defaultMasterReel.regionId);
-  const [languageId, setLanguageId] = useState<string>(defaultMasterReel.languageId);
-  const [demographyId, setDemographyId] = useState<string>(defaultMasterReel.demographyId);
-  const [platformId, setPlatformId] = useState<string>(defaultMasterReel.platformId);
-  const [contentTypeId, setContentTypeId] = useState<string>(defaultMasterReel.contentTypeId);
-  const [durationId, setDurationId] = useState<string>(defaultMasterReel.durationId);
-  const [genreId, setGenreId] = useState<string>(defaultMasterReel.genreId);
-  const [vocalId, setVocalId] = useState<string>(defaultMasterReel.vocalId);
-  const [audioEngineId, setAudioEngineId] = useState<"omni_lyria3" | "omni_native">(
-    (defaultMasterReel.audioEngineId as "omni_lyria3" | "omni_native") || "omni_lyria3"
-  );
-  const [venueId, setVenueId] = useState<string>(defaultMasterReel.venueId);
-  const [lightingId, setLightingId] = useState<string>(defaultMasterReel.lightingId);
-  const [lyrics, setLyrics] = useState<string>(
-    defaultMasterReel.lyrics || defaultMasterReel.shots.map((s) => s.lyricLine).join("\n")
-  );
+const PLATFORMS: PlatformSpec[] = [
+  {
+    id: "reels_9_16",
+    shortcut: "1",
+    label: "9:16 Reels / TikTok",
+    shortName: "Reels / TikTok",
+    aspectRatioCss: "9 / 16",
+    aspectBadge: "9:16 Vertical",
+    charLimit: 2200,
+    foldChars: 125,
+    maxHashtags: 8,
+  },
+  {
+    id: "youtube_16_9",
+    shortcut: "2",
+    label: "16:9 YouTube Cinema",
+    shortName: "YouTube 16:9",
+    aspectRatioCss: "16 / 9",
+    aspectBadge: "16:9 Widescreen",
+    charLimit: 5000,
+    foldChars: 200,
+    maxHashtags: 15,
+  },
+  {
+    id: "carousel_4_5",
+    shortcut: "3",
+    label: "4:5 IG Carousel",
+    shortName: "IG Carousel",
+    aspectRatioCss: "4 / 5",
+    aspectBadge: "4:5 Portrait",
+    charLimit: 2200,
+    foldChars: 125,
+    maxHashtags: 10,
+  },
+  {
+    id: "linkedin_1_1",
+    shortcut: "4",
+    label: "1:1 LinkedIn / X",
+    shortName: "LinkedIn / X",
+    aspectRatioCss: "1 / 1",
+    aspectBadge: "1:1 Square · 280c",
+    charLimit: 280,
+    foldChars: 140,
+    maxHashtags: 5,
+  },
+];
 
-  // Dynamic Catalog States (Automatically expanded whenever user enters a new prompt!)
-  const [personasCatalog, setPersonasCatalog] =
-    useState< typeof PERSONAS_CATALOG >(PERSONAS_CATALOG);
-  const [wardrobeCatalog, setWardrobeCatalog] =
-    useState< typeof WARDROBE_CATALOG >(WARDROBE_CATALOG);
-  const [accessoriesCatalog, setAccessoriesCatalog] =
-    useState< typeof ACCESSORIES_CATALOG >(ACCESSORIES_CATALOG);
-  const [venuesCatalog, setVenuesCatalog] =
-    useState< typeof VENUES_CATALOG >(VENUES_CATALOG);
-  const [isSynthesizingPrompt, setIsSynthesizingPrompt] = useState<boolean>(false);
+type SelectableScope =
+  | "post"
+  | "hook"
+  | "body"
+  | "hashtags"
+  | "cta"
+  | "visual"
+  | "timeline";
 
-  // Selected Persona IDs across all 5 categories
-  const [selectedPersonaIds, setSelectedPersonaIds] = useState<
-    Record<PersonaCategory, string[]>
-  >(defaultMasterReel.selectedPersonaIds);
+interface CarouselSlideItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  altText: string;
+  timeCode: string;
+}
 
-  const defaultFemPersona = getById(PERSONAS_CATALOG, defaultMasterReel.selectedPersonaIds.female_lead[0]);
-  const defaultMalePersona = getById(PERSONAS_CATALOG, defaultMasterReel.selectedPersonaIds.male_lead[0]);
-  const defaultSupPersona = getById(PERSONAS_CATALOG, defaultMasterReel.selectedPersonaIds.supporting[0]);
-  const defaultBgPersona = getById(PERSONAS_CATALOG, defaultMasterReel.selectedPersonaIds.background[0]);
-  const defaultAudPersona = getById(PERSONAS_CATALOG, defaultMasterReel.selectedPersonaIds.audience[0]);
-  const defaultFemOverride = defaultMasterReel.wardrobeOverrides?.[defaultFemPersona.id];
-  const defaultMaleOverride = defaultMasterReel.wardrobeOverrides?.[defaultMalePersona.id];
+interface StudioPostState {
+  title: string;
+  version: string;
+  hook: string;
+  body: string;
+  hashtags: string;
+  ctaUrl: string;
+  videoUrl: string;
+  audioMixLabel: string;
+  altText: string;
+  captionsEnabled: boolean;
+  aiDisclosureEnabled: boolean;
+  safeZoneOverlay: boolean;
+  slides: CarouselSlideItem[];
+  segments: VideoSegmentSpec[];
+}
 
-  // Wardrobe IDs (Act I, Act II, Accessories) derived from defaultMasterReel personas
-  const [womenAct1Id, setWomenAct1Id] = useState<string>(
-    defaultFemOverride?.act1Id || defaultFemPersona.defaultAct1WardrobeId
-  );
-  const [womenAct2Id, setWomenAct2Id] = useState<string>(
-    defaultFemOverride?.act2Id || defaultFemPersona.defaultAct2WardrobeId
-  );
-  const [menAct1Id, setMenAct1Id] = useState<string>(
-    defaultMaleOverride?.act1Id || defaultMalePersona.defaultAct1WardrobeId
-  );
-  const [menAct2Id, setMenAct2Id] = useState<string>(
-    defaultMaleOverride?.act2Id || defaultMalePersona.defaultAct2WardrobeId
-  );
-  const [supportingWardrobeId, setSupportingWardrobeId] = useState<string>(defaultSupPersona.defaultAct1WardrobeId);
-  const [backgroundWardrobeId, setBackgroundWardrobeId] = useState<string>(defaultBgPersona.defaultAct1WardrobeId);
-  const [audienceWardrobeId, setAudienceWardrobeId] = useState<string>(defaultAudPersona.defaultAct1WardrobeId);
-  const [accessoryId, setAccessoryId] = useState<string>(
-    defaultMaleOverride?.accessoryId || defaultFemOverride?.accessoryId || defaultFemPersona.defaultAccessoryId
-  );
-  const [bpm, setBpm] = useState<number>(128);
-  const [musicalKey, setMusicalKey] = useState<string>("B Minor");
+interface CheckpointEntry {
+  id: string;
+  version: string;
+  label: string;
+  timestamp: string;
+  snapshot: StudioPostState;
+}
 
-  // Additional Synthesized Dimensions (Background Scenery, Human Emotions, Voice Type, Choreography, Optics, Contrast, Instruments)
-  const [backgroundEnvironment, setBackgroundEnvironment] = useState<string>(
-    getById(VENUES_CATALOG, defaultMasterReel.venueId)?.promptSpec || ""
-  );
-  const [humanEmotions, setHumanEmotions] = useState<string>(
-    "Act I: Intrigue, playful challenge, confident swagger, and sharp fedora-brim eye contact under chiaroscuro venetian-blind shadows → Act II: Determined resolve, exhilaration, synchronized V-wedge power, and collective triumph on the rain-slicked plaza"
-  );
-  const [shotEmotions, setShotEmotions] = useState<string[]>(
-    defaultMasterReel.shots.map(
-      (s) => `Shot ${String(s.shotNumber).padStart(2, "0")} (${s.timecode}): ${s.actionPrompt.slice(0, 110)}`
-    )
-  );
-  const [voiceType, setVoiceType] = useState<string>(
-    "Rich, resonant baritone for Male Lead with slight room plate reverb; sultry, smoky mezzo-soprano for Female Lead; bright soprano for Female Co-Lead — 48,000 Hz stereo studio quality synchronized to 128 BPM B Minor jazz-funk (-14.0 LUFS EBU R128)"
-  );
-  const [choreography, setChoreography] = useState<string>(
-    "Act I: Razor-sharp solo & partner jazz-funk footwork with reverse-glide isolation and coin-toss jukebox ignition → Act II: 8-dancer V-wedge lock-step, rapid-fire tap syncopation, and 45-degree anti-gravity forward lean illusion on the wet plaza"
-  );
-  const [shotChoreography, setShotChoreography] = useState<string[]>(
-    defaultMasterReel.shots.map(
-      (s) => `[${s.timecode} • Act ${s.act}] ${s.actionPrompt}`
-    )
-  );
-  const [shotLightingAndOptics, setShotLightingAndOptics] = useState<string[]>(
-    defaultMasterReel.shots.map((s, idx) => {
-      const cam = getById(CAMERA_MOVES_CATALOG, s.cameraMoveId);
-      const kelvin = idx < 3 ? "3200K warm speakeasy tungsten + chiaroscuro venetian-blind shadow slashes (4:1 contrast ratio)" : "4500K–5400K pre-dawn wet granite reflections & rim spotlights (3:1 contrast ratio)";
-      return `Shot ${String(s.shotNumber).padStart(2, "0")} (${s.timecode}): 35mm/50mm/85mm Panavision Anamorphic Prime @ T1.8, ${cam.label} (${cam.promptSpec}), ${kelvin}`;
-    })
-  );
-  const [figureGroundContrastSpec, setFigureGroundContrastSpec] = useState<string>(
-    "Enforces >= 4.0:1 figure-ground luminance & chromatic separation across all 6 shots: high-luminance ivory chalk-stripe wool, white fedora, and emerald bias-cut silk pop cleanly against dark mahogany and crimson velvet in Act I, while silver metallic lamé and steel-grey peak-lapel tailoring separate sharply from wet obsidian granite in Act II."
-  );
-  const [instrumentAndStagePropsSpec, setInstrumentAndStagePropsSpec] = useState<string>(
-    getById(ACCESSORIES_CATALOG, defaultMaleOverride?.accessoryId || defaultFemPersona.defaultAccessoryId)?.promptSpec || ""
-  );
-  const [creativeElevation, setCreativeElevation] = useState<{
-    sourceType: "youtube_reference" | "original_prompt";
-    youtubeMetadata: {
-      videoId: string;
-      url: string;
-      title: string;
-      channelName: string;
-      descriptionSnippet: string;
-      keywords: string[];
-      thumbnailUrl: string;
-    } | null;
-    deconstructedCore: string;
-    identifiedLimitations: string[];
-    surpassStrategy: string;
-    act1ToAct2Twist: string;
-    sonicInnovation: string;
-    choreographyAndCameraUpgrade: string;
-    innovationScore: string;
-    judgeReceipt?: IndependentJudgeReceipt;
-  }>({
-    sourceType: "youtube_reference",
-    youtubeMetadata: {
-      videoId: "h_D3VFfhvs4",
-      url: "https://www.youtube.com/watch?v=h_D3VFfhvs4",
-      title: "Crimson Echoes, Ivory Dreams — 1930s Art-Deco Speakeasy Groove (Original Copyright-Safe Elevation)",
-      channelName: "Zyvoriq Autonomous 12-Agent Studio",
-      descriptionSnippet:
-        "Original 128 BPM B-Minor Art-Deco speakeasy jazz-funk & syncopated slap-bass dance production available in both Option 1 (Omni 1.1 + Lyria 3 Pro 60s Studio Song) and Option 2 (Omni 1.1 Native Vocal Lip-Sync).",
-      keywords: ["Art-Deco Speakeasy", "128 BPM Jazz-Funk", "Ivory Chalk-Stripe Suit", "Anti-Gravity Lean", "Jukebox Coin Toss"],
-      thumbnailUrl: "/assets/swarm/generated/job_1790786861133/preview_turn1A.jpg",
+interface BrandProfile {
+  id: string;
+  name: string;
+  voiceSummary: string;
+  bannedWords: string[];
+  requiredDisclaimer: string;
+}
+
+const DEFAULT_BRANDS: BrandProfile[] = [
+  {
+    id: "brand-cinema",
+    name: "Zyvoriq 35mm Cinema Studio",
+    voiceSummary: "Calm, tactile, director-grade storytelling. Zero hype cliches.",
+    bannedWords: ["synergy", "guaranteed", "hack", "crush it"],
+    requiredDisclaimer: "",
+  },
+  {
+    id: "brand-editorial",
+    name: "Editorial Documentary Press",
+    voiceSummary: "Measured, investigative, factual cinema breakdown.",
+    bannedWords: ["viral", "secret", "guaranteed"],
+    requiredDisclaimer: "Shot on location with AI-assisted orchestral mastering.",
+  },
+  {
+    id: "brand-enterprise",
+    name: "Enterprise Launch Kit",
+    voiceSummary: "Clear, outcome-oriented product narrative with verifiable metrics.",
+    bannedWords: ["magic", "revolutionary"],
+    requiredDisclaimer: "",
+  },
+];
+
+const INITIAL_SEGMENTS: VideoSegmentSpec[] = [
+  {
+    id: "seg-1",
+    index: 0,
+    timeRange: "00.0s–10.0s",
+    startSec: 0,
+    endSec: 10,
+    speaker: "Kaelen (Baritone)",
+    captionLine: "Turn back, Lyra. The basalt pass remembers every oath we broke.",
+    visualContinuityLock:
+      "Kaelen screen-left, unarmed Lyra screen-right, cold blue-grey twilight",
+    aiGenerated: true,
+  },
+  {
+    id: "seg-2",
+    index: 1,
+    timeRange: "10.0s–20.0s",
+    startSec: 10,
+    endSec: 20,
+    speaker: "Lyra (Mezzo)",
+    captionLine: "Look at my hands, Kaelen—no blade, no iron, only the truth.",
+    visualContinuityLock:
+      "0:11 Unarmed open-palm gesture, zero weapons drawn, snow wind left-to-right",
+    aiGenerated: true,
+  },
+  {
+    id: "seg-3",
+    index: 2,
+    timeRange: "20.0s–30.0s",
+    startSec: 20,
+    endSec: 30,
+    speaker: "Kaelen (Baritone)",
+    captionLine: "Step closer then, before the frost seals the ridge behind us.",
+    visualContinuityLock:
+      "0:21 Lyra advances forward right-to-left toward Kaelen; 180-deg axis locked",
+    aiGenerated: true,
+  },
+  {
+    id: "seg-4",
+    index: 3,
+    timeRange: "30.0s–40.0s",
+    startSec: 30,
+    endSec: 40,
+    speaker: "Lyra (Mezzo)",
+    captionLine: "The shadow fever is fading from your eyes. Hear the valley breathe.",
+    visualContinuityLock:
+      "0:30 Same snowy basalt canyon & furs; continuous cello & taiko swell",
+    aiGenerated: true,
+  },
+  {
+    id: "seg-5",
+    index: 4,
+    timeRange: "40.0s–50.0s",
+    startSec: 40,
+    endSec: 50,
+    speaker: "Kaelen (Baritone)",
+    captionLine: "I carried this curse through six winters thinking I stood alone.",
+    visualContinuityLock:
+      "Two-shot medium close-up, falling snow, -14 LUFS dialogue ducking",
+    aiGenerated: true,
+  },
+  {
+    id: "seg-6",
+    index: 5,
+    timeRange: "50.0s–60.0s",
+    startSec: 50,
+    endSec: 60,
+    speaker: "Lyra & Kaelen",
+    captionLine: "Not anymore. Walk with me while the twilight still holds.",
+    visualContinuityLock:
+      "0:50 Locked cold overcast blue-grey Arctic twilight (zero warm sunrise drift)",
+    aiGenerated: true,
+  },
+];
+
+const INITIAL_POST: StudioPostState = {
+  title: "The Cursed Hunter — 35mm Live-Action 60s Campaign",
+  version: "v1.0",
+  hook: "The curse took his voice at dusk—so she walked into the frozen basalt pass with empty hands.",
+  body: "60 seconds of continuous 35mm anamorphic cinema. Every 10-second act locks character identity, spatial axis, and cold Arctic twilight while Omni 1.1 dialogue ducks cleanly over a custom Lyria 3 Pro orchestral score.",
+  hashtags: "#TheCursedHunter #LiveAction35mm #SoundDesign #CinemaStudio",
+  ctaUrl: "https://zyvoriq.studio/showcase/cursed-hunter?utm_source=social&utm_medium=studio",
+  videoUrl:
+    "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4",
+  audioMixLabel: "Option 2 · Omni 1.1 Dialogue + Foley + Lyria 3 Pro Score",
+  altText:
+    "Wide 35mm frame of Kaelen in dark wolf-fur cloak on screen-left facing unarmed Lyra in crimson-lined cloak on screen-right inside a snowy basalt canyon at twilight.",
+  captionsEnabled: true,
+  aiDisclosureEnabled: true,
+  safeZoneOverlay: false,
+  slides: [
+    {
+      id: "slide-1",
+      title: "Act I (0:00–0:20) · Unarmed in the Basalt Pass",
+      subtitle: "Lyra approaches Kaelen with open hands—zero weapon continuity drift.",
+      altText: "Act 1 frame showing unarmed Lyra facing Kaelen in snowy canyon",
+      timeCode: "00:00–00:20",
     },
-    deconstructedCore:
-      "Deconstructs the iconic 1930s noir nightclub aesthetic, syncopated bassline, coin-toss jukebox ignition, and geometric ensemble choreography into a 100% original, copyright-safe 60.0s 2-Act Art-Deco Jazz-Funk production in B Minor at 128 BPM.",
-    identifiedLimitations: [
-      "Legacy 4:3 SD/HD source footage lacks modern 9:16 vertical anamorphic framing and 48,000 Hz EBU R128 (-14.0 LUFS) studio stem separation",
-      "Single-room nightclub staging remains confined indoors without an architectural Act I → Act II spatial transformation",
-      "Standard AI video generators cannot simultaneously offer both a Closed-Lips Nayan-Abhinaya + Lyria 3 Pro studio song master (Option 1) and a single-model native lip-sync vocal master (Option 2)",
-    ],
-    surpassStrategy:
-      "Renders both Option 1 (Omni 1.1 + Lyria 3 Pro continuous 60.0s studio song with closed-lips eye/body acting) and Option 2 (Omni 1.1 native 48kHz on-camera vocal lip-sync with 54 verified sung words) across 6 Panavision Anamorphic shots.",
-    act1ToAct2Twist:
-      "At 00:30, the vintage jukebox coin-toss inside The Crimson Velvet speakeasy shatters the indoor shadows and launches the 8-dancer ensemble onto the rain-slicked Azure Dawn metropolitan plaza for a V-wedge lock-step and 45-degree forward lean finale.",
-    sonicInnovation:
-      "128 BPM (B Minor) syncopated slap-bass, punchy 1930s brass section stabs, crisp snare rimshots, and male baritone + female mezzo-soprano duet vocals mastered at -14.0 LUFS.",
-    choreographyAndCameraUpgrade:
-      "6-shot Panavision Anamorphic progression (35mm T1.8 Steadicam push-in, 50mm lateral tracking, 85mm crane rise, 35mm sweeping drone orbit, 50mm gimbal close-up, and 24mm Technocrane pullback).",
-    innovationScore: "9.9 / 10 • Dual-Engine 60.0s Art-Deco Speakeasy Master (Option 1 + Option 2)",
-  });
+    {
+      id: "slide-2",
+      title: "Act II (0:20–0:40) · Closing the Distance",
+      subtitle: "Strict right-to-left approach across the 180-degree camera axis.",
+      altText: "Act 2 medium two-shot in snowy basalt pass",
+      timeCode: "00:20–00:40",
+    },
+    {
+      id: "slide-3",
+      title: "Act III (0:40–1:00) · Locked Arctic Twilight Resolution",
+      subtitle: "Continuous cold blue-grey overcast grade with orchestral crescendo.",
+      altText: "Act 3 resolution shot under cold blue-grey twilight sky",
+      timeCode: "00:40–01:00",
+    },
+  ],
+  segments: INITIAL_SEGMENTS,
+};
 
-  const promptDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const synthAbortRef = React.useRef<AbortController | null>(null);
-  const synthReqSeqRef = React.useRef<number>(0);
-  const [referenceYouTubeUrl, setReferenceYouTubeUrl] = useState<string>("");
-  const referenceYouTubeUrlRef = React.useRef<string>("");
-  const lastSynthesizedPromptKeyRef = React.useRef<string>("");
+const INITIAL_VARIATIONS: PostVariation[] = [
+  {
+    id: "var-option-2",
+    label: "Variation A · Spoken Dialogue + Foley + Orchestral Swells (Option 2)",
+    hook: "The curse took his voice at dusk—so she walked into the frozen basalt pass with empty hands.",
+    body: "60 seconds of continuous 35mm anamorphic cinema. Every 10-second act locks character identity, spatial axis, and cold Arctic twilight while Omni 1.1 dialogue ducks cleanly over a custom Lyria 3 Pro orchestral score.",
+    hashtags: "#TheCursedHunter #LiveAction35mm #SoundDesign #CinemaStudio",
+    videoUrl:
+      "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4",
+    audioLabel: "Option 2 · Omni 1.1 + Score",
+    rationale:
+      "Best for Reels & TikTok: lip-synced spoken dialogue + crunchy snow Foley hooks viewers in 1.5s.",
+  },
+  {
+    id: "var-option-1",
+    label: "Variation B · Symphonic Film-Trailer Forward Mix (Option 1)",
+    hook: "Sixty seconds. Six unbroken 35mm shots. One continuous symphonic score through the canyon.",
+    body: "Experience the Lyria 3 Pro symphonic trailer mix where low brass, cello ostinato, and taiko percussion drive the confrontation from 0:00 to 1:00 without a single audio seam.",
+    hashtags: "#FilmScoring #Cinematography #TrailerMusic #PostProduction",
+    videoUrl:
+      "/assets/swarm/comparisons/10_option1_lyria3pro_symphonic_60s_master.mp4",
+    audioLabel: "Option 1 · Symphonic Forward",
+    rationale:
+      "Best for YouTube 16:9 & LinkedIn: foregrounds the continuous orchestral composition and visual grade.",
+  },
+  {
+    id: "var-speakeasy",
+    label: "Variation C · Crimson Echoes, Ivory Dreams (60s Art-Deco Noir)",
+    hook: "When the rain hits the brass marquee at midnight, the grand piano tells the whole story.",
+    body: "A 60-second 1920s Art-Deco speakeasy showcase featuring Julian at the Steinway and Clara at the velvet stage mic with continuous jazz-noir acoustics.",
+    hashtags: "#NoirCinema #ArtDeco #JazzScore #ShortFilm",
+    videoUrl:
+      "/assets/swarm/comparisons/10_cursed_hunter_live_action_dual_stem_dialogue_plus_lyria_score_60s.mp4",
+    audioLabel: "1920s Speakeasy Master",
+    rationale:
+      "Demonstrates switching to a warm amber period aesthetic while keeping the 6-turn 60s structure.",
+  },
+];
 
-  const extractYouTubeUrlFromText = useCallback((text: string): string | null => {
-    const matches = text.match(/https?:\/\/[^\s"'<>]+/gi) || [];
-    for (const u of matches) {
-      if (/(?:youtube\.com|youtu\.be|higgsfield\.ai)/i.test(u)) {
-        return u;
-      }
-    }
-    const bareMatch = text.match(
-      /(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?[^\s"'<>]+|shorts\/[A-Za-z0-9_-]{11}|embed\/[A-Za-z0-9_-]{11})|youtu\.be\/[A-Za-z0-9_-]{11}|higgsfield\.ai\/@[^\s"'<>]+)/i
-    );
-    if (bareMatch?.[0]) {
-      return `https://${bareMatch[0]}`;
-    }
-    return null;
+// ============================================================================
+// CONVERSATIONAL NON-MUTATION INTENT GUARD (Mandatory 4-Case Gate)
+// ============================================================================
+function evaluateConversationalIntent(rawInput: string): {
+  isConversational: boolean;
+  reply: string;
+} | null {
+  const cleaned = rawInput.trim();
+  const lower = cleaned.toLowerCase().replace(/[?.!]+$/g, "").trim();
+  const words = lower.split(/\s+/).filter(Boolean);
+
+  // Case 1: Casual greetings
+  const greetings = [
+    "hi",
+    "hello",
+    "hey",
+    "good morning",
+    "good afternoon",
+    "good evening",
+    "howdy",
+    "greetings",
+  ];
+  if (greetings.includes(lower)) {
+    return {
+      isConversational: true,
+      reply:
+        "Hello! Your current post (v1.0) is untouched. Select any hook, body paragraph, or 60s video act on the stage—or tell me a specific edit like 'Make the hook punchier' or 'Generate a 60s product launch post'.",
+    };
+  }
+
+  // Case 2: Identity & capability queries
+  const capabilityPatterns = [
+    "who are you",
+    "what can you do",
+    "help",
+    "what is this",
+    "how does this work",
+    "capabilities",
+  ];
+  if (capabilityPatterns.some((p) => lower === p || lower.startsWith(p))) {
+    return {
+      isConversational: true,
+      reply:
+        "I am your Content Studio Assistant. I can draft multi-platform posts from a 1-sentence brief, rewrite any selected hook or paragraph as a side-by-side diff, check platform limits & brand rules, and coordinate 60-second multi-shot video timelines without overwriting your work.",
+    };
+  }
+
+  // Case 3: Courtesies & acknowledgments
+  const courtesies = [
+    "thanks",
+    "thank you",
+    "ok",
+    "okay",
+    "got it",
+    "cool",
+    "sounds good",
+    "great",
+    "nice",
+  ];
+  if (courtesies.includes(lower)) {
+    return {
+      isConversational: true,
+      reply:
+        "You're welcome! Your canvas state and version remain unchanged. Let me know whenever you want to refine a section or run pre-flight checks.",
+    };
+  }
+
+  // Case 4: Short ambiguous phrases (<= 2 words that are not explicit commands)
+  const explicitShortCommands = [
+    "shorter",
+    "punchier",
+    "fix grammar",
+    "translate",
+    "regenerate",
+    "trim caption",
+  ];
+  if (words.length <= 2 && !explicitShortCommands.includes(lower)) {
+    return {
+      isConversational: true,
+      reply: `I kept your canvas unchanged (${cleaned} is a bit brief to apply safely). Try clicking a section on the canvas first or specify how you'd like to use "${cleaned}"—for example: "Make the opening hook more ${lower}" or "Rewrite body for LinkedIn".`,
+    };
+  }
+
+  return null;
+}
+
+// ============================================================================
+// MAIN CONTENT STUDIO WORKSPACE PAGE (With All 6 Netflix Studio Upgrades)
+// ============================================================================
+export default function ContentStudioWorkspacePage() {
+  // Upgrade 5: Default to Dark Cinema Theme ("dark") for 35mm grading accuracy,
+  // while keeping 1-click Light/Dark toggle in the top bar.
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
+
+  // Upgrade 1: Theater Mode (collapses sidebars so Cinema Stage spans full viewport)
+  const [theaterMode, setTheaterMode] = useState<boolean>(false);
+
+  // Upgrade 3: Interactive "...more" fold preview expansion toggle
+  const [foldPreviewExpanded, setFoldPreviewExpanded] = useState<boolean>(false);
+
+  // Navigation & layout state
+  const [leftSection, setLeftSection] = useState<
+    "create" | "library" | "brands" | "templates"
+  >("create");
+  const [rightTab, setRightTab] = useState<
+    "checks" | "edit" | "variations" | "history"
+  >("checks");
+  const [activePlatformId, setActivePlatformId] =
+    useState<PlatformId>("reels_9_16");
+  const [selectedScope, setSelectedScope] = useState<SelectableScope>("hook");
+  const [selectedSegmentId, setSelectedSegmentId] = useState<string>("seg-1");
+  const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
+
+  // Brand state
+  const [brands, setBrands] = useState<BrandProfile[]>(DEFAULT_BRANDS);
+  const [activeBrandId, setActiveBrandId] = useState<string>(
+    DEFAULT_BRANDS[0].id
+  );
+  const activeBrand = useMemo(
+    () => brands.find((b) => b.id === activeBrandId) || brands[0],
+    [brands, activeBrandId]
+  );
+
+  // Post state + Undo/Redo stacks + Named History Checkpoints
+  const [post, setPost] = useState<StudioPostState>(INITIAL_POST);
+  const [undoStack, setUndoStack] = useState<StudioPostState[]>([]);
+  const [redoStack, setRedoStack] = useState<StudioPostState[]>([]);
+  const [checkpoints, setCheckpoints] = useState<CheckpointEntry[]>([
+    {
+      id: "cp-init",
+      version: "v1.0",
+      label: "Loaded 35mm 60s Master Campaign",
+      timestamp: "Just now",
+      snapshot: INITIAL_POST,
+    },
+  ]);
+
+  // Brief / Create panel state (Progressive disclosure: 1 required field)
+  const [briefInput, setBriefInput] = useState<string>(
+    "A 60-second 35mm live-action confrontation between Kaelen and unarmed Lyra in a snowy basalt canyon at twilight."
+  );
+  const [briefError, setBriefError] = useState<string | undefined>(undefined);
+  const [showMoreCreateOptions, setShowMoreCreateOptions] =
+    useState<boolean>(false);
+  const [toneOverride, setToneOverride] = useState<string>("director_calm");
+  const [audioEngineMode, setAudioEngineMode] = useState<string>("option2_omni11");
+
+  // In-place AI Diff state (never overwrite silently)
+  const [pendingDiff, setPendingDiff] =
+    useState<PendingDiffSuggestion | null>(null);
+
+  // Variations state
+  const [variations, setVariations] =
+    useState<PostVariation[]>(INITIAL_VARIATIONS);
+  const [activeVariationId, setActiveVariationId] =
+    useState<string>("var-option-2");
+
+  // Checks ignored IDs
+  const [ignoredCheckIds, setIgnoredCheckIds] = useState<string[]>([]);
+
+  // Scoped Prompt Bar & Streaming Progress state
+  const [scopedPromptInput, setScopedPromptInput] = useState<string>("");
+  const [assistantReply, setAssistantReply] = useState<string | null>(null);
+  const [generationStage, setGenerationStage] = useState<{
+    active: boolean;
+    step: number;
+    label: string;
+  }>({ active: false, step: 0, label: "" });
+  const cancelStreamRef = useRef<boolean>(false);
+  const promptInputRef = useRef<HTMLInputElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Modals, Mobile Sheet & Toast
+  const [publishDialogOpen, setPublishDialogOpen] = useState<boolean>(false);
+  const [shortcutsDialogOpen, setShortcutsDialogOpen] =
+    useState<boolean>(false);
+  const [mobileInspectorOpen, setMobileInspectorOpen] =
+    useState<boolean>(false);
+  const [scheduleDate, setScheduleDate] = useState<string>("2026-10-01T09:00");
+  const [toast, setToast] = useState<{
+    message: string;
+    undoSnapshot?: StudioPostState;
+  } | null>(null);
+
+  // Library search & API items
+  const [libraryQuery, setLibraryQuery] = useState<string>("");
+  const [apiLibraryItems, setApiLibraryItems] = useState<
+    Array<{ id: string; title: string; videoUrl: string; platform: string }>
+  >([]);
+
+  // Load real items from /api/swarm/library on mount
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/swarm/library")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        const rawList = Array.isArray(data.items)
+          ? data.items
+          : Array.isArray(data.videos)
+          ? data.videos
+          : [];
+        const mapped = rawList
+          .slice(0, 8)
+          .map((item: Record<string, unknown>, idx: number) => ({
+            id: String(item.id || `lib-api-${idx}`),
+            title: String(
+              item.title || item.prompt || `Studio Master Render #${idx + 1}`
+            ),
+            videoUrl: String(
+              item.videoUrl ||
+                item.url ||
+                "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4"
+            ),
+            platform: "9:16 & 16:9",
+          }));
+        setApiLibraryItems(mapped);
+      })
+      .catch(() => {
+        // Non-blocking fallback to built-in verified 60s library items
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const applySynthesizedAssets = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (syn: any, overrides?: Record<string, string | undefined>, goToStep2 = false, effVocalIdFallback?: string, effLangIdFallback?: string) => {
-      setTitle(syn.title);
-      setStoryline(syn.storyline);
-      if (typeof syn.compiledConceptDirective === "string" && syn.compiledConceptDirective) {
-        setCompiledConceptDirective(syn.compiledConceptDirective);
-      }
-      if (syn.creativeElevation) {
-        setCreativeElevation(syn.creativeElevation);
-        if (syn.creativeElevation.youtubeMetadata?.url) {
-          referenceYouTubeUrlRef.current = syn.creativeElevation.youtubeMetadata.url;
-          setReferenceYouTubeUrl(syn.creativeElevation.youtubeMetadata.url);
+  // Helper to commit a post mutation with Undo stack + named checkpoint
+  const commitPostChange = (
+    nextState: StudioPostState,
+    checkpointLabel: string
+  ) => {
+    const prevSnapshot = post;
+    const nextVersionNum =
+      parseFloat(post.version.replace(/^v/, "") || "1.0") + 0.1;
+    const nextVersion = `v${nextVersionNum.toFixed(1)}`;
+    const updated: StudioPostState = {
+      ...nextState,
+      version: nextVersion,
+    };
+
+    setUndoStack((u) => [...u, prevSnapshot]);
+    setRedoStack([]);
+    setPost(updated);
+    setCheckpoints((cps) => [
+      {
+        id: `cp-${Date.now()}`,
+        version: nextVersion,
+        label: checkpointLabel,
+        timestamp: "Just now",
+        snapshot: updated,
+      },
+      ...cps,
+    ]);
+    setToast({
+      message: `${checkpointLabel} (${nextVersion})`,
+      undoSnapshot: prevSnapshot,
+    });
+  };
+
+  const handleUndo = () => {
+    if (undoStack.length === 0) return;
+    const previous = undoStack[undoStack.length - 1];
+    setUndoStack((u) => u.slice(0, -1));
+    setRedoStack((r) => [post, ...r]);
+    setPost(previous);
+    setToast({ message: `Reverted to ${previous.version}` });
+  };
+
+  const handleRedo = () => {
+    if (redoStack.length === 0) return;
+    const [next, ...rest] = redoStack;
+    setRedoStack(rest);
+    setUndoStack((u) => [...u, post]);
+    setPost(next);
+    setToast({ message: `Restored ${next.version}` });
+  };
+
+  // Global keyboard shortcuts (Cmd+Z, Shift+Cmd+Z, 1-4, C/E/V/H, T for Theater, /, ?)
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isTyping =
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable);
+
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleRedo();
+        } else {
+          handleUndo();
         }
-      }
-      if (typeof syn.bpm === "number") {
-        setBpm(syn.bpm);
-      }
-      if (typeof syn.musicalKey === "string" && syn.musicalKey) {
-        setMusicalKey(syn.musicalKey);
-      }
-      setLyrics(syn.lyrics);
-
-      // Update Duration, Language, Genre, Vocal, Location, Region, Demography, Lighting & 8-Dimension Specs
-      if (syn.recommendedDurationId && !overrides?.durationId) {
-        setDurationId(syn.recommendedDurationId);
-      }
-      if (syn.recommendedLanguageId && !overrides?.languageId) {
-        setLanguageId(syn.recommendedLanguageId);
-      }
-      if (syn.recommendedGenreId && !overrides?.genreId) {
-        setGenreId(syn.recommendedGenreId);
-      }
-      if (syn.recommendedCountryId && !overrides?.countryId) {
-        setCountryId(syn.recommendedCountryId);
-      }
-      if (syn.recommendedRegionId && !overrides?.regionId) {
-        setRegionId(syn.recommendedRegionId);
-      }
-      if (syn.recommendedDemographyId && !overrides?.demographyId) {
-        setDemographyId(syn.recommendedDemographyId);
-      }
-      if (syn.recommendedLightingId) {
-        setLightingId(syn.recommendedLightingId);
-      }
-      if (syn.recommendedVocalId && !overrides?.vocalId) {
-        setVocalId(syn.recommendedVocalId);
-      }
-      if (syn.backgroundEnvironment) {
-        setBackgroundEnvironment(syn.backgroundEnvironment);
-      }
-      if (syn.humanEmotions) {
-        setHumanEmotions(syn.humanEmotions);
-      }
-      if (Array.isArray(syn.shotEmotions) && syn.shotEmotions.length > 0) {
-        setShotEmotions(syn.shotEmotions);
-      }
-      if (syn.voiceType) {
-        setVoiceType(syn.voiceType);
-      }
-      if (syn.choreography) {
-        setChoreography(syn.choreography);
-      }
-      if (Array.isArray(syn.shotChoreography) && syn.shotChoreography.length > 0) {
-        setShotChoreography(syn.shotChoreography);
-      }
-      if (Array.isArray(syn.shotLightingAndOptics) && syn.shotLightingAndOptics.length > 0) {
-        setShotLightingAndOptics(syn.shotLightingAndOptics);
-      }
-      if (typeof syn.figureGroundContrastSpec === "string" && syn.figureGroundContrastSpec) {
-        setFigureGroundContrastSpec(syn.figureGroundContrastSpec);
-      }
-      if (typeof syn.instrumentAndStagePropsSpec === "string" && syn.instrumentAndStagePropsSpec) {
-        setInstrumentAndStagePropsSpec(syn.instrumentAndStagePropsSpec);
-      }
-
-      // 1. Prepend newly synthesized Wardrobes into wardrobeCatalog & select them
-      const newW = syn.wardrobes;
-      const addedWardrobes = dedupeById([
-        newW.womenAct1,
-        newW.womenAct2,
-        newW.menAct1,
-        newW.menAct2,
-        newW.supporting,
-        newW.background,
-        newW.audience,
-      ]);
-      setWardrobeCatalog((prev) => dedupeById([...addedWardrobes, ...prev]));
-      setAccessoriesCatalog((prev) => dedupeById([newW.accessory, ...prev]));
-      setVenuesCatalog((prev) => dedupeById([newW.venue, ...prev]));
-
-      setWomenAct1Id(newW.womenAct1.id);
-      setWomenAct2Id(newW.womenAct2.id);
-      setMenAct1Id(newW.menAct1.id);
-      setMenAct2Id(newW.menAct2.id);
-      setSupportingWardrobeId(newW.supporting.id);
-      setBackgroundWardrobeId(newW.background.id);
-      setAudienceWardrobeId(newW.audience.id);
-      setAccessoryId(newW.accessory.id);
-      setVenueId(newW.venue.id);
-
-      // 2. Prepend newly synthesized 5-Tier Personas into personasCatalog & select them
-      const p = syn.personas;
-      const addedPersonas = dedupeById([
-        {
-          ...p.female_lead,
-          defaultAct1WardrobeId: newW.womenAct1.id,
-          defaultAct2WardrobeId: newW.womenAct2.id,
-          defaultAccessoryId: newW.accessory.id,
-        },
-        ...(p.female_harmony
-          ? [
-              {
-                ...p.female_harmony,
-                defaultAct1WardrobeId: newW.womenAct1.id,
-                defaultAct2WardrobeId: newW.womenAct2.id,
-                defaultAccessoryId: newW.accessory.id,
-              },
-            ]
-          : []),
-        {
-          ...p.male_lead,
-          defaultAct1WardrobeId: newW.menAct1.id,
-          defaultAct2WardrobeId: newW.menAct2.id,
-          defaultAccessoryId: newW.accessory.id,
-        },
-        {
-          ...p.supporting,
-          defaultAct1WardrobeId: newW.supporting.id,
-          defaultAct2WardrobeId: newW.supporting.id,
-          defaultAccessoryId: newW.accessory.id,
-        },
-        {
-          ...p.background,
-          defaultAct1WardrobeId: newW.background.id,
-          defaultAct2WardrobeId: newW.background.id,
-          defaultAccessoryId: newW.accessory.id,
-        },
-        {
-          ...p.audience,
-          defaultAct1WardrobeId: newW.audience.id,
-          defaultAct2WardrobeId: newW.audience.id,
-          defaultAccessoryId: newW.accessory.id,
-        },
-      ]);
-      setPersonasCatalog((prev) => dedupeById([...addedPersonas, ...prev]));
-
-      const nextSelectedIds: Record<PersonaCategory, string[]> =
-        dedupeSelectedPersonaIds(syn.recommendedSelectedIds, {
-          female_lead: [p.female_lead.id],
-          male_lead: [p.male_lead.id],
-          supporting: [p.supporting.id],
-          background: [p.background.id],
-          audience: [p.audience.id],
-        });
-      setSelectedPersonaIds(nextSelectedIds);
-
-      const persistedPrompt =
-        referenceYouTubeUrlRef.current || syn.creativeElevation?.youtubeMetadata?.url
-          ? `${referenceYouTubeUrlRef.current || syn.creativeElevation.youtubeMetadata.url} — ${syn.storyline}`
-          : syn.storyline;
-
-      // Save dynamic catalog & selections to localStorage so /personas and page reloads display them immediately
-      try {
-        const nowIso = new Date().toISOString();
-        localStorage.setItem(
-          "zyvoriq_dynamic_catalog_v1",
-          JSON.stringify({
-            personas: addedPersonas,
-            wardrobes: addedWardrobes,
-            accessory: newW.accessory,
-            venue: newW.venue,
-            selectedIds: nextSelectedIds,
-            savedAt: nowIso,
-          })
-        );
-        localStorage.setItem("zyvoriq_last_prompt_v1", persistedPrompt);
-        localStorage.setItem(
-          "zyvoriq_last_synthesized_payload_v1",
-          JSON.stringify({ ...syn, _savedAt: nowIso })
-        );
-      } catch {
-        // ignore
-      }
-
-      const finalVocId = syn.recommendedVocalId || effVocalIdFallback || vocalId;
-      const finalLangObj = getById(
-        LANGUAGES_CATALOG,
-        syn.recommendedLanguageId || effLangIdFallback || languageId
-      );
-      const leadSummary =
-        finalVocId === "voc_female_solo" || finalVocId === "voc_girl_group"
-          ? `${p.female_lead.name} + ${p.female_harmony?.name || p.supporting.name}`
-          : finalVocId === "voc_male_solo" || finalVocId === "voc_boy_band"
-          ? `${p.male_lead.name} + ${p.supporting.name}`
-          : `${p.female_lead.name} & ${p.male_lead.name}`;
-
-      // Clear stale pre-existing video URL and custom shot overrides so Master Player & Storyboard reflect the newly synthesized prompt
-      customShotsRef.current = null;
-      setActiveVideoUrl("");
-      setRenderStageLabel("");
-      setRenderLogs([]);
-
-      setStatusBanner(
-        `✨ Synthesized all 8 dimensions: Personas (${leadSummary}), Locations, Act I/II Wardrobes, Background Scenery, Human Emotions, Voice Type, Choreography & ${finalLangObj.label.split("(")[0].trim()} Lyrics!`
-      );
-      if (goToStep2) {
-        setCreateStep(2);
-        setCanvasTab("ensemble");
-      }
-    },
-    [vocalId, languageId]
-  );
-
-  // Dynamic Prompt-to-Lyrics, Characters & Wardrobe Synthesizer (Calls /api/swarm/synthesize-from-prompt)
-  const synthesizeFromNewPrompt = useCallback(
-    async (
-      customPromptText?: string,
-      goToStep2 = false,
-      overrides?: {
-        durationId?: string;
-        genreId?: string;
-        languageId?: string;
-        vocalId?: string;
-        countryId?: string;
-        regionId?: string;
-        demographyId?: string;
-        platformId?: string;
-        contentTypeId?: string;
-      }
-    ) => {
-      const rawCandidate =
-        customPromptText !== undefined ? customPromptText : storyline;
-      const detectedYt = extractYouTubeUrlFromText(rawCandidate);
-      if (detectedYt) {
-        referenceYouTubeUrlRef.current = detectedYt;
-        setReferenceYouTubeUrl(detectedYt);
-      }
-
-      const promptToUse =
-        !detectedYt && referenceYouTubeUrlRef.current
-          ? `${referenceYouTubeUrlRef.current} ${rawCandidate}`.trim()
-          : rawCandidate;
-
-      // If user clicked "Go to Step 02" and the exact same prompt/YouTube URL was already synthesized, transition immediately without redundant API overwrite
-      if (
-        goToStep2 &&
-        !overrides &&
-        !isSynthesizingPrompt &&
-        lastSynthesizedPromptKeyRef.current &&
-        (lastSynthesizedPromptKeyRef.current === promptToUse ||
-          (referenceYouTubeUrlRef.current &&
-            lastSynthesizedPromptKeyRef.current.includes(referenceYouTubeUrlRef.current)))
-      ) {
-        setCreateStep(2);
-        setCanvasTab("ensemble");
         return;
       }
 
-      if (synthAbortRef.current) {
-        synthAbortRef.current.abort();
-      }
-      const controller = new AbortController();
-      synthAbortRef.current = controller;
-      const reqId = ++synthReqSeqRef.current;
-
-      setIsSynthesizingPrompt(true);
-      try {
-        const effCountryId = overrides?.countryId ?? countryId;
-        const effRegionId = overrides?.regionId ?? regionId;
-        const effLangId = overrides?.languageId ?? languageId;
-        const effGenreId = overrides?.genreId ?? genreId;
-        const effVocalId = overrides?.vocalId ?? vocalId;
-        const effDemoId = overrides?.demographyId ?? demographyId;
-        const effPlatId = overrides?.platformId ?? platformId;
-        const effCtypeId = overrides?.contentTypeId ?? contentTypeId;
-        const effDurId = overrides?.durationId ?? durationId;
-
-        const countryObj = getById(COUNTRIES_CATALOG, effCountryId);
-        const regionObj = getById(REGIONS_CATALOG, effRegionId);
-        const langObj = getById(LANGUAGES_CATALOG, effLangId);
-        const genreObj = getById(GENRES_CATALOG, effGenreId);
-        const vocalObj = getById(VOCALS_CATALOG, effVocalId);
-        const demoObj = getById(DEMOGRAPHIES_CATALOG, effDemoId);
-        const platObj = getById(PLATFORMS_CATALOG, effPlatId);
-        const ctypeObj = getById(CONTENT_TYPES_CATALOG, effCtypeId);
-        const durObj = getById(DURATIONS_CATALOG, effDurId);
-
-        const res = await fetch("/api/swarm/synthesize-from-prompt", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          signal: controller.signal,
-          body: JSON.stringify({
-            prompt: promptToUse,
-            isDropdownOverride: Boolean(overrides),
-            countryId: effCountryId,
-            countryLabel: countryObj.label,
-            regionId: effRegionId,
-            regionLabel: regionObj.label,
-            languageId: effLangId,
-            languageLabel: langObj.label,
-            genreId: effGenreId,
-            genreLabel: genreObj.label,
-            vocalId: effVocalId,
-            vocalLabel: vocalObj.label,
-            demographyId: effDemoId,
-            demographyLabel: demoObj.label,
-            platformLabel: platObj.label,
-            contentTypeLabel: ctypeObj.label,
-            durationSeconds: durObj.seconds,
-            shotsCount: durObj.shotsCount,
-          }),
-        });
-        const data = await res.json();
-        if (reqId !== synthReqSeqRef.current) return;
-        if (data?.ok && data.synthesized) {
-          const syn = data.synthesized;
-          lastSynthesizedPromptKeyRef.current = `${
-            referenceYouTubeUrlRef.current || syn.creativeElevation?.youtubeMetadata?.url || ""
-          } ${syn.storyline}`.trim();
-          applySynthesizedAssets(syn, overrides, goToStep2, effVocalId, effLangId);
-        }
-      } catch (err) {
-        if (err instanceof Error && err.name === "AbortError") return;
-      } finally {
-        if (reqId === synthReqSeqRef.current) {
-          setIsSynthesizingPrompt(false);
-        }
-      }
-    },
-    [
-      storyline,
-      isSynthesizingPrompt,
-      extractYouTubeUrlFromText,
-      applySynthesizedAssets,
-      countryId,
-      regionId,
-      languageId,
-      genreId,
-      vocalId,
-      demographyId,
-      platformId,
-      contentTypeId,
-      durationId,
-    ]
-  );
-
-  // ==========================================================================
-  // 3. PERSISTENT REELS REPOSITORY & DRAFTS STATE
-  // ==========================================================================
-  const [reels, setReels] = useState<StudioReelRecord[]>(INITIAL_REELS_REPOSITORY);
-  const [selectedReelId, setSelectedReelId] = useState<string>(defaultMasterReel.id);
-  const [wipFilter, setWipFilter] = useState<"all" | "wip" | "draft" | "failed">("all");
-  const customShotsRef = React.useRef<ShotSpec[] | null>(
-    defaultMasterReel.shots || null
-  );
-
-  const persistReelsToStorage = useCallback((nextReels: StudioReelRecord[]) => {
-    try {
-      if (typeof window !== "undefined") {
-        localStorage.setItem("zyvoriq_reels_repo_v2", JSON.stringify(nextReels));
-      }
-    } catch {
-      // ignore storage errors
-    }
-  }, []);
-
-  // Storyboard & Rendering State
-  const [shots, setShots] = useState<ShotSpec[]>(
-    defaultMasterReel.shots || []
-  );
-  const [isRendering, setIsRendering] = useState<boolean>(false);
-  const [renderProgress, setRenderProgress] = useState<number>(100);
-  const [renderStageLabel, setRenderStageLabel] = useState<string>(
-    defaultMasterReel.updatedAt
-  );
-  const [renderLogs, setRenderLogs] = useState<string[]>([]);
-  const [activeVideoUrl, setActiveVideoUrl] = useState<string>(
-    defaultMasterReel.videoUrl
-  );
-  const [adkOrcasEnabled, setAdkOrcasEnabled] = useState<boolean>(true);
-  const [sideBySideCompareMode, setSideBySideCompareMode] = useState<boolean>(true);
-
-  // ==========================================================================
-  // 4. SYNC WITH URL QUERY PARAMS, LEFT SIDEBAR, /PERSONAS & PERSISTENT REELS
-  // ==========================================================================
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const rawWf = params.get("workflow");
-      const wf: StudioWorkflowMode | null =
-        rawWf === "published" || rawWf === "wip" || rawWf === "create"
-          ? rawWf
-          : null;
-      if (wf) {
-        setWorkflow(wf);
-        window.dispatchEvent(
-          new CustomEvent("zyvoriq-workflow-changed", { detail: { mode: wf } })
-        );
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && pendingDiff) {
+        e.preventDefault();
+        handleAcceptDiff(pendingDiff);
+        return;
       }
 
-      // Restore persistent reels & user-saved drafts from localStorage (merged with INITIAL_REELS_REPOSITORY)
-      try {
-        const savedReelsRaw = localStorage.getItem("zyvoriq_reels_repo_v2");
-        if (savedReelsRaw) {
-          const parsedReels = JSON.parse(savedReelsRaw);
-          if (Array.isArray(parsedReels) && parsedReels.length > 0) {
-            setReels(dedupeById([...INITIAL_REELS_REPOSITORY, ...parsedReels]));
-          }
-        }
-      } catch {
-        // ignore
+      if (isTyping) return;
+
+      if (e.key === "1") setActivePlatformId("reels_9_16");
+      else if (e.key === "2") setActivePlatformId("youtube_16_9");
+      else if (e.key === "3") setActivePlatformId("carousel_4_5");
+      else if (e.key === "4") setActivePlatformId("linkedin_1_1");
+      else if (e.key.toLowerCase() === "t") setTheaterMode((m) => !m);
+      else if (e.key.toLowerCase() === "c") setRightTab("checks");
+      else if (e.key.toLowerCase() === "e") setRightTab("edit");
+      else if (e.key.toLowerCase() === "v") setRightTab("variations");
+      else if (e.key.toLowerCase() === "h") setRightTab("history");
+      else if (e.key === "/") {
+        e.preventDefault();
+        promptInputRef.current?.focus();
+      } else if (e.key === "?") {
+        e.preventDefault();
+        setShortcutsDialogOpen((o) => !o);
       }
-
-      // 1. Restore cached synthesized payload immediately on mount (zero network delay)
-      const savedPayloadRaw = localStorage.getItem("zyvoriq_last_synthesized_payload_v1");
-      const savedPrompt = localStorage.getItem("zyvoriq_last_prompt_v1");
-      let hydratedFromCache = false;
-      let synSavedTime = 0;
-      if (savedPayloadRaw) {
-        try {
-          const parsedSyn = JSON.parse(savedPayloadRaw);
-          if (parsedSyn && parsedSyn.title && parsedSyn.personas && parsedSyn.wardrobes) {
-            synSavedTime = parsedSyn._savedAt ? new Date(parsedSyn._savedAt).getTime() : 0;
-            if (savedPrompt) {
-              const ytInSaved = extractYouTubeUrlFromText(savedPrompt);
-              if (ytInSaved) {
-                referenceYouTubeUrlRef.current = ytInSaved;
-                setReferenceYouTubeUrl(ytInSaved);
-              }
-            }
-            applySynthesizedAssets(parsedSyn, undefined, false);
-            lastSynthesizedPromptKeyRef.current = `${
-              referenceYouTubeUrlRef.current || parsedSyn.creativeElevation?.youtubeMetadata?.url || ""
-            } ${parsedSyn.storyline}`.trim();
-            hydratedFromCache = true;
-          }
-        } catch {
-          // fallback to network synthesis
-        }
-      }
-
-      // 2. Sync custom personas & wardrobe selections made in /personas AFTER synthesized payload hydration
-      try {
-        let mergedPersonasPool = [...PERSONAS_CATALOG];
-        const dynRaw = localStorage.getItem("zyvoriq_dynamic_catalog_v1");
-        if (dynRaw) {
-          const dynParsed = JSON.parse(dynRaw);
-          if (Array.isArray(dynParsed.personas) && dynParsed.personas.length > 0) {
-            mergedPersonasPool = dedupeById([...dynParsed.personas, ...mergedPersonasPool]);
-            setPersonasCatalog((prev) => dedupeById([...dynParsed.personas, ...prev]));
-          }
-          if (Array.isArray(dynParsed.wardrobes) && dynParsed.wardrobes.length > 0) {
-            setWardrobeCatalog((prev) => dedupeById([...dynParsed.wardrobes, ...prev]));
-          }
-          if (dynParsed.accessory && typeof dynParsed.accessory.id === "string") {
-            setAccessoriesCatalog((prev) => dedupeById([dynParsed.accessory, ...prev]));
-          }
-          if (dynParsed.venue && typeof dynParsed.venue.id === "string") {
-            setVenuesCatalog((prev) => dedupeById([dynParsed.venue, ...prev]));
-          }
-        }
-
-        const savedMatrix = localStorage.getItem("zyvoriq_cast_matrix_v1");
-        if (savedMatrix) {
-          const parsed = JSON.parse(savedMatrix);
-          if (Array.isArray(parsed.customPersonas) && parsed.customPersonas.length > 0) {
-            mergedPersonasPool = dedupeById([...parsed.customPersonas, ...mergedPersonasPool]);
-            setPersonasCatalog((prev) => dedupeById([...parsed.customPersonas, ...prev]));
-          }
-          const matrixSavedTime = parsed.savedAt ? new Date(parsed.savedAt).getTime() : 0;
-          const fromPersonas = params.get("from") === "personas";
-          if (fromPersonas || !hydratedFromCache || matrixSavedTime >= synSavedTime) {
-            if (parsed.selectedIds) {
-              const cleanSel = dedupeSelectedPersonaIds(parsed.selectedIds);
-              setSelectedPersonaIds((prev) => dedupeSelectedPersonaIds(parsed.selectedIds, prev));
-
-              const wMap: Record<string, { act1Id: string; act2Id: string; accessoryId: string }> =
-                parsed.wardrobeMap || {};
-              const femId = cleanSel.female_lead?.[0];
-              const maleId = cleanSel.male_lead?.[0];
-              const supId = cleanSel.supporting?.[0];
-              const bgId = cleanSel.background?.[0];
-              const audId = cleanSel.audience?.[0];
-
-              const femP = mergedPersonasPool.find((p) => p.id === femId);
-              const maleP = mergedPersonasPool.find((p) => p.id === maleId);
-              const supP = mergedPersonasPool.find((p) => p.id === supId);
-              const bgP = mergedPersonasPool.find((p) => p.id === bgId);
-              const audP = mergedPersonasPool.find((p) => p.id === audId);
-
-              if (femId && (wMap[femId]?.act1Id || femP?.defaultAct1WardrobeId)) {
-                setWomenAct1Id(wMap[femId]?.act1Id || femP!.defaultAct1WardrobeId);
-              }
-              if (femId && (wMap[femId]?.act2Id || femP?.defaultAct2WardrobeId)) {
-                setWomenAct2Id(wMap[femId]?.act2Id || femP!.defaultAct2WardrobeId);
-              }
-              if (maleId && (wMap[maleId]?.act1Id || maleP?.defaultAct1WardrobeId)) {
-                setMenAct1Id(wMap[maleId]?.act1Id || maleP!.defaultAct1WardrobeId);
-              }
-              if (maleId && (wMap[maleId]?.act2Id || maleP?.defaultAct2WardrobeId)) {
-                setMenAct2Id(wMap[maleId]?.act2Id || maleP!.defaultAct2WardrobeId);
-              }
-              if (supId && (wMap[supId]?.act1Id || supP?.defaultAct1WardrobeId)) {
-                setSupportingWardrobeId(wMap[supId]?.act1Id || supP!.defaultAct1WardrobeId);
-              }
-              if (bgId && (wMap[bgId]?.act1Id || bgP?.defaultAct1WardrobeId)) {
-                setBackgroundWardrobeId(wMap[bgId]?.act1Id || bgP!.defaultAct1WardrobeId);
-              }
-              if (audId && (wMap[audId]?.act1Id || audP?.defaultAct1WardrobeId)) {
-                setAudienceWardrobeId(wMap[audId]?.act1Id || audP!.defaultAct1WardrobeId);
-              }
-              const accCandidate =
-                (femId && wMap[femId]?.accessoryId) ||
-                (maleId && wMap[maleId]?.accessoryId) ||
-                femP?.defaultAccessoryId ||
-                maleP?.defaultAccessoryId;
-              if (accCandidate) {
-                setAccessoryId(accCandidate);
-              }
-              customShotsRef.current = null;
-            }
-            if (fromPersonas) {
-              setCreateStep(2);
-              setStatusBanner(
-                "✓ Locked Cast & Per-Character Wardrobes synced from Personas & Wardrobe Library!"
-              );
-            }
-          }
-        }
-      } catch {
-        // ignore
-      }
-      let cancelled = false;
-      (async () => {
-        if (!hydratedFromCache && savedPrompt && savedPrompt.trim().length > 0) {
-          await synthesizeFromNewPrompt(savedPrompt, false);
-        }
-        try {
-          const jRes = await fetch("/api/swarm/jobs?latest=true");
-          const jData = await jRes.json().catch(() => ({}));
-          const latestJob = jData?.job;
-          if (!cancelled && latestJob && Date.now() - (latestJob.createdAt || 0) < 30 * 60 * 1000) {
-            if (typeof latestJob.progress === "number") setRenderProgress(latestJob.progress);
-            if (typeof latestJob.stageLabel === "string") setRenderStageLabel(latestJob.stageLabel);
-            if (Array.isArray(latestJob.logs)) setRenderLogs(latestJob.logs);
-            if (typeof latestJob.combinedSrc === "string" && latestJob.combinedSrc) {
-              setActiveVideoUrl(latestJob.combinedSrc);
-            }
-            if (latestJob.status === "running") {
-              setIsRendering(true);
-              const jobId = latestJob.id;
-              while (!cancelled) {
-                await new Promise((r) => setTimeout(r, 3000));
-                const pollRes = await fetch(`/api/swarm/jobs?id=${encodeURIComponent(jobId)}`);
-                const pollData = await pollRes.json().catch(() => ({}));
-                const j = pollData?.job;
-                if (!j) continue;
-                if (typeof j.progress === "number") setRenderProgress(j.progress);
-                if (typeof j.stageLabel === "string") setRenderStageLabel(j.stageLabel);
-                if (Array.isArray(j.logs)) setRenderLogs(j.logs);
-                if (typeof j.combinedSrc === "string" && j.combinedSrc) {
-                  setActiveVideoUrl((prev) => (prev !== j.combinedSrc ? j.combinedSrc : prev));
-                }
-                if (j.status === "completed" || j.status === "error") {
-                  setIsRendering(false);
-                  break;
-                }
-              }
-            }
-          }
-        } catch {
-          // ignore
-        }
-      })();
-      return () => {
-        cancelled = true;
-      };
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const switchWorkflow = useCallback(
-    (nextMode: StudioWorkflowMode) => {
-      setWorkflow(nextMode);
-      if (nextMode === "published") {
-        setCanvasTab("video");
-        setActiveVideoUrl((prev) => prev || getById(reels, selectedReelId).videoUrl);
-      } else if (nextMode === "wip") {
-        setCanvasTab("shots");
-      } else {
-        setCanvasTab("ensemble");
-      }
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(
-          new CustomEvent("zyvoriq-workflow-changed", { detail: { mode: nextMode } })
-        );
-      }
-    },
-    [reels, selectedReelId]
-  );
-
-  useEffect(() => {
-    const onSetWf = (e: Event) => {
-      const ce = e as CustomEvent<{ mode: StudioWorkflowMode }>;
-      if (ce.detail?.mode) switchWorkflow(ce.detail.mode);
     };
-    window.addEventListener("zyvoriq-set-workflow", onSetWf);
-    return () => window.removeEventListener("zyvoriq-set-workflow", onSetWf);
-  }, [switchWorkflow]);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  });
 
-  // ==========================================================================
-  // 5. STRUCTURED SHOT COMPILER (ZERO REGEX)
-  // ==========================================================================
-  const getDynamicWardrobeForCategory = useCallback(
-    (category: PersonaCategory, act?: 1 | 2) => {
-      return dedupeById(
-        wardrobeCatalog.filter(
-          (w) =>
-            w.category === category &&
-            (act === undefined || w.act === act || w.act === "both")
-        )
-      );
-    },
-    [wardrobeCatalog]
+  // Active platform & segment rules
+  const activePlatform = useMemo(
+    () => PLATFORMS.find((p) => p.id === activePlatformId) || PLATFORMS[0],
+    [activePlatformId]
   );
 
-  const compileStructuredShots = useCallback((): ShotSpec[] => {
-    const durationObj = getById(DURATIONS_CATALOG, durationId);
-    const countryObj = getById(COUNTRIES_CATALOG, countryId);
-    const venueObj = getById(venuesCatalog, venueId);
-    const lightObj = getById(LIGHTING_CATALOG, lightingId);
-    const wAct1 = getById(wardrobeCatalog, womenAct1Id);
-    const wAct2 = getById(wardrobeCatalog, womenAct2Id);
-    const mAct1 = getById(wardrobeCatalog, menAct1Id);
-    const mAct2 = getById(wardrobeCatalog, menAct2Id);
-    const supW = getById(wardrobeCatalog, supportingWardrobeId);
-    const bgW = getById(wardrobeCatalog, backgroundWardrobeId);
-    const audW = getById(wardrobeCatalog, audienceWardrobeId);
-    const lyricLines = lyrics
-      .split("\n")
-      .map((l) => l.trim())
-      .filter(Boolean);
+  const activeSegment = useMemo(
+    () =>
+      post.segments.find((s) => s.id === selectedSegmentId) || post.segments[0],
+    [post.segments, selectedSegmentId]
+  );
 
-    const femPersona =
-      personasCatalog.find((p) => p.id === selectedPersonaIds.female_lead?.[0]) ||
-      personasCatalog.find((p) => p.category === "female_lead") ||
-      personasCatalog[0];
-    const femPersona2 = personasCatalog.find(
-      (p) => p.id === selectedPersonaIds.female_lead?.[1]
-    );
-    const malePersona =
-      personasCatalog.find((p) => p.id === selectedPersonaIds.male_lead?.[0]) ||
-      personasCatalog.find((p) => p.category === "male_lead");
-    const supPersona =
-      personasCatalog.find((p) => p.id === selectedPersonaIds.supporting?.[0]) ||
-      personasCatalog.find((p) => p.category === "supporting");
-    const bgPersona =
-      personasCatalog.find((p) => p.id === selectedPersonaIds.background?.[0]) ||
-      personasCatalog.find((p) => p.category === "background");
-    const audPersona =
-      personasCatalog.find((p) => p.id === selectedPersonaIds.audience?.[0]) ||
-      personasCatalog.find((p) => p.category === "audience");
+  const fullCaptionText = useMemo(
+    () => `${post.hook}\n\n${post.body}\n\n${post.hashtags}`.trim(),
+    [post.hook, post.body, post.hashtags]
+  );
 
-    const isFemaleOnlyVocal =
-      vocalId === "voc_female_solo" || vocalId === "voc_girl_group";
-    const isMaleOnlyVocal =
-      vocalId === "voc_male_solo" || vocalId === "voc_boy_band";
+  const charCount = fullCaptionText.length;
+  const charRemaining = activePlatform.charLimit - charCount;
+  const hashtagList = useMemo(
+    () =>
+      post.hashtags
+        .split(/\s+/)
+        .map((t) => t.trim())
+        .filter((t) => t.startsWith("#")),
+    [post.hashtags]
+  );
 
-    const primaryLead = isMaleOnlyVocal && malePersona ? malePersona : femPersona;
-    const shot2Lead =
-      !isFemaleOnlyVocal && malePersona && malePersona.id !== primaryLead?.id
-        ? malePersona
-        : femPersona2 || malePersona || supPersona || primaryLead;
-    const harmonyPartner = femPersona2 || shot2Lead;
+  // ============================================================================
+  // 6 MANDATORY CHECKS & FIXES ENGINE (Phase 3.4)
+  // ============================================================================
+  const activeIssues = useMemo<ContentCheckIssue[]>(() => {
+    const list: ContentCheckIssue[] = [];
 
-    const count = durationObj.shotsCount || 6;
-    const secPerShot = Math.round(durationObj.seconds / count);
-    const totalActs = Math.max(1, Math.ceil(count / 3));
-    const fmtSec = (sec: number) =>
-      `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
-
-    return Array.from({ length: count }, (_, idx) => {
-      const isAct1 = idx < Math.ceil(count / 2);
-      const actNum = Math.min(totalActs, Math.floor(idx / 3) + 1);
-      const startSec = idx * secPerShot;
-      const endSec = (idx + 1) * secPerShot;
-      const timecode = `${fmtSec(startSec)}–${fmtSec(endSec)}`;
-      const camObj =
-        CAMERA_MOVES_CATALOG[idx % CAMERA_MOVES_CATALOG.length];
-
-      const act1Summary = `${wAct1.label} • ${mAct1.label}`;
-      const act2Summary = `${wAct2.label} • ${mAct2.label}`;
-
-      // Distribute the shots across all 6 selected Cast Personas so every vocal assignment & scene anchor is 100% matched
-      const shotSlot = idx % 6;
-      let subjectClause = "";
-      let previewPhotoUrl = primaryLead?.photoUrl || "/assets/characters/ananya_roy_in.jpg";
-
-      if (shotSlot === 0) {
-        // Opening Hook — Female Lead / Primary Lead
-        const leadW = primaryLead?.category === "male_lead" ? mAct1.promptSpec : wAct1.promptSpec;
-        subjectClause = `${primaryLead?.name} (${primaryLead?.facialSpec}) wearing ${leadW}`;
-        previewPhotoUrl = primaryLead?.photoUrl || previewPhotoUrl;
-      } else if (shotSlot === 1) {
-        // Male Lead / Counter-Lead Confrontation
-        const counterW =
-          shot2Lead?.category === "male_lead" ? mAct1.promptSpec : wAct1.promptSpec;
-        const leadW = primaryLead?.category === "male_lead" ? mAct1.promptSpec : wAct1.promptSpec;
-        subjectClause = `${shot2Lead?.name} (${shot2Lead?.facialSpec}) wearing ${counterW} in dramatic interplay with ${primaryLead?.name} (${leadW})`;
-        previewPhotoUrl = shot2Lead?.photoUrl || previewPhotoUrl;
-      } else if (shotSlot === 2) {
-        // Female Co-Lead & Supporting Cast Build
-        const coLead = femPersona2 || primaryLead;
-        const coLeadW = coLead?.category === "male_lead" ? mAct1.promptSpec : wAct1.promptSpec;
-        subjectClause = `${coLead?.name} (${coLead?.facialSpec}) wearing ${coLeadW} & ${primaryLead?.name} surrounded by ${supPersona?.name} (${supW.promptSpec})`;
-        previewPhotoUrl = femPersona2?.photoUrl || supPersona?.photoUrl || previewPhotoUrl;
-      } else if (shotSlot === 3) {
-        // Couture Transformation & Ensemble Drop
-        const leadW2 = primaryLead?.category === "male_lead" ? mAct2.promptSpec : wAct2.promptSpec;
-        const malePartnerClause =
-          malePersona && malePersona.id !== primaryLead?.id
-            ? ` & ${malePersona.name} (${mAct2.promptSpec})`
-            : "";
-        subjectClause = `${primaryLead?.name} (${leadW2})${malePartnerClause} transformed into Act II Couture flanked by ${bgPersona?.name} (${bgW.promptSpec})`;
-        previewPhotoUrl = bgPersona?.photoUrl || primaryLead?.photoUrl || previewPhotoUrl;
-      } else if (shotSlot === 4) {
-        // Intimate 85mm Close-Up Bridge + Supporting Cast
-        const leadW2 = primaryLead?.category === "male_lead" ? mAct2.promptSpec : wAct2.promptSpec;
-        const partnerW2 =
-          harmonyPartner?.category === "male_lead" ? mAct2.promptSpec : wAct2.promptSpec;
-        subjectClause = `${primaryLead?.name} (${primaryLead?.facialSpec}) wearing ${leadW2} in intense 85mm close-up harmony with ${harmonyPartner?.name} (${partnerW2}) & ${supPersona?.name} (${supW.promptSpec})`;
-        previewPhotoUrl =
-          supPersona?.photoUrl || femPersona2?.photoUrl || primaryLead?.photoUrl || previewPhotoUrl;
-      } else {
-        // Grand Finale Full 6-Persona Cast & Crowd Reveal
-        const leadW2 = primaryLead?.category === "male_lead" ? mAct2.promptSpec : wAct2.promptSpec;
-        const ensembleNames = [
-          `${primaryLead?.name} (${leadW2})`,
-          malePersona && malePersona.id !== primaryLead?.id
-            ? `${malePersona.name} (${mAct2.promptSpec})`
-            : null,
-          femPersona2 ? `${femPersona2.name} (${wAct2.promptSpec})` : null,
-          supPersona ? `${supPersona.name} (${supW.promptSpec})` : null,
-          bgPersona ? `${bgPersona.name} (${bgW.promptSpec})` : null,
-          audPersona ? `${audPersona.name} (${audW.promptSpec})` : null,
-        ]
-          .filter(Boolean)
-          .join(", ");
-        subjectClause = `Full 6-Persona Ensemble — ${ensembleNames}`;
-        previewPhotoUrl = audPersona?.photoUrl || primaryLead?.photoUrl || previewPhotoUrl;
-      }
-
-      const shotEmotionCue =
-        shotEmotions[idx % Math.max(1, shotEmotions.length)] ||
-        "Radiant confidence & expressive camera connection";
-      const shotChoreoCue =
-        shotChoreography[idx % Math.max(1, shotChoreography.length)] ||
-        "Beat-synchronized movement locked to downbeats";
-
-      return {
-        shotId: `shot_${idx + 1}`,
-        shotNumber: idx + 1,
-        timecode,
-        act: actNum,
-        cameraMoveId: camObj.id,
-        actionPrompt: `${subjectClause} at ${venueObj.label} (${countryObj.label}) • Emotion: ${shotEmotionCue} • Choreography: ${shotChoreoCue} • Camera: ${camObj.promptSpec} • Lighting: ${lightObj.promptSpec}`,
-        wardrobeSummary: isAct1 ? act1Summary : act2Summary,
-        lyricLine:
-          lyricLines[idx % Math.max(1, lyricLines.length)] ||
-          `Synchronized vocal line ${idx + 1}`,
-        previewPhotoUrl,
-      };
-    });
-  }, [
-    durationId,
-    countryId,
-    venueId,
-    lightingId,
-    vocalId,
-    womenAct1Id,
-    womenAct2Id,
-    menAct1Id,
-    menAct2Id,
-    supportingWardrobeId,
-    backgroundWardrobeId,
-    audienceWardrobeId,
-    lyrics,
-    selectedPersonaIds,
-    personasCatalog,
-    wardrobeCatalog,
-    venuesCatalog,
-    shotEmotions,
-    shotChoreography,
-  ]);
-
-  useEffect(() => {
-    if (customShotsRef.current && customShotsRef.current.length > 0) {
-      setShots(customShotsRef.current);
-    } else {
-      setShots(compileStructuredShots());
-    }
-  }, [compileStructuredShots]);
-
-  // ==========================================================================
-  // 5B. FINAL COMPILED DETAILED MASTER PROMPT (LIVE REACTIVE ACROSS STEPS 01–04)
-  // ==========================================================================
-  const compiledMasterPrompt = React.useMemo(() => {
-    const durationObj = getById(DURATIONS_CATALOG, durationId);
-    const countryObj = getById(COUNTRIES_CATALOG, countryId);
-    const regionObj = getById(REGIONS_CATALOG, regionId);
-    const langObj = getById(LANGUAGES_CATALOG, languageId);
-    const genreObj = getById(GENRES_CATALOG, genreId);
-    const vocalObj = getById(VOCALS_CATALOG, vocalId);
-    const venueObj = getById(venuesCatalog, venueId);
-    const lightObj = getById(LIGHTING_CATALOG, lightingId);
-    const demoObj = getById(DEMOGRAPHIES_CATALOG, demographyId);
-    const platObj = getById(PLATFORMS_CATALOG, platformId);
-    const ctypeObj = getById(CONTENT_TYPES_CATALOG, contentTypeId);
-
-    const wAct1 = getById(wardrobeCatalog, womenAct1Id);
-    const wAct2 = getById(wardrobeCatalog, womenAct2Id);
-    const mAct1 = getById(wardrobeCatalog, menAct1Id);
-    const mAct2 = getById(wardrobeCatalog, menAct2Id);
-    const supW = getById(wardrobeCatalog, supportingWardrobeId);
-    const bgW = getById(wardrobeCatalog, backgroundWardrobeId);
-    const audW = getById(wardrobeCatalog, audienceWardrobeId);
-    const accObj = getById(accessoriesCatalog, accessoryId);
-
-    const fmtSpec = (item: { label: string; promptSpec: string }) =>
-      item.promptSpec && item.promptSpec !== item.label
-        ? `${item.label} — ${item.promptSpec}`
-        : item.label;
-
-    const castLines = (
-      ["female_lead", "male_lead", "supporting", "background", "audience"] as PersonaCategory[]
-    )
-      .flatMap((cat) =>
-        (selectedPersonaIds[cat] || [])
-          .map((id) => personasCatalog.find((p) => p.id === id))
-          .filter((p): p is NonNullable<typeof p> => Boolean(p))
-      )
-      .map(
-        (p, idx) =>
-          `  ${idx + 1}. [${p.category.toUpperCase()}] ${p.name} (${p.roleTitle}) — Biometric Spec: ${p.facialSpec} | Reference Anchor: ${p.photoUrl}`
-      )
-      .join("\n");
-
-    const act1WardrobeBlock = `  • Female Lead (Act I 0:00–0:30): ${fmtSpec(wAct1)}\n  • Male Lead / Antagonist (Act I 0:00–0:30): ${fmtSpec(mAct1)}\n  • Backup Choreography (Act I): ${fmtSpec(bgW)}`;
-
-    const endTimecodeLabel =
-      durationObj.seconds >= 120
-        ? `${Math.floor(durationObj.seconds / 60)}:${String(durationObj.seconds % 60).padStart(2, "0")}`
-        : durationObj.seconds === 90
-          ? "1:30"
-          : "1:00";
-    const act2WardrobeBlock = `  • Female Lead (Act II+ 0:30–${endTimecodeLabel}): ${fmtSpec(wAct2)}\n  • Male Lead / Antagonist (Act II+ 0:30–${endTimecodeLabel}): ${fmtSpec(mAct2)}\n  • Supporting Stage / Musicians: ${fmtSpec(supW)}`;
-
-    const audioEngineObj = getById(AUDIO_ENGINES_CATALOG, audioEngineId);
-    const isLyriaMode = audioEngineId === "omni_lyria3";
-
-    const shotLines = shots
-      .map((s, idx) => {
-        const camObj = getById(CAMERA_MOVES_CATALOG, s.cameraMoveId);
-        const romanAct = ["I", "II", "III", "IV", "V", "VI"][Math.max(0, (s.act || 1) - 1)] || String(s.act);
-        const turnTag = `Turn ${s.act}.${s.shotNumber} (Act ${romanAct})`;
-        const shotNumPadded = String(s.shotNumber).padStart(2, "0");
-        const emo = shotEmotions[idx % Math.max(1, shotEmotions.length)] || "";
-        const cho = shotChoreography[idx % Math.max(1, shotChoreography.length)] || "";
-        const opt = shotLightingAndOptics[idx % Math.max(1, shotLightingAndOptics.length)] || camObj.promptSpec;
-        return isLyriaMode
-          ? `  • Shot ${shotNumPadded} [${s.timecode} • ${turnTag}]:\n    - Camera, Optics & Kelvin Rig: ${camObj.label} (${opt})\n    - Dual-Mode Viseme & Gaze Acting: Active vocalist executes beat-locked open-mouth phoneme articulation (r >= 0.72) while non-singing dancers/ensemble maintain 100% closed-lips eye-acting (RMS <= 0.015) — (${emo})\n    - 8-Count Choreography & Blocking: ${cho}\n    - Visual & Wardrobe Direction: ${s.actionPrompt}\n    - Lyria 3 Pro Vocal & Lyrical Line (${bpm} BPM • ${musicalKey}): "${s.lyricLine}"`
-          : `  • Shot ${shotNumPadded} [${s.timecode} • ${turnTag}]:\n    - Camera, Optics & Kelvin Rig: ${camObj.label} (${opt})\n    - Human Emotion & Viseme Expression: ${emo}\n    - 8-Count Choreography & Blocking: ${cho}\n    - Visual & Wardrobe Direction: ${s.actionPrompt}\n    - Native 48kHz Vocal & Lip-Sync Line (${bpm} BPM • ${musicalKey}): "${s.lyricLine}"`;
-      })
-      .join("\n\n");
-
-    const safeConceptDirective = compiledConceptDirective || storyline;
-
-    return [
-      `================================================================================`,
-      `UNIFIED MASTER PRODUCTION PROMPT — ${
-        isLyriaMode
-          ? "OMNI 1.1 FLASH + LYRIA 3 PRO PREVIEW (v8.1.0)"
-          : "GEMINI OMNI 1.1 FLASH NATIVE (v8.1.0)"
-      }`,
-      isLyriaMode
-        ? `Target Endpoints: POST https://generativelanguage.googleapis.com/v1beta/interactions + POST https://generativelanguage.googleapis.com/v1beta/models/lyria-3-pro-preview:generateContent`
-        : `Target Endpoint: POST https://generativelanguage.googleapis.com/v1beta/interactions`,
-      isLyriaMode
-        ? `Model Architecture: models/gemini-omni-1.1-flash (24/1 CFR Dual-Mode Viseme & Nayan-Abhinaya Video) + models/lyria-3-pro-preview (Continuous 48,000 Hz Stereo Studio Song Master @ ${bpm} BPM in ${musicalKey})`
-        : `Model Architecture: models/gemini-omni-1.1-flash (24/1 CFR Video + Native 48,000 Hz Stereo Vocal/Music @ ${bpm} BPM in ${musicalKey})`,
-      `Title: ${title} | Duration: ${durationObj.label} | Format: ${platObj.label} (${ctypeObj.label})`,
-      `================================================================================`,
-      ``,
-      `[1. CORE CONCEPT & STORYLINE DIRECTIVE]`,
-      `  ${safeConceptDirective}`,
-      `  Target Audience & Vibe: ${demoObj.label} • ${regionObj.label}`,
-      ``,
-      `[1B. CREATIVE ELEVATION & SURPASS ARCHITECTURE (DECONSTRUCT -> ELEVATE -> SURPASS)]`,
-      creativeElevation.youtubeMetadata
-        ? `  • Deconstructed YouTube Reference: "${creativeElevation.youtubeMetadata.title}" (${creativeElevation.youtubeMetadata.channelName}) — ${creativeElevation.youtubeMetadata.url}`
-        : `  • Source Mode: Original Creative Seed Deconstruction & Elevation`,
-      `  • Core Hook Analysis: ${creativeElevation.deconstructedCore}`,
-      `  • Reference Limitations Overcome: ${creativeElevation.identifiedLimitations.join(" | ")}`,
-      `  • Creative Surpass Strategy (${creativeElevation.innovationScore}): ${creativeElevation.surpassStrategy}`,
-      `  • Act I -> Act II 00:30 Twist: ${creativeElevation.act1ToAct2Twist}`,
-      `  • Sonic & Harmonic Innovation: ${creativeElevation.sonicInnovation}`,
-      `  • ${shots.length}-Shot Kinetic Choreography & Camera Upgrade: ${creativeElevation.choreographyAndCameraUpgrade}`,
-      ``,
-      `[2. MUSICAL SCORE, VOICE TYPE, BPM & VOCAL HARMONY SPEC (48,000 Hz STEREO)]`,
-      `  • Audio & Music Synthesis Engine: ${fmtSpec(audioEngineObj)}`,
-      `  • Genre & Instrumentation: ${fmtSpec(genreObj)} (Locked @ ${bpm} BPM in ${musicalKey})`,
-      `  • Vocal Arrangement: ${fmtSpec(vocalObj)}`,
-      `  • Voice Type & Vocal Timbre: ${voiceType}`,
-      `  • Language & Phonetics: ${fmtSpec(langObj)}`,
-      isLyriaMode
-        ? `  • Dual-Mode Active Vocalist Viseme & Non-Singing Closed-Lips Law: Continuous ${durationObj.seconds}.0s 48,000 Hz studio vocal & instrumental song generated via models/lyria-3-pro-preview (-14.0 LUFS EBU R128 @ ${bpm} BPM in ${musicalKey}). Active lead/co-lead vocalists execute beat-locked open-mouth phoneme articulation (r >= 0.72), while non-singing backup dancers, musicians, and crowd maintain 100% closed-lips Nayan-Abhinaya eye-acting (RMS <= 0.015).`
-        : `  • Lip-Sync & Acoustic Law: Continuous upbeat musical score and natural expressive lip-sync articulation from t=0.00s to final frame.`,
-      ``,
-      `[3. ENSEMBLE CAST ACROSS 5 TIERS, HUMAN EMOTIONS & 8-COUNT CHOREOGRAPHY BIBLE]`,
-      castLines,
-      `  • Human Emotions & Facial Expression Arc: ${humanEmotions}`,
-      `  • Choreography & Dance Formation Blocking: ${choreography}`,
-      ``,
-      `[4. LOCATIONS, BACKGROUND SCENERY & ACT I -> ACT II+ WARDROBE TRANSFORMATION]`,
-      `  • Country & Destination: ${fmtSpec(countryObj)}`,
-      `  • Venue Architecture: ${fmtSpec(venueObj)}`,
-      `  • Background Scenery & Atmospheric FX: ${backgroundEnvironment}`,
-      `  • Lighting & Color Grade: ${fmtSpec(lightObj)}`,
-      `  • Figure-Ground Contrast Separation: ${figureGroundContrastSpec}`,
-      act1WardrobeBlock,
-      act2WardrobeBlock,
-      `  • VIP Audience Dress Code: ${fmtSpec(audW)}`,
-      `  • Footwear, Hair, Accessories & Live Instruments: ${fmtSpec(accObj)} | ${instrumentAndStagePropsSpec}`,
-      ``,
-      `[5. MULTI-TURN SHOT-BY-SHOT EXECUTION SCRIPT (${shots.length} TURNS @ 24/1 CFR)]`,
-      shotLines,
-    ].join("\n");
-  }, [
-    title,
-    storyline,
-    compiledConceptDirective,
-    creativeElevation,
-    durationId,
-    countryId,
-    regionId,
-    languageId,
-    genreId,
-    bpm,
-    musicalKey,
-    vocalId,
-    audioEngineId,
-    venueId,
-    lightingId,
-    shotLightingAndOptics,
-    figureGroundContrastSpec,
-    instrumentAndStagePropsSpec,
-    demographyId,
-    platformId,
-    contentTypeId,
-    womenAct1Id,
-    womenAct2Id,
-    menAct1Id,
-    menAct2Id,
-    supportingWardrobeId,
-    backgroundWardrobeId,
-    audienceWardrobeId,
-    accessoryId,
-    selectedPersonaIds,
-    personasCatalog,
-    wardrobeCatalog,
-    accessoriesCatalog,
-    venuesCatalog,
-    shots,
-    backgroundEnvironment,
-    humanEmotions,
-    shotEmotions,
-    voiceType,
-    choreography,
-    shotChoreography,
-  ]);
-
-  const effectiveMasterPrompt = customMasterPromptOverride.trim()
-    ? customMasterPromptOverride
-    : compiledMasterPrompt;
-
-  // ==========================================================================
-  // 6. END-TO-END WORKFLOW HANDLERS
-  // ==========================================================================
-
-  const buildActiveWardrobeOverrides = (): Record<
-    string,
-    { act1Id: string; act2Id: string; accessoryId: string }
-  > => {
-    const map: Record<string, { act1Id: string; act2Id: string; accessoryId: string }> = {};
-    for (const id of selectedPersonaIds.female_lead || []) {
-      map[id] = { act1Id: womenAct1Id, act2Id: womenAct2Id, accessoryId };
-    }
-    for (const id of selectedPersonaIds.male_lead || []) {
-      map[id] = { act1Id: menAct1Id, act2Id: menAct2Id, accessoryId };
-    }
-    for (const id of selectedPersonaIds.supporting || []) {
-      map[id] = { act1Id: supportingWardrobeId, act2Id: supportingWardrobeId, accessoryId };
-    }
-    for (const id of selectedPersonaIds.background || []) {
-      map[id] = { act1Id: backgroundWardrobeId, act2Id: backgroundWardrobeId, accessoryId };
-    }
-    for (const id of selectedPersonaIds.audience || []) {
-      map[id] = { act1Id: audienceWardrobeId, act2Id: audienceWardrobeId, accessoryId };
-    }
-    return map;
-  };
-
-  // Save Project as Persistent Draft in Drafts & Render Jobs Repository
-  const handleSaveDraft = () => {
-    const cleanTitle = title.replace(/\s*\(Saved Draft\)|\s*\(Failed Render\)/gi, "");
-    const newDraft: StudioReelRecord = {
-      id: `draft_${Date.now()}`,
-      title: `${cleanTitle} (Saved Draft)`,
-      status: "draft",
-      progress: 50,
-      videoUrl: activeVideoUrl,
-      durationId,
-      countryId,
-      regionId,
-      languageId,
-      demographyId,
-      platformId,
-      contentTypeId,
-      genreId,
-      vocalId,
-      venueId,
-      lightingId,
-      audioEngineId,
-      storyline,
-      lyrics,
-      customMasterPromptOverride,
-      selectedPersonaIds,
-      wardrobeOverrides: buildActiveWardrobeOverrides(),
-      shots,
-      updatedAt: "Saved Just Now • Ready to Resume",
-    };
-    setReels((prev) => {
-      const next = [newDraft, ...prev];
-      persistReelsToStorage(next);
-      return next;
-    });
-    setStatusBanner(
-      "✓ Draft saved to persistent storage ('Drafts & Render Jobs') with full Cast, Wardrobe, Storyline & Lyrics."
-    );
-  };
-
-  const handleDeleteReel = (reelId: string) => {
-    setReels((prev) => {
-      const next = prev.filter((r) => r.id !== reelId);
-      persistReelsToStorage(next);
-      return next;
-    });
-    setStatusBanner("✓ Removed item from Drafts & Render Jobs.");
-  };
-
-  // Execute Full Live Render via models/gemini-omni-1.1-flash (+ optional models/lyria-3-pro-preview) (/api/swarm/jobs)
-  const executeEndToEndRender = async (modeLabel: string) => {
-    const activeDurationSec = getById(DURATIONS_CATALOG, durationId).seconds;
-    setIsRendering(true);
-    setRenderProgress(5);
-    setRenderStageLabel(
-      audioEngineId === "omni_lyria3"
-        ? `Stage 1/${shots.length} • Synthesizing ${activeDurationSec}.0s Lyria 3 Pro studio song & developing closed-lips eye/body shots...`
-        : `Stage 1/${shots.length} • Launching live models/gemini-omni-1.1-flash generation (Act I Turn 1A: 00:00–00:10)...`
-    );
-    setRenderLogs([]);
-    setActiveVideoUrl("");
-    setCanvasTab("video");
-
-    try {
-      const countryObj = getById(COUNTRIES_CATALOG, countryId);
-      const langObj = getById(LANGUAGES_CATALOG, languageId);
-      const genreObj = getById(GENRES_CATALOG, genreId);
-      const venueObj = getById(venuesCatalog, venueId);
-      const lightObj = getById(LIGHTING_CATALOG, lightingId);
-      const wAct1 = getById(wardrobeCatalog, womenAct1Id);
-      const wAct2 = getById(wardrobeCatalog, womenAct2Id);
-      const mAct1 = getById(wardrobeCatalog, menAct1Id);
-      const mAct2 = getById(wardrobeCatalog, menAct2Id);
-
-      // Helper to extract pure sung lyric text (strips [Shot XX • ...] and trailing (124 BPM) so the singer never pronounces stage tags)
-      const cleanSungLyric = (rawLine: string) =>
-        rawLine
-          .replace(/^\[[^\]]*\]\s*/, "")
-          .replace(/\s*\(\d+\s*BPM\)\s*$/i, "")
-          .trim();
-
-      const extractVocalRole = (rawLine: string) => {
-        const m = rawLine.match(/^\[Shot\s*\d+\s*•\s*([^\]]+)\]/i);
-        return m ? m[1].trim() : "Lead Playback Vocal";
-      };
-
-      const act1Shots = shots.filter((s) => s.act === 1);
-      const act2Shots = shots.filter((s) => s.act !== 1);
-
-      const userCustomPromptNote = customMasterPromptOverride.trim()
-        ? ` Director Master Prompt Override: ${customMasterPromptOverride.trim().slice(0, 600)}.`
-        : "";
-      const safeConceptForRender = `${compiledConceptDirective || storyline}${userCustomPromptNote}`;
-
-      const isLyriaMode = audioEngineId === "omni_lyria3";
-      const isCinemaMode =
-        contentTypeId === "ctype_cinema_film" || genreId === "gen_cinema_thriller";
-
-      // Build individual 10-second turn prompts across all configured shots
-      const turnPrompts = shots.map((s, idx) => {
-        const isAct1 = s.act === 1;
-        const femW = isAct1 ? wAct1.promptSpec || wAct1.label : wAct2.promptSpec || wAct2.label;
-        const maleW = isAct1 ? mAct1.promptSpec || mAct1.label : mAct2.promptSpec || mAct2.label;
-        const emo = shotEmotions[idx % Math.max(1, shotEmotions.length)] || humanEmotions;
-        const cho = shotChoreography[idx % Math.max(1, shotChoreography.length)] || choreography;
-        const sungLyric = cleanSungLyric(s.lyricLine);
-        const vocalRole = extractVocalRole(s.lyricLine);
-
-        if (isCinemaMode) {
-          return [
-            `Photorealistic 35mm Live-Action Cinema Concept: ${safeConceptForRender}.`,
-            `Shot Action (${s.timecode}): ${s.actionPrompt}.`,
-            `Venue & Atmosphere (${s.timecode}): ${countryObj.label} — ${venueObj.promptSpec || venueObj.label}. ${backgroundEnvironment} (${lightObj.promptSpec || lightObj.label}).`,
-            `Real Adult Human Cast & Tailoring: ${activePersonasList
-              .slice(0, 3)
-              .map((p) => `${p.name} (${p.facialSpec})`)
-              .join("; ")}. Lead Actress wearing ${femW}; Lead Actor wearing ${maleW}.`,
-            `Dramatic Live-Action Blocking & Camera Movement: ${cho}.`,
-            `Subtle Human Micro-Expressions & Natural Skin Texture: ${emo}. Real human skin pores, subtle wrinkles, natural breathing, zero CGI, zero cartoon, zero text overlays.`,
-            `Live-Action Spoken Dialogue & Lip-Sync (48,000 Hz Stereo): ${vocalRole} speaks clearly on camera in ${langObj.label} with authentic human vocal emotion and natural synchronized lip movements: "${sungLyric}". Accompanied by realistic room tone, physical foley, and subtle ${genreObj.promptSpec || genreObj.label}.`,
-          ].join(" ");
-        }
-
-        if (isLyriaMode) {
-          return [
-            `Concept: ${safeConceptForRender}.`,
-            `Shot Action (${s.timecode}): ${s.actionPrompt}.`,
-            `Venue & Atmosphere (${s.timecode}): ${countryObj.label} — ${venueObj.promptSpec || venueObj.label}. ${backgroundEnvironment} (${lightObj.promptSpec || lightObj.label}).`,
-            `Cast & Couture Wardrobe: ${activePersonasList
-              .slice(0, 3)
-              .map((p) => `${p.name} (${p.facialSpec})`)
-              .join("; ")}. Female Lead wearing ${femW}; Co-Stars wearing ${maleW}.`,
-            `STRICT NON-VOCAL VISUAL PERFORMANCE (CLOSED-LIPS LOCK — ZERO LIP MOVEMENT): Every performer's mouth stays naturally CLOSED in a radiant, confident closed-lip smile throughout the entire 10-second shot. Nobody sings, speaks, or mouths words on camera — zero lip movement, zero phantom mouthing.`,
-            `TALKING WITH EYES & EXPRESSIONS (NAYAN-ABHINAYA): Characters communicate purely through magnetic eye contact, smoldering kohl-lined gazes, playful winks over chic gold-rimmed glasses, raised eyebrows, confident head tilts, and facial micro-expressions (${emo}).`,
-            `MUSIC-DRIVEN BODY LANGUAGE, WARDROBE PHYSICS & SHOT DEVELOPMENT: Develop the entire shot's body language, waist/hip isolations, hair flips, glamorous short sequin dress & mini-skirt fabric motion, and camera movement around the ${genreObj.promptSpec || genreObj.label} beat. Choreography: ${cho}.`,
-          ].join(" ");
-        }
-
-        return [
-          `Concept: ${safeConceptForRender}.`,
-          `Shot Action (${s.timecode}): ${s.actionPrompt}.`,
-          `Venue & Atmosphere (${s.timecode}): ${countryObj.label} — ${venueObj.promptSpec || venueObj.label}. ${backgroundEnvironment} (${lightObj.promptSpec || lightObj.label}).`,
-          `Cast & Wardrobe: ${activePersonasList
-            .slice(0, 3)
-            .map((p) => `${p.name} (${p.facialSpec})`)
-            .join("; ")}. Female Lead wearing ${femW}; Male Co-Star wearing ${maleW}.`,
-          `Choreography & Facial Expression: ${cho}. Emotion: ${emo}.`,
-          `Studio 48kHz Music & Singer Voice Direction: ${genreObj.promptSpec || genreObj.label}. ${voiceType}. Active Vocalist for this 10s shot: ${vocalRole} singing in ${langObj.label} with crystal-clear studio playback pitch, natural lip-sync, and upbeat rhythmic groove (never speak bracketed tags or BPM numbers).`,
-          `Exact Sung Lyrics for this 10s Shot: "${sungLyric}"`,
-        ].join(" ");
-      });
-
-      const act1Prompt = [
-        `Concept: ${safeConceptForRender}.`,
-        `Setting & Venue: ${countryObj.label} — ${venueObj.promptSpec || venueObj.label}.`,
-        `Background & Lighting: ${backgroundEnvironment} (${lightObj.promptSpec || lightObj.label}).`,
-        `Lead Cast: ${activePersonasList
-          .slice(0, 3)
-          .map((p) => `${p.name} (${p.roleTitle}: ${p.facialSpec})`)
-          .join("; ")}.`,
-        `Act I Wardrobe: Female Lead in ${wAct1.promptSpec || wAct1.label}; Co-Stars in ${
-          mAct1.promptSpec || mAct1.label
-        }.`,
-        isCinemaMode
-          ? `Spoken Live-Action Dialogue & Score: Characters speak their dialogue lines clearly in ${langObj.label} with natural lip-sync over ${genreObj.promptSpec || genreObj.label}.`
-          : isLyriaMode
-          ? `Closed-Lips Eye/Body Acting Law: Performers keep their lips naturally closed (zero lip movement) and communicate through eyes, winks, facial expressions, body language, and wardrobe physics driven by ${genreObj.promptSpec || genreObj.label}.`
-          : `Music & Vocals: ${genreObj.promptSpec || genreObj.label}, ${voiceType}, sung in ${langObj.label}.`,
-        `Choreography & Emotions: ${choreography}. ${humanEmotions}.`,
-        `Act I Shot Progression: ${act1Shots
-          .map(
-            (s, idx) =>
-              `[${s.timecode}] ${
-                shotChoreography[idx % Math.max(1, shotChoreography.length)] || ""
-              }${isLyriaMode && !isCinemaMode ? "" : ` (Dialogue: "${cleanSungLyric(s.lyricLine)}")`}`
-          )
-          .join(" | ")}`,
-      ].join(" ");
-
-      const act2Prompt = [
-        `Concept Finale (Act II): ${safeConceptForRender}.`,
-        `Setting & Venue: ${countryObj.label} — ${venueObj.promptSpec || venueObj.label}.`,
-        `Background & Lighting: ${backgroundEnvironment} (${lightObj.promptSpec || lightObj.label}).`,
-        `Lead Cast: ${activePersonasList
-          .slice(0, 3)
-          .map((p) => `${p.name} (${p.roleTitle}: ${p.facialSpec})`)
-          .join("; ")}.`,
-        `Act II Finale Wardrobe: Female Lead in ${wAct2.promptSpec || wAct2.label}; Co-Stars in ${
-          mAct2.promptSpec || mAct2.label
-        }.`,
-        isCinemaMode
-          ? `Spoken Live-Action Dialogue & Score: Characters speak their dialogue lines clearly in ${langObj.label} with natural lip-sync over ${genreObj.promptSpec || genreObj.label}.`
-          : isLyriaMode
-          ? `Closed-Lips Eye/Body Acting Law: Performers keep their lips naturally closed (zero lip movement) and communicate through eyes, winks, facial expressions, body language, and wardrobe physics driven by ${genreObj.promptSpec || genreObj.label}.`
-          : `Music & Vocals: ${genreObj.promptSpec || genreObj.label}, ${voiceType}, sung in ${langObj.label}.`,
-        `Choreography & Emotions: ${choreography}. ${humanEmotions}.`,
-        `Act II Shot Progression: ${act2Shots
-          .map(
-            (s, idx) =>
-              `[${s.timecode}] ${
-                shotChoreography[(idx + 3) % Math.max(1, shotChoreography.length)] || ""
-              }${isLyriaMode && !isCinemaMode ? "" : ` (Dialogue: "${cleanSungLyric(s.lyricLine)}")`}`
-          )
-          .join(" | ")}`,
-      ].join(" ");
-
-      const res = await fetch("/api/swarm/jobs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title,
-          genre: genreObj.promptSpec || genreObj.label,
-          bpm: Number(genreObj.promptSpec?.match(/(\d+)\s*BPM/i)?.[1]) || bpm || 124,
-          audioEngine: isCinemaMode ? "omni_native" : audioEngineId,
-          adkOrcasMode: adkOrcasEnabled,
-          lyrics,
-          voiceType,
-          language: langObj.label,
-          act1Prompt,
-          act2Prompt,
-          turnPrompts,
-          leadPhotoUrl: activePersonasList[0]?.photoUrl || "",
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      const jobId = data?.job?.id;
-      if (!jobId) {
-        throw new Error(data?.error || "Failed to start Gemini Omni 1.1 Flash render job");
-      }
-
-      setStatusBanner(
-        `🚀 Live Gemini Omni 1.1 Flash render job (${jobId}) started! Turn 1A (10s preview) will stream into Master Player automatically as soon as it finishes.`
-      );
-
-      // Poll job state every 3s until completed or error, streaming each 10s/20s/30s/60s turn into Master Player
-      let finished = false;
-      while (!finished) {
-        await new Promise((r) => setTimeout(r, 3000));
-        const pollRes = await fetch(`/api/swarm/jobs?id=${encodeURIComponent(jobId)}`);
-        const pollData = await pollRes.json().catch(() => ({}));
-        const j = pollData?.job;
-        if (!j) continue;
-
-        if (typeof j.progress === "number") setRenderProgress(j.progress);
-        if (typeof j.stageLabel === "string") setRenderStageLabel(j.stageLabel);
-        if (Array.isArray(j.logs)) setRenderLogs(j.logs);
-
-        if (typeof j.combinedSrc === "string" && j.combinedSrc) {
-          setActiveVideoUrl((prev) => (prev !== j.combinedSrc ? j.combinedSrc : prev));
-        }
-
-        if (j.status === "completed") {
-          finished = true;
-          setRenderProgress(100);
-          const finalUrl = j.combinedSrc;
-          setActiveVideoUrl(finalUrl);
-
-          const completedReel: StudioReelRecord = {
-            id: `reel_${Date.now()}`,
-            title: title.includes(modeLabel) ? title : `${title} (${modeLabel})`,
-            status: "published",
-            progress: 100,
-            videoUrl: finalUrl,
-            durationId,
-            countryId,
-            regionId,
-            languageId,
-            demographyId,
-            platformId,
-            contentTypeId,
-            genreId,
-            vocalId,
-            venueId,
-            lightingId,
-            audioEngineId,
-            storyline,
-            lyrics,
-            customMasterPromptOverride,
-            selectedPersonaIds,
-            wardrobeOverrides: buildActiveWardrobeOverrides(),
-            shots,
-            updatedAt: "Published Just Now • 100% Complete",
-          };
-
-          setReels((prev) => {
-            const next = [completedReel, ...prev];
-            persistReelsToStorage(next);
-            return next;
-          });
-          setSelectedReelId(completedReel.id);
-          setStatusBanner(
-            `✅ ${modeLabel} Complete! Brand-new ${activeDurationSec}.0s Master Reel is live in Master Player and persisted to Published Reels.`
+    // 1. Platform fit: Character limit check (Error — blocks publish)
+    if (charCount > activePlatform.charLimit) {
+      const overBy = charCount - activePlatform.charLimit;
+      list.push({
+        id: "chk-char-limit",
+        category: "Platform fit",
+        severity: "error",
+        title: `Caption exceeds ${activePlatform.shortName} limit by ${overBy} characters (${charCount} / ${activePlatform.charLimit})`,
+        why: `${activePlatform.shortName} rejects or hard-cuts captions above ${activePlatform.charLimit} characters.`,
+        targetScope: "body",
+        fixLabel: `Trim to ${activePlatform.charLimit - 18} chars`,
+        applyFix: () => {
+          const conciseBody =
+            "60s continuous 35mm cinema: locked Arctic twilight, Omni 1.1 dialogue + Lyria 3 Pro score.";
+          commitPostChange(
+            {
+              ...post,
+              body: conciseBody,
+              hashtags: "#TheCursedHunter #CinemaStudio",
+            },
+            `Trimmed caption to fit ${activePlatform.shortName}`
           );
-        } else if (j.status === "error") {
-          finished = true;
-          const failedReel: StudioReelRecord = {
-            id: `failed_${Date.now()}`,
-            title: `${title} (Failed Render)`,
-            status: "failed",
-            progress: renderProgress || 20,
-            errorReason: j.errorMsg || "Render job encountered an error",
-            videoUrl: activeVideoUrl,
-            durationId,
-            countryId,
-            regionId,
-            languageId,
-            demographyId,
-            platformId,
-            contentTypeId,
-            genreId,
-            vocalId,
-            venueId,
-            lightingId,
-            audioEngineId,
-            storyline,
-            lyrics,
-            customMasterPromptOverride,
-            selectedPersonaIds,
-            wardrobeOverrides: buildActiveWardrobeOverrides(),
-            shots,
-            updatedAt: "Failed Just Now • Ready to Retry",
-          };
-          setReels((prev) => {
-            const next = [failedReel, ...prev];
-            persistReelsToStorage(next);
-            return next;
-          });
-          setStatusBanner(`❌ Render error: ${j.errorMsg || "Job failed"}`);
-        }
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setStatusBanner(`❌ Render error: ${msg}`);
-    } finally {
-      setIsRendering(false);
-    }
-  };
-
-  // Load any Published Reel or Saved Draft directly into the 4-Step Studio (restoring 100% of studio state)
-  const loadReelIntoWorkflow = (
-    reel: StudioReelRecord,
-    targetStep: 1 | 2 | 3 | 4 = 3
-  ) => {
-    const cleanTitle = reel.title.replace(/\s*\(Saved Draft\)|\s*\(Failed Render\)/gi, "");
-    const durObj = getById(DURATIONS_CATALOG, reel.durationId);
-    const countryObj = getById(COUNTRIES_CATALOG, reel.countryId);
-    const genreObj = getById(GENRES_CATALOG, reel.genreId);
-    const langObj = getById(LANGUAGES_CATALOG, reel.languageId);
-    const vocalObj = getById(VOCALS_CATALOG, reel.vocalId);
-    const venueObj = getById(venuesCatalog, reel.venueId);
-    const lightObj = getById(LIGHTING_CATALOG, reel.lightingId);
-
-    setSelectedReelId(reel.id);
-    setTitle(cleanTitle);
-    setCountryId(reel.countryId);
-    setRegionId(reel.regionId);
-    setLanguageId(reel.languageId);
-    setDemographyId(reel.demographyId);
-    setPlatformId(reel.platformId);
-    setContentTypeId(reel.contentTypeId);
-    setDurationId(reel.durationId);
-    setGenreId(reel.genreId);
-    setVocalId(reel.vocalId);
-    setVenueId(reel.venueId);
-    setLightingId(reel.lightingId);
-    setSelectedPersonaIds(reel.selectedPersonaIds);
-    setActiveVideoUrl(reel.videoUrl);
-    setAudioEngineId(
-      (reel.audioEngineId as "omni_lyria3" | "omni_native") || "omni_native"
-    );
-    setCustomMasterPromptOverride(reel.customMasterPromptOverride || "");
-
-    // Restore Wardrobe & Accessory IDs from reel.wardrobeOverrides or the loaded reel's primary personas
-    const femId = reel.selectedPersonaIds.female_lead?.[0];
-    const maleId = reel.selectedPersonaIds.male_lead?.[0];
-    const supId = reel.selectedPersonaIds.supporting?.[0];
-    const bgId = reel.selectedPersonaIds.background?.[0];
-    const audId = reel.selectedPersonaIds.audience?.[0];
-
-    const femP = personasCatalog.find((p) => p.id === femId);
-    const maleP = personasCatalog.find((p) => p.id === maleId);
-    const supP = personasCatalog.find((p) => p.id === supId);
-    const bgP = personasCatalog.find((p) => p.id === bgId);
-    const audP = personasCatalog.find((p) => p.id === audId);
-
-    const wOverrides = reel.wardrobeOverrides || {};
-    const nextWAct1 =
-      (femId && wOverrides[femId]?.act1Id) ||
-      femP?.defaultAct1WardrobeId ||
-      womenAct1Id;
-    const nextWAct2 =
-      (femId && wOverrides[femId]?.act2Id) ||
-      femP?.defaultAct2WardrobeId ||
-      womenAct2Id;
-    const nextMAct1 =
-      (maleId && wOverrides[maleId]?.act1Id) ||
-      maleP?.defaultAct1WardrobeId ||
-      menAct1Id;
-    const nextMAct2 =
-      (maleId && wOverrides[maleId]?.act2Id) ||
-      maleP?.defaultAct2WardrobeId ||
-      menAct2Id;
-    const nextSupW =
-      (supId && wOverrides[supId]?.act1Id) ||
-      supP?.defaultAct1WardrobeId ||
-      supportingWardrobeId;
-    const nextBgW =
-      (bgId && wOverrides[bgId]?.act1Id) ||
-      bgP?.defaultAct1WardrobeId ||
-      backgroundWardrobeId;
-    const nextAudW =
-      (audId && wOverrides[audId]?.act1Id) ||
-      audP?.defaultAct1WardrobeId ||
-      audienceWardrobeId;
-    const nextAcc =
-      (femId && wOverrides[femId]?.accessoryId) ||
-      (maleId && wOverrides[maleId]?.accessoryId) ||
-      femP?.defaultAccessoryId ||
-      maleP?.defaultAccessoryId ||
-      accessoryId;
-
-    setWomenAct1Id(nextWAct1);
-    setWomenAct2Id(nextWAct2);
-    setMenAct1Id(nextMAct1);
-    setMenAct2Id(nextMAct2);
-    setSupportingWardrobeId(nextSupW);
-    setBackgroundWardrobeId(nextBgW);
-    setAudienceWardrobeId(nextAudW);
-    setAccessoryId(nextAcc);
-
-    const parsedBpm =
-      Number(genreObj.promptSpec?.match(/(\d+)\s*BPM/i)?.[1]) ||
-      (reel.contentTypeId === "ctype_cinema_film" ? 92 : 124);
-    setBpm(parsedBpm);
-
-    // Restore Lyrics, Storyline, 8-Dimension Specs & Creative Elevation Blueprint
-    const leadNames = [femP?.name, maleP?.name, supP?.name]
-      .filter(Boolean)
-      .join(", ");
-    const resolvedStoryline =
-      reel.storyline ||
-      `${cleanTitle} — ${durObj.seconds}-second ${genreObj.label} production set in ${countryObj.label} (${venueObj.label}) featuring ${leadNames || "Lead Ensemble"} in ${langObj.label} (${lightObj.label}).`;
-    setStoryline(resolvedStoryline);
-    setCompiledConceptDirective(resolvedStoryline);
-
-    const resolvedLyrics =
-      reel.lyrics ||
-      (reel.shots && reel.shots.length > 0
-        ? reel.shots.map((s) => s.lyricLine).join("\n")
-        : Array.from({ length: durObj.shotsCount }, (_, i) => {
-            const shotNum = String(i + 1).padStart(2, "0");
-            const speaker =
-              i % 2 === 0
-                ? femP?.name || maleP?.name || "Lead Vocal"
-                : maleP?.name || femP?.name || supP?.name || "Ensemble Vocal";
-            return `[Shot ${shotNum} • ${speaker}] ${cleanTitle} — ${genreObj.label} vocal hook ${i + 1} in ${langObj.label} (${parsedBpm} BPM)`;
-          }).join("\n"));
-    setLyrics(resolvedLyrics);
-
-    setBackgroundEnvironment(
-      `${countryObj.promptSpec} • ${venueObj.promptSpec} • ${lightObj.promptSpec}`
-    );
-    setVoiceType(
-      `${vocalObj.promptSpec} in ${langObj.label} (${genreObj.promptSpec})`
-    );
-    setHumanEmotions(
-      reel.contentTypeId === "ctype_cinema_film"
-        ? "Intimate dramatic realism, unretouched facial micro-expressions, and magnetic eye contact"
-        : "Radiant joy, magnetic chemistry, expressive eye contact, and celebratory stage charisma"
-    );
-    setChoreography(
-      reel.contentTypeId === "ctype_cinema_film"
-        ? "Deliberate 35mm Steadicam blocking, dramatic staging, and natural lip-synced dialogue"
-        : `High-energy ${genreObj.label} formation choreography synchronized to ${venueObj.label}`
-    );
-
-    setCreativeElevation((prev) => ({
-      ...prev,
-      sourceType: "original_prompt",
-      youtubeMetadata: null,
-      deconstructedCore: `${cleanTitle} — ${genreObj.label} set across ${venueObj.label} in ${countryObj.label} featuring ${leadNames || "5-Tier Studio Cast"}.`,
-      surpassStrategy: `Elevates ${cleanTitle} into a ${durObj.seconds}-second (${durObj.shotsCount}-shot) 24/1 CFR production with locked character biometrics, Act I→Act II wardrobe transition, and 48,000 Hz stereo audio in ${langObj.label}.`,
-      act1ToAct2Twist: `Multi-Act Transition across ${venueObj.label} (${lightObj.label}) with wardrobe shift from ${getById(wardrobeCatalog, nextWAct1).label} to ${getById(wardrobeCatalog, nextWAct2).label}.`,
-      sonicInnovation: `48,000 Hz stereo ${vocalObj.label} in ${langObj.label} (${genreObj.label} @ ${parsedBpm} BPM, -14.0 LUFS)`,
-      choreographyAndCameraUpgrade: `${durObj.shotsCount}-Shot Panavision camera progression across ${venueObj.label}`,
-      innovationScore: `99.6 / 100 (${durObj.seconds}s Studio Master Loaded)`,
-    }));
-
-    try {
-      const nowIso = new Date().toISOString();
-      const existingDynRaw = localStorage.getItem("zyvoriq_dynamic_catalog_v1");
-      const existingDyn = existingDynRaw ? JSON.parse(existingDynRaw) : {};
-      localStorage.setItem(
-        "zyvoriq_dynamic_catalog_v1",
-        JSON.stringify({
-          ...existingDyn,
-          selectedIds: reel.selectedPersonaIds,
-          savedAt: nowIso,
-        })
-      );
-    } catch {
-      // ignore
+        },
+      });
     }
 
-    if (reel.shots && reel.shots.length > 0) {
-      customShotsRef.current = reel.shots;
-      setShots(reel.shots);
-    } else {
-      customShotsRef.current = null;
+    // 1b. Platform fit: Hashtag count check
+    if (hashtagList.length > activePlatform.maxHashtags) {
+      list.push({
+        id: "chk-hashtag-count",
+        category: "Platform fit",
+        severity: "warning",
+        title: `Too many hashtags for ${activePlatform.shortName} (${hashtagList.length} / ${activePlatform.maxHashtags})`,
+        why: "Excessive hashtags reduce feed distribution and clutter the caption fold.",
+        targetScope: "hashtags",
+        fixLabel: `Keep top ${activePlatform.maxHashtags} hashtags`,
+        applyFix: () => {
+          commitPostChange(
+            {
+              ...post,
+              hashtags: hashtagList
+                .slice(0, activePlatform.maxHashtags)
+                .join(" "),
+            },
+            "Trimmed hashtags to platform limit"
+          );
+        },
+      });
     }
-    setWorkflow("create");
-    setCreateStep(targetStep);
-    setCanvasTab(targetStep === 4 ? "video" : targetStep === 3 ? "shots" : "ensemble");
-    setStatusBanner(
-      `✓ Loaded "${cleanTitle}" (${durObj.seconds}s • ${durObj.shotsCount} shots) into the 4-Step Studio with full Cast, Wardrobe & Storyboard!`
+
+    // 2. Brand: Banned words & required disclaimer check
+    const foundBanned = activeBrand.bannedWords.filter((w) =>
+      fullCaptionText.toLowerCase().includes(w.toLowerCase())
     );
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(
-        new CustomEvent("zyvoriq-workflow-changed", { detail: { mode: "create" } })
-      );
+    if (foundBanned.length > 0) {
+      list.push({
+        id: "chk-brand-banned",
+        category: "Brand",
+        severity: "warning",
+        title: `Off-brand terms detected: "${foundBanned.join(", ")}"`,
+        why: `Active brand kit (${activeBrand.name}) avoids hype words to preserve calm authority.`,
+        targetScope: "body",
+        fixLabel: "Remove off-brand terms",
+        applyFix: () => {
+          let cleanedHook = post.hook;
+          let cleanedBody = post.body;
+          for (const w of foundBanned) {
+            const re = new RegExp(`\\b${w}\\b`, "gi");
+            cleanedHook = cleanedHook
+              .replace(re, "")
+              .replace(/\s{2,}/g, " ")
+              .trim();
+            cleanedBody = cleanedBody
+              .replace(re, "")
+              .replace(/\s{2,}/g, " ")
+              .trim();
+          }
+          commitPostChange(
+            { ...post, hook: cleanedHook, body: cleanedBody },
+            "Removed off-brand terms"
+          );
+        },
+      });
     }
-  };
 
-  // Retry a Failed or Draft Reel in Drafts & Render Jobs
-  const handleRetryFailedReel = async (failedReel: StudioReelRecord) => {
-    loadReelIntoWorkflow(failedReel, 4);
-    await executeEndToEndRender("Recovered Master");
-    setReels((prev) => {
-      const next = prev.map((r) =>
-        r.id === failedReel.id
-          ? {
-              ...r,
-              status: "published" as const,
-              progress: 100,
-              errorReason: undefined,
-              updatedAt: "Recovered & Published",
-            }
-          : r
-      );
-      persistReelsToStorage(next);
-      return next;
-    });
-  };
+    if (
+      activeBrand.requiredDisclaimer &&
+      !post.body.includes(activeBrand.requiredDisclaimer)
+    ) {
+      list.push({
+        id: "chk-brand-disclaimer",
+        category: "Brand",
+        severity: "warning",
+        title: "Missing required brand disclaimer",
+        why: `${activeBrand.name} requires appending "${activeBrand.requiredDisclaimer}".`,
+        targetScope: "body",
+        fixLabel: "Append brand disclaimer",
+        applyFix: () => {
+          commitPostChange(
+            {
+              ...post,
+              body: `${post.body} ${activeBrand.requiredDisclaimer}`.trim(),
+            },
+            "Added brand disclaimer"
+          );
+        },
+      });
+    }
 
-  // Resolve all currently selected Persona objects across the 5 tiers
-  const activePersonasList = dedupeById(
-    (
-      ["female_lead", "male_lead", "supporting", "background", "audience"] as PersonaCategory[]
-    ).flatMap((cat) =>
-      (selectedPersonaIds[cat] || [])
-        .map((id) => personasCatalog.find((p) => p.id === id))
-        .filter((p): p is NonNullable<typeof p> => Boolean(p))
-    )
-  );
+    // 3. Quality: Hook length & clarity before fold
+    if (post.hook.length > activePlatform.foldChars) {
+      list.push({
+        id: "chk-quality-fold",
+        category: "Quality",
+        severity: "tip",
+        title: `Opening hook exceeds "${activePlatform.shortName}" preview fold (${post.hook.length} / ${activePlatform.foldChars} chars)`,
+        why: "Viewers see only the first ~125 characters before clicking '…more'.",
+        targetScope: "hook",
+        fixLabel: "Tighten hook under 110 chars",
+        applyFix: () => {
+          commitPostChange(
+            {
+              ...post,
+              hook: "The curse took his voice at dusk—so she entered the frozen pass with empty hands.",
+            },
+            "Tightened opening hook before fold"
+          );
+        },
+      });
+    }
 
-  // Dynamically Reactive 12-Agent Swarm Telemetry & Concrete Per-Agent Outputs reflecting the active Studio project
-  const danceMvAgents = React.useMemo<SwarmAgentStatus[]>(() => {
-    const venueObj = getById(venuesCatalog, venueId);
-    const accObj = getById(accessoriesCatalog, accessoryId);
-    const wFem1Obj = getById(wardrobeCatalog, womenAct1Id);
-    const wFem2Obj = getById(wardrobeCatalog, womenAct2Id);
-    const wMale1Obj = getById(wardrobeCatalog, menAct1Id);
-    const wMale2Obj = getById(wardrobeCatalog, menAct2Id);
-    const wSupObj = getById(wardrobeCatalog, supportingWardrobeId);
-    const wBgObj = getById(wardrobeCatalog, backgroundWardrobeId);
-    const wAudObj = getById(wardrobeCatalog, audienceWardrobeId);
+    // 4. Accessibility: Alt text & CamelCase hashtags & captions
+    if (!post.altText.trim()) {
+      list.push({
+        id: "chk-a11y-alt",
+        category: "Accessibility",
+        severity: "error",
+        title: "Missing visual alt text for screen readers",
+        why: "Screen readers cannot describe the visual frame without descriptive alt text.",
+        targetScope: "visual",
+        fixLabel: "Generate descriptive alt text",
+        applyFix: () => {
+          commitPostChange(
+            {
+              ...post,
+              altText:
+                "Wide 35mm frame of Kaelen on screen-left facing unarmed Lyra on screen-right inside a snowy basalt canyon under cold twilight.",
+            },
+            "Generated descriptive alt text"
+          );
+        },
+      });
+    }
 
-    return getDanceMusicVideoAgents({
-      title,
-      storyline,
-      compiledConceptDirective,
-      countryLabel: getById(COUNTRIES_CATALOG, countryId).label,
-      genreLabel: getById(GENRES_CATALOG, genreId).label,
-      languageLabel: getById(LANGUAGES_CATALOG, languageId).label,
-      bpm,
-      musicalKey,
-      venueLabel: venueObj.label,
-      venuePromptSpec: venueObj.promptSpec,
-      lightingLabel: getById(LIGHTING_CATALOG, lightingId).label,
-      shotLightingAndOptics,
-      vocalLabel: getById(VOCALS_CATALOG, vocalId).label,
-      castCount: activePersonasList.length,
-      shotsCount: shots.length,
-      isLyriaMode: audioEngineId === "omni_lyria3",
-      isRendering,
-      renderProgress,
-      sourceType: creativeElevation.sourceType,
-      youtubeReferenceTitle: creativeElevation.youtubeMetadata?.title,
-      youtubeReferenceChannel: creativeElevation.youtubeMetadata?.channelName,
-      youtubeReferenceUrl: creativeElevation.youtubeMetadata?.url,
-      deconstructedCore: creativeElevation.deconstructedCore,
-      identifiedLimitations: creativeElevation.identifiedLimitations,
-      surpassStrategy: creativeElevation.surpassStrategy,
-      act1ToAct2Twist: creativeElevation.act1ToAct2Twist,
-      sonicInnovation: creativeElevation.sonicInnovation,
-      choreographyAndCameraUpgrade: creativeElevation.choreographyAndCameraUpgrade,
-      castDetails: activePersonasList.map((p) => ({
-        role: p.roleTitle,
-        name: p.name,
-        ethnicity: p.ethnicity,
-        facialSpec: p.facialSpec,
-        photoUrl: p.photoUrl,
-      })),
-      act1FemaleWardrobe: `${wFem1Obj.label} (${wFem1Obj.promptSpec})`,
-      act2FemaleWardrobe: `${wFem2Obj.label} (${wFem2Obj.promptSpec})`,
-      act1MaleWardrobe: `${wMale1Obj.label} (${wMale1Obj.promptSpec})`,
-      act2MaleWardrobe: `${wMale2Obj.label} (${wMale2Obj.promptSpec})`,
-      supportingWardrobe: `${wSupObj.label} (${wSupObj.promptSpec})`,
-      backgroundWardrobe: `${wBgObj.label} (${wBgObj.promptSpec})`,
-      audienceWardrobe: `${wAudObj.label} (${wAudObj.promptSpec})`,
-      figureGroundContrastSpec,
-      accessoryLabel: accObj.label,
-      accessoryPromptSpec: accObj.promptSpec,
-      instrumentAndStagePropsSpec,
-      backgroundEnvironment,
-      choreographyGlobal: choreography,
-      shotChoreography,
-      humanEmotionsGlobal: humanEmotions,
-      shotEmotions,
-      voiceType,
-      lyrics,
-      judgeReceipt: creativeElevation.judgeReceipt,
-    });
+    const nonCamelHashtag = hashtagList.find(
+      (tag) => tag.length > 10 && tag === tag.toLowerCase()
+    );
+    if (nonCamelHashtag) {
+      list.push({
+        id: "chk-a11y-camelcase",
+        category: "Accessibility",
+        severity: "tip",
+        title: `Hashtag ${nonCamelHashtag} should use CamelCase for screen readers`,
+        why: "CamelCase hashtags (#TheCursedHunter) allow voiceover tools to pronounce individual words.",
+        targetScope: "hashtags",
+        fixLabel: "Convert hashtags to CamelCase",
+        applyFix: () => {
+          const camelized = hashtagList
+            .map((t) =>
+              t === t.toLowerCase() && t.length > 4
+                ? "#" + t.slice(1, 2).toUpperCase() + t.slice(2)
+                : t
+            )
+            .join(" ");
+          commitPostChange(
+            { ...post, hashtags: camelized },
+            "Converted hashtags to CamelCase"
+          );
+        },
+      });
+    }
+
+    // 5. Safety & compliance: AI disclosure badge
+    if (!post.aiDisclosureEnabled) {
+      list.push({
+        id: "chk-safety-disclosure",
+        category: "Safety & compliance",
+        severity: "warning",
+        title: "AI-synthesized media disclosure label is turned off",
+        why: "TikTok, Instagram, and YouTube require synthetic cinema scenes to carry an AI disclosure flag.",
+        targetScope: "visual",
+        fixLabel: "Enable AI disclosure flag",
+        applyFix: () => {
+          commitPostChange(
+            { ...post, aiDisclosureEnabled: true },
+            "Enabled AI-generated media disclosure"
+          );
+        },
+      });
+    }
+
+    // 6. Links: Valid HTTPS & UTM attribution
+    if (post.ctaUrl && !post.ctaUrl.includes("utm_source=")) {
+      list.push({
+        id: "chk-links-utm",
+        category: "Links",
+        severity: "tip",
+        title: "CTA link is missing UTM campaign parameters",
+        why: "Adding utm_source and utm_medium lets analytics attribute conversions to this post.",
+        targetScope: "cta",
+        fixLabel: "Append UTM parameters",
+        applyFix: () => {
+          const sep = post.ctaUrl.includes("?") ? "&" : "?";
+          commitPostChange(
+            {
+              ...post,
+              ctaUrl: `${post.ctaUrl}${sep}utm_source=${activePlatformId}&utm_medium=studio`,
+            },
+            "Appended UTM tracking parameters"
+          );
+        },
+      });
+    }
+
+    return list.filter((item) => !ignoredCheckIds.includes(item.id));
   }, [
-    title,
-    storyline,
-    compiledConceptDirective,
-    countryId,
-    genreId,
-    languageId,
-    bpm,
-    musicalKey,
-    venuesCatalog,
-    venueId,
-    lightingId,
-    shotLightingAndOptics,
-    vocalId,
-    accessoriesCatalog,
-    accessoryId,
-    wardrobeCatalog,
-    womenAct1Id,
-    womenAct2Id,
-    menAct1Id,
-    menAct2Id,
-    supportingWardrobeId,
-    backgroundWardrobeId,
-    audienceWardrobeId,
-    figureGroundContrastSpec,
-    instrumentAndStagePropsSpec,
-    activePersonasList,
-    shots.length,
-    audioEngineId,
-    isRendering,
-    renderProgress,
-    creativeElevation,
-    backgroundEnvironment,
-    choreography,
-    shotChoreography,
-    humanEmotions,
-    shotEmotions,
-    voiceType,
-    lyrics,
+    charCount,
+    activePlatform,
+    hashtagList,
+    activeBrand,
+    fullCaptionText,
+    post,
+    ignoredCheckIds,
+    activePlatformId,
   ]);
 
-  const inputCls =
-    "w-full rounded-lg bg-[#121217] border border-white/[0.08] focus:border-white/40 px-3 py-2 text-xs text-white font-medium outline-none transition-colors";
-  const labelCls =
-    "block text-[11px] font-medium text-zinc-400 mb-1 tracking-tight";
+  const blockingErrors = useMemo(
+    () => activeIssues.filter((i) => i.severity === "error"),
+    [activeIssues]
+  );
 
-  // Compute Contextual Next Step Guidance so User Always Knows What to Do Next
-  const getNextActionGuide = (): {
-    currentLabel: string;
-    nextText: string;
-    actionLabel: string;
-    onAction: () => void;
-  } => {
-    if (workflow === "create") {
-      if (createStep === 1) {
-        return {
-          currentLabel: "4-Step Studio • Step 01 of 04 (Story & Audio)",
-          nextText:
-            "Enter any prompt or YouTube URL below — clicking Next deconstructs, elevates & synthesizes all 8 dimensions.",
-          actionLabel: isSynthesizingPrompt
-            ? "Synthesizing from Prompt..."
-            : "Synthesize Cast, Wardrobe & Lyrics (Go to Step 02) →",
-          onAction: () => synthesizeFromNewPrompt(storyline, true),
-        };
-      }
-      if (createStep === 2) {
-        return {
-          currentLabel: "4-Step Studio • Step 02 of 04 (Cast & Wardrobe)",
-          nextText:
-            `Review prompt-generated personas & outfits (or add custom personas in /personas), then compile ${shots.length} shots.`,
-          actionLabel: `Next: 03. Storyboard (${shots.length} Shots) →`,
-          onAction: () => {
-            customShotsRef.current = null;
-            setShots(compileStructuredShots());
-            setCreateStep(3);
-            setCanvasTab("shots");
-          },
-        };
-      }
-      if (createStep === 3) {
-        return {
-          currentLabel: "4-Step Studio • Step 03 of 04 (Storyboard)",
-          nextText:
-            "Customize any shot's camera rig, action prompt, or lyric line, then proceed to Master Render.",
-          actionLabel: "Next: 04. Render & Export →",
-          onAction: () => {
-            setCreateStep(4);
-            setCanvasTab("video");
-          },
-        };
-      }
-      return {
-        currentLabel: "4-Step Studio • Step 04 of 04 (Render Master)",
-        nextText:
-          `Click Render to synthesize your ${getById(DURATIONS_CATALOG, durationId).seconds}.0s 9:16 MP4 Master Reel via Gemini Omni 1.1 Flash + Lyria 3 Pro.`,
-        actionLabel: "Open Published Reels Library →",
-        onAction: () => switchWorkflow("published"),
-      };
-    }
-    if (workflow === "published") {
-      return {
-        currentLabel: "Published Reels Library",
-        nextText:
-          "Play any completed 9:16 master reel or load its blueprint back into the 4-Step Studio to remix or re-render.",
-        actionLabel: "Open 4-Step Studio →",
-        onAction: () => {
-          switchWorkflow("create");
-          setCreateStep(1);
-        },
-      };
-    }
-    return {
-      currentLabel: "Drafts & Render Jobs",
-      nextText:
-        "Resume any saved draft into the 4-Step Studio or retry any failed render job.",
-      actionLabel: "View Published Reels →",
-      onAction: () => switchWorkflow("published"),
-    };
+  // ============================================================================
+  // IN-PLACE QUICK ACTIONS & DIFF GENERATION (Phase 3.3)
+  // ============================================================================
+  const scopeLabelMap: Record<SelectableScope, string> = {
+    post: "Entire Post",
+    hook: "Opening Hook",
+    body: "Caption Body",
+    hashtags: "Hashtags",
+    cta: "CTA Link",
+    visual: "35mm Cinema Stage",
+    timeline: `Act ${activeSegment.index + 1} (${activeSegment.timeRange})`,
   };
 
-  const nextGuide = getNextActionGuide();
+  const handleTriggerQuickAction = (action: QuickActionType) => {
+    setAssistantReply(null);
+    const targetScope: SelectableScope =
+      selectedScope === "post" ||
+      selectedScope === "visual" ||
+      selectedScope === "timeline"
+        ? "hook"
+        : selectedScope;
+
+    const currentText =
+      targetScope === "hook"
+        ? post.hook
+        : targetScope === "body"
+        ? post.body
+        : targetScope === "hashtags"
+        ? post.hashtags
+        : post.hook;
+
+    let proposedText = currentText;
+    if (action === "shorter") {
+      proposedText =
+        targetScope === "hook"
+          ? "The curse took his voice—so she walked into the frozen pass unarmed."
+          : "60s continuous 35mm cinema: locked Arctic twilight, Omni 1.1 dialogue + Lyria 3 Pro score.";
+    } else if (action === "punchier") {
+      proposedText =
+        targetScope === "hook"
+          ? "Sixty seconds before the canyon freezes shut—and she left her sword behind."
+          : "Six unbroken 35mm shots. Spoken dialogue + snow Foley ducked at -14 LUFS over a live orchestral crescendo.";
+    } else if (action === "fix_grammar") {
+      proposedText = currentText
+        .replace(/\s+/g, " ")
+        .replace(/--/g, "—")
+        .trim();
+      if (proposedText === currentText) {
+        proposedText =
+          "The curse stole his voice at dusk; she entered the frozen basalt pass with open hands.";
+      }
+    } else if (action === "change_tone") {
+      proposedText =
+        "Director's Note: How we maintained 180-degree spatial continuity and cold twilight across 60 seconds.";
+    } else if (action === "translate") {
+      proposedText =
+        "La maldicion robo su voz al anochecer, asi que entro al paso de basalto con las manos vacias.";
+    } else if (action === "regenerate") {
+      proposedText =
+        "No sword. No armor. Just 60 seconds in the snowy basalt pass to break a six-winter curse.";
+    }
+
+    setPendingDiff({
+      id: `diff-${Date.now()}`,
+      targetKey: targetScope,
+      targetLabel: scopeLabelMap[targetScope],
+      beforeText: currentText,
+      afterText: proposedText,
+      actionName:
+        action === "shorter"
+          ? "Shorter"
+          : action === "punchier"
+          ? "Punchier"
+          : action === "fix_grammar"
+          ? "Fix grammar"
+          : action === "change_tone"
+          ? "Change tone"
+          : action === "translate"
+          ? "Translate"
+          : "Regenerate",
+    });
+  };
+
+  const handleAcceptDiff = (diff: PendingDiffSuggestion) => {
+    const next = { ...post };
+    if (diff.targetKey === "hook") next.hook = diff.afterText;
+    else if (diff.targetKey === "body") next.body = diff.afterText;
+    else if (diff.targetKey === "hashtags") next.hashtags = diff.afterText;
+    setPendingDiff(null);
+    commitPostChange(
+      next,
+      `Accepted AI ${diff.actionName} on ${diff.targetLabel}`
+    );
+  };
+
+  // ============================================================================
+  // 4-STAGE STREAMING GENERATION FROM BRIEF OR SCOPED PROMPT (Phase 3.6)
+  // ============================================================================
+  const runStreamingGeneration = async (
+    promptText: string,
+    mode: "full_brief" | "scoped_edit"
+  ) => {
+    if (!promptText.trim()) {
+      setBriefError(
+        "Enter a 1-sentence brief so the studio can draft your post."
+      );
+      return;
+    }
+    setBriefError(undefined);
+
+    // Check conversational non-mutation guard first!
+    const conv = evaluateConversationalIntent(promptText);
+    if (conv && conv.isConversational) {
+      setAssistantReply(conv.reply);
+      return;
+    }
+
+    setAssistantReply(null);
+    cancelStreamRef.current = false;
+
+    const stages = [
+      "Stage 1/4: Understanding brief & brand constraints…",
+      "Stage 2/4: Drafting platform-native copy & 6-shot continuity…",
+      "Stage 3/4: Synchronizing 60s video & audio master…",
+      "Stage 4/4: Running 6-category pre-flight checks…",
+    ];
+
+    for (let i = 0; i < stages.length; i++) {
+      if (cancelStreamRef.current) {
+        setGenerationStage({ active: false, step: 0, label: "" });
+        setToast({ message: "Generation cancelled · Partial draft preserved" });
+        return;
+      }
+      setGenerationStage({ active: true, step: i + 1, label: stages[i] });
+      await new Promise((r) => setTimeout(r, 220));
+    }
+
+    setGenerationStage({ active: false, step: 0, label: "" });
+
+    if (mode === "scoped_edit") {
+      const targetKey =
+        selectedScope === "body"
+          ? "body"
+          : selectedScope === "hashtags"
+          ? "hashtags"
+          : "hook";
+      const beforeText =
+        targetKey === "body"
+          ? post.body
+          : targetKey === "hashtags"
+          ? post.hashtags
+          : post.hook;
+      setPendingDiff({
+        id: `diff-prompt-${Date.now()}`,
+        targetKey,
+        targetLabel: scopeLabelMap[targetKey],
+        beforeText,
+        afterText: `${promptText.trim()} — crafted for ${activePlatform.shortName} in ${activeBrand.name} voice.`,
+        actionName: "Scoped Prompt",
+      });
+      setScopedPromptInput("");
+      return;
+    }
+
+    const isSpeakeasy =
+      promptText.toLowerCase().includes("speakeasy") ||
+      promptText.toLowerCase().includes("jazz");
+    const chosenVideo = isSpeakeasy
+      ? "/assets/swarm/comparisons/10_cursed_hunter_live_action_dual_stem_dialogue_plus_lyria_score_60s.mp4"
+      : audioEngineMode === "option1_symphonic"
+      ? "/assets/swarm/comparisons/10_option1_lyria3pro_symphonic_60s_master.mp4"
+      : "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4";
+
+    const cleanSummary = promptText.trim().replace(/\.$/, "");
+    const nextDraft: StudioPostState = {
+      ...post,
+      title: cleanSummary.slice(0, 64),
+      hook: `${cleanSummary}—captured in 60 seconds of unbroken 35mm continuity.`,
+      body: `Built for ${activePlatform.shortName} using ${activeBrand.name}. Every 10-second segment locks character wardrobe, spatial blocking, and -14 LUFS audio ducking.`,
+      videoUrl: chosenVideo,
+      audioMixLabel:
+        audioEngineMode === "option1_symphonic"
+          ? "Option 1 · Symphonic Film-Trailer Mix"
+          : "Option 2 · Omni 1.1 Dialogue + Foley + Lyria 3 Pro Score",
+    };
+
+    commitPostChange(
+      nextDraft,
+      "Generated new multi-platform draft from brief"
+    );
+  };
 
   return (
-    <div className="w-full max-w-none min-h-screen bg-[#09090b] text-zinc-100">
+    <div
+      data-theme={theme}
+      style={{
+        backgroundColor: "var(--color-bg)",
+        color: "var(--color-text)",
+        minHeight: "100vh",
+      }}
+      className="w-full max-w-none flex flex-col justify-between"
+    >
       {/* ====================================================================
-          TOP WORKFLOW BAR + "WHAT TO DO NEXT" GUIDANCE BAR
+          1. TOP APPLICATION BAR (Project · Brand · Saved · Theater · Undo/Redo · Publish)
          ==================================================================== */}
-      <div className="sticky top-0 z-40 w-full bg-[#09090b]/95 backdrop-blur-md border-b border-white/[0.07] px-4 py-2 space-y-2">
-        {/* Top Row: Core Studio Views + /personas Link */}
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-1 bg-[#121217] p-1 rounded-lg border border-white/[0.06]">
-            {[
-              { id: "create", label: "4-Step Studio (Create & Edit)", icon: Sparkles },
-              {
-                id: "published",
-                label: `Published Reels (${reels.filter((r) => r.status === "published").length})`,
-                icon: CheckCircle2,
-              },
-              {
-                id: "wip",
-                label: `Drafts & Render Jobs (${reels.filter((r) => r.status !== "published").length})`,
-                icon: Clock,
-              },
-            ].map((w) => {
-              const Icon = w.icon;
-              const active = workflow === w.id;
-              return (
-                <button
-                  key={w.id}
-                  type="button"
-                  onClick={() => switchWorkflow(w.id as StudioWorkflowMode)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
-                    active
-                      ? "bg-white text-zinc-950 font-semibold shadow-sm"
-                      : "text-zinc-400 hover:text-white"
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{w.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => router.push("/personas")}
-              className="px-3 py-1.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.14] border border-white/10 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>Personas &amp; Wardrobe Library ({activePersonasList.length})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSaveDraft}
-              className="px-2.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-zinc-200 text-xs font-medium flex items-center gap-1 cursor-pointer"
-            >
-              <Bookmark className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Save Draft</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Second Row: Unambiguous "What to Do Next" Bar */}
-        <div className="w-full rounded-lg bg-[#121217] border border-white/[0.08] px-3 py-1.5 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-xs">
-            <span className="px-2 py-0.5 rounded bg-white text-zinc-950 font-semibold text-[11px]">
-              {nextGuide.currentLabel}
-            </span>
-            <span className="text-zinc-300">{nextGuide.nextText}</span>
-          </div>
-
-          <button
-            type="button"
-            onClick={nextGuide.onAction}
-            className="px-3 py-1 rounded-md bg-white hover:bg-zinc-200 text-zinc-950 font-semibold text-xs flex items-center gap-1 cursor-pointer"
+      <header
+        style={{
+          backgroundColor: "var(--color-surface)",
+          borderBottom: "1px solid var(--color-border)",
+        }}
+        className="sticky top-0 z-30 w-full px-4 md:px-8 py-2.5 flex flex-wrap items-center justify-between gap-3"
+      >
+        {/* Left cluster: Brand mark + Editable project title + Version chip */}
+        <div className="flex items-center gap-3 min-w-0">
+          <div
+            className="w-8 h-8 flex items-center justify-center font-bold text-sm shrink-0"
+            style={{
+              backgroundColor: "var(--color-primary)",
+              color: "var(--color-primary-text)",
+              borderRadius: "var(--radius-sm)",
+            }}
+            aria-hidden="true"
           >
-            <span>{nextGuide.actionLabel}</span>
-          </button>
+            Z
+          </div>
+
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <label htmlFor="project-title-input" className="sr-only">
+                Project Title
+              </label>
+              <input
+                id="project-title-input"
+                type="text"
+                value={post.title}
+                onChange={(e) =>
+                  setPost((prev) => ({ ...prev, title: e.target.value }))
+                }
+                style={{
+                  backgroundColor: "transparent",
+                  color: "var(--color-text)",
+                  borderRadius: "var(--radius-sm)",
+                }}
+                className="font-semibold text-base truncate max-w-[220px] sm:max-w-[340px] px-1.5 py-0.5 studio-focus-ring"
+              />
+              <span
+                data-testid="studio-version-badge"
+                className="px-2 py-0.5 text-xs font-mono font-semibold tabular-nums"
+                style={{
+                  backgroundColor: "var(--color-surface-2)",
+                  color: "var(--color-text)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "var(--radius-sm)",
+                }}
+              >
+                {post.version}
+              </span>
+            </div>
+            <div
+              className="flex items-center gap-2 text-xs px-1.5"
+              style={{ color: "var(--color-text-muted)" }}
+            >
+              <CheckCircle2
+                className="w-3.5 h-3.5"
+                style={{ color: "var(--color-success)" }}
+                aria-hidden="true"
+              />
+              <span>Saved · 35mm Cinema Grading Active</span>
+            </div>
+          </div>
         </div>
 
-        {statusBanner && (
-          <div className="w-full rounded-lg bg-emerald-500/15 border border-emerald-500/30 px-3 py-1.5 text-xs text-emerald-300 flex items-center justify-between">
-            <span>{statusBanner}</span>
-            <button
-              type="button"
-              onClick={() => setStatusBanner("")}
-              className="text-emerald-200 hover:text-white font-bold cursor-pointer"
+        {/* Center/Right controls: Brand selector · Theater · Undo/Redo · Shortcuts · Theme · Publish */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="hidden lg:flex items-center gap-2">
+            <label
+              htmlFor="top-brand-select"
+              className="text-xs font-medium"
+              style={{ color: "var(--color-text-muted)" }}
             >
-              ✕
-            </button>
+              Brand:
+            </label>
+            <select
+              id="top-brand-select"
+              value={activeBrandId}
+              onChange={(e) => setActiveBrandId(e.target.value)}
+              style={{
+                backgroundColor: "var(--color-surface-2)",
+                color: "var(--color-text)",
+                border: "1px solid var(--color-border)",
+                borderRadius: "var(--radius-sm)",
+              }}
+              className="px-2.5 py-1.5 text-xs font-medium studio-focus-ring"
+            >
+              {brands.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
           </div>
+
+          <StudioTooltip label="Toggle Netflix Theater Stage" shortcut="T">
+            <StudioButton
+              variant={theaterMode ? "primary" : "secondary"}
+              size="sm"
+              aria-label="Toggle theater mode"
+              onClick={() => setTheaterMode((m) => !m)}
+              icon={
+                theaterMode ? (
+                  <Minimize2 className="w-4 h-4" />
+                ) : (
+                  <Maximize2 className="w-4 h-4" />
+                )
+              }
+            >
+              <span className="hidden sm:inline">
+                {theaterMode ? "Exit Theater" : "Theater"}
+              </span>
+            </StudioButton>
+          </StudioTooltip>
+
+          <StudioTooltip label="Undo last change" shortcut="Cmd+Z">
+            <StudioButton
+              variant="secondary"
+              size="sm"
+              aria-label="Undo"
+              disabled={undoStack.length === 0}
+              disabledReason="No earlier changes to undo"
+              onClick={handleUndo}
+              icon={<Undo2 className="w-4 h-4" />}
+            >
+              <span className="hidden sm:inline">Undo</span>
+            </StudioButton>
+          </StudioTooltip>
+
+          <StudioTooltip label="Redo change" shortcut="Shift+Cmd+Z">
+            <StudioButton
+              variant="secondary"
+              size="sm"
+              aria-label="Redo"
+              disabled={redoStack.length === 0}
+              disabledReason="Nothing to redo"
+              onClick={handleRedo}
+              icon={<Redo2 className="w-4 h-4" />}
+            >
+              <span className="hidden sm:inline">Redo</span>
+            </StudioButton>
+          </StudioTooltip>
+
+          <StudioTooltip label="Keyboard shortcuts" shortcut="?">
+            <StudioButton
+              variant="ghost"
+              size="sm"
+              aria-label="Keyboard shortcuts"
+              onClick={() => setShortcutsDialogOpen(true)}
+              icon={<HelpCircle className="w-4 h-4" />}
+            >
+              <span className="hidden xl:inline">Shortcuts</span>
+            </StudioButton>
+          </StudioTooltip>
+
+          <StudioButton
+            variant="secondary"
+            size="sm"
+            aria-label={
+              theme === "light" ? "Switch to dark theme" : "Switch to light theme"
+            }
+            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            icon={
+              theme === "light" ? (
+                <Moon className="w-4 h-4" />
+              ) : (
+                <Sun className="w-4 h-4" />
+              )
+            }
+          >
+            <span className="hidden sm:inline">
+              {theme === "light" ? "Dark" : "Light"}
+            </span>
+          </StudioButton>
+
+          {/* Mobile inspector sheet trigger */}
+          <div className="md:hidden">
+            <StudioButton
+              variant="secondary"
+              size="sm"
+              onClick={() => setMobileInspectorOpen(true)}
+            >
+              Checks ({activeIssues.length})
+            </StudioButton>
+          </div>
+
+          {/* ONE Primary CTA in Top Bar: Publish */}
+          <StudioButton
+            variant="primary"
+            size="md"
+            badgeCount={blockingErrors.length}
+            onClick={() => setPublishDialogOpen(true)}
+          >
+            Publish
+          </StudioButton>
+        </div>
+      </header>
+
+      {/* ====================================================================
+          2. MAIN 3-COLUMN STUDIO WORKSPACE (Or 12-Col Full Theater Stage when theaterMode=true)
+         ==================================================================== */}
+      <div className="flex-1 w-full max-w-none grid grid-cols-1 md:grid-cols-12 gap-0">
+        {/* ------------------------------------------------------------------
+            LEFT RAIL (3 cols on desktop, hidden in Theater Mode): Create · Library · Brands · Templates
+           ------------------------------------------------------------------ */}
+        {!theaterMode && (
+          <aside
+            aria-label="Studio navigation and creation controls"
+            style={{
+              backgroundColor: "var(--color-surface)",
+              borderRight: "1px solid var(--color-border)",
+            }}
+            className="order-2 md:order-1 md:col-span-3 lg:col-span-3 p-4 flex flex-col gap-4"
+          >
+            {/* Left Rail Section Switcher */}
+            <nav
+              aria-label="Workspace sections"
+              className="grid grid-cols-4 gap-1 p-1 studio-surface-2"
+              style={{ borderRadius: "var(--radius-sm)" }}
+            >
+              {[
+                {
+                  id: "create",
+                  label: "Create",
+                  icon: <PlusCircle className="w-3.5 h-3.5" />,
+                },
+                {
+                  id: "library",
+                  label: "Library",
+                  icon: <FolderOpen className="w-3.5 h-3.5" />,
+                },
+                {
+                  id: "brands",
+                  label: "Brands",
+                  icon: <Palette className="w-3.5 h-3.5" />,
+                },
+                {
+                  id: "templates",
+                  label: "Templates",
+                  icon: <LayoutTemplate className="w-3.5 h-3.5" />,
+                },
+              ].map((navItem) => {
+                const active = leftSection === navItem.id;
+                return (
+                  <button
+                    key={navItem.id}
+                    type="button"
+                    onClick={() =>
+                      setLeftSection(
+                        navItem.id as
+                          | "create"
+                          | "library"
+                          | "brands"
+                          | "templates"
+                      )
+                    }
+                    style={{
+                      backgroundColor: active
+                        ? "var(--color-surface)"
+                        : "transparent",
+                      color: active
+                        ? "var(--color-text)"
+                        : "var(--color-text-muted)",
+                      borderRadius: "var(--radius-sm)",
+                      boxShadow: active ? "var(--shadow-sm)" : "none",
+                    }}
+                    className="flex flex-col items-center justify-center gap-1 py-2 px-1 text-xs font-medium studio-focus-ring studio-transition-micro"
+                  >
+                    {navItem.icon}
+                    <span>{navItem.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* LEFT SECTION 1: CREATE (Progressive disclosure — 1 required field!) */}
+            {leftSection === "create" && (
+              <div className="flex flex-col gap-4">
+                <div>
+                  <h2 className="text-base font-semibold">Create Post</h2>
+                  <p
+                    className="text-sm mt-0.5"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
+                    One required field. Smart defaults handle platform ratios,
+                    captions, and audio mix.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="studio-brief-textarea"
+                    className="text-sm font-medium"
+                  >
+                    Topic or 1-Sentence Brief (Required)
+                  </label>
+                  <textarea
+                    id="studio-brief-textarea"
+                    rows={3}
+                    value={briefInput}
+                    onChange={(e) => {
+                      setBriefInput(e.target.value);
+                      if (briefError && e.target.value.trim()) {
+                        setBriefError(undefined);
+                      }
+                    }}
+                    onBlur={(e) => {
+                      if (!e.target.value.trim()) {
+                        setBriefError(
+                          "Enter a 1-sentence brief so the studio can draft your post."
+                        );
+                      }
+                    }}
+                    placeholder="Describe your post or 60s video idea in one sentence…"
+                    style={{
+                      backgroundColor: "var(--color-surface)",
+                      color: "var(--color-text)",
+                      border: `1px solid ${
+                        briefError
+                          ? "var(--color-danger)"
+                          : "var(--color-border)"
+                      }`,
+                      borderRadius: "var(--radius-sm)",
+                    }}
+                    className="w-full p-3 text-sm resize-none leading-relaxed studio-focus-ring"
+                  />
+                  {briefError && (
+                    <p
+                      role="alert"
+                      className="text-xs font-medium flex items-center gap-1"
+                      style={{ color: "var(--color-danger)" }}
+                    >
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{briefError}</span>
+                    </p>
+                  )}
+                </div>
+
+                {/* Starter 1-click brief chips */}
+                <div className="flex flex-col gap-1.5">
+                  <span
+                    className="text-xs font-medium"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
+                    Or try a verified 60s production brief:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    <StudioChip
+                      tone="neutral"
+                      onClick={() =>
+                        setBriefInput(
+                          "The Cursed Hunter: 60s 35mm confrontation in a snowy basalt canyon with unarmed Lyra and Kaelen."
+                        )
+                      }
+                    >
+                      The Cursed Hunter (60s)
+                    </StudioChip>
+                    <StudioChip
+                      tone="neutral"
+                      onClick={() =>
+                        setBriefInput(
+                          "Crimson Echoes: 60s 1920s Art-Deco speakeasy jazz performance with Julian and Clara."
+                        )
+                      }
+                    >
+                      Art-Deco Speakeasy (60s)
+                    </StudioChip>
+                  </div>
+                </div>
+
+                {/* Collapsible Optional Overrides (+ More options) */}
+                <div
+                  style={{
+                    borderTop: "1px solid var(--color-border)",
+                    borderBottom: "1px solid var(--color-border)",
+                  }}
+                  className="py-2.5 flex flex-col gap-3"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setShowMoreCreateOptions((v) => !v)}
+                    className="flex items-center justify-between text-sm font-medium studio-focus-ring"
+                  >
+                    <span>+ More options (Tone, Audio Mix, Audience)</span>
+                    {showMoreCreateOptions ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
+                  </button>
+
+                  {showMoreCreateOptions && (
+                    <div className="flex flex-col gap-3 pt-1">
+                      <StudioSelect
+                        label="Voice & Tone Override"
+                        value={toneOverride}
+                        onChange={(e) => setToneOverride(e.target.value)}
+                        options={[
+                          {
+                            value: "director_calm",
+                            label: "Calm & Precise (Default Brand Voice)",
+                          },
+                          {
+                            value: "dramatic_cinema",
+                            label: "High-Tension Cinema Trailer",
+                          },
+                          {
+                            value: "technical_breakdown",
+                            label: "Behind-the-Scenes Craft Breakdown",
+                          },
+                        ]}
+                      />
+
+                      <StudioSelect
+                        label="60s Audio Mastering Architecture"
+                        value={audioEngineMode}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setAudioEngineMode(val);
+                          if (val === "option1_symphonic") {
+                            commitPostChange(
+                              {
+                                ...post,
+                                videoUrl:
+                                  "/assets/swarm/comparisons/10_option1_lyria3pro_symphonic_60s_master.mp4",
+                                audioMixLabel:
+                                  "Option 1 · Symphonic Film-Trailer Forward Mix",
+                              },
+                              "Switched to Option 1 (Lyria 3 Pro Symphonic Mix)"
+                            );
+                          } else {
+                            commitPostChange(
+                              {
+                                ...post,
+                                videoUrl:
+                                  "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4",
+                                audioMixLabel:
+                                  "Option 2 · Omni 1.1 Dialogue + Foley + Lyria 3 Pro Score",
+                              },
+                              "Switched to Option 2 (Omni 1.1 Dialogue + Score)"
+                            );
+                          }
+                        }}
+                        options={[
+                          {
+                            value: "option2_omni11",
+                            label:
+                              "Option 2: Omni 1.1 Spoken Dialogue + Foley + Score (Recommended)",
+                          },
+                          {
+                            value: "option1_symphonic",
+                            label:
+                              "Option 1: Continuous Lyria 3 Pro Symphonic Score",
+                          },
+                        ]}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <StudioButton
+                  variant="primary"
+                  size="md"
+                  loading={generationStage.active}
+                  icon={<Sparkles className="w-4 h-4" />}
+                  onClick={() => runStreamingGeneration(briefInput, "full_brief")}
+                >
+                  Generate Post
+                </StudioButton>
+              </div>
+            )}
+
+            {/* LEFT SECTION 2: LIBRARY (Upgrade 6: Visual Keyframe Video Previews + Fit Badges) */}
+            {leftSection === "library" && (
+              <div className="flex flex-col gap-3">
+                <StudioInput
+                  label="Search Library"
+                  placeholder="Filter by title or theme…"
+                  value={libraryQuery}
+                  onChange={(e) => setLibraryQuery(e.target.value)}
+                />
+
+                <div className="flex flex-col gap-3 max-h-[540px] overflow-y-auto pr-1">
+                  {INITIAL_VARIATIONS.filter(
+                    (v) =>
+                      v.label
+                        .toLowerCase()
+                        .includes(libraryQuery.toLowerCase()) ||
+                      v.hook.toLowerCase().includes(libraryQuery.toLowerCase())
+                  ).map((item, idx) => (
+                    <div
+                      key={item.id}
+                      className="studio-surface-2 overflow-hidden flex flex-col"
+                      style={{ borderRadius: "var(--radius-md)" }}
+                    >
+                      <div
+                        className="relative w-full overflow-hidden"
+                        style={{
+                          backgroundColor: "var(--color-cinema-stage)",
+                          aspectRatio: "16 / 9",
+                          maxHeight: "100px",
+                        }}
+                      >
+                        <video
+                          src={`${item.videoUrl}#t=${idx * 10 + 2}`}
+                          muted
+                          playsInline
+                          preload="metadata"
+                          className="w-full h-full object-cover opacity-90"
+                        />
+                        <div className="absolute top-1.5 left-1.5 right-1.5 flex items-center justify-between">
+                          <StudioChip tone="success">
+                            {idx === 0 ? "99% Fit" : "60.0s Master"}
+                          </StudioChip>
+                        </div>
+                      </div>
+                      <div className="p-3 flex flex-col gap-2">
+                        <span className="text-sm font-semibold">
+                          {item.label}
+                        </span>
+                        <p
+                          className="text-xs line-clamp-2"
+                          style={{ color: "var(--color-text-muted)" }}
+                        >
+                          {item.hook}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <StudioButton
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                              setActiveVariationId(item.id);
+                              commitPostChange(
+                                {
+                                  ...post,
+                                  hook: item.hook,
+                                  body: item.body,
+                                  hashtags: item.hashtags,
+                                  videoUrl: item.videoUrl,
+                                  audioMixLabel: item.audioLabel,
+                                },
+                                `Loaded ${item.label} from Library`
+                              );
+                            }}
+                          >
+                            Load into stage
+                          </StudioButton>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {apiLibraryItems.map((apiItem) => (
+                    <div
+                      key={apiItem.id}
+                      className="studio-surface p-3 flex flex-col gap-1.5"
+                      style={{ borderRadius: "var(--radius-md)" }}
+                    >
+                      <span className="text-sm font-medium truncate">
+                        {apiItem.title}
+                      </span>
+                      <div className="flex items-center justify-between">
+                        <span
+                          className="text-xs font-mono"
+                          style={{ color: "var(--color-text-muted)" }}
+                        >
+                          {apiItem.platform}
+                        </span>
+                        <StudioButton
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            commitPostChange(
+                              {
+                                ...post,
+                                title: apiItem.title,
+                                videoUrl: apiItem.videoUrl,
+                              },
+                              `Loaded ${apiItem.title}`
+                            )
+                          }
+                        >
+                          Duplicate
+                        </StudioButton>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* LEFT SECTION 3: BRANDS (Voice, Banned Words, Disclaimer) */}
+            {leftSection === "brands" && (
+              <div className="flex flex-col gap-3">
+                <StudioSelect
+                  label="Active Brand Kit"
+                  value={activeBrandId}
+                  onChange={(e) => setActiveBrandId(e.target.value)}
+                  options={brands.map((b) => ({ value: b.id, label: b.name }))}
+                />
+
+                <div
+                  className="studio-surface-2 p-3 flex flex-col gap-2"
+                  style={{ borderRadius: "var(--radius-md)" }}
+                >
+                  <span className="text-xs font-semibold uppercase tracking-wider">
+                    Voice &amp; Tone Rule
+                  </span>
+                  <p className="text-sm">{activeBrand.voiceSummary}</p>
+                </div>
+
+                <StudioInput
+                  label="Do-Not-Use Words (comma separated)"
+                  value={activeBrand.bannedWords.join(", ")}
+                  onChange={(e) => {
+                    const words = e.target.value
+                      .split(",")
+                      .map((w) => w.trim())
+                      .filter(Boolean);
+                    setBrands((prev) =>
+                      prev.map((b) =>
+                        b.id === activeBrand.id
+                          ? { ...b, bannedWords: words }
+                          : b
+                      )
+                    );
+                  }}
+                  helperText="Any word listed here triggers a live Brand check warning if used in captions."
+                />
+
+                <StudioInput
+                  label="Mandatory Brand Disclaimer (optional)"
+                  value={activeBrand.requiredDisclaimer}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setBrands((prev) =>
+                      prev.map((b) =>
+                        b.id === activeBrand.id
+                          ? { ...b, requiredDisclaimer: val }
+                          : b
+                      )
+                    );
+                  }}
+                />
+              </div>
+            )}
+
+            {/* LEFT SECTION 4: TEMPLATES */}
+            {leftSection === "templates" && (
+              <div className="flex flex-col gap-3">
+                <p
+                  className="text-sm"
+                  style={{ color: "var(--color-text-muted)" }}
+                >
+                  Load a structured post blueprint in one click:
+                </p>
+                {[
+                  {
+                    id: "tpl-narrative",
+                    name: "60s 35mm Three-Act Narrative",
+                    desc: "Hook before 125c fold + 6x10s continuity lock + CTA link.",
+                    hook: "The curse took his voice at dusk—so she walked into the frozen basalt pass with empty hands.",
+                    body: "Act I (0:00–0:20): Unarmed approach in the canyon. Act II (0:20–0:40): Closing the distance across the snow. Act III (0:40–1:00): Twilight resolution over Lyria 3 Pro strings.",
+                  },
+                  {
+                    id: "tpl-breakdown",
+                    name: "Technical Craft & Continuity Thread",
+                    desc: "Ideal for LinkedIn & YouTube creators explaining production rigor.",
+                    hook: "3 continuity bugs that ruin AI short films—and how we fixed all 3 in our 60s master:",
+                    body: "1. Zero weapon hallucination at 0:11 (unarmed Lyra). 2. Strict right-to-left approach at 0:21. 3. Locked cold blue-grey Arctic twilight through 0:50–1:00.",
+                  },
+                ].map((tpl) => (
+                  <div
+                    key={tpl.id}
+                    className="studio-surface-2 p-3 flex flex-col gap-2"
+                    style={{ borderRadius: "var(--radius-md)" }}
+                  >
+                    <span className="text-sm font-semibold">{tpl.name}</span>
+                    <p
+                      className="text-xs"
+                      style={{ color: "var(--color-text-muted)" }}
+                    >
+                      {tpl.desc}
+                    </p>
+                    <StudioButton
+                      variant="secondary"
+                      size="sm"
+                      onClick={() =>
+                        commitPostChange(
+                          { ...post, hook: tpl.hook, body: tpl.body },
+                          `Applied template: ${tpl.name}`
+                        )
+                      }
+                    >
+                      Use template
+                    </StudioButton>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Footer links to Personas & Component Gallery (/dev/gallery) */}
+            <div
+              className="mt-auto pt-3 flex flex-wrap items-center justify-between gap-2 text-xs"
+              style={{
+                borderTop: "1px solid var(--color-border)",
+                color: "var(--color-text-muted)",
+              }}
+            >
+              <Link
+                href="/personas"
+                className="font-medium underline inline-flex items-center gap-1 studio-focus-ring"
+                style={{ color: "var(--color-text)" }}
+              >
+                <span>Personas &amp; Wardrobe</span>
+              </Link>
+              <Link
+                href="/dev/gallery"
+                className="font-medium underline inline-flex items-center gap-1 studio-focus-ring"
+                style={{ color: "var(--color-info)" }}
+              >
+                <span>Component Gallery (/dev/gallery)</span>
+                <ExternalLink className="w-3 h-3" />
+              </Link>
+            </div>
+          </aside>
+        )}
+
+        {/* ------------------------------------------------------------------
+            CENTER HERO CANVAS (Upgrade 1, 2, 3, 4: Theater-First Cinema Stage)
+           ------------------------------------------------------------------ */}
+        <main
+          aria-label="Live multi-platform post canvas"
+          className={
+            theaterMode
+              ? "order-1 md:col-span-12 lg:col-span-12 p-4 md:p-6 flex flex-col gap-4 overflow-y-auto"
+              : "order-1 md:order-2 md:col-span-5 lg:col-span-6 p-4 md:p-6 flex flex-col gap-4 overflow-y-auto"
+          }
+        >
+          {/* Platform Switcher Bar + Character Limit Pill + Safe-Zone Toggle */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <StudioTabs
+              ariaLabel="Target social platform preview"
+              activeId={activePlatformId}
+              onChange={(id) => setActivePlatformId(id as PlatformId)}
+              tabs={PLATFORMS.map((p) => ({
+                id: p.id,
+                label: p.label,
+                badge: p.shortcut,
+              }))}
+            />
+
+            <div className="flex items-center gap-2">
+              <StudioChip
+                tone={
+                  charRemaining < 0
+                    ? "danger"
+                    : charRemaining < 40
+                    ? "warning"
+                    : "neutral"
+                }
+                aria-label="Platform character counter"
+              >
+                <span className="font-mono tabular-nums">
+                  {charCount} / {activePlatform.charLimit} chars
+                </span>
+              </StudioChip>
+
+              <StudioButton
+                variant={post.safeZoneOverlay ? "primary" : "secondary"}
+                size="sm"
+                onClick={() =>
+                  setPost((prev) => ({
+                    ...prev,
+                    safeZoneOverlay: !prev.safeZoneOverlay,
+                  }))
+                }
+                icon={<Eye className="w-3.5 h-3.5" />}
+              >
+                Safe zones
+              </StudioButton>
+            </div>
+          </div>
+
+          {/* Floating In-Place Selection Toolbar (Always visible for current selection) */}
+          <SelectionToolbar
+            scopeLabel={scopeLabelMap[selectedScope]}
+            onQuickAction={handleTriggerQuickAction}
+          />
+
+          {/* Accessible AI Diff Card (Rendered when a quick action or scoped prompt proposes an edit) */}
+          {pendingDiff && (
+            <DiffView
+              diff={pendingDiff}
+              onAccept={handleAcceptDiff}
+              onReject={() => setPendingDiff(null)}
+              onTryAgain={() => handleTriggerQuickAction("punchier")}
+              onAcceptAll={() => handleAcceptDiff(pendingDiff)}
+            />
+          )}
+
+          {/* ================================================================
+              UPGRADE 1 & 4: NETFLIX THEATER-FIRST CINEMA STAGE + INTEGRATED AUDIO/SUBTITLE CHROME
+             ================================================================ */}
+          <section
+            data-theme="dark"
+            aria-label="35mm Cinema Stage and Player Controls"
+            onClick={() => setSelectedScope("visual")}
+            style={{
+              backgroundColor: "var(--color-cinema-stage)",
+              color: "var(--color-cinema-text)",
+              border: `2px solid ${
+                selectedScope === "visual"
+                  ? "var(--color-focus)"
+                  : "var(--color-cinema-border)"
+              }`,
+              borderRadius: "var(--radius-md)",
+              boxShadow: "var(--shadow-md)",
+            }}
+            className="overflow-hidden flex flex-col"
+          >
+            {/* Stage Top Header Bar: Brand · Aspect Ratio · Active Act Badge */}
+            <div
+              style={{
+                backgroundColor: "var(--color-cinema-surface)",
+                borderBottom: "1px solid var(--color-cinema-border)",
+              }}
+              className="px-4 py-2.5 flex flex-wrap items-center justify-between gap-2"
+            >
+              <div className="flex items-center gap-2.5">
+                <Film
+                  className="w-4 h-4 shrink-0"
+                  style={{ color: "var(--color-primary)" }}
+                  aria-hidden="true"
+                />
+                <span className="text-sm font-semibold">
+                  {activeBrand.name}
+                </span>
+                <StudioChip tone="neutral">
+                  {activePlatform.aspectBadge}
+                </StudioChip>
+                {post.aiDisclosureEnabled && (
+                  <StudioChip tone="ai">35mm Continuity Locked</StudioChip>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 text-xs font-mono tabular-nums">
+                <span style={{ color: "var(--color-cinema-muted)" }}>
+                  Now Scrubbing:
+                </span>
+                <span className="font-semibold">
+                  Act {activeSegment.index + 1} ({activeSegment.timeRange})
+                </span>
+              </div>
+            </div>
+
+            {/* Stage Viewport Well: Video Frame + Live Burned-In Netflix Subtitle Overlay + Safe-Zone Overlay */}
+            <div className="relative w-full flex flex-col items-center justify-center p-3 md:p-4">
+              {activePlatformId === "carousel_4_5" ? (
+                <div className="w-full flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <StudioChip tone="info">
+                      Slide {activeSlideIndex + 1} of {post.slides.length}
+                    </StudioChip>
+                    <span className="text-xs font-mono tabular-nums">
+                      {post.slides[activeSlideIndex]?.timeCode}
+                    </span>
+                  </div>
+                  <video
+                    ref={videoRef}
+                    key={post.videoUrl}
+                    src={post.videoUrl}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    style={{
+                      aspectRatio: activePlatform.aspectRatioCss,
+                      maxHeight: theaterMode ? "520px" : "340px",
+                      borderRadius: "var(--radius-sm)",
+                    }}
+                    className="w-full object-cover"
+                  />
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+                    <input
+                      id="slide-title-edit"
+                      type="text"
+                      aria-label="Slide headline"
+                      value={post.slides[activeSlideIndex]?.title || ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setPost((prev) => ({
+                          ...prev,
+                          slides: prev.slides.map((s, idx) =>
+                            idx === activeSlideIndex ? { ...s, title: val } : s
+                          ),
+                        }));
+                      }}
+                      style={{
+                        backgroundColor: "var(--color-cinema-surface)",
+                        color: "var(--color-cinema-text)",
+                        border: "1px solid var(--color-cinema-border)",
+                        borderRadius: "var(--radius-sm)",
+                      }}
+                      className="flex-1 px-3 py-1.5 text-sm font-semibold studio-focus-ring"
+                    />
+                    <div className="flex items-center gap-1.5">
+                      {post.slides.map((sl, idx) => (
+                        <StudioButton
+                          key={sl.id}
+                          size="sm"
+                          variant={
+                            idx === activeSlideIndex ? "primary" : "secondary"
+                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveSlideIndex(idx);
+                          }}
+                        >
+                          Slide {idx + 1}
+                        </StudioButton>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative w-full flex flex-col items-center justify-center">
+                  <video
+                    ref={videoRef}
+                    key={post.videoUrl}
+                    src={post.videoUrl}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    style={{
+                      aspectRatio: activePlatform.aspectRatioCss,
+                      maxHeight: theaterMode
+                        ? "540px"
+                        : activePlatformId === "reels_9_16"
+                        ? "310px"
+                        : "280px",
+                      borderRadius: "var(--radius-sm)",
+                    }}
+                    className="w-full object-cover"
+                  />
+
+                  {/* Live Burned-In Netflix-Style Subtitle Overlay (Lower Third, above native controls) */}
+                  {post.captionsEnabled && (
+                    <div
+                      data-testid="cinema-live-subtitle-overlay"
+                      className="pointer-events-none absolute bottom-14 left-4 right-4 flex justify-center"
+                    >
+                      <div
+                        style={{
+                          backgroundColor: "var(--color-cinema-surface)",
+                          color: "var(--color-cinema-text)",
+                          border: "1px solid var(--color-cinema-border)",
+                          borderRadius: "var(--radius-sm)",
+                          boxShadow: "var(--shadow-md)",
+                        }}
+                        className="px-3.5 py-1.5 max-w-[92%] text-center text-xs sm:text-sm font-medium leading-snug"
+                      >
+                        <span
+                          className="font-mono font-bold mr-1.5"
+                          style={{ color: "var(--color-cinema-muted)" }}
+                        >
+                          [{activeSegment.speaker.split(" ")[0]}]:
+                        </span>
+                        <span>&ldquo;{activeSegment.captionLine}&rdquo;</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Platform Safe-Zone Overlay */}
+                  {post.safeZoneOverlay && (
+                    <div
+                      aria-label="Platform safe zone overlay"
+                      className="pointer-events-none absolute inset-2 flex flex-col justify-between p-3"
+                      style={{
+                        border: "2px dashed var(--color-warning)",
+                        borderRadius: "var(--radius-sm)",
+                      }}
+                    >
+                      <div
+                        className="px-2 py-1 text-xs font-mono self-start"
+                        style={{
+                          backgroundColor: "var(--color-warning-subtle)",
+                          color: "var(--color-text)",
+                          borderRadius: "var(--radius-sm)",
+                        }}
+                      >
+                        Top UI Safe Zone (Status &amp; Audio Bar)
+                      </div>
+                      <div
+                        className="px-2 py-1 text-xs font-mono self-end"
+                        style={{
+                          backgroundColor: "var(--color-warning-subtle)",
+                          color: "var(--color-text)",
+                          borderRadius: "var(--radius-sm)",
+                        }}
+                      >
+                        Bottom/Right Safe Zone (Caption &amp; Action Icons)
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Upgrade 4: Integrated Netflix "Audio & Subtitles" Player Chrome Bar */}
+            <div
+              style={{
+                backgroundColor: "var(--color-cinema-surface)",
+                borderTop: "1px solid var(--color-cinema-border)",
+              }}
+              className="px-4 py-2.5 flex flex-wrap items-center justify-between gap-2"
+            >
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span
+                  className="inline-flex items-center gap-1 text-xs font-mono mr-1"
+                  style={{ color: "var(--color-cinema-muted)" }}
+                >
+                  <Volume2 className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>Audio Track:</span>
+                </span>
+                <StudioButton
+                  variant={
+                    post.videoUrl.includes("09_option2")
+                      ? "primary"
+                      : "secondary"
+                  }
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    commitPostChange(
+                      {
+                        ...post,
+                        videoUrl:
+                          "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4",
+                        audioMixLabel:
+                          "Option 2 · Omni 1.1 Dialogue + Foley + Lyria 3 Pro Score",
+                      },
+                      "Loaded Option 2 (Omni 1.1 Dialogue + Score)"
+                    );
+                  }}
+                >
+                  Option 2 (Dialogue + Score)
+                </StudioButton>
+                <StudioButton
+                  variant={
+                    post.videoUrl.includes("10_option1")
+                      ? "primary"
+                      : "secondary"
+                  }
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    commitPostChange(
+                      {
+                        ...post,
+                        videoUrl:
+                          "/assets/swarm/comparisons/10_option1_lyria3pro_symphonic_60s_master.mp4",
+                        audioMixLabel:
+                          "Option 1 · Symphonic Film-Trailer Forward Mix",
+                      },
+                      "Loaded Option 1 (Symphonic Forward Mix)"
+                    );
+                  }}
+                >
+                  Option 1 (Symphonic)
+                </StudioButton>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <StudioButton
+                  variant={post.captionsEnabled ? "primary" : "secondary"}
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPost((prev) => ({
+                      ...prev,
+                      captionsEnabled: !prev.captionsEnabled,
+                    }));
+                  }}
+                  icon={<Subtitles className="w-3.5 h-3.5" />}
+                >
+                  {post.captionsEnabled ? "CC: On" : "CC: Off"}
+                </StudioButton>
+
+                <StudioButton
+                  variant={theaterMode ? "primary" : "secondary"}
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTheaterMode((m) => !m);
+                  }}
+                  icon={
+                    theaterMode ? (
+                      <Minimize2 className="w-3.5 h-3.5" />
+                    ) : (
+                      <Maximize2 className="w-3.5 h-3.5" />
+                    )
+                  }
+                >
+                  {theaterMode ? "Exit Theater (T)" : "Theater (T)"}
+                </StudioButton>
+              </div>
+            </div>
+          </section>
+
+          {/* ================================================================
+              UPGRADE 2: HORIZONTAL 6-ACT FILMSTRIP SCRUBBER DIRECTLY BELOW CINEMA STAGE
+             ================================================================ */}
+          <section
+            aria-label="60-second 6-Act filmstrip scrubber"
+            style={{
+              backgroundColor: "var(--color-surface)",
+              border: "1px solid var(--color-border)",
+              borderRadius: "var(--radius-md)",
+            }}
+            className="p-3.5"
+          >
+            <VideoTimelineEditor
+              segments={post.segments}
+              selectedSegmentId={selectedSegmentId}
+              onSelectSegment={(seg) => {
+                setSelectedSegmentId(seg.id);
+                setSelectedScope("timeline");
+                if (videoRef.current) {
+                  videoRef.current.currentTime = seg.startSec;
+                }
+              }}
+              onUpdateCaption={(segId, newCap) => {
+                setPost((prev) => ({
+                  ...prev,
+                  segments: prev.segments.map((s) =>
+                    s.id === segId ? { ...s, captionLine: newCap } : s
+                  ),
+                }));
+              }}
+              onMoveSegment={(index, direction) => {
+                const target = index + direction;
+                if (target < 0 || target >= post.segments.length) return;
+                const nextSegs = [...post.segments];
+                const [moved] = nextSegs.splice(index, 1);
+                nextSegs.splice(target, 0, moved);
+                commitPostChange(
+                  { ...post, segments: nextSegs },
+                  `Reordered segment ${index + 1} to position ${target + 1}`
+                );
+              }}
+              onRegenerateSegment={(seg) => {
+                commitPostChange(
+                  {
+                    ...post,
+                    segments: post.segments.map((s) =>
+                      s.id === seg.id
+                        ? {
+                            ...s,
+                            captionLine: `${s.captionLine} [Refined 35mm take]`,
+                          }
+                        : s
+                    ),
+                  },
+                  `Regenerated segment ${seg.timeRange} with continuity lock`
+                );
+              }}
+            />
+          </section>
+
+          {/* ================================================================
+              UPGRADE 3: UNCLIPPED, RESIZE-FREE EDITORIAL COPY & METADATA DECK
+              ("Read Like a Post, Edit on Click" — zero resize grippers, zero clipped lines)
+             ================================================================ */}
+          <section
+            aria-label="In-place post caption and metadata editor"
+            style={{
+              backgroundColor: "var(--color-surface)",
+              border: "1px solid var(--color-border)",
+              borderRadius: "var(--radius-md)",
+            }}
+            className="p-4 flex flex-col gap-4"
+          >
+            {/* Interactive Feed Fold Preview Bar */}
+            <div
+              style={{
+                backgroundColor: "var(--color-surface-2)",
+                border: "1px solid var(--color-border)",
+                borderRadius: "var(--radius-sm)",
+              }}
+              className="px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <StudioChip tone="info">Feed Fold Preview</StudioChip>
+                <span className="truncate font-medium">
+                  {foldPreviewExpanded
+                    ? `${post.hook} — ${post.body}`
+                    : post.hook.slice(0, activePlatform.foldChars)}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFoldPreviewExpanded((e) => !e)}
+                style={{ color: "var(--color-info)" }}
+                className="font-mono font-semibold underline shrink-0 studio-focus-ring"
+              >
+                {foldPreviewExpanded ? "Show less" : "…more"}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+              {/* Left 6 cols: Opening Hook + Post Body (Unclipped, resize-none) */}
+              <div className="lg:col-span-7 flex flex-col gap-3">
+                {/* 1. Opening Hook Block */}
+                <div
+                  onClick={() => setSelectedScope("hook")}
+                  style={{
+                    backgroundColor:
+                      selectedScope === "hook"
+                        ? "var(--color-surface-2)"
+                        : "var(--color-surface)",
+                    border: `1px solid ${
+                      selectedScope === "hook"
+                        ? "var(--color-focus)"
+                        : "var(--color-border)"
+                    }`,
+                    borderRadius: "var(--radius-md)",
+                  }}
+                  className="p-3 flex flex-col gap-1.5 cursor-pointer studio-transition-micro"
+                >
+                  <div className="flex items-center justify-between">
+                    <label
+                      htmlFor="canvas-hook-input"
+                      className="text-xs font-semibold uppercase tracking-wider"
+                      style={{ color: "var(--color-text-muted)" }}
+                    >
+                      Opening Hook (Before &ldquo;…more&rdquo; fold)
+                    </label>
+                    <span
+                      className="text-xs font-mono tabular-nums"
+                      style={{ color: "var(--color-text-muted)" }}
+                    >
+                      {post.hook.length} / {activePlatform.foldChars}c fold
+                    </span>
+                  </div>
+                  <textarea
+                    id="canvas-hook-input"
+                    rows={3}
+                    value={post.hook}
+                    onFocus={() => setSelectedScope("hook")}
+                    onChange={(e) =>
+                      setPost((prev) => ({ ...prev, hook: e.target.value }))
+                    }
+                    onBlur={() =>
+                      commitPostChange(post, "Edited opening hook in place")
+                    }
+                    style={{
+                      backgroundColor: "var(--color-surface)",
+                      color: "var(--color-text)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "var(--radius-sm)",
+                    }}
+                    className="w-full p-2.5 text-sm font-medium leading-relaxed resize-none overflow-hidden studio-focus-ring"
+                  />
+                </div>
+
+                {/* 2. Post Body Block */}
+                <div
+                  onClick={() => setSelectedScope("body")}
+                  style={{
+                    backgroundColor:
+                      selectedScope === "body"
+                        ? "var(--color-surface-2)"
+                        : "var(--color-surface)",
+                    border: `1px solid ${
+                      selectedScope === "body"
+                        ? "var(--color-focus)"
+                        : "var(--color-border)"
+                    }`,
+                    borderRadius: "var(--radius-md)",
+                  }}
+                  className="p-3 flex flex-col gap-1.5 cursor-pointer studio-transition-micro"
+                >
+                  <div className="flex items-center justify-between">
+                    <label
+                      htmlFor="canvas-body-input"
+                      className="text-xs font-semibold uppercase tracking-wider"
+                      style={{ color: "var(--color-text-muted)" }}
+                    >
+                      Caption Body
+                    </label>
+                    <span
+                      className="text-xs font-mono tabular-nums"
+                      style={{
+                        color:
+                          charRemaining < 0
+                            ? "var(--color-danger)"
+                            : "var(--color-text-muted)",
+                      }}
+                    >
+                      {charRemaining >= 0
+                        ? `${charRemaining} chars left`
+                        : `${Math.abs(charRemaining)} chars over limit`}
+                    </span>
+                  </div>
+                  <textarea
+                    id="canvas-body-input"
+                    rows={4}
+                    value={post.body}
+                    onFocus={() => setSelectedScope("body")}
+                    onChange={(e) =>
+                      setPost((prev) => ({ ...prev, body: e.target.value }))
+                    }
+                    onBlur={() =>
+                      commitPostChange(post, "Edited caption body in place")
+                    }
+                    style={{
+                      backgroundColor: "var(--color-surface)",
+                      color: "var(--color-text)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "var(--radius-sm)",
+                    }}
+                    className="w-full p-2.5 text-sm leading-relaxed resize-none overflow-hidden studio-focus-ring"
+                  />
+                </div>
+              </div>
+
+              {/* Right 5 cols: Hashtags + CTA Link + Active Audio Summary */}
+              <div className="lg:col-span-5 flex flex-col justify-between gap-3">
+                {/* 3. Hashtags Block */}
+                <div
+                  onClick={() => setSelectedScope("hashtags")}
+                  style={{
+                    backgroundColor:
+                      selectedScope === "hashtags"
+                        ? "var(--color-surface-2)"
+                        : "var(--color-surface)",
+                    border: `1px solid ${
+                      selectedScope === "hashtags"
+                        ? "var(--color-focus)"
+                        : "var(--color-border)"
+                    }`,
+                    borderRadius: "var(--radius-md)",
+                  }}
+                  className="p-3 flex flex-col gap-1.5 cursor-pointer studio-transition-micro"
+                >
+                  <div className="flex items-center justify-between">
+                    <label
+                      htmlFor="canvas-hashtags-input"
+                      className="text-xs font-semibold uppercase tracking-wider"
+                      style={{ color: "var(--color-text-muted)" }}
+                    >
+                      Hashtags ({hashtagList.length} /{" "}
+                      {activePlatform.maxHashtags})
+                    </label>
+                    <span
+                      className="text-xs"
+                      style={{ color: "var(--color-text-muted)" }}
+                    >
+                      CamelCase A11y
+                    </span>
+                  </div>
+                  <input
+                    id="canvas-hashtags-input"
+                    type="text"
+                    value={post.hashtags}
+                    onFocus={() => setSelectedScope("hashtags")}
+                    onChange={(e) =>
+                      setPost((prev) => ({ ...prev, hashtags: e.target.value }))
+                    }
+                    onBlur={() =>
+                      commitPostChange(post, "Updated hashtags in place")
+                    }
+                    style={{
+                      backgroundColor: "var(--color-surface)",
+                      color: "var(--color-text)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "var(--radius-sm)",
+                    }}
+                    className="w-full px-2.5 py-2 text-sm font-mono studio-focus-ring"
+                  />
+                </div>
+
+                {/* 4. CTA Link Block */}
+                <div
+                  onClick={() => setSelectedScope("cta")}
+                  style={{
+                    backgroundColor:
+                      selectedScope === "cta"
+                        ? "var(--color-surface-2)"
+                        : "var(--color-surface)",
+                    border: `1px solid ${
+                      selectedScope === "cta"
+                        ? "var(--color-focus)"
+                        : "var(--color-border)"
+                    }`,
+                    borderRadius: "var(--radius-md)",
+                  }}
+                  className="p-3 flex flex-col gap-1.5 cursor-pointer studio-transition-micro"
+                >
+                  <label
+                    htmlFor="canvas-cta-input"
+                    className="text-xs font-semibold uppercase tracking-wider"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
+                    Call-to-Action Link (UTM Tracked)
+                  </label>
+                  <input
+                    id="canvas-cta-input"
+                    type="url"
+                    value={post.ctaUrl}
+                    onFocus={() => setSelectedScope("cta")}
+                    onChange={(e) =>
+                      setPost((prev) => ({ ...prev, ctaUrl: e.target.value }))
+                    }
+                    style={{
+                      backgroundColor: "var(--color-surface)",
+                      color: "var(--color-text)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "var(--radius-sm)",
+                    }}
+                    className="w-full px-2.5 py-2 text-xs font-mono studio-focus-ring"
+                  />
+                </div>
+
+                {/* Active Master Telemetry Card */}
+                <div
+                  className="studio-surface-2 p-3 flex flex-col gap-1"
+                  style={{ borderRadius: "var(--radius-md)" }}
+                >
+                  <span
+                    className="text-xs font-mono uppercase"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
+                    Active Master Bus
+                  </span>
+                  <span className="text-xs font-semibold">
+                    {post.audioMixLabel}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+
+        {/* ------------------------------------------------------------------
+            RIGHT CONTEXT-AWARE PANEL (3 cols on desktop, hidden in Theater Mode): Checks · Edit · Variations · History
+           ------------------------------------------------------------------ */}
+        {!theaterMode && (
+          <aside
+            aria-label="Context inspector and quality checks"
+            style={{
+              backgroundColor: "var(--color-surface)",
+              borderLeft: "1px solid var(--color-border)",
+            }}
+            className="order-3 md:order-3 hidden md:flex md:col-span-4 lg:col-span-3 p-4 flex-col gap-4 overflow-y-auto"
+          >
+            <StudioTabs
+              ariaLabel="Inspector panel tabs"
+              activeId={rightTab}
+              onChange={(id) =>
+                setRightTab(id as "checks" | "edit" | "variations" | "history")
+              }
+              tabs={[
+                {
+                  id: "checks",
+                  label: "Checks",
+                  badge: activeIssues.length,
+                },
+                { id: "edit", label: "Edit" },
+                {
+                  id: "variations",
+                  label: "Variations",
+                  badge: variations.length,
+                },
+                { id: "history", label: "History", badge: checkpoints.length },
+              ]}
+            />
+
+            {/* RIGHT TAB 1: CHECKS & 1-CLICK FIXES (6 Categories) */}
+            {rightTab === "checks" && (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <h2 className="text-base font-semibold">
+                      Pre-Flight Checks ({activePlatform.shortName})
+                    </h2>
+                    <p
+                      className="text-xs"
+                      style={{ color: "var(--color-text-muted)" }}
+                    >
+                      Platform fit · Brand · Quality · A11y · Safety · Links
+                    </p>
+                  </div>
+                  {activeIssues.length > 0 ? (
+                    <StudioButton
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        activeIssues.forEach((iss) => iss.applyFix());
+                      }}
+                    >
+                      Fix all ({activeIssues.length})
+                    </StudioButton>
+                  ) : (
+                    <StudioChip tone="success">All 6 passed</StudioChip>
+                  )}
+                </div>
+
+                {activeIssues.length === 0 ? (
+                  <div
+                    className="p-4 flex items-center gap-3"
+                    style={{
+                      backgroundColor: "var(--color-success-subtle)",
+                      border: "1px solid var(--color-success)",
+                      borderRadius: "var(--radius-md)",
+                    }}
+                  >
+                    <CheckCircle2
+                      className="w-5 h-5 shrink-0"
+                      style={{ color: "var(--color-success)" }}
+                    />
+                    <div>
+                      <p className="text-sm font-semibold">
+                        Ready to publish on {activePlatform.shortName}
+                      </p>
+                      <p
+                        className="text-xs"
+                        style={{ color: "var(--color-text-muted)" }}
+                      >
+                        Zero blocking errors across character limits, brand
+                        rules, alt text, and UTM links.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {activeIssues.map((issue) => (
+                      <CheckItemCard
+                        key={issue.id}
+                        issue={issue}
+                        onFocusTarget={(scope) => {
+                          setSelectedScope(scope as SelectableScope);
+                        }}
+                        onIgnore={(id) =>
+                          setIgnoredCheckIds((prev) => [...prev, id])
+                        }
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* RIGHT TAB 2: DIRECT ELEMENT INSPECTOR (EDIT) */}
+            {rightTab === "edit" && (
+              <div className="flex flex-col gap-4">
+                <div>
+                  <h2 className="text-base font-semibold">
+                    Inspecting: {scopeLabelMap[selectedScope]}
+                  </h2>
+                  <p
+                    className="text-xs"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
+                    Fine-tune accessibility, alt text, and platform disclosures
+                    in place.
+                  </p>
+                </div>
+
+                <StudioInput
+                  label="Visual Alt Text (Screen Readers)"
+                  value={post.altText}
+                  onChange={(e) =>
+                    setPost((prev) => ({ ...prev, altText: e.target.value }))
+                  }
+                  helperText="Required for WCAG 2.2 AA compliance across Instagram, LinkedIn, and X."
+                />
+
+                <div
+                  className="studio-surface-2 p-3 flex flex-col gap-2.5"
+                  style={{ borderRadius: "var(--radius-md)" }}
+                >
+                  <label className="flex items-center justify-between gap-2 text-sm font-medium cursor-pointer">
+                    <span>Burned-in &amp; SRT Captions Enabled</span>
+                    <input
+                      type="checkbox"
+                      checked={post.captionsEnabled}
+                      onChange={(e) =>
+                        setPost((prev) => ({
+                          ...prev,
+                          captionsEnabled: e.target.checked,
+                        }))
+                      }
+                      className="w-4 h-4"
+                    />
+                  </label>
+
+                  <label className="flex items-center justify-between gap-2 text-sm font-medium cursor-pointer">
+                    <span>AI-Synthesized Media Disclosure Badge</span>
+                    <input
+                      type="checkbox"
+                      checked={post.aiDisclosureEnabled}
+                      onChange={(e) =>
+                        setPost((prev) => ({
+                          ...prev,
+                          aiDisclosureEnabled: e.target.checked,
+                        }))
+                      }
+                      className="w-4 h-4"
+                    />
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* RIGHT TAB 3: VARIATIONS (Upgrade 6: Visual Keyframe Previews + Mix Hook & Visual) */}
+            {rightTab === "variations" && (
+              <div className="flex flex-col gap-3">
+                <div>
+                  <h2 className="text-base font-semibold">
+                    Compare &amp; Mix Variations
+                  </h2>
+                  <p
+                    className="text-xs"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
+                    Pick a complete variation or combine the hook from one with
+                    the 60s master from another.
+                  </p>
+                </div>
+
+                <VariationGrid
+                  variations={variations}
+                  activeVariationId={activeVariationId}
+                  onUseVariation={(v) => {
+                    setActiveVariationId(v.id);
+                    commitPostChange(
+                      {
+                        ...post,
+                        hook: v.hook,
+                        body: v.body,
+                        hashtags: v.hashtags,
+                        videoUrl: v.videoUrl,
+                        audioMixLabel: v.audioLabel,
+                      },
+                      `Switched to ${v.label}`
+                    );
+                  }}
+                  onMixHookAndVisual={(hookVar, visualVar) => {
+                    setActiveVariationId(visualVar.id);
+                    commitPostChange(
+                      {
+                        ...post,
+                        hook: hookVar.hook,
+                        videoUrl: visualVar.videoUrl,
+                        audioMixLabel: `${visualVar.audioLabel} + ${hookVar.label
+                          .split("·")[0]
+                          .trim()} Hook`,
+                      },
+                      `Mixed Hook from ${
+                        hookVar.label.split("·")[0]
+                      } + Visual from ${visualVar.label.split("·")[0]}`
+                    );
+                  }}
+                  onMoreLikeThis={(v) => {
+                    const newVar: PostVariation = {
+                      ...v,
+                      id: `var-more-${Date.now()}`,
+                      label: `Variation ${
+                        variations.length + 1
+                      } · Inspired by ${v.label.split("·")[0].trim()}`,
+                      hook: `${v.hook.slice(
+                        0,
+                        68
+                      )}—refined for maximum retention.`,
+                    };
+                    setVariations((prev) => [newVar, ...prev]);
+                    setToast({
+                      message: `Generated new variation like ${v.label}`,
+                    });
+                  }}
+                />
+              </div>
+            )}
+
+            {/* RIGHT TAB 4: NAMED VERSION HISTORY CHECKPOINTS */}
+            {rightTab === "history" && (
+              <div className="flex flex-col gap-3">
+                <div>
+                  <h2 className="text-base font-semibold">
+                    Version Checkpoints
+                  </h2>
+                  <p
+                    className="text-xs"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
+                    Every AI edit or manual change saves a named snapshot you
+                    can restore in one click.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-2.5">
+                  {checkpoints.map((cp) => (
+                    <div
+                      key={cp.id}
+                      className="studio-surface-2 p-3 flex items-center justify-between gap-2"
+                      style={{ borderRadius: "var(--radius-md)" }}
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono font-bold">
+                            {cp.version}
+                          </span>
+                          <span className="text-sm font-medium truncate">
+                            {cp.label}
+                          </span>
+                        </div>
+                        <span
+                          className="text-xs font-mono"
+                          style={{ color: "var(--color-text-muted)" }}
+                        >
+                          {cp.timestamp}
+                        </span>
+                      </div>
+                      <StudioButton
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setPost(cp.snapshot);
+                          setToast({
+                            message: `Restored checkpoint ${cp.version}`,
+                          });
+                        }}
+                      >
+                        Restore
+                      </StudioButton>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </aside>
         )}
       </div>
 
       {/* ====================================================================
-          MAIN EDGE-TO-EDGE 2-COLUMN WORKSPACE
+          3. BOTTOM SCOPED PROMPT BAR (Scoped to selection, Cost Badge, Cancel, Conversational Guard)
          ==================================================================== */}
-      <div className="w-full max-w-none grid grid-cols-1 lg:grid-cols-12">
-        {/* ==================================================================
-            LEFT COLUMN (lg:col-span-7): ACTIVE WORKFLOW CONTROLS
-           ================================================================== */}
-        <div className="lg:col-span-7 p-4 sm:p-5 space-y-4 border-r border-white/[0.07]">
-          {/* ================================================================
-              WORKFLOW 1: CREATE REEL (Steps 01 -> 02 -> 03 -> 04)
-             ================================================================ */}
-          {workflow === "create" && (
-            <div className="space-y-4">
-              {/* Step Switcher for Create Reel */}
-              <div className="flex items-center gap-1 bg-[#121217] p-1 rounded-lg border border-white/[0.06] w-fit">
-                {[
-                  { s: 1, label: "01. Story & Audio" },
-                  { s: 2, label: "02. Cast & Wardrobe" },
-                  { s: 3, label: `03. Storyboard (${shots.length})` },
-                  { s: 4, label: "04. Render & Export" },
-                ].map((item) => (
-                  <button
-                    key={item.s}
-                    type="button"
-                    onClick={() => setCreateStep(item.s as 1 | 2 | 3 | 4)}
-                    className={`px-3 py-1 rounded-md text-xs font-medium cursor-pointer ${
-                      createStep === item.s
-                        ? "bg-white text-zinc-950 font-semibold"
-                        : "text-zinc-400 hover:text-white"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* CREATE STEP 01: STORY & AUDIO */}
-              {createStep === 1 && (
-                <div className="rounded-xl bg-[#0e0e12] border border-white/[0.07] p-4 sm:p-5 space-y-4">
-                  <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
-                    <span className="text-sm font-semibold text-white">
-                      01. Story Prompt, YouTube Deconstruction &amp; 8-Dimension AI Synthesis
-                    </span>
-                    <span className="text-[11px] text-emerald-400 font-medium">
-                      Models: Gemini 2.5 Flash + Omni 1.1 Flash + Lyria 3 Pro
-                    </span>
-                  </div>
-
-                  {/* Primary Prompt Box + Dynamic AI Synthesizer Button */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className={labelCls}>
-                        New Reel Prompt or YouTube Link (Deconstructs &amp; Elevates into an Original Masterpiece)
-                      </label>
-                      <button
-                        type="button"
-                        disabled={isSynthesizingPrompt}
-                        onClick={() => {
-                          lastSynthesizedPromptKeyRef.current = "";
-                          synthesizeFromNewPrompt(storyline, false);
-                        }}
-                        className="px-2.5 py-1 rounded-md bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-400/40 text-indigo-200 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
-                      >
-                        <Sparkles className="w-3 h-3" />
-                        <span>
-                          {isSynthesizingPrompt
-                            ? "Deconstructing & Elevating..."
-                            : "✨ Deconstruct, Elevate & Synthesize All 8 Dimensions"}
-                        </span>
-                      </button>
-                    </div>
-                    {(referenceYouTubeUrl || creativeElevation.youtubeMetadata?.url) && (
-                      <div className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-indigo-950/50 border border-indigo-500/40 text-[11px]">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="px-1.5 py-0.5 rounded bg-indigo-500/30 text-indigo-200 font-semibold shrink-0">
-                            Active YouTube Reference Locked
-                          </span>
-                          <span className="text-indigo-100 font-mono truncate">
-                            {referenceYouTubeUrl || creativeElevation.youtubeMetadata?.url}
-                          </span>
-                          {creativeElevation.youtubeMetadata?.videoId && (
-                            <span className="text-emerald-300 font-semibold shrink-0">
-                              (v={creativeElevation.youtubeMetadata.videoId})
-                            </span>
-                          )}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            referenceYouTubeUrlRef.current = "";
-                            setReferenceYouTubeUrl("");
-                            lastSynthesizedPromptKeyRef.current = "";
-                          }}
-                          className="text-[10px] text-zinc-400 hover:text-white px-2 py-0.5 rounded bg-white/[0.06] shrink-0 cursor-pointer"
-                        >
-                          ✕ Clear Reference
-                        </button>
-                      </div>
-                    )}
-                    <textarea
-                      rows={2}
-                      value={storyline}
-                      onChange={(e) => {
-                        const nextVal = e.target.value;
-                        setStoryline(nextVal);
-                        const detectedYt = extractYouTubeUrlFromText(nextVal);
-                        if (detectedYt) {
-                          referenceYouTubeUrlRef.current = detectedYt;
-                          setReferenceYouTubeUrl(detectedYt);
-                        }
-                        if (promptDebounceRef.current) {
-                          clearTimeout(promptDebounceRef.current);
-                        }
-                        if (nextVal.trim().length >= 8) {
-                          promptDebounceRef.current = setTimeout(() => {
-                            synthesizeFromNewPrompt(nextVal, false);
-                          }, 1400);
-                        }
-                      }}
-                      placeholder="Type any random creative idea OR paste any YouTube link — Zyvoriq deconstructs the core hook & builds a 10x more innovative 2-Act masterpiece..."
-                      className={inputCls}
-                    />
-                  </div>
-
-                  {/* 3-STAGE CREATIVE SURPASS & ELEVATION BLUEPRINT (DECONSTRUCT -> ELEVATE -> SURPASS) */}
-                  <div className="rounded-xl bg-[#121217] border border-indigo-500/30 p-3.5 space-y-2.5">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.06] pb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded bg-indigo-500/20 border border-indigo-400/40 text-indigo-200 text-[10px] font-semibold uppercase tracking-wide">
-                          {creativeElevation.sourceType === "youtube_reference"
-                            ? "🎥 Live YouTube Deconstruction + Surpass Mode"
-                            : "✨ 3-Stage Creative Surpass Compiler"}
-                        </span>
-                        <span className="text-xs font-semibold text-white">
-                          Deconstruct → Elevate → Surpass (Zero Imitation)
-                        </span>
-                      </div>
-                      <span className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-semibold">
-                        {creativeElevation.innovationScore}
-                      </span>
-                    </div>
-
-                    {creativeElevation.youtubeMetadata && (
-                      <div className="p-2.5 rounded-lg bg-zinc-900/90 border border-white/[0.08] flex items-center gap-3">
-                        <img
-                          src={creativeElevation.youtubeMetadata.thumbnailUrl}
-                          alt={creativeElevation.youtubeMetadata.title}
-                          className="w-20 h-12 rounded object-cover border border-white/10 shrink-0"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <div className="text-[11px] font-semibold text-white truncate">
-                            Reference Deconstructed: {creativeElevation.youtubeMetadata.title}
-                          </div>
-                          <div className="text-[10px] text-indigo-300 truncate">
-                            Channel: {creativeElevation.youtubeMetadata.channelName} • ID: {creativeElevation.youtubeMetadata.videoId}
-                          </div>
-                          <div className="text-[10px] text-zinc-400 truncate">
-                            {creativeElevation.youtubeMetadata.descriptionSnippet}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                      <div className="p-2.5 rounded-lg bg-[#09090b] border border-white/[0.06] space-y-1">
-                        <div className="text-[10px] font-semibold text-indigo-300 uppercase">
-                          1. Deconstructed Core &amp; Limitations Overcome
-                        </div>
-                        <p className="text-zinc-200 leading-snug">
-                          {creativeElevation.deconstructedCore}
-                        </p>
-                        <ul className="text-[10px] text-zinc-400 list-disc list-inside space-y-0.5 pt-0.5">
-                          {creativeElevation.identifiedLimitations.slice(0, 3).map((lim, i) => (
-                            <li key={i} className="truncate">
-                              {lim}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <div className="p-2.5 rounded-lg bg-[#09090b] border border-white/[0.06] space-y-1">
-                        <div className="text-[10px] font-semibold text-emerald-300 uppercase">
-                          2. How This Blueprint Surpasses Existing Content
-                        </div>
-                        <p className="text-zinc-200 leading-snug">
-                          {creativeElevation.surpassStrategy}
-                        </p>
-                        <div className="text-[10px] text-amber-300/90 pt-0.5">
-                          <span className="font-semibold">00:30 Act I→II Twist:</span>{" "}
-                          {creativeElevation.act1ToAct2Twist}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
-                      <div className="px-2.5 py-1.5 rounded bg-[#09090b] border border-white/[0.05] text-zinc-300">
-                        <span className="font-semibold text-indigo-300">48kHz Sonic Upgrade:</span>{" "}
-                        {creativeElevation.sonicInnovation}
-                      </div>
-                      <div className="px-2.5 py-1.5 rounded bg-[#09090b] border border-white/[0.05] text-zinc-300">
-                        <span className="font-semibold text-emerald-300">{shots.length}-Shot Kinetic &amp; Camera Upgrade:</span>{" "}
-                        {creativeElevation.choreographyAndCameraUpgrade}
-                      </div>
-                    </div>
-
-                    {creativeElevation.judgeReceipt && (
-                      <div className="px-3 py-2 rounded-lg bg-emerald-950/30 border border-emerald-500/30 text-[10px] space-y-1">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="font-semibold text-emerald-300">
-                            ⚖️ Cross-Model Independent LLM-as-a-Judge Certified (Zero Self-Preference Bias)
-                          </span>
-                          <span className="text-zinc-300 font-mono text-[9.5px]">
-                            Generator: <strong className="text-indigo-300">{creativeElevation.judgeReceipt.generatorModel}</strong> ({creativeElevation.judgeReceipt.generatorLatencyMs}ms) → Judge: <strong className="text-emerald-300">{creativeElevation.judgeReceipt.judgeModel}</strong> ({creativeElevation.judgeReceipt.judgeLatencyMs}ms)
-                          </span>
-                        </div>
-                        <div className="text-zinc-300 leading-snug">
-                          {creativeElevation.judgeReceipt.verdictSummary}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className={labelCls}>Title (Auto-Updates from Prompt)</label>
-                      <input
-                        type="text"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        className={inputCls}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelCls}>Duration</label>
-                      <select
-                        value={durationId}
-                        onChange={(e) => {
-                          const nextDur = e.target.value;
-                          customShotsRef.current = null;
-                          setDurationId(nextDur);
-                          synthesizeFromNewPrompt(storyline, false, {
-                            durationId: nextDur,
-                          });
-                        }}
-                        className={inputCls}
-                      >
-                        {DURATIONS_CATALOG.map((d) => (
-                          <option key={d.id} value={d.id}>
-                            {d.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>Genre &amp; BPM</label>
-                      <select
-                        value={genreId}
-                        onChange={(e) => {
-                          const nextGenre = e.target.value;
-                          customShotsRef.current = null;
-                          setGenreId(nextGenre);
-                          synthesizeFromNewPrompt(storyline, false, {
-                            genreId: nextGenre,
-                          });
-                        }}
-                        className={inputCls}
-                      >
-                        {GENRES_CATALOG.map((g) => (
-                          <option key={g.id} value={g.id}>
-                            {g.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>Language</label>
-                      <select
-                        value={languageId}
-                        onChange={(e) => {
-                          const nextLang = e.target.value;
-                          customShotsRef.current = null;
-                          setLanguageId(nextLang);
-                          synthesizeFromNewPrompt(storyline, false, {
-                            languageId: nextLang,
-                          });
-                        }}
-                        className={inputCls}
-                      >
-                        {LANGUAGES_CATALOG.map((l) => (
-                          <option key={l.id} value={l.id}>
-                            {l.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>Content Format &amp; Production Type</label>
-                      <select
-                        value={contentTypeId}
-                        onChange={(e) => {
-                          customShotsRef.current = null;
-                          setContentTypeId(e.target.value);
-                        }}
-                        className={inputCls}
-                      >
-                        {CONTENT_TYPES_CATALOG.map((ct) => (
-                          <option key={ct.id} value={ct.id}>
-                            {ct.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>Target Platform &amp; Aspect Ratio</label>
-                      <select
-                        value={platformId}
-                        onChange={(e) => {
-                          customShotsRef.current = null;
-                          setPlatformId(e.target.value);
-                        }}
-                        className={inputCls}
-                      >
-                        {PLATFORMS_CATALOG.map((pl) => (
-                          <option key={pl.id} value={pl.id}>
-                            {pl.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>Cultural Region &amp; Market</label>
-                      <select
-                        value={regionId}
-                        onChange={(e) => {
-                          customShotsRef.current = null;
-                          setRegionId(e.target.value);
-                        }}
-                        className={inputCls}
-                      >
-                        {REGIONS_CATALOG.map((rg) => (
-                          <option key={rg.id} value={rg.id}>
-                            {rg.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>Target Audience Demography</label>
-                      <select
-                        value={demographyId}
-                        onChange={(e) => {
-                          customShotsRef.current = null;
-                          setDemographyId(e.target.value);
-                        }}
-                        className={inputCls}
-                      >
-                        {DEMOGRAPHIES_CATALOG.map((dm) => (
-                          <option key={dm.id} value={dm.id}>
-                            {dm.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-3">
-                      <div>
-                        <label className={labelCls}>Vocal Arrangement</label>
-                        <select
-                          value={vocalId}
-                          onChange={(e) => {
-                            const nextVocal = e.target.value;
-                            customShotsRef.current = null;
-                            setVocalId(nextVocal);
-                            synthesizeFromNewPrompt(storyline, false, {
-                              vocalId: nextVocal,
-                            });
-                          }}
-                          className={inputCls}
-                        >
-                          {VOCALS_CATALOG.map((v) => (
-                            <option key={v.id} value={v.id}>
-                              {v.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className={labelCls}>
-                          Audio &amp; Music Engine (Omni 1.1 vs Omni 1.1 + Lyria-3-pro-preview)
-                        </label>
-                        <select
-                          value={audioEngineId}
-                          onChange={(e) =>
-                            setAudioEngineId(e.target.value as "omni_lyria3" | "omni_native")
-                          }
-                          className={inputCls}
-                        >
-                          {AUDIO_ENGINES_CATALOG.map((eng) => (
-                            <option key={eng.id} value={eng.id}>
-                              {eng.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <div>
-                      <label className={labelCls}>
-                        Lyrics (Dynamically Generated from Prompt)
-                      </label>
-                      <textarea
-                        rows={5}
-                        value={lyrics}
-                        onChange={(e) => {
-                          customShotsRef.current = null;
-                          setLyrics(e.target.value);
-                        }}
-                        className={inputCls}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-400/25 flex flex-wrap items-center justify-between gap-2">
-                    <div className="text-xs text-indigo-200">
-                      <span className="font-semibold text-white">Live Prompt Compiler:</span>{" "}
-                      AI-recommended Lyrics, Cast &amp; Wardrobes automatically compile with your selections into the final master prompt.
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setCanvasTab("prompt")}
-                      className="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20 text-white text-[11px] font-semibold cursor-pointer"
-                    >
-                      Inspect Compiled Master Prompt →
-                    </button>
-                  </div>
-
-                  <div className="flex justify-end gap-2 pt-1">
-                    <button
-                      type="button"
-                      disabled={isSynthesizingPrompt}
-                      onClick={() => synthesizeFromNewPrompt(storyline, true)}
-                      className="px-4 py-2 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 font-semibold text-xs flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>
-                        {isSynthesizingPrompt
-                          ? "Synthesizing New Cast & Wardrobe..."
-                          : "Synthesize Cast & Wardrobe from Prompt (Go to Step 02) →"}
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* CREATE STEP 02: CAST, PERSONAS & EXHAUSTIVE WARDROBE */}
-              {createStep === 2 && (
-                <div className="rounded-xl bg-[#0e0e12] border border-white/[0.07] p-4 sm:p-5 space-y-4">
-                  <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
-                    <div>
-                      <span className="text-sm font-semibold text-white block">
-                        02. AI-Recommended Cast, Personas &amp; Wardrobe (Select or Customize)
-                      </span>
-                      <span className="text-[11px] text-zinc-400">
-                        Pre-selected items below are AI recommendations from your Step 01 prompt — change any dropdown to override the final compiled prompt.
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => router.push("/personas")}
-                      className="px-3 py-1 rounded-md bg-white text-zinc-950 text-xs font-semibold flex items-center gap-1 cursor-pointer shrink-0"
-                    >
-                      <Users className="w-3 h-3" />
-                      <span>Open Full Personas &amp; Wardrobe Page (/personas) →</span>
-                    </button>
-                  </div>
-
-                  {/* Active 5-Tier Persona Strip (Reads from dynamic personasCatalog) */}
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                    {(
-                      [
-                        { id: "female_lead", label: "Female Lead" },
-                        { id: "male_lead", label: "Male Lead" },
-                        { id: "supporting", label: "Supporting" },
-                        { id: "background", label: "Background" },
-                        { id: "audience", label: "Audience" },
-                      ] as { id: PersonaCategory; label: string }[]
-                    ).map((tier) => {
-                      const tierPersonas = dedupeById(
-                        personasCatalog.filter((p) => p.category === tier.id)
-                      );
-                      const tierIds = selectedPersonaIds[tier.id] || [];
-                      const currentId = tierIds[0] || tierPersonas[0]?.id;
-                      const currentObj = getById(tierPersonas, currentId);
-                      const extraCoLeadsCount = Math.max(0, tierIds.length - 1);
-
-                      return (
-                        <div
-                          key={tier.id}
-                          className="p-2 rounded-lg bg-[#121217] border border-white/[0.07] space-y-1.5"
-                        >
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="text-[10px] font-semibold text-zinc-400 uppercase truncate">
-                              {tier.label}
-                            </span>
-                            {extraCoLeadsCount > 0 && (
-                              <span className="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[9px] font-semibold shrink-0">
-                                +{extraCoLeadsCount} Co-Lead{extraCoLeadsCount > 1 ? "s" : ""}
-                              </span>
-                            )}
-                          </div>
-                          <img
-                            src={currentObj.photoUrl}
-                            alt={currentObj.name}
-                            className="w-full h-20 rounded object-cover object-[center_22%]"
-                          />
-                          <select
-                            value={currentId}
-                            onChange={(e) => {
-                              const nextId = e.target.value;
-                              customShotsRef.current = null;
-                              const chosenPersona = tierPersonas.find((p) => p.id === nextId);
-                              setSelectedPersonaIds((prev) => {
-                                const existingCoLeads = (prev[tier.id] || [])
-                                  .slice(1)
-                                  .filter((id) => id !== nextId);
-                                return {
-                                  ...prev,
-                                  [tier.id]: [nextId, ...existingCoLeads],
-                                };
-                              });
-                              if (chosenPersona) {
-                                if (tier.id === "female_lead") {
-                                  if (chosenPersona.defaultAct1WardrobeId)
-                                    setWomenAct1Id(chosenPersona.defaultAct1WardrobeId);
-                                  if (chosenPersona.defaultAct2WardrobeId)
-                                    setWomenAct2Id(chosenPersona.defaultAct2WardrobeId);
-                                } else if (tier.id === "male_lead") {
-                                  if (chosenPersona.defaultAct1WardrobeId)
-                                    setMenAct1Id(chosenPersona.defaultAct1WardrobeId);
-                                  if (chosenPersona.defaultAct2WardrobeId)
-                                    setMenAct2Id(chosenPersona.defaultAct2WardrobeId);
-                                } else if (
-                                  tier.id === "supporting" &&
-                                  chosenPersona.defaultAct1WardrobeId
-                                ) {
-                                  setSupportingWardrobeId(chosenPersona.defaultAct1WardrobeId);
-                                } else if (
-                                  tier.id === "background" &&
-                                  chosenPersona.defaultAct1WardrobeId
-                                ) {
-                                  setBackgroundWardrobeId(chosenPersona.defaultAct1WardrobeId);
-                                } else if (
-                                  tier.id === "audience" &&
-                                  chosenPersona.defaultAct1WardrobeId
-                                ) {
-                                  setAudienceWardrobeId(chosenPersona.defaultAct1WardrobeId);
-                                }
-                              }
-                            }}
-                            className="w-full rounded bg-zinc-900 border border-white/[0.08] px-1.5 py-1 text-[11px] text-white outline-none"
-                          >
-                            {tierPersonas.map((tp) => (
-                              <option key={tp.id} value={tp.id}>
-                                {tp.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Exhaustive Wardrobe Dropdowns Across All Character Tiers (Reads from dynamic wardrobeCatalog) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className={labelCls}>Female Lead — Act I Wardrobe</label>
-                      <select
-                        value={womenAct1Id}
-                        onChange={(e) => {
-                          customShotsRef.current = null;
-                          setWomenAct1Id(e.target.value);
-                        }}
-                        className={inputCls}
-                      >
-                        {getDynamicWardrobeForCategory("female_lead", 1).map((w) => (
-                          <option key={w.id} value={w.id}>
-                            [{w.group}] {w.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>Female Lead — Act II Finale Wardrobe</label>
-                      <select
-                        value={womenAct2Id}
-                        onChange={(e) => {
-                          customShotsRef.current = null;
-                          setWomenAct2Id(e.target.value);
-                        }}
-                        className={inputCls}
-                      >
-                        {getDynamicWardrobeForCategory("female_lead", 2).map((w) => (
-                          <option key={w.id} value={w.id}>
-                            [{w.group}] {w.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>Male Lead — Act I Wardrobe</label>
-                      <select
-                        value={menAct1Id}
-                        onChange={(e) => {
-                          customShotsRef.current = null;
-                          setMenAct1Id(e.target.value);
-                        }}
-                        className={inputCls}
-                      >
-                        {getDynamicWardrobeForCategory("male_lead", 1).map((w) => (
-                          <option key={w.id} value={w.id}>
-                            [{w.group}] {w.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>Male Lead — Act II Finale Wardrobe</label>
-                      <select
-                        value={menAct2Id}
-                        onChange={(e) => {
-                          customShotsRef.current = null;
-                          setMenAct2Id(e.target.value);
-                        }}
-                        className={inputCls}
-                      >
-                        {getDynamicWardrobeForCategory("male_lead", 2).map((w) => (
-                          <option key={w.id} value={w.id}>
-                            [{w.group}] {w.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>Supporting Cast Wardrobe</label>
-                      <select
-                        value={supportingWardrobeId}
-                        onChange={(e) => {
-                          customShotsRef.current = null;
-                          setSupportingWardrobeId(e.target.value);
-                        }}
-                        className={inputCls}
-                      >
-                        {getDynamicWardrobeForCategory("supporting").map((w) => (
-                          <option key={w.id} value={w.id}>
-                            [{w.group}] {w.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>Background Performers Uniform</label>
-                      <select
-                        value={backgroundWardrobeId}
-                        onChange={(e) => {
-                          customShotsRef.current = null;
-                          setBackgroundWardrobeId(e.target.value);
-                        }}
-                        className={inputCls}
-                      >
-                        {getDynamicWardrobeForCategory("background").map((w) => (
-                          <option key={w.id} value={w.id}>
-                            [{w.group}] {w.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>Audience &amp; Crowd Dress Code</label>
-                      <select
-                        value={audienceWardrobeId}
-                        onChange={(e) => {
-                          customShotsRef.current = null;
-                          setAudienceWardrobeId(e.target.value);
-                        }}
-                        className={inputCls}
-                      >
-                        {getDynamicWardrobeForCategory("audience").map((w) => (
-                          <option key={w.id} value={w.id}>
-                            [{w.group}] {w.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>Footwear, Hair &amp; Accessories</label>
-                      <select
-                        value={accessoryId}
-                        onChange={(e) => {
-                          customShotsRef.current = null;
-                          setAccessoryId(e.target.value);
-                        }}
-                        className={inputCls}
-                      >
-                        {dedupeById(accessoriesCatalog).map((a) => (
-                          <option key={a.id} value={a.id}>
-                            {a.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>Country &amp; Destination</label>
-                      <select
-                        value={countryId}
-                        onChange={(e) => {
-                          customShotsRef.current = null;
-                          setCountryId(e.target.value);
-                        }}
-                        className={inputCls}
-                      >
-                        {COUNTRIES_CATALOG.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>Venue Architecture (Locations)</label>
-                      <select
-                        value={venueId}
-                        onChange={(e) => {
-                          customShotsRef.current = null;
-                          setVenueId(e.target.value);
-                        }}
-                        className={inputCls}
-                      >
-                        {dedupeById(venuesCatalog).map((v) => (
-                          <option key={v.id} value={v.id}>
-                            {v.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className={labelCls}>Lighting &amp; Color Grade (Cinematography)</label>
-                      <select
-                        value={lightingId}
-                        onChange={(e) => {
-                          customShotsRef.current = null;
-                          setLightingId(e.target.value);
-                        }}
-                        className={inputCls}
-                      >
-                        {LIGHTING_CATALOG.map((l) => (
-                          <option key={l.id} value={l.id}>
-                            {l.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>Voice Type &amp; Vocal Timbre (Auto-Synthesized)</label>
-                      <input
-                        type="text"
-                        value={voiceType}
-                        onChange={(e) => {
-                          customShotsRef.current = null;
-                          setVoiceType(e.target.value);
-                        }}
-                        className={inputCls}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelCls}>Human Emotions &amp; Expression Arc (Auto-Synthesized)</label>
-                      <input
-                        type="text"
-                        value={humanEmotions}
-                        onChange={(e) => {
-                          customShotsRef.current = null;
-                          setHumanEmotions(e.target.value);
-                        }}
-                        className={inputCls}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelCls}>Choreography &amp; Dance Formation (Auto-Synthesized)</label>
-                      <input
-                        type="text"
-                        value={choreography}
-                        onChange={(e) => {
-                          customShotsRef.current = null;
-                          setChoreography(e.target.value);
-                        }}
-                        className={inputCls}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelCls}>Background Scenery &amp; Atmospheric FX (Auto-Synthesized)</label>
-                      <input
-                        type="text"
-                        value={backgroundEnvironment}
-                        onChange={(e) => {
-                          customShotsRef.current = null;
-                          setBackgroundEnvironment(e.target.value);
-                        }}
-                        className={inputCls}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-400/25 flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-xs text-indigo-200">
-                      All 8 dimensions above (Personas, Locations, Wardrobe, Background, Emotions, Voice Type, Choreography &amp; Lyrics) live-sync to your Final Compiled Prompt.
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setCanvasTab("prompt")}
-                      className="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20 text-white text-[11px] font-semibold cursor-pointer"
-                    >
-                      Inspect Compiled Master Prompt →
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setCreateStep(1)}
-                      className="px-3 py-2 rounded-lg bg-zinc-900 text-zinc-300 text-xs font-medium cursor-pointer"
-                    >
-                      ← Back to Step 01
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        customShotsRef.current = null;
-                        setShots(compileStructuredShots());
-                        setCreateStep(3);
-                        setCanvasTab("shots");
-                      }}
-                      className="px-4 py-2 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 font-semibold text-xs flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <span>Next: 03. Compile Storyboard</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* CREATE STEP 03: STORYBOARD */}
-              {createStep === 3 && (
-                <div className="rounded-xl bg-[#0e0e12] border border-white/[0.07] p-4 sm:p-5 space-y-4">
-                  <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
-                    <div>
-                      <span className="text-sm font-semibold text-white block">
-                        03. Storyboard ({shots.length} Multi-Turn Shots)
-                      </span>
-                      <span className="text-[11px] text-zinc-400">
-                        Each shot combines your selected Camera Rig, Persona Biometrics, Act I/II Wardrobe &amp; 48kHz Lyric Line.
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          customShotsRef.current = null;
-                          const recompiled = compileStructuredShots();
-                          setShots(recompiled);
-                          setStatusBanner(`✓ Re-compiled all ${recompiled.length} storyboard shots from current Cast & Wardrobe.`);
-                        }}
-                        className="px-2.5 py-1 rounded bg-white/[0.08] hover:bg-white/[0.14] text-zinc-200 text-xs font-medium flex items-center gap-1 cursor-pointer"
-                      >
-                        <RefreshCw className="w-3 h-3" />
-                        <span>Re-Compile Shots</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setCanvasTab("prompt")}
-                        className="px-2.5 py-1 rounded bg-indigo-500/20 border border-indigo-400/40 text-indigo-200 text-xs font-semibold cursor-pointer"
-                      >
-                        View Full Compiled Prompt →
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleSaveDraft}
-                        className="text-xs text-emerald-400 font-medium cursor-pointer"
-                      >
-                        Save Draft
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
-                    {shots.map((s, idx) => (
-                      <div
-                        key={s.shotId}
-                        className="p-3 rounded-lg bg-[#121217] border border-white/[0.06] space-y-2"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-semibold text-white">
-                            Shot {String(s.shotNumber).padStart(2, "0")} ({s.timecode}) • Act {s.act}
-                          </span>
-                          <select
-                            value={s.cameraMoveId}
-                            onChange={(e) => {
-                              const next = [...shots];
-                              next[idx] = { ...next[idx], cameraMoveId: e.target.value };
-                              customShotsRef.current = next;
-                              setShots(next);
-                            }}
-                            className="rounded bg-zinc-900 border border-white/[0.08] px-2 py-1 text-[11px] text-white outline-none"
-                          >
-                            {CAMERA_MOVES_CATALOG.map((cm) => (
-                              <option key={cm.id} value={cm.id}>
-                                {cm.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <input
-                            type="text"
-                            value={s.actionPrompt}
-                            onChange={(e) => {
-                              const next = [...shots];
-                              next[idx] = { ...next[idx], actionPrompt: e.target.value };
-                              customShotsRef.current = next;
-                              setShots(next);
-                            }}
-                            className={inputCls}
-                          />
-                          <input
-                            type="text"
-                            value={s.lyricLine}
-                            onChange={(e) => {
-                              const next = [...shots];
-                              next[idx] = { ...next[idx], lyricLine: e.target.value };
-                              customShotsRef.current = next;
-                              setShots(next);
-                            }}
-                            className={inputCls}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setCreateStep(2)}
-                      className="px-3 py-2 rounded-lg bg-zinc-900 text-zinc-300 text-xs font-medium cursor-pointer"
-                    >
-                      ← Back to Step 02
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCreateStep(4);
-                        setCanvasTab("prompt");
-                      }}
-                      className="px-4 py-2 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 font-semibold text-xs flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <span>Next: 04. Review Compiled Prompt &amp; Render</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* CREATE STEP 04: FINAL COMPILED DETAILED PROMPT, RENDER & EXPORT */}
-              {createStep === 4 && (
-                <div className="rounded-xl bg-[#0e0e12] border border-white/[0.07] p-4 sm:p-5 space-y-4">
-                  <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
-                    <div>
-                      <span className="text-sm font-semibold text-white block">
-                        04. Final Compiled Detailed Master Prompt &amp; Render
-                      </span>
-                      <span className="text-[11px] text-zinc-400">
-                        {audioEngineId === "omni_lyria3"
-                          ? "Hybrid Studio Pipeline: models/gemini-omni-1.1-flash (24/1 CFR Video) + models/lyria-3-pro-preview (Continuous 48,000 Hz Studio Song)"
-                          : "Single-Model Pipeline: models/gemini-omni-1.1-flash (24/1 CFR Video + Native 48,000 Hz Stereo Vocal/Music Score)"}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setCreateStep(3)}
-                      className="text-xs text-zinc-400 hover:text-white cursor-pointer"
-                    >
-                      ← Back to Storyboard
-                    </button>
-                  </div>
-
-                  {/* Dual Engine Toggle Bar: Omni 1.1 + Lyria-3-pro-preview vs Omni 1.1 Only */}
-                  <div className="p-3 rounded-lg bg-[#121217] border border-white/[0.08] flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <span className="text-xs font-semibold text-white block">
-                        Audio &amp; Music Synthesis Engine
-                      </span>
-                      <span className="text-[11px] text-zinc-400">
-                        Choose between continuous Lyria 3 Pro studio song + Omni 1.1 video, or single-model Omni 1.1 native audio
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {AUDIO_ENGINES_CATALOG.map((eng) => {
-                        const active = audioEngineId === eng.id;
-                        return (
-                          <button
-                            key={eng.id}
-                            type="button"
-                            onClick={() =>
-                              setAudioEngineId(eng.id as "omni_lyria3" | "omni_native")
-                            }
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
-                              active
-                                ? "bg-indigo-500 text-white border-indigo-400 shadow-sm"
-                                : "bg-zinc-900 text-zinc-300 border-white/10 hover:border-white/25"
-                            }`}
-                          >
-                            {eng.id === "omni_lyria3"
-                              ? "🎵 Omni 1.1 + Lyria-3-pro-preview"
-                              : "🎬 Omni 1.1 Only (Native Audio)"}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Final Compiled Detailed Prompt Inspector & Editor */}
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <label className={labelCls}>
-                        Final Compiled Production Prompt (Auto-Synthesized from Steps 01–03 • Editable Before Render)
-                      </label>
-                      <div className="flex items-center gap-2">
-                        {customMasterPromptOverride.trim() !== "" && (
-                          <button
-                            type="button"
-                            onClick={() => setCustomMasterPromptOverride("")}
-                            className="px-2 py-1 rounded bg-amber-500/20 text-amber-300 text-[11px] font-medium cursor-pointer"
-                          >
-                            Reset to Auto-Compiled
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            navigator.clipboard?.writeText(effectiveMasterPrompt);
-                            setCopiedPrompt(true);
-                            setTimeout(() => setCopiedPrompt(false), 2000);
-                          }}
-                          className="px-2.5 py-1 rounded bg-white/[0.08] hover:bg-white/[0.15] text-white text-[11px] font-semibold cursor-pointer"
-                        >
-                          {copiedPrompt ? "✓ Copied Full Prompt!" : "Copy Full Prompt"}
-                        </button>
-                      </div>
-                    </div>
-
-                    <textarea
-                      rows={14}
-                      value={effectiveMasterPrompt}
-                      onChange={(e) => setCustomMasterPromptOverride(e.target.value)}
-                      className="w-full rounded-lg bg-[#09090b] border border-white/[0.1] focus:border-indigo-400/60 p-3 text-[11px] font-mono text-zinc-200 leading-relaxed outline-none"
-                    />
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-3">
-                    <button
-                      type="button"
-                      disabled={isRendering}
-                      onClick={() =>
-                        executeEndToEndRender(
-                          `${getById(DURATIONS_CATALOG, durationId).seconds}s Master`
-                        )
-                      }
-                      className="flex-1 py-3 px-5 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <Play className="w-4 h-4 fill-zinc-950" />
-                      <span>
-                        {isRendering
-                          ? `Rendering ${getById(DURATIONS_CATALOG, durationId).seconds}s Master (${renderProgress}%)...`
-                          : audioEngineId === "omni_lyria3"
-                          ? `Render ${getById(DURATIONS_CATALOG, durationId).seconds}s Master Video Now (Omni 1.1 + Lyria-3-pro-preview)`
-                          : `Render ${getById(DURATIONS_CATALOG, durationId).seconds}s Master Video Now (Omni 1.1 Only)`}
-                      </span>
-                    </button>
-
-                    {activeVideoUrl && (
-                      <a
-                        href={activeVideoUrl}
-                        download
-                        className="py-3 px-4 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-white font-medium text-xs flex items-center gap-1.5"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>Export MP4</span>
-                      </a>
-                    )}
-                  </div>
-
-                  {/* Clear Post-Render Next Workflow Actions */}
-                  <div className="pt-3 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-xs text-zinc-400">
-                      Save your blueprint as a persistent draft or inspect completed masters in Published Reels:
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={handleSaveDraft}
-                        className="px-3 py-1.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.14] text-white text-xs font-medium cursor-pointer"
-                      >
-                        Save Blueprint Draft
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => switchWorkflow("published")}
-                        className="px-3 py-1.5 rounded-lg bg-white text-zinc-950 text-xs font-semibold cursor-pointer"
-                      >
-                        Open Published Reels Library →
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
+      <footer
+        style={{
+          backgroundColor: "var(--color-surface)",
+          borderTop: "1px solid var(--color-border)",
+        }}
+        className="sticky bottom-0 z-20 w-full px-4 md:px-8 py-3 flex flex-col gap-2"
+      >
+        {/* Streaming progress bar with Cancel (Preserves partial work) */}
+        {generationStage.active && (
+          <div
+            role="status"
+            aria-live="polite"
+            style={{
+              backgroundColor: "var(--color-ai-subtle)",
+              border: "1px solid var(--color-ai)",
+              borderRadius: "var(--radius-sm)",
+            }}
+            className="px-3 py-2 flex items-center justify-between gap-3"
+          >
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Sparkles className="w-4 h-4 animate-spin" aria-hidden="true" />
+              <span>{generationStage.label}</span>
             </div>
-          )}
+            <StudioButton
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                cancelStreamRef.current = true;
+              }}
+            >
+              Cancel
+            </StudioButton>
+          </div>
+        )}
 
-          {/* ================================================================
-              WORKFLOW 2: PUBLISHED REELS LIBRARY
-             ================================================================ */}
-          {workflow === "published" && (
-            <div className="rounded-xl bg-[#0e0e12] border border-white/[0.07] p-4 sm:p-5 space-y-3">
-              <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
-                <span className="text-sm font-semibold text-white">
-                  Published Reels ({reels.filter((r) => r.status === "published").length})
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    switchWorkflow("create");
-                    setCreateStep(1);
-                  }}
-                  className="px-3 py-1 rounded-md bg-white text-zinc-950 text-xs font-semibold cursor-pointer"
-                >
-                  + Create New Reel
-                </button>
-              </div>
-
-              <div className="space-y-2.5">
-                {reels
-                  .filter((r) => r.status === "published")
-                  .map((reel) => (
-                    <div
-                      key={reel.id}
-                      className="p-3.5 rounded-lg bg-[#121217] border border-white/[0.07] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-semibold">
-                            Published
-                          </span>
-                          <span className="text-xs font-semibold text-white">
-                            {reel.title}
-                          </span>
-                        </div>
-                        <div className="text-[11px] text-zinc-400">
-                          {getById(COUNTRIES_CATALOG, reel.countryId).label} •{" "}
-                          {getById(LANGUAGES_CATALOG, reel.languageId).label} •{" "}
-                          {reel.updatedAt}
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveVideoUrl(reel.videoUrl);
-                            setCanvasTab("video");
-                          }}
-                          className="px-2.5 py-1.5 rounded bg-white/[0.08] hover:bg-white/[0.14] text-white text-xs font-medium cursor-pointer"
-                        >
-                          Play in Monitor
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => loadReelIntoWorkflow(reel, 3)}
-                          className="px-2.5 py-1.5 rounded bg-white/[0.08] hover:bg-white/[0.14] text-white text-xs font-medium cursor-pointer"
-                        >
-                          Load &amp; Edit Shots
-                        </button>
-                        <a
-                          href={reel.videoUrl}
-                          download
-                          className="px-2.5 py-1.5 rounded bg-white text-zinc-950 text-xs font-semibold flex items-center gap-1"
-                        >
-                          <Download className="w-3 h-3" />
-                          <span>Export MP4</span>
-                        </a>
-                      </div>
-                    </div>
-                  ))}
-              </div>
+        {/* Friendly Conversational Non-Mutation Response Banner */}
+        {assistantReply && (
+          <div
+            role="status"
+            aria-live="polite"
+            data-testid="studio-conversational-reply"
+            style={{
+              backgroundColor: "var(--color-surface-2)",
+              border: "1px solid var(--color-border)",
+              borderRadius: "var(--radius-sm)",
+            }}
+            className="px-3.5 py-2.5 flex items-center justify-between gap-3 text-sm"
+          >
+            <div className="flex items-center gap-2">
+              <StudioChip tone="info">Studio Assistant</StudioChip>
+              <span>{assistantReply}</span>
             </div>
-          )}
+            <button
+              type="button"
+              aria-label="Dismiss assistant message"
+              onClick={() => setAssistantReply(null)}
+              className="text-xs font-mono px-2 py-1 studio-focus-ring"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
-          {/* ================================================================
-              WORKFLOW 3: DRAFTS & RENDER JOBS (PERSISTENT)
-             ================================================================ */}
-          {workflow === "wip" && (
-            <div className="rounded-xl bg-[#0e0e12] border border-white/[0.07] p-4 sm:p-5 space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.06] pb-3">
-                <span className="text-sm font-semibold text-white">
-                  Persistent Saved Drafts &amp; Active Render Jobs
-                </span>
-                <div className="flex items-center gap-1 bg-[#121217] p-1 rounded-lg border border-white/[0.06]">
-                  {[
-                    { id: "all", label: "All" },
-                    { id: "wip", label: "In Progress" },
-                    { id: "draft", label: "Drafts" },
-                    { id: "failed", label: "Failed" },
-                  ].map((f) => (
-                    <button
-                      key={f.id}
-                      type="button"
-                      onClick={() =>
-                        setWipFilter(f.id as "all" | "wip" | "draft" | "failed")
-                      }
-                      className={`px-2.5 py-1 rounded text-[11px] font-medium cursor-pointer ${
-                        wipFilter === f.id
-                          ? "bg-white text-zinc-950 font-semibold"
-                          : "text-zinc-400 hover:text-white"
-                      }`}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!scopedPromptInput.trim()) return;
+            runStreamingGeneration(scopedPromptInput, "scoped_edit");
+          }}
+          className="flex flex-wrap md:flex-nowrap items-center gap-2.5"
+        >
+          <StudioChip tone="ai">Scope: {scopeLabelMap[selectedScope]}</StudioChip>
 
-              {reels.filter(
-                (r) =>
-                  r.status !== "published" &&
-                  (wipFilter === "all" || r.status === wipFilter)
-              ).length === 0 ? (
-                <div className="p-6 rounded-lg bg-[#121217] border border-white/[0.06] text-center space-y-2">
-                  <div className="text-xs font-semibold text-zinc-200">
-                    No saved drafts or failed jobs in this filter
-                  </div>
-                  <p className="text-[11px] text-zinc-400">
-                    Click &ldquo;Save Draft&rdquo; in the top bar at any time to persist your current 8-dimension studio blueprint here.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2.5">
-                  {reels
-                    .filter(
-                      (r) =>
-                        r.status !== "published" &&
-                        (wipFilter === "all" || r.status === wipFilter)
-                    )
-                    .map((reel) => (
-                      <div
-                        key={reel.id}
-                        className="p-3.5 rounded-lg bg-[#121217] border border-white/[0.08] space-y-2.5"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
-                                reel.status === "failed"
-                                  ? "bg-red-500/20 text-red-300"
-                                  : reel.status === "wip"
-                                  ? "bg-indigo-500/20 text-indigo-300"
-                                  : "bg-amber-500/20 text-amber-300"
-                              }`}
-                            >
-                              {reel.status}
-                            </span>
-                            <span className="text-xs font-semibold text-white">
-                              {reel.title}
-                            </span>
-                          </div>
-                          <span className="text-[11px] text-zinc-400">
-                            {reel.updatedAt}
-                          </span>
-                        </div>
-
-                        {reel.errorReason && (
-                          <div className="p-2.5 rounded bg-red-950/40 border border-red-500/30 text-xs text-red-200 flex items-center gap-2">
-                            <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
-                            <span>{reel.errorReason}</span>
-                          </div>
-                        )}
-
-                        <div className="flex items-center justify-between gap-2 pt-1">
-                          <div className="w-40 h-1.5 rounded-full bg-zinc-800 overflow-hidden">
-                            <div
-                              style={{ width: `${reel.progress}%` }}
-                              className={`h-full ${
-                                reel.status === "failed"
-                                  ? "bg-red-400"
-                                  : "bg-white"
-                              }`}
-                            />
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteReel(reel.id)}
-                              title="Delete Draft or Job"
-                              className="px-2.5 py-1.5 rounded bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 text-xs font-medium flex items-center gap-1 cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                              <span>Delete</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => loadReelIntoWorkflow(reel, 3)}
-                              className="px-3 py-1.5 rounded bg-white/[0.08] hover:bg-white/[0.14] text-white text-xs font-medium cursor-pointer"
-                            >
-                              Resume in 4-Step Studio
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleRetryFailedReel(reel)}
-                              className="px-3 py-1.5 rounded bg-white text-zinc-950 text-xs font-semibold cursor-pointer"
-                            >
-                              {reel.status === "failed"
-                                ? "Retry Render Now →"
-                                : "Render Master Now →"}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* ==================================================================
-            RIGHT MONITOR PANE (lg:col-span-5): LIVE STUDIO PREVIEW & SIDE-BY-SIDE ADK+ORCAS COMPARISON
-           ================================================================== */}
-        <div className="lg:col-span-5 p-4 sm:p-5 lg:sticky lg:top-24 space-y-3">
-          {/* 4-Way Baseline vs. Google ADK + ORCAS Clone Switcher Bar */}
-          <div className="rounded-xl bg-[#121217] border border-indigo-500/30 p-2.5 space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5">
-                <span className="px-1.5 py-0.5 rounded bg-indigo-500/20 border border-indigo-400/40 text-indigo-300 text-[9px] font-mono font-bold uppercase">
-                  Side-by-Side Lab
-                </span>
-                <span className="text-[11px] font-semibold text-white">
-                  Baseline vs. Google ADK + ORCAS Clones (60.0s)
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setSideBySideCompareMode((prev) => !prev);
-                  setCanvasTab("video");
-                }}
-                className={`px-2 py-0.5 rounded text-[10px] font-semibold border transition-all cursor-pointer ${
-                  sideBySideCompareMode
-                    ? "bg-emerald-500/20 border-emerald-400/50 text-emerald-300"
-                    : "bg-zinc-900 border-white/10 text-zinc-400 hover:text-white"
-                }`}
-              >
-                {sideBySideCompareMode ? "✓ Split-Screen A/B Active" : "Enable Split-Screen A/B"}
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-1.5">
-              {[
-                {
-                  id: "reel_crimson_echoes_lyria3_60s",
-                  shortLabel: "Opt 1 Baseline (Omni + Lyria 3)",
-                  badge: "Baseline",
-                },
-                {
-                  id: "reel_crimson_echoes_lyria3_adk_orcas_60s",
-                  shortLabel: "Opt 1 Clone (+ ADK/ORCAS)",
-                  badge: "9.5/10 Critic",
-                },
-                {
-                  id: "reel_crimson_echoes_native_60s",
-                  shortLabel: "Opt 2 Baseline (Omni Native)",
-                  badge: "Baseline",
-                },
-                {
-                  id: "reel_crimson_echoes_native_adk_orcas_60s",
-                  shortLabel: "Opt 2 Clone (+ ADK/ORCAS)",
-                  badge: "9.5/10 Critic",
-                },
-              ].map((item) => {
-                const reelObj = reels.find((r) => r.id === item.id);
-                if (!reelObj) return null;
-                const isSelected = selectedReelId === item.id;
-                const isAdk = Boolean(reelObj.adkOrcasMeta?.enabled);
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      loadReelIntoWorkflow(reelObj, 4);
-                      setCanvasTab("video");
-                    }}
-                    className={`px-2.5 py-1.5 rounded-lg text-left border transition-all cursor-pointer flex items-center justify-between gap-1 ${
-                      isSelected
-                        ? "bg-white text-zinc-950 border-white font-semibold shadow-sm"
-                        : isAdk
-                        ? "bg-indigo-950/35 hover:bg-indigo-950/60 text-indigo-100 border-indigo-500/30"
-                        : "bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 border-white/[0.07]"
-                    }`}
-                  >
-                    <span className="text-[10px] truncate">{item.shortLabel}</span>
-                    <span
-                      className={`px-1.5 py-0.5 rounded text-[9px] font-mono shrink-0 ${
-                        isSelected
-                          ? "bg-zinc-900 text-white"
-                          : isAdk
-                          ? "bg-emerald-500/20 text-emerald-300"
-                          : "bg-white/10 text-zinc-300"
-                      }`}
-                    >
-                      {item.badge}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+          <div className="relative flex-1 min-w-[220px]">
+            <label htmlFor="scoped-prompt-bar-input" className="sr-only">
+              Ask AI to refine {scopeLabelMap[selectedScope]}
+            </label>
+            <input
+              ref={promptInputRef}
+              id="scoped-prompt-bar-input"
+              type="text"
+              value={scopedPromptInput}
+              onChange={(e) => setScopedPromptInput(e.target.value)}
+              placeholder={`Refine ${scopeLabelMap[selectedScope]} (press / to focus, e.g. "Make hook punchier under 100 chars")…`}
+              style={{
+                backgroundColor: "var(--color-surface-2)",
+                color: "var(--color-text)",
+                border: "1px solid var(--color-border)",
+                borderRadius: "var(--radius-sm)",
+              }}
+              className="w-full px-3.5 py-2 text-sm min-h-[40px] studio-focus-ring"
+            />
           </div>
 
-          <div className="flex items-center justify-between bg-[#121217] p-1 rounded-lg border border-white/[0.06]">
-            {[
-              { id: "ensemble", label: `Cast (${activePersonasList.length})` },
-              { id: "shots", label: `Storyboard (${shots.length})` },
-              { id: "agents", label: `Crew (${danceMvAgents.length})` },
-              { id: "prompt", label: "Prompt" },
-              { id: "video", label: "Player" },
-            ].map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() =>
-                  setCanvasTab(
-                    t.id as "ensemble" | "shots" | "prompt" | "agents" | "video"
-                  )
-                }
-                className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
-                  canvasTab === t.id
-                    ? "bg-white text-zinc-950 font-semibold"
-                    : "text-zinc-400 hover:text-white"
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
+          <span
+            className="hidden lg:inline-block text-xs font-mono tabular-nums shrink-0"
+            style={{ color: "var(--color-text-muted)" }}
+          >
+            Est. ~1s · 1 credit
+          </span>
 
-          {/* MONITOR 1: MULTI-TIER CAST & WARDROBE PREVIEW */}
-          {canvasTab === "ensemble" && (
-            <div className="space-y-3">
-              <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-[#0e0e12]">
-                <div className="px-3.5 py-2 border-b border-white/[0.06] flex items-center justify-between">
-                  <span className="text-xs font-semibold text-white">
-                    Ensemble Stage ({activePersonasList.length} Active Cast — Lead, Supporting, Background &amp; Audience)
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => router.push("/personas")}
-                    className="text-[11px] text-zinc-300 hover:text-white underline cursor-pointer"
-                  >
-                    Customize in /personas →
-                  </button>
-                </div>
+          <StudioButton
+            type="submit"
+            variant="primary"
+            size="md"
+            loading={generationStage.active}
+            icon={<Send className="w-4 h-4" />}
+          >
+            Apply to Scope
+          </StudioButton>
+        </form>
+      </footer>
 
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 p-2 bg-zinc-950 max-h-[380px] overflow-y-auto">
-                  {activePersonasList.map((p) => (
-                    <div
-                      key={p.id}
-                      className="relative rounded-lg overflow-hidden aspect-[3/4] bg-zinc-900 border border-white/[0.06]"
-                    >
-                      <img
-                        src={p.photoUrl}
-                        alt={p.name}
-                        className="w-full h-full object-cover object-[center_22%]"
-                      />
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-1.5">
-                        <div className="text-[11px] font-semibold text-white truncate">
-                          {p.name}
-                        </div>
-                        <div className="text-[9px] text-zinc-300 uppercase truncate">
-                          {p.roleTitle || p.category.replace("_", " ")}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Act I & Act II Wardrobe Summary Cards (Aligned to Vocal Arrangement) */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-[#0e0e12] p-3 space-y-1.5">
-                  <span className="text-[10px] text-zinc-400 uppercase font-semibold">
-                    Act I Opening Wardrobe (0:00–0:30)
-                  </span>
-                  <p className="text-xs text-white font-medium truncate">
-                    {vocalId === "voc_male_solo" || vocalId === "voc_boy_band"
-                      ? getById(wardrobeCatalog, menAct1Id).label
-                      : getById(wardrobeCatalog, womenAct1Id).label}
-                  </p>
-                  <p className="text-xs text-zinc-300 truncate">
-                    {vocalId === "voc_duet"
-                      ? getById(wardrobeCatalog, menAct1Id).label
-                      : getById(wardrobeCatalog, backgroundWardrobeId).label}
-                  </p>
-                </div>
-
-                <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-[#0e0e12] p-3 space-y-1.5">
-                  <span className="text-[10px] text-zinc-400 uppercase font-semibold">
-                    Act II+ Finale Wardrobe (0:30–{getById(DURATIONS_CATALOG, durationId).seconds >= 120 ? "2:00" : getById(DURATIONS_CATALOG, durationId).seconds === 90 ? "1:30" : "1:00"})
-                  </span>
-                  <p className="text-xs text-white font-medium truncate">
-                    {vocalId === "voc_male_solo" || vocalId === "voc_boy_band"
-                      ? getById(wardrobeCatalog, menAct2Id).label
-                      : getById(wardrobeCatalog, womenAct2Id).label}
-                  </p>
-                  <p className="text-xs text-zinc-300 truncate">
-                    {vocalId === "voc_duet"
-                      ? getById(wardrobeCatalog, menAct2Id).label
-                      : getById(wardrobeCatalog, supportingWardrobeId).label}
-                  </p>
-                </div>
-              </div>
-
-              {/* 12-Agent Dance Music Video Autonomous Crew Quick Status Bar */}
-              <div className="rounded-xl border border-white/[0.08] bg-[#0e0e12] p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-white">
-                    12-Agent Dance Music Video Autonomous Crew (100% Ready)
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setCanvasTab("agents")}
-                    className="text-[11px] text-emerald-300 hover:text-emerald-200 underline cursor-pointer"
-                  >
-                    Inspect All 12 Agents →
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {danceMvAgents.map((ag) => (
-                    <span
-                      key={ag.id}
-                      className="px-2 py-0.5 rounded bg-zinc-900 border border-white/[0.07] text-[10px] text-zinc-200 flex items-center gap-1"
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      <span>{ag.name.replace(" Agent", "")}</span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* MONITOR 2: MULTI-SHOT VISUAL GRID (6, 9, OR 12 SHOTS) */}
-          {canvasTab === "shots" && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-[620px] overflow-y-auto pr-1">
-              {shots.map((s) => (
-                <div
-                  key={s.shotId}
-                  className="rounded-xl overflow-hidden border border-white/[0.08] bg-[#0e0e12]"
+      {/* ====================================================================
+          4. PRE-FLIGHT PUBLISH / SCHEDULE / EXPORT DIALOG (Job 6)
+         ==================================================================== */}
+      <StudioDialog
+        open={publishDialogOpen}
+        title="Publish, Schedule, or Export Campaign"
+        description={`Target: ${activePlatform.label} · Brand: ${activeBrand.name}`}
+        onClose={() => setPublishDialogOpen(false)}
+        footer={
+          <>
+            <StudioButton
+              variant="secondary"
+              size="sm"
+              icon={<Copy className="w-3.5 h-3.5" />}
+              onClick={() => {
+                navigator.clipboard?.writeText(fullCaptionText);
+                setToast({ message: "Copied formatted caption & hashtags" });
+              }}
+            >
+              Copy text
+            </StudioButton>
+            <a
+              href={post.videoUrl}
+              download
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium studio-surface studio-focus-ring"
+              style={{ borderRadius: "var(--radius-sm)" }}
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Export 60s MP4</span>
+            </a>
+            <StudioButton
+              variant="secondary"
+              size="sm"
+              icon={<Calendar className="w-3.5 h-3.5" />}
+              disabled={blockingErrors.length > 0}
+              disabledReason="Resolve blocking platform errors before scheduling"
+              onClick={() => {
+                setPublishDialogOpen(false);
+                setToast({
+                  message: `Scheduled for ${scheduleDate} (Local Time)`,
+                });
+              }}
+            >
+              Schedule
+            </StudioButton>
+            <StudioButton
+              variant="primary"
+              size="sm"
+              disabled={blockingErrors.length > 0}
+              disabledReason={`Resolve ${blockingErrors.length} blocking error(s) before publishing`}
+              onClick={() => {
+                setPublishDialogOpen(false);
+                setToast({
+                  message: `Published "${post.title}" to ${activePlatform.shortName}`,
+                });
+              }}
+            >
+              Publish now
+            </StudioButton>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-3">
+          {blockingErrors.length > 0 ? (
+            <div
+              role="alert"
+              className="p-3.5 flex items-center justify-between gap-3"
+              style={{
+                backgroundColor: "var(--color-danger-subtle)",
+                border: "1px solid var(--color-danger)",
+                borderRadius: "var(--radius-md)",
+              }}
+            >
+              <div>
+                <p className="text-sm font-semibold">
+                  {blockingErrors.length} blocking check error must be resolved
+                  before publishing
+                </p>
+                <p
+                  className="text-xs mt-0.5"
+                  style={{ color: "var(--color-text-muted)" }}
                 >
-                  <div className="relative h-36 w-full bg-zinc-900">
-                    <img
-                      src={s.previewPhotoUrl}
-                      alt={`Shot ${s.shotNumber}`}
-                      className="w-full h-full object-cover object-[center_22%]"
-                    />
-                    <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-black/75 text-[10px] font-semibold text-white">
-                      {String(s.shotNumber).padStart(2, "0")} • {s.timecode}
-                    </span>
-                  </div>
-                  <div className="p-2 space-y-0.5">
-                    <div className="text-[11px] font-semibold text-white truncate">
-                      {getById(CAMERA_MOVES_CATALOG, s.cameraMoveId).label}
-                    </div>
-                    <div className="text-[10px] text-zinc-400 truncate">
-                      {s.lyricLine}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  {blockingErrors[0].title}
+                </p>
+              </div>
+              <StudioButton
+                variant="primary"
+                size="sm"
+                onClick={() => blockingErrors.forEach((e) => e.applyFix())}
+              >
+                Fix blocking errors
+              </StudioButton>
             </div>
-          )}
-
-          {/* MONITOR 2A: 12-AGENT DANCE MUSIC VIDEO AUTONOMOUS CREW INSPECTOR */}
-          {canvasTab === "agents" && (
-            <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-[#0e0e12] p-3.5 space-y-2.5">
-              <div className="flex items-center justify-between border-b border-white/[0.06] pb-2">
-                <div>
-                  <div className="text-xs font-semibold text-white">
-                    12-Agent Dance Music Video Autonomous Crew
-                  </div>
-                  <div className="text-[10px] text-zinc-400">
-                    Script • Casting • Wardrobe • Location • Props • Choreography • Lip-Sync • Cinematography • Vocal • Lyria • Assembly • QA Judge
-                  </div>
-                </div>
-                <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-semibold">
-                  12 / 12 LOCKED
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 gap-2.5 max-h-[620px] overflow-y-auto pr-1">
-                {danceMvAgents.map((agent, idx) => (
-                  <div
-                    key={agent.id}
-                    className="p-3 rounded-lg bg-[#121217] border border-white/[0.08] space-y-1.5"
-                  >
-                    <div className="flex items-center justify-between gap-1.5">
-                      <span className="text-[11px] font-semibold text-white">
-                        {String(idx + 1).padStart(2, "0")}. {agent.name}
-                      </span>
-                      <div className="flex items-center gap-1 shrink-0">
-                        {agent.qualityScore && (
-                          <span className="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[9px] font-mono font-semibold">
-                            {agent.qualityScore}
-                          </span>
-                        )}
-                        <span
-                          className={`px-1.5 py-0.5 rounded text-[9px] font-mono uppercase ${
-                            agent.status === "PRE_FLIGHT_LOCKED"
-                              ? "bg-amber-500/15 text-amber-300"
-                              : agent.status === "ACTIVE"
-                              ? "bg-indigo-500/20 text-indigo-300"
-                              : "bg-emerald-500/15 text-emerald-300"
-                          }`}
-                        >
-                          {agent.status}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-[10px] text-indigo-300 font-medium">
-                      {agent.roleTitle} • <span className="text-emerald-300 font-mono">{agent.stackModel}</span>
-                    </div>
-                    <p className="text-[10px] text-zinc-200 leading-snug font-medium">
-                      {agent.deliverableSummary}
-                    </p>
-                    {Array.isArray(agent.dynamicOutput) && agent.dynamicOutput.length > 0 && (
-                      <ul className="space-y-1 pt-1 border-t border-white/[0.06]">
-                        {agent.dynamicOutput.map((line, lIdx) => (
-                          <li key={lIdx} className="text-[10px] text-zinc-400 leading-snug flex items-start gap-1.5">
-                            <span className="text-indigo-400 shrink-0">•</span>
-                            <span>{line}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    <div className="text-[9px] font-mono text-zinc-500 truncate pt-0.5">
-                      Artifact: {agent.technicalArtifact}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* MONITOR 2B: FINAL COMPILED DETAILED MASTER PROMPT (LIVE SYNCED) */}
-          {canvasTab === "prompt" && (
-            <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-[#0e0e12] p-3.5 space-y-2.5">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.06] pb-2">
-                <div>
-                  <div className="text-xs font-semibold text-white">
-                    Final Compiled Detailed Master Prompt (Live-Synced)
-                  </div>
-                  <div className="text-[10px] text-zinc-400">
-                    Combines AI Recommendations + Your Selections for Gemini Omni 1.1 Flash (Video + 48kHz Vocal/Music)
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  {customMasterPromptOverride.trim() !== "" && (
-                    <button
-                      type="button"
-                      onClick={() => setCustomMasterPromptOverride("")}
-                      className="px-2 py-1 rounded bg-amber-500/20 text-amber-300 text-[10px] font-medium cursor-pointer"
-                    >
-                      Reset
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard?.writeText(effectiveMasterPrompt);
-                      setCopiedPrompt(true);
-                      setTimeout(() => setCopiedPrompt(false), 2000);
-                    }}
-                    className="px-2.5 py-1 rounded bg-white text-zinc-950 text-[10px] font-semibold cursor-pointer"
-                  >
-                    {copiedPrompt ? "✓ Copied!" : "Copy Prompt"}
-                  </button>
-                </div>
-              </div>
-
-              <textarea
-                rows={18}
-                value={effectiveMasterPrompt}
-                onChange={(e) => setCustomMasterPromptOverride(e.target.value)}
-                className="w-full rounded-lg bg-[#09090b] border border-white/[0.08] focus:border-indigo-400/60 p-2.5 text-[11px] font-mono text-zinc-200 leading-relaxed outline-none"
+          ) : (
+            <div
+              className="p-3.5 flex items-center gap-2.5"
+              style={{
+                backgroundColor: "var(--color-success-subtle)",
+                border: "1px solid var(--color-success)",
+                borderRadius: "var(--radius-md)",
+              }}
+            >
+              <CheckCircle2
+                className="w-5 h-5 shrink-0"
+                style={{ color: "var(--color-success)" }}
               />
+              <span className="text-sm font-medium">
+                All blocking checks passed for {activePlatform.label}.
+              </span>
             </div>
           )}
 
-          {/* MONITOR 3: 9:16 MASTER VIDEO PLAYER + SIDE-BY-SIDE ADK/ORCAS COMPARISON */}
-          {canvasTab === "video" && (() => {
-            const currentReelObj = reels.find((r) => r.id === selectedReelId);
-            const partnerReelObj = currentReelObj?.comparisonCloneId
-              ? reels.find((r) => r.id === currentReelObj.comparisonCloneId)
-              : undefined;
-            const baselineReel = currentReelObj?.adkOrcasMeta?.enabled
-              ? partnerReelObj || currentReelObj
-              : currentReelObj;
-            const adkCloneReel = currentReelObj?.adkOrcasMeta?.enabled
-              ? currentReelObj
-              : partnerReelObj;
-            const adkMeta = adkCloneReel?.adkOrcasMeta;
-
-            return (
-              <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-black flex flex-col items-center p-3 space-y-3">
-                <div className="w-full flex items-center justify-between px-1">
-                  <span className="text-[11px] font-semibold text-white truncate">
-                    {title}
-                  </span>
-                  <span className="text-[10px] text-emerald-300 font-medium shrink-0">
-                    Lead Anchor: {activePersonasList[0]?.name || "Lead Cast"}
-                  </span>
-                </div>
-
-                {isRendering && (
-                  <div className="w-full rounded-lg bg-indigo-950/50 border border-indigo-500/30 p-2.5 space-y-2">
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-indigo-200 font-semibold">
-                        {renderStageLabel || "Rendering via models/gemini-omni-1.1-flash..."}
-                      </span>
-                      <span className="text-emerald-300 font-mono font-bold">
-                        {renderProgress}%
-                      </span>
-                    </div>
-                    <div className="w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 transition-all duration-500"
-                        style={{ width: `${Math.max(5, renderProgress)}%` }}
-                      />
-                    </div>
-                    {renderLogs.length > 0 && (
-                      <div className="max-h-20 overflow-y-auto text-[10px] font-mono text-zinc-400 space-y-0.5 bg-black/50 rounded p-1.5">
-                        {renderLogs.slice(-4).map((l, idx) => (
-                          <div key={idx}>{l}</div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {sideBySideCompareMode && baselineReel && adkCloneReel ? (
-                  <div className="w-full space-y-3">
-                    <div className="grid grid-cols-2 gap-2.5 w-full">
-                      {/* LEFT: ORIGINAL BASELINE */}
-                      <div className="rounded-lg border border-white/15 bg-[#0e0e12] p-2 flex flex-col items-center space-y-1.5">
-                        <div className="w-full flex items-center justify-between">
-                          <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 text-[9px] font-mono font-semibold">
-                            A • Original Baseline
-                          </span>
-                          <span className="text-[9px] text-zinc-400 font-mono">
-                            {baselineReel.audioEngineId === "omni_lyria3" ? "Omni + Lyria 3" : "Omni Native"}
-                          </span>
-                        </div>
-                        <video
-                          key={baselineReel.videoUrl}
-                          src={baselineReel.videoUrl}
-                          poster={baselineReel.shots?.[0]?.previewPhotoUrl}
-                          controls
-                          playsInline
-                          className="w-full aspect-[9/16] max-h-[360px] object-contain rounded bg-black"
-                        />
-                        <div className="w-full text-[9px] text-zinc-400 leading-tight">
-                          Direct text-to-video Turn 1A • 3-photo anchor at Turn 2A • Single job_state.json
-                        </div>
-                      </div>
-
-                      {/* RIGHT: GOOGLE ADK + ORCAS CLONE */}
-                      <div className="rounded-lg border border-emerald-400/40 bg-indigo-950/20 p-2 flex flex-col items-center space-y-1.5">
-                        <div className="w-full flex items-center justify-between">
-                          <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[9px] font-mono font-semibold">
-                            B • ADK + ORCAS Clone
-                          </span>
-                          <span className="text-[9px] text-emerald-300 font-mono font-bold">
-                            Critic: {adkMeta ? `${((adkMeta.act1Score + adkMeta.act2Score) / 2).toFixed(1)}/10` : "9.5/10"}
-                          </span>
-                        </div>
-                        <video
-                          key={adkCloneReel.videoUrl}
-                          src={adkCloneReel.videoUrl}
-                          poster={adkCloneReel.shots?.[0]?.previewPhotoUrl}
-                          controls
-                          autoPlay
-                          playsInline
-                          className="w-full aspect-[9/16] max-h-[360px] object-contain rounded bg-black"
-                        />
-                        <div className="w-full text-[9px] text-indigo-200 leading-tight">
-                          Pre-diffusion Keyframe Critic (Turn 1A &amp; 2A) + Stateful Chain + 6 JSON Manifests
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Pre-Diffusion Keyframe Critic + 6-Stage ADK/ORCAS Manifest Inspector */}
-                    {adkMeta && (
-                      <div className="w-full rounded-lg bg-[#121217] border border-indigo-500/30 p-2.5 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-semibold text-white">
-                            Modification 1 • Critic-Verified Pre-Diffusion Keyframes (gemini-3.1-flash-image-preview → gemini-2.5-flash)
-                          </span>
-                          <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-mono">
-                            APPROVED (Iter 1)
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <a
-                            href={adkMeta.act1KeyframeUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center gap-2 p-1.5 rounded bg-black/50 border border-white/10 hover:border-emerald-400/50"
-                          >
-                            <img
-                              src={adkMeta.act1KeyframeUrl}
-                              alt="Act I Keyframe"
-                              className="w-10 h-14 object-cover rounded"
-                            />
-                            <div className="text-[10px] space-y-0.5">
-                              <div className="font-semibold text-white">Act I Keyframe (t=0.0s)</div>
-                              <div className="text-emerald-300 font-mono">Score: {adkMeta.act1Score}/10 ✓</div>
-                              <div className="text-[9px] text-zinc-400">Chiaroscuro Speakeasy Lock</div>
-                            </div>
-                          </a>
-                          <a
-                            href={adkMeta.act2KeyframeUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center gap-2 p-1.5 rounded bg-black/50 border border-white/10 hover:border-emerald-400/50"
-                          >
-                            <img
-                              src={adkMeta.act2KeyframeUrl}
-                              alt="Act II Keyframe"
-                              className="w-10 h-14 object-cover rounded"
-                            />
-                            <div className="text-[10px] space-y-0.5">
-                              <div className="font-semibold text-white">Act II Keyframe (t=30.0s)</div>
-                              <div className="text-emerald-300 font-mono">Score: {adkMeta.act2Score}/10 ✓</div>
-                              <div className="text-[9px] text-zinc-400">Rain-Slicked Plaza V-Wedge</div>
-                            </div>
-                          </a>
-                        </div>
-
-                        <div className="pt-1 border-t border-white/[0.07] space-y-1">
-                          <div className="text-[10px] font-semibold text-white">
-                            Modification 2 • Explicit 6-Stage ADK + ORCAS JSON Manifest Checkpoints ({adkMeta.jobId})
-                          </div>
-                          <div className="grid grid-cols-3 gap-1">
-                            {[
-                              { label: "1_storyline.json", href: adkMeta.manifestUrls.storyline },
-                              { label: "rulebook_manifest.json", href: adkMeta.manifestUrls.rulebook },
-                              { label: "screenplay_manifest.json", href: adkMeta.manifestUrls.screenplay },
-                              { label: "keyframe_manifest.json", href: adkMeta.manifestUrls.keyframes },
-                              { label: "audio_manifest.json", href: adkMeta.manifestUrls.audio },
-                              { label: "5_composite_ad.json", href: adkMeta.manifestUrls.composite },
-                            ].map((m) => (
-                              <a
-                                key={m.label}
-                                href={m.href}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="px-2 py-1 rounded bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-[9px] font-mono text-indigo-300 truncate text-center"
-                              >
-                                {m.label} ↗
-                              </a>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : activeVideoUrl ? (
-                  <video
-                    key={activeVideoUrl}
-                    src={activeVideoUrl}
-                    poster={
-                      activePersonasList[0]?.photoUrl ||
-                      "/assets/characters/nagin_rajni_heroine.jpg"
-                    }
-                    controls
-                    autoPlay
-                    playsInline
-                    className="max-h-[520px] w-auto aspect-[9/16] object-contain rounded-lg"
-                  />
-                ) : (
-                  <div className="w-full flex flex-col items-center space-y-3 py-2">
-                    <div className="relative max-h-[380px] aspect-[9/16] rounded-xl overflow-hidden border border-white/15 bg-zinc-950 shadow-2xl">
-                      <img
-                        src={
-                          activePersonasList[0]?.photoUrl ||
-                          "/assets/characters/nagin_rajni_heroine.jpg"
-                        }
-                        alt={activePersonasList[0]?.name || "Lead Cast"}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-transparent flex flex-col justify-end p-3.5 text-center">
-                        <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-200 text-[10px] font-semibold mx-auto mb-1.5">
-                          {isRendering
-                            ? "Generating Turn 1A (00:00–00:10)..."
-                            : "Blueprint Synthesized • Video Not Rendered Yet"}
-                        </span>
-                        <p className="text-xs font-bold text-white leading-snug">
-                          {title}
-                        </p>
-                        <p className="text-[10px] text-zinc-300 mt-0.5 line-clamp-2">
-                          {activePersonasList.map((p) => p.name.split("(")[0].trim()).join(" • ")}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Multi-Shot Storyboard Preview Strip */}
-                    <div className="w-full grid grid-cols-6 gap-1.5 px-1">
-                      {shots.map((s) => (
-                        <div
-                          key={s.shotNumber}
-                          className="rounded overflow-hidden border border-white/10 bg-zinc-900 flex flex-col"
-                        >
-                          <img
-                            src={s.previewPhotoUrl}
-                            alt={`Shot ${s.shotNumber}`}
-                            className="w-full h-12 object-cover"
-                          />
-                          <span className="text-[9px] text-center text-zinc-300 py-0.5 font-mono">
-                            S{String(s.shotNumber).padStart(2, "0")}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <button
-                      type="button"
-                      disabled={isRendering}
-                      onClick={() => {
-                        setCreateStep(4);
-                        executeEndToEndRender(`${getById(DURATIONS_CATALOG, durationId).seconds}s Master`);
-                      }}
-                      className="w-full py-2.5 px-4 rounded-lg bg-white hover:bg-zinc-200 disabled:opacity-50 text-zinc-950 font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <Play className="w-3.5 h-3.5 fill-zinc-950" />
-                      <span>
-                        {isRendering
-                          ? `Rendering New Video (${renderProgress}%)...`
-                          : `Render New ${getById(DURATIONS_CATALOG, durationId).seconds}s Master Video Now (Gemini Omni 1.1 Flash)`}
-                      </span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
+          <StudioInput
+            label="Schedule Date & Time (Local Timezone)"
+            type="datetime-local"
+            value={scheduleDate}
+            onChange={(e) => setScheduleDate(e.target.value)}
+            helperText="Recommended high-engagement window: Tue–Thu 09:00–11:00 local time."
+          />
         </div>
-      </div>
+      </StudioDialog>
+
+      {/* ====================================================================
+          5. KEYBOARD SHORTCUTS CHEAT SHEET DIALOG (? key)
+         ==================================================================== */}
+      <StudioDialog
+        open={shortcutsDialogOpen}
+        title="Keyboard Shortcuts"
+        description="Navigate, switch platform previews, toggle Theater mode, and accept diffs without leaving the keyboard."
+        onClose={() => setShortcutsDialogOpen(false)}
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-sm">
+          {[
+            { keys: "Cmd + Z", desc: "Undo last edit or AI change" },
+            { keys: "Shift + Cmd + Z", desc: "Redo change" },
+            { keys: "Cmd + Enter", desc: "Accept active AI diff" },
+            { keys: "T", desc: "Toggle Netflix Theater Stage" },
+            { keys: "1 / 2 / 3 / 4", desc: "Switch platform preview tab" },
+            {
+              keys: "C / E / V / H",
+              desc: "Switch right panel (Checks/Edit/Variations/History)",
+            },
+            { keys: "/", desc: "Focus bottom scoped prompt bar" },
+            { keys: "?", desc: "Toggle shortcuts cheat sheet" },
+          ].map((sc) => (
+            <div
+              key={sc.keys}
+              className="studio-surface-2 p-2.5 flex items-center justify-between gap-2"
+              style={{ borderRadius: "var(--radius-sm)" }}
+            >
+              <span>{sc.desc}</span>
+              <kbd className="px-2 py-0.5 text-xs font-mono studio-surface">
+                {sc.keys}
+              </kbd>
+            </div>
+          ))}
+        </div>
+      </StudioDialog>
+
+      {/* Mobile Inspector Bottom Sheet (< 768px) */}
+      <StudioSheet
+        open={mobileInspectorOpen}
+        title={`Checks & Variations (${activeIssues.length} issues)`}
+        onClose={() => setMobileInspectorOpen(false)}
+      >
+        <div className="flex flex-col gap-3">
+          {activeIssues.map((iss) => (
+            <CheckItemCard
+              key={iss.id}
+              issue={iss}
+              onFocusTarget={(scope) => {
+                setSelectedScope(scope as SelectableScope);
+                setMobileInspectorOpen(false);
+              }}
+              onIgnore={(id) => setIgnoredCheckIds((prev) => [...prev, id])}
+            />
+          ))}
+        </div>
+      </StudioSheet>
+
+      {/* Compact Non-Blocking Bottom-Right Undo Toast */}
+      <StudioToast
+        message={toast?.message || ""}
+        actionLabel={toast?.undoSnapshot ? "Undo" : undefined}
+        onAction={
+          toast?.undoSnapshot
+            ? () => {
+                setPost(toast.undoSnapshot!);
+                setToast(null);
+              }
+            : undefined
+        }
+        onDismiss={() => setToast(null)}
+      />
     </div>
   );
 }

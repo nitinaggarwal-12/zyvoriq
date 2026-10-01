@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { LeftIconRail } from "@/components/LeftIconRail";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
-  title: "Zyvoriq Studio — Multi-Act AI Cinema & Ensemble Video Studio",
+  title: "Zyvoriq Content Studio — Calm, Precise Multi-Platform Social & 60s Cinema Studio",
   description:
-    "4-Step Guided Multi-Act AI Cinema & Music Video Production Studio (30s / 60s / 90s / 120s) powered by Gemini Omni 1.1 Flash.",
+    "Create, preview, edit in place, check & fix across 6 categories, compare variations, and publish multi-platform social & 60s 35mm video content.",
 };
 
 export default function RootLayout({
@@ -15,18 +14,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark scroll-smooth" data-scroll-behavior="smooth" suppressHydrationWarning>
+    <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body
-        className="bg-[#09090b] text-zinc-100 antialiased min-h-screen w-full max-w-none overflow-x-hidden selection:bg-white/20 selection:text-white"
+        style={{
+          backgroundColor: "var(--color-bg)",
+          color: "var(--color-text)",
+        }}
+        className="antialiased min-h-screen w-full max-w-none overflow-x-hidden"
         suppressHydrationWarning
       >
         <ThemeProvider>
-          <LeftIconRail />
-          <div
-            style={{ paddingLeft: "var(--left-nav-width, 216px)" }}
-            className="min-h-screen w-full max-w-none flex flex-col transition-all duration-200"
-          >
-            <main className="flex-1 w-full max-w-none">{children}</main>
+          <div className="min-h-screen w-full max-w-none flex flex-col">
+            <div className="flex-1 w-full max-w-none">{children}</div>
           </div>
         </ThemeProvider>
       </body>
