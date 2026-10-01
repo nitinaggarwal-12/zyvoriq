@@ -22,7 +22,7 @@ process.stdin.on("end", async () => {
       }
     } catch {}
 
-    if (workspace.includes("zyvoriq") && payload.terminationReason === "model_stop") {
+    if (workspace.includes("zyvoriq") && (!payload.terminationReason || payload.terminationReason === "model_stop")) {
       // Load workspace environment variables for API keys
       try {
         const envPath = path.join(workspace, ".env.local");
@@ -212,10 +212,22 @@ process.stdin.on("end", async () => {
           return results;
         }
 
+        const seenSizes = new Set();
         recentDeliverables = candidateRoots
           .flatMap((root) => findRecentDeliverables(root, 60 * 60 * 1000))
+          .filter((d) => !/(?:_slice10s|_clean10s|_raw|act\d+_30s|dry_dialogue_foley)\.mp4$/i.test(d.name))
           .sort((a, b) => b.mtimeMs - a.mtimeMs)
-          ;
+          .filter((d) => {
+            if (!d.name.endsWith(".mp4")) return true;
+            try {
+              const sz = fs.statSync(d.fullPath).size;
+              if (seenSizes.has(sz)) return false;
+              seenSizes.add(sz);
+              return true;
+            } catch {
+              return true;
+            }
+          });
 
         
         
@@ -488,6 +500,28 @@ process.stdin.on("end", async () => {
             } catch (err) { console.log(JSON.stringify({ decision: "block", reason: "[ZYVORIQ STOP GATE CRITICAL FAILURE]: Assertion crashed: " + err.message + ". Failing closed." })); return; }
 
             // =========================================================================
+            // ASSERTION 3c: DYNAMIC DRAMATIC SCORE VOLUME ENVELOPE (NO DRY -22dB MASTERS)
+            // =========================================================================
+            try {
+              if (fs.existsSync(videoPath) && /(?:combined_60s_master|07_option2|08_option1|09_option2|10_option1).*\.mp4$/i.test(vf)) {
+                const volDetect = execSync(`ffmpeg -i "${videoPath}" -af "volumedetect" -f null - 2>&1`, { timeout: 8000 }).toString();
+                const meanMatch = volDetect.match(/mean_volume:\s*([-\d.]+)\s*dB/);
+                if (meanMatch) {
+                  const meanVol = parseFloat(meanMatch[1]);
+                  if (meanVol < -15.5) {
+                    console.log(
+                      JSON.stringify({
+                        decision: "block",
+                        reason: `[ZYVORIQ DRAMATIC SCORE GATE BLOCKED]: Master video ${relativePath} has weak/dry mean_volume (${meanVol} dB < -15.5 dB)! Dramatic 60s cinema masters must include a dynamic instrumental background score with action/combat swells and -8dB dialogue sidechain ducking rather than dry wind/dialogue alone.`
+                      })
+                    );
+                    return;
+                  }
+                }
+              }
+            } catch (err) { console.log(JSON.stringify({ decision: "block", reason: "[ZYVORIQ STOP GATE CRITICAL FAILURE]: Assertion 3c crashed: " + err.message + ". Failing closed." })); return; }
+
+            // =========================================================================
             // ASSERTION 4: CUT-BOUNDARY ANCHOR-CONDITIONED ZERO-TOLERANCE VISUAL AUDIT
             // =========================================================================
             const anchorsDir = path.join(dir, "anchors");
@@ -500,22 +534,34 @@ process.stdin.on("end", async () => {
               }
             }
             if (!anchorPath && fs.existsSync(dir)) {
-              const localAnchors = fs.readdirSync(dir).filter(f => (f.startsWith("anchor") || f.startsWith("composite") || f.includes("anchor")) && (f.endsWith(".jpg") || f.endsWith(".png") || f.endsWith(".jpeg")));
+              const localAnchors = fs.readdirSync(dir).filter(f => (f.startsWith("anchor") || f.startsWith("composite") || f.includes("anchor") || f === "preview_turn1A.jpg") && (f.endsWith(".jpg") || f.endsWith(".png") || f.endsWith(".jpeg")));
               if (localAnchors.length > 0) {
-                const comp = localAnchors.find(f => f.includes("composite"));
+                const comp = localAnchors.find(f => f.includes("composite") || f.includes("anchor"));
                 anchorPath = path.join(dir, comp || localAnchors[0]);
               }
             }
 
-            if (anchorPath && fs.existsSync(anchorPath) && apiKey) {
-              const anchorB64 = fs.readFileSync(anchorPath).toString("base64");
-              const anchorMime = anchorPath.endsWith(".png") ? "image/png" : "image/jpeg";
+            // Fallback: if no external anchor image file exists alongside the MP4 (e.g. in comparisons/),
+            // extract t=2.0s of the video itself as the canonical scene/cast/prop/lighting reference anchor
+            // so Assertion 4a and Assertion 4b NEVER silently skip!
+            let anchorB64 = "";
+            let anchorMime = "image/jpeg";
+            if (anchorPath && fs.existsSync(anchorPath)) {
+              anchorB64 = fs.readFileSync(anchorPath).toString("base64");
+              anchorMime = anchorPath.endsWith(".png") ? "image/png" : "image/jpeg";
+            } else if (fs.existsSync(videoPath)) {
+              try {
+                anchorB64 = execSync(`ffmpeg -y -ss 2.0 -i "${videoPath}" -vframes 1 -f image2pipe -vcodec mjpeg -q:v 2 - 2>/dev/null | base64`, { timeout: 8000, maxBuffer: 10 * 1024 * 1024 }).toString().replace(/\r?\n|\r/g, "").trim();
+              } catch {}
+            }
+
+            if (anchorB64 && anchorB64.length > 5000 && apiKey) {
               const remotePath = `~/zyvoriq_remote/${relativePath}`;
 
               // Assertion 4d: Pre-flight Reference Anchor Still Mouth-Aperture Audit
               try {
                 const isNonVocalDance = /non[-\s]?vocal|closed[-\s]?mouth|instrumental_only|dance_only/i.test(relativePath || videoPath);
-                if (isNonVocalDance) {
+                if (isNonVocalDance && anchorPath) {
                   const anchorAuditRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -556,7 +602,7 @@ process.stdin.on("end", async () => {
                 }
               } catch (err) { console.log(JSON.stringify({ decision: "block", reason: "[ZYVORIQ STOP GATE CRITICAL FAILURE]: Assertion crashed: " + err.message + ". Failing closed." })); return; }
 
-              // Dynamic duration and uniform timeline sampling across all shot interiors
+              // Dynamic duration and dense multi-point timeline sampling across all turns
               let totalDur = 40;
               try {
                 if (fs.existsSync(videoPath)) {
@@ -569,12 +615,16 @@ process.stdin.on("end", async () => {
                 }
               } catch {}
 
-              // 4a. Anchor-Conditioned Visual Audit at Shot Midpoints
-              const numSamples = Math.min(8, Math.max(4, Math.floor(totalDur / 10)));
+              // 4a. Anchor-Conditioned Visual Audit at Dense Intra-Turn Points (including t=11s, 21s, 32s, 42s, 52s)
               const sampleCutTimes = [];
-              const interval = totalDur / numSamples;
-              for (let i = 0; i < numSamples; i++) {
-                sampleCutTimes.push(Math.round((i * interval + interval / 2) * 10) / 10);
+              if (totalDur >= 55) {
+                sampleCutTimes.push(11.0, 21.0, 32.0, 42.0, 52.0);
+              } else {
+                const numSamples = Math.min(8, Math.max(4, Math.floor(totalDur / 10)));
+                const interval = totalDur / numSamples;
+                for (let i = 0; i < numSamples; i++) {
+                  sampleCutTimes.push(Math.round((i * interval + interval / 2) * 10) / 10);
+                }
               }
 
               for (const t of sampleCutTimes) {
@@ -599,7 +649,9 @@ Zero-tolerance rules:
 6. ENSEMBLE BIOMETRIC DIVERSITY: If multiple characters of the same gender appear in the frame, verify that they have distinctly different hairstyles (e.g. bob vs waves vs braids; buzzcut vs turban vs curls), facial features, and wardrobe colors. If characters appear cloned, homogeneous, or interchangeable, output FAIL immediately with REASON: ENSEMBLE_HOMOGENEITY_DETECTED.
 7. MOUTH VISEME STATE & AUDIO-VISUAL HARMONY:
 - For non-vocal dance shots, instrumental sections, or background dancers: performers must have closed mouths with lips sealed shut; reject open mouths or laughing visemes (FAIL: OPEN_MOUTH_VISEME_MISMATCH).
-- For vocal singing performances where performers are singing lyrics: natural mouth movement, singing articulation, and vocal visemes are expected and required. Only reject if mouth movement violates human anatomy or if characters mouth words during instrumental-only breaks (FAIL: PHANTOM_VOCAL_MOUTHING).
+- For vocal singing or spoken-dialogue cinema performances: natural mouth movement and speech/singing articulation are expected and required.
+8. UNARMED CHARACTER PROP/WEAPON CONTINUITY: If a character (such as the silver-haired female mystic) is established as unarmed (no sword) in the reference anchor, she must NOT suddenly materialize or hold/clash a sword or weapon in the video frame (FAIL: UNARMED_PROP_HALLUCINATION).
+9. TIME-OF-DAY & BLOCKING CONTINUITY: If the reference anchor is set in cold blue-grey evening/twilight, the video frame must NOT suddenly jump to bright golden morning sun/sunrise (FAIL: TIME_OF_DAY_LIGHTING_JUMP), nor should characters turn their backs and walk away down the canyon away from their companion (FAIL: BLOCKING_DIRECTION_REVERSAL).
 Do NOT rationalize styling variations. If any detail differs by even 5%, output FAIL immediately.
 
 State your verdict clearly:
@@ -639,7 +691,7 @@ REASON: <concise explanation>`;
                         console.log(
                           JSON.stringify({
                             decision: "block",
-                            reason: `[ZYVORIQ ZERO-TOLERANCE QUALITY GATE BLOCKED]: Visual discontinuity detected at cut boundary t=${t}s against reference anchor! Reason: ${reason}. Remediate shot generation and wardrobe continuity before concluding.`
+                            reason: `[ZYVORIQ ZERO-TOLERANCE QUALITY GATE BLOCKED]: Visual discontinuity detected at t=${t}s against reference anchor! Reason: ${reason}. Remediate shot generation and wardrobe/prop/lighting continuity before concluding.`
                           })
                         );
                         return;
@@ -653,23 +705,25 @@ REASON: <concise explanation>`;
 
               // =========================================================================
               // ASSERTION 4b: PAIRWISE CUT-BOUNDARY DELTA INSPECTION (SEAM COMPARISON)
+              // Deterministically includes all 10s turn boundaries (10s, 20s, 30s, 40s, 50s)
               // =========================================================================
-              // Identify cut boundaries (e.g. every 10s or from concat list)
-              const cutSeams = [];
+              const cutSeamSet = new Set();
+              for (let s = 10; s <= totalDur - 5; s += 10) {
+                cutSeamSet.add(Number(s.toFixed(2)));
+              }
               try {
-    const scOut = execSync(`ffprobe -v error -f lavfi -i "movie=${videoPath},select=gt(scene\,0.32)" -show_entries frame=pts_time -of csv=p=0`, { encoding: "utf8", timeout: 30000 });
-    for (const line of scOut.trim().split("\n")) {
-      const t = Number(line);
-      if (t > 1.0 && t < totalDur - 1.0) cutSeams.push(Number(t.toFixed(2)));
-    }
-  } catch (err) {
-    for (let s = 5; s <= totalDur - 3; s += 5) cutSeams.push(s);
-  }
+                const scOut = execSync(`ffprobe -v error -f lavfi -i "movie=${videoPath},select=gt(scene\\,0.32)" -show_entries frame=pts_time -of csv=p=0`, { encoding: "utf8", timeout: 30000 });
+                for (const line of scOut.trim().split("\n")) {
+                  const t = Number(line);
+                  if (t > 1.0 && t < totalDur - 1.0) cutSeamSet.add(Number(t.toFixed(2)));
+                }
+              } catch (err) {}
+              const cutSeams = [...cutSeamSet].sort((a, b) => a - b);
 
               for (const cutTime of cutSeams) {
                 try {
-                  const tPre = Math.max(0.1, Math.round((cutTime - 0.2) * 10) / 10);
-                  const tPost = Math.min(totalDur - 0.1, Math.round((cutTime + 0.2) * 10) / 10);
+                  const tPre = Math.max(0.5, Math.round((cutTime - 1.0) * 10) / 10);
+                  const tPost = Math.min(totalDur - 0.5, Math.round((cutTime + 1.5) * 10) / 10);
 
                   let preB64 = "";
                   let postB64 = "";
@@ -687,9 +741,10 @@ REASON: <concise explanation>`;
                     const seamPrompt = `You are the Zyvoriq Chief Quality Auditor inspecting a pairwise cut transition at seam t=${cutTime}s.
 Compare the OUTGOING frame (just before cut at t=${tPre}s) directly with the INCOMING frame (just after cut at t=${tPost}s).
 Zero-tolerance transition rules:
-1. ENVIRONMENTAL & LIGHTING CONTINUITY: The time of day, sky, weather, and color temperature must be continuous across the cut. A violent jump from broad daylight/sunlight to nighttime/midnight aurora in consecutive performance cuts is strictly forbidden (FAIL: DAY_NIGHT_LIGHTING_JUMP).
+1. ENVIRONMENTAL & TIME-OF-DAY LIGHTING CONTINUITY: The time of day, sky brightness, weather, and color temperature must be continuous across the cut. A jump from cold blue-grey evening/twilight to bright golden morning sunlight/sunrise (or daylight to midnight) across consecutive cuts is strictly forbidden (FAIL: TIME_OF_DAY_LIGHTING_JUMP).
 2. ACTOR BIOMETRIC CAST LOCKING: The same character must not jump to a different human actor across the seam. Facial bone structure, jawline geometry, nose shape, eye spacing, and skin texture must belong to the exact same performer. Cast substitutions between shots are strictly forbidden (FAIL: ACTOR_CAST_SUBSTITUTION).
-3. WARDROBE & ACCESSORY STABILITY: Garments, accessories, cloaks, and fasteners must remain stable across the cut. Sudden appearance of brooches, buttons, sleeve changes, or shifting bodice crystal patterns across the seam is strictly forbidden (FAIL: WARDROBE_SEAM_MORPH).
+3. WARDROBE & UNARMED PROP STABILITY: Garments, accessories, cloaks, and weapons must remain stable across the cut. If a character is unarmed in the outgoing frame, she must not suddenly materialize a sword in the incoming frame (FAIL: UNARMED_PROP_HALLUCINATION). Sudden garment morphs across the seam are strictly forbidden (FAIL: WARDROBE_SEAM_MORPH).
+4. SPATIAL BLOCKING & DIRECTION CONTINUITY: Characters must not abruptly flip 180 degrees from walking away with their backs turned in the outgoing frame to approaching face-to-face in the incoming frame (FAIL: BLOCKING_DIRECTION_REVERSAL).
 
 State your verdict clearly:
 VERDICT: FAIL or PASS
@@ -728,7 +783,7 @@ REASON: <concise explanation>`;
                         console.log(
                           JSON.stringify({
                             decision: "block",
-                            reason: `[ZYVORIQ ZERO-TOLERANCE QUALITY GATE BLOCKED]: Cut-boundary transition defect at t=${cutTime}s! Outgoing frame (t=${tPre}s) and incoming frame (t=${tPost}s) failed continuity! Reason: ${seamReason}. Remediate environmental lighting and actor consistency across cuts.`
+                            reason: `[ZYVORIQ ZERO-TOLERANCE QUALITY GATE BLOCKED]: Cut-boundary transition defect at t=${cutTime}s! Outgoing frame (t=${tPre}s) and incoming frame (t=${tPost}s) failed continuity! Reason: ${seamReason}. Remediate environmental lighting, prop, and actor consistency across cuts.`
                           })
                         );
                         return;

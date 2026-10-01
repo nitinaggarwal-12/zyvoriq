@@ -871,6 +871,59 @@ function runGuard(rawInput) {
       }
     }
 
+    // ==================================================================
+    // RULE 40C - REQUIRE CUMULATIVE SESSION TAIL-SLICING ON MULTI-TURN OMNI INTERACTIONS
+    // Root cause of 0:30 Act I repetition: models/gemini-omni-1.1-flash returns a
+    // cumulative 20s/30s MP4 when previous_interaction_id is passed. Slicing from -ss 0
+    // re-extracts Turn 1A instead of the newly generated 10s tail.
+    // ==================================================================
+    if (decision === "allow" && !exempt && isWriteOrEdit && on("require_cumulative_interaction_tail_slicing")) {
+      const usesPrevInteraction = /previous_interaction_id/i.test(writeContent) && /gemini-omni-1\.1-flash/i.test(writeContent);
+      const hasTailSliceCalc = /rawDur\s*-\s*10|sliceStart|expectedStartSec/i.test(writeContent);
+      if (usesPrevInteraction && !hasTailSliceCalc && /-t\s+10(?:\.0)?\b/i.test(writeContent)) {
+        decision = "deny";
+        reason =
+          "[ZYVORIQ CUMULATIVE INTERACTION TAIL-SLICE GUARD - RULE 40C VIOLATION]: Script chains `previous_interaction_id` on `models/gemini-omni-1.1-flash` and slices `-t 10.0` without computing `sliceStart = Math.max(0, rawDur - 10.0)`!\n\n" +
+          "When `previous_interaction_id` is passed, Omni 1.1 Flash returns a cumulative MP4 (0..20s on Turn 2, 0..30s on Turn 3). Slicing from 0s re-extracts Turn 1 instead of the new 10s tail. Always inspect `ffprobe` duration and slice `-ss ${sliceStart} -t 10.0`.";
+      }
+    }
+
+    // ==================================================================
+    // RULE 40D - BAN INTRA-SCENE TIME-OF-DAY LIGHTING JUMPS (TWILIGHT -> MORNING SUN)
+    // Root cause of 0:50 sudden evening-to-morning jump: Turn 1A-2B prompted
+    // "cold overcast blue-grey twilight" while Turn 2C prompted "golden dawn sunlight".
+    // ==================================================================
+    if (decision === "allow" && !exempt && isWriteOrEdit && on("ban_intra_scene_time_of_day_lighting_jump")) {
+      const isMultiTurnScript = /prompt1A|prompt2C|turnPrompts|previous_interaction_id/i.test(writeContent);
+      const hasTwilightOrNight = /\b(twilight|dusk|evening|midnight|nighttime)\b/i.test(writeContent);
+      const hasMorningSunrise = /\b(golden\s+dawn\s+sunlight|morning\s+sun(?:light)?|bright\s+sunrise|golden\s+morning)\b/i.test(writeContent);
+      const explicitlyNegated = /ZERO\s+sunrise|ZERO\s+golden\s+or\s+yellow\s+morning\s+sunlight|MULTI_DAY_TIME_JUMP_JUSTIFIED/i.test(writeContent);
+      if (isMultiTurnScript && hasTwilightOrNight && hasMorningSunrise && !explicitlyNegated) {
+        decision = "deny";
+        reason =
+          "[ZYVORIQ TIME-OF-DAY CONTINUITY GUARD - RULE 40D VIOLATION]: Detected conflicting time-of-day lighting tokens (twilight/evening/dusk mixed with golden dawn/morning sunlight) inside a continuous multi-turn generation script!\n\n" +
+          "Switching from cold blue-grey twilight (0:00-0:50) to bright golden morning sunlight (0:50-1:00) causes a jarring 1-frame time-of-day jump at the cut boundary. Lock the exact same time-of-day and color temperature across all turns of a continuous scene.";
+      }
+    }
+
+    // ==================================================================
+    // RULE 40E - BAN AMBIGUOUS SWORD-CLASH PROMPTS WITHOUT UNARMED CHARACTER LOCK
+    // Root cause of 0:11 unarmed mystic suddenly holding a sword: prompting
+    // "parries a sudden steel sword strike" in a two-shot caused the model to give
+    // the unarmed female character a second sword so two blades could clash.
+    // ==================================================================
+    if (decision === "allow" && !exempt && isWriteOrEdit && on("ban_unarmed_character_weapon_hallucination")) {
+      const isMultiTurnScript = /prompt1B|turnPrompts|previous_interaction_id/i.test(writeContent);
+      const mentionsSwordClash = /\b(parries\s+a\s+sudden\s+steel\s+sword\s+strike|clashing\s+swords|sword\s+clash\s+between)\b/i.test(writeContent);
+      const hasUnarmedLock = /\b(100%\s+UNARMED|ZERO\s+sword|unarmed\s+woman)\b/i.test(writeContent);
+      if (isMultiTurnScript && mentionsSwordClash && !hasUnarmedLock) {
+        decision = "deny";
+        reason =
+          "[ZYVORIQ UNARMED PROP CONTINUITY GUARD - RULE 40E VIOLATION]: Detected reciprocal sword-clash phrasing in a multi-character prompt without an explicit `100% UNARMED / ZERO sword` lock for unarmed characters!\n\n" +
+          "Prompting a sword clash in a two-shot with an unarmed companion causes the video model to hallucinate a second sword in the unarmed character's hands (0:11 defect). Explicitly lock unarmed characters (`100% UNARMED, ZERO sword`) and specify off-screen projectile/arrow deflection.";
+      }
+    }
+
     const out = { decision };
     if (reason) out.reason = reason;
     console.log(JSON.stringify(out));

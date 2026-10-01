@@ -8,7 +8,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, "..");
+const ROOT = fs.existsSync(path.join(process.cwd(), "scripts", "guards"))
+  ? process.cwd()
+  : path.resolve(__dirname, "..", "..", "..");
 
 let buf = "";
 process.stdin.setEncoding("utf-8");
