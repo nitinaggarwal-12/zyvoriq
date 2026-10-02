@@ -1,0 +1,55 @@
+name: Continuous Deploy to Argolis Cloud Run
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Only runs if GCP_SA_KEY is configured in GitHub Repository Secrets
+      - name: Authenticate to Google Cloud
+        if: env.GCP_SA_KEY != ''
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        if: env.GCP_SA_KEY != ''
+        uses: google-github-actions/setup-gcloud@v2
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Configure Docker for Google Container Registry / Artifact Registry
+        if: env.GCP_SA_KEY != ''
+        run: gcloud auth configure-docker --quiet
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Build & Push Container
+        if: env.GCP_SA_KEY != ''
+        run: |
+          docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID || 'nitinagga-ge-2' }}/zyvoriq:${{ github.sha }} .
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID || 'nitinagga-ge-2' }}/zyvoriq:${{ github.sha }}
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Deploy to Cloud Run
+        if: env.GCP_SA_KEY != ''
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: zyvoriq
+          image: gcr.io/${{ secrets.GCP_PROJECT_ID || 'nitinagga-ge-2' }}/zyvoriq:${{ github.sha }}
+          region: us-central1
+          flags: '--allow-unauthenticated'
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
