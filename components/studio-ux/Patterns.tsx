@@ -479,23 +479,33 @@ export function VideoTimelineEditor({
   );
   const activeSegment = segments[activeIdx] || segments[0];
 
+  const firstRange = segments[0]?.timeRange || "00.0s–10.0s";
+  const lastRange =
+    segments[segments.length - 1]?.timeRange || "50.0s–60.0s";
+  const rangeStart = firstRange.split(/[–—-]/)[0]?.trim() || "0:00";
+  const rangeEnd = lastRange.split(/[–—-]/)[1]?.trim() || "1:00";
+  const totalSec = segments[segments.length - 1]?.endSec || 60;
+  const perActSec = Math.round(totalSec / Math.max(1, segments.length));
+
   return (
     <div
       role="region"
-      aria-label="60-second 6-act cinema chapter scrubber"
+      aria-label={`${segments.length}-act cinema chapter scrubber (${rangeStart} to ${rangeEnd})`}
       className="flex flex-col gap-3"
     >
       {/* Header Row */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <span className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2">
           <Volume2 className="w-4 h-4" aria-hidden="true" />
-          <span>6-Act Cinema Chapter Scrubber (0:00 — 1:00)</span>
+          <span data-testid="scrubber-header-title">
+            {segments.length}-Act Cinema Chapter Scrubber ({rangeStart} — {rangeEnd})
+          </span>
         </span>
         <span
           className="text-xs font-mono tabular-nums"
           style={{ color: "var(--color-text-muted)" }}
         >
-          Click any 10s chapter to scrub player &amp; edit subtitle
+          Click any {perActSec}s chapter to scrub player &amp; edit subtitle
         </span>
       </div>
 

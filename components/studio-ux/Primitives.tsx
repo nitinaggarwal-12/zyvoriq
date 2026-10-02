@@ -616,17 +616,28 @@ export function StudioToast({
   actionLabel,
   onAction,
   onDismiss,
+  durationMs = 4500,
 }: {
   message: string;
   actionLabel?: string;
   onAction?: () => void;
   onDismiss: () => void;
+  durationMs?: number;
 }) {
+  useEffect(() => {
+    if (!message || durationMs <= 0) return;
+    const timer = setTimeout(() => {
+      onDismiss();
+    }, durationMs);
+    return () => clearTimeout(timer);
+  }, [message, durationMs, onDismiss]);
+
   if (!message) return null;
   return (
     <div
       role="status"
       aria-live="polite"
+      data-testid="studio-toast"
       style={{
         backgroundColor: "var(--color-surface)",
         border: "1px solid var(--color-border)",
@@ -634,7 +645,7 @@ export function StudioToast({
         boxShadow: "var(--shadow-md)",
         color: "var(--color-text)",
       }}
-      className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 max-w-sm sm:max-w-[420px] p-3 sm:p-3.5 z-50 flex items-center justify-between gap-3 studio-transition-ui"
+      className="fixed bottom-16 right-3 sm:bottom-20 sm:right-6 max-w-sm sm:max-w-[420px] p-3 sm:p-3.5 z-50 flex items-center justify-between gap-3 studio-transition-ui"
     >
       <div className="flex items-center gap-2 text-sm">
         <CheckCircle2

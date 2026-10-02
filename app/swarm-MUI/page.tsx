@@ -52,6 +52,7 @@ import {
   PostVariation,
   VideoSegmentSpec,
 } from "@/components/studio-ux/Patterns";
+import { PERSONAS_CATALOG, PersonaDefinition } from "@/lib/studioCatalog";
 
 // ============================================================================
 // TYPES & PLATFORM RULES (Phase 1 & Phase 3 + Netflix Cinema Upgrades)
@@ -144,6 +145,8 @@ interface StudioPostState {
   videoUrl: string;
   audioMixLabel: string;
   altText: string;
+  castBadge: string;
+  youtubeRefBadge: string | null;
   captionsEnabled: boolean;
   aiDisclosureEnabled: boolean;
   safeZoneOverlay: boolean;
@@ -278,6 +281,8 @@ const INITIAL_POST: StudioPostState = {
   audioMixLabel: "Option 2 · Omni 1.1 Dialogue + Foley + Lyria 3 Pro Score",
   altText:
     "Wide 35mm frame of Kaelen in dark wolf-fur cloak on screen-left facing unarmed Lyra in crimson-lined cloak on screen-right inside a snowy basalt canyon at twilight.",
+  castBadge: "Kaelen (Baritone) · Lyra (Mezzo)",
+  youtubeRefBadge: null,
   captionsEnabled: true,
   aiDisclosureEnabled: true,
   safeZoneOverlay: false,
@@ -339,7 +344,7 @@ const INITIAL_VARIATIONS: PostVariation[] = [
     body: "A 60-second 1920s Art-Deco speakeasy showcase featuring Julian at the Steinway and Clara at the velvet stage mic with continuous jazz-noir acoustics.",
     hashtags: "#NoirCinema #ArtDeco #JazzScore #ShortFilm",
     videoUrl:
-      "/assets/swarm/comparisons/10_cursed_hunter_live_action_dual_stem_dialogue_plus_lyria_score_60s.mp4",
+      "/assets/swarm/comparisons/04_option2_clone_adk_orcas_omni_native_60s.mp4",
     audioLabel: "1920s Speakeasy Master",
     rationale:
       "Demonstrates switching to a warm amber period aesthetic while keeping the 6-turn 60s structure.",
@@ -542,10 +547,6 @@ export default function ContentStudioWorkspacePage() {
   >([]);
 
   // Live Cloud Video & Audio Render Job State (/api/swarm/jobs)
-  const [synthesizedCastBadge, setSynthesizedCastBadge] = useState<string>(
-    "Kaelen (Baritone) · Lyra (Mezzo)"
-  );
-  const [youtubeRefBadge, setYoutubeRefBadge] = useState<string | null>(null);
   const [liveRenderJob, setLiveRenderJob] = useState<{
     id: string;
     status: "idle" | "running" | "completed" | "error";
@@ -559,6 +560,53 @@ export default function ContentStudioWorkspacePage() {
     stageLabel: "",
     latestLog: "",
   });
+
+  // Sync locked cast from /personas (localStorage zyvoriq_cast_matrix_v1) on mount
+  useEffect(() => {
+    try {
+      const fromPersonas =
+        typeof window !== "undefined" &&
+        window.location.search.includes("from=personas");
+      const rawMatrix = localStorage.getItem("zyvoriq_cast_matrix_v1");
+      const rawDyn = localStorage.getItem("zyvoriq_dynamic_catalog_v1");
+      if (!rawMatrix && !rawDyn) return;
+      const matrixParsed = rawMatrix ? JSON.parse(rawMatrix) : null;
+      const dynParsed = rawDyn ? JSON.parse(rawDyn) : null;
+      const selectedIds =
+        matrixParsed?.selectedIds || dynParsed?.selectedIds || null;
+      if (!selectedIds) return;
+
+      const allPersonas: PersonaDefinition[] = [
+        ...(Array.isArray(dynParsed?.personas) ? dynParsed.personas : []),
+        ...(Array.isArray(matrixParsed?.customPersonas)
+          ? matrixParsed.customPersonas
+          : []),
+        ...PERSONAS_CATALOG,
+      ];
+      const leadIds: string[] = [
+        ...(Array.isArray(selectedIds.female_lead)
+          ? selectedIds.female_lead
+          : []),
+        ...(Array.isArray(selectedIds.male_lead) ? selectedIds.male_lead : []),
+      ];
+      const resolvedNames = Array.from(
+        new Set(
+          leadIds
+            .map((id) => allPersonas.find((p) => p.id === id)?.name)
+            .filter((n): n is string => Boolean(n))
+        )
+      );
+      if (resolvedNames.length > 0 && fromPersonas) {
+        const badgeText = resolvedNames.slice(0, 3).join(" · ");
+        setPost((prev) => ({ ...prev, castBadge: badgeText }));
+        setToast({
+          message: `Locked ensemble cast from Personas & Wardrobe (${badgeText})`,
+        });
+      }
+    } catch {
+      // Ignore storage parse errors
+    }
+  }, []);
 
   // Poll /api/swarm/jobs?id=<id> when a live video render job is running
   useEffect(() => {
@@ -643,7 +691,7 @@ export default function ContentStudioWorkspacePage() {
           audioEngine:
             audioEngineMode === "option1_symphonic"
               ? "omni_lyria3"
-              : "omni_lyria3",
+              : "omni_native",
           adkOrcasMode: true,
           act1Prompt: turnPrompts.slice(0, 3).join(" "),
           act2Prompt: turnPrompts.slice(3, 6).join(" "),
@@ -670,12 +718,18 @@ export default function ContentStudioWorkspacePage() {
           message: `Started live Omni 1.1 + Lyria 3 render (${data.job.id})`,
         });
       } else {
+        const errReason = String(
+          data?.error || "Cloud render requires active Gemini API key"
+        );
         setLiveRenderJob({
           id: "",
           status: "error",
           progress: 0,
-          stageLabel: "Cloud render requires active Gemini API key",
-          latestLog: String(data?.error || "Unable to start job"),
+          stageLabel: "Cloud render fallback: Pre-rendered 35mm master active",
+          latestLog: errReason,
+        });
+        setToast({
+          message: `${errReason} — playing pre-rendered 35mm studio master`,
         });
       }
     } catch (err) {
@@ -685,6 +739,9 @@ export default function ContentStudioWorkspacePage() {
         progress: 0,
         stageLabel: "Network error starting live render job",
         latestLog: String(err),
+      });
+      setToast({
+        message: "Network error starting live render — playing studio master",
       });
     }
   };
@@ -824,7 +881,7 @@ export default function ContentStudioWorkspacePage() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  });
+  }, [pendingDiff, undoStack, redoStack, post]);
 
   // Active platform & segment rules
   const activePlatform = useMemo(
@@ -1134,9 +1191,7 @@ export default function ContentStudioWorkspacePage() {
   const handleTriggerQuickAction = (action: QuickActionType) => {
     setAssistantReply(null);
     const targetScope: SelectableScope =
-      selectedScope === "post" ||
-      selectedScope === "visual" ||
-      selectedScope === "timeline"
+      selectedScope === "post" || selectedScope === "visual"
         ? "hook"
         : selectedScope;
 
@@ -1147,6 +1202,10 @@ export default function ContentStudioWorkspacePage() {
         ? post.body
         : targetScope === "hashtags"
         ? post.hashtags
+        : targetScope === "timeline"
+        ? activeSegment.captionLine
+        : targetScope === "cta"
+        ? post.ctaUrl
         : post.hook;
 
     const isDefaultHunter =
@@ -1158,7 +1217,24 @@ export default function ContentStudioWorkspacePage() {
       .trim();
 
     let proposedText = currentText;
-    if (action === "shorter") {
+    if (targetScope === "timeline") {
+      if (action === "shorter") {
+        proposedText =
+          urlClean.length > 56
+            ? `${urlClean.slice(0, 54).replace(/[,;:\s]+$/, "")}.`
+            : `${urlClean.split(/[—,;]/)[0].trim()}.`;
+      } else if (action === "punchier") {
+        proposedText = `${urlClean.replace(/\.$/, "")}—before the final frame fades!`;
+      } else if (action === "fix_grammar") {
+        proposedText = `${urlClean.replace(/\s+/g, " ").replace(/--/g, "—").replace(/\.$/, "")}.`;
+      } else if (action === "change_tone") {
+        proposedText = `[Whispered, -14 LUFS close-mic]: "${urlClean.replace(/^"|"$/g, "")}"`;
+      } else if (action === "translate") {
+        proposedText = "Mira mis manos en el paso helado—solo la verdad permanece en este acto.";
+      } else {
+        proposedText = `${urlClean.replace(/\.$/, "")} [Take 2 · Locked 35mm continuity].`;
+      }
+    } else if (action === "shorter") {
       if (isDefaultHunter) {
         proposedText =
           targetScope === "hook"
@@ -1234,6 +1310,12 @@ export default function ContentStudioWorkspacePage() {
     if (diff.targetKey === "hook") next.hook = diff.afterText;
     else if (diff.targetKey === "body") next.body = diff.afterText;
     else if (diff.targetKey === "hashtags") next.hashtags = diff.afterText;
+    else if (diff.targetKey === "cta") next.ctaUrl = diff.afterText;
+    else if (diff.targetKey === "timeline") {
+      next.segments = post.segments.map((s) =>
+        s.id === activeSegment.id ? { ...s, captionLine: diff.afterText } : s
+      );
+    }
     setPendingDiff(null);
     commitPostChange(
       next,
@@ -1308,17 +1390,25 @@ export default function ContentStudioWorkspacePage() {
     setGenerationStage({ active: false, step: 0, label: "" });
 
     if (mode === "scoped_edit") {
-      const targetKey =
+      const targetKey: SelectableScope =
         selectedScope === "body"
           ? "body"
           : selectedScope === "hashtags"
           ? "hashtags"
+          : selectedScope === "timeline"
+          ? "timeline"
+          : selectedScope === "cta"
+          ? "cta"
           : "hook";
       const beforeText =
         targetKey === "body"
           ? post.body
           : targetKey === "hashtags"
           ? post.hashtags
+          : targetKey === "timeline"
+          ? activeSegment.captionLine
+          : targetKey === "cta"
+          ? post.ctaUrl
           : post.hook;
       const cleanScoped = promptText
         .replace(/https?:\/\/[^\s"'<>]+/gi, "")
@@ -1328,7 +1418,10 @@ export default function ContentStudioWorkspacePage() {
         targetKey,
         targetLabel: scopeLabelMap[targetKey],
         beforeText,
-        afterText: `${cleanScoped} — crafted for ${activePlatform.shortName} in ${activeBrand.name} voice.`,
+        afterText:
+          targetKey === "timeline"
+            ? `${cleanScoped.replace(/^"|"$/g, "")}`
+            : `${cleanScoped} — crafted for ${activePlatform.shortName} in ${activeBrand.name} voice.`,
         actionName: "Scoped Prompt",
       });
       setScopedPromptInput("");
@@ -1357,10 +1450,17 @@ export default function ContentStudioWorkspacePage() {
       lowerPrompt.includes("lyra");
 
     const chosenVideo = isSpeakeasy
-      ? "/assets/swarm/comparisons/10_cursed_hunter_live_action_dual_stem_dialogue_plus_lyria_score_60s.mp4"
-      : audioEngineMode === "option1_symphonic"
-      ? "/assets/swarm/comparisons/10_option1_lyria3pro_symphonic_60s_master.mp4"
-      : "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4";
+      ? audioEngineMode === "option1_symphonic"
+        ? "/assets/swarm/comparisons/02_option1_clone_adk_orcas_omni_lyria3_60s.mp4"
+        : "/assets/swarm/comparisons/04_option2_clone_adk_orcas_omni_native_60s.mp4"
+      : isGaneshShivaParvati
+      ? "/assets/swarm/generated/job_1790479809664/combined_60s.mp4"
+      : isCursedHunter
+      ? audioEngineMode === "option1_symphonic"
+        ? "/assets/swarm/comparisons/10_option1_lyria3pro_symphonic_60s_master.mp4"
+        : "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4"
+      : apiData?.assets?.videoUrl ||
+        "/assets/swarm/generated/job_1790575141271/combined_60s.mp4";
 
     let nextTitle = post.title;
     let nextHook = post.hook;
@@ -1374,6 +1474,7 @@ export default function ContentStudioWorkspacePage() {
     if (isGaneshShivaParvati) {
       const isFiveMin =
         lowerPrompt.includes("5 min") || lowerPrompt.includes("5-min");
+      const actDur = isFiveMin ? 50 : 10;
       const timeRanges = isFiveMin
         ? [
             "0:00–0:50",
@@ -1411,8 +1512,8 @@ export default function ContentStudioWorkspacePage() {
           id: "seg-1",
           index: 0,
           timeRange: timeRanges[0],
-          startSec: 0,
-          endSec: 10,
+          startSec: 0 * actDur,
+          endSec: 1 * actDur,
           speaker: "Goddess Parvati",
           captionLine:
             "Guard this sacred threshold of Kailash, my son, and let no force cross unbidden.",
@@ -1424,8 +1525,8 @@ export default function ContentStudioWorkspacePage() {
           id: "seg-2",
           index: 1,
           timeRange: timeRanges[1],
-          startSec: 10,
-          endSec: 20,
+          startSec: 1 * actDur,
+          endSec: 2 * actDur,
           speaker: "Lord Ganesha",
           captionLine:
             "A mother's word is higher than the heavens—I stand unmoved at the mountain gate.",
@@ -1437,8 +1538,8 @@ export default function ContentStudioWorkspacePage() {
           id: "seg-3",
           index: 2,
           timeRange: timeRanges[2],
-          startSec: 20,
-          endSec: 30,
+          startSec: 2 * actDur,
+          endSec: 3 * actDur,
           speaker: "Lord Shiva",
           captionLine:
             "Who bars the path to my own abode upon the eternal snows of Kailash?",
@@ -1450,8 +1551,8 @@ export default function ContentStudioWorkspacePage() {
           id: "seg-4",
           index: 3,
           timeRange: timeRanges[3],
-          startSec: 30,
-          endSec: 40,
+          startSec: 3 * actDur,
+          endSec: 4 * actDur,
           speaker: "Lord Ganesha",
           captionLine:
             "Even the lord of the cosmos must honor the sacred vow spoken at this threshold.",
@@ -1463,8 +1564,8 @@ export default function ContentStudioWorkspacePage() {
           id: "seg-5",
           index: 4,
           timeRange: timeRanges[4],
-          startSec: 40,
-          endSec: 50,
+          startSec: 4 * actDur,
+          endSec: 5 * actDur,
           speaker: "Goddess Parvati",
           captionLine:
             "Restore him with divine grace, Mahadeva—so every auspicious journey begins in his name.",
@@ -1476,8 +1577,8 @@ export default function ContentStudioWorkspacePage() {
           id: "seg-6",
           index: 5,
           timeRange: timeRanges[5],
-          startSec: 50,
-          endSec: 60,
+          startSec: 5 * actDur,
+          endSec: 6 * actDur,
           speaker: "Shiva & Parvati",
           captionLine:
             "Rise as Gajanana, Vigneshwara—first among the gods and remover of all obstacles.",
@@ -1601,6 +1702,32 @@ export default function ContentStudioWorkspacePage() {
           aiGenerated: true,
         },
       ];
+      nextSlides = [
+        {
+          id: "slide-1",
+          title: "Act I (0:00–0:20) · Midnight at the Brass Marquee",
+          subtitle:
+            "Julian opens on the Steinway grand while Clara steps into the warm amber spotlight.",
+          altText: "1920s Art-Deco speakeasy stage with grand piano and ribbon mic",
+          timeCode: "00:00–00:20",
+        },
+        {
+          id: "slide-2",
+          title: "Act II (0:20–0:40) · Velvet Jazz-Noir Groove",
+          subtitle:
+            "118 BPM brushed snare and upright bass lock the room into unbroken silence.",
+          altText: "Medium dolly shot across the speakeasy floor",
+          timeCode: "00:20–00:40",
+        },
+        {
+          id: "slide-3",
+          title: "Act III (0:40–1:00) · D-Minor Midnight Encore",
+          subtitle:
+            "Duet finale under warm tungsten sconces with -14 LUFS vocal ducking.",
+          altText: "Clara and Julian final duet frame",
+          timeCode: "00:40–01:00",
+        },
+      ];
     } else if (isCursedHunter) {
       nextTitle = "The Cursed Hunter — 35mm Live-Action 60s Campaign";
       nextHook =
@@ -1609,6 +1736,7 @@ export default function ContentStudioWorkspacePage() {
       nextHashtags =
         "#TheCursedHunter #LiveAction35mm #SoundDesign #CinemaStudio";
       nextSegments = INITIAL_SEGMENTS;
+      nextSlides = INITIAL_POST.slides;
       nextCastLabel = "Kaelen (Baritone) · Lyra (Mezzo)";
     } else {
       // Custom topic or YouTube reference synthesis
@@ -1713,12 +1841,40 @@ export default function ContentStudioWorkspacePage() {
           aiGenerated: true,
         },
       ];
+      nextSlides = [
+        {
+          id: "slide-1",
+          title: `Act I (0:00–0:20) · ${conciseTopic.slice(0, 32)}`,
+          subtitle: nextSegments[0].captionLine,
+          altText: `Act I 35mm frame for ${conciseTopic}`,
+          timeCode: "00:00–00:20",
+        },
+        {
+          id: "slide-2",
+          title: `Act II (0:20–0:40) · Rising Tension`,
+          subtitle: nextSegments[2].captionLine,
+          altText: `Act II medium two-shot for ${conciseTopic}`,
+          timeCode: "00:20–00:40",
+        },
+        {
+          id: "slide-3",
+          title: `Act III (0:40–1:00) · Symphonic Finale`,
+          subtitle: nextSegments[5].captionLine,
+          altText: `Act III finale shot for ${conciseTopic}`,
+          timeCode: "00:40–01:00",
+        },
+      ];
     }
 
-    setSynthesizedCastBadge(nextCastLabel);
-    setYoutubeRefBadge(
-      extractedYtId ? `YouTube Ref: ${extractedYtId} · Deconstructed` : null
-    );
+    const ctaSlug = nextTitle
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .slice(0, 48)
+      .replace(/^-+|-+$/g, "");
+    const nextCtaUrl = `https://zyvoriq.studio/showcase/${
+      ctaSlug || "cinema-master"
+    }?utm_source=social&utm_medium=studio`;
+
     setSelectedSegmentId("seg-1");
 
     const nextDraft: StudioPostState = {
@@ -1727,7 +1883,12 @@ export default function ContentStudioWorkspacePage() {
       hook: nextHook,
       body: nextBody,
       hashtags: nextHashtags,
+      ctaUrl: nextCtaUrl,
       altText: nextAltText,
+      castBadge: nextCastLabel,
+      youtubeRefBadge: extractedYtId
+        ? `YouTube Ref: ${extractedYtId} · Deconstructed`
+        : null,
       segments: nextSegments,
       slides: nextSlides,
       videoUrl: chosenVideo,
@@ -2190,23 +2351,38 @@ export default function ContentStudioWorkspacePage() {
                         onChange={(e) => {
                           const val = e.target.value;
                           setAudioEngineMode(val);
+                          const lowerT = post.title.toLowerCase();
                           if (val === "option1_symphonic") {
+                            const nextVid =
+                              lowerT.includes("crimson echoes") ||
+                              lowerT.includes("speakeasy")
+                                ? "/assets/swarm/comparisons/02_option1_clone_adk_orcas_omni_lyria3_60s.mp4"
+                                : lowerT.includes("kailash") ||
+                                  lowerT.includes("ganesh")
+                                ? "/assets/swarm/generated/job_1790575141271/combined_60s.mp4"
+                                : "/assets/swarm/comparisons/10_option1_lyria3pro_symphonic_60s_master.mp4";
                             commitPostChange(
                               {
                                 ...post,
-                                videoUrl:
-                                  "/assets/swarm/comparisons/10_option1_lyria3pro_symphonic_60s_master.mp4",
+                                videoUrl: nextVid,
                                 audioMixLabel:
                                   "Option 1 · Symphonic Film-Trailer Forward Mix",
                               },
                               "Switched to Option 1 (Lyria 3 Pro Symphonic Mix)"
                             );
                           } else {
+                            const nextVid =
+                              lowerT.includes("crimson echoes") ||
+                              lowerT.includes("speakeasy")
+                                ? "/assets/swarm/comparisons/04_option2_clone_adk_orcas_omni_native_60s.mp4"
+                                : lowerT.includes("kailash") ||
+                                  lowerT.includes("ganesh")
+                                ? "/assets/swarm/generated/job_1790479809664/combined_60s.mp4"
+                                : "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4";
                             commitPostChange(
                               {
                                 ...post,
-                                videoUrl:
-                                  "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4",
+                                videoUrl: nextVid,
                                 audioMixLabel:
                                   "Option 2 · Omni 1.1 Dialogue + Foley + Lyria 3 Pro Score",
                               },
@@ -2253,7 +2429,7 @@ export default function ContentStudioWorkspacePage() {
                   onChange={(e) => setLibraryQuery(e.target.value)}
                 />
 
-                <div className="flex flex-col gap-3 max-h-[540px] overflow-y-auto pr-1">
+                <div className="flex flex-col gap-3">
                   {INITIAL_VARIATIONS.filter(
                     (v) =>
                       v.label
@@ -2506,12 +2682,12 @@ export default function ContentStudioWorkspacePage() {
           aria-label="Live multi-platform post canvas"
           className={
             theaterMode
-              ? "order-1 md:col-span-12 lg:col-span-12 p-3 flex flex-col gap-2 h-full overflow-y-auto studio-scrollbar"
-              : "order-1 md:order-2 md:col-span-6 lg:col-span-6 p-3 flex flex-col gap-2 h-full overflow-hidden"
+              ? "order-1 md:col-span-12 lg:col-span-12 p-3 flex flex-col gap-3 h-full overflow-y-auto studio-scrollbar"
+              : "order-1 md:order-2 md:col-span-6 lg:col-span-6 p-3 flex flex-col gap-3 h-full overflow-y-auto studio-scrollbar"
           }
         >
           {/* Platform Switcher Bar + Character Limit Pill + Safe-Zone Toggle */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 shrink-0">
             <StudioTabs
               ariaLabel="Target social platform preview"
               activeId={activePlatformId}
@@ -2556,20 +2732,24 @@ export default function ContentStudioWorkspacePage() {
           </div>
 
           {/* Floating In-Place Selection Toolbar (Always visible for current selection) */}
-          <SelectionToolbar
-            scopeLabel={scopeLabelMap[selectedScope]}
-            onQuickAction={handleTriggerQuickAction}
-          />
+          <div className="shrink-0">
+            <SelectionToolbar
+              scopeLabel={scopeLabelMap[selectedScope]}
+              onQuickAction={handleTriggerQuickAction}
+            />
+          </div>
 
           {/* Accessible AI Diff Card (Rendered when a quick action or scoped prompt proposes an edit) */}
           {pendingDiff && (
-            <DiffView
-              diff={pendingDiff}
-              onAccept={handleAcceptDiff}
-              onReject={() => setPendingDiff(null)}
-              onTryAgain={() => handleTriggerQuickAction("punchier")}
-              onAcceptAll={() => handleAcceptDiff(pendingDiff)}
-            />
+            <div className="shrink-0">
+              <DiffView
+                diff={pendingDiff}
+                onAccept={handleAcceptDiff}
+                onReject={() => setPendingDiff(null)}
+                onTryAgain={() => handleTriggerQuickAction("punchier")}
+                onAcceptAll={() => handleAcceptDiff(pendingDiff)}
+              />
+            </div>
           )}
 
           {/* ================================================================
@@ -2590,7 +2770,7 @@ export default function ContentStudioWorkspacePage() {
               borderRadius: "var(--radius-md)",
               boxShadow: "var(--shadow-md)",
             }}
-            className="overflow-hidden flex flex-col"
+            className="shrink-0 overflow-hidden flex flex-col"
           >
             {/* Stage Top Header Bar: Brand · Aspect Ratio · Active Act Badge */}
             <div
@@ -2615,8 +2795,8 @@ export default function ContentStudioWorkspacePage() {
                 {post.aiDisclosureEnabled && (
                   <StudioChip tone="ai">35mm Continuity Locked</StudioChip>
                 )}
-                {youtubeRefBadge && (
-                  <StudioChip tone="info">{youtubeRefBadge}</StudioChip>
+                {post.youtubeRefBadge && (
+                  <StudioChip tone="info">{post.youtubeRefBadge}</StudioChip>
                 )}
               </div>
 
@@ -2628,7 +2808,7 @@ export default function ContentStudioWorkspacePage() {
                   data-testid="cinema-cast-badge"
                   className="font-semibold"
                 >
-                  {synthesizedCastBadge}
+                  {post.castBadge}
                 </span>
                 <span style={{ color: "var(--color-cinema-muted)" }}>·</span>
                 <span className="font-semibold">
@@ -2643,19 +2823,32 @@ export default function ContentStudioWorkspacePage() {
                 backgroundColor: "var(--color-cinema-surface)",
                 borderBottom: "1px solid var(--color-cinema-border)",
               }}
-              className="px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs"
+              className="px-4 py-2 flex items-center justify-between gap-3 text-xs"
             >
-              <div className="flex items-center gap-2 min-w-0">
-                <Sparkles
-                  className="w-3.5 h-3.5 shrink-0"
-                  style={{ color: "var(--color-primary)" }}
-                  aria-hidden="true"
-                />
-                <span className="truncate font-medium">
+              <div className="flex-1 flex items-center gap-2 min-w-0">
+                {liveRenderJob.status === "error" ? (
+                  <AlertCircle
+                    className="w-3.5 h-3.5 shrink-0"
+                    style={{ color: "var(--color-warning)" }}
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Sparkles
+                    className="w-3.5 h-3.5 shrink-0"
+                    style={{ color: "var(--color-primary)" }}
+                    aria-hidden="true"
+                  />
+                )}
+                <span
+                  data-testid="cinema-render-status-text"
+                  className="truncate font-medium"
+                >
                   {liveRenderJob.status === "running"
                     ? `${liveRenderJob.stageLabel} (${liveRenderJob.progress}%)`
                     : liveRenderJob.status === "completed"
                     ? `Live Master Ready: ${post.title}`
+                    : liveRenderJob.status === "error"
+                    ? `${liveRenderJob.stageLabel} (${liveRenderJob.latestLog})`
                     : `6-Act Screenplay Ready: ${post.title} — Click any Act below to scrub or render fresh cloud video`}
                 </span>
               </div>
@@ -2672,6 +2865,8 @@ export default function ContentStudioWorkspacePage() {
                 >
                   {liveRenderJob.status === "running"
                     ? `Rendering ${liveRenderJob.progress}%…`
+                    : liveRenderJob.status === "error"
+                    ? "Retry Live Render"
                     : "Render Live Video & Audio"}
                 </StudioButton>
               </div>
@@ -2756,11 +2951,12 @@ export default function ContentStudioWorkspacePage() {
                     preload="metadata"
                     style={{
                       aspectRatio: activePlatform.aspectRatioCss,
+                      minHeight: theaterMode ? "360px" : "230px",
                       maxHeight: theaterMode
-                        ? "500px"
+                        ? "540px"
                         : activePlatformId === "reels_9_16"
-                        ? "205px"
-                        : "175px",
+                        ? "340px"
+                        : "290px",
                       borderRadius: "var(--radius-sm)",
                     }}
                     className="w-full object-cover"
@@ -2847,18 +3043,27 @@ export default function ContentStudioWorkspacePage() {
                 </span>
                 <StudioButton
                   variant={
-                    post.videoUrl.includes("09_option2")
+                    post.audioMixLabel.startsWith("Option 2")
                       ? "primary"
                       : "secondary"
                   }
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
+                    setAudioEngineMode("option2_omni11");
+                    const lowerT = post.title.toLowerCase();
+                    const nextVid =
+                      lowerT.includes("crimson echoes") ||
+                      lowerT.includes("speakeasy")
+                        ? "/assets/swarm/comparisons/04_option2_clone_adk_orcas_omni_native_60s.mp4"
+                        : lowerT.includes("kailash") ||
+                          lowerT.includes("ganesh")
+                        ? "/assets/swarm/generated/job_1790479809664/combined_60s.mp4"
+                        : "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4";
                     commitPostChange(
                       {
                         ...post,
-                        videoUrl:
-                          "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4",
+                        videoUrl: nextVid,
                         audioMixLabel:
                           "Option 2 · Omni 1.1 Dialogue + Foley + Lyria 3 Pro Score",
                       },
@@ -2870,18 +3075,27 @@ export default function ContentStudioWorkspacePage() {
                 </StudioButton>
                 <StudioButton
                   variant={
-                    post.videoUrl.includes("10_option1")
+                    post.audioMixLabel.startsWith("Option 1")
                       ? "primary"
                       : "secondary"
                   }
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
+                    setAudioEngineMode("option1_symphonic");
+                    const lowerT = post.title.toLowerCase();
+                    const nextVid =
+                      lowerT.includes("crimson echoes") ||
+                      lowerT.includes("speakeasy")
+                        ? "/assets/swarm/comparisons/02_option1_clone_adk_orcas_omni_lyria3_60s.mp4"
+                        : lowerT.includes("kailash") ||
+                          lowerT.includes("ganesh")
+                        ? "/assets/swarm/generated/job_1790575141271/combined_60s.mp4"
+                        : "/assets/swarm/comparisons/10_option1_lyria3pro_symphonic_60s_master.mp4";
                     commitPostChange(
                       {
                         ...post,
-                        videoUrl:
-                          "/assets/swarm/comparisons/10_option1_lyria3pro_symphonic_60s_master.mp4",
+                        videoUrl: nextVid,
                         audioMixLabel:
                           "Option 1 · Symphonic Film-Trailer Forward Mix",
                       },
@@ -2940,7 +3154,7 @@ export default function ContentStudioWorkspacePage() {
               border: "1px solid var(--color-border)",
               borderRadius: "var(--radius-md)",
             }}
-            className="p-3.5"
+            className="p-3.5 shrink-0"
           >
             <VideoTimelineEditor
               segments={post.segments}
@@ -2949,7 +3163,21 @@ export default function ContentStudioWorkspacePage() {
                 setSelectedSegmentId(seg.id);
                 setSelectedScope("timeline");
                 if (videoRef.current) {
-                  videoRef.current.currentTime = seg.startSec;
+                  const totalTimelineSec =
+                    post.segments[post.segments.length - 1]?.endSec || 60;
+                  const vidDur =
+                    Number.isFinite(videoRef.current.duration) &&
+                    videoRef.current.duration > 0
+                      ? videoRef.current.duration
+                      : 60;
+                  const mappedTime =
+                    totalTimelineSec > 0
+                      ? (seg.startSec / totalTimelineSec) * vidDur
+                      : seg.startSec;
+                  videoRef.current.currentTime = Math.min(
+                    Math.max(0, mappedTime),
+                    Math.max(0, vidDur - 0.5)
+                  );
                 }
               }}
               onUpdateCaption={(segId, newCap) => {
@@ -3001,7 +3229,7 @@ export default function ContentStudioWorkspacePage() {
               border: "1px solid var(--color-border)",
               borderRadius: "var(--radius-md)",
             }}
-            className="p-4 flex flex-col gap-4"
+            className="p-4 flex flex-col gap-4 shrink-0"
           >
             {/* Interactive Feed Fold Preview Bar */}
             <div
@@ -3030,7 +3258,7 @@ export default function ContentStudioWorkspacePage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 items-stretch flex-1 min-h-0 overflow-y-auto studio-scrollbar p-0.5">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 items-stretch p-0.5">
               {/* Left 6 cols: Opening Hook + Post Body (Unclipped, resize-none) */}
               <div className="lg:col-span-7 flex flex-col gap-2">
                 {/* 1. Opening Hook Block */}
