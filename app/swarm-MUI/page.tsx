@@ -413,6 +413,11 @@ function evaluateConversationalIntent(rawInput: string): {
     };
   }
 
+  // Exempt URLs and reference links immediately from conversational non-mutation checks
+  if (/https?:\/\/|www\.|youtu\.be|youtube\.com/i.test(cleaned)) {
+    return null;
+  }
+
   // Case 4: Short ambiguous phrases (<= 2 words that are not explicit commands)
   const explicitShortCommands = [
     "shorter",
@@ -1611,12 +1616,13 @@ export default function ContentStudioWorkspacePage() {
       const conciseTopic =
         promptWithoutUrls.length > 52
           ? promptWithoutUrls.slice(0, 50).replace(/[,;:\s]+$/, "")
-          : promptWithoutUrls || "Custom 35mm Visual Story";
+          : promptWithoutUrls || (extractedYtId ? `YouTube Ref (${extractedYtId}) Cinema Epic` : "Custom 35mm Visual Story");
       nextTitle = apiAssets?.title || `${conciseTopic} — 35mm Cinema Master`;
-      const rawHookCandidate =
-        promptWithoutUrls.length <= 92
+      const rawHookCandidate = promptWithoutUrls.trim()
+        ? promptWithoutUrls.length <= 92
           ? `${promptWithoutUrls.replace(/\.$/, "")}—in unbroken 35mm continuity.`
-          : `${promptWithoutUrls.slice(0, 96).replace(/[,;:\s]+$/, "")}—in 35mm cinema.`;
+          : `${promptWithoutUrls.slice(0, 96).replace(/[,;:\s]+$/, "")}—in 35mm cinema.`
+        : `Deconstructing YouTube reference ${extractedYtId || "visual"} into an unbroken 60s 35mm cinema cut.`;
       nextHook = rawHookCandidate.slice(0, 114);
       nextBody =
         apiAssets?.storyline?.slice(0, 260) ||
