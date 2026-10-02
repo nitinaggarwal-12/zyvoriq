@@ -375,7 +375,7 @@ export function VariationGrid({
                 className="relative w-full h-32 overflow-hidden flex items-center justify-center"
               >
                 <video
-                  src={`${v.videoUrl}#t=${idx === 0 ? 4 : idx === 1 ? 14 : 8}`}
+                  src={`${v.videoUrl}#t=${idx === 0 ? 1 : idx === 1 ? 12 : 8}`}
                   muted
                   playsInline
                   preload="metadata"

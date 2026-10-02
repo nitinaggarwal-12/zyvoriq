@@ -194,7 +194,7 @@ const DEFAULT_BRANDS: BrandProfile[] = [
   },
 ];
 
-const INITIAL_SEGMENTS: VideoSegmentSpec[] = [
+const CURSED_HUNTER_SEGMENTS: VideoSegmentSpec[] = [
   {
     id: "seg-1",
     index: 0,
@@ -269,43 +269,124 @@ const INITIAL_SEGMENTS: VideoSegmentSpec[] = [
   },
 ];
 
+const INITIAL_SEGMENTS: VideoSegmentSpec[] = [
+  {
+    id: "seg-1",
+    index: 0,
+    timeRange: "00.0s–10.0s",
+    startSec: 0,
+    endSec: 10,
+    speaker: "Goddess Parvati",
+    captionLine:
+      "Guard this sacred threshold of Kailash, my son, and let no force cross unbidden.",
+    visualContinuityLock:
+      "Golden Kailash courtyard, radiant turmeric aura VFX, Parvati screen-left & Ganesha screen-right",
+    aiGenerated: true,
+  },
+  {
+    id: "seg-2",
+    index: 1,
+    timeRange: "10.0s–20.0s",
+    startSec: 10,
+    endSec: 20,
+    speaker: "Lord Ganesha",
+    captionLine:
+      "A mother's word is higher than the heavens—I stand unmoved at the mountain gate.",
+    visualContinuityLock:
+      "Ganesha planted center-right holding lotus staff, warm Himalayan mist & golden mandala",
+    aiGenerated: true,
+  },
+  {
+    id: "seg-3",
+    index: 2,
+    timeRange: "20.0s–30.0s",
+    startSec: 20,
+    endSec: 30,
+    speaker: "Lord Shiva",
+    captionLine:
+      "Who bars the path to my own abode upon the eternal snows of Kailash?",
+    visualContinuityLock:
+      "Shiva approaches screen-left with crescent moon glow & damaru resonance; 180-deg axis locked",
+    aiGenerated: true,
+  },
+  {
+    id: "seg-4",
+    index: 3,
+    timeRange: "30.0s–40.0s",
+    startSec: 30,
+    endSec: 40,
+    speaker: "Lord Ganesha",
+    captionLine:
+      "Even the lord of the cosmos must honor the sacred vow spoken at this threshold.",
+    visualContinuityLock:
+      "Celestial shockwave VFX in snow canyon, tabla & low brass crescendo ducked -14 LUFS",
+    aiGenerated: true,
+  },
+  {
+    id: "seg-5",
+    index: 4,
+    timeRange: "40.0s–50.0s",
+    startSec: 40,
+    endSec: 50,
+    speaker: "Goddess Parvati",
+    captionLine:
+      "Restore him with divine grace, Mahadeva—so every auspicious journey begins in his name.",
+    visualContinuityLock:
+      "Parvati steps into luminous golden beam between Shiva and Ganesha; emotional three-shot",
+    aiGenerated: true,
+  },
+  {
+    id: "seg-6",
+    index: 5,
+    timeRange: "50.0s–60.0s",
+    startSec: 50,
+    endSec: 60,
+    speaker: "Shiva & Parvati",
+    captionLine:
+      "Rise as Gajanana, Vigneshwara—first among the gods and remover of all obstacles.",
+    visualContinuityLock:
+      "Divine elephant-crowned awakening VFX, celestial flower rain, symphonic conch & veena finale",
+    aiGenerated: true,
+  },
+];
+
 const INITIAL_POST: StudioPostState = {
-  title: "The Cursed Hunter — 35mm Live-Action 60s Campaign",
+  title: "Sacred Kailash: Ganesh, Parvati & Shiva — 35mm Visual Epic",
   version: "v1.0",
-  hook: "The curse took his voice at dusk—so she walked into the frozen basalt pass with empty hands.",
-  body: "60 seconds of continuous 35mm anamorphic cinema. Every 10-second act locks character identity, spatial axis, and cold Arctic twilight while Omni 1.1 dialogue ducks cleanly over a custom Lyria 3 Pro orchestral score.",
-  hashtags: "#TheCursedHunter #LiveAction35mm #SoundDesign #CinemaStudio",
-  ctaUrl: "https://zyvoriq.studio/showcase/cursed-hunter?utm_source=social&utm_medium=studio",
+  hook: "At the sacred gates of Mount Kailash, a vow between Parvati, Ganesha, and Shiva awakens the cosmos.",
+  body: "Multi-act 35mm mythological visual story (elevated from YouTube ref m55XOXtscXU) featuring Goddess Parvati, Lord Ganesha, and Lord Shiva. Combines celestial particle VFX, spoken dialogue, and a dynamic Lyria 3 Pro Vedic percussion & symphonic score ducked at -14 LUFS.",
+  hashtags: "#GaneshParvatiShiva #SacredMythology #VisualEffects #CinemaStudio",
+  ctaUrl: "https://zyvoriq.studio/showcase/sacred-kailash-ganesh-parvati-shiva?utm_source=social&utm_medium=studio",
   videoUrl:
-    "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4",
+    "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4",
   audioMixLabel: "Option 2 · Omni 1.1 Dialogue + Foley + Lyria 3 Pro Score",
   altText:
-    "Wide 35mm frame of Kaelen in dark wolf-fur cloak on screen-left facing unarmed Lyra in crimson-lined cloak on screen-right inside a snowy basalt canyon at twilight.",
-  castBadge: "Kaelen (Baritone) · Lyra (Mezzo)",
-  youtubeRefBadge: null,
+    "Wide 35mm cinema frame of Mount Kailash at golden twilight featuring Goddess Parvati, young elephant-headed Lord Ganesha guarding the temple threshold, and Lord Shiva with celestial light effects.",
+  castBadge: "Goddess Parvati (Soprano) · Lord Ganesha (Tenor) · Lord Shiva (Baritone)",
+  youtubeRefBadge: "YouTube Ref: m55XOXtscXU · Deconstructed",
   captionsEnabled: true,
   aiDisclosureEnabled: true,
   safeZoneOverlay: false,
   slides: [
     {
       id: "slide-1",
-      title: "Act I (0:00–0:20) · Unarmed in the Basalt Pass",
-      subtitle: "Lyra approaches Kaelen with open hands—zero weapon continuity drift.",
-      altText: "Act 1 frame showing unarmed Lyra facing Kaelen in snowy canyon",
+      title: "Act I (0:00–0:20) · Sacred Vow at Mount Kailash",
+      subtitle: "Parvati creates Ganesha and entrusts him with guarding the inner sanctum.",
+      altText: "Goddess Parvati and young Ganesha at the gates of Kailash",
       timeCode: "00:00–00:20",
     },
     {
       id: "slide-2",
-      title: "Act II (0:20–0:40) · Closing the Distance",
-      subtitle: "Strict right-to-left approach across the 180-degree camera axis.",
-      altText: "Act 2 medium two-shot in snowy basalt pass",
+      title: "Act II (0:20–0:40) · The Cosmic Confrontation",
+      subtitle: "Shiva returns to Kailash as dynamic damaru & orchestral swells heighten the standoff.",
+      altText: "Lord Shiva facing Ganesha at the snowy mountain threshold",
       timeCode: "00:20–00:40",
     },
     {
       id: "slide-3",
-      title: "Act III (0:40–1:00) · Locked Arctic Twilight Resolution",
-      subtitle: "Continuous cold blue-grey overcast grade with orchestral crescendo.",
-      altText: "Act 3 resolution shot under cold blue-grey twilight sky",
+      title: "Act III (0:40–1:00) · Dawn of Vigneshwara",
+      subtitle: "Ganesha is crowned remover of obstacles under a golden celestial blessing.",
+      altText: "Shiva and Parvati blessing Lord Ganesha",
       timeCode: "00:40–01:00",
     },
   ],
@@ -314,8 +395,32 @@ const INITIAL_POST: StudioPostState = {
 
 const INITIAL_VARIATIONS: PostVariation[] = [
   {
+    id: "var-kailash-option-2",
+    label: "Variation A · Sacred Kailash: Spoken Dialogue + Temple Foley + Lyria 3 Score (Option 2)",
+    hook: "At the sacred gates of Mount Kailash, a vow between Parvati, Ganesha, and Shiva awakens the cosmos.",
+    body: "Multi-act 35mm mythological visual story featuring Goddess Parvati, Lord Ganesha, and Lord Shiva. Combines celestial particle VFX, spoken dialogue, and a dynamic Lyria 3 Pro Vedic percussion & symphonic score ducked at -14 LUFS.",
+    hashtags: "#GaneshParvatiShiva #SacredMythology #VisualEffects #CinemaStudio",
+    videoUrl:
+      "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4",
+    audioLabel: "Option 2 · Omni 1.1 + Vedic Score",
+    rationale:
+      "New 60s Master (YouTube Ref m55XOXtscXU): multi-character spoken dialogue + damaru/bell Foley + Lyria 3 Pro orchestral score.",
+  },
+  {
+    id: "var-kailash-option-1",
+    label: "Variation B · Sacred Kailash: Symphonic Devotional Forward Mix (Option 1)",
+    hook: "Six unbroken 35mm mythological acts at Mount Kailash—driven by a continuous Lyria 3 Pro Vedic orchestral score.",
+    body: "Experience the Lyria 3 Pro devotional symphonic mix where temple bells, mridangam, bansuri flute, and epic strings drive the sacred story of Ganesh, Parvati, and Shiva from 0:00 to 1:00.",
+    hashtags: "#GaneshParvatiShiva #VedicSymphony #Cinematography #CinemaStudio",
+    videoUrl:
+      "/assets/swarm/comparisons/12_sacred_kailash_ganesh_shiva_parvati_option1_lyria3_devotional_60s.mp4",
+    audioLabel: "Option 1 · Devotional Symphonic",
+    rationale:
+      "New 60s Master (Option 1): foregrounds the continuous 96 BPM Lyria 3 Pro Vedic orchestral composition with dialogue.",
+  },
+  {
     id: "var-option-2",
-    label: "Variation A · Spoken Dialogue + Foley + Orchestral Swells (Option 2)",
+    label: "Variation C · The Cursed Hunter: Spoken Dialogue + Foley + Score (Option 2)",
     hook: "The curse took his voice at dusk—so she walked into the frozen basalt pass with empty hands.",
     body: "60 seconds of continuous 35mm anamorphic cinema. Every 10-second act locks character identity, spatial axis, and cold Arctic twilight while Omni 1.1 dialogue ducks cleanly over a custom Lyria 3 Pro orchestral score.",
     hashtags: "#TheCursedHunter #LiveAction35mm #SoundDesign #CinemaStudio",
@@ -323,23 +428,11 @@ const INITIAL_VARIATIONS: PostVariation[] = [
       "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4",
     audioLabel: "Option 2 · Omni 1.1 + Score",
     rationale:
-      "Best for Reels & TikTok: lip-synced spoken dialogue + crunchy snow Foley hooks viewers in 1.5s.",
-  },
-  {
-    id: "var-option-1",
-    label: "Variation B · Symphonic Film-Trailer Forward Mix (Option 1)",
-    hook: "Sixty seconds. Six unbroken 35mm shots. One continuous symphonic score through the canyon.",
-    body: "Experience the Lyria 3 Pro symphonic trailer mix where low brass, cello ostinato, and taiko percussion drive the confrontation from 0:00 to 1:00 without a single audio seam.",
-    hashtags: "#FilmScoring #Cinematography #TrailerMusic #PostProduction",
-    videoUrl:
-      "/assets/swarm/comparisons/10_option1_lyria3pro_symphonic_60s_master.mp4",
-    audioLabel: "Option 1 · Symphonic Forward",
-    rationale:
-      "Best for YouTube 16:9 & LinkedIn: foregrounds the continuous orchestral composition and visual grade.",
+      "Arctic Fantasy 60s Master: lip-synced spoken dialogue + crunchy snow Foley hooks viewers in 1.5s.",
   },
   {
     id: "var-speakeasy",
-    label: "Variation C · Crimson Echoes, Ivory Dreams (60s Art-Deco Noir)",
+    label: "Variation D · Crimson Echoes, Ivory Dreams (60s Art-Deco Noir)",
     hook: "When the rain hits the brass marquee at midnight, the grand piano tells the whole story.",
     body: "A 60-second 1920s Art-Deco speakeasy showcase featuring Julian at the Steinway and Clara at the velvet stage mic with continuous jazz-noir acoustics.",
     hashtags: "#NoirCinema #ArtDeco #JazzScore #ShortFilm",
@@ -495,7 +588,7 @@ export default function ContentStudioWorkspacePage() {
 
   // Brief / Create panel state (Progressive disclosure: 1 required field)
   const [briefInput, setBriefInput] = useState<string>(
-    "A 60-second 35mm live-action confrontation between Kaelen and unarmed Lyra in a snowy basalt canyon at twilight."
+    "a 5 min high quality visual story with best sound and visual effects with dialogs, dynamic background music based on Ganesh Parvati and Shiva story similar to this one: https://www.youtube.com/watch?v=m55XOXtscXU"
   );
   const [briefError, setBriefError] = useState<string | undefined>(undefined);
   const [showMoreCreateOptions, setShowMoreCreateOptions] =
@@ -511,7 +604,7 @@ export default function ContentStudioWorkspacePage() {
   const [variations, setVariations] =
     useState<PostVariation[]>(INITIAL_VARIATIONS);
   const [activeVariationId, setActiveVariationId] =
-    useState<string>("var-option-2");
+    useState<string>("var-kailash-option-2");
 
   // Checks ignored IDs
   const [ignoredCheckIds, setIgnoredCheckIds] = useState<string[]>([]);
@@ -766,9 +859,10 @@ export default function ContentStudioWorkspacePage() {
               item.title || item.prompt || `Studio Master Render #${idx + 1}`
             ),
             videoUrl: String(
-              item.videoUrl ||
+              item.src ||
+                item.videoUrl ||
                 item.url ||
-                "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4"
+                "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4"
             ),
             platform: "9:16 & 16:9",
           }));
@@ -1454,13 +1548,15 @@ export default function ContentStudioWorkspacePage() {
         ? "/assets/swarm/comparisons/02_option1_clone_adk_orcas_omni_lyria3_60s.mp4"
         : "/assets/swarm/comparisons/04_option2_clone_adk_orcas_omni_native_60s.mp4"
       : isGaneshShivaParvati
-      ? "/assets/swarm/generated/job_1790479809664/combined_60s.mp4"
+      ? audioEngineMode === "option1_symphonic"
+        ? "/assets/swarm/comparisons/12_sacred_kailash_ganesh_shiva_parvati_option1_lyria3_devotional_60s.mp4"
+        : "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4"
       : isCursedHunter
       ? audioEngineMode === "option1_symphonic"
         ? "/assets/swarm/comparisons/10_option1_lyria3pro_symphonic_60s_master.mp4"
         : "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4"
       : apiData?.assets?.videoUrl ||
-        "/assets/swarm/generated/job_1790575141271/combined_60s.mp4";
+        "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4";
 
     let nextTitle = post.title;
     let nextHook = post.hook;
@@ -1735,8 +1831,30 @@ export default function ContentStudioWorkspacePage() {
       nextBody = `Built for ${activePlatform.shortName} using ${activeBrand.name}. Every 10-second segment locks character wardrobe, spatial blocking, and -14 LUFS audio ducking.`;
       nextHashtags =
         "#TheCursedHunter #LiveAction35mm #SoundDesign #CinemaStudio";
-      nextSegments = INITIAL_SEGMENTS;
-      nextSlides = INITIAL_POST.slides;
+      nextSegments = CURSED_HUNTER_SEGMENTS;
+      nextSlides = [
+        {
+          id: "slide-1",
+          title: "Act I (0:00–0:20) · Unarmed in the Basalt Pass",
+          subtitle: "Lyra approaches Kaelen with open hands—zero weapon continuity drift.",
+          altText: "Act 1 frame showing unarmed Lyra facing Kaelen in snowy canyon",
+          timeCode: "00:00–00:20",
+        },
+        {
+          id: "slide-2",
+          title: "Act II (0:20–0:40) · Closing the Distance",
+          subtitle: "Strict right-to-left approach across the 180-degree camera axis.",
+          altText: "Act 2 medium two-shot in snowy basalt pass",
+          timeCode: "00:20–00:40",
+        },
+        {
+          id: "slide-3",
+          title: "Act III (0:40–1:00) · Locked Arctic Twilight Resolution",
+          subtitle: "Continuous cold blue-grey overcast grade with orchestral crescendo.",
+          altText: "Act 3 resolution shot under cold blue-grey twilight sky",
+          timeCode: "00:40–01:00",
+        },
+      ];
       nextCastLabel = "Kaelen (Baritone) · Lyra (Mezzo)";
     } else {
       // Custom topic or YouTube reference synthesis
@@ -2359,7 +2477,7 @@ export default function ContentStudioWorkspacePage() {
                                 ? "/assets/swarm/comparisons/02_option1_clone_adk_orcas_omni_lyria3_60s.mp4"
                                 : lowerT.includes("kailash") ||
                                   lowerT.includes("ganesh")
-                                ? "/assets/swarm/generated/job_1790575141271/combined_60s.mp4"
+                                ? "/assets/swarm/comparisons/12_sacred_kailash_ganesh_shiva_parvati_option1_lyria3_devotional_60s.mp4"
                                 : "/assets/swarm/comparisons/10_option1_lyria3pro_symphonic_60s_master.mp4";
                             commitPostChange(
                               {
@@ -2377,7 +2495,7 @@ export default function ContentStudioWorkspacePage() {
                                 ? "/assets/swarm/comparisons/04_option2_clone_adk_orcas_omni_native_60s.mp4"
                                 : lowerT.includes("kailash") ||
                                   lowerT.includes("ganesh")
-                                ? "/assets/swarm/generated/job_1790479809664/combined_60s.mp4"
+                                ? "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4"
                                 : "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4";
                             commitPostChange(
                               {
@@ -2451,11 +2569,11 @@ export default function ContentStudioWorkspacePage() {
                         }}
                       >
                         <video
-                          src={`${item.videoUrl}#t=${idx * 10 + 2}`}
+                          src={`${item.videoUrl}#t=${idx === 0 ? 1 : idx === 1 ? 12 : 8}`}
                           muted
                           playsInline
                           preload="metadata"
-                          className="w-full h-full object-cover opacity-90"
+                          className="w-full h-full object-cover opacity-95"
                         />
                         <div className="absolute top-1.5 left-1.5 right-1.5 flex items-center justify-between">
                           <StudioChip tone="success">
@@ -2949,17 +3067,27 @@ export default function ContentStudioWorkspacePage() {
                     controls
                     playsInline
                     preload="metadata"
+                    onTimeUpdate={(e) => {
+                      const t = e.currentTarget.currentTime;
+                      const matched = post.segments.find(
+                        (s) => t >= s.startSec && t < s.endSec
+                      );
+                      if (matched && matched.id !== selectedSegmentId) {
+                        setSelectedSegmentId(matched.id);
+                      }
+                    }}
                     style={{
                       aspectRatio: activePlatform.aspectRatioCss,
-                      minHeight: theaterMode ? "360px" : "230px",
+                      minHeight: theaterMode ? "360px" : "240px",
                       maxHeight: theaterMode
                         ? "540px"
                         : activePlatformId === "reels_9_16"
-                        ? "340px"
+                        ? "350px"
                         : "290px",
+                      backgroundColor: "#05070B",
                       borderRadius: "var(--radius-sm)",
                     }}
-                    className="w-full object-cover"
+                    className="w-full object-contain"
                   />
 
                   {/* Live Burned-In Netflix-Style Subtitle Overlay (Lower Third, above native controls) */}
@@ -2982,7 +3110,7 @@ export default function ContentStudioWorkspacePage() {
                           className="font-mono font-bold mr-1.5"
                           style={{ color: "var(--color-cinema-muted)" }}
                         >
-                          [{activeSegment.speaker.split(" ")[0]}]:
+                          [{activeSegment.speaker.replace(/\s*\(.*?\)\s*/g, "")}]:
                         </span>
                         <span>&ldquo;{activeSegment.captionLine}&rdquo;</span>
                       </div>
@@ -3058,7 +3186,7 @@ export default function ContentStudioWorkspacePage() {
                         ? "/assets/swarm/comparisons/04_option2_clone_adk_orcas_omni_native_60s.mp4"
                         : lowerT.includes("kailash") ||
                           lowerT.includes("ganesh")
-                        ? "/assets/swarm/generated/job_1790479809664/combined_60s.mp4"
+                        ? "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4"
                         : "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4";
                     commitPostChange(
                       {
@@ -3090,7 +3218,7 @@ export default function ContentStudioWorkspacePage() {
                         ? "/assets/swarm/comparisons/02_option1_clone_adk_orcas_omni_lyria3_60s.mp4"
                         : lowerT.includes("kailash") ||
                           lowerT.includes("ganesh")
-                        ? "/assets/swarm/generated/job_1790575141271/combined_60s.mp4"
+                        ? "/assets/swarm/comparisons/12_sacred_kailash_ganesh_shiva_parvati_option1_lyria3_devotional_60s.mp4"
                         : "/assets/swarm/comparisons/10_option1_lyria3pro_symphonic_60s_master.mp4";
                     commitPostChange(
                       {

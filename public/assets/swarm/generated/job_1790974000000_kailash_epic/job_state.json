@@ -1,0 +1,54 @@
+{
+  "id": "job_1790974000000_kailash_epic",
+  "title": "Sacred Kailash: Ganesh, Parvati & Shiva — 35mm Visual Epic",
+  "genre": "35mm Mythological Devotional Epic — Sacred Kailash (Spoken Dialogue + Lyria 3 Pro Score)",
+  "bpm": 96,
+  "audioEngine": "omni_native",
+  "adkOrcasMode": true,
+  "lyrics": "[Shot 01 • Goddess Parvati] \"Guard this sacred threshold of Kailash, my son, and let no force cross unbidden.\"\n[Shot 02 • Lord Ganesha] \"A mother's word is supreme law — I stand watch over these golden temple steps.\"\n[Shot 03 • Lord Shiva] \"Who bars the path to my own abode upon the eternal snows of Kailash?\"\n[Shot 04 • Lord Ganesha] \"Even the lord of the cosmos must honor the vow entrusted by Goddess Parvati.\"\n[Shot 05 • Goddess Parvati] \"Restore him with divine grace and crown him first among all sacred guardians!\"\n[Shot 06 • Shiva & Parvati] \"Rise as Gajanana, Vighnaharta — blessed with wisdom, revered before every sacred prayer.\"",
+  "act1Prompt": "Generate a 10.0-second 9:16 vertical 24fps 35mm live-action mythological cinema scene shot on ARRI Alexa 65 with Panavision Primo anamorphic lenses (photorealistic live-action adult cinema actors with natural skin texture, volumetric golden temple lighting, swirling celestial gold dust VFX, zero burned-in text overlays, zero subtitles). In the grand carved sandstone and marble courtyard of sacred Mount Kailash at golden twilight, a regal maternal sovereign woman in a crimson-and-gold Banarasi silk sari and temple gold jewelry (Goddess Parvati) stands beside a noble young guardian in a saffron silk dhoti and golden crown holding a glowing golden lotus staff (Lord Ganesha). Swirling golden turmeric-light particles shimmer around them as she places her hand in blessing over his shoulder and speaks clearly on camera in 48kHz stereo English with synchronized lip movements: \"Guard this sacred threshold of Kailash, my son, and let no force cross unbidden.\" Resonant temple bells, warm Himalayan breeze, and celestial shimmer Foley.",
+  "act2Prompt": "Generate a 10.0-second 9:16 vertical 24fps 35mm live-action mythological cinema scene shot on ARRI Alexa 65 with Panavision Primo anamorphic lenses (photorealistic live-action adult cinema actors, dramatic sapphire and molten-gold volumetric lighting, celestial light-shield VFX, zero text overlays, zero subtitles). At the grand threshold of Mount Kailash, the young guardian in saffron silk and gold crown stands steadfast before the majestic bearded ascetic sovereign in sapphire twilight light. The young guardian raises his glowing golden lotus staff, projecting a luminous dome of sacred golden geometric light ripples across the snowy courtyard, and speaks courageously on camera with synchronized lip movements: \"Even the lord of the cosmos must honor the vow entrusted by Goddess Parvati.\" Sonic energy hum, damaru percussion, and mountain wind.",
+  "turnPrompts": [
+    "Generate a 10.0-second 9:16 vertical 24fps 35mm live-action mythological cinema scene shot on ARRI Alexa 65 with Panavision Primo anamorphic lenses (photorealistic live-action adult cinema actors with natural skin texture, volumetric golden temple lighting, swirling celestial gold dust VFX, zero burned-in text overlays, zero subtitles). In the grand carved sandstone and marble courtyard of sacred Mount Kailash at golden twilight, a regal maternal sovereign woman in a crimson-and-gold Banarasi silk sari and temple gold jewelry (Goddess Parvati) stands beside a noble young guardian in a saffron silk dhoti and golden crown holding a glowing golden lotus staff (Lord Ganesha). Swirling golden turmeric-light particles shimmer around them as she places her hand in blessing over his shoulder and speaks clearly on camera in 48kHz stereo English with synchronized lip movements: \"Guard this sacred threshold of Kailash, my son, and let no force cross unbidden.\" Resonant temple bells, warm Himalayan breeze, and celestial shimmer Foley.",
+    "From 10.0s to 20.0s: CONTINUOUS 35MM LIVE-ACTION MYTHOLOGICAL CINEMA SHOT preserving the exact same Mount Kailash golden marble temple archway and the noble young guardian in saffron silk and golden crown holding the glowing golden lotus staff. Golden oil lamps flicker along the carved pillars as Himalayan snow mist drifts across the courtyard floor. The young guardian plants his glowing golden lotus staff firmly on the temple steps, sending a ripple of warm golden light across the stone, and speaks clearly on camera with synchronized lip movements: \"A mother's word is supreme law — I stand watch over these golden temple steps.\" Deep temple gong resonance and sacred fire crackle.",
+    "From 20.0s to 30.0s: CONTINUOUS 35MM LIVE-ACTION MYTHOLOGICAL CINEMA SHOT at the snow-swept stone bridge leading to the golden temple archway of Mount Kailash at twilight. A majestic bearded ascetic sovereign with coiled dark locks, sacred rudraksha beads, sapphire-blue twilight rim light, and a glowing golden ceremonial trident staff (Lord Shiva) strides forward through swirling silver mountain mist and glowing blue-and-gold energy particles. He looks toward the temple threshold with commanding presence and speaks in a resonant baritone on camera with synchronized lip movements: \"Who bars the path to my own abode upon the eternal snows of Kailash?\" Rhythmic damaru drum pulse, mountain thunder, and wind.",
+    "Generate a 10.0-second 9:16 vertical 24fps 35mm live-action mythological cinema scene shot on ARRI Alexa 65 with Panavision Primo anamorphic lenses (photorealistic live-action adult cinema actors, dramatic sapphire and molten-gold volumetric lighting, celestial light-shield VFX, zero text overlays, zero subtitles). At the grand threshold of Mount Kailash, the young guardian in saffron silk and gold crown stands steadfast before the majestic bearded ascetic sovereign in sapphire twilight light. The young guardian raises his glowing golden lotus staff, projecting a luminous dome of sacred golden geometric light ripples across the snowy courtyard, and speaks courageously on camera with synchronized lip movements: \"Even the lord of the cosmos must honor the vow entrusted by Goddess Parvati.\" Sonic energy hum, damaru percussion, and mountain wind.",
+    "From 10.0s to 20.0s: CONTINUOUS 35MM LIVE-ACTION MYTHOLOGICAL CINEMA SHOT in the Mount Kailash courtyard. The regal maternal sovereign woman in crimson-and-gold Banarasi silk sari steps into a radiant beam of golden celestial light between the bearded ascetic sovereign and the young guardian. She joins her palms in a sacred plea as a breathtaking vortex of golden stardust and lotus petals swirls upward around the courtyard, speaking with deep emotion on camera with synchronized lip movements: \"Restore him with divine grace and crown him first among all sacred guardians!\" Soaring bansuri flute swell and celestial chime.",
+    "From 20.0s to 30.0s: CONTINUOUS 35MM LIVE-ACTION MYTHOLOGICAL CINEMA FINALE in the sunlit golden sanctum courtyard of Mount Kailash. A shower of glowing golden lotus petals and divine light rays descends from the Himalayan sky as the majestic ascetic sovereign and the regal woman in crimson-and-gold silk raise their hands in unison to bless the crowned guardian of wisdom (Gajanana) glowing with a radiant golden halo. The ascetic sovereign speaks with majestic warmth on camera: \"Rise as Gajanana, Vighnaharta — blessed with wisdom, revered before every sacred prayer.\" Triumphant orchestral conch shell, temple bells, and Vedic percussion finale."
+  ],
+  "status": "completed",
+  "stageIndex": 6,
+  "stageLabel": "Stage 6/6 • ✅ Complete (Omni 1.1 Flash + Multi-Character Spoken Dialogue + Lyria 3 Pro Vedic Score)! 60.0s Master Reel is live in the player.",
+  "progress": 100,
+  "createdAt": 1790973954515,
+  "updatedAt": 1790974201346,
+  "logs": [
+    "[20:45:54] Launched Sacred Kailash: Ganesh, Parvati & Shiva (m55XOXtscXU) 6-Shot 35mm Visual Epic",
+    "[20:50:01] ✅ Generated 60.0s Lyria 3 Pro Sacred Kailash Orchestral & Vedic Percussion Score",
+    "[20:50:01] ✅ Synthesized 6-shot multi-character 48kHz spoken dialogue (Goddess Parvati [Aoede], Lord Ganesha [Puck], Lord Shiva [Charon])",
+    "[20:50:01] ✅ Rendered 6 stateful 10s 24fps 35mm cinema shots via models/gemini-omni-1.1-flash with celestial Kailash VFX",
+    "[20:50:01] ✅ Mastered 3-stem audio (Spoken Dialogue + Lyria 3 Pro Score + Temple Foley) at -14.0 LUFS stereo"
+  ],
+  "combinedSrc": "/assets/swarm/generated/job_1790974000000_kailash_epic/combined_60s.mp4",
+  "part1Src": "/assets/swarm/generated/job_1790974000000_kailash_epic/act1_30s.mp4",
+  "part2Src": "/assets/swarm/generated/job_1790974000000_kailash_epic/act2_30s.mp4",
+  "soundtrackSrc": "/assets/swarm/generated/job_1790974000000_kailash_epic/soundtrack_master.mp3",
+  "segments": [
+    {
+      "id": "part1_30s",
+      "partIndex": 1,
+      "label": "Part 1 • Act I (0:00–0:30)",
+      "sublabel": "Sacred Vow & Threshold Watch (Parvati, Ganesha, Shiva)",
+      "rawSeconds": 30,
+      "src": "/assets/swarm/generated/job_1790974000000_kailash_epic/act1_30s.mp4"
+    },
+    {
+      "id": "part2_30s",
+      "partIndex": 2,
+      "label": "Part 2 • Act II (0:30–1:00)",
+      "sublabel": "Cosmic Standoff & Divine Blessing of Gajanana",
+      "rawSeconds": 30,
+      "src": "/assets/swarm/generated/job_1790974000000_kailash_epic/act2_30s.mp4"
+    }
+  ]
+}
