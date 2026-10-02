@@ -1751,9 +1751,10 @@ export default function ContentStudioWorkspacePage() {
       style={{
         backgroundColor: "var(--color-bg)",
         color: "var(--color-text)",
-        minHeight: "100vh",
+        height: "100vh",
+        maxHeight: "100vh",
       }}
-      className="w-full max-w-none flex flex-col justify-between"
+      className="w-full max-w-none h-screen max-h-screen flex flex-col justify-between overflow-hidden"
     >
       {/* ====================================================================
           1. TOP APPLICATION BAR (Project · Brand · Saved · Theater · Undo/Redo · Publish)
@@ -1959,9 +1960,9 @@ export default function ContentStudioWorkspacePage() {
       </header>
 
       {/* ====================================================================
-          2. MAIN 3-COLUMN STUDIO WORKSPACE (Or 12-Col Full Theater Stage when theaterMode=true)
+          2. MAIN 3-COLUMN STUDIO WORKSPACE (Zero-Scroll Ergonomic Workbench)
          ==================================================================== */}
-      <div className="flex-1 w-full max-w-none grid grid-cols-1 md:grid-cols-12 gap-0">
+      <div className="flex-1 min-h-0 w-full max-w-none grid grid-cols-1 md:grid-cols-12 gap-0 overflow-hidden">
         {/* ------------------------------------------------------------------
             LEFT RAIL (3 cols on desktop, hidden in Theater Mode): Create · Library · Brands · Templates
            ------------------------------------------------------------------ */}
@@ -1972,12 +1973,12 @@ export default function ContentStudioWorkspacePage() {
               backgroundColor: "var(--color-surface)",
               borderRight: "1px solid var(--color-border)",
             }}
-            className="order-2 md:order-1 md:col-span-3 lg:col-span-3 p-4 flex flex-col gap-4"
+            className="order-2 md:order-1 md:col-span-3 lg:col-span-3 p-3 flex flex-col gap-2.5 h-full overflow-y-auto studio-scrollbar"
           >
             {/* Left Rail Section Switcher */}
             <nav
               aria-label="Workspace sections"
-              className="grid grid-cols-4 gap-1 p-1 studio-surface-2"
+              className="grid grid-cols-4 gap-1 p-1 studio-surface-2 shrink-0"
               style={{ borderRadius: "var(--radius-sm)" }}
             >
               {[
@@ -2505,8 +2506,8 @@ export default function ContentStudioWorkspacePage() {
           aria-label="Live multi-platform post canvas"
           className={
             theaterMode
-              ? "order-1 md:col-span-12 lg:col-span-12 p-4 md:p-6 flex flex-col gap-4 overflow-y-auto"
-              : "order-1 md:order-2 md:col-span-5 lg:col-span-6 p-4 md:p-6 flex flex-col gap-4 overflow-y-auto"
+              ? "order-1 md:col-span-12 lg:col-span-12 p-3 flex flex-col gap-2 h-full overflow-y-auto studio-scrollbar"
+              : "order-1 md:order-2 md:col-span-6 lg:col-span-6 p-3 flex flex-col gap-2 h-full overflow-hidden"
           }
         >
           {/* Platform Switcher Bar + Character Limit Pill + Safe-Zone Toggle */}
@@ -2756,10 +2757,10 @@ export default function ContentStudioWorkspacePage() {
                     style={{
                       aspectRatio: activePlatform.aspectRatioCss,
                       maxHeight: theaterMode
-                        ? "540px"
+                        ? "500px"
                         : activePlatformId === "reels_9_16"
-                        ? "310px"
-                        : "280px",
+                        ? "205px"
+                        : "175px",
                       borderRadius: "var(--radius-sm)",
                     }}
                     className="w-full object-cover"
@@ -3029,9 +3030,9 @@ export default function ContentStudioWorkspacePage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 items-stretch flex-1 min-h-0 overflow-y-auto studio-scrollbar p-0.5">
               {/* Left 6 cols: Opening Hook + Post Body (Unclipped, resize-none) */}
-              <div className="lg:col-span-7 flex flex-col gap-3">
+              <div className="lg:col-span-7 flex flex-col gap-2">
                 {/* 1. Opening Hook Block */}
                 <div
                   onClick={() => setSelectedScope("hook")}
@@ -3274,7 +3275,7 @@ export default function ContentStudioWorkspacePage() {
               backgroundColor: "var(--color-surface)",
               borderLeft: "1px solid var(--color-border)",
             }}
-            className="order-3 md:order-3 hidden md:flex md:col-span-4 lg:col-span-3 p-4 flex-col gap-4 overflow-y-auto"
+            className="order-3 md:order-3 hidden md:flex md:col-span-3 lg:col-span-3 p-3 flex-col gap-2.5 h-full overflow-y-auto studio-scrollbar"
           >
             <StudioTabs
               ariaLabel="Inspector panel tabs"
@@ -3573,7 +3574,7 @@ export default function ContentStudioWorkspacePage() {
           backgroundColor: "var(--color-surface)",
           borderTop: "1px solid var(--color-border)",
         }}
-        className="sticky bottom-0 z-20 w-full px-4 md:px-8 py-3 flex flex-col gap-2"
+        className="sticky bottom-0 z-20 w-full px-4 md:px-6 py-2 shrink-0 flex flex-col gap-1.5"
       >
         {/* Streaming progress bar with Cancel (Preserves partial work) */}
         {generationStage.active && (
