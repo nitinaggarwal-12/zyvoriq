@@ -88,41 +88,41 @@ function discoverVerifiedMastersOnDisk(): LibraryAssetItem[] {
       id: "reel_sacred_kailash_option2_60s",
       projectId: "job_1790974000000_kailash_epic",
       projectTitle: "Sacred Kailash: Ganesh, Parvati & Shiva — 35mm Visual Epic",
-      title: "Sacred Kailash: Ganesh, Parvati & Shiva (Option 2: Spoken Dialogue + Lyria 3 Score)",
-      subtitle: "6-Shot 35mm Mythological Cinema • Parvati, Ganesha & Shiva (60.0s • 24/1 CFR)",
+      title: "Sacred Kailash: Ganesh, Parvati & Shiva (Option 2: Lip-Synced Dialogue + Lyria 3 Theatrical Score + Sidechain Ducking)",
+      subtitle: "6-Shot 35mm Mythological Cinema • Parvati, Ganesha & Shiva (60.0s • 24/1 CFR • 108 BPM Theatrical Score)",
       assetType: "combined_master",
       genre: "Sacred Indian Mythological Epic",
       durationSec: 60.0,
       frames: 1440,
       fps: "24/1 CFR",
-      audioSpec: "48,000 Hz Stereo AAC (-14.0 LUFS)",
+      audioSpec: "48,000 Hz Stereo AAC (-14.0 LUFS Sidechain Ducked)",
       speedMultiplier: 1.0,
       wardrobe: "Crimson & Gold Temple Silk Sari, Saffron Dhoti & Crown, Tiger-Skin & Trishul",
       location: "Sacred Sandstone Gates & Snowy Bridge of Mount Kailash",
       promptSummary:
         "a 5 min high quality visual story with best sound and visual effects with dialogs, dynamic background music based on Ganesh Parvati and Shiva story similar to https://www.youtube.com/watch?v=m55XOXtscXU",
-      src: "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4",
-      createdAt: "2026-10-02T20:56:00Z",
+      src: "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4?v=theatrical3",
+      createdAt: "2026-10-03T07:15:00Z",
     },
     {
       id: "reel_sacred_kailash_option1_60s",
       projectId: "job_1790974000000_kailash_epic",
       projectTitle: "Sacred Kailash: Ganesh, Parvati & Shiva — Symphonic Devotional Master",
-      title: "Sacred Kailash: Ganesh, Parvati & Shiva (Option 1: Lyria 3 Devotional Symphony)",
-      subtitle: "96 BPM Vedic Percussion, Temple Bells, Bansuri & Strings (60.0s • 24/1 CFR)",
+      title: "Sacred Kailash: Ganesh, Parvati & Shiva (Option 1: Lyria 3 Pro IMAX Symphonic Score + Dialogue)",
+      subtitle: "108 BPM Vedic War Drums, Brass Swells, Temple Bells, Bansuri & Strings (60.0s • 24/1 CFR)",
       assetType: "combined_master",
       genre: "Sacred Indian Mythological Epic",
       durationSec: 60.0,
       frames: 1440,
       fps: "24/1 CFR",
-      audioSpec: "48,000 Hz Stereo AAC (-14.0 LUFS)",
+      audioSpec: "48,000 Hz Stereo AAC (-14.0 LUFS Symphonic Mix)",
       speedMultiplier: 1.0,
       wardrobe: "Crimson & Gold Temple Silk Sari, Saffron Dhoti & Crown, Tiger-Skin & Trishul",
       location: "Sacred Sandstone Gates & Snowy Bridge of Mount Kailash",
       promptSummary:
-        "Continuous 96 BPM Lyria 3 Pro Vedic orchestral score with spoken dialogue for Ganesh, Parvati, and Shiva at Mount Kailash.",
-      src: "/assets/swarm/comparisons/12_sacred_kailash_ganesh_shiva_parvati_option1_lyria3_devotional_60s.mp4",
-      createdAt: "2026-10-02T20:55:00Z",
+        "Continuous 108 BPM Lyria 3 Pro Big-Movie Theatrical Vedic orchestral score + LFE SFX with lip-synced dialogue for Ganesh, Parvati, and Shiva at Mount Kailash.",
+      src: "/assets/swarm/comparisons/12_sacred_kailash_ganesh_shiva_parvati_option1_lyria3_devotional_60s.mp4?v=theatrical3",
+      createdAt: "2026-10-03T07:14:00Z",
     },
     ...dynamicJobs,
     {
@@ -215,7 +215,7 @@ export function loadLibraryAssets(): LibraryAssetItem[] {
       return fs.existsSync(path.join(process.cwd(), "public", cleanRel));
     });
     const mergedMap = new Map<string, LibraryAssetItem>();
-    for (const item of [...verifiedDefaults, ...valid]) {
+    for (const item of [...valid, ...verifiedDefaults]) {
       mergedMap.set(item.id, item);
     }
     const merged = Array.from(mergedMap.values());

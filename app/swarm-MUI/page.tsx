@@ -364,7 +364,7 @@ const INITIAL_POST: StudioPostState = {
   hashtags: "#GaneshParvatiShiva #SacredMythology #VisualEffects #CinemaStudio",
   ctaUrl: "https://zyvoriq.studio/showcase/sacred-kailash-ganesh-parvati-shiva?utm_source=social&utm_medium=studio",
   videoUrl:
-    "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4",
+    "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4?v=theatrical3",
   audioMixLabel: "Option 2 · Omni 1.1 Dialogue + Foley + Lyria 3 Pro Score",
   altText:
     "Wide 35mm cinema frame of Mount Kailash at golden twilight featuring Goddess Parvati, young elephant-headed Lord Ganesha guarding the temple threshold, and Lord Shiva with celestial light effects.",
@@ -407,7 +407,7 @@ const INITIAL_VARIATIONS: PostVariation[] = [
     body: "Multi-act 35mm mythological visual story featuring Goddess Parvati, Lord Ganesha, and Lord Shiva. Combines celestial particle VFX, spoken dialogue, and a dynamic Lyria 3 Pro Vedic percussion & symphonic score ducked at -14 LUFS.",
     hashtags: "#GaneshParvatiShiva #SacredMythology #VisualEffects #CinemaStudio",
     videoUrl:
-      "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4",
+      "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4?v=theatrical3",
     audioLabel: "Option 2 · Omni 1.1 + Vedic Score",
     rationale:
       "New 60s Master (YouTube Ref m55XOXtscXU): multi-character spoken dialogue + damaru/bell Foley + Lyria 3 Pro orchestral score.",
@@ -419,7 +419,7 @@ const INITIAL_VARIATIONS: PostVariation[] = [
     body: "Experience the Lyria 3 Pro devotional symphonic mix where temple bells, mridangam, bansuri flute, and epic strings drive the sacred story of Ganesh, Parvati, and Shiva from 0:00 to 1:00.",
     hashtags: "#GaneshParvatiShiva #VedicSymphony #Cinematography #CinemaStudio",
     videoUrl:
-      "/assets/swarm/comparisons/12_sacred_kailash_ganesh_shiva_parvati_option1_lyria3_devotional_60s.mp4",
+      "/assets/swarm/comparisons/12_sacred_kailash_ganesh_shiva_parvati_option1_lyria3_devotional_60s.mp4?v=theatrical3",
     audioLabel: "Option 1 · Devotional Symphonic",
     rationale:
       "New 60s Master (Option 1): foregrounds the continuous 96 BPM Lyria 3 Pro Vedic orchestral composition with dialogue.",
@@ -868,7 +868,7 @@ export default function ContentStudioWorkspacePage() {
               item.src ||
                 item.videoUrl ||
                 item.url ||
-                "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4"
+                "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4?v=theatrical3"
             ),
             platform: "9:16 & 16:9",
           }));
@@ -1555,14 +1555,14 @@ export default function ContentStudioWorkspacePage() {
         : "/assets/swarm/comparisons/04_option2_clone_adk_orcas_omni_native_60s.mp4"
       : isGaneshShivaParvati
       ? audioEngineMode === "option1_symphonic"
-        ? "/assets/swarm/comparisons/12_sacred_kailash_ganesh_shiva_parvati_option1_lyria3_devotional_60s.mp4"
-        : "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4"
+        ? "/assets/swarm/comparisons/12_sacred_kailash_ganesh_shiva_parvati_option1_lyria3_devotional_60s.mp4?v=theatrical3"
+        : "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4?v=theatrical3"
       : isCursedHunter
       ? audioEngineMode === "option1_symphonic"
         ? "/assets/swarm/comparisons/10_option1_lyria3pro_symphonic_60s_master.mp4"
         : "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4"
       : apiData?.assets?.videoUrl ||
-        "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4";
+        "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4?v=theatrical3";
 
     let nextTitle = post.title;
     let nextHook = post.hook;
@@ -2483,7 +2483,7 @@ export default function ContentStudioWorkspacePage() {
                                 ? "/assets/swarm/comparisons/02_option1_clone_adk_orcas_omni_lyria3_60s.mp4"
                                 : lowerT.includes("kailash") ||
                                   lowerT.includes("ganesh")
-                                ? "/assets/swarm/comparisons/12_sacred_kailash_ganesh_shiva_parvati_option1_lyria3_devotional_60s.mp4"
+                                ? "/assets/swarm/comparisons/12_sacred_kailash_ganesh_shiva_parvati_option1_lyria3_devotional_60s.mp4?v=theatrical3"
                                 : "/assets/swarm/comparisons/10_option1_lyria3pro_symphonic_60s_master.mp4";
                             commitPostChange(
                               {
@@ -2501,7 +2501,7 @@ export default function ContentStudioWorkspacePage() {
                                 ? "/assets/swarm/comparisons/04_option2_clone_adk_orcas_omni_native_60s.mp4"
                                 : lowerT.includes("kailash") ||
                                   lowerT.includes("ganesh")
-                                ? "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4"
+                                ? "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4?v=theatrical3"
                                 : "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4";
                             commitPostChange(
                               {

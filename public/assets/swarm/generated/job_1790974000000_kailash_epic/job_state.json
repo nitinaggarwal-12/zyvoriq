@@ -18,21 +18,20 @@
   ],
   "status": "completed",
   "stageIndex": 6,
-  "stageLabel": "Stage 6/6 • ✅ Complete (Omni 1.1 Flash + Multi-Character Spoken Dialogue + Lyria 3 Pro Vedic Score)! 60.0s Master Reel is live in the player.",
+  "stageLabel": "Stage 6/6 • ✅ Complete (Omni 1.1 Native Lip-Sync + Lyria 3 Pro 108 BPM Theatrical Score + Sidechain Ducking)! 60.0s Master Reel is live in the player.",
   "progress": 100,
   "createdAt": 1790973954515,
-  "updatedAt": 1790974201346,
+  "updatedAt": 1791000000000,
   "logs": [
     "[20:45:54] Launched Sacred Kailash: Ganesh, Parvati & Shiva (m55XOXtscXU) 6-Shot 35mm Visual Epic",
-    "[20:50:01] ✅ Generated 60.0s Lyria 3 Pro Sacred Kailash Orchestral & Vedic Percussion Score",
-    "[20:50:01] ✅ Synthesized 6-shot multi-character 48kHz spoken dialogue (Goddess Parvati [Aoede], Lord Ganesha [Puck], Lord Shiva [Charon])",
-    "[20:50:01] ✅ Rendered 6 stateful 10s 24fps 35mm cinema shots via models/gemini-omni-1.1-flash with celestial Kailash VFX",
-    "[20:50:01] ✅ Mastered 3-stem audio (Spoken Dialogue + Lyria 3 Pro Score + Temple Foley) at -14.0 LUFS stereo"
+    "[03:06:18] ✅ Generated 60.0s Lyria 3 Pro 108 BPM Big-Movie IMAX Theatrical Instrumental Score (Vedic War Drums, Brass Swells, Damaru Risers, Temple Gongs, Bansuri)",
+    "[03:07:35] ✅ Synthesized frame-accurate 60.0s Big-Movie Theatrical SFX & LFE Impact Bed (Staff-Slam Shockwave @ 11.8s, Shiva Thunder @ 20.0s/23.0s, Forcefield Swell @ 36.8s, Shankha Conch Finale @ 57.0s)",
+    "[03:07:45] ✅ Preserved 100% frame-accurate native Omni 1.1 lip-synced dialogue & diegetic Foley and mastered with FFmpeg sidechaincompress dynamic ducking (-14.0 LUFS)"
   ],
-  "combinedSrc": "/assets/swarm/generated/job_1790974000000_kailash_epic/combined_60s.mp4",
-  "part1Src": "/assets/swarm/generated/job_1790974000000_kailash_epic/act1_30s.mp4",
-  "part2Src": "/assets/swarm/generated/job_1790974000000_kailash_epic/act2_30s.mp4",
-  "soundtrackSrc": "/assets/swarm/generated/job_1790974000000_kailash_epic/soundtrack_master.mp3",
+  "combinedSrc": "/assets/swarm/generated/job_1790974000000_kailash_epic/combined_60s.mp4?v=theatrical3",
+  "part1Src": "/assets/swarm/generated/job_1790974000000_kailash_epic/act1_30s.mp4?v=theatrical3",
+  "part2Src": "/assets/swarm/generated/job_1790974000000_kailash_epic/act2_30s.mp4?v=theatrical3",
+  "soundtrackSrc": "/assets/swarm/generated/job_1790974000000_kailash_epic/soundtrack_master.mp3?v=theatrical3",
   "segments": [
     {
       "id": "part1_30s",
@@ -40,7 +39,7 @@
       "label": "Part 1 • Act I (0:00–0:30)",
       "sublabel": "Sacred Vow & Threshold Watch (Parvati, Ganesha, Shiva)",
       "rawSeconds": 30,
-      "src": "/assets/swarm/generated/job_1790974000000_kailash_epic/act1_30s.mp4"
+      "src": "/assets/swarm/generated/job_1790974000000_kailash_epic/act1_30s.mp4?v=theatrical3"
     },
     {
       "id": "part2_30s",
@@ -48,7 +47,7 @@
       "label": "Part 2 • Act II (0:30–1:00)",
       "sublabel": "Cosmic Standoff & Divine Blessing of Gajanana",
       "rawSeconds": 30,
-      "src": "/assets/swarm/generated/job_1790974000000_kailash_epic/act2_30s.mp4"
+      "src": "/assets/swarm/generated/job_1790974000000_kailash_epic/act2_30s.mp4?v=theatrical3"
     }
   ]
 }

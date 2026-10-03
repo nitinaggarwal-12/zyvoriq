@@ -323,12 +323,15 @@ export async function generateLyriaBackgroundMusic(options: {
       // Root prompt sanitization for Lyria 3 safety filters: eliminate celebrity likeness and prohibited terms
       const { sanitizedTopic: sanitizedPrompt } = await sanitizeAndEnrichUserPrompt(prompt, { genre: selectedPreset.genre });
       const cleanPresetName = selectedPreset.name.replace(/[^\w\s-]/g, "").replace(/\bshakira\b/gi, "Latin pop").trim();
-      const lyriaPrompt = `Compose a high-energy ${selectedPreset.bpm} BPM song arrangement for: ${sanitizedPrompt}. Style: ${cleanPresetName}, genre: ${selectedPreset.genre}, key: ${selectedPreset.keySignature}. Include intro, verse, chorus, and drop rhythm sections with energetic singing lyrics.`;
+      const isInstrumentalScore = vocalMode === "instrumental";
+      const lyriaPrompt = isInstrumentalScore
+        ? `Compose a 100% PURE INSTRUMENTAL big-movie IMAX theatrical film score (${selectedPreset.bpm} BPM, key: ${selectedPreset.keySignature}) for: ${sanitizedPrompt}. Style: ${cleanPresetName}, genre: ${selectedPreset.genre}. Include dramatic orchestral brass swells, thunderous cinematic war drums and percussion hits, tension risers, sub-bass LFE drops on visual transitions, and sweeping symphonic strings. STRICTLY INSTRUMENTAL ONLY — NO vocals, NO singing, NO spoken words, NO choir.`
+        : `Compose a high-energy ${selectedPreset.bpm} BPM song arrangement for: ${sanitizedPrompt}. Style: ${cleanPresetName}, genre: ${selectedPreset.genre}, key: ${selectedPreset.keySignature}. Include intro, verse, chorus, and drop rhythm sections with energetic singing lyrics.`;
 
-      // Physical Google DeepMind Lyria models: lyria-3-clip-preview (returns text + audio/mpeg), lyria-3.5, lyria-3-pro-preview
+      // Physical Google DeepMind Lyria models: prioritize lyria-3-pro-preview for pro tier
       const candidateLyriaModels = tier === "pro" 
-        ? ["lyria-3-clip-preview", "lyria-3.5", "lyria-3-pro-preview"]
-        : ["lyria-3-clip-preview", "lyria-3.5"];
+        ? ["lyria-3-pro-preview", "lyria-3-clip-preview", "lyria-3.5"]
+        : ["lyria-3-clip-preview", "lyria-3-pro-preview", "lyria-3.5"];
 
       for (const modelToTry of candidateLyriaModels) {
         try {
@@ -415,7 +418,7 @@ export interface LyriaMasterOutput {
 
 /**
  * Direct DeepMind Lyria master track generation for worker audio pipeline.
- * Returns raw MP3 buffer and timestamped lyrics/chorus from models/lyria-3-clip-preview or models/lyria-3.5.
+ * Returns raw MP3 buffer and timestamped arrangement from models/lyria-3-pro-preview or models/lyria-3-clip-preview.
  */
 export async function generateLyriaMusicMaster(options: {
   prompt: string;
@@ -423,6 +426,8 @@ export async function generateLyriaMusicMaster(options: {
   durationSec?: number;
   bpm?: number;
   keySignature?: string;
+  instrumentalOnly?: boolean;
+  theatricalMode?: boolean;
 }): Promise<LyriaMasterOutput | null> {
   const apiKey =
     process.env.GEMINI_API_KEY ||
@@ -435,21 +440,41 @@ export async function generateLyriaMusicMaster(options: {
     return null;
   }
 
-  const { prompt, genre = "Bollywood Action & Romance", durationSec = 30, bpm = 128, keySignature = "D minor" } = options;
+  const {
+    prompt,
+    genre = "Bollywood Action & Romance",
+    durationSec = 30,
+    bpm = 128,
+    keySignature = "D minor",
+    instrumentalOnly = false,
+    theatricalMode = false,
+  } = options;
+  const isMythologicalOrVedic = /kailash|shiva|parvati|ganesh|vedic|mytholog|devotional|temple|sacred|sanskrit/i.test(
+    genre + " " + prompt
+  );
   const isBollywood = /bollywood|desi|hindi|punjabi|india/i.test(genre + " " + prompt);
-  const instruments = isBollywood
+  const instruments = isMythologicalOrVedic
+    ? "Thunderous Vedic pakhawaj and mridangam war drums, resonant Shiva damaru risers, heroic low brass horn swells, sacred bronze temple gongs, soaring bansuri bamboo flute, rudra veena, and sweeping IMAX symphonic strings"
+    : isBollywood
     ? "Live Punjabi Dhol, energetic tabla, soaring cinematic violins, dramatic sitar leads, and brass drops"
-    : "Symphonic strings, brass crescendos, punchy electronic drums, and deep sub-bass";
+    : "Symphonic strings, heroic brass crescendos, thunderous taiko war drums, tension risers, and deep sub-bass LFE drops";
 
-  const lyriaPrompt = `Compose a high-energy, authentic cinematic musical score and song chorus for: "${prompt.trim()}".
+  const lyriaPrompt =
+    instrumentalOnly || theatricalMode
+      ? `Compose a 100% PURE INSTRUMENTAL big-movie IMAX theatrical film score for: "${prompt.trim()}".
+Style: ${genre}, Tempo: ${bpm} BPM, Key: ${keySignature}.
+Instrumentation: ${instruments}.
+Include dramatic act-transition risers, massive brass swells, thunderous percussion hits, and emotional symphonic themes that leave clear midrange headroom for spoken actor dialogue.
+CRITICAL RULE: STRICTLY 100% INSTRUMENTAL ONLY — NO vocals, NO singing, NO lyrics, NO choir chants, NO spoken words.`
+      : `Compose a high-energy, authentic cinematic musical score and song chorus for: "${prompt.trim()}".
 Style: ${genre}, Tempo: ${bpm} BPM, Key: ${keySignature}.
 Instrumentation: ${instruments}.
 Include memorable song lyrics, melodic chorus drops, and dynamic musical momentum.`;
 
   const candidateModels = [
+    "models/lyria-3-pro-preview",
     "models/lyria-3-clip-preview",
-    "models/lyria-3.5",
-    "models/lyria-3-pro-preview"
+    "models/lyria-3.5"
   ];
 
   for (const model of candidateModels) {

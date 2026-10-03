@@ -990,9 +990,164 @@ function buildMusicDrivenClosedLipsTurnPrompt(
 const TTS_MODEL = "models/gemini-3.1-flash-tts-preview";
 
 /**
- * Synthesizes multi-character 48kHz stereo spoken English dialogue across all 10-second shots
- * using `models/gemini-3.1-flash-tts-preview` (`Charon`, `Aoede`, `Kore`, `Fenrir`, `Puck`, `Leda`)
- * and mixes it at broadcast `-14.0 LUFS` over the 35mm cinema room foley & cello/piano score (`bed volume <= 0.20`).
+ * Generates a 100% PURE INSTRUMENTAL Big-Movie IMAX Theatrical Score via `models/lyria-3-pro-preview`
+ * for dramatic spoken-dialogue cinema reels (zero singing vocals so music never collides with actors).
+ */
+async function generateLyria3TheatricalFilmScore(
+  apiKey: string,
+  job: SwarmGenerationJob,
+  jobDir: string,
+  totalDurationSec: number,
+  log: (msg: string, stage?: string, progress?: number) => void
+): Promise<string | null> {
+  const existingScorePath = path.join(jobDir, "lyria3_theatrical_score.mp3");
+  if (fs.existsSync(existingScorePath) && fs.statSync(existingScorePath).size > 50000) {
+    return existingScorePath;
+  }
+
+  const combinedContext = `${job.title} ${job.genre} ${job.act1Prompt} ${job.act2Prompt}`;
+  const isMythological = /kailash|shiva|parvati|ganesh|vedic|mytholog|devotional|temple|sacred|sanskrit/i.test(
+    combinedContext
+  );
+  const orchestration = isMythological
+    ? "Thunderous Vedic pakhawaj, mridangam, and massive IMAX taiko war drums, rapid Shiva damaru tension risers, heroic low-brass horn blasts, sacred bronze temple gongs, soaring bansuri bamboo flute, rudra veena, and sweeping cinematic string ostinatos"
+    : "Hans Zimmer / IMAX style heroic low-brass swells, thunderous taiko and orchestral timpani war drums, taut staccato string ostinatos, dramatic act-transition tension risers, and deep sub-bass LFE impacts";
+
+  const theatricalPrompt = [
+    `Generate a 100% PURE INSTRUMENTAL ${job.bpm || 108} BPM Big-Movie IMAX Theatrical Film Score for "${job.title}" (${job.genre}).`,
+    `Orchestration & Theatrical Sound Design: ${orchestration}.`,
+    `Dramatic Structure across ${totalDurationSec} seconds:`,
+    `- 0:00–0:10 (Act I Opening): Deep atmospheric brass & temple/timpani resonance building tension.`,
+    `- 0:10–0:20 (Act I Escalation): Rising percussion pulse, dramatic string ostinato, and seismic brass swell.`,
+    `- 0:20–0:30 (Act I Climax): Thunderous war-drum drive and commanding low-brass theme.`,
+    `- 0:30–0:40 (Act II Forcefield / Confrontation): High-energy orchestral percussion, rapid tension risers, and heroic brass blasts.`,
+    `- 0:40–0:50 (Act II Emotional Awakening): Soaring emotional strings and melodic woodwind/bansuri counterpoint.`,
+    `- 0:50–1:00 (Grand IMAX Theatrical Finale): Full symphonic brass, thunderous percussion, and triumphant resonant finale.`,
+    `CRITICAL MANDATE: STRICTLY 100% INSTRUMENTAL FILM SCORE ONLY. Absolutely NO singing, NO vocals, NO lyrics, NO choir words, and NO spoken voice so the midrange remains crystal clear for foreground movie dialogue.`,
+  ].join("\n");
+
+  log(
+    `🎻 [Big-Movie Theatrical Score] Calling ${LYRIA_MODEL} for ${totalDurationSec}s 100% Instrumental IMAX Orchestral Score...`,
+    `Stage 6/6 • Generating ${LYRIA_MODEL} Big-Movie Theatrical Score...`,
+    93
+  );
+
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/${LYRIA_MODEL}:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: theatricalPrompt }] }],
+            generationConfig: { responseModalities: ["AUDIO"] },
+          }),
+        }
+      );
+      if (!res.ok) continue;
+      const data = await res.json();
+      const parts: Array<Record<string, unknown>> =
+        data?.candidates?.[0]?.content?.parts || [];
+      const audioPart = parts.find((p) => {
+        const inline = p.inlineData as { data?: string } | undefined;
+        return inline && typeof inline.data === "string" && inline.data.length > 1000;
+      }) as { inlineData: { data: string } } | undefined;
+
+      if (audioPart?.inlineData?.data) {
+        const rawScorePath = path.join(jobDir, "lyria3_theatrical_raw.mp3");
+        fs.writeFileSync(rawScorePath, Buffer.from(audioPart.inlineData.data, "base64"));
+        execFileSync(
+          "ffmpeg",
+          [
+            "-y",
+            "-i",
+            rawScorePath,
+            "-t",
+            String(totalDurationSec),
+            "-af",
+            `atrim=0:${totalDurationSec},asetpts=PTS-STARTPTS,highpass=f=35,equalizer=f=65:t=q:w=1.1:g=3.5,equalizer=f=1800:t=q:w=1.4:g=-4.5,afade=t=in:st=0:d=0.5,afade=t=out:st=${Math.max(
+              1,
+              totalDurationSec - 1.8
+            )}:d=1.8`,
+            "-ar",
+            "48000",
+            "-ac",
+            "2",
+            "-c:a",
+            "libmp3lame",
+            "-b:a",
+            "320k",
+            existingScorePath,
+          ],
+          { stdio: "ignore" }
+        );
+        return existingScorePath;
+      }
+    } catch {
+      // ignore and retry
+    }
+  }
+  return null;
+}
+
+/**
+ * Builds a synchronized 48kHz stereo Big-Movie Theatrical Sound Effects (SFX & LFE) stem
+ * with seismic sub-bass drops (45Hz–85Hz), tension risers before shot transitions, and bronze gong/brass swells
+ * aligned to the 10-second shot boundaries (`0s`, `10s`, `20s`, `30s`, `40s`, `50s`, `57s` finale).
+ */
+function buildTheatricalSfxBedWav(jobDir: string, totalDurationSec: number): string | null {
+  const sfxWavPath = path.join(jobDir, "theatrical_sfx_bed.wav");
+  try {
+    // Synthesize synchronized LFE sub-bass booms + harmonic cinematic impacts at 0.2s, 11.6s, 20.0s, 36.8s, 41.2s, 50.0s, and 57.0s finale
+    const hitFilter = [
+      `aevalsrc='` +
+        `0.42*sin(2*PI*(58-22*t)*t)*exp(-2.2*t)` +
+        ` + 0.48*gte(t,11.5)*sin(2*PI*(68-28*(t-11.5))*(t-11.5))*exp(-2.0*max(0,t-11.5))` +
+        ` + 0.44*gte(t,20.0)*sin(2*PI*(55-20*(t-20.0))*(t-20.0))*exp(-1.8*max(0,t-20.0))` +
+        ` + 0.50*gte(t,36.8)*sin(2*PI*(72-25*(t-36.8))*(t-36.8))*exp(-1.5*max(0,t-36.8))` +
+        ` + 0.36*gte(t,41.0)*sin(2*PI*(110+35*(t-41.0))*(t-41.0))*exp(-2.2*max(0,t-41.0))` +
+        ` + 0.45*gte(t,50.0)*sin(2*PI*(62-20*(t-50.0))*(t-50.0))*exp(-1.9*max(0,t-50.0))` +
+        ` + 0.55*gte(t,57.0)*(0.6*sin(2*PI*146.8*(t-57.0))+0.4*sin(2*PI*220*(t-57.0))+0.5*sin(2*PI*73.4*(t-57.0)))*exp(-0.75*max(0,t-57.0))` +
+        `':s=48000:c=stereo:d=${totalDurationSec}`,
+    ].join("");
+
+    execFileSync(
+      "ffmpeg",
+      [
+        "-y",
+        "-f",
+        "lavfi",
+        "-i",
+        hitFilter,
+        "-af",
+        "lowpass=f=420,afade=t=in:st=0:d=0.15,afade=t=out:st=" +
+          Math.max(1, totalDurationSec - 0.5) +
+          ":d=0.5",
+        "-ar",
+        "48000",
+        "-ac",
+        "2",
+        "-c:a",
+        "pcm_s16le",
+        sfxWavPath,
+      ],
+      { stdio: "ignore" }
+    );
+    return fs.existsSync(sfxWavPath) ? sfxWavPath : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Big-Movie Theatrical Dialogue + Foley + Lyria 3 Pro Orchestral Score + Dynamic Sidechain Ducking Mixer:
+ * 1. Inspects `[0:a]` from `combinedMasterPath` first. When `omni-video-1.1-flash-0315` has already generated
+ *    frame-accurate lip-synced spoken dialogue + diegetic Foley in `[0:a]`, we PRESERVE `[0:a]` at full 48kHz clarity
+ *    (NEVER destroying lip-sync with `lowpass=f=320` or layering duplicate unsynced TTS on top!).
+ * 2. Generates a 100% Pure Instrumental Big-Movie Theatrical Score via `models/lyria-3-pro-preview` + synchronized LFE/SFX hits.
+ * 3. Uses FFmpeg `sidechaincompress` keyed by the foreground dialogue track so the theatrical score & SFX swell to full
+ *    IMAX power during visual action beats and automatically duck `-12 dB` the exact millisecond any character speaks!
  */
 async function synthesizeAndMixCinemaDialogueTrack(
   apiKey: string,
@@ -1003,6 +1158,121 @@ async function synthesizeAndMixCinemaDialogueTrack(
   log: (msg: string, stage?: string, progress?: number) => void
 ): Promise<void> {
   const totalShots = allActMasterPaths.length * 3;
+  const totalDurationSec = allActMasterPaths.length * 30;
+
+  // Step 1: Check if [0:a] in combinedMasterPath ALREADY has frame-accurate lip-synced native speech from Omni 1.1!
+  const nativeProbeMp3 = path.join(jobDir, "native_omni_probe.mp3");
+  let nativeSpokenWordsCount = 0;
+  try {
+    execFileSync(
+      "ffmpeg",
+      ["-y", "-i", combinedMasterPath, "-vn", "-c:a", "libmp3lame", "-b:a", "192k", nativeProbeMp3],
+      { stdio: "ignore" }
+    );
+    if (fs.existsSync(nativeProbeMp3)) {
+      const words = await transcribeAudioWordsWithGemini35(
+        apiKey,
+        nativeProbeMp3,
+        job.language || "English",
+        (job.lyrics || "").slice(0, 240)
+      );
+      nativeSpokenWordsCount = words.length;
+    }
+  } catch {
+    // ignore
+  }
+
+  // Step 2: Generate 100% Instrumental Big-Movie Theatrical Score via Lyria 3 Pro + Synchronized LFE/SFX Sweetener Bed
+  const theatricalScoreMp3 = await generateLyria3TheatricalFilmScore(
+    apiKey,
+    job,
+    jobDir,
+    totalDurationSec,
+    log
+  );
+  const theatricalSfxWav = buildTheatricalSfxBedWav(jobDir, totalDurationSec);
+  const mixedMasterAudioMp3 = path.join(jobDir, "cinema_dialogue_mixed_master.mp3");
+
+  // Step 3A: If [0:a] ALREADY contains native lip-synced dialogue from Omni 1.1 (>= 8 transcribed words),
+  // preserve [0:a] 100% intact (zero duplicate TTS overlay, zero lowpass muffling!) and sidechain-duck the Lyria 3 Pro theatrical score + SFX!
+  if (nativeSpokenWordsCount >= 8) {
+    log(
+      `🎬 [Native Lip-Sync Lock + Sidechain Theatrical Mix] Detected ${nativeSpokenWordsCount} frame-accurate native spoken words in Omni 1.1 track — preserving 100% native lip-sync & Foley and mixing ${LYRIA_MODEL} theatrical score + LFE SFX with dynamic sidechaincompress ducking!`,
+      `Stage 6/6 • Mastering Native Lip-Sync + ${LYRIA_MODEL} Theatrical Score (Sidechain Ducking)...`,
+      96
+    );
+
+    if (theatricalScoreMp3 && theatricalSfxWav) {
+      execFileSync(
+        "ffmpeg",
+        [
+          "-y",
+          "-i",
+          combinedMasterPath,
+          "-i",
+          theatricalScoreMp3,
+          "-i",
+          theatricalSfxWav,
+          "-filter_complex",
+          `[0:a]highpass=f=55,equalizer=f=2600:t=q:w=1.1:g=2.5,volume=1.30,asplit=2[dlg_main][dlg_sc];` +
+            `[1:a]volume=0.62[score];[2:a]volume=0.58[sfx];` +
+            `[score][sfx]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[bg_raw];` +
+            `[bg_raw][dlg_sc]sidechaincompress=threshold=0.025:ratio=6:attack=15:release=350:makeup=1.0[bg_ducked];` +
+            `[dlg_main][bg_ducked]amix=inputs=2:duration=first:dropout_transition=0:normalize=0,atrim=0:${totalDurationSec},asetpts=PTS-STARTPTS,loudnorm=I=-14.0:TP=-1.0:LRA=9.0[outa]`,
+          "-map",
+          "[outa]",
+          "-ar",
+          "48000",
+          "-ac",
+          "2",
+          "-c:a",
+          "libmp3lame",
+          "-b:a",
+          "320k",
+          mixedMasterAudioMp3,
+        ],
+        { stdio: "ignore" }
+      );
+    } else if (theatricalScoreMp3) {
+      execFileSync(
+        "ffmpeg",
+        [
+          "-y",
+          "-i",
+          combinedMasterPath,
+          "-i",
+          theatricalScoreMp3,
+          "-filter_complex",
+          `[0:a]highpass=f=55,equalizer=f=2600:t=q:w=1.1:g=2.5,volume=1.30,asplit=2[dlg_main][dlg_sc];` +
+            `[1:a]volume=0.62[bg_raw];` +
+            `[bg_raw][dlg_sc]sidechaincompress=threshold=0.025:ratio=6:attack=15:release=350:makeup=1.0[bg_ducked];` +
+            `[dlg_main][bg_ducked]amix=inputs=2:duration=first:dropout_transition=0:normalize=0,atrim=0:${totalDurationSec},asetpts=PTS-STARTPTS,loudnorm=I=-14.0:TP=-1.0:LRA=9.0[outa]`,
+          "-map",
+          "[outa]",
+          "-ar",
+          "48000",
+          "-ac",
+          "2",
+          "-c:a",
+          "libmp3lame",
+          "-b:a",
+          "320k",
+          mixedMasterAudioMp3,
+        ],
+        { stdio: "ignore" }
+      );
+    }
+
+    if (fs.existsSync(mixedMasterAudioMp3)) {
+      for (let i = 0; i < allActMasterPaths.length; i++) {
+        muxAudioOntoVideo(allActMasterPaths[i], mixedMasterAudioMp3, allActMasterPaths[i], 30, i * 30);
+      }
+      muxAudioOntoVideo(combinedMasterPath, mixedMasterAudioMp3, combinedMasterPath, totalDurationSec, 0);
+    }
+    return;
+  }
+
+  // Step 3B: Fallback ONLY when [0:a] has no audible speech (< 8 words) — synthesize multi-character TTS dialogue
   const rawLyricLines = (job.lyrics || "")
     .split(/\r?\n/)
     .map((l) => l.trim())
@@ -1011,16 +1281,15 @@ async function synthesizeAndMixCinemaDialogueTrack(
   const VOICE_ROTATION = ["Charon", "Aoede", "Kore", "Fenrir", "Puck", "Leda"];
 
   const pickVoiceForRole = (roleHint: string, idx: number): string => {
-    if (/inspector|captain|male\s*lead|baritone|father|protagonist|commander/i.test(roleHint)) return "Charon";
-    if (/female\s*lead|mother|woman|geneticist|soprano|heroine/i.test(roleHint)) return "Aoede";
+    if (/inspector|captain|male\s*lead|baritone|father|protagonist|commander|shiva/i.test(roleHint)) return "Charon";
+    if (/female\s*lead|mother|woman|geneticist|soprano|heroine|parvati/i.test(roleHint)) return "Aoede";
     if (/co-lead|auditor|journalist|mezzo|partner|harmony/i.test(roleHint)) return "Kore";
     if (/doctor|dr\.|historian|director|elder|scholar|supporting|mentor/i.test(roleHint)) return "Fenrir";
-    if (/counsel|enforcer|counter|tenor|operative|tribunal/i.test(roleHint)) return "Puck";
+    if (/counsel|enforcer|counter|tenor|operative|tribunal|ganesh/i.test(roleHint)) return "Puck";
     if (/cryptographer|archivist|engineer|alto|specialist/i.test(roleHint)) return "Leda";
     return VOICE_ROTATION[idx % VOICE_ROTATION.length];
   };
 
-  // If fewer than totalShots dialogue lines exist in job.lyrics or job.turnPrompts, dynamically synthesize bespoke lines via Gemini 2.5 Flash
   let dynamicFallbackLines: string[] = [];
   const hasAllExplicitLines = Array.from({ length: totalShots }, (_, idx) => {
     const rawLine = rawLyricLines[idx] || "";
@@ -1077,15 +1346,15 @@ async function synthesizeAndMixCinemaDialogueTrack(
       cleanText =
         promptQuote?.[1] ||
         dynamicFallbackLines[idx] ||
-        `In this moment of ${job.title}, every choice we make echoes across the entire city.`;
+        `In this moment of ${job.title}, every choice we make echoes across the entire realm.`;
     }
     const voice = pickVoiceForRole(roleHint || cleanText, idx);
     return { shotIndex: idx + 1, voice, text: cleanText };
   });
 
   log(
-    `🎙️ Synthesizing ${totalShots}-shot multi-character 48kHz spoken English dialogue via ${TTS_MODEL} (Charon, Aoede, Kore, Fenrir, Puck, Leda)...`,
-    `Stage 6/6 • Synthesizing ${totalShots}-Shot Multi-Character Spoken Dialogue via ${TTS_MODEL}...`,
+    `🎙️ Synthesizing ${totalShots}-shot fallback 48kHz spoken dialogue via ${TTS_MODEL} + sidechain-ducked ${LYRIA_MODEL} score...`,
+    `Stage 6/6 • Synthesizing ${totalShots}-Shot Spoken Dialogue & Theatrical Mix...`,
     95
   );
 
@@ -1125,7 +1394,6 @@ async function synthesizeAndMixCinemaDialogueTrack(
         if (typeof b64 === "string" && b64.length > 1000) {
           const pcmBuf = Buffer.from(b64, "base64");
           fs.writeFileSync(pcmPath, pcmBuf);
-          // 24,000 Hz 16-bit mono = 48,000 bytes/sec
           const rawDurSec = pcmBuf.length / 48000;
           const tempo = rawDurSec > 8.5 ? Math.min(1.35, +(rawDurSec / 8.3).toFixed(2)) : 1.0;
           const tempoFilter = tempo > 1.01 ? `atempo=${tempo},` : "";
@@ -1202,35 +1470,65 @@ async function synthesizeAndMixCinemaDialogueTrack(
     { stdio: "ignore" }
   );
 
-  // Mix foreground multi-character spoken dialogue (volume=1.55) with low-pass filtered 35mm cinema room foley & cello bass bed (lowpass=f=320,volume=0.14 <= 0.20) so zero competing speech bleeds through
-  const mixedMasterAudioMp3 = path.join(jobDir, "cinema_dialogue_mixed_master.mp3");
-  const totalDurationSec = allActMasterPaths.length * 30;
-  execFileSync(
-    "ffmpeg",
-    [
-      "-y",
-      "-i",
-      combinedMasterPath,
-      "-i",
-      fullDialogueWav,
-      "-filter_complex",
-      `[0:a]lowpass=f=320,volume=0.14[bed];[1:a]volume=1.55,highpass=f=75,equalizer=f=2800:t=q:w=1.1:g=3.2[vox];[bed][vox]amix=inputs=2:duration=longest:dropout_transition=0,atrim=0:${totalDurationSec},asetpts=PTS-STARTPTS,loudnorm=I=-14.0:TP=-1.0:LRA=9.0[outa]`,
-      "-map",
-      "[outa]",
-      "-ar",
-      "48000",
-      "-ac",
-      "2",
-      "-c:a",
-      "libmp3lame",
-      "-b:a",
-      "320k",
-      mixedMasterAudioMp3,
-    ],
-    { stdio: "ignore" }
-  );
+  if (theatricalScoreMp3) {
+    execFileSync(
+      "ffmpeg",
+      [
+        "-y",
+        "-i",
+        combinedMasterPath,
+        "-i",
+        fullDialogueWav,
+        "-i",
+        theatricalScoreMp3,
+        "-filter_complex",
+        `[0:a]highpass=f=60,volume=0.35[foley];` +
+          `[1:a]volume=1.55,highpass=f=75,equalizer=f=2800:t=q:w=1.1:g=3.2,asplit=2[vox_main][vox_sc];` +
+          `[2:a]volume=0.58[score_raw];` +
+          `[foley][score_raw]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[bg_raw];` +
+          `[bg_raw][vox_sc]sidechaincompress=threshold=0.025:ratio=6:attack=15:release=350:makeup=1.0[bg_ducked];` +
+          `[vox_main][bg_ducked]amix=inputs=2:duration=longest:dropout_transition=0:normalize=0,atrim=0:${totalDurationSec},asetpts=PTS-STARTPTS,loudnorm=I=-14.0:TP=-1.0:LRA=9.0[outa]`,
+        "-map",
+        "[outa]",
+        "-ar",
+        "48000",
+        "-ac",
+        "2",
+        "-c:a",
+        "libmp3lame",
+        "-b:a",
+        "320k",
+        mixedMasterAudioMp3,
+      ],
+      { stdio: "ignore" }
+    );
+  } else {
+    execFileSync(
+      "ffmpeg",
+      [
+        "-y",
+        "-i",
+        combinedMasterPath,
+        "-i",
+        fullDialogueWav,
+        "-filter_complex",
+        `[0:a]highpass=f=60,volume=0.32[bed];[1:a]volume=1.55,highpass=f=75,equalizer=f=2800:t=q:w=1.1:g=3.2[vox];[bed][vox]amix=inputs=2:duration=longest:dropout_transition=0:normalize=0,atrim=0:${totalDurationSec},asetpts=PTS-STARTPTS,loudnorm=I=-14.0:TP=-1.0:LRA=9.0[outa]`,
+        "-map",
+        "[outa]",
+        "-ar",
+        "48000",
+        "-ac",
+        "2",
+        "-c:a",
+        "libmp3lame",
+        "-b:a",
+        "320k",
+        mixedMasterAudioMp3,
+      ],
+      { stdio: "ignore" }
+    );
+  }
 
-  // Mux the mixed multi-character spoken dialogue + foley/score master onto every 30s Act MP4 and the combined MP4!
   for (let i = 0; i < allActMasterPaths.length; i++) {
     muxAudioOntoVideo(allActMasterPaths[i], mixedMasterAudioMp3, allActMasterPaths[i], 30, i * 30);
   }
@@ -1675,10 +1973,10 @@ async function runRealOmniPipeline(
   const jobDir = getJobDir(job.id);
   const publicPrefix = `/assets/swarm/generated/${job.id}`;
   const combinedContext = `${job.title} ${job.genre} ${job.act1Prompt} ${job.act2Prompt}`;
-  const isRealisticCinema = /\b(real\s+people|everything\s+real|live-action\s+cinema|ten\s+billion|beyond\s+control|higgsfield|dramatic\s+film|thriller|census|enforcer|35mm\s+live-action)\b/i.test(
+  const isRealisticCinema = /\b(real\s+people|everything\s+real|live-action\s+cinema|ten\s+billion|beyond\s+control|higgsfield|dramatic\s+film|thriller|census|enforcer|35mm\s+live-action|kailash|shiva|parvati|ganesh|mytholog|epic\s+cinema|spoken\s+dialogue)\b/i.test(
     combinedContext
   );
-  // Never overwrite spoken live-action cinema dialogue with a closed-lips Lyria song
+  // Never overwrite spoken live-action cinema dialogue with a closed-lips Lyria pop song
   const useLyria3 = job.audioEngine === "omni_lyria3" && !isRealisticCinema;
 
   const log = (msg: string, stage?: string, progress?: number) => {
@@ -2363,8 +2661,8 @@ async function runRealOmniPipeline(
       { stdio: "inherit" }
     );
 
-    // If realistic live-action cinema mode, synthesize & mix multi-character 48kHz spoken dialogue across all shots!
-    if (isRealisticCinema && !useLyria3) {
+    // For all spoken-dialogue / dramatic cinema reels (!useLyria3), preserve native lip-sync & mix Lyria 3 Pro Theatrical Score + SFX with dynamic sidechaincompress ducking!
+    if (!useLyria3) {
       await synthesizeAndMixCinemaDialogueTrack(
         apiKey,
         job,
