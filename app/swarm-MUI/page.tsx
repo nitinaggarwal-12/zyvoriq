@@ -202,9 +202,10 @@ const CURSED_HUNTER_SEGMENTS: VideoSegmentSpec[] = [
     startSec: 0,
     endSec: 10,
     speaker: "Kaelen (Baritone)",
-    captionLine: "Turn back, Lyra. The basalt pass remembers every oath we broke.",
+    captionLine:
+      "Lower your bows. The contract is over—nobody touches her while I stand here.",
     visualContinuityLock:
-      "Kaelen screen-left, unarmed Lyra screen-right, cold blue-grey twilight",
+      "Kaelen screen-left lowering steel sword, Lyra screen-right, cold blue-grey twilight",
     aiGenerated: true,
   },
   {
@@ -213,10 +214,11 @@ const CURSED_HUNTER_SEGMENTS: VideoSegmentSpec[] = [
     timeRange: "10.0s–20.0s",
     startSec: 10,
     endSec: 20,
-    speaker: "Lyra (Mezzo)",
-    captionLine: "Look at my hands, Kaelen—no blade, no iron, only the truth.",
+    speaker: "Kaelen (Baritone)",
+    captionLine:
+      "Stay right beside me. Step back into the glacier archway behind us.",
     visualContinuityLock:
-      "0:11 Unarmed open-palm gesture, zero weapons drawn, snow wind left-to-right",
+      "Sword parry sparks in snow canyon, guiding Lyra toward glacier ridge",
     aiGenerated: true,
   },
   {
@@ -225,10 +227,11 @@ const CURSED_HUNTER_SEGMENTS: VideoSegmentSpec[] = [
     timeRange: "20.0s–30.0s",
     startSec: 20,
     endSec: 30,
-    speaker: "Kaelen (Baritone)",
-    captionLine: "Step closer then, before the frost seals the ridge behind us.",
+    speaker: "Lyra (Mezzo)",
+    captionLine:
+      "Your shoulder is wounded—come inside the ice cavern before the blizzard freezes us.",
     visualContinuityLock:
-      "0:21 Lyra advances forward right-to-left toward Kaelen; 180-deg axis locked",
+      "Lyra places hand on Kaelen's wounded shoulder at glacier archway; 180-deg axis locked",
     aiGenerated: true,
   },
   {
@@ -238,9 +241,10 @@ const CURSED_HUNTER_SEGMENTS: VideoSegmentSpec[] = [
     startSec: 30,
     endSec: 40,
     speaker: "Lyra (Mezzo)",
-    captionLine: "The shadow fever is fading from your eyes. Hear the valley breathe.",
+    captionLine:
+      "They hunted me across the mountains, yet you stood between me and their steel.",
     visualContinuityLock:
-      "0:30 Same snowy basalt canyon & furs; continuous cello & taiko swell",
+      "Lyra tends Kaelen's shoulder inside blue glacial ice cavern; continuous cello & taiko swell",
     aiGenerated: true,
   },
   {
@@ -250,9 +254,10 @@ const CURSED_HUNTER_SEGMENTS: VideoSegmentSpec[] = [
     startSec: 40,
     endSec: 50,
     speaker: "Kaelen (Baritone)",
-    captionLine: "I carried this curse through six winters thinking I stood alone.",
+    captionLine:
+      "The true monsters sit on thrones in the valley. Whatever storm comes next, we face it together.",
     visualContinuityLock:
-      "Two-shot medium close-up, falling snow, -14 LUFS dialogue ducking",
+      "Two-shot medium close-up in glacial cavern, falling snow, -14 LUFS dialogue ducking",
     aiGenerated: true,
   },
   {
@@ -261,10 +266,11 @@ const CURSED_HUNTER_SEGMENTS: VideoSegmentSpec[] = [
     timeRange: "50.0s–60.0s",
     startSec: 50,
     endSec: 60,
-    speaker: "Lyra & Kaelen",
-    captionLine: "Not anymore. Walk with me while the twilight still holds.",
+    speaker: "Lyra (Mezzo)",
+    captionLine:
+      "The blizzard is subsiding across the canyon. The mountain belongs to us now.",
     visualContinuityLock:
-      "0:50 Locked cold overcast blue-grey Arctic twilight (zero warm sunrise drift)",
+      "Locked cold overcast blue-grey Arctic twilight at glacial cavern mouth",
     aiGenerated: true,
   },
 ];
@@ -291,9 +297,9 @@ const INITIAL_SEGMENTS: VideoSegmentSpec[] = [
     endSec: 20,
     speaker: "Lord Ganesha",
     captionLine:
-      "A mother's word is higher than the heavens—I stand unmoved at the mountain gate.",
+      "A mother's word is supreme law. I stand watch over these golden temple steps.",
     visualContinuityLock:
-      "Ganesha planted center-right holding lotus staff, warm Himalayan mist & golden mandala",
+      "Ganesha plants glowing golden lotus staff on temple steps, warm Himalayan mist & golden mandala",
     aiGenerated: true,
   },
   {
@@ -306,7 +312,7 @@ const INITIAL_SEGMENTS: VideoSegmentSpec[] = [
     captionLine:
       "Who bars the path to my own abode upon the eternal snows of Kailash?",
     visualContinuityLock:
-      "Shiva approaches screen-left with crescent moon glow & damaru resonance; 180-deg axis locked",
+      "Shiva approaches snow-swept Kailash bridge with crescent moon glow & damaru resonance",
     aiGenerated: true,
   },
   {
@@ -317,9 +323,9 @@ const INITIAL_SEGMENTS: VideoSegmentSpec[] = [
     endSec: 40,
     speaker: "Lord Ganesha",
     captionLine:
-      "Even the lord of the cosmos must honor the sacred vow spoken at this threshold.",
+      "Even the lord of the cosmos must honor the vow entrusted by Goddess Parvati.",
     visualContinuityLock:
-      "Celestial shockwave VFX in snow canyon, tabla & low brass crescendo ducked -14 LUFS",
+      "Golden geometric light-shield dome VFX in snow courtyard, damaru & brass crescendo ducked -14 LUFS",
     aiGenerated: true,
   },
   {
@@ -330,9 +336,9 @@ const INITIAL_SEGMENTS: VideoSegmentSpec[] = [
     endSec: 50,
     speaker: "Goddess Parvati",
     captionLine:
-      "Restore him with divine grace, Mahadeva—so every auspicious journey begins in his name.",
+      "Restore him with divine grace, and crown him first among all sacred guardians.",
     visualContinuityLock:
-      "Parvati steps into luminous golden beam between Shiva and Ganesha; emotional three-shot",
+      "Parvati steps into luminous golden beam between Shiva and Ganesha; emotional close-up",
     aiGenerated: true,
   },
   {
@@ -343,9 +349,9 @@ const INITIAL_SEGMENTS: VideoSegmentSpec[] = [
     endSec: 60,
     speaker: "Shiva & Parvati",
     captionLine:
-      "Rise as Gajanana, Vigneshwara—first among the gods and remover of all obstacles.",
+      "Rise as Gajanana, Vighnaharta, blessed with wisdom, revered before every sacred prayer.",
     visualContinuityLock:
-      "Divine elephant-crowned awakening VFX, celestial flower rain, symphonic conch & veena finale",
+      "Divine golden lotus petal rain, Shiva & Parvati unison blessing, sacred Shankha conch finale",
     aiGenerated: true,
   },
 ];
@@ -1625,9 +1631,9 @@ export default function ContentStudioWorkspacePage() {
           endSec: 2 * actDur,
           speaker: "Lord Ganesha",
           captionLine:
-            "A mother's word is higher than the heavens—I stand unmoved at the mountain gate.",
+            "A mother's word is supreme law. I stand watch over these golden temple steps.",
           visualContinuityLock:
-            "Ganesha planted center-right holding lotus staff, warm Himalayan mist & golden embers",
+            "Ganesha plants glowing golden lotus staff on temple steps, warm Himalayan mist & golden mandala",
           aiGenerated: true,
         },
         {
@@ -1640,7 +1646,7 @@ export default function ContentStudioWorkspacePage() {
           captionLine:
             "Who bars the path to my own abode upon the eternal snows of Kailash?",
           visualContinuityLock:
-            "Shiva approaches screen-left with crescent moon glow & damaru resonance; 180-deg axis locked",
+            "Shiva approaches snow-swept Kailash bridge with crescent moon glow & damaru resonance",
           aiGenerated: true,
         },
         {
@@ -1651,9 +1657,9 @@ export default function ContentStudioWorkspacePage() {
           endSec: 4 * actDur,
           speaker: "Lord Ganesha",
           captionLine:
-            "Even the lord of the cosmos must honor the sacred vow spoken at this threshold.",
+            "Even the lord of the cosmos must honor the vow entrusted by Goddess Parvati.",
           visualContinuityLock:
-            "Celestial shockwave VFX in snow canyon, tabla & low brass crescendo ducked -14 LUFS",
+            "Golden geometric light-shield dome VFX in snow courtyard, damaru & brass crescendo ducked -14 LUFS",
           aiGenerated: true,
         },
         {
@@ -1664,7 +1670,7 @@ export default function ContentStudioWorkspacePage() {
           endSec: 5 * actDur,
           speaker: "Goddess Parvati",
           captionLine:
-            "Restore him with divine grace, Mahadeva—so every auspicious journey begins in his name.",
+            "Restore him with divine grace, and crown him first among all sacred guardians.",
           visualContinuityLock:
             "Parvati steps into luminous golden beam between Shiva and Ganesha; emotional close-up",
           aiGenerated: true,
@@ -1677,9 +1683,9 @@ export default function ContentStudioWorkspacePage() {
           endSec: 6 * actDur,
           speaker: "Shiva & Parvati",
           captionLine:
-            "Rise as Gajanana, Vigneshwara—first among the gods and remover of all obstacles.",
+            "Rise as Gajanana, Vighnaharta, blessed with wisdom, revered before every sacred prayer.",
           visualContinuityLock:
-            "Divine elephant-crowned awakening VFX, celestial flower rain, symphonic conch & veena finale",
+            "Divine golden lotus petal rain, Shiva & Parvati unison blessing, sacred Shankha conch finale",
           aiGenerated: true,
         },
       ];
