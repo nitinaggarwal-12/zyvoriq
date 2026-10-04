@@ -3,6 +3,9 @@ const nextConfig = {
   output: "standalone",
   reactStrictMode: true,
   serverExternalPackages: ["node:sqlite", "pg"],
+  outputFileTracingExcludes: {
+    "*": ["./public/**", "./scratch/**", "./dev.db*"]
+  },
   allowedDevOrigins: [
     "localhost:3000",
     "127.0.0.1:3000",
