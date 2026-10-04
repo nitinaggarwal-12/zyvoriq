@@ -32,6 +32,7 @@
     "build": "npm run canonical:qa && next build",
     "worker:reels": "node --import ./scripts/canonical_reel_operation_guard.mjs --import ./scripts/transcription_word_timing_guard.mjs scripts/reel_worker_v2.mjs",
     "start": "next start -H 0.0.0.0 -p ${PORT:-3000}",
+    "deploy": "gcloud builds submit --config cloudbuild.yaml --project=nitina-ggarwal-sandbox-647724 --account=nitinagga@google.com && gcloud run deploy zyvoriq --image gcr.io/nitina-ggarwal-sandbox-647724/zyvoriq:latest --region us-central1 --project nitina-ggarwal-sandbox-647724 --account nitinagga@google.com --allow-unauthenticated --memory 4Gi --cpu 2",
     "test:e2e": "node scripts/cloudtop_puppeteer_remote.js",
     "test:sprints": "node scripts/e2e/test_all_sprints.mjs"
   },
