@@ -16,7 +16,7 @@ steps:
       - '--all-tags'
       - 'gcr.io/$PROJECT_ID/zyvoriq'
 
-  # 3. Deploy to Cloud Run
+  # 3. Deploy to Cloud Run (routed via cr-infra-dynamic-url-cr-neg -> https://zyvoriq-887605034827.cr.gclb.goog)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -29,7 +29,8 @@ steps:
       - 'us-central1'
       - '--platform'
       - 'managed'
-      - '--allow-unauthenticated'
+      - '--ingress'
+      - 'internal-and-cloud-load-balancing'
       - '--memory'
       - '4Gi'
       - '--cpu'
