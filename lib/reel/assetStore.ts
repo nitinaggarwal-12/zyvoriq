@@ -6,7 +6,7 @@ import fsSync from "node:fs";
 const ASSET_URL_PREFIX = "/api/reels/assets/";
 
 function configuredRoot() {
-  const env = process.env.ZYVORIQ_ASSET_ROOT || process.env.RAILWAY_VOLUME_MOUNT_PATH;
+  const env = process.env.ZYVORIQ_ASSET_ROOT || process.env.CLOUD_RUN_VOLUME_MOUNT_PATH;
   if (env) return env;
   try {
     const localScratch = path.join(process.cwd(), "scratch", "assets");
@@ -57,7 +57,7 @@ export function getAssetStoreCapability() {
 
 export async function writeAsset(key: string, data: Buffer) {
   if (!configuredRoot()) {
-    throw new Error("Durable asset storage is not configured. Set ZYVORIQ_ASSET_ROOT or attach a Railway volume.");
+    throw new Error("Durable asset storage is not configured. Set ZYVORIQ_ASSET_ROOT or attach a Cloud Run volume.");
   }
   const { clean, target } = resolveAssetPath(key);
   await fs.mkdir(path.dirname(target), { recursive: true });
@@ -141,7 +141,8 @@ export async function readAsset(key: string) {
 
     if (process.env.NODE_ENV !== "production") {
       try {
-        const prodUrl = `https://zyvoriq.up.railway.app/api/reels/assets/${key.replace(/^\/+/, "")}`;
+        const prodBase = (process.env.ZYVORIQ_PRODUCTION_URL || "https://zyvoriq-887605034827.cr.gclb.goog").replace(/\/$/, "");
+        const prodUrl = `${prodBase}/api/reels/assets/${key.replace(/^\/+/, "")}`;
         const res = await fetch(prodUrl, { signal: AbortSignal.timeout(4000) });
         if (res.ok) {
           const cType = res.headers.get("content-type") || "";
@@ -170,7 +171,7 @@ export async function deleteAsset(key: string) {
   }
 }
 
-const WORKER_ASSET_BASE = (process.env.ZYVORIQ_WORKER_ASSET_BASE_URL || "http://zyvoriq-reel-worker.railway.internal:8080/internal/reel-assets").replace(/\/$/, "");
+const WORKER_ASSET_BASE = (process.env.ZYVORIQ_WORKER_ASSET_BASE_URL || "").replace(/\/$/, "");
 
 export async function deleteProductionAssets(productionId: string): Promise<void> {
   const cleanId = safeKey(productionId);
@@ -194,8 +195,8 @@ export async function deleteProductionAssets(productionId: string): Promise<void
     }
   }
 
-  // Also check RAILWAY_VOLUME_MOUNT_PATH directly if different from root
-  const volMount = process.env.RAILWAY_VOLUME_MOUNT_PATH;
+  // Also check CLOUD_RUN_VOLUME_MOUNT_PATH directly if different from root
+  const volMount = process.env.CLOUD_RUN_VOLUME_MOUNT_PATH;
   if (volMount && volMount !== root) {
     try {
       await fs.rm(path.resolve(volMount, "reels", cleanId), { recursive: true, force: true }).catch(() => {});

@@ -127,6 +127,15 @@ export const SAMPLE_REDDIT_STORIES: RedditStoryConfig[] = [
   }
 ];
 
+function deterministicStorySeed(input: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
 /**
  * Generates an automated Reddit / iMessage story script from user input.
  */
@@ -136,10 +145,11 @@ export function generateRedditStory(
 ): RedditStoryConfig {
   const isMystery = theme === "scary_mystery";
   const subreddit = isMystery ? "r/nosleep" : "r/AmItheAsshole";
-  const upvotes = Math.floor(25000 + Math.random() * 30000);
-  const commentsCount = Math.floor(1200 + Math.random() * 2500);
-
   const cleanTitle = topicOrTitle.trim() || (isMystery ? "The rule we broke at midnight" : "AITA for confronting my boss publicly?");
+  const seed = deterministicStorySeed(`${cleanTitle}|${theme}`);
+  const upvotes = 25000 + (seed % 30000);
+  const commentsCount = 1200 + ((seed >>> 8) % 2500);
+  const authorSuffix = 100 + ((seed >>> 16) % 900);
 
   const messages: ChatMessage[] = [
     {
@@ -191,7 +201,7 @@ export function generateRedditStory(
   return {
     subreddit,
     title: cleanTitle,
-    author: `u/viral_creator_${Math.floor(Math.random() * 900 + 100)}`,
+    author: `u/viral_creator_${authorSuffix}`,
     upvotes,
     commentsCount,
     storyTheme: theme,

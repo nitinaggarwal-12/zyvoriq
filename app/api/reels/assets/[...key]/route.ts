@@ -7,8 +7,8 @@ import { getPostgresPool, getDatabase } from "@/lib/db/client";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const WORKER_ASSET_BASE = (process.env.ZYVORIQ_WORKER_ASSET_BASE_URL || "http://zyvoriq-reel-worker.railway.internal:8080/internal/reel-assets").replace(/\/$/, "");
-const PRODUCTION_ASSET_BASE = (process.env.ZYVORIQ_PRODUCTION_URL || "https://zyvoriq.up.railway.app").replace(/\/$/, "");
+const WORKER_ASSET_BASE = (process.env.ZYVORIQ_WORKER_ASSET_BASE_URL || "").replace(/\/$/, "");
+const PRODUCTION_ASSET_BASE = (process.env.ZYVORIQ_PRODUCTION_URL || "https://zyvoriq-887605034827.cr.gclb.goog").replace(/\/$/, "");
 
 function resolveLocalStaticFallback(assetKey: string): { buffer: Buffer; mime: string } | null {
   try {
@@ -64,7 +64,7 @@ const FALLBACK_IMAGE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="640" 
 </svg>`;
 
 async function proxyFromProduction(req: NextRequest, assetKey: string, method: "GET" | "HEAD"): Promise<Response> {
-  if (req.url.includes("zyvoriq.up.railway.app")) {
+  if (req.url.includes("zyvoriq-887605034827.cr.gclb.goog")) {
     throw new Error("Already on production host; skipping self-proxy");
   }
   const headers = new Headers();

@@ -688,6 +688,196 @@ export async function POST(req: NextRequest) {
     );
     const stamp = Date.now();
 
+    // =========================================================================
+    // FAST PATH A: LIVE GEMINI IN-PLACE QUICK EDIT & SCOPED REWRITE ("quick_edit")
+    // =========================================================================
+    if (body.mode === "quick_edit") {
+      const action = String(body.action || "regenerate");
+      const scope = String(body.scope || "hook");
+      const sourceText = String(body.text || "").trim();
+      const instruction = String(body.instruction || "").trim();
+      const postTitle = String(body.title || "35mm Cinema Campaign").trim();
+      const platformName = String(body.platform || "Reels").trim();
+      const brandVoice = String(body.brandVoice || "Zyvoriq Studio").trim();
+      const speakerName = String(body.speaker || "Lead").trim();
+      const timeRange = String(body.timeRange || "00.0s–10.0s").trim();
+
+      const maxChars = scope === "hook" ? 105 : scope === "timeline" ? 95 : 280;
+      const editDirective =
+        action === "shorter"
+          ? `Condense and tighten this ${scope} to be punchy, vivid, and strictly under ${
+              scope === "hook" ? 85 : 140
+            } characters while preserving its exact story meaning.`
+          : action === "punchier"
+          ? `Rewrite this ${scope} with high-impact cinematic urgency and scroll-stopping energy for ${platformName} (strictly under ${maxChars} characters, zero URLs).`
+          : action === "fix_grammar"
+          ? `Polish grammar, cadence, and punctuation for this ${scope} while preserving its exact meaning and length (strictly under ${maxChars} characters).`
+          : action === "change_tone"
+          ? `Rewrite this ${scope} in the authoritative, elevated voice of "${brandVoice}" (${
+              instruction || "calm 35mm cinema director"
+            }) (strictly under ${maxChars} characters).`
+          : action === "translate"
+          ? `Translate the following ${scope} accurately and naturally into ${
+              instruction || "Spanish"
+            } while preserving its dramatic cinematic tone (strictly under ${maxChars} characters).`
+          : action === "scoped_prompt"
+          ? `Apply the user's specific editing instruction ("${instruction}") to rewrite the current ${scope} for ${platformName} in ${brandVoice} voice. Output ONLY the rewritten ${scope} text (strictly under ${maxChars} characters, zero raw URLs, do NOT echo the instruction itself).`
+          : action === "regenerate_segment"
+          ? `Write a fresh, emotionally gripping spoken dialogue line for speaker "${speakerName}" during segment ${timeRange} of "${postTitle}" (strictly 1 sentence under 95 characters, no quotation marks).`
+          : action === "more_like_this"
+          ? `Write a fresh, high-retention variation opening hook inspired by "${sourceText}" for "${postTitle}" (strictly 1 sentence under 100 characters, zero URLs).`
+          : `Write a fresh, compelling alternative version of this ${scope} for "${postTitle}" on ${platformName} (strictly under ${maxChars} characters, zero URLs).`;
+
+      const quickPrompt = `You are the Principal Editorial & Screenplay Copywriter for ${brandVoice}.
+Task: ${editDirective}
+Campaign Title: "${postTitle}"
+Target Scope: ${scope}
+Current Text: "${sourceText}"
+
+Return STRICTLY valid JSON with this exact schema:
+{
+  "rewrittenText": "The final rewritten text only, with zero surrounding quotes and zero http/https URLs"
+}`;
+
+      const t0 = Date.now();
+      if (apiKey) {
+        for (const modelName of ["models/gemini-2.5-flash", "models/gemini-3.8-flash"]) {
+          try {
+            const res = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${apiKey}`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  contents: [{ role: "user", parts: [{ text: quickPrompt }] }],
+                  generationConfig: {
+                    temperature: 0.55,
+                    responseMimeType: "application/json",
+                    thinkingConfig: { thinkingBudget: 0 },
+                  },
+                }),
+                signal: AbortSignal.timeout(9000),
+              }
+            );
+            if (res.ok) {
+              const data = await res.json();
+              const raw =
+                data?.candidates?.[0]?.content?.parts
+                  ?.filter((p: { thought?: boolean; text?: string }) => !p.thought && typeof p.text === "string")
+                  ?.map((p: { text?: string }) => p.text || "")
+                  .join("") || "";
+              const cleaned = raw.replace(/^```json\s*/i, "").replace(/```\s*$/i, "").trim();
+              const j = JSON.parse(cleaned);
+              if (j && typeof j.rewrittenText === "string" && j.rewrittenText.trim()) {
+                return NextResponse.json({
+                  ok: true,
+                  rewrittenText: j.rewrittenText.trim().replace(/^["']|["']$/g, ""),
+                  modelUsed: modelName,
+                  latencyMs: Date.now() - t0,
+                });
+              }
+            }
+          } catch {
+            // try next model
+          }
+        }
+      }
+      return NextResponse.json(
+        { ok: false, error: "Gemini quick_edit unavailable" },
+        { status: 502 }
+      );
+    }
+
+    // =========================================================================
+    // FAST PATH B: LIVE 6-ACT STUDIO CAMPAIGN BRIEF SYNTHESIS ("studioFastMode")
+    // =========================================================================
+    if (body.studioFastMode) {
+      const ytRefFast = await fetchYouTubeReferenceIntelligence(rawPrompt);
+      const cleanBrief = rawPrompt.replace(/https?:\/\/[^\s"'<>]+/gi, "").trim();
+      const fastPrompt = `You are the Executive 35mm Cinema Director & Social Campaign Showrunner for Zyvoriq Studio.
+Synthesize a complete, grounded 60-second (6-act, 10s per act) 35mm cinema social campaign from this user brief:
+- User Brief: "${rawPrompt}"
+- Clean Topic: "${cleanBrief}"
+${
+  ytRefFast
+    ? `- Referenced YouTube Video (${ytRefFast.videoId}): "${ytRefFast.title}" by ${ytRefFast.channelName} — ${ytRefFast.descriptionSnippet.slice(0, 260)}`
+    : ""
+}
+
+STRICT RULES:
+1. "hook" MUST be 1 gripping sentence strictly under 105 characters (never exceed 110 chars) and contain ZERO URLs.
+2. "body" MUST be 2 rich sentences describing the 6-act 35mm visual story, character continuity, and -14 LUFS Lyria 3 Pro orchestral score (zero raw URLs).
+3. "segments" MUST contain exactly 6 acts covering 00.0s–60.0s (10s each: 0–10, 10–20, 20–30, 30–40, 40–50, 50–60) with character speaker names, natural spoken dialogue lines, and specific 35mm visual continuity locks tailored to the user's topic.
+
+Return STRICTLY valid JSON matching this schema:
+{
+  "title": "Concise Campaign Title — 35mm Visual Epic",
+  "hook": "Scroll-stopping opening hook under 105 characters",
+  "body": "Two-sentence campaign body copy",
+  "hashtags": "#Tag1 #Tag2 #Tag3 #CinemaStudio",
+  "altText": "Detailed 35mm frame description for accessibility",
+  "castBadge": "Character A (Voice Type) · Character B (Voice Type)",
+  "segments": [
+    {
+      "speaker": "Character Name",
+      "captionLine": "Spoken dialogue line for this 10s act",
+      "visualContinuityLock": "35mm camera, lighting, and blocking continuity lock"
+    }
+  ]
+}`;
+      const t0 = Date.now();
+      if (apiKey) {
+        for (const modelName of ["models/gemini-2.5-flash", "models/gemini-3.8-flash"]) {
+          try {
+            const res = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${apiKey}`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  contents: [{ role: "user", parts: [{ text: fastPrompt }] }],
+                  generationConfig: {
+                    temperature: 0.6,
+                    responseMimeType: "application/json",
+                    thinkingConfig: { thinkingBudget: 0 },
+                  },
+                }),
+                signal: AbortSignal.timeout(12000),
+              }
+            );
+            if (res.ok) {
+              const data = await res.json();
+              const raw =
+                data?.candidates?.[0]?.content?.parts
+                  ?.filter((p: { thought?: boolean; text?: string }) => !p.thought && typeof p.text === "string")
+                  ?.map((p: { text?: string }) => p.text || "")
+                  .join("") || "";
+              const cleaned = raw.replace(/^```json\s*/i, "").replace(/```\s*$/i, "").trim();
+              const j = JSON.parse(cleaned);
+              if (j && j.title && j.hook) {
+                return NextResponse.json({
+                  ok: true,
+                  modelUsed: modelName,
+                  latencyMs: Date.now() - t0,
+                  assets: {
+                    title: String(j.title),
+                    hook: String(j.hook).replace(/https?:\/\/[^\s]+/gi, "").trim().slice(0, 114),
+                    storyline: String(j.body || ""),
+                    hashtags: String(j.hashtags || "#35mmCinema #VisualStory #SoundDesign #CinemaStudio"),
+                    altText: String(j.altText || ""),
+                    castBadge: String(j.castBadge || ""),
+                    segments: Array.isArray(j.segments) ? j.segments : [],
+                  },
+                });
+              }
+            }
+          } catch {
+            // try next model
+          }
+        }
+      }
+    }
+
     // Step 1: Live YouTube / External Reference URL Detection & Deconstruction
     const ytRef = await fetchYouTubeReferenceIntelligence(rawPrompt);
 

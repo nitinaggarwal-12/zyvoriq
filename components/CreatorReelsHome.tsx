@@ -97,7 +97,7 @@ export const FINISHED_REELS: FinishedReel[] = [
     category: "Choreography & Style",
     shots: 8,
     durationSec: 42,
-    videoUrl: "/assets/video/studio1_e2e00945.mp4",
+    videoUrl: "/assets/swarm/comparisons/04_option2_clone_adk_orcas_omni_native_60s.mp4",
     posterUrl: "/assets/stills/dubai_dance.jpg",
     prompt: "Street dancer performing liquid popping choreography under neon rain in Shinjuku, continuous camera orbit, synthwave bass drop at 0:15.",
     continuityProof: "Full 8-shot unbroken extension. Facial structure, wet hair physics, and cyberpunk jacket stay 100% coherent from shot 1 to shot 8 without face-morphing.",
@@ -109,7 +109,7 @@ export const FINISHED_REELS: FinishedReel[] = [
     category: "Outdoor Adventure",
     shots: 6,
     durationSec: 24,
-    videoUrl: "/assets/video/studio1_9f360810.mp4",
+    videoUrl: "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4",
     posterUrl: "/assets/stills/swiss_alpine.jpg",
     prompt: "Solo mountaineer standing on a jagged snow-covered ridge in the Swiss Alps at golden hour, looking out over a sea of clouds as mountain wind whips.",
     continuityProof: "6 continuous shots. Cold breath vapor, red parka texture, and polarized sunglasses reflections remain rock-solid across every camera push-in.",
@@ -121,7 +121,7 @@ export const FINISHED_REELS: FinishedReel[] = [
     category: "Cinematic Sci-Fi",
     shots: 6,
     durationSec: 30,
-    videoUrl: "/assets/video/studio1_d2d144d2.mp4",
+    videoUrl: "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4",
     posterUrl: "/assets/stills/desert_spiral.jpg",
     prompt: "Desert nomad in wind-swept nomadic silks walking along knife-edge sand dune crest, swirling golden particles in low evening sun.",
     continuityProof: "Extended 6-shot camera spiral. Fabric aerodynamics and sand physics flow continuously without the telltale warping of clip-stitched AI video.",
@@ -133,7 +133,7 @@ export const FINISHED_REELS: FinishedReel[] = [
     category: "Sci-Fi & Cosmos",
     shots: 5,
     durationSec: 34,
-    videoUrl: "/assets/video/studio1_5bfb958d.mp4",
+    videoUrl: "/assets/swarm/bollywood_top_heroine_hindi_superhit_60s_omni_1_1_flash.mp4",
     posterUrl: "/assets/stills/cosmic_nebula.jpg",
     prompt: "Astronaut tethered outside orbital station viewing violet aurora over Earth's horizon, visor reflection showing stars and glowing instruments.",
     continuityProof: "5-shot unbroken orbital arc. Visor curvature reflections, helmet seams, and zero-G drift maintain identity lock from start to finish.",
@@ -167,7 +167,7 @@ export const CINEMA_FINISHED_REELS: CinemaMasterReel[] = [
     shots: 30,
     durationSec: 180,
     aspectRatio: "2.39:1",
-    videoUrl: "/assets/video/napoleon_180s_master.mp4",
+    videoUrl: "/assets/swarm/comparisons/12_sacred_kailash_ganesh_shiva_parvati_option1_lyria3_devotional_60s.mp4",
     posterUrl: "/assets/stills/napoleon_hero.png",
     prompt: "Napoleon Bonaparte 180-second 5-act theatrical romance. Marseilles youth, Joséphine's coronation at Notre-Dame, Finckenstein Polish winter, Tuileries dynastic divorce, and solitary remembrance on Saint Helena.",
     scoreTitle: "Beethoven Symphony No. 7 in A major, Op. 92 – II. Allegretto (-24.0 LUFS EBU R128)",
@@ -390,7 +390,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
             let cleanTitle = m.title || m.topic || prod.topic || (m as any).studio1?.projectTitle || fallbackCleanTitle;
             if (cleanTitle.length > 50) cleanTitle = cleanTitle.slice(0, 48) + "...";
             let poster = prod.posterUrl || m.theatricalPosterUrl || m.assets?.anchorUrl || undefined;
-            if (!poster || poster.includes(".railway.internal")) {
+            if (!poster || poster.includes(".internal")) {
               poster = m.shots?.[1]?.continuityIn?.referenceFrameUrl || m.shots?.[0]?.posterUrl || undefined;
             }
             setContinuationParent({
@@ -734,7 +734,7 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
 
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 md:px-10 lg:px-12 relative z-10">
           {/* STUDIO HEADER */}
-          <div className="flex flex-col items-center text-center max-w-4xl mx-auto mb-4">
+          <div className="flex flex-col items-center text-center max-w-8xl w-full mx-auto mb-4">
 
             {activeTab === "instagram_tiktok" ? (
               <>
@@ -1663,10 +1663,10 @@ export function CreatorReelsHome({ initialTab = "instagram_tiktok" }: { initialT
                           let title = m.topic || (m as any).studio1?.projectTitle || p.id;
                           if (title.length > 60) title = title.slice(0, 58) + "...";
                           let poster = p.posterUrl;
-                          if (!poster || poster.includes(".railway.internal")) {
+                          if (!poster || poster.includes(".internal")) {
                             poster = m.shots?.[1]?.continuityIn?.referenceFrameUrl || m.shots?.[0]?.posterUrl || null;
                           }
-                          if (!poster || poster.includes(".railway.internal")) {
+                          if (!poster || poster.includes(".internal")) {
                             if (p.id.includes("5b3c6b72")) poster = "/assets/stills/ren_cyberpunk.png";
                             else if (p.id.includes("e2e00945")) poster = "/assets/stills/dubai_dance.jpg";
                             else if (p.id.includes("9f360810") || p.id.includes("39a1fe18")) poster = "/assets/stills/swiss_alpine.jpg";

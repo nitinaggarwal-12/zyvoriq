@@ -29,7 +29,7 @@ export interface SwarmAgentStatus {
   roleTitle: string;
   stackModel:
     | "models/gemini-2.5-flash & models/gemini-3.8-flash"
-    | "models/imagen-3.0-generate-002 & models/gemini-3.1-flash-image-preview"
+    | "models/gemini-3-pro-image & models/gemini-3.1-flash-image-preview"
     | "models/lyria-3-pro-preview & models/lyria-3.5"
     | "FFmpeg 24/1 CFR Master"
     | "models/gemini-omni-1.1-flash & models/veo-3.1-generate-preview"
@@ -446,7 +446,7 @@ export function getDanceMusicVideoAgents(
       name: "Casting Direction Agent",
       icon: "🎭",
       roleTitle: `5-Tier Biometric Cast Lock (${castCount} Distinct Performers • ${castCount} Unique Portraits)`,
-      stackModel: "models/imagen-3.0-generate-002 & models/gemini-3.1-flash-image-preview",
+      stackModel: "models/gemini-3-pro-image & models/gemini-3.1-flash-image-preview",
       status: computeBlueprintAgentStatus(15),
       executionTimeMs: perAgentSynthMs,
       qualityScore: computedQualityScore,
@@ -462,7 +462,7 @@ export function getDanceMusicVideoAgents(
       name: "Wardrobe Department Agent",
       icon: "👗",
       roleTitle: `5-Tier ${totalActs}-Act Couture Metamorphosis & Contrast Guard`,
-      stackModel: "models/imagen-3.0-generate-002 & models/gemini-3.1-flash-image-preview",
+      stackModel: "models/gemini-3-pro-image & models/gemini-3.1-flash-image-preview",
       status: computeBlueprintAgentStatus(20),
       executionTimeMs: perAgentSynthMs,
       qualityScore: computedQualityScore,
@@ -483,7 +483,7 @@ export function getDanceMusicVideoAgents(
       name: "Location Scouting Agent",
       icon: "📍",
       roleTitle: `${country} — ${venue} Spatial Architecture`,
-      stackModel: "models/imagen-3.0-generate-002 & models/gemini-3.1-flash-image-preview",
+      stackModel: "models/gemini-3-pro-image & models/gemini-3.1-flash-image-preview",
       status: computeBlueprintAgentStatus(25),
       executionTimeMs: perAgentSynthMs,
       qualityScore: computedQualityScore,
@@ -503,7 +503,7 @@ export function getDanceMusicVideoAgents(
       name: "Prop & Styling Facility Agent",
       icon: "🕶️",
       roleTitle: "Per-Tier Jewelry, Footwear, Hero Props & Kinetic Stage FX",
-      stackModel: "models/imagen-3.0-generate-002 & models/gemini-3.1-flash-image-preview",
+      stackModel: "models/gemini-3-pro-image & models/gemini-3.1-flash-image-preview",
       status: computeBlueprintAgentStatus(30),
       executionTimeMs: perAgentSynthMs,
       qualityScore: computedQualityScore,

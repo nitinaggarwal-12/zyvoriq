@@ -241,7 +241,7 @@ export function resolveReelPoster(pId: string, m: any, shots: LibraryClip[]): st
 
   // 1. Explicit Theatrical Key Visual / Master Movie Poster (Highest Priority!)
   const theatricalPoster = m?.theatricalPosterUrl || m?.keyVisualUrl || m?.posterUrl || m?.outputs?.masterPosterUrl || m?.outputs?.posterUrl || m?.outputs?.master?.posterUrl || m?.outputs?.narratedRoughCut?.posterUrl;
-  if (theatricalPoster && typeof theatricalPoster === "string" && !theatricalPoster.includes("undefined") && !theatricalPoster.includes(".railway.internal")) {
+  if (theatricalPoster && typeof theatricalPoster === "string" && !theatricalPoster.includes("undefined") && !theatricalPoster.includes(".internal")) {
     return theatricalPoster;
   }
 
@@ -253,20 +253,20 @@ export function resolveReelPoster(pId: string, m: any, shots: LibraryClip[]): st
   // 3. Authentic Generated Video Frames & Reference Stills from Completed Shots (Actual 4K Video Keyframes)
   // Check any shot reference frame that is a real scene frame (explicitly ignore isolated character portraits)
   const sceneRefFrame = (m?.shots || []).map((s: any) => s.continuityIn?.referenceFrameUrl || s.asset?.posterUrl)
-    .find((url: string) => url && typeof url === "string" && !url.includes("/character/") && !url.includes("undefined") && !url.includes(".railway.internal"));
+    .find((url: string) => url && typeof url === "string" && !url.includes("/character/") && !url.includes("undefined") && !url.includes(".internal"));
   if (sceneRefFrame) {
     return sceneRefFrame;
   }
 
   // Shot 01 frame captured in shot 02 incoming continuity reference
   const shot1Frame = m?.shots?.[1]?.continuityIn?.referenceFrameUrl;
-  if (shot1Frame && typeof shot1Frame === "string" && !shot1Frame.includes("/character/") && !shot1Frame.includes("undefined") && !shot1Frame.includes(".railway.internal")) {
+  if (shot1Frame && typeof shot1Frame === "string" && !shot1Frame.includes("/character/") && !shot1Frame.includes("undefined") && !shot1Frame.includes(".internal")) {
     return shot1Frame;
   }
 
   // First shot poster if not an isolated character portrait
   const firstShotPoster = shots[0]?.posterUrl || m?.shots?.[0]?.posterUrl;
-  if (firstShotPoster && typeof firstShotPoster === "string" && !firstShotPoster.includes("/character/") && !firstShotPoster.includes("undefined") && !firstShotPoster.includes(".railway.internal")) {
+  if (firstShotPoster && typeof firstShotPoster === "string" && !firstShotPoster.includes("/character/") && !firstShotPoster.includes("undefined") && !firstShotPoster.includes(".internal")) {
     return firstShotPoster;
   }
 
@@ -278,7 +278,7 @@ export function resolveReelPoster(pId: string, m: any, shots: LibraryClip[]): st
 
   // 4. Scene & Location Environment Stills
   const sceneStill = m?.stillUrl || m?.locationStillUrl || m?.creativeBible?.environmentStillUrl;
-  if (sceneStill && typeof sceneStill === "string" && !sceneStill.includes("/character/") && !sceneStill.includes("undefined") && !sceneStill.includes(".railway.internal")) {
+  if (sceneStill && typeof sceneStill === "string" && !sceneStill.includes("/character/") && !sceneStill.includes("undefined") && !sceneStill.includes(".internal")) {
     return sceneStill;
   }
 
@@ -312,7 +312,7 @@ export function resolveReelPoster(pId: string, m: any, shots: LibraryClip[]): st
 
   // 6. Character Reference Anchor (Absolute Last Resort ONLY if no scene, video, or demo artwork exists)
   const characterRef = m?.canonicalCharacterAnchorUrl || m?.continuity?.characters?.[0]?.canonicalReferenceImages?.[0] || m?.characters?.[0]?.canonicalReferenceImages?.[0];
-  if (characterRef && typeof characterRef === "string" && !characterRef.includes("undefined") && !characterRef.includes(".railway.internal")) {
+  if (characterRef && typeof characterRef === "string" && !characterRef.includes("undefined") && !characterRef.includes(".internal")) {
     return characterRef;
   }
 
@@ -363,8 +363,8 @@ export const CANONICAL_SHOWCASES: LibraryReel[] = [
     prompt: "Napoleon Bonaparte 180-second cinematic master film across five acts: Toulon artillery siege, Malmaison romance with Joséphine, Notre-Dame imperial coronation, Austerlitz winter victory, and St. Helena Atlantic exile. Authentic 24fps Cooke anamorphic cinematography with Beethoven Op. 92 symphonic score.",
     status: "READY",
     durationSec: 180.1,
-    videoUrl: "/assets/video/napoleon_180s_master.mp4",
-    roughCutUrl: "/assets/video/napoleon_180s_master.mp4",
+    videoUrl: "/renders/edited/reel_napoleon_180s_master_director_1789422757181.mp4",
+    roughCutUrl: "/renders/edited/reel_napoleon_180s_master_director_1789422757181.mp4",
     posterUrl: "/assets/stills/napoleon_hero.png",
     createdAt: "2026-09-07T05:00:00.000Z",
     genre: "Historical Epic",
@@ -378,7 +378,7 @@ export const CANONICAL_SHOWCASES: LibraryReel[] = [
         id: "shot_01",
         order: 1,
         title: "Act I: The Fires of Youth & Toulon Siege",
-        videoUrl: "/assets/video/napoleon_180s_master.mp4",
+        videoUrl: "/renders/edited/reel_napoleon_180s_master_director_1789422757181.mp4",
         posterUrl: "/assets/stills/napoleon_hero.png",
         durationSec: 36.0,
         status: "PASSED",
@@ -394,7 +394,7 @@ export const CANONICAL_SHOWCASES: LibraryReel[] = [
         id: "shot_02",
         order: 2,
         title: "Act II: The Imperial Crown & Malmaison Romance",
-        videoUrl: "/assets/video/napoleon_180s_master.mp4",
+        videoUrl: "/renders/edited/reel_napoleon_180s_master_director_1789422757181.mp4",
         posterUrl: "/assets/stills/coronation_hero.png",
         durationSec: 36.0,
         status: "PASSED",
@@ -410,7 +410,7 @@ export const CANONICAL_SHOWCASES: LibraryReel[] = [
         id: "shot_03",
         order: 3,
         title: "Act III: The Polish Winter & Finckenstein Palace",
-        videoUrl: "/assets/video/napoleon_180s_master.mp4",
+        videoUrl: "/renders/edited/reel_napoleon_180s_master_director_1789422757181.mp4",
         posterUrl: "/assets/stills/napoleon_hero.png",
         durationSec: 36.0,
         status: "PASSED",
@@ -426,7 +426,7 @@ export const CANONICAL_SHOWCASES: LibraryReel[] = [
         id: "shot_04",
         order: 4,
         title: "Act IV: The Dynastic Sacrifice & King of Rome",
-        videoUrl: "/assets/video/napoleon_180s_master.mp4",
+        videoUrl: "/renders/edited/reel_napoleon_180s_master_director_1789422757181.mp4",
         posterUrl: "/assets/stills/coronation_hero.png",
         durationSec: 36.0,
         status: "PASSED",
@@ -442,7 +442,7 @@ export const CANONICAL_SHOWCASES: LibraryReel[] = [
         id: "shot_05",
         order: 5,
         title: "Act V: The Atlantic Wind & St. Helena Solitude",
-        videoUrl: "/assets/video/napoleon_180s_master.mp4",
+        videoUrl: "/renders/edited/reel_napoleon_180s_master_director_1789422757181.mp4",
         posterUrl: "/assets/stills/napoleon_hero.png",
         durationSec: 36.1,
         status: "PASSED",
@@ -463,8 +463,8 @@ export const CANONICAL_SHOWCASES: LibraryReel[] = [
     prompt: "4K DCI master film capturing affluent Mumbai penthouse evening. Warm dinner table dialogue with authentic banter, golden ambient chandelier lighting, and Cooke spherical portraits.",
     status: "READY",
     durationSec: 32.0,
-    videoUrl: "/assets/video/zyvoriq_mumbai_penthouse_master.mp4",
-    roughCutUrl: "/assets/video/zyvoriq_mumbai_penthouse_master.mp4",
+    videoUrl: "/assets/australia_punjabi_beach_60s/australia_punjabi_beach_60s_master.mp4",
+    roughCutUrl: "/assets/australia_punjabi_beach_60s/australia_punjabi_beach_60s_master.mp4",
     posterUrl: "/assets/stills/coronation_hero.png",
     createdAt: "2026-09-08T18:00:00.000Z",
     genre: "Family & Drama",
@@ -478,7 +478,7 @@ export const CANONICAL_SHOWCASES: LibraryReel[] = [
         id: "shot_01",
         order: 1,
         title: "Act I: Dining Table Banter & Paneer Defense",
-        videoUrl: "/assets/video/zyvoriq_mumbai_penthouse_master.mp4",
+        videoUrl: "/assets/australia_punjabi_beach_60s/australia_punjabi_beach_60s_master.mp4",
         posterUrl: "/assets/stills/coronation_hero.png",
         durationSec: 32.0,
         status: "PASSED",
@@ -499,8 +499,8 @@ export const CANONICAL_SHOWCASES: LibraryReel[] = [
     prompt: "Imperial coronation ceremony in Notre-Dame Cathedral: Gilded ermine robes, incense billowing across stone vaults, and Beethoven Op. 92.",
     status: "READY",
     durationSec: 30.0,
-    videoUrl: "/assets/video/coronation_30s_cut.mp4",
-    roughCutUrl: "/assets/video/coronation_30s_cut.mp4",
+    videoUrl: "/assets/paris_caucasian_60s/paris_caucasian_60s_master.mp4",
+    roughCutUrl: "/assets/paris_caucasian_60s/paris_caucasian_60s_master.mp4",
     posterUrl: "/assets/stills/coronation_hero.png",
     createdAt: "2026-09-07T08:00:00.000Z",
     genre: "Historical Drama",
@@ -514,7 +514,7 @@ export const CANONICAL_SHOWCASES: LibraryReel[] = [
         id: "shot_01",
         order: 1,
         title: "Act I: Incense Through The Gothic Vaults",
-        videoUrl: "/assets/video/coronation_30s_cut.mp4",
+        videoUrl: "/assets/paris_caucasian_60s/paris_caucasian_60s_master.mp4",
         posterUrl: "/assets/stills/coronation_hero.png",
         durationSec: 30.0,
         status: "PASSED",
@@ -535,8 +535,8 @@ export const CANONICAL_SHOWCASES: LibraryReel[] = [
     prompt: "4K DCI Bollywood kathak-fusion masterwork starring Priya: 10 continuous acts of swirling lehengas, rose-petal fountains, and pristine orchestral rhythms.",
     status: "READY",
     durationSec: 60.0,
-    videoUrl: "/assets/video/priya_4k_10act_master.mp4",
-    roughCutUrl: "/assets/video/priya_4k_10act_master.mp4",
+    videoUrl: "/assets/reels/studio1_aebb020a-490c-4157-8985-eb8ac75e04d6/renders/narrated-rough-8f3d6c91a4b2e750.mp4",
+    roughCutUrl: "/assets/reels/studio1_aebb020a-490c-4157-8985-eb8ac75e04d6/renders/narrated-rough-8f3d6c91a4b2e750.mp4",
     posterUrl: "/assets/stills/dubai_dance.jpg",
     createdAt: "2026-09-08T12:00:00.000Z",
     genre: "Music Video",
@@ -550,7 +550,7 @@ export const CANONICAL_SHOWCASES: LibraryReel[] = [
         id: "shot_01",
         order: 1,
         title: "Act I: The Marble Courtyard Lotus Fountain",
-        videoUrl: "/assets/video/priya_4k_10act_master.mp4",
+        videoUrl: "/assets/reels/studio1_aebb020a-490c-4157-8985-eb8ac75e04d6/renders/narrated-rough-8f3d6c91a4b2e750.mp4",
         posterUrl: "/assets/stills/coronation_hero.png",
         durationSec: 60.0,
         status: "PASSED",
@@ -1822,7 +1822,7 @@ export function MyReelsLibrary() {
     <div className="min-h-screen bg-[#07090E] text-slate-100 selection:bg-teal-500/30 selection:text-teal-100">
       <audio
         ref={bgmAudioRef}
-        src="/assets/audio/bollywood_romantic_bgm.mp3"
+        src="/assets/audio/music/bollywood_romance_orchestra.mp3"
         loop
         preload="none"
         className="hidden"

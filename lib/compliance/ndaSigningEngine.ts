@@ -365,6 +365,8 @@ let notificationsStore: AdminNotification[] = [
   }
 ];
 
+import crypto from "node:crypto";
+
 export function generateAuditHash(payload: {
   token: string;
   name: string;
@@ -374,14 +376,8 @@ export function generateAuditHash(payload: {
   ip: string;
 }): string {
   const str = `${payload.token}|${payload.name}|${payload.email}|${payload.company}|${payload.timestamp}|${payload.ip}`;
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash |= 0;
-  }
-  const hex = Math.abs(hash).toString(16).padStart(8, "0");
-  return `sha256_${hex}_${Date.now().toString(16)}89a0b12`;
+  const digest = crypto.createHash("sha256").update(str).digest("hex");
+  return `sha256_${digest.slice(0, 32)}`;
 }
 
 export function createNdaAgreement(params: {
@@ -401,8 +397,14 @@ export function createNdaAgreement(params: {
   channelDispatchUrl: string;
   prefilledMessage: string;
 } {
-  const token = `demo_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 7)}`;
-  const id = `nda_rec_${Date.now().toString(36)}`;
+  const ts = Date.now().toString(36);
+  const suffix = crypto
+    .createHash("sha256")
+    .update(`${params.recipientEmail}|${params.recipientCompany}|${ts}`)
+    .digest("hex")
+    .slice(0, 6);
+  const token = `demo_${ts}_${suffix}`;
+  const id = `nda_rec_${ts}`;
   const language = params.language || "en";
   
   const agreement: NdaAgreement = {

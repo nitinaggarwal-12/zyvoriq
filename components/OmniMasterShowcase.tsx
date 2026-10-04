@@ -136,7 +136,7 @@ export function OmniMasterShowcase() {
               ref={videoRef}
               key="napoleon-master-video"
               className="h-full w-full object-cover"
-              src="/assets/video/napoleon_180s_master.mp4"
+              src="/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4"
               poster={activeAct.stillUrl || "/assets/stills/napoleon_hero.png"}
               playsInline
               controls

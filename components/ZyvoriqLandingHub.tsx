@@ -332,14 +332,14 @@ const STUDIO_CONFIGS: Record<StudioFormatId, StudioCardConfig> = {
     studioButtonText: "Enter Reel Studio",
     accentColor: "teal",
     aspectClass: "aspect-[9/16] max-h-[520px]",
-    heroVideoUrl: "/assets/video/studio1_e2e00945.mp4",
+    heroVideoUrl: "/assets/reels/studio1_aebb020a-490c-4157-8985-eb8ac75e04d6/renders/narrated-rough-8f3d6c91a4b2e750.mp4",
     specs: ["9:16 Vertical", "24s–60s Pacing", "Biometric Face Lock", "Sub-Bass Retained"],
     presets: [
       {
         id: "reel_tokyo",
         title: "Tokyo Midnight Neon Run",
         subtitle: "Cyberpunk street chase with anamorphic rain reflections",
-        videoUrl: "/assets/video/studio1_e2e00945.mp4",
+        videoUrl: "/assets/reels/studio1_aebb020a-490c-4157-8985-eb8ac75e04d6/renders/narrated-rough-8f3d6c91a4b2e750.mp4",
         durationSec: 15,
         aspectBadge: "9:16 Vertical (1080×1920)",
         defaultPrompt:
@@ -381,7 +381,7 @@ const STUDIO_CONFIGS: Record<StudioFormatId, StudioCardConfig> = {
         id: "reel_santorini",
         title: "Santorini Golden Hour Walk",
         subtitle: "Mediterranean luxury lifestyle reel with warm sunlight bloom",
-        videoUrl: "/assets/video/studio1_9f360810.mp4",
+        videoUrl: "/assets/reels/studio1_d5dbfcf2-3001-470b-b229-4a521684f4bb/renders/narrated-rough-d7da0bef8ef10d69.mp4",
         durationSec: 15,
         aspectBadge: "9:16 Vertical (1080×1920)",
         defaultPrompt:
@@ -423,7 +423,7 @@ const STUDIO_CONFIGS: Record<StudioFormatId, StudioCardConfig> = {
         id: "reel_alps",
         title: "Alpine Ridge Helicopter Pursuit",
         subtitle: "High-altitude action sports showcase with crisp snow optics",
-        videoUrl: "/assets/video/studio1_d2d144d2.mp4",
+        videoUrl: "/renders/yt/yt_spain_pool_party_omni_hybrid/master_hybrid.mp4",
         durationSec: 15,
         aspectBadge: "9:16 Vertical (1080×1920)",
         defaultPrompt:
@@ -616,14 +616,14 @@ const STUDIO_CONFIGS: Record<StudioFormatId, StudioCardConfig> = {
     studioButtonText: "Enter Feature Film Studio",
     accentColor: "amber",
     aspectClass: "aspect-[21/9] max-h-[380px]",
-    heroVideoUrl: "/assets/video/napoleon_180s_master.mp4",
+    heroVideoUrl: "/renders/edited/reel_napoleon_180s_master_director_1789422757181.mp4",
     specs: ["2.39:1 Anamorphic Scope", "Multi-Scene Narrative", "Chiaroscuro Optics", "-24 LUFS Theatrical"],
     presets: [
        {
         id: "film_napoleon",
         title: "Napoleon: The Emperor's Heart (180s Master)",
         subtitle: "5-Act Imperial Epic & Tragic Romance with Beethoven Op. 92 Score",
-        videoUrl: "/assets/video/napoleon_180s_master.mp4",
+        videoUrl: "/renders/edited/reel_napoleon_180s_master_director_1789422757181.mp4",
         durationSec: 180,
         aspectBadge: "2.39:1 Anamorphic Widescreen",
         defaultPrompt:
@@ -665,7 +665,7 @@ const STUDIO_CONFIGS: Record<StudioFormatId, StudioCardConfig> = {
         id: "film_coastal",
         title: "Amalfi Vintage GT Escape (2.39:1 Scope)",
         subtitle: "35mm Kodak Vision3 film grain with warm Mediterranean color science",
-        videoUrl: "/assets/video/studio1_5bfb958d.mp4",
+        videoUrl: "/renders/yt/yt_summer_roadtrip_omni_hybrid/master_hybrid.mp4",
         durationSec: 15,
         aspectBadge: "2.39:1 Anamorphic Widescreen",
         defaultPrompt:
@@ -707,7 +707,7 @@ const STUDIO_CONFIGS: Record<StudioFormatId, StudioCardConfig> = {
         id: "film_dynasty",
         title: "Imperial Palace Thriller (2.39:1 Scope)",
         subtitle: "Epic historical production design with candlelit volumetric shadows",
-        videoUrl: "/assets/video/napoleon_180s_master.mp4",
+        videoUrl: "/renders/edited/reel_napoleon_180s_master_director_1789422757181.mp4",
         durationSec: 15,
         aspectBadge: "2.39:1 Anamorphic Widescreen",
         defaultPrompt:

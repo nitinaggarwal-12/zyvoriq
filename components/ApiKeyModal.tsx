@@ -55,9 +55,9 @@ export function ApiKeyModal({ isOpen, onClose }: ApiKeyModalProps) {
           if (data.configured && data.ok) {
             const defaultEntry: KeyEntry = {
               id: "server_env_default",
-              name: "Server Environment Key (Railway)",
+              name: "Server Environment Key (Cloud Run)",
               key: "SERVER_ENV_KEY",
-              masked: "AIzaSy••••••••••••(Railway Env)",
+              masked: "AIzaSy••••••••••••(Cloud Run Env)",
               status: "alive",
               latencyMs: 35,
               lastChecked: new Date().toLocaleTimeString(),

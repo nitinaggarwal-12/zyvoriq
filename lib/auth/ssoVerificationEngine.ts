@@ -164,7 +164,7 @@ export const SSO_PRESET_PROFILES: Record<SsoProvider, VerifiedSsoProfile> = {
     providerId: "x_oauth2_user_88291029",
     legalName: "Alexander Hayes",
     email: "alex@novacreative.co",
-    avatarUrl: "/assets/characters/marcus_vance_us.jpg",
+    avatarUrl: "/assets/characters/mathias_alder_ch.jpg",
     ageTier: "21+_VERIFIED",
     isAgeVerified: true,
     birthYearApprox: 1996,

@@ -270,7 +270,7 @@ export async function generateAlignedNarration(input: {
   if (!input.text.trim()) throw new Error("Cannot synthesize empty narration");
   const storage = getAssetStoreCapability();
   if (!storage.configured || !storage.durable) {
-    throw new Error("Real narration requires durable asset storage. Configure ZYVORIQ_ASSET_ROOT or attach a Railway volume before generation.");
+    throw new Error("Real narration requires durable asset storage. Configure ZYVORIQ_ASSET_ROOT or attach a Cloud Run storage volume before generation.");
   }
   apiKey();
 

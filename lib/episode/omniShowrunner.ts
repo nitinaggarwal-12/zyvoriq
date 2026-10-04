@@ -167,7 +167,7 @@ OUTPUT JSON FORMAT (Must be strict, valid JSON):
 `;
 
   const primaryModel = process.env.GEMINI_SCRIPT_MODEL || "gemini-2.5-flash";
-  const candidateModels = [primaryModel, "gemini-2.5-flash", "gemini-1.5-pro"];
+  const candidateModels = [primaryModel, "gemini-2.5-flash", "gemini-2.5-pro"];
 
   let lastError: Error | null = null;
   let rawText = "";

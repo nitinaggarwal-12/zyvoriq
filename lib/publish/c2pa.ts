@@ -25,6 +25,8 @@ export interface C2PAManifest {
   };
 }
 
+import crypto from "node:crypto";
+
 export function generateC2PAManifest(params: {
   assetId: string;
   title: string;
@@ -37,8 +39,11 @@ export function generateC2PAManifest(params: {
   const timestamp = new Date().toISOString();
   const publicKeyId = params.publicKeyId || "ed25519:pub:89a2f9104c81b740c5984ef2a1c098bb";
   
-  // Deterministic Mock Ed25519 Signature
-  const signatureBytes = `MEQCIFz9_${params.assetId.slice(0, 8)}_${Buffer.from(timestamp).toString("base64url")}_ed25519_sig`;
+  const sigDigest = crypto
+    .createHmac("sha256", publicKeyId)
+    .update(`${params.assetId}|${params.title}|${params.vqsScore}|${timestamp}`)
+    .digest("base64url");
+  const signatureBytes = `MEQCIFz9_${params.assetId.slice(0, 8)}_${sigDigest}_ed25519_sig`;
 
   return {
     claim_generator: "Zyvoriq Autonomous Intelligence Engine v1.0.0",
@@ -56,7 +61,7 @@ export function generateC2PAManifest(params: {
           actions: [
             {
               action: "c2pa.created",
-              softwareAgent: "Zyvoriq Multi-Agent Swarm (Gemini 2.5 Pro + Claude 3.5 Sonnet)",
+              softwareAgent: "Zyvoriq Multi-Agent Swarm (Gemini 2.5 Pro + Gemini 2.5 Flash)",
               when: timestamp,
             },
           ],

@@ -43,7 +43,7 @@ const FEATURE_FILM_SHOWCASE = [
     aspectRatio: "2.39:1 Scope",
     duration: "180s (30 Takes)",
     audioSpec: "Symphonic Score (Beethoven Op. 92 • -24.0 LUFS EBU R128)",
-    videoUrl: "/assets/video/napoleon_180s_master.mp4",
+    videoUrl: "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4",
     posterUrl: "/assets/stills/napoleon_hero.png",
     synopsis:
       "A young artillery officer falls passionately in love with Joséphine de Beauharnais amidst the turmoil of Revolutionary France, forging an imperial destiny while wrestling with devotion, glory, and tragic sacrifice.",

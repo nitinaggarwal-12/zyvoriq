@@ -62,16 +62,16 @@ export const DEFAULT_EDITABLE_REELS: EditableReelItem[] = [
     id: "mv_01_summer_asia_master",
     title: "Neon Horizon: Tokyo Skyline Rooftop (4-Shot Master)",
     genre: "J-Pop / Electronic Pop • 9:16 Social Canvas",
-    videoUrl: "/assets/video/mv_01_summer_asia_master.mp4",
+    videoUrl: "/renders/yt/yt_summer_roadtrip_omni_hybrid/master_hybrid.mp4",
     durationSec: 24.0,
     shots: [
-      { id: "shot_1", title: "Shot 1 • Shibuya Rooftop Horizon", videoUrl: "/assets/video/mv_01_summer_asia_master.mp4", durationSec: 6.0 },
-      { id: "shot_2", title: "Shot 2 • Neon Core Choreography", videoUrl: "/assets/video/mv_01_summer_asia_master.mp4", durationSec: 6.0 },
-      { id: "shot_3", title: "Shot 3 • Tokyo Tower Panorama", videoUrl: "/assets/video/mv_01_summer_asia_master.mp4", durationSec: 6.0 },
-      { id: "shot_4", title: "Shot 4 • Strobe Finale", videoUrl: "/assets/video/mv_01_summer_asia_master.mp4", durationSec: 6.0 },
+      { id: "shot_1", title: "Shot 1 • Shibuya Rooftop Horizon", videoUrl: "/renders/yt/yt_summer_roadtrip_omni_hybrid/shot_1.mp4", durationSec: 6.0 },
+      { id: "shot_2", title: "Shot 2 • Neon Core Choreography", videoUrl: "/renders/yt/yt_summer_roadtrip_omni_hybrid/shot_2.mp4", durationSec: 6.0 },
+      { id: "shot_3", title: "Shot 3 • Tokyo Tower Panorama", videoUrl: "/renders/yt/yt_summer_roadtrip_omni_hybrid/shot_3.mp4", durationSec: 6.0 },
+      { id: "shot_4", title: "Shot 4 • Strobe Finale", videoUrl: "/renders/yt/yt_summer_roadtrip_omni_hybrid/shot_4.mp4", durationSec: 6.0 },
     ],
     versions: [
-      { versionNumber: 1, label: "v1 • Original Master", url: "/assets/video/mv_01_summer_asia_master.mp4", durationSec: 24.0 },
+      { versionNumber: 1, label: "v1 • Original Master", url: "/renders/yt/yt_summer_roadtrip_omni_hybrid/master_hybrid.mp4", durationSec: 24.0 },
     ],
   },
   {
@@ -109,32 +109,32 @@ export const DEFAULT_EDITABLE_REELS: EditableReelItem[] = [
     id: "napoleon_180s_master",
     title: "Waterloo 1815: The Fog of War (Theatrical Scope)",
     genre: "Historical Epic • 2.39:1 Scope",
-    videoUrl: "/assets/video/napoleon_180s_master.mp4",
+    videoUrl: "/renders/edited/reel_napoleon_180s_master_director_1789422757181.mp4",
     durationSec: 30.0,
     shots: [
-      { id: "shot_1", title: "Shot 1 • Heavy Cavalry Charge Formations", videoUrl: "/assets/video/napoleon_30s_cut.mp4", durationSec: 7.5 },
-      { id: "shot_2", title: "Shot 2 • Volumetric Cannon & Gunpowder Smoke", videoUrl: "/assets/video/napoleon_preview.mp4", durationSec: 7.5 },
-      { id: "shot_3", title: "Shot 3 • The Emperor's Command Tent Close-Up", videoUrl: "/assets/video/napoleon_30s_cut.mp4", durationSec: 7.5 },
-      { id: "shot_4", title: "Shot 4 • Muddy Rainfield Decisive Turn", videoUrl: "/assets/video/napoleon_preview.mp4", durationSec: 7.5 },
+      { id: "shot_1", title: "Shot 1 • Heavy Cavalry Charge Formations", videoUrl: "/renders/edited/reel_napoleon_180s_master_director_1789422757181.mp4", durationSec: 7.5 },
+      { id: "shot_2", title: "Shot 2 • Volumetric Cannon & Gunpowder Smoke", videoUrl: "/renders/edited/reel_napoleon_180s_master_director_1789422748352.mp4", durationSec: 7.5 },
+      { id: "shot_3", title: "Shot 3 • The Emperor's Command Tent Close-Up", videoUrl: "/renders/edited/reel_napoleon_180s_master_director_1789422605988.mp4", durationSec: 7.5 },
+      { id: "shot_4", title: "Shot 4 • Muddy Rainfield Decisive Turn", videoUrl: "/renders/edited/reel_napoleon_180s_master_director_1789422757181.mp4", durationSec: 7.5 },
     ],
     versions: [
-      { versionNumber: 1, label: "v1 • Original Master", url: "/assets/video/napoleon_180s_master.mp4", durationSec: 30.0 },
+      { versionNumber: 1, label: "v1 • Original Master", url: "/renders/edited/reel_napoleon_180s_master_director_1789422757181.mp4", durationSec: 30.0 },
     ],
   },
   {
     id: "coronation_30s_cut",
     title: "Imperial Coronation: Hall of Mirrors",
     genre: "Historical Drama • 2.39:1 Scope",
-    videoUrl: "/assets/video/coronation_30s_cut.mp4",
+    videoUrl: "/assets/paris_caucasian_60s/paris_caucasian_60s_master.mp4",
     durationSec: 24.0,
     shots: [
-      { id: "shot_1", title: "Shot 1 • Royal Procession Down the Nave", videoUrl: "/assets/video/coronation_preview.mp4", durationSec: 6.0 },
-      { id: "shot_2", title: "Shot 2 • Anointing of the Golden Diadem", videoUrl: "/assets/video/coronation_30s_cut.mp4", durationSec: 6.0 },
-      { id: "shot_3", title: "Shot 3 • The Grand Banquet & Candlelit Gold", videoUrl: "/assets/video/coronation_preview.mp4", durationSec: 6.0 },
-      { id: "shot_4", title: "Shot 4 • Hall of Mirrors Velvet Waltz", videoUrl: "/assets/video/coronation_30s_cut.mp4", durationSec: 6.0 },
+      { id: "shot_1", title: "Shot 1 • Royal Procession Down the Nave", videoUrl: "/assets/paris_caucasian_60s/paris_caucasian_60s_master.mp4", durationSec: 6.0 },
+      { id: "shot_2", title: "Shot 2 • Anointing of the Golden Diadem", videoUrl: "/assets/paris_caucasian_60s/paris_caucasian_60s_master.mp4", durationSec: 6.0 },
+      { id: "shot_3", title: "Shot 3 • The Grand Banquet & Candlelit Gold", videoUrl: "/assets/paris_caucasian_60s/paris_caucasian_60s_master.mp4", durationSec: 6.0 },
+      { id: "shot_4", title: "Shot 4 • Hall of Mirrors Velvet Waltz", videoUrl: "/assets/paris_caucasian_60s/paris_caucasian_60s_master.mp4", durationSec: 6.0 },
     ],
     versions: [
-      { versionNumber: 1, label: "v1 • Original Master", url: "/assets/video/coronation_30s_cut.mp4", durationSec: 24.0 },
+      { versionNumber: 1, label: "v1 • Original Master", url: "/assets/paris_caucasian_60s/paris_caucasian_60s_master.mp4", durationSec: 24.0 },
     ],
   },
 ];
@@ -348,7 +348,7 @@ export default function MotionPicturesStudio() {
       prod.videoUrl ||
       prod.manifest?.outputVideoUrl ||
       prod.manifest?.roughCutUrl ||
-      "/assets/video/mv_01_summer_asia_master.mp4";
+      "/renders/yt/yt_summer_roadtrip_omni_hybrid/master_hybrid.mp4";
     const rawShots = prod.manifest?.shots || [];
     const shots =
       rawShots.length > 0
@@ -748,7 +748,7 @@ export default function MotionPicturesStudio() {
                       type="text"
                       value={importedVideoUrlInput}
                       onChange={(e) => setImportedVideoUrlInput(e.target.value)}
-                      placeholder="e.g. /assets/video/mv_01_summer_asia_master.mp4 or https://..."
+                      placeholder="e.g. /renders/yt/yt_summer_roadtrip_omni_hybrid/master_hybrid.mp4 or https://..."
                       className="w-full px-3 py-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-purple-500 font-mono"
                     />
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">

@@ -450,6 +450,196 @@ const INITIAL_VARIATIONS: PostVariation[] = [
   },
 ];
 
+const SPEAKEASY_SEGMENTS: VideoSegmentSpec[] = [
+  {
+    id: "seg-1",
+    index: 0,
+    timeRange: "00.0s–10.0s",
+    startSec: 0,
+    endSec: 10,
+    speaker: "Julian (Baritone)",
+    captionLine:
+      "Play the minor chord soft, Clara—the rain outside knows every secret in this room.",
+    visualContinuityLock:
+      "Julian screen-left at Steinway grand, Clara screen-right by brass mic, warm amber haze",
+    aiGenerated: true,
+  },
+  {
+    id: "seg-2",
+    index: 1,
+    timeRange: "10.0s–20.0s",
+    startSec: 10,
+    endSec: 20,
+    speaker: "Clara (Alto)",
+    captionLine:
+      "Then let the brass horns answer before the velvet curtains close tonight.",
+    visualContinuityLock:
+      "Close-up on Clara in crimson sequin gown, spotlight reflection on wet parquet floor",
+    aiGenerated: true,
+  },
+  {
+    id: "seg-3",
+    index: 2,
+    timeRange: "20.0s–30.0s",
+    startSec: 20,
+    endSec: 30,
+    speaker: "Julian (Baritone)",
+    captionLine:
+      "Every table in the balcony just went quiet. Keep the tempo steady at 118 BPM.",
+    visualContinuityLock:
+      "Tracking dolly from piano keys to center stage; 180-deg axis locked",
+    aiGenerated: true,
+  },
+  {
+    id: "seg-4",
+    index: 3,
+    timeRange: "30.0s–40.0s",
+    startSec: 30,
+    endSec: 40,
+    speaker: "Clara (Alto)",
+    captionLine:
+      "City lights fade on the avenue, but the ivory dreams stay awake till dawn.",
+    visualContinuityLock:
+      "Upright bass and brushed snare swell in background, warm Art-Deco sconces",
+    aiGenerated: true,
+  },
+  {
+    id: "seg-5",
+    index: 4,
+    timeRange: "40.0s–50.0s",
+    startSec: 40,
+    endSec: 50,
+    speaker: "Julian (Baritone)",
+    captionLine:
+      "One last modulation into D-minor before the marquee lights dim.",
+    visualContinuityLock:
+      "Two-shot medium frame by the piano, -14 LUFS vocal ducking",
+    aiGenerated: true,
+  },
+  {
+    id: "seg-6",
+    index: 5,
+    timeRange: "50.0s–60.0s",
+    startSec: 50,
+    endSec: 60,
+    speaker: "Clara & Julian",
+    captionLine:
+      "Goodnight to the shadows—until the next midnight encore.",
+    visualContinuityLock:
+      "Locked warm tungsten speakeasy grade through final sustained piano chord",
+    aiGenerated: true,
+  },
+];
+
+function buildPostFromVariation(
+  v: PostVariation,
+  basePost: StudioPostState
+): StudioPostState {
+  const lower = `${v.id} ${v.label} ${v.videoUrl}`.toLowerCase();
+  if (lower.includes("speakeasy") || lower.includes("crimson echoes")) {
+    return {
+      ...basePost,
+      title: "Crimson Echoes — 1920s Art-Deco Speakeasy 60s Master",
+      hook: v.hook,
+      body: v.body,
+      hashtags: v.hashtags,
+      videoUrl: v.videoUrl,
+      audioMixLabel: v.audioLabel,
+      castBadge: "Clara (Velvet Alto) · Julian (Baritone Pianist)",
+      youtubeRefBadge: "1920s Art-Deco Master · 6-Act Locked",
+      altText:
+        "35mm warm amber frame of Clara at a vintage ribbon mic and Julian at a grand piano inside a 1920s speakeasy.",
+      ctaUrl:
+        "https://zyvoriq.studio/showcase/crimson-echoes-speakeasy?utm_source=social&utm_medium=studio",
+      segments: SPEAKEASY_SEGMENTS,
+      slides: [
+        {
+          id: "slide-1",
+          title: "Act I (0:00–0:20) · Midnight at the Brass Marquee",
+          subtitle:
+            "Julian opens on the Steinway grand while Clara steps into the warm amber spotlight.",
+          altText: "1920s Art-Deco speakeasy stage with grand piano and ribbon mic",
+          timeCode: "00:00–00:20",
+        },
+        {
+          id: "slide-2",
+          title: "Act II (0:20–0:40) · Velvet Jazz-Noir Groove",
+          subtitle:
+            "118 BPM brushed snare and upright bass lock the room into unbroken silence.",
+          altText: "Medium dolly shot across the speakeasy floor",
+          timeCode: "00:20–00:40",
+        },
+        {
+          id: "slide-3",
+          title: "Act III (0:40–1:00) · D-Minor Midnight Encore",
+          subtitle:
+            "Duet finale under warm tungsten sconces with -14 LUFS vocal ducking.",
+          altText: "Clara and Julian final duet frame",
+          timeCode: "00:40–01:00",
+        },
+      ],
+    };
+  }
+
+  if (lower.includes("cursed hunter") || lower.includes("var-option-2") || lower.includes("09_option2")) {
+    return {
+      ...basePost,
+      title: "The Cursed Hunter — 35mm Live-Action 60s Campaign",
+      hook: v.hook,
+      body: v.body,
+      hashtags: v.hashtags,
+      videoUrl: v.videoUrl,
+      audioMixLabel: v.audioLabel,
+      castBadge: "Kaelen (Baritone) · Lyra (Mezzo)",
+      youtubeRefBadge: "35mm Anamorphic Master · 6-Act Locked",
+      altText:
+        "35mm anamorphic frame of Kaelen and Lyra in the frozen basalt pass at Arctic twilight.",
+      ctaUrl:
+        "https://zyvoriq.studio/showcase/the-cursed-hunter?utm_source=social&utm_medium=studio",
+      segments: CURSED_HUNTER_SEGMENTS,
+      slides: [
+        {
+          id: "slide-1",
+          title: "Act I (0:00–0:20) · Unarmed in the Basalt Pass",
+          subtitle: "Lyra approaches Kaelen with open hands—zero weapon continuity drift.",
+          altText: "Act 1 frame showing unarmed Lyra facing Kaelen in snowy canyon",
+          timeCode: "00:00–00:20",
+        },
+        {
+          id: "slide-2",
+          title: "Act II (0:20–0:40) · Closing the Distance",
+          subtitle: "Strict right-to-left approach across the 180-degree camera axis.",
+          altText: "Act 2 medium two-shot in snowy basalt pass",
+          timeCode: "00:20–00:40",
+        },
+        {
+          id: "slide-3",
+          title: "Act III (0:40–1:00) · Locked Arctic Twilight Resolution",
+          subtitle: "Continuous cold blue-grey overcast grade with orchestral crescendo.",
+          altText: "Act 3 resolution shot under cold blue-grey twilight sky",
+          timeCode: "00:40–01:00",
+        },
+      ],
+    };
+  }
+
+  return {
+    ...basePost,
+    title: INITIAL_POST.title,
+    hook: v.hook,
+    body: v.body,
+    hashtags: v.hashtags,
+    videoUrl: v.videoUrl,
+    audioMixLabel: v.audioLabel,
+    castBadge: INITIAL_POST.castBadge,
+    youtubeRefBadge: INITIAL_POST.youtubeRefBadge,
+    altText: INITIAL_POST.altText,
+    ctaUrl: INITIAL_POST.ctaUrl,
+    segments: INITIAL_SEGMENTS,
+    slides: INITIAL_POST.slides,
+  };
+}
+
 // ============================================================================
 // CONVERSATIONAL NON-MUTATION INTENT GUARD (Mandatory 4-Case Gate)
 // ============================================================================
@@ -633,7 +823,7 @@ export default function ContentStudioWorkspacePage() {
     useState<boolean>(false);
   const [mobileInspectorOpen, setMobileInspectorOpen] =
     useState<boolean>(false);
-  const [scheduleDate, setScheduleDate] = useState<string>("2026-10-01T09:00");
+  const [scheduleDate, setScheduleDate] = useState<string>("2026-10-05T09:00");
   const [toast, setToast] = useState<{
     message: string;
     undoSnapshot?: StudioPostState;
@@ -1288,7 +1478,7 @@ export default function ContentStudioWorkspacePage() {
     timeline: `Act ${activeSegment.index + 1} (${activeSegment.timeRange})`,
   };
 
-  const handleTriggerQuickAction = (action: QuickActionType) => {
+  const handleTriggerQuickAction = async (action: QuickActionType) => {
     setAssistantReply(null);
     const targetScope: SelectableScope =
       selectedScope === "post" || selectedScope === "visual"
@@ -1308,6 +1498,19 @@ export default function ContentStudioWorkspacePage() {
         ? post.ctaUrl
         : post.hook;
 
+    const actionLabel =
+      action === "shorter"
+        ? "Shorter"
+        : action === "punchier"
+        ? "Punchier"
+        : action === "fix_grammar"
+        ? "Fix grammar"
+        : action === "change_tone"
+        ? "Change tone"
+        : action === "translate"
+        ? "Translate"
+        : "Regenerate";
+
     const isDefaultHunter =
       post.title.toLowerCase().includes("cursed hunter") ||
       post.hook.toLowerCase().includes("basalt pass");
@@ -1316,32 +1519,32 @@ export default function ContentStudioWorkspacePage() {
       .replace(/\s{2,}/g, " ")
       .trim();
 
-    let proposedText = currentText;
+    let fallbackText = currentText;
     if (targetScope === "timeline") {
       if (action === "shorter") {
-        proposedText =
+        fallbackText =
           urlClean.length > 56
             ? `${urlClean.slice(0, 54).replace(/[,;:\s]+$/, "")}.`
             : `${urlClean.split(/[—,;]/)[0].trim()}.`;
       } else if (action === "punchier") {
-        proposedText = `${urlClean.replace(/\.$/, "")}—before the final frame fades!`;
+        fallbackText = `${urlClean.replace(/\.$/, "")}—before the final frame fades!`;
       } else if (action === "fix_grammar") {
-        proposedText = `${urlClean.replace(/\s+/g, " ").replace(/--/g, "—").replace(/\.$/, "")}.`;
+        fallbackText = `${urlClean.replace(/\s+/g, " ").replace(/--/g, "—").replace(/\.$/, "")}.`;
       } else if (action === "change_tone") {
-        proposedText = `[Whispered, -14 LUFS close-mic]: "${urlClean.replace(/^"|"$/g, "")}"`;
+        fallbackText = `[Whispered, -14 LUFS close-mic]: "${urlClean.replace(/^"|"$/g, "")}"`;
       } else if (action === "translate") {
-        proposedText = "Mira mis manos en el paso helado—solo la verdad permanece en este acto.";
+        fallbackText = "Custodia este umbral sagrado de Kailash, hijo mio, y no dejes pasar ninguna fuerza.";
       } else {
-        proposedText = `${urlClean.replace(/\.$/, "")} [Take 2 · Locked 35mm continuity].`;
+        fallbackText = `${urlClean.replace(/\.$/, "")} [Take 2 · Locked 35mm continuity].`;
       }
     } else if (action === "shorter") {
       if (isDefaultHunter) {
-        proposedText =
+        fallbackText =
           targetScope === "hook"
             ? "The curse took his voice—so she walked into the frozen pass unarmed."
             : "60s continuous 35mm cinema: locked Arctic twilight, Omni 1.1 dialogue + Lyria 3 Pro score.";
       } else {
-        proposedText =
+        fallbackText =
           targetScope === "hook"
             ? urlClean.length > 88
               ? `${urlClean.slice(0, 85).replace(/[,;:\s]+$/, "")}.`
@@ -1350,59 +1553,81 @@ export default function ContentStudioWorkspacePage() {
       }
     } else if (action === "punchier") {
       if (isDefaultHunter) {
-        proposedText =
+        fallbackText =
           targetScope === "hook"
             ? "Sixty seconds before the canyon freezes shut—and she left her sword behind."
             : "Six unbroken 35mm shots. Spoken dialogue + snow Foley ducked at -14 LUFS over a live orchestral crescendo.";
       } else {
-        proposedText =
+        fallbackText =
           targetScope === "hook"
             ? `Every frame counts: ${urlClean.slice(0, 86).replace(/\.$/, "")}!`
             : `Unbroken 35mm visual effects, lip-synced dialogue, and a soaring Lyria 3 Pro orchestral score. ${urlClean}`;
       }
     } else if (action === "fix_grammar") {
-      proposedText = urlClean
+      fallbackText = urlClean
         .replace(/\s+/g, " ")
         .replace(/--/g, "—")
         .trim();
-      if (proposedText === currentText) {
-        proposedText = isDefaultHunter
+      if (fallbackText === currentText) {
+        fallbackText = isDefaultHunter
           ? "The curse stole his voice at dusk; she entered the frozen basalt pass with open hands."
           : `${urlClean.replace(/\.$/, "")} — presented in 35mm theatrical continuity.`;
       }
     } else if (action === "change_tone") {
-      proposedText = isDefaultHunter
+      fallbackText = isDefaultHunter
         ? "Director's Note: How we maintained 180-degree spatial continuity and cold twilight across 60 seconds."
         : `Director's Breakdown: Crafting "${post.title}" with 6-act character continuity and -14 LUFS dynamic scoring.`;
     } else if (action === "translate") {
-      proposedText = isDefaultHunter
+      fallbackText = isDefaultHunter
         ? "La maldicion robo su voz al anochecer, asi que entro al paso de basalto con las manos vacias."
-        : "Una historia visual cinematografica en 35mm con dialogo sincronizado y musica dinamica orquestal.";
+        : "En las puertas sagradas del Monte Kailash, un voto entre Parvati, Ganesha y Shiva despierta el cosmos.";
     } else if (action === "regenerate") {
-      proposedText = isDefaultHunter
+      fallbackText = isDefaultHunter
         ? "No sword. No armor. Just 60 seconds in the snowy basalt pass to break a six-winter curse."
         : `Six cinematic acts bring "${post.title}" to life with spoken dialogue and dynamic orchestral sound design.`;
     }
 
+    // Show immediate diff card while upgrading with live Gemini 2.5 Flash response
+    const diffId = `diff-${Date.now()}`;
     setPendingDiff({
-      id: `diff-${Date.now()}`,
+      id: diffId,
       targetKey: targetScope,
       targetLabel: scopeLabelMap[targetScope],
       beforeText: currentText,
-      afterText: proposedText,
-      actionName:
-        action === "shorter"
-          ? "Shorter"
-          : action === "punchier"
-          ? "Punchier"
-          : action === "fix_grammar"
-          ? "Fix grammar"
-          : action === "change_tone"
-          ? "Change tone"
-          : action === "translate"
-          ? "Translate"
-          : "Regenerate",
+      afterText: fallbackText,
+      actionName: actionLabel,
     });
+
+    try {
+      const res = await fetch("/api/swarm/synthesize-from-prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "quick_edit",
+          action,
+          scope: targetScope,
+          text: currentText,
+          title: post.title,
+          platform: activePlatform.shortName,
+          brandVoice: activeBrand.name,
+          speaker: activeSegment.speaker,
+          timeRange: activeSegment.timeRange,
+        }),
+        signal: AbortSignal.timeout(8000),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.ok && typeof data.rewrittenText === "string" && data.rewrittenText.trim()) {
+          setPendingDiff((prev) =>
+            prev && prev.id === diffId
+              ? { ...prev, afterText: data.rewrittenText.trim() }
+              : prev
+          );
+        }
+      }
+    } catch {
+      // Keep deterministic fallback if offline
+    }
   };
 
   const handleAcceptDiff = (diff: PendingDiffSuggestion) => {
@@ -1463,18 +1688,55 @@ export default function ContentStudioWorkspacePage() {
       "Stage 4/4: Running 6-category pre-flight checks…",
     ];
 
-    // Fire non-blocking synthesis request in parallel with stage progress
+    const targetKeyForScoped: SelectableScope =
+      selectedScope === "body"
+        ? "body"
+        : selectedScope === "hashtags"
+        ? "hashtags"
+        : selectedScope === "timeline"
+        ? "timeline"
+        : selectedScope === "cta"
+        ? "cta"
+        : "hook";
+    const beforeTextForScoped =
+      targetKeyForScoped === "body"
+        ? post.body
+        : targetKeyForScoped === "hashtags"
+        ? post.hashtags
+        : targetKeyForScoped === "timeline"
+        ? activeSegment.captionLine
+        : targetKeyForScoped === "cta"
+        ? post.ctaUrl
+        : post.hook;
+
+    // Fire non-blocking synthesis request in parallel with stage progress (15s timeout so Gemini 2.5 Flash completes reliably)
     const apiPromise =
       mode === "full_brief"
         ? fetch("/api/swarm/synthesize-from-prompt", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prompt: promptText }),
-            signal: AbortSignal.timeout(2200),
+            body: JSON.stringify({ prompt: promptText, studioFastMode: true }),
+            signal: AbortSignal.timeout(15000),
           })
             .then((r) => (r.ok ? r.json() : null))
             .catch(() => null)
-        : Promise.resolve(null);
+        : fetch("/api/swarm/synthesize-from-prompt", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              mode: "quick_edit",
+              action: "scoped_prompt",
+              scope: targetKeyForScoped,
+              text: beforeTextForScoped,
+              instruction: promptText,
+              title: post.title,
+              platform: activePlatform.shortName,
+              brandVoice: activeBrand.name,
+            }),
+            signal: AbortSignal.timeout(9000),
+          })
+            .then((r) => (r.ok ? r.json() : null))
+            .catch(() => null);
 
     for (let i = 0; i < stages.length; i++) {
       if (cancelStreamRef.current) {
@@ -1490,38 +1752,21 @@ export default function ContentStudioWorkspacePage() {
     setGenerationStage({ active: false, step: 0, label: "" });
 
     if (mode === "scoped_edit") {
-      const targetKey: SelectableScope =
-        selectedScope === "body"
-          ? "body"
-          : selectedScope === "hashtags"
-          ? "hashtags"
-          : selectedScope === "timeline"
-          ? "timeline"
-          : selectedScope === "cta"
-          ? "cta"
-          : "hook";
-      const beforeText =
-        targetKey === "body"
-          ? post.body
-          : targetKey === "hashtags"
-          ? post.hashtags
-          : targetKey === "timeline"
-          ? activeSegment.captionLine
-          : targetKey === "cta"
-          ? post.ctaUrl
-          : post.hook;
       const cleanScoped = promptText
         .replace(/https?:\/\/[^\s"'<>]+/gi, "")
         .trim();
+      const aiRewritten =
+        apiData?.ok && typeof apiData.rewrittenText === "string" && apiData.rewrittenText.trim()
+          ? apiData.rewrittenText.trim()
+          : targetKeyForScoped === "timeline"
+          ? `${cleanScoped.replace(/^"|"$/g, "")}`
+          : `${cleanScoped} — crafted for ${activePlatform.shortName} in ${activeBrand.name} voice.`;
       setPendingDiff({
         id: `diff-prompt-${Date.now()}`,
-        targetKey,
-        targetLabel: scopeLabelMap[targetKey],
-        beforeText,
-        afterText:
-          targetKey === "timeline"
-            ? `${cleanScoped.replace(/^"|"$/g, "")}`
-            : `${cleanScoped} — crafted for ${activePlatform.shortName} in ${activeBrand.name} voice.`,
+        targetKey: targetKeyForScoped,
+        targetLabel: scopeLabelMap[targetKeyForScoped],
+        beforeText: beforeTextForScoped,
+        afterText: aiRewritten,
         actionName: "Scoped Prompt",
       });
       setScopedPromptInput("");
@@ -1543,11 +1788,13 @@ export default function ContentStudioWorkspacePage() {
       lowerPrompt.includes("kailash") ||
       extractedYtId === "m55XOXtscXU";
     const isSpeakeasy =
-      lowerPrompt.includes("speakeasy") || lowerPrompt.includes("jazz");
+      lowerPrompt.includes("speakeasy") || lowerPrompt.includes("jazz") || lowerPrompt.includes("noir");
     const isCursedHunter =
       lowerPrompt.includes("cursed hunter") ||
       lowerPrompt.includes("kaelen") ||
-      lowerPrompt.includes("lyra");
+      lowerPrompt.includes("lyra") ||
+      lowerPrompt.includes("basalt") ||
+      lowerPrompt.includes("arctic");
 
     const chosenVideo = isSpeakeasy
       ? audioEngineMode === "option1_symphonic"
@@ -1561,8 +1808,14 @@ export default function ContentStudioWorkspacePage() {
       ? audioEngineMode === "option1_symphonic"
         ? "/assets/swarm/comparisons/10_option1_lyria3pro_symphonic_60s_master.mp4"
         : "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4"
+      : /dance|bollywood|bhangra|party|festival/i.test(lowerPrompt)
+      ? "/assets/swarm/bollywood_top_heroine_hindi_superhit_60s_omni_1_1_flash.mp4"
+      : /coastal|beach|summer|synth|ocean|island/i.test(lowerPrompt)
+      ? "/assets/swarm/punjabi_spain_poolside_full_60s_omni_1_1_flash.mp4"
+      : /cyberpunk|tokyo|sci-fi|detective|neon|future|thriller/i.test(lowerPrompt)
+      ? "/assets/swarm/comparisons/04_option2_clone_adk_orcas_omni_native_60s.mp4"
       : apiData?.assets?.videoUrl ||
-        "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4?v=theatrical3";
+        "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4";
 
     let nextTitle = post.title;
     let nextHook = post.hook;
@@ -1573,27 +1826,16 @@ export default function ContentStudioWorkspacePage() {
     let nextSlides: CarouselSlideItem[] = post.slides;
     let nextCastLabel = "Kaelen (Baritone) · Lyra (Mezzo)";
 
+    const standardTimeRanges = [
+      "00.0s–10.0s",
+      "10.0s–20.0s",
+      "20.0s–30.0s",
+      "30.0s–40.0s",
+      "40.0s–50.0s",
+      "50.0s–60.0s",
+    ];
+
     if (isGaneshShivaParvati) {
-      const isFiveMin =
-        lowerPrompt.includes("5 min") || lowerPrompt.includes("5-min");
-      const actDur = isFiveMin ? 50 : 10;
-      const timeRanges = isFiveMin
-        ? [
-            "0:00–0:50",
-            "0:50–1:40",
-            "1:40–2:30",
-            "2:30–3:20",
-            "3:20–4:10",
-            "4:10–5:00",
-          ]
-        : [
-            "00.0s–10.0s",
-            "10.0s–20.0s",
-            "20.0s–30.0s",
-            "30.0s–40.0s",
-            "40.0s–50.0s",
-            "50.0s–60.0s",
-          ];
       nextTitle =
         apiData?.assets?.title ||
         "Sacred Kailash: Ganesh, Parvati & Shiva — 35mm Visual Epic";
@@ -1609,112 +1851,8 @@ export default function ContentStudioWorkspacePage() {
         "Wide 35mm cinema frame of Mount Kailash at golden twilight featuring Goddess Parvati, young Lord Ganesha guarding the temple threshold, and Lord Shiva with celestial light effects.";
       nextCastLabel =
         "Goddess Parvati (Soprano) · Lord Ganesha (Tenor) · Lord Shiva (Baritone)";
-      nextSegments = [
-        {
-          id: "seg-1",
-          index: 0,
-          timeRange: timeRanges[0],
-          startSec: 0 * actDur,
-          endSec: 1 * actDur,
-          speaker: "Goddess Parvati",
-          captionLine:
-            "Guard this sacred threshold of Kailash, my son, and let no force cross unbidden.",
-          visualContinuityLock:
-            "Golden Kailash courtyard, radiant turmeric aura VFX, Parvati screen-left & Ganesha screen-right",
-          aiGenerated: true,
-        },
-        {
-          id: "seg-2",
-          index: 1,
-          timeRange: timeRanges[1],
-          startSec: 1 * actDur,
-          endSec: 2 * actDur,
-          speaker: "Lord Ganesha",
-          captionLine:
-            "A mother's word is supreme law. I stand watch over these golden temple steps.",
-          visualContinuityLock:
-            "Ganesha plants glowing golden lotus staff on temple steps, warm Himalayan mist & golden mandala",
-          aiGenerated: true,
-        },
-        {
-          id: "seg-3",
-          index: 2,
-          timeRange: timeRanges[2],
-          startSec: 2 * actDur,
-          endSec: 3 * actDur,
-          speaker: "Lord Shiva",
-          captionLine:
-            "Who bars the path to my own abode upon the eternal snows of Kailash?",
-          visualContinuityLock:
-            "Shiva approaches snow-swept Kailash bridge with crescent moon glow & damaru resonance",
-          aiGenerated: true,
-        },
-        {
-          id: "seg-4",
-          index: 3,
-          timeRange: timeRanges[3],
-          startSec: 3 * actDur,
-          endSec: 4 * actDur,
-          speaker: "Lord Ganesha",
-          captionLine:
-            "Even the lord of the cosmos must honor the vow entrusted by Goddess Parvati.",
-          visualContinuityLock:
-            "Golden geometric light-shield dome VFX in snow courtyard, damaru & brass crescendo ducked -14 LUFS",
-          aiGenerated: true,
-        },
-        {
-          id: "seg-5",
-          index: 4,
-          timeRange: timeRanges[4],
-          startSec: 4 * actDur,
-          endSec: 5 * actDur,
-          speaker: "Goddess Parvati",
-          captionLine:
-            "Restore him with divine grace, and crown him first among all sacred guardians.",
-          visualContinuityLock:
-            "Parvati steps into luminous golden beam between Shiva and Ganesha; emotional close-up",
-          aiGenerated: true,
-        },
-        {
-          id: "seg-6",
-          index: 5,
-          timeRange: timeRanges[5],
-          startSec: 5 * actDur,
-          endSec: 6 * actDur,
-          speaker: "Shiva & Parvati",
-          captionLine:
-            "Rise as Gajanana, Vighnaharta, blessed with wisdom, revered before every sacred prayer.",
-          visualContinuityLock:
-            "Divine golden lotus petal rain, Shiva & Parvati unison blessing, sacred Shankha conch finale",
-          aiGenerated: true,
-        },
-      ];
-      nextSlides = [
-        {
-          id: "slide-1",
-          title: `Act I (${timeRanges[0]}) · Sacred Vow at Mount Kailash`,
-          subtitle:
-            "Parvati creates Ganesha and entrusts him with guarding the inner sanctum.",
-          altText: "Goddess Parvati and young Ganesha at the gates of Kailash",
-          timeCode: timeRanges[0],
-        },
-        {
-          id: "slide-2",
-          title: `Act II (${timeRanges[2]}) · The Cosmic Confrontation`,
-          subtitle:
-            "Shiva returns to Kailash as dynamic damaru & orchestral swells heighten the standoff.",
-          altText: "Lord Shiva facing Ganesha at the snowy mountain threshold",
-          timeCode: timeRanges[2],
-        },
-        {
-          id: "slide-3",
-          title: `Act III (${timeRanges[5]}) · Dawn of Vigneshwara`,
-          subtitle:
-            "Ganesha is crowned remover of obstacles under a golden celestial blessing.",
-          altText: "Shiva and Parvati blessing Lord Ganesha",
-          timeCode: timeRanges[5],
-        },
-      ];
+      nextSegments = INITIAL_SEGMENTS;
+      nextSlides = INITIAL_POST.slides;
     } else if (isSpeakeasy) {
       nextTitle = "Crimson Echoes — 1920s Art-Deco Speakeasy 60s Master";
       nextHook =
@@ -1724,86 +1862,7 @@ export default function ContentStudioWorkspacePage() {
       nextAltText =
         "35mm warm amber frame of Clara at a vintage ribbon mic and Julian at a grand piano inside a 1920s speakeasy.";
       nextCastLabel = "Clara (Velvet Alto) · Julian (Baritone Pianist)";
-      nextSegments = [
-        {
-          id: "seg-1",
-          index: 0,
-          timeRange: "00.0s–10.0s",
-          startSec: 0,
-          endSec: 10,
-          speaker: "Julian (Baritone)",
-          captionLine:
-            "Play the minor chord soft, Clara—the rain outside knows every secret in this room.",
-          visualContinuityLock:
-            "Julian screen-left at Steinway grand, Clara screen-right by brass mic, warm amber haze",
-          aiGenerated: true,
-        },
-        {
-          id: "seg-2",
-          index: 1,
-          timeRange: "10.0s–20.0s",
-          startSec: 10,
-          endSec: 20,
-          speaker: "Clara (Alto)",
-          captionLine:
-            "Then let the brass horns answer before the velvet curtains close tonight.",
-          visualContinuityLock:
-            "Close-up on Clara in crimson sequin gown, spotlight reflection on wet parquet floor",
-          aiGenerated: true,
-        },
-        {
-          id: "seg-3",
-          index: 2,
-          timeRange: "20.0s–30.0s",
-          startSec: 20,
-          endSec: 30,
-          speaker: "Julian (Baritone)",
-          captionLine:
-            "Every table in the balcony just went quiet. Keep the tempo steady at 118 BPM.",
-          visualContinuityLock:
-            "Tracking dolly from piano keys to center stage; 180-deg axis locked",
-          aiGenerated: true,
-        },
-        {
-          id: "seg-4",
-          index: 3,
-          timeRange: "30.0s–40.0s",
-          startSec: 30,
-          endSec: 40,
-          speaker: "Clara (Alto)",
-          captionLine:
-            "City lights fade on the avenue, but the ivory dreams stay awake till dawn.",
-          visualContinuityLock:
-            "Upright bass and brushed snare swell in background, warm Art-Deco sconces",
-          aiGenerated: true,
-        },
-        {
-          id: "seg-5",
-          index: 4,
-          timeRange: "40.0s–50.0s",
-          startSec: 40,
-          endSec: 50,
-          speaker: "Julian (Baritone)",
-          captionLine:
-            "One last modulation into D-minor before the marquee lights dim.",
-          visualContinuityLock:
-            "Two-shot medium frame by the piano, -14 LUFS vocal ducking",
-          aiGenerated: true,
-        },
-        {
-          id: "seg-6",
-          index: 5,
-          timeRange: "50.0s–60.0s",
-          startSec: 50,
-          endSec: 60,
-          speaker: "Clara & Julian",
-          captionLine:
-            "Goodnight to the shadows—until the next midnight encore.",
-          visualContinuityLock:
-            "Locked warm tungsten speakeasy grade through final sustained piano chord",
-          aiGenerated: true,
-        },
-      ];
+      nextSegments = SPEAKEASY_SEGMENTS;
       nextSlides = [
         {
           id: "slide-1",
@@ -1863,108 +1922,141 @@ export default function ContentStudioWorkspacePage() {
       ];
       nextCastLabel = "Kaelen (Baritone) · Lyra (Mezzo)";
     } else {
-      // Custom topic or YouTube reference synthesis
+      // Custom topic or YouTube reference synthesis powered by live Gemini 2.5 Flash
       const apiAssets = apiData?.assets;
       const conciseTopic =
         promptWithoutUrls.length > 52
           ? promptWithoutUrls.slice(0, 50).replace(/[,;:\s]+$/, "")
           : promptWithoutUrls || (extractedYtId ? `YouTube Ref (${extractedYtId}) Cinema Epic` : "Custom 35mm Visual Story");
       nextTitle = apiAssets?.title || `${conciseTopic} — 35mm Cinema Master`;
-      const rawHookCandidate = promptWithoutUrls.trim()
-        ? promptWithoutUrls.length <= 92
-          ? `${promptWithoutUrls.replace(/\.$/, "")}—in unbroken 35mm continuity.`
-          : `${promptWithoutUrls.slice(0, 96).replace(/[,;:\s]+$/, "")}—in 35mm cinema.`
-        : `Deconstructing YouTube reference ${extractedYtId || "visual"} into an unbroken 60s 35mm cinema cut.`;
-      nextHook = rawHookCandidate.slice(0, 114);
+      const rawHookCandidate =
+        apiAssets?.hook ||
+        (promptWithoutUrls.trim()
+          ? promptWithoutUrls.length <= 92
+            ? `${promptWithoutUrls.replace(/\.$/, "")}—in unbroken 35mm continuity.`
+            : `${promptWithoutUrls.slice(0, 96).replace(/[,;:\s]+$/, "")}—in 35mm cinema.`
+          : `Deconstructing YouTube reference ${extractedYtId || "visual"} into an unbroken 60s 35mm cinema cut.`);
+      nextHook = String(rawHookCandidate).replace(/https?:\/\/[^\s]+/gi, "").trim().slice(0, 114);
       nextBody =
         apiAssets?.storyline?.slice(0, 260) ||
         `Built for ${activePlatform.shortName} using ${activeBrand.name}${
           extractedYtId ? ` (referencing YouTube ID ${extractedYtId})` : ""
         }. Six continuous 35mm acts with spoken dialogue, visual effects continuity locks, and dynamic Lyria 3 Pro orchestral scoring at -14 LUFS.`;
-      nextHashtags = "#VisualStorytelling #35mmCinema #SoundDesign #CinemaStudio";
-      nextAltText = `Wide 35mm cinema frame for ${nextTitle} with locked character lighting and dynamic atmospheric effects.`;
+      nextHashtags =
+        apiAssets?.hashtags || "#VisualStorytelling #35mmCinema #SoundDesign #CinemaStudio";
+      nextAltText =
+        apiAssets?.altText ||
+        `Wide 35mm cinema frame for ${nextTitle} with locked character lighting and dynamic atmospheric effects.`;
       const leadA = apiAssets?.personas?.female_lead?.name || "Lead Protagonist";
       const leadB = apiAssets?.personas?.male_lead?.name || "Co-Lead";
-      nextCastLabel = `${leadA} · ${leadB}`;
-      nextSegments = [
-        {
-          id: "seg-1",
-          index: 0,
-          timeRange: "00.0s–10.0s",
-          startSec: 0,
-          endSec: 10,
-          speaker: leadA,
-          captionLine:
-            "Every step into this threshold changes the story we came here to tell.",
-          visualContinuityLock: `Establishing 35mm wide shot for ${conciseTopic}; locked atmospheric lighting`,
-          aiGenerated: true,
-        },
-        {
-          id: "seg-2",
-          index: 1,
-          timeRange: "10.0s–20.0s",
-          startSec: 10,
-          endSec: 20,
-          speaker: leadB,
-          captionLine:
-            "Hold your ground—listen to the resonance rising through the mist.",
-          visualContinuityLock:
-            "Medium two-shot with zero prop drift; dynamic particle VFX",
-          aiGenerated: true,
-        },
-        {
-          id: "seg-3",
-          index: 2,
-          timeRange: "20.0s–30.0s",
-          startSec: 20,
-          endSec: 30,
-          speaker: leadA,
-          captionLine:
-            "We don't turn back when the score reaches the second act.",
-          visualContinuityLock:
-            "180-degree camera axis locked; forward dolly movement",
-          aiGenerated: true,
-        },
-        {
-          id: "seg-4",
-          index: 3,
-          timeRange: "30.0s–40.0s",
-          startSec: 30,
-          endSec: 40,
-          speaker: leadB,
-          captionLine:
-            "The shadows are clearing—look at the horizon opening ahead.",
-          visualContinuityLock:
-            "Continuous orchestral swell ducked at -14 LUFS under spoken dialogue",
-          aiGenerated: true,
-        },
-        {
-          id: "seg-5",
-          index: 4,
-          timeRange: "40.0s–50.0s",
-          startSec: 40,
-          endSec: 50,
-          speaker: leadA,
-          captionLine:
-            "Every vow we made at the beginning holds true in the final light.",
-          visualContinuityLock:
-            "Close-up emotional beat; locked wardrobe and color grade",
-          aiGenerated: true,
-        },
-        {
-          id: "seg-6",
-          index: 5,
-          timeRange: "50.0s–60.0s",
-          startSec: 50,
-          endSec: 60,
-          speaker: `${leadA} & ${leadB}`,
-          captionLine:
-            "Here begins the next chapter—unbroken from first frame to last.",
-          visualContinuityLock:
-            "Wide theatrical resolution shot with symphonic crescendo",
-          aiGenerated: true,
-        },
-      ];
+      nextCastLabel = apiAssets?.castBadge || `${leadA} · ${leadB}`;
+
+      if (Array.isArray(apiAssets?.segments) && apiAssets.segments.length >= 6) {
+        nextSegments = apiAssets.segments.slice(0, 6).map(
+          (
+            seg: {
+              speaker?: string;
+              captionLine?: string;
+              visualContinuityLock?: string;
+            },
+            idx: number
+          ) => ({
+            id: `seg-${idx + 1}`,
+            index: idx,
+            timeRange: standardTimeRanges[idx],
+            startSec: idx * 10,
+            endSec: (idx + 1) * 10,
+            speaker: String(seg.speaker || (idx % 2 === 0 ? leadA : leadB)),
+            captionLine: String(
+              seg.captionLine || `Act ${idx + 1} spoken dialogue for ${conciseTopic}.`
+            ),
+            visualContinuityLock: String(
+              seg.visualContinuityLock || `35mm continuity lock for Act ${idx + 1}`
+            ),
+            aiGenerated: true,
+          })
+        );
+      } else {
+        nextSegments = [
+          {
+            id: "seg-1",
+            index: 0,
+            timeRange: "00.0s–10.0s",
+            startSec: 0,
+            endSec: 10,
+            speaker: leadA,
+            captionLine:
+              "Every step into this threshold changes the story we came here to tell.",
+            visualContinuityLock: `Establishing 35mm wide shot for ${conciseTopic}; locked atmospheric lighting`,
+            aiGenerated: true,
+          },
+          {
+            id: "seg-2",
+            index: 1,
+            timeRange: "10.0s–20.0s",
+            startSec: 10,
+            endSec: 20,
+            speaker: leadB,
+            captionLine:
+              "Hold your ground—listen to the resonance rising through the mist.",
+            visualContinuityLock:
+              "Medium two-shot with zero prop drift; dynamic particle VFX",
+            aiGenerated: true,
+          },
+          {
+            id: "seg-3",
+            index: 2,
+            timeRange: "20.0s–30.0s",
+            startSec: 20,
+            endSec: 30,
+            speaker: leadA,
+            captionLine:
+              "We don't turn back when the score reaches the second act.",
+            visualContinuityLock:
+              "180-degree camera axis locked; forward dolly movement",
+            aiGenerated: true,
+          },
+          {
+            id: "seg-4",
+            index: 3,
+            timeRange: "30.0s–40.0s",
+            startSec: 30,
+            endSec: 40,
+            speaker: leadB,
+            captionLine:
+              "The shadows are clearing—look at the horizon opening ahead.",
+            visualContinuityLock:
+              "Continuous orchestral swell ducked at -14 LUFS under spoken dialogue",
+            aiGenerated: true,
+          },
+          {
+            id: "seg-5",
+            index: 4,
+            timeRange: "40.0s–50.0s",
+            startSec: 40,
+            endSec: 50,
+            speaker: leadA,
+            captionLine:
+              "Every vow we made at the beginning holds true in the final light.",
+            visualContinuityLock:
+              "Close-up emotional beat; locked wardrobe and color grade",
+            aiGenerated: true,
+          },
+          {
+            id: "seg-6",
+            index: 5,
+            timeRange: "50.0s–60.0s",
+            startSec: 50,
+            endSec: 60,
+            speaker: `${leadA} & ${leadB}`,
+            captionLine:
+              "Here begins the next chapter—unbroken from first frame to last.",
+            visualContinuityLock:
+              "Wide theatrical resolution shot with symphonic crescendo",
+            aiGenerated: true,
+          },
+        ];
+      }
       nextSlides = [
         {
           id: "slide-1",
@@ -2603,15 +2695,9 @@ export default function ContentStudioWorkspacePage() {
                             size="sm"
                             onClick={() => {
                               setActiveVariationId(item.id);
+                              setSelectedSegmentId("seg-1");
                               commitPostChange(
-                                {
-                                  ...post,
-                                  hook: item.hook,
-                                  body: item.body,
-                                  hashtags: item.hashtags,
-                                  videoUrl: item.videoUrl,
-                                  audioMixLabel: item.audioLabel,
-                                },
+                                buildPostFromVariation(item, post),
                                 `Loaded ${item.label} from Library`
                               );
                             }}
@@ -3192,7 +3278,7 @@ export default function ContentStudioWorkspacePage() {
                         ? "/assets/swarm/comparisons/04_option2_clone_adk_orcas_omni_native_60s.mp4"
                         : lowerT.includes("kailash") ||
                           lowerT.includes("ganesh")
-                        ? "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4"
+                        ? "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4?v=theatrical3"
                         : "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4";
                     commitPostChange(
                       {
@@ -3224,7 +3310,7 @@ export default function ContentStudioWorkspacePage() {
                         ? "/assets/swarm/comparisons/02_option1_clone_adk_orcas_omni_lyria3_60s.mp4"
                         : lowerT.includes("kailash") ||
                           lowerT.includes("ganesh")
-                        ? "/assets/swarm/comparisons/12_sacred_kailash_ganesh_shiva_parvati_option1_lyria3_devotional_60s.mp4"
+                        ? "/assets/swarm/comparisons/12_sacred_kailash_ganesh_shiva_parvati_option1_lyria3_devotional_60s.mp4?v=theatrical3"
                         : "/assets/swarm/comparisons/10_option1_lyria3pro_symphonic_60s_master.mp4";
                     commitPostChange(
                       {
@@ -3333,7 +3419,37 @@ export default function ContentStudioWorkspacePage() {
                   `Reordered segment ${index + 1} to position ${target + 1}`
                 );
               }}
-              onRegenerateSegment={(seg) => {
+              onRegenerateSegment={async (seg) => {
+                setToast({
+                  message: `Regenerating ${seg.timeRange} (${seg.speaker}) via Gemini 2.5 Flash…`,
+                });
+                let nextCaption = `${seg.captionLine} — ${seg.speaker} holds the frame with unbroken resolve.`;
+                try {
+                  const res = await fetch("/api/swarm/synthesize-from-prompt", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      mode: "quick_edit",
+                      action: "regenerate_segment",
+                      scope: "timeline",
+                      text: seg.captionLine,
+                      speaker: seg.speaker,
+                      timeRange: seg.timeRange,
+                      title: post.title,
+                    }),
+                  });
+                  if (res.ok) {
+                    const data = await res.json();
+                    if (
+                      typeof data?.rewrittenText === "string" &&
+                      data.rewrittenText.trim().length > 0
+                    ) {
+                      nextCaption = data.rewrittenText.trim();
+                    }
+                  }
+                } catch {
+                  // Fallback already set
+                }
                 commitPostChange(
                   {
                     ...post,
@@ -3341,7 +3457,7 @@ export default function ContentStudioWorkspacePage() {
                       s.id === seg.id
                         ? {
                             ...s,
-                            captionLine: `${s.captionLine} [Refined 35mm take]`,
+                            captionLine: nextCaption,
                           }
                         : s
                     ),
@@ -3819,25 +3935,20 @@ export default function ContentStudioWorkspacePage() {
                   activeVariationId={activeVariationId}
                   onUseVariation={(v) => {
                     setActiveVariationId(v.id);
+                    setSelectedSegmentId("seg-1");
                     commitPostChange(
-                      {
-                        ...post,
-                        hook: v.hook,
-                        body: v.body,
-                        hashtags: v.hashtags,
-                        videoUrl: v.videoUrl,
-                        audioMixLabel: v.audioLabel,
-                      },
+                      buildPostFromVariation(v, post),
                       `Switched to ${v.label}`
                     );
                   }}
                   onMixHookAndVisual={(hookVar, visualVar) => {
                     setActiveVariationId(visualVar.id);
+                    setSelectedSegmentId("seg-1");
+                    const visualPost = buildPostFromVariation(visualVar, post);
                     commitPostChange(
                       {
-                        ...post,
+                        ...visualPost,
                         hook: hookVar.hook,
-                        videoUrl: visualVar.videoUrl,
                         audioMixLabel: `${visualVar.audioLabel} + ${hookVar.label
                           .split("·")[0]
                           .trim()} Hook`,
@@ -3847,17 +3958,50 @@ export default function ContentStudioWorkspacePage() {
                       } + Visual from ${visualVar.label.split("·")[0]}`
                     );
                   }}
-                  onMoreLikeThis={(v) => {
+                  onMoreLikeThis={async (v) => {
+                    const varId = `var-more-${Date.now()}`;
+                    const varNum = variations.length + 1;
+                    let nextHook = `${v.hook.slice(
+                      0,
+                      68
+                    )}—cut for immediate 3-second retention.`;
+                    setToast({
+                      message: `Generating new variation like ${v.label} via Gemini 2.5 Flash…`,
+                    });
+                    try {
+                      const res = await fetch(
+                        "/api/swarm/synthesize-from-prompt",
+                        {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            mode: "quick_edit",
+                            action: "more_like_this",
+                            scope: "hook",
+                            text: v.hook,
+                            title: v.label,
+                          }),
+                        }
+                      );
+                      if (res.ok) {
+                        const data = await res.json();
+                        if (
+                          typeof data?.rewrittenText === "string" &&
+                          data.rewrittenText.trim().length > 0
+                        ) {
+                          nextHook = data.rewrittenText.trim();
+                        }
+                      }
+                    } catch {
+                      // Fallback already set
+                    }
                     const newVar: PostVariation = {
                       ...v,
-                      id: `var-more-${Date.now()}`,
-                      label: `Variation ${
-                        variations.length + 1
-                      } · Inspired by ${v.label.split("·")[0].trim()}`,
-                      hook: `${v.hook.slice(
-                        0,
-                        68
-                      )}—refined for maximum retention.`,
+                      id: varId,
+                      label: `Variation ${varNum} · Inspired by ${v.label
+                        .split("·")[0]
+                        .trim()}`,
+                      hook: nextHook,
                     };
                     setVariations((prev) => [newVar, ...prev]);
                     setToast({
@@ -4080,11 +4224,31 @@ export default function ContentStudioWorkspacePage() {
               icon={<Calendar className="w-3.5 h-3.5" />}
               disabled={blockingErrors.length > 0}
               disabledReason="Resolve blocking platform errors before scheduling"
-              onClick={() => {
+              onClick={async () => {
                 setPublishDialogOpen(false);
-                setToast({
-                  message: `Scheduled for ${scheduleDate} (Local Time)`,
-                });
+                try {
+                  const res = await fetch("/api/reels/publish", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      platform: activePlatform.id,
+                      title: post.title,
+                      description: fullCaptionText,
+                      videoUrl: post.videoUrl,
+                      scheduledAt: scheduleDate,
+                    }),
+                  });
+                  const data = await res.json().catch(() => null);
+                  setToast({
+                    message:
+                      data?.message ||
+                      `Scheduled "${post.title}" for ${scheduleDate} (${activePlatform.shortName})`,
+                  });
+                } catch {
+                  setToast({
+                    message: `Scheduled "${post.title}" for ${scheduleDate} (Local Time)`,
+                  });
+                }
               }}
             >
               Schedule
@@ -4094,11 +4258,34 @@ export default function ContentStudioWorkspacePage() {
               size="sm"
               disabled={blockingErrors.length > 0}
               disabledReason={`Resolve ${blockingErrors.length} blocking error(s) before publishing`}
-              onClick={() => {
+              onClick={async () => {
                 setPublishDialogOpen(false);
-                setToast({
-                  message: `Published "${post.title}" to ${activePlatform.shortName}`,
-                });
+                try {
+                  const res = await fetch("/api/reels/publish", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      platform: activePlatform.id,
+                      title: post.title,
+                      description: fullCaptionText,
+                      videoUrl: post.videoUrl,
+                    }),
+                  });
+                  const data = await res.json().catch(() => null);
+                  if (data?.status === "staging_queued" || data?.message) {
+                    setToast({
+                      message: data.message,
+                    });
+                  } else {
+                    setToast({
+                      message: `Dispatched "${post.title}" to ${activePlatform.shortName}`,
+                    });
+                  }
+                } catch {
+                  setToast({
+                    message: `Queued "${post.title}" for ${activePlatform.shortName} export`,
+                  });
+                }
               }}
             >
               Publish now

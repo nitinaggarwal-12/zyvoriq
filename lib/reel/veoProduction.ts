@@ -11,7 +11,7 @@ export async function generateProductionShot(input: {
 }) {
   const storage = getAssetStoreCapability();
   if (!storage.configured || !storage.durable) {
-    throw new Error("Real video generation requires durable asset storage. Configure ZYVORIQ_ASSET_ROOT or attach a Railway volume before generation.");
+    throw new Error("Real video generation requires durable asset storage. Configure ZYVORIQ_ASSET_ROOT or attach a Cloud Run storage volume before generation.");
   }
 
   const generated = await generateVeoVideoBytes(input.shot.generationPrompt, {

@@ -53,7 +53,7 @@ export function seedDatabase() {
     id: taskId,
     swarm_run_id: runId,
     agent_role: "Cinematic Video Agent",
-    model_engine: "google-veo-2",
+    model_engine: "models/veo-3.1-generate-preview",
   });
 
   const artifactId = "art_master_package_8492";

@@ -4,11 +4,11 @@ import path from "path";
 import { readAsset } from "@/lib/reel/assetStore";
 
 const PRODUCTION_ASSET_BASE = (
-  process.env.ZYVORIQ_PRODUCTION_URL || "https://zyvoriq.up.railway.app"
+  process.env.ZYVORIQ_PRODUCTION_URL || "https://zyvoriq-887605034827.cr.gclb.goog"
 ).replace(/\/$/, "");
 
 /**
- * Resolves a web asset path (e.g., "/assets/video/foo.mp4", "/renders/yt/...",
+ * Resolves a web asset path (e.g., "/assets/stills/napoleon_hero.png", "/renders/yt/...",
  * or "/api/reels/assets/reels/...") to an absolute filesystem path on the current environment.
  */
 function resolveWebPathToDisk(webUrl: string): string | null {
@@ -44,7 +44,7 @@ function resolveWebPathToDisk(webUrl: string): string | null {
 async function checkFileExistsAndValid(webUrl: string): Promise<boolean> {
   if (!webUrl || typeof webUrl !== "string") return false;
   if (webUrl.startsWith("http://") || webUrl.startsWith("https://")) {
-    if (webUrl.includes(".railway.internal")) return false;
+    if (webUrl.includes(".internal")) return false;
     return true;
   }
   if (webUrl.startsWith("data:")) return true;
@@ -59,7 +59,7 @@ async function checkFileExistsAndValid(webUrl: string): Promise<boolean> {
       if (buf && buf.length > 512) return true;
     } catch {}
 
-    // Live generated studio1 / yt / ep assets are served on-demand via /api/reels/assets/[...key] proxy from Railway
+    // Live generated studio1 / yt / ep assets are served on-demand via /api/reels/assets/[...key] proxy from Cloud Run
     if (
       rel.startsWith("reels/studio1_") ||
       rel.startsWith("reels/ep_") ||
@@ -97,20 +97,11 @@ export async function POST(req: NextRequest) {
     );
 
     const fallbacks: Record<string, string> = {};
-    const defaultVerifiedFallback = "/assets/swarm/generated/job_1790663346051/combined_120s.mp4";
-    for (const u of urls) {
-      if (u && !results[u]) {
-        if (await checkFileExistsAndValid(defaultVerifiedFallback)) {
-          fallbacks[u] = defaultVerifiedFallback;
-          results[u] = true;
-        }
-      }
-    }
 
     return NextResponse.json({
       success: true,
       environment:
-        process.env.RAILWAY_ENVIRONMENT_NAME ||
+        process.env.K_SERVICE ||
         process.env.NODE_ENV ||
         "development",
       verified: results,
