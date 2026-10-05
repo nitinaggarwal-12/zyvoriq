@@ -23,7 +23,7 @@
     "build": "npm run canonical:qa && next build",
     "worker:reels": "node --import ./scripts/canonical_reel_operation_guard.mjs --import ./scripts/transcription_word_timing_guard.mjs scripts/reel_worker_v2.mjs",
     "start": "next start -H 0.0.0.0 -p ${PORT:-8080}",
-    "deploy": "gcloud builds submit --config cloudbuild.yaml --project=bbar-138hf0 --account=nitinagga@google.com && gcloud run services add-iam-policy-binding zyvoriq --project=bbar-138hf0 --region=us-central1 --member='serviceAccount:service-856805769004@gcp-sa-uberproxy.iam.gserviceaccount.com' --role='roles/run.invoker' --quiet && echo 'Live GCLB URL: https://zyvoriq-48439189383.cr.gclb.goog/swarm-MUI'",
+    "deploy": "gcloud builds submit --config cloudbuild.yaml --project=ramp-portal-dev --account=nitinagga@google.com && gcloud run services add-iam-policy-binding zyvoriq --project=ramp-portal-dev --region=us-west1 --account=nitinagga@google.com --member='serviceAccount:service-856805769004@gcp-sa-uberproxy.iam.gserviceaccount.com' --role='roles/run.invoker' --quiet && echo 'Live GCLB URL: https://zyvoriq-248990048888.cr.gclb.goog/swarm-MUI'",
     "test:e2e": "node scripts/cloudtop_puppeteer_remote.js",
     "test:sprints": "node scripts/e2e/test_all_sprints.mjs"
   },

@@ -4,9 +4,9 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/zyvoriq:$BUILD_ID'
+      - 'us-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/zyvoriq:$BUILD_ID'
       - '-t'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/zyvoriq:latest'
+      - 'us-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/zyvoriq:latest'
       - '.'
 
   # 2. Push container image to Artifact Registry
@@ -14,9 +14,9 @@ steps:
     args:
       - 'push'
       - '--all-tags'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/zyvoriq'
+      - 'us-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/zyvoriq'
 
-  # 3. Deploy to Cloud Run (routed via cr-infra-dynamic-url-cr-neg -> https://zyvoriq-48439189383.cr.gclb.goog)
+  # 3. Deploy to Cloud Run (routed via cr-infra-dynamic-url-cr-neg -> https://zyvoriq-248990048888.cr.gclb.goog)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -24,9 +24,9 @@ steps:
       - 'deploy'
       - 'zyvoriq'
       - '--image'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/zyvoriq:$BUILD_ID'
+      - 'us-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/zyvoriq:$BUILD_ID'
       - '--region'
-      - 'us-central1'
+      - 'us-west1'
       - '--platform'
       - 'managed'
       - '--ingress'
@@ -39,8 +39,8 @@ steps:
       - '2'
 
 images:
-  - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/zyvoriq:$BUILD_ID'
-  - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/zyvoriq:latest'
+  - 'us-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/zyvoriq:$BUILD_ID'
+  - 'us-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/zyvoriq:latest'
 
 options:
   machineType: 'E2_HIGHCPU_8'
