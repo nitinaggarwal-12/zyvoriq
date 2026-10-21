@@ -53,6 +53,7 @@ import {
   VideoSegmentSpec,
 } from "@/components/studio-ux/Patterns";
 import { PERSONAS_CATALOG, PersonaDefinition } from "@/lib/studioCatalog";
+import { FeedbackHeaderEmailButton } from "@/components/UniversalFeedbackSystem";
 
 // ============================================================================
 // TYPES & PLATFORM RULES (Phase 1 & Phase 3 + Netflix Cinema Upgrades)
@@ -2333,6 +2334,11 @@ export default function ContentStudioWorkspacePage() {
           >
             Publish
           </StudioButton>
+
+          <FeedbackHeaderEmailButton
+            appId="zyvoriq"
+            appName="Zyvoriq Content Studio"
+          />
         </div>
       </header>
 

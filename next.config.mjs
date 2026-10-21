@@ -137,16 +137,6 @@ const nextConfig = {
         permanent: false
       },
       {
-        source: "/admin/:path*",
-        destination: "/#top",
-        permanent: false
-      },
-      {
-        source: "/admin",
-        destination: "/#top",
-        permanent: false
-      },
-      {
         source: "/dashboard",
         destination: "/#architecture",
         permanent: false
