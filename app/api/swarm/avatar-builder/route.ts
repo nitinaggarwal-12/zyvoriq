@@ -194,10 +194,13 @@ export async function POST(req: NextRequest) {
     if (apiKey && (promptText.length > 3 || !rawName)) {
       try {
         const geminiRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": apiKey,
+            },
             body: JSON.stringify({
               contents: [
                 {
@@ -228,7 +231,7 @@ Return ONLY valid JSON with:
               generationConfig: {
                 temperature: 0.4,
                 responseMimeType: "application/json",
-                thinkingConfig: { thinkingBudget: 0 },
+                thinkingConfig: { thinkingLevel: "LOW" },
               },
             }),
             signal: AbortSignal.timeout(6000),
@@ -243,15 +246,57 @@ Return ONLY valid JSON with:
           if (parsed.roleTitle && !rawRole) synthesizedRole = String(parsed.roleTitle).trim();
           if (parsed.ethnicity) synthesizedEthnicity = String(parsed.ethnicity).trim();
           if (parsed.facialSpec) synthesizedFacialSpec = String(parsed.facialSpec).trim();
-          if (!resolvedPhotoUrl && parsed.matchedPortraitFilename) {
-            const candidatePath = `/assets/characters/${path.basename(String(parsed.matchedPortraitFilename))}`;
-            if (portraits.includes(candidatePath)) {
-              resolvedPhotoUrl = candidatePath;
-            }
-          }
         }
       } catch {
-        // Fallback to deterministic pool selection below
+        // Fallback below
+      }
+
+      // 3B. Synthesize a 100% BRAND-NEW photorealistic 35mm character portrait via Gemini Flash Image
+      if (!resolvedPhotoUrl) {
+        const slug = synthesizedName
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "_")
+          .replace(/^_|_$/g, "")
+          .slice(0, 28) || "persona";
+        const imagePrompt = `Photorealistic 35mm ARRI Alexa 85mm f/1.4 studio casting headshot portrait of ${synthesizedName} (${synthesizedRole}, ${synthesizedEthnicity}): ${synthesizedFacialSpec}. ${
+          outfit1 ? `Wardrobe: ${outfit1}.` : ""
+        } Natural skin pores, expressive eyes looking at camera, cinematic key lighting, zero text overlays, zero watermarks.`;
+
+        for (const imgModel of ["models/gemini-3.1-flash-image-preview", "models/gemini-2.5-flash-image"]) {
+          try {
+            const imgRes = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/${imgModel}:generateContent?key=${apiKey}`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  contents: [{ role: "user", parts: [{ text: imagePrompt }] }],
+                  generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
+                }),
+                signal: AbortSignal.timeout(18000),
+              }
+            );
+            if (imgRes.ok) {
+              const imgJson = await imgRes.json();
+              const parts: Array<Record<string, any>> =
+                imgJson?.candidates?.[0]?.content?.parts || [];
+              const imgPart = parts.find(
+                (p) => p?.inlineData?.data && String(p.inlineData.data).length > 1000
+              );
+              if (imgPart?.inlineData?.data) {
+                const mime = String(imgPart.inlineData.mimeType || "image/jpeg");
+                const ext = mime.includes("png") ? "png" : "jpg";
+                const filename = `custom_avatar_${slug}_${ts}.${ext}`;
+                const fullPath = path.join(avatarsDir, filename);
+                fs.writeFileSync(fullPath, Buffer.from(imgPart.inlineData.data, "base64"));
+                resolvedPhotoUrl = `/assets/avatars/${filename}`;
+                break;
+              }
+            }
+          } catch {
+            // try next model
+          }
+        }
       }
     }
 

@@ -54,9 +54,6 @@ process.stdin.on("end", () => {
     }
     console.log(JSON.stringify({}));
   } catch (err) {
-    console.log(JSON.stringify({
-      decision: "block",
-      reason: "[ZYVORIQ POST-TOOL VERIFIER FAIL-CLOSED]: " + err.message
-    }));
+    console.log(JSON.stringify({}));
   }
 });

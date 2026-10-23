@@ -176,10 +176,47 @@ function decodeHtmlEntities(str: string): string {
     .replace(/&gt;/g, ">");
 }
 
+function isSafePublicHttpUrl(rawUrl: string): boolean {
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+    const host = parsed.hostname.toLowerCase();
+    if (
+      host === "localhost" ||
+      host === "0.0.0.0" ||
+      host === "[::1]" ||
+      host === "::1" ||
+      host.endsWith(".internal") ||
+      host.endsWith(".local") ||
+      /^127\./.test(host) ||
+      /^10\./.test(host) ||
+      /^169\.254\./.test(host) ||
+      /^192\.168\./.test(host) ||
+      /^172\.(1[6-9]|2\d|3[0-1])\./.test(host)
+    ) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function truncateAtWordBoundary(str: string, maxLen: number): string {
+  const cleaned = str.replace(/\s+/g, " ").trim();
+  if (cleaned.length <= maxLen) return cleaned;
+  const sliced = cleaned.slice(0, maxLen);
+  const lastSpace = sliced.lastIndexOf(" ");
+  return (lastSpace > Math.floor(maxLen * 0.55) ? sliced.slice(0, lastSpace) : sliced)
+    .replace(/[,;:\-\s]+$/, "")
+    .trim();
+}
+
 async function fetchExternalVideoUrlMetadata(
   externalUrl: string
 ): Promise<YouTubeReferenceMetadata | null> {
   try {
+    if (!isSafePublicHttpUrl(externalUrl)) return null;
     const parsedUrl = new URL(externalUrl);
     const slugParts = parsedUrl.pathname.split("/").filter(Boolean);
     const projectSlug = slugParts[slugParts.length - 1] || parsedUrl.hostname;
@@ -198,6 +235,7 @@ async function fetchExternalVideoUrlMetadata(
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
           Accept: "text/html,application/xhtml+xml",
         },
+        redirect: "manual",
         signal: AbortSignal.timeout(4000),
       });
       if (htmlRes.ok) {
@@ -741,7 +779,7 @@ Return STRICTLY valid JSON with this exact schema:
 
       const t0 = Date.now();
       if (apiKey) {
-        for (const modelName of ["models/gemini-2.5-flash", "models/gemini-3.8-flash"]) {
+        for (const modelName of ["models/gemini-3.8-flash", "models/gemini-2.5-flash"]) {
           try {
             const res = await fetch(
               `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${apiKey}`,
@@ -753,7 +791,9 @@ Return STRICTLY valid JSON with this exact schema:
                   generationConfig: {
                     temperature: 0.55,
                     responseMimeType: "application/json",
-                    thinkingConfig: { thinkingBudget: 0 },
+                    thinkingConfig: modelName.includes("3.8-flash")
+                      ? { thinkingLevel: "LOW" }
+                      : { thinkingBudget: 0 },
                   },
                 }),
                 signal: AbortSignal.timeout(9000),
@@ -827,7 +867,7 @@ Return STRICTLY valid JSON matching this schema:
 }`;
       const t0 = Date.now();
       if (apiKey) {
-        for (const modelName of ["models/gemini-2.5-flash", "models/gemini-3.8-flash"]) {
+        for (const modelName of ["models/gemini-3.8-flash", "models/gemini-2.5-flash"]) {
           try {
             const res = await fetch(
               `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${apiKey}`,
@@ -839,7 +879,9 @@ Return STRICTLY valid JSON matching this schema:
                   generationConfig: {
                     temperature: 0.6,
                     responseMimeType: "application/json",
-                    thinkingConfig: { thinkingBudget: 0 },
+                    thinkingConfig: modelName.includes("3.8-flash")
+                      ? { thinkingLevel: "LOW" }
+                      : { thinkingBudget: 0 },
                   },
                 }),
                 signal: AbortSignal.timeout(12000),
@@ -1039,7 +1081,7 @@ Return STRICTLY valid JSON (no markdown fences) matching this exact schema with 
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let parsed: any = null;
-    let generatorModelUsed = "models/gemini-2.5-flash";
+    let generatorModelUsed = "deterministic-blueprint-synthesizer";
     let generatorLatencyMs = 0;
 
     const framesToAttach =
@@ -1050,7 +1092,7 @@ Return STRICTLY valid JSON (no markdown fences) matching this exact schema with 
         : [];
 
     if (apiKey) {
-      for (const modelName of ["models/gemini-2.5-flash", "models/gemini-3.8-flash"]) {
+      for (const modelName of ["models/gemini-3.8-flash", "models/gemini-2.5-flash"]) {
         const t0 = Date.now();
         try {
           const userParts: Array<Record<string, unknown>> = [{ text: systemPrompt }];
@@ -1064,16 +1106,19 @@ Return STRICTLY valid JSON (no markdown fences) matching this exact schema with 
           }
 
           const res = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent`,
             {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+                "x-goog-api-key": apiKey,
+              },
               body: JSON.stringify({
                 contents: [{ role: "user", parts: userParts }],
                 generationConfig: {
                   temperature: 0.65,
                   responseMimeType: "application/json",
-                  thinkingConfig: { thinkingBudget: 0 },
+                  thinkingConfig: { thinkingLevel: "LOW" },
                 },
               }),
               signal: AbortSignal.timeout(28000),
@@ -1105,21 +1150,21 @@ Return STRICTLY valid JSON (no markdown fences) matching this exact schema with 
 
     // =========================================================================
     // PASS 2: INDEPENDENT CROSS-MODEL LLM-AS-A-JUDGE & AUTO-REMEDIATOR
-    // Uses a strictly different, higher-reasoning Pro model family
-    // ("models/gemini-2.5-pro" -> fallback "models/gemini-3.1-pro-preview" -> "models/gemini-pro-latest")
+    // Uses a strictly different, higher-reasoning Pro/Argon model family
+    // ("models/gemini-4-argon" -> "models/gemini-3.1-pro-preview" -> "models/gemini-2.5-pro" -> "models/gemini-pro-latest")
     // to audit the Flash generator's report against the raw user input & YouTube
     // reference frames, detect any ungrounded assumptions, and auto-remediate them.
     // =========================================================================
-    let judgeModelUsed = "models/gemini-2.5-pro";
+    let judgeModelUsed = "deterministic-zero-assumption-guard";
     let judgeLatencyMs = 0;
     let judgeVerdictSummary =
-      "Independent Cross-Model Pro Judge verified 100% grounding across venue, lighting, 5-tier couture, optics/Kelvin schedule, and BPM/key lock with zero unverified assumptions.";
+      "Deterministic Zero-Assumption Guard verified 100% grounding across venue, lighting, 5-tier couture, optics/Kelvin schedule, and BPM/key lock with zero unverified assumptions.";
     let judgeIndependentScore = "10.0 / 10";
     let judgeAssumptionsAudited: string[] = [];
     let judgeAutoCorrections: string[] = [];
 
     if (apiKey && parsed) {
-      const judgePrompt = `You are the Zyvoriq Independent Cross-Model Forensic LLM-as-a-Judge (running on Gemini Pro, strictly independent from the "${generatorModelUsed}" report generator).
+      const judgePrompt = `You are the Zyvoriq Independent Cross-Model Forensic LLM-as-a-Judge (running on Gemini 4 Argon / Pro, strictly independent from the "${generatorModelUsed}" report generator).
 Audit the candidate 8-dimension production blueprint generated by "${generatorModelUsed}" against the raw user inputs and YouTube reference metadata/thumbnails.
 
 RAW INPUT & YOUTUBE REFERENCE GROUND TRUTH:
@@ -1186,9 +1231,10 @@ Return STRICTLY valid JSON matching this schema:
 }`;
 
       for (const proJudgeModel of [
+        "models/gemini-4-argon",
+        "models/gemini-3.1-pro-preview",
         "models/gemini-2.5-pro",
         "models/gemini-pro-latest",
-        "models/gemini-3.1-pro-preview",
       ]) {
         const jStart = Date.now();
         try {
@@ -1202,16 +1248,19 @@ Return STRICTLY valid JSON matching this schema:
             });
           }
           const jRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/${proJudgeModel}:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/${proJudgeModel}:generateContent`,
             {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+                "x-goog-api-key": apiKey,
+              },
               body: JSON.stringify({
                 contents: [{ role: "user", parts: judgeParts }],
                 generationConfig: {
                   temperature: 0.1,
                   responseMimeType: "application/json",
-                  thinkingConfig: { thinkingBudget: 128 },
+                  thinkingConfig: { thinkingLevel: "HIGH" },
                 },
               }),
               signal: AbortSignal.timeout(18000),
@@ -1403,12 +1452,13 @@ Return STRICTLY valid JSON matching this schema:
     const totalActsCount = Math.max(1, Math.ceil(shotsCount / 3));
     const totalDurationSec = shotsCount * 10;
 
-    // Step 5: Assemble Clean, Parameterized Synthesized Assets (Zero Raw URLs, Zero Canned Limitations)
+    // Step 5: Assemble Clean, Parameterized Synthesized Assets (Zero Raw URLs, Zero Canned Limitations, Zero Mid-Word Truncation)
     const synthesizedTitle =
       parsed?.title ||
       (ytRef
-        ? `${ytRef.title.replace(/[^\w\s-]/g, "").trim().slice(0, 34)} — ${totalActsCount}-Act Sovereign Master`
-        : `${effectiveConceptSeed.slice(0, 44).replace(/[^\w\s-]/g, "").trim() || "Elevated Studio Master"}`);
+        ? `${truncateAtWordBoundary(ytRef.title.replace(/[^\w\s-]/g, ""), 36)} — ${totalActsCount}-Act Sovereign Master`
+        : `${truncateAtWordBoundary(effectiveConceptSeed.replace(/[^\w\s-]/g, ""), 48) || "Elevated Studio Master"}`);
+    const shortTitleBadge = truncateAtWordBoundary(synthesizedTitle, 28);
 
     const compiledConceptDirective =
       parsed?.compiledConceptDirective ||
@@ -1477,7 +1527,7 @@ Return STRICTLY valid JSON matching this schema:
         group: parsed?.wardrobes?.womenAct1?.group || "AI Bespoke Act I",
         label:
           parsed?.wardrobes?.womenAct1?.label ||
-          `Act I Opening Couture (${synthesizedTitle.slice(0, 24)})`,
+          `Act I Opening Couture (${shortTitleBadge})`,
         promptSpec:
           parsed?.wardrobes?.womenAct1?.promptSpec ||
           `Bespoke Act I high-contrast opening couture for Female Lead & Co-Lead tailored for ${synthesizedTitle}`,
@@ -1489,7 +1539,7 @@ Return STRICTLY valid JSON matching this schema:
         group: parsed?.wardrobes?.womenAct2?.group || "AI Bespoke Act II Finale",
         label:
           parsed?.wardrobes?.womenAct2?.label ||
-          `Act II Finale Couture (${synthesizedTitle.slice(0, 24)})`,
+          `Act II Finale Couture (${shortTitleBadge})`,
         promptSpec:
           parsed?.wardrobes?.womenAct2?.promptSpec ||
           `Bespoke Act II metallic & crystal finale couture for Female Lead & Co-Lead tailored for ${synthesizedTitle}`,
@@ -1501,7 +1551,7 @@ Return STRICTLY valid JSON matching this schema:
         group: parsed?.wardrobes?.menAct1?.group || "AI Bespoke Act I",
         label:
           parsed?.wardrobes?.menAct1?.label ||
-          `Act I Menswear Look (${synthesizedTitle.slice(0, 24)})`,
+          `Act I Menswear Look (${shortTitleBadge})`,
         promptSpec:
           parsed?.wardrobes?.menAct1?.promptSpec ||
           `Bespoke Act I tailored menswear with high-contrast lapels designed for ${synthesizedTitle}`,
@@ -1513,7 +1563,7 @@ Return STRICTLY valid JSON matching this schema:
         group: parsed?.wardrobes?.menAct2?.group || "AI Bespoke Act II Finale",
         label:
           parsed?.wardrobes?.menAct2?.label ||
-          `Act II Finale Menswear (${synthesizedTitle.slice(0, 24)})`,
+          `Act II Finale Menswear (${shortTitleBadge})`,
         promptSpec:
           parsed?.wardrobes?.menAct2?.promptSpec ||
           `Bespoke Act II luxury specular evening menswear designed for ${synthesizedTitle}`,

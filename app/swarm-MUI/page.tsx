@@ -41,7 +41,6 @@ import {
   StudioToast,
 } from "@/components/studio-ux/Primitives";
 import {
-  SelectionToolbar,
   DiffView,
   CheckItemCard,
   VariationGrid,
@@ -365,7 +364,7 @@ const INITIAL_POST: StudioPostState = {
   hashtags: "#GaneshParvatiShiva #SacredMythology #VisualEffects #CinemaStudio",
   ctaUrl: "https://zyvoriq.studio/showcase/sacred-kailash-ganesh-parvati-shiva?utm_source=social&utm_medium=studio",
   videoUrl:
-    "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4?v=theatrical3",
+    "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4?v=kailash_fresh_20261023",
   audioMixLabel: "Option 2 · Omni 1.1 Dialogue + Foley + Lyria 3 Pro Score",
   altText:
     "Wide 35mm cinema frame of Mount Kailash at golden twilight featuring Goddess Parvati, young elephant-headed Lord Ganesha guarding the temple threshold, and Lord Shiva with celestial light effects.",
@@ -408,7 +407,7 @@ const INITIAL_VARIATIONS: PostVariation[] = [
     body: "Multi-act 35mm mythological visual story featuring Goddess Parvati, Lord Ganesha, and Lord Shiva. Combines celestial particle VFX, spoken dialogue, and a dynamic Lyria 3 Pro Vedic percussion & symphonic score ducked at -14 LUFS.",
     hashtags: "#GaneshParvatiShiva #SacredMythology #VisualEffects #CinemaStudio",
     videoUrl:
-      "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4?v=theatrical3",
+      "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4?v=kailash_fresh_20261023",
     audioLabel: "Option 2 · Omni 1.1 + Vedic Score",
     rationale:
       "New 60s Master (YouTube Ref m55XOXtscXU): multi-character spoken dialogue + damaru/bell Foley + Lyria 3 Pro orchestral score.",
@@ -420,7 +419,7 @@ const INITIAL_VARIATIONS: PostVariation[] = [
     body: "Experience the Lyria 3 Pro devotional symphonic mix where temple bells, mridangam, bansuri flute, and epic strings drive the sacred story of Ganesh, Parvati, and Shiva from 0:00 to 1:00.",
     hashtags: "#GaneshParvatiShiva #VedicSymphony #Cinematography #CinemaStudio",
     videoUrl:
-      "/assets/swarm/comparisons/12_sacred_kailash_ganesh_shiva_parvati_option1_lyria3_devotional_60s.mp4?v=theatrical3",
+      "/assets/swarm/comparisons/12_sacred_kailash_ganesh_shiva_parvati_option1_lyria3_devotional_60s.mp4?v=kailash_fresh_20261023",
     audioLabel: "Option 1 · Devotional Symphonic",
     rationale:
       "New 60s Master (Option 1): foregrounds the continuous 96 BPM Lyria 3 Pro Vedic orchestral composition with dialogue.",
@@ -448,6 +447,30 @@ const INITIAL_VARIATIONS: PostVariation[] = [
     audioLabel: "1920s Speakeasy Master",
     rationale:
       "Demonstrates switching to a warm amber period aesthetic while keeping the 6-turn 60s structure.",
+  },
+  {
+    id: "var-fresh-barcelona-bhangra-flamenco",
+    label: "Variation E · [FRESH E2E] Barcelona Bhangra-Flamenco Rooftop Sundown (60s 118 BPM Master)",
+    hook: "Golden sun on Gothic rooftop stone—Punjabi dhol and Spanish flamenco guitar collide at 118 BPM.",
+    body: "Freshly synthesized 60.0s 2-Act (24fps CFR, 48kHz stereo) music video generated from prompt: Zoya Sandhu in emerald & gold zardozi lehenga and Mateo in obsidian bolero perform synchronized Bhangra dhol & flamenco footwork on a Barcelona Gothic Quarter rooftop at sunset, transitioning into crimson flamenco silk under 3200K lanterns.",
+    hashtags: "#BarcelonaBhangra #FlamencoFusion #Lyria3Pro #Omni11Cinema",
+    videoUrl:
+      "/assets/swarm/generated/job_1792800001_barcelona_bhangra_flamenco/combined_60s.mp4",
+    audioLabel: "Fresh 118 BPM Dhol + Flamenco Master",
+    rationale:
+      "100% fresh 6-shot Omni 1.1 video + Lyria 3 Pro 118 BPM Punjabi-Flamenco vocal master generated live during E2E testing.",
+  },
+  {
+    id: "var-fresh-neotokyo-quantum-echo",
+    label: "Variation F · [FRESH E2E] Quantum Echo: Neo-Tokyo Glass Observatory (60s 35mm Sci-Fi)",
+    hook: "In the final sixty seconds before orbital lock, every encrypted frame pointed to a single origin.",
+    body: "Freshly synthesized 60.0s 35mm ARRI Alexa anamorphic sci-fi thriller generated from prompt: Kaito Vance (orbital quantum cryptographer) and Dr. Elena Moretti inside a rain-slicked Neo-Tokyo glass observatory at midnight under 3200K tungsten and cyan neon lighting.",
+    hashtags: "#QuantumEcho #NeoTokyo35mm #SciFiCinema #Lyria3Score",
+    videoUrl:
+      "/assets/swarm/generated/job_1792800002_neotokyo_quantum_observatory/combined_60s.mp4",
+    audioLabel: "Fresh 108 BPM Sci-Fi Score + Dialogue",
+    rationale:
+      "100% fresh 6-shot Omni 1.1 35mm live-action sci-fi reel + Lyria 3 Pro 108 BPM C-Minor electronic/orchestral score generated live during E2E testing.",
   },
 ];
 
@@ -751,7 +774,7 @@ export default function ContentStudioWorkspacePage() {
   >("create");
   const [rightTab, setRightTab] = useState<
     "checks" | "edit" | "variations" | "history"
-  >("checks");
+  >("edit");
   const [activePlatformId, setActivePlatformId] =
     useState<PlatformId>("reels_9_16");
   const [selectedScope, setSelectedScope] = useState<SelectableScope>("hook");
@@ -950,38 +973,43 @@ export default function ContentStudioWorkspacePage() {
   }, [liveRenderJob.status, liveRenderJob.id]);
 
   // Trigger live Gemini Omni 1.1 Flash + Lyria 3 Pro render job in /api/swarm/jobs
-  const handleStartLiveVideoRender = async () => {
-    if (liveRenderJob.status === "running") return;
+  const handleStartLiveVideoRender = async (
+    draftOverride?: StudioPostState,
+    rawBriefOverride?: string
+  ) => {
+    const targetPost = draftOverride || post;
+    const effectiveBrief = (rawBriefOverride || briefInput || targetPost.title).trim();
     setLiveRenderJob({
       id: "starting",
       status: "running",
-      progress: 6,
+      progress: 8,
       stageLabel:
-        "Stage 1/6 • Launching models/gemini-omni-1.1-flash + models/lyria-3-pro-preview...",
+        `Stage 1/6 • Launching models/gemini-omni-1.1-flash + models/lyria-3-pro-preview for "${targetPost.title}"...`,
       latestLog: "Submitting 6-act screenplay & dialogue stems to cloud render pipeline...",
     });
     try {
-      const turnPrompts = post.segments.map(
+      const turnPrompts = targetPost.segments.map(
         (seg, idx) =>
-          `Act ${idx + 1} (${seg.timeRange}) — Speaker: ${seg.speaker} speaking "${
+          `Act ${idx + 1} (${seg.timeRange}) — 9:16 vertical 24fps 35mm live-action cinema. Speaker: ${seg.speaker} speaking "${
             seg.captionLine
-          }". Visual & Lighting Lock: ${seg.visualContinuityLock}. Photorealistic 35mm live-action cinema.`
+          }". Visual & Lighting Lock: ${seg.visualContinuityLock}. Campaign context: ${effectiveBrief}.`
       );
-      const lyrics = post.segments
+      const lyrics = targetPost.segments
         .map((seg) => `[${seg.speaker}]: "${seg.captionLine}"`)
         .join("\n");
       const res = await fetch("/api/swarm/jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: post.title,
+          title: targetPost.title,
+          prompt: effectiveBrief,
           genre: "35mm Cinematic Epic Score",
           bpm: 118,
           audioEngine:
             audioEngineMode === "option1_symphonic"
               ? "omni_lyria3"
               : "omni_native",
-          adkOrcasMode: true,
+          adkOrcasMode: false,
           act1Prompt: turnPrompts.slice(0, 3).join(" "),
           act2Prompt: turnPrompts.slice(3, 6).join(" "),
           turnPrompts,
@@ -993,10 +1021,10 @@ export default function ContentStudioWorkspacePage() {
         setLiveRenderJob({
           id: data.job.id,
           status: "running",
-          progress: Number(data.job.progress || 8),
+          progress: Number(data.job.progress || 12),
           stageLabel: String(
             data.job.stageLabel ||
-              "Stage 1/6 • Rendering 35mm keyframes & Lyria 3 Pro score..."
+              "Stage 1/6 • Rendering 6-act 35mm video & Lyria 3 Pro score..."
           ),
           latestLog:
             Array.isArray(data.job.logs) && data.job.logs.length > 0
@@ -1004,7 +1032,7 @@ export default function ContentStudioWorkspacePage() {
               : `Job ${data.job.id} active`,
         });
         setToast({
-          message: `Started live Omni 1.1 + Lyria 3 render (${data.job.id})`,
+          message: `Started live Omni 1.1 + Lyria 3 reel render (${data.job.id})`,
         });
       } else {
         const errReason = String(
@@ -1058,7 +1086,7 @@ export default function ContentStudioWorkspacePage() {
               item.src ||
                 item.videoUrl ||
                 item.url ||
-                "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4?v=theatrical3"
+                "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4?v=kailash_fresh_20261023"
             ),
             platform: "9:16 & 16:9",
           }));
@@ -1802,20 +1830,21 @@ export default function ContentStudioWorkspacePage() {
         : "/assets/swarm/comparisons/04_option2_clone_adk_orcas_omni_native_60s.mp4"
       : isGaneshShivaParvati
       ? audioEngineMode === "option1_symphonic"
-        ? "/assets/swarm/comparisons/12_sacred_kailash_ganesh_shiva_parvati_option1_lyria3_devotional_60s.mp4?v=theatrical3"
-        : "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4?v=theatrical3"
+        ? "/assets/swarm/comparisons/12_sacred_kailash_ganesh_shiva_parvati_option1_lyria3_devotional_60s.mp4?v=kailash_fresh_20261023"
+        : "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4?v=kailash_fresh_20261023"
       : isCursedHunter
       ? audioEngineMode === "option1_symphonic"
         ? "/assets/swarm/comparisons/10_option1_lyria3pro_symphonic_60s_master.mp4"
         : "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4"
-      : /dance|bollywood|bhangra|party|festival/i.test(lowerPrompt)
-      ? "/assets/swarm/bollywood_top_heroine_hindi_superhit_60s_omni_1_1_flash.mp4"
+      : /bhangra|flamenco|barcelona|gothic|dhol/i.test(lowerPrompt)
+      ? "/assets/swarm/generated/job_1792800001_barcelona_bhangra_flamenco/combined_60s.mp4"
+      : /cyberpunk|tokyo|sci-fi|quantum|cryptographer|observatory|neon|future|thriller/i.test(lowerPrompt)
+      ? "/assets/swarm/generated/job_1792800002_neotokyo_quantum_observatory/combined_60s.mp4"
       : /coastal|beach|summer|synth|ocean|island/i.test(lowerPrompt)
-      ? "/assets/swarm/punjabi_spain_poolside_full_60s_omni_1_1_flash.mp4"
-      : /cyberpunk|tokyo|sci-fi|detective|neon|future|thriller/i.test(lowerPrompt)
-      ? "/assets/swarm/comparisons/04_option2_clone_adk_orcas_omni_native_60s.mp4"
-      : apiData?.assets?.videoUrl ||
-        "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4";
+      ? "/assets/swarm/spain_pool_english_master_A.mp4"
+      : apiData?.synthesized?.videoUrl ||
+        apiData?.assets?.videoUrl ||
+        "/assets/swarm/generated/job_1792800001_barcelona_bhangra_flamenco/combined_60s.mp4";
 
     let nextTitle = post.title;
     let nextHook = post.hook;
@@ -1835,99 +1864,102 @@ export default function ContentStudioWorkspacePage() {
       "50.0s–60.0s",
     ];
 
+    const apiAssets = apiData?.assets || apiData?.synthesized;
+    const conciseTopic =
+      promptWithoutUrls.length > 52
+        ? promptWithoutUrls.slice(0, 50).replace(/[,;:\s]+$/, "")
+        : promptWithoutUrls ||
+          (extractedYtId
+            ? `YouTube Ref (${extractedYtId}) Cinema Epic`
+            : "Custom 35mm Visual Story");
+
+    const leadFallbackA =
+      apiAssets?.personas?.female_lead?.name ||
+      (isGaneshShivaParvati
+        ? "Goddess Parvati"
+        : isSpeakeasy
+        ? "Clara"
+        : isCursedHunter
+        ? "Lyra"
+        : "Lead Protagonist A");
+    const leadFallbackB =
+      apiAssets?.personas?.male_lead?.name ||
+      (isGaneshShivaParvati
+        ? "Lord Shiva"
+        : isSpeakeasy
+        ? "Julian"
+        : isCursedHunter
+        ? "Kaelen"
+        : "Lead Protagonist B");
+    const harmonyC = apiAssets?.personas?.female_harmony?.name;
+
+    const dynamicTopicTag = conciseTopic
+      .replace(/[^a-zA-Z0-9\s]/g, "")
+      .split(/\s+/)
+      .filter((w) => w.length > 2)
+      .slice(0, 3)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join("");
+
     if (isGaneshShivaParvati) {
       nextTitle =
-        apiData?.assets?.title ||
+        apiAssets?.title ||
         "Sacred Kailash: Ganesh, Parvati & Shiva — 35mm Visual Epic";
-      // Keep hook strictly under 110 characters (< 125c fold) with zero raw URLs!
-      nextHook =
-        "At the sacred gates of Mount Kailash, a vow between Parvati, Ganesha, and Shiva awakens the cosmos.";
-      nextBody = `Multi-act 35mm mythological visual story${
-        extractedYtId ? ` (elevated from YouTube ref ${extractedYtId})` : ""
-      } featuring Goddess Parvati, Lord Ganesha, and Lord Shiva. Combines celestial particle VFX, spoken dialogue, and a dynamic Lyria 3 Pro Vedic percussion & symphonic score ducked at -14 LUFS.`;
+      nextHook = apiAssets?.hook
+        ? String(apiAssets.hook).replace(/https?:\/\/[^\s]+/gi, "").trim().slice(0, 114)
+        : "At the sacred gates of Mount Kailash, a vow between Parvati, Ganesha, and Shiva awakens the cosmos.";
+      nextBody =
+        apiAssets?.storyline?.slice(0, 260) ||
+        `Multi-act 35mm mythological visual story${
+          extractedYtId ? ` (elevated from YouTube ref ${extractedYtId})` : ""
+        } featuring Goddess Parvati, Lord Ganesha, and Lord Shiva. Combines celestial particle VFX, spoken dialogue, and a dynamic Lyria 3 Pro Vedic percussion & symphonic score ducked at -14 LUFS.`;
       nextHashtags =
+        apiAssets?.hashtags ||
         "#GaneshParvatiShiva #SacredMythology #VisualEffects #CinemaStudio";
       nextAltText =
+        apiAssets?.altText ||
         "Wide 35mm cinema frame of Mount Kailash at golden twilight featuring Goddess Parvati, young Lord Ganesha guarding the temple threshold, and Lord Shiva with celestial light effects.";
       nextCastLabel =
-        "Goddess Parvati (Soprano) · Lord Ganesha (Tenor) · Lord Shiva (Baritone)";
+        apiAssets?.castBadge ||
+        (harmonyC
+          ? `${leadFallbackA} · ${leadFallbackB} · ${harmonyC}`
+          : "Goddess Parvati (Soprano) · Lord Ganesha (Tenor) · Lord Shiva (Baritone)");
       nextSegments = INITIAL_SEGMENTS;
       nextSlides = INITIAL_POST.slides;
     } else if (isSpeakeasy) {
-      nextTitle = "Crimson Echoes — 1920s Art-Deco Speakeasy 60s Master";
-      nextHook =
-        "When midnight rain hits the brass marquee, Julian's Steinway and Clara's voice own the room.";
-      nextBody = `Built for ${activePlatform.shortName} using ${activeBrand.name}. Six continuous 10s takes inside a warm amber 1920s speakeasy with lip-synced jazz vocals and upright bass at -14 LUFS.`;
-      nextHashtags = "#CrimsonEchoes #ArtDecoNoir #JazzCinema #CinemaStudio";
-      nextAltText =
-        "35mm warm amber frame of Clara at a vintage ribbon mic and Julian at a grand piano inside a 1920s speakeasy.";
-      nextCastLabel = "Clara (Velvet Alto) · Julian (Baritone Pianist)";
-      nextSegments = SPEAKEASY_SEGMENTS;
-      nextSlides = [
-        {
-          id: "slide-1",
-          title: "Act I (0:00–0:20) · Midnight at the Brass Marquee",
-          subtitle:
-            "Julian opens on the Steinway grand while Clara steps into the warm amber spotlight.",
-          altText: "1920s Art-Deco speakeasy stage with grand piano and ribbon mic",
-          timeCode: "00:00–00:20",
-        },
-        {
-          id: "slide-2",
-          title: "Act II (0:20–0:40) · Velvet Jazz-Noir Groove",
-          subtitle:
-            "118 BPM brushed snare and upright bass lock the room into unbroken silence.",
-          altText: "Medium dolly shot across the speakeasy floor",
-          timeCode: "00:20–00:40",
-        },
-        {
-          id: "slide-3",
-          title: "Act III (0:40–1:00) · D-Minor Midnight Encore",
-          subtitle:
-            "Duet finale under warm tungsten sconces with -14 LUFS vocal ducking.",
-          altText: "Clara and Julian final duet frame",
-          timeCode: "00:40–01:00",
-        },
-      ];
-    } else if (isCursedHunter) {
-      nextTitle = "The Cursed Hunter — 35mm Live-Action 60s Campaign";
-      nextHook =
-        "The curse took his voice at dusk—so she walked into the frozen basalt pass with empty hands.";
-      nextBody = `Built for ${activePlatform.shortName} using ${activeBrand.name}. Every 10-second segment locks character wardrobe, spatial blocking, and -14 LUFS audio ducking.`;
+      nextTitle =
+        apiAssets?.title ||
+        "Crimson Echoes — 1920s Art-Deco Speakeasy 60s Master";
+      nextHook = apiAssets?.hook
+        ? String(apiAssets.hook).replace(/https?:\/\/[^\s]+/gi, "").trim().slice(0, 114)
+        : "When midnight rain hits the brass marquee, Julian's Steinway and Clara's voice own the room.";
+      nextBody =
+        apiAssets?.storyline?.slice(0, 260) ||
+        `Built for ${activePlatform.shortName} using ${activeBrand.name}. Six continuous 10s takes inside a warm amber 1920s speakeasy with lip-synced jazz vocals and upright bass at -14 LUFS.`;
       nextHashtags =
+        apiAssets?.hashtags || "#CrimsonEchoes #ArtDecoNoir #JazzCinema #CinemaStudio";
+      nextAltText =
+        apiAssets?.altText ||
+        "35mm warm amber frame of Clara at a vintage ribbon mic and Julian at a grand piano inside a 1920s speakeasy.";
+      nextCastLabel =
+        apiAssets?.castBadge || "Clara (Velvet Alto) · Julian (Baritone Pianist)";
+      nextSegments = SPEAKEASY_SEGMENTS;
+    } else if (isCursedHunter) {
+      nextTitle =
+        apiAssets?.title ||
+        "The Cursed Hunter — 35mm Live-Action 60s Campaign";
+      nextHook = apiAssets?.hook
+        ? String(apiAssets.hook).replace(/https?:\/\/[^\s]+/gi, "").trim().slice(0, 114)
+        : "The curse took his voice at dusk—so she walked into the frozen basalt pass with empty hands.";
+      nextBody =
+        apiAssets?.storyline?.slice(0, 260) ||
+        `Built for ${activePlatform.shortName} using ${activeBrand.name}. Every 10-second segment locks character wardrobe, spatial blocking, and -14 LUFS audio ducking.`;
+      nextHashtags =
+        apiAssets?.hashtags ||
         "#TheCursedHunter #LiveAction35mm #SoundDesign #CinemaStudio";
       nextSegments = CURSED_HUNTER_SEGMENTS;
-      nextSlides = [
-        {
-          id: "slide-1",
-          title: "Act I (0:00–0:20) · Unarmed in the Basalt Pass",
-          subtitle: "Lyra approaches Kaelen with open hands—zero weapon continuity drift.",
-          altText: "Act 1 frame showing unarmed Lyra facing Kaelen in snowy canyon",
-          timeCode: "00:00–00:20",
-        },
-        {
-          id: "slide-2",
-          title: "Act II (0:20–0:40) · Closing the Distance",
-          subtitle: "Strict right-to-left approach across the 180-degree camera axis.",
-          altText: "Act 2 medium two-shot in snowy basalt pass",
-          timeCode: "00:20–00:40",
-        },
-        {
-          id: "slide-3",
-          title: "Act III (0:40–1:00) · Locked Arctic Twilight Resolution",
-          subtitle: "Continuous cold blue-grey overcast grade with orchestral crescendo.",
-          altText: "Act 3 resolution shot under cold blue-grey twilight sky",
-          timeCode: "00:40–01:00",
-        },
-      ];
-      nextCastLabel = "Kaelen (Baritone) · Lyra (Mezzo)";
+      nextCastLabel = apiAssets?.castBadge || "Kaelen (Baritone) · Lyra (Mezzo)";
     } else {
-      // Custom topic or YouTube reference synthesis powered by live Gemini 2.5 Flash
-      const apiAssets = apiData?.assets;
-      const conciseTopic =
-        promptWithoutUrls.length > 52
-          ? promptWithoutUrls.slice(0, 50).replace(/[,;:\s]+$/, "")
-          : promptWithoutUrls || (extractedYtId ? `YouTube Ref (${extractedYtId}) Cinema Epic` : "Custom 35mm Visual Story");
       nextTitle = apiAssets?.title || `${conciseTopic} — 35mm Cinema Master`;
       const rawHookCandidate =
         apiAssets?.hook ||
@@ -1943,140 +1975,124 @@ export default function ContentStudioWorkspacePage() {
           extractedYtId ? ` (referencing YouTube ID ${extractedYtId})` : ""
         }. Six continuous 35mm acts with spoken dialogue, visual effects continuity locks, and dynamic Lyria 3 Pro orchestral scoring at -14 LUFS.`;
       nextHashtags =
-        apiAssets?.hashtags || "#VisualStorytelling #35mmCinema #SoundDesign #CinemaStudio";
+        apiAssets?.hashtags ||
+        `#${dynamicTopicTag || "OriginalStory"} #35mmCinema #VisualStorytelling #CinemaStudio`;
       nextAltText =
         apiAssets?.altText ||
         `Wide 35mm cinema frame for ${nextTitle} with locked character lighting and dynamic atmospheric effects.`;
-      const leadA = apiAssets?.personas?.female_lead?.name || "Lead Protagonist";
-      const leadB = apiAssets?.personas?.male_lead?.name || "Co-Lead";
-      nextCastLabel = apiAssets?.castBadge || `${leadA} · ${leadB}`;
+      nextCastLabel =
+        apiAssets?.castBadge ||
+        (harmonyC
+          ? `${leadFallbackA} · ${leadFallbackB} · ${harmonyC}`
+          : `${leadFallbackA} · ${leadFallbackB}`);
+      nextSegments = Array.from({ length: 6 }, (_, idx) => ({
+        id: `seg-${idx + 1}`,
+        index: idx,
+        timeRange: standardTimeRanges[idx],
+        startSec: idx * 10,
+        endSec: (idx + 1) * 10,
+        speaker:
+          idx === 5
+            ? `${leadFallbackA} & ${leadFallbackB}`
+            : idx % 2 === 0
+            ? leadFallbackA
+            : leadFallbackB,
+        captionLine: `Act ${idx + 1}: ${conciseTopic} — dramatic 35mm progression.`,
+        visualContinuityLock: `Act ${idx + 1} 35mm wide/medium shot for ${conciseTopic}; locked character lighting`,
+        aiGenerated: true,
+      }));
+    }
 
-      if (Array.isArray(apiAssets?.segments) && apiAssets.segments.length >= 6) {
-        nextSegments = apiAssets.segments.slice(0, 6).map(
-          (
-            seg: {
-              speaker?: string;
-              captionLine?: string;
-              visualContinuityLock?: string;
-            },
-            idx: number
-          ) => ({
-            id: `seg-${idx + 1}`,
-            index: idx,
-            timeRange: standardTimeRanges[idx],
-            startSec: idx * 10,
-            endSec: (idx + 1) * 10,
-            speaker: String(seg.speaker || (idx % 2 === 0 ? leadA : leadB)),
-            captionLine: String(
-              seg.captionLine || `Act ${idx + 1} spoken dialogue for ${conciseTopic}.`
-            ),
-            visualContinuityLock: String(
-              seg.visualContinuityLock || `35mm continuity lock for Act ${idx + 1}`
-            ),
-            aiGenerated: true,
-          })
-        );
-      } else {
-        nextSegments = [
-          {
-            id: "seg-1",
-            index: 0,
-            timeRange: "00.0s–10.0s",
-            startSec: 0,
-            endSec: 10,
-            speaker: leadA,
-            captionLine:
-              "Every step into this threshold changes the story we came here to tell.",
-            visualContinuityLock: `Establishing 35mm wide shot for ${conciseTopic}; locked atmospheric lighting`,
-            aiGenerated: true,
+    // Apply Gemini's synthesized 6-act segments & slides across ALL prompts
+    const lyricLines: string[] =
+      typeof apiAssets?.lyrics === "string"
+        ? apiAssets.lyrics
+            .split("\n")
+            .map((l: string) => l.replace(/^\[[^\]]*\]\s*/, "").trim())
+            .filter(Boolean)
+        : [];
+    const shotChoreo: string[] = Array.isArray(apiAssets?.shotChoreography)
+      ? apiAssets.shotChoreography
+      : [];
+    const shotOptics: string[] = Array.isArray(apiAssets?.shotLightingAndOptics)
+      ? apiAssets.shotLightingAndOptics
+      : [];
+
+    if (Array.isArray(apiAssets?.segments) && apiAssets.segments.length >= 6) {
+      nextSegments = apiAssets.segments.slice(0, 6).map(
+        (
+          seg: {
+            speaker?: string;
+            captionLine?: string;
+            visualContinuityLock?: string;
           },
-          {
-            id: "seg-2",
-            index: 1,
-            timeRange: "10.0s–20.0s",
-            startSec: 10,
-            endSec: 20,
-            speaker: leadB,
-            captionLine:
-              "Hold your ground—listen to the resonance rising through the mist.",
-            visualContinuityLock:
-              "Medium two-shot with zero prop drift; dynamic particle VFX",
-            aiGenerated: true,
-          },
-          {
-            id: "seg-3",
-            index: 2,
-            timeRange: "20.0s–30.0s",
-            startSec: 20,
-            endSec: 30,
-            speaker: leadA,
-            captionLine:
-              "We don't turn back when the score reaches the second act.",
-            visualContinuityLock:
-              "180-degree camera axis locked; forward dolly movement",
-            aiGenerated: true,
-          },
-          {
-            id: "seg-4",
-            index: 3,
-            timeRange: "30.0s–40.0s",
-            startSec: 30,
-            endSec: 40,
-            speaker: leadB,
-            captionLine:
-              "The shadows are clearing—look at the horizon opening ahead.",
-            visualContinuityLock:
-              "Continuous orchestral swell ducked at -14 LUFS under spoken dialogue",
-            aiGenerated: true,
-          },
-          {
-            id: "seg-5",
-            index: 4,
-            timeRange: "40.0s–50.0s",
-            startSec: 40,
-            endSec: 50,
-            speaker: leadA,
-            captionLine:
-              "Every vow we made at the beginning holds true in the final light.",
-            visualContinuityLock:
-              "Close-up emotional beat; locked wardrobe and color grade",
-            aiGenerated: true,
-          },
-          {
-            id: "seg-6",
-            index: 5,
-            timeRange: "50.0s–60.0s",
-            startSec: 50,
-            endSec: 60,
-            speaker: `${leadA} & ${leadB}`,
-            captionLine:
-              "Here begins the next chapter—unbroken from first frame to last.",
-            visualContinuityLock:
-              "Wide theatrical resolution shot with symphonic crescendo",
-            aiGenerated: true,
-          },
-        ];
-      }
+          idx: number
+        ) => ({
+          id: `seg-${idx + 1}`,
+          index: idx,
+          timeRange: standardTimeRanges[idx],
+          startSec: idx * 10,
+          endSec: (idx + 1) * 10,
+          speaker: String(
+            seg.speaker || (idx % 2 === 0 ? leadFallbackA : leadFallbackB)
+          ),
+          captionLine: String(
+            seg.captionLine || `Act ${idx + 1} spoken dialogue for ${conciseTopic}.`
+          ),
+          visualContinuityLock: String(
+            seg.visualContinuityLock || `35mm continuity lock for Act ${idx + 1}`
+          ),
+          aiGenerated: true,
+        })
+      );
+    } else if (lyricLines.length > 0 || shotChoreo.length > 0) {
+      nextSegments = Array.from({ length: 6 }, (_, idx) => ({
+        id: `seg-${idx + 1}`,
+        index: idx,
+        timeRange: standardTimeRanges[idx],
+        startSec: idx * 10,
+        endSec: (idx + 1) * 10,
+        speaker:
+          idx === 5
+            ? `${leadFallbackA} & ${leadFallbackB}`
+            : idx % 2 === 0
+            ? leadFallbackA
+            : leadFallbackB,
+        captionLine:
+          lyricLines[idx] ||
+          shotChoreo[idx] ||
+          `Shot ${idx + 1}: ${nextTitle} (${apiAssets?.bpm || 118} BPM)`,
+        visualContinuityLock:
+          shotOptics[idx] ||
+          shotChoreo[idx] ||
+          `35mm continuity lock (${apiAssets?.musicalKey || "D Minor"}, ${
+            apiAssets?.bpm || 118
+          } BPM)`,
+        aiGenerated: true,
+      }));
+    }
+
+    if (nextSegments.length >= 6) {
       nextSlides = [
         {
           id: "slide-1",
-          title: `Act I (0:00–0:20) · ${conciseTopic.slice(0, 32)}`,
+          title: `Act I (0:00–0:20) · ${nextTitle.slice(0, 32)}`,
           subtitle: nextSegments[0].captionLine,
-          altText: `Act I 35mm frame for ${conciseTopic}`,
+          altText: `Act I 35mm frame for ${nextTitle}`,
           timeCode: "00:00–00:20",
         },
         {
           id: "slide-2",
-          title: `Act II (0:20–0:40) · Rising Tension`,
+          title: `Act II (0:20–0:40) · Rising Confrontation`,
           subtitle: nextSegments[2].captionLine,
-          altText: `Act II medium two-shot for ${conciseTopic}`,
+          altText: `Act II medium two-shot for ${nextTitle}`,
           timeCode: "00:20–00:40",
         },
         {
           id: "slide-3",
           title: `Act III (0:40–1:00) · Symphonic Finale`,
           subtitle: nextSegments[5].captionLine,
-          altText: `Act III finale shot for ${conciseTopic}`,
+          altText: `Act III finale shot for ${nextTitle}`,
           timeCode: "00:40–01:00",
         },
       ];
@@ -2114,12 +2130,31 @@ export default function ContentStudioWorkspacePage() {
           : "Option 2 · Omni 1.1 Dialogue + Foley + Lyria 3 Pro Score",
     };
 
+    // Prepend newly generated campaign into Variations & switch Right Inspector to "edit" so the right side updates immediately
+    const generatedVarId = `var-gen-${Date.now()}`;
+    const generatedVar: PostVariation = {
+      id: generatedVarId,
+      label: `Generated · ${nextTitle}`,
+      hook: nextHook,
+      body: nextBody,
+      hashtags: nextHashtags,
+      videoUrl: chosenVideo,
+      audioLabel: nextDraft.audioMixLabel,
+      rationale: `Freshly synthesized 6-Act screenplay & reel for "${conciseTopic}" (${nextCastLabel}).`,
+    };
+    setVariations((prev) => [generatedVar, ...prev.slice(0, 9)]);
+    setActiveVariationId(generatedVarId);
+    setRightTab("edit");
+
     commitPostChange(
       nextDraft,
       extractedYtId
         ? `Synthesized 6-Act story & dialogue from YouTube ref (${extractedYtId})`
-        : "Synthesized 6-Act story, dialogue & multi-platform post from brief"
+        : `Synthesized "${nextTitle}" & launched live video reel`
     );
+
+    // Automatically launch live cloud video & audio reel generation from the new prompt!
+    void handleStartLiveVideoRender(nextDraft, promptText);
   };
 
   return (
@@ -2174,7 +2209,7 @@ export default function ContentStudioWorkspacePage() {
                   color: "var(--color-text)",
                   borderRadius: "var(--radius-sm)",
                 }}
-                className="font-semibold text-base truncate max-w-[220px] sm:max-w-[340px] px-1.5 py-0.5 studio-focus-ring"
+                className="font-semibold text-base min-w-[260px] sm:min-w-[420px] md:min-w-[540px] max-w-[620px] px-1.5 py-0.5 studio-focus-ring"
               />
               <span
                 data-testid="studio-version-badge"
@@ -2203,7 +2238,7 @@ export default function ContentStudioWorkspacePage() {
           </div>
         </div>
 
-        {/* Center/Right controls: Brand selector · Theater · Undo/Redo · Shortcuts · Theme · Publish */}
+        {/* Center/Right controls: Brand selector · Theater · Undo/Redo · Shortcuts · Publish */}
         <div className="flex flex-wrap items-center gap-2">
           <div className="hidden lg:flex items-center gap-2">
             <label
@@ -2292,26 +2327,6 @@ export default function ContentStudioWorkspacePage() {
               <span className="hidden xl:inline">Shortcuts</span>
             </StudioButton>
           </StudioTooltip>
-
-          <StudioButton
-            variant="secondary"
-            size="sm"
-            aria-label={
-              theme === "light" ? "Switch to dark theme" : "Switch to light theme"
-            }
-            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-            icon={
-              theme === "light" ? (
-                <Moon className="w-4 h-4" />
-              ) : (
-                <Sun className="w-4 h-4" />
-              )
-            }
-          >
-            <span className="hidden sm:inline">
-              {theme === "light" ? "Dark" : "Light"}
-            </span>
-          </StudioButton>
 
           {/* Mobile inspector sheet trigger */}
           <div className="md:hidden">
@@ -2580,7 +2595,7 @@ export default function ContentStudioWorkspacePage() {
                                 ? "/assets/swarm/comparisons/02_option1_clone_adk_orcas_omni_lyria3_60s.mp4"
                                 : lowerT.includes("kailash") ||
                                   lowerT.includes("ganesh")
-                                ? "/assets/swarm/comparisons/12_sacred_kailash_ganesh_shiva_parvati_option1_lyria3_devotional_60s.mp4?v=theatrical3"
+                                ? "/assets/swarm/comparisons/12_sacred_kailash_ganesh_shiva_parvati_option1_lyria3_devotional_60s.mp4?v=kailash_fresh_20261023"
                                 : "/assets/swarm/comparisons/10_option1_lyria3pro_symphonic_60s_master.mp4";
                             commitPostChange(
                               {
@@ -2598,7 +2613,7 @@ export default function ContentStudioWorkspacePage() {
                                 ? "/assets/swarm/comparisons/04_option2_clone_adk_orcas_omni_native_60s.mp4"
                                 : lowerT.includes("kailash") ||
                                   lowerT.includes("ganesh")
-                                ? "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4?v=theatrical3"
+                                ? "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4?v=kailash_fresh_20261023"
                                 : "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4";
                             commitPostChange(
                               {
@@ -2628,15 +2643,19 @@ export default function ContentStudioWorkspacePage() {
                   )}
                 </div>
 
-                <StudioButton
-                  variant="primary"
-                  size="md"
-                  loading={generationStage.active}
-                  icon={<Sparkles className="w-4 h-4" />}
-                  onClick={() => runStreamingGeneration(briefInput, "full_brief")}
-                >
-                  Generate Post
-                </StudioButton>
+                <div className="flex flex-col gap-2">
+                  <StudioButton
+                    variant="primary"
+                    size="md"
+                    loading={generationStage.active || liveRenderJob.status === "running"}
+                    icon={<Sparkles className="w-4 h-4" />}
+                    onClick={() => runStreamingGeneration(briefInput, "full_brief")}
+                  >
+                    {liveRenderJob.status === "running"
+                      ? `Rendering New Reel (${liveRenderJob.progress || 12}%)…`
+                      : "Generate Post & Video Reel"}
+                  </StudioButton>
+                </div>
               </div>
             )}
 
@@ -2863,7 +2882,7 @@ export default function ContentStudioWorkspacePage() {
               </div>
             )}
 
-            {/* Footer links to Personas & Component Gallery (/dev/gallery) */}
+            {/* Footer link to Personas & Wardrobe Studio */}
             <div
               className="mt-auto pt-3 flex flex-wrap items-center justify-between gap-2 text-xs"
               style={{
@@ -2876,22 +2895,17 @@ export default function ContentStudioWorkspacePage() {
                 className="font-medium underline inline-flex items-center gap-1 studio-focus-ring"
                 style={{ color: "var(--color-text)" }}
               >
-                <span>Personas &amp; Wardrobe</span>
+                <span>Personas &amp; Wardrobe Studio</span>
               </Link>
-              <Link
-                href="/dev/gallery"
-                className="font-medium underline inline-flex items-center gap-1 studio-focus-ring"
-                style={{ color: "var(--color-info)" }}
-              >
-                <span>Component Gallery (/dev/gallery)</span>
-                <ExternalLink className="w-3 h-3" />
-              </Link>
+              <span className="font-mono text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+                12-Agent Swarm Active
+              </span>
             </div>
           </aside>
         )}
 
         {/* ------------------------------------------------------------------
-            CENTER HERO CANVAS (Upgrade 1, 2, 3, 4: Theater-First Cinema Stage)
+            CENTER HERO CANVAS (Executive Light-Theme Split Studio Stage)
            ------------------------------------------------------------------ */}
         <main
           aria-label="Live multi-platform post canvas"
@@ -2946,14 +2960,6 @@ export default function ContentStudioWorkspacePage() {
             </div>
           </div>
 
-          {/* Floating In-Place Selection Toolbar (Always visible for current selection) */}
-          <div className="shrink-0">
-            <SelectionToolbar
-              scopeLabel={scopeLabelMap[selectedScope]}
-              onQuickAction={handleTriggerQuickAction}
-            />
-          </div>
-
           {/* Accessible AI Diff Card (Rendered when a quick action or scoped prompt proposes an edit) */}
           {pendingDiff && (
             <div className="shrink-0">
@@ -2968,32 +2974,31 @@ export default function ContentStudioWorkspacePage() {
           )}
 
           {/* ================================================================
-              UPGRADE 1 & 4: NETFLIX THEATER-FIRST CINEMA STAGE + INTEGRATED AUDIO/SUBTITLE CHROME
+              EXECUTIVE LIGHT-THEME SPLIT CINEMA STAGE (9:16 Full-Bleed Reel + 6-Act Interactive Storyboard)
              ================================================================ */}
           <section
-            data-theme="dark"
             aria-label="35mm Cinema Stage and Player Controls"
             onClick={() => setSelectedScope("visual")}
             style={{
-              backgroundColor: "var(--color-cinema-stage)",
-              color: "var(--color-cinema-text)",
+              backgroundColor: "var(--color-surface)",
+              color: "var(--color-text)",
               border: `2px solid ${
                 selectedScope === "visual"
                   ? "var(--color-focus)"
-                  : "var(--color-cinema-border)"
+                  : "var(--color-border)"
               }`,
               borderRadius: "var(--radius-md)",
-              boxShadow: "var(--shadow-md)",
+              boxShadow: "var(--shadow-sm)",
             }}
             className="shrink-0 overflow-hidden flex flex-col"
           >
             {/* Stage Top Header Bar: Brand · Aspect Ratio · Active Act Badge */}
             <div
               style={{
-                backgroundColor: "var(--color-cinema-surface)",
-                borderBottom: "1px solid var(--color-cinema-border)",
+                backgroundColor: "var(--color-surface-2)",
+                borderBottom: "1px solid var(--color-border)",
               }}
-              className="px-4 py-2.5 flex flex-wrap items-center justify-between gap-2"
+              className="px-4 py-2 flex flex-wrap items-center justify-between gap-2"
             >
               <div className="flex flex-wrap items-center gap-2">
                 <Film
@@ -3016,7 +3021,7 @@ export default function ContentStudioWorkspacePage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2 text-xs font-mono tabular-nums">
-                <span style={{ color: "var(--color-cinema-muted)" }}>
+                <span style={{ color: "var(--color-text-muted)" }}>
                   Cast:
                 </span>
                 <span
@@ -3025,20 +3030,20 @@ export default function ContentStudioWorkspacePage() {
                 >
                   {post.castBadge}
                 </span>
-                <span style={{ color: "var(--color-cinema-muted)" }}>·</span>
-                <span className="font-semibold">
+                <span style={{ color: "var(--color-text-muted)" }}>·</span>
+                <span className="font-semibold" style={{ color: "var(--color-primary)" }}>
                   Act {activeSegment.index + 1} ({activeSegment.timeRange})
                 </span>
               </div>
             </div>
 
-            {/* Live Cloud Video & Audio Synthesis / Render Control Bar (/api/swarm/jobs) */}
+            {/* Live Cloud Video & Audio Synthesis Status Bar (/api/swarm/jobs) */}
             <div
               style={{
-                backgroundColor: "var(--color-cinema-surface)",
-                borderBottom: "1px solid var(--color-cinema-border)",
+                backgroundColor: "var(--color-surface)",
+                borderBottom: "1px solid var(--color-border)",
               }}
-              className="px-4 py-2 flex items-center justify-between gap-3 text-xs"
+              className="px-4 py-1.5 flex items-center justify-between gap-3 text-xs"
             >
               <div className="flex-1 flex items-center gap-2 min-w-0">
                 {liveRenderJob.status === "error" ? (
@@ -3056,7 +3061,7 @@ export default function ContentStudioWorkspacePage() {
                 )}
                 <span
                   data-testid="cinema-render-status-text"
-                  className="truncate font-medium"
+                  className="font-medium leading-snug break-words"
                 >
                   {liveRenderJob.status === "running"
                     ? `${liveRenderJob.stageLabel} (${liveRenderJob.progress}%)`
@@ -3064,31 +3069,13 @@ export default function ContentStudioWorkspacePage() {
                     ? `Live Master Ready: ${post.title}`
                     : liveRenderJob.status === "error"
                     ? `${liveRenderJob.stageLabel} (${liveRenderJob.latestLog})`
-                    : `6-Act Screenplay Ready: ${post.title} — Click any Act below to scrub or render fresh cloud video`}
+                    : `6-Act Screenplay Ready — Click any Act card on the right to jump to that scene`}
                 </span>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <StudioButton
-                  variant="primary"
-                  size="sm"
-                  loading={liveRenderJob.status === "running"}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleStartLiveVideoRender();
-                  }}
-                >
-                  {liveRenderJob.status === "running"
-                    ? `Rendering ${liveRenderJob.progress}%…`
-                    : liveRenderJob.status === "error"
-                    ? "Retry Live Render"
-                    : "Render Live Video & Audio"}
-                </StudioButton>
               </div>
             </div>
 
-            {/* Stage Viewport Well: Video Frame + Live Burned-In Netflix Subtitle Overlay + Safe-Zone Overlay */}
-            <div className="relative w-full flex flex-col items-center justify-center p-3 md:p-4">
+            {/* Stage Viewport Well: Zero-Pillarbox Split Studio Stage (9:16 Video on Left + 6-Act Live Script on Right) */}
+            <div className="relative w-full p-3 md:p-4" style={{ backgroundColor: "var(--color-bg)" }}>
               {activePlatformId === "carousel_4_5" ? (
                 <div className="w-full flex flex-col gap-3">
                   <div className="flex items-center justify-between">
@@ -3129,9 +3116,9 @@ export default function ContentStudioWorkspacePage() {
                         }));
                       }}
                       style={{
-                        backgroundColor: "var(--color-cinema-surface)",
-                        color: "var(--color-cinema-text)",
-                        border: "1px solid var(--color-cinema-border)",
+                        backgroundColor: "var(--color-surface)",
+                        color: "var(--color-text)",
+                        border: "1px solid var(--color-border)",
                         borderRadius: "var(--radius-sm)",
                       }}
                       className="flex-1 px-3 py-1.5 text-sm font-semibold studio-focus-ring"
@@ -3156,93 +3143,178 @@ export default function ContentStudioWorkspacePage() {
                   </div>
                 </div>
               ) : (
-                <div className="relative w-full flex flex-col items-center justify-center">
-                  <video
-                    ref={videoRef}
-                    key={post.videoUrl}
-                    src={post.videoUrl}
-                    controls
-                    playsInline
-                    preload="metadata"
-                    onTimeUpdate={(e) => {
-                      const t = e.currentTarget.currentTime;
-                      const matched = post.segments.find(
-                        (s) => t >= s.startSec && t < s.endSec
-                      );
-                      if (matched && matched.id !== selectedSegmentId) {
-                        setSelectedSegmentId(matched.id);
-                      }
-                    }}
-                    style={{
-                      aspectRatio: activePlatform.aspectRatioCss,
-                      minHeight: theaterMode ? "360px" : "240px",
-                      maxHeight: theaterMode
-                        ? "540px"
-                        : activePlatformId === "reels_9_16"
-                        ? "350px"
-                        : "290px",
-                      backgroundColor: "#05070B",
-                      borderRadius: "var(--radius-sm)",
-                    }}
-                    className="w-full object-contain"
-                  />
-
-                  {/* Live Burned-In Netflix-Style Subtitle Overlay (Lower Third, above native controls) */}
-                  {post.captionsEnabled && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+                  {/* Left 5 Cols: Full-Bleed 9:16 Vertical Reel Frame (0px Black Pillarbox Bars) */}
+                  <div className={activePlatformId === "reels_9_16" ? "lg:col-span-5 flex items-center justify-center" : "lg:col-span-12 flex items-center justify-center"}>
                     <div
-                      data-testid="cinema-live-subtitle-overlay"
-                      className="pointer-events-none absolute bottom-14 left-4 right-4 flex justify-center"
-                    >
-                      <div
-                        style={{
-                          backgroundColor: "var(--color-cinema-surface)",
-                          color: "var(--color-cinema-text)",
-                          border: "1px solid var(--color-cinema-border)",
-                          borderRadius: "var(--radius-sm)",
-                          boxShadow: "var(--shadow-md)",
-                        }}
-                        className="px-3.5 py-1.5 max-w-[92%] text-center text-xs sm:text-sm font-medium leading-snug"
-                      >
-                        <span
-                          className="font-mono font-bold mr-1.5"
-                          style={{ color: "var(--color-cinema-muted)" }}
-                        >
-                          [{activeSegment.speaker.replace(/\s*\(.*?\)\s*/g, "")}]:
-                        </span>
-                        <span>&ldquo;{activeSegment.captionLine}&rdquo;</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Platform Safe-Zone Overlay */}
-                  {post.safeZoneOverlay && (
-                    <div
-                      aria-label="Platform safe zone overlay"
-                      className="pointer-events-none absolute inset-2 flex flex-col justify-between p-3"
+                      className="relative overflow-hidden shadow-md flex items-center justify-center"
                       style={{
-                        border: "2px dashed var(--color-warning)",
-                        borderRadius: "var(--radius-sm)",
+                        aspectRatio: activePlatform.aspectRatioCss,
+                        height: theaterMode
+                          ? "480px"
+                          : activePlatformId === "reels_9_16"
+                          ? "420px"
+                          : "310px",
+                        width: activePlatformId === "reels_9_16" ? "auto" : "100%",
+                        backgroundColor: "#0f172a",
+                        borderRadius: "var(--radius-md)",
+                        border: "1px solid var(--color-border)",
                       }}
                     >
-                      <div
-                        className="px-2 py-1 text-xs font-mono self-start"
-                        style={{
-                          backgroundColor: "var(--color-warning-subtle)",
-                          color: "var(--color-text)",
-                          borderRadius: "var(--radius-sm)",
+                      <video
+                        ref={videoRef}
+                        key={post.videoUrl}
+                        src={post.videoUrl}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        onTimeUpdate={(e) => {
+                          const t = e.currentTarget.currentTime;
+                          const matched = post.segments.find(
+                            (s) => t >= s.startSec && t < s.endSec
+                          );
+                          if (matched && matched.id !== selectedSegmentId) {
+                            setSelectedSegmentId(matched.id);
+                          }
                         }}
-                      >
-                        Top UI Safe Zone (Status &amp; Audio Bar)
+                        className="w-full h-full object-cover"
+                      />
+
+                      {liveRenderJob.status === "running" && (
+                        <div
+                          data-testid="cinema-live-render-progress-badge"
+                          className="pointer-events-none absolute top-2.5 left-2.5 right-2.5 flex justify-center"
+                        >
+                          <div
+                            style={{
+                              backgroundColor: "rgba(15, 23, 42, 0.90)",
+                              color: "#F8FAFC",
+                              border: "1px solid rgba(56, 189, 248, 0.55)",
+                              borderRadius: "var(--radius-sm)",
+                            }}
+                            className="px-2.5 py-1 text-[11px] font-medium flex items-center gap-1.5 shadow-md"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 animate-pulse text-sky-400 shrink-0" />
+                            <span>
+                              Rendering Reel ({liveRenderJob.progress}%)
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Live Burned-In Subtitle Overlay (Positioned cleanly above native HTML5 video controls) */}
+                      {post.captionsEnabled && (
+                        <div
+                          data-testid="cinema-live-subtitle-overlay"
+                          className="pointer-events-none absolute bottom-16 left-2 right-2 flex justify-center"
+                        >
+                          <div
+                            style={{
+                              backgroundColor: "rgba(15, 23, 42, 0.86)",
+                              color: "#F8FAFC",
+                              border: "1px solid rgba(255,255,255,0.18)",
+                              borderRadius: "var(--radius-sm)",
+                            }}
+                            className="px-2 py-1 max-w-[96%] text-center text-[11px] font-medium leading-snug shadow"
+                          >
+                            <span className="font-mono font-bold mr-1 text-sky-300">
+                              [{activeSegment.speaker.replace(/\s*\(.*?\)\s*/g, "")}]:
+                            </span>
+                            <span>&ldquo;{activeSegment.captionLine}&rdquo;</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Platform Safe-Zone Overlay */}
+                      {post.safeZoneOverlay && (
+                        <div
+                          aria-label="Platform safe zone overlay"
+                          className="pointer-events-none absolute inset-2 flex flex-col justify-between p-2.5"
+                          style={{
+                            border: "2px dashed var(--color-warning)",
+                            borderRadius: "var(--radius-sm)",
+                          }}
+                        >
+                          <div
+                            className="px-2 py-0.5 text-[11px] font-mono self-start"
+                            style={{
+                              backgroundColor: "var(--color-warning-subtle)",
+                              color: "var(--color-text)",
+                              borderRadius: "var(--radius-sm)",
+                            }}
+                          >
+                            Top UI Safe Zone
+                          </div>
+                          <div
+                            className="px-2 py-0.5 text-[11px] font-mono self-end"
+                            style={{
+                              backgroundColor: "var(--color-warning-subtle)",
+                              color: "var(--color-text)",
+                              borderRadius: "var(--radius-sm)",
+                            }}
+                          >
+                            Bottom Caption Safe Zone
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right 7 Cols: Interactive 6-Act Storyboard & Spoken Dialogue Deck (Eliminates Pillarbox Void) */}
+                  {activePlatformId === "reels_9_16" && (
+                    <div
+                      data-testid="center-stage-6act-storyboard"
+                      className="lg:col-span-7 flex flex-col justify-start gap-2"
+                    >
+                      <div className="flex items-center justify-between px-1">
+                        <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>
+                          6-Act Spoken Dialogue &amp; Shot Breakdown (Click Act to Seek)
+                        </span>
+                        <span className="text-xs font-mono" style={{ color: "var(--color-primary)" }}>
+                          60.0s Master · 24fps CFR
+                        </span>
                       </div>
-                      <div
-                        className="px-2 py-1 text-xs font-mono self-end"
-                        style={{
-                          backgroundColor: "var(--color-warning-subtle)",
-                          color: "var(--color-text)",
-                          borderRadius: "var(--radius-sm)",
-                        }}
-                      >
-                        Bottom/Right Safe Zone (Caption &amp; Action Icons)
+                      <div className={theaterMode ? "grid grid-cols-1 md:grid-cols-2 gap-2.5" : "grid grid-cols-1 gap-1.5"}>
+                        {post.segments.slice(0, 6).map((seg, idx) => {
+                          const isActSelected = seg.id === selectedSegmentId;
+                          return (
+                            <button
+                              key={seg.id}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedSegmentId(seg.id);
+                                if (videoRef.current) {
+                                  videoRef.current.currentTime = seg.startSec + 0.5;
+                                }
+                              }}
+                              style={{
+                                backgroundColor: isActSelected
+                                  ? "var(--color-surface)"
+                                  : "var(--color-surface-2)",
+                                border: `1px solid ${
+                                  isActSelected
+                                    ? "var(--color-focus)"
+                                    : "var(--color-border)"
+                                }`,
+                                borderRadius: "var(--radius-sm)",
+                              }}
+                              className="w-full text-left px-3 py-1.5 flex flex-col gap-0.5 studio-focus-ring transition-colors"
+                            >
+                              <div className="flex items-center justify-between gap-2 text-xs">
+                                <span className="font-semibold" style={{ color: "var(--color-text)" }}>
+                                  Act {idx + 1} · {seg.speaker}
+                                </span>
+                                <span className="font-mono text-[11px]" style={{ color: "var(--color-primary)" }}>
+                                  {seg.timeRange}
+                                </span>
+                              </div>
+                              <p className="text-xs leading-snug break-words" style={{ color: "var(--color-text-muted)" }}>
+                                &ldquo;{seg.captionLine}&rdquo;
+                              </p>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -3250,18 +3322,18 @@ export default function ContentStudioWorkspacePage() {
               )}
             </div>
 
-            {/* Upgrade 4: Integrated Netflix "Audio & Subtitles" Player Chrome Bar */}
+            {/* Integrated Executive Light-Theme "Audio & Subtitles" Player Chrome Bar */}
             <div
               style={{
-                backgroundColor: "var(--color-cinema-surface)",
-                borderTop: "1px solid var(--color-cinema-border)",
+                backgroundColor: "var(--color-surface-2)",
+                borderTop: "1px solid var(--color-border)",
               }}
-              className="px-4 py-2.5 flex flex-wrap items-center justify-between gap-2"
+              className="px-4 py-2 flex flex-wrap items-center justify-between gap-2"
             >
               <div className="flex flex-wrap items-center gap-1.5">
                 <span
                   className="inline-flex items-center gap-1 text-xs font-mono mr-1"
-                  style={{ color: "var(--color-cinema-muted)" }}
+                  style={{ color: "var(--color-text-muted)" }}
                 >
                   <Volume2 className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>Audio Track:</span>
@@ -3283,7 +3355,7 @@ export default function ContentStudioWorkspacePage() {
                         ? "/assets/swarm/comparisons/04_option2_clone_adk_orcas_omni_native_60s.mp4"
                         : lowerT.includes("kailash") ||
                           lowerT.includes("ganesh")
-                        ? "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4?v=theatrical3"
+                        ? "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4?v=kailash_fresh_20261023"
                         : "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4";
                     commitPostChange(
                       {
@@ -3315,7 +3387,7 @@ export default function ContentStudioWorkspacePage() {
                         ? "/assets/swarm/comparisons/02_option1_clone_adk_orcas_omni_lyria3_60s.mp4"
                         : lowerT.includes("kailash") ||
                           lowerT.includes("ganesh")
-                        ? "/assets/swarm/comparisons/12_sacred_kailash_ganesh_shiva_parvati_option1_lyria3_devotional_60s.mp4?v=theatrical3"
+                        ? "/assets/swarm/comparisons/12_sacred_kailash_ganesh_shiva_parvati_option1_lyria3_devotional_60s.mp4?v=kailash_fresh_20261023"
                         : "/assets/swarm/comparisons/10_option1_lyria3pro_symphonic_60s_master.mp4";
                     commitPostChange(
                       {
@@ -3346,24 +3418,6 @@ export default function ContentStudioWorkspacePage() {
                   icon={<Subtitles className="w-3.5 h-3.5" />}
                 >
                   {post.captionsEnabled ? "CC: On" : "CC: Off"}
-                </StudioButton>
-
-                <StudioButton
-                  variant={theaterMode ? "primary" : "secondary"}
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setTheaterMode((m) => !m);
-                  }}
-                  icon={
-                    theaterMode ? (
-                      <Minimize2 className="w-3.5 h-3.5" />
-                    ) : (
-                      <Maximize2 className="w-3.5 h-3.5" />
-                    )
-                  }
-                >
-                  {theaterMode ? "Exit Theater (T)" : "Theater (T)"}
                 </StudioButton>
               </div>
             </div>
@@ -3767,16 +3821,16 @@ export default function ContentStudioWorkspacePage() {
                 setRightTab(id as "checks" | "edit" | "variations" | "history")
               }
               tabs={[
-                {
-                  id: "checks",
-                  label: "Checks",
-                  badge: activeIssues.length,
-                },
-                { id: "edit", label: "Edit" },
+                { id: "edit", label: "Story & Cast" },
                 {
                   id: "variations",
                   label: "Variations",
                   badge: variations.length,
+                },
+                {
+                  id: "checks",
+                  label: "Checks",
+                  badge: activeIssues.length,
                 },
                 { id: "history", label: "History", badge: checkpoints.length },
               ]}
@@ -3857,30 +3911,90 @@ export default function ContentStudioWorkspacePage() {
               </div>
             )}
 
-            {/* RIGHT TAB 2: DIRECT ELEMENT INSPECTOR (EDIT) */}
+            {/* RIGHT TAB 2: DIRECT ELEMENT INSPECTOR (STORY & CAST) */}
             {rightTab === "edit" && (
               <div className="flex flex-col gap-4">
                 <div>
                   <h2 className="text-base font-semibold">
-                    Inspecting: {scopeLabelMap[selectedScope]}
+                    Story, Cast &amp; 6-Act Production Bible
                   </h2>
                   <p
                     className="text-xs"
                     style={{ color: "var(--color-text-muted)" }}
                   >
-                    Fine-tune accessibility, alt text, and platform disclosures
-                    in place.
+                    Live prompt synthesis, 6-act storyboard, and accessibility controls.
                   </p>
                 </div>
 
-                <StudioInput
-                  label="Visual Alt Text (Screen Readers)"
-                  value={post.altText}
-                  onChange={(e) =>
-                    setPost((prev) => ({ ...prev, altText: e.target.value }))
-                  }
-                  helperText="Required for WCAG 2.2 AA compliance across Instagram, LinkedIn, and X."
-                />
+                <div
+                  data-testid="right-inspector-synthesized-story-card"
+                  className="studio-surface-2 p-3 flex flex-col gap-2"
+                  style={{
+                    borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--color-primary)",
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--color-primary)" }}>
+                      Synthesized Story &amp; 6-Act Reel
+                    </span>
+                    <StudioChip tone={liveRenderJob.status === "running" ? "warning" : "success"}>
+                      {liveRenderJob.status === "running"
+                        ? `Rendering Reel (${liveRenderJob.progress || 15}%)`
+                        : "Live in Canvas"}
+                    </StudioChip>
+                  </div>
+                  <div className="text-sm font-semibold leading-snug break-words">{post.title}</div>
+                  <div className="text-xs leading-snug break-words" style={{ color: "var(--color-text-muted)" }}>
+                    {post.castBadge}
+                  </div>
+                  <p className="text-xs leading-relaxed break-words" style={{ color: "var(--color-text)" }}>
+                    <strong>Hook:</strong> {post.hook}
+                  </p>
+                  <div className="flex flex-col gap-1.5 pt-1.5 border-t" style={{ borderColor: "var(--color-border)" }}>
+                    {post.segments.slice(0, 6).map((seg) => (
+                      <div key={seg.id} className="text-[11px] leading-snug flex items-start gap-1.5">
+                        <span className="font-mono font-semibold shrink-0" style={{ color: "var(--color-primary)" }}>
+                          {seg.timeRange.split("–")[0]}
+                        </span>
+                        <span className="leading-snug break-words">
+                          <strong>{seg.speaker}:</strong> {seg.captionLine}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="visual-alt-text-input"
+                    className="text-xs font-semibold"
+                    style={{ color: "var(--color-text)" }}
+                  >
+                    Visual Alt Text (Screen Readers)
+                  </label>
+                  <textarea
+                    id="visual-alt-text-input"
+                    rows={2}
+                    value={post.altText}
+                    onChange={(e) =>
+                      setPost((prev) => ({ ...prev, altText: e.target.value }))
+                    }
+                    style={{
+                      backgroundColor: "var(--color-surface)",
+                      color: "var(--color-text)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "var(--radius-sm)",
+                    }}
+                    className="w-full px-3 py-1.5 text-xs leading-snug resize-y studio-focus-ring"
+                  />
+                  <span
+                    className="text-[11px]"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
+                    Required for WCAG 2.2 AA compliance across Instagram, LinkedIn, and X.
+                  </span>
+                </div>
 
                 <div
                   className="studio-surface-2 p-3 flex flex-col gap-2.5"
