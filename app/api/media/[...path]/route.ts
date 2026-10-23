@@ -134,3 +134,46 @@ export async function GET(
     return new NextResponse(`Error serving media: ${err.message}`, { status: 500 });
   }
 }
+
+export async function HEAD(
+  req: NextRequest,
+  context: { params: Promise<{ path: string[] }> }
+) {
+  try {
+    const { path: pathSegments } = await context.params;
+    const requestedPath = pathSegments.join("/");
+    if (requestedPath.includes("..")) {
+      return new NextResponse(null, { status: 403 });
+    }
+    const candidates = [
+      path.resolve(process.cwd(), "public", requestedPath),
+      path.resolve(process.cwd(), "public/assets", requestedPath),
+      path.resolve(process.cwd(), requestedPath),
+    ];
+    const targetFile = candidates.find((p) => fs.existsSync(p));
+    if (!targetFile) {
+      return new NextResponse(null, { status: 404 });
+    }
+    const stat = fs.statSync(targetFile);
+    const ext = path.extname(targetFile).toLowerCase();
+    let contentType = "application/octet-stream";
+    if (ext === ".mp4") contentType = "video/mp4";
+    else if (ext === ".webm") contentType = "video/webm";
+    else if (ext === ".mp3") contentType = "audio/mpeg";
+    else if (ext === ".wav") contentType = "audio/wav";
+    else if (ext === ".png") contentType = "image/png";
+    else if (ext === ".jpg" || ext === ".jpeg") contentType = "image/jpeg";
+    return new NextResponse(null, {
+      status: 200,
+      headers: {
+        "Content-Length": stat.size.toString(),
+        "Content-Type": contentType,
+        "Accept-Ranges": "bytes",
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+    });
+  } catch {
+    return new NextResponse(null, { status: 500 });
+  }
+}
+

@@ -162,6 +162,16 @@ const nextConfig = {
         permanent: false
       }
     ];
+  },
+  async rewrites() {
+    return {
+      fallback: [
+        {
+          source: "/assets/:path*",
+          destination: "/api/media/assets/:path*"
+        }
+      ]
+    };
   }
 };
 

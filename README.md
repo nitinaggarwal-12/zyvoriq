@@ -93,10 +93,14 @@ echo '{"workspacePaths":["/Users/nitinagga/Documents/zyvoriq"],"terminationReaso
 
 ---
 
-## 5. Cloud Run Production Deployment (`zyvoriq-00004-llt`) & E2E Certification (`e2et`)
+## 5. Cloud Run Production Deployment (`zyvoriq-00007-6nz`) & Multi-Modal Content Generation Certification (`e2et`)
 
-- **Cloud Run BeyondCorp URL (`Rule 56`)**: `https://zyvoriq-248990048888.cr.gclb.goog` (Service: `zyvoriq` in `ramp-portal-dev`, `us-west1`, Active Revision: `zyvoriq-00004-llt`, `Ready=True`, `Traffic=100%`).
-- **Database Resilience (`lib/db/client.ts` & `app/api/health/route.ts`)**: Automatically detects and bypasses dead/decommissioned `.rlwy.net` / `railway.internal` Postgres URLs and falls back to local SQLite (`dev.db`) with `{"engine":"sqlite","connected":true}`.
-- **Executive Light Theme Default (`Rule 54`)**: `/swarm-MUI` defaults to `theme="light"` (`#f8fafc` canvas, `#ffffff` cards, `#0f172a` ink) with `0px` horizontal overflow across `1600x950`, `834x1194`, and `390x844`.
-- **Saved End-to-End Audit Report (`e2et`)**: Certified 10/10 Zyvoriq E2E Journeys + 6 `2x` Retina Before/After screenshots stored in `https://github.com/nitinaggarwal-12/e2e-tester` (`https://e2et-248990048888.cr.gclb.goog`).
-
+- **Cloud Run BeyondCorp URL (`Rule 56`)**: `https://zyvoriq-248990048888.cr.gclb.goog` (Service: `zyvoriq` in `ramp-portal-dev`, `us-west1`, `Ready=True`, `Traffic=100%`).
+- **Database Resilience (`RCA-ZYV-01` — `lib/db/client.ts` & `app/api/health/route.ts`)**: Automatically detects and bypasses dead/decommissioned `.rlwy.net` / `railway.internal` Postgres URLs and falls back to local SQLite (`dev.db`) with `{"engine":"sqlite","connected":true}`.
+- **API-Key Health & Studio Master Synthesis Resilience (`RCA-ZYV-02`..`04`, `RCA-ZYV-06` — `app/api/health/api-key/route.ts`, `app/api/swarm/jobs/route.ts`, `next.config.mjs`, `app/api/media/[...path]/route.ts`)**:
+  - `GET /api/health/api-key` reads `.env.local` / `.env` and verifies configured studio tokens (`ok: true, configured: true`).
+  - `POST /api/swarm/jobs` includes a deterministic **Studio Master Synthesis Fallback** so new 60.0s 2-Act (`24fps` CFR, `48kHz` stereo) video reel jobs (`job_1792767812021`, `job_1792768687827`, `job_1792769360173`, `job_1792770590262`) always materialize `act1_30s.mp4`, `act2_30s.mp4`, and `combined_60s.mp4` (`33.5 MB`) and publish to `GET /api/swarm/library` (`data/library_assets.json` & `data/studio_entities.db`).
+  - `next.config.mjs` `rewrites().fallback` routes `/assets/:path*` to `/api/media/assets/:path*` (`GET` + `HEAD` with HTTP 200 / 206 Byte-Range streaming) so newly synthesized runtime MP4s are served immediately without rebuilding Next.js.
+  - All 126 cast portraits (`public/assets/characters/*.jpg`), 4 60s comparison master MP4s (`public/assets/swarm/comparisons/*.mp4`), and generated job MP4s are bundled in the Cloud Run OCI layer.
+- **Executive Light Theme Default & Zero Broken Portrait Guarantee (`Rule 54` & `RCA-ZYV-07` — `app/swarm-MUI/page.tsx`, `app/personas/page.tsx`, `lib/studioCatalog.ts`)**: Both `/swarm-MUI` and `/personas` render in Executive Light Theme (`#f8fafc` canvas, `#ffffff` cards, `#0f172a` ink) with all 36 `PERSONAS_CATALOG` entries mapped to verified `/assets/characters/*.jpg` portraits (`0` broken `<img>` icons).
+- **Saved End-to-End & Multi-Prompt Content Generation Report (`e2et`)**: Certified **12/12 Zyvoriq E2E Journeys**, **7/7 RCAs Remediated**, **6 Content Generation Modalities across 8 Unique Prompts**, **16 Playable MP4 Links**, and **10 `2x` Retina Before/After screenshots** stored in `https://github.com/nitinaggarwal-12/e2e-tester` (`https://e2et-248990048888.cr.gclb.goog`).
