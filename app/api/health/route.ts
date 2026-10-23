@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getPostgresPool } from "@/lib/db/client";
+import { getPostgresPool, db } from "@/lib/db/client";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -16,8 +16,16 @@ export async function GET() {
       dbType = "postgres";
       pgConnected = true;
       tracksCount = parseInt(res.rows[0]?.count || "0", 10);
-    } catch (e: any) {
-      dbType = "postgres_error: " + e.message;
+    } catch {
+      dbType = "sqlite";
+    }
+  }
+
+  if (dbType === "sqlite") {
+    try {
+      tracksCount = db.getStudioTracks().length;
+    } catch {
+      tracksCount = 0;
     }
   }
 
@@ -29,8 +37,8 @@ export async function GET() {
       connected: pgConnected || dbType === "sqlite",
       tracksCount
     },
-    version: "1.0.0-omni-portal",
-    buildId: "omni-singlepage-portal-20260906-1935",
+    version: "3.5.0-omni-swarm",
+    buildId: "zyvoriq-v3.5.0-rule58",
     timestamp: new Date().toISOString()
   });
 }

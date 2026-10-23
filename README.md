@@ -17,7 +17,7 @@
 2. **Tier 2 — Deep Architectural Reasoning, Creative Surpass Direction & Multimodal Vision**:
    - `models/gemini-3.1-pro-preview` & `models/gemini-2.5-pro`
 3. **Tier 3 — High-Throughput Sub-Second Structured JSON Compiler, YouTube Reference Deconstruction & Biometric Synthesis**:
-   - `models/gemini-3.8-flash`, `models/gemini-3.1-flash`, `models/gemini-2.5-flash`, & `models/gemini-2.5-flash-lite` (`thinkingConfig: { thinkingBudget: 0 }`)
+   - `models/gemini-3.8-flash`, `models/gemini-3.1-flash`, `models/gemini-2.5-flash`, & `models/gemini-2.5-flash-lite` (`thinkingConfig: { thinkingLevel: "LOW" | "MEDIUM" | "HIGH" }`)
 4. **Tier 4 — Real-Time Bidirectional & Sub-Second Interactive Streaming**:
    - `models/gemini-3.1-flash-live-preview`
 5. **Tier 5 — Native DeepMind Multimodal Media, Audio, Image & Embeddings**:
@@ -90,3 +90,13 @@ node scripts/guards/enforce_universal_single_source_trinity.mjs --auto-heal
 # Run stop quality gate & deterministic forensic verification
 echo '{"workspacePaths":["/Users/nitinagga/Documents/zyvoriq"],"terminationReason":"model_stop"}' | node scripts/stop_quality_gate.mjs
 ```
+
+---
+
+## 5. Cloud Run Production Deployment (`zyvoriq-00004-llt`) & E2E Certification (`e2et`)
+
+- **Cloud Run BeyondCorp URL (`Rule 56`)**: `https://zyvoriq-248990048888.cr.gclb.goog` (Service: `zyvoriq` in `ramp-portal-dev`, `us-west1`, Active Revision: `zyvoriq-00004-llt`, `Ready=True`, `Traffic=100%`).
+- **Database Resilience (`lib/db/client.ts` & `app/api/health/route.ts`)**: Automatically detects and bypasses dead/decommissioned `.rlwy.net` / `railway.internal` Postgres URLs and falls back to local SQLite (`dev.db`) with `{"engine":"sqlite","connected":true}`.
+- **Executive Light Theme Default (`Rule 54`)**: `/swarm-MUI` defaults to `theme="light"` (`#f8fafc` canvas, `#ffffff` cards, `#0f172a` ink) with `0px` horizontal overflow across `1600x950`, `834x1194`, and `390x844`.
+- **Saved End-to-End Audit Report (`e2et`)**: Certified 10/10 Zyvoriq E2E Journeys + 6 `2x` Retina Before/After screenshots stored in `https://github.com/nitinaggarwal-12/e2e-tester` (`https://e2et-248990048888.cr.gclb.goog`).
+

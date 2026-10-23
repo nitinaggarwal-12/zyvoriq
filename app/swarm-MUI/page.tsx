@@ -736,9 +736,8 @@ function evaluateConversationalIntent(rawInput: string): {
 // MAIN CONTENT STUDIO WORKSPACE PAGE (With All 6 Netflix Studio Upgrades)
 // ============================================================================
 export default function ContentStudioWorkspacePage() {
-  // Upgrade 5: Default to Dark Cinema Theme ("dark") for 35mm grading accuracy,
-  // while keeping 1-click Light/Dark toggle in the top bar.
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
+  // Upgrade 5: Default to Executive Light Theme ("light", Rule 54 / DESIGN.md) with 1-click Light/Dark toggle in the top bar.
+  const [theme, setTheme] = useState<"light" | "dark">("light");
 
   // Upgrade 1: Theater Mode (collapses sidebars so Cinema Stage spans full viewport)
   const [theaterMode, setTheaterMode] = useState<boolean>(false);

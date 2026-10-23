@@ -27,8 +27,10 @@ try {
 let dbInstance: any = null;
 let pgPool: Pool | null = null;
 let pgSchemaMigrated = false;
+let pgPoolDisabled = false;
 
 export function getPostgresPool(): Pool | null {
+  if (pgPoolDisabled) return null;
   let dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.DATABASE_PRIVATE_URL;
   
   if (!dbUrl && process.env.PGHOST && process.env.PGUSER && process.env.PGDATABASE) {
@@ -40,7 +42,7 @@ export function getPostgresPool(): Pool | null {
     dbUrl = `postgresql://${user}${pass}@${host}:${port}/${db}`;
   }
 
-  if (!dbUrl) return null;
+  if (!dbUrl || dbUrl.includes(".rlwy.net") || dbUrl.includes("railway.internal")) return null;
 
   if (!pgPool) {
     try {
@@ -52,17 +54,20 @@ export function getPostgresPool(): Pool | null {
           : { rejectUnauthorized: false },
         max: 10,
         idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 5000,
+        connectionTimeoutMillis: 3000,
       });
 
       if (!pgSchemaMigrated && pgPool) {
         pgSchemaMigrated = true;
         pgPool.query(POSTGRES_SCHEMA).catch((err) => {
-          console.warn("PostgreSQL initial schema migration warning:", err.message);
+          console.warn("PostgreSQL initial schema migration warning (disabling dead pgPool, using SQLite):", err.message);
+          pgPoolDisabled = true;
+          pgPool = null;
         });
       }
     } catch (e: any) {
       console.warn("Failed to initialize PostgreSQL pool, falling back to SQLite:", e.message);
+      pgPoolDisabled = true;
       return null;
     }
   }
@@ -356,11 +361,9 @@ export const db = {
 
       let rows = database.prepare("SELECT * FROM studio_series_tracks ORDER BY created_at DESC").all() as any[];
 
-      // Ensure all canonical tracks exist in database
-      const existingIds = new Set(rows.map(r => r.id));
-      let newlyAdded = false;
-      for (const canonical of CANONICAL_SERIES_TRACKS) {
-        if (!existingIds.has(canonical.id)) {
+      // Only seed default canonical tracks on initial empty database (unless explicitly skipped)
+      if (rows.length === 0 && process.env.ZYVORIQ_SKIP_DEFAULT_SEED !== "1") {
+        for (const canonical of CANONICAL_SERIES_TRACKS) {
           this.saveStudioTrack({
             id: canonical.id,
             title: canonical.title,
@@ -373,10 +376,7 @@ export const db = {
             veritas_status: canonical.veritas?.status || "CERTIFIED_VALID",
             snark_proof_hash: canonical.veritas?.snarkProofHash || "0x8f2d...4a19"
           });
-          newlyAdded = true;
         }
-      }
-      if (newlyAdded || rows.length === 0) {
         rows = database.prepare("SELECT * FROM studio_series_tracks ORDER BY created_at DESC").all() as any[];
       }
 

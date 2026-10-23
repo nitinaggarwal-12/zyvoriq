@@ -1,0 +1,17 @@
+{
+  "serviceName": "zyvoriq",
+  "beyondCorpUrl": "https://zyvoriq-248990048888.cr.gclb.goog",
+  "directCloudRunUrl": "https://zyvoriq-mi7l4h536a-uw.a.run.app",
+  "buildProject": "nitina-ggarwal-sandbox-647724",
+  "runProject": "ramp-portal-dev",
+  "region": "us-west1",
+  "latestReadyRevisionName": "zyvoriq-00004-llt",
+  "latestCreatedRevisionName": "zyvoriq-00004-llt",
+  "readyStatus": "True",
+  "trafficPercent": 100,
+  "image": "us-west1-docker.pkg.dev/ramp-portal-dev/cloud-run-source-deploy/zyvoriq:v20261023-053308-rule58",
+  "startupProbeLog": "Default STARTUP TCP/HTTP probe succeeded for zyvoriq-00004-llt",
+  "catalogDemosCount": 13,
+  "catalogTilesCount": 14,
+  "verifiedAt": "2026-10-23T05:33:48Z"
+}
