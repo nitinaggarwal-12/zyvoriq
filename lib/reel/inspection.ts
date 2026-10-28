@@ -68,7 +68,7 @@ export function buildInspectionPackage(manifest: ReelProductionManifest, fps = 3
     const characterId = shot?.continuityIn?.characterId || shot?.continuityOut?.characterId;
     const environmentId = shot?.continuityIn?.environmentId || shot?.continuityOut?.environmentId;
     const objectId = `zyvoriq:${manifest.id}:r${revision}:frame:${frame}`;
-    const canonicalUrl = `/studio/inspector?productionId=${encodeURIComponent(manifest.id)}&frame=${frame}&object=${encodeURIComponent(objectId)}`;
+    const canonicalUrl = `/entity/${encodeURIComponent(manifest.id)}?frame=${frame}&object=${encodeURIComponent(objectId)}`;
     frames.push({
       frame,
       objectId,

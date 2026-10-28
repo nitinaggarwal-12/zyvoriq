@@ -2043,7 +2043,12 @@ export default function ContentStudioWorkspacePage() {
               })
             : INITIAL_POST.segments;
 
+        const resolvedModel =
+          typeof ent.foundationModel === "string" && ent.foundationModel
+            ? ent.foundationModel
+            : "omni11_lyria3";
         setSelectedDurationSec(dur);
+        setSelectedModelId(resolvedModel);
         if (ent.deepResearchBible) {
           setCustomDeepResearchBible(ent.deepResearchBible);
         }
@@ -2056,6 +2061,7 @@ export default function ContentStudioWorkspacePage() {
           hook: String(ent.promptSummary || ent.subtitle || prev.hook).slice(0, 118),
           body: String(ent.prompt || ent.subtitle || prev.body),
           durationSeconds: dur,
+          foundationModel: resolvedModel,
           videoUrl: String(ent.videoSrc || prev.videoUrl),
           segments: mappedSegs,
         }));
@@ -2189,24 +2195,35 @@ export default function ContentStudioWorkspacePage() {
           Array.isArray(j.logs) && j.logs.length > 0
             ? String(j.logs[j.logs.length - 1])
             : "";
-        setLiveRenderJob((prev) => ({
-          id: j.id,
-          canonicalId: j.canonicalId || prev.canonicalId,
-          canonicalUrl: j.canonicalUrl || prev.canonicalUrl,
-          status:
-            j.status === "completed"
-              ? "completed"
-              : j.status === "error"
-              ? "error"
-              : "running",
-          progress: Math.max(prev.progress, Number(j.progress || 18)),
-          stageLabel: String(
-            j.stageLabel ||
-              `Parallel Worker Pool (${j.parallelWorkers || 10} Acts Concurrent) rendering...`
-          ),
-          latestLog,
-          parallelWorkers: Number(j.parallelWorkers || prev.parallelWorkers || 10),
-        }));
+        setLiveRenderJob((prev) => {
+          const resolvedWorkerCount =
+            typeof j.parallelWorkers === "number"
+              ? j.parallelWorkers
+              : Number(
+                  j.parallelWorkers?.veoWorkers ||
+                    j.parallelWorkers?.totalWorkers ||
+                    prev.parallelWorkers ||
+                    10
+                );
+          return {
+            id: j.id,
+            canonicalId: j.canonicalId || prev.canonicalId,
+            canonicalUrl: j.canonicalUrl || prev.canonicalUrl,
+            status:
+              j.status === "completed"
+                ? "completed"
+                : j.status === "error"
+                ? "error"
+                : "running",
+            progress: Math.max(prev.progress, Number(j.progress || 18)),
+            stageLabel: String(
+              j.stageLabel ||
+                `Parallel Worker Pool (${resolvedWorkerCount} Acts Concurrent) rendering...`
+            ),
+            latestLog,
+            parallelWorkers: resolvedWorkerCount,
+          };
+        });
         const nextVideoSrc = j.combinedSrc || j.part1Src;
         if (nextVideoSrc && typeof nextVideoSrc === "string") {
           setPost((prev) => ({
@@ -2273,6 +2290,15 @@ export default function ContentStudioWorkspacePage() {
     const targetDurSec =
       durationSecOverride || targetPost.durationSeconds || selectedDurationSec || 300;
     const workerCount = targetDurSec >= 180 ? 10 : 6;
+    const effectiveFoundationModel =
+      draftOverride?.foundationModel ||
+      selectedModelId ||
+      targetPost.foundationModel ||
+      "omni11_lyria3";
+    const engineShortName =
+      effectiveFoundationModel === "veo31_4k"
+        ? "Veo 3.1 4K"
+        : "Omni 1.1 Flash";
 
     setLiveRenderJob({
       id: "starting",
@@ -2280,8 +2306,8 @@ export default function ContentStudioWorkspacePage() {
       canonicalUrl: targetPost.canonicalUrl,
       status: "running",
       progress: 14,
-      stageLabel: `Stage 1/4 • Parallel Worker Pool (${workerCount} Concurrent Acts · ${targetDurSec}s) launching for "${targetPost.title}"...`,
-      latestLog: `Dispatching ${workerCount} parallel act workers via Promise.all (${targetPost.cameraPreset} · ${targetPost.lensPreset})...`,
+      stageLabel: `Stage 1/4 • ${engineShortName} Pool (${workerCount} Concurrent Acts · ${targetDurSec}s) launching for "${targetPost.title}"...`,
+      latestLog: `Dispatching ${workerCount} parallel ${engineShortName} act workers via Promise.all (${targetPost.cameraPreset} · ${targetPost.lensPreset})...`,
       parallelWorkers: workerCount,
     });
     try {
@@ -2303,6 +2329,7 @@ export default function ContentStudioWorkspacePage() {
           durationSeconds: targetDurSec,
           actsCount: targetPost.segments.length,
           canonicalId: targetPost.canonicalId,
+          foundationModel: effectiveFoundationModel,
           cameraPreset: targetPost.cameraPreset,
           lensPreset: targetPost.lensPreset,
           genre: "35mm Cinematic Epic Score",
@@ -3342,6 +3369,11 @@ export default function ContentStudioWorkspacePage() {
       canonicalUrl: nextCanonUrl,
       studioUrl: nextStudioUrl,
       durationSeconds: detectedDurSec,
+      foundationModel: selectedModelId,
+      cameraPreset: selectedCameraPreset,
+      lensPreset: selectedLensId,
+      vfxPreset: selectedVfxId,
+      subtitleStyle: selectedSubtitleStyleId,
       title: nextTitle,
       hook: nextHook,
       body: nextBody,
@@ -3356,6 +3388,8 @@ export default function ContentStudioWorkspacePage() {
       audioMixLabel:
         audioEngineMode === "option1_symphonic"
           ? "Option 1 · Symphonic Film-Trailer Mix"
+          : selectedModelId === "veo31_4k"
+          ? "Option 2 · Veo 3.1 4K Dialogue + Foley + Chirp 3 HD"
           : "Option 2 · Omni 1.1 Dialogue + Foley + Lyria 3 Pro Score",
     };
 
@@ -3905,7 +3939,11 @@ export default function ContentStudioWorkspacePage() {
                 <StudioSelect
                   label="Foundation Cinema Engine"
                   value={selectedModelId}
-                  onChange={(e) => setSelectedModelId(e.target.value)}
+                  onChange={(e) => {
+                    const nextModel = e.target.value;
+                    setSelectedModelId(nextModel);
+                    setPost((prev) => ({ ...prev, foundationModel: nextModel }));
+                  }}
                   options={FOUNDATION_MODELS_CATALOG.map((m) => ({
                     value: m.id,
                     label: m.label,
@@ -6762,7 +6800,11 @@ export default function ContentStudioWorkspacePage() {
             <StudioSelect
               label="3. Foundation Video Model"
               value={selectedModelId}
-              onChange={(e) => setSelectedModelId(e.target.value)}
+              onChange={(e) => {
+                const nextModel = e.target.value;
+                setSelectedModelId(nextModel);
+                setPost((prev) => ({ ...prev, foundationModel: nextModel }));
+              }}
               options={FOUNDATION_MODELS_CATALOG.map((m) => ({
                 value: m.id,
                 label: `${m.label} (${m.badge})`,

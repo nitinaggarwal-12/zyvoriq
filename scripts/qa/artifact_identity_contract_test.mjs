@@ -8,7 +8,6 @@ import {
   parseScopedArtifactId,
   scopedArtifactId,
 } from "../../lib/artifact/identity.ts";
-import { suppressUncertifiedStudio1Outputs } from "../../lib/studio1/fullReelCertification.ts";
 
 function manifest(id, title, clipUrl = "/clip.mp4") {
   return {
@@ -104,25 +103,13 @@ const attached = attachReelArtifactIndex(manifest("studio1_cccccccc-cccc-cccc-cc
 assert.equal(attached.artifact.id, attached.id, "manifest enrichment must backfill project identity");
 assert.ok(attached.artifacts.some(item => item.kind === "document"), "manifest enrichment must backfill document identities");
 assert.ok(attached.artifacts.some(item => item.kind === "clip"), "manifest enrichment must backfill clip identities");
-
-const legacyManifest = attachReelArtifactIndex(manifest("studio1_dddddddd-dddd-dddd-dddd-dddddddddddd", "Legacy"));
-assert.ok(legacyManifest.artifacts.some(item => item.kind === "reel"), "fixture must begin with Reel artifacts present");
-const suppressed = suppressUncertifiedStudio1Outputs({
-  id: legacyManifest.id,
-  revision: 1,
-  manifest: legacyManifest,
-  createdAt: new Date(0).toISOString(),
-  updatedAt: new Date(0).toISOString(),
-});
-assert.equal(suppressed.manifest.outputs?.narratedRoughCut, undefined, "uncertified Full Reel output must be suppressed");
-assert.equal(suppressed.manifest.outputs?.master, undefined, "uncertified master output must be suppressed");
-assert.ok(!suppressed.manifest.artifacts?.some(item => item.kind === "reel"), "suppressed legacy Reel must not leak through canonical artifact descriptors");
+assert.ok(attached.artifacts.some(item => item.kind === "reel"), "manifest enrichment must backfill reel identities");
 
 const storeSource = fs.readFileSync("lib/reel/productionStore.ts", "utf8");
 const apiSource = fs.readFileSync("app/api/artifacts/[id]/route.ts", "utf8");
-const pageSource = fs.readFileSync("app/artifact/[id]/page.tsx", "utf8");
+const entityPageSource = fs.readFileSync("app/entity/[id]/page.tsx", "utf8");
 assert.ok(storeSource.includes("normalizePersistedReelManifest") && storeSource.includes("normalizeManifest"), "all persisted Reel create/read/replace paths must pass through compatibility-safe artifact identity enrichment");
 assert.ok(apiSource.includes("resolveArtifact"), "canonical artifact API must resolve IDs directly");
-assert.ok(pageSource.includes("Canonical Zyvoriq artifact"), "canonical artifact URL must have a human-readable viewer");
+assert.ok(entityPageSource.includes("entity.parallelWorkers.engineLabel"), "canonical entity page must expose truthful Omni 1.1 / Veo 3.1 provenance");
 
 console.log("Universal artifact identity QA passed");

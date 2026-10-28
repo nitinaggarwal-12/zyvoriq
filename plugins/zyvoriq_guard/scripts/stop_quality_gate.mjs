@@ -207,6 +207,59 @@ process.stdin.on("end", async () => {
             return;
           }
         }
+
+        // 7. require_veo31_foundation_model_wiring_and_dynamic_entity_provenance
+        if (ruleEnabled(activeRules, "require_veo31_foundation_model_wiring_and_dynamic_entity_provenance")) {
+          const jobsRouteSrc = fs.readFileSync(path.join(workspace, "app/api/swarm/jobs/route.ts"), "utf8");
+          const entityPageSrc = fs.readFileSync(path.join(workspace, "app/entity/[id]/page.tsx"), "utf8");
+          if (
+            !pageSrc.includes("foundationModel: effectiveFoundationModel") ||
+            !jobsRouteSrc.includes("generateVeoVideoBytes") ||
+            !jobsRouteSrc.includes("synthesize30sActViaVeo31") ||
+            !entityPageSrc.includes("entity.parallelWorkers.engineLabel")
+          ) {
+            console.log(JSON.stringify({
+              decision: "continue",
+              reason: `[ZYVORIQ GOOGLE STITCH UI GATE BLOCKED]: Foundation model selector (veo31_4k) in app/swarm-MUI/page.tsx must pass foundationModel to app/api/swarm/jobs/route.ts (generateVeoVideoBytes), and app/entity/[id]/page.tsx must render dynamic engineLabel.`
+            }));
+            return;
+          }
+        }
+
+        // 8. require_option_a_lean_omni_first_veo_safety_net_and_zero_dead_studio1_worker
+        if (ruleEnabled(activeRules, "require_option_a_lean_omni_first_veo_safety_net_and_zero_dead_studio1_worker")) {
+          const retiredPaths = [
+            "scripts/reel_worker_v2.mjs",
+            "scripts/studio1_native.mjs",
+            "app/api/studio1",
+            "lib/studio1",
+            "app/api/studio/omni-generate/route.ts"
+          ];
+          const resurrected = retiredPaths.filter((rel) => fs.existsSync(path.join(workspace, rel)));
+          const opQueueSrc = fs.readFileSync(path.join(workspace, "lib/reel/operationQueue.ts"), "utf8");
+          const opRouteSrc = fs.readFileSync(path.join(workspace, "app/api/reels/operations/[id]/route.ts"), "utf8");
+          const prodIdRouteSrc = fs.readFileSync(path.join(workspace, "app/api/reels/productions/[id]/route.ts"), "utf8");
+          const planRouteSrc = fs.readFileSync(path.join(workspace, "app/api/reels/plan/route.ts"), "utf8");
+          const prodsRouteSrc = fs.readFileSync(path.join(workspace, "app/api/reels/productions/route.ts"), "utf8");
+          const plannerSrc = fs.readFileSync(path.join(workspace, "lib/reel/planner.ts"), "utf8");
+          if (
+            resurrected.length > 0 ||
+            !fs.existsSync(path.join(workspace, "lib/ai/veoService.ts")) ||
+            !fs.existsSync(path.join(workspace, "scripts/yt_pipeline.mjs")) ||
+            !opQueueSrc.includes("Queue retry rejected for operation") ||
+            !opRouteSrc.includes('code: "STUDIO1_WORKER_PRUNED_OPTION_A"') ||
+            !prodIdRouteSrc.includes('"regenerate-shot"') ||
+            !planRouteSrc.includes("planReelAsync") ||
+            !prodsRouteSrc.includes("planReelAsync") ||
+            plannerSrc.includes("planStudio1")
+          ) {
+            console.log(JSON.stringify({
+              decision: "continue",
+              reason: `[ZYVORIQ OPTION A GATE BLOCKED]: Dead Studio1 worker/routes must remain pruned (${resurrected.join(", ") || "none"}), queue retry/actions must fail closed with 410 STUDIO1_WORKER_PRUNED_OPTION_A, /api/reels/plan & /api/reels/productions must wire planReelAsync, and lean Veo 3.1 safety-net (lib/ai/veoService.ts, scripts/yt_pipeline.mjs) must remain intact.`
+            }));
+            return;
+          }
+        }
       } catch (uiGateErr) {
         console.log(JSON.stringify({
           decision: "continue",

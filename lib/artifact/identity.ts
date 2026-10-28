@@ -80,7 +80,7 @@ function ref(input: Omit<ArtifactReference, "canonicalPath">): ArtifactReference
 /** Build the canonical artifact index for every persisted piece currently represented by a Reel manifest. */
 export function buildReelArtifactIndex(manifest: ReelProductionManifest): ArtifactReference[] {
   const projectId = manifest.id;
-  const projectTitle = (manifest as any).studio1?.projectTitle || manifest.topic || projectId;
+  const projectTitle = manifest.topic || projectId;
   // Persisted manifests predate the current required audio/shots schema. Artifact
   // indexing runs on every list read, so it must remain safe for those legacy
   // rows rather than taking down the complete production archive.

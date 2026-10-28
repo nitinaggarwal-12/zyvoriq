@@ -1,6 +1,5 @@
 import { buildReelArtifactIndex, canonicalArtifactPath, parseScopedArtifactId, type ArtifactReference } from "./identity";
 import { reelProductionStore, type StoredReelProduction } from "@/lib/reel/productionStore";
-import { suppressUncertifiedStudio1Outputs } from "@/lib/studio1/fullReelCertification";
 
 export interface ResolvedArtifact {
   artifact: ArtifactReference;
@@ -16,7 +15,7 @@ export interface ResolvedArtifact {
 }
 
 function safeProduction(production: StoredReelProduction): StoredReelProduction {
-  return production.id.startsWith("studio1_") ? suppressUncertifiedStudio1Outputs(production) : production;
+  return production;
 }
 
 function artifactPayload(production: StoredReelProduction, artifact: ArtifactReference): unknown {

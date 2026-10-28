@@ -96,23 +96,12 @@ export const reelOperationQueue = {
     idempotencyKey: string;
     payload?: Record<string, unknown>;
   }): Promise<ReelOperation> {
-    // One paid media engine only. Any future API or UI regression that tries to
-    // enqueue narration, Veo shots, or a rough cut without the Studio1 contract
-    // fails before a provider call can be persisted or dispatched.
-    if (!input.productionId.startsWith("studio1_") || input.payload?.studio1 !== true) {
-      throw new Error("LEGACY_REEL_PIPELINE_DISABLED: paid Reel operations require a studio1_ production and studio1=true operation evidence");
-    }
-
-    const pool = await ensureTable();
-    const id = `rop_${crypto.randomUUID()}`;
-    const result = await pool.query(
-      `INSERT INTO reel_operations (id, production_id, kind, target_id, idempotency_key, payload_json)
-       VALUES ($1,$2,$3,$4,$5,$6::jsonb)
-       ON CONFLICT (idempotency_key) DO UPDATE SET updated_at = reel_operations.updated_at
-       RETURNING *`,
-      [id, input.productionId, input.kind, input.targetId || null, input.idempotencyKey, JSON.stringify(input.payload || {})]
+    // Option A (Lean Omni-First + Veo Safety-Net): The legacy Studio1 Postgres
+    // queue worker (reel_worker_v2.mjs) is retired. All live generation executes
+    // through POST /api/swarm/jobs (Gemini Omni 1.1 Flash primary + Veo 3.1 safety-net).
+    throw new Error(
+      `STUDIO1_WORKER_PRUNED_OPTION_A: Queue enqueue rejected for ${input.productionId} (${input.kind}). Dispatch live synthesis via POST /api/swarm/jobs.`
     );
-    return fromRow(result.rows[0]);
   },
 
   async get(id: string): Promise<ReelOperation | null> {
@@ -131,19 +120,8 @@ export const reelOperationQueue = {
   },
 
   async retry(id: string): Promise<ReelOperation | null> {
-    const pool = await ensureTable();
-    const result = await pool.query(
-      `UPDATE reel_operations
-       SET status='QUEUED', attempt=0, last_error=NULL, provider_operation_name=NULL, lease_owner=NULL, lease_expires_at=NULL, updated_at=NOW()
-       WHERE id=$1
-       RETURNING *`,
-      [id]
+    throw new Error(
+      `STUDIO1_WORKER_PRUNED_OPTION_A: Queue retry rejected for operation ${id}. Legacy Studio1 background worker is retired; dispatch live synthesis via POST /api/swarm/jobs.`
     );
-    if (result.rows[0]?.production_id) {
-      try {
-        await pool.query(`UPDATE reel_productions SET updated_at=NOW() WHERE id=$1`, [result.rows[0].production_id]);
-      } catch {}
-    }
-    return result.rows[0] ? fromRow(result.rows[0]) : null;
   },
 };

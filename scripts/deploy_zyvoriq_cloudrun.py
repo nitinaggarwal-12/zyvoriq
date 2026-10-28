@@ -153,7 +153,7 @@ def build_tar_gz_layer(
                     ])
                     rel_dir = os.path.relpath(root, src_path)
                     for fname in sorted(files):
-                        if fname in (".DS_Store", "dev.db", "dev.db-journal") or fname.endswith(".pyc") or fname.startswith(".env"):
+                        if fname in (".DS_Store", "dev.db", "dev.db-journal", "zyvoriq_registry.sqlite") or fname.endswith(".pyc") or fname.startswith(".env"):
                             continue
                         fpath = Path(root) / fname
                         if not fpath.is_file() or fpath.is_symlink():
@@ -222,7 +222,7 @@ def main() -> None:
     token = get_gcloud_token()
     dest_host = "us-west1-docker.pkg.dev"
     dest_repo = f"ramp-portal-dev/cloud-run-source-deploy/{service_name}"
-    tag = f"v{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-mi10-300s"
+    tag = f"v{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-option-a-lean-veo"
 
     print(f"🚀 Deploying [{service_name}] -> {dest_host}/{dest_repo}:{tag}")
 
@@ -249,6 +249,10 @@ def main() -> None:
         ("/Users/nitinagga/Documents/zyvoriq/.next/standalone/node_modules", "app/node_modules"),
         ("/Users/nitinagga/Documents/zyvoriq/.next/static", "app/.next/static"),
         ("/Users/nitinagga/Documents/zyvoriq/lib/server/unifiedFeedbackEngine.cjs", "app/lib/server/unifiedFeedbackEngine.cjs"),
+        ("/Users/nitinagga/Documents/zyvoriq/scripts/yt_pipeline.mjs", "app/scripts/yt_pipeline.mjs"),
+        ("/Users/nitinagga/Documents/zyvoriq/scripts/characterAnchor.mjs", "app/scripts/characterAnchor.mjs"),
+        ("/Users/nitinagga/Documents/zyvoriq/scripts/validateCharacterSheet.mjs", "app/scripts/validateCharacterSheet.mjs"),
+        ("/Users/nitinagga/Documents/zyvoriq/scripts/transcription_word_timing_guard.mjs", "app/scripts/transcription_word_timing_guard.mjs"),
         ("/Users/nitinagga/Documents/zyvoriq/public/universal_feedback_widget.js", "app/public/universal_feedback_widget.js"),
         ("/Users/nitinagga/Documents/zyvoriq/public/assets/avatars", "app/public/assets/avatars"),
         ("/Users/nitinagga/Documents/zyvoriq/public/assets/characters", "app/public/assets/characters"),
@@ -289,7 +293,7 @@ def main() -> None:
     base_config["created"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     base_config.setdefault("rootfs", {"type": "layers", "diff_ids": []})["diff_ids"].append(diff_id)
     base_config.setdefault("history", []).append(
-        {"created": base_config["created"], "created_by": "Zyvoriq 5-Min MI10 & 4-Platform Studio OCI Overlay"}
+        {"created": base_config["created"], "created_by": "Zyvoriq Option A Lean Omni-First + Veo 3.1 Safety-Net OCI Overlay"}
     )
 
     new_cfg_bytes = json.dumps(base_config, separators=(",", ":")).encode("utf-8")

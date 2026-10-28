@@ -20,7 +20,7 @@ A quiet, confident workspace where the user's content is the only colorful thing
 
 | Token | Light Theme (Default Workspace) | Dark Theme (`[data-theme="dark"]` & Shell) | Role & Contrast Guarantee |
 | :--- | :--- | :--- | :--- |
-| `--color-bg` | `#F6F7F9` | `#0B0E14` | App canvas background |
+| `--color-bg` | `#F8FAFC` | `#0B0E14` | App canvas background |
 | `--color-surface` | `#FFFFFF` | `#121721` | Panels, cards, rails, modals |
 | `--color-surface-2` | `#EEF1F5` | `#1A2130` | Raised / hover / selected row surface |
 | `--color-border` | `#D8DEE8` | `#263042` | 1px structural hairlines & dividers |

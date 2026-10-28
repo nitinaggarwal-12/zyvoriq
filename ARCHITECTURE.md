@@ -7,32 +7,32 @@
 
 ## 1. Executive System Overview
 
-Zyvoriq is an AI-native multi-modal studio and generative publishing platform. The architecture coordinates four foundational generative media modalities:
-1. **Cinematic Video Diffusion**: Multi-act high-definition video synthesis powered by Google DeepMind Veo 3.1 / 2.0.
-2. **48kHz Neural Voice & Emotional Dubbing**: Low-latency expressive speech powered by `gemini-3.1-flash-tts-preview` and `gemini-2.5-flash-preview-tts`.
-3. **Harmonic Music & Multi-Section Audio**: Sectional song composition (up to 180s) powered by Google DeepMind Lyria 3.0 Pro.
+Zyvoriq is an AI-native multi-modal studio and generative publishing platform built on the **Option A (Lean Omni-First + Veo 3.1 Safety-Net)** architecture:
+1. **Primary Joint Audio-Video & Lip-Sync Synthesis**: Multi-act native audio-video generation powered by `models/gemini-omni-1.1-flash` (`generateSwarmJob` in [`app/api/swarm/jobs/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/swarm/jobs/route.ts)).
+2. **Veo 3.1 Safety-Net & Explicit 4K Tier**: `veo-3.1-generate-preview`, `veo-3.1-fast-generate-preview`, and `veo-3.1-lite-generate-preview` via [`lib/ai/veoService.ts`](file:///Users/nitinagga/Documents/zyvoriq/lib/ai/veoService.ts) when the user explicitly selects `veo31_4k` or when Omni 1.1 encounters transient quota/API unavailability, plus silent B-roll in [`scripts/yt_pipeline.mjs`](file:///Users/nitinagga/Documents/zyvoriq/scripts/yt_pipeline.mjs).
+3. **48kHz Neural Voice & Harmonic Music**: Expressive speech (`gemini-3.1-flash-tts-preview` / `gemini-2.5-flash-preview-tts` / Vertex Cloud TTS ADC) and sectional orchestral/symphonic composition powered by Google DeepMind Lyria 3.0 Pro (`lyria-3-pro-preview`).
 4. **Cryptographic Provenance & Safety**: Veritas zk-SNARK proof hashing, C2PA manifest embedding, and SynthID digital watermarking.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
 │                             CLIENT LAYER (React 19)                              │
-│  ┌───────────────────────────┐  ┌──────────────────────────────────────────────┐ │
-│  │ Studio Monitor / Scrubber │  │ Dedicated Creation Hubs (/studio/create/*)   │ │
-│  │ ResolutionDownloadDropdown│  │ Aspect Ratio Frame: 9:16 | 16:9 | 1:1        │ │
-│  └─────────────┬─────────────┘  └──────────────────────┬───────────────────────┘ │
-└────────────────┼───────────────────────────────────────┼─────────────────────────┘
-                 │                                       │
-┌────────────────▼───────────────────────────────────────▼─────────────────────────┐
+│  ┌────────────────────────────────────┐  ┌─────────────────────────────────────┐ │
+│  │ Google Stitch Studio (/swarm-MUI)  │  │ Library (/library) & Entity (/entity│ │
+│  │ Structured Matrix · 9:16|16:9|2.39 │  │ /[id]) · Personas (/personas)       │ │
+│  └─────────────────┬──────────────────┘  └──────────────────┬──────────────────┘ │
+└────────────────────┼────────────────────────────────────────┼────────────────────┘
+                     │                                        │
+┌────────────────────▼────────────────────────────────────────▼────────────────────┐
 │                       NEXT.JS 15 APP ROUTER API LAYER                            │
-│  /api/audio/*  ·  /api/video/*  ·  /api/studio/*  ·  /api/tier6/*  ·  /api/health│
+│  /api/swarm/* · /api/entity/[id] · /api/library/* · /api/yt/* · /api/reels/*     │
 └────────────────┬───────────────────┬───────────────────┬─────────────────────────┘
                  │                   │                   │
 ┌────────────────▼─────────┐ ┌───────▼─────────┐ ┌───────▼─────────────────────────┐
 │   DEEPMIND AI SERVICES   │ │ DUAL DATABASE   │ │ VERITAS PROVENANCE VAULT        │
-│  - Veo 3.1 Recursive     │ │ - Local: SQLite │ │ - zk-SNARK Proof Generator      │
-│  - Gemini 3.1 Flash TTS  │ │   (dev.db, WAL) │ │ - C2PA Manifest Signer          │
-│  - Lyria 3.0 Pro Music   │ │ - Cloud: PgPool │ │ - SynthID Digital Watermarking  │
-│  - Imagen 3 / Director   │ │   (PostgreSQL)  │ │                                 │
+│  - Omni 1.1 Flash (Prim) │ │ - SQLite WAL    │ │ - zk-SNARK Proof Generator      │
+│  - Veo 3.1 (Safety-Net)  │ │   (studio_ent.) │ │ - C2PA Manifest Signer          │
+│  - Gemini TTS / CloudTTS │ │ - Cloud PgPool  │ │ - SynthID Digital Watermarking  │
+│  - Lyria 3.0 Pro Music   │ │   (reel_prod.)  │ │                                 │
 └──────────────────────────┘ └─────────────────┘ └─────────────────────────────────┘
 ```
 
@@ -40,46 +40,37 @@ Zyvoriq is an AI-native multi-modal studio and generative publishing platform. T
 
 ## 2. Next.js 15 App Router Topology
 
-All major creation flows use **first-class page routes** with deep-linkable query parameters. Modals are reserved exclusively for short transactional overlays (e.g. API key configuration).
+All major creation, library, provenance, and administrative flows use **first-class mounted page routes** with deep-linkable query/path parameters. Legacy `/studio/*`, `/director`, and `/governance` UI trees and the standalone `reel_worker_v2.mjs` Studio1 queue daemon were retired under Option A.
 
-### 2.1 Studio Core & Creation Hubs
+### 2.1 Mounted UI Page Routes
 
-| Route | Purpose | Key Components |
+| Route | Purpose | Key Files |
 | :--- | :--- | :--- |
-| [`/studio`](file:///Users/nitinagga/Documents/zyvoriq/app/studio/page.tsx) | Master Studio Workspace | [`app/studio/ReelStudio.tsx`](file:///Users/nitinagga/Documents/zyvoriq/app/studio/ReelStudio.tsx), [`components/ResolutionDownloadDropdown.tsx`](file:///Users/nitinagga/Documents/zyvoriq/components/ResolutionDownloadDropdown.tsx) |
-| [`/studio/create`](file:///Users/nitinagga/Documents/zyvoriq/app/studio/create/page.tsx) | Universal Persona Creation Hub | Deep links with `?persona=heritage\|ugc\|anime\|corporate`, dynamic tab switching wrapped in `<Suspense>` |
-| [`/studio/create/reel`](file:///Users/nitinagga/Documents/zyvoriq/app/studio/create/reel/page.tsx) | Cinematic Veo 3.1 Reel Creator | Aspect ratio frame morphing (`9:16`, `16:9`, `1:1`), multi-act scene prompts |
-| [`/studio/create/comics`](file:///Users/nitinagga/Documents/zyvoriq/app/studio/create/comics/page.tsx) | Visual Manga & Comic Strip Studio | Multi-panel grid storyboarder, speech balloon overlay generator |
-| [`/studio/create/animation`](file:///Users/nitinagga/Documents/zyvoriq/app/studio/create/animation/page.tsx) | 2D/3D Keyframe Animation Studio | Canvas motion interpolation, character rig alignment |
-| [`/studio/create/ugc`](file:///Users/nitinagga/Documents/zyvoriq/app/studio/create/ugc/page.tsx) | UGC Performance Ad Creator | Hook matrix generator, viral pacing controller |
-| [`/studio/create/music`](file:///Users/nitinagga/Documents/zyvoriq/app/studio/create/music/page.tsx) | Lyria 3.0 Pro Songwriter | Sectional stem sequencer (`intro`, `verse`, `chorus`, `bridge`, `outro`) |
-| [`/studio/create/podcast`](file:///Users/nitinagga/Documents/zyvoriq/app/studio/create/podcast/page.tsx) | Multi-Speaker Neural Podcast Studio | Multi-track dialogue casting (`Charon`, `Aoede`, `Puck`, `Fenrir`, `Kore`) |
-| [`/studio/create/story`](file:///Users/nitinagga/Documents/zyvoriq/app/studio/create/story/page.tsx) | Narrative & Lore Engine | Long-form story tree branching, multimodal scene compilation |
-| [`/studio/library`](file:///Users/nitinagga/Documents/zyvoriq/app/studio/library/page.tsx) | Media Assets & Tracks Vault | Canonical tracks catalog, stem downloads, SNARK proof inspection |
-| [`/studio/trend-radar`](file:///Users/nitinagga/Documents/zyvoriq/app/studio/trend-radar/page.tsx) | Viral Trend & Narrative Discovery | Real-time topic clustering, cultural hook synthesis |
+| [`/`](file:///Users/nitinagga/Documents/zyvoriq/app/page.tsx) | Root Entry Redirect (`→ /swarm-MUI`) | [`app/page.tsx`](file:///Users/nitinagga/Documents/zyvoriq/app/page.tsx) |
+| [`/swarm-MUI`](file:///Users/nitinagga/Documents/zyvoriq/app/swarm-MUI/page.tsx) | Primary Google Stitch Daylight Studio (`#F8FAFC`) | [`app/swarm-MUI/page.tsx`](file:///Users/nitinagga/Documents/zyvoriq/app/swarm-MUI/page.tsx), [`components/DeepResearchBiblePanel.tsx`](file:///Users/nitinagga/Documents/zyvoriq/components/DeepResearchBiblePanel.tsx) |
+| [`/library`](file:///Users/nitinagga/Documents/zyvoriq/app/library/page.tsx) | Media Assets, Characters, Locations & Saved Reels Vault | [`app/library/page.tsx`](file:///Users/nitinagga/Documents/zyvoriq/app/library/page.tsx) |
+| [`/entity/[id]`](file:///Users/nitinagga/Documents/zyvoriq/app/entity/[id]/page.tsx) | Canonical Deep-Linkable Production Entity & Dynamic Provenance Inspector (`Omni 1.1` vs `Veo 3.1`) | [`app/entity/[id]/page.tsx`](file:///Users/nitinagga/Documents/zyvoriq/app/entity/[id]/page.tsx), [`app/api/entity/[id]/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/entity/[id]/route.ts) |
+| [`/personas`](file:///Users/nitinagga/Documents/zyvoriq/app/personas/page.tsx) | Biometric Character & Voice Persona Studio | [`app/personas/page.tsx`](file:///Users/nitinagga/Documents/zyvoriq/app/personas/page.tsx) |
+| [`/dev/gallery`](file:///Users/nitinagga/Documents/zyvoriq/app/dev/gallery/page.tsx) | Engineering Verification & Render Gallery | [`app/dev/gallery/page.tsx`](file:///Users/nitinagga/Documents/zyvoriq/app/dev/gallery/page.tsx) |
+| [`/admin/feedback`](file:///Users/nitinagga/Documents/zyvoriq/app/admin/feedback/page.tsx) | Rule 58 Cross-App Admin Feedback Inbox (`nitinagga@google.com`) | [`app/admin/feedback/page.tsx`](file:///Users/nitinagga/Documents/zyvoriq/app/admin/feedback/page.tsx), [`components/UniversalFeedbackSystem.tsx`](file:///Users/nitinagga/Documents/zyvoriq/components/UniversalFeedbackSystem.tsx) |
 
-### 2.2 Global Management & Platform Routes
+### 2.2 Core App Router API Surfaces
 
-| Route | Purpose | Key Components |
+| API Namespace | Purpose | Key Routes |
 | :--- | :--- | :--- |
-| [`/director`](file:///Users/nitinagga/Documents/zyvoriq/app/director/page.tsx) | Autonomous Executive Director | Multi-agent scene orchestration, script compilation |
-| [`/governance`](file:///Users/nitinagga/Documents/zyvoriq/app/governance/page.tsx) | Enterprise Governance & Audit Logs | Veritas certification verification, kill-switch policy sliders |
-| [`/creator/analytics`](file:///Users/nitinagga/Documents/zyvoriq/app/creator/analytics/page.tsx) | Creator Intelligence & Telemetry | Multi-channel attribution, viral lift, engagement forecasting |
+| `/api/swarm/*` | Canonical Multi-Act Omni 1.1 + Veo 3.1 Safety-Net Orchestration, Deep-Research Bible & Library | [`app/api/swarm/jobs/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/swarm/jobs/route.ts), [`app/api/swarm/deep-research/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/swarm/deep-research/route.ts), [`app/api/swarm/library/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/swarm/library/route.ts) |
+| `/api/entity/[id]` & `/api/artifacts/[id]` | Canonical Entity & Universal Artifact Identity Resolution | [`app/api/entity/[id]/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/entity/[id]/route.ts), [`app/api/artifacts/[id]/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/artifacts/[id]/route.ts) |
+| `/api/yt/*` | Autonomous YouTube Pipeline (Veo 3.1 silent B-roll + Gemini TTS + FFmpeg CFR) | [`app/api/yt/productions/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/yt/productions/route.ts), [`scripts/yt_pipeline.mjs`](file:///Users/nitinagga/Documents/zyvoriq/scripts/yt_pipeline.mjs) |
+| `/api/reels/*` | Manifest Planning (`planReel` / `planReelAsync`), Read Compatibility & Inspection (`410 STUDIO1_WORKER_PRUNED_OPTION_A` on retired queue actions) | [`app/api/reels/plan/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/reels/plan/route.ts), [`app/api/reels/productions/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/reels/productions/route.ts), [`app/api/reels/capabilities/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/reels/capabilities/route.ts) |
+| `/api/audio/*` & `/api/library/*` | Lyria 3.0 Pro Music, Gemini TTS Narration, Character/Location DNA Vault | [`app/api/audio/lyria-music/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/audio/lyria-music/route.ts), [`app/api/audio/narrate/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/audio/narrate/route.ts), [`app/api/library/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/library/route.ts) |
+| `/api/feedback/*` & `/api/health` | Rule 58 Feedback Persistence & Runtime Health Telemetry | [`app/api/feedback/submit/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/feedback/submit/route.ts), [`app/api/health/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/health/route.ts) |
 
-### 2.3 Cinema Originals & Autonomous Long-Form Feature Studio
+### 2.3 Multi-Act Cinema & Timeline Continuity Invariants
 
-| Route | Purpose | Key Components |
-| :--- | :--- | :--- |
-| [`/studio/cinema`](file:///Users/nitinagga/Documents/zyvoriq/app/studio/cinema/page.tsx) | 15-Minute Feature Film Master Cinema Player | Multi-Act video switching, 12-scene dialogue engine, 50% acoustic ducking, Ken Burns camera motion |
-| [`/studio/cinema/audit`](file:///Users/nitinagga/Documents/zyvoriq/app/studio/cinema/audit/page.tsx) | Autonomous Film Audit & Quality Engine | 118-shot EDL generator, 15-parameter superhit film scoring, audio ducking assertions |
-
-Key Architectural Principles for Cinema Originals:
-1. **Logical Timeline Decoupling**: Dialogue, EDL scene changes, and subtitles synchronize with a dedicated 900-second logical master clock (`timeline15mSec`), never the loop duration of backing video stems.
-2. **Strict Ban on Synthetic `<video loop>`**: The `<video>` element MUST NOT have the `loop` attribute. Synthetic looping is an anti-pattern that masks asset shortages by repeating short clips.
-3. **118-Shot Visual Continuity Engine**: Every single shot in the 118-shot Edit Decision List (#001 to #118) provides a unique visual composition, optical camera motion, lens simulation, and character blocking. The player transitions cleanly across shot cuts without looping.
-4. **5-Act Progressive Video Switching Engine**: Player dynamically switches active video stems across narrative arcs (Act 1: Heritage Mythology, Act 2: Noir Sorrows, Act 3: Vishwaroopa Cosmic Nebulae, Act 4: Awakening Charge, Act 5: Golden Sunrise & Master Credits).
-5. **Balanced 50% Acoustic Ducking**: Speech synthesis ducks background orchestral beds to 50% (`0.50`), maintaining Vedic hymns and bass impact while ensuring full dialogue clarity.
-6. **Agentic Framework Compliance**: Built and validated according to the [Universal Agentic Coding Framework](file:///Users/nitinagga/Documents/zyvoriq/docs/UNIVERSAL_AGENTIC_FRAMEWORK.md) and [Cinema Feature Film QA Skill](file:///Users/nitinagga/Documents/zyvoriq/skills/cinema-feature-film-qa/SKILL.md).
+1. **Logical Timeline Decoupling**: Dialogue, EDL scene changes, and subtitles synchronize with a dedicated logical master clock (`requestedDurationSec` up to 300s across 30s CFR acts), never synthetic `<video loop>` repetition.
+2. **Strict Ban on Synthetic `<video loop>`**: Master `<video>` surfaces never mask asset shortages by looping short stems; multi-act extensions synthesize discrete 30.0s CFR acts (`act1_30s.mp4 .. actN_30s.mp4`) stitched cleanly via FFmpeg.
+3. **4-Clock Drift Gate (`±50ms` Ceiling)**: Video stream duration, audio stream duration, container duration, and VTT subtitle envelope stay locked within `±50ms` with EBU R128 `-24.0 LUFS` loudness normalization.
+4. **Truthful Engine Provenance**: [`app/api/entity/[id]/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/entity/[id]/route.ts) and [`app/entity/[id]/page.tsx`](file:///Users/nitinagga/Documents/zyvoriq/app/entity/[id]/page.tsx) badge `Veo 3.1` only when live Veo synthesis ran without static seed fallback (`usedVeo31Live && !isFallbackMaster`), defaulting to `Omni 1.1` otherwise.
 
 ---
 
@@ -118,12 +109,15 @@ All AI calls execute through encapsulated server-side modules in [`lib/ai/`](fil
      }
      ```
 
-### 3.3 Cinematic Video Diffusion ([`lib/ai/veoService.ts`](file:///Users/nitinagga/Documents/zyvoriq/lib/ai/veoService.ts))
-- **Primary Model**: `veo-2.0-generate-001` / `veo-3.1-diffusion-preview`
-- **Container Standards**: Strictly `H.264 (avc1)` video codec with `yuv420p` pixel format, 24fps/30fps, faststart `moov` atom enabled.
+### 3.3 Cinematic Video Diffusion — Option A: Lean Omni-First + Veo 3.1 Safety-Net ([`lib/ai/veoService.ts`](file:///Users/nitinagga/Documents/zyvoriq/lib/ai/veoService.ts), [`app/api/swarm/jobs/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/swarm/jobs/route.ts), [`scripts/yt_pipeline.mjs`](file:///Users/nitinagga/Documents/zyvoriq/scripts/yt_pipeline.mjs))
+- **Primary & Safety-Net Models**:
+  - `models/gemini-omni-1.1-flash` (`/v1beta/interactions`) — default native 24fps multi-turn AV engine in `/swarm-MUI` (`foundationModel: "omni11_lyria3"`), producing synchronous video + spoken/sung lip-sync audio in a single pass.
+  - `veo-3.1-generate-preview` (`quality`), `veo-3.1-fast-generate-preview` (`fast`), `veo-3.1-lite-generate-preview` (`lite`) via `:predictLongRunning` — retained as the lean ~300-LOC safety-net (`lib/ai/veoService.ts` + `scripts/yt_pipeline.mjs`) for: (1) optional `/swarm-MUI` 4K diffusion selector (`foundationModel === "veo31_4k"` -> `synthesize30sActViaVeo31` -> `generateVeoVideoBytes`), (2) automatic live diffusion fallback in `/api/swarm/jobs` & `scripts/yt_pipeline.mjs` when Omni 1.1 blocks or errors prior to cached seed masters, and (3) dynamic `"Omni 1.1"` vs `"Veo 3.1"` provenance badges on `/entity/[id]`.
+  - **Retired Legacy Stack**: The unmounted `Studio1` background queue worker (`scripts/reel_worker_v2.mjs`, `scripts/studio1_native.mjs`), `app/api/studio1/*`, `app/api/studio/omni-generate`, and `lib/studio1/*` are permanently retired under Option A; `lib/reel/operationQueue.ts` fails closed with `STUDIO1_WORKER_PRUNED_OPTION_A`.
+- **Container Standards**: Strictly `H.264 (avc1)` video codec with `yuv420p` pixel format, `24/1` CFR, faststart `moov` atom enabled, and `4s / 6s / 8s` discrete Veo buckets (`8s` mandatory when `referenceImages` are attached).
 - **Recursive Chaining Architecture**:
-  - `generateVeoRecursiveChainedVideo(acts: SceneAct[], maxCycles = 20)`
-  - Chains consecutive 8-second video generations with latent continuity conditioning, scaling up to 168 seconds of continuous multi-act video.
+  - `generateVeoRecursiveChainedVideo(masterPrompt, options)` in [`lib/ai/veoService.ts`](file:///Users/nitinagga/Documents/zyvoriq/lib/ai/veoService.ts)
+  - Chains consecutive 8s base + 7s/8s extension hops up to 148 seconds of continuous multi-act video.
 
 ---
 

@@ -65,6 +65,7 @@ interface ResolvedEntityPayload {
   videoSrc: string;
   posterSrc?: string;
   projectId: string;
+  foundationModel: string;
   prompt: string;
   promptSummary: string;
   createdAt: string;
@@ -72,6 +73,7 @@ interface ResolvedEntityPayload {
   parallelWorkers: {
     totalWorkers: number;
     mode: string;
+    engineLabel: string;
     veoWorkers: number;
     lyriaWorkers: number;
     chirpWorkers: number;
@@ -268,9 +270,29 @@ function buildEntityFromLibraryItem(
     };
   });
 
+  const rawFoundationModel =
+    typeof rawState?.foundationModel === "string" ? rawState.foundationModel : "";
+  const isFallback = rawState?.isFallbackMaster === true;
+  const persistedEngineLabel =
+    typeof (rawState?.parallelWorkers as Record<string, unknown> | undefined)
+      ?.engineLabel === "string"
+      ? String(
+          (rawState?.parallelWorkers as Record<string, unknown>).engineLabel
+        )
+      : "";
+  const isVeoPrimary = persistedEngineLabel
+    ? persistedEngineLabel === "Veo 3.1"
+    : (!isFallback && rawState?.usedVeo31Live === true) ||
+      (!isFallback && rawFoundationModel === "veo31_4k") ||
+      /\bveo\b/i.test(`${item.subtitle || ""} ${item.audioSpec || ""}`);
+  const resolvedEngineLabel = isVeoPrimary ? "Veo 3.1" : "Omni 1.1";
+  const resolvedFoundationModel =
+    rawFoundationModel || (isVeoPrimary ? "veo31_4k" : "omni11_lyria3");
+
   const parallelWorkers = {
     totalWorkers: enrichedSegments.length + 3,
-    mode: `Promise.all (${enrichedSegments.length} Concurrent Video Workers + Lyria 3 Pro + Omni 1.1 Voice + FFmpeg Mux)`,
+    mode: `Promise.all (${enrichedSegments.length} Concurrent ${resolvedEngineLabel} Video Workers + Lyria 3 Pro + Chirp 3 HD + FFmpeg Mux)`,
+    engineLabel: resolvedEngineLabel,
     veoWorkers: enrichedSegments.length,
     lyriaWorkers: 1,
     chirpWorkers: 1,
@@ -307,6 +329,7 @@ function buildEntityFromLibraryItem(
       videoSrc: matchedAct.videoSrc,
       posterSrc: item.posterSrc,
       projectId: item.projectId,
+      foundationModel: resolvedFoundationModel,
       prompt: item.promptSummary,
       promptSummary: item.promptSummary,
       createdAt: item.createdAt,
@@ -349,6 +372,7 @@ function buildEntityFromLibraryItem(
     videoSrc: normalizedMainSrc,
     posterSrc: item.posterSrc,
     projectId: item.projectId,
+    foundationModel: resolvedFoundationModel,
     prompt: item.promptSummary,
     promptSummary: item.promptSummary,
     createdAt: item.createdAt,

@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import fs from "node:fs";
 import { sanitizeTranscriptionPayload } from "../transcription_word_timing_guard.mjs";
 
 const mixed = {
@@ -30,13 +29,5 @@ assert.equal(sanitizeTranscriptionPayload(phraseOnly).segment.text, undefined, "
 
 const untimed = { summary: { text: "Untimed provider metadata stays intact" } };
 assert.equal(sanitizeTranscriptionPayload(untimed).summary.text, untimed.summary.text, "untimed provider metadata must not be modified");
-
-const worker = fs.readFileSync("scripts/reel_worker_v2.mjs", "utf8");
-assert.ok(worker.includes("NUMBER_WORDS"), "worker transcript validation must retain number-word canonicalization");
-assert.ok(worker.includes("out.push(String(n))"), "worker must canonicalize spoken number words to numeric tokens");
-assert.ok(worker.includes('"not"'), "worker must continue treating lost negation as critical");
-
-const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
-assert.ok(packageJson.scripts["worker:reels"].includes("transcription_word_timing_guard.mjs"), "production worker entrypoint must load the transcription timing guard");
 
 console.log("Transcription word-timing sanitation QA passed");

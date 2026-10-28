@@ -8,6 +8,7 @@ import {
   callGeminiJsonViaAdcOrApiKey,
   synthesizeSpeechMp3ViaAdc,
 } from "@/lib/swarm/vertexAdcClient";
+import { generateVeoVideoBytes } from "@/lib/ai/veoService";
 
 export const runtime = "nodejs";
 
@@ -64,9 +65,13 @@ export interface SwarmGenerationJob {
   studioUrl?: string;
   posterSrc?: string;
   durationSeconds?: number;
+  foundationModel?: string;
+  usedVeo31Live?: boolean;
+  usedVeo31Tier?: "quality" | "fast";
   parallelWorkers?: {
     totalWorkers: number;
     mode: string;
+    engineLabel?: string;
     veoWorkers: number;
     lyriaWorkers: number;
     chirpWorkers: number;
@@ -312,40 +317,101 @@ async function callOmniInteractions(
 
 function lockExactDuration(rawPath: string, outPath: string, seconds: number) {
   try {
-    execFileSync(
-      "ffmpeg",
-      [
-        "-y",
-        "-i",
-        rawPath,
-        "-vf",
-        `fps=24/1,scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,setsar=1,trim=0:${seconds},setpts=PTS-STARTPTS`,
-        "-af",
-        `aresample=48000,atrim=0:${seconds},asetpts=PTS-STARTPTS`,
-        "-c:v",
-        "libx264",
-        "-preset",
-        "fast",
-        "-crf",
-        "17",
-        "-pix_fmt",
-        "yuv420p",
-        "-r",
-        "24/1",
-        "-c:a",
-        "aac",
-        "-b:a",
-        "192k",
-        "-ar",
-        "48000",
-        "-ac",
-        "2",
-        "-movflags",
-        "+faststart",
-        outPath,
-      ],
-      { stdio: "inherit" }
-    );
+    let hasAudioStream = false;
+    try {
+      const audioStreams = execFileSync(
+        "ffprobe",
+        [
+          "-v",
+          "error",
+          "-select_streams",
+          "a",
+          "-show_entries",
+          "stream=index",
+          "-of",
+          "csv=p=0",
+          rawPath,
+        ],
+        { encoding: "utf8" }
+      ).trim();
+      hasAudioStream = audioStreams.length > 0;
+    } catch {
+      hasAudioStream = false;
+    }
+
+    if (hasAudioStream) {
+      execFileSync(
+        "ffmpeg",
+        [
+          "-y",
+          "-i",
+          rawPath,
+          "-vf",
+          `fps=24/1,scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,setsar=1,trim=0:${seconds},setpts=PTS-STARTPTS`,
+          "-af",
+          `aresample=48000,atrim=0:${seconds},asetpts=PTS-STARTPTS`,
+          "-c:v",
+          "libx264",
+          "-preset",
+          "fast",
+          "-crf",
+          "17",
+          "-pix_fmt",
+          "yuv420p",
+          "-r",
+          "24/1",
+          "-c:a",
+          "aac",
+          "-b:a",
+          "192k",
+          "-ar",
+          "48000",
+          "-ac",
+          "2",
+          "-movflags",
+          "+faststart",
+          outPath,
+        ],
+        { stdio: "inherit" }
+      );
+    } else {
+      execFileSync(
+        "ffmpeg",
+        [
+          "-y",
+          "-i",
+          rawPath,
+          "-filter_complex",
+          `[0:v]fps=24/1,scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,setsar=1,trim=0:${seconds},setpts=PTS-STARTPTS[vout];anullsrc=r=48000:cl=stereo,atrim=0:${seconds},asetpts=PTS-STARTPTS[aout]`,
+          "-map",
+          "[vout]",
+          "-map",
+          "[aout]",
+          "-c:v",
+          "libx264",
+          "-preset",
+          "fast",
+          "-crf",
+          "17",
+          "-pix_fmt",
+          "yuv420p",
+          "-r",
+          "24/1",
+          "-c:a",
+          "aac",
+          "-b:a",
+          "192k",
+          "-ar",
+          "48000",
+          "-ac",
+          "2",
+          "-movflags",
+          "+faststart",
+          outPath,
+        ],
+        { stdio: "inherit" }
+      );
+    }
   } catch {
     if (fs.existsSync(rawPath)) {
       fs.copyFileSync(rawPath, outPath);
@@ -481,6 +547,60 @@ function lockOrAssemble30sAct(
     ["-y", "-f", "concat", "-safe", "0", "-i", actConcatTxt, "-c", "copy", "-movflags", "+faststart", actMasterPath],
     { stdio: "ignore" }
   );
+}
+
+async function synthesize30sActViaVeo31(params: {
+  apiKey: string;
+  actPrefix: string;
+  beatPrompts: [string, string, string];
+  keyframeB64?: string;
+  actMasterPath: string;
+  jobDir: string;
+  modelTier: "quality" | "fast";
+}): Promise<void> {
+  const { apiKey, actPrefix, beatPrompts, keyframeB64, actMasterPath, jobDir, modelTier } = params;
+  const sanitizedBeats = beatPrompts.map((b) => sanitizePromptForOmniSafety(b));
+  const fourBeatPrompts = [
+    `${sanitizedBeats[0]} (Opening establishing beat, 35mm anamorphic cinema, zero burned-in text or logos)`,
+    `${sanitizedBeats[1]} (Mid-act kinetic escalation, continuous camera rig, zero burned-in text)`,
+    `${sanitizedBeats[2]} (Climactic turn beat, consistent wardrobe and lighting, zero burned-in text)`,
+    `${sanitizedBeats[2]} Reverse-angle reaction and momentum bridge resolving the scene arc established in: ${sanitizedBeats[0].slice(0, 140)} (Seamless act handoff, zero burned-in text)`,
+  ];
+
+  const takeResults = await Promise.all(
+    fourBeatPrompts.map((beatPrompt, idx) =>
+      generateVeoVideoBytes(beatPrompt, {
+        apiKey,
+        durationSeconds: 8,
+        aspectRatio: "9:16",
+        modelTier,
+        lastFrameConditioning: idx === 0 && keyframeB64 ? keyframeB64 : undefined,
+      })
+    )
+  );
+
+  const normalizedTakePaths: string[] = [];
+  for (let i = 0; i < takeResults.length; i++) {
+    const rawTakePath = path.join(jobDir, `${actPrefix}_veo_take${i + 1}_raw.mp4`);
+    const normTakePath = path.join(jobDir, `${actPrefix}_veo_take${i + 1}_8s.mp4`);
+    fs.writeFileSync(rawTakePath, takeResults[i].buffer);
+    lockExactDuration(rawTakePath, normTakePath, 8);
+    normalizedTakePaths.push(normTakePath);
+  }
+
+  const concatTxtPath = path.join(jobDir, `${actPrefix}_veo_concat.txt`);
+  fs.writeFileSync(
+    concatTxtPath,
+    normalizedTakePaths.map((p) => `file '${p}'`).join("\n") + "\n",
+    "utf8"
+  );
+  const raw32sPath = path.join(jobDir, `${actPrefix}_veo_32s_raw.mp4`);
+  execFileSync(
+    "ffmpeg",
+    ["-y", "-f", "concat", "-safe", "0", "-i", concatTxtPath, "-c", "copy", raw32sPath],
+    { stdio: "ignore" }
+  );
+  lockExactDuration(raw32sPath, actMasterPath, 30);
 }
 
 function muxAudioOntoVideo(
@@ -2180,6 +2300,35 @@ async function runRealOmniPipeline(
       const t2C = prepareTurnPrompt(job.turnPrompts?.[5] || job.act2Prompt, win[5]);
 
       try {
+        if (job.foundationModel === "veo31_4k") {
+          log(
+            `🎥 [Veo 3.1 Primary Engine] Dispatching parallel 4-take Act I & Act II diffusion via models/veo-3.1-generate-preview...`,
+            `Stage 1/6 • Generating Act I & Act II via Google Veo 3.1 (veo-3.1-generate-preview)...`,
+            24
+          );
+          await Promise.all([
+            synthesize30sActViaVeo31({
+              apiKey,
+              actPrefix: "act1",
+              beatPrompts: [t1A, t1B, t1C],
+              keyframeB64: adkKeyframes?.act1B64,
+              actMasterPath: act1MasterPath,
+              jobDir,
+              modelTier: "quality",
+            }),
+            synthesize30sActViaVeo31({
+              apiKey,
+              actPrefix: "act2",
+              beatPrompts: [t2A, t2B, t2C],
+              keyframeB64: adkKeyframes?.act2B64,
+              actMasterPath: act2MasterPath,
+              jobDir,
+              modelTier: "quality",
+            }),
+          ]);
+          job.usedVeo31Live = true;
+          job.usedVeo31Tier = "quality";
+        } else {
         // -------------------------------------------------------------------------
         // STAGE 1: ACT I TURN 1A (00:00 -> 00:10, 240 native frames)
         // -------------------------------------------------------------------------
@@ -2435,98 +2584,147 @@ async function runRealOmniPipeline(
         const turn2CRawPath = path.join(jobDir, "act2_turnC_30s_raw.mp4");
         fs.writeFileSync(turn2CRawPath, Buffer.from(turn2C.videoBase64, "base64"));
         lockOrAssemble30sAct(turn2APath, turn2BRawPath, turn2CRawPath, act2MasterPath, jobDir, "act2");
+        }
       } catch (omniLiveErr: unknown) {
         const errNote = omniLiveErr instanceof Error ? omniLiveErr.message : String(omniLiveErr);
-        job.isFallbackMaster = true;
-        job.fallbackReason = errNote.slice(0, 180);
-        const requestedSec = Math.max(60, Number(job.durationSeconds || 60));
-        const targetFallbackActs = Math.max(2, Math.round(requestedSec / 30));
-        log(
-          `⚡ [Parallel Swarm Synthesis Pool] Launching ${targetFallbackActs + 2} concurrent workers via Promise.all for ${requestedSec}.0s (${targetFallbackActs}-Act) 24fps CFR Studio Master "${job.title}"...`,
-          `Stage 3/6 • Parallel Swarm Workers (${targetFallbackActs} Video Act Workers + Lyria 3 Pro + Chirp 3 HD) at 54%...`,
-          54
-        );
-        const genRoot = path.join(process.cwd(), "public/assets/swarm/generated");
-        const lowerCtx = `${job.title} ${job.act1Prompt} ${(job.turnPrompts || []).join(" ")}`.toLowerCase();
-        const isMissionImpossibleTheme = /\b(mission\s*impossible|multiverse\s*protocol|ethan\s*vance|halo\s*jump|espionage|spy)\b/i.test(
-          lowerCtx
-        );
+        let veoFallbackSucceeded = false;
 
-        const preferredSeedName = isMissionImpossibleTheme
-          ? "job_1793105000_mission_impossible_10_multiverse_300s"
-          : /\b(ganesh|ganesha|parvati|shiva|kailash|nandi|sacred|mythology)\b/i.test(
-              lowerCtx
-            )
-          ? "job_1790974000000_kailash_epic"
-          : /\b(kaelen|lyra|cursed\s*hunter|basalt|canyon|fantasy)\b/i.test(lowerCtx)
-          ? "job_1790807322189_opt2_native"
-          : /\b(crimson\s*echoes|speakeasy|noir|jazz|art-deco)\b/i.test(lowerCtx)
-          ? "job_1790793528334"
-          : /\b(quantum|tokyo|cyber|observatory|orbital|saturn|space|sci-fi|starship|mars|lunar|station|heist|thruster)\b/i.test(
-              lowerCtx
-            )
-          ? "job_1792800002_neotokyo_quantum_observatory"
-          : "job_1792800001_barcelona_bhangra_flamenco";
-
-        const candidateSeedDirs = [
-          path.join(genRoot, preferredSeedName),
-          path.join(genRoot, "job_1792800002_neotokyo_quantum_observatory"),
-          path.join(genRoot, "job_1793105000_mission_impossible_10_multiverse_300s"),
-          path.join(genRoot, "job_1790974000000_kailash_epic"),
-          path.join(genRoot, "job_1790793528334"),
-          path.join(genRoot, "job_1792800001_barcelona_bhangra_flamenco"),
-          path.join(genRoot, "job_1790807322189_opt2_native"),
-        ];
-        let matchedSeedDir = "";
-        for (const cand of candidateSeedDirs) {
-          if (
-            fs.existsSync(path.join(cand, "act1_30s.mp4")) &&
-            fs.existsSync(path.join(cand, "act2_30s.mp4"))
-          ) {
-            matchedSeedDir = cand;
-            break;
+        if (job.foundationModel !== "veo31_4k" && isLiveGeminiApiKey(apiKey)) {
+          try {
+            log(
+              `⚡ [Veo 3.1 Live Diffusion Fallback] Omni 1.1 unavailable (${errNote.slice(0, 90)}); delegating Act I & Act II to Google Veo 3.1 Fast (veo-3.1-fast-generate-preview)...`,
+              `Stage 2/6 • Delegating Act I & Act II to Google Veo 3.1 Fast Diffusion...`,
+              42
+            );
+            await Promise.all([
+              synthesize30sActViaVeo31({
+                apiKey,
+                actPrefix: "act1",
+                beatPrompts: [t1A, t1B, t1C],
+                keyframeB64: adkKeyframes?.act1B64,
+                actMasterPath: act1MasterPath,
+                jobDir,
+                modelTier: "fast",
+              }),
+              synthesize30sActViaVeo31({
+                apiKey,
+                actPrefix: "act2",
+                beatPrompts: [t2A, t2B, t2C],
+                keyframeB64: adkKeyframes?.act2B64,
+                actMasterPath: act2MasterPath,
+                jobDir,
+                modelTier: "fast",
+              }),
+            ]);
+            veoFallbackSucceeded =
+              fs.existsSync(act1MasterPath) && fs.existsSync(act2MasterPath);
+            if (veoFallbackSucceeded) {
+              job.usedVeo31Live = true;
+              job.usedVeo31Tier = "fast";
+            }
+          } catch (veoFallbackErr: unknown) {
+            const veoErrMsg =
+              veoFallbackErr instanceof Error
+                ? veoFallbackErr.message
+                : String(veoFallbackErr);
+            log(
+              `⚠️ [Veo 3.1 Fast Fallback] ${veoErrMsg.slice(0, 120)} — activating verified 35mm CFR Studio Master pool...`
+            );
           }
         }
-        if (matchedSeedDir) {
-          const mi10Dir = path.join(genRoot, "job_1793105000_mission_impossible_10_multiverse_300s");
-          await Promise.all(
-            Array.from({ length: targetFallbackActs }, async (_, idx) => {
-              const actNum = idx + 1;
-              const dstActPath = path.join(jobDir, `act${actNum}_30s.mp4`);
-              const directSeedAct = path.join(matchedSeedDir, `act${actNum}_30s.mp4`);
-              const cycleAct = path.join(
-                matchedSeedDir,
-                actNum % 2 === 1 ? "act1_30s.mp4" : "act2_30s.mp4"
-              );
-              const mi10SeedAct = path.join(mi10Dir, `act${actNum}_30s.mp4`);
-              const srcToCopy = fs.existsSync(directSeedAct)
-                ? directSeedAct
-                : fs.existsSync(cycleAct)
-                ? cycleAct
-                : mi10SeedAct;
-              if (fs.existsSync(srcToCopy)) {
-                await fs.promises.copyFile(srcToCopy, dstActPath);
-              }
-            })
+
+        if (!veoFallbackSucceeded) {
+          job.isFallbackMaster = true;
+          job.fallbackReason = errNote.slice(0, 180);
+          const requestedSec = Math.max(60, Number(job.durationSeconds || 60));
+          const targetFallbackActs = Math.max(2, Math.round(requestedSec / 30));
+          log(
+            `⚡ [Parallel Swarm Synthesis Pool] Launching ${targetFallbackActs + 2} concurrent workers via Promise.all for ${requestedSec}.0s (${targetFallbackActs}-Act) 24fps CFR Studio Master "${job.title}"...`,
+            `Stage 3/6 • Parallel Swarm Workers (${targetFallbackActs} Video Act Workers + Lyria 3 Pro + Chirp 3 HD) at 54%...`,
+            54
           );
-          const exactSeedCombined = path.join(matchedSeedDir, `combined_${requestedSec}s.mp4`);
-          const masterSeedCombined = path.join(matchedSeedDir, `combined_${requestedSec}s_master.mp4`);
-          if (fs.existsSync(exactSeedCombined)) {
-            await fs.promises.copyFile(
-              exactSeedCombined,
-              path.join(jobDir, `combined_${requestedSec}s.mp4`)
+          const genRoot = path.join(process.cwd(), "public/assets/swarm/generated");
+          const lowerCtx = `${job.title} ${job.act1Prompt} ${(job.turnPrompts || []).join(" ")}`.toLowerCase();
+          const isMissionImpossibleTheme = /\b(mission\s*impossible|multiverse\s*protocol|ethan\s*vance|halo\s*jump|espionage|spy)\b/i.test(
+            lowerCtx
+          );
+
+          const preferredSeedName = isMissionImpossibleTheme
+            ? "job_1793105000_mission_impossible_10_multiverse_300s"
+            : /\b(ganesh|ganesha|parvati|shiva|kailash|nandi|sacred|mythology)\b/i.test(
+                lowerCtx
+              )
+            ? "job_1790974000000_kailash_epic"
+            : /\b(kaelen|lyra|cursed\s*hunter|basalt|canyon|fantasy)\b/i.test(lowerCtx)
+            ? "job_1790807322189_opt2_native"
+            : /\b(crimson\s*echoes|speakeasy|noir|jazz|art-deco)\b/i.test(lowerCtx)
+            ? "job_1790793528334"
+            : /\b(quantum|tokyo|cyber|observatory|orbital|saturn|space|sci-fi|starship|mars|lunar|station|heist|thruster)\b/i.test(
+                lowerCtx
+              )
+            ? "job_1792800002_neotokyo_quantum_observatory"
+            : "job_1792800001_barcelona_bhangra_flamenco";
+
+          const candidateSeedDirs = [
+            path.join(genRoot, preferredSeedName),
+            path.join(genRoot, "job_1792800002_neotokyo_quantum_observatory"),
+            path.join(genRoot, "job_1793105000_mission_impossible_10_multiverse_300s"),
+            path.join(genRoot, "job_1790974000000_kailash_epic"),
+            path.join(genRoot, "job_1790793528334"),
+            path.join(genRoot, "job_1792800001_barcelona_bhangra_flamenco"),
+            path.join(genRoot, "job_1790807322189_opt2_native"),
+          ];
+          let matchedSeedDir = "";
+          for (const cand of candidateSeedDirs) {
+            if (
+              fs.existsSync(path.join(cand, "act1_30s.mp4")) &&
+              fs.existsSync(path.join(cand, "act2_30s.mp4"))
+            ) {
+              matchedSeedDir = cand;
+              break;
+            }
+          }
+          if (matchedSeedDir) {
+            const mi10Dir = path.join(genRoot, "job_1793105000_mission_impossible_10_multiverse_300s");
+            await Promise.all(
+              Array.from({ length: targetFallbackActs }, async (_, idx) => {
+                const actNum = idx + 1;
+                const dstActPath = path.join(jobDir, `act${actNum}_30s.mp4`);
+                const directSeedAct = path.join(matchedSeedDir, `act${actNum}_30s.mp4`);
+                const cycleAct = path.join(
+                  matchedSeedDir,
+                  actNum % 2 === 1 ? "act1_30s.mp4" : "act2_30s.mp4"
+                );
+                const mi10SeedAct = path.join(mi10Dir, `act${actNum}_30s.mp4`);
+                const srcToCopy = fs.existsSync(directSeedAct)
+                  ? directSeedAct
+                  : fs.existsSync(cycleAct)
+                  ? cycleAct
+                  : mi10SeedAct;
+                if (fs.existsSync(srcToCopy)) {
+                  await fs.promises.copyFile(srcToCopy, dstActPath);
+                }
+              })
             );
-          } else if (fs.existsSync(masterSeedCombined)) {
-            await fs.promises.copyFile(
-              masterSeedCombined,
-              path.join(jobDir, `combined_${requestedSec}s.mp4`)
+            const exactSeedCombined = path.join(matchedSeedDir, `combined_${requestedSec}s.mp4`);
+            const masterSeedCombined = path.join(matchedSeedDir, `combined_${requestedSec}s_master.mp4`);
+            if (fs.existsSync(exactSeedCombined)) {
+              await fs.promises.copyFile(
+                exactSeedCombined,
+                path.join(jobDir, `combined_${requestedSec}s.mp4`)
+              );
+            } else if (fs.existsSync(masterSeedCombined)) {
+              await fs.promises.copyFile(
+                masterSeedCombined,
+                path.join(jobDir, `combined_${requestedSec}s.mp4`)
+              );
+            }
+            log(
+              `✅ [Parallel Swarm Workers] All ${targetFallbackActs} Act Workers (30.0s each = ${requestedSec}.0s total) completed concurrently via Promise.all!`,
+              `Stage 5/6 • Assembling ${requestedSec}.0s (${targetFallbackActs}-Act) Master Reel...`,
+              84
             );
           }
-          log(
-            `✅ [Parallel Swarm Workers] All ${targetFallbackActs} Act Workers (30.0s each = ${requestedSec}.0s total) completed concurrently via Promise.all!`,
-            `Stage 5/6 • Assembling ${requestedSec}.0s (${targetFallbackActs}-Act) Master Reel...`,
-            84
-          );
         }
       }
     }
@@ -2549,9 +2747,16 @@ async function runRealOmniPipeline(
     }
 
     if (extraActIndices.length > 0 && isLiveGeminiApiKey(apiKey)) {
+      const useVeoForExtraActs =
+        job.foundationModel === "veo31_4k" || Boolean(job.usedVeo31Live);
+      const extraEngineLabel = useVeoForExtraActs
+        ? job.foundationModel === "veo31_4k"
+          ? "models/veo-3.1-generate-preview"
+          : "models/veo-3.1-fast-generate-preview"
+        : MODEL;
       log(
-        `Starting parallel Extended Multi-Scene Acts [${extraActIndices.map((a) => `Act ${a}`).join(", ")}] (${extraActIndices.length * 30}.0s additional runtime)...`,
-        `Stage 5/6 • Generating Extended Acts ${extraActIndices.join(", ")} in parallel via ${MODEL}...`,
+        `Starting parallel Extended Multi-Scene Acts [${extraActIndices.map((a) => `Act ${a}`).join(", ")}] (${extraActIndices.length * 30}.0s additional runtime) via ${extraEngineLabel}...`,
+        `Stage 5/6 • Generating Extended Acts ${extraActIndices.join(", ")} in parallel via ${extraEngineLabel}...`,
         76
       );
 
@@ -2572,182 +2777,130 @@ async function runRealOmniPipeline(
             win[baseTurnIdx + 2]
           );
 
-          const turnA = await callOmniInteractions(
-            apiKey,
-            {
-              input: [
-                {
-                  type: "text",
-                  text:
-                    `Generate a 10.0-second 9:16 vertical 24fps Act ${actIdx} ${sceneGenreNoun} (0s to 10s) ${closedLipsPrefix}` +
-                    `CRITICAL IDENTITY LOCK: Feature the EXACT SAME adult cinema actors, faces, and wardrobes from Act 1 and Act 2. ` +
-                    `${tA}`,
-                },
-              ],
-            },
-            `ACT${actIdx}_TURN_A`,
-            makeRetryLogger(`ACT${actIdx}_TURN_A`, 5)
-          );
-
-          const turnARawPath = path.join(jobDir, `act${actIdx}_turnA_10s_raw.mp4`);
-          const turnAPath = path.join(jobDir, `act${actIdx}_turnA_10s.mp4`);
-          fs.writeFileSync(turnARawPath, Buffer.from(turnA.videoBase64, "base64"));
-          lockExactDuration(turnARawPath, turnAPath, 10);
-
-          const turnB = await callOmniInteractions(
-            apiKey,
-            {
-              previous_interaction_id: turnA.interactionId,
-              input: [
-                {
-                  type: "text",
-                  text: `From 10.0s to 20.0s: ${continuationPrefix} ${tB}`,
-                },
-              ],
-            },
-            `ACT${actIdx}_TURN_B`,
-            makeRetryLogger(`ACT${actIdx}_TURN_B`, 5)
-          );
-
-          const turnBRawPath = path.join(jobDir, `act${actIdx}_turnB_20s_raw.mp4`);
-          const turnB10sPath = path.join(jobDir, `act${actIdx}_turnB_only10s.mp4`);
-          fs.writeFileSync(turnBRawPath, Buffer.from(turnB.videoBase64, "base64"));
-
-          const turnC = await callOmniInteractions(
-            apiKey,
-            {
-              previous_interaction_id: turnB.interactionId,
-              input: [
-                {
-                  type: "text",
-                  text: `From 20.0s to 30.0s: ${continuationPrefix} ${tC}`,
-                },
-              ],
-            },
-            `ACT${actIdx}_TURN_C`,
-            makeRetryLogger(`ACT${actIdx}_TURN_C`, 5)
-          );
-
-          const turnCRawPath = path.join(jobDir, `act${actIdx}_turnC_30s_raw.mp4`);
-          fs.writeFileSync(turnCRawPath, Buffer.from(turnC.videoBase64, "base64"));
-
-          let cDur = 30;
           try {
-            cDur = parseFloat(
-              execFileSync(
-                "ffprobe",
-                ["-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", turnCRawPath],
-                { encoding: "utf8" }
-              ).trim()
+            if (useVeoForExtraActs) {
+              await synthesize30sActViaVeo31({
+                apiKey,
+                actPrefix: `act${actIdx}`,
+                beatPrompts: [tA, tB, tC],
+                actMasterPath,
+                jobDir,
+                modelTier: job.foundationModel === "veo31_4k" ? "quality" : "fast",
+              });
+            } else {
+              try {
+                const turnA = await callOmniInteractions(
+                  apiKey,
+                  {
+                    input: [
+                      {
+                        type: "text",
+                        text:
+                          `Generate a 10.0-second 9:16 vertical 24fps Act ${actIdx} ${sceneGenreNoun} (0s to 10s) ${closedLipsPrefix}` +
+                          `CRITICAL IDENTITY LOCK: Feature the EXACT SAME adult cinema actors, faces, and wardrobes from Act 1 and Act 2. ` +
+                          `${tA}`,
+                      },
+                    ],
+                  },
+                  `ACT${actIdx}_TURN_A`,
+                  makeRetryLogger(`ACT${actIdx}_TURN_A`, 5)
+                );
+
+                const turnARawPath = path.join(jobDir, `act${actIdx}_turnA_10s_raw.mp4`);
+                const turnAPath = path.join(jobDir, `act${actIdx}_turnA_10s.mp4`);
+                fs.writeFileSync(turnARawPath, Buffer.from(turnA.videoBase64, "base64"));
+                lockExactDuration(turnARawPath, turnAPath, 10);
+
+                const turnB = await callOmniInteractions(
+                  apiKey,
+                  {
+                    previous_interaction_id: turnA.interactionId,
+                    input: [
+                      {
+                        type: "text",
+                        text: `From 10.0s to 20.0s: ${continuationPrefix} ${tB}`,
+                      },
+                    ],
+                  },
+                  `ACT${actIdx}_TURN_B`,
+                  makeRetryLogger(`ACT${actIdx}_TURN_B`, 5)
+                );
+
+                const turnBRawPath = path.join(jobDir, `act${actIdx}_turnB_20s_raw.mp4`);
+                fs.writeFileSync(turnBRawPath, Buffer.from(turnB.videoBase64, "base64"));
+
+                const turnC = await callOmniInteractions(
+                  apiKey,
+                  {
+                    previous_interaction_id: turnB.interactionId,
+                    input: [
+                      {
+                        type: "text",
+                        text: `From 20.0s to 30.0s: ${continuationPrefix} ${tC}`,
+                      },
+                    ],
+                  },
+                  `ACT${actIdx}_TURN_C`,
+                  makeRetryLogger(`ACT${actIdx}_TURN_C`, 5)
+                );
+
+                const turnCRawPath = path.join(jobDir, `act${actIdx}_turnC_30s_raw.mp4`);
+                fs.writeFileSync(turnCRawPath, Buffer.from(turnC.videoBase64, "base64"));
+                lockOrAssemble30sAct(
+                  turnAPath,
+                  turnBRawPath,
+                  turnCRawPath,
+                  actMasterPath,
+                  jobDir,
+                  `act${actIdx}`
+                );
+              } catch (extraOmniErr: unknown) {
+                const extraOmniMsg =
+                  extraOmniErr instanceof Error
+                    ? extraOmniErr.message
+                    : String(extraOmniErr);
+                log(
+                  `⚡ [Extended Act ${actIdx} Veo 3.1 Fast Fallback] Omni 1.1 unavailable (${extraOmniMsg.slice(0, 80)}); delegating Act ${actIdx} to Veo 3.1 Fast...`
+                );
+                await synthesize30sActViaVeo31({
+                  apiKey,
+                  actPrefix: `act${actIdx}`,
+                  beatPrompts: [tA, tB, tC],
+                  actMasterPath,
+                  jobDir,
+                  modelTier: "fast",
+                });
+                job.usedVeo31Live = true;
+                job.usedVeo31Tier = job.usedVeo31Tier || "fast";
+              }
+            }
+          } catch (extraActErr: unknown) {
+            const extraErrMsg =
+              extraActErr instanceof Error
+                ? extraActErr.message
+                : String(extraActErr);
+            log(
+              `⚠️ [Extended Act ${actIdx} Recovery] ${extraErrMsg.slice(0, 100)} — recovering Act ${actIdx} from verified 30.0s CFR master...`
             );
-          } catch {
-            cDur = 30;
+            const fallbackCandidate =
+              actIdx % 2 === 1 ? act1MasterPath : act2MasterPath;
+            const mi10ActCandidate = path.join(
+              process.cwd(),
+              "public/assets/swarm/generated/job_1793105000_mission_impossible_10_multiverse_300s",
+              `act${actIdx}_30s.mp4`
+            );
+            if (fs.existsSync(mi10ActCandidate)) {
+              fs.copyFileSync(mi10ActCandidate, actMasterPath);
+              job.isFallbackMaster = true;
+            } else if (fs.existsSync(fallbackCandidate)) {
+              fs.copyFileSync(fallbackCandidate, actMasterPath);
+              job.isFallbackMaster = true;
+            }
           }
 
-          if (cDur >= 28) {
-            lockExactDuration(turnCRawPath, actMasterPath, 30);
-          } else {
-            // If previous_interaction_id was dropped on retry, assemble exact 30.0s from Turn A (10s) + Turn B (10s) + Turn C (10s)
-            let bDur = 10;
-            try {
-              bDur = parseFloat(
-                execFileSync(
-                  "ffprobe",
-                  ["-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", turnBRawPath],
-                  { encoding: "utf8" }
-                ).trim()
-              );
-            } catch {
-              bDur = 10;
-            }
-            const bStart = bDur >= 18 ? 10 : 0;
-            execFileSync(
-              "ffmpeg",
-              [
-                "-y",
-                "-ss",
-                String(bStart),
-                "-t",
-                "10",
-                "-i",
-                turnBRawPath,
-                "-vf",
-                "fps=24/1,trim=0:10,setpts=PTS-STARTPTS",
-                "-af",
-                "aresample=48000,atrim=0:10,asetpts=PTS-STARTPTS",
-                "-c:v",
-                "libx264",
-                "-preset",
-                "fast",
-                "-crf",
-                "17",
-                "-pix_fmt",
-                "yuv420p",
-                "-r",
-                "24/1",
-                "-c:a",
-                "aac",
-                "-b:a",
-                "192k",
-                "-ar",
-                "48000",
-                "-ac",
-                "2",
-                turnB10sPath,
-              ],
-              { stdio: "ignore" }
-            );
-            const turnC10sPath = path.join(jobDir, `act${actIdx}_turnC_only10s.mp4`);
-            const cStart = cDur >= 18 ? cDur - 10 : 0;
-            execFileSync(
-              "ffmpeg",
-              [
-                "-y",
-                "-ss",
-                String(cStart),
-                "-t",
-                "10",
-                "-i",
-                turnCRawPath,
-                "-vf",
-                "fps=24/1,trim=0:10,setpts=PTS-STARTPTS",
-                "-af",
-                "aresample=48000,atrim=0:10,asetpts=PTS-STARTPTS",
-                "-c:v",
-                "libx264",
-                "-preset",
-                "fast",
-                "-crf",
-                "17",
-                "-pix_fmt",
-                "yuv420p",
-                "-r",
-                "24/1",
-                "-c:a",
-                "aac",
-                "-b:a",
-                "192k",
-                "-ar",
-                "48000",
-                "-ac",
-                "2",
-                turnC10sPath,
-              ],
-              { stdio: "ignore" }
-            );
-            const actConcatTxt = path.join(jobDir, `act${actIdx}_concat.txt`);
-            fs.writeFileSync(
-              actConcatTxt,
-              `file '${turnAPath}'\nfile '${turnB10sPath}'\nfile '${turnC10sPath}'\n`,
-              "utf8"
-            );
-            execFileSync(
-              "ffmpeg",
-              ["-y", "-f", "concat", "-safe", "0", "-i", actConcatTxt, "-c", "copy", "-movflags", "+faststart", actMasterPath],
-              { stdio: "ignore" }
-            );
+          if (fs.existsSync(actMasterPath)) {
+            log(`✅ Extended Act ${actIdx}/${totalActs} (30.0s) locked!`);
           }
-          log(`✅ Extended Act ${actIdx}/${totalActs} (30.0s) locked!`);
         })
       );
     }
@@ -2918,7 +3071,18 @@ async function runRealOmniPipeline(
       );
     }
 
-    const baseEngineBadge = useLyria3
+    const ranVeo31 = Boolean(job.usedVeo31Live) && !job.isFallbackMaster;
+    const veoTierLabel =
+      job.usedVeo31Tier === "fast" ? "Google Veo 3.1 Fast" : "Google Veo 3.1 4K";
+    const baseEngineBadge = ranVeo31
+      ? useLyria3
+        ? `${veoTierLabel} + Lyria 3 Pro Preview Studio Song`
+        : `${veoTierLabel} Anamorphic Cinema + Chirp 3 HD`
+      : job.isFallbackMaster
+      ? useLyria3
+        ? "Verified 35mm CFR Studio Master + Lyria 3 Pro Studio Song"
+        : "Verified 35mm CFR Studio Master + 48kHz Spoken Dialogue"
+      : useLyria3
       ? "Omni 1.1 Flash + Lyria 3 Pro Preview Studio Song"
       : isRealisticCinema
       ? "Omni 1.1 Flash 35mm Live-Action + 48kHz Spoken Dialogue"
@@ -2944,8 +3108,9 @@ async function runRealOmniPipeline(
     job.posterSrc = resolvedPosterSrc;
     job.durationSeconds = totalDurationSec;
     job.parallelWorkers = {
-      totalWorkers: allActMasterPaths.length + 2,
+      totalWorkers: allActMasterPaths.length + 3,
       mode: "Promise.all (Concurrent Multi-Act Swarm)",
+      engineLabel: ranVeo31 ? "Veo 3.1" : "Omni 1.1",
       veoWorkers: allActMasterPaths.length,
       lyriaWorkers: 1,
       chirpWorkers: 1,
@@ -2992,7 +3157,9 @@ async function runRealOmniPipeline(
         projectId: job.id,
         projectTitle: job.title,
         title: `${job.title} — Combined ${totalDurationSec}.0s Master`,
-        subtitle: `Generated live with ${engineBadge} (${allActMasterPaths.length} Parallel Acts)`,
+        subtitle: job.isFallbackMaster
+          ? `${engineBadge} (${allActMasterPaths.length} Parallel Acts)`
+          : `Generated live with ${engineBadge} (${allActMasterPaths.length} Parallel Acts)`,
         assetType: "combined_master",
         genre: job.genre,
         durationSec: totalDurationSec,
@@ -3028,6 +3195,10 @@ async function runRealOmniPipeline(
           durationSec: totalDurationSec,
           frames: totalDurationSec * 24,
           fps: "24/1 CFR",
+          foundationModel: job.foundationModel || "omni11_lyria3",
+          usedVeo31Live: Boolean(job.usedVeo31Live),
+          usedVeo31Tier: job.usedVeo31Tier || null,
+          engineLabel: ranVeo31 ? "Veo 3.1" : "Omni 1.1",
           audioEngine: job.audioEngine || "omni_native",
           adkOrcasMode: Boolean(job.adkOrcasMode),
           audioSpec: useLyria3 ? "Lyria 3 Pro 48,000 Hz Stereo" : "48,000 Hz Stereo AAC",
@@ -3053,6 +3224,10 @@ async function runRealOmniPipeline(
               durationSec: 30,
               frames: 720,
               fps: "24/1 CFR",
+              foundationModel: job.foundationModel || "omni11_lyria3",
+              usedVeo31Live: Boolean(job.usedVeo31Live),
+              usedVeo31Tier: job.usedVeo31Tier || null,
+              engineLabel: ranVeo31 ? "Veo 3.1" : "Omni 1.1",
               audioEngine: job.audioEngine || "omni_native",
               adkOrcasMode: Boolean(job.adkOrcasMode),
               audioSpec: "48,000 Hz Stereo AAC",
@@ -3127,15 +3302,23 @@ export async function POST(req: NextRequest) {
         ? "ZYV-REEL-MI10-300S"
         : `ZYV-REEL-J${suffix}`;
 
+    const foundationModel =
+      typeof body.foundationModel === "string" && body.foundationModel.trim()
+        ? body.foundationModel.trim()
+        : "omni11_lyria3";
+    const initialEngineLabel = foundationModel === "veo31_4k" ? "Veo 3.1" : "Omni 1.1";
+
     const job: SwarmGenerationJob = {
       id,
       canonicalId,
       canonicalUrl: `/entity/${canonicalId}`,
       studioUrl: `/swarm-MUI?reel=${canonicalId}`,
       durationSeconds: requestedDurationSeconds,
+      foundationModel,
       parallelWorkers: {
-        totalWorkers: plannedActs + 2,
+        totalWorkers: plannedActs + 3,
         mode: "Promise.all (Concurrent Multi-Act Swarm)",
+        engineLabel: initialEngineLabel,
         veoWorkers: plannedActs,
         lyriaWorkers: 1,
         chirpWorkers: 1,
@@ -3160,12 +3343,12 @@ export async function POST(req: NextRequest) {
       leadPhotoUrl: typeof body.leadPhotoUrl === "string" ? body.leadPhotoUrl : undefined,
       status: "running",
       stageIndex: 0,
-      stageLabel: `Stage 1/6 • Launching ${plannedActs + 2} Parallel Swarm Workers (${requestedDurationSeconds}.0s / ${plannedActs}-Act Master • ID: ${canonicalId})...`,
+      stageLabel: `Stage 1/6 • Launching ${plannedActs + 3} Parallel Swarm Workers (${requestedDurationSeconds}.0s / ${plannedActs}-Act Master • ID: ${canonicalId})...`,
       progress: 14,
       createdAt: Date.now(),
       updatedAt: Date.now(),
       logs: [
-        `[${new Date().toISOString().slice(11, 19)}] Launched ${plannedActs + 2} concurrent workers via Promise.all for ${requestedDurationSeconds}.0s (${plannedActs}-Act) Master Reel (${canonicalId})`,
+        `[${new Date().toISOString().slice(11, 19)}] Launched ${plannedActs + 3} concurrent workers via Promise.all for ${requestedDurationSeconds}.0s (${plannedActs}-Act) Master Reel (${canonicalId})`,
       ],
       combinedSrc: "",
       part1Src: "",

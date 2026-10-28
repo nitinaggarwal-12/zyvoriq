@@ -68,6 +68,7 @@ interface EntityRecord {
   parallelWorkers?: {
     totalWorkers: number;
     mode: string;
+    engineLabel?: string;
     veoWorkers: number;
     lyriaWorkers: number;
     chirpWorkers: number;
@@ -450,7 +451,7 @@ export default function CanonicalEntityInspectorPage() {
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-600">
-                      Mode: <span className="font-mono font-semibold">{entity.parallelWorkers.mode}</span> ({entity.parallelWorkers.veoWorkers} Veo 3.1 Act Workers + {entity.parallelWorkers.lyriaWorkers} Lyria 3 Pro Score Worker + {entity.parallelWorkers.chirpWorkers} Chirp 3 HD Voice Worker)
+                      Mode: <span className="font-mono font-semibold">{entity.parallelWorkers.mode}</span> ({entity.parallelWorkers.veoWorkers} {entity.parallelWorkers.engineLabel || "Omni 1.1"} Act Workers + {entity.parallelWorkers.lyriaWorkers} Lyria 3 Pro Score Worker + {entity.parallelWorkers.chirpWorkers} Chirp 3 HD Voice Worker)
                     </p>
                   </div>
                 )}

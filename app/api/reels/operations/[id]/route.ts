@@ -29,6 +29,15 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
     }
     return NextResponse.json({ success: false, error: "Unsupported action" }, { status: 400 });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error?.message || "Failed to retry operation" }, { status: 500 });
+    const message = String(error?.message || "Failed to retry operation");
+    if (message.includes("STUDIO1_WORKER_PRUNED_OPTION_A")) {
+      return NextResponse.json({
+        success: false,
+        code: "STUDIO1_WORKER_PRUNED_OPTION_A",
+        canonicalEngine: "omni11_veo31_safety_net",
+        error: message,
+      }, { status: 410, headers: { "Cache-Control": "no-store" } });
+    }
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

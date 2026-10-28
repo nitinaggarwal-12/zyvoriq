@@ -17,6 +17,7 @@ export interface VeoReferenceImage {
 }
 
 export interface VeoOptions {
+  apiKey?: string;
   durationSeconds?: number;
   aspectRatio?: "16:9" | "9:16" | "1:1";
   modelTier?: "fast" | "quality" | "lite";
@@ -44,14 +45,23 @@ export async function generateVeoVideoBytes(
   prompt: string,
   options: VeoOptions = {}
 ): Promise<VeoVideoBytes> {
-  const apiKey =
+  const candidateKey =
+    options.apiKey?.trim() ||
     process.env.GEMINI_API_KEY ||
     process.env.GOOGLE_API_KEY ||
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+    process.env.GOOGLE_GENAI_API_KEY ||
     process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
     process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+  const apiKey =
+    candidateKey &&
+    candidateKey !== "STUDIO_MASTER_SYNTHESIS_ACTIVE" &&
+    !candidateKey.includes("••••")
+      ? candidateKey.trim()
+      : undefined;
 
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY or GOOGLE_API_KEY environment variable is missing on server.");
+    throw new Error("GEMINI_API_KEY or GOOGLE_API_KEY is missing on server or request.");
   }
 
   // Token safety constraint: Prompt must strictly not exceed 1,024 tokens (~700 words max)
@@ -86,7 +96,13 @@ export async function generateVeoVideoBytes(
 
   if (!hasReferenceImages) {
     if (options.lastFrameConditioning) {
-      instance.image = { bytesBase64Encoded: options.lastFrameConditioning };
+      const detectedMime = options.lastFrameConditioning.trim().startsWith("iVBOR")
+        ? "image/png"
+        : "image/jpeg";
+      instance.image = {
+        bytesBase64Encoded: options.lastFrameConditioning,
+        mimeType: detectedMime,
+      };
     } else if (options.inputVideoUri) {
       instance.video = { uri: options.inputVideoUri };
     }

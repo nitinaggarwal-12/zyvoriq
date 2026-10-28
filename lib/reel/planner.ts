@@ -64,7 +64,7 @@ const normalizeSpaces = (value: string) => value.trim().replace(/\s+/g, " ");
 // Narration budgeting and shot duration constants
 //
 // Veo locks durationSeconds to 8 whenever a referenceImages array is present
-// (see reel_worker_v2.mjs generateShot). Every shot in a character-led
+// (see lib/ai/veoService.ts generateVeoVideoBytes). Every shot in a character-led
 // production therefore generates exactly 8s of source regardless of what the
 // planner asks for, and Veo bills per second of generated video. Narration
 // must fill that 8s window or the surplus is paid for and discarded.
@@ -452,7 +452,7 @@ export function planReel(input: PlanReelInput, directorial?: OmniDirectorialComp
   const masterScript = (input.scriptText || directorial?.masterScript || input.creationIntent?.conceptSpeechSample || "").trim();
   if (!masterScript) {
     throw new Error(
-      "NARRATION_PRECONDITION_FAILED: Non-empty scriptText is required to plan a reel manifest synchronously. In async creation pipelines, use planStudio1() or planReelAsync() to dynamically synthesize the script via Gemini before calling synchronous planning."
+      "NARRATION_PRECONDITION_FAILED: Non-empty scriptText is required to plan a reel manifest synchronously. In async creation pipelines, use planReelAsync() to dynamically synthesize the script via Gemini before calling synchronous planning."
     );
   }
   const dir = directorial || compileDeterministicDirectorialPass(topic, masterScript, requestedDurationSec, creationIntent, input.genre, aspectRatio, resolvedLanguage, input.continuationFrom);

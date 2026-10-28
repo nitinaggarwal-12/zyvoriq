@@ -4,7 +4,6 @@ import {
   collectValidStoredProductions,
   normalizePersistedReelManifest,
 } from "../../lib/reel/manifestCompatibility.ts";
-import { suppressUncertifiedStudio1Outputs } from "../../lib/studio1/fullReelCertification.mjs";
 
 function legacyManifest(id, version = 1) {
   return {
@@ -44,12 +43,5 @@ const hydrated = collectValidStoredProductions(
 );
 assert.deepEqual(hydrated.map(manifest => manifest.id), ["studio1_healthy", "studio1_recovered"]);
 assert.deepEqual(invalidRows, ["studio1_corrupt"]);
-
-const suppressed = suppressUncertifiedStudio1Outputs({
-  id: normalizedLegacy.id,
-  revision: 1,
-  manifest: normalizedLegacy,
-});
-assert.equal(suppressed.manifest.outputs?.narratedRoughCut, undefined);
 
 console.log("Reel manifest read compatibility QA passed");

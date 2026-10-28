@@ -17,13 +17,13 @@ Traditional AI video generators attempt "one-shot" text-to-video diffusion, resu
 
 ```mermaid
 flowchart TD
-    subgraph Stage0 ["Stage 0: Distributed Task DAG & Anti-Starvation Queue Engine"]
-        Q0[User Prompt Submitted] --> Q1[Next.js Web Tier Dispatches /api/studio/omni-generate]
-        Q1 --> Q2[(PostgreSQL reel_operations Table)]
+    subgraph Stage0 ["Stage 0 (Historical DAG Spec — Superseded in Option A by In-Process /api/swarm/jobs Swarm)"]
+        Q0[User Prompt Submitted] --> Q1[Legacy Studio1 Queue Ingress]
+        Q1 --> Q2[(PostgreSQL reel_operations Table — Retired in Option A)]
         Q2 --> Q3{Upstream Parent Dependencies Ready?}
         Q3 -- "Dependencies Incomplete" --> Q4[status = 'BLOCKED'<br>Excluded from claim query]
         Q3 -- "Dependencies Satisfied" --> Q5[status = 'QUEUED'<br>attempt < 5]
-        Q5 --> Q6[Dedicated Background Worker Claims Job<br>status = 'RUNNING']
+        Q5 --> Q6[Historical Background Worker Claimed Job<br>status = 'RUNNING']
         Q6 --> Q7{Parent Shot Succeeds?}
         Q7 -- "GENERATED" --> Q8[Event-Driven Promotion:<br>Promote Dependent Shots BLOCKED -> QUEUED]
         Q7 -- "FAILED / CANCELLED" --> Q9[Terminal Cascading:<br>Cancel Dependent Shots PARENT_TERMINAL_FAILURE]
@@ -39,8 +39,8 @@ flowchart TD
     end
 
     subgraph InFlight ["Stage 2: In-Flight Milestone Orchestration"]
-        P6 --> I1[Unbiased Model Decider: Veo 3.1 + Gemini + Audio Engine]
-        I1 --> I2[Iterative 6s Plate Diffusion]
+        P6 --> I1[Option A Engine: Omni 1.1 Flash Primary + Veo 3.1 Safety-Net]
+        I1 --> I2[Iterative Multi-Act Plate Synthesis]
         I2 --> I3{Omni Quality Gate: Biometric / Hand / Motion Drift?}
         I3 -- "Artifact Detected" --> I4[Autonomous Negative Prompt Seed Re-Roll]
         I4 --> I2
@@ -63,15 +63,17 @@ flowchart TD
 
 ---
 
-## ⚙️ Stage 0: Distributed Task DAG & Anti-Starvation Queue Architecture
+## ⚙️ Stage 0: Distributed Task DAG & Anti-Starvation Queue Architecture *(Historical Stage 0 DAG Spec — Superseded in Option A)*
 
-A cinematic production pipeline is only as reliable as the distributed asynchronous state machine executing it. A single unhandled dependency or naive claim query can paralyze the entire platform.
+> **Option A Architectural Status**: Under **Option A (Lean Omni-First + Veo 3.1 Safety-Net)**, the standalone `reel_worker_v2.mjs` daemon and `reel_operations` queue mutations (`enqueue` / `retry`) fail closed with `STUDIO1_WORKER_PRUNED_OPTION_A` (`HTTP 410`). All live multi-act video/audio synthesis executes in-process via `POST /api/swarm/jobs` ([`app/api/swarm/jobs/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/swarm/jobs/route.ts)) with `Promise.all` parallel act workers and durable SQLite WAL entity persistence (`studio_entities`). Sections `0.1`–`0.6` below are preserved as the historical reference specification for Stage 0 DAG anti-starvation semantics and read-only `reel_operations` history inspection.
 
-### 0.1 Asynchronous Multi-Tier Decoupling
-To achieve zero-freeze client interactions, the pipeline strictly isolates workloads across three independent tiers:
-1. **Next.js Web Tier (`zyvoriq`)**: Ingests prompts, verifies user sessions, performs instant pre-flight validation, creates production manifest rows in PostgreSQL, and immediately returns HTTP 200 with deep-linkable URLs (`?reel=...&phase=...`). It never performs heavy compute.
-2. **PostgreSQL Durability & State Machine (`Postgres`)**: Acts as the single source of truth for all production metadata (`reel_productions`), shot operations (`reel_operations`), and heartbeats (`reel_worker_heartbeats`).
-3. **Dedicated Background Reel Worker (`zyvoriq-reel-worker`)**: Standalone Node.js daemon consuming operations via atomic transactions (`FOR UPDATE SKIP LOCKED`), executing multi-hop Veo diffusion, FFmpeg rendering, and Gemini multimodal verification.
+A cinematic production pipeline is only as reliable as the asynchronous state machine executing it. A single unhandled dependency or naive claim query can paralyze the entire platform.
+
+### 0.1 Historical Multi-Tier Queue Decoupling (Superseded by `/api/swarm/jobs`)
+In the original Stage 0 Studio1 design, workloads were isolated across three tiers (now consolidated under Next.js Cloud Run `/api/swarm/jobs` + SQLite/Postgres under Option A):
+1. **Next.js Web Tier (`zyvoriq` on Cloud Run)**: Ingests prompts on `/swarm-MUI`, dispatches `POST /api/swarm/jobs`, persists entities to `studio_entities`, and exposes canonical deep links (`/entity/[id]`).
+2. **PostgreSQL Read Compatibility (`Postgres`)**: Preserves historical `reel_productions` and `reel_operations` inspection while rejecting new queue mutations with `410 STUDIO1_WORKER_PRUNED_OPTION_A`.
+3. **Retired Background Reel Worker (`reel_worker_v2.mjs` — Pruned in Option A)**: Replaced by parallel `Promise.all` act workers inside [`app/api/swarm/jobs/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/swarm/jobs/route.ts) routing to `models/gemini-omni-1.1-flash` primary + [`lib/ai/veoService.ts`](file:///Users/nitinagga/Documents/zyvoriq/lib/ai/veoService.ts) Veo 3.1 safety-net.
 
 ### 0.2 The Non-Blocking DAG State Machine
 Every generative task (Narration, Shot Plate Diffusion, Audio Mixing, Rough Cut) is an operation node in a Directed Acyclic Graph (DAG). Operations must strictly adhere to the following finite state machine:
@@ -100,7 +102,7 @@ Every generative task (Narration, Shot Plate Diffusion, Audio Mixing, Rough Cut)
   3. Child operations enter `QUEUED` only when they are physically capable of running, reducing idle worker CPU and repoll churn to **zero**.
 
 ### 0.4 Claim Circuit Breakers & Poison Job Dead-Letter Quarantine
-* To ensure a corrupted or unprocessable job never holds the queue hostage, Omni enforces strict claim boundaries in [scripts/reel_worker_v2.mjs](file:///Users/nitinagga/Documents/zyvoriq/scripts/reel_worker_v2.mjs#L619-L639):
+* To ensure a corrupted or unprocessable job never holds the queue hostage, Omni enforces strict claim boundaries in [lib/reel/operationQueue.ts](file:///Users/nitinagga/Documents/zyvoriq/lib/reel/operationQueue.ts) (note: under Option A, live studio jobs execute directly via [app/api/swarm/jobs/route.ts](file:///Users/nitinagga/Documents/zyvoriq/app/api/swarm/jobs/route.ts) and legacy Studio1 queue workers are retired):
   ```sql
   WITH c AS (
     SELECT id FROM reel_operations
@@ -307,7 +309,7 @@ Even when an AI script is well-written, complex productions face severe generati
 
 ### 7. The HTTP 206 Byte-Range Streaming Blindspot (Playback Freeze)
 * **The Blindspot**: A 180-second 4K cinema master is a 60MB–110MB payload. Without byte-range request support, web browsers cannot scrub the timeline until the entire file downloads, causing player freezing and timeout crashes.
-* **Omni's Neutralization Protocol**: Master video encoding mandates **faststart MOOV atom front-loading** (`ffmpeg -movflags +faststart`) and deploys via HTTP 206 partial content streaming, enabling instantaneous timeline scrubbing across all 180 seconds on [zyvoriq.up.railway.app](https://zyvoriq.up.railway.app).
+* **Omni's Neutralization Protocol**: Master video encoding mandates **faststart MOOV atom front-loading** (`ffmpeg -movflags +faststart`) and deploys via HTTP 206 partial content streaming, enabling instantaneous timeline scrubbing across all 180 seconds on [zyvoriq-248990048888.cr.gclb.goog](https://zyvoriq-248990048888.cr.gclb.goog).
 
 ### 8. The Night-Window Mirror Reflection Blindspot (Photometric Consistency)
 * **The Blindspot**: The penthouse has 20-foot glass French windows. At night (Acts 4 & 5), physics dictates that dark exterior glass acts as a partial mirror reflecting the illuminated interior. Raw diffusion models either render the window as a flat pitch-black studio wall or hallucinate phantom reflections of people not in the room.
@@ -375,8 +377,8 @@ Even when an AI script is well-written, complex productions face severe generati
 * **Omni's Neutralization Protocol**: Enforces **Terminal Parent Cascading**: If an upstream dependency is failed, cancelled, or missing, all child operations immediately transition to `CANCELLED` with explicit causality (`PARENT_TERMINAL_FAILURE`), purging dead chains from the queue.
 
 ### 23. Diagnostic Inversion (Symptom-Chasing in UI vs. Engine Telemetry)
-* **The Blindspot**: When generation stalls or users report infinite waiting, developers and AI agents naturally focus on what is visible in front of them: tweaking React buttons, adjusting CSS, adding cosmetic delay timers, and assuming the frontend is failing to dispatch. In reality, 99% of stalled generations occur in the backend queue worker.
-* **Omni's Neutralization Protocol**: Mandates the **Telemetry-First Root-Cause Protocol**: UI edits and delay hacks are strictly prohibited when generation hangs. Step 0 is non-negotiable inspection of Railway container logs (`railway logs --service zyvoriq-reel-worker`), database operation status, and worker heartbeats.
+* **The Blindspot**: When generation stalls or users report infinite waiting, developers and AI agents naturally focus on what is visible in front of them: tweaking React buttons, adjusting CSS, adding cosmetic delay timers, and assuming the frontend is failing to dispatch. In reality, 99% of stalled generations occur in the backend synthesis pipeline.
+* **Omni's Neutralization Protocol**: Mandates the **Telemetry-First Root-Cause Protocol**: UI edits and delay hacks are strictly prohibited when generation hangs. Step 0 is non-negotiable inspection of Cloud Run container logs (`gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="zyvoriq"' --project=ramp-portal-dev`), `/api/swarm/jobs` telemetry, and SQLite/Postgres entity state.
 
 ---
 
@@ -402,9 +404,9 @@ zyvoriq-output/
     └── c2pa_provenance_manifest.json         # Cryptographic trust receipt
 ```
 
-### Full-Stack UI Integration on [zyvoriq.up.railway.app](https://zyvoriq.up.railway.app)
+### Full-Stack UI Integration on [zyvoriq-248990048888.cr.gclb.goog](https://zyvoriq-248990048888.cr.gclb.goog)
 * **Instant Player Remount**: Delivered with a unique `generationNonce` query string (`?v=1`), preventing browser caching and forcing the HTML5 `<video>` tag to reset its buffer and scrub cleanly from `00:00`.
-* **Zero 404s & In-Place Playback**: Rendered in-line directly on the `#hero-director` section with full audio level meters, resolution selectors (`4K DCI`, `1080p`), and instant 1-click master download.
+* **Zero 404s & In-Place Playback**: Rendered in-line directly on `/swarm-MUI` and `/entity/[id]` with full audio level meters, resolution selectors (`4K DCI`, `1080p`), and instant 1-click master download.
 
 ---
 
