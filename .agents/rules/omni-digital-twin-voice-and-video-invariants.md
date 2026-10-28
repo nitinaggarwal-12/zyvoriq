@@ -1,0 +1,1 @@
+/Users/nitinagga/.gemini/config/rules/omni-digital-twin-voice-and-video-invariants.md

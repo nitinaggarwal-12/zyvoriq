@@ -5,13 +5,12 @@
   "buildProject": "nitina-ggarwal-sandbox-647724",
   "runProject": "ramp-portal-dev",
   "region": "us-west1",
-  "latestReadyRevisionName": "zyvoriq-00004-llt",
-  "latestCreatedRevisionName": "zyvoriq-00004-llt",
+  "latestReadyRevisionName": "zyvoriq-00017-7s4",
+  "latestCreatedRevisionName": "zyvoriq-00017-7s4",
   "readyStatus": "True",
   "trafficPercent": 100,
-  "image": "us-west1-docker.pkg.dev/ramp-portal-dev/cloud-run-source-deploy/zyvoriq:v20261023-053308-rule58",
-  "startupProbeLog": "Default STARTUP TCP/HTTP probe succeeded for zyvoriq-00004-llt",
-  "catalogDemosCount": 13,
-  "catalogTilesCount": 14,
-  "verifiedAt": "2026-10-23T05:33:48Z"
+  "image": "us-west1-docker.pkg.dev/ramp-portal-dev/cloud-run-source-deploy/zyvoriq:v20261028-045401-mi10-300s",
+  "startupProbeLog": "Default STARTUP TCP probe succeeded after 1 attempt for container \"zyvoriq-1\" on port 8080.",
+  "defaultCanonicalReelId": "ZYV-REEL-MI10-300S",
+  "verifiedAt": "2026-10-28T04:56:45Z"
 }

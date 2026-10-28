@@ -827,23 +827,30 @@ Return a JSON object conforming strictly to this structure:
   ]
 }`;
 
-  const primaryModel = process.env.GEMINI_SCRIPT_MODEL || "gemini-2.5-pro";
-  const candidateModels = [primaryModel, "gemini-3.7-flash", "gemini-2.5-flash"].filter((m, i, arr) => arr.indexOf(m) === i);
+  const primaryModel = process.env.GEMINI_SCRIPT_MODEL || "gemini-4-argon";
+  const candidateModels = [primaryModel, "gemini-3.8-flash", "gemini-2.5-pro", "gemini-3.7-flash", "gemini-2.5-flash"].filter((m, i, arr) => arr.indexOf(m) === i);
 
   let lastError: Error | null = null;
   let rawText = "";
 
   for (const model of candidateModels) {
     try {
+      const generationConfig: Record<string, unknown> = {
+        responseMimeType: "application/json",
+        temperature: 0.7,
+      };
+      if (model.includes("4-argon")) {
+        generationConfig.thinkingConfig = { thinkingLevel: "HIGH" };
+      } else if (model.includes("3.8-flash")) {
+        generationConfig.thinkingConfig = { thinkingLevel: "LOW" };
+      }
+
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: systemPrompt }] }],
-          generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.7,
-          }
+          generationConfig
         })
       });
 
@@ -855,7 +862,8 @@ Return a JSON object conforming strictly to this structure:
       }
 
       const data = await res.json();
-      rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      const parts: Array<{ thought?: boolean; text?: string }> = data?.candidates?.[0]?.content?.parts || [];
+      rawText = (parts.find((p) => !p.thought && p.text) || parts[0])?.text || "";
       if (rawText) break;
     } catch (err: any) {
       console.warn(`[omni-director] Compilation with ${model} threw: ${err?.message || err}`);

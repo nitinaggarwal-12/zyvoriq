@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   PersonaCategory,
@@ -20,10 +21,12 @@ import {
   Sparkles,
   Upload,
   Link as LinkIcon,
+  ArrowLeft,
   ArrowRight,
   Users,
   Trash2,
 } from "lucide-react";
+import { FeedbackHeaderEmailButton } from "@/components/UniversalFeedbackSystem";
 
 const CATEGORY_TABS: { id: PersonaCategory; label: string }[] = [
   { id: "female_lead", label: "Female Leads" },
@@ -328,7 +331,7 @@ export default function PersonasAndWardrobePage() {
 
   const applyToStudio = () => {
     persistCastAndCatalogToStorage(personas, wardrobes, selectedIds, wardrobeMap);
-    router.push("/?workflow=create&from=personas");
+    router.push("/swarm-MUI?workflow=create&from=personas");
   };
 
   const activeCategoryPersonas = dedupeById(
@@ -359,8 +362,16 @@ export default function PersonasAndWardrobePage() {
   return (
     <div className="w-full max-w-none min-h-screen bg-slate-50 text-slate-900">
       {/* Sticky Top Subheader */}
-      <div className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 h-13 flex items-center justify-between gap-3">
+      <div className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-200 px-[clamp(16px,1.8vw,28px)] h-13 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
+          <Link
+            href="/swarm-MUI"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Studio</span>
+          </Link>
+          <div className="h-4 w-px bg-slate-200" />
           <Users className="w-4 h-4 text-blue-600" />
           <span className="text-sm font-semibold text-slate-900">
             Personas &amp; Exhaustive Wardrobe Library
@@ -376,9 +387,14 @@ export default function PersonasAndWardrobePage() {
             onClick={applyToStudio}
             className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-sm"
           >
-            <span>Lock Cast &amp; Return to 4-Step Studio</span>
+            <span>Lock Cast &amp; Return to Studio</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
+          <FeedbackHeaderEmailButton
+            appId="zyvoriq"
+            appName="Zyvoriq Personas & Wardrobe Library"
+            currentRoute="/personas"
+          />
         </div>
       </div>
 
@@ -755,15 +771,6 @@ export default function PersonasAndWardrobePage() {
                 );
               })}
             </div>
-
-            <button
-              type="button"
-              onClick={applyToStudio}
-              className="w-full py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-            >
-              <span>Lock Cast &amp; Return to 4-Step Studio</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
           </div>
         </div>
       </div>

@@ -325,6 +325,12 @@ export function CheckItemCard({
 // ============================================================================
 export interface PostVariation {
   id: string;
+  canonicalId?: string;
+  canonicalUrl?: string;
+  studioUrl?: string;
+  durationSeconds?: number;
+  cameraPreset?: string;
+  lensPreset?: string;
   label: string;
   hook: string;
   body: string;
@@ -353,7 +359,14 @@ export function VariationGrid({
         {variations.map((v, idx) => {
           const isCurrent = v.id === activeVariationId;
           const nextVar = variations[(idx + 1) % variations.length];
-          const matchScore = idx === 0 ? "99% Fit" : idx === 1 ? "96% Fit" : "94% Fit";
+          const matchScore =
+            v.durationSeconds && v.durationSeconds >= 240
+              ? "300.0s / 5:00 Epic"
+              : idx === 0
+              ? "99% Fit"
+              : idx === 1
+              ? "96% Fit"
+              : "94% Fit";
           return (
             <div
               key={v.id}
@@ -387,8 +400,13 @@ export function VariationGrid({
                   }}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute top-2 left-2">
+                <div className="absolute top-2 left-2 flex items-center gap-1.5">
                   <StudioChip tone="success">{matchScore}</StudioChip>
+                  {v.canonicalId && (
+                    <span className="px-1.5 py-0.5 rounded bg-white/95 text-slate-900 font-mono text-[10px] font-bold border border-slate-200 shadow-xs">
+                      {v.canonicalId}
+                    </span>
+                  )}
                 </div>
                 {isCurrent && (
                   <div className="absolute top-2 right-2">
@@ -401,7 +419,18 @@ export function VariationGrid({
               </div>
 
               <div className="p-3.5 flex flex-col gap-2">
-                <span className="text-sm font-semibold">{v.label}</span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold">{v.label}</span>
+                  {v.canonicalUrl && (
+                    <a
+                      href={v.canonicalUrl}
+                      className="text-[11px] font-mono font-semibold underline shrink-0"
+                      style={{ color: "var(--color-primary)" }}
+                    >
+                      {v.canonicalUrl} ↗
+                    </a>
+                  )}
+                </div>
                 <p className="text-sm font-medium">&ldquo;{v.hook}&rdquo;</p>
                 <p
                   className="text-xs font-mono"
@@ -444,10 +473,15 @@ export function VariationGrid({
 }
 
 // ============================================================================
-// 5. VIDEO TIMELINE PATTERN (Horizontal 6-Act Filmstrip Scrubber + Focused Act Bar)
+// 5. VIDEO TIMELINE PATTERN (Horizontal N-Act Filmstrip Scrubber + Focused Act Bar)
 // ============================================================================
 export interface VideoSegmentSpec {
   id: string;
+  actId?: string;
+  canonicalId?: string;
+  canonicalUrl?: string;
+  cameraPreset?: string;
+  lensPreset?: string;
   index: number;
   timeRange: string;
   startSec: number;
@@ -498,7 +532,7 @@ export function VideoTimelineEditor({
         <span className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2">
           <Volume2 className="w-4 h-4" aria-hidden="true" />
           <span data-testid="scrubber-header-title">
-            {segments.length}-Act Cinema Chapter Scrubber ({rangeStart} — {rangeEnd})
+            {segments.length}-Act Cinema Chapter Scrubber ({rangeStart} — {rangeEnd} · {totalSec}.0s Master)
           </span>
         </span>
         <span
@@ -509,8 +543,14 @@ export function VideoTimelineEditor({
         </span>
       </div>
 
-      {/* Horizontal 6-Act Chapter Scrubber Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2">
+      {/* Horizontal N-Act Chapter Scrubber Strip (Supports 6-Act 60s & 10-Act 300s) */}
+      <div
+        className={
+          segments.length >= 10
+            ? "grid grid-cols-2 sm:grid-cols-5 xl:grid-cols-5 gap-2"
+            : "grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2"
+        }
+      >
         {segments.map((seg, idx) => {
           const isSelected = seg.id === activeSegment?.id;
           return (
@@ -544,10 +584,10 @@ export function VideoTimelineEditor({
                   {seg.timeRange}
                 </span>
                 <span
-                  className="text-xs font-mono"
+                  className="text-[11px] font-mono"
                   style={{ color: "var(--color-text-muted)" }}
                 >
-                  Act {idx + 1}
+                  {seg.actId || `Act ${idx + 1}`}
                 </span>
               </div>
               <span className="text-xs font-semibold truncate">
@@ -576,10 +616,15 @@ export function VideoTimelineEditor({
         >
           <div className="flex-1 flex flex-col gap-1.5 min-w-0">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <StudioChip tone="active">
                   Act {activeIdx + 1} · {activeSegment.timeRange}
                 </StudioChip>
+                {activeSegment.actId && (
+                  <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 font-mono text-[11px] font-bold">
+                    {activeSegment.actId}
+                  </span>
+                )}
                 <span className="text-xs font-semibold">
                   {activeSegment.speaker}
                 </span>

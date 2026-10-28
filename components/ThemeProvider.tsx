@@ -14,8 +14,8 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeMode>("dark");
-  const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("dark");
+  const [theme, setThemeState] = useState<ThemeMode>("light");
+  const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("light");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -24,14 +24,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (saved && (saved === "dark" || saved === "light" || saved === "system")) {
       setThemeState(saved);
     } else {
-      setThemeState("dark");
+      setThemeState("light");
     }
   }, []);
 
   useEffect(() => {
     if (!mounted) return;
 
-    let effectiveTheme: "dark" | "light" = "dark";
+    let effectiveTheme: "dark" | "light" = "light";
     if (theme === "system") {
       const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
       effectiveTheme = prefersDark ? "dark" : "light";
@@ -74,8 +74,8 @@ export function useTheme() {
   const context = useContext(ThemeContext);
   if (!context) {
     return {
-      theme: "dark" as ThemeMode,
-      resolvedTheme: "dark" as "dark" | "light",
+      theme: "light" as ThemeMode,
+      resolvedTheme: "light" as "dark" | "light",
       setTheme: () => {},
       toggleTheme: () => {},
     };

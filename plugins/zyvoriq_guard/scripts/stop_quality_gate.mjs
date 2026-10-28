@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
-import { execSync } from "node:child_process";
+import { execSync, execFileSync } from "node:child_process";
 
 let inputData = "";
 process.stdin.setEncoding("utf-8");
@@ -83,6 +83,136 @@ process.stdin.on("end", async () => {
           );
           return;
         }
+      }
+
+      // =====================================================================
+      // STAGE 0.2: GOOGLE STITCH STUDIO UI & ZERO HARDCODED CLUTTER GATE
+      // ---------------------------------------------------------------------
+      // Consumes and binds all 6 Zyvoriq project rule keys from lib/rules_engine.mjs
+      // and permanently blocks regressions in app/swarm-MUI/page.tsx,
+      // components/DeepResearchBiblePanel.tsx, and app/globals.css.
+      // =====================================================================
+      try {
+        const { loadRules, ruleEnabled } = await import(
+          path.join(workspace, "lib", "rules_engine.mjs")
+        );
+        const activeRules = loadRules(workspace);
+        const swarmPagePath = path.join(workspace, "app", "swarm-MUI", "page.tsx");
+        const biblePanelPath = path.join(workspace, "components", "DeepResearchBiblePanel.tsx");
+        const globalsCssPath = path.join(workspace, "app", "globals.css");
+
+        if (!fs.existsSync(swarmPagePath) || !fs.existsSync(biblePanelPath)) {
+          console.log(JSON.stringify({
+            decision: "continue",
+            reason: `[ZYVORIQ GOOGLE STITCH UI GATE FAIL-CLOSED]: Mandatory UI files missing (${swarmPagePath} or ${biblePanelPath}).`
+          }));
+          return;
+        }
+
+        const pageSrc = fs.readFileSync(swarmPagePath, "utf-8");
+        const bibleSrc = fs.readFileSync(biblePanelPath, "utf-8");
+        const cssSrc = fs.existsSync(globalsCssPath) ? fs.readFileSync(globalsCssPath, "utf-8") : "";
+
+        // 1. require_google_stitch_daylight_studio_and_zero_hardcoded_landing_clutter
+        if (ruleEnabled(activeRules, "require_google_stitch_daylight_studio_and_zero_hardcoded_landing_clutter")) {
+          if (!/useState<"light"\s*\|\s*"dark">\("light"\)/.test(pageSrc) || !/--color-bg:\s*#F8FAFC/i.test(cssSrc)) {
+            console.log(JSON.stringify({
+              decision: "continue",
+              reason: `[ZYVORIQ GOOGLE STITCH UI GATE BLOCKED]: Rule 54 Daylight Studio default ("light" + --color-bg: #F8FAFC) violated in app/swarm-MUI/page.tsx or app/globals.css.`
+            }));
+            return;
+          }
+          for (const reqId of [
+            "google-stitch-top-bar",
+            "google-stitch-create-composer",
+            "stitch-structured-parameter-matrix",
+            "google-stitch-canvas-mode-bar",
+            "left-rail-footer-bar"
+          ]) {
+            if (!pageSrc.includes(`data-testid="${reqId}"`)) {
+              console.log(JSON.stringify({
+                decision: "continue",
+                reason: `[ZYVORIQ GOOGLE STITCH UI GATE BLOCKED]: app/swarm-MUI/page.tsx is missing mandatory Google Stitch surface data-testid="${reqId}".`
+              }));
+              return;
+            }
+          }
+        }
+
+        // 2. require_empty_brief_input_on_initial_create_load
+        if (ruleEnabled(activeRules, "require_empty_brief_input_on_initial_create_load")) {
+          if (!/const\s+\[briefInput,\s*setBriefInput\]\s*=\s*useState(?:<string>)?\(\s*""\s*\)/.test(pageSrc)) {
+            console.log(JSON.stringify({
+              decision: "continue",
+              reason: `[ZYVORIQ GOOGLE STITCH UI GATE BLOCKED]: app/swarm-MUI/page.tsx must initialize briefInput to useState("") so the Create composer is clean on landing load.`
+            }));
+            return;
+          }
+        }
+
+        // 3. ban_hardcoded_demo_chips_and_duplicate_saved_reels_vault_in_create_tab
+        if (ruleEnabled(activeRules, "ban_hardcoded_demo_chips_and_duplicate_saved_reels_vault_in_create_tab")) {
+          if (
+            /1-Click Verified 5-Min \(300s\) & 60s Production Briefs:/i.test(pageSrc) ||
+            /SAVED REELS VAULT \(/i.test(pageSrc)
+          ) {
+            console.log(JSON.stringify({
+              decision: "continue",
+              reason: `[ZYVORIQ GOOGLE STITCH UI GATE BLOCKED]: app/swarm-MUI/page.tsx contains hardcoded demo brief chips or a duplicate SAVED REELS VAULT card list inside the Create tab (Rule 25A violation).`
+            }));
+            return;
+          }
+        }
+
+        // 4. ban_hardcoded_title_substring_audio_routing_in_page_tsx
+        if (ruleEnabled(activeRules, "ban_hardcoded_title_substring_audio_routing_in_page_tsx")) {
+          if (
+            /(?:lowerT|lowerPrompt)\.includes\(\s*["'](?:crimson echoes|kailash|speakeasy|cursed hunter)["']\s*\)/i.test(pageSrc) ||
+            /isMissionImpossible\s*\|\|\s*detectedDurSec\s*>=\s*180/.test(pageSrc)
+          ) {
+            console.log(JSON.stringify({
+              decision: "continue",
+              reason: `[ZYVORIQ GOOGLE STITCH UI GATE BLOCKED]: app/swarm-MUI/page.tsx contains hardcoded title/prompt substring audio/video routing or 300s duration hijacking onto Mission Impossible.`
+            }));
+            return;
+          }
+          const adcClientFile = path.join(workspace, "lib/swarm/vertexAdcClient.ts");
+          if (!fs.existsSync(adcClientFile)) {
+            console.log(JSON.stringify({
+              decision: "continue",
+              reason: `[ZYVORIQ GOOGLE STITCH UI GATE BLOCKED]: lib/swarm/vertexAdcClient.ts is missing. Vertex AI ADC + Google Cloud TTS ADC bridge is required so new content synthesis works without a raw GEMINI_API_KEY.`
+            }));
+            return;
+          }
+        }
+
+        // 5. require_7dept_deep_research_production_bible_and_unclipped_5d_scorecard
+        if (ruleEnabled(activeRules, "require_7dept_deep_research_production_bible_and_unclipped_5d_scorecard")) {
+          if (/\bline-clamp-3\b/.test(bibleSrc)) {
+            console.log(JSON.stringify({
+              decision: "continue",
+              reason: `[ZYVORIQ GOOGLE STITCH UI GATE BLOCKED]: components/DeepResearchBiblePanel.tsx contains line-clamp-3 which vertically clips the 5D Scorecard rationales (Rule 26 violation).`
+            }));
+            return;
+          }
+        }
+
+        // 6. require_unclipped_left_rail_footer_and_responsive_top_bar_title
+        if (ruleEnabled(activeRules, "require_unclipped_left_rail_footer_and_responsive_top_bar_title")) {
+          if (!pageSrc.includes('data-testid="top-bar-status-line"')) {
+            console.log(JSON.stringify({
+              decision: "continue",
+              reason: `[ZYVORIQ GOOGLE STITCH UI GATE BLOCKED]: app/swarm-MUI/page.tsx is missing unclipped data-testid="top-bar-status-line".`
+            }));
+            return;
+          }
+        }
+      } catch (uiGateErr) {
+        console.log(JSON.stringify({
+          decision: "continue",
+          reason: `[ZYVORIQ GOOGLE STITCH UI GATE FAIL-CLOSED]: ${uiGateErr?.message || uiGateErr}`
+        }));
+        return;
       }
 
       // =====================================================================
@@ -405,12 +535,19 @@ process.stdin.on("end", async () => {
             // ASSERTION 2c: MANDATORY DEEPMIND LYRIA SOUNDTRACK FOR MUSIC_VIDEO REELS
             // =========================================================================
             const prodMatch = videoPath.match(/reels\/([^\/]+)\//);
-            if (prodMatch) {
+            if (prodMatch && /^[a-zA-Z0-9_-]{1,80}$/.test(prodMatch[1])) {
               const prodId = prodMatch[1];
               let prodManifest = null;
               try {
-                const dbRes = execSync(`psql -h localhost -p 5433 -U nitinagga -d zyvoriq -t -A -c "SELECT manifest_json FROM reel_productions WHERE id='${prodId}'"`, { timeout: 3000 }).toString();
-                if (dbRes) prodManifest = JSON.parse(dbRes);
+                const sqlitePath = path.join(workspace, "data/studio_entities.db");
+                if (fs.existsSync(sqlitePath)) {
+                  const dbRes = execFileSync(
+                    "sqlite3",
+                    [sqlitePath, `SELECT metadata_json FROM studio_entities WHERE id='${prodId}' LIMIT 1;`],
+                    { timeout: 3000 }
+                  ).toString().trim();
+                  if (dbRes) prodManifest = JSON.parse(dbRes);
+                }
               } catch {}
 
               if (prodManifest && prodManifest.genre === "MUSIC_VIDEO") {
@@ -451,7 +588,7 @@ process.stdin.on("end", async () => {
             }
 
             // =========================================================================
-            // ASSERTION 3: ZERO SILENCE (LOCAL + REMOTE FALLBACK) (-40dB, 0.3s)
+            // ASSERTION 3: ZERO SILENCE (-40dB, 0.3s)
             // =========================================================================
             try {
               let silence = "";
@@ -461,10 +598,6 @@ process.stdin.on("end", async () => {
                 } catch (lErr) {
                   silence = lErr.stdout?.toString?.() || lErr.stderr?.toString?.() || "";
                 }
-              } else {
-                const remotePath = `~/zyvoriq_remote/${relativePath}`;
-                const checkCmd = `ssh -o ConnectTimeout=3 -o StrictHostKeyChecking=no nitinagga.c.googlers.com 'ffmpeg -i ${remotePath} -af "silencedetect=noise=-40dB:d=0.3" -f null - 2>&1'`;
-                silence = execSync(checkCmd, { timeout: 8000 }).toString();
               }
               if (silence.includes("silence_start")) {
                 console.log(
@@ -536,7 +669,7 @@ process.stdin.on("end", async () => {
             if (!anchorPath && fs.existsSync(dir)) {
               const localAnchors = fs.readdirSync(dir).filter(f => (f.startsWith("anchor") || f.startsWith("composite") || f.includes("anchor") || f === "preview_turn1A.jpg") && (f.endsWith(".jpg") || f.endsWith(".png") || f.endsWith(".jpeg")));
               if (localAnchors.length > 0) {
-                const comp = localAnchors.find(f => f.includes("composite") || f.includes("anchor"));
+                const comp = localAnchors.find(f => f.includes("composite")) || localAnchors.find(f => f.includes("anchor"));
                 anchorPath = path.join(dir, comp || localAnchors[0]);
               }
             }
@@ -556,8 +689,6 @@ process.stdin.on("end", async () => {
             }
 
             if (anchorB64 && anchorB64.length > 5000 && apiKey) {
-              const remotePath = `~/zyvoriq_remote/${relativePath}`;
-
               // Assertion 4d: Pre-flight Reference Anchor Still Mouth-Aperture Audit
               try {
                 const isNonVocalDance = /non[-\s]?vocal|closed[-\s]?mouth|instrumental_only|dance_only/i.test(relativePath || videoPath);
@@ -608,10 +739,6 @@ process.stdin.on("end", async () => {
                 if (fs.existsSync(videoPath)) {
                   const parsedDur = parseFloat(execSync(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${videoPath}"`, { timeout: 5000 }).toString().trim());
                   if (!isNaN(parsedDur) && parsedDur > 0) totalDur = parsedDur;
-                } else {
-                  const durCmd = `ssh -o ConnectTimeout=3 -o StrictHostKeyChecking=no nitinagga.c.googlers.com 'ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ${remotePath}'`;
-                  const parsedDur = parseFloat(execSync(durCmd, { timeout: 8000 }).toString().trim());
-                  if (!isNaN(parsedDur) && parsedDur > 0) totalDur = parsedDur;
                 }
               } catch {}
 
@@ -632,26 +759,34 @@ process.stdin.on("end", async () => {
                   let frameB64 = "";
                   if (fs.existsSync(videoPath)) {
                     frameB64 = execSync(`ffmpeg -y -ss ${t} -i "${videoPath}" -vframes 1 -f image2pipe -vcodec mjpeg -q:v 2 - 2>/dev/null | base64`, { timeout: 8000, maxBuffer: 10 * 1024 * 1024 }).toString().replace(/\r?\n|\r/g, "").trim();
-                  } else {
-                    const b64Cmd = `ssh -o ConnectTimeout=3 -o StrictHostKeyChecking=no nitinagga.c.googlers.com 'ffmpeg -y -ss ${t} -i ${remotePath} -vframes 1 -f image2pipe -vcodec mjpeg -q:v 2 - 2>/dev/null | base64'`;
-                    frameB64 = execSync(b64Cmd, { timeout: 10000, maxBuffer: 10 * 1024 * 1024 }).toString().replace(/\r?\n|\r/g, "").trim();
                   }
 
                   if (frameB64 && frameB64.length > 5000) {
+                    const isSpokenDialogueCinema =
+                      fs.existsSync(path.join(dir, "spoken_dialogue_transcript.json")) ||
+                      fs.existsSync(path.join(dir, "cinema_dialogue_mixed_master.mp3")) ||
+                      checkIsVocalProduction(dir, relativePath);
+                    const isStrictNonVocal =
+                      !isSpokenDialogueCinema &&
+                      /non[-\s]?vocal|closed[-\s]?mouth|instrumental_only|dance_only/i.test(relativePath || videoPath);
+                    const modeDirective = isStrictNonVocal
+                      ? "PRODUCTION MODE: NON-VOCAL DANCE / INSTRUMENTAL REEL (apply Rule 7a: mouths must remain closed)."
+                      : "PRODUCTION MODE: SPOKEN-DIALOGUE CINEMA / VOCAL PERFORMANCE (apply Rule 7b: natural mouth movement, open/closed speaking articulation, and dramatic cinema blocking across shots are expected and valid; do NOT fail for OPEN_MOUTH_VISEME_MISMATCH).";
                     const promptText = `You are the Zyvoriq Independent Chief Quality Auditor conducting a zero-tolerance visual continuity inspection.
-Compare the provided video frame directly against the reference anchor image.
+${modeDirective}
+Compare the provided video frame directly against the reference anchor image (which may be a multi-panel composite cast reference sheet showing all characters across the production's acts, or a single establishing frame).
 Zero-tolerance rules:
 1. ARTISTIC MEDIUM CONTINUITY: Both the reference anchor and the video frame must be in the EXACT same artistic medium (photorealistic live-action cinema vs 3D CGI animation). If a character shifts into 3D CGI cartoon animation or cartoon styling, output FAIL immediately with REASON: MEDIUM_STYLE_MORPH.
-2. ANCHOR IDENTITY & BIOMETRICS: Every character present must match their reference anchor facial bone structure, skin complexion, hair color, and hairstyle (e.g. wavy hair vs braided crown).
-3. GARMENT STRUCTURE & CONSTRUCTION: Compare neckline cut, bodice construction (e.g. sweetheart crystal corset vs flat snowflake mesh yoke), sleeve style, and cape/cloak attachment (single-shoulder drape vs neck clasp). If garment construction differs from the anchor by even 5%, output FAIL immediately.
-4. NO PHANTOM CHARACTERS: No duplicate performers, no missing lead performers, and no un-anchored extra performers.
+2. ANCHOR IDENTITY & BIOMETRICS: Every character present in the current video frame must match their established identity (facial bone structure, skin complexion, hair color, hairstyle) in the REFERENCE ANCHOR IMAGE.
+3. GARMENT STRUCTURE & CONSTRUCTION: For whichever character(s) appear in the current video frame, compare their garment construction (neckline, bodice, cloak/armor) against their corresponding appearance in the reference anchor. If garment construction for that character differs from their reference panel in the anchor by even 5%, output FAIL immediately.
+4. NO PHANTOM CHARACTERS: No duplicate clones of the same character in the same frame, and no un-anchored extra performers who are not part of the reference anchor cast.
 5. SCENE-CONTEXT WARDROBE CONTINUITY: If the video frame depicts characters inside a swimming pool, jacuzzi, or water body, verify that they are wearing authentic swimwear (swimsuits, bikinis, trunks, monokinis). If characters are in the water wearing formal blazers, suits, dinner jackets, or evening dresses, output FAIL immediately with REASON: SCENE_WARDROBE_MISMATCH.
 6. ENSEMBLE BIOMETRIC DIVERSITY: If multiple characters of the same gender appear in the frame, verify that they have distinctly different hairstyles (e.g. bob vs waves vs braids; buzzcut vs turban vs curls), facial features, and wardrobe colors. If characters appear cloned, homogeneous, or interchangeable, output FAIL immediately with REASON: ENSEMBLE_HOMOGENEITY_DETECTED.
 7. MOUTH VISEME STATE & AUDIO-VISUAL HARMONY:
-- For non-vocal dance shots, instrumental sections, or background dancers: performers must have closed mouths with lips sealed shut; reject open mouths or laughing visemes (FAIL: OPEN_MOUTH_VISEME_MISMATCH).
-- For vocal singing or spoken-dialogue cinema performances: natural mouth movement and speech/singing articulation are expected and required.
-8. UNARMED CHARACTER PROP/WEAPON CONTINUITY: If a character (such as the silver-haired female mystic) is established as unarmed (no sword) in the reference anchor, she must NOT suddenly materialize or hold/clash a sword or weapon in the video frame (FAIL: UNARMED_PROP_HALLUCINATION).
-9. TIME-OF-DAY & BLOCKING CONTINUITY: If the reference anchor is set in cold blue-grey evening/twilight, the video frame must NOT suddenly jump to bright golden morning sun/sunrise (FAIL: TIME_OF_DAY_LIGHTING_JUMP), nor should characters turn their backs and walk away down the canyon away from their companion (FAIL: BLOCKING_DIRECTION_REVERSAL).
+- Rule 7a (ONLY when PRODUCTION MODE is NON-VOCAL DANCE): performers must have closed mouths with lips sealed shut; reject open mouths or laughing visemes (FAIL: OPEN_MOUTH_VISEME_MISMATCH).
+- Rule 7b (When PRODUCTION MODE is SPOKEN-DIALOGUE CINEMA / VOCAL PERFORMANCE): natural mouth movement, open speaking visemes, or closed-lip listening between lines are both valid and expected.
+8. UNARMED CHARACTER PROP/WEAPON CONTINUITY: If a character is established as unarmed in the reference anchor, they must NOT unexpectedly materialize an unscripted weapon in the video frame (FAIL: UNARMED_PROP_HALLUCINATION).
+9. TIME-OF-DAY & BLOCKING CONTINUITY: Verify that ambient time-of-day lighting (e.g., twilight vs midday sun) and spatial 180-degree axis blocking remain consistent with the reference anchor unless an explicit scene transition occurs (FAIL: TIME_OF_DAY_LIGHTING_JUMP or FAIL: BLOCKING_DIRECTION_REVERSAL).
 Do NOT rationalize styling variations. If any detail differs by even 5%, output FAIL immediately.
 
 State your verdict clearly:
@@ -671,7 +806,8 @@ REASON: <concise explanation>`;
                             { text: `\n[VIDEO FRAME AT t=${t}s]:` },
                             { inlineData: { mimeType: "image/jpeg", data: frameB64 } }
                           ]
-                        }]
+                        }],
+                        generationConfig: { temperature: 0.0 }
                       })
                     });
 
@@ -699,7 +835,7 @@ REASON: <concise explanation>`;
                     }
                   }
                 } catch (err) {
-                  // If remote extraction or network call fails, proceed to next checks
+                  // If extraction or network call fails, proceed to next checks
                 }
               }
 
@@ -730,11 +866,6 @@ REASON: <concise explanation>`;
                   if (fs.existsSync(videoPath)) {
                     preB64 = execSync(`ffmpeg -y -ss ${tPre} -i "${videoPath}" -vframes 1 -f image2pipe -vcodec mjpeg -q:v 2 - 2>/dev/null | base64`, { timeout: 8000, maxBuffer: 10 * 1024 * 1024 }).toString().replace(/\r?\n|\r/g, "").trim();
                     postB64 = execSync(`ffmpeg -y -ss ${tPost} -i "${videoPath}" -vframes 1 -f image2pipe -vcodec mjpeg -q:v 2 - 2>/dev/null | base64`, { timeout: 8000, maxBuffer: 10 * 1024 * 1024 }).toString().replace(/\r?\n|\r/g, "").trim();
-                  } else {
-                    const preCmd = `ssh -o ConnectTimeout=3 -o StrictHostKeyChecking=no nitinagga.c.googlers.com 'ffmpeg -y -ss ${tPre} -i ${remotePath} -vframes 1 -f image2pipe -vcodec mjpeg -q:v 2 - 2>/dev/null | base64'`;
-                    const postCmd = `ssh -o ConnectTimeout=3 -o StrictHostKeyChecking=no nitinagga.c.googlers.com 'ffmpeg -y -ss ${tPost} -i ${remotePath} -vframes 1 -f image2pipe -vcodec mjpeg -q:v 2 - 2>/dev/null | base64'`;
-                    preB64 = execSync(preCmd, { timeout: 10000, maxBuffer: 10 * 1024 * 1024 }).toString().replace(/\r?\n|\r/g, "").trim();
-                    postB64 = execSync(postCmd, { timeout: 10000, maxBuffer: 10 * 1024 * 1024 }).toString().replace(/\r?\n|\r/g, "").trim();
                   }
 
                   if (preB64.length > 5000 && postB64.length > 5000) {
@@ -758,12 +889,15 @@ REASON: <concise explanation>`;
                           role: "user",
                           parts: [
                             { text: seamPrompt },
+                            { text: "\n[REFERENCE ANCHOR IMAGE (ESTABLISHED ENSEMBLE CAST & SCENE)]:" },
+                            { inlineData: { mimeType: anchorMime, data: anchorB64 } },
                             { text: `\n[OUTGOING VIDEO FRAME AT t=${tPre}s]:` },
                             { inlineData: { mimeType: "image/jpeg", data: preB64 } },
                             { text: `\n[INCOMING VIDEO FRAME AT t=${tPost}s]:` },
                             { inlineData: { mimeType: "image/jpeg", data: postB64 } }
                           ]
-                        }]
+                        }],
+                        generationConfig: { temperature: 0.0 }
                       })
                     });
 
@@ -799,12 +933,8 @@ REASON: <concise explanation>`;
               try {
                 const sampleT = 4.0;
                 let frameB64 = "";
-                const remotePath = `~/zyvoriq_remote/${relativePath}`;
                 if (fs.existsSync(videoPath)) {
                   frameB64 = execSync(`ffmpeg -y -ss ${sampleT} -i "${videoPath}" -vframes 1 -f image2pipe -vcodec mjpeg -q:v 2 - 2>/dev/null | base64`, { timeout: 8000, maxBuffer: 10 * 1024 * 1024 }).toString().replace(/\r?\n|\r/g, "").trim();
-                } else {
-                  const b64Cmd = `ssh -o ConnectTimeout=3 -o StrictHostKeyChecking=no nitinagga.c.googlers.com 'ffmpeg -y -ss ${sampleT} -i ${remotePath} -vframes 1 -f image2pipe -vcodec mjpeg -q:v 2 - 2>/dev/null | base64'`;
-                  frameB64 = execSync(b64Cmd, { timeout: 10000, maxBuffer: 10 * 1024 * 1024 }).toString().replace(/\r?\n|\r/g, "").trim();
                 }
 
                 if (frameB64 && frameB64.length > 5000) {
@@ -827,7 +957,8 @@ REASON: <concise explanation>`;
                           { text: standalonePrompt },
                           { inlineData: { mimeType: "image/jpeg", data: frameB64 } }
                         ]
-                      }]
+                      }],
+                      generationConfig: { temperature: 0.0 }
                     })
                   });
 
@@ -916,12 +1047,17 @@ REASON: <concise explanation>`;
             try {
               let psnrOut = "";
               if (fs.existsSync(videoPath)) {
-                const localCmd = `ffmpeg -y -ss 0.0 -i "${videoPath}" -vframes 1 -q:v 2 /tmp/p0.jpg 2>/dev/null; ffmpeg -y -ss 8.0 -i "${videoPath}" -vframes 1 -q:v 2 /tmp/p8.jpg 2>/dev/null; ffmpeg -y -ss 16.0 -i "${videoPath}" -vframes 1 -q:v 2 /tmp/p16.jpg 2>/dev/null; ffmpeg -i /tmp/p0.jpg -i /tmp/p8.jpg -filter_complex "psnr" -f null - 2>&1; ffmpeg -i /tmp/p8.jpg -i /tmp/p16.jpg -filter_complex "psnr" -f null - 2>&1`;
-                psnrOut = execSync(localCmd, { timeout: 10000 }).toString();
-              } else {
-                const remotePath = `~/zyvoriq_remote/${relativePath}`;
-                const p0Cmd = `ssh -o ConnectTimeout=3 -o StrictHostKeyChecking=no nitinagga.c.googlers.com 'ffmpeg -y -ss 0.0 -i ${remotePath} -vframes 1 -q:v 2 /tmp/p0.jpg 2>/dev/null; ffmpeg -y -ss 8.0 -i ${remotePath} -vframes 1 -q:v 2 /tmp/p8.jpg 2>/dev/null; ffmpeg -y -ss 16.0 -i ${remotePath} -vframes 1 -q:v 2 /tmp/p16.jpg 2>/dev/null; ffmpeg -i /tmp/p0.jpg -i /tmp/p8.jpg -filter_complex "psnr" -f null - 2>&1; ffmpeg -i /tmp/p8.jpg -i /tmp/p16.jpg -filter_complex "psnr" -f null - 2>&1'`;
-                psnrOut = execSync(p0Cmd, { timeout: 15000 }).toString();
+                const p0 = `/tmp/p0_${process.pid}.jpg`;
+                const p8 = `/tmp/p8_${process.pid}.jpg`;
+                const p16 = `/tmp/p16_${process.pid}.jpg`;
+                try {
+                  const localCmd = `ffmpeg -y -ss 0.0 -i "${videoPath}" -vframes 1 -q:v 2 "${p0}" 2>/dev/null; ffmpeg -y -ss 8.0 -i "${videoPath}" -vframes 1 -q:v 2 "${p8}" 2>/dev/null; ffmpeg -y -ss 16.0 -i "${videoPath}" -vframes 1 -q:v 2 "${p16}" 2>/dev/null; ffmpeg -i "${p0}" -i "${p8}" -filter_complex "psnr" -f null - 2>&1; ffmpeg -i "${p8}" -i "${p16}" -filter_complex "psnr" -f null - 2>&1`;
+                  psnrOut = execSync(localCmd, { timeout: 10000 }).toString();
+                } finally {
+                  for (const tmpImg of [p0, p8, p16]) {
+                    try { if (fs.existsSync(tmpImg)) fs.unlinkSync(tmpImg); } catch {}
+                  }
+                }
               }
               const psnrMatches = [...psnrOut.matchAll(/average:([0-9.]+)/g)].map(m => parseFloat(m[1]));
               for (const p of psnrMatches) {

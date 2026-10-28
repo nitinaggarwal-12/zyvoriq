@@ -195,6 +195,17 @@ export async function deleteProductionAssets(productionId: string): Promise<void
     }
   }
 
+  // Also purge fallback cache directories used by readAsset() so deleted reels cannot be resurrected
+  const fallbackCacheTargets = [
+    path.resolve(process.cwd(), "scratch", "asset_cache", "reels", cleanId),
+    path.resolve(process.cwd(), "public", "assets", "reels", cleanId),
+  ];
+  for (const cacheTarget of fallbackCacheTargets) {
+    try {
+      await fs.rm(cacheTarget, { recursive: true, force: true });
+    } catch {}
+  }
+
   // Also check CLOUD_RUN_VOLUME_MOUNT_PATH directly if different from root
   const volMount = process.env.CLOUD_RUN_VOLUME_MOUNT_PATH;
   if (volMount && volMount !== root) {

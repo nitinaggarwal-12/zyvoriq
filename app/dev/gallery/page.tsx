@@ -37,6 +37,7 @@ import {
   PostVariation,
   VideoSegmentSpec,
 } from "@/components/studio-ux/Patterns";
+import { FeedbackHeaderEmailButton } from "@/components/UniversalFeedbackSystem";
 
 const ALL_12_STATES: ComponentStateName[] = [
   "default",
@@ -210,6 +211,11 @@ export default function ComponentGalleryPage() {
           >
             {theme === "light" ? "Switch to Dark" : "Switch to Light"}
           </StudioButton>
+          <FeedbackHeaderEmailButton
+            appId="zyvoriq"
+            appName="Zyvoriq Component Gallery"
+            currentRoute="/dev/gallery"
+          />
         </div>
       </header>
 

@@ -1,0 +1,1 @@
+/Users/nitinagga/.gemini/config/rules/gantrypulse-link-provenance-and-chat-gate.md

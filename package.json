@@ -7,6 +7,8 @@
     "guard:scope": "node scripts/guards/guard_codebase_scope.mjs",
     "guard:mocks": "node scripts/guards/guard_no_synthetic_mocks.mjs",
     "guard:trinity": "node scripts/guards/enforce_universal_single_source_trinity.mjs",
+    "guard:sync": "node scripts/guards/enforce_universal_single_source_trinity.mjs --auto-heal",
+    "guard:drift": "node scripts/guards/enforce_universal_single_source_trinity.mjs --verify-only",
     "guard:deterministic": "npm run guard:scope && npm run guard:mocks && npm run guard:legacy && npm run canonical:qa",
     "guard:legacy": "node scripts/governance/legacy_tech_guard.js",
     "docs:validate": "node scripts/governance/validate_docs_traceability.mjs",

@@ -1,0 +1,1 @@
+/Users/nitinagga/.gemini/config/rules/before-and-after-screenshots.md
