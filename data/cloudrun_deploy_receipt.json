@@ -2,15 +2,42 @@
   "serviceName": "zyvoriq",
   "beyondCorpUrl": "https://zyvoriq-248990048888.cr.gclb.goog",
   "directCloudRunUrl": "https://zyvoriq-mi7l4h536a-uw.a.run.app",
+  "ingressPolicy": "internal-and-cloud-load-balancing",
+  "beyondCorpEdge": {
+    "httpStatus": 302,
+    "uberProxyVerified": true,
+    "directRunAppBypassBlockedHttpStatus": 404
+  },
   "buildProject": "nitina-ggarwal-sandbox-647724",
   "runProject": "ramp-portal-dev",
   "region": "us-west1",
-  "latestReadyRevisionName": "zyvoriq-00018-n5b",
-  "latestCreatedRevisionName": "zyvoriq-00018-n5b",
+  "latestReadyRevisionName": "zyvoriq-00020-jfr",
+  "latestCreatedRevisionName": "zyvoriq-00020-jfr",
   "readyStatus": "True",
   "trafficPercent": 100,
-  "image": "us-west1-docker.pkg.dev/ramp-portal-dev/cloud-run-source-deploy/zyvoriq:v20261028-144612-option-a-lean-veo",
+  "image": "us-west1-docker.pkg.dev/ramp-portal-dev/cloud-run-source-deploy/zyvoriq:v20261028-182214-option-a-lean-veo",
   "startupProbeLog": "Default STARTUP TCP probe succeeded after 1 attempt for container \"zyvoriq-1\" on port 8080.",
+  "bootSelfTestReceipt": {
+    "revision": "zyvoriq-00020-jfr",
+    "verifiedAt": "2026-10-28T18:25:41.675Z",
+    "checks": {
+      "health": 200,
+      "swarmMui": 200,
+      "swarmMuiHasHtml": true,
+      "capabilities": 200,
+      "engineArchitecture": "option_a_omni11_primary_veo31_safety_net",
+      "persistence": "sqlite-wal",
+      "reelProductionsList": 200,
+      "reelProductionsSuccess": true,
+      "reelFeedbackList": 200,
+      "reelFeedbackSuccess": true,
+      "dualEngineCrudRoundTrip": true,
+      "studio1Pruned": 404,
+      "omniGeneratePruned": 404,
+      "operationRetryPruned": 410,
+      "operationRetryCode": "STUDIO1_WORKER_PRUNED_OPTION_A"
+    }
+  },
   "defaultCanonicalReelId": "ZYV-REEL-MI10-300S",
-  "verifiedAt": "2026-10-28T14:49:20Z"
+  "verifiedAt": "2026-10-28T18:25:57Z"
 }

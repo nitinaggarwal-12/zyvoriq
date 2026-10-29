@@ -475,11 +475,11 @@ interface PortraitCandidate {
 
 const PORTRAIT_POOL: PortraitCandidate[] = [
   // 35mm Live-Action European Cinema Realism
-  { photoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn1C.jpg", gender: "female", cluster: "latin_mediterranean", tags: ["italy", "milan", "mediterranean", "cinema", "thriller", "dramatic", "actress", "mother", "realism"] },
-  { photoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn1A.jpg", gender: "male", cluster: "latin_mediterranean", tags: ["italy", "milan", "mediterranean", "cinema", "thriller", "inspector", "lead", "actor", "realism"] },
-  { photoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn2B.jpg", gender: "male", cluster: "latin_mediterranean", tags: ["italy", "milan", "mediterranean", "cinema", "thriller", "historian", "scholar", "supporting", "realism"] },
-  { photoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn2A.jpg", gender: "male", cluster: "latin_mediterranean", tags: ["italy", "milan", "mediterranean", "cinema", "thriller", "marshals", "ensemble", "background", "realism"] },
-  { photoUrl: "/assets/swarm/generated/job_1790654474523/preview_turn2C.jpg", gender: "female", cluster: "latin_mediterranean", tags: ["italy", "milan", "mediterranean", "cinema", "thriller", "courtyard", "residents", "audience", "realism"] },
+  { photoUrl: "/assets/swarm/generated/job_1790793528334/preview_turn1C.jpg", gender: "female", cluster: "latin_mediterranean", tags: ["italy", "milan", "mediterranean", "cinema", "thriller", "dramatic", "actress", "mother", "realism"] },
+  { photoUrl: "/assets/swarm/generated/job_1790793528334/preview_turn1A.jpg", gender: "male", cluster: "latin_mediterranean", tags: ["italy", "milan", "mediterranean", "cinema", "thriller", "inspector", "lead", "actor", "realism"] },
+  { photoUrl: "/assets/swarm/generated/job_1790793528334/preview_turn2B.jpg", gender: "male", cluster: "latin_mediterranean", tags: ["italy", "milan", "mediterranean", "cinema", "thriller", "historian", "scholar", "supporting", "realism"] },
+  { photoUrl: "/assets/swarm/generated/job_1790793528334/preview_turn2A.jpg", gender: "male", cluster: "latin_mediterranean", tags: ["italy", "milan", "mediterranean", "cinema", "thriller", "marshals", "ensemble", "background", "realism"] },
+  { photoUrl: "/assets/swarm/generated/job_1790793528334/preview_turn2C.jpg", gender: "female", cluster: "latin_mediterranean", tags: ["italy", "milan", "mediterranean", "cinema", "thriller", "courtyard", "residents", "audience", "realism"] },
 
   // East & Southeast Asian Female
   { photoUrl: "/assets/characters/yuna_park_kr.jpg", gender: "female", cluster: "east_asia", tags: ["korea", "korean", "kpop", "seoul", "east_asia", "idol", "disco", "funk", "pop", "neon"] },

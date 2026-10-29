@@ -242,20 +242,25 @@ process.stdin.on("end", async () => {
           const planRouteSrc = fs.readFileSync(path.join(workspace, "app/api/reels/plan/route.ts"), "utf8");
           const prodsRouteSrc = fs.readFileSync(path.join(workspace, "app/api/reels/productions/route.ts"), "utf8");
           const plannerSrc = fs.readFileSync(path.join(workspace, "lib/reel/planner.ts"), "utf8");
+          const prodStoreSrc = fs.readFileSync(path.join(workspace, "lib/reel/productionStore.ts"), "utf8");
+          const prodControlSrc = fs.readFileSync(path.join(workspace, "lib/reel/productionControl.ts"), "utf8");
           if (
             resurrected.length > 0 ||
             !fs.existsSync(path.join(workspace, "lib/ai/veoService.ts")) ||
             !fs.existsSync(path.join(workspace, "scripts/yt_pipeline.mjs")) ||
+            !fs.existsSync(path.join(workspace, "instrumentation.ts")) ||
             !opQueueSrc.includes("Queue retry rejected for operation") ||
             !opRouteSrc.includes('code: "STUDIO1_WORKER_PRUNED_OPTION_A"') ||
             !prodIdRouteSrc.includes('"regenerate-shot"') ||
             !planRouteSrc.includes("planReelAsync") ||
             !prodsRouteSrc.includes("planReelAsync") ||
-            plannerSrc.includes("planStudio1")
+            plannerSrc.includes("planStudio1") ||
+            !prodStoreSrc.includes("ensureSqliteDb") ||
+            !prodControlSrc.includes("ensureSqliteControlDb")
           ) {
             console.log(JSON.stringify({
               decision: "continue",
-              reason: `[ZYVORIQ OPTION A GATE BLOCKED]: Dead Studio1 worker/routes must remain pruned (${resurrected.join(", ") || "none"}), queue retry/actions must fail closed with 410 STUDIO1_WORKER_PRUNED_OPTION_A, /api/reels/plan & /api/reels/productions must wire planReelAsync, and lean Veo 3.1 safety-net (lib/ai/veoService.ts, scripts/yt_pipeline.mjs) must remain intact.`
+              reason: `[ZYVORIQ OPTION A GATE BLOCKED]: Dead Studio1 worker/routes must remain pruned (${resurrected.join(", ") || "none"}), queue retry/actions must fail closed with 410 STUDIO1_WORKER_PRUNED_OPTION_A, /api/reels/plan & /api/reels/productions must wire planReelAsync, reel_productions/controls must maintain SQLite WAL fallback, instrumentation.ts must exist, and lean Veo 3.1 safety-net (lib/ai/veoService.ts, scripts/yt_pipeline.mjs) must remain intact.`
             }));
             return;
           }

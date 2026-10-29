@@ -26,8 +26,33 @@ try {
 
 let dbInstance: any = null;
 let pgPool: Pool | null = null;
-let pgSchemaMigrated = false;
 let pgPoolDisabled = false;
+let pgMigrationPromise: Promise<void> | null = null;
+
+function buildFallbackPostgresSchemaWithoutVector(rawSchema: string): string {
+  return rawSchema
+    .replace(/CREATE\s+EXTENSION\s+IF\s+NOT\s+EXISTS\s+vector\s*;/gi, "")
+    .replace(/VECTOR\s*\(\s*1536\s*\)/gi, "TEXT")
+    .replace(/CREATE\s+INDEX\s+IF\s+NOT\s+EXISTS\s+idx_workspaces_brand_vector[^;]*;/gi, "");
+}
+
+async function runPostgresSchemaMigration(pool: Pool): Promise<void> {
+  let vectorAvailable = true;
+  try {
+    await pool.query("CREATE EXTENSION IF NOT EXISTS vector;");
+  } catch {
+    vectorAvailable = false;
+  }
+
+  const ddl = vectorAvailable
+    ? POSTGRES_SCHEMA.replace(/CREATE\s+EXTENSION\s+IF\s+NOT\s+EXISTS\s+vector\s*;/gi, "")
+    : buildFallbackPostgresSchemaWithoutVector(POSTGRES_SCHEMA);
+
+  await pool.query(ddl);
+  await pool
+    .query("ALTER TABLE studio_production_jobs ADD COLUMN IF NOT EXISTS acts_json JSONB DEFAULT '[]'::jsonb;")
+    .catch(() => {});
+}
 
 export function getPostgresPool(): Pool | null {
   if (pgPoolDisabled) return null;
@@ -47,7 +72,7 @@ export function getPostgresPool(): Pool | null {
   if (!pgPool) {
     try {
       const { Pool: PgPool } = require("pg");
-      pgPool = new PgPool({
+      const createdPool: Pool = new PgPool({
         connectionString: dbUrl,
         ssl: dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1")
           ? false
@@ -56,13 +81,14 @@ export function getPostgresPool(): Pool | null {
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 3000,
       });
+      pgPool = createdPool;
 
-      if (!pgSchemaMigrated && pgPool) {
-        pgSchemaMigrated = true;
-        pgPool.query(POSTGRES_SCHEMA).catch((err) => {
+      if (!pgMigrationPromise) {
+        pgMigrationPromise = runPostgresSchemaMigration(createdPool).catch((err) => {
           console.warn("PostgreSQL initial schema migration warning (disabling dead pgPool, using SQLite):", err.message);
           pgPoolDisabled = true;
           pgPool = null;
+          pgMigrationPromise = null;
         });
       }
     } catch (e: any) {
@@ -86,7 +112,9 @@ export function safeJsonParse<T>(jsonStr: any, fallback: T): T {
 export function getDatabase(): any {
   if (!dbInstance) {
     try {
-      const dbPath = path.resolve(process.cwd(), "dev.db");
+      const dbPath = process.env.ZYVORIQ_SQLITE_PATH
+        ? path.resolve(process.env.ZYVORIQ_SQLITE_PATH)
+        : path.resolve(process.cwd(), "dev.db");
       dbInstance = new DatabaseSync(dbPath);
       dbInstance.exec("PRAGMA foreign_keys = ON;");
       dbInstance.exec("PRAGMA journal_mode = WAL;");
@@ -118,14 +146,15 @@ export function getDatabase(): any {
   return dbInstance;
 }
 
-let pgMigrationPromise: Promise<any> | null = null;
-
 export async function ensurePostgresSchema(): Promise<void> {
   const pool = getPostgresPool();
   if (!pool) return;
   if (!pgMigrationPromise) {
-    pgMigrationPromise = pool.query(POSTGRES_SCHEMA).catch((err) => {
+    pgMigrationPromise = runPostgresSchemaMigration(pool).catch((err) => {
       console.warn("PostgreSQL initial schema migration warning:", err.message);
+      pgPoolDisabled = true;
+      pgPool = null;
+      pgMigrationPromise = null;
     });
   }
   await pgMigrationPromise;
@@ -783,6 +812,7 @@ export const db = {
   // === Dual-Engine Asynchronous PostgreSQL Methods ===
 
   async deleteStudioTrackAsync(id: string): Promise<void> {
+    await ensurePostgresSchema();
     const pg = getPostgresPool();
     if (pg) {
       try {
@@ -795,6 +825,7 @@ export const db = {
   },
 
   async getStudioTracksAsync(): Promise<any[]> {
+    await ensurePostgresSchema();
     const pg = getPostgresPool();
     if (!pg) {
       return this.getStudioTracks();
@@ -880,6 +911,7 @@ export const db = {
   },
 
   async saveStudioTrackAsync(track: any): Promise<void> {
+    await ensurePostgresSchema();
     const pg = getPostgresPool();
     if (!pg) {
       this.saveStudioTrack(track);
@@ -922,6 +954,7 @@ export const db = {
   },
 
   async createProductionJobAsync(job: any): Promise<void> {
+    await ensurePostgresSchema();
     const pg = getPostgresPool();
     if (!pg) {
       this.createProductionJob(job);
@@ -969,6 +1002,7 @@ export const db = {
   },
 
   async updateProductionJobAsync(id: string, updates: any): Promise<void> {
+    await ensurePostgresSchema();
     const pg = getPostgresPool();
     if (!pg) {
       this.updateProductionJob(id, updates);
@@ -986,8 +1020,9 @@ export const db = {
           operation_name = COALESCE($7, operation_name),
           duration = COALESCE($8, duration),
           acts_json = COALESCE($9, acts_json),
+          logs_json = COALESCE($10::jsonb, logs_json),
           updated_at = now()
-        WHERE id = $10;
+        WHERE id = $11;
       `;
       await pg.query(query, [
         updates.status !== undefined ? updates.status : null,
@@ -999,6 +1034,7 @@ export const db = {
         updates.operationName !== undefined ? updates.operationName : null,
         updates.duration !== undefined ? updates.duration : null,
         updates.acts !== undefined ? JSON.stringify(updates.acts) : null,
+        updates.logs !== undefined ? JSON.stringify(updates.logs) : null,
         id
       ]);
     } catch (err: any) {
@@ -1008,6 +1044,7 @@ export const db = {
   },
 
   async getProductionJobAsync(id: string): Promise<any | null> {
+    await ensurePostgresSchema();
     const pg = getPostgresPool();
     if (!pg) {
       return this.getProductionJob(id);
@@ -1042,6 +1079,7 @@ export const db = {
   },
 
   async getAllProductionJobsAsync(): Promise<any[]> {
+    await ensurePostgresSchema();
     const pg = getPostgresPool();
     if (!pg) {
       return this.getAllProductionJobs();

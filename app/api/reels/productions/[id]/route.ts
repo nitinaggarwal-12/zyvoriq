@@ -4,7 +4,7 @@ import { reelOperationQueue } from "@/lib/reel/operationQueue";
 import { reelProductionControl } from "@/lib/reel/productionControl";
 import type { ReelOperation } from "@/lib/reel/operationQueue";
 import type { ReelProductionStatus } from "@/lib/reel/types";
-import { reelProductionStore } from "@/lib/reel/productionStore";
+import { reelProductionStore, RevisionConflictError } from "@/lib/reel/productionStore";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -38,7 +38,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       const current = await reelProductionStore.get(id);
       if (!current) return NextResponse.json({ success: false, error: "Production not found" }, { status: 404 });
       const nextStarred = body.starred !== undefined ? Boolean(body.starred) : !Boolean(current.starred || current.manifest?.starred);
-      const updated = await reelProductionStore.setStarred(id, nextStarred);
+      const updated = await reelProductionStore.setStarred(id, nextStarred, expectedRevision);
       return NextResponse.json({ success: true, starred: nextStarred, production: updated });
     }
 
@@ -88,6 +88,18 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
     return NextResponse.json({ success: false, error: `Unsupported action: ${action}` }, { status: 400 });
   } catch (error: any) {
+    if (error instanceof RevisionConflictError) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: error.code,
+          error: error.message,
+          expectedRevision: error.expectedRevision,
+          actualRevision: error.actualRevision,
+        },
+        { status: 409 }
+      );
+    }
     const message = error?.message || "Failed to update production";
     const unavailable = message.includes("worker unavailable") || message.includes("Production control requires Postgres");
     const conflict = message.includes("concurrently") || message.includes("requires") || message.includes("not allowed") || message.includes("dependency") || message.includes("cancelled");
@@ -95,12 +107,33 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   }
 }
 
-export async function DELETE(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
-    await reelProductionStore.delete(id);
+    const { searchParams } = new URL(req.url);
+    const queryRev = searchParams.get("expectedRevision");
+    let expectedRevision = queryRev !== null && queryRev !== "" ? Number(queryRev) : undefined;
+    if (expectedRevision === undefined) {
+      const body = await req.json().catch(() => null);
+      if (body && body.expectedRevision !== undefined) {
+        expectedRevision = Number(body.expectedRevision);
+      }
+    }
+    await reelProductionStore.delete(id, expectedRevision);
     return NextResponse.json({ success: true, deleted: true, id });
   } catch (error: any) {
+    if (error instanceof RevisionConflictError) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: error.code,
+          error: error.message,
+          expectedRevision: error.expectedRevision,
+          actualRevision: error.actualRevision,
+        },
+        { status: 409 }
+      );
+    }
     return NextResponse.json({ success: false, error: error?.message || "Failed to delete production" }, { status: 500 });
   }
 }

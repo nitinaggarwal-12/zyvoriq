@@ -105,13 +105,17 @@ export const reelOperationQueue = {
   },
 
   async get(id: string): Promise<ReelOperation | null> {
-    const pool = await ensureTable();
+    const pool = getPostgresPool();
+    if (!pool) return null;
+    await pool.query(TABLE);
     const result = await pool.query(`SELECT * FROM reel_operations WHERE id=$1`, [id]);
     return result.rows[0] ? fromRow(result.rows[0]) : null;
   },
 
   async latestForProduction(productionId: string, limit = 25): Promise<ReelOperation[]> {
-    const pool = await ensureTable();
+    const pool = getPostgresPool();
+    if (!pool) return [];
+    await pool.query(TABLE);
     const result = await pool.query(
       `SELECT * FROM reel_operations WHERE production_id=$1 ORDER BY created_at DESC LIMIT $2`,
       [productionId, Math.max(1, Math.min(100, Math.floor(limit)))]

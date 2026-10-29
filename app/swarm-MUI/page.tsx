@@ -3214,7 +3214,7 @@ export default function ContentStudioWorkspacePage() {
       : apiData?.videoUrl ||
         apiAssets?.videoUrl ||
         (detectedDurSec <= 90
-          ? "/assets/swarm/generated/job_1793154322715/combined_60s.mp4"
+          ? "/assets/swarm/generated/job_1792800001_barcelona_bhangra_flamenco/combined_60s.mp4"
           : post.videoUrl);
 
     let nextTitle = post.title;

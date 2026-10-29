@@ -65,4 +65,6 @@ public/assets/stills/generated/
 scripts/qa/*keyframes/
 antigravity_*
 ANTIGRAVITY_*
-
+.local_backup/
+public/screenshots/
+public/assets/swarm/generated/

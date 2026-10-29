@@ -249,6 +249,7 @@ def main() -> None:
         ("/Users/nitinagga/Documents/zyvoriq/.next/standalone/node_modules", "app/node_modules"),
         ("/Users/nitinagga/Documents/zyvoriq/.next/static", "app/.next/static"),
         ("/Users/nitinagga/Documents/zyvoriq/lib/server/unifiedFeedbackEngine.cjs", "app/lib/server/unifiedFeedbackEngine.cjs"),
+        ("/Users/nitinagga/Documents/zyvoriq/scripts/gate5_self_verify_entrypoint.mjs", "app/scripts/gate5_self_verify_entrypoint.mjs"),
         ("/Users/nitinagga/Documents/zyvoriq/scripts/yt_pipeline.mjs", "app/scripts/yt_pipeline.mjs"),
         ("/Users/nitinagga/Documents/zyvoriq/scripts/characterAnchor.mjs", "app/scripts/characterAnchor.mjs"),
         ("/Users/nitinagga/Documents/zyvoriq/scripts/validateCharacterSheet.mjs", "app/scripts/validateCharacterSheet.mjs"),
@@ -286,7 +287,7 @@ def main() -> None:
 
     cfg_obj = base_config.setdefault("config", {})
     cfg_obj["WorkingDir"] = "/app"
-    cfg_obj["Cmd"] = ["node", "server.js"]
+    cfg_obj["Cmd"] = ["node", "scripts/gate5_self_verify_entrypoint.mjs"]
     cfg_obj["Entrypoint"] = []
     cfg_obj["User"] = "root"
 
@@ -355,7 +356,7 @@ def main() -> None:
         env=env,
     )
 
-    print(f"==> [4/4] Verifying 4 Post-Deploy Readiness Gates for {service_name}...")
+    print(f"==> [4/4] Verifying 5 Post-Deploy Readiness & In-Container HTTP E2E Gates for {service_name}...")
     desc_out = subprocess.check_output(
         [
             "gcloud",
@@ -373,30 +374,76 @@ def main() -> None:
     )
     svc_json = json.loads(desc_out)
     status = svc_json.get("status", {})
+    ingress_mode = svc_json.get("metadata", {}).get("annotations", {}).get("run.googleapis.com/ingress", "")
     ready_rev = status.get("latestReadyRevisionName", "")
     created_rev = status.get("latestCreatedRevisionName", "")
     conds = status.get("conditions", [])
     ready_status = next((c.get("status") for c in conds if c.get("type") == "Ready"), "False")
     traffic_pct = status.get("traffic", [{}])[0].get("percent", 0)
     direct_url = status.get("url", "")
+    beyondcorp_url = f"https://{service_name}-248990048888.cr.gclb.goog"
 
     if ready_rev != created_rev or ready_status != "True" or traffic_pct != 100:
         raise RuntimeError(
             f"Gate check failed for {service_name}: ready={ready_rev}, created={created_rev}, status={ready_status}, traffic={traffic_pct}"
         )
 
+    if ingress_mode != "internal-and-cloud-load-balancing":
+        raise RuntimeError(
+            f"BeyondCorp ingress policy violation on {service_name}: expected 'internal-and-cloud-load-balancing', got '{ingress_mode}'"
+        )
+
+    class _NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, req, fp, code, msg, headers, newurl):
+            return None
+
+    no_redirect_opener = urllib.request.build_opener(_NoRedirect)
+    beyondcorp_edge_status = 0
+    beyondcorp_uberproxy_verified = False
+    try:
+        with no_redirect_opener.open(f"{beyondcorp_url}/swarm-MUI", timeout=15) as r:
+            beyondcorp_edge_status = r.status
+            # Unauthenticated CLI probe MUST redirect to corporate SSO, never return 200
+            beyondcorp_uberproxy_verified = False
+    except urllib.error.HTTPError as e:
+        beyondcorp_edge_status = e.code
+        loc = (e.headers.get("Location") or "").lower()
+        if e.code in (301, 302, 307, 308) and ("login.corp.google.com" in loc or "uberproxy" in loc):
+            beyondcorp_uberproxy_verified = True
+
+    direct_run_app_status = 0
+    if direct_url:
+        try:
+            with no_redirect_opener.open(f"{direct_url}/api/health", timeout=10) as r:
+                direct_run_app_status = r.status
+        except urllib.error.HTTPError as e:
+            direct_run_app_status = e.code
+        except (urllib.error.URLError, TimeoutError, OSError) as e:
+            raise RuntimeError(f"Direct Cloud Run URL probe failed unexpectedly on {direct_url}/api/health: {e}") from e
+
+        if direct_run_app_status != 404:
+            raise RuntimeError(
+                f"Direct Cloud Run bypass was NOT blocked on {direct_url}/api/health (expected HTTP 404 from Google Front End, got HTTP {direct_run_app_status})"
+            )
+
+    if not beyondcorp_uberproxy_verified:
+        raise RuntimeError(
+            f"BeyondCorp GCLB edge verification failed on {beyondcorp_url}/swarm-MUI (expected 302 UberProxy SSO redirect, got HTTP {beyondcorp_edge_status})"
+        )
+
     startup_probe_log = ""
-    for _ in range(6):
+    boot_selftest_receipt = None
+    for _ in range(12):
         try:
             log_out = subprocess.check_output(
                 [
                     "gcloud",
                     "logging",
                     "read",
-                    f'resource.type="cloud_run_revision" AND resource.labels.revision_name="{ready_rev}" AND textPayload:"STARTUP"',
+                    f'resource.type="cloud_run_revision" AND resource.labels.revision_name="{ready_rev}" AND (textPayload:"STARTUP" OR textPayload:"CLOUDRUN_BOOT_SELFTEST_")',
                     "--project=ramp-portal-dev",
                     "--billing-project=ramp-portal-dev",
-                    "--limit=5",
+                    "--limit=20",
                     "--format=value(textPayload)",
                 ],
                 text=True,
@@ -404,19 +451,41 @@ def main() -> None:
                 timeout=30,
             ).strip()
             if log_out:
-                startup_probe_log = log_out.splitlines()[0].strip()
+                for line in log_out.splitlines():
+                    clean_line = line.strip()
+                    if "STARTUP" in clean_line and not startup_probe_log:
+                        startup_probe_log = clean_line
+                    if "[CLOUDRUN_BOOT_SELFTEST_FAIL]" in clean_line:
+                        raise RuntimeError(f"In-container Cloud Run boot self-test FAILED on {ready_rev}: {clean_line}")
+                    if "[CLOUDRUN_BOOT_SELFTEST_PASS]" in clean_line and boot_selftest_receipt is None:
+                        json_part = clean_line.split("[CLOUDRUN_BOOT_SELFTEST_PASS]", 1)[1].strip()
+                        boot_selftest_receipt = json.loads(json_part)
+            if startup_probe_log and boot_selftest_receipt is not None:
                 break
+        except RuntimeError:
+            raise
         except Exception:
             pass
         time.sleep(3)
+
     if not startup_probe_log:
-        startup_probe_log = f"Ready=True verified via Cloud Run control plane for {ready_rev} (Cloud Logging ingestion pending)"
+        startup_probe_log = f"Ready=True verified via Cloud Run control plane for {ready_rev}"
+    if boot_selftest_receipt is None:
+        raise RuntimeError(
+            f"Gate 5 failed: [CLOUDRUN_BOOT_SELFTEST_PASS] log receipt not observed in Cloud Logging for {ready_rev}"
+        )
 
     receipt_path = Path("/Users/nitinagga/Documents/zyvoriq/data/cloudrun_deploy_receipt.json")
     receipt = {
         "serviceName": service_name,
-        "beyondCorpUrl": f"https://{service_name}-248990048888.cr.gclb.goog",
+        "beyondCorpUrl": beyondcorp_url,
         "directCloudRunUrl": direct_url,
+        "ingressPolicy": ingress_mode,
+        "beyondCorpEdge": {
+            "httpStatus": beyondcorp_edge_status,
+            "uberProxyVerified": beyondcorp_uberproxy_verified,
+            "directRunAppBypassBlockedHttpStatus": direct_run_app_status,
+        },
         "buildProject": "nitina-ggarwal-sandbox-647724",
         "runProject": "ramp-portal-dev",
         "region": "us-west1",
@@ -426,13 +495,16 @@ def main() -> None:
         "trafficPercent": traffic_pct,
         "image": image_uri,
         "startupProbeLog": startup_probe_log,
+        "bootSelfTestReceipt": boot_selftest_receipt,
         "defaultCanonicalReelId": "ZYV-REEL-MI10-300S",
         "verifiedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
     receipt_path.parent.mkdir(parents=True, exist_ok=True)
     receipt_path.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
     print(f"✅ {service_name} verified on revision {ready_rev} (Ready={ready_status}, Traffic={traffic_pct}%)")
+    print(f"✅ BeyondCorp GCLB Edge: HTTP {beyondcorp_edge_status} (UberProxy verified={beyondcorp_uberproxy_verified}, direct run.app bypass HTTP {direct_run_app_status})")
     print(f"✅ Startup probe: {startup_probe_log}")
+    print(f"✅ In-container HTTP E2E boot self-test: {json.dumps(boot_selftest_receipt.get('checks', {}))}")
 
 
 if __name__ == "__main__":

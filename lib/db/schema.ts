@@ -133,6 +133,17 @@ CREATE TABLE IF NOT EXISTS veritas_certificates (
   issued_at TEXT DEFAULT (datetime('now'))
 );
 
+-- 12. publish_dispatches
+CREATE TABLE IF NOT EXISTS publish_dispatches (
+  id TEXT PRIMARY KEY,
+  cert_id TEXT NOT NULL REFERENCES veritas_certificates(id) ON DELETE CASCADE,
+  channel TEXT NOT NULL,
+  external_post_id TEXT,
+  delivery_status TEXT DEFAULT 'sent',
+  error_response TEXT,
+  published_at TEXT DEFAULT (datetime('now'))
+);
+
 -- 13. studio_series_tracks (Saved Series & Clips Library)
 CREATE TABLE IF NOT EXISTS studio_series_tracks (
   id TEXT PRIMARY KEY,
@@ -165,6 +176,7 @@ CREATE TABLE IF NOT EXISTS studio_production_jobs (
   script_json TEXT,
   veritas_json TEXT,
   operation_name TEXT,
+  acts_json TEXT DEFAULT '[]',
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now'))
 );
@@ -235,6 +247,45 @@ CREATE TABLE IF NOT EXISTS episode_productions (
 );
 CREATE INDEX IF NOT EXISTS idx_episodes_created ON episode_productions (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_episodes_status ON episode_productions (status);
+
+-- 19. reel_productions (Dual-Engine Reel Manifests with Optimistic Revision CAS)
+CREATE TABLE IF NOT EXISTS reel_productions (
+  id TEXT PRIMARY KEY,
+  revision INTEGER NOT NULL DEFAULT 1,
+  manifest_json TEXT NOT NULL,
+  starred INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_reel_productions_updated ON reel_productions (updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_reel_productions_starred ON reel_productions (starred);
+
+-- 20. reel_production_controls (Priority & Cancellation Controls)
+CREATE TABLE IF NOT EXISTS reel_production_controls (
+  production_id TEXT PRIMARY KEY,
+  generation_token TEXT NOT NULL,
+  cancelled_at TEXT,
+  superseded_by TEXT,
+  priority INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_pc_priority ON reel_production_controls (production_id, priority);
+
+-- 21. reel_feedback (Dual-Engine Reel Quality Feedback)
+CREATE TABLE IF NOT EXISTS reel_feedback (
+  id TEXT PRIMARY KEY,
+  production_id TEXT NOT NULL,
+  reel_title TEXT NOT NULL DEFAULT '',
+  rating TEXT NOT NULL,
+  is_good INTEGER NOT NULL DEFAULT 1,
+  reasons TEXT NOT NULL DEFAULT '[]',
+  notes TEXT NOT NULL DEFAULT '',
+  metadata TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_reel_feedback_prod ON reel_feedback (production_id, created_at DESC);
 `;
 
 export const POSTGRES_SCHEMA = `
@@ -416,6 +467,7 @@ CREATE TABLE IF NOT EXISTS studio_production_jobs (
   script_json JSONB,
   veritas_json JSONB,
   operation_name TEXT,
+  acts_json JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -490,4 +542,43 @@ CREATE TABLE IF NOT EXISTS episode_productions (
 );
 CREATE INDEX IF NOT EXISTS idx_pg_episodes_created ON episode_productions (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_pg_episodes_status ON episode_productions (status);
+
+-- 19. reel_productions (Dual-Engine Reel Manifests with Optimistic Revision CAS)
+CREATE TABLE IF NOT EXISTS reel_productions (
+  id TEXT PRIMARY KEY,
+  revision INTEGER NOT NULL DEFAULT 1,
+  manifest_json JSONB NOT NULL,
+  starred BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_pg_reel_productions_updated ON reel_productions (updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_pg_reel_productions_starred ON reel_productions (starred);
+
+-- 20. reel_production_controls (Priority & Cancellation Controls)
+CREATE TABLE IF NOT EXISTS reel_production_controls (
+  production_id TEXT PRIMARY KEY,
+  generation_token TEXT NOT NULL,
+  cancelled_at TIMESTAMPTZ,
+  superseded_by TEXT,
+  priority INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_pg_pc_priority ON reel_production_controls (production_id, priority);
+
+-- 21. reel_feedback (Dual-Engine Reel Quality Feedback)
+CREATE TABLE IF NOT EXISTS reel_feedback (
+  id TEXT PRIMARY KEY,
+  production_id TEXT NOT NULL,
+  reel_title TEXT NOT NULL DEFAULT '',
+  rating VARCHAR(32) NOT NULL,
+  is_good BOOLEAN NOT NULL DEFAULT TRUE,
+  reasons TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  notes TEXT NOT NULL DEFAULT '',
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_pg_reel_feedback_prod ON reel_feedback (production_id, created_at DESC);
 `;

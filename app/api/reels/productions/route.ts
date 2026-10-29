@@ -46,11 +46,12 @@ export async function POST(req: NextRequest) {
     const hasScript = Boolean(String(body.scriptText || "").trim());
     const manifest = hasScript ? planReel(planInput) : await planReelAsync(planInput);
     const production = await reelProductionStore.create(manifest);
+    const productionControl = await reelProductionControl.register(production.id, Number(body.priority || 0));
 
     return NextResponse.json({
       success: true,
       production,
-      productionControl: null,
+      productionControl,
       nextRequiredAction: "DISPATCH_SWARM_JOB",
       canonicalEngine: "omni11_veo31_safety_net",
       note: "Option A Lean Omni-First + Veo Safety-Net: live multi-act video/audio synthesis dispatches through POST /api/swarm/jobs.",

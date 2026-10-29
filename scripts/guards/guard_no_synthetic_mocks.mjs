@@ -6,9 +6,10 @@ console.log("🛡️ ZYVORIQ GUARD: ZERO SYNTHETIC MOCKS & CRYPTO DETERMINISM");
 console.log("=================================================================");
 
 const DETERMINISTIC_FILES = [
-  "lib/compliance/identityVerificationEngine.ts",
-  "lib/compliance/ndaSigningEngine.ts",
+  "lib/compliance/preFlightPromptShield.ts",
   "lib/compliance/contentModeratorAgent.ts",
+  "lib/reel/productionStore.ts",
+  "lib/reel/productionControl.ts",
   "lib/publish/c2pa.ts",
   "lib/publish/connectors.ts",
   "app/api/reels/publish/route.ts",

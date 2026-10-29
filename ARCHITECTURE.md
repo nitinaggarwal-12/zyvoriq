@@ -30,9 +30,9 @@ Zyvoriq is an AI-native multi-modal studio and generative publishing platform bu
 ┌────────────────▼─────────┐ ┌───────▼─────────┐ ┌───────▼─────────────────────────┐
 │   DEEPMIND AI SERVICES   │ │ DUAL DATABASE   │ │ VERITAS PROVENANCE VAULT        │
 │  - Omni 1.1 Flash (Prim) │ │ - SQLite WAL    │ │ - zk-SNARK Proof Generator      │
-│  - Veo 3.1 (Safety-Net)  │ │   (studio_ent.) │ │ - C2PA Manifest Signer          │
+│  - Veo 3.1 (Safety-Net)  │ │   (All 21 Tbls) │ │ - C2PA Manifest Signer          │
 │  - Gemini TTS / CloudTTS │ │ - Cloud PgPool  │ │ - SynthID Digital Watermarking  │
-│  - Lyria 3.0 Pro Music   │ │   (reel_prod.)  │ │                                 │
+│  - Lyria 3.0 Pro Music   │ │   (All 21 Tbls) │ │                                 │
 └──────────────────────────┘ └─────────────────┘ └─────────────────────────────────┘
 ```
 
@@ -149,8 +149,9 @@ Zyvoriq utilizes a dual-engine persistence layer to guarantee zero friction in l
 - **Contention Resilience**: Uses kernel-level sleeping via `Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, delay)` within `withRetry<T>()` to eliminate CPU-spinning lock contention on disk writes.
 
 ### 4.2 Schema Synchronization
-- Dual-engine tables: `organizations`, `workspaces`, `swarm_runs`, `swarm_tasks`, `modality_artifacts`, `veritas_evaluations`, `veritas_certificates`, `studio_series_tracks`, `studio_production_jobs`.
-- Startup guarantee: `ensurePostgresSchema()` ensures all tables, indexes, and column migrations are applied before processing web traffic.
+- **Full 21-Table DDL Schema Parity**: All 21 relational tables (`organizations`, `workspaces`, `users_rbac`, `persona_memories`, `swarm_runs`, `swarm_tasks`, `grounding_claims`, `modality_artifacts`, `veritas_evaluations`, `defect_diff_reports`, `veritas_certificates`, `publish_dispatches`, `studio_series_tracks`, `studio_production_jobs`, `character_library`, `character_wardrobe`, `location_library`, `episode_productions`, `reel_productions`, `reel_production_controls`, and `reel_feedback`) exist in 1:1 DDL parity across `POSTGRES_SCHEMA` and `SQLITE_SCHEMA`.
+- **Runtime Dual-Engine Routing**: Active production, reel, episode, and library stores (`reel_productions` with `RevisionConflictError` optimistic `expectedRevision` CAS, `reel_production_controls`, `reel_feedback`, `episode_productions`, `studio_series_tracks`, `studio_production_jobs`, `character_library`, `character_wardrobe`, and `location_library`) dynamically route to PostgreSQL when `DATABASE_URL` is configured and transparently operate on zero-config SQLite WAL (`getDatabase()` + `withRetry()`) otherwise, while synchronous tenant/Veritas audit helpers in `lib/db/client.ts` execute directly against local SQLite WAL.
+- **Startup Guarantee**: `ensurePostgresSchema()` (with isolated `pgvector` capability probing so vanilla PostgreSQL instances without `vector` never roll back the 21-table DDL batch) and `getDatabase()` ensure all tables, indexes, and column migrations are applied once at boot without per-query `ALTER TABLE` locks.
 
 ---
 
@@ -165,9 +166,9 @@ Zyvoriq utilizes a dual-engine persistence layer to guarantee zero friction in l
 
 ---
 
-## 6. Verification Quality Gates
+## 6. Verification Quality Gates & BeyondCorp Cloud Run In-Container Self-Test
 
-Every code change must pass:
-1. **TypeScript Typecheck**: `npx tsc --noEmit` must exit with code `0`.
-2. **Legacy Governance Audit**: `npm run guard:legacy` must confirm zero banned packages (`SadTalker`, `Wav2Lip`, `D-ID`, `mp4v`).
-3. **Automated E2E Headless Suite**: Headless macOS Chrome verification capturing visual proofs in `scratch/screenshots_<task_id>/`.
+Every code change and Cloud Run revision must pass:
+1. **TypeScript & Standalone Build**: `npm run check` (`canonical:qa` + `next build`) must exit with code `0`.
+2. **Legacy Governance & Dual-Engine Audit**: `npm run guard:deterministic` verifies zero banned packages (`SadTalker`, `Wav2Lip`, `D-ID`, `mp4v`), zero retired `Studio1` workers, and live SQLite WAL optimistic-CAS parity.
+3. **In-Container BeyondCorp Cloud Run Pre-Traffic Canary & E2E Gate ([`scripts/gate5_self_verify_entrypoint.mjs`](file:///Users/nitinagga/Documents/zyvoriq/scripts/gate5_self_verify_entrypoint.mjs), [`instrumentation.ts`](file:///Users/nitinagga/Documents/zyvoriq/instrumentation.ts), & [`scripts/deploy_zyvoriq_cloudrun.py`](file:///Users/nitinagga/Documents/zyvoriq/scripts/deploy_zyvoriq_cloudrun.py))**: Because `zyvoriq` enforces `run.googleapis.com/ingress: internal-and-cloud-load-balancing` (with request-scoped CPU throttling once TCP port `8080` binds) behind Google's BeyondCorp Global External Application Load Balancer (`https://zyvoriq-248990048888.cr.gclb.goog`), [`scripts/gate5_self_verify_entrypoint.mjs`](file:///Users/nitinagga/Documents/zyvoriq/scripts/gate5_self_verify_entrypoint.mjs) runs a fail-closed loopback HTTP E2E + Dual-Engine CAS suite on `127.0.0.1:18080` under unthrottled startup CPU boost *before* opening `0.0.0.0:8080` and emits `[CLOUDRUN_BOOT_SELFTEST_PASS]` + `CLOUDRUN_LIVE_E2E_VERIFICATION_RESULT:` to Cloud Logging, verified synchronously by Gate 5 of [`scripts/deploy_zyvoriq_cloudrun.py`](file:///Users/nitinagga/Documents/zyvoriq/scripts/deploy_zyvoriq_cloudrun.py).

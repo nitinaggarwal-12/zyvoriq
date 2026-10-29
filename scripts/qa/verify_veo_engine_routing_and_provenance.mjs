@@ -67,6 +67,10 @@ const reelsProductionByIdRoute = readRepoFile("app/api/reels/productions/[id]/ro
 const reelPlanner = readRepoFile("lib/reel/planner.ts");
 const reelInspection = readRepoFile("lib/reel/inspection.ts");
 const reelsCapabilitiesRoute = readRepoFile("app/api/reels/capabilities/route.ts");
+const reelProductionStore = readRepoFile("lib/reel/productionStore.ts");
+const reelProductionControl = readRepoFile("lib/reel/productionControl.ts");
+const episodeStore = readRepoFile("lib/episode/episodeStore.ts");
+const instrumentationSrc = readRepoFile("instrumentation.ts");
 const pkgJson = JSON.parse(readRepoFile("package.json"));
 
 assert.ok(operationQueue.includes("STUDIO1_WORKER_PRUNED_OPTION_A"), "lib/reel/operationQueue.ts enqueue must fail closed with STUDIO1_WORKER_PRUNED_OPTION_A");
@@ -82,9 +86,13 @@ assert.ok(reelsPlanRoute.includes('canonicalEngine: "omni11_veo31_safety_net"'),
 assert.ok(reelsProductionsRoute.includes('canonicalEngine: "omni11_veo31_safety_net"'), "/api/reels/productions must declare omni11_veo31_safety_net");
 assert.ok(!reelInspection.includes("/studio/inspector"), "lib/reel/inspection.ts must point canonicalUrl to /entity/[id], not retired /studio/inspector");
 assert.ok(reelInspection.includes("/entity/${encodeURIComponent(manifest.id)}"), "lib/reel/inspection.ts must point canonicalUrl to /entity/[id]");
-assert.ok(!reelsCapabilitiesRoute.includes('"sqlite-fallback"'), "/api/reels/capabilities must report truthful Postgres vs studio_entities SQLite persistence");
+assert.ok(reelsCapabilitiesRoute.includes('"sqlite-wal"'), "/api/reels/capabilities must report dual-engine sqlite-wal persistence when Postgres is unconfigured");
+assert.ok(reelProductionStore.includes("ensureSqliteDb") && !reelProductionStore.includes("no local fallback"), "lib/reel/productionStore.ts must support zero-config SQLite WAL fallback");
+assert.ok(reelProductionControl.includes("ensureSqliteControlDb") && !reelProductionControl.includes("requires Postgres"), "lib/reel/productionControl.ts must support zero-config SQLite WAL fallback");
+assert.ok(episodeStore.includes("ensureSqliteEpisodesDb") && !episodeStore.includes("POSTGRES_REQUIRED"), "lib/episode/episodeStore.ts must support zero-config SQLite WAL fallback");
+assert.ok(instrumentationSrc.includes("[CLOUDRUN_BOOT_SELFTEST_PASS]"), "instrumentation.ts must run Cloud Run in-container HTTP boot self-verification");
 assert.equal((swarmJobsRoute.match(/job\.isFallbackMaster\s*=\s*true;/g) || []).length >= 3, true, "/api/swarm/jobs must flag job.isFallbackMaster = true on both Act 1-2 and extended-act seed recoveries");
 assert.equal(pkgJson.scripts?.["worker:reels"], undefined, "package.json must not retain dead worker:reels script");
 assert.equal(pkgJson.scripts?.["studio1:qa"], undefined, "package.json must not retain dead studio1:qa script");
 
-console.log("✅ Option A (Lean Omni-First + Veo 3.1 Safety-Net) engine routing, provenance, and Studio1 pruning QA passed");
+console.log("✅ Option A (Lean Omni-First + Veo 3.1 Safety-Net), SQLite WAL dual-engine parity, and Cloud Run boot self-test QA passed");

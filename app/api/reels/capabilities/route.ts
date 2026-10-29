@@ -33,7 +33,7 @@ export async function GET() {
     success: true,
     productionReady: blockers.length === 0,
     capabilities: {
-      persistence: postgres ? "postgres" : "postgres-unconfigured (studio_entities uses sqlite)",
+      persistence: postgres ? "postgres" : "sqlite-wal",
       durableAssetStorage: storage,
       geminiConfigured: gemini,
       ffmpeg,
