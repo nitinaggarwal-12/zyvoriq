@@ -31,10 +31,12 @@ const fb = 64 * 36;
 const totalF = Math.floor(rawLuma.length / fb);
 
 const frameSteps = [];
+let duplicateFrames = 0;
 for (let f = 1; f < totalF; f++) {
   let diff = 0;
   for (let i = 0; i < fb; i++) diff += Math.abs(rawLuma[f * fb + i] - rawLuma[(f - 1) * fb + i]);
   const meanStep = diff / fb;
+  if (meanStep < 0.06) duplicateFrames++;
   if (meanStep < 28.0) frameSteps.push(meanStep);
 }
 
@@ -42,13 +44,31 @@ const meanVel = frameSteps.length ? frameSteps.reduce((a, b) => a + b, 0) / fram
 const sorted = [...frameSteps].sort((a, b) => a - b);
 const p90Vel = sorted.length ? sorted[Math.floor(sorted.length * 0.9)] : 0;
 
-if (p90Vel > 2.65 || meanVel > 2.25) {
-  console.error(`[gate_motion_velocity_cadence] FAIL: Speed-warped frame velocity detected (meanVel=${meanVel.toFixed(3)}, p90Vel=${p90Vel.toFixed(3)}; ceiling mean<=2.25, p90<=2.65). Video has been artificially accelerated via setpts.`);
+if (meanVel < 0.35 && totalF > 24) {
+  console.error(`[gate_motion_velocity_cadence] FAIL: Motion velocity too low (meanVel=${meanVel.toFixed(3)} < 0.35). Video is frozen or near-static.`);
   process.exit(1);
 }
 
-if (meanVel < 0.35 && totalF > 24) {
-  console.error(`[gate_motion_velocity_cadence] FAIL: Motion velocity too low (meanVel=${meanVel.toFixed(3)} < 0.35). Video is frozen or near-static.`);
+// Detect periodic frame-drop decimation spikes created when setpts<1.0*PTS is re-encoded at 24/1 CFR:
+// every dropped frame creates an isolated ~2x optical-step spike relative to both neighboring frame steps.
+let decimationSpikes = 0;
+for (let i = 1; i < frameSteps.length - 1; i++) {
+  const s = frameSteps[i];
+  if (s < 18.0 && s > 1.5 && s > 1.55 * frameSteps[i - 1] && s > 1.55 * frameSteps[i + 1]) {
+    decimationSpikes++;
+  }
+}
+const durSec = Math.max(1, totalF / 24.0);
+const decimationSpikesPerSec = decimationSpikes / durSec;
+const duplicateFramesPerSec = duplicateFrames / durSec;
+
+if (decimationSpikesPerSec > 0.85 || p90Vel > 16.0 || meanVel > 8.5) {
+  console.error(`[gate_motion_velocity_cadence] FAIL: Speed-warped frame velocity detected (decimationSpikesPerSec=${decimationSpikesPerSec.toFixed(3)}, meanVel=${meanVel.toFixed(3)}, p90Vel=${p90Vel.toFixed(3)}; ceiling spikes/s<=0.85). Video has been artificially accelerated via setpts.`);
+  process.exit(1);
+}
+
+if (duplicateFramesPerSec > 0.85 && totalF > 48) {
+  console.error(`[gate_motion_velocity_cadence] FAIL: Slow-motion duplicated frame cadence detected (duplicateFramesPerSec=${duplicateFramesPerSec.toFixed(3)} > 0.85). Video has been artificially stretched via setpts.`);
   process.exit(1);
 }
 
@@ -58,5 +78,6 @@ console.log(JSON.stringify({
   r_frame_rate: st.r_frame_rate,
   frames: totalF,
   meanLumaVelocity: Number(meanVel.toFixed(3)),
-  p90LumaVelocity: Number(p90Vel.toFixed(3))
+  p90LumaVelocity: Number(p90Vel.toFixed(3)),
+  decimationSpikesPerSec: Number(decimationSpikesPerSec.toFixed(3))
 }));

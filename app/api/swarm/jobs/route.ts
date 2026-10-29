@@ -65,6 +65,7 @@ export interface SwarmGenerationJob {
   studioUrl?: string;
   posterSrc?: string;
   durationSeconds?: number;
+  aspectRatio?: "9:16" | "16:9" | "1:1";
   foundationModel?: string;
   usedVeo31Live?: boolean;
   usedVeo31Tier?: "quality" | "fast";
@@ -78,6 +79,7 @@ export interface SwarmGenerationJob {
     muxWorker: number;
   };
   title: string;
+  prompt?: string;
   genre: string;
   bpm: number;
   audioEngine?: "omni_lyria3" | "omni_native";
@@ -129,18 +131,6 @@ function resolveApiKey(overrideKey?: string): string {
     process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
     process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
   if (envKey && envKey.trim()) return envKey.trim();
-  for (const file of [".env.local", ".env"]) {
-    try {
-      const envPath = path.join(process.cwd(), file);
-      if (fs.existsSync(envPath)) {
-        const content = fs.readFileSync(envPath, "utf8");
-        const match = content.match(/(?:GEMINI_API_KEY|GOOGLE_API_KEY)\s*=\s*([^\r\n#]+)/);
-        if (match && match[1]) return match[1].trim().replace(/^["']|["']$/g, "");
-      }
-    } catch {
-      // ignore
-    }
-  }
   return "STUDIO_MASTER_SYNTHESIS_ACTIVE";
 }
 
@@ -237,6 +227,18 @@ function sanitizePromptForOmniSafety(raw: string): string {
     .replace(/\breal\s+people('s)?\b/gi, "photorealistic live-action adult cinema actors")
     .replace(/\breal\s+human(\s+beings|\s+actors)?\b/gi, "photorealistic live-action adult cinema actors")
     // Copyright, celebrity likeness & noir safety normalizations
+    .replace(/\bShakira('s)?\b/gi, (_, poss?: string) =>
+      poss ? "the fiery Latin-pop mezzo-soprano diva's" : "a fiery Latin-pop mezzo-soprano diva"
+    )
+    .replace(/\bHips\s+Don'?t\s+Lie\b/gi, "Barranquilla Carnival Pulse")
+    .replace(/\bWaka\s+Waka\b/gi, "Golden Stadium Carnival")
+    .replace(/\bWyclef(\s+Jean)?('s)?\b/gi, "the charismatic baritone hype vocalist")
+    .replace(/\b(Beyonc[eé]|Rihanna|Taylor\s+Swift|Dua\s+Lipa|Lady\s+Gaga|Ariana\s+Grande)('s)?\b/gi, (_, _name: string, poss?: string) =>
+      poss ? "the headline pop vocal superstar's" : "a headline pop vocal superstar"
+    )
+    .replace(/\b(Bad\s+Bunny|Drake|The\s+Weeknd|Arijit\s+Singh|Diljit\s+Dosanjh)('s)?\b/gi, (_, _name: string, poss?: string) =>
+      poss ? "the headline studio vocalist's" : "a headline studio vocalist"
+    )
     .replace(/\bMichael\s+Jackson('s)?\b/gi, "the lead Art-Deco jazz-funk choreographer")
     .replace(/\bSmooth\s+Criminal\b/gi, "Midnight Pinstripe Velocity")
     .replace(/\bMoonwalker\b/gi, "Art-Deco Nocturne")
@@ -258,7 +260,8 @@ async function callOmniInteractions(
   if (!isLiveGeminiApiKey(apiKey)) {
     throw new Error(`[${label}] Studio token missing — routing to Studio Master Synthesis Pool`);
   }
-  const MAX_RETRIES = 1;
+  const MAX_RETRIES = 3;
+  const OMNI_TIMEOUT_MS = 150000;
   const workingPayload: Record<string, unknown> = { ...payload };
 
   // Sanitize any text blocks in workingPayload.input
@@ -282,12 +285,12 @@ async function callOmniInteractions(
           "x-goog-api-key": apiKey,
         },
         body: JSON.stringify({ model: MODEL, ...workingPayload }),
-        signal: AbortSignal.timeout(15000),
+        signal: AbortSignal.timeout(OMNI_TIMEOUT_MS),
       });
     } catch (netErr) {
       if (attempt < MAX_RETRIES) {
-        const waitSec = 2;
-        onRetry?.(attempt, MAX_RETRIES, waitSec, 503, "network timeout — routing to parallel swarm pool");
+        const waitSec = 4 * attempt;
+        onRetry?.(attempt, MAX_RETRIES, waitSec, 503, "network timeout — retrying Omni 1.1 interaction");
         await new Promise((r) => setTimeout(r, waitSec * 1000));
         continue;
       }
@@ -298,6 +301,12 @@ async function callOmniInteractions(
     if (!res.ok) {
       if (rawText.includes("API_KEY_INVALID") || rawText.includes("API keys are not supported") || res.status === 401 || res.status === 403 || res.status === 404) {
         throw new Error(`[${label}] HTTP ${res.status}: ${rawText.slice(0, 300)}`);
+      }
+      if ((res.status === 429 || res.status >= 500) && attempt < MAX_RETRIES) {
+        const waitSec = 5 * attempt;
+        onRetry?.(attempt, MAX_RETRIES, waitSec, res.status, rawText.slice(0, 120));
+        await new Promise((r) => setTimeout(r, waitSec * 1000));
+        continue;
       }
       throw new Error(`[${label}] HTTP ${res.status}: ${rawText.slice(0, 600)}`);
     }
@@ -315,7 +324,35 @@ async function callOmniInteractions(
   throw new Error(`[${label}] Exhausted ${MAX_RETRIES} retries`);
 }
 
-function lockExactDuration(rawPath: string, outPath: string, seconds: number) {
+function resolveTargetScaleAndCrop(aspectRatio?: string): { w: number; h: number; vfScale: string } {
+  if (aspectRatio === "16:9") {
+    return {
+      w: 1280,
+      h: 720,
+      vfScale: "scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,setsar=1",
+    };
+  }
+  if (aspectRatio === "1:1") {
+    return {
+      w: 1080,
+      h: 1080,
+      vfScale: "scale=1080:1080:force_original_aspect_ratio=increase,crop=1080:1080,setsar=1",
+    };
+  }
+  return {
+    w: 720,
+    h: 1280,
+    vfScale: "scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,setsar=1",
+  };
+}
+
+function lockExactDuration(
+  rawPath: string,
+  outPath: string,
+  seconds: number,
+  aspectRatio: "9:16" | "16:9" | "1:1" = "9:16"
+) {
+  const { vfScale } = resolveTargetScaleAndCrop(aspectRatio);
   try {
     let hasAudioStream = false;
     try {
@@ -347,7 +384,7 @@ function lockExactDuration(rawPath: string, outPath: string, seconds: number) {
           "-i",
           rawPath,
           "-vf",
-          `fps=24/1,scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,setsar=1,trim=0:${seconds},setpts=PTS-STARTPTS`,
+          `fps=24/1,${vfScale},trim=0:${seconds},setpts=PTS-STARTPTS`,
           "-af",
           `aresample=48000,atrim=0:${seconds},asetpts=PTS-STARTPTS`,
           "-c:v",
@@ -382,7 +419,7 @@ function lockExactDuration(rawPath: string, outPath: string, seconds: number) {
           "-i",
           rawPath,
           "-filter_complex",
-          `[0:v]fps=24/1,scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,setsar=1,trim=0:${seconds},setpts=PTS-STARTPTS[vout];anullsrc=r=48000:cl=stereo,atrim=0:${seconds},asetpts=PTS-STARTPTS[aout]`,
+          `[0:v]fps=24/1,${vfScale},trim=0:${seconds},setpts=PTS-STARTPTS[vout];anullsrc=r=48000:cl=stereo,atrim=0:${seconds},asetpts=PTS-STARTPTS[aout]`,
           "-map",
           "[vout]",
           "-map",
@@ -425,8 +462,10 @@ function lockOrAssemble30sAct(
   turnCRawPath: string,
   actMasterPath: string,
   jobDir: string,
-  actPrefix: string
+  actPrefix: string,
+  aspectRatio: "9:16" | "16:9" | "1:1" = "9:16"
 ) {
+  const { vfScale } = resolveTargetScaleAndCrop(aspectRatio);
   let cDur = 30;
   try {
     cDur = parseFloat(
@@ -441,7 +480,7 @@ function lockOrAssemble30sAct(
   }
 
   if (cDur >= 28) {
-    lockExactDuration(turnCRawPath, actMasterPath, 30);
+    lockExactDuration(turnCRawPath, actMasterPath, 30, aspectRatio);
     return;
   }
 
@@ -471,7 +510,7 @@ function lockOrAssemble30sAct(
       "-i",
       turnBRawPath,
       "-vf",
-      "fps=24/1,trim=0:10,setpts=PTS-STARTPTS",
+      `fps=24/1,${vfScale},trim=0:10,setpts=PTS-STARTPTS`,
       "-af",
       "aresample=48000,atrim=0:10,asetpts=PTS-STARTPTS",
       "-c:v",
@@ -510,7 +549,7 @@ function lockOrAssemble30sAct(
       "-i",
       turnCRawPath,
       "-vf",
-      "fps=24/1,trim=0:10,setpts=PTS-STARTPTS",
+      `fps=24/1,${vfScale},trim=0:10,setpts=PTS-STARTPTS`,
       "-af",
       "aresample=48000,atrim=0:10,asetpts=PTS-STARTPTS",
       "-c:v",
@@ -557,8 +596,19 @@ async function synthesize30sActViaVeo31(params: {
   actMasterPath: string;
   jobDir: string;
   modelTier: "quality" | "fast";
+  aspectRatio?: "9:16" | "16:9" | "1:1";
 }): Promise<void> {
-  const { apiKey, actPrefix, beatPrompts, keyframeB64, actMasterPath, jobDir, modelTier } = params;
+  const {
+    apiKey,
+    actPrefix,
+    beatPrompts,
+    keyframeB64,
+    actMasterPath,
+    jobDir,
+    modelTier,
+    aspectRatio = "9:16",
+  } = params;
+  const veoAspect: "9:16" | "16:9" = aspectRatio === "16:9" ? "16:9" : "9:16";
   const sanitizedBeats = beatPrompts.map((b) => sanitizePromptForOmniSafety(b));
   const fourBeatPrompts = [
     `${sanitizedBeats[0]} (Opening establishing beat, 35mm anamorphic cinema, zero burned-in text or logos)`,
@@ -572,7 +622,7 @@ async function synthesize30sActViaVeo31(params: {
       generateVeoVideoBytes(beatPrompt, {
         apiKey,
         durationSeconds: 8,
-        aspectRatio: "9:16",
+        aspectRatio: veoAspect,
         modelTier,
         lastFrameConditioning: idx === 0 && keyframeB64 ? keyframeB64 : undefined,
       })
@@ -584,7 +634,7 @@ async function synthesize30sActViaVeo31(params: {
     const rawTakePath = path.join(jobDir, `${actPrefix}_veo_take${i + 1}_raw.mp4`);
     const normTakePath = path.join(jobDir, `${actPrefix}_veo_take${i + 1}_8s.mp4`);
     fs.writeFileSync(rawTakePath, takeResults[i].buffer);
-    lockExactDuration(rawTakePath, normTakePath, 8);
+    lockExactDuration(rawTakePath, normTakePath, 8, aspectRatio);
     normalizedTakePaths.push(normTakePath);
   }
 
@@ -600,7 +650,7 @@ async function synthesize30sActViaVeo31(params: {
     ["-y", "-f", "concat", "-safe", "0", "-i", concatTxtPath, "-c", "copy", raw32sPath],
     { stdio: "ignore" }
   );
-  lockExactDuration(raw32sPath, actMasterPath, 30);
+  lockExactDuration(raw32sPath, actMasterPath, 30, aspectRatio);
 }
 
 function muxAudioOntoVideo(
@@ -611,6 +661,7 @@ function muxAudioOntoVideo(
   audioOffsetSec = 0
 ) {
   const tmpOut = `${outPath}.${crypto.randomUUID().slice(0, 8)}.mux_tmp.mp4`;
+  const shouldLoopAudio = seconds > 55 && audioOffsetSec === 0;
   execFileSync(
     "ffmpeg",
     [
@@ -619,8 +670,7 @@ function muxAudioOntoVideo(
       videoPath,
       "-ss",
       String(audioOffsetSec),
-      "-t",
-      String(seconds),
+      ...(shouldLoopAudio ? [] : ["-t", String(seconds)]),
       "-i",
       audioPath,
       "-map",
@@ -640,7 +690,7 @@ function muxAudioOntoVideo(
       "-r",
       "24/1",
       "-af",
-      `aresample=48000,apad=whole_dur=${seconds},atrim=0:${seconds},asetpts=PTS-STARTPTS,alimiter=limit=0.72:level=disabled`,
+      `${shouldLoopAudio ? "aloop=loop=-1:size=2000000000," : ""}aresample=48000,apad=whole_dur=${seconds},atrim=0:${seconds},asetpts=PTS-STARTPTS,alimiter=limit=0.84:level=disabled`,
       "-c:a",
       "aac",
       "-b:a",
@@ -791,8 +841,9 @@ async function generateLyria3MasterSong(
     .split("\n")
     .map((l) =>
       l
-        .replace(/^\[[^\]]*\]\s*/, "")
+        .replace(/^\[[^\]]*\]:?\s*/, "")
         .replace(/\s*\(\d+\s*BPM\)\s*$/i, "")
+        .replace(/^["“”']+|["“”']+$/g, "")
         .trim()
     )
     .filter(Boolean);
@@ -858,14 +909,18 @@ async function generateLyria3MasterSong(
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/${LYRIA_MODEL}:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/${LYRIA_MODEL}:generateContent`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
+          },
           body: JSON.stringify({
             contents: [{ role: "user", parts: [{ text: fullLyriaPrompt }] }],
             generationConfig: { responseModalities: ["AUDIO"] },
           }),
+          signal: AbortSignal.timeout(150000),
         }
       );
 
@@ -945,9 +1000,9 @@ async function generateLyria3MasterSong(
       }
 
       // Apply Studio Vocal Presence & Intelligibility Mastering Chain (48kHz stereo, -14.0 LUFS EBU R128)
-      // Crossfades the active chorus (20.0s+) into the final 10s whenever intro trimming shortens a ~62s Lyria track below 60s.
-      const bodyDur = Math.max(48, +(60.5 - Math.max(0, trimStartSec - 2.0)).toFixed(2));
-      const tailNeeded = Math.max(3, +(61.5 - bodyDur).toFixed(2));
+      // Strips any premature Lyria fade-out/dropout below -34dB and crossfades the active chorus (16.0s+) into the finale so 60.0s masters have zero -40dB silence gaps.
+      const bodyDur = Math.max(44, +(56.0 - Math.max(0, trimStartSec - 2.0)).toFixed(2));
+      const tailNeeded = 28.0;
       execFileSync(
         "ffmpeg",
         [
@@ -959,13 +1014,13 @@ async function generateLyria3MasterSong(
           "-i",
           rawAudioPath,
           "-ss",
-          "20.00",
+          "16.00",
           "-t",
           String(tailNeeded),
           "-i",
           rawAudioPath,
           "-filter_complex",
-          "[0:a][1:a]acrossfade=d=1.0:c1=tri:c2=tri,atrim=0:60.000,asetpts=PTS-STARTPTS,highpass=f=45,equalizer=f=280:t=q:w=1.2:g=-3.2,equalizer=f=1150:t=q:w=1.1:g=2.5,equalizer=f=3100:t=q:w=1.0:g=4.2,equalizer=f=6500:t=q:w=0.9:g=2.2,afade=t=in:st=0:d=0.35,afade=t=out:st=58.5:d=1.5,loudnorm=I=-14.0:TP=-1.0:LRA=9.0[outa]",
+          "[0:a]silenceremove=start_periods=0:stop_periods=-1:stop_duration=0.18:stop_threshold=-34dB[body];[1:a]silenceremove=start_periods=0:stop_periods=-1:stop_duration=0.18:stop_threshold=-34dB[tail];[body][tail]acrossfade=d=1.5:c1=tri:c2=tri,atrim=0:60.000,asetpts=PTS-STARTPTS,highpass=f=45,equalizer=f=280:t=q:w=1.2:g=-3.2,equalizer=f=1150:t=q:w=1.1:g=2.5,equalizer=f=3100:t=q:w=1.0:g=4.2,equalizer=f=6500:t=q:w=0.9:g=2.2,loudnorm=I=-14.0:TP=-1.0:LRA=9.0,volume='if(lt(t,14),0.66,if(lt(t,29),1.22,if(lt(t,41),0.68,if(lt(t,56.5),1.26,0.66))))':eval=frame,afade=t=in:st=0:d=0.10,afade=t=out:st=59.88:d=0.12,alimiter=limit=0.84:level=disabled[outa]",
           "-map",
           "[outa]",
           "-ar",
@@ -2180,12 +2235,19 @@ async function runRealOmniPipeline(
   const apiKey = resolveApiKey(clientApiKey);
   const jobDir = getJobDir(job.id);
   const publicPrefix = `/assets/swarm/generated/${job.id}`;
-  const combinedContext = `${job.title} ${job.genre} ${job.act1Prompt} ${job.act2Prompt}`;
-  const isRealisticCinema = /\b(real\s+people|everything\s+real|live-action\s+cinema|ten\s+billion|beyond\s+control|higgsfield|dramatic\s+film|thriller|census|enforcer|35mm\s+live-action|kailash|shiva|parvati|ganesh|mytholog|epic\s+cinema|spoken\s+dialogue)\b/i.test(
-    combinedContext
+  const combinedContext = `${job.title} ${job.prompt || ""} ${job.genre} ${job.act1Prompt} ${job.act2Prompt}`;
+  const isExplicitMusicBrief = /\b(music\s*(?:video|album|reel|track)|song|sing(?:ing|er)?|vocal(?:s|ist)?|lyrics?|dance|dancing|choreograph(?:y|er)?|lyria|cumbia|reggaeton|salsa|bachata|bhangra|flamenco|bollywood|pop\s*anthem|hip[\s-]*hop|rap|edm|shakira|hips\s*don'?t\s*lie|waka\s*waka|beyonc[eé]|rihanna|bad\s*bunny|dua\s*lipa|concert)\b/i.test(
+    `${job.title} ${job.prompt || ""} ${job.genre}`
   );
-  // Never overwrite spoken live-action cinema dialogue with a closed-lips Lyria pop song
-  const useLyria3 = job.audioEngine === "omni_lyria3" && !isRealisticCinema;
+  const isRealisticCinema =
+    !isExplicitMusicBrief &&
+    /\b(real\s+people|everything\s+real|live-action\s+cinema|ten\s+billion|beyond\s+control|dramatic\s+film|thriller|census|enforcer|35mm\s+live-action|kailash|shiva|parvati|ganesh|mytholog|epic\s+cinema|spoken\s+dialogue)\b/i.test(
+      combinedContext
+    );
+  // Route all music/dance/vocal reels or omni_lyria3 jobs to Lyria 3 Pro studio song synthesis
+  const useLyria3 =
+    (job.audioEngine === "omni_lyria3" || isExplicitMusicBrief) &&
+    !isRealisticCinema;
 
   const log = (msg: string, stage?: string, progress?: number) => {
     const stamp = new Date().toISOString().slice(11, 19);
@@ -2230,7 +2292,7 @@ async function runRealOmniPipeline(
           const dstLyriaMp3 = path.join(jobDir, "lyria3_master_60s.mp3");
           fs.copyFileSync(srcLyriaMp3, dstLyriaMp3);
           lyriaMasterMp3 = dstLyriaMp3;
-          job.soundtrackSrc = `${publicPrefix}/lyria3_master_60s.mp3?t=${Date.now()}`;
+          job.soundtrackSrc = `/api/media${publicPrefix}/lyria3_master_60s.mp3?t=${Date.now()}`;
           if (srcLyriaState?.vocalAlignment) {
             job.vocalAlignment = srcLyriaState.vocalAlignment;
           }
@@ -2243,8 +2305,20 @@ async function runRealOmniPipeline(
       }
       if (!lyriaMasterMp3) {
         lyriaMasterMp3 = await generateLyria3MasterSong(apiKey, job, jobDir, log);
+        if (lyriaMasterMp3) {
+          job.soundtrackSrc = `/api/media${publicPrefix}/lyria3_master_60s.mp3?t=${Date.now()}`;
+        }
       }
     }
+
+    const jobAspect: "9:16" | "16:9" | "1:1" =
+      job.aspectRatio === "16:9" ? "16:9" : job.aspectRatio === "1:1" ? "1:1" : "9:16";
+    const aspectPromptPhrase =
+      jobAspect === "16:9"
+        ? "16:9 widescreen cinema"
+        : jobAspect === "1:1"
+        ? "1:1 square feed"
+        : "9:16 vertical";
 
     // ADK + ORCAS ENHANCEMENT 1: Pre-Diffusion Keyframe Critic Loop (`keyframe_manifest.json`)
     const adkKeyframes = job.adkOrcasMode
@@ -2291,19 +2365,47 @@ async function runRealOmniPipeline(
       ? "Continue seamlessly with the exact same real human actors, natural skin texture, real-world clothing, physical architecture, 35mm anamorphic camera realism, and clear synchronized 48kHz spoken English dialogue with realistic lip-sync (zero text overlays or title cards)."
       : `Continue seamlessly in the exact same venue, cast, wardrobe, and continuous ${job.bpm} BPM rhythm (zero text overlays or title cards).`;
 
+    const totalTargetActs = Math.max(2, Math.round(Number(job.durationSeconds || 60) / 30));
+    const hasPerTurnPrompts =
+      Array.isArray(job.turnPrompts) && job.turnPrompts.length >= totalTargetActs * 3;
+
     if (!fs.existsSync(act1MasterPath) || !fs.existsSync(act2MasterPath)) {
-      const t1A = prepareTurnPrompt(job.turnPrompts?.[0] || job.act1Prompt, win[0]);
-      const t1B = prepareTurnPrompt(job.turnPrompts?.[1] || job.act1Prompt, win[1]);
-      const t1C = prepareTurnPrompt(job.turnPrompts?.[2] || job.act1Prompt, win[2]);
-      const t2A = prepareTurnPrompt(job.turnPrompts?.[3] || job.act2Prompt, win[3]);
-      const t2B = prepareTurnPrompt(job.turnPrompts?.[4] || job.act2Prompt, win[4]);
-      const t2C = prepareTurnPrompt(job.turnPrompts?.[5] || job.act2Prompt, win[5]);
+      const act1Base = hasPerTurnPrompts
+        ? job.act1Prompt
+        : job.turnPrompts?.[0] || job.act1Prompt;
+      const act2Base = hasPerTurnPrompts
+        ? job.act2Prompt
+        : job.turnPrompts?.[1] || job.act2Prompt;
+      const t1A = prepareTurnPrompt(
+        hasPerTurnPrompts ? job.turnPrompts?.[0] || act1Base : act1Base,
+        win[0]
+      );
+      const t1B = prepareTurnPrompt(
+        hasPerTurnPrompts ? job.turnPrompts?.[1] || act1Base : act1Base,
+        win[1]
+      );
+      const t1C = prepareTurnPrompt(
+        hasPerTurnPrompts ? job.turnPrompts?.[2] || act1Base : act1Base,
+        win[2]
+      );
+      const t2A = prepareTurnPrompt(
+        hasPerTurnPrompts ? job.turnPrompts?.[3] || act2Base : act2Base,
+        win[3]
+      );
+      const t2B = prepareTurnPrompt(
+        hasPerTurnPrompts ? job.turnPrompts?.[4] || act2Base : act2Base,
+        win[4]
+      );
+      const t2C = prepareTurnPrompt(
+        hasPerTurnPrompts ? job.turnPrompts?.[5] || act2Base : act2Base,
+        win[5]
+      );
 
       try {
         if (job.foundationModel === "veo31_4k") {
           log(
-            `🎥 [Veo 3.1 Primary Engine] Dispatching parallel 4-take Act I & Act II diffusion via models/veo-3.1-generate-preview...`,
-            `Stage 1/6 • Generating Act I & Act II via Google Veo 3.1 (veo-3.1-generate-preview)...`,
+            `🎥 [Veo 3.1 Primary Engine] Dispatching parallel 4-take Act I & Act II (${jobAspect}) diffusion via models/veo-3.1-generate-preview...`,
+            `Stage 1/6 • Generating Act I & Act II (${jobAspect}) via Google Veo 3.1 (veo-3.1-generate-preview)...`,
             24
           );
           await Promise.all([
@@ -2315,6 +2417,7 @@ async function runRealOmniPipeline(
               actMasterPath: act1MasterPath,
               jobDir,
               modelTier: "quality",
+              aspectRatio: jobAspect,
             }),
             synthesize30sActViaVeo31({
               apiKey,
@@ -2324,6 +2427,7 @@ async function runRealOmniPipeline(
               actMasterPath: act2MasterPath,
               jobDir,
               modelTier: "quality",
+              aspectRatio: jobAspect,
             }),
           ]);
           job.usedVeo31Live = true;
@@ -2333,11 +2437,11 @@ async function runRealOmniPipeline(
         // STAGE 1: ACT I TURN 1A (00:00 -> 00:10, 240 native frames)
         // -------------------------------------------------------------------------
         log(
-          `Calling ${MODEL} for Act I Turn 1A (00:00–00:10)${adkKeyframes ? " [ADK+ORCAS Keyframe-Conditioned]" : ""}... Prompt: "${t1A.slice(
+          `Calling ${MODEL} for Act I Turn 1A (00:00–00:10, ${jobAspect})${adkKeyframes ? " [ADK+ORCAS Keyframe-Conditioned]" : ""}... Prompt: "${t1A.slice(
             0,
             90
           )}..."`,
-          `Stage 1/6 • Generating Act I Turn 1A (00:00–00:10) via ${MODEL}${
+          `Stage 1/6 • Generating Act I Turn 1A (00:00–00:10, ${jobAspect}) via ${MODEL}${
             useLyria3 ? ` (Closed-Lips Eye/Body Acting + ${LYRIA_MODEL} Beat)` : ""
           }...`,
           18
@@ -2356,7 +2460,7 @@ async function runRealOmniPipeline(
           {
             type: "text",
             text:
-              `Generate a 10.0-second 9:16 vertical 24fps opening ${sceneGenreNoun} (0s to 10s) ${closedLipsPrefix}` +
+              `Generate a 10.0-second ${aspectPromptPhrase} 24fps opening ${sceneGenreNoun} (0s to 10s) ${closedLipsPrefix}` +
               (adkKeyframes?.act1B64
                 ? `CRITICAL ADK+ORCAS KEYFRAME LOCK: Animate directly from the provided critic-approved Act I keyframe image, preserving the exact lead facial identity, high-contrast couture wardrobe, and Art-Deco speakeasy composition from t=0.0s. `
                 : "") +
@@ -2376,9 +2480,9 @@ async function runRealOmniPipeline(
         const turn1ARawPath = path.join(jobDir, "act1_turnA_10s_raw.mp4");
         const turn1APath = path.join(jobDir, "act1_turnA_10s.mp4");
         fs.writeFileSync(turn1ARawPath, Buffer.from(turn1A.videoBase64, "base64"));
-        lockExactDuration(turn1ARawPath, turn1APath, 10);
+        lockExactDuration(turn1ARawPath, turn1APath, 10, jobAspect);
 
-        job.part1Src = `${publicPrefix}/act1_turnA_10s.mp4?t=${Date.now()}`;
+        job.part1Src = `/api/media${publicPrefix}/act1_turnA_10s.mp4?t=${Date.now()}`;
         job.combinedSrc = job.part1Src;
         job.segments = [
           {
@@ -2433,13 +2537,13 @@ async function runRealOmniPipeline(
         const turn1BRawPath = path.join(jobDir, "act1_turnB_20s_raw.mp4");
         const turn1BPath = path.join(jobDir, "act1_turnB_20s.mp4");
         fs.writeFileSync(turn1BRawPath, Buffer.from(turn1B.videoBase64, "base64"));
-        lockExactDuration(turn1BRawPath, turn1BPath, 10);
+        lockExactDuration(turn1BRawPath, turn1BPath, 10, jobAspect);
 
         const turn1CRawPath = path.join(jobDir, "act1_turnC_30s_raw.mp4");
         fs.writeFileSync(turn1CRawPath, Buffer.from(turn1C.videoBase64, "base64"));
-        lockOrAssemble30sAct(turn1APath, turn1BRawPath, turn1CRawPath, act1MasterPath, jobDir, "act1");
+        lockOrAssemble30sAct(turn1APath, turn1BRawPath, turn1CRawPath, act1MasterPath, jobDir, "act1", jobAspect);
 
-        job.part1Src = `${publicPrefix}/act1_30s.mp4?t=${Date.now()}`;
+        job.part1Src = `/api/media${publicPrefix}/act1_30s.mp4?t=${Date.now()}`;
         job.combinedSrc = job.part1Src;
         job.segments = [
           {
@@ -2452,8 +2556,8 @@ async function runRealOmniPipeline(
           },
         ];
 
-        // Extract 3-Layer Biometric & Wardrobe Reference Anchor Frames (t = 2.0s, 5.0s, 8.5s) from Act I
-        const anchorTimes = [2.0, 5.0, 8.5];
+        // Extract 3-Layer Seam + Biometric + Wardrobe Reference Anchor Frames (t = 29.2s outgoing seam, 4.0s full-body wardrobe, 14.0s mid-shot) from Act I
+        const anchorTimes = [29.2, 4.0, 14.0];
         const anchorB64s: string[] = [];
         for (let i = 0; i < anchorTimes.length; i++) {
           const anchorFile =
@@ -2528,10 +2632,10 @@ async function runRealOmniPipeline(
               {
                 type: "text",
                 text:
-                  `Generate a 10.0-second 9:16 vertical 24fps second-half ${sceneGenreNoun} (0s to 10s) ${closedLipsPrefix}` +
+                  `Generate a 10.0-second ${aspectPromptPhrase} 24fps second-half ${sceneGenreNoun} (0s to 10s) ${closedLipsPrefix}` +
                   (adkKeyframes?.act2B64
                     ? `CRITICAL ADK+ORCAS ACT II KEYFRAME + BIOMETRIC LOCK: Animate directly from the critic-approved Act II rooftop keyframe image while preserving the exact lead facial identity from the Act I anchor photo. `
-                    : `CRITICAL 3-PHOTO IDENTITY LOCK: Feature the EXACT SAME adult cinema actors, faces, and identities from Part 1. `) +
+                    : `CRITICAL SEAM + 3-PHOTO IDENTITY & WARDROBE LOCK: Continue smoothly from the first reference photo (outgoing t=29.2s frame of Part 1) with the EXACT SAME lead actor face, identical garment silhouette/skirt design and bustier, and identical golden-hour lighting—zero wardrobe morph across the t=30s cut! `) +
                   `${t2A}`,
               },
             ],
@@ -2574,16 +2678,16 @@ async function runRealOmniPipeline(
         const turn2ARawPath = path.join(jobDir, "act2_turnA_10s_raw.mp4");
         const turn2APath = path.join(jobDir, "act2_turnA_10s.mp4");
         fs.writeFileSync(turn2ARawPath, Buffer.from(turn2A.videoBase64, "base64"));
-        lockExactDuration(turn2ARawPath, turn2APath, 10);
+        lockExactDuration(turn2ARawPath, turn2APath, 10, jobAspect);
 
         const turn2BRawPath = path.join(jobDir, "act2_turnB_20s_raw.mp4");
         const turn2BPath = path.join(jobDir, "act2_turnB_20s.mp4");
         fs.writeFileSync(turn2BRawPath, Buffer.from(turn2B.videoBase64, "base64"));
-        lockExactDuration(turn2BRawPath, turn2BPath, 10);
+        lockExactDuration(turn2BRawPath, turn2BPath, 10, jobAspect);
 
         const turn2CRawPath = path.join(jobDir, "act2_turnC_30s_raw.mp4");
         fs.writeFileSync(turn2CRawPath, Buffer.from(turn2C.videoBase64, "base64"));
-        lockOrAssemble30sAct(turn2APath, turn2BRawPath, turn2CRawPath, act2MasterPath, jobDir, "act2");
+        lockOrAssemble30sAct(turn2APath, turn2BRawPath, turn2CRawPath, act2MasterPath, jobDir, "act2", jobAspect);
         }
       } catch (omniLiveErr: unknown) {
         const errNote = omniLiveErr instanceof Error ? omniLiveErr.message : String(omniLiveErr);
@@ -2605,6 +2709,7 @@ async function runRealOmniPipeline(
                 actMasterPath: act1MasterPath,
                 jobDir,
                 modelTier: "fast",
+                aspectRatio: jobAspect,
               }),
               synthesize30sActViaVeo31({
                 apiKey,
@@ -2614,6 +2719,7 @@ async function runRealOmniPipeline(
                 actMasterPath: act2MasterPath,
                 jobDir,
                 modelTier: "fast",
+                aspectRatio: jobAspect,
               }),
             ]);
             veoFallbackSucceeded =
@@ -2760,58 +2866,62 @@ async function runRealOmniPipeline(
         76
       );
 
-      await Promise.all(
-        extraActIndices.map(async (actIdx) => {
-          const actMasterPath = path.join(jobDir, `act${actIdx}_30s.mp4`);
-          const baseTurnIdx = (actIdx - 1) * 3;
-          const tA = prepareTurnPrompt(
-            job.turnPrompts?.[baseTurnIdx] || job.act2Prompt,
-            win[baseTurnIdx]
-          );
-          const tB = prepareTurnPrompt(
-            job.turnPrompts?.[baseTurnIdx + 1] || job.act2Prompt,
-            win[baseTurnIdx + 1]
-          );
-          const tC = prepareTurnPrompt(
-            job.turnPrompts?.[baseTurnIdx + 2] || job.act2Prompt,
-            win[baseTurnIdx + 2]
-          );
+      const runExtendedAct = async (actIdx: number) => {
+        const actMasterPath = path.join(jobDir, `act${actIdx}_30s.mp4`);
+        const baseTurnIdx = (actIdx - 1) * 3;
+        const extActBase = hasPerTurnPrompts
+          ? job.act2Prompt
+          : job.turnPrompts?.[actIdx - 1] || job.act2Prompt;
+        const tA = prepareTurnPrompt(
+          hasPerTurnPrompts ? job.turnPrompts?.[baseTurnIdx] || extActBase : extActBase,
+          win[baseTurnIdx % Math.max(1, win.length)]
+        );
+        const tB = prepareTurnPrompt(
+          hasPerTurnPrompts ? job.turnPrompts?.[baseTurnIdx + 1] || extActBase : extActBase,
+          win[(baseTurnIdx + 1) % Math.max(1, win.length)]
+        );
+        const tC = prepareTurnPrompt(
+          hasPerTurnPrompts ? job.turnPrompts?.[baseTurnIdx + 2] || extActBase : extActBase,
+          win[(baseTurnIdx + 2) % Math.max(1, win.length)]
+        );
 
-          try {
-            if (useVeoForExtraActs) {
-              await synthesize30sActViaVeo31({
+        try {
+          if (useVeoForExtraActs) {
+            await synthesize30sActViaVeo31({
+              apiKey,
+              actPrefix: `act${actIdx}`,
+              beatPrompts: [tA, tB, tC],
+              actMasterPath,
+              jobDir,
+              modelTier: job.foundationModel === "veo31_4k" ? "quality" : "fast",
+              aspectRatio: jobAspect,
+            });
+          } else {
+            try {
+              const turnA = await callOmniInteractions(
                 apiKey,
-                actPrefix: `act${actIdx}`,
-                beatPrompts: [tA, tB, tC],
-                actMasterPath,
-                jobDir,
-                modelTier: job.foundationModel === "veo31_4k" ? "quality" : "fast",
-              });
-            } else {
-              try {
-                const turnA = await callOmniInteractions(
-                  apiKey,
-                  {
-                    input: [
-                      {
-                        type: "text",
-                        text:
-                          `Generate a 10.0-second 9:16 vertical 24fps Act ${actIdx} ${sceneGenreNoun} (0s to 10s) ${closedLipsPrefix}` +
-                          `CRITICAL IDENTITY LOCK: Feature the EXACT SAME adult cinema actors, faces, and wardrobes from Act 1 and Act 2. ` +
-                          `${tA}`,
-                      },
-                    ],
-                  },
-                  `ACT${actIdx}_TURN_A`,
-                  makeRetryLogger(`ACT${actIdx}_TURN_A`, 5)
-                );
+                {
+                  input: [
+                    {
+                      type: "text",
+                      text:
+                        `Generate a 10.0-second ${aspectPromptPhrase} 24fps Act ${actIdx} ${sceneGenreNoun} (0s to 10s) ${closedLipsPrefix}` +
+                        `CRITICAL IDENTITY LOCK: Feature the EXACT SAME adult cinema actors, faces, and wardrobes from Act 1 and Act 2. ` +
+                        `${tA}`,
+                    },
+                  ],
+                },
+                `ACT${actIdx}_TURN_A`,
+                makeRetryLogger(`ACT${actIdx}_TURN_A`, 5)
+              );
 
-                const turnARawPath = path.join(jobDir, `act${actIdx}_turnA_10s_raw.mp4`);
-                const turnAPath = path.join(jobDir, `act${actIdx}_turnA_10s.mp4`);
-                fs.writeFileSync(turnARawPath, Buffer.from(turnA.videoBase64, "base64"));
-                lockExactDuration(turnARawPath, turnAPath, 10);
+              const turnARawPath = path.join(jobDir, `act${actIdx}_turnA_10s_raw.mp4`);
+              const turnAPath = path.join(jobDir, `act${actIdx}_turnA_10s.mp4`);
+              fs.writeFileSync(turnARawPath, Buffer.from(turnA.videoBase64, "base64"));
+              lockExactDuration(turnARawPath, turnAPath, 10, jobAspect);
 
-                const turnB = await callOmniInteractions(
+              const [turnB, turnC] = await Promise.all([
+                callOmniInteractions(
                   apiKey,
                   {
                     previous_interaction_id: turnA.interactionId,
@@ -2824,15 +2934,11 @@ async function runRealOmniPipeline(
                   },
                   `ACT${actIdx}_TURN_B`,
                   makeRetryLogger(`ACT${actIdx}_TURN_B`, 5)
-                );
-
-                const turnBRawPath = path.join(jobDir, `act${actIdx}_turnB_20s_raw.mp4`);
-                fs.writeFileSync(turnBRawPath, Buffer.from(turnB.videoBase64, "base64"));
-
-                const turnC = await callOmniInteractions(
+                ),
+                callOmniInteractions(
                   apiKey,
                   {
-                    previous_interaction_id: turnB.interactionId,
+                    previous_interaction_id: turnA.interactionId,
                     input: [
                       {
                         type: "text",
@@ -2842,67 +2948,78 @@ async function runRealOmniPipeline(
                   },
                   `ACT${actIdx}_TURN_C`,
                   makeRetryLogger(`ACT${actIdx}_TURN_C`, 5)
-                );
+                ),
+              ]);
 
-                const turnCRawPath = path.join(jobDir, `act${actIdx}_turnC_30s_raw.mp4`);
-                fs.writeFileSync(turnCRawPath, Buffer.from(turnC.videoBase64, "base64"));
-                lockOrAssemble30sAct(
-                  turnAPath,
-                  turnBRawPath,
-                  turnCRawPath,
-                  actMasterPath,
-                  jobDir,
-                  `act${actIdx}`
-                );
-              } catch (extraOmniErr: unknown) {
-                const extraOmniMsg =
-                  extraOmniErr instanceof Error
-                    ? extraOmniErr.message
-                    : String(extraOmniErr);
-                log(
-                  `⚡ [Extended Act ${actIdx} Veo 3.1 Fast Fallback] Omni 1.1 unavailable (${extraOmniMsg.slice(0, 80)}); delegating Act ${actIdx} to Veo 3.1 Fast...`
-                );
-                await synthesize30sActViaVeo31({
-                  apiKey,
-                  actPrefix: `act${actIdx}`,
-                  beatPrompts: [tA, tB, tC],
-                  actMasterPath,
-                  jobDir,
-                  modelTier: "fast",
-                });
-                job.usedVeo31Live = true;
-                job.usedVeo31Tier = job.usedVeo31Tier || "fast";
-              }
-            }
-          } catch (extraActErr: unknown) {
-            const extraErrMsg =
-              extraActErr instanceof Error
-                ? extraActErr.message
-                : String(extraActErr);
-            log(
-              `⚠️ [Extended Act ${actIdx} Recovery] ${extraErrMsg.slice(0, 100)} — recovering Act ${actIdx} from verified 30.0s CFR master...`
-            );
-            const fallbackCandidate =
-              actIdx % 2 === 1 ? act1MasterPath : act2MasterPath;
-            const mi10ActCandidate = path.join(
-              process.cwd(),
-              "public/assets/swarm/generated/job_1793105000_mission_impossible_10_multiverse_300s",
-              `act${actIdx}_30s.mp4`
-            );
-            if (fs.existsSync(mi10ActCandidate)) {
-              fs.copyFileSync(mi10ActCandidate, actMasterPath);
-              job.isFallbackMaster = true;
-            } else if (fs.existsSync(fallbackCandidate)) {
-              fs.copyFileSync(fallbackCandidate, actMasterPath);
-              job.isFallbackMaster = true;
+              const turnBRawPath = path.join(jobDir, `act${actIdx}_turnB_20s_raw.mp4`);
+              fs.writeFileSync(turnBRawPath, Buffer.from(turnB.videoBase64, "base64"));
+
+              const turnCRawPath = path.join(jobDir, `act${actIdx}_turnC_30s_raw.mp4`);
+              fs.writeFileSync(turnCRawPath, Buffer.from(turnC.videoBase64, "base64"));
+              lockOrAssemble30sAct(
+                turnAPath,
+                turnBRawPath,
+                turnCRawPath,
+                actMasterPath,
+                jobDir,
+                `act${actIdx}`,
+                jobAspect
+              );
+            } catch (extraOmniErr: unknown) {
+              const extraOmniMsg =
+                extraOmniErr instanceof Error
+                  ? extraOmniErr.message
+                  : String(extraOmniErr);
+              log(
+                `⚡ [Extended Act ${actIdx} Veo 3.1 Fast Fallback] Omni 1.1 unavailable (${extraOmniMsg.slice(0, 80)}); delegating Act ${actIdx} to Veo 3.1 Fast...`
+              );
+              await synthesize30sActViaVeo31({
+                apiKey,
+                actPrefix: `act${actIdx}`,
+                beatPrompts: [tA, tB, tC],
+                actMasterPath,
+                jobDir,
+                modelTier: "fast",
+                aspectRatio: jobAspect,
+              });
+              job.usedVeo31Live = true;
+              job.usedVeo31Tier = job.usedVeo31Tier || "fast";
             }
           }
-
-          if (fs.existsSync(actMasterPath)) {
-            log(`✅ Extended Act ${actIdx}/${totalActs} (30.0s) locked!`);
+        } catch (extraActErr: unknown) {
+          const extraErrMsg =
+            extraActErr instanceof Error
+              ? extraActErr.message
+              : String(extraActErr);
+          log(
+            `⚠️ [Extended Act ${actIdx} Recovery] ${extraErrMsg.slice(0, 100)} — recovering Act ${actIdx} from verified 30.0s CFR master...`
+          );
+          const fallbackCandidate =
+            actIdx % 2 === 1 ? act1MasterPath : act2MasterPath;
+          const mi10ActCandidate = path.join(
+            process.cwd(),
+            "public/assets/swarm/generated/job_1793105000_mission_impossible_10_multiverse_300s",
+            `act${actIdx}_30s.mp4`
+          );
+          if (fs.existsSync(mi10ActCandidate)) {
+            fs.copyFileSync(mi10ActCandidate, actMasterPath);
+            job.isFallbackMaster = true;
+          } else if (fs.existsSync(fallbackCandidate)) {
+            fs.copyFileSync(fallbackCandidate, actMasterPath);
+            job.isFallbackMaster = true;
           }
-        })
-      );
+        }
+
+        if (fs.existsSync(actMasterPath)) {
+          log(`✅ Extended Act ${actIdx}/${totalActs} (30.0s) locked!`);
+        }
+      };
+
+      const EXTENDED_ACT_CONCURRENCY = 3;
+      for (let i = 0; i < extraActIndices.length; i += EXTENDED_ACT_CONCURRENCY) {
+        const batch = extraActIndices.slice(i, i + EXTENDED_ACT_CONCURRENCY);
+        await Promise.all(batch.map((actIdx) => runExtendedAct(actIdx)));
+      }
     }
 
     // Collect all rendered 30s Act masters in order (Act 1 .. Act N)
@@ -2923,8 +3040,15 @@ async function runRealOmniPipeline(
         96
       );
       try {
-        muxAudioOntoVideo(act1MasterPath, lyriaMasterMp3, act1MasterPath, 30, 0);
-        muxAudioOntoVideo(act2MasterPath, lyriaMasterMp3, act2MasterPath, 30, 30);
+        for (let idx = 0; idx < allActMasterPaths.length; idx++) {
+          muxAudioOntoVideo(
+            allActMasterPaths[idx],
+            lyriaMasterMp3,
+            allActMasterPaths[idx],
+            30,
+            (idx % 2) * 30
+          );
+        }
       } catch {
         // non-fatal if ffmpeg absent
       }
@@ -3100,7 +3224,8 @@ async function runRealOmniPipeline(
         : `ZYV-REEL-J${jobSuffix}`);
     const resolvedCanonicalUrl = `/entity/${resolvedCanonicalId}`;
     const resolvedStudioUrl = `/swarm-MUI?reel=${resolvedCanonicalId}`;
-    const resolvedPosterSrc = `${publicPrefix}/scene1_anchor.jpg`;
+    const mediaPrefix = `/api/media${publicPrefix}`;
+    const resolvedPosterSrc = `${mediaPrefix}/scene1_anchor.jpg`;
 
     job.canonicalId = resolvedCanonicalId;
     job.canonicalUrl = resolvedCanonicalUrl;
@@ -3117,9 +3242,9 @@ async function runRealOmniPipeline(
       muxWorker: 1,
     };
 
-    job.part1Src = `${publicPrefix}/act1_30s.mp4?t=${ts}`;
-    job.part2Src = `${publicPrefix}/act2_30s.mp4?t=${ts}`;
-    job.combinedSrc = `${publicPrefix}/${combinedFileName}?t=${ts}`;
+    job.part1Src = `${mediaPrefix}/act1_30s.mp4?t=${ts}`;
+    job.part2Src = `${mediaPrefix}/act2_30s.mp4?t=${ts}`;
+    job.combinedSrc = `${mediaPrefix}/${combinedFileName}?t=${ts}`;
     job.segments = allActMasterPaths.map((_, idx) => {
       const actNum = idx + 1;
       const startSec = idx * 30;
@@ -3135,7 +3260,7 @@ async function runRealOmniPipeline(
         label: `Part ${actNum} • Act ${actNum} (${fmtTime(startSec)}–${fmtTime(endSec)})`,
         sublabel: `Act ${actNum} 30.0s (${engineBadge})`,
         rawSeconds: 30,
-        src: `${publicPrefix}/act${actNum}_30s.mp4?t=${ts}`,
+        src: `${mediaPrefix}/act${actNum}_30s.mp4?t=${ts}`,
       };
     });
     job.status = "completed";
@@ -3171,7 +3296,7 @@ async function runRealOmniPipeline(
         wardrobe: "Custom Prompt Wardrobe",
         location: "Custom Prompt Location",
         promptSummary: `${job.act1Prompt} // ${job.act2Prompt}`,
-        src: `${publicPrefix}/${combinedFileName}`,
+        src: `${mediaPrefix}/${combinedFileName}`,
         createdAt: nowIso,
       },
     ];
@@ -3306,6 +3431,12 @@ export async function POST(req: NextRequest) {
       typeof body.foundationModel === "string" && body.foundationModel.trim()
         ? body.foundationModel.trim()
         : "omni11_lyria3";
+    const requestedAspectRatio: "9:16" | "16:9" | "1:1" =
+      body.aspectRatio === "16:9"
+        ? "16:9"
+        : body.aspectRatio === "1:1"
+        ? "1:1"
+        : "9:16";
     const initialEngineLabel = foundationModel === "veo31_4k" ? "Veo 3.1" : "Omni 1.1";
 
     const job: SwarmGenerationJob = {
@@ -3314,6 +3445,7 @@ export async function POST(req: NextRequest) {
       canonicalUrl: `/entity/${canonicalId}`,
       studioUrl: `/swarm-MUI?reel=${canonicalId}`,
       durationSeconds: requestedDurationSeconds,
+      aspectRatio: requestedAspectRatio,
       foundationModel,
       parallelWorkers: {
         totalWorkers: plannedActs + 3,
@@ -3325,6 +3457,7 @@ export async function POST(req: NextRequest) {
         muxWorker: 1,
       },
       title: String(body.title || "Custom Omni 1.1 Flash Master Reel"),
+      prompt: typeof body.prompt === "string" ? body.prompt : undefined,
       genre: String(body.genre || "Bollywood Hindi Pop"),
       bpm: Number(body.bpm || 124),
       audioEngine,

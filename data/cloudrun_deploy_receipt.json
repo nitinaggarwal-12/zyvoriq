@@ -11,15 +11,15 @@
   "buildProject": "nitina-ggarwal-sandbox-647724",
   "runProject": "ramp-portal-dev",
   "region": "us-west1",
-  "latestReadyRevisionName": "zyvoriq-00020-jfr",
-  "latestCreatedRevisionName": "zyvoriq-00020-jfr",
+  "latestReadyRevisionName": "zyvoriq-00023-tvv",
+  "latestCreatedRevisionName": "zyvoriq-00023-tvv",
   "readyStatus": "True",
   "trafficPercent": 100,
-  "image": "us-west1-docker.pkg.dev/ramp-portal-dev/cloud-run-source-deploy/zyvoriq:v20261028-182214-option-a-lean-veo",
+  "image": "us-west1-docker.pkg.dev/ramp-portal-dev/cloud-run-source-deploy/zyvoriq:v20261029-151003-option-a-lean-veo",
   "startupProbeLog": "Default STARTUP TCP probe succeeded after 1 attempt for container \"zyvoriq-1\" on port 8080.",
   "bootSelfTestReceipt": {
-    "revision": "zyvoriq-00020-jfr",
-    "verifiedAt": "2026-10-28T18:25:41.675Z",
+    "revision": "zyvoriq-00023-tvv",
+    "verifiedAt": "2026-10-29T15:14:14.187Z",
     "checks": {
       "health": 200,
       "swarmMui": 200,
@@ -32,6 +32,11 @@
       "reelFeedbackList": 200,
       "reelFeedbackSuccess": true,
       "dualEngineCrudRoundTrip": true,
+      "largeMp4Range206": true,
+      "largeMp4ChunkBytes": 8388608,
+      "cartagenaEntityReady": true,
+      "zeroSeedHijack404": true,
+      "audioVoices200": true,
       "studio1Pruned": 404,
       "omniGeneratePruned": 404,
       "operationRetryPruned": 410,
@@ -39,5 +44,5 @@
     }
   },
   "defaultCanonicalReelId": "ZYV-REEL-MI10-300S",
-  "verifiedAt": "2026-10-28T18:25:57Z"
+  "verifiedAt": "2026-10-29T15:18:49Z"
 }

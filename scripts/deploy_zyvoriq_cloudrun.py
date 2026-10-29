@@ -155,6 +155,16 @@ def build_tar_gz_layer(
                     for fname in sorted(files):
                         if fname in (".DS_Store", "dev.db", "dev.db-journal", "zyvoriq_registry.sqlite") or fname.endswith(".pyc") or fname.startswith(".env"):
                             continue
+                        if "/public/assets/swarm/generated/" in f"/{arc_dest.strip('/')}/":
+                            if (
+                                fname.endswith((".wav", ".txt"))
+                                or "_raw" in fname
+                                or "_turn" in fname
+                                or fname.startswith(("shot_", "pure_"))
+                                or "_visual_" in fname
+                                or "_opt1_" in fname
+                            ):
+                                continue
                         fpath = Path(root) / fname
                         if not fpath.is_file() or fpath.is_symlink():
                             continue
@@ -258,6 +268,7 @@ def main() -> None:
         ("/Users/nitinagga/Documents/zyvoriq/public/assets/avatars", "app/public/assets/avatars"),
         ("/Users/nitinagga/Documents/zyvoriq/public/assets/characters", "app/public/assets/characters"),
         ("/Users/nitinagga/Documents/zyvoriq/public/assets/swarm/generated/job_1793105000_mission_impossible_10_multiverse_300s", "app/public/assets/swarm/generated/job_1793105000_mission_impossible_10_multiverse_300s"),
+        ("/Users/nitinagga/Documents/zyvoriq/public/assets/swarm/generated/job_1793244563480_9dcef9", "app/public/assets/swarm/generated/job_1793244563480_9dcef9"),
         ("/Users/nitinagga/Documents/zyvoriq/public/assets/swarm/generated/job_1790974000000_kailash_epic", "app/public/assets/swarm/generated/job_1790974000000_kailash_epic"),
         ("/Users/nitinagga/Documents/zyvoriq/public/assets/swarm/generated/job_1790807322189_opt2_native", "app/public/assets/swarm/generated/job_1790807322189_opt2_native"),
         ("/Users/nitinagga/Documents/zyvoriq/public/assets/swarm/generated/job_1790793528334", "app/public/assets/swarm/generated/job_1790793528334"),
@@ -350,6 +361,12 @@ def main() -> None:
             "--billing-project=ramp-portal-dev",
             "--region=us-west1",
             f"--image={image_uri}",
+            "--no-cpu-throttling",
+            "--cpu=4",
+            "--memory=8Gi",
+            "--max-instances=1",
+            "--concurrency=80",
+            "--timeout=900",
             "--quiet",
         ],
         check=True,

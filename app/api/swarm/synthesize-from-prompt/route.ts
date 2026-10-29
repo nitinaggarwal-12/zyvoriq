@@ -35,9 +35,7 @@ function resolveApiKey(overrideKey?: string): string {
     process.env.GEMINI_API_KEY ||
     process.env.GOOGLE_API_KEY ||
     process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
-    process.env.GOOGLE_GENAI_API_KEY ||
-    process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
-    process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+    process.env.GOOGLE_GENAI_API_KEY;
   if (envKey && envKey.trim()) return envKey.trim();
   for (const file of [".env.local", ".env"]) {
     try {
@@ -844,17 +842,30 @@ Return STRICTLY valid JSON with this exact schema:
     if (body.studioFastMode) {
       const ytRefFast = await fetchYouTubeReferenceIntelligence(rawPrompt);
       const cleanBrief = rawPrompt.replace(/https?:\/\/[^\s"'<>]+/gi, "").trim();
-      const targetActsCount = durationSeconds >= 180 ? 10 : 6;
-      const secPerAct = Math.round(durationSeconds / targetActsCount);
-      const slugCode =
-        (cleanBrief || "STUDIO")
-          .toUpperCase()
-          .replace(/[^A-Z0-9]+/g, "")
-          .slice(0, 8) || "REEL";
+      const isMusicBrief =
+        /\b(music\s*(?:video|album)?|song|sing(?:er|ing)?|vocal(?:s|ist)?|dance|choreograph|album|shakira|hips\s+don'?t\s+lie|bhangra|flamenco|reggaeton|cumbia|salsa|latin\s+pop|pop|hip[\s-]*hop|rap|r&b|edm|disco|bollywood|k-?pop|anthem|chorus|lyrics|beat)\b/i.test(
+          `${cleanBrief} ${ytRefFast?.title || ""}`
+        );
+      const targetActsCount = durationSeconds >= 180 ? 10 : durationSeconds >= 60 ? Math.max(2, Math.round(durationSeconds / 30)) : 2;
+      const secPerAct = Math.max(10, Math.round(durationSeconds / targetActsCount));
+
+      const stopWords = new Set([
+        "A", "AN", "THE", "CREATE", "MAKE", "GENERATE", "BUILD", "NEW", "FOR",
+        "WITH", "AND", "BUT", "OR", "TO", "OF", "IN", "ON", "AT", "BY", "FROM",
+        "SIMILAR", "LIKE", "BASED", "MUSIC", "VIDEO", "ALBUM", "SONG", "MOVIE",
+        "FILM", "REEL", "SHORT", "STORY", "VISUAL", "HIGH", "QUALITY",
+      ]);
+      const significantTokens = cleanBrief
+        .toUpperCase()
+        .replace(/[^A-Z0-9\s]+/g, " ")
+        .split(/\s+/)
+        .filter((tok) => tok.length >= 3 && !stopWords.has(tok));
+      const baseSlug = (significantTokens.slice(0, 2).join("") || cleanBrief.toUpperCase().replace(/[^A-Z0-9]+/g, "") || "STUDIO").slice(0, 10);
+      const shortEntropy = Date.now().toString(36).toUpperCase().slice(-4);
       const canonicalId =
         /mission\s*impossible/i.test(cleanBrief) && durationSeconds >= 240
           ? "ZYV-REEL-MI10-300S"
-          : `ZYV-REEL-${slugCode}-${durationSeconds}S`;
+          : `ZYV-REEL-${baseSlug}-${durationSeconds}S-${shortEntropy}`;
       const canonicalUrl = `/entity/${canonicalId}`;
       const studioUrl = `/swarm-MUI?reel=${canonicalId}`;
 
@@ -864,30 +875,61 @@ Return STRICTLY valid JSON with this exact schema:
         return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
       };
 
+      const buildWordSafeTopic = (raw: string, maxChars = 48): string => {
+        const bounded = truncateAtWordBoundary(raw, maxChars)
+          .replace(/\b(but|and|or|with|to|for|in|of|on|at|by|like|similar|bu|th|wh)$/i, "")
+          .replace(/[,;:\-\s]+$/, "")
+          .trim();
+        if (!bounded) {
+          return isMusicBrief ? "Elevated Studio Music Video" : "Custom 35mm Cinema Master";
+        }
+        return bounded.charAt(0).toUpperCase() + bounded.slice(1);
+      };
+
+      const inferredMusicGenre = /\b(shakira|hips\s+don'?t\s+lie|cumbia|reggaeton|salsa|colombia|latin)\b/i.test(cleanBrief)
+        ? "106 BPM Coastal Latin Cumbia-Reggaeton Pop Fusion"
+        : /\b(bhangra|punjabi|bollywood|hindi|desi)\b/i.test(cleanBrief)
+        ? "122 BPM Bollywood Bhangra Pop Anthem"
+        : /\b(flamenco|spain|barcelona)\b/i.test(cleanBrief)
+        ? "118 BPM Modern Flamenco-Pop Club Fusion"
+        : /\b(hip[\s-]*hop|rap|trap)\b/i.test(cleanBrief)
+        ? "98 BPM Melodic Hip-Hop & Sub-Bass Production"
+        : isMusicBrief
+        ? "120 BPM Contemporary Dance-Pop Studio Production"
+        : "35mm Cinematic Epic Score";
+      const inferredBpm = Number(inferredMusicGenre.match(/^(\d{2,3})\s*BPM/i)?.[1] || 120);
+
       const cameraPresetCycle = [
-        "Crash Zoom",
+        "35mm Steadicam Gimbal Track",
         "Bullet Time 360°",
-        "FPV Drone Dive",
-        "SnorriCam Chest-Rig",
-        "Dolly Zoom / Vertigo",
-        "Dutch Angle Thriller",
-        "Whip Pan Transition",
-        "Crane Up Reveal",
+        "FPV Crane Sweep",
+        "Low-Angle Rhythm Dolly",
+        "Dolly Zoom / Reveal",
+        "Anamorphic Whip-Pan",
+        "Overhead Formation Reveal",
+        "85mm Close-Up Focus Pull",
         "Hyper-Lapse Orbit",
-        "Overhead God's Eye",
+        "Techno-Crane Grand Finale",
       ];
       const lensPresetCycle = [
         "ARRI Alexa 65 + Panavision Anamorphic",
-        "IMAX 70mm Kodak 2383",
-        "Cooke S4 Prime + Halation",
-        "Panavision C-Series + Volumetric Rain",
-        "ARRI Master Anamorphic + Flare",
+        "Cooke S4/i 40mm Prime + Warm Halation",
+        "ARRI Master Anamorphic 50mm T1.9",
+        "Panavision C-Series 35mm + Golden Flare",
+        "Leica Summilux-C 29mm T1.4",
       ];
 
-      const fastPrompt = `You are the Executive 35mm Cinema Director & Social Campaign Showrunner for Zyvoriq Super-Studio.
-Synthesize a complete, grounded ${durationSeconds}-second (${targetActsCount}-act, ${secPerAct}s per act) 35mm cinema production from this user brief:
+      const fastPrompt = `You are the ${
+        isMusicBrief
+          ? "Executive Grammy-Winning Music Video Director, Choreographer & Hit Songwriter"
+          : "Executive 35mm Cinema Director & Social Campaign Showrunner"
+      } for Zyvoriq Super-Studio.
+Synthesize a complete, grounded ${durationSeconds}-second (${targetActsCount}-act, ${secPerAct}s per act) ${
+        isMusicBrief ? `9:16 music video & studio album visual (${inferredMusicGenre})` : "35mm cinema production"
+      } from this user brief:
 - User Brief: "${rawPrompt}"
 - Clean Topic: "${cleanBrief}"
+- Mode: ${isMusicBrief ? "MUSIC_VIDEO_AND_SONG (Lyria 3 Pro vocals + Omni 1.1 choreography — create an ORIGINAL creative song/album title, NEVER truncate the user's raw prompt!)" : "CINEMA_STORY"}
 - Requested Duration: ${durationSeconds} seconds (${targetActsCount} parallel acts of ${secPerAct}s each)
 ${
   ytRefFast
@@ -896,29 +938,45 @@ ${
 }
 
 STRICT RULES:
-1. "hook" MUST be 1 gripping sentence strictly under 105 characters (never exceed 110 chars) and contain ZERO URLs.
-2. "body" MUST be 2 rich sentences describing the ${targetActsCount}-act (${durationSeconds}s) 35mm visual story, character continuity, and -14 LUFS Lyria 3 Pro orchestral score (zero raw URLs).
-3. "segments" MUST contain exactly ${targetActsCount} acts covering 00:00–${formatMmSs(durationSeconds)} (${secPerAct}s per act) with named character speakers (specific to the user's story), natural spoken dialogue lines (12-22 words per act, zero "[Counts 1-4]" dance tags unless the prompt is a dance video), and specific 35mm visual continuity locks tailored to the user's topic.
+1. "title" MUST be an original, evocative, complete 3–7 word creative title (${
+        isMusicBrief ? 'e.g. "Cartagena Gold — Coastal Rhythm Master"' : 'e.g. "The Sovereign Protocol"'
+      }) — NEVER copy or mid-word truncate the user's raw prompt sentence, and NEVER reference copyrighted artist/song names directly in the title.
+2. "hook" MUST be 1 gripping sentence strictly under 105 characters (never exceed 110 chars) and contain ZERO URLs.
+3. "body" MUST be 2 rich sentences describing the ${targetActsCount}-act (${durationSeconds}s) ${
+        isMusicBrief
+          ? "vocal arrangement, percussion/horn instrumentation, couture wardrobe progression, and kinetic ensemble choreography"
+          : "35mm visual story, character continuity, and -14 LUFS Lyria 3 Pro orchestral score"
+      } (zero raw URLs).
+4. "segments" MUST contain exactly ${targetActsCount} acts covering 00:00–${formatMmSs(durationSeconds)} (${secPerAct}s per act) with ${
+        isMusicBrief
+          ? "named vocalists/performers, original catchy sung lyric lines (10-18 words per act), and specific 35mm choreography + lighting continuity locks"
+          : "named character speakers, natural spoken dialogue lines (12-22 words per act), and specific 35mm visual continuity locks"
+      } tailored to the user's brief.
+5. AMBIENT TIME-OF-DAY & WARDROBE CONTINUITY LOCK: All ${targetActsCount} acts MUST maintain the EXACT SAME continuous ambient time-of-day sky lighting, Kelvin color temperature, and principal lead wardrobe (NEVER jump from bright golden-hour sun to blue dusk/twilight/night across consecutive acts).
 
 Return STRICTLY valid JSON matching this schema:
 {
-  "title": "Concise Campaign Title (${durationSeconds >= 240 ? "5-Min / 300.0s 10-Act 35mm Master" : `${durationSeconds}s ${targetActsCount}-Act 35mm Master`})",
+  "title": "Original Creative Title (${durationSeconds}s · ${targetActsCount}-Act Master)",
+  "genre": "${inferredMusicGenre}",
+  "bpm": ${inferredBpm},
   "hook": "Scroll-stopping opening hook under 105 characters",
   "body": "Two-sentence campaign body copy",
-  "hashtags": "#Tag1 #Tag2 #Tag3 #CinemaStudio",
+  "hashtags": "#Tag1 #Tag2 #Tag3 #ZyvoriqStudio",
   "altText": "Detailed 35mm frame description for accessibility",
-  "castBadge": "Character A (Voice Type) · Character B (Voice Type)",
+  "castBadge": "${isMusicBrief ? "Valentina Cruz (Mezzo Lead Vocal) · Mateo Reyes (Rhythmic Counter-Vocal)" : "Character A (Voice Type) · Character B (Voice Type)"}",
   "segments": [
     {
-      "speaker": "Character Name",
-      "captionLine": "Spoken dialogue line for this ${secPerAct}s act",
-      "visualContinuityLock": "35mm camera, lighting, and blocking continuity lock"
+      "speaker": "${isMusicBrief ? "Lead Vocalist" : "Character Name"}",
+      "captionLine": "${isMusicBrief ? "Original sung lyric hook for this act" : `Spoken dialogue line for this ${secPerAct}s act`}",
+      "visualContinuityLock": "35mm camera, lighting, wardrobe, and choreography/blocking continuity lock"
     }
   ]
 }`;
 
       const fastResult = await callGeminiJsonViaAdcOrApiKey<{
         title?: string;
+        genre?: string;
+        bpm?: number;
         hook?: string;
         body?: string;
         hashtags?: string;
@@ -933,36 +991,59 @@ Return STRICTLY valid JSON matching this schema:
         prompt: fastPrompt,
         apiKey,
         temperature: 0.6,
-        timeoutMs: 12000,
+        timeoutMs: 20000,
       });
 
       const j = fastResult.parsed || {};
-      const conciseTopic =
-        cleanBrief.slice(0, 52).replace(/[,;:\s]+$/, "") ||
-        "Custom 35mm Cinema Master";
-      const resolvedTitle = String(
-        j.title || `${conciseTopic} (${durationSeconds}s · ${targetActsCount}-Act 35mm Master)`
-      );
+      const conciseTopic = buildWordSafeTopic(cleanBrief, 46);
+      const rawCandidateTitle = String(j.title || "").trim();
+      const resolvedTitle =
+        rawCandidateTitle && rawCandidateTitle.length >= 4
+          ? rawCandidateTitle
+          : `${conciseTopic} (${durationSeconds}s · ${targetActsCount}-Act ${isMusicBrief ? "Music Video Master" : "35mm Master"})`;
+      const resolvedGenre = String(j.genre || inferredMusicGenre);
+      const resolvedBpm =
+        Number.isFinite(Number(j.bpm)) && Number(j.bpm) >= 70 && Number(j.bpm) <= 180
+          ? Math.round(Number(j.bpm))
+          : inferredBpm;
       const resolvedHook = String(
         j.hook ||
-          `${conciseTopic} — ${targetActsCount} unbroken 35mm acts with spoken dialogue & orchestral score.`
+          (isMusicBrief
+            ? `${conciseTopic} — ${resolvedBpm} BPM studio vocals & ${targetActsCount}-act 35mm dance choreography.`
+            : `${conciseTopic} — ${targetActsCount} unbroken 35mm acts with spoken dialogue & orchestral score.`)
       )
         .replace(/https?:\/\/[^\s]+/gi, "")
         .trim()
         .slice(0, 114);
       const resolvedBody = String(
         j.body ||
-          `Engineered across ${targetActsCount} parallel ${secPerAct}s acts (${durationSeconds}s total @ 24fps) with ARRI Alexa 65 anamorphic optics, character identity locks, and -14.0 LUFS 48kHz stereo sound design.`
+          (isMusicBrief
+            ? `Synthesized across ${targetActsCount} parallel ${secPerAct}s acts (${durationSeconds}s total @ 24fps) with ${resolvedGenre} Lyria 3 Pro studio vocals, 35mm anamorphic camera choreography, and -14.0 LUFS 48kHz stereo mastering.`
+            : `Engineered across ${targetActsCount} parallel ${secPerAct}s acts (${durationSeconds}s total @ 24fps) with ARRI Alexa 65 anamorphic optics, character identity locks, and -14.0 LUFS 48kHz stereo sound design.`)
       );
       const resolvedHashtags = String(
-        j.hashtags || "#35mmCinema #ParallelSwarm #VisualStory #CinemaStudio"
+        j.hashtags ||
+          (isMusicBrief
+            ? "#MusicVideo #Lyria3Pro #Omni11 #DancePop #ZyvoriqStudio"
+            : "#35mmCinema #ParallelSwarm #VisualStory #CinemaStudio")
       );
       const resolvedAltText = String(
-        j.altText || `35mm anamorphic cinema frame from ${resolvedTitle}`
+        j.altText || `35mm anamorphic frame from ${resolvedTitle}`
       );
       const resolvedCastBadge = String(
-        j.castBadge || "Commander Orion Vance (Baritone) · Dr. Lyra Chen (Mezzo)"
+        j.castBadge ||
+          (isMusicBrief
+            ? "Valentina Cruz (Lead Vocal) · Mateo Reyes (Counter-Vocal) · 6-Dancer Ensemble"
+            : "Commander Orion Vance (Baritone) · Dr. Lyra Chen (Mezzo)")
       );
+      const fallbackMusicLyrics = [
+        "Feel the brass ignite the courtyard night, every heartbeat locked in golden light",
+        "Con-ga rhythm pulling closer now, truth is in the movement—take a bow",
+        "Hands rise under neon carnival skies, when the bassline drops nobody lies",
+        "Spin across the lantern stone in time, two voices climbing on a coastal rhyme",
+        "Silver fringe and percussion in the air, midnight fire dancing everywhere",
+        "Turn the final chorus all the way high, rhythm echoes underneath the sky",
+      ];
       const rawSegs = Array.isArray(j.segments) ? j.segments : [];
       const enrichedSegments = Array.from({ length: targetActsCount }, (_, idx) => {
         const s = rawSegs[idx] || {};
@@ -980,16 +1061,20 @@ Return STRICTLY valid JSON matching this schema:
           speaker: String(
             s.speaker ||
               (idx % 2 === 0
-                ? resolvedCastBadge.split(/[·•|]/)[0]?.replace(/\([^)]*\)/g, "").trim() || "Principal Lead"
+                ? resolvedCastBadge.split(/[·•|]/)[0]?.replace(/\([^)]*\)/g, "").trim() || "Lead Vocalist"
                 : resolvedCastBadge.split(/[·•|]/)[1]?.replace(/\([^)]*\)/g, "").trim() || "Counter-Lead")
           ),
           captionLine: String(
             s.captionLine ||
-              `Act ${idx + 1} (${formatMmSs(startSec)}–${formatMmSs(endSec)}): ${cleanBrief.slice(0, 78)}`
+              (isMusicBrief
+                ? fallbackMusicLyrics[idx % fallbackMusicLyrics.length]
+                : `Act ${idx + 1} (${formatMmSs(startSec)}–${formatMmSs(endSec)}): ${buildWordSafeTopic(cleanBrief, 72)}`)
           ),
           visualContinuityLock: String(
             s.visualContinuityLock ||
-              `35mm Kodak 2383 · ${cameraPresetCycle[idx % cameraPresetCycle.length]} · ${lensPresetCycle[idx % lensPresetCycle.length]}`
+              (isMusicBrief
+                ? `9:16 35mm Music Video · ${resolvedBpm} BPM ensemble choreography · ${cameraPresetCycle[idx % cameraPresetCycle.length]} · ${lensPresetCycle[idx % lensPresetCycle.length]}`
+                : `35mm Kodak 2383 · ${cameraPresetCycle[idx % cameraPresetCycle.length]} · ${lensPresetCycle[idx % lensPresetCycle.length]}`)
           ),
           cameraPreset: cameraPresetCycle[idx % cameraPresetCycle.length],
           lensPreset: lensPresetCycle[idx % lensPresetCycle.length],
@@ -1006,24 +1091,21 @@ Return STRICTLY valid JSON matching this schema:
         segments: enrichedSegments,
       });
 
-      const lowerBriefCheck = `${cleanBrief} ${resolvedTitle}`.toLowerCase();
-      const initialVideoUrl = /\b(mission\s*impossible|multiverse\s*protocol|ethan\s*vance|halo\s*jump|espionage|spy)\b/i.test(
+      const lowerBriefCheck = cleanBrief.toLowerCase();
+      const matchedShowcaseVideoUrl = /\b(mission\s*:?\s*impossible|multiverse\s+protocol|ethan\s+cross|ethan\s+vance)\b/i.test(
         lowerBriefCheck
       )
-        ? "/assets/swarm/generated/job_1793105000_mission_impossible_10_multiverse_300s/combined_300s.mp4"
-        : /\b(ganesh|ganesha|parvati|shiva|kailash|nandi|sacred|mythology)\b/i.test(
+        ? "/api/media/assets/swarm/generated/job_1793105000_mission_impossible_10_multiverse_300s/combined_300s.mp4"
+        : /\b(sacred\s+kailash|mount\s+kailash|ganesh.*parvati.*shiva)\b/i.test(
             lowerBriefCheck
           )
-        ? "/assets/swarm/generated/job_1790974000000_kailash_epic/combined_60s.mp4"
-        : /\b(kaelen|lyra|cursed\s*hunter|basalt|canyon|fantasy)\b/i.test(lowerBriefCheck)
-        ? "/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4"
-        : /\b(crimson\s*echoes|speakeasy|noir|jazz|art-deco)\b/i.test(lowerBriefCheck)
-        ? "/assets/swarm/comparisons/04_option2_clone_adk_orcas_omni_native_60s.mp4"
-        : /\b(quantum|tokyo|cyber|observatory|orbital|saturn|space|sci-fi|starship|mars|lunar|station|heist)\b/i.test(
-            lowerBriefCheck
-          )
-        ? "/assets/swarm/generated/job_1792800002_neotokyo_quantum_observatory/combined_60s.mp4"
-        : "/assets/swarm/generated/job_1792800001_barcelona_bhangra_flamenco/combined_60s.mp4";
+        ? "/api/media/assets/swarm/generated/job_1790974000000_kailash_epic/combined_60s.mp4"
+        : /\b(cursed\s+hunter|kaelen.*lyra)\b/i.test(lowerBriefCheck)
+        ? "/api/media/assets/swarm/comparisons/09_option2_omni11_dramatic_score_60s_master.mp4"
+        : /\b(crimson\s+echoes)\b/i.test(lowerBriefCheck)
+        ? "/api/media/assets/swarm/comparisons/04_option2_clone_adk_orcas_omni_native_60s.mp4"
+        : "";
+      const initialVideoUrl = matchedShowcaseVideoUrl;
 
       try {
         const nowIso = new Date().toISOString();
@@ -1040,15 +1122,17 @@ Return STRICTLY valid JSON matching this schema:
             projectTitle: resolvedTitle,
             title: cleanMasterTitle,
             subtitle: `${targetActsCount}-Act Parallel Master • ${resolvedCastBadge} (${durationSeconds}.0s • 24/1 CFR)`,
-            assetType: "combined_master",
-            genre: deepResearchBible.domainCorpus.primaryDomain,
+            assetType: initialVideoUrl ? "combined_master" : "blueprint_pending_render",
+            genre: resolvedGenre,
             durationSec: durationSeconds,
             frames: durationSeconds * 24,
             fps: "24/1 CFR",
-            audioSpec: "48,000 Hz Stereo AAC (-14.0 LUFS)",
+            audioSpec: isMusicBrief
+              ? `Lyria 3 Pro ${resolvedBpm} BPM Studio Song (48,000 Hz Stereo, -14.0 LUFS)`
+              : "48,000 Hz Stereo AAC (-14.0 LUFS)",
             wardrobe:
               deepResearchBible.charactersAndLeads[0]?.wardrobeContinuity.openingActs ||
-              "35mm Cinema Wardrobe",
+              "35mm Couture Wardrobe",
             location: deepResearchBible.lightingPlot.colorScienceAndLut,
             promptSummary: `${resolvedHook} — ${resolvedBody}`,
             src: initialVideoUrl,
@@ -1063,6 +1147,10 @@ Return STRICTLY valid JSON matching this schema:
         ok: true,
         modelUsed: fastResult.modelUsed,
         latencyMs: fastResult.latencyMs,
+        isMusicVideo: isMusicBrief,
+        recommendedAudioEngine: isMusicBrief ? "omni_lyria3" : "omni_native",
+        genre: resolvedGenre,
+        bpm: resolvedBpm,
         durationSeconds,
         actsCount: targetActsCount,
         canonicalId,
@@ -1076,6 +1164,10 @@ Return STRICTLY valid JSON matching this schema:
           canonicalUrl,
           studioUrl,
           videoUrl: initialVideoUrl,
+          isMusicVideo: isMusicBrief,
+          recommendedAudioEngine: isMusicBrief ? "omni_lyria3" : "omni_native",
+          genre: resolvedGenre,
+          bpm: resolvedBpm,
           durationSeconds,
           actsCount: targetActsCount,
           title: resolvedTitle,
@@ -1274,6 +1366,16 @@ Return STRICTLY valid JSON (no markdown fences) matching this exact schema with 
             });
           }
 
+          const supportsThinkingLevel = /gemini-(3\.8|4|3\.1)/i.test(modelName);
+          const genConfig: Record<string, unknown> = {
+            temperature: 0.65,
+            maxOutputTokens: 16384,
+            responseMimeType: "application/json",
+          };
+          if (supportsThinkingLevel) {
+            genConfig.thinkingConfig = { thinkingLevel: "LOW" };
+          }
+
           const res = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent`,
             {
@@ -1284,11 +1386,7 @@ Return STRICTLY valid JSON (no markdown fences) matching this exact schema with 
               },
               body: JSON.stringify({
                 contents: [{ role: "user", parts: userParts }],
-                generationConfig: {
-                  temperature: 0.65,
-                  responseMimeType: "application/json",
-                  thinkingConfig: { thinkingLevel: "LOW" },
-                },
+                generationConfig: genConfig,
               }),
               signal: AbortSignal.timeout(28000),
             }
@@ -1430,6 +1528,15 @@ Return STRICTLY valid JSON matching this schema:
               },
             });
           }
+          const judgeSupportsThinkingLevel = /gemini-(3\.8|4|3\.1)/i.test(proJudgeModel);
+          const judgeGenConfig: Record<string, unknown> = {
+            temperature: 0.1,
+            maxOutputTokens: 16384,
+            responseMimeType: "application/json",
+          };
+          if (judgeSupportsThinkingLevel) {
+            judgeGenConfig.thinkingConfig = { thinkingLevel: "HIGH" };
+          }
           const jRes = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/${proJudgeModel}:generateContent`,
             {
@@ -1440,11 +1547,7 @@ Return STRICTLY valid JSON matching this schema:
               },
               body: JSON.stringify({
                 contents: [{ role: "user", parts: judgeParts }],
-                generationConfig: {
-                  temperature: 0.1,
-                  responseMimeType: "application/json",
-                  thinkingConfig: { thinkingLevel: "HIGH" },
-                },
+                generationConfig: judgeGenConfig,
               }),
               signal: AbortSignal.timeout(18000),
             }

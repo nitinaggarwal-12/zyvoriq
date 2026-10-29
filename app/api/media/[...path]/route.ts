@@ -53,6 +53,11 @@ export async function GET(
     const stat = fs.statSync(targetFile);
     const fileSize = stat.size;
     const range = req.headers.get("range");
+    const isMutableGenerated =
+      requestedPath.includes("generated/") || requestedPath.includes("library_manifest.json");
+    const cacheControl = isMutableGenerated
+      ? "no-store, no-cache, must-revalidate, max-age=0"
+      : "public, max-age=3600, stale-while-revalidate=86400";
 
     // Determine content type
     const ext = path.extname(targetFile).toLowerCase();
@@ -65,30 +70,98 @@ export async function GET(
     else if (ext === ".jpg" || ext === ".jpeg") contentType = "image/jpeg";
     else if (ext === ".svg") contentType = "image/svg+xml";
 
-    // Handle HTTP Range Requests (Essential for video playback & seeking in Safari/Chrome)
-    if (range) {
-      const parts = range.replace(/bytes=/, "").split("-");
-      const start = parseInt(parts[0], 10);
-      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+    // Cloud Run's GFE / Envoy HTTP/1.1 layer rejects single buffered responses > 32 MiB
+    // ("Response size was too large"). Cap open-ended or oversized Range windows to 8 MiB
+    // so <video> elements play immediately at 0:00 and pipeline sequential 206 chunks.
+    const MAX_CLOUDRUN_RANGE_CHUNK_BYTES = 8 * 1024 * 1024; // 8 MiB (< 32 MiB limit)
+    const SAFE_DIRECT_RESPONSE_BYTES = 24 * 1024 * 1024; // 24 MiB
 
-      if (start >= fileSize || end >= fileSize) {
+    const createSafeFileWebStream = (opts?: { start: number; end: number }) => {
+      const fileStream = opts
+        ? fs.createReadStream(targetFile, { start: opts.start, end: opts.end })
+        : fs.createReadStream(targetFile);
+      let closed = false;
+      const cleanup = () => {
+        if (closed) return;
+        closed = true;
+        fileStream.removeAllListeners("data");
+        fileStream.removeAllListeners("end");
+        fileStream.removeAllListeners("error");
+        if (!fileStream.destroyed) {
+          fileStream.destroy();
+        }
+      };
+
+      return new ReadableStream<Uint8Array>({
+        start(controller) {
+          fileStream.on("data", (chunk: Buffer | string) => {
+            if (closed) return;
+            try {
+              const bytes =
+                typeof chunk === "string" ? Buffer.from(chunk) : new Uint8Array(chunk);
+              controller.enqueue(bytes);
+            } catch {
+              cleanup();
+            }
+          });
+          fileStream.on("end", () => {
+            if (closed) return;
+            closed = true;
+            try {
+              controller.close();
+            } catch {
+              // Controller already closed by client abort
+            }
+          });
+          fileStream.on("error", (err) => {
+            if (closed) return;
+            closed = true;
+            try {
+              controller.error(err);
+            } catch {
+              // Controller already closed
+            }
+          });
+        },
+        cancel() {
+          cleanup();
+        },
+      });
+    };
+
+    const isDownload = req.nextUrl.searchParams.get("download") === "true";
+
+    // Handle HTTP Range Requests (and auto-promote >24 MiB non-download video probes to 8 MiB 206 Range)
+    if (range || (!isDownload && (ext === ".mp4" || ext === ".webm") && fileSize > SAFE_DIRECT_RESPONSE_BYTES)) {
+      const normalizedRange = range ? range.replace(/bytes=/i, "").trim() : "0-";
+      const parts = normalizedRange.split("-");
+      let start = parts[0] ? parseInt(parts[0], 10) : 0;
+      if (!Number.isFinite(start) || start < 0) start = 0;
+
+      // Suffix byte-range request (e.g., bytes=-500)
+      if (!parts[0] && parts[1]) {
+        const suffixLen = parseInt(parts[1], 10);
+        if (Number.isFinite(suffixLen) && suffixLen > 0) {
+          start = Math.max(0, fileSize - Math.min(suffixLen, MAX_CLOUDRUN_RANGE_CHUNK_BYTES));
+        }
+      }
+
+      if (start >= fileSize) {
         return new NextResponse(null, {
           status: 416,
-          headers: { "Content-Range": `bytes */${fileSize}` }
+          headers: { "Content-Range": `bytes */${fileSize}` },
         });
       }
 
-      const chunksize = end - start + 1;
-      const fileStream = fs.createReadStream(targetFile, { start, end });
+      const maxWindowEnd = Math.min(fileSize - 1, start + MAX_CLOUDRUN_RANGE_CHUNK_BYTES - 1);
+      const requestedEnd = parts[0] && parts[1] ? parseInt(parts[1], 10) : maxWindowEnd;
+      const end =
+        Number.isFinite(requestedEnd) && requestedEnd >= start
+          ? Math.min(requestedEnd, maxWindowEnd)
+          : maxWindowEnd;
 
-      // Convert Node stream to Web ReadableStream
-      const stream = new ReadableStream({
-        start(controller) {
-          fileStream.on("data", (chunk) => controller.enqueue(chunk));
-          fileStream.on("end", () => controller.close());
-          fileStream.on("error", (err) => controller.error(err));
-        }
-      });
+      const chunksize = end - start + 1;
+      const stream = createSafeFileWebStream({ start, end });
 
       return new NextResponse(stream as any, {
         status: 206,
@@ -97,29 +170,22 @@ export async function GET(
           "Accept-Ranges": "bytes",
           "Content-Length": chunksize.toString(),
           "Content-Type": contentType,
-          "Cache-Control": "public, max-age=31536000, immutable"
-        }
+          "Cache-Control": cacheControl,
+        },
       });
     }
 
-    // Full file stream
-    const fileStream = fs.createReadStream(targetFile);
-    const stream = new ReadableStream({
-      start(controller) {
-        fileStream.on("data", (chunk) => controller.enqueue(chunk));
-        fileStream.on("end", () => controller.close());
-        fileStream.on("error", (err) => controller.error(err));
-      }
-    });
-
-    const isDownload = req.nextUrl.searchParams.get("download") === "true";
-    const downloadFilename = req.nextUrl.searchParams.get("filename") || path.basename(targetFile);
+    // Full file stream (<= 24 MiB or explicit small asset download)
+    const stream = createSafeFileWebStream();
+    const downloadFilename = (
+      req.nextUrl.searchParams.get("filename") || path.basename(targetFile)
+    ).replace(/[^a-zA-Z0-9._-]/g, "_");
 
     const headers: Record<string, string> = {
       "Content-Length": fileSize.toString(),
       "Content-Type": contentType,
       "Accept-Ranges": "bytes",
-      "Cache-Control": "public, max-age=31536000, immutable"
+      "Cache-Control": cacheControl,
     };
 
     if (isDownload) {
@@ -128,7 +194,7 @@ export async function GET(
 
     return new NextResponse(stream as any, {
       status: 200,
-      headers
+      headers,
     });
   } catch (err: any) {
     return new NextResponse(`Error serving media: ${err.message}`, { status: 500 });
@@ -155,6 +221,8 @@ export async function HEAD(
       return new NextResponse(null, { status: 404 });
     }
     const stat = fs.statSync(targetFile);
+    const isMutableGenerated =
+      requestedPath.includes("generated/") || requestedPath.includes("library_manifest.json");
     const ext = path.extname(targetFile).toLowerCase();
     let contentType = "application/octet-stream";
     if (ext === ".mp4") contentType = "video/mp4";
@@ -169,7 +237,9 @@ export async function HEAD(
         "Content-Length": stat.size.toString(),
         "Content-Type": contentType,
         "Accept-Ranges": "bytes",
-        "Cache-Control": "public, max-age=31536000, immutable",
+        "Cache-Control": isMutableGenerated
+          ? "no-store, no-cache, must-revalidate, max-age=0"
+          : "public, max-age=3600, stale-while-revalidate=86400",
       },
     });
   } catch {

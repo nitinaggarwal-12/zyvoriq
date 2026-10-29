@@ -40,6 +40,10 @@ import {
   Zap,
   Video,
   Music,
+  Mic,
+  Image as ImageIcon,
+  RefreshCw,
+  X,
 } from "lucide-react";
 import {
   StudioButton,
@@ -649,6 +653,9 @@ interface StudioPostState {
   vfxPreset: string;
   subtitleStyle: SubtitleStyleId;
   foundationModel: string;
+  genre?: string;
+  bpm?: number;
+  audioEngineOverride?: "omni_lyria3" | "omni_native";
   title: string;
   version: string;
   hook: string;
@@ -656,6 +663,8 @@ interface StudioPostState {
   hashtags: string;
   ctaUrl: string;
   videoUrl: string;
+  audioTrackUrl?: string;
+  posterUrl?: string;
   audioMixLabel: string;
   altText: string;
   castBadge: string;
@@ -1529,24 +1538,63 @@ function buildPostFromVariation(
     };
   }
 
+  const varCanonId = v.canonicalId || `ZYV-VAR-${String(v.id || "CUSTOM").toUpperCase()}`;
+  const varDur = v.durationSeconds || 60;
+  const varActCount = Math.max(2, Math.round(Math.max(60, varDur) / 30));
+  const varSegDur = Math.max(10, Math.round(varDur / varActCount));
+
   return {
     ...basePost,
-    canonicalId: v.canonicalId || "ZYV-REEL-KAILASH-60S",
-    canonicalUrl: v.canonicalUrl || "/entity/ZYV-REEL-KAILASH-60S",
-    studioUrl: `/swarm-MUI?reel=${v.canonicalId || "ZYV-REEL-KAILASH-60S"}`,
-    durationSeconds: v.durationSeconds || 60,
-    title: INITIAL_POST.title,
+    canonicalId: varCanonId,
+    canonicalUrl: v.canonicalUrl || `/entity/${varCanonId}`,
+    studioUrl: `/swarm-MUI?reel=${varCanonId}`,
+    durationSeconds: varDur,
+    title: v.label || varCanonId,
     hook: v.hook,
     body: v.body,
     hashtags: v.hashtags,
-    videoUrl: v.videoUrl,
+    videoUrl: v.videoUrl || "",
     audioMixLabel: v.audioLabel,
-    castBadge: INITIAL_POST.castBadge,
-    youtubeRefBadge: INITIAL_POST.youtubeRefBadge,
-    altText: INITIAL_POST.altText,
-    ctaUrl: INITIAL_POST.ctaUrl,
-    segments: INITIAL_SEGMENTS,
-    slides: INITIAL_POST.slides,
+    castBadge: "Studio Custom Ensemble",
+    youtubeRefBadge: v.audioLabel || "35mm Cinema Master",
+    altText: v.hook || v.label || varCanonId,
+    ctaUrl: v.canonicalUrl || `/entity/${varCanonId}`,
+    segments: Array.from({ length: varActCount }, (_, idx) => {
+      const actId = `${varCanonId}-ACT-${String(idx + 1).padStart(2, "0")}`;
+      return {
+        id: `seg-${idx + 1}`,
+        actId,
+        canonicalId: actId,
+        canonicalUrl: `/entity/${actId}`,
+        cameraPreset:
+          HIGGSFIELD_CAMERA_PRESETS[idx % HIGGSFIELD_CAMERA_PRESETS.length].name,
+        lensPreset: "Panavision C-Series 35mm Anamorphic",
+        index: idx,
+        timeRange: `${idx * varSegDur}s–${(idx + 1) * varSegDur}s`,
+        startSec: idx * varSegDur,
+        endSec: (idx + 1) * varSegDur,
+        speaker: `Act ${idx + 1} Lead`,
+        captionLine: v.hook || v.label,
+        visualContinuityLock: `35mm Anamorphic continuity lock for Act ${idx + 1}`,
+        aiGenerated: true,
+      };
+    }),
+    slides: [
+      {
+        id: "slide-1",
+        title: `Act I (0:00–0:${String(varSegDur).padStart(2, "0")}) · ${v.label}`,
+        subtitle: v.hook,
+        altText: `${v.label} opening frame`,
+        timeCode: `00:00–00:${String(varSegDur).padStart(2, "0")}`,
+      },
+      {
+        id: "slide-2",
+        title: `Act II · ${v.audioLabel || "Master Continuity"}`,
+        subtitle: v.body.slice(0, 140),
+        altText: `${v.label} middle frame`,
+        timeCode: `00:${String(varSegDur).padStart(2, "0")}–01:00`,
+      },
+    ],
   };
 }
 
@@ -1811,6 +1859,38 @@ export default function ContentStudioWorkspacePage() {
     parallelWorkers: 10,
   });
 
+  // Unified 6-Modality Multimedia Studio State (Video, Music Video, Song/Score, Voice/Podcast, Sound FX, AI Keyframe)
+  const [studioModality, setStudioModality] = useState<
+    | "video_cinema"
+    | "music_video"
+    | "audio_music"
+    | "audio_voice"
+    | "audio_sfx"
+    | "image_keyframe"
+  >("video_cinema");
+  const [songInstrumentalOnly, setSongInstrumentalOnly] = useState<boolean>(false);
+  const [voiceNarrateMode, setVoiceNarrateMode] = useState<"single" | "podcast">(
+    "single"
+  );
+  const [selectedVoiceName, setSelectedVoiceName] = useState<
+    "Charon" | "Aoede" | "Puck" | "Kore" | "Fenrir"
+  >("Charon");
+  const [mediaGenBusy, setMediaGenBusy] = useState<boolean>(false);
+  const [mediaGenStageLabel, setMediaGenStageLabel] = useState<string>("");
+  const [mediaGenError, setMediaGenError] = useState<string | null>(null);
+  const [generatedMediaCard, setGeneratedMediaCard] = useState<{
+    kind: "audio" | "image";
+    modalityId: "audio_music" | "audio_voice" | "audio_sfx" | "image_keyframe";
+    modalityLabel: string;
+    title: string;
+    url: string;
+    modelUsed: string;
+    durationSec?: number;
+    specBadge: string;
+    transcriptOrCues?: string;
+    canonicalId?: string;
+  } | null>(null);
+
   // Active Optical Lens CSS Filter & Active Presets
   const activeLensSpec = useMemo(
     () =>
@@ -2000,13 +2080,39 @@ export default function ContentStudioWorkspacePage() {
     // Fetch custom or persisted reel from /api/entity/[id]
     let cancelled = false;
     fetch(`/api/entity/${encodeURIComponent(requestedReel)}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (cancelled || !data?.ok || !data?.entity) return;
+      .then(async (r) => {
+        if (!r.ok) {
+          return { notFoundStatus: r.status, data: null };
+        }
+        return { notFoundStatus: 0, data: await r.json().catch(() => null) };
+      })
+      .then(({ notFoundStatus, data }) => {
+        if (cancelled) return;
+        if (notFoundStatus === 404 || !data?.ok || !data?.entity) {
+          if (notFoundStatus === 404) {
+            setPost((prev) => ({
+              ...prev,
+              canonicalId: requestedReel,
+              canonicalUrl: `/entity/${requestedReel}`,
+              studioUrl: `/swarm-MUI?reel=${encodeURIComponent(requestedReel)}`,
+              title: `Object Not Found: ${requestedReel}`,
+              hook: `No canonical production exists for ${requestedReel}. Enter a creative brief on the left to synthesize a new master.`,
+              body: `Requested canonical ID ${requestedReel} returned HTTP 404 (zero seed-reel substitution).`,
+              videoUrl: "",
+              segments: [],
+            }));
+            setToast({
+              message: `Canonical ID ${requestedReel} was not found (HTTP 404 — zero seed hijack).`,
+            });
+          }
+          return;
+        }
         const ent = data.entity;
         const dur = Number(ent.durationSeconds || ent.durationSec || 60);
         const cId = String(ent.parentReelId || ent.canonicalId || requestedReel);
         const rawSegs = Array.isArray(ent.segments) ? ent.segments : [];
+        const fallbackActCount = Math.max(2, Math.round(Math.max(60, dur) / 30));
+        const fallbackSegDur = Math.max(10, Math.round(dur / fallbackActCount));
         const mappedSegs: VideoSegmentSpec[] =
           rawSegs.length > 0
             ? rawSegs.map((s: Record<string, unknown>, idx: number) => {
@@ -2041,7 +2147,26 @@ export default function ContentStudioWorkspacePage() {
                   aiGenerated: true,
                 };
               })
-            : INITIAL_POST.segments;
+            : Array.from({ length: fallbackActCount }, (_, idx) => {
+                const aId = `${cId}-ACT-${String(idx + 1).padStart(2, "0")}`;
+                return {
+                  id: `seg-${idx + 1}`,
+                  actId: aId,
+                  canonicalId: aId,
+                  canonicalUrl: `/entity/${aId}`,
+                  cameraPreset:
+                    HIGGSFIELD_CAMERA_PRESETS[idx % HIGGSFIELD_CAMERA_PRESETS.length].name,
+                  lensPreset: "Panavision C-Series 35mm Anamorphic",
+                  index: idx,
+                  timeRange: `${idx * fallbackSegDur}s–${(idx + 1) * fallbackSegDur}s`,
+                  startSec: idx * fallbackSegDur,
+                  endSec: (idx + 1) * fallbackSegDur,
+                  speaker: `Act ${idx + 1} Lead`,
+                  captionLine: String(ent.subtitle || ent.title || cId),
+                  visualContinuityLock: `35mm Anamorphic continuity lock for Act ${idx + 1}`,
+                  aiGenerated: true,
+                };
+              });
 
         const resolvedModel =
           typeof ent.foundationModel === "string" && ent.foundationModel
@@ -2052,19 +2177,41 @@ export default function ContentStudioWorkspacePage() {
         if (ent.deepResearchBible) {
           setCustomDeepResearchBible(ent.deepResearchBible);
         }
+        const resolvedEntVideo = String(ent.videoUrl ?? ent.videoSrc ?? "");
         setPost((prev) => ({
           ...prev,
           canonicalId: cId,
           canonicalUrl: `/entity/${cId}`,
           studioUrl: `/swarm-MUI?reel=${cId}`,
-          title: String(ent.title || prev.title).replace(/\s*—\s*Act\s+\d+$/i, ""),
-          hook: String(ent.promptSummary || ent.subtitle || prev.hook).slice(0, 118),
-          body: String(ent.prompt || ent.subtitle || prev.body),
+          title: String(ent.title || cId).replace(/\s*—\s*Act\s+\d+$/i, ""),
+          hook: String(ent.promptSummary || ent.subtitle || ent.title || cId).slice(0, 118),
+          body: String(ent.prompt || ent.subtitle || ent.title || cId),
           durationSeconds: dur,
           foundationModel: resolvedModel,
-          videoUrl: String(ent.videoSrc || prev.videoUrl),
+          videoUrl: resolvedEntVideo,
           segments: mappedSegs,
         }));
+        const activeJobObj =
+          ent.activeJob && typeof ent.activeJob === "object"
+            ? (ent.activeJob as Record<string, unknown>)
+            : null;
+        const resumedJobId = String(activeJobObj?.id || ent.liveJobId || "");
+        if (ent.renderStatus === "rendering" && resumedJobId) {
+          setLiveRenderJob({
+            id: resumedJobId,
+            canonicalId: cId,
+            canonicalUrl: `/entity/${cId}`,
+            status: "running",
+            progress: Number(activeJobObj?.progress ?? ent.renderProgress ?? 18),
+            stageLabel: String(
+              activeJobObj?.stageLabel ||
+                ent.renderStageLabel ||
+                `Rendering ${dur}s multi-act master...`
+            ),
+            latestLog: `Resumed live job ${resumedJobId} (${cId})`,
+            parallelWorkers: Math.max(2, Math.round(Math.max(60, dur) / 30)),
+          });
+        }
         if (requestedAct) {
           const foundAct = mappedSegs.find(
             (s) =>
@@ -2288,8 +2435,14 @@ export default function ContentStudioWorkspacePage() {
     const targetPost = draftOverride || post;
     const effectiveBrief = (rawBriefOverride || briefInput || targetPost.title).trim();
     const targetDurSec =
-      durationSecOverride || targetPost.durationSeconds || selectedDurationSec || 300;
-    const workerCount = targetDurSec >= 180 ? 10 : 6;
+      durationSecOverride || targetPost.durationSeconds || selectedDurationSec || 60;
+    const workerCount = Math.max(2, Math.round(Math.max(60, targetDurSec) / 30));
+    const resolvedAspectRatio: "9:16" | "16:9" | "1:1" =
+      activePlatformId === "youtube_16_9" || activePlatformId === "cinema_21_9"
+        ? "16:9"
+        : activePlatformId === "linkedin_1_1"
+        ? "1:1"
+        : "9:16";
     const effectiveFoundationModel =
       draftOverride?.foundationModel ||
       selectedModelId ||
@@ -2299,6 +2452,26 @@ export default function ContentStudioWorkspacePage() {
       effectiveFoundationModel === "veo31_4k"
         ? "Veo 3.1 4K"
         : "Omni 1.1 Flash";
+    const isMusicPrompt =
+      studioModality === "music_video" ||
+      targetPost.audioEngineOverride === "omni_lyria3" ||
+      /\b(music\s*(?:video|album|reel|track)|song|sing(?:ing|er)?|vocal(?:s|ist)?|lyrics?|dance|dancing|choreograph(?:y|er)?|lyria|cumbia|reggaeton|salsa|bachata|bhangra|flamenco|bollywood|pop\s*anthem|hip[\s-]*hop|rap|edm|shakira|hips\s*don'?t\s*lie|waka\s*waka|beyonc[eé]|rihanna|bad\s*bunny|dua\s*lipa|concert)\b/i.test(
+        `${effectiveBrief} ${targetPost.title} ${targetPost.genre || ""}`
+      );
+    const effectiveAudioEngine: "omni_lyria3" | "omni_native" =
+      studioModality === "music_video"
+        ? "omni_lyria3"
+        : targetPost.audioEngineOverride ||
+          (isMusicPrompt || audioEngineMode === "option1_symphonic"
+            ? "omni_lyria3"
+            : "omni_native");
+    const effectiveGenre =
+      targetPost.genre ||
+      (isMusicPrompt
+        ? "Latin Pop Cumbia-Reggaeton & Brass Carnival Anthem"
+        : "35mm Cinematic Epic Score");
+    const effectiveBpm =
+      targetPost.bpm || (isMusicPrompt ? 104 : 124);
 
     setLiveRenderJob({
       id: "starting",
@@ -2306,19 +2479,37 @@ export default function ContentStudioWorkspacePage() {
       canonicalUrl: targetPost.canonicalUrl,
       status: "running",
       progress: 14,
-      stageLabel: `Stage 1/4 • ${engineShortName} Pool (${workerCount} Concurrent Acts · ${targetDurSec}s) launching for "${targetPost.title}"...`,
-      latestLog: `Dispatching ${workerCount} parallel ${engineShortName} act workers via Promise.all (${targetPost.cameraPreset} · ${targetPost.lensPreset})...`,
+      stageLabel: `Stage 1/6 • ${engineShortName}${effectiveAudioEngine === "omni_lyria3" ? " + Lyria 3 Pro" : ""} (${workerCount} Acts · ${targetDurSec}s · ${resolvedAspectRatio}) launching for "${targetPost.title}"...`,
+      latestLog: `Dispatching ${workerCount} ${engineShortName} act workers${effectiveAudioEngine === "omni_lyria3" ? ` + Lyria 3 Pro (${effectiveBpm} BPM)` : ""} (${targetPost.cameraPreset} · ${targetPost.lensPreset})...`,
       parallelWorkers: workerCount,
     });
     try {
-      const turnPrompts = targetPost.segments.map(
-        (seg, idx) =>
-          `Act ${idx + 1} (${seg.timeRange}) [Camera: ${seg.cameraPreset || targetPost.cameraPreset}, Lens: ${seg.lensPreset || targetPost.lensPreset}] — Speaker: ${seg.speaker} speaking "${
-            seg.captionLine
-          }". Visual Lock: ${seg.visualContinuityLock}. Brief: ${effectiveBrief}.`
-      );
+      const requiredTurnCount = Math.max(workerCount * 3, targetPost.segments.length);
+      const turnPrompts = Array.from({ length: requiredTurnCount }, (_, idx) => {
+        const seg =
+          targetPost.segments[idx % Math.max(1, targetPost.segments.length)];
+        const camMotion = seg?.cameraPreset || targetPost.cameraPreset;
+        const lensOptic = seg?.lensPreset || targetPost.lensPreset;
+        const cleanLine = String(seg?.captionLine || effectiveBrief)
+          .replace(/^\[[^\]]+\]:\s*/g, "")
+          .replace(/^"+|"+$/g, "")
+          .trim();
+        const continuityNote = String(
+          seg?.visualContinuityLock || "Continuous 35mm Panavision Anamorphic lighting and wardrobe"
+        ).trim();
+        return isMusicPrompt
+          ? `Photorealistic 35mm cinema music video shot ${idx + 1} (${resolvedAspectRatio}) captured with ${camMotion} and ${lensOptic}: ${seg?.speaker || "Lead vocalist"} dynamically performing "${cleanLine}" with expressive beat-locked choreography. ${continuityNote}. Core concept: ${effectiveBrief}. Zero on-screen text, subtitles, or watermarks.`
+          : `Photorealistic 35mm cinema shot ${idx + 1} (${resolvedAspectRatio}) captured with ${camMotion} and ${lensOptic}: ${seg?.speaker || "Lead character"} delivering "${cleanLine}" with natural lip-sync and physical scene interaction. ${continuityNote}. Core concept: ${effectiveBrief}. Zero on-screen text, subtitles, or watermarks.`;
+      });
       const lyrics = targetPost.segments
-        .map((seg) => `[${seg.speaker}]: "${seg.captionLine}"`)
+        .map((seg) => {
+          const cleanCaption = String(seg.captionLine || "")
+            .replace(/^\[[^\]]+\]:\s*/g, "")
+            .replace(/^"+|"+$/g, "")
+            .trim();
+          return isMusicPrompt ? cleanCaption : `${seg.speaker}: ${cleanCaption}`;
+        })
+        .filter(Boolean)
         .join("\n");
       const res = await fetch("/api/swarm/jobs", {
         method: "POST",
@@ -2327,17 +2518,15 @@ export default function ContentStudioWorkspacePage() {
           title: targetPost.title,
           prompt: effectiveBrief,
           durationSeconds: targetDurSec,
-          actsCount: targetPost.segments.length,
+          actsCount: workerCount,
+          aspectRatio: resolvedAspectRatio,
           canonicalId: targetPost.canonicalId,
           foundationModel: effectiveFoundationModel,
           cameraPreset: targetPost.cameraPreset,
           lensPreset: targetPost.lensPreset,
-          genre: "35mm Cinematic Epic Score",
-          bpm: 124,
-          audioEngine:
-            audioEngineMode === "option1_symphonic"
-              ? "omni_lyria3"
-              : "omni_native",
+          genre: effectiveGenre,
+          bpm: effectiveBpm,
+          audioEngine: effectiveAudioEngine,
           adkOrcasMode: false,
           act1Prompt: turnPrompts.slice(0, Math.ceil(turnPrompts.length / 2)).join(" "),
           act2Prompt: turnPrompts.slice(Math.ceil(turnPrompts.length / 2)).join(" "),
@@ -2346,7 +2535,7 @@ export default function ContentStudioWorkspacePage() {
         }),
       });
       const data = await res.json();
-      if (data?.ok && data?.job?.id) {
+      if (res.ok && data?.ok && data?.job?.id) {
         const j = data.job;
         setLiveRenderJob({
           id: j.id,
@@ -2356,7 +2545,7 @@ export default function ContentStudioWorkspacePage() {
           progress: Number(j.progress || 24),
           stageLabel: String(
             j.stageLabel ||
-              `Parallel Worker Pool (${workerCount} Acts) rendering ${targetDurSec}s master...`
+              `Parallel Worker Pool (${workerCount} Acts · ${resolvedAspectRatio}) rendering ${targetDurSec}s master...`
           ),
           latestLog:
             Array.isArray(j.logs) && j.logs.length > 0
@@ -2365,27 +2554,252 @@ export default function ContentStudioWorkspacePage() {
           parallelWorkers: workerCount,
         });
         setToast({
-          message: `Parallel ${workerCount}-Act Render active (${j.canonicalId || j.id} · ${targetDurSec}s)`,
+          message: `Parallel ${workerCount}-Act Render active (${j.canonicalId || j.id} · ${targetDurSec}s · ${resolvedAspectRatio})`,
         });
       } else {
+        const errDetail = String(
+          data?.error || data?.message || `HTTP ${res.status} render dispatch failure`
+        );
         setLiveRenderJob({
           id: "",
-          status: "completed",
-          progress: 100,
-          stageLabel: `Master Active: ${targetPost.title} (${targetDurSec}.0s · ${targetPost.canonicalId})`,
-          latestLog: "Verified 35mm multi-act studio master loaded in canvas & Library.",
+          canonicalId: targetPost.canonicalId,
+          canonicalUrl: targetPost.canonicalUrl,
+          status: "error",
+          progress: 0,
+          stageLabel: `Live Render Dispatch Failed for "${targetPost.title}"`,
+          latestLog: errDetail,
           parallelWorkers: workerCount,
         });
       }
-    } catch {
+    } catch (err) {
+      const errDetail =
+        err instanceof Error ? err.message : "Network error contacting /api/swarm/jobs";
       setLiveRenderJob({
         id: "",
-        status: "completed",
-        progress: 100,
-        stageLabel: `Master Active: ${targetPost.title} (${targetDurSec}.0s · ${targetPost.canonicalId})`,
-        latestLog: "Verified 35mm studio master active.",
+        canonicalId: targetPost.canonicalId,
+        canonicalUrl: targetPost.canonicalUrl,
+        status: "error",
+        progress: 0,
+        stageLabel: `Live Render Dispatch Error for "${targetPost.title}"`,
+        latestLog: errDetail,
         parallelWorkers: workerCount,
       });
+    }
+  };
+
+  // Generate Standalone Audio (Lyria 3 Pro Song/Score, Gemini Neural Voiceover / 2-Host Podcast, V2A Foley) or AI Keyframe Image
+  const handleGenerateStandaloneMedia = async () => {
+    const trimmed = briefInput.trim();
+    if (!trimmed) {
+      setBriefError(
+        "Enter a prompt describing the song, voiceover/podcast topic, sound effect, or keyframe scene you want to generate."
+      );
+      return;
+    }
+    setBriefError(undefined);
+    setMediaGenBusy(true);
+    setMediaGenError(null);
+
+    const resolvedAspectRatio: "9:16" | "16:9" | "1:1" =
+      activePlatformId === "youtube_16_9" || activePlatformId === "cinema_21_9"
+        ? "16:9"
+        : activePlatformId === "linkedin_1_1"
+        ? "1:1"
+        : "9:16";
+    const normalizedPrompt = trimmed.replace(/\s+/g, " ");
+    const conciseTitle = (() => {
+      if (normalizedPrompt.length <= 68) return normalizedPrompt;
+      const cut = normalizedPrompt.slice(0, 68);
+      const lastSpace = cut.lastIndexOf(" ");
+      const wordSafe = lastSpace >= 36 ? cut.slice(0, lastSpace) : cut;
+      return `${wordSafe.replace(/[,;:\-–—]+$/, "")}…`;
+    })();
+
+    try {
+      if (studioModality === "audio_music") {
+        const dur = Math.min(180, Math.max(15, selectedDurationSec));
+        setMediaGenStageLabel(
+          `Synthesizing ${dur}s ${songInstrumentalOnly ? "Instrumental Film Score" : "Vocal Studio Song"} via Lyria 3 Pro…`
+        );
+        const res = await fetch("/api/audio/lyria-music", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: trimmed,
+            title: conciseTitle,
+            genre: songInstrumentalOnly
+              ? "35mm Orchestral & Electronic Cinema Score"
+              : "Studio Vocal Pop / Cumbia-Reggaeton / Electronic Anthem",
+            bpm: 112,
+            durationSeconds: dur,
+            instrumentalOnly: songInstrumentalOnly,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data?.ok || !data?.audioUrl) {
+          throw new Error(
+            String(data?.error || `Lyria 3 Pro synthesis failed (HTTP ${res.status})`)
+          );
+        }
+        const cleanedLyrics = data.lyricsUsed
+          ? String(data.lyricsUsed)
+              .split("\n")
+              .map((line: string) =>
+                line
+                  .replace(/\[\[[A-Za-z0-9_.-]+\]\]/g, "")
+                  .replace(/^\s*\[:\]\s*/g, "")
+                  .replace(/\s+\[:\]\s+/g, " ")
+                  .trim()
+              )
+              .filter(Boolean)
+              .join("\n")
+          : undefined;
+        setGeneratedMediaCard({
+          kind: "audio",
+          modalityId: "audio_music",
+          modalityLabel: songInstrumentalOnly
+            ? "Lyria 3 Pro · Instrumental Score"
+            : "Lyria 3 Pro · Vocal Studio Song",
+          title: String(data.title || conciseTitle),
+          url: String(data.audioUrl),
+          modelUsed: String(data.modelUsed || "models/lyria-3-pro-preview"),
+          durationSec: Number(data.durationSec || dur),
+          specBadge: `48 kHz Stereo · -14 LUFS · ${Number(data.durationSec || dur).toFixed(1)}s`,
+          transcriptOrCues: cleanedLyrics || undefined,
+          canonicalId: data.canonicalId ? String(data.canonicalId) : undefined,
+        });
+        setToast({
+          message: `Lyria 3 Pro ${songInstrumentalOnly ? "score" : "song"} mastered (${Number(data.durationSec || dur).toFixed(1)}s)`,
+        });
+      } else if (studioModality === "audio_voice") {
+        setMediaGenStageLabel(
+          voiceNarrateMode === "podcast"
+            ? "Synthesizing 2-Host Studio Podcast (Aoede + Charon) via Gemini Neural TTS…"
+            : `Synthesizing Neural Voiceover (${selectedVoiceName}) via Gemini Neural TTS…`
+        );
+        const res = await fetch("/api/audio/narrate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: trimmed,
+            title: conciseTitle,
+            mode: voiceNarrateMode,
+            voiceName: selectedVoiceName,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data?.ok || !data?.audioUrl) {
+          throw new Error(
+            String(data?.error || `Neural voice synthesis failed (HTTP ${res.status})`)
+          );
+        }
+        setGeneratedMediaCard({
+          kind: "audio",
+          modalityId: "audio_voice",
+          modalityLabel:
+            voiceNarrateMode === "podcast"
+              ? "2-Host Studio Podcast (Aoede + Charon)"
+              : `Neural Voiceover (${selectedVoiceName})`,
+          title: String(data.title || conciseTitle),
+          url: String(data.audioUrl),
+          modelUsed: String(data.modelUsed || "models/gemini-2.5-flash-preview-tts"),
+          durationSec: Number(data.durationSec || 0),
+          specBadge: `48 kHz Broadcast · -15 LUFS · ${Number(data.durationSec || 0).toFixed(1)}s`,
+          transcriptOrCues: data.transcript ? String(data.transcript) : undefined,
+          canonicalId: data.canonicalId ? String(data.canonicalId) : undefined,
+        });
+        setToast({
+          message: `${voiceNarrateMode === "podcast" ? "2-Host Podcast" : "Voiceover"} mastered (${Number(data.durationSec || 0).toFixed(1)}s)`,
+        });
+      } else if (studioModality === "audio_sfx") {
+        const dur = Math.min(30, Math.max(8, selectedDurationSec <= 30 ? selectedDurationSec : 15));
+        setMediaGenStageLabel(
+          `Synthesizing ${dur}s Cinematic Foley & Sound FX via V2A + Lyria 3 Clip…`
+        );
+        const res = await fetch("/api/audio/v2a", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            videoDescription: trimmed,
+            title: conciseTitle,
+            durationSeconds: dur,
+            ambientEnvironment: activeVfxPreset.label,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data?.ok || !data?.audioUrl) {
+          throw new Error(
+            String(data?.error || `V2A Sound FX synthesis failed (HTTP ${res.status})`)
+          );
+        }
+        const cueSummary = Array.isArray(data.cues)
+          ? data.cues
+              .map(
+                (c: { timestampSec?: number; effect?: string; intensity?: string }) =>
+                  `[${Number(c.timestampSec || 0).toFixed(1)}s] ${c.effect || "Foley cue"} (${c.intensity || "medium"})`
+              )
+              .join("\n")
+          : undefined;
+        setGeneratedMediaCard({
+          kind: "audio",
+          modalityId: "audio_sfx",
+          modalityLabel: "V2A Cinematic Sound FX & Foley",
+          title: String(data.title || conciseTitle),
+          url: String(data.audioUrl),
+          modelUsed: String(data.modelUsed || "models/lyria-3-clip-preview"),
+          durationSec: Number(data.durationSec || dur),
+          specBadge: `48 kHz Stereo Foley · -15 LUFS · ${Number(data.durationSec || dur).toFixed(1)}s`,
+          transcriptOrCues: cueSummary,
+          canonicalId: data.canonicalId ? String(data.canonicalId) : undefined,
+        });
+        setToast({
+          message: `V2A Foley master ready (${Number(data.durationSec || dur).toFixed(1)}s)`,
+        });
+      } else if (studioModality === "image_keyframe") {
+        setMediaGenStageLabel(
+          `Synthesizing ${resolvedAspectRatio} 35mm Cinema Keyframe via Gemini Flash Image…`
+        );
+        const res = await fetch("/api/swarm/avatar-builder", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mode: "keyframe",
+            surfaceType: "keyframe",
+            prompt: trimmed,
+            aspectRatio: resolvedAspectRatio,
+            cameraPreset: activeCameraPreset.label,
+            lensPreset: activeLensPreset.label,
+            vfxPreset: activeVfxPreset.label,
+          }),
+        });
+        const data = await res.json();
+        const imgUrl = data?.imageUrl || data?.avatarUrl;
+        if (!res.ok || !data?.ok || !imgUrl) {
+          throw new Error(
+            String(data?.error || `AI Keyframe generation failed (HTTP ${res.status})`)
+          );
+        }
+        setGeneratedMediaCard({
+          kind: "image",
+          modalityId: "image_keyframe",
+          modalityLabel: `35mm AI Keyframe & Poster (${resolvedAspectRatio})`,
+          title: conciseTitle,
+          url: String(imgUrl),
+          modelUsed: String(data.modelUsed || "models/gemini-3.1-flash-image-preview"),
+          specBadge: `${resolvedAspectRatio} Photorealistic 35mm Still · ${activeCameraPreset.label}`,
+          canonicalId: data.canonicalId ? String(data.canonicalId) : undefined,
+        });
+        setToast({
+          message: `AI Keyframe generated (${resolvedAspectRatio} · ${data.modelUsed || "Gemini Image"})`,
+        });
+      }
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Multimedia synthesis request failed";
+      setMediaGenError(msg);
+    } finally {
+      setMediaGenBusy(false);
+      setMediaGenStageLabel("");
     }
   };
 
@@ -2421,7 +2835,7 @@ export default function ContentStudioWorkspacePage() {
                   item.src ||
                   item.videoUrl ||
                   item.url ||
-                  "/assets/swarm/comparisons/11_sacred_kailash_ganesh_shiva_parvati_option2_dialogue_score_60s.mp4?v=kailash_fresh_20261023"
+                  ""
               ),
               platform: `9:16 & 16:9 · ${dur}s`,
               durationSeconds: dur,
@@ -3210,12 +3624,8 @@ export default function ContentStudioWorkspacePage() {
     const nextStudioUrl = `/swarm-MUI?reel=${nextCanonId}`;
 
     const chosenVideo = isMissionImpossible
-      ? "/assets/swarm/generated/job_1793105000_mission_impossible_10_multiverse_300s/combined_300s.mp4"
-      : apiData?.videoUrl ||
-        apiAssets?.videoUrl ||
-        (detectedDurSec <= 90
-          ? "/assets/swarm/generated/job_1792800001_barcelona_bhangra_flamenco/combined_60s.mp4"
-          : post.videoUrl);
+      ? "/api/media/assets/swarm/generated/job_1793105000_mission_impossible_10_multiverse_300s/combined_300s.mp4"
+      : apiData?.videoUrl || apiAssets?.videoUrl || "";
 
     let nextTitle = post.title;
     let nextHook = post.hook;
@@ -3227,6 +3637,42 @@ export default function ContentStudioWorkspacePage() {
     let nextCastLabel = post.castBadge;
 
     const incomingSegments = apiData?.segments || apiAssets?.segments;
+
+    const clipAtWordBoundary = (rawStr: string, maxChars: number): string => {
+      const clean = rawStr.replace(/\s+/g, " ").trim();
+      if (clean.length <= maxChars) return clean;
+      const sliced = clean.slice(0, maxChars);
+      const lastSpace = sliced.lastIndexOf(" ");
+      return (lastSpace >= 20 ? sliced.slice(0, lastSpace) : sliced).replace(
+        /[,;:\-\s]+$/,
+        ""
+      );
+    };
+
+    const isMusicPrompt =
+      studioModality === "music_video" ||
+      Boolean(apiData?.isMusicVideo || apiAssets?.isMusicVideo) ||
+      /\b(music\s*(?:video|album|reel|track)|song|sing(?:ing|er)?|vocal(?:s|ist)?|lyrics?|dance|dancing|choreograph(?:y|er)?|lyria|cumbia|reggaeton|salsa|bachata|bhangra|flamenco|bollywood|pop\s*anthem|hip[\s-]*hop|rap|edm|shakira|hips\s*don'?t\s*lie|waka\s*waka|beyonc[eé]|rihanna|bad\s*bunny|dua\s*lipa|concert)\b/i.test(
+        promptWithoutUrls
+      );
+    const resolvedGenre =
+      apiData?.genre ||
+      apiAssets?.genre ||
+      (isMusicPrompt
+        ? "Latin Pop Cumbia-Reggaeton & Brass Carnival Anthem"
+        : "35mm Cinematic Epic Score");
+    const resolvedBpm = Number(
+      apiData?.bpm || apiAssets?.bpm || (isMusicPrompt ? 104 : 124)
+    );
+    const resolvedAudioEngine: "omni_lyria3" | "omni_native" =
+      studioModality === "music_video" ||
+      apiData?.recommendedAudioEngine === "omni_lyria3" ||
+      apiAssets?.recommendedAudioEngine === "omni_lyria3" ||
+      isMusicPrompt
+        ? "omni_lyria3"
+        : audioEngineMode === "option1_symphonic"
+        ? "omni_lyria3"
+        : "omni_native";
 
     if (isMissionImpossible) {
       nextTitle =
@@ -3244,7 +3690,7 @@ export default function ContentStudioWorkspacePage() {
       nextSegments = MI10_SEGMENTS;
     } else if (Array.isArray(incomingSegments) && incomingSegments.length > 0) {
       const conciseTopic =
-        promptWithoutUrls.slice(0, 50).replace(/[,;:\s]+$/, "") ||
+        clipAtWordBoundary(promptWithoutUrls, 54) ||
         "Custom 35mm Visual Story";
       nextTitle =
         apiAssets?.title ||
@@ -3258,15 +3704,20 @@ export default function ContentStudioWorkspacePage() {
         .slice(0, 114);
       nextBody =
         apiAssets?.storyline?.slice(0, 260) ||
-        `Built for ${activePlatform.shortName} using ${activeBrand.name}. ${targetActsCount} continuous 35mm acts (${detectedDurSec}s total) with spoken dialogue, Higgsfield camera presets, and -14 LUFS Lyria 3 Pro scoring.`;
+        `Built for ${activePlatform.shortName} using ${activeBrand.name}. ${targetActsCount} continuous 35mm acts (${detectedDurSec}s total) with ${isMusicPrompt ? "original studio vocals & Lyria 3 Pro -14 LUFS mastering" : "spoken dialogue & -14 LUFS orchestral scoring"}.`;
       nextHashtags =
         apiAssets?.hashtags ||
-        "#OriginalStory #35mmCinema #ParallelSwarm #CinemaStudio";
+        (isMusicPrompt
+          ? "#MusicVideo #Lyria3Pro #Omni11Flash #StudioMaster"
+          : "#OriginalStory #35mmCinema #ParallelSwarm #CinemaStudio");
       nextAltText =
         apiAssets?.altText ||
         `35mm Panavision Anamorphic frame from "${nextTitle}" featuring ${apiAssets?.castBadge || "ensemble cast"}.`;
       nextCastLabel =
-        apiAssets?.castBadge || "Commander Orion Vance (Baritone) · Dr. Lyra Chen (Mezzo)";
+        apiAssets?.castBadge ||
+        (isMusicPrompt
+          ? "Lead Vocalist (Mezzo-Soprano) · Hype Duet Vocalist (Baritone)"
+          : "Commander Orion Vance (Baritone) · Dr. Lyra Chen (Mezzo)");
       const segDur = Math.round(detectedDurSec / incomingSegments.length);
       nextSegments = incomingSegments.map(
         (
@@ -3318,14 +3769,18 @@ export default function ContentStudioWorkspacePage() {
       }
     } else {
       const conciseTopic =
-        promptWithoutUrls.slice(0, 56).replace(/[,;:\s]+$/, "") ||
+        clipAtWordBoundary(promptWithoutUrls, 56) ||
         "Custom 35mm Cinema Master";
       const segDur = Math.round(detectedDurSec / targetActsCount);
       nextTitle = `${conciseTopic} (${detectedDurSec}s · ${targetActsCount}-Act Master)`;
-      nextHook = `${conciseTopic} — ${targetActsCount} continuous 35mm acts (${detectedDurSec}s @ 24fps) with synchronized spoken dialogue.`.slice(0, 114);
-      nextBody = `Synthesized for ${activePlatform.shortName} using ${activeBrand.name}. ${targetActsCount} parallel 30-second acts (${detectedDurSec}s total) with Higgsfield camera presets, 35mm Panavision optics, and -14 LUFS orchestral scoring.`;
-      nextHashtags = "#OriginalCinema #35mmAnamorphic #ParallelSwarm #CinemaStudio";
-      nextCastLabel = "Commander Orion Vance (Baritone) · Dr. Lyra Chen (Mezzo)";
+      nextHook = `${conciseTopic} — ${targetActsCount} continuous 35mm acts (${detectedDurSec}s @ 24fps) with ${isMusicPrompt ? "Lyria 3 Pro studio vocals" : "synchronized spoken dialogue"}.`.slice(0, 114);
+      nextBody = `Synthesized for ${activePlatform.shortName} using ${activeBrand.name}. ${targetActsCount} parallel acts (${detectedDurSec}s total) with Higgsfield camera presets, 35mm Panavision optics, and -14 LUFS ${isMusicPrompt ? "Lyria 3 Pro studio vocal song" : "orchestral scoring"}.`;
+      nextHashtags = isMusicPrompt
+        ? "#MusicVideo #Lyria3Pro #Omni11Flash #StudioMaster"
+        : "#OriginalCinema #35mmAnamorphic #ParallelSwarm #CinemaStudio";
+      nextCastLabel = isMusicPrompt
+        ? "Lead Vocalist (Mezzo-Soprano) · Hype Duet Vocalist (Baritone)"
+        : "Commander Orion Vance (Baritone) · Dr. Lyra Chen (Mezzo)";
       nextAltText = `35mm Panavision Anamorphic frame from "${nextTitle}" featuring ${nextCastLabel}.`;
       nextSegments = Array.from({ length: targetActsCount }, (_, idx) => ({
         id: `seg-${idx + 1}`,
@@ -3338,14 +3793,20 @@ export default function ContentStudioWorkspacePage() {
         timeRange: `${idx * segDur}s–${(idx + 1) * segDur}s`,
         startSec: idx * segDur,
         endSec: (idx + 1) * segDur,
-        speaker:
-          idx % 2 === 0
-            ? "Commander Orion Vance (Baritone)"
-            : "Dr. Lyra Chen (Mezzo)",
-        captionLine:
-          idx === 0
-            ? `"${conciseTopic} — lock phase telemetry and engage primary sequence."`
-            : `"Phase ${idx + 1} stabilized. Executing final trajectory across the perimeter."`,
+        speaker: isMusicPrompt
+          ? idx % 2 === 0
+            ? "Lead Vocalist (Mezzo-Soprano)"
+            : "Hype Duet Vocalist (Baritone)"
+          : idx % 2 === 0
+          ? "Commander Orion Vance (Baritone)"
+          : "Dr. Lyra Chen (Mezzo)",
+        captionLine: isMusicPrompt
+          ? idx % 2 === 0
+            ? "Feel the brass and percussion ignite the night — every rhythm moves in golden fire!"
+            : "Hands high under the carnival lights, two hearts locked inside the groove tonight!"
+          : idx === 0
+          ? `"${conciseTopic} — lock phase telemetry and engage primary sequence."`
+          : `"Phase ${idx + 1} stabilized. Executing final trajectory across the perimeter."`,
         visualContinuityLock: `35mm Panavision Anamorphic 40mm T2.0 · Act ${idx + 1} continuity lock for ${conciseTopic}`,
         aiGenerated: true,
       }));
@@ -3370,6 +3831,9 @@ export default function ContentStudioWorkspacePage() {
       studioUrl: nextStudioUrl,
       durationSeconds: detectedDurSec,
       foundationModel: selectedModelId,
+      genre: resolvedGenre,
+      bpm: resolvedBpm,
+      audioEngineOverride: resolvedAudioEngine,
       cameraPreset: selectedCameraPreset,
       lensPreset: selectedLensId,
       vfxPreset: selectedVfxId,
@@ -3386,7 +3850,9 @@ export default function ContentStudioWorkspacePage() {
       slides: nextSlides,
       videoUrl: chosenVideo,
       audioMixLabel:
-        audioEngineMode === "option1_symphonic"
+        resolvedAudioEngine === "omni_lyria3" && isMusicPrompt
+          ? `Lyria 3 Pro Studio Song (${resolvedBpm} BPM · -14 LUFS)`
+          : audioEngineMode === "option1_symphonic"
           ? "Option 1 · Symphonic Film-Trailer Mix"
           : selectedModelId === "veo31_4k"
           ? "Option 2 · Veo 3.1 4K Dialogue + Foley + Chirp 3 HD"
@@ -3412,23 +3878,25 @@ export default function ContentStudioWorkspacePage() {
     };
     setVariations((prev) => [generatedVar, ...prev.slice(0, 11)]);
     setActiveVariationId(generatedVarId);
-    setApiLibraryItems((prev) => {
-      const filtered = prev.filter((item) => item.canonicalId !== nextCanonId);
-      return [
-        {
-          id: generatedVarId,
-          canonicalId: nextCanonId,
-          canonicalUrl: nextCanonUrl,
-          studioUrl: nextStudioUrl,
-          title: nextTitle,
-          videoUrl: chosenVideo,
-          platform: `9:16 & 16:9 · ${detectedDurSec}s`,
-          durationSeconds: detectedDurSec,
-          actsCount: nextSegments.length,
-        },
-        ...filtered,
-      ];
-    });
+    if (chosenVideo) {
+      setApiLibraryItems((prev) => {
+        const filtered = prev.filter((item) => item.canonicalId !== nextCanonId);
+        return [
+          {
+            id: generatedVarId,
+            canonicalId: nextCanonId,
+            canonicalUrl: nextCanonUrl,
+            studioUrl: nextStudioUrl,
+            title: nextTitle,
+            videoUrl: chosenVideo,
+            platform: `9:16 & 16:9 · ${detectedDurSec}s`,
+            durationSeconds: detectedDurSec,
+            actsCount: nextSegments.length,
+          },
+          ...filtered,
+        ];
+      });
+    }
     setRightTab("edit");
 
     commitPostChange(
@@ -3576,7 +4044,10 @@ export default function ContentStudioWorkspacePage() {
             variant="secondary"
             size="sm"
             data-testid="header-new-reel-btn"
-            onClick={() => setNewReelModalOpen(true)}
+            onClick={() => {
+              if (!briefInput.trim()) setSelectedDurationSec(60);
+              setNewReelModalOpen(true);
+            }}
             icon={<PlusCircle className="w-4 h-4 text-indigo-600" />}
           >
             <span className="font-semibold text-indigo-700">+ New Reel</span>
@@ -3717,7 +4188,7 @@ export default function ContentStudioWorkspacePage() {
               backgroundColor: "var(--color-surface)",
               borderRight: "1px solid var(--color-border)",
             }}
-            className="order-2 md:order-1 md:col-span-3 lg:col-span-3 p-3 flex flex-col gap-2.5 h-full overflow-y-auto studio-scrollbar"
+            className="order-2 md:order-1 md:col-span-3 lg:col-span-3 p-3 flex flex-col gap-2 h-full overflow-hidden"
           >
             {/* Left Rail 5-Section Switcher */}
             <nav
@@ -3787,7 +4258,11 @@ export default function ContentStudioWorkspacePage() {
               })}
             </nav>
 
-            {/* LEFT SECTION 1: CREATE (Google Stitch AI Prompt & Parameter Composer — Zero Hardcoded Demo Clutter) */}
+            <div
+              data-testid="left-rail-scroll-body"
+              className="flex-1 min-h-0 overflow-y-auto pr-0.5 flex flex-col gap-2.5 studio-scrollbar"
+            >
+            {/* LEFT SECTION 1: CREATE (Google Stitch Unified 6-Modality Multimedia Composer — Zero Hardcoded Demo Clutter) */}
             {leftSection === "create" && (
               <div
                 data-testid="google-stitch-create-composer"
@@ -3796,22 +4271,122 @@ export default function ContentStudioWorkspacePage() {
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <h2 className="text-sm font-semibold">
-                      Google Stitch Prompt Composer
+                      Google Stitch Multimedia Composer
                     </h2>
                     <p
                       className="text-[11px] leading-snug"
                       style={{ color: "var(--color-text-muted)" }}
                     >
-                      Synthesize 15s–300s multi-act productions with 7-department deep research.
+                      Synthesize Cinema Video, Music Videos, Songs, Podcasts, Sound FX &amp; Keyframes.
                     </p>
                   </div>
                   <StudioButton
                     variant="secondary"
                     size="sm"
-                    onClick={() => setNewReelModalOpen(true)}
+                    onClick={() => {
+                      if (!briefInput.trim()) setSelectedDurationSec(60);
+                      setNewReelModalOpen(true);
+                    }}
                   >
                     Wizard ↗
                   </StudioButton>
+                </div>
+
+                {/* 6-Modality Multimedia Selector Grid */}
+                <div className="flex flex-col gap-1">
+                  <span
+                    className="text-[10px] font-semibold uppercase tracking-wider"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
+                    Output Modality (6 Engines)
+                  </span>
+                  <div
+                    data-testid="multimedia-modality-selector"
+                    className="grid grid-cols-2 gap-1"
+                  >
+                    {[
+                      {
+                        id: "video_cinema" as const,
+                        label: "Cinema Video",
+                        sub: "Omni 1.1 / Veo 3.1",
+                        icon: <Film className="w-3.5 h-3.5 shrink-0" />,
+                      },
+                      {
+                        id: "music_video" as const,
+                        label: "Music Video",
+                        sub: "Lyria 3 + Choreography",
+                        icon: <Video className="w-3.5 h-3.5 shrink-0" />,
+                      },
+                      {
+                        id: "audio_music" as const,
+                        label: "Song / Score",
+                        sub: "Lyria 3 Pro MP3",
+                        icon: <Music className="w-3.5 h-3.5 shrink-0" />,
+                      },
+                      {
+                        id: "audio_voice" as const,
+                        label: "Voice / Podcast",
+                        sub: "Gemini Neural TTS",
+                        icon: <Mic className="w-3.5 h-3.5 shrink-0" />,
+                      },
+                      {
+                        id: "audio_sfx" as const,
+                        label: "Sound FX",
+                        sub: "V2A + Lyria Foley",
+                        icon: <Volume2 className="w-3.5 h-3.5 shrink-0" />,
+                      },
+                      {
+                        id: "image_keyframe" as const,
+                        label: "AI Keyframe",
+                        sub: "Gemini Flash Image",
+                        icon: <ImageIcon className="w-3.5 h-3.5 shrink-0" />,
+                      },
+                    ].map((mod) => {
+                      const active = studioModality === mod.id;
+                      return (
+                        <button
+                          key={mod.id}
+                          type="button"
+                          data-testid={`modality-pill-${mod.id}`}
+                          onClick={() => {
+                            setStudioModality(mod.id);
+                            setMediaGenError(null);
+                            setBriefError(undefined);
+                          }}
+                          style={{
+                            backgroundColor: active
+                              ? "rgba(79, 70, 229, 0.09)"
+                              : "var(--color-surface-2)",
+                            color: active
+                              ? "var(--color-primary)"
+                              : "var(--color-text)",
+                            border: active
+                              ? "1.5px solid var(--color-primary)"
+                              : "1px solid var(--color-border)",
+                            borderRadius: "var(--radius-sm)",
+                          }}
+                          className="px-2 py-1.5 text-left flex items-center gap-1.5 min-w-0 studio-focus-ring transition-colors cursor-pointer"
+                        >
+                          {mod.icon}
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-[11px] font-semibold leading-tight break-words">
+                              {mod.label}
+                            </span>
+                            <span
+                              className="text-[9px] font-mono leading-tight break-words"
+                              style={{
+                                color: active
+                                  ? "var(--color-primary)"
+                                  : "var(--color-text-muted)",
+                              }}
+                            >
+                              {mod.sub}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Clean Google Stitch Prompt Box (Empty on load — zero hardcoded Mission Impossible paragraph) */}
@@ -3822,7 +4397,19 @@ export default function ContentStudioWorkspacePage() {
                       className="text-[11px] font-semibold uppercase tracking-wider"
                       style={{ color: "var(--color-text-muted)" }}
                     >
-                      Scene &amp; Story Prompt
+                      {studioModality === "music_video"
+                        ? "Music Video & Vocal Song Prompt"
+                        : studioModality === "audio_music"
+                        ? "Song Lyrics / Musical Genre Prompt"
+                        : studioModality === "audio_voice"
+                        ? voiceNarrateMode === "podcast"
+                          ? "Podcast Topic or Dialogue Script"
+                          : "Voiceover Script or Narration Topic"
+                        : studioModality === "audio_sfx"
+                        ? "Scene Action & Foley Cue Prompt"
+                        : studioModality === "image_keyframe"
+                        ? "35mm Keyframe / Character Portrait Prompt"
+                        : "Scene & Story Prompt"}
                     </label>
                     <button
                       type="button"
@@ -3837,7 +4424,7 @@ export default function ContentStudioWorkspacePage() {
                   <textarea
                     id="studio-brief-textarea"
                     data-testid="stitch-brief-textarea"
-                    rows={2}
+                    rows={4}
                     value={briefInput}
                     onChange={(e) => {
                       setBriefInput(e.target.value);
@@ -3845,7 +4432,21 @@ export default function ContentStudioWorkspacePage() {
                         setBriefError(undefined);
                       }
                     }}
-                    placeholder="Describe your scene, characters, camera motion, lighting Kelvin, and acoustic score (or paste a reference URL)…"
+                    placeholder={
+                      studioModality === "music_video"
+                        ? "Describe your vocalist, choreography, 35mm stage lighting, genre, BPM, and vocal chorus hook…"
+                        : studioModality === "audio_music"
+                        ? "Describe genre, BPM, instruments, mood, and optional vocal lyrics (e.g., 114 BPM Latin pop brass anthem)…"
+                        : studioModality === "audio_voice"
+                        ? voiceNarrateMode === "podcast"
+                          ? "Enter a topic or Host A / Host B dialogue for a 2-speaker Aoede + Charon studio podcast…"
+                          : "Enter verbatim narration script or topic for broadcast neural voiceover…"
+                        : studioModality === "audio_sfx"
+                        ? "Describe physical sound effects & ambient foley (e.g., thunderclap over rain-slicked neon alley + footsteps)…"
+                        : studioModality === "image_keyframe"
+                        ? "Describe photorealistic 35mm cinema frame, character wardrobe, lens bokeh, and Kelvin lighting…"
+                        : "Describe your scene, characters, camera motion, lighting Kelvin, and acoustic score (or paste a reference URL)…"
+                    }
                     style={{
                       backgroundColor: "var(--color-surface)",
                       color: "var(--color-text)",
@@ -3856,7 +4457,7 @@ export default function ContentStudioWorkspacePage() {
                       }`,
                       borderRadius: "var(--radius-sm)",
                     }}
-                    className="w-full p-2 text-xs resize-none leading-relaxed studio-focus-ring"
+                    className="w-full min-h-[88px] p-2 text-xs resize-y leading-relaxed studio-focus-ring"
                   />
                   {briefError && (
                     <p
@@ -3870,87 +4471,268 @@ export default function ContentStudioWorkspacePage() {
                   )}
                 </div>
 
-                {/* Duration Target Selector (15s .. 300s / 5m) */}
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center justify-between">
-                    <span
-                      className="text-[11px] font-semibold uppercase tracking-wider"
-                      style={{ color: "var(--color-text-muted)" }}
-                    >
-                      Duration &amp; Parallel Acts
-                    </span>
-                    <span
-                      className="text-xs font-mono font-semibold"
-                      style={{ color: "var(--color-primary)" }}
-                    >
-                      {selectedDurationSec}s (
-                      {selectedDurationSec >= 300
-                        ? "10 Acts · 5 Min"
-                        : `${Math.max(3, Math.ceil(selectedDurationSec / 10))} Acts`}
-                      )
-                    </span>
-                  </div>
+                {/* Contextual Modality Controls for Standalone Audio / Keyframe */}
+                {studioModality === "audio_music" && (
                   <div
-                    data-testid="create-duration-selector-grid"
-                    className="grid grid-cols-3 gap-1"
+                    data-testid="lyria-song-mode-controls"
+                    className="grid grid-cols-2 gap-1"
                   >
-                    {INVIDEO_DURATION_OPTIONS.map((opt) => {
-                      const active = selectedDurationSec === opt.sec;
+                    {[
+                      {
+                        id: false,
+                        label: "Vocal Studio Song",
+                        icon: <Mic className="w-3 h-3 shrink-0" />,
+                      },
+                      {
+                        id: true,
+                        label: "Instrumental Score",
+                        icon: <Music className="w-3 h-3 shrink-0" />,
+                      },
+                    ].map((opt) => {
+                      const active = songInstrumentalOnly === opt.id;
                       return (
                         <button
-                          key={opt.sec}
+                          key={String(opt.id)}
                           type="button"
-                          data-testid={`duration-option-${opt.sec}s`}
-                          onClick={() => setSelectedDurationSec(opt.sec)}
+                          data-testid={
+                            opt.id
+                              ? "lyria-mode-instrumental"
+                              : "lyria-mode-vocal"
+                          }
+                          onClick={() => setSongInstrumentalOnly(opt.id)}
                           style={{
                             backgroundColor: active
-                              ? "var(--color-primary)"
+                              ? "rgba(79, 70, 229, 0.09)"
                               : "var(--color-surface-2)",
-                            color: active ? "#FFFFFF" : "var(--color-text)",
-                            border: `1px solid ${
-                              active
-                                ? "var(--color-primary)"
-                                : "var(--color-border)"
-                            }`,
+                            color: active
+                              ? "var(--color-primary)"
+                              : "var(--color-text)",
+                            border: active
+                              ? "1.5px solid var(--color-primary)"
+                              : "1px solid var(--color-border)",
                             borderRadius: "var(--radius-sm)",
                           }}
-                          className="px-2 py-1 text-left flex flex-col studio-focus-ring transition-colors"
+                          className="px-2 py-1 text-[11px] font-semibold inline-flex items-center justify-center gap-1.5 cursor-pointer"
                         >
-                          <span className="text-xs font-bold font-mono leading-tight">
-                            {opt.label}
-                          </span>
-                          <span
-                            className="text-[10px] truncate"
-                            style={{
-                              color: active
-                                ? "rgba(255,255,255,0.88)"
-                                : "var(--color-text-muted)",
-                            }}
-                          >
-                            {opt.badge}
-                          </span>
+                          {opt.icon}
+                          <span>{opt.label}</span>
                         </button>
                       );
                     })}
                   </div>
-                </div>
+                )}
 
-                {/* Foundation Video Model Selector */}
-                <StudioSelect
-                  label="Foundation Cinema Engine"
-                  value={selectedModelId}
-                  onChange={(e) => {
-                    const nextModel = e.target.value;
-                    setSelectedModelId(nextModel);
-                    setPost((prev) => ({ ...prev, foundationModel: nextModel }));
-                  }}
-                  options={FOUNDATION_MODELS_CATALOG.map((m) => ({
-                    value: m.id,
-                    label: m.label,
-                  }))}
-                />
+                {studioModality === "audio_voice" && (
+                  <div
+                    data-testid="voice-podcast-mode-controls"
+                    className="flex flex-col gap-1.5"
+                  >
+                    <div className="grid grid-cols-2 gap-1">
+                      {[
+                        {
+                          id: "single" as const,
+                          label: "Single Voiceover",
+                          icon: <Mic className="w-3 h-3 shrink-0" />,
+                        },
+                        {
+                          id: "podcast" as const,
+                          label: "2-Host Podcast",
+                          icon: <Volume2 className="w-3 h-3 shrink-0" />,
+                        },
+                      ].map((opt) => {
+                        const active = voiceNarrateMode === opt.id;
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            data-testid={`voice-mode-${opt.id}`}
+                            onClick={() => setVoiceNarrateMode(opt.id)}
+                            style={{
+                              backgroundColor: active
+                                ? "rgba(79, 70, 229, 0.09)"
+                                : "var(--color-surface-2)",
+                              color: active
+                                ? "var(--color-primary)"
+                                : "var(--color-text)",
+                              border: active
+                                ? "1.5px solid var(--color-primary)"
+                                : "1px solid var(--color-border)",
+                              borderRadius: "var(--radius-sm)",
+                            }}
+                            className="px-2 py-1 text-[11px] font-semibold inline-flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            {opt.icon}
+                            <span>{opt.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {voiceNarrateMode === "single" && (
+                      <StudioSelect
+                        label="Neural Studio Voice"
+                        value={selectedVoiceName}
+                        onChange={(e) =>
+                          setSelectedVoiceName(
+                            e.target.value as
+                              | "Charon"
+                              | "Aoede"
+                              | "Puck"
+                              | "Kore"
+                              | "Fenrir"
+                          )
+                        }
+                        options={[
+                          { value: "Charon", label: "Charon — Deep Cinema Baritone" },
+                          { value: "Aoede", label: "Aoede — Warm Studio Mezzo" },
+                          { value: "Puck", label: "Puck — Crisp Energetic Tenor" },
+                          { value: "Kore", label: "Kore — Clear Editorial Alto" },
+                          { value: "Fenrir", label: "Fenrir — Epic Trailer Bass" },
+                        ]}
+                      />
+                    )}
+                  </div>
+                )}
 
-                {/* Google Stitch Structured Parameter Matrix (2x2 Live Tokens — Replaces Hardcoded Demo Chips, Zero Truncation) */}
+                {studioModality === "image_keyframe" && (
+                  <div
+                    data-testid="keyframe-aspect-controls"
+                    className="grid grid-cols-3 gap-1"
+                  >
+                    {[
+                      { id: "reels_9_16" as PlatformId, label: "9:16 Vertical" },
+                      { id: "youtube_16_9" as PlatformId, label: "16:9 Cinema" },
+                      { id: "linkedin_1_1" as PlatformId, label: "1:1 Square" },
+                    ].map((ar) => {
+                      const active = activePlatformId === ar.id;
+                      return (
+                        <button
+                          key={ar.id}
+                          type="button"
+                          data-testid={`keyframe-aspect-${ar.id}`}
+                          onClick={() => setActivePlatformId(ar.id)}
+                          style={{
+                            backgroundColor: active
+                              ? "rgba(79, 70, 229, 0.09)"
+                              : "var(--color-surface-2)",
+                            color: active
+                              ? "var(--color-primary)"
+                              : "var(--color-text)",
+                            border: active
+                              ? "1.5px solid var(--color-primary)"
+                              : "1px solid var(--color-border)",
+                            borderRadius: "var(--radius-sm)",
+                          }}
+                          className="px-2 py-1 text-[11px] font-semibold cursor-pointer"
+                        >
+                          {ar.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Duration Target Selector (Hidden for still AI Keyframe; Audio-specific header for Audio modalities) */}
+                {studioModality !== "image_keyframe" && (
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between">
+                      <span
+                        className="text-[11px] font-semibold uppercase tracking-wider"
+                        style={{ color: "var(--color-text-muted)" }}
+                      >
+                        {studioModality === "video_cinema" ||
+                        studioModality === "music_video"
+                          ? "Duration & Parallel Acts"
+                          : "Target Audio Duration"}
+                      </span>
+                      <span
+                        className="text-xs font-mono font-semibold"
+                        style={{ color: "var(--color-primary)" }}
+                      >
+                        {studioModality === "video_cinema" ||
+                        studioModality === "music_video"
+                          ? `${selectedDurationSec}s (${
+                              INVIDEO_DURATION_OPTIONS.find(
+                                (o) => o.sec === selectedDurationSec
+                              )?.badge ||
+                              `${Math.max(2, Math.ceil(selectedDurationSec / 10))} Acts`
+                            })`
+                          : `${selectedDurationSec}s`}
+                      </span>
+                    </div>
+                    <div
+                      data-testid="create-duration-selector-grid"
+                      className="grid grid-cols-3 gap-1"
+                    >
+                      {INVIDEO_DURATION_OPTIONS.map((opt) => {
+                        const active = selectedDurationSec === opt.sec;
+                        return (
+                          <button
+                            key={opt.sec}
+                            type="button"
+                            data-testid={`duration-option-${opt.sec}s`}
+                            onClick={() => setSelectedDurationSec(opt.sec)}
+                            style={{
+                              backgroundColor: active
+                                ? "rgba(79, 70, 229, 0.09)"
+                                : "var(--color-surface-2)",
+                              color: active
+                                ? "var(--color-primary)"
+                                : "var(--color-text)",
+                              border: active
+                                ? "1.5px solid var(--color-primary)"
+                                : "1px solid var(--color-border)",
+                              borderRadius: "var(--radius-sm)",
+                            }}
+                            className="px-2 py-1 text-left flex flex-col studio-focus-ring transition-colors"
+                          >
+                            <span className="text-xs font-bold font-mono leading-tight">
+                              {opt.label}
+                            </span>
+                            <span
+                              className="text-[10px] truncate"
+                              style={{
+                                color: active
+                                  ? "var(--color-primary)"
+                                  : "var(--color-text-muted)",
+                              }}
+                            >
+                              {studioModality === "video_cinema" ||
+                              studioModality === "music_video"
+                                ? opt.badge
+                                : `${opt.sec}s Master`}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Foundation Video Model Selector (Video & Music Video Modalities Only) */}
+                {(studioModality === "video_cinema" ||
+                  studioModality === "music_video") && (
+                  <StudioSelect
+                    label="Foundation Cinema Engine"
+                    value={selectedModelId}
+                    onChange={(e) => {
+                      const nextModel = e.target.value;
+                      setSelectedModelId(nextModel);
+                      setPost((prev) => ({
+                        ...prev,
+                        foundationModel: nextModel,
+                      }));
+                    }}
+                    options={FOUNDATION_MODELS_CATALOG.map((m) => ({
+                      value: m.id,
+                      label: m.label,
+                    }))}
+                  />
+                )}
+
+                {/* Google Stitch Structured Parameter Matrix (2x2 Live Tokens — Visual Modalities Only) */}
+                {(studioModality === "video_cinema" ||
+                  studioModality === "music_video" ||
+                  studioModality === "image_keyframe") && (
                 <div
                   data-testid="stitch-structured-parameter-matrix"
                   className="grid grid-cols-2 gap-1.5"
@@ -4032,6 +4814,7 @@ export default function ContentStudioWorkspacePage() {
                     </span>
                   </button>
                 </div>
+                )}
 
                 {/* Collapsible Optional Overrides (+ Audio Mastering & Director Tone) */}
                 <div
@@ -4108,71 +4891,6 @@ export default function ContentStudioWorkspacePage() {
                       />
                     </div>
                   )}
-                </div>
-
-                {/* Primary Synthesis Action */}
-                <div
-                  data-testid="stitch-generate-btn-wrapper"
-                  className="flex flex-col gap-2"
-                >
-                  <StudioButton
-                    variant="primary"
-                    size="md"
-                    loading={
-                      generationStage.active || liveRenderJob.status === "running"
-                    }
-                    icon={<Sparkles className="w-4 h-4" />}
-                    onClick={() =>
-                      runStreamingGeneration(
-                        briefInput,
-                        "full_brief",
-                        selectedDurationSec
-                      )
-                    }
-                  >
-                    {liveRenderJob.status === "running"
-                      ? `Parallel Swarm Rendering (${liveRenderJob.progress || 18}%)…`
-                      : `Synthesize ${selectedDurationSec}s Reel (${
-                          selectedDurationSec >= 300
-                            ? "10 Parallel Workers"
-                            : "6 Parallel Workers"
-                        })`}
-                  </StudioButton>
-                </div>
-
-                {/* Compact Google Stitch Library Status Bar (Replaces Duplicate 6-Card Vault List per Rule 25A) */}
-                <div
-                  data-testid="my-generated-reels-vault"
-                  className="studio-surface-2 px-3 py-2 flex items-center justify-between gap-2"
-                  style={{
-                    borderRadius: "var(--radius-md)",
-                    border: "1px solid var(--color-border)",
-                  }}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <FolderOpen
-                      className="w-4 h-4 shrink-0"
-                      style={{ color: "var(--color-primary)" }}
-                    />
-                    <div className="min-w-0">
-                      <div className="text-xs font-semibold">
-                        Library Vault ({myGeneratedReels.length} Saved)
-                      </div>
-                      <div
-                        className="text-[11px] font-mono"
-                        style={{ color: "var(--color-text-muted)" }}
-                      >
-                        Auto-saved to disk &amp; Cloud Run
-                      </div>
-                    </div>
-                  </div>
-                  <StudioButton
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setLeftSection("library")}
-                  >
-                    Browse →
-                  </StudioButton>
                 </div>
               </div>
             )}
@@ -4551,7 +5269,7 @@ export default function ContentStudioWorkspacePage() {
                         </p>
                         <div className="flex flex-wrap items-center justify-between gap-1.5 pt-1">
                           <StudioButton
-                            variant="primary"
+                            variant="secondary"
                             size="sm"
                             onClick={() => {
                               setActiveVariationId(item.id);
@@ -4796,33 +5514,136 @@ export default function ContentStudioWorkspacePage() {
                 ))}
               </div>
             )}
+            </div>
 
-            {/* Footer link to Personas & Wardrobe Studio (Zero Horizontal Clipping) */}
+            {/* Pinned Bottom Dock: Primary Synthesis Action + Library Vault + Personas Footer (Always Above Fold across All 6 Modalities) */}
             <div
-              data-testid="left-rail-footer-bar"
-              className="mt-auto pt-2.5 flex items-center justify-between gap-1.5 text-[11px] min-w-0"
-              style={{
-                borderTop: "1px solid var(--color-border)",
-                color: "var(--color-text-muted)",
-              }}
+              data-testid="left-rail-bottom-dock"
+              className="shrink-0 pt-2 flex flex-col gap-1.5"
+              style={{ borderTop: "1px solid var(--color-border)" }}
             >
-              <Link
-                href="/personas"
-                className="font-medium underline inline-flex items-center gap-1 studio-focus-ring truncate"
-                style={{ color: "var(--color-text)" }}
-              >
-                <span>Personas &amp; Wardrobe ↗</span>
-              </Link>
-              <span
-                className="font-mono text-[10px] px-1.5 py-0.5 rounded shrink-0"
+              {leftSection === "create" && (
+                <>
+                  <div
+                    data-testid="stitch-generate-btn-wrapper"
+                    className="flex flex-col"
+                  >
+                    <StudioButton
+                      variant="primary"
+                      size="md"
+                      data-testid="stitch-primary-generate-btn"
+                      loading={
+                        studioModality === "video_cinema" ||
+                        studioModality === "music_video"
+                          ? generationStage.active ||
+                            liveRenderJob.status === "running"
+                          : mediaGenBusy
+                      }
+                      icon={<Sparkles className="w-4 h-4" />}
+                      onClick={() => {
+                        if (
+                          studioModality === "video_cinema" ||
+                          studioModality === "music_video"
+                        ) {
+                          void runStreamingGeneration(
+                            briefInput,
+                            "full_brief",
+                            selectedDurationSec
+                          );
+                        } else {
+                          void handleGenerateStandaloneMedia();
+                        }
+                      }}
+                    >
+                      {studioModality === "video_cinema" ||
+                      studioModality === "music_video"
+                        ? liveRenderJob.status === "running"
+                          ? `Parallel Swarm Rendering (${liveRenderJob.progress || 18}%)…`
+                          : studioModality === "music_video"
+                          ? `Synthesize ${selectedDurationSec}s Music Video + Lyria Song`
+                          : `Synthesize ${selectedDurationSec}s Reel (${
+                              selectedDurationSec >= 300
+                                ? "10 Parallel Workers"
+                                : `${Math.max(2, Math.round(Math.max(60, selectedDurationSec) / 30))} Parallel Workers`
+                            })`
+                        : mediaGenBusy
+                        ? mediaGenStageLabel || "Synthesizing Multimedia Master…"
+                        : studioModality === "audio_music"
+                        ? `Synthesize ${Math.min(180, Math.max(15, selectedDurationSec))}s ${
+                            songInstrumentalOnly ? "Instrumental Score" : "Lyria 3 Song"
+                          }`
+                        : studioModality === "audio_voice"
+                        ? voiceNarrateMode === "podcast"
+                          ? "Synthesize 2-Host Studio Podcast"
+                          : `Synthesize ${selectedVoiceName} Voiceover`
+                        : studioModality === "audio_sfx"
+                        ? `Synthesize ${Math.min(30, Math.max(8, selectedDurationSec <= 30 ? selectedDurationSec : 15))}s V2A Sound FX`
+                        : "Generate 35mm AI Keyframe"}
+                    </StudioButton>
+                  </div>
+
+                  <div
+                    data-testid="my-generated-reels-vault"
+                    className="studio-surface-2 px-2.5 py-1.5 flex items-center justify-between gap-2"
+                    style={{
+                      borderRadius: "var(--radius-md)",
+                      border: "1px solid var(--color-border)",
+                    }}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FolderOpen
+                        className="w-3.5 h-3.5 shrink-0"
+                        style={{ color: "var(--color-primary)" }}
+                      />
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold leading-tight truncate">
+                          Library Vault ({myGeneratedReels.length} Saved)
+                        </div>
+                        <div
+                          className="text-[10px] font-mono leading-tight truncate"
+                          style={{ color: "var(--color-text-muted)" }}
+                        >
+                          Auto-saved to disk &amp; Cloud Run
+                        </div>
+                      </div>
+                    </div>
+                    <StudioButton
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setLeftSection("library")}
+                    >
+                      Browse →
+                    </StudioButton>
+                  </div>
+                </>
+              )}
+
+              {/* Footer link to Personas & Wardrobe Studio (Zero Horizontal Clipping) */}
+              <div
+                data-testid="left-rail-footer-bar"
+                className="pt-1 flex items-center justify-between gap-1.5 text-[11px] min-w-0"
                 style={{
-                  backgroundColor: "var(--color-surface-2)",
-                  color: "var(--color-primary)",
-                  border: "1px solid var(--color-border)",
+                  color: "var(--color-text-muted)",
                 }}
               >
-                10-Worker Swarm
-              </span>
+                <Link
+                  href="/personas"
+                  className="font-medium underline inline-flex items-center gap-1 studio-focus-ring truncate"
+                  style={{ color: "var(--color-text)" }}
+                >
+                  <span>Personas &amp; Wardrobe ↗</span>
+                </Link>
+                <span
+                  className="font-mono text-[10px] px-1.5 py-0.5 rounded shrink-0"
+                  style={{
+                    backgroundColor: "var(--color-surface-2)",
+                    color: "var(--color-primary)",
+                    border: "1px solid var(--color-border)",
+                  }}
+                >
+                  10-Worker Swarm
+                </span>
+              </div>
             </div>
           </aside>
         )}
@@ -4834,8 +5655,8 @@ export default function ContentStudioWorkspacePage() {
           aria-label="Live multi-platform post canvas"
           className={
             theaterMode
-              ? "order-1 md:col-span-12 lg:col-span-12 p-3 flex flex-col gap-3 h-full overflow-y-auto studio-scrollbar"
-              : "order-1 md:order-2 md:col-span-6 lg:col-span-6 p-3 flex flex-col gap-3 h-full overflow-y-auto studio-scrollbar"
+              ? "order-1 md:col-span-12 lg:col-span-12 p-3 pb-8 flex flex-col gap-3 h-full overflow-y-auto studio-scrollbar"
+              : "order-1 md:order-2 md:col-span-6 lg:col-span-6 p-3 pb-8 flex flex-col gap-3 h-full overflow-y-auto studio-scrollbar"
           }
         >
           {/* Google Stitch Workspace View Switcher Bar */}
@@ -4849,15 +5670,17 @@ export default function ContentStudioWorkspacePage() {
           >
             <div className="flex flex-wrap items-center gap-1">
               {[
-                { id: "all", label: "📐 Full Stitch Canvas" },
-                { id: "stage", label: "🎬 Stage & 5-Track Timeline" },
+                { id: "all", label: "Full Stitch Canvas", Icon: Layers },
+                { id: "stage", label: "Stage & 5-Track Timeline", Icon: Film },
                 {
                   id: "bible",
-                  label: `🔬 7-Dept Production Bible (${activeDeepResearchBible.fiveDimensionScorecard.overallScore.toFixed(1)}%)`,
+                  label: `7-Dept Production Bible (${activeDeepResearchBible.fiveDimensionScorecard.overallScore.toFixed(1)}%)`,
+                  Icon: Compass,
                 },
-                { id: "copy", label: "📝 Copy & Metadata" },
+                { id: "copy", label: "Copy & Metadata", Icon: Copy },
               ].map((tab) => {
                 const active = stitchCanvasMode === tab.id;
+                const TabIcon = tab.Icon;
                 return (
                   <button
                     key={tab.id}
@@ -4870,17 +5693,18 @@ export default function ContentStudioWorkspacePage() {
                     }
                     style={{
                       backgroundColor: active
-                        ? "var(--color-primary)"
+                        ? "rgba(79, 70, 229, 0.09)"
                         : "var(--color-surface)",
-                      color: active ? "#FFFFFF" : "var(--color-text)",
-                      border: `1px solid ${
-                        active ? "var(--color-primary)" : "var(--color-border)"
-                      }`,
+                      color: active ? "var(--color-primary)" : "var(--color-text)",
+                      border: active
+                        ? "1.5px solid var(--color-primary)"
+                        : "1px solid var(--color-border)",
                       borderRadius: "var(--radius-sm)",
                     }}
-                    className="px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer"
+                    className="px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer inline-flex items-center gap-1.5"
                   >
-                    {tab.label}
+                    <TabIcon className="w-3.5 h-3.5 shrink-0" />
+                    <span>{tab.label}</span>
                   </button>
                 );
               })}
@@ -4920,7 +5744,7 @@ export default function ContentStudioWorkspacePage() {
               </StudioChip>
 
               <StudioButton
-                variant={videoFitMode === "contain" ? "primary" : "secondary"}
+                variant="secondary"
                 size="sm"
                 data-testid="toggle-video-fit-mode-btn"
                 onClick={() =>
@@ -4969,6 +5793,179 @@ export default function ContentStudioWorkspacePage() {
                 onAcceptAll={() => handleAcceptDiff(pendingDiff)}
               />
             </div>
+          )}
+
+          {/* Unified Standalone Multimedia Output Studio Card (Song / Voiceover / 2-Host Podcast / Sound FX / AI Keyframe) */}
+          {(mediaGenBusy || mediaGenError || generatedMediaCard) && (
+            <section
+              data-testid="multimedia-generated-output-card"
+              aria-label="Generated Multimedia Studio Output"
+              style={{
+                backgroundColor: "var(--color-surface)",
+                color: "var(--color-text)",
+                border: "2px solid var(--color-primary)",
+                borderRadius: "var(--radius-md)",
+                boxShadow: "var(--shadow-sm)",
+              }}
+              className="shrink-0 p-3.5 flex flex-col gap-2.5"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2 min-w-0">
+                  <Sparkles
+                    className="w-4 h-4 shrink-0"
+                    style={{ color: "var(--color-primary)" }}
+                  />
+                  <span className="text-sm font-semibold leading-tight break-words">
+                    {mediaGenBusy
+                      ? mediaGenStageLabel || "Synthesizing Multimedia Master…"
+                      : mediaGenError
+                      ? "Multimedia Synthesis Error"
+                      : `${generatedMediaCard?.modalityLabel} — ${generatedMediaCard?.title}`}
+                  </span>
+                  {generatedMediaCard && !mediaGenBusy && (
+                    <>
+                      <StudioChip tone="ai">
+                        {generatedMediaCard.modelUsed}
+                      </StudioChip>
+                      <StudioChip tone="info">
+                        {generatedMediaCard.specBadge}
+                      </StudioChip>
+                    </>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {generatedMediaCard && !mediaGenBusy && (
+                    <>
+                      <a
+                        href={generatedMediaCard.url}
+                        download
+                        data-testid="multimedia-download-master-link"
+                        style={{
+                          backgroundColor: "var(--color-surface-2)",
+                          color: "var(--color-text)",
+                          border: "1px solid var(--color-border)",
+                          borderRadius: "var(--radius-sm)",
+                        }}
+                        className="px-2.5 py-1 text-xs font-semibold inline-flex items-center gap-1 hover:opacity-90"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download Master</span>
+                      </a>
+                      <StudioButton
+                        variant="secondary"
+                        size="sm"
+                        data-testid="multimedia-apply-to-reel-btn"
+                        onClick={() => {
+                          if (!generatedMediaCard) return;
+                          if (generatedMediaCard.kind === "audio") {
+                            commitPostChange(
+                              {
+                                ...post,
+                                audioTrackUrl: generatedMediaCard.url,
+                                audioMixLabel: `${generatedMediaCard.modalityLabel} (${generatedMediaCard.specBadge})`,
+                              },
+                              `Applied ${generatedMediaCard.modalityLabel} to active reel audio bus`
+                            );
+                          } else {
+                            commitPostChange(
+                              {
+                                ...post,
+                                posterUrl: generatedMediaCard.url,
+                              },
+                              `Applied 35mm keyframe "${generatedMediaCard.title}" as active reel poster`
+                            );
+                          }
+                        }}
+                      >
+                        Apply to Active Reel
+                      </StudioButton>
+                    </>
+                  )}
+                  {!mediaGenBusy && (
+                    <button
+                      type="button"
+                      data-testid="multimedia-dismiss-card-btn"
+                      onClick={() => {
+                        setGeneratedMediaCard(null);
+                        setMediaGenError(null);
+                      }}
+                      className="px-2 py-1 text-xs font-semibold rounded hover:bg-slate-100 cursor-pointer inline-flex items-center gap-1"
+                      style={{ color: "var(--color-text-muted)" }}
+                    >
+                      <X className="w-3.5 h-3.5" aria-hidden="true" />
+                      <span>Dismiss</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {mediaGenBusy && (
+                <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                  <div
+                    className="h-full rounded-full animate-pulse"
+                    style={{
+                      width: "68%",
+                      backgroundColor: "var(--color-primary)",
+                    }}
+                  />
+                </div>
+              )}
+
+              {mediaGenError && !mediaGenBusy && (
+                <div
+                  role="alert"
+                  data-testid="multimedia-error-banner"
+                  className="p-2.5 rounded border border-rose-200 bg-rose-50 text-rose-900 text-xs flex items-center justify-between gap-2"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                    <span className="font-medium break-words">{mediaGenError}</span>
+                  </div>
+                  <StudioButton
+                    variant="secondary"
+                    size="sm"
+                    icon={<RefreshCw className="w-3.5 h-3.5" />}
+                    onClick={() => void handleGenerateStandaloneMedia()}
+                  >
+                    Retry
+                  </StudioButton>
+                </div>
+              )}
+
+              {generatedMediaCard && !mediaGenBusy && !mediaGenError && (
+                <div className="flex flex-col gap-2">
+                  {generatedMediaCard.kind === "audio" ? (
+                    <audio
+                      key={generatedMediaCard.url}
+                      data-testid="generated-standalone-audio-player"
+                      src={generatedMediaCard.url}
+                      controls
+                      preload="metadata"
+                      className="w-full h-10"
+                    />
+                  ) : (
+                    <div className="w-full flex items-center justify-center bg-slate-50 border border-slate-200 rounded-lg p-2">
+                      <img
+                        key={generatedMediaCard.url}
+                        data-testid="generated-standalone-keyframe-img"
+                        src={generatedMediaCard.url}
+                        alt={generatedMediaCard.title}
+                        className="max-h-72 w-auto object-contain rounded border border-slate-200 shadow-sm"
+                      />
+                    </div>
+                  )}
+
+                  {generatedMediaCard.transcriptOrCues && (
+                    <div
+                      data-testid="multimedia-transcript-or-cues-box"
+                      className="p-2.5 rounded bg-slate-50 border border-slate-200 text-xs leading-relaxed whitespace-pre-wrap max-h-56 overflow-y-auto font-mono text-slate-700"
+                    >
+                      {generatedMediaCard.transcriptOrCues}
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
           )}
 
           {/* ================================================================
@@ -5048,7 +6045,7 @@ export default function ContentStudioWorkspacePage() {
                 {liveRenderJob.status === "error" ? (
                   <AlertCircle
                     className="w-3.5 h-3.5 shrink-0"
-                    style={{ color: "var(--color-warning)" }}
+                    style={{ color: "var(--color-danger)" }}
                     aria-hidden="true"
                   />
                 ) : (
@@ -5073,13 +6070,32 @@ export default function ContentStudioWorkspacePage() {
                     : `${post.segments.length}-Act Master Ready (${post.durationSeconds}.0s · ${post.canonicalId}) — Click any Act card to seek`}
                 </span>
               </div>
-              <Link
-                href={post.canonicalUrl}
-                className="font-mono text-[11px] font-semibold underline shrink-0"
-                style={{ color: "var(--color-primary)" }}
-              >
-                {post.canonicalUrl} ↗
-              </Link>
+              <div className="flex items-center gap-2 shrink-0">
+                {liveRenderJob.status === "error" && (
+                  <StudioButton
+                    variant="secondary"
+                    size="sm"
+                    data-testid="retry-live-render-btn"
+                    icon={<RefreshCw className="w-3.5 h-3.5" />}
+                    onClick={() =>
+                      void handleStartLiveVideoRender(
+                        post,
+                        briefInput || post.title,
+                        post.durationSeconds
+                      )
+                    }
+                  >
+                    Retry Render
+                  </StudioButton>
+                )}
+                <Link
+                  href={post.canonicalUrl}
+                  className="font-mono text-[11px] font-semibold underline shrink-0"
+                  style={{ color: "var(--color-primary)" }}
+                >
+                  {post.canonicalUrl} ↗
+                </Link>
+              </div>
             </div>
 
             {/* Stage Viewport Well: Uncropped Video Stage + Interactive 10-Act / 6-Act Storyboard */}
@@ -5101,28 +6117,46 @@ export default function ContentStudioWorkspacePage() {
                     ref={videoStageContainerRef}
                     className="zyvoriq-uncropped-stage relative w-full overflow-hidden flex items-center justify-center"
                     style={{
-                      backgroundColor: "#000000",
+                      backgroundColor: post.videoUrl ? "#000000" : "#F8FAFC",
                       borderRadius: "var(--radius-sm)",
                       maxHeight: theaterMode ? "540px" : "380px",
                     }}
                   >
-                    <video
-                      ref={videoRef}
-                      key={post.videoUrl}
-                      src={post.videoUrl}
-                      controls
-                      playsInline
-                      preload="metadata"
-                      style={{
-                        aspectRatio: activePlatform.aspectRatioCss,
-                        maxHeight: theaterMode ? "540px" : "380px",
-                      }}
-                      className={`w-full h-full ${
-                        videoFitMode === "contain"
-                          ? "object-contain"
-                          : "object-cover"
-                      }`}
-                    />
+                    {post.videoUrl ? (
+                      <video
+                        ref={videoRef}
+                        key={post.videoUrl}
+                        poster={post.posterUrl || undefined}
+                        src={
+                          post.videoUrl.startsWith("/assets/")
+                            ? `/api/media${post.videoUrl}`
+                            : post.videoUrl
+                        }
+                        controls
+                        playsInline
+                        preload="metadata"
+                        style={{
+                          aspectRatio: activePlatform.aspectRatioCss,
+                          maxHeight: theaterMode ? "540px" : "380px",
+                        }}
+                        className={`w-full h-full ${
+                          videoFitMode === "contain"
+                            ? "object-contain"
+                            : "object-cover"
+                        }`}
+                      />
+                    ) : (
+                      <div
+                        data-testid="studio-pending-live-render-stage"
+                        className="w-full p-6 text-center flex flex-col items-center justify-center gap-2 bg-slate-50 text-slate-900 border border-slate-200 rounded"
+                      >
+                        <Sparkles className="w-6 h-6 text-blue-600 animate-pulse" />
+                        <p className="text-xs font-semibold">
+                          {liveRenderJob.stageLabel ||
+                            `Synthesizing ${post.durationSeconds}s Multi-Act Master (${post.canonicalId})…`}
+                        </p>
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
                     <input
@@ -5189,36 +6223,78 @@ export default function ContentStudioWorkspacePage() {
                           : "340px",
                         width:
                           activePlatformId === "reels_9_16" ? "auto" : "100%",
-                        backgroundColor: "#000000",
+                        backgroundColor: post.videoUrl ? "#000000" : "#F8FAFC",
                         borderRadius: "var(--radius-md)",
                         border: "1px solid var(--color-border)",
                       }}
                     >
-                      <video
-                        ref={videoRef}
-                        key={post.videoUrl}
-                        src={post.videoUrl}
-                        controls
-                        playsInline
-                        preload="metadata"
-                        onTimeUpdate={(e) => {
-                          const t = e.currentTarget.currentTime;
-                          const matched = post.segments.find(
-                            (s) => t >= s.startSec && t < s.endSec
-                          );
-                          if (matched && matched.id !== selectedSegmentId) {
-                            setSelectedSegmentId(matched.id);
+                      {post.videoUrl ? (
+                        <video
+                          ref={videoRef}
+                          key={post.videoUrl}
+                          src={
+                            post.videoUrl.startsWith("/assets/")
+                              ? `/api/media${post.videoUrl}`
+                              : post.videoUrl
                           }
-                        }}
-                        style={{
-                          objectFit: videoFitMode,
-                        }}
-                        className={`w-full h-full ${
-                          videoFitMode === "contain"
-                            ? "object-contain"
-                            : "object-cover"
-                        }`}
-                      />
+                          controls
+                          playsInline
+                          preload="metadata"
+                          onTimeUpdate={(e) => {
+                            const t = e.currentTarget.currentTime;
+                            const matched = post.segments.find(
+                              (s) => t >= s.startSec && t < s.endSec
+                            );
+                            if (matched && matched.id !== selectedSegmentId) {
+                              setSelectedSegmentId(matched.id);
+                            }
+                          }}
+                          style={{
+                            objectFit: videoFitMode,
+                          }}
+                          className={`w-full h-full ${
+                            videoFitMode === "contain"
+                              ? "object-contain"
+                              : "object-cover"
+                          }`}
+                        />
+                      ) : (
+                        <div
+                          data-testid="studio-pending-live-render-stage"
+                          className="w-full h-full p-4 flex flex-col items-center justify-center text-center gap-2.5 bg-slate-50 text-slate-900"
+                        >
+                          <div className="w-9 h-9 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center">
+                            {liveRenderJob.status === "error" ? (
+                              <AlertCircle className="w-5 h-5 text-rose-600" />
+                            ) : (
+                              <Sparkles className="w-5 h-5 text-blue-600 animate-pulse" />
+                            )}
+                          </div>
+                          <span className="text-xs font-bold leading-snug px-1">
+                            {liveRenderJob.status === "error"
+                              ? "Live Render Dispatch Interrupted"
+                              : `Synthesizing ${post.durationSeconds}s Multi-Act Master`}
+                          </span>
+                          <span className="text-[11px] text-slate-600 leading-snug px-2 break-words">
+                            {liveRenderJob.stageLabel ||
+                              "Dispatching parallel Omni 1.1 Flash / Veo 3.1 + Lyria 3 Pro act workers…"}
+                          </span>
+                          {liveRenderJob.status !== "error" && (
+                            <div className="w-4/5 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{
+                                  width: `${Math.max(12, liveRenderJob.progress || 18)}%`,
+                                  backgroundColor: "var(--color-primary)",
+                                }}
+                              />
+                            </div>
+                          )}
+                          <span className="text-[10px] font-mono text-slate-500 px-2 break-words">
+                            {liveRenderJob.latestLog || post.canonicalId}
+                          </span>
+                        </div>
+                      )}
 
                       {/* Top Camera Rig / VFX Telemetry HUD */}
                       <div className="pointer-events-none absolute top-2 left-2 right-2 flex items-center justify-between gap-1">
@@ -5453,12 +6529,14 @@ export default function ContentStudioWorkspacePage() {
                   <span>Audio Track:</span>
                 </span>
                 <StudioButton
-                  variant={
-                    post.audioMixLabel.startsWith("Option 2")
-                      ? "primary"
-                      : "secondary"
-                  }
+                  variant="secondary"
                   size="sm"
+                  aria-pressed={post.audioMixLabel.startsWith("Option 2")}
+                  className={
+                    post.audioMixLabel.startsWith("Option 2")
+                      ? "ring-1 ring-indigo-600 text-indigo-700 bg-indigo-50/70"
+                      : ""
+                  }
                   onClick={(e) => {
                     e.stopPropagation();
                     setAudioEngineMode("option2_omni11");
@@ -5474,12 +6552,14 @@ export default function ContentStudioWorkspacePage() {
                   Option 2 (Dialogue + Score)
                 </StudioButton>
                 <StudioButton
-                  variant={
-                    post.audioMixLabel.startsWith("Option 1")
-                      ? "primary"
-                      : "secondary"
-                  }
+                  variant="secondary"
                   size="sm"
+                  aria-pressed={post.audioMixLabel.startsWith("Option 1")}
+                  className={
+                    post.audioMixLabel.startsWith("Option 1")
+                      ? "ring-1 ring-indigo-600 text-indigo-700 bg-indigo-50/70"
+                      : ""
+                  }
                   onClick={(e) => {
                     e.stopPropagation();
                     setAudioEngineMode("option1_symphonic");
@@ -5498,8 +6578,14 @@ export default function ContentStudioWorkspacePage() {
 
               <div className="flex items-center gap-1.5">
                 <StudioButton
-                  variant={post.captionsEnabled ? "primary" : "secondary"}
+                  variant="secondary"
                   size="sm"
+                  aria-pressed={post.captionsEnabled}
+                  className={
+                    post.captionsEnabled
+                      ? "ring-1 ring-indigo-600 text-indigo-700 bg-indigo-50/70"
+                      : ""
+                  }
                   onClick={(e) => {
                     e.stopPropagation();
                     setPost((prev) => ({
@@ -5512,8 +6598,14 @@ export default function ContentStudioWorkspacePage() {
                   {post.captionsEnabled ? "CC: On" : "CC: Off"}
                 </StudioButton>
                 <StudioButton
-                  variant={stitchCanvasMode === "bible" ? "primary" : "secondary"}
+                  variant="secondary"
                   size="sm"
+                  aria-pressed={stitchCanvasMode === "bible"}
+                  className={
+                    stitchCanvasMode === "bible"
+                      ? "ring-1 ring-indigo-600 text-indigo-700 bg-indigo-50/70"
+                      : ""
+                  }
                   onClick={(e) => {
                     e.stopPropagation();
                     setStitchCanvasMode((m) => (m === "bible" ? "all" : "bible"));
@@ -5997,7 +7089,7 @@ export default function ContentStudioWorkspacePage() {
 
                 {/* Active Master Telemetry Card */}
                 <div
-                  className="studio-surface-2 p-3 flex flex-col gap-1"
+                  className="studio-surface-2 p-3 flex flex-col gap-1.5"
                   style={{ borderRadius: "var(--radius-md)" }}
                 >
                   <span
@@ -6009,6 +7101,15 @@ export default function ContentStudioWorkspacePage() {
                   <span className="text-xs font-semibold">
                     {post.audioMixLabel}
                   </span>
+                  {post.audioTrackUrl && (
+                    <audio
+                      key={post.audioTrackUrl}
+                      src={post.audioTrackUrl}
+                      controls
+                      preload="metadata"
+                      className="w-full h-8 mt-0.5"
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -6025,7 +7126,7 @@ export default function ContentStudioWorkspacePage() {
               backgroundColor: "var(--color-surface)",
               borderLeft: "1px solid var(--color-border)",
             }}
-            className="order-3 md:order-3 hidden md:flex md:col-span-3 lg:col-span-3 p-3 flex-col gap-2.5 h-full overflow-y-auto studio-scrollbar"
+            className="order-3 md:order-3 hidden md:flex md:col-span-3 lg:col-span-3 p-3 pb-8 flex-col gap-2.5 h-full overflow-y-auto studio-scrollbar"
           >
             <StudioTabs
               ariaLabel="Inspector panel tabs"
@@ -6627,10 +7728,11 @@ export default function ContentStudioWorkspacePage() {
                   300
                 );
               }}
-              className="px-2 py-1 text-[11px] font-medium rounded studio-surface-2 hover:opacity-90"
+              className="px-2 py-1 text-[11px] font-medium rounded studio-surface-2 hover:opacity-90 inline-flex items-center gap-1"
               style={{ border: "1px solid var(--color-border)" }}
             >
-              ⚡ 5m (300s · 10 Acts)
+              <Zap className="w-3 h-3 shrink-0" style={{ color: "var(--color-primary)" }} />
+              <span>5m (300s · 10 Acts)</span>
             </button>
             <button
               type="button"
@@ -6641,10 +7743,11 @@ export default function ContentStudioWorkspacePage() {
                   message: "Activated Higgsfield 360° Bullet-Time Orbit Rig",
                 });
               }}
-              className="px-2 py-1 text-[11px] font-medium rounded studio-surface-2 hover:opacity-90"
+              className="px-2 py-1 text-[11px] font-medium rounded studio-surface-2 hover:opacity-90 inline-flex items-center gap-1"
               style={{ border: "1px solid var(--color-border)" }}
             >
-              🎥 360° Bullet-Time
+              <Camera className="w-3 h-3 shrink-0" style={{ color: "var(--color-primary)" }} />
+              <span>360° Bullet-Time</span>
             </button>
           </div>
 
@@ -6678,7 +7781,7 @@ export default function ContentStudioWorkspacePage() {
 
           <StudioButton
             type="submit"
-            variant="primary"
+            variant="secondary"
             size="md"
             loading={generationStage.active}
             icon={<Send className="w-4 h-4" />}
@@ -6775,9 +7878,9 @@ export default function ContentStudioWorkspacePage() {
                     onClick={() => setSelectedDurationSec(opt.sec)}
                     style={{
                       backgroundColor: active
-                        ? "var(--color-primary)"
+                        ? "var(--color-primary-subtle)"
                         : "var(--color-surface-2)",
-                      color: active ? "#FFFFFF" : "var(--color-text)",
+                      color: active ? "var(--color-primary)" : "var(--color-text)",
                       border: `1px solid ${
                         active ? "var(--color-primary)" : "var(--color-border)"
                       }`,

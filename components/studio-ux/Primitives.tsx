@@ -645,7 +645,7 @@ export function StudioToast({
         boxShadow: "var(--shadow-md)",
         color: "var(--color-text)",
       }}
-      className="fixed bottom-16 right-3 sm:bottom-20 sm:right-6 max-w-sm sm:max-w-[420px] p-3 sm:p-3.5 z-50 flex items-center justify-between gap-3 studio-transition-ui"
+      className="fixed bottom-16 right-6 max-w-sm sm:max-w-[420px] px-3.5 py-2.5 z-50 flex items-center justify-between gap-3 studio-transition-ui"
     >
       <div className="flex items-center gap-2 text-sm">
         <CheckCircle2
@@ -668,7 +668,7 @@ export function StudioToast({
           className="p-1 text-sm studio-focus-ring"
           style={{ color: "var(--color-text-muted)" }}
         >
-          ✕
+          <X className="w-3.5 h-3.5" aria-hidden="true" />
         </button>
       </div>
     </div>

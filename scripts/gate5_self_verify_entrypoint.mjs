@@ -199,6 +199,90 @@ async function runPreflightE2E(baseUrl) {
     }
   }
 
+  // Verify >32 MiB MP4 open-ended Range request returns <= 8 MiB HTTP 206 chunk + ISO BMFF ftyp header + clean stream cancel
+  let largeMp4Range206 = false;
+  let largeMp4ChunkBytes = 0;
+  try {
+    const mp4Res = await fetch(
+      `${baseUrl}/api/media/assets/swarm/generated/job_1793105000_mission_impossible_10_multiverse_300s/combined_300s.mp4`,
+      {
+        headers: { Range: "bytes=0-" },
+        cache: "no-store",
+        signal: AbortSignal.timeout(6000),
+      }
+    );
+    largeMp4ChunkBytes = Number(mp4Res.headers.get("content-length") || "0");
+    const contentRange = mp4Res.headers.get("content-range") || "";
+    const reader = mp4Res.body?.getReader();
+    let hasFtyp = false;
+    if (reader) {
+      const firstRead = await reader.read();
+      const bytes = firstRead?.value;
+      if (bytes && bytes.length >= 8) {
+        const boxType = Buffer.from(bytes.subarray(4, 8)).toString("ascii");
+        hasFtyp = boxType === "ftyp";
+      }
+      await reader.cancel();
+    }
+    largeMp4Range206 =
+      mp4Res.status === 206 &&
+      largeMp4ChunkBytes > 0 &&
+      largeMp4ChunkBytes <= 8 * 1024 * 1024 &&
+      contentRange.startsWith("bytes 0-") &&
+      hasFtyp;
+  } catch {
+    largeMp4Range206 = false;
+  }
+
+  let cartagenaEntityReady = false;
+  let zeroSeedHijack404 = false;
+  let audioVoices200 = false;
+  try {
+    const [canonRes, aliasRes, unknownRes, voicesRes, cartMp4Res] = await Promise.all([
+      fetch(`${baseUrl}/api/entity/ZYV-REEL-SHAKIRAHIP-60S-IC8B`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(6000),
+      }),
+      fetch(`${baseUrl}/api/entity/ZYV-REEL-AMUSICAL-300S`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(6000),
+      }),
+      fetch(`${baseUrl}/api/entity/ZYV-UNKNOWN-BOOT-PROBE-404`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(6000),
+      }),
+      fetch(`${baseUrl}/api/audio/voices`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(6000),
+      }),
+      fetch(
+        `${baseUrl}/api/media/assets/swarm/generated/job_1793244563480_9dcef9/combined_60s.mp4`,
+        {
+          headers: { Range: "bytes=0-" },
+          cache: "no-store",
+          signal: AbortSignal.timeout(6000),
+        }
+      ),
+    ]);
+    const canonJson = await canonRes.json().catch(() => ({}));
+    const aliasJson = await aliasRes.json().catch(() => ({}));
+    const cartChunkLen = Number(cartMp4Res.headers.get("content-length") || "0");
+    await cartMp4Res.body?.cancel().catch(() => {});
+    zeroSeedHijack404 = unknownRes.status === 404;
+    audioVoices200 = voicesRes.status === 200;
+    cartagenaEntityReady =
+      canonRes.status === 200 &&
+      aliasRes.status === 200 &&
+      canonJson?.entity?.renderStatus === "ready" &&
+      aliasJson?.entity?.canonicalId === "ZYV-REEL-SHAKIRAHIP-60S-IC8B" &&
+      aliasJson?.entity?.isFallbackMaster === false &&
+      cartMp4Res.status === 206 &&
+      cartChunkLen > 0 &&
+      cartChunkLen <= 8 * 1024 * 1024;
+  } catch {
+    cartagenaEntityReady = false;
+  }
+
   const checks = {
     health: healthRes.status,
     swarmMui: swarmMuiRes.status,
@@ -211,6 +295,11 @@ async function runPreflightE2E(baseUrl) {
     reelFeedbackList: reelsFeedbackListRes.status,
     reelFeedbackSuccess: Boolean(reelsFeedbackJson?.success),
     dualEngineCrudRoundTrip,
+    largeMp4Range206,
+    largeMp4ChunkBytes,
+    cartagenaEntityReady,
+    zeroSeedHijack404,
+    audioVoices200,
     studio1Pruned: studio1PrunedRes.status,
     omniGeneratePruned: omniGenPrunedRes.status,
     operationRetryPruned: opRetryPrunedRes.status,
@@ -228,6 +317,10 @@ async function runPreflightE2E(baseUrl) {
     checks.reelFeedbackList === 200 &&
     checks.reelFeedbackSuccess === true &&
     checks.dualEngineCrudRoundTrip === true &&
+    checks.largeMp4Range206 === true &&
+    checks.cartagenaEntityReady === true &&
+    checks.zeroSeedHijack404 === true &&
+    checks.audioVoices200 === true &&
     checks.studio1Pruned === 404 &&
     checks.omniGeneratePruned === 404 &&
     checks.operationRetryPruned === 410 &&

@@ -163,9 +163,9 @@ export function DeepResearchBiblePanel({
             onClick={onRefreshResearch}
             disabled={isRefreshing}
             data-testid="run-deep-research-bible-btn"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-xs font-semibold shadow-xs"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-60 text-slate-800 text-xs font-semibold shadow-xs"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-indigo-600 ${isRefreshing ? "animate-spin" : ""}`} />
             <span>{isRefreshing ? "Researching..." : "Re-Run Deep Research Audit"}</span>
           </button>
         )}
@@ -221,7 +221,7 @@ export function DeepResearchBiblePanel({
               data-testid={`bible-dept-tab-${t.id}`}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-colors ${
                 active
-                  ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                  ? "bg-indigo-50 text-indigo-700 border-indigo-300 shadow-xs"
                   : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
               }`}
             >
@@ -229,7 +229,7 @@ export function DeepResearchBiblePanel({
               <span>{compact ? t.shortLabel : t.label}</span>
               <span
                 className={`px-1.5 py-0.2 rounded text-[9px] font-mono ${
-                  active ? "bg-indigo-700 text-indigo-100" : "bg-white text-slate-600 border border-slate-200"
+                  active ? "bg-indigo-100 text-indigo-800" : "bg-white text-slate-600 border border-slate-200"
                 }`}
               >
                 {t.count}

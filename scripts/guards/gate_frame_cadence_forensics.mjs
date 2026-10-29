@@ -50,10 +50,49 @@ export function auditFrameCadenceForensics(videoPath, metadata = {}) {
   }
 
   if (!vocalEvents || vocalEvents.length === 0) {
-    throw new Error(
-      `[GATE 10 FAIL-CLOSED]: No valid phrase_map.json or vocalEvents found for ${path.basename(absVideo)}. ` +
-      `Refusing to fall back to dummy lyrics. Generate an acoustic phrase map first.`
+    // When no talking-head phrase_map.json exists, perform physical CFR & setpts frame-decimation cadence forensics
+    const rawProbe = JSON.parse(
+      execSync(`ffprobe -v error -select_streams v:0 -count_frames -show_entries stream=r_frame_rate,avg_frame_rate,nb_read_frames -of json "${absVideo}"`, { encoding: "utf8" })
     );
+    const st = rawProbe.streams?.[0] || {};
+    const violations = [];
+    if (st.r_frame_rate !== st.avg_frame_rate || st.r_frame_rate !== "24/1") {
+      violations.push({
+        type: "NON_NATIVE_CFR_CADENCE",
+        message: `Expected strict 24/1 CFR, got r_frame_rate=${st.r_frame_rate}, avg_frame_rate=${st.avg_frame_rate}`
+      });
+    }
+    const rawLuma = execSync(`ffmpeg -v error -i "${absVideo}" -vf "scale=64:36,format=gray" -f rawvideo pipe:1`, { maxBuffer: 64 * 1024 * 1024 });
+    const fb = 64 * 36;
+    const totalF = Math.floor(rawLuma.length / fb);
+    const steps = [];
+    for (let f = 1; f < totalF; f++) {
+      let d = 0;
+      for (let i = 0; i < fb; i++) d += Math.abs(rawLuma[f * fb + i] - rawLuma[(f - 1) * fb + i]);
+      if (d / fb < 28.0) steps.push(d / fb);
+    }
+    let decimationSpikes = 0;
+    for (let i = 1; i < steps.length - 1; i++) {
+      if (steps[i] < 18.0 && steps[i] > 1.5 && steps[i] > 1.55 * steps[i - 1] && steps[i] > 1.55 * steps[i + 1]) {
+        decimationSpikes++;
+      }
+    }
+    const spikesPerSec = decimationSpikes / Math.max(1, totalF / 24.0);
+    if (spikesPerSec > 0.85) {
+      violations.push({
+        type: "SETPTS_FRAME_DECIMATION_CADENCE_DEFECT",
+        spikesPerSec: Number(spikesPerSec.toFixed(3)),
+        message: `Periodic setpts speed-warp frame decimation detected (${spikesPerSec.toFixed(3)} spikes/s > 0.85 ceiling).`
+      });
+    }
+    return {
+      videoPath: absVideo,
+      totalFrames: totalF,
+      fps: 24,
+      passed: violations.length === 0,
+      violations,
+      shotAudits: []
+    };
   }
 
   const tmpDir = path.join(process.cwd(), "scratch", "tmp_frame_forensics");

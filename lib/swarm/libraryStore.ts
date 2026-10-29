@@ -17,16 +17,22 @@ export interface LibraryAssetItem {
     | "act_master"
     | "turn_segment"
     | "baked_custom"
-    | "face_anchor";
+    | "face_anchor"
+    | "blueprint_pending_render"
+    | "audio_master"
+    | "audio_track"
+    | "audio_sfx"
+    | "audio_narration"
+    | "keyframe_image";
   genre: string;
   durationSec: number;
-  frames: number;
-  fps: string;
+  frames?: number;
+  fps?: string;
   audioSpec: string;
   partIndex?: number;
   speedMultiplier?: number;
-  wardrobe: string;
-  location: string;
+  wardrobe?: string;
+  location?: string;
   promptSummary: string;
   src: string;
   createdAt: string;
@@ -352,7 +358,12 @@ const CURATED_CANONICAL_IDS = new Set([
   "ZYV-REEL-SPEAKEASY-60S",
 ]);
 
-export function loadLibraryAssets(): LibraryAssetItem[] {
+export function loadLibraryAssets(options?: {
+  includePendingBlueprints?: boolean;
+  includeAudioAndImages?: boolean;
+}): LibraryAssetItem[] {
+  const includePending = Boolean(options?.includePendingBlueprints);
+  const includeAudioImg = Boolean(options?.includeAudioAndImages);
   const manifestPath = getManifestPath();
   const verifiedDefaults = discoverVerifiedMastersOnDisk();
   if (!fs.existsSync(manifestPath)) {
@@ -381,10 +392,24 @@ export function loadLibraryAssets(): LibraryAssetItem[] {
         ) {
           return false;
         }
+        if (item.assetType === "blueprint_pending_render") {
+          return includePending;
+        }
+        if (
+          item.assetType === "audio_master" ||
+          item.assetType === "audio_track" ||
+          item.assetType === "audio_sfx" ||
+          item.assetType === "audio_narration" ||
+          item.assetType === "keyframe_image"
+        ) {
+          return includeAudioImg;
+        }
         if (item.assetType === "baked_custom") return true;
         if (curatedProjectIdsFilter(item.projectId, cidStr)) return false;
         const cleanRel = normalizeMediaRelPath(item.src);
-        return fs.existsSync(path.join(process.cwd(), "public", cleanRel));
+        if (!cleanRel) return false;
+        const absFile = path.join(process.cwd(), "public", cleanRel);
+        return fs.existsSync(absFile) && fs.statSync(absFile).isFile();
       })
       .map(enrichCanonicalUrls);
     const curatedFirst = verifiedDefaults.filter((d) =>
@@ -395,9 +420,18 @@ export function loadLibraryAssets(): LibraryAssetItem[] {
     );
     const mergedMap = new Map<string, LibraryAssetItem>();
     for (const item of [...curatedFirst, ...valid, ...dynamicFallbacks]) {
-      const key = item.canonicalId || item.id;
-      if (!mergedMap.has(key)) {
-        mergedMap.set(key, enrichCanonicalUrls(item));
+      const enriched = enrichCanonicalUrls(item);
+      const key = enriched.canonicalId || enriched.id;
+      const existing = mergedMap.get(key);
+      if (!existing) {
+        mergedMap.set(key, enriched);
+      } else if (
+        (String(existing.projectId || "").startsWith("synth_") ||
+          existing.assetType === "blueprint_pending_render") &&
+        !String(enriched.projectId || "").startsWith("synth_") &&
+        enriched.assetType !== "blueprint_pending_render"
+      ) {
+        mergedMap.set(key, enriched);
       }
     }
     const merged = Array.from(mergedMap.values());
@@ -410,11 +444,21 @@ export function loadLibraryAssets(): LibraryAssetItem[] {
 export function appendLibraryAssets(
   newItems: LibraryAssetItem[]
 ): LibraryAssetItem[] {
-  const existing = loadLibraryAssets();
+  const existing = loadLibraryAssets({
+    includePendingBlueprints: true,
+    includeAudioAndImages: true,
+  });
   const map = new Map<string, LibraryAssetItem>();
   for (const item of [...newItems.map(enrichCanonicalUrls), ...existing]) {
     const key = item.canonicalId || item.id;
-    if (!map.has(key)) {
+    const prev = map.get(key);
+    if (!prev) {
+      map.set(key, enrichCanonicalUrls(item));
+    } else if (
+      prev.assetType === "blueprint_pending_render" &&
+      item.assetType !== "blueprint_pending_render" &&
+      item.src
+    ) {
       map.set(key, enrichCanonicalUrls(item));
     }
   }

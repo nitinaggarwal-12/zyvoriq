@@ -67,7 +67,7 @@ export async function callGeminiJsonViaAdcOrApiKey<T = Record<string, unknown>>(
 }): Promise<{ parsed: T | null; modelUsed: string; latencyMs: number }> {
   const t0 = Date.now();
   const temperature = params.temperature ?? 0.55;
-  const timeoutMs = params.timeoutMs ?? 14000;
+  const timeoutMs = Math.max(18000, params.timeoutMs ?? 20000);
   const cleanKey = (params.apiKey || "").trim();
   const hasLiveApiKey =
     cleanKey.startsWith("AIza") || cleanKey.startsWith("AQ.");
@@ -76,21 +76,34 @@ export async function callGeminiJsonViaAdcOrApiKey<T = Record<string, unknown>>(
   if (hasLiveApiKey) {
     const models =
       params.modelPreference === "pro"
-        ? ["models/gemini-2.5-pro", "models/gemini-2.5-flash"]
+        ? ["models/gemini-3.8-flash", "models/gemini-2.5-pro", "models/gemini-2.5-flash"]
         : ["models/gemini-3.8-flash", "models/gemini-2.5-flash"];
     for (const modelName of models) {
       try {
+        const isFrontier38Or4 = /gemini-(3\.8|4)/i.test(modelName);
+        const generationConfig: Record<string, unknown> = {
+          temperature,
+          responseMimeType: "application/json",
+          maxOutputTokens: 8192,
+          ...(isFrontier38Or4
+            ? {
+                thinkingConfig: {
+                  thinkingLevel: params.modelPreference === "pro" ? "MEDIUM" : "LOW",
+                },
+              }
+            : {}),
+        };
         const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${cleanKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": cleanKey,
+            },
             body: JSON.stringify({
               contents: [{ role: "user", parts: [{ text: params.prompt }] }],
-              generationConfig: {
-                temperature,
-                responseMimeType: "application/json",
-              },
+              generationConfig,
             }),
             signal: AbortSignal.timeout(timeoutMs),
           }
@@ -118,7 +131,7 @@ export async function callGeminiJsonViaAdcOrApiKey<T = Record<string, unknown>>(
           }
         }
       } catch {
-        // fall through to Vertex AI ADC
+        // fall through to next model / Vertex AI ADC
       }
     }
   }

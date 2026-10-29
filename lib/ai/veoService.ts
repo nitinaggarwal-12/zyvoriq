@@ -133,10 +133,13 @@ export async function generateVeoVideoBytes(
   });
 
   const dispatchRes = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predictLongRunning?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predictLongRunning`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
       body: JSON.stringify({
         instances: [instance],
         parameters: { aspectRatio, durationSeconds }
@@ -169,7 +172,9 @@ export async function generateVeoVideoBytes(
     });
 
     try {
-      const pollRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/${operationName}?key=${apiKey}`);
+      const pollRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/${operationName}`, {
+        headers: { "x-goog-api-key": apiKey },
+      });
       const pollData = await pollRes.json();
       if (!pollRes.ok || pollData.error) {
         throw new Error(`Veo Polling Error: ${pollData.error?.message || `HTTP ${pollRes.status}`}`);
@@ -196,8 +201,9 @@ export async function generateVeoVideoBytes(
     operationName
   });
 
-  const separator = videoDownloadUri.includes("?") ? "&" : "?";
-  const videoFetchRes = await fetch(`${videoDownloadUri}${separator}key=${apiKey}`);
+  const videoFetchRes = await fetch(videoDownloadUri, {
+    headers: { "x-goog-api-key": apiKey },
+  });
   if (!videoFetchRes.ok) throw new Error(`Failed to download video stream: HTTP ${videoFetchRes.status}`);
   const buffer = Buffer.from(await videoFetchRes.arrayBuffer());
   if (!buffer.length) throw new Error("Veo returned an empty MP4 payload");

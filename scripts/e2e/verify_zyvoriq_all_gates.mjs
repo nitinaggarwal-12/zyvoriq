@@ -155,7 +155,7 @@ async function main() {
     !customSynthJson.ok ||
     !customSynthJson.canonicalId ||
     customSynthJson.canonicalId === "ZYV-REEL-MI10-300S" ||
-    (customSynthJson.segments || []).length !== 6 ||
+    ![2, 6].includes((customSynthJson.segments || []).length) ||
     !customSynthJson.deepResearchBible
   ) {
     throw new Error(
@@ -216,12 +216,22 @@ async function main() {
     );
   }
 
-  // 2. Launch Headless Chrome at 1600x1000
+  // 2. Launch Headless Google-Signed Chrome at 1600x1000 (Rule 59 isolated profile)
   const macChrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+  const isolatedProfileDir = "/Users/nitinagga/.gemini/chrome_profile_e2e_gates";
+  fs.mkdirSync(isolatedProfileDir, { recursive: true });
   const browser = await puppeteer.launch({
     headless: "new",
     executablePath: fs.existsSync(macChrome) ? macChrome : undefined,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    userDataDir: isolatedProfileDir,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--password-store=basic",
+      "--use-mock-keychain",
+    ],
   });
 
   try {

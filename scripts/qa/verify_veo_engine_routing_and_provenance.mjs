@@ -95,4 +95,41 @@ assert.equal((swarmJobsRoute.match(/job\.isFallbackMaster\s*=\s*true;/g) || []).
 assert.equal(pkgJson.scripts?.["worker:reels"], undefined, "package.json must not retain dead worker:reels script");
 assert.equal(pkgJson.scripts?.["studio1:qa"], undefined, "package.json must not retain dead studio1:qa script");
 
-console.log("✅ Option A (Lean Omni-First + Veo 3.1 Safety-Net), SQLite WAL dual-engine parity, and Cloud Run boot self-test QA passed");
+// 6. RCA-ZYV-11..15: Cloud Run <=8 MiB HTTP 206 Range Cap, Safe ReadableStream Cancel, Law 16 thinkingLevel, 150s Omni/Lyria Timeouts & Music Routing
+const mediaRoute = readRepoFile("app/api/media/[...path]/route.ts");
+const vertexAdcClient = readRepoFile("lib/swarm/vertexAdcClient.ts");
+const synthFromPromptRoute = readRepoFile("app/api/swarm/synthesize-from-prompt/route.ts");
+const gate5Entrypoint = readRepoFile("scripts/gate5_self_verify_entrypoint.mjs");
+const deployCloudRunPy = readRepoFile("scripts/deploy_zyvoriq_cloudrun.py");
+
+assert.ok(mediaRoute.includes("MAX_CLOUDRUN_RANGE_CHUNK_BYTES = 8 * 1024 * 1024"), "/api/media must cap HTTP 206 Byte-Range chunks to 8 MiB (<32 MiB Cloud Run GFE HTTP/1.1 limit)");
+assert.ok(mediaRoute.includes("createSafeFileWebStream") && mediaRoute.includes("cancel()"), "/api/media ReadableStream must guard cancel() and closed state to prevent ERR_INVALID_STATE");
+assert.ok(vertexAdcClient.includes('thinkingLevel: params.modelPreference === "pro" ? "MEDIUM" : "LOW"'), "lib/swarm/vertexAdcClient.ts must pass discrete Law 16 thinkingConfig.thinkingLevel on gemini-3.8-flash");
+assert.ok(synthFromPromptRoute.includes("buildWordSafeTopic") && !synthFromPromptRoute.includes("cleanBrief.slice(0, 52)"), "synthesize-from-prompt must use word-boundary truncation (zero mid-word 'bu' truncation)");
+assert.ok(synthFromPromptRoute.includes('recommendedAudioEngine: isMusicBrief ? "omni_lyria3"'), "synthesize-from-prompt must recommend omni_lyria3 for music/song/dance prompts");
+assert.ok(swarmJobsRoute.includes("const OMNI_TIMEOUT_MS = 150000;") && !swarmJobsRoute.includes("AbortSignal.timeout(15000)"), "/api/swarm/jobs callOmniInteractions must allow 150s for ~40s real Omni 1.1 video diffusion");
+assert.ok(swarmJobsRoute.includes("aloop=loop=-1:size=2000000000"), "/api/swarm/jobs muxAudioOntoVideo must loop 60s Lyria 3 Pro song across >55s masters via aloop filter instead of padding silence");
+assert.ok(swarmJobsRoute.includes("isExplicitMusicBrief") && !swarmJobsRoute.includes("|higgsfield|"), "/api/swarm/jobs must route music prompts to Lyria 3 Pro without Higgsfield camera presets suppressing it");
+assert.ok(swarmJobsRoute.includes("const hasPerTurnPrompts =") && swarmJobsRoute.includes("alimiter=limit=0.84"), "/api/swarm/jobs must distinguish per-act vs per-turn prompts and preserve LRA >= 3.5 LU dynamics");
+assert.ok(swarmJobsRoute.includes("silenceremove=start_periods=0:stop_periods=-1:stop_duration=0.18:stop_threshold=-34dB") && swarmJobsRoute.includes("const anchorTimes = [29.2, 4.0, 14.0];"), "/api/swarm/jobs must strip premature Lyria fade-outs before chorus crossfade and anchor Act II on outgoing t=29.2s seam frame");
+assert.ok(swarmJobsRoute.includes("const mediaPrefix = `/api/media${publicPrefix}`;") && studioPage.includes('post.videoUrl.startsWith("/assets/")'), "/api/swarm/jobs and /swarm-MUI must route generated MP4 URLs via /api/media/assets/... for Cloud Run <=8 MiB HTTP 206 streaming");
+assert.ok(entityApiRoute.includes("findNewestJobStateForCanonicalId") && entityApiRoute.includes("LEGACY_CANONICAL_ID_ALIASES"), "/api/entity/[id] must resolve live running/completed job_state.json and alias ZYV-REEL-AMUSICAL-300S");
+assert.ok(entityPage.includes("entity?.renderStatus !== 'rendering'") && entityPage.includes("useState<boolean>(false)"), "/entity/[id] must poll rendering jobs and initialize isPlaying=false");
+assert.ok(gate5Entrypoint.includes("largeMp4Range206"), "gate5_self_verify_entrypoint.mjs must verify 8 MiB HTTP 206 Range chunking on >32 MiB MP4");
+assert.ok(deployCloudRunPy.includes("--no-cpu-throttling") && deployCloudRunPy.includes("--max-instances=1"), "deploy_zyvoriq_cloudrun.py must configure --no-cpu-throttling and --max-instances=1");
+
+// 7. RCA-ZYV-16..17: Zero Seed-Video Hijack, Honest Pending Stage, Multi-Aspect Ratio & Unified 6-Modality Multimedia Studio
+const audioNarrateService = readRepoFile("lib/audio/audioNarrationService.ts");
+const lyriaService = readRepoFile("lib/ai/lyriaService.ts");
+const v2aService = readRepoFile("lib/ai/v2aService.ts");
+const avatarBuilderRoute = readRepoFile("app/api/swarm/avatar-builder/route.ts");
+
+assert.ok(synthFromPromptRoute.includes('assetType: initialVideoUrl ? "combined_master" : "blueprint_pending_render"'), "synthesize-from-prompt must mark custom unrendered prompts as blueprint_pending_render with empty videoUrl");
+assert.ok(!studioPage.includes("Verified 35mm studio master active."), "/swarm-MUI handleStartLiveVideoRender must never fake completion on dispatch failure");
+assert.ok(studioPage.includes('data-testid="multimedia-modality-selector"') && studioPage.includes("handleGenerateStandaloneMedia"), "/swarm-MUI must expose Unified 6-Modality Multimedia Selector and standalone media handler");
+assert.ok(studioPage.includes('data-testid="studio-pending-live-render-stage"') && entityPage.includes('data-testid="entity-pending-render-stage"'), "/swarm-MUI and /entity/[id] must render honest pending stage cards when videoUrl is empty");
+assert.ok(swarmJobsRoute.includes("resolveTargetScaleAndCrop") && studioPage.includes("aspectRatio: resolvedAspectRatio"), "/api/swarm/jobs and /swarm-MUI must support 9:16, 16:9, and 1:1 multi-aspect video synthesis");
+assert.ok(audioNarrateService.includes("multiSpeakerVoiceConfig") && lyriaService.includes("lyria-3-pro-preview") && v2aService.includes("lyria-3-clip-preview") && avatarBuilderRoute.includes('mode === "keyframe"'), "All 4 standalone audio/image services (Narrate/Podcast, Lyria Song, V2A Foley, Keyframe Image) must be wired to live models");
+
+console.log("✅ Option A (Lean Omni-First + Veo 3.1 Safety-Net), RCA-ZYV-11..17 6-Modality/Zero-Hijack Gates, SQLite WAL parity, and Cloud Run preflight QA passed");
+

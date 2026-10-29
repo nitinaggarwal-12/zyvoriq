@@ -28,7 +28,7 @@ export interface LyriaMusicPreset {
 export const LYRIA_MUSIC_PRESETS: LyriaMusicPreset[] = [
   {
     id: "adaptive_cinematic",
-    name: "🎼 Adaptive Cinematic Score (AI Auto-Match)",
+    name: "Adaptive Cinematic Score (AI Auto-Match)",
     badge: "DeepMind Lyria 3.0",
     description: "Dynamically morphs musical dynamics, orchestration, and key to match the exact visual pacing and emotion of the Veo 3.1 scene.",
     genre: "Cinematic Orchestral",
@@ -40,7 +40,7 @@ export const LYRIA_MUSIC_PRESETS: LyriaMusicPreset[] = [
   },
   {
     id: "zen_shakuhachi",
-    name: "🌸 Zen Dojo Shakuhachi & Koto Strings",
+    name: "Zen Dojo Shakuhachi & Koto Strings",
     badge: "DeepMind Lyria 3.0",
     description: "Traditional bamboo flute, resonant koto strings, taiko heartbeat pulses, and soothing rain textures for contemplative and anime scenes.",
     genre: "Traditional Neo-Zen",
@@ -52,7 +52,7 @@ export const LYRIA_MUSIC_PRESETS: LyriaMusicPreset[] = [
   },
   {
     id: "cyberpunk_synth",
-    name: "⚡ Cyberpunk 2099 Analog Neon Pulse",
+    name: "Cyberpunk 2099 Analog Neon Pulse",
     badge: "High-Energy Synth",
     description: "Analog Moog saw basslines, gated reverb claps, arpeggiated neon synths, and driving darkwave percussion at 128 BPM.",
     genre: "Darksynth / Cyberpunk",
@@ -64,7 +64,7 @@ export const LYRIA_MUSIC_PRESETS: LyriaMusicPreset[] = [
   },
   {
     id: "savannah_orchestral",
-    name: "🦁 Serengeti Majestic Wildlife Score",
+    name: "Serengeti Majestic Wildlife Score",
     badge: "BBC Earth 8K",
     description: "Sweeping cinematic strings, warm African marimbas, kalimba rhythms, and triumphant brass capturing the raw grandeur of nature.",
     genre: "Wildlife Documentary",
@@ -76,7 +76,7 @@ export const LYRIA_MUSIC_PRESETS: LyriaMusicPreset[] = [
   },
   {
     id: "executive_ambient",
-    name: "🏛️ Minimalist Sovereign Keynote Pulse",
+    name: "Minimalist Sovereign Keynote Pulse",
     badge: "Silicon Valley Tech",
     description: "Clean glassmorphic marimba plucks, subtle sub-bass pads, and precision digital pulses designed to elevate speech without distraction.",
     genre: "Tech Corporate Ambient",
@@ -88,7 +88,7 @@ export const LYRIA_MUSIC_PRESETS: LyriaMusicPreset[] = [
   },
   {
     id: "interstellar_drone",
-    name: "🌌 Interstellar Deep Space Gravitational Drone",
+    name: "Interstellar Deep Space Gravitational Drone",
     badge: "Cosmic Sci-Fi",
     description: "Hans Zimmer-inspired church organ harmonics, gravitational wave sub-frequencies, and shimmering cosmic shimmer reverbs.",
     genre: "Cosmic Ambient",
@@ -100,7 +100,7 @@ export const LYRIA_MUSIC_PRESETS: LyriaMusicPreset[] = [
   },
   {
     id: "bollywood_fusion",
-    name: "🇮🇳 Bollywood Grandeur & Dynamic Dhol",
+    name: "Bollywood Grandeur & Dynamic Dhol",
     badge: "Indian Classical & Fusion",
     description: "Sitar virtuosity, passionate Indian violin sections, heavy Punjabi dhol beats, and dramatic emotional crescendos.",
     genre: "Bollywood Cinematic Fusion",
@@ -112,7 +112,7 @@ export const LYRIA_MUSIC_PRESETS: LyriaMusicPreset[] = [
   },
   {
     id: "latin_indian_fusion",
-    name: "🔥 Latin-Pop & Desi Dance Fusion (High-Energy Dance Anthem)",
+    name: "Latin-Pop & Desi Dance Fusion (High-Energy Dance Anthem)",
     badge: "DeepMind Lyria 3.0 Pro",
     description: "Infectious Latin pop polyrhythms, driving Punjabi Dhol syncopations, timbales, acoustic brass stabs, and hypnotic dance cadence at 128 BPM.",
     genre: "Latin-Desi Pop Fusion",
@@ -124,7 +124,7 @@ export const LYRIA_MUSIC_PRESETS: LyriaMusicPreset[] = [
   },
   {
     id: "chandigarh_denmark_fusion",
-    name: "⚡ Chandigarh-Copenhagen Summer Pop Dance Fusion",
+    name: "Chandigarh-Copenhagen Summer Pop Dance Fusion",
     badge: "DeepMind Lyria 3.5 Pro",
     description: "High-octane Punjabi pop dance anthem fusing Chandigarh bhangra energy with Scandinavian summer festival brass, clean 128 BPM live dhol groove, modern electronic synth drops, and stadium orchestra dynamics.",
     genre: "Punjabi Pop / Modern Western Dance Fusion",
@@ -136,7 +136,7 @@ export const LYRIA_MUSIC_PRESETS: LyriaMusicPreset[] = [
   },
   {
     id: "precision_industrial",
-    name: "🏎️ High-Torque Precision Machining Beat",
+    name: "High-Torque Precision Machining Beat",
     badge: "Automotive & Engineering",
     description: "Metallic impact percussion, hydraulic rhythm ticks, carbon-fiber synth textures, and high-velocity pacing.",
     genre: "Industrial Electronic",
@@ -148,7 +148,7 @@ export const LYRIA_MUSIC_PRESETS: LyriaMusicPreset[] = [
   },
   {
     id: "none",
-    name: "🔇 Voice-Only / Zero Background Music",
+    name: "Voice-Only / Zero Background Music",
     badge: "Clean Dialogue",
     description: "Pure uninterrupted neural voice speech stems with zero background score or ambient music.",
     genre: "Acapella / Speech Only",
@@ -175,7 +175,7 @@ export interface LyriaVocalStyle {
 export const LYRIA_VOCAL_STYLES: LyriaVocalStyle[] = [
   {
     id: "anime_jpop_lead",
-    name: "🎤 Anime J-Pop / Epic Rock Theme Lead",
+    name: "Anime J-Pop / Epic Rock Theme Lead",
     badge: "Ufotable & Shonen",
     description: "Energetic, emotive anime opening theme lead vocals with rapid lyrical cadence, crisp consonant visemes, and sustained emotional vibrato.",
     vocalRange: "Mezzo-Soprano / Tenor",
@@ -184,7 +184,7 @@ export const LYRIA_VOCAL_STYLES: LyriaVocalStyle[] = [
   },
   {
     id: "bollywood_melodic_raga",
-    name: "🎶 Bollywood Classical Raga & Sitar Melisma",
+    name: "Bollywood Classical Raga & Sitar Melisma",
     badge: "Indian Classical",
     description: "Passionate ornamented vocal runs (harkat/taan), microtonal pitch bends, and expressive classical Hindi/Sanskrit lyrical phrasing.",
     vocalRange: "Soprano / Baritone",
@@ -193,7 +193,7 @@ export const LYRIA_VOCAL_STYLES: LyriaVocalStyle[] = [
   },
   {
     id: "cyberpunk_autotune_vocoder",
-    name: "⚡ Cyberpunk 2099 Holographic Vocoder Lead",
+    name: "Cyberpunk 2099 Holographic Vocoder Lead",
     badge: "Futuristic Synth",
     description: "Hard-tuned digital vocoder harmonies, rhythmic synth-pop delivery, and stuttered electronic vocal chops synchronized to 128 BPM beats.",
     vocalRange: "Synthesized Tenor",
@@ -202,7 +202,7 @@ export const LYRIA_VOCAL_STYLES: LyriaVocalStyle[] = [
   },
   {
     id: "ethereal_operatic_choir",
-    name: "🌌 Ethereal Operatic Soprano & Choral Harmony",
+    name: "Ethereal Operatic Soprano & Choral Harmony",
     badge: "Cosmic Cinema",
     description: "Sweeping cinematic choir and transcendent solo soprano notes with wide dynamic range and reverbed acoustic space.",
     vocalRange: "Coloratura Soprano",
@@ -211,7 +211,7 @@ export const LYRIA_VOCAL_STYLES: LyriaVocalStyle[] = [
   },
   {
     id: "tribal_savannah_chant",
-    name: "🦁 African Choral & Savannah Harmonic Chant",
+    name: "African Choral & Savannah Harmonic Chant",
     badge: "BBC Wildlife",
     description: "Warm polyphonic harmonies, rhythmic call-and-response vocal chants, and celebratory acoustic resonance.",
     vocalRange: "Full SATB Choir",
@@ -220,7 +220,7 @@ export const LYRIA_VOCAL_STYLES: LyriaVocalStyle[] = [
   },
   {
     id: "latin_pop_belt",
-    name: "💃 Latin-Pop Belt & Desi Dance Fusion Vocal",
+    name: "Latin-Pop Belt & Desi Dance Fusion Vocal",
     badge: "Latin & Bollywood Pop",
     description: "High-energy rhythmic chest-voice singing, fast staccato vocal phrasing, expressive vibrato, and dynamic festival call-and-response.",
     vocalRange: "Mezzo-Soprano / Belter",
@@ -231,6 +231,8 @@ export const LYRIA_VOCAL_STYLES: LyriaVocalStyle[] = [
 
 export interface LyriaMusicResult {
   audioUrl: string;
+  canonicalId?: string;
+  modelUsed?: string;
   duration: number;
   tier: LyriaTier;
   presetId: string;
@@ -258,6 +260,8 @@ export async function generateLyriaBackgroundMusic(options: {
   sections?: LyriaSection[];
   visualStyle?: string;
   musicPreset?: string;
+  genre?: string;
+  bpm?: number;
   vocalMode?: LyriaVocalMode;
   vocalStyle?: string;
   duration?: number;
@@ -279,19 +283,28 @@ export async function generateLyriaBackgroundMusic(options: {
     return null;
   }
 
-  // Resolve best preset
+  // Resolve best preset, honoring caller-supplied bpm/genre overrides when provided
   const selectedPreset = LYRIA_MUSIC_PRESETS.find(p => p.id === musicPreset) ||
     LYRIA_MUSIC_PRESETS.find(p => p.recommendedAesthetics.includes(visualStyle)) ||
     LYRIA_MUSIC_PRESETS[0];
 
+  const effectiveBpm =
+    typeof options.bpm === "number" && Number.isFinite(options.bpm) && options.bpm > 0
+      ? Math.round(options.bpm)
+      : selectedPreset.bpm;
+  const effectiveGenre =
+    typeof options.genre === "string" && options.genre.trim().length > 0
+      ? options.genre.trim()
+      : selectedPreset.genre;
+
   const selectedVocal = LYRIA_VOCAL_STYLES.find(v => v.id === vocalStyle) || LYRIA_VOCAL_STYLES[0];
 
-  const c2paHash = "0x" + crypto.createHash("sha256").update(`${jobId}_${prompt}_${selectedPreset.id}_${vocalMode}_lyria_v3_${tier}`).digest("hex");
+  const c2paHash = "0x" + crypto.createHash("sha256").update(`${jobId}_${prompt}_${selectedPreset.id}_${effectiveBpm}_${vocalMode}_lyria_v3_${tier}`).digest("hex");
 
   // Format singing performance direction for Veo 3.1 video diffusion
   let singingPromptDirective = "";
   if (vocalMode === "character_singing") {
-    singingPromptDirective = `The lead character is passionately singing into the camera/stage mic with expressive facial emotion and rhythmic mouth articulation synchronized to the ${selectedPreset.bpm} BPM musical tempo (${selectedVocal.name}). Visemes show clear vowel extensions and melodic phrasing.`;
+    singingPromptDirective = `The lead character is passionately singing into the camera/stage mic with expressive facial emotion and rhythmic mouth articulation synchronized to the ${effectiveBpm} BPM musical tempo (${selectedVocal.name}). Visemes show clear vowel extensions and melodic phrasing.`;
   } else if (vocalMode === "duet_ensemble") {
     singingPromptDirective = `Both characters are singing in dynamic duet harmony, trading vocal lines with expressive facial acting, open-throat vocal projection, and musical cadence.`;
   } else if (vocalMode === "choir_chant") {
@@ -312,36 +325,60 @@ export async function generateLyriaBackgroundMusic(options: {
     { name: "verse", startSec: 0, endSec: effectiveDuration, energy: 0.5 }
   ]);
 
-  // Physical Google DeepMind Lyria 3 Pro API call
+  // Physical Google DeepMind Lyria 3 Pro API call + Broadcast 48kHz Mastering
   let lyriaRawArrangement: string | undefined;
   let lyrics: string[] | undefined;
   let generatedAudioUrl = "";
+  let generatedCanonicalId: string | undefined;
+  let usedModelName =
+    tier === "pro" ? "models/lyria-3-pro-preview" : "models/lyria-3-clip-preview";
+  let actualDuration = effectiveDuration;
 
-  const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  const key = (
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+    ""
+  ).trim();
+
   if (key) {
     try {
-      // Root prompt sanitization for Lyria 3 safety filters: eliminate celebrity likeness and prohibited terms
-      const { sanitizedTopic: sanitizedPrompt } = await sanitizeAndEnrichUserPrompt(prompt, { genre: selectedPreset.genre });
-      const cleanPresetName = selectedPreset.name.replace(/[^\w\s-]/g, "").replace(/\bshakira\b/gi, "Latin pop").trim();
+      const { execFileSync } = await import("node:child_process");
+      const { appendLibraryAssets } = await import("@/lib/swarm/libraryStore");
+      const { sanitizedTopic: sanitizedPrompt } = await sanitizeAndEnrichUserPrompt(prompt, {
+        genre: effectiveGenre,
+      });
+      const cleanPresetName = selectedPreset.name
+        .replace(/[^\w\s-]/g, "")
+        .replace(/\b(shakira|beyonc[eé]|rihanna|taylor\s*swift|drake|bad\s*bunny|dua\s*lipa)\b/gi, "studio artist")
+        .trim();
       const isInstrumentalScore = vocalMode === "instrumental";
       const lyriaPrompt = isInstrumentalScore
-        ? `Compose a 100% PURE INSTRUMENTAL big-movie IMAX theatrical film score (${selectedPreset.bpm} BPM, key: ${selectedPreset.keySignature}) for: ${sanitizedPrompt}. Style: ${cleanPresetName}, genre: ${selectedPreset.genre}. Include dramatic orchestral brass swells, thunderous cinematic war drums and percussion hits, tension risers, sub-bass LFE drops on visual transitions, and sweeping symphonic strings. STRICTLY INSTRUMENTAL ONLY — NO vocals, NO singing, NO spoken words, NO choir.`
-        : `Compose a high-energy ${selectedPreset.bpm} BPM song arrangement for: ${sanitizedPrompt}. Style: ${cleanPresetName}, genre: ${selectedPreset.genre}, key: ${selectedPreset.keySignature}. Include intro, verse, chorus, and drop rhythm sections with energetic singing lyrics.`;
+        ? `Compose a 100% PURE INSTRUMENTAL big-movie IMAX theatrical film score (${effectiveBpm} BPM, key: ${selectedPreset.keySignature}) for: ${sanitizedPrompt}. Style: ${cleanPresetName}, genre: ${effectiveGenre}. Include dramatic orchestral brass swells, thunderous cinematic war drums and percussion hits, tension risers, sub-bass LFE drops, and sweeping symphonic strings. STRICTLY INSTRUMENTAL ONLY — NO vocals, NO singing, NO spoken words, NO choir.`
+        : `Compose a complete, radio-ready ${effectiveBpm} BPM studio song arrangement for: ${sanitizedPrompt}. Style: ${cleanPresetName}, genre: ${effectiveGenre}, key: ${selectedPreset.keySignature}. Include a tight 1-second rhythmic pickup, expressive upfront studio vocals (+4.5 dB), verse, explosive chorus hook, and dynamic finale.`;
 
-      // Physical Google DeepMind Lyria models: prioritize lyria-3-pro-preview for pro tier
-      const candidateLyriaModels = tier === "pro" 
-        ? ["lyria-3-pro-preview", "lyria-3-clip-preview", "lyria-3.5"]
-        : ["lyria-3-clip-preview", "lyria-3-pro-preview", "lyria-3.5"];
+      const candidateLyriaModels =
+        tier === "pro" || effectiveDuration > 30
+          ? ["models/lyria-3-pro-preview", "models/lyria-3-clip-preview"]
+          : ["models/lyria-3-clip-preview", "models/lyria-3-pro-preview"];
 
       for (const modelToTry of candidateLyriaModels) {
         try {
-          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelToTry}:generateContent?key=${key}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{ role: "user", parts: [{ text: lyriaPrompt }] }]
-            })
-          });
+          const res = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/${modelToTry}:generateContent`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-goog-api-key": key,
+              },
+              body: JSON.stringify({
+                contents: [{ role: "user", parts: [{ text: lyriaPrompt }] }],
+                generationConfig: { responseModalities: ["AUDIO"] },
+              }),
+              signal: AbortSignal.timeout(55000),
+            }
+          );
 
           if (res.ok) {
             const data = await res.json();
@@ -357,27 +394,119 @@ export async function generateLyriaBackgroundMusic(options: {
             }
 
             if (textAcc) {
-              lyriaRawArrangement = textAcc;
-              // Extract timestamped lines or bracketed lines
-              lyrics = textAcc
+              const cleanedLines = textAcc
                 .split("\n")
-                .map(l => l.trim())
-                .filter(l => l.length > 0 && (l.includes(":") || l.startsWith("[")));
+                .map((rawLine) =>
+                  rawLine
+                    .replace(/\[\[[A-Za-z0-9_.-]+\]\]/g, "")
+                    .replace(/^\s*\[:\]\s*/g, "")
+                    .replace(/\s+\[:\]\s+/g, " ")
+                    .trim()
+                )
+                .filter((l) => l.length > 0);
+              lyriaRawArrangement = cleanedLines.join("\n");
+              lyrics = cleanedLines.filter(
+                (l) => !/^(?:bpm|key|tempo|style|genre)\s*:/i.test(l)
+              );
             }
 
-            if (audioB64) {
-              const audioMime = "audio/mp3";
-              generatedAudioUrl = `data:${audioMime};base64,${audioB64}`;
-              console.log(`[lyria-service] Successfully received physical DeepMind ${modelToTry} audio (${Math.round(audioB64.length * 0.75 / 1024)} KB).`);
-            }
+            if (audioB64 && audioB64.length > 1000) {
+              usedModelName = modelToTry;
+              const outDir = path.join(
+                process.cwd(),
+                "public/assets/swarm/generated/audio_studio"
+              );
+              fs.mkdirSync(outDir, { recursive: true });
+              const shortHash = c2paHash.slice(2, 12);
+              const rawPath = path.join(outDir, `lyria_raw_${Date.now()}_${shortHash}.mp3`);
+              const filename = `lyria_song_${Date.now()}_${shortHash}.mp3`;
+              const masteredPath = path.join(outDir, filename);
+              fs.writeFileSync(rawPath, Buffer.from(audioB64, "base64"));
 
-            if (textAcc || audioB64) {
-              console.log(`[lyria-service] Completed Lyria generation via ${modelToTry}.`);
+              try {
+                const targetSec = Math.min(180, Math.max(15, effectiveDuration));
+                execFileSync(
+                  "ffmpeg",
+                  [
+                    "-y",
+                    "-i",
+                    rawPath,
+                    "-filter_complex",
+                    `[0:a]silenceremove=start_periods=0:stop_periods=-1:stop_duration=0.18:stop_threshold=-34dB,aloop=loop=-1:size=2000000000,atrim=0:${targetSec},asetpts=PTS-STARTPTS,highpass=f=42,equalizer=f=3100:t=q:w=1.0:g=3.2,equalizer=f=7200:t=q:w=0.9:g=2.4,loudnorm=I=-14.0:TP=-1.2:LRA=9.0,volume='if(lt(t,${(targetSec * 0.28).toFixed(1)}),0.72,if(lt(t,${(targetSec * 0.65).toFixed(1)}),1.22,if(lt(t,${(targetSec * 0.82).toFixed(1)}),0.74,1.24)))':eval=frame,afade=t=in:st=0:d=0.08,afade=t=out:st=${Math.max(0.5, targetSec - 0.14).toFixed(2)}:d=0.14,alimiter=limit=0.84:level=disabled[outa]`,
+                    "-map",
+                    "[outa]",
+                    "-ar",
+                    "48000",
+                    "-ac",
+                    "2",
+                    "-c:a",
+                    "libmp3lame",
+                    "-b:a",
+                    "320k",
+                    masteredPath,
+                  ],
+                  { stdio: "ignore", timeout: 60000 }
+                );
+                const durStr = execFileSync(
+                  "ffprobe",
+                  [
+                    "-v",
+                    "error",
+                    "-show_entries",
+                    "format=duration",
+                    "-of",
+                    "default=noprint_wrappers=1:nokey=1",
+                    masteredPath,
+                  ],
+                  { encoding: "utf8", timeout: 8000 }
+                ).trim();
+                const parsedDur = parseFloat(durStr);
+                if (Number.isFinite(parsedDur) && parsedDur > 0) {
+                  actualDuration = Number(parsedDur.toFixed(2));
+                }
+              } finally {
+                try {
+                  if (fs.existsSync(rawPath)) fs.unlinkSync(rawPath);
+                } catch {}
+              }
+
+              generatedAudioUrl = `/api/media/assets/swarm/generated/audio_studio/${filename}`;
+              generatedCanonicalId = `ZYV-SONG-${shortHash.slice(0, 8).toUpperCase()}`;
+              const wordSafeSnippet = (maxLen: number) => {
+                const norm = prompt.replace(/\s+/g, " ").trim();
+                if (norm.length <= maxLen) return norm;
+                const cut = norm.slice(0, maxLen);
+                const sp = cut.lastIndexOf(" ");
+                return `${(sp > maxLen * 0.55 ? cut.slice(0, sp) : cut).replace(/[,;:\-–—]+$/, "")}…`;
+              };
+              try {
+                appendLibraryAssets([
+                  {
+                    id: generatedCanonicalId,
+                    canonicalId: generatedCanonicalId,
+                    canonicalUrl: generatedAudioUrl,
+                    studioUrl: `/swarm-MUI`,
+                    projectId: jobId,
+                    projectTitle: `Lyria 3 Studio Track — ${wordSafeSnippet(48)}`,
+                    title: `${isInstrumentalScore ? "Instrumental Score" : "Studio Song"} — ${wordSafeSnippet(52)}`,
+                    subtitle: `${usedModelName} • ${effectiveBpm} BPM • ${actualDuration}s • 48,000 Hz Stereo (-14.0 LUFS)`,
+                    assetType: "audio_track",
+                    genre: effectiveGenre,
+                    durationSec: Math.round(actualDuration),
+                    audioSpec: "48,000 Hz Stereo MP3 (-14.0 LUFS)",
+                    promptSummary: prompt,
+                    src: generatedAudioUrl,
+                    createdAt: new Date().toISOString(),
+                  },
+                ]);
+              } catch {}
               break;
             }
           } else {
             const errText = await res.text().catch(() => "");
-            console.warn(`[lyria-service] ${modelToTry} returned status ${res.status}: ${errText.slice(0, 200)}`);
+            console.warn(
+              `[lyria-service] ${modelToTry} returned status ${res.status}: ${errText.slice(0, 200)}`
+            );
           }
         } catch (callErr: any) {
           console.warn(`[lyria-service] Error trying ${modelToTry}:`, callErr.message);
@@ -390,21 +519,23 @@ export async function generateLyriaBackgroundMusic(options: {
 
   return {
     audioUrl: generatedAudioUrl || "",
-    duration: effectiveDuration,
+    canonicalId: generatedCanonicalId,
+    modelUsed: usedModelName,
+    duration: actualDuration,
     tier,
     presetId: selectedPreset.id,
     presetName: selectedPreset.name,
     vocalMode,
     vocalStyle: vocalMode !== "instrumental" ? selectedVocal.name : undefined,
-    genre: selectedPreset.genre,
-    bpm: selectedPreset.bpm,
+    genre: effectiveGenre,
+    bpm: effectiveBpm,
     keySignature: selectedPreset.keySignature,
     synthIdWatermark: true,
     c2paHash,
     singingPromptDirective,
     sections: defaultSections,
     lyriaRawArrangement,
-    lyrics
+    lyrics,
   };
 }
 
@@ -429,11 +560,12 @@ export async function generateLyriaMusicMaster(options: {
   instrumentalOnly?: boolean;
   theatricalMode?: boolean;
 }): Promise<LyriaMasterOutput | null> {
-  const apiKey =
+  const apiKey = (
     process.env.GEMINI_API_KEY ||
     process.env.GOOGLE_API_KEY ||
-    process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
-    process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+    ""
+  ).trim();
 
   if (!apiKey) {
     console.warn("[lyria-master] Missing GEMINI_API_KEY, skipping Lyria audio generation");
@@ -474,18 +606,22 @@ Include memorable song lyrics, melodic chorus drops, and dynamic musical momentu
   const candidateModels = [
     "models/lyria-3-pro-preview",
     "models/lyria-3-clip-preview",
-    "models/lyria-3.5"
   ];
 
   for (const model of candidateModels) {
     try {
       console.log(`[lyria-master] Invoking DeepMind ${model} for "${prompt.slice(0, 60)}..."`);
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/${model}:generateContent?key=${apiKey}`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/${model}:generateContent`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
         body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: lyriaPrompt }] }]
-        })
+          contents: [{ role: "user", parts: [{ text: lyriaPrompt }] }],
+          generationConfig: { responseModalities: ["AUDIO"] },
+        }),
+        signal: AbortSignal.timeout(150000),
       });
 
       if (!res.ok) {
@@ -507,10 +643,19 @@ Include memorable song lyrics, melodic chorus drops, and dynamic musical momentu
       }
 
       if (audioBuffer && audioBuffer.length > 1000) {
-        const lyrics = textAcc
+        const cleanedLines = textAcc
           .split("\n")
-          .map(l => l.trim())
-          .filter(l => l.length > 0 && (l.includes(":") || l.startsWith("[")));
+          .map((rawLine) =>
+            rawLine
+              .replace(/\[\[[A-Za-z0-9_.-]+\]\]/g, "")
+              .replace(/^\s*\[:\]\s*/g, "")
+              .replace(/\s+\[:\]\s+/g, " ")
+              .trim()
+          )
+          .filter((l) => l.length > 0);
+        const lyrics = cleanedLines.filter(
+          (l) => !/^(?:bpm|key|tempo|style|genre)\s*:/i.test(l)
+        );
 
         console.log(`[lyria-master] Successfully generated ${audioBuffer.length} bytes audio (~${Math.round(audioBuffer.length / 1024)} KB) via ${model}`);
         if (lyrics.length) {
@@ -520,7 +665,7 @@ Include memorable song lyrics, melodic chorus drops, and dynamic musical momentu
         return {
           audioBuffer,
           lyrics,
-          arrangementText: textAcc,
+          arrangementText: cleanedLines.join("\n"),
           modelUsed: model,
           durationSec
         };

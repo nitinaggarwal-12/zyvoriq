@@ -74,6 +74,18 @@ interface EntityRecord {
     chirpWorkers: number;
     muxWorker: number;
   };
+  renderStatus?: 'ready' | 'rendering' | 'fallback';
+  isFallbackMaster?: boolean;
+  fallbackReason?: string;
+  activeJob?: {
+    id: string;
+    status: string;
+    progress: number;
+    stageLabel: string;
+    latestLog?: string;
+    part1Src?: string;
+    combinedSrc?: string;
+  };
   segments?: EntitySegment[];
   deepResearchBible?: DeepResearchProductionBible;
 }
@@ -89,8 +101,10 @@ export default function CanonicalEntityInspectorPage() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [activeVideoSrc, setActiveVideoSrc] = useState<string>('');
   const [activeActLabel, setActiveActLabel] = useState<string>('Full Master Reel');
-  const [isPlaying, setIsPlaying] = useState<boolean>(true);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(true);
+  const [videoErrorNote, setVideoErrorNote] = useState<string | null>(null);
+  const [isDownloadingMp4, setIsDownloadingMp4] = useState<boolean>(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const stageContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -105,9 +119,12 @@ export default function CanonicalEntityInspectorPage() {
         }
         setEntity(data.entity);
         setActiveVideoSrc(data.entity.videoSrc);
+        setVideoErrorNote(null);
         setActiveActLabel(
           data.entity.entityType === 'ACT'
             ? `Act ${data.entity.actNumber}: ${data.entity.title}`
+            : data.entity.renderStatus === 'rendering'
+            ? `Live Progressive Preview (${data.entity.activeJob?.progress || 18}% Rendered)`
             : `Full ${data.entity.durationSeconds}s Master Reel`
         );
       })
@@ -118,6 +135,86 @@ export default function CanonicalEntityInspectorPage() {
         setLoading(false);
       });
   }, [rawId]);
+
+  // Live poll /api/entity/[id] every 2.5s while background multi-act synthesis is active
+  useEffect(() => {
+    if (!rawId || entity?.renderStatus !== 'rendering') return;
+    let cancelled = false;
+    const timer = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/entity/${encodeURIComponent(rawId)}`, {
+          cache: 'no-store',
+        });
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (!data?.entity || cancelled) return;
+        const nextEnt: EntityRecord = data.entity;
+        setEntity(nextEnt);
+        if (nextEnt.videoSrc && nextEnt.videoSrc !== activeVideoSrc) {
+          setActiveVideoSrc(nextEnt.videoSrc);
+          setVideoErrorNote(null);
+        }
+        setActiveActLabel(
+          nextEnt.renderStatus === 'rendering'
+            ? `Live Progressive Preview (${nextEnt.activeJob?.progress || 24}% Rendered)`
+            : `Full ${nextEnt.durationSeconds}s Master Reel`
+        );
+      } catch {
+        // transient network retry on next tick
+      }
+    }, 2500);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [rawId, entity?.renderStatus, activeVideoSrc]);
+
+  const handleDownloadMasterMp4 = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    if (!entity) return;
+    const targetUrl = activeVideoSrc || entity.videoSrc;
+    if (!targetUrl) return;
+    if (isDownloadingMp4) return;
+    setIsDownloadingMp4(true);
+    try {
+      const headRes = await fetch(targetUrl, { method: 'HEAD', cache: 'no-store' });
+      const totalBytes = Number(headRes.headers.get('content-length') || '0');
+      const CHUNK = 8 * 1024 * 1024;
+      let blob: Blob;
+      if (totalBytes > CHUNK) {
+        const parts: BlobPart[] = [];
+        for (let offset = 0; offset < totalBytes; offset += CHUNK) {
+          const end = Math.min(offset + CHUNK - 1, totalBytes - 1);
+          const partRes = await fetch(targetUrl, {
+            headers: { Range: `bytes=${offset}-${end}` },
+            cache: 'no-store',
+          });
+          if (!partRes.ok && partRes.status !== 206) {
+            throw new Error(`Chunk HTTP ${partRes.status}`);
+          }
+          parts.push(await partRes.arrayBuffer());
+        }
+        blob = new Blob(parts, { type: 'video/mp4' });
+      } else {
+        const fullRes = await fetch(`${targetUrl}${targetUrl.includes('?') ? '&' : '?'}download=1`, {
+          cache: 'no-store',
+        });
+        blob = await fullRes.blob();
+      }
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objUrl;
+      a.download = `${entity.canonicalId}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(objUrl), 15000);
+    } catch {
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    } finally {
+      setIsDownloadingMp4(false);
+    }
+  };
 
   const handleCopy = (value: string, key: string) => {
     if (typeof window !== 'undefined') {
@@ -193,15 +290,26 @@ export default function CanonicalEntityInspectorPage() {
                 )}
                 <span>{copiedKey === 'canonical' ? 'Copied Permalink!' : 'Copy Canonical URL'}</span>
               </button>
-              <a
-                href={activeVideoSrc || entity.videoSrc}
-                download={`${entity.canonicalId}.mp4`}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs"
-                data-testid="entity-download-mp4-btn"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Download Master MP4</span>
-              </a>
+              {activeVideoSrc || entity.videoSrc ? (
+                <a
+                  href={activeVideoSrc || entity.videoSrc}
+                  onClick={handleDownloadMasterMp4}
+                  download={`${entity.canonicalId}.mp4`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs"
+                  data-testid="entity-download-mp4-btn"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>{isDownloadingMp4 ? 'Downloading Chunks…' : 'Download Master MP4'}</span>
+                </a>
+              ) : (
+                <span
+                  data-testid="entity-pending-download-badge"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-600 text-xs font-semibold"
+                >
+                  <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>MP4 Unlocks After Render</span>
+                </span>
+              )}
             </>
           )}
           <FeedbackHeaderEmailButton
@@ -241,13 +349,43 @@ export default function CanonicalEntityInspectorPage() {
               <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs flex flex-col gap-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold">
-                        ● VERIFIED MASTER
-                      </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {entity.renderStatus === 'rendering' ? (
+                        <span
+                          data-testid="entity-render-status-pill"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-[11px] font-bold"
+                        >
+                          <Sparkles className="w-3 h-3 text-indigo-600" />
+                          <span>RENDERING LIVE ({entity.activeJob?.progress || 18}%)</span>
+                        </span>
+                      ) : entity.isFallbackMaster ? (
+                        <span
+                          data-testid="entity-render-status-pill"
+                          className="px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-bold"
+                        >
+                          ● STUDIO SEED MASTER
+                        </span>
+                      ) : (
+                        <span
+                          data-testid="entity-render-status-pill"
+                          className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold"
+                        >
+                          ● VERIFIED MASTER
+                        </span>
+                      )}
                       <span className="text-xs font-mono font-semibold text-slate-500">
                         ID: {entity.canonicalId}
                       </span>
+                      {(entity as EntityRecord & { aliasedFromId?: string }).aliasedFromId && (
+                        <span data-testid="legacy-alias-resolution-pill">
+                          <span
+                            data-testid="entity-legacy-alias-pill"
+                            className="text-[11px] font-mono font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200"
+                          >
+                            Resolved from legacy slug {(entity as EntityRecord & { aliasedFromId?: string }).aliasedFromId}
+                          </span>
+                        </span>
+                      )}
                       <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
                         {entity.durationLabel || `${entity.durationSeconds}.0s`}
                       </span>
@@ -269,38 +407,144 @@ export default function CanonicalEntityInspectorPage() {
                   </div>
                 </div>
 
+                {entity.renderStatus === 'rendering' && entity.activeJob && (
+                  <div
+                    data-testid="entity-live-render-banner"
+                    className="rounded-xl border border-indigo-200 bg-indigo-50/70 px-3.5 py-2.5 flex flex-col gap-1.5"
+                  >
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                      <span className="font-bold text-indigo-900 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
+                        <span>{entity.activeJob.stageLabel}</span>
+                      </span>
+                      <span className="font-mono font-bold text-indigo-700">
+                        {entity.activeJob.progress}%
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 rounded-full bg-indigo-100 overflow-hidden">
+                      <div
+                        className="h-full bg-indigo-600 transition-all duration-500"
+                        style={{ width: `${Math.max(8, Math.min(100, entity.activeJob.progress))}%` }}
+                      />
+                    </div>
+                    {entity.activeJob.latestLog && (
+                      <p className="text-[11px] font-mono text-slate-600 leading-snug">
+                        {entity.activeJob.latestLog}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {videoErrorNote && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 flex items-center justify-between gap-2">
+                    <span>{videoErrorNote}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVideoErrorNote(null);
+                        const cleanBase = (activeVideoSrc || entity.videoSrc).split('?')[0];
+                        setActiveVideoSrc(`${cleanBase}?t=${Date.now()}`);
+                      }}
+                      className="px-2.5 py-1 rounded-md bg-white border border-amber-300 font-semibold text-amber-900 hover:bg-amber-100 shrink-0"
+                    >
+                      Reload Stream
+                    </button>
+                  </div>
+                )}
+
                 {/* Uncropped Video Viewport */}
                 <div
                   ref={stageContainerRef}
-                  className="relative w-full h-[540px] bg-slate-950 rounded-xl overflow-hidden flex items-center justify-center border border-slate-200"
+                  className={`relative w-full h-[540px] ${
+                    activeVideoSrc ? 'bg-slate-950' : 'bg-slate-50'
+                  } rounded-xl overflow-hidden flex items-center justify-center border border-slate-200`}
                 >
-                  <video
-                    ref={videoRef}
-                    key={activeVideoSrc}
-                    src={activeVideoSrc}
-                    poster={entity.posterSrc}
-                    autoPlay
-                    loop
-                    muted={isMuted}
-                    playsInline
-                    controls
-                    onPlay={() => setIsPlaying(true)}
-                    onPause={() => setIsPlaying(false)}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'contain',
-                      backgroundColor: '#000000',
-                    }}
-                    data-testid="entity-master-video-player"
-                  />
-                  <div className="absolute top-3 left-3 flex items-center gap-2 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-slate-200 shadow-xs pointer-events-none">
-                    <Film className="w-3.5 h-3.5 text-indigo-600" />
-                    <span className="text-[11px] font-bold text-slate-800">{activeActLabel}</span>
-                    <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                      object-fit: contain (0% Crop)
-                    </span>
-                  </div>
+                  {activeVideoSrc ? (
+                    <>
+                      <video
+                        ref={videoRef}
+                        key={activeVideoSrc}
+                        src={activeVideoSrc}
+                        poster={entity.posterSrc}
+                        preload="metadata"
+                        autoPlay
+                        loop
+                        muted={isMuted}
+                        playsInline
+                        controls
+                        onPlay={() => {
+                          setIsPlaying(true);
+                          setVideoErrorNote(null);
+                        }}
+                        onPlaying={() => {
+                          setIsPlaying(true);
+                          setVideoErrorNote(null);
+                        }}
+                        onPause={() => setIsPlaying(false)}
+                        onEnded={() => setIsPlaying(false)}
+                        onError={() => {
+                          setIsPlaying(false);
+                          setVideoErrorNote(
+                            entity.renderStatus === 'rendering'
+                              ? 'Live master stream is finalizing current segment — player will auto-refresh when ready.'
+                              : 'Media stream interrupted — click Reload Stream to resume 8 MiB Byte-Range playback.'
+                          );
+                        }}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain',
+                          backgroundColor: '#000000',
+                        }}
+                        data-testid="entity-master-video-player"
+                      />
+                      <div className="absolute top-3 left-3 flex items-center gap-2 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-slate-200 shadow-xs pointer-events-none">
+                        <Film className="w-3.5 h-3.5 text-indigo-600" />
+                        <span className="text-[11px] font-bold text-slate-800">{activeActLabel}</span>
+                        <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                          object-fit: contain (0% Crop)
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <div
+                      data-testid="entity-video-pending-stage"
+                      className="w-full h-full bg-slate-50 flex items-center justify-center"
+                    >
+                      <div
+                        data-testid="entity-pending-render-stage"
+                        className="w-full h-full bg-slate-50 flex flex-col items-center justify-center px-8 text-center gap-3"
+                      >
+                        <div className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center shadow-xs">
+                          <Sparkles className="w-5 h-5 text-indigo-600 animate-pulse" />
+                        </div>
+                        <div className="space-y-1 max-w-md">
+                          <p className="text-sm font-bold text-slate-900">
+                            Synthesizing Live Multi-Act Master ({entity.canonicalId})
+                          </p>
+                          <p className="text-xs text-slate-600 leading-relaxed">
+                            {entity.activeJob?.stageLabel ||
+                              'Production Bible locked. Dispatching Omni 1.1 / Veo 3.1 & Lyria 3 Pro studio workers — progressive 10s preview will stream here automatically.'}
+                          </p>
+                        </div>
+                        <div className="w-64 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                          <div
+                            className="h-full bg-indigo-600 transition-all duration-500"
+                            style={{
+                              width: `${Math.max(12, Math.min(96, entity.activeJob?.progress || 18))}%`,
+                            }}
+                          />
+                        </div>
+                        <Link
+                          href={entity.studioUrl || `/swarm-MUI?reel=${encodeURIComponent(entity.canonicalId)}`}
+                          className="mt-1 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs"
+                        >
+                          <Wand2 className="w-3.5 h-3.5" />
+                          <span>Open Live Render Controls in Super-Studio</span>
+                        </Link>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Stage Controls Footer */}
@@ -308,23 +552,28 @@ export default function CanonicalEntityInspectorPage() {
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
+                      disabled={!activeVideoSrc}
                       onClick={() => {
                         if (!videoRef.current) return;
-                        if (videoRef.current.paused) videoRef.current.play();
-                        else videoRef.current.pause();
+                        if (videoRef.current.paused) {
+                          videoRef.current.play().catch(() => {});
+                        } else {
+                          videoRef.current.pause();
+                        }
                       }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 font-semibold text-slate-800"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-45 disabled:cursor-not-allowed font-semibold text-slate-800"
                     >
                       {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
                       <span>{isPlaying ? 'Pause' : 'Play'}</span>
                     </button>
                     <button
                       type="button"
+                      disabled={!activeVideoSrc}
                       onClick={() => {
                         setIsMuted((prev) => !prev);
                         if (videoRef.current) videoRef.current.muted = !isMuted;
                       }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 font-semibold text-slate-800"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-45 disabled:cursor-not-allowed font-semibold text-slate-800"
                     >
                       {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
                       <span>{isMuted ? 'Unmute Audio' : 'Mute Audio'}</span>
@@ -431,10 +680,10 @@ export default function CanonicalEntityInspectorPage() {
                     </div>
                     <Link
                       href={entity.studioUrl}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-indigo-600 text-white text-[11px] font-semibold hover:bg-indigo-700 shrink-0"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-white border border-slate-300 text-slate-800 text-[11px] font-semibold hover:bg-slate-100 shrink-0"
                     >
                       <span>Edit in Studio</span>
-                      <ExternalLink className="w-3 h-3" />
+                      <ExternalLink className="w-3 h-3 text-indigo-600" />
                     </Link>
                   </div>
                 </div>
@@ -474,7 +723,7 @@ export default function CanonicalEntityInspectorPage() {
 
                   <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
                     {entity.segments.map((seg) => {
-                      const isSelected = activeVideoSrc === seg.videoSrc;
+                      const isSelected = Boolean(seg.videoSrc) && activeVideoSrc === seg.videoSrc;
                       return (
                         <div
                           key={seg.actId}
@@ -497,13 +746,19 @@ export default function CanonicalEntityInspectorPage() {
                             <div className="flex items-center gap-1.5 shrink-0">
                               <button
                                 type="button"
+                                disabled={!seg.videoSrc}
                                 onClick={() => {
+                                  if (!seg.videoSrc) return;
                                   setActiveVideoSrc(seg.videoSrc);
                                   setActiveActLabel(`Act ${seg.act} (${seg.timeRange}): ${seg.label}`);
                                 }}
-                                className="px-2 py-0.5 rounded bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-semibold"
+                                className={`px-2 py-0.5 rounded border text-[10px] font-semibold disabled:opacity-45 disabled:cursor-not-allowed ${
+                                  isSelected
+                                    ? 'bg-indigo-50 border-indigo-300 text-indigo-700'
+                                    : 'bg-white border-slate-300 hover:bg-slate-100 text-slate-800'
+                                }`}
                               >
-                                Play Act {seg.act}
+                                {seg.videoSrc ? `Play Act ${seg.act}` : `Act ${seg.act} Pending`}
                               </button>
                               <Link
                                 href={seg.canonicalUrl}
