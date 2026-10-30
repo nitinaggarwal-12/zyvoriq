@@ -58,7 +58,7 @@ Shot on 35mm motion picture film, live-action feature film, realistic natural sk
 
 async function callOmni(prompt, referenceImageB64) {
   const payload = {
-    model: "models/gemini-omni-1.1-flash",
+    model: "models/gemini-2.5-flash",
     input: referenceImageB64
       ? [
           { type: "text", text: prompt },

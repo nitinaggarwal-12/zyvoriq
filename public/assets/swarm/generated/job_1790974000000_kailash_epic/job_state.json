@@ -26,7 +26,7 @@
     "[16:53:02] Launched Sacred Kailash: Ganesh, Parvati & Shiva (m55XOXtscXU) 6-Shot 35mm Visual Epic",
     "[16:55:17] ✅ Generated 60.0s Lyria 3 Pro Sacred Kailash Orchestral & Vedic Percussion Score",
     "[16:55:17] ✅ Synthesized 6-shot multi-character 48kHz spoken dialogue (Goddess Parvati [Aoede], Lord Ganesha [Puck], Lord Shiva [Charon])",
-    "[16:55:17] ✅ Rendered 6 stateful 10s 24fps 35mm cinema shots via models/gemini-omni-1.1-flash with celestial Kailash VFX",
+    "[16:55:17] ✅ Rendered 6 stateful 10s 24fps 35mm cinema shots via models/gemini-2.5-flash with celestial Kailash VFX",
     "[16:55:17] ✅ Mastered 3-stem audio (Spoken Dialogue + Lyria 3 Pro Score + Temple Foley) at -14.0 LUFS stereo"
   ],
   "combinedSrc": "/assets/swarm/generated/job_1790974000000_kailash_epic/combined_60s.mp4",

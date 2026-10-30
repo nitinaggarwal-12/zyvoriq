@@ -282,7 +282,7 @@ export function purePhysicalCharacterDescription(char) {
 export async function validateCharacterSheetAgainstVeo(pngBuffer) {
   const key = apiKey();
   if (!key) return { passed: true };
-  const model = process.env.ZYVORIQ_VEO_MODEL || "veo-3.1-generate-preview";
+  const model = process.env.ZYVORIQ_VEO_MODEL || "veo-3.0-generate-preview";
 
   const payload = {
     prompt: "Cinematic portrait of performer looking forward with natural subtle motion.",

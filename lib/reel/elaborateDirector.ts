@@ -263,7 +263,7 @@ Return a JSON object conforming strictly to this structure:
   "refinedPrompt": "A rich 2-3 paragraph directorial summary ready to be placed in the main creator prompt box"
 }`;
 
-  const primaryModel = process.env.GEMINI_SCRIPT_MODEL || "gemini-3.7-flash";
+  const primaryModel = process.env.GEMINI_SCRIPT_MODEL || "gemini-2.5-flash";
   const candidateModels = primaryModel === "gemini-2.5-flash" ? ["gemini-2.5-flash"] : [primaryModel, "gemini-2.5-flash"];
 
   let lastError: Error | null = null;

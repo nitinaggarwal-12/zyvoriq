@@ -31,7 +31,7 @@ Zyvoriq operates under a sovereign zero-egress architecture. All generative work
 
 | Modality | Approved Native Model Endpoints | Banned Third-Party Services |
 | :--- | :--- | :--- |
-| **Neural TTS** | `gemini-3.1-flash-tts-preview`, `gemini-2.5-flash-preview-tts` | ❌ ElevenLabs, PlayHT, Azure Speech, OpenAI Audio |
+| **Neural TTS** | `gemini-2.5-flash-preview-tts`, `gemini-2.5-flash-preview-tts` | ❌ ElevenLabs, PlayHT, Azure Speech, OpenAI Audio |
 | **Music Composition** | `DeepMind Lyria 3.0` | ❌ Suno, Udio, Soundraw |
 | **Video Diffusion** | `veo-2.0-generate-001`, `veo-3.1-diffusion-preview` | ❌ Runway, Luma Dream Machine, Kling, Pika, Haiper |
 | **Visual Diffusion** | `imagen-3.0-generate-002` | ❌ Midjourney, Stable Diffusion, DALL-E |

@@ -117,10 +117,10 @@ export async function generateVeoVideoBytes(
   const aspectRatio = options.aspectRatio || "16:9";
   const modelName =
     options.modelTier === "quality"
-      ? "veo-3.1-generate-preview"
+      ? "veo-3.0-generate-preview"
       : options.modelTier === "lite"
       ? "veo-3.1-lite-generate-preview"
-      : "veo-3.1-fast-generate-preview";
+      : "veo-3.0-generate-preview";
 
   const startTime = Date.now();
   const getElapsed = () => Math.round((Date.now() - startTime) / 1000);

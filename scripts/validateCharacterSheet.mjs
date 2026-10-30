@@ -93,7 +93,7 @@ export async function validateCharacterSheet({
   archetype = "performer",
   sheetBuffers = [],
   sheetUris = [],
-  model = process.env.ZYVORIQ_VEO_MODEL || "veo-3.1-generate-preview"
+  model = process.env.ZYVORIQ_VEO_MODEL || "veo-3.0-generate-preview"
 } = {}) {
   const apiKey = getApiKey();
   if (!apiKey) {
@@ -143,7 +143,7 @@ export async function validateCharacterSheet({
     sampleCount: 1
   };
 
-  const effectiveModel = model || process.env.ZYVORIQ_VEO_MODEL || "veo-3.1-fast-generate-preview";
+  const effectiveModel = model || process.env.ZYVORIQ_VEO_MODEL || "veo-3.0-generate-preview";
   const dispatchRes = await fetch(`${API_BASE}/v1beta/models/${effectiveModel}:predictLongRunning?key=${apiKey}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

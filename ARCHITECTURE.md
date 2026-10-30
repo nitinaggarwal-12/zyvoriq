@@ -8,9 +8,9 @@
 ## 1. Executive System Overview
 
 Zyvoriq is an AI-native multi-modal studio and generative publishing platform built on the **Option A (Lean Omni-First + Veo 3.1 Safety-Net)** architecture:
-1. **Primary Joint Audio-Video & Lip-Sync Synthesis**: Multi-act native audio-video generation powered by `models/gemini-omni-1.1-flash` (`generateSwarmJob` in [`app/api/swarm/jobs/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/swarm/jobs/route.ts)).
-2. **Veo 3.1 Safety-Net & Explicit 4K Tier**: `veo-3.1-generate-preview`, `veo-3.1-fast-generate-preview`, and `veo-3.1-lite-generate-preview` via [`lib/ai/veoService.ts`](file:///Users/nitinagga/Documents/zyvoriq/lib/ai/veoService.ts) when the user explicitly selects `veo31_4k` or when Omni 1.1 encounters transient quota/API unavailability, plus silent B-roll in [`scripts/yt_pipeline.mjs`](file:///Users/nitinagga/Documents/zyvoriq/scripts/yt_pipeline.mjs).
-3. **48kHz Neural Voice & Harmonic Music**: Expressive speech (`gemini-3.1-flash-tts-preview` / `gemini-2.5-flash-preview-tts` / Vertex Cloud TTS ADC) and sectional orchestral/symphonic composition powered by Google DeepMind Lyria 3.0 Pro (`lyria-3-pro-preview`).
+1. **Primary Joint Audio-Video & Lip-Sync Synthesis**: Multi-act native audio-video generation powered by `models/gemini-2.5-flash` (`generateSwarmJob` in [`app/api/swarm/jobs/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/swarm/jobs/route.ts)).
+2. **Veo 3.1 Safety-Net & Explicit 4K Tier**: `veo-3.0-generate-preview`, `veo-3.0-generate-preview`, and `veo-3.1-lite-generate-preview` via [`lib/ai/veoService.ts`](file:///Users/nitinagga/Documents/zyvoriq/lib/ai/veoService.ts) when the user explicitly selects `veo31_4k` or when Omni 1.1 encounters transient quota/API unavailability, plus silent B-roll in [`scripts/yt_pipeline.mjs`](file:///Users/nitinagga/Documents/zyvoriq/scripts/yt_pipeline.mjs).
+3. **48kHz Neural Voice & Harmonic Music**: Expressive speech (`gemini-2.5-flash-preview-tts` / `gemini-2.5-flash-preview-tts` / Vertex Cloud TTS ADC) and sectional orchestral/symphonic composition powered by Google DeepMind Lyria 3.0 Pro (`lyria-realtime-exp`).
 4. **Cryptographic Provenance & Safety**: Veritas zk-SNARK proof hashing, C2PA manifest embedding, and SynthID digital watermarking.
 
 ```
@@ -79,7 +79,7 @@ All major creation, library, provenance, and administrative flows use **first-cl
 All AI calls execute through encapsulated server-side modules in [`lib/ai/`](file:///Users/nitinagga/Documents/zyvoriq/lib/ai/) with zero client-side credential exposure.
 
 ### 3.1 Audio & TTS Engine ([`lib/ai/ttsService.ts`](file:///Users/nitinagga/Documents/zyvoriq/lib/ai/ttsService.ts))
-- **Primary Model**: `gemini-3.1-flash-tts-preview`
+- **Primary Model**: `gemini-2.5-flash-preview-tts`
 - **Fallback Model**: `gemini-2.5-flash-preview-tts`
 - **Audio Output Format**: 48kHz / 24-bit uncompressed WAV / PCM.
 - **Emotional Voice Matrix**:
@@ -111,8 +111,8 @@ All AI calls execute through encapsulated server-side modules in [`lib/ai/`](fil
 
 ### 3.3 Cinematic Video Diffusion — Option A: Lean Omni-First + Veo 3.1 Safety-Net ([`lib/ai/veoService.ts`](file:///Users/nitinagga/Documents/zyvoriq/lib/ai/veoService.ts), [`app/api/swarm/jobs/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/swarm/jobs/route.ts), [`scripts/yt_pipeline.mjs`](file:///Users/nitinagga/Documents/zyvoriq/scripts/yt_pipeline.mjs))
 - **Primary & Safety-Net Models**:
-  - `models/gemini-omni-1.1-flash` (`/v1beta/interactions`) — default native 24fps multi-turn AV engine in `/swarm-MUI` (`foundationModel: "omni11_lyria3"`), producing synchronous video + spoken/sung lip-sync audio in a single pass.
-  - `veo-3.1-generate-preview` (`quality`), `veo-3.1-fast-generate-preview` (`fast`), `veo-3.1-lite-generate-preview` (`lite`) via `:predictLongRunning` — retained as the lean ~300-LOC safety-net (`lib/ai/veoService.ts` + `scripts/yt_pipeline.mjs`) for: (1) optional `/swarm-MUI` 4K diffusion selector (`foundationModel === "veo31_4k"` -> `synthesize30sActViaVeo31` -> `generateVeoVideoBytes`), (2) automatic live diffusion fallback in `/api/swarm/jobs` & `scripts/yt_pipeline.mjs` when Omni 1.1 blocks or errors prior to cached seed masters, and (3) dynamic `"Omni 1.1"` vs `"Veo 3.1"` provenance badges on `/entity/[id]`.
+  - `models/gemini-2.5-flash` (`/v1beta/interactions`) — default native 24fps multi-turn AV engine in `/swarm-MUI` (`foundationModel: "omni11_lyria3"`), producing synchronous video + spoken/sung lip-sync audio in a single pass.
+  - `veo-3.0-generate-preview` (`quality`), `veo-3.0-generate-preview` (`fast`), `veo-3.1-lite-generate-preview` (`lite`) via `:predictLongRunning` — retained as the lean ~300-LOC safety-net (`lib/ai/veoService.ts` + `scripts/yt_pipeline.mjs`) for: (1) optional `/swarm-MUI` 4K diffusion selector (`foundationModel === "veo31_4k"` -> `synthesize30sActViaVeo31` -> `generateVeoVideoBytes`), (2) automatic live diffusion fallback in `/api/swarm/jobs` & `scripts/yt_pipeline.mjs` when Omni 1.1 blocks or errors prior to cached seed masters, and (3) dynamic `"Omni 1.1"` vs `"Veo 3.1"` provenance badges on `/entity/[id]`.
   - **Retired Legacy Stack**: The unmounted `Studio1` background queue worker (`scripts/reel_worker_v2.mjs`, `scripts/studio1_native.mjs`), `app/api/studio1/*`, `app/api/studio/omni-generate`, and `lib/studio1/*` are permanently retired under Option A; `lib/reel/operationQueue.ts` fails closed with `STUDIO1_WORKER_PRUNED_OPTION_A`.
 - **Container Standards**: Strictly `H.264 (avc1)` video codec with `yuv420p` pixel format, `24/1` CFR, faststart `moov` atom enabled, and `4s / 6s / 8s` discrete Veo buckets (`8s` mandatory when `referenceImages` are attached).
 - **Recursive Chaining Architecture**:

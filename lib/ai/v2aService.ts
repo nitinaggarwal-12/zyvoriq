@@ -127,7 +127,7 @@ export async function generateV2AFoleyEffects(options: {
     ""
   ).trim();
 
-  // 1. Generate bespoke prompt-specific foley cue sheet via Gemini 3.8 Flash (thinkingLevel: LOW)
+  // 1. Generate bespoke prompt-specific foley cue sheet via Gemini 2.5 Flash (thinkingLevel: LOW)
   let cues: V2AFoleyCue[] = [];
   let acousticSpace = ambientEnvironment?.trim() || "35mm Cinema Soundstage";
   let spatialReverb = "Natural Acoustic Field (1.1s RT60)";
@@ -211,7 +211,7 @@ Include 3 to 4 layered foley cues.`,
     const cueSummary = cues.map((c) => `${c.name}: ${c.soundDescription}`).join("; ");
     const soundPrompt = `Create an authentic cinematic foley soundscape and physical environmental audio texture for: "${prompt}". Acoustic space: ${acousticSpace} (${spatialReverb}). Layered sonic textures: ${cueSummary}. Focus on rich percussive transients, deep sub-bass LFE physical impacts, atmospheric air, and spatial realism. STRICTLY NO singing, NO vocals, NO spoken words, NO pop lyrics.`;
 
-    for (const modelName of ["models/lyria-3-clip-preview", "models/lyria-3-pro-preview"]) {
+    for (const modelName of ["models/lyria-3-clip-preview", "models/lyria-realtime-exp"]) {
       try {
         const res = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent`,

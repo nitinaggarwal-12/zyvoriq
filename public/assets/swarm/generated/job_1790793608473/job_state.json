@@ -26,15 +26,15 @@
   "createdAt": 1790793608473,
   "updatedAt": 1790794082036,
   "logs": [
-    "[18:40:08] Launched live models/gemini-omni-1.1-flash (Native Audio) [Google ADK + ORCAS Mode Enabled] job (job_1790793608473)",
+    "[18:40:08] Launched live models/gemini-2.5-flash (Native Audio) [Google ADK + ORCAS Mode Enabled] job (job_1790793608473)",
     "[18:40:08] 🖼️ [ADK+ORCAS LoopSubAgent] Reused critic-approved Act I (9.3/10) & Act II (9.7/10) keyframes from job_1790793528334 for 100% A/B parity!",
-    "[18:40:08] Calling models/gemini-omni-1.1-flash for Act I Turn 1A (00:00–00:10) [ADK+ORCAS Keyframe-Conditioned]... Prompt: \"Concept: This Zyvoriq production elevates the classic 1930s Art-Deco jazz-funk aesthetic w...\"",
+    "[18:40:08] Calling models/gemini-2.5-flash for Act I Turn 1A (00:00–00:10) [ADK+ORCAS Keyframe-Conditioned]... Prompt: \"Concept: This Zyvoriq production elevates the classic 1930s Art-Deco jazz-funk aesthetic w...\"",
     "[18:40:51] Act I Turn 1A ready (v1_ChdpRmU5YXUtV00tQ2pfUFVQOExhVXFBbxIXaUZlOWF1LVdNLUNqX1BVUDhMYVVxQW8) — live preview loaded into player!",
     "[18:42:15] Act I Turn 1B ready (v1_ChZzMWU5YXVuM0x2bW5fdU1Qdks2LVFREhZzMWU5YXVuM0x2bW5fdU1Qdks2LVFR) — player updated to 20.0s!",
     "[18:44:13] Act I full 30.0s Master locked & 3 biometric/wardrobe anchor photos (t=2.0s, 5.0s, 8.5s) extracted! Starting Act II Turn 2A...",
     "[18:44:49] Act II Turn 2A ready (v1_ChdmVmk5YXA2LUhKV2pfUFVQai02U3dBZxIXZlZpOWFwNi1ISldqX1BVUGotNlN3QWc) — extending Act II to 20.0s...",
     "[18:46:13] Act II Turn 2B (20.0s) complete (v1_ChdvbGk5YW8zNUZ2YTNfdU1QdEt2QWdBdxIXb2xpOWFvMzVGdmEzX3VNUHRLdkFnQXc) — generating final Turn 2C (30.0s)...",
-    "[18:48:02] 🎙️ [Spoken Dialogue Verification Gate] Verified 70 audible spoken/vocal words via models/gemini-3.5-transcribe: \"The rhythm calls. 128 BPM. Can you feel the pulse? Shadows dance, secrets kept in this velvet lined escape. One coin, one choice, the\"",
+    "[18:48:02] 🎙️ [Spoken Dialogue Verification Gate] Verified 70 audible spoken/vocal words via models/gemini-2.5-flash: \"The rhythm calls. 128 BPM. Can you feel the pulse? Shadows dance, secrets kept in this velvet lined escape. One coin, one choice, the\"",
     "[18:48:02] 📦 [Google ADK + ORCAS 6-Stage Checkpoints] Exported 1_storyline.json, rulebook_manifest.json, screenplay_manifest.json, keyframe_manifest.json, audio_manifest.json, and 5_composite_ad.json",
     "[18:48:02] ✅ COMPLETED (Omni 1.1 Flash Native Audio + Google ADK & ORCAS (Keyframe-Critic))! Brand-new 60.0s Combined Master (2 Acts) loaded into player & saved to /library."
   ],
@@ -61,7 +61,7 @@
   ],
   "keyframeManifest": {
     "framework": "Google ADK + ORCAS LoopSubAgent (Zyvoriq v3.5.0)",
-    "generatorModel": "models/gemini-3.1-flash-image-preview",
+    "generatorModel": "models/gemini-2.5-flash-image",
     "criticModel": "models/gemini-2.5-flash",
     "act1KeyframeSrc": "/assets/swarm/generated/job_1790793608473/act1_keyframe_verified.jpg",
     "act2KeyframeSrc": "/assets/swarm/generated/job_1790793608473/act2_keyframe_verified.jpg",

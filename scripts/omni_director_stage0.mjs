@@ -16,7 +16,7 @@ import crypto from "node:crypto";
 
 const API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 const WORK = "/Users/nitinagga/Documents/zyvoriq/scratch/coastal_synthpop_30s";
-const OMNI_MODEL = "models/gemini-omni-1.1-flash";
+const OMNI_MODEL = "models/gemini-2.5-flash";
 const BPM = 118, BAR = (60 / BPM) * 4;
 const DURS = [BAR * 3, BAR * 3, BAR * 3, BAR * 3, 30 - BAR * 12];
 

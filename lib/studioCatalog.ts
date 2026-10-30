@@ -230,15 +230,15 @@ export const VOCALS_CATALOG: CatalogOption[] = [
 export const AUDIO_ENGINES_CATALOG: CatalogOption[] = [
   {
     id: "omni_lyria3",
-    label: "Omni 1.1 + Lyria-3-pro-preview (Closed-Lips Eye/Body Acting + Continuous Studio Song)",
+    label: "Omni 1.1 + lyria-realtime-exp (Closed-Lips Eye/Body Acting + Continuous Studio Song)",
     promptSpec:
-      "Dual-Mode Vocal & Ensemble Pipeline: models/lyria-3-pro-preview generates the continuous 60.0s 48,000 Hz studio vocal & instrumental master first; models/gemini-omni-1.1-flash locks active vocalists to beat-synced phoneme visemes (r >= 0.72) while enforcing 100% closed-lips Nayan-Abhinaya eye-acting (RMS <= 0.015) on all non-singing dancers and ensemble tiers",
+      "Dual-Mode Vocal & Ensemble Pipeline: models/lyria-realtime-exp generates the continuous 60.0s 48,000 Hz studio vocal & instrumental master first; models/gemini-2.5-flash locks active vocalists to beat-synced phoneme visemes (r >= 0.72) while enforcing 100% closed-lips Nayan-Abhinaya eye-acting (RMS <= 0.015) on all non-singing dancers and ensemble tiers",
   },
   {
     id: "omni_native",
     label: "Omni 1.1 Only (Single-Model Native Video + Lip-Sync Audio)",
     promptSpec:
-      "Single-Model Pipeline: models/gemini-omni-1.1-flash (POST /v1beta/interactions 24/1 CFR Video + Native 48,000 Hz stereo vocal lip-sync per 10s turn)",
+      "Single-Model Pipeline: models/gemini-2.5-flash (POST /v1beta/interactions 24/1 CFR Video + Native 48,000 Hz stereo vocal lip-sync per 10s turn)",
   },
 ];
 
@@ -1187,7 +1187,7 @@ export const INITIAL_REELS_REPOSITORY: StudioReelRecord[] = [
       },
     },
     storyline:
-      "Google ADK + ORCAS Hybrid Clone of Option 1 (Omni 1.1 + Lyria 3 Pro 60s). Adds (1) Pre-Diffusion Keyframe Critic LoopSubAgent via models/gemini-3.1-flash-image-preview + models/gemini-2.5-flash (Act I Keyframe 9.3/10 APPROVED, Act II Keyframe 9.7/10 APPROVED) conditioning Turn 1A and Turn 2A at t=0.0s and t=30.0s before stateful previous_interaction_id chaining, and (2) 6-Stage Auditable JSON Checkpoints (1_storyline.json, rulebook_manifest.json, screenplay_manifest.json, keyframe_manifest.json, audio_manifest.json, 5_composite_ad.json) with 100% identical Lyria 3 Pro studio soundtrack for apples-to-apples side-by-side comparison.",
+      "Google ADK + ORCAS Hybrid Clone of Option 1 (Omni 1.1 + Lyria 3 Pro 60s). Adds (1) Pre-Diffusion Keyframe Critic LoopSubAgent via models/gemini-2.5-flash-image + models/gemini-2.5-flash (Act I Keyframe 9.3/10 APPROVED, Act II Keyframe 9.7/10 APPROVED) conditioning Turn 1A and Turn 2A at t=0.0s and t=30.0s before stateful previous_interaction_id chaining, and (2) 6-Stage Auditable JSON Checkpoints (1_storyline.json, rulebook_manifest.json, screenplay_manifest.json, keyframe_manifest.json, audio_manifest.json, 5_composite_ad.json) with 100% identical Lyria 3 Pro studio soundtrack for apples-to-apples side-by-side comparison.",
     lyrics:
       "[Shot 01 • Female Lead] 'The rhythm calls, 128 BPM, can you feel the pulse?' (128 BPM)\n[Shot 02 • Male Lead] 'Shadows dance, secrets kept, in this velvet-lined escape.'\n[Shot 03 • Female Co-Lead] 'One coin, one choice, the night's about to ignite.'\n[Shot 04 • Duet (Female Lead & Male Lead)] 'City awakes, rain-kissed streets, our moment takes flight.'\n[Shot 05 • Female Lead & Co-Lead] 'Gravity's a whisper now, as we defy the dawn.'\n[Shot 06 • Full Vocal Ensemble] 'United in motion, a new day born, our legacy drawn!'",
     selectedPersonaIds: {
@@ -1305,7 +1305,7 @@ export const INITIAL_REELS_REPOSITORY: StudioReelRecord[] = [
     audioEngineId: "omni_native",
     comparisonCloneId: "reel_crimson_echoes_native_adk_orcas_60s",
     storyline:
-      "Original 128 BPM B-Minor 1930s Art-Deco speakeasy jazz-funk & syncopated slap-bass dance reel (Option 2 Baseline: Single-Model Omni 1.1 Native Video + Synchronized On-Camera Vocal Lip-Sync). Verified 54 audible sung/spoken words via models/gemini-3.5-transcribe across 6 anamorphic shots from The Crimson Velvet speakeasy to the rain-slicked Azure Dawn metropolitan plaza.",
+      "Original 128 BPM B-Minor 1930s Art-Deco speakeasy jazz-funk & syncopated slap-bass dance reel (Option 2 Baseline: Single-Model Omni 1.1 Native Video + Synchronized On-Camera Vocal Lip-Sync). Verified 54 audible sung/spoken words via models/gemini-2.5-flash across 6 anamorphic shots from The Crimson Velvet speakeasy to the rain-slicked Azure Dawn metropolitan plaza.",
     lyrics:
       "[Shot 01 • Female Lead] 'The rhythm calls, 128 BPM, can you feel the pulse?' (128 BPM)\n[Shot 02 • Male Lead] 'Shadows dance, secrets kept, in this velvet-lined escape.'\n[Shot 03 • Female Co-Lead] 'One coin, one choice, the night's about to ignite.'\n[Shot 04 • Duet (Female Lead & Male Lead)] 'City awakes, rain-kissed streets, our moment takes flight.'\n[Shot 05 • Female Lead & Co-Lead] 'Gravity's a whisper now, as we defy the dawn.'\n[Shot 06 • Full Vocal Ensemble] 'United in motion, a new day born, our legacy drawn!'",
     selectedPersonaIds: {
@@ -1440,7 +1440,7 @@ export const INITIAL_REELS_REPOSITORY: StudioReelRecord[] = [
       },
     },
     storyline:
-      "Google ADK + ORCAS Hybrid Clone of Option 2 (Omni 1.1 Native Vocal Lip-Sync 60s). Uses the exact same critic-approved opening keyframes (act1_keyframe_verified.jpg 9.3/10 & act2_keyframe_verified.jpg 9.7/10) to lock figure-ground contrast and 1930s Art-Deco speakeasy/plaza geometry from frame 0 while generating native 48kHz on-camera vocal lip-sync verified via models/gemini-3.5-transcribe and exporting all 6 ADK/ORCAS JSON stage manifests.",
+      "Google ADK + ORCAS Hybrid Clone of Option 2 (Omni 1.1 Native Vocal Lip-Sync 60s). Uses the exact same critic-approved opening keyframes (act1_keyframe_verified.jpg 9.3/10 & act2_keyframe_verified.jpg 9.7/10) to lock figure-ground contrast and 1930s Art-Deco speakeasy/plaza geometry from frame 0 while generating native 48kHz on-camera vocal lip-sync verified via models/gemini-2.5-flash and exporting all 6 ADK/ORCAS JSON stage manifests.",
     lyrics:
       "[Shot 01 • Female Lead] 'The rhythm calls, 128 BPM, can you feel the pulse?' (128 BPM)\n[Shot 02 • Male Lead] 'Shadows dance, secrets kept, in this velvet-lined escape.'\n[Shot 03 • Female Co-Lead] 'One coin, one choice, the night's about to ignite.'\n[Shot 04 • Duet (Female Lead & Male Lead)] 'City awakes, rain-kissed streets, our moment takes flight.'\n[Shot 05 • Female Lead & Co-Lead] 'Gravity's a whisper now, as we defy the dawn.'\n[Shot 06 • Full Vocal Ensemble] 'United in motion, a new day born, our legacy drawn!'",
     selectedPersonaIds: {

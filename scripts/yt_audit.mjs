@@ -7,7 +7,7 @@
  * importable lets scripts/yt_audit_selftest.mjs prove both verdicts on real files.
  *
  * Design notes (empirically established, do not "simplify" these away):
- *  - gemini-omni-1.1-flash rejects :generateContent ("only supports Interactions API").
+ *  - gemini-2.5-flash rejects :generateContent ("only supports Interactions API").
  *  - With images it also rejects the turn_list form ([{role,content}]); it requires
  *    the step_list form: input:[{type:"user_input",content:[...]}].
  *  - Image items are {type:"image", mime_type:"...", data:"<base64>"} — snake_case
@@ -42,7 +42,7 @@ export async function runOmniSyncAudit({
   timeline = {},       // { has_sung_vocals, first_vocal_onset_sec }
   lyricLines = [],     // [{ text, start, end }] on the MASTER timebase - the Lyria clock
   cutTimes = [],       // master-timebase start of each shot; drives the reset-loop check
-  model = "models/gemini-omni-1.1-flash",
+  model = "models/gemini-2.5-flash",
   spec = YT_MASTER_SPEC,
   topic = null,
   genre = null,

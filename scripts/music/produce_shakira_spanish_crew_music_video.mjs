@@ -48,7 +48,7 @@ Zero silence intervals. Continuous backing music bed. Broadcast mastering standa
   let audioBase64 = null;
   let lyricsText = "";
 
-  const candidateModels = ["lyria-3-clip-preview", "lyria-3.5", "lyria-3-pro-preview", "gemini-2.5-flash-preview-tts"];
+  const candidateModels = ["lyria-3-clip-preview", "lyria-3.5", "lyria-realtime-exp", "gemini-2.5-flash-preview-tts"];
   for (const model of candidateModels) {
     try {
       console.log(`Trying model: ${model}...`);

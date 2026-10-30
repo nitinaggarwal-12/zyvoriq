@@ -8,7 +8,7 @@
  * =============================================================================
  *
  * GOVERNANCE CONSTITUTION COMPLIANCE (v8.0.0):
- *  - Sole Authorized Model: `models/gemini-omni-1.1-flash`
+ *  - Sole Authorized Model: `models/gemini-2.5-flash`
  *    (`POST https://generativelanguage.googleapis.com/v1beta/interactions`) ONLY.
  *  - Multi-Turn Stateful Native Generation (2 x Native 30.0s Acts):
  *      * Act I  (00:00.000 -> 00:30.000, 720 native frames @ 24/1 CFR):
@@ -40,7 +40,7 @@ if (!API_KEY) {
 }
 
 const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/interactions";
-const MODEL = "models/gemini-omni-1.1-flash";
+const MODEL = "models/gemini-2.5-flash";
 
 const ZYVORIQ_ROOT = process.env.ZYVORIQ_ROOT || "/Users/nitinagga/Documents/zyvoriq";
 const WORK_DIR = path.join(ZYVORIQ_ROOT, "scratch/bollywood_heroine_hindi_60s");
@@ -137,7 +137,7 @@ function lockExact30sNativeAct(raw30sPath, synced30sPath) {
 async function main() {
   console.log("=================================================================");
   console.log(" Master B v2: 60.0s (1,440f @ 24/1 CFR) 2-Act Bollywood Reel");
-  console.log(" Model: models/gemini-omni-1.1-flash ONLY");
+  console.log(" Model: models/gemini-2.5-flash ONLY");
   console.log("=================================================================");
 
   const act1AnchorPath = path.join(WORK_DIR, "act1_villa_crimson_anchor.jpg");

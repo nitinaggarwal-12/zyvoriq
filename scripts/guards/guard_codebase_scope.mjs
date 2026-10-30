@@ -10,7 +10,7 @@ const BANNED_MODEL_IDS = [
   "gemini-1.5-pro-latest",
   "gemini-1.5-flash",
   "imagen-3.0-generate-002",
-  "veo-3.1-generate-001",
+  "veo-3.0-generate-preview-001",
 ];
 const BANNED_CLOUD_PATTERNS = [
   /\.up\.railway\.app/i,

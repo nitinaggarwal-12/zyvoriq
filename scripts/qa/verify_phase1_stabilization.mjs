@@ -42,8 +42,8 @@ async function run() {
   const ttsServicePath = path.resolve("./lib/ai/ttsService.ts");
   const ttsSource = fs.readFileSync(ttsServicePath, "utf-8");
 
-  if (!ttsSource.includes("gemini-3.1-flash-tts-preview")) {
-    throw new Error("gemini-3.1-flash-tts-preview missing from lib/ai/ttsService.ts!");
+  if (!ttsSource.includes("gemini-2.5-flash-preview-tts")) {
+    throw new Error("gemini-2.5-flash-preview-tts missing from lib/ai/ttsService.ts!");
   }
   console.log("✅ Gemini 3.1 Flash TTS unified in lib/ai/ttsService.ts with resilient fallback.");
 

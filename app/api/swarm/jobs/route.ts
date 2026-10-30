@@ -115,10 +115,10 @@ export interface SwarmGenerationJob {
 }
 
 const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/interactions";
-const MODEL = "models/gemini-omni-1.1-flash";
-const LYRIA_MODEL = "models/lyria-3-pro-preview";
-const TRANSCRIBE_MODEL = "gemini-3.5-transcribe";
-const KEYFRAME_IMAGE_MODEL = "models/gemini-3.1-flash-image-preview";
+const MODEL = "models/gemini-2.5-flash";
+const LYRIA_MODEL = "models/lyria-realtime-exp";
+const TRANSCRIBE_MODEL = "gemini-2.5-flash";
+const KEYFRAME_IMAGE_MODEL = "models/gemini-2.5-flash-image";
 const KEYFRAME_CRITIC_MODEL = "models/gemini-2.5-flash";
 
 function resolveApiKey(overrideKey?: string): string {
@@ -131,7 +131,7 @@ function resolveApiKey(overrideKey?: string): string {
     process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
     process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
   if (envKey && envKey.trim()) return envKey.trim();
-  return "STUDIO_MASTER_SYNTHESIS_ACTIVE";
+  return "";
 }
 
 function sanitizeJobId(rawId: string): string {
@@ -716,7 +716,7 @@ interface TranscribedWordTiming {
 
 /**
  * Uploads an audio file to the Gemini Files API and runs verbatim word-level
- * timestamp extraction via `models/gemini-3.5-transcribe` (`POST /v1beta/interactions`).
+ * timestamp extraction via `models/gemini-2.5-flash` (`POST /v1beta/interactions`).
  */
 async function transcribeAudioWordsWithGemini35(
   apiKey: string,
@@ -826,8 +826,8 @@ async function transcribeAudioWordsWithGemini35(
 
 /**
  * Generates a single continuous studio vocal & instrumental song via
- * Google DeepMind Lyria 3 Pro Preview (`models/lyria-3-pro-preview:generateContent`),
- * runs `models/gemini-3.5-transcribe` to auto-trim any long instrumental intro so vocals
+ * Google DeepMind Lyria 3 Pro Preview (`models/lyria-realtime-exp:generateContent`),
+ * runs `models/gemini-2.5-flash` to auto-trim any long instrumental intro so vocals
  * enter at ~0.80s of Shot 1, extracts the 6-shot vocal windows (`lyria3_vocal_windows.json`),
  * and masters the track to 48,000 Hz stereo (-14.0 LUFS EBU R128 with upfront vocal presence EQ).
  */
@@ -950,7 +950,7 @@ async function generateLyria3MasterSong(
       const mastered60sMp3 = path.join(jobDir, "lyria3_master_60s.mp3");
       fs.writeFileSync(rawAudioPath, Buffer.from(audioPart.inlineData.data, "base64"));
 
-      // Step 2A: Slice first 75s of raw Lyria song and transcribe word-level timestamps via gemini-3.5-transcribe
+      // Step 2A: Slice first 75s of raw Lyria song and transcribe word-level timestamps via gemini-2.5-flash
       execFileSync(
         "ffmpeg",
         ["-y", "-i", rawAudioPath, "-t", "75", "-c:a", "libmp3lame", "-b:a", "192k", probe75sPath],
@@ -1112,7 +1112,7 @@ async function generateLyria3MasterSong(
 
 /**
  * Transforms an Omni 1.1 10-second turn prompt for `omni_lyria3` mode:
- * 1. Strips any on-camera singing / lip-sync instructions so `models/gemini-omni-1.1-flash` never moves the character's lips.
+ * 1. Strips any on-camera singing / lip-sync instructions so `models/gemini-2.5-flash` never moves the character's lips.
  * 2. Enforces the Closed-Lips Eye/Body Acting (*Nayan-Abhinaya*), Body Language, Wardrobe Physics, and Music-Driven Shot Development directive
  *    anchored to the `Lyria 3 Pro` song window.
  */
@@ -1161,11 +1161,11 @@ function buildMusicDrivenClosedLipsTurnPrompt(
   );
 }
 
-const TTS_MODEL = "models/gemini-3.8-flash-tts";
-const TTS_FALLBACK_MODEL = "models/gemini-3.1-flash-tts-preview";
+const TTS_MODEL = "models/gemini-2.5-flash-preview-tts";
+const TTS_FALLBACK_MODEL = "models/gemini-2.5-flash-preview-tts";
 
 /**
- * Generates a 100% PURE INSTRUMENTAL Big-Movie IMAX Theatrical Score via `models/lyria-3-pro-preview`
+ * Generates a 100% PURE INSTRUMENTAL Big-Movie IMAX Theatrical Score via `models/lyria-realtime-exp`
  * for dramatic spoken-dialogue cinema reels (zero singing vocals so music never collides with actors).
  */
 async function generateLyria3TheatricalFilmScore(
@@ -1320,7 +1320,7 @@ function buildTheatricalSfxBedWav(jobDir: string, totalDurationSec: number): str
  * 1. Inspects `[0:a]` from `combinedMasterPath` first. When `omni-video-1.1-flash-0315` has already generated
  *    frame-accurate lip-synced spoken dialogue + diegetic Foley in `[0:a]`, we PRESERVE `[0:a]` at full 48kHz clarity
  *    (NEVER destroying lip-sync with `lowpass=f=320` or layering duplicate unsynced TTS on top!).
- * 2. Generates a 100% Pure Instrumental Big-Movie Theatrical Score via `models/lyria-3-pro-preview` + synchronized LFE/SFX hits.
+ * 2. Generates a 100% Pure Instrumental Big-Movie Theatrical Score via `models/lyria-realtime-exp` + synchronized LFE/SFX hits.
  * 3. Uses FFmpeg `sidechaincompress` keyed by the foreground dialogue track so the theatrical score & SFX swell to full
  *    IMAX power during visual action beats and automatically duck `-12 dB` the exact millisecond any character speaks!
  */
@@ -2272,7 +2272,7 @@ async function runRealOmniPipeline(
       const srcAct2 = path.join(srcDir, "act2_30s.mp4");
       if (fs.existsSync(srcAct1) && fs.existsSync(srcAct2)) {
         log(
-          `Reusing verified 6-turn models/gemini-omni-1.1-flash 24fps video tracks (Act 1 & Act 2) from ${reuseJobId}...`,
+          `Reusing verified 6-turn models/gemini-2.5-flash 24fps video tracks (Act 1 & Act 2) from ${reuseJobId}...`,
           `Stage 2/6 • Preparing Multi-Act Video & Audio Pipeline...`,
           35
         );
@@ -2297,7 +2297,7 @@ async function runRealOmniPipeline(
             job.vocalAlignment = srcLyriaState.vocalAlignment;
           }
           log(
-            `🎵 [ADK+ORCAS Audio Lock] Reused verified 60.0s models/lyria-3-pro-preview master song & 6-shot vocal windows from ${job.reuseLyriaFromJobId} for 100% A/B sonic parity!`,
+            `🎵 [ADK+ORCAS Audio Lock] Reused verified 60.0s models/lyria-realtime-exp master song & 6-shot vocal windows from ${job.reuseLyriaFromJobId} for 100% A/B sonic parity!`,
             `Stage 1/6 • Locked 60.0s Lyria 3 Pro Master Song (-14.0 LUFS)...`,
             10
           );
@@ -2404,8 +2404,8 @@ async function runRealOmniPipeline(
       try {
         if (job.foundationModel === "veo31_4k") {
           log(
-            `🎥 [Veo 3.1 Primary Engine] Dispatching parallel 4-take Act I & Act II (${jobAspect}) diffusion via models/veo-3.1-generate-preview...`,
-            `Stage 1/6 • Generating Act I & Act II (${jobAspect}) via Google Veo 3.1 (veo-3.1-generate-preview)...`,
+            `🎥 [Veo 3.1 Primary Engine] Dispatching parallel 4-take Act I & Act II (${jobAspect}) diffusion via models/veo-3.0-generate-preview...`,
+            `Stage 1/6 • Generating Act I & Act II (${jobAspect}) via Google Veo 3.1 (veo-3.0-generate-preview)...`,
             24
           );
           await Promise.all([
@@ -2696,7 +2696,7 @@ async function runRealOmniPipeline(
         if (job.foundationModel !== "veo31_4k" && isLiveGeminiApiKey(apiKey)) {
           try {
             log(
-              `⚡ [Veo 3.1 Live Diffusion Fallback] Omni 1.1 unavailable (${errNote.slice(0, 90)}); delegating Act I & Act II to Google Veo 3.1 Fast (veo-3.1-fast-generate-preview)...`,
+              `⚡ [Veo 3.1 Live Diffusion Fallback] Omni 1.1 unavailable (${errNote.slice(0, 90)}); delegating Act I & Act II to Google Veo 3.1 Fast (veo-3.0-generate-preview)...`,
               `Stage 2/6 • Delegating Act I & Act II to Google Veo 3.1 Fast Diffusion...`,
               42
             );
@@ -2740,97 +2740,7 @@ async function runRealOmniPipeline(
         }
 
         if (!veoFallbackSucceeded) {
-          job.isFallbackMaster = true;
-          job.fallbackReason = errNote.slice(0, 180);
-          const requestedSec = Math.max(60, Number(job.durationSeconds || 60));
-          const targetFallbackActs = Math.max(2, Math.round(requestedSec / 30));
-          log(
-            `⚡ [Parallel Swarm Synthesis Pool] Launching ${targetFallbackActs + 2} concurrent workers via Promise.all for ${requestedSec}.0s (${targetFallbackActs}-Act) 24fps CFR Studio Master "${job.title}"...`,
-            `Stage 3/6 • Parallel Swarm Workers (${targetFallbackActs} Video Act Workers + Lyria 3 Pro + Chirp 3 HD) at 54%...`,
-            54
-          );
-          const genRoot = path.join(process.cwd(), "public/assets/swarm/generated");
-          const lowerCtx = `${job.title} ${job.act1Prompt} ${(job.turnPrompts || []).join(" ")}`.toLowerCase();
-          const isMissionImpossibleTheme = /\b(mission\s*impossible|multiverse\s*protocol|ethan\s*vance|halo\s*jump|espionage|spy)\b/i.test(
-            lowerCtx
-          );
-
-          const preferredSeedName = isMissionImpossibleTheme
-            ? "job_1793105000_mission_impossible_10_multiverse_300s"
-            : /\b(ganesh|ganesha|parvati|shiva|kailash|nandi|sacred|mythology)\b/i.test(
-                lowerCtx
-              )
-            ? "job_1790974000000_kailash_epic"
-            : /\b(kaelen|lyra|cursed\s*hunter|basalt|canyon|fantasy)\b/i.test(lowerCtx)
-            ? "job_1790807322189_opt2_native"
-            : /\b(crimson\s*echoes|speakeasy|noir|jazz|art-deco)\b/i.test(lowerCtx)
-            ? "job_1790793528334"
-            : /\b(quantum|tokyo|cyber|observatory|orbital|saturn|space|sci-fi|starship|mars|lunar|station|heist|thruster)\b/i.test(
-                lowerCtx
-              )
-            ? "job_1792800002_neotokyo_quantum_observatory"
-            : "job_1792800001_barcelona_bhangra_flamenco";
-
-          const candidateSeedDirs = [
-            path.join(genRoot, preferredSeedName),
-            path.join(genRoot, "job_1792800002_neotokyo_quantum_observatory"),
-            path.join(genRoot, "job_1793105000_mission_impossible_10_multiverse_300s"),
-            path.join(genRoot, "job_1790974000000_kailash_epic"),
-            path.join(genRoot, "job_1790793528334"),
-            path.join(genRoot, "job_1792800001_barcelona_bhangra_flamenco"),
-            path.join(genRoot, "job_1790807322189_opt2_native"),
-          ];
-          let matchedSeedDir = "";
-          for (const cand of candidateSeedDirs) {
-            if (
-              fs.existsSync(path.join(cand, "act1_30s.mp4")) &&
-              fs.existsSync(path.join(cand, "act2_30s.mp4"))
-            ) {
-              matchedSeedDir = cand;
-              break;
-            }
-          }
-          if (matchedSeedDir) {
-            const mi10Dir = path.join(genRoot, "job_1793105000_mission_impossible_10_multiverse_300s");
-            await Promise.all(
-              Array.from({ length: targetFallbackActs }, async (_, idx) => {
-                const actNum = idx + 1;
-                const dstActPath = path.join(jobDir, `act${actNum}_30s.mp4`);
-                const directSeedAct = path.join(matchedSeedDir, `act${actNum}_30s.mp4`);
-                const cycleAct = path.join(
-                  matchedSeedDir,
-                  actNum % 2 === 1 ? "act1_30s.mp4" : "act2_30s.mp4"
-                );
-                const mi10SeedAct = path.join(mi10Dir, `act${actNum}_30s.mp4`);
-                const srcToCopy = fs.existsSync(directSeedAct)
-                  ? directSeedAct
-                  : fs.existsSync(cycleAct)
-                  ? cycleAct
-                  : mi10SeedAct;
-                if (fs.existsSync(srcToCopy)) {
-                  await fs.promises.copyFile(srcToCopy, dstActPath);
-                }
-              })
-            );
-            const exactSeedCombined = path.join(matchedSeedDir, `combined_${requestedSec}s.mp4`);
-            const masterSeedCombined = path.join(matchedSeedDir, `combined_${requestedSec}s_master.mp4`);
-            if (fs.existsSync(exactSeedCombined)) {
-              await fs.promises.copyFile(
-                exactSeedCombined,
-                path.join(jobDir, `combined_${requestedSec}s.mp4`)
-              );
-            } else if (fs.existsSync(masterSeedCombined)) {
-              await fs.promises.copyFile(
-                masterSeedCombined,
-                path.join(jobDir, `combined_${requestedSec}s.mp4`)
-              );
-            }
-            log(
-              `✅ [Parallel Swarm Workers] All ${targetFallbackActs} Act Workers (30.0s each = ${requestedSec}.0s total) completed concurrently via Promise.all!`,
-              `Stage 5/6 • Assembling ${requestedSec}.0s (${targetFallbackActs}-Act) Master Reel...`,
-              84
-            );
-          }
+          throw new Error(`Live video synthesis failed (${errNote.slice(0, 180)}). Refusing to substitute pre-baked unrelated seed videos.`);
         }
       }
     }
@@ -2857,8 +2767,8 @@ async function runRealOmniPipeline(
         job.foundationModel === "veo31_4k" || Boolean(job.usedVeo31Live);
       const extraEngineLabel = useVeoForExtraActs
         ? job.foundationModel === "veo31_4k"
-          ? "models/veo-3.1-generate-preview"
-          : "models/veo-3.1-fast-generate-preview"
+          ? "models/veo-3.0-generate-preview"
+          : "models/veo-3.0-generate-preview"
         : MODEL;
       log(
         `Starting parallel Extended Multi-Scene Acts [${extraActIndices.map((a) => `Act ${a}`).join(", ")}] (${extraActIndices.length * 30}.0s additional runtime) via ${extraEngineLabel}...`,
@@ -2991,23 +2901,7 @@ async function runRealOmniPipeline(
             extraActErr instanceof Error
               ? extraActErr.message
               : String(extraActErr);
-          log(
-            `⚠️ [Extended Act ${actIdx} Recovery] ${extraErrMsg.slice(0, 100)} — recovering Act ${actIdx} from verified 30.0s CFR master...`
-          );
-          const fallbackCandidate =
-            actIdx % 2 === 1 ? act1MasterPath : act2MasterPath;
-          const mi10ActCandidate = path.join(
-            process.cwd(),
-            "public/assets/swarm/generated/job_1793105000_mission_impossible_10_multiverse_300s",
-            `act${actIdx}_30s.mp4`
-          );
-          if (fs.existsSync(mi10ActCandidate)) {
-            fs.copyFileSync(mi10ActCandidate, actMasterPath);
-            job.isFallbackMaster = true;
-          } else if (fs.existsSync(fallbackCandidate)) {
-            fs.copyFileSync(fallbackCandidate, actMasterPath);
-            job.isFallbackMaster = true;
-          }
+          throw new Error(`Extended Act ${actIdx} synthesis failed: ${extraErrMsg.slice(0, 140)}`);
         }
 
         if (fs.existsSync(actMasterPath)) {
@@ -3162,7 +3056,7 @@ async function runRealOmniPipeline(
       // non-fatal
     }
 
-    // MANDATORY SPOKEN-DIALOGUE AUDIO VERIFICATION GATE (models/gemini-3.5-transcribe)
+    // MANDATORY SPOKEN-DIALOGUE AUDIO VERIFICATION GATE (models/gemini-2.5-flash)
     if (!useLyria3 && fs.existsSync(mp3Path)) {
       try {
         const spokenWords = await transcribeAudioWordsWithGemini35(

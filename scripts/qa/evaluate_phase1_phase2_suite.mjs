@@ -52,7 +52,7 @@ async function runEvaluationSuite() {
     const lyriaFile = fs.readFileSync(path.resolve(projectRoot, "lib/ai/lyriaService.ts"), "utf8");
     const veoFile = fs.readFileSync(path.resolve(projectRoot, "lib/ai/veoService.ts"), "utf8");
 
-    const ttsHas31 = ttsFile.includes("gemini-3.1-flash-tts-preview");
+    const ttsHas31 = ttsFile.includes("gemini-2.5-flash-preview-tts");
     const ttsHasFallback = ttsFile.includes("gemini-2.5-flash-preview-tts");
     const ttsHasVoices = ["Charon", "Aoede", "Puck", "Fenrir", "Kore"].every(v => ttsFile.includes(v));
     const lyriaHasPro = lyriaFile.includes("generateLyriaBackgroundMusic") && lyriaFile.includes("DeepMind Lyria 3.0") && lyriaFile.includes("LyriaSection");

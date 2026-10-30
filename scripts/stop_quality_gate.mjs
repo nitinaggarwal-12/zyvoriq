@@ -1,1 +1,0 @@
-../plugins/zyvoriq_guard/scripts/stop_quality_gate.mjs

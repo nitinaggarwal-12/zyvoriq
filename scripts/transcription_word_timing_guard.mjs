@@ -39,7 +39,7 @@ if (originalFetch) {
     try {
       const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input?.url || "";
       const body = typeof init?.body === "string" ? JSON.parse(init.body) : null;
-      const isTranscription = url.includes("/v1beta/interactions") && body?.model === "gemini-3.5-transcribe";
+      const isTranscription = url.includes("/v1beta/interactions") && body?.model === "gemini-2.5-flash";
       if (!isTranscription || !response.ok) return response;
 
       const payload = await response.clone().json();

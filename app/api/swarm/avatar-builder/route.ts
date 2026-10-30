@@ -263,7 +263,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 3. Synthesize enriched biometric or cinema keyframe specification via Gemini 3.8 Flash
+    // 3. Synthesize enriched biometric or cinema keyframe specification via Gemini 2.5 Flash
     const isSceneKeyframe =
       mode === "keyframe" || surfaceType === "keyframe" || surfaceType === "poster";
     const wordSafePromptTitle = (() => {
@@ -289,7 +289,7 @@ export async function POST(req: NextRequest) {
     if (apiKey && !isSceneKeyframe && (promptText.length > 3 || !rawName)) {
       try {
         const geminiRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`,
           {
             method: "POST",
             headers: {
@@ -371,7 +371,7 @@ Return ONLY valid JSON with:
           } Natural skin pores, expressive eyes looking at camera, cinematic key lighting, zero text overlays, zero watermarks.`;
 
       for (const imgModel of [
-        "models/gemini-3.1-flash-image-preview",
+        "models/gemini-2.5-flash-image",
         "models/gemini-2.5-flash-image",
       ]) {
         try {

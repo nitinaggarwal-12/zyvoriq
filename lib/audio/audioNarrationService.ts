@@ -5,7 +5,7 @@
  * 1. Gemini Native Neural TTS (`models/gemini-2.5-flash-preview-tts`) with strict Law 16
  *    verbatim-transcript-only input (zero prompt instructions leaked into spoken audio).
  * 2. Multi-Speaker Dual-Host Podcast synthesis (`multiSpeakerVoiceConfig`: Aoede + Charon)
- *    with automatic topic-to-dialogue script generation via `gemini-3.8-flash` (`thinkingLevel: "LOW"`).
+ *    with automatic topic-to-dialogue script generation via `gemini-2.5-flash` (`thinkingLevel: "LOW"`).
  * 3. Seamless GCP Cloud Text-to-Speech Chirp3-HD / Journey ADC fallback (`synthesizeSpeechMp3ViaAdc`).
  * 4. Broadcast FFmpeg mastering (`48,000 Hz` Stereo, `-14.5 LUFS` EBU R128, `TP <= -1.5 dBTP`,
  *    6kHz–20kHz studio condenser air retention) persisted to `public/assets/swarm/generated/audio_studio/`
@@ -342,7 +342,7 @@ export class AudioNarrationService {
     // 1. Primary: Gemini Native Neural TTS (Law 16 verbatim transcript only)
     if (apiKey) {
       for (const ttsModel of [
-        "models/gemini-3.1-flash-tts-preview",
+        "models/gemini-2.5-flash-preview-tts",
         "models/gemini-2.5-flash-preview-tts",
         "models/gemini-2.5-pro-preview-tts",
       ]) {
@@ -492,7 +492,7 @@ export class AudioNarrationService {
     const hostAVoice = req.hostAVoice || "Aoede";
     const hostBVoice = req.hostBVoice || "Charon";
 
-    // Parse explicit lines if provided, else synthesize a 6-turn podcast dialogue via Gemini 3.8 Flash
+    // Parse explicit lines if provided, else synthesize a 6-turn podcast dialogue via Gemini 2.5 Flash
     let turns: PodcastTurn[] = [];
     const explicitLines = req.text
       .split("\n")
@@ -587,7 +587,7 @@ Provide exactly 6 alternating turns between HostA and HostB. Pure spoken words o
 
     if (apiKey) {
       for (const multiTtsModel of [
-        "models/gemini-3.1-flash-tts-preview",
+        "models/gemini-2.5-flash-preview-tts",
         "models/gemini-2.5-flash-preview-tts",
       ]) {
         try {

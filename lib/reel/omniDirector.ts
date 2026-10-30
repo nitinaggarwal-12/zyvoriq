@@ -827,8 +827,8 @@ Return a JSON object conforming strictly to this structure:
   ]
 }`;
 
-  const primaryModel = process.env.GEMINI_SCRIPT_MODEL || "gemini-4-argon";
-  const candidateModels = [primaryModel, "gemini-3.8-flash", "gemini-2.5-pro", "gemini-3.7-flash", "gemini-2.5-flash"].filter((m, i, arr) => arr.indexOf(m) === i);
+  const primaryModel = process.env.GEMINI_SCRIPT_MODEL || "gemini-2.5-pro";
+  const candidateModels = [primaryModel, "gemini-2.5-flash", "gemini-2.5-pro"].filter((m, i, arr) => arr.indexOf(m) === i);
 
   let lastError: Error | null = null;
   let rawText = "";

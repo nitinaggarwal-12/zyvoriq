@@ -1,1 +1,0 @@
-/Users/nitinagga/.gemini/config/guards/enforce_universal_single_source_trinity.mjs

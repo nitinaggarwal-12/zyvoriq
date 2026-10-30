@@ -171,20 +171,20 @@ RULES & HARD BUDGET:
 6. Output format: Return a raw JSON array of strings containing exactly ${targetShots} lines:
 ["Line 1", "Line 2", ...]${languageRule}`;
 
-  const primaryModel = process.env.GEMINI_SCRIPT_MODEL || "gemini-3.7-flash";
+  const primaryModel = process.env.GEMINI_SCRIPT_MODEL || "gemini-2.5-flash";
   const candidateModels = primaryModel === "gemini-2.5-flash" ? ["gemini-2.5-flash"] : [primaryModel, "gemini-2.5-flash"];
 
   let lastError: Error | null = null;
   let rawText = "";
 
-  // Priority 1: Google Omni 1.1 via Interactions API (Bollywood Top Producer, Writer & Director)
+  // Priority 1: Gemini 2.5 Flash via Interactions API
   try {
-    console.log(`[planner] Invoking Google Omni 1.1 (models/gemini-omni-1.1-flash) via Interactions API...`);
+    console.log(`[planner] Invoking models/gemini-2.5-flash via Interactions API...`);
     const omniRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/interactions?key=${key}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "models/gemini-omni-1.1-flash",
+        model: "models/gemini-2.5-flash",
         input: systemPrompt
       })
     });

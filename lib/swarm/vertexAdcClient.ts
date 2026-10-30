@@ -76,8 +76,8 @@ export async function callGeminiJsonViaAdcOrApiKey<T = Record<string, unknown>>(
   if (hasLiveApiKey) {
     const models =
       params.modelPreference === "pro"
-        ? ["models/gemini-3.8-flash", "models/gemini-2.5-pro", "models/gemini-2.5-flash"]
-        : ["models/gemini-3.8-flash", "models/gemini-2.5-flash"];
+        ? ["models/gemini-2.5-flash", "models/gemini-2.5-pro", "models/gemini-2.5-flash"]
+        : ["models/gemini-2.5-flash", "models/gemini-2.5-flash"];
     for (const modelName of models) {
       try {
         const isFrontier38Or4 = /gemini-(3\.8|4)/i.test(modelName);

@@ -13,18 +13,18 @@
 ## 1. Canonical 5-Tier Google / Gemini / DeepMind Model Stack (`v3.5.0`)
 
 1. **Tier 1 — Omni 1.1 Master Orchestrator, Multi-Turn Video Synthesis & Multimodal Forensic Judge**:
-   - `google-omni-1.1` / `models/gemini-omni-1.1-flash` (`POST /v1beta/interactions`)
+   - `gemini-2.5-pro` / `models/gemini-2.5-flash` (`POST /v1beta/interactions`)
 2. **Tier 2 — Deep Architectural Reasoning, Creative Surpass Direction & Multimodal Vision**:
-   - `models/gemini-3.1-pro-preview` & `models/gemini-2.5-pro`
+   - `models/gemini-2.5-pro` & `models/gemini-2.5-pro`
 3. **Tier 3 — High-Throughput Sub-Second Structured JSON Compiler, YouTube Reference Deconstruction & Biometric Synthesis**:
-   - `models/gemini-3.8-flash`, `models/gemini-3.1-flash`, `models/gemini-2.5-flash`, & `models/gemini-2.5-flash-lite` (`thinkingConfig: { thinkingLevel: "LOW" | "MEDIUM" | "HIGH" }`)
+   - `models/gemini-2.5-flash`, `models/gemini-2.5-flash`, `models/gemini-2.5-flash`, & `models/gemini-2.5-flash-lite` (`thinkingConfig: { thinkingLevel: "LOW" | "MEDIUM" | "HIGH" }`)
 4. **Tier 4 — Real-Time Bidirectional & Sub-Second Interactive Streaming**:
-   - `models/gemini-3.1-flash-live-preview`
+   - `models/gemini-2.5-flash`
 5. **Tier 5 — Native DeepMind Multimodal Media, Audio, Image & Embeddings**:
-   - **Video Synthesis**: `models/veo-3.1-generate-preview` & `models/gemini-omni-1.1-flash`
-   - **Studio Music & Vocal Synthesis**: `models/lyria-3-pro-preview` & `models/lyria-3.5` (`48,000 Hz` stereo, `-14.0 LUFS`)
-   - **Neural Speech & TTS**: `models/gemini-3.1-flash-tts-preview`
-   - **8K Character & Keyframe Portraits**: `models/imagen-3.0-generate-002` & `models/gemini-3.1-flash-image-preview`
+   - **Video Synthesis**: `models/veo-3.0-generate-preview` & `models/gemini-2.5-flash`
+   - **Studio Music & Vocal Synthesis**: `models/lyria-realtime-exp` & `models/lyria-3.5` (`48,000 Hz` stereo, `-14.0 LUFS`)
+   - **Neural Speech & TTS**: `models/gemini-2.5-flash-preview-tts`
+   - **8K Character & Keyframe Portraits**: `models/imagen-3.0-generate-002` & `models/gemini-2.5-flash-image`
    - **Vector Embeddings**: `models/gemini-embedding-001` & `models/text-embedding-005`
 
 ---
@@ -42,10 +42,10 @@ All studio workflows, pre-render blueprints, and rendered `.mp4` masters are gov
     6. 6-shot kinetic choreography progression with distinct lead vs. 8-dancer geometric formations.
     7. Dual-Mode Active Vocalist Viseme (`r >= 0.72` mouth-aperture-to-audio envelope correlation on singing leads) + Non-Singing Ensemble Closed-Lips (`RMS <= 0.015`, Nayan-Abhinaya eye emotion).
     8. 6-shot focal length (`mm`), T-stop, rig movement & Kelvin/CRI lighting schedule.
-    9. 60s lyric sheet with `[Female Lead]`, `[Male Lead]`, and `[Female Co-Lead]` harmony hooks + locked BPM & musical key across `models/lyria-3-pro-preview`.
+    9. 60s lyric sheet with `[Female Lead]`, `[Male Lead]`, and `[Female Co-Lead]` harmony hooks + locked BPM & musical key across `models/lyria-realtime-exp`.
     10. Truthful `PRE_FLIGHT_LOCKED` status pre-render (`COMPLETED` only after physical `.mp4` render) and zero hardcoded `"9.8 / 10"` rubber-stamping.
 - **Stage 1 — Deterministic Signal & Frame Prober**: `${ZYVORIQ_ROOT:-/Users/nitinagga/Documents/zyvoriq}/scripts/guards/universal_deterministic_output_auditor.mjs` performs deterministic `ffprobe`, `24/1` CFR, STFT spectrogram, optical flow, pixel-domain luma step velocity, cross-turn boundary PSNR (`[26.0, 42.0] dB`), and mouth-onset viseme sync (`r >= 0.72`) checks.
-- **Stage 2 — Binding Final Multimodal Judge**: `Google Omni 1.1` (`models/gemini-omni-1.1-flash`) & `Gemini 3.1 Pro` (`models/gemini-3.1-pro-preview`) (`authority: BINDING_VETO`) evaluate Stage 1 telemetry and sign the cryptographic PASS/FAIL verdict receipt via `scripts/stop_quality_gate.mjs`.
+- **Stage 2 — Binding Final Multimodal Judge**: `Google Omni 1.1` (`models/gemini-2.5-flash`) & `Gemini 3.1 Pro` (`models/gemini-2.5-pro`) (`authority: BINDING_VETO`) evaluate Stage 1 telemetry and sign the cryptographic PASS/FAIL verdict receipt via `scripts/stop_quality_gate.mjs`.
 
 ---
 
@@ -61,7 +61,7 @@ All studio workflows, pre-render blueprints, and rendered `.mp4` masters are gov
    - Every generated or curated reel (`ZYV-REEL-MI10-300S`, `ZYV-REEL-KAILASH-60S`, `ZYV-REEL-HUNTER-60S`, `ZYV-REEL-SPEAKEASY-60S`, `ZYV-REEL-BARCELONA-60S`, `ZYV-REEL-NEOTOKYO-60S`) and every individual act (`ZYV-ACT-MI10-300S-01`..`10`) has a deterministic **Canonical ID** and permanent deep-linkable URL (`/entity/ZYV-REEL-MI10-300S` and `/swarm-MUI?reel=ZYV-REEL-MI10-300S&act=ZYV-ACT-MI10-300S-01`).
    - Includes the verified **5-Minute (`300.0s`, 10-Act, 7,200-frame, `24/1` CFR, `720x1280`) Master Reel** for *Mission: Impossible 10 — The Multiverse Protocol* (`public/assets/swarm/generated/job_1793105000_mission_impossible_10_multiverse_300s/combined_300s.mp4`).
 3. **Workflow 3 — Parallel Multi-Act Swarm Render Engine (`app/api/swarm/jobs/route.ts`)**:
-   - Executes all `N` acts (`2` acts / `6` turns for `60s` or `10` acts for `300s / 5m`) in parallel via `Promise.all` with `OMNI_TIMEOUT_MS = 150000` (`150s`) real diffusion windows (`~40s` per `models/gemini-omni-1.1-flash` HD clip + `~40s` `models/lyria-3-pro-preview` studio song), `aloop=loop=-1` multi-act song continuity, and automatic persistence into `lib/swarm/libraryStore.ts` (`public/assets/swarm/library_manifest.json`).
+   - Executes all `N` acts (`2` acts / `6` turns for `60s` or `10` acts for `300s / 5m`) in parallel via `Promise.all` with `OMNI_TIMEOUT_MS = 150000` (`150s`) real diffusion windows (`~40s` per `models/gemini-2.5-flash` HD clip + `~40s` `models/lyria-realtime-exp` studio song), `aloop=loop=-1` multi-act song continuity, and automatic persistence into `lib/swarm/libraryStore.ts` (`public/assets/swarm/library_manifest.json`).
 4. **Workflow 4 — Custom Persona & Biometric Anchor Builder (`/personas`)**:
    - Create and persist custom cast members via AI Biometric Prompt Synthesis (`models/gemini-2.5-flash`), local base64 photo upload (`public/assets/avatars/`), or external image URL import.
 5. **Workflow 5 — Deep Research Pre-Production & 7-Department Bible Engine (`lib/swarm/deepResearchBible.ts` & `components/DeepResearchBiblePanel.tsx`)**:
@@ -74,9 +74,9 @@ All studio workflows, pre-render blueprints, and rendered `.mp4` masters are gov
    - `GET & POST /api/swarm/deep-research` — Deep Research Pre-Production & 7-Department Bible Synthesizer & 5-Dimension Auditor (`Accuracy`, `Relevancy`, `Continuity`, `Completeness`, `Faithfulness`).
 - `POST /api/swarm/synthesize-from-prompt` — 3-Stage (`Deconstruct -> Elevate -> Surpass`) 12-Agent Production Bible, Music/Song Auto-Detector (`isMusicVideo`, `recommendedAudioEngine: "omni_lyria3"`), Word-Boundary Title/Slug Compiler, Zero Seed-Hijack (`blueprint_pending_render`), & Multi-Act (`15s`–`300s / 10-Act`) Storyboard Compiler.
 - `POST & GET /api/swarm/jobs` — Parallel Multi-Act (`Promise.all` + `150s` diffusion window) `24/1` CFR Multi-Aspect (`9:16`, `16:9`, `1:1`) Video & `48kHz` Lyria 3 Pro Audio Render Engine.
-- `POST /api/audio/lyria-music` — Standalone `models/lyria-3-pro-preview` Vocal Song & Instrumental Cinema Score synthesizer (`48kHz` Stereo `-14 LUFS` `.mp3` streamed via `/api/media/...`).
+- `POST /api/audio/lyria-music` — Standalone `models/lyria-realtime-exp` Vocal Song & Instrumental Cinema Score synthesizer (`48kHz` Stereo `-14 LUFS` `.mp3` streamed via `/api/media/...`).
 - `POST /api/audio/narrate` — Single-Speaker Neural Voiceover (`Charon`, `Aoede`, `Puck`, `Kore`, `Fenrir`) & 2-Host Studio Podcast (`multiSpeakerVoiceConfig` Aoede + Charon, `Law 16` verbatim transcript only, `48kHz` `-15 LUFS` `.mp3`).
-- `POST /api/audio/v2a` — Video-to-Audio (`V2A`) `models/gemini-3.8-flash` acoustic foley cue designer + `models/lyria-3-clip-preview` stereo foley master (`48kHz` `-15 LUFS` `.mp3`).
+- `POST /api/audio/v2a` — Video-to-Audio (`V2A`) `models/gemini-2.5-flash` acoustic foley cue designer + `models/lyria-3-clip-preview` stereo foley master (`48kHz` `-15 LUFS` `.mp3`).
 - `POST & GET /api/swarm/avatar-builder` — Custom Persona Biometric Anchor & Multi-Aspect (`9:16`, `16:9`, `1:1`) 35mm AI Keyframe / Poster Builder (`prompt`, `keyframe`, `upload`, `url`).
 
 ---
@@ -112,14 +112,14 @@ echo '{"workspacePaths":["/Users/nitinagga/Documents/zyvoriq"],"terminationReaso
 - **Database & SQL Injection Resilience (`RCA-ZYV-01`, `RCA-ZYV-14` — `lib/db/client.ts`, `app/api/health/route.ts`, `app/api/swarm/jobs/route.ts`)**: Automatically detects and bypasses dead/decommissioned `.rlwy.net` / `railway.internal` Postgres URLs and falls back to local SQLite (`dev.db`) with `{"engine":"sqlite","connected":true}`, and sanitizes all `sqlite3` `studio_entities` inserts via `escSql()`.
 - **API-Key Header Security, Rule 55 `thinkingLevel`, SSRF & Path-Traversal Hardening (`RCA-ZYV-02`, `RCA-ZYV-12`..`17`)**:
   - `GET /api/health/api-key` reads `.env.local` / `.env` and verifies configured studio tokens (`ok: true, configured: true`).
-  - Migrated Gemini API authentication from `?key=` URL query strings to `"x-goog-api-key"` HTTP request headers and enforced `Rule 55` discrete `thinkingConfig: { thinkingLevel: "LOW" | "MEDIUM" | "HIGH" }` across `lib/swarm/vertexAdcClient.ts` (`models/gemini-3.8-flash`).
+  - Migrated Gemini API authentication from `?key=` URL query strings to `"x-goog-api-key"` HTTP request headers and enforced `Rule 55` discrete `thinkingConfig: { thinkingLevel: "LOW" | "MEDIUM" | "HIGH" }` across `lib/swarm/vertexAdcClient.ts` (`models/gemini-2.5-flash`).
   - Enforced `isSafePublicHttpUrl()` (`redirect: "manual"`) on YouTube oEmbed fetches to block SSRF and `sanitizeJobId()` (`/job_[a-zA-Z0-9_-]{1,80}/`) on `GET /api/swarm/jobs?id=...` to block path traversal.
 - **Cloud Run `<= 8 MiB` HTTP `206` Media Streaming, `150s` Real Omni 1.1 + Lyria 3 Pro Diffusion & Live Entity Polling (`RCA-ZYV-11`..`15` — `app/api/media/[...path]/route.ts`, `app/api/swarm/jobs/route.ts`, `app/api/entity/[id]/route.ts`, `app/entity/[id]/page.tsx`)**:
   - Caps open-ended `Range: bytes=0-` responses on `>24 MiB` `.mp4`/`.webm` masters to `8 MiB` HTTP `206` windows (`< 32 MiB` Cloud Run HTTP/1.1 GFE limit), routes completed job URLs via `mediaPrefix = "/api/media" + publicPrefix` across `/swarm-MUI`, `/library`, and `/entity/[id]`, and guards `ReadableStream` teardown (`0` `ERR_INVALID_STATE` crashes, `0` black `0:00` video players).
   - Fullscreen and stage video players enforce `object-fit: contain !important` (`:fullscreen` / `:-webkit-full-screen` in `app/globals.css`) so top and bottom frames are never chopped off.
-  - Music/song/dance prompts default to `60s` (`+ New Reel`), compile whole-word titles/canonical IDs (`0` `"bu"` / `"AMUSICAL"` truncation), route through `models/lyria-3-pro-preview` (with pre-crossfade `silenceremove` zero-silence mastering + `LRA >= 7.5 LU` dynamic envelope) + `models/gemini-omni-1.1-flash` (`150s` per diffusion call, `anchorTimes = [29.2, 4.0, 14.0]` `t=30s` seam conditioning, `hasPerTurnPrompts` guard), and live-poll `/api/entity/[id]` every `2.5s` until `renderStatus === "ready"`.
+  - Music/song/dance prompts default to `60s` (`+ New Reel`), compile whole-word titles/canonical IDs (`0` `"bu"` / `"AMUSICAL"` truncation), route through `models/lyria-realtime-exp` (with pre-crossfade `silenceremove` zero-silence mastering + `LRA >= 7.5 LU` dynamic envelope) + `models/gemini-2.5-flash` (`150s` per diffusion call, `anchorTimes = [29.2, 4.0, 14.0]` `t=30s` seam conditioning, `hasPerTurnPrompts` guard), and live-poll `/api/entity/[id]` every `2.5s` until `renderStatus === "ready"`.
 - **Executive Light Theme Default & Zero Broken Portrait Guarantee (`Rule 54` & `RCA-ZYV-07` — `app/swarm-MUI/page.tsx`, `app/entity/[id]/page.tsx`, `app/personas/page.tsx`, `lib/studioCatalog.ts`)**: All routes render in Executive Light Theme (`#f8fafc` canvas, `#ffffff` cards, `#0f172a` ink) with all 36 `PERSONAS_CATALOG` entries mapped to verified `/assets/characters/*.jpg` portraits (`0` broken `<img>` icons).
-- **Option A — Lean Omni-First + Veo 3.1 Safety-Net & Retired Studio1 Worker (`lib/ai/veoService.ts`, `scripts/yt_pipeline.mjs`, `app/api/swarm/jobs/route.ts`, `app/entity/[id]/page.tsx`)**: `models/gemini-omni-1.1-flash` (`omni11_lyria3`) serves as the primary native AV engine, backed by the lean Veo 3.1 safety-net (`veo-3.1-fast-generate-preview` live fallback + optional `veo31_4k` 4K diffusion) and dynamic `"Omni 1.1"` vs `"Veo 3.1"` entity provenance; legacy `Studio1` queue workers and unmounted `/api/studio1/*` routes are permanently pruned.
+- **Option A — Lean Omni-First + Veo 3.1 Safety-Net & Retired Studio1 Worker (`lib/ai/veoService.ts`, `scripts/yt_pipeline.mjs`, `app/api/swarm/jobs/route.ts`, `app/entity/[id]/page.tsx`)**: `models/gemini-2.5-flash` (`omni11_lyria3`) serves as the primary native AV engine, backed by the lean Veo 3.1 safety-net (`veo-3.0-generate-preview` live fallback + optional `veo31_4k` 4K diffusion) and dynamic `"Omni 1.1"` vs `"Veo 3.1"` entity provenance; legacy `Studio1` queue workers and unmounted `/api/studio1/*` routes are permanently pruned.
 
 
 

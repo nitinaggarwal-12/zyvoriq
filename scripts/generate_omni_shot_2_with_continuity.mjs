@@ -48,7 +48,7 @@ CRITICAL IMMEDIATE VOCAL ATTACK (0.0 SECONDS): The performer begins singing imme
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "models/gemini-omni-1.1-flash",
+      model: "models/gemini-2.5-flash",
       input: [
         { type: "text", text: shot2Prompt },
         { type: "image", data: refImageB64, mime_type: "image/jpeg" }

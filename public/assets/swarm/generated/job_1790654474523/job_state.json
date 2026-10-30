@@ -25,8 +25,8 @@
   "createdAt": 1790654474523,
   "updatedAt": 1790654928408,
   "logs": [
-    "[04:01:14] Launched live models/gemini-omni-1.1-flash (Native Audio) job (job_1790654474523)",
-    "[04:01:14] Calling models/gemini-omni-1.1-flash for Act I Turn 1A (00:00–00:10)... Prompt: \"Photorealistic 35mm live-action cinema shot on ARRI Alexa Mini LF with 35mm Panavision Pri...\"",
+    "[04:01:14] Launched live models/gemini-2.5-flash (Native Audio) job (job_1790654474523)",
+    "[04:01:14] Calling models/gemini-2.5-flash for Act I Turn 1A (00:00–00:10)... Prompt: \"Photorealistic 35mm live-action cinema shot on ARRI Alexa Mini LF with 35mm Panavision Pri...\"",
     "[04:01:52] Act I Turn 1A ready (v1_ChdMVGk3YXNUTkNMTDQtOFlQeEplYjBBZxIXTFRpN2FzVE5DTEw0LThZUHhKZWIwQWc) — live preview loaded into player!",
     "[04:03:17] Act I Turn 1B ready (v1_ChdMVGk3YXNUTkNMTDQtOFlQeEplYjBBZxIXZ0RpN2F1YUNMWlMzc09JUHByNmY0UUk) — player updated to 20.0s!",
     "[04:04:58] Act I full 30.0s Master locked & 3 biometric/wardrobe anchor photos (t=2.0s, 5.0s, 8.5s) extracted! Starting Act II Turn 2A...",

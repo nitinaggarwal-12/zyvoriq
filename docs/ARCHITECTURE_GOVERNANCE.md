@@ -10,8 +10,8 @@ The following tools, models, and paradigms are permanently banned from the codeb
 ---
 
 ## 2. Approved 2026 Production Standard Stack
-- ✅ **Video Diffusion — Option A (Lean Omni-First + Veo 3.1 Safety-Net)**: Primary native AV synthesis via Google Gemini Omni 1.1 Flash (`models/gemini-omni-1.1-flash`), backed by the lean Google DeepMind Veo 3.1 safety-net (`lib/ai/veoService.ts` + `scripts/yt_pipeline.mjs`: `veo-3.1-generate-preview` / `veo-3.1-fast-generate-preview` / `veo-3.1-lite-generate-preview` via `:predictLongRunning`) for live fallback and optional `veo31_4k` 4K selection (legacy `Studio1` background worker retired).
-- ✅ **Audio & Multimodal TTS**: Google DeepMind Lyria 3 Pro (`models/lyria-3-pro-preview`), Google Cloud Chirp 3: HD (`en-US-Chirp3-HD-*`), and 48kHz Neural TTS (`gemini-2.5-flash-preview-tts`).
+- ✅ **Video Diffusion — Option A (Lean Omni-First + Veo 3.1 Safety-Net)**: Primary native AV synthesis via Google Gemini Omni 1.1 Flash (`models/gemini-2.5-flash`), backed by the lean Google DeepMind Veo 3.1 safety-net (`lib/ai/veoService.ts` + `scripts/yt_pipeline.mjs`: `veo-3.0-generate-preview` / `veo-3.0-generate-preview` / `veo-3.1-lite-generate-preview` via `:predictLongRunning`) for live fallback and optional `veo31_4k` 4K selection (legacy `Studio1` background worker retired).
+- ✅ **Audio & Multimodal TTS**: Google DeepMind Lyria 3 Pro (`models/lyria-realtime-exp`), Google Cloud Chirp 3: HD (`en-US-Chirp3-HD-*`), and 48kHz Neural TTS (`gemini-2.5-flash-preview-tts`).
 - ✅ **Interactive 3D Stage (Real-Time Mode)**: Full 3D Skinned Humanoid Rigs (GLTF / VRM / `@pixiv/three-vrm`) with skeletal bone hierarchies and blendshape visemes.
 - ✅ **Cryptographic Provenance**: Veritas C2PA / Ed25519 tamper-proof signed manifests.
 

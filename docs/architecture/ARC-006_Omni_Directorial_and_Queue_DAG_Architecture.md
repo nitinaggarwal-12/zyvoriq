@@ -73,7 +73,7 @@ A cinematic production pipeline is only as reliable as the asynchronous state ma
 In the original Stage 0 Studio1 design, workloads were isolated across three tiers (now consolidated under Next.js Cloud Run `/api/swarm/jobs` + SQLite/Postgres under Option A):
 1. **Next.js Web Tier (`zyvoriq` on Cloud Run)**: Ingests prompts on `/swarm-MUI`, dispatches `POST /api/swarm/jobs`, persists entities to `studio_entities`, and exposes canonical deep links (`/entity/[id]`).
 2. **PostgreSQL Read Compatibility (`Postgres`)**: Preserves historical `reel_productions` and `reel_operations` inspection while rejecting new queue mutations with `410 STUDIO1_WORKER_PRUNED_OPTION_A`.
-3. **Retired Background Reel Worker (`reel_worker_v2.mjs` — Pruned in Option A)**: Replaced by parallel `Promise.all` act workers inside [`app/api/swarm/jobs/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/swarm/jobs/route.ts) routing to `models/gemini-omni-1.1-flash` primary + [`lib/ai/veoService.ts`](file:///Users/nitinagga/Documents/zyvoriq/lib/ai/veoService.ts) Veo 3.1 safety-net.
+3. **Retired Background Reel Worker (`reel_worker_v2.mjs` — Pruned in Option A)**: Replaced by parallel `Promise.all` act workers inside [`app/api/swarm/jobs/route.ts`](file:///Users/nitinagga/Documents/zyvoriq/app/api/swarm/jobs/route.ts) routing to `models/gemini-2.5-flash` primary + [`lib/ai/veoService.ts`](file:///Users/nitinagga/Documents/zyvoriq/lib/ai/veoService.ts) Veo 3.1 safety-net.
 
 ### 0.2 The Non-Blocking DAG State Machine
 Every generative task (Narration, Shot Plate Diffusion, Audio Mixing, Rough Cut) is an operation node in a Directed Acyclic Graph (DAG). Operations must strictly adhere to the following finite state machine:

@@ -331,7 +331,7 @@ export async function generateLyriaBackgroundMusic(options: {
   let generatedAudioUrl = "";
   let generatedCanonicalId: string | undefined;
   let usedModelName =
-    tier === "pro" ? "models/lyria-3-pro-preview" : "models/lyria-3-clip-preview";
+    tier === "pro" ? "models/lyria-realtime-exp" : "models/lyria-3-clip-preview";
   let actualDuration = effectiveDuration;
 
   const key = (
@@ -359,8 +359,8 @@ export async function generateLyriaBackgroundMusic(options: {
 
       const candidateLyriaModels =
         tier === "pro" || effectiveDuration > 30
-          ? ["models/lyria-3-pro-preview", "models/lyria-3-clip-preview"]
-          : ["models/lyria-3-clip-preview", "models/lyria-3-pro-preview"];
+          ? ["models/lyria-realtime-exp", "models/lyria-3-clip-preview"]
+          : ["models/lyria-3-clip-preview", "models/lyria-realtime-exp"];
 
       for (const modelToTry of candidateLyriaModels) {
         try {
@@ -549,7 +549,7 @@ export interface LyriaMasterOutput {
 
 /**
  * Direct DeepMind Lyria master track generation for worker audio pipeline.
- * Returns raw MP3 buffer and timestamped arrangement from models/lyria-3-pro-preview or models/lyria-3-clip-preview.
+ * Returns raw MP3 buffer and timestamped arrangement from models/lyria-realtime-exp or models/lyria-3-clip-preview.
  */
 export async function generateLyriaMusicMaster(options: {
   prompt: string;
@@ -604,7 +604,7 @@ Instrumentation: ${instruments}.
 Include memorable song lyrics, melodic chorus drops, and dynamic musical momentum.`;
 
   const candidateModels = [
-    "models/lyria-3-pro-preview",
+    "models/lyria-realtime-exp",
     "models/lyria-3-clip-preview",
   ];
 

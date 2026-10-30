@@ -24,7 +24,7 @@ const parsed = parseArgs({
     // an unflagged run is unchanged.
     clock: { type: 'string' },            // whisperx | pro | transcribe-live
     'veo-tier': { type: 'string' },       // full | fast | lite
-    engine: { type: 'string' },           // veo | omni (models/gemini-omni-1.1-flash continuous duration)
+    engine: { type: 'string' },           // veo | omni (models/gemini-2.5-flash continuous duration)
     'audio-source': { type: 'string' },   // lyria | native | hybrid (Demucs Lyria bed + Omni vocal stem)
     'anchor-cadence': { type: 'string' }, // re-anchor every N shots; 1 = every shot
     label: { type: 'string' },            // matrix arm name, recorded in provenance
@@ -114,8 +114,8 @@ const MAX_WASTE = args['max-waste'] !== undefined
 // operator has to override on purpose.
 const ALLOW_UNIFORM = args['allow-uniform'] === true;
 const VEO_TIER_MODEL = {
-  full: "models/veo-3.1-generate-preview",
-  fast: "models/veo-3.1-fast-generate-preview",
+  full: "models/veo-3.0-generate-preview",
+  fast: "models/veo-3.0-generate-preview",
   lite: "models/veo-3.1-lite-generate-preview",
 };
 if (!VEO_TIER_MODEL[VEO_TIER]) {
@@ -140,13 +140,13 @@ const YT_STAGES = [
 ];
 
 const YT_STAGE_EXECUTOR = {
-  OMNI_DIRECTION: "models/gemini-omni-1.1-flash",
+  OMNI_DIRECTION: "models/gemini-2.5-flash",
   LYRIA_SONG: "models/lyria-3.5",
   TEMPO_MEASURE: "deterministic:ffmpeg+autocorrelation (no model)",
   ANCHOR_PLATE: "models/gemini-2.5-flash-image",
-  VEO_SHOTS: "models/veo-3.1-generate-preview",
+  VEO_SHOTS: "models/veo-3.0-generate-preview",
   MASTER_MUX: "deterministic:ffmpeg (no model)",
-  OMNI_SYNC_AUDIT: "models/gemini-omni-1.1-flash",
+  OMNI_SYNC_AUDIT: "models/gemini-2.5-flash",
 };
 
 // One normalizer for every model URL. Interpolating executor values straight
@@ -161,7 +161,7 @@ if (VEO_TIER !== "full") {
   YT_STAGE_EXECUTOR.VEO_SHOTS = VEO_TIER_MODEL[VEO_TIER];
 }
 if (ENGINE === "omni") {
-  YT_STAGE_EXECUTOR.VEO_SHOTS = "models/gemini-omni-1.1-flash";
+  YT_STAGE_EXECUTOR.VEO_SHOTS = "models/gemini-2.5-flash";
 }
 
 const modelPath = (m) => (String(m).startsWith("models/") ? String(m) : `models/${m}`);
@@ -1587,7 +1587,7 @@ for (let i = 0; i < shotPlan.length; i++) {
       for (const detailed of [true, false]) {
         const omniPrompt = buildOmniPrompt(detailed);
         const omniBody = {
-          model: "models/gemini-omni-1.1-flash",
+          model: "models/gemini-2.5-flash",
           input: [{
             type: "user_input",
             content: [
@@ -1606,7 +1606,7 @@ for (let i = 0; i < shotPlan.length; i++) {
           `https://generativelanguage.googleapis.com/v1beta/interactions?key=${API_KEY}`,
           omniBody
         );
-        receipt(`VEO_SHOT_${s.index}_OMNI`, "models/gemini-omni-1.1-flash", "interactions", res.status, omniPrompt, txt.length, startedAt, Date.now() - t0);
+        receipt(`VEO_SHOT_${s.index}_OMNI`, "models/gemini-2.5-flash", "interactions", res.status, omniPrompt, txt.length, startedAt, Date.now() - t0);
         if (res.ok) {
           const o = JSON.parse(txt);
           for (const st of (o.steps || [])) {
@@ -1626,7 +1626,7 @@ for (let i = 0; i < shotPlan.length; i++) {
           const cropImg64 = fs.readFileSync(cropPath).toString("base64");
           const cropPrompt = buildOmniPrompt(false);
           const cropBody = {
-            model: "models/gemini-omni-1.1-flash",
+            model: "models/gemini-2.5-flash",
             input: [{
               type: "user_input",
               content: [
@@ -1645,7 +1645,7 @@ for (let i = 0; i < shotPlan.length; i++) {
             `https://generativelanguage.googleapis.com/v1beta/interactions?key=${API_KEY}`,
             cropBody
           );
-          receipt(`VEO_SHOT_${s.index}_OMNI_CROP`, "models/gemini-omni-1.1-flash", "interactions", res.status, cropPrompt, txt.length, startedAt, Date.now() - t0);
+          receipt(`VEO_SHOT_${s.index}_OMNI_CROP`, "models/gemini-2.5-flash", "interactions", res.status, cropPrompt, txt.length, startedAt, Date.now() - t0);
           if (res.ok) {
             const o = JSON.parse(txt);
             for (const st of (o.steps || [])) {

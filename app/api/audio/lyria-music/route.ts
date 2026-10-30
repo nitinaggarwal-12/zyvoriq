@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
       modelUsed:
         result.modelUsed ||
         (resolvedTier === "pro"
-          ? "models/lyria-3-pro-preview"
+          ? "models/lyria-realtime-exp"
           : "models/lyria-3-clip-preview"),
       lyricsUsed:
         Array.isArray(result.lyrics) && result.lyrics.length > 0

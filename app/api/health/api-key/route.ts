@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "node:fs";
-import path from "node:path";
 
 function loadConfiguredApiKey(): string {
   const envKey =
@@ -8,21 +6,7 @@ function loadConfiguredApiKey(): string {
     process.env.GOOGLE_API_KEY ||
     process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
     process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
-  if (envKey && envKey.trim()) return envKey.trim();
-
-  for (const file of [".env.local", ".env"]) {
-    try {
-      const envPath = path.join(process.cwd(), file);
-      if (fs.existsSync(envPath)) {
-        const content = fs.readFileSync(envPath, "utf8");
-        const match = content.match(/(?:GEMINI_API_KEY|GOOGLE_API_KEY)\s*=\s*([^\r\n#]+)/);
-        if (match && match[1]) return match[1].trim().replace(/^["']|["']$/g, "");
-      }
-    } catch {
-      // ignore
-    }
-  }
-  return "STUDIO_MASTER_SYNTHESIS_ACTIVE";
+  return envKey && envKey.trim() ? envKey.trim() : "";
 }
 
 export async function GET(req: NextRequest) {
@@ -31,56 +15,64 @@ export async function GET(req: NextRequest) {
   const apiKey = cookieKey || headerKey || loadConfiguredApiKey();
 
   if (!apiKey) {
-    return NextResponse.json({
-      ok: false,
-      configured: false,
-      source: "none",
-      message: "GEMINI_API_KEY / GOOGLE_API_KEY is not configured."
-    });
+    return NextResponse.json(
+      {
+        ok: false,
+        configured: false,
+        source: "none",
+        message: "GEMINI_API_KEY / GOOGLE_API_KEY is not configured."
+      },
+      { status: 503 }
+    );
   }
 
   const source = cookieKey ? "browser_cookie" : headerKey ? "request_header" : "server_env";
 
   try {
     const testRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: "ping" }] }]
+          contents: [{ parts: [{ text: "ping" }] }],
+          generationConfig: { maxOutputTokens: 4 }
         }),
-        signal: AbortSignal.timeout(4000)
+        signal: AbortSignal.timeout(5000)
       }
     );
 
-    if (testRes.ok || testRes.status === 200 || testRes.status === 400) {
+    if (testRes.ok) {
       return NextResponse.json({
         ok: true,
         configured: true,
         source,
-        model: "models/gemini-omni-1.1-flash",
-        tier: "Omni 1.1 Swarm, Veo 3.1 Fast Diffusion & Gemini 2.5 TTS Active",
-        ttsModel: "gemini-2.5-flash-preview-tts"
-      });
-    } else {
-      return NextResponse.json({
-        ok: true,
-        configured: true,
-        source,
-        model: "models/gemini-omni-1.1-flash",
-        tier: "Omni 1.1 Swarm Studio Active (Deterministic Synthesis & Master Pool Verified)",
+        model: "models/gemini-2.5-flash",
+        tier: "Gemini 2.5 Flash / Pro, Veo 3.0 & Gemini 2.5 TTS Active",
         ttsModel: "gemini-2.5-flash-preview-tts"
       });
     }
-  } catch {
-    return NextResponse.json({
-      ok: true,
-      configured: true,
-      source,
-      model: "models/gemini-omni-1.1-flash",
-      tier: "Omni 1.1 Swarm Studio Active (Offline Fallback Verified)"
-    });
+
+    return NextResponse.json(
+      {
+        ok: false,
+        configured: false,
+        source,
+        status: testRes.status,
+        message: `Gemini API key validation failed with HTTP ${testRes.status}.`
+      },
+      { status: 401 }
+    );
+  } catch (err) {
+    return NextResponse.json(
+      {
+        ok: false,
+        configured: false,
+        source,
+        message: err instanceof Error ? err.message : "Failed to reach Gemini API."
+      },
+      { status: 503 }
+    );
   }
 }
 
@@ -90,78 +82,80 @@ export async function POST(req: NextRequest) {
     const { apiKey, action } = body;
 
     if (!apiKey) {
-      const response = NextResponse.json({ ok: false, message: "API key is required." });
+      const response = NextResponse.json({ ok: false, message: "API key is required." }, { status: 400 });
       response.cookies.delete("zyvoriq_gemini_api_key");
       return response;
     }
 
-    const cleanKey = apiKey.trim();
+    const cleanKey = String(apiKey).trim();
 
-    // If validating a key securely without URL query param leakage
     if (action === "validate") {
       const startTime = performance.now();
       try {
         const testRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${cleanKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${cleanKey}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              contents: [{ parts: [{ text: "ping" }] }]
-            })
+              contents: [{ parts: [{ text: "ping" }] }],
+              generationConfig: { maxOutputTokens: 4 }
+            }),
+            signal: AbortSignal.timeout(5000)
           }
         );
 
         const latencyMs = Math.round(performance.now() - startTime);
-
-        if (testRes.ok || testRes.status === 200 || testRes.status === 400) {
+        if (testRes.ok) {
           return NextResponse.json({
             ok: true,
             status: "alive",
             latencyMs,
-            tier: "Veo 3.1 & Gemini 2.5 TTS"
-          });
-        } else if (testRes.status === 429) {
-          return NextResponse.json({
-            ok: false,
-            status: "rate_limited",
-            latencyMs,
-            error: "Quota / Rate Limit Exceeded (429)"
-          });
-        } else {
-          const errData = await testRes.json().catch(() => ({}));
-          return NextResponse.json({
-            ok: false,
-            status: "dead",
-            latencyMs,
-            error: errData.error?.message || `HTTP ${testRes.status} Unauthorized`
+            model: "models/gemini-2.5-flash"
           });
         }
-      } catch (err: any) {
-        return NextResponse.json({
-          ok: false,
-          status: "dead",
-          latencyMs: Math.round(performance.now() - startTime),
-          error: err.message || "Network Timeout"
-        });
+
+        const errData = await testRes.json().catch(() => ({}));
+        return NextResponse.json(
+          {
+            ok: false,
+            status: "invalid",
+            latencyMs,
+            message: errData?.error?.message || `API returned status ${testRes.status}`
+          },
+          { status: 401 }
+        );
+      } catch (err: unknown) {
+        return NextResponse.json(
+          {
+            ok: false,
+            status: "error",
+            message: err instanceof Error ? err.message : "Network validation failed"
+          },
+          { status: 503 }
+        );
       }
     }
 
     const response = NextResponse.json({
       ok: true,
       configured: true,
-      message: "API Key verified and saved into session cookie."
+      source: "browser_cookie",
+      message: "Gemini API key saved in secure HTTP-only cookie."
     });
 
     response.cookies.set("zyvoriq_gemini_api_key", cleanKey, {
+      httpOnly: true,
+      sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24 * 365, // 1 year
-      httpOnly: false,
-      sameSite: "strict"
+      maxAge: 60 * 60 * 24 * 30
     });
 
     return response;
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, message: e.message }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json(
+      { ok: false, message: err instanceof Error ? err.message : "Invalid request" },
+      { status: 400 }
+    );
   }
 }

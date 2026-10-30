@@ -42,7 +42,7 @@ function getSeedEntities(): StudioEntityRecord[] {
       subtitle: "Primary 24fps Music Video Director & Per-Act Speed Studio Page",
       parent_id: null,
       media_src: null,
-      metadata_json: JSON.stringify({ route: "/swarm", engine: "models/gemini-omni-1.1-flash" }),
+      metadata_json: JSON.stringify({ route: "/swarm", engine: "models/gemini-2.5-flash" }),
       created_at: now,
     },
     {

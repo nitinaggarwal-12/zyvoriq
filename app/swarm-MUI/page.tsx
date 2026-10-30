@@ -2662,7 +2662,7 @@ export default function ContentStudioWorkspacePage() {
             : "Lyria 3 Pro · Vocal Studio Song",
           title: String(data.title || conciseTitle),
           url: String(data.audioUrl),
-          modelUsed: String(data.modelUsed || "models/lyria-3-pro-preview"),
+          modelUsed: String(data.modelUsed || "models/lyria-realtime-exp"),
           durationSec: Number(data.durationSec || dur),
           specBadge: `48 kHz Stereo · -14 LUFS · ${Number(data.durationSec || dur).toFixed(1)}s`,
           transcriptOrCues: cleanedLyrics || undefined,
@@ -2785,7 +2785,7 @@ export default function ContentStudioWorkspacePage() {
           modalityLabel: `35mm AI Keyframe & Poster (${resolvedAspectRatio})`,
           title: conciseTitle,
           url: String(imgUrl),
-          modelUsed: String(data.modelUsed || "models/gemini-3.1-flash-image-preview"),
+          modelUsed: String(data.modelUsed || "models/gemini-2.5-flash-image"),
           specBadge: `${resolvedAspectRatio} Photorealistic 35mm Still · ${activeCameraPreset.label}`,
           canonicalId: data.canonicalId ? String(data.canonicalId) : undefined,
         });

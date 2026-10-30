@@ -12,7 +12,7 @@ if (!key) {
 }
 
 async function test() {
-  const models = ["models/lyria-3.5", "models/lyria-3-pro-preview", "models/lyria-3-clip-preview"];
+  const models = ["models/lyria-3.5", "models/lyria-realtime-exp", "models/lyria-3-clip-preview"];
   const prompt = "Compose a high-energy 124 BPM Tropical House dance-pop song arrangement for Sol de Fuga. Key: F# minor. Instruments: Spanish acoustic guitar, deep sub-bass, marimba plucks, saxophone melody. Lyrics: Sunrise hits the villa walls, no turning back / No me llames, I won't call, we are off the track.";
 
   for (const m of models) {

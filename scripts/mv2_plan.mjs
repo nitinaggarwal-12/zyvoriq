@@ -31,7 +31,7 @@ import crypto from "node:crypto";
 
 const API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 const WORK = "/Users/nitinagga/Documents/zyvoriq/scratch/mv_v2";
-const OMNI = "models/gemini-omni-1.1-flash";
+const OMNI = "models/gemini-2.5-flash";
 const LEDGER = path.join(WORK, "provenance.jsonl");
 
 const BPM = 120.63, BAR = 1.98949;

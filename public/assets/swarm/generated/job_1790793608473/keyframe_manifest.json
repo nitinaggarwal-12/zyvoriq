@@ -1,6 +1,6 @@
 {
   "framework": "Google ADK + ORCAS LoopSubAgent (Zyvoriq v3.5.0)",
-  "generatorModel": "models/gemini-3.1-flash-image-preview",
+  "generatorModel": "models/gemini-2.5-flash-image",
   "criticModel": "models/gemini-2.5-flash",
   "act1KeyframeSrc": "/assets/swarm/generated/job_1790793608473/act1_keyframe_verified.jpg",
   "act2KeyframeSrc": "/assets/swarm/generated/job_1790793608473/act2_keyframe_verified.jpg",

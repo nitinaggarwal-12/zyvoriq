@@ -28,14 +28,14 @@ export interface SwarmAgentStatus {
   icon: string;
   roleTitle: string;
   stackModel:
-    | "models/gemini-2.5-flash & models/gemini-3.8-flash"
-    | "models/gemini-3-pro-image & models/gemini-3.1-flash-image-preview"
-    | "models/lyria-3-pro-preview & models/lyria-3.5"
+    | "models/gemini-2.5-flash & models/gemini-2.5-flash"
+    | "models/imagen-3.0-generate-002 & models/gemini-2.5-flash-image"
+    | "models/lyria-realtime-exp & models/lyria-002"
     | "FFmpeg 24/1 CFR Master"
-    | "models/gemini-omni-1.1-flash & models/veo-3.1-generate-preview"
-    | "models/lyria-3-pro-preview & models/gemini-3.1-flash-tts-preview"
-    | "Stage 1 FFprobe/DSP + Stage 2 models/gemini-omni-1.1-flash & models/gemini-3.1-pro-preview"
-    | "Cross-Model Judge: models/gemini-2.5-pro & models/gemini-3.1-pro-preview (auditing models/gemini-2.5-flash) + Stage 2 models/gemini-omni-1.1-flash";
+    | "models/gemini-2.5-flash & models/veo-3.0-generate-preview"
+    | "models/lyria-realtime-exp & models/gemini-2.5-flash-preview-tts"
+    | "Stage 1 FFprobe/DSP + Stage 2 models/gemini-2.5-flash & models/gemini-2.5-pro"
+    | "Cross-Model Judge: models/gemini-2.5-pro & models/gemini-2.5-pro (auditing models/gemini-2.5-flash) + Stage 2 models/gemini-2.5-flash";
   status: "COMPLETED" | "PRE_FLIGHT_LOCKED" | "ACTIVE" | "QUEUED";
   executionTimeMs: number;
   deliverableSummary: string;
@@ -420,7 +420,7 @@ export function getDanceMusicVideoAgents(
       roleTitle: isYt
         ? `Live Reference Deconstruction (${ctx.youtubeReferenceTitle || "Reference MV"}) & ${totalActs}-Act Surpass Screenplay`
         : `3-Stage Creative Surpass Compiler & ${totalActs}-Act Screenplay`,
-      stackModel: "models/gemini-2.5-flash & models/gemini-3.8-flash",
+      stackModel: "models/gemini-2.5-flash & models/gemini-2.5-flash",
       status: computeBlueprintAgentStatus(10),
       executionTimeMs: perAgentSynthMs,
       qualityScore: computedQualityScore,
@@ -446,7 +446,7 @@ export function getDanceMusicVideoAgents(
       name: "Casting Direction Agent",
       icon: "🎭",
       roleTitle: `5-Tier Biometric Cast Lock (${castCount} Distinct Performers • ${castCount} Unique Portraits)`,
-      stackModel: "models/gemini-3-pro-image & models/gemini-3.1-flash-image-preview",
+      stackModel: "models/imagen-3.0-generate-002 & models/gemini-2.5-flash-image",
       status: computeBlueprintAgentStatus(15),
       executionTimeMs: perAgentSynthMs,
       qualityScore: computedQualityScore,
@@ -462,7 +462,7 @@ export function getDanceMusicVideoAgents(
       name: "Wardrobe Department Agent",
       icon: "👗",
       roleTitle: `5-Tier ${totalActs}-Act Couture Metamorphosis & Contrast Guard`,
-      stackModel: "models/gemini-3-pro-image & models/gemini-3.1-flash-image-preview",
+      stackModel: "models/imagen-3.0-generate-002 & models/gemini-2.5-flash-image",
       status: computeBlueprintAgentStatus(20),
       executionTimeMs: perAgentSynthMs,
       qualityScore: computedQualityScore,
@@ -483,7 +483,7 @@ export function getDanceMusicVideoAgents(
       name: "Location Scouting Agent",
       icon: "📍",
       roleTitle: `${country} — ${venue} Spatial Architecture`,
-      stackModel: "models/gemini-3-pro-image & models/gemini-3.1-flash-image-preview",
+      stackModel: "models/imagen-3.0-generate-002 & models/gemini-2.5-flash-image",
       status: computeBlueprintAgentStatus(25),
       executionTimeMs: perAgentSynthMs,
       qualityScore: computedQualityScore,
@@ -503,7 +503,7 @@ export function getDanceMusicVideoAgents(
       name: "Prop & Styling Facility Agent",
       icon: "🕶️",
       roleTitle: "Per-Tier Jewelry, Footwear, Hero Props & Kinetic Stage FX",
-      stackModel: "models/gemini-3-pro-image & models/gemini-3.1-flash-image-preview",
+      stackModel: "models/imagen-3.0-generate-002 & models/gemini-2.5-flash-image",
       status: computeBlueprintAgentStatus(30),
       executionTimeMs: perAgentSynthMs,
       qualityScore: computedQualityScore,
@@ -521,7 +521,7 @@ export function getDanceMusicVideoAgents(
       name: "Choreography & Kinetic Blocking Agent",
       icon: "💃",
       roleTitle: `${shotsCount}-Shot ${bpm} BPM 8-Count Formation Geometry & Kinetic Blocking`,
-      stackModel: "models/gemini-omni-1.1-flash & models/veo-3.1-generate-preview",
+      stackModel: "models/gemini-2.5-flash & models/veo-3.0-generate-preview",
       status: computeBlueprintAgentStatus(45),
       executionTimeMs: perAgentSynthMs,
       qualityScore: computedQualityScore,
@@ -539,7 +539,7 @@ export function getDanceMusicVideoAgents(
       name: "Vocal Viseme & Mouth-Lock Agent",
       icon: "👄",
       roleTitle: `Dual-Mode Active Speaker/Singer Viseme Lock (r >= 0.72) + Ensemble Closed-Lips Eye Acting`,
-      stackModel: "models/lyria-3-pro-preview & models/gemini-3.1-flash-tts-preview",
+      stackModel: "models/lyria-realtime-exp & models/gemini-2.5-flash-preview-tts",
       status: computeBlueprintAgentStatus(55),
       executionTimeMs: perAgentSynthMs,
       qualityScore: computedQualityScore,
@@ -557,7 +557,7 @@ export function getDanceMusicVideoAgents(
       name: "Camera Optics & Beat-Drop Lighting Agent",
       icon: "🎥",
       roleTitle: `${shotsCount}-Shot 24mm/35mm/50mm/85mm T-Stop & Kelvin Lighting Schedule`,
-      stackModel: "models/gemini-omni-1.1-flash & models/veo-3.1-generate-preview",
+      stackModel: "models/gemini-2.5-flash & models/veo-3.0-generate-preview",
       status: computeBlueprintAgentStatus(65),
       executionTimeMs: perAgentSynthMs,
       qualityScore: computedQualityScore,
@@ -575,7 +575,7 @@ export function getDanceMusicVideoAgents(
       name: "Vocal & Lyric Direction Agent",
       icon: "🎙️",
       roleTitle: `${language} Lead/Co-Lead Vocal & Spoken Dialogue Grid (${shotsCount} Turns @ ${bpm} BPM)`,
-      stackModel: "models/gemini-2.5-flash & models/gemini-3.8-flash",
+      stackModel: "models/gemini-2.5-flash & models/gemini-2.5-flash",
       status: computeBlueprintAgentStatus(72),
       executionTimeMs: perAgentSynthMs,
       qualityScore: computedQualityScore,
@@ -599,7 +599,7 @@ export function getDanceMusicVideoAgents(
       name: "Music Scoring Agent",
       icon: "🎼",
       roleTitle: `48kHz Full-Spectrum ${bpm} BPM (${musicalKey}) ${genreRaw.replace(/\s*\(\d+\s*BPM\)/i, "")} Master`,
-      stackModel: "models/lyria-3-pro-preview & models/lyria-3.5",
+      stackModel: "models/lyria-realtime-exp & models/lyria-002",
       status: computeBlueprintAgentStatus(80),
       executionTimeMs: perAgentSynthMs,
       qualityScore: computedQualityScore,
@@ -642,7 +642,7 @@ export function getDanceMusicVideoAgents(
         ? `Independent Cross-Model LLM-as-a-Judge (${jr.judgeModel} auditing ${jr.generatorModel}) + 10-Invariant & Stage 2 Omni Judge`
         : "Independent Cross-Model LLM-as-a-Judge (models/gemini-2.5-pro auditing models/gemini-2.5-flash) + Stage 2 Omni Judge",
       stackModel:
-        "Cross-Model Judge: models/gemini-2.5-pro & models/gemini-3.1-pro-preview (auditing models/gemini-2.5-flash) + Stage 2 models/gemini-omni-1.1-flash",
+        "Cross-Model Judge: models/gemini-2.5-pro & models/gemini-2.5-pro (auditing models/gemini-2.5-flash) + Stage 2 models/gemini-2.5-flash",
       status: computeRenderStageStatus(100),
       executionTimeMs: judgeMs,
       qualityScore: jr?.independentScore || computedQualityScore,
@@ -652,7 +652,7 @@ export function getDanceMusicVideoAgents(
       dynamicOutput: [
         jr
           ? `Cross-Model Judge Separation: Pass 1 Generator = ${jr.generatorModel} (${jr.generatorLatencyMs}ms) | Pass 2 Independent Judge = ${jr.judgeModel} (${jr.judgeLatencyMs}ms)`
-          : `Cross-Model Judge Separation: Pass 1 Generator = models/gemini-2.5-flash | Pass 2 Independent Judge = models/gemini-2.5-pro & models/gemini-3.1-pro-preview`,
+          : `Cross-Model Judge Separation: Pass 1 Generator = models/gemini-2.5-flash | Pass 2 Independent Judge = models/gemini-2.5-pro & models/gemini-2.5-pro`,
         ...(jr?.verdictSummary ? [`Independent Pro Judge Verdict: ${jr.verdictSummary}`] : []),
         ...(jr?.assumptionsAudited || []).map((a) => `🔍 [Pro Judge Zero-Assumption Audit]: ${a}`),
         ...(jr?.autoCorrectionsApplied || []).map((c) => `🛠️ [Pro Judge Auto-Remediation]: ${c}`),

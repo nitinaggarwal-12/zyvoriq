@@ -34,13 +34,13 @@ export type YtStage = (typeof YT_STAGES)[number];
  * template interpolated the value directly while another prepended "models/".
  */
 export const YT_STAGE_EXECUTOR: Record<YtStage, string> = {
-  OMNI_DIRECTION: "models/gemini-omni-1.1-flash",
+  OMNI_DIRECTION: "models/gemini-2.5-flash",
   LYRIA_SONG: "models/lyria-3.5",
   TEMPO_MEASURE: "deterministic:ffmpeg+autocorrelation (no model)",
   ANCHOR_PLATE: "models/gemini-2.5-flash-image",
-  VEO_SHOTS: "models/veo-3.1-generate-preview",
+  VEO_SHOTS: "models/veo-3.0-generate-preview",
   MASTER_MUX: "deterministic:ffmpeg (no model)",
-  OMNI_SYNC_AUDIT: "models/gemini-omni-1.1-flash",
+  OMNI_SYNC_AUDIT: "models/gemini-2.5-flash",
 };
 
 /** Roles Omni genuinely performs. Kept honest on purpose - see OMNI_NOT_ROLES. */
@@ -68,8 +68,8 @@ export const OMNI_NOT_ROLES: Record<string, string> = {
  * ledger - a reel must never claim a model that did not generate it.
  */
 export const VEO_TIER_MODEL = {
-  full: "models/veo-3.1-generate-preview",
-  fast: "models/veo-3.1-fast-generate-preview",
+  full: "models/veo-3.0-generate-preview",
+  fast: "models/veo-3.0-generate-preview",
   lite: "models/veo-3.1-lite-generate-preview",
 } as const;
 

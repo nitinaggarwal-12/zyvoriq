@@ -31,7 +31,7 @@ const API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 if (!API_KEY) { console.error("FATAL: GEMINI_API_KEY / GOOGLE_API_KEY not set"); process.exit(1); }
 
 const WORK = "/Users/nitinagga/Documents/zyvoriq/scratch/coastal_synthpop_30s";
-const OMNI_MODEL = "models/gemini-omni-1.1-flash";
+const OMNI_MODEL = "models/gemini-2.5-flash";
 const PLAN_PATH = path.join(WORK, "omni_directorial_plan.json");
 const LEDGER = path.join(WORK, "provenance", "stage0.receipts.jsonl");
 
